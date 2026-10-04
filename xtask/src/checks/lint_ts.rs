@@ -80,6 +80,7 @@ mod tests {
             "no-non-null-assertion",
             "no-eval",
             "no-floating-promises",
+            "no-default-export",
             "jsx-no-literals",
             "forbid-dom-props",
         ] {

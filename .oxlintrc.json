@@ -10,12 +10,21 @@
   "env": { "browser": true, "es2024": true },
   "overrides": [
     {
+      // Vite, Vitest, Playwright, stylelint and html-validate read the default export of their config.
+      "files": ["**/*.config.ts", "**/*.config.mjs"],
+      "rules": { "import/no-default-export": "off" }
+    },
+    {
       // Playwright hands tests mutable fixtures (page, context); their types cannot be readonly.
       "files": ["web/app/e2e/**"],
-      "rules": { "typescript/prefer-readonly-parameter-types": "off" }
+      "rules": {
+        "typescript/prefer-readonly-parameter-types": "off"
+      }
     }
   ],
   "rules": {
+    // Named exports only (coding-standards section 4); the config override above is the exception.
+    "import/no-default-export": "error",
     "no-console": "error",
     "no-eval": "error",
     "no-new-func": "error",

@@ -7,3 +7,7 @@ export function risky(input: any, maybe: string | undefined): string {
 export function forgets(): void {
   Promise.resolve(1);
 }
+
+export default function defaulted(): number {
+  return 1;
+}

@@ -8,6 +8,10 @@ import {
   storeChoice,
 } from "./theme.ts";
 
+const blocked = (): never => {
+  throw new Error("blocked");
+};
+
 describe("thm_01 theme choice", () => {
   it("matches the device: Daylight on light, Dusk on dark", () => {
     expect(resolveTheme("device", false)).toBe("daylight");
@@ -24,7 +28,9 @@ describe("thm_01 theme choice", () => {
     expect(isThemeChoice("neon")).toBe(false);
     expect(isThemeChoice(null)).toBe(false);
   });
+});
 
+describe("thm_01 theme storage", () => {
   it("falls back to the default when storage is empty, invalid or blocked", () => {
     expect(readStoredChoice(() => ({ getItem: () => null }))).toBe(defaultThemeChoice);
     expect(readStoredChoice(() => ({ getItem: () => "neon" }))).toBe(defaultThemeChoice);
@@ -38,9 +44,6 @@ describe("thm_01 theme choice", () => {
   });
 
   it("survives storage whose getter itself throws (blocked site data)", () => {
-    const blocked = (): never => {
-      throw new Error("blocked");
-    };
     expect(readStoredChoice(blocked)).toBe(defaultThemeChoice);
     expect(() => {
       storeChoice(blocked, "paper");
