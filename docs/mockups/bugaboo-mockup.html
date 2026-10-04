@@ -399,14 +399,14 @@ button.fact:hover{border-color:var(--accent)}
       <svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="17" r="11" style="fill:var(--accent)"/><path d="M16 6v22" style="stroke:var(--bg-surface)" stroke-width="2"/><circle cx="11.5" cy="14" r="2.2" style="fill:var(--bg-surface)"/><circle cx="20.5" cy="14" r="2.2" style="fill:var(--bg-surface)"/><circle cx="12" cy="21.5" r="1.8" style="fill:var(--bg-surface)"/><circle cx="20" cy="21.5" r="1.8" style="fill:var(--bg-surface)"/><path d="M12 6.5 9 3M20 6.5 23 3" style="stroke:var(--accent)" stroke-width="2" stroke-linecap="round" fill="none"/></svg>
       Bugaboo
     </div>
-    <button class="side-search" data-act="quick"><svg class="ico"><use href="#i-search"/></svg>Search<kbd>Ctrl K</kbd></button>
-    <nav class="side-scroll" id="sidenav"></nav>
+    <button type="button" class="side-search" data-act="quick"><svg class="ico"><use href="#i-search"/></svg>Search<kbd>Ctrl K</kbd></button>
+    <nav class="side-scroll" id="sidenav" aria-label="Sections"></nav>
     <div class="side-foot" id="sidefoot"></div>
   </aside>
 
   <main class="main" id="main"></main>
 
-  <aside class="panel" id="panel" hidden></aside>
+  <aside class="panel" id="panel" aria-label="Details" hidden></aside>
 
   <nav class="bottombar" id="bottombar" aria-label="Main menu"></nav>
 </div>
@@ -559,7 +559,7 @@ function typeTag(i, withWord=true){ return `<span class="type ${i.type}">${ico("
 function statusPill(i, clickable=true){
   const g = STATUS_GROUP[i.status];
   return clickable
-    ? `<button class="pill st-${g}" data-act="status-menu" data-key="${i.key}" aria-label="Status: ${i.status}. Change status">${i.status}</button>`
+    ? `<button type="button" class="pill st-${g}" data-act="status-menu" data-key="${i.key}" aria-label="Status: ${i.status}. Change status">${i.status}</button>`
     : `<span class="pill st-${g}">${i.status}</span>`;
 }
 const prioTag = p => `<span class="prio ${p}">${ico(PRIO_ICON[p])}${p}</span>`;
@@ -646,34 +646,34 @@ const NAV = [
 ];
 function renderNav(){
   const unread = 3 - S.notifRead.size;
-  const item = (id, icon, label, extra="") => `<button class="nav-item" data-act="go" data-screen="${id}" aria-current="${S.screen===id}">${ico(icon)}${label}${extra}</button>`;
+  const item = (id, icon, label, extra="") => `<button type="button" class="nav-item" data-act="go" data-screen="${id}" aria-current="${S.screen===id}">${ico(icon)}${label}${extra}</button>`;
   $("#sidenav").innerHTML =
     NAV.map(([id,icon,label]) => item(id,icon,label, id==="notifications" && unread>0 ? `<span class="count">${unread}</span>` : "")).join("") +
     `<div class="nav-label">Pinned</div>
-     <button class="nav-item" data-act="pinned">${ico("i-bookmark")}Open bugs in Website</button>
+     <button type="button" class="nav-item" data-act="pinned">${ico("i-bookmark")}Open bugs in Website</button>
      <div class="nav-label">Projects</div>
-     <button class="nav-item">${ico("i-folder")}ACME</button>
-     <button class="nav-item nav-sub" data-act="go" data-screen="issues" aria-current="${S.screen==="issues"}">${ico("i-list")}Website issues</button>
-     <button class="nav-item nav-sub" data-act="go" data-screen="docs" aria-current="${S.screen==="docs"}">${ico("i-file")}Website documents</button>
-     <button class="nav-item nav-sub">${ico("i-list")}Mobile app</button>`;
+     <button type="button" class="nav-item">${ico("i-folder")}ACME</button>
+     <button type="button" class="nav-item nav-sub" data-act="go" data-screen="issues" aria-current="${S.screen==="issues"}">${ico("i-list")}Website issues</button>
+     <button type="button" class="nav-item nav-sub" data-act="go" data-screen="docs" aria-current="${S.screen==="docs"}">${ico("i-file")}Website documents</button>
+     <button type="button" class="nav-item nav-sub">${ico("i-list")}Mobile app</button>`;
   const t = S.timer;
   $("#sidefoot").innerHTML = workdayChip() +
-    (t ? `<button class="timer-chip" data-act="timer-stop" aria-label="Timer running on ${t.key}. Stop timer"><span class="dot-live"></span>${t.key}<span class="t mono" id="timer-sidebar">${elapsed()}</span>${ico("i-stop")}</button>`
-       : `<button class="timer-chip off" data-act="quick" data-mode="timer">${ico("i-clock")}Start a timer</button>`) +
-    `<button class="nav-item" data-act="go" data-screen="settings" aria-current="${S.screen==="settings"}">${ico("i-settings")}Settings</button>
-     <button class="nav-item" data-act="go" data-screen="settings" data-tab="look">${avatar("Ana")}My settings</button>`;
+    (t ? `<button type="button" class="timer-chip" data-act="timer-stop" aria-label="Timer running on ${t.key}. Stop timer"><span class="dot-live"></span>${t.key}<span class="t mono" id="timer-sidebar">${elapsed()}</span>${ico("i-stop")}</button>`
+       : `<button type="button" class="timer-chip off" data-act="quick" data-mode="timer">${ico("i-clock")}Start a timer</button>`) +
+    `<button type="button" class="nav-item" data-act="go" data-screen="settings" aria-current="${S.screen==="settings"}">${ico("i-settings")}Settings</button>
+     <button type="button" class="nav-item" data-act="go" data-screen="settings" data-tab="look">${avatar("Ana")}My settings</button>`;
   const bb = [["home","i-home","Home"],["issues","i-search","Search"],["new","i-plus","New"],["notifications","i-bell","Notifications"],["more","i-more","More"]];
   $("#bottombar").innerHTML = bb.map(([id,icon,label]) =>
-    id==="new" ? `<button class="new" data-act="new">${ico(icon)}${label}</button>`
-    : id==="more" ? `<button data-act="more" aria-current="${["saved","time","docs","settings"].includes(S.screen)}">${ico(icon)}${label}</button>`
-    : `<button data-act="go" data-screen="${id}" aria-current="${S.screen===id}">${ico(icon)}${label}${id==="notifications"&&unread>0?` (${unread})`:""}</button>`).join("");
+    id==="new" ? `<button type="button" class="new" data-act="new">${ico(icon)}${label}</button>`
+    : id==="more" ? `<button type="button" data-act="more" aria-current="${["saved","time","docs","settings"].includes(S.screen)}">${ico(icon)}${label}</button>`
+    : `<button type="button" data-act="go" data-screen="${id}" aria-current="${S.screen===id}">${ico(icon)}${label}${id==="notifications"&&unread>0?` (${unread})`:""}</button>`).join("");
 }
 
 function workdayChip(){
   const w = S.workday;
-  if(!w) return `<button class="wd-chip off" data-act="wd-start">${ico("i-play")}Start work day</button>`;
+  if(!w) return `<button type="button" class="wd-chip off" data-act="wd-start">${ico("i-play")}Start work day</button>`;
   const since = new Date(w.start).toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"});
-  return `<button class="wd-chip ${w.onBreak?"brk":""}" data-act="wd-menu" aria-label="Work day. ${w.onBreak?"On break":"Working since "+since}">${w.onBreak?ico("i-clock")+"On break":`<span class="dot-live" style="background:var(--success)"></span>Working since ${since}`}<span class="t mono" id="wd-sidebar">${wdElapsed()}</span></button>`;
+  return `<button type="button" class="wd-chip ${w.onBreak?"brk":""}" data-act="wd-menu" aria-label="Work day. ${w.onBreak?"On break":"Working since "+since}">${w.onBreak?ico("i-clock")+"On break":`<span class="dot-live" style="background:var(--success)"></span>Working since ${since}`}<span class="t mono" id="wd-sidebar">${wdElapsed()}</span></button>`;
 }
 function wdElapsedOf(w){ const m = Math.max(0, Math.floor((Date.now()-w.start)/60000) - w.brk); return `${Math.floor(m/60)} h ${m%60} min`; }
 function wdElapsed(){ const w = S.workday; if(!w) return ""; const m = Math.max(0, Math.floor((Date.now()-w.start)/60000) - w.brk); return `${Math.floor(m/60)}:${String(m%60).padStart(2,"0")}`; }
@@ -681,17 +681,17 @@ function elapsed(){ if(!S.timer) return ""; const s = Math.floor((Date.now()-S.t
 
 function topbar(crumbs, center=""){
   return `<header class="topbar">
-    ${S.viewAs === "guest" ? `<div class="viewas-bar">${ico("i-lock")}Seeing Bugaboo as a <b>Guest</b>: names follow <i>Who sees people</i><button class="btn sm" data-act="viewas" data-v="">Stop</button></div>` : ""}
+    ${S.viewAs === "guest" ? `<div class="viewas-bar">${ico("i-lock")}Seeing Bugaboo as a <b>Guest</b>: names follow <i>Who sees people</i><button type="button" class="btn sm" data-act="viewas" data-v="">Stop</button></div>` : ""}
     <div class="crumbs">${crumbs}</div>
     ${center}
     <div class="top-actions">
-      <button class="btn ghost hide-phone" data-act="assistant">${ico("i-spark")}Assistant</button>
-      <button class="btn ghost" data-act="assistant" aria-label="Assistant" style="${narrow()?"":"display:none"}">${ico("i-spark","lg")}</button>
+      <button type="button" class="btn ghost hide-phone" data-act="assistant">${ico("i-spark")}Assistant</button>
+      <button type="button" class="btn ghost" data-act="assistant" aria-label="Assistant" style="${narrow()?"":"display:none"}">${ico("i-spark","lg")}</button>
       <label class="hide-phone" style="display:flex;align-items:center;gap:6px">${ico("i-palette")}<span class="sr">Theme</span>
         <select class="look" id="look-select" data-act-change="look" aria-label="Theme">
           <option value="system">Match my device</option>${Object.entries(LOOKS).map(([k,v])=>`<option value="${k}">${v}</option>`).join("")}
         </select></label>
-      <button class="btn primary hide-phone" data-act="new">${ico("i-plus")}New issue</button>
+      <button type="button" class="btn primary hide-phone" data-act="new">${ico("i-plus")}New issue</button>
     </div></header>`;
 }
 
@@ -699,7 +699,7 @@ function topbar(crumbs, center=""){
 function renderIssues(){
   const showSeg = `<div class="seg" role="group" aria-label="Show as">
     ${[["list","i-list","List"],["board","i-board","Board"],["timeline","i-timeline","Timeline"],["calendar","i-calendar","Calendar"],["map","i-map","Map"]].map(([k,i,l]) =>
-      `<button aria-pressed="${S.show===k}" data-act="show" data-show="${k}">${ico(i)}<span>${l}</span></button>`).join("")}</div>`;
+      `<button type="button" aria-pressed="${S.show===k}" data-act="show" data-show="${k}">${ico(i)}<span>${l}</span></button>`).join("")}</div>`;
   let body = "";
   const list = visibleIssues();
   if(S.show === "list") body = renderList(list);
@@ -720,40 +720,40 @@ function renderSearchbar(){
       ${S.advErr ? `<div class="err" role="alert">${ico("i-x")}${esc(S.advErr)}</div>` : ""}
       <div class="hint">Try: <span class="mono">status is Open and priority is Critical</span> · or type <span class="mono">costCenter is 4100</span> — you get the same answer as for a field that doesn't exist, because you aren't allowed to see that field.</div>
     </div>
-    <div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn primary" data-act="adv-run">Search</button><button class="btn" data-act="mode-simple">Simple</button></div></div>`;
+    <div style="display:flex;gap:6px;flex-wrap:wrap"><button type="button" class="btn primary" data-act="adv-run">Search</button><button type="button" class="btn" data-act="mode-simple">Simple</button></div></div>`;
   }
   if(S.searchMode === "ask"){
     return `<div class="searchbar"><div class="ask">
-      <input id="ask" value="${esc(S.ask?.q || "")}" placeholder="Describe what you're looking for, e.g. urgent bugs Ben is working on" aria-label="Ask in your own words">
-      <button class="btn primary" data-act="ask-run">${ico("i-spark")}Make a search</button>
-      <button class="btn" data-act="mode-simple">Cancel</button>
+      <input type="text" id="ask" value="${esc(S.ask?.q || "")}" placeholder="Describe what you're looking for, e.g. urgent bugs Ben is working on" aria-label="Ask in your own words">
+      <button type="button" class="btn primary" data-act="ask-run">${ico("i-spark")}Make a search</button>
+      <button type="button" class="btn" data-act="mode-simple">Cancel</button>
       ${S.ask?.result ? `<div class="ask-result"><span class="ai-label">${ico("i-spark")}Suggested by the assistant</span><code>${esc(S.ask.result)}</code>
-        <button class="btn sm primary" data-act="ask-use">Use this search</button><button class="btn sm" data-act="ask-edit">Edit first</button></div>` : ""}
+        <button type="button" class="btn sm primary" data-act="ask-use">Use this search</button><button type="button" class="btn sm" data-act="ask-edit">Edit first</button></div>` : ""}
     </div></div>`;
   }
   return `<div class="searchbar"><div class="chips" role="group" aria-label="Filters">
     ${S.filters.map((c,ix) => c.raw
-      ? `<span class="chip raw" title="Typed condition (not applied in this mockup)"><button data-act="mode-adv">${esc(c.raw)}</button><button class="x" data-act="chip-del" data-ix="${ix}" aria-label="Remove filter">${ico("i-x")}</button></span>`
-      : `<span class="chip"><button data-act="chip-edit" data-ix="${ix}">${chipLabel(c)}</button>${c.f==="project"?"":`<button class="x" data-act="chip-del" data-ix="${ix}" aria-label="Remove filter ${FIELDS[c.f]}">${ico("i-x")}</button>`}</span>`).join("")}
-    ${S.sort ? `<span class="chip"><button data-act="sort-menu"><b>Sort:</b> ${esc(S.sort)}</button></span>` : ""}
-    <button class="chip add" data-act="chip-add">${ico("i-plus")}Add filter</button>
+      ? `<span class="chip raw" title="Typed condition (not applied in this mockup)"><button type="button" data-act="mode-adv">${esc(c.raw)}</button><button type="button" class="x" data-act="chip-del" data-ix="${ix}" aria-label="Remove filter">${ico("i-x")}</button></span>`
+      : `<span class="chip"><button type="button" data-act="chip-edit" data-ix="${ix}">${chipLabel(c)}</button>${c.f==="project"?"":`<button type="button" class="x" data-act="chip-del" data-ix="${ix}" aria-label="Remove filter ${FIELDS[c.f]}">${ico("i-x")}</button>`}</span>`).join("")}
+    ${S.sort ? `<span class="chip"><button type="button" data-act="sort-menu"><b>Sort:</b> ${esc(S.sort)}</button></span>` : ""}
+    <button type="button" class="chip add" data-act="chip-add">${ico("i-plus")}Add filter</button>
   </div>
   <div style="display:flex;gap:6px;flex-wrap:wrap">
-    <button class="btn ghost" data-act="mode-ask">${ico("i-spark")}Ask</button>
-    <button class="btn ghost" data-act="mode-adv">Advanced</button>
-    <button class="btn hide-phone" data-act="save-search">${ico("i-bookmark")}Save search</button>
+    <button type="button" class="btn ghost" data-act="mode-ask">${ico("i-spark")}Ask</button>
+    <button type="button" class="btn ghost" data-act="mode-adv">Advanced</button>
+    <button type="button" class="btn hide-phone" data-act="save-search">${ico("i-bookmark")}Save search</button>
   </div></div>`;
 }
 
 function renderList(list){
-  if(!list.length) return `<div class="box" style="padding:28px;text-align:center"><p style="margin:0 0 12px">No issues match these filters.</p><button class="btn" data-act="clear-filters">Clear filters</button> <button class="btn primary" data-act="new">Create an issue</button></div>`;
+  if(!list.length) return `<div class="box" style="padding:28px;text-align:center"><p style="margin:0 0 12px">No issues match these filters.</p><button type="button" class="btn" data-act="clear-filters">Clear filters</button> <button type="button" class="btn primary" data-act="new">Create an issue</button></div>`;
   const rows = list.map(i => `<tr class="row ${S.open===i.key?"sel":""}" data-act="open" data-key="${i.key}">
       <td><input type="checkbox" class="cb" data-act-change="select" data-key="${i.key}" ${S.selected.has(i.key)?"checked":""} aria-label="Select ${i.key}"></td>
       <td>${typeTag(i,false)} <span class="key">${i.key}</span></td>
       <td class="title">${esc(i.title)} ${labelTags(i.labels)}</td>
       <td>${statusPill(i)}</td><td>${prioTag(i.prio)}</td><td>${whoTag(i.who)}</td>
       <td class="num muted">${i.due||""}</td></tr>`).join("");
-  const cards = list.map(i => `<button class="lrow" data-act="open" data-key="${i.key}">
+  const cards = list.map(i => `<button type="button" class="lrow" data-act="open" data-key="${i.key}">
       <span>${typeTag(i,false)}</span>
       <span style="min-width:0;flex:1"><span class="key">${i.key}</span><span class="t">${esc(i.title)}</span>
       <span class="m">${statusPill(i,false)}${prioTag(i.prio)}${i.who?whoTag(i.who):""}</span></span></button>`).join("");
@@ -762,10 +762,10 @@ function renderList(list){
     <div class="cards">${cards}</div>
     <p class="muted" style="font-size:var(--fs-sm);margin-top:12px">${list.length} issue${list.length===1?"":"s"} · Click a status to change it · Tick boxes to change several issues at once</p>
     ${n ? `<div class="bulkbar" role="region" aria-label="Change selected issues"><b>${n} selected</b>
-      <button class="btn sm" data-act="bulk" data-what="status">Change status</button>
-      <button class="btn sm" data-act="bulk" data-what="assign">Assign to me</button>
-      <button class="btn sm" data-act="bulk" data-what="label">Add label</button>
-      <button class="btn sm ghost" data-act="bulk-clear">Clear</button></div>` : ""}`;
+      <button type="button" class="btn sm" data-act="bulk" data-what="status">Change status</button>
+      <button type="button" class="btn sm" data-act="bulk" data-what="assign">Assign to me</button>
+      <button type="button" class="btn sm" data-act="bulk" data-what="label">Add label</button>
+      <button type="button" class="btn sm ghost" data-act="bulk-clear">Clear</button></div>` : ""}`;
 }
 
 function renderBoard(list){
@@ -777,12 +777,12 @@ function renderBoard(list){
       <div class="col-h"><span class="pill st-${STATUS_GROUP[st]}">${st}</span>
         ${lim ? `<span class="lim ${items.length>lim?"over":""}">${items.length} of ${lim}</span>` : `<span class="lim">${items.length}</span>`}</div>
       <div class="col-b">${items.map(i => `<article class="card" draggable="true" data-drag="${i.key}">
-        <div class="meta">${typeTag(i,false)}<span class="key">${i.key}</span><button class="btn sm ghost move" data-act="status-menu" data-key="${i.key}" aria-label="Move ${i.key} to another column">Move to …</button></div>
-        <button class="title" data-act="open" data-key="${i.key}" style="border:0;background:none;padding:0;text-align:left">${esc(i.title)}</button>
+        <div class="meta">${typeTag(i,false)}<span class="key">${i.key}</span><button type="button" class="btn sm ghost move" data-act="status-menu" data-key="${i.key}" aria-label="Move ${i.key} to another column">Move to …</button></div>
+        <button type="button" class="title" data-act="open" data-key="${i.key}" style="border:0;background:none;padding:0;text-align:left">${esc(i.title)}</button>
         <div class="meta">${prioTag(i.prio)}${avatar(i.who)}${labelTags(i.labels)}</div></article>`).join("") ||
         `<p class="subtle" style="font-size:var(--fs-sm);margin:4px 2px">No issues here.</p>`}</div></section>`;
   }).join("");
-  const tabs = `<div class="board-tabs" role="tablist">${STATUSES.map(st => `<button class="btn sm" role="tab" aria-selected="${S.boardCol===st}" style="${S.boardCol===st?"border-color:var(--accent);color:var(--accent-fg);font-weight:600":""}" data-act="board-col" data-col="${st}">${st} (${list.filter(i=>i.status===st).length})</button>`).join("")}</div>`;
+  const tabs = `<div class="board-tabs" role="tablist">${STATUSES.map(st => `<button type="button" class="btn sm" role="tab" aria-selected="${S.boardCol===st}" style="${S.boardCol===st?"border-color:var(--accent);color:var(--accent-fg);font-weight:600":""}" data-act="board-col" data-col="${st}">${st} (${list.filter(i=>i.status===st).length})</button>`).join("")}</div>`;
   return tabs + `<div class="board">${cols}</div>`;
 }
 
@@ -794,14 +794,14 @@ function renderTimeline(){
   const others = issues.filter(i => !i.parent && i.type!=="goal" && i.start);
   const unscheduled = issues.filter(i => !i.start);
   const bar = i => { const l = pos(i.start), w = Math.max(pos(i.end)-l + 100/SPAN, 2.5);
-    return `<button class="bar ${STATUS_GROUP[i.status]==="ns"?"ns":STATUS_GROUP[i.status]==="done"?"done":""}" style="left:${l}%;width:${w}%" data-act="open" data-key="${i.key}" title="${i.key}: ${esc(i.title)} (${i.start} to ${i.end})">${i.key}</button>`; };
+    return `<button type="button" class="bar ${STATUS_GROUP[i.status]==="ns"?"ns":STATUS_GROUP[i.status]==="done"?"done":""}" style="left:${l}%;width:${w}%" data-act="open" data-key="${i.key}" title="${i.key}: ${esc(i.title)} (${i.start} to ${i.end})">${i.key}</button>`; };
   const today = `<div class="today" style="left:${TODAY/SPAN*100}%"></div>`;
   const row = (i, cls) => `<div class="tl-name ${cls}" data-act="open" data-key="${i.key}">${typeTag(i,false)}<span class="key">${i.key}</span><span class="t">${esc(i.title)}</span></div><div class="tl-lane">${today}${bar(i)}</div>`;
   const gl = pos(goal.start), gw = pos(goal.end)-gl;
   const grid = `<div class="tl">
     <div class="tl-h"><div>Issue</div><div class="tl-weeks">${["Sep 28","Oct 5","Oct 12","Oct 19","Oct 26"].map(w=>`<span>Week of ${w}</span>`).join("")}</div></div>
     <div class="tl-name goal" data-act="open" data-key="WEB-145">${typeTag(goal,false)}<span class="t">Goal: ${esc(goal.title)}</span></div>
-    <div class="tl-lane">${today}<div class="today-label" style="left:${TODAY/SPAN*100}%">Today</div><button class="bar goal" data-act="open" data-key="WEB-145" style="left:${gl}%;width:${gw}%" title="About 40% done"><span class="prog" style="width:40%"></span></button></div>
+    <div class="tl-lane">${today}<div class="today-label" style="left:${TODAY/SPAN*100}%">Today</div><button type="button" class="bar goal" data-act="open" data-key="WEB-145" style="left:${gl}%;width:${gw}%" title="About 40% done"><span class="prog" style="width:40%"></span></button></div>
     ${kids.map(k => row(k,"child")).join("")}
     <div class="tl-name" style="background:var(--bg-surface);font-weight:600">${ico("i-goal")}Release 2.4</div>
     <div class="tl-lane" style="background-color:var(--bg-surface)">${today}<div class="ms" style="left:${pos("2026-10-23")}%" title="Release 2.4 on Oct 23"></div></div>
@@ -809,12 +809,12 @@ function renderTimeline(){
   </div>
   <div class="tl-legend"><span><i style="background:var(--fg-subtle)"></i>Not started</span><span><i style="background:var(--st-ip)"></i>In progress</span><span><i style="background:var(--st-done)"></i>Done</span><span><i style="background:var(--warning);transform:rotate(45deg)"></i>Milestone</span>
     <span>WEB-141 must wait for WEB-140 to finish first.</span>
-    <button class="btn sm" data-act="toast" data-msg="Deadline drivers: WEB-140 → WEB-141 → Release 2.4. A delay in either moves the release.">Show deadline drivers</button></div>
+    <button type="button" class="btn sm" data-act="toast" data-msg="Deadline drivers: WEB-140 → WEB-141 → Release 2.4. A delay in either moves the release.">Show deadline drivers</button></div>
   <div class="box" style="margin-top:14px"><div class="box-h">Not scheduled yet<span class="muted">Drag onto the chart, or use “Set dates …”</span></div>
-    ${unscheduled.map(u => `<div class="box-row">${typeTag(u,false)}<span class="key">${u.key}</span><span class="t">${esc(u.title)}</span><button class="btn sm" data-act="toast" data-msg="In the real app this opens a date picker for ${u.key}.">Set dates …</button></div>`).join("")}</div>`;
+    ${unscheduled.map(u => `<div class="box-row">${typeTag(u,false)}<span class="key">${u.key}</span><span class="t">${esc(u.title)}</span><button type="button" class="btn sm" data-act="toast" data-msg="In the real app this opens a date picker for ${u.key}.">Set dates …</button></div>`).join("")}</div>`;
   const dated = issues.filter(i => i.start).sort((a,b) => a.start.localeCompare(b.start));
   const lst = `<div class="tl-list"><p class="muted" style="margin:0;font-size:var(--fs-sm)">On phones the timeline is a dated list. Change dates inside each issue.</p>
-    ${dated.map(i => `<button class="lrow" data-act="open" data-key="${i.key}" style="border:1px solid var(--border);border-radius:var(--r-card);padding:10px 12px;background:var(--bg-raised)">
+    ${dated.map(i => `<button type="button" class="lrow" data-act="open" data-key="${i.key}" style="border:1px solid var(--border);border-radius:var(--r-card);padding:10px 12px;background:var(--bg-raised)">
       <span style="min-width:0;flex:1"><span class="tl-day">${new Date(i.start).toLocaleDateString(undefined,{month:"short",day:"numeric"})} → ${new Date(i.end).toLocaleDateString(undefined,{month:"short",day:"numeric"})}</span>
       <span class="t">${esc(i.title)}</span><span class="m">${typeTag(i,false)}<span class="key">${i.key}</span>${statusPill(i,false)}</span></span></button>`).join("")}</div>`;
   return `<div class="tl-wrap">${grid}</div>${lst}`;
@@ -823,54 +823,54 @@ function renderTimeline(){
 function renderHome(){
   const mine = issues.filter(i => i.who === ME);
   const grp = g => mine.filter(i => STATUS_GROUP[i.status] === g);
-  const rows = arr => arr.map(i => `<button class="box-row" data-act="open" data-key="${i.key}">${typeTag(i,false)}<span class="key">${i.key}</span><span class="t">${esc(i.title)}</span>${statusPill(i,false)}</button>`).join("") || `<div class="box-row subtle">Nothing here.</div>`;
+  const rows = arr => arr.map(i => `<button type="button" class="box-row" data-act="open" data-key="${i.key}">${typeTag(i,false)}<span class="key">${i.key}</span><span class="t">${esc(i.title)}</span>${statusPill(i,false)}</button>`).join("") || `<div class="box-row subtle">Nothing here.</div>`;
   return topbar(`<b>Home</b>`) + `<div class="content">
     <div class="page-h"><h1>Good morning, Ana</h1><span class="muted">Sunday, October 4</span></div>
     <div class="checklist" aria-label="Getting started"><b style="flex-basis:100%">Getting started</b>
       <span class="step"><span class="done-mark">✓</span>Create your first issue</span>
       <span class="step"><span class="done-mark">✓</span>Invite people</span>
-      <button class="btn sm" data-act="go" data-screen="settings" data-tab="look">${ico("i-palette")}Pick your theme</button>
-      <button class="btn sm ghost" data-act="toast" data-msg="Getting started hidden. You can bring it back in My settings.">Hide this</button></div>
+      <button type="button" class="btn sm" data-act="go" data-screen="settings" data-tab="look">${ico("i-palette")}Pick your theme</button>
+      <button type="button" class="btn sm ghost" data-act="toast" data-msg="Getting started hidden. You can bring it back in My settings.">Hide this</button></div>
     ${S.timer ? `<div class="timer-big"><span class="dot-live"></span><div style="flex:1;min-width:180px"><div class="muted" style="font-size:var(--fs-sm)">Timer running on</div><b>${S.timer.key} · ${esc(byKey(S.timer.key).title)}</b></div>
-      <span class="clock" id="timer-home">${elapsed()}</span><button class="btn primary" data-act="timer-stop">${ico("i-stop")}Stop</button><button class="btn" data-act="quick" data-mode="timer">Switch issue</button></div>` : ""}
+      <span class="clock" id="timer-home">${elapsed()}</span><button type="button" class="btn primary" data-act="timer-stop">${ico("i-stop")}Stop</button><button type="button" class="btn" data-act="quick" data-mode="timer">Switch issue</button></div>` : ""}
     <div class="grid2">
       <section class="box"><div class="box-h">${ico("i-list")}My issues<span class="muted">Assigned to me</span></div>
         <div class="box-row muted" style="font-size:var(--fs-xs);text-transform:uppercase;letter-spacing:.06em;font-weight:700">In progress</div>${rows(grp("ip"))}
         <div class="box-row muted" style="font-size:var(--fs-xs);text-transform:uppercase;letter-spacing:.06em;font-weight:700">Not started</div>${rows(grp("ns"))}</section>
       <section class="box"><div class="box-h">${ico("i-bell")}Mentions<span class="muted">2 unread</span></div>
-        <button class="box-row" data-act="open" data-key="WEB-142">${avatar("Ben")}<span class="t"><b>Ben</b> in WEB-142: “@Ana can you check the reset e-mail link?”</span></button>
-        <button class="box-row" data-act="go" data-screen="docs">${avatar("Chloe")}<span class="t"><b>Chloe</b> in <i>Login flow</i>: “@Ana is step 3 still right?”</span></button></section>
+        <button type="button" class="box-row" data-act="open" data-key="WEB-142">${avatar("Ben")}<span class="t"><b>Ben</b> in WEB-142: “@Ana can you check the reset e-mail link?”</span></button>
+        <button type="button" class="box-row" data-act="go" data-screen="docs">${avatar("Chloe")}<span class="t"><b>Chloe</b> in <i>Login flow</i>: “@Ana is step 3 still right?”</span></button></section>
       <section class="box"><div class="box-h">${ico("i-clock")}Due soon<span class="muted">Next 7 days</span></div>
-        ${["WEB-139","WEB-142"].map(k=>byKey(k)).map(i => `<button class="box-row" data-act="open" data-key="${i.key}">${typeTag(i,false)}<span class="t">${esc(i.title)}</span><span class="num muted">${i.due}</span></button>`).join("")}
+        ${["WEB-139","WEB-142"].map(k=>byKey(k)).map(i => `<button type="button" class="box-row" data-act="open" data-key="${i.key}">${typeTag(i,false)}<span class="t">${esc(i.title)}</span><span class="num muted">${i.due}</span></button>`).join("")}
         <div class="box-row">${ico("i-goal")}<span class="t">Release 2.4</span><span class="num muted">Oct 23</span></div></section>
       <section class="box"><div class="box-h">Recently opened</div>
-        <button class="box-row" data-act="go" data-screen="docs">${ico("i-file")}<span class="t">Login flow</span><span class="muted">Page</span></button>
-        <button class="box-row" data-act="open" data-key="WEB-141">${typeTag(byKey("WEB-141"),false)}<span class="t">Sign in with a passkey</span><span class="key">WEB-141</span></button></section>
+        <button type="button" class="box-row" data-act="go" data-screen="docs">${ico("i-file")}<span class="t">Login flow</span><span class="muted">Page</span></button>
+        <button type="button" class="box-row" data-act="open" data-key="WEB-141">${typeTag(byKey("WEB-141"),false)}<span class="t">Sign in with a passkey</span><span class="key">WEB-141</span></button></section>
     </div>
-    <p class="muted" style="font-size:var(--fs-sm);margin-top:16px">Each box is a saved search. <button class="btn sm ghost" data-act="toast" data-msg="In the real app this opens a dialog to reorder, remove or add boxes.">Customize Home</button></p></div>`;
+    <p class="muted" style="font-size:var(--fs-sm);margin-top:16px">Each box is a saved search. <button type="button" class="btn sm ghost" data-act="toast" data-msg="In the real app this opens a dialog to reorder, remove or add boxes.">Customize Home</button></p></div>`;
 }
 
 function renderDocs(){
   const st = byKey("WEB-142");
   return topbar(`<span class="hide-phone">ACME › Website ›</span><b>Documents</b>`) + `<div class="content flush"><div class="docs">
     <nav class="doc-tree" aria-label="Folders">
-      <button class="nav-item" aria-current="false">${ico("i-folder")}<b>Specs</b></button>
-      <button class="nav-item nav-sub" aria-current="true">${ico("i-file")}Login flow</button>
-      <button class="nav-item nav-sub">${ico("i-file")}Search</button>
-      <button class="nav-item">${ico("i-folder")}<b>How-tos</b></button>
-      <button class="nav-item nav-sub">${ico("i-file")}Release checklist</button>
-      <button class="nav-item">${ico("i-folder")}<b>Files</b></button>
-      <button class="nav-item nav-sub">${ico("i-file")}login-wireframes.pdf<span class="lockbadge" title="Locked for editing by Ben since 10:12">${ico("i-lock")}Ben</span></button>
-      <button class="btn sm" style="margin-top:10px" data-act="toast" data-msg="Choose: Page, Folder or Upload a file.">${ico("i-plus")}New</button>
+      <button type="button" class="nav-item" aria-current="false">${ico("i-folder")}<b>Specs</b></button>
+      <button type="button" class="nav-item nav-sub" aria-current="true">${ico("i-file")}Login flow</button>
+      <button type="button" class="nav-item nav-sub">${ico("i-file")}Search</button>
+      <button type="button" class="nav-item">${ico("i-folder")}<b>How-tos</b></button>
+      <button type="button" class="nav-item nav-sub">${ico("i-file")}Release checklist</button>
+      <button type="button" class="nav-item">${ico("i-folder")}<b>Files</b></button>
+      <button type="button" class="nav-item nav-sub">${ico("i-file")}login-wireframes.pdf<span class="lockbadge" title="Locked for editing by Ben since 10:12">${ico("i-lock")}Ben</span></button>
+      <button type="button" class="btn sm" style="margin-top:10px" data-act="toast" data-msg="Choose: Page, Folder or Upload a file.">${ico("i-plus")}New</button>
     </nav>
     <article class="doc-page">
       <div class="muted" style="font-size:var(--fs-sm)">Specs › Login flow · Version 7 · changed by Ana 2 days ago</div>
       <h1>Login flow</h1>
-      <div class="doc-toolbar" role="toolbar" aria-label="Formatting">${["Heading","Bold","List","Checklist","Table","Image","Code"].map(b=>`<button>${b}</button>`).join("")}</div>
+      <div class="doc-toolbar" role="toolbar" aria-label="Formatting">${["Heading","Bold","List","Checklist","Table","Image","Code"].map(b=>`<button type="button">${b}</button>`).join("")}</div>
       <p>People sign in with a <b>passkey</b> first. If they don't have one yet, they use e-mail and password, and we offer to create a passkey right after.</p>
       <h2>Known problems</h2>
       <p>Resetting a password currently breaks the next sign-in:
-        <button class="live-chip" data-act="open" data-key="WEB-142">${typeTag(st,false)}<span class="key">WEB-142</span>${statusPill(st,false)}</button>.
+        <button type="button" class="live-chip" data-act="open" data-key="WEB-142">${typeTag(st,false)}<span class="key">WEB-142</span>${statusPill(st,false)}</button>.
         The chip shows the issue's live status, and only to people who may see that issue.</p>
       <h2>Steps</h2>
       <ol><li>Show “Sign in with a passkey” as the main button.</li><li>Below it: e-mail and password.</li><li>After a password sign-in, suggest creating a passkey.</li></ol>
@@ -878,11 +878,11 @@ function renderDocs(){
     <aside class="doc-side">
       <div><div class="section-h">On this page</div><div>Known problems</div><div>Steps</div></div>
       <div><div class="section-h">Related issues</div>
-        <button class="box-row" style="padding:4px 0" data-act="open" data-key="WEB-142"><span class="key">WEB-142</span><span class="t">Login fails after reset</span></button>
-        <button class="box-row" style="padding:4px 0" data-act="open" data-key="WEB-141"><span class="key">WEB-141</span><span class="t">Sign in with a passkey</span></button></div>
+        <button type="button" class="box-row" style="padding:4px 0" data-act="open" data-key="WEB-142"><span class="key">WEB-142</span><span class="t">Login fails after reset</span></button>
+        <button type="button" class="box-row" style="padding:4px 0" data-act="open" data-key="WEB-141"><span class="key">WEB-141</span><span class="t">Sign in with a passkey</span></button></div>
       <div><div class="section-h">Versions</div>
         ${[["7","Ana","2 days ago"],["6","Ben","last week"],["5","Ana","Sep 14"]].map(([v,w,d])=>`<div class="ver">${avatar(w)}<span>Version ${v}</span><span class="muted" style="margin-left:auto">${d}</span></div>`).join("")}
-        <button class="btn sm" style="margin-top:6px" data-act="toast" data-msg="Pick any two versions to see what changed between them.">Compare versions</button></div>
+        <button type="button" class="btn sm" style="margin-top:6px" data-act="toast" data-msg="Pick any two versions to see what changed between them.">Compare versions</button></div>
     </aside></div></div>`;
 }
 
@@ -892,7 +892,7 @@ function renderTime(){
   const booked = timesheet.reduce((s,r)=>s+r.m.reduce((a,b)=>a+b,0),0);
   const wh = workdays.reduce((s,w)=>s+worked(w),0);
   const warns = workdays.map((w,d) => ruleWarnings(w).map(x => `<b>${days[d]}:</b> ${x}.`)).flat();
-  const wdRow = (label, key) => `<tr><td>${label}</td>${workdays.map((w,d)=>`<td><input inputmode="numeric" class="${key==="brk"&&ruleWarnings(w).some(x=>x.includes("break"))?"warn":""}" value="${w?(key==="brk"?fmtClock(w.brk):fmtClock(w[key])):""}" data-act-change="wd" data-k="${key}" data-d="${d}" aria-label="${label}, ${days[d]}" placeholder="–"></td>`).join("")}<td></td></tr>`;
+  const wdRow = (label, key) => `<tr><td>${label}</td>${workdays.map((w,d)=>`<td><input type="text" inputmode="numeric" class="${key==="brk"&&ruleWarnings(w).some(x=>x.includes("break"))?"warn":""}" value="${w?(key==="brk"?fmtClock(w.brk):fmtClock(w[key])):""}" data-act-change="wd" data-k="${key}" data-d="${d}" aria-label="${label}, ${days[d]}" placeholder="–"></td>`).join("")}<td></td></tr>`;
   return topbar(`<b>Time</b>`) + `<div class="content">
     <div class="page-h"><h1>My timesheet</h1><span class="muted">Week of September 28</span></div>
     <h2 class="section-h" style="margin-top:4px">Working hours</h2>
@@ -904,14 +904,14 @@ function renderTime(){
     <h2 class="section-h" style="margin-top:22px">Time on issues</h2>
     <p class="help" style="margin-top:0">Type <span class="mono">1:30</span>, <span class="mono">1.5</span> or <span class="mono">90m</span> — they all mean ninety minutes. Activity and cost center come from the issue; change them per row.</p>
     <div class="ts-wrap"><table class="ts" style="min-width:980px"><thead><tr><th>Issue</th><th>Activity</th><th>Cost center</th>${days.map((d,ix)=>`<th class="${ix===6?"today":""}">${d}</th>`).join("")}<th>Total</th></tr></thead>
-      <tbody>${timesheet.map((r,ri) => { const i = byKey(r.key); return `<tr><td><button class="box-row" style="padding:0;border:0" data-act="open" data-key="${i.key}"><span class="key">${i.key}</span><span class="t" style="max-width:180px">${esc(i.title)}</span></button></td>
+      <tbody>${timesheet.map((r,ri) => { const i = byKey(r.key); return `<tr><td><button type="button" class="box-row" style="padding:0;border:0" data-act="open" data-key="${i.key}"><span class="key">${i.key}</span><span class="t" style="max-width:180px">${esc(i.title)}</span></button></td>
         <td><select data-act-change="ts-act" data-r="${ri}" aria-label="Activity for ${i.key}">${ACTIVITIES.map(a=>`<option ${a===r.act?"selected":""}>${a}</option>`).join("")}</select></td>
         <td><select data-act-change="ts-cc" data-r="${ri}" aria-label="Cost center for ${i.key}">${COST_CENTERS.map(([n,l])=>`<option value="${n}" ${n===r.cc?"selected":""}>${n} ${l}</option>`).join("")}</select></td>
-        ${r.m.map((m,d)=>`<td><input inputmode="decimal" value="${fmtMin(m)}" data-act-change="ts" data-r="${ri}" data-d="${d}" aria-label="${i.key}, ${days[d]}"></td>`).join("")}
+        ${r.m.map((m,d)=>`<td><input type="text" inputmode="decimal" value="${fmtMin(m)}" data-act-change="ts" data-r="${ri}" data-d="${d}" aria-label="${i.key}, ${days[d]}"></td>`).join("")}
         <td class="num"><b>${fmtMin(r.m.reduce((a,b)=>a+b,0))}</b></td></tr>`; }).join("")}</tbody>
       <tfoot><tr><td colspan="3">Booked on issues</td>${days.map((_,d)=>`<td>${fmtMin(col(d))}</td>`).join("")}<td>${fmtMin(booked)}</td></tr>
         <tr><td colspan="3">Working hours not booked on issues</td>${days.map((_,d)=>`<td>${fmtMin(Math.max(0,worked(workdays[d])-col(d)))}</td>`).join("")}<td>${fmtMin(Math.max(0,wh-booked))}</td></tr></tfoot></table></div>
-    <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn" data-act="toast" data-msg="Search for an issue to add a row.">${ico("i-plus")}Add issue</button><button class="btn ghost" data-act="toast" data-msg="Reports: same search bar, grouped by person, project, issue, activity, cost center or week.">Reports</button></div></div>`;
+    <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn" data-act="toast" data-msg="Search for an issue to add a row.">${ico("i-plus")}Add issue</button><button type="button" class="btn ghost" data-act="toast" data-msg="Reports: same search bar, grouped by person, project, issue, activity, cost center or week.">Reports</button></div></div>`;
 }
 
 function renderNotifications(){
@@ -920,17 +920,17 @@ function renderNotifications(){
     ["n2","WEB-139","Malik assigned this to Ben and changed priority to Critical","","1 h ago"],
     ["n3","Login flow","Chloe mentioned you in a document","“@Ana is step 3 still right?”","Yesterday"]
   ];
-  return topbar(`<b>Notifications</b>`) + `<div class="content"><div class="page-h"><h1>Notifications</h1><button class="btn sm ghost" data-act="toast" data-msg="Opens notification settings: what you get, and how (in Bugaboo, e-mail).">Customize</button></div>
+  return topbar(`<b>Notifications</b>`) + `<div class="content"><div class="page-h"><h1>Notifications</h1><button type="button" class="btn sm ghost" data-act="toast" data-msg="Opens notification settings: what you get, and how (in Bugaboo, e-mail).">Customize</button></div>
     <div class="box">${items.map(([id,k,t,q,w]) => `<div class="box-row" style="${S.notifRead.has(id)?"opacity:.6":""}">${S.notifRead.has(id)?"":`<span class="dot-live" style="animation:none"></span>`}
       <span class="t" style="white-space:normal"><span class="key">${k}</span> · <b>${t}</b>${q?`<br><span class="muted">${q}</span>`:""}</span><span class="muted" style="font-size:var(--fs-sm)">${w}</span>
-      ${k.startsWith("WEB")?`<button class="btn sm" data-act="open" data-key="${k}">Open</button>`:`<button class="btn sm" data-act="go" data-screen="docs">Open</button>`}
-      <button class="btn sm ghost" data-act="notif-read" data-id="${id}">${S.notifRead.has(id)?"Read":"Mark as read"}</button></div>`).join("")}</div></div>`;
+      ${k.startsWith("WEB")?`<button type="button" class="btn sm" data-act="open" data-key="${k}">Open</button>`:`<button type="button" class="btn sm" data-act="go" data-screen="docs">Open</button>`}
+      <button type="button" class="btn sm ghost" data-act="notif-read" data-id="${id}">${S.notifRead.has(id)?"Read":"Mark as read"}</button></div>`).join("")}</div></div>`;
 }
 
 function renderSaved(){
   const s = [["Open bugs in Website","status is not Done and type is Bug","List"],["Release 2.4 plan","project within WEB","Timeline"],["Team board","project within WEB","Board"],["Critical, nobody assigned","priority is Critical and assignedTo is nobody","List"]];
   return topbar(`<b>Saved searches</b>`) + `<div class="content"><div class="page-h"><h1>Saved searches</h1></div>
-    <div class="box">${s.map(([n,q,v])=>`<button class="box-row" data-act="saved-open" data-q="${esc(q)}" data-v="${v.toLowerCase()}">${ico("i-bookmark")}<span class="t"><b>${n}</b><br><span class="mono muted" style="font-size:var(--fs-xs)">${esc(q)}</span></span><span class="muted">${v}</span></button>`).join("")}</div></div>`;
+    <div class="box">${s.map(([n,q,v])=>`<button type="button" class="box-row" data-act="saved-open" data-q="${esc(q)}" data-v="${v.toLowerCase()}">${ico("i-bookmark")}<span class="t"><b>${n}</b><br><span class="mono muted" style="font-size:var(--fs-xs)">${esc(q)}</span></span><span class="muted">${v}</span></button>`).join("")}</div></div>`;
 }
 
 function renderSettings(){
@@ -945,14 +945,14 @@ function renderSettings(){
       ${rows.map(([f,vals])=>`<tr><td><b>${f}</b></td>${vals.map((v,ix)=>`<td><select class="${v}" data-act-change="perm" aria-label="${f} for ${roles[ix]}">${opt(v)}</select></td>`).join("")}</tr>`).join("")}</tbody></table></div>
       <h3 style="margin:22px 0 8px">Check access</h3>
       <div class="explain"><b>Can Ana change Priority in Website?</b><br>${ico("i-check")} Yes — Ana is in the group <b>Backend</b>, which has the role <b>Team member</b> in <b>ACME</b>. Website is inside ACME, so the role applies here too.</div>
-      <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn" data-act="toast" data-msg="See as … shows any screen exactly as the chosen person sees it. Nothing can be changed there, and it's recorded in the security log.">See Bugaboo as a Contributor …</button></div>`;
+      <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn" data-act="toast" data-msg="See as … shows any screen exactly as the chosen person sees it. Nothing can be changed there, and it's recorded in the security log.">See Bugaboo as a Contributor …</button></div>`;
   }
   if(S.setTab === "wf"){
     body = `<p class="help">The workflow for <b>Bugs</b> in Website. Each status lists where an issue can go next, and what the button says.</p>
       <div class="wf">${STATUSES.map(st => `<div class="wf-row"><span class="muted">From</span><span class="pill st-${STATUS_GROUP[st]}">${st}</span><span class="muted">you can go to:</span>
-        ${MOVES[st].map(([to,lab])=>`<button class="btn sm" data-act="toast" data-msg="Rules for “${lab}”: Who can do it · Only if … · Must be filled in · Ask for · Then automatically …"><span class="pill st-${STATUS_GROUP[to]}" style="padding:0 6px">${to}</span>“${lab}”</button>`).join("")}</div>`).join("")}</div>
+        ${MOVES[st].map(([to,lab])=>`<button type="button" class="btn sm" data-act="toast" data-msg="Rules for “${lab}”: Who can do it · Only if … · Must be filled in · Ask for · Then automatically …"><span class="pill st-${STATUS_GROUP[to]}" style="padding:0 6px">${to}</span>“${lab}”</button>`).join("")}</div>`).join("")}</div>
       <p class="help" style="margin-top:12px">“Mark as done” asks for <b>Planned for release</b> if it's empty. Try it on WEB-139 after moving it to Testing.</p>
-      <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" data-act="toast" data-msg="The drawing view shows statuses as boxes and allowed changes as arrows.">Show as drawing</button><button class="btn" data-act="toast" data-msg="Try it: pick an issue and a person to see which status changes they'd get, and why.">Try it</button></div>`;
+      <div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn" data-act="toast" data-msg="The drawing view shows statuses as boxes and allowed changes as arrows.">Show as drawing</button><button type="button" class="btn" data-act="toast" data-msg="Try it: pick an issue and a person to see which status changes they'd get, and why.">Try it</button></div>`;
   }
   if(S.setTab === "privacy"){
     const rows = [["Working hours","2 years","German working-time recording"],["Time on issues","10 years","Accounting; your organization sets the period"],["Security log","1 year","Finding and explaining security problems"],["IP addresses in logs","7 days","Stopping attacks on sign-in"],["Notifications","90 days","Not needed longer"],["Trash","30 days","Time to restore by mistake"]];
@@ -963,32 +963,32 @@ function renderSettings(){
       <p class="help">For each role: show people's names, only their role ("a Team member"), or nothing ("Someone"). People who can't see names can't search or filter by them either.</p>
       <div style="overflow-x:auto" class="box"><table class="perm"><thead><tr><th>What</th><th>Team member</th><th>Contributor</th><th>Guest</th></tr></thead><tbody>
       ${[["Assigned to","n","n","r"],["Reported by","n","n","h"],["Comment and history authors","n","n","r"],["“… is editing”","n","n","h"],["Followers","n","r","h"],["Time entries","n","h","h"]].map(([w,...v])=>`<tr><td><b>${w}</b></td>${v.map(x=>`<td><select class="${x==="n"?"chg":x==="r"?"see":"hid"}" aria-label="${w}"><option ${x==="n"?"selected":""}>Names</option><option ${x==="r"?"selected":""}>Role only</option><option ${x==="h"?"selected":""}>Hidden</option></select></td>`).join("")}</tr>`).join("")}</tbody></table></div>
-      <div style="margin-top:10px"><button class="btn" data-act="viewas" data-v="guest">${ico("i-lock")}See Bugaboo as a Guest</button></div>
+      <div style="margin-top:10px"><button type="button" class="btn" data-act="viewas" data-v="guest">${ico("i-lock")}See Bugaboo as a Guest</button></div>
       <h3 style="margin:22px 0 8px">Issue IDs</h3>
       <p class="help">Counting IDs are easy to say aloud but show how many issues a project has. Random IDs don't. Existing IDs keep working when you switch.</p>
-      <div class="seg" role="group" aria-label="Issue IDs for Website"><button aria-pressed="${S.idMode==="random"}" data-act="idmode" data-m="random">Random · <span class="mono">WEB-K7Q2X</span></button><button aria-pressed="${S.idMode==="counting"}" data-act="idmode" data-m="counting">Counting · <span class="mono">WEB-142</span></button></div>
+      <div class="seg" role="group" aria-label="Issue IDs for Website"><button type="button" aria-pressed="${S.idMode==="random"}" data-act="idmode" data-m="random">Random · <span class="mono">WEB-K7Q2X</span></button><button type="button" aria-pressed="${S.idMode==="counting"}" data-act="idmode" data-m="counting">Counting · <span class="mono">WEB-142</span></button></div>
       <h3 style="margin:22px 0 8px">My data</h3>
-      <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" data-act="toast" data-msg="Preparing your data: everything Bugaboo stores about you, as readable pages and as a JSON file. You'll get a notification when it's ready.">Download my data</button>
-      <button class="btn" data-act="toast" data-msg="Remove a person: their account is deleted and their name becomes “Former user K7Q2”. Records the law requires are kept until their period ends.">Remove a person …</button></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn" data-act="toast" data-msg="Preparing your data: everything Bugaboo stores about you, as readable pages and as a JSON file. You'll get a notification when it's ready.">Download my data</button>
+      <button type="button" class="btn" data-act="toast" data-msg="Remove a person: their account is deleted and their name becomes “Former user K7Q2”. Records the law requires are kept until their period ends.">Remove a person …</button></div>
       <h3 style="margin:22px 0 8px">Outside services</h3>
       <div class="explain">${ico("i-spark")} <b>Assistant:</b> Claude (Anthropic) · data processing agreement confirmed by Ana on Sep 30 · fields never sent: Cost center, Working hours.<br><span class="muted">E-mail: own mail server. No tracking, analytics or outside scripts.</span></div>`;
   }
   if(S.setTab === "look"){
-    const card = (k, light) => `<button class="theme-card" data-act="pick-look" data-look="${k}" aria-pressed="${S.look===k}">
+    const card = (k, light) => `<button type="button" class="theme-card" data-act="pick-look" data-look="${k}" aria-pressed="${S.look===k}">
       <div class="pv" data-look-preview="${k}"></div><div class="cap"><b>${LOOKS[k]}</b><small>${{daylight:"Light, neutral",paper:"Light, warm and soft",dusk:"Dark, dim grey",midnight:"Dark, pure black"}[k]}</small></div></button>`;
     body = `<p class="help">Bugaboo follows your device's light or dark setting. Pick which theme to use for each.</p>
       <div class="seg" role="group" aria-label="Mode" style="margin-bottom:18px">
-        <button aria-pressed="${S.look==="system"}" data-act="pick-look" data-look="system">Match my device</button>
-        <button aria-pressed="${["daylight","paper"].includes(S.look)}" data-act="pick-look" data-look="${S.prefLight}">Always light</button>
-        <button aria-pressed="${["dusk","midnight"].includes(S.look)}" data-act="pick-look" data-look="${S.prefDark}">Always dark</button></div>
+        <button type="button" aria-pressed="${S.look==="system"}" data-act="pick-look" data-look="system">Match my device</button>
+        <button type="button" aria-pressed="${["daylight","paper"].includes(S.look)}" data-act="pick-look" data-look="${S.prefLight}">Always light</button>
+        <button type="button" aria-pressed="${["dusk","midnight"].includes(S.look)}" data-act="pick-look" data-look="${S.prefDark}">Always dark</button></div>
       <h3 style="margin:0 0 10px">Open issues in</h3>
-      <div class="seg" role="group" aria-label="Open issues in" style="margin-bottom:20px"><button aria-pressed="${S.issueLayout==="focus"}" data-act="layout" data-l="focus">Focus view · more room</button><button aria-pressed="${S.issueLayout==="panel"}" data-act="layout" data-l="panel">Side panel · list stays visible</button></div>
+      <div class="seg" role="group" aria-label="Open issues in" style="margin-bottom:20px"><button type="button" aria-pressed="${S.issueLayout==="focus"}" data-act="layout" data-l="focus">Focus view · more room</button><button type="button" aria-pressed="${S.issueLayout==="panel"}" data-act="layout" data-l="panel">Side panel · list stays visible</button></div>
       <h3 style="margin:0 0 10px">Light theme</h3><div class="themes" style="margin-bottom:20px">${card("daylight")}${card("paper")}</div>
       <h3 style="margin:0 0 10px">Dark theme</h3><div class="themes">${card("dusk")}${card("midnight")}</div>
       <p class="help" style="margin-top:16px">Want your own colors? Copy a theme in Organization settings › Themes. Every text color shows how easy it is to read.</p>`;
   }
   return topbar(`<b>Settings</b>`) + `<div class="content"><div class="page-h"><h1>Settings</h1><span class="muted">Example pages from Organization settings and My settings</span></div>
-    <div class="setting-tabs" role="tablist">${tabs.map(([k,l])=>`<button role="tab" aria-selected="${S.setTab===k}" data-act="set-tab" data-tab="${k}">${l}</button>`).join("")}</div>${body}</div>`;
+    <div class="setting-tabs" role="tablist">${tabs.map(([k,l])=>`<button type="button" role="tab" aria-selected="${S.setTab===k}" data-act="set-tab" data-tab="${k}">${l}</button>`).join("")}</div>${body}</div>`;
 }
 
 const PREVIEW = {
@@ -1011,47 +1011,47 @@ function issueParts(i){
   const parent = i.parent ? byKey(i.parent) : null;
   const rels = neighbors(i.key, new Set(Object.keys(RELATION_KINDS))).filter(n => n.rel.kind !== "part");
   const P = {};
-  P.parent = parent ? `<button class="btn sm ghost" style="align-self:flex-start" data-act="open" data-key="${parent.key}">${ico("i-goal")}Part of: ${esc(parent.title)}</button>` : "";
-  P.title = `<input class="issue-title" value="${esc(i.title)}" aria-label="Title" data-act-change="title" data-key="${i.key}">`;
-  P.timer = `<button class="btn sm ${running?"primary":""}" data-act="${running?"timer-stop":"timer-start"}" data-key="${i.key}">${ico(running?"i-stop":"i-play")}${running?"Stop timer":"Start timer"}</button>`;
+  P.parent = parent ? `<button type="button" class="btn sm ghost" style="align-self:flex-start" data-act="open" data-key="${parent.key}">${ico("i-goal")}Part of: ${esc(parent.title)}</button>` : "";
+  P.title = `<input type="text" class="issue-title" value="${esc(i.title)}" aria-label="Title" data-act-change="title" data-key="${i.key}">`;
+  P.timer = `<button type="button" class="btn sm ${running?"primary":""}" data-act="${running?"timer-stop":"timer-start"}" data-key="${i.key}">${ico(running?"i-stop":"i-play")}${running?"Stop timer":"Start timer"}</button>`;
   P.status = `<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">${statusPill(i)}${P.timer}</div>`;
   P.fields = `<dl class="fields">
-        <dt>Assigned to</dt><dd><button class="fval" data-act="field-menu" data-field="who" data-key="${i.key}">${whoTag(i.who,"assigned")}</button></dd>
-        <dt>Priority</dt><dd><button class="fval" data-act="field-menu" data-field="prio" data-key="${i.key}">${prioTag(i.prio)}</button></dd>
-        ${i.sev ? `<dt>Severity</dt><dd><button class="fval" data-act="toast" data-msg="Opens the list of severities."><span class="tag ${i.sev==="S1"?"c1":i.sev==="S2"?"c4":"c2"}">${i.sev}</span></button></dd>` : ""}
-        <dt>Labels</dt><dd>${i.labels.length ? `<span class="fval">${labelTags(i.labels)}</span>` : `<button class="fval add" data-act="toast" data-msg="Opens the label list.">Add a label</button>`}</dd>
-        <dt>Planned for</dt><dd>${i.release ? `<span class="fval">Release ${i.release}</span>` : `<button class="fval add" data-act="toast" data-msg="Opens the release list.">Add a release</button>`}</dd>
-        <dt>Due date</dt><dd>${i.due ? `<span class="fval num">${i.due}</span>` : `<button class="fval add" data-act="toast" data-msg="Opens a date picker.">Add a due date</button>`}</dd>
+        <dt>Assigned to</dt><dd><button type="button" class="fval" data-act="field-menu" data-field="who" data-key="${i.key}">${whoTag(i.who,"assigned")}</button></dd>
+        <dt>Priority</dt><dd><button type="button" class="fval" data-act="field-menu" data-field="prio" data-key="${i.key}">${prioTag(i.prio)}</button></dd>
+        ${i.sev ? `<dt>Severity</dt><dd><button type="button" class="fval" data-act="toast" data-msg="Opens the list of severities."><span class="tag ${i.sev==="S1"?"c1":i.sev==="S2"?"c4":"c2"}">${i.sev}</span></button></dd>` : ""}
+        <dt>Labels</dt><dd>${i.labels.length ? `<span class="fval">${labelTags(i.labels)}</span>` : `<button type="button" class="fval add" data-act="toast" data-msg="Opens the label list.">Add a label</button>`}</dd>
+        <dt>Planned for</dt><dd>${i.release ? `<span class="fval">Release ${i.release}</span>` : `<button type="button" class="fval add" data-act="toast" data-msg="Opens the release list.">Add a release</button>`}</dd>
+        <dt>Due date</dt><dd>${i.due ? `<span class="fval num">${i.due}</span>` : `<button type="button" class="fval add" data-act="toast" data-msg="Opens a date picker.">Add a due date</button>`}</dd>
         <dt>Estimated time</dt><dd><span class="fval num">${i.est}</span></dd>
         <dt>Time spent</dt><dd><span class="fval num">${fmtSpent(i.spent + (running ? Math.floor((Date.now()-S.timer.start)/60000) : 0))}</span></dd>
         <dt>Cost center</dt><dd><span class="ro" title="Only team members and administrators can change Cost center.">4100 ${ico("i-lock","lock")}</span></dd>
         <dd class="ro-note">Only team members and administrators can change this.</dd>
         <dt>Activity</dt><dd><span class="tag c2">Development</span></dd>
         <dt>Reported by</dt><dd><span class="fval">${whoTag(i.by,"reported")}</span></dd>
-        <dt>Followers</dt><dd><button class="fval" data-act="toast" data-msg="You're now following ${i.key}.">3 · Follow</button></dd>
-        <dt></dt><dd><button class="fval add" data-act="add-field" data-key="${i.key}">${ico("i-plus")}Add a field</button></dd>
+        <dt>Followers</dt><dd><button type="button" class="fval" data-act="toast" data-msg="You're now following ${i.key}.">3 · Follow</button></dd>
+        <dt></dt><dd><button type="button" class="fval add" data-act="add-field" data-key="${i.key}">${ico("i-plus")}Add a field</button></dd>
       </dl>`;
   P.facts = `<div class="facts" role="group" aria-label="Main details">${statusPill(i)}
-      <button class="fact" data-act="field-menu" data-field="who" data-key="${i.key}"><span class="fl">Assigned to</span>${whoTag(i.who,"assigned")}</button>
-      <button class="fact" data-act="field-menu" data-field="prio" data-key="${i.key}"><span class="fl">Priority</span>${prioTag(i.prio)}</button>
+      <button type="button" class="fact" data-act="field-menu" data-field="who" data-key="${i.key}"><span class="fl">Assigned to</span>${whoTag(i.who,"assigned")}</button>
+      <button type="button" class="fact" data-act="field-menu" data-field="prio" data-key="${i.key}"><span class="fl">Priority</span>${prioTag(i.prio)}</button>
       ${i.due ? `<span class="fact"><span class="fl">Due</span><span class="num">${i.due}</span></span>` : ""}
       ${i.release ? `<span class="fact"><span class="fl">Planned for</span>${i.release}</span>` : ""}
       ${i.labels.length ? `<span class="fact"><span class="fl">Labels</span>${labelTags(i.labels)}</span>` : ""}
       ${P.timer}
-      <button class="btn sm ghost fx-details-btn" data-act="fx-details">${S.detailsOpen ? "Hide details" : "All details"}</button></div>`;
+      <button type="button" class="btn sm ghost fx-details-btn" data-act="fx-details">${S.detailsOpen ? "Hide details" : "All details"}</button></div>`;
   P.desc = descSection(i);
-  P.subs = kids.length ? `<section><h3 class="section-h">Sub-issues (${kids.length})</h3><div class="subs">${kids.map(k=>`<button data-act="open" data-key="${k.key}">${typeTag(k,false)}<span class="key">${k.key}</span><span style="flex:1;min-width:0">${esc(k.title)}</span>${statusPill(k,false)}</button>`).join("")}</div></section>` : "";
+  P.subs = kids.length ? `<section><h3 class="section-h">Sub-issues (${kids.length})</h3><div class="subs">${kids.map(k=>`<button type="button" data-act="open" data-key="${k.key}">${typeTag(k,false)}<span class="key">${k.key}</span><span style="flex:1;min-width:0">${esc(k.title)}</span>${statusPill(k,false)}</button>`).join("")}</div></section>` : "";
   P.related = `<section><h3 class="section-h">Related issues (${rels.length})</h3>
-        ${rels.length ? `<div class="subs">${rels.map(({rel, other}) => { const o = byKey(other); return `<button data-act="open" data-key="${other}"><span class="muted rel-ph">${relPhrase(rel, i.key)}</span><span class="key">${other}</span><span style="flex:1;min-width:0">${esc(o.title)}</span>${statusPill(o,false)}</button>`; }).join("")}</div>` : `<p class="subtle" style="margin:0">No related issues yet.</p>`}
-        <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap"><button class="btn sm" data-act="rel-add" data-key="${i.key}">${ico("i-plus")}Add relation</button><button class="btn sm" data-act="map-open" data-key="${i.key}">${ico("i-map")}Show relation map</button></div></section>`;
+        ${rels.length ? `<div class="subs">${rels.map(({rel, other}) => { const o = byKey(other); return `<button type="button" data-act="open" data-key="${other}"><span class="muted rel-ph">${relPhrase(rel, i.key)}</span><span class="key">${other}</span><span style="flex:1;min-width:0">${esc(o.title)}</span>${statusPill(o,false)}</button>`; }).join("")}</div>` : `<p class="subtle" style="margin:0">No related issues yet.</p>`}
+        <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap"><button type="button" class="btn sm" data-act="rel-add" data-key="${i.key}">${ico("i-plus")}Add relation</button><button type="button" class="btn sm" data-act="map-open" data-key="${i.key}">${ico("i-map")}Show relation map</button></div></section>`;
   P.activity = `<section><h3 class="section-h">Activity</h3>
-        <div class="tabs" role="tablist">${[["all","Everything"],["comments","Comments"],["changes","Changes"],["time","Time"]].map(([k,l])=>`<button role="tab" aria-selected="${S.panelTab===k}" data-act="ptab" data-tab="${k}">${l}</button>`).join("")}</div>
+        <div class="tabs" role="tablist">${[["all","Everything"],["comments","Comments"],["changes","Changes"],["time","Time"]].map(([k,l])=>`<button type="button" role="tab" aria-selected="${S.panelTab===k}" data-act="ptab" data-tab="${k}">${l}</button>`).join("")}</div>
         <div class="activity">
           ${S.panelTab!=="changes"&&S.panelTab!=="time" ? `<div class="act">${personAvatar("Ben","author")}<div class="body"><b>${personLabel("Ben","author")}</b> <span class="muted" style="font-size:var(--fs-sm)">· 10 min ago</span><div class="bubble">@Ana can you check the reset e-mail link? 14 customers have reported this since Friday.</div></div></div>` : ""}
           ${S.panelTab!=="comments"&&S.panelTab!=="time" ? `<div class="act change">${personAvatar("Ana","author")}<span><b>${personLabel("Ana","author")}</b> changed the status from <b>Open</b> to <b>In progress</b> · 2 h ago</span></div>` : ""}
           ${S.panelTab==="all"||S.panelTab==="time" ? `<div class="act change">${ico("i-clock")}<span><b>${personLabel("Ana","author")}</b> added 1 h 20 min · “Found the token check” · Friday</span></div>` : ""}
         </div></section>`;
-  P.comment = `<div class="comment-box"><textarea placeholder="Write a comment… Use @ to mention someone." aria-label="Comment"></textarea><button class="btn primary" data-act="toast" data-msg="Comment sent.">Send</button></div>`;
+  P.comment = `<div class="comment-box"><textarea placeholder="Write a comment… Use @ to mention someone." aria-label="Comment"></textarea><button type="button" class="btn primary" data-act="toast" data-msg="Comment sent.">Send</button></div>`;
   return P;
 }
 const focusActive = () => !!S.open && S.issueLayout === "focus" && !narrow() && S.screen !== "map";
@@ -1063,12 +1063,12 @@ function renderPanel(){
   const i = byKey(S.open), P = issueParts(i);
   p.hidden = false;
   p.innerHTML = `<div class="panel-h">
-      <button class="btn ghost back-btn" data-act="close">${ico("i-back")}Back</button>
-      ${typeTag(i)}<button class="key" data-act="toast" data-msg="Link to ${i.key} copied." style="border:0;background:none">${i.key}</button>
+      <button type="button" class="btn ghost back-btn" data-act="close">${ico("i-back")}Back</button>
+      ${typeTag(i)}<button type="button" class="key" data-act="toast" data-msg="Link to ${i.key} copied." style="border:0;background:none">${i.key}</button>
       <span style="margin-left:auto"></span>
-      <button class="btn ghost" data-act="assistant" aria-label="Ask the assistant about this issue">${ico("i-spark")}<span class="hide-phone">Ask</span></button>
-      <button class="btn ghost hide-phone" data-act="layout" data-l="focus" title="Open in the focus view, with much more room">${ico("i-expand")}<span>Focus view</span></button>
-      <button class="btn ghost hide-phone" data-act="close" aria-label="Close">${ico("i-x")}</button></div>
+      <button type="button" class="btn ghost" data-act="assistant" aria-label="Ask the assistant about this issue">${ico("i-spark")}<span class="hide-phone">Ask</span></button>
+      <button type="button" class="btn ghost hide-phone" data-act="layout" data-l="focus" title="Open in the focus view, with much more room">${ico("i-expand")}<span>Focus view</span></button>
+      <button type="button" class="btn ghost hide-phone" data-act="close" aria-label="Close">${ico("i-x")}</button></div>
     <div class="panel-b">${P.parent}${P.title}${P.status}${P.fields}${P.desc}${P.subs}${P.related}${P.activity}${P.comment}</div>`;
 }
 
@@ -1076,19 +1076,19 @@ function renderFocus(){
   const i = byKey(S.open), P = issueParts(i);
   const list = S.screen === "issues" ? visibleIssues() : [];
   const rail = list.length && S.railOpen ? `<aside class="rail" aria-label="Issues in this search">
-      <div class="rail-h"><b>Website issues</b><button class="btn sm ghost" data-act="rail" title="Hide the list for even more room">Hide list</button></div>
-      ${list.map(x => `<button class="rail-i ${x.key===i.key?"on":""}" data-act="open" data-key="${x.key}"><span class="rd nd-${STATUS_GROUP[x.status]}"></span><span class="key">${x.key}</span><span class="t">${esc(x.title)}</span></button>`).join("")}
+      <div class="rail-h"><b>Website issues</b><button type="button" class="btn sm ghost" data-act="rail" title="Hide the list for even more room">Hide list</button></div>
+      ${list.map(x => `<button type="button" class="rail-i ${x.key===i.key?"on":""}" data-act="open" data-key="${x.key}"><span class="rd nd-${STATUS_GROUP[x.status]}"></span><span class="key">${x.key}</span><span class="t">${esc(x.title)}</span></button>`).join("")}
       <p class="subtle" style="font-size:var(--fs-xs);padding:8px 10px;margin:0">Use j / k to move through the list.</p></aside>` : "";
   const crumbs = `<span class="hide-phone">${S.screen === "issues" ? "Website issues ›" : ""}</span><b>${i.key}</b>`;
   return topbar(crumbs) + `<div class="focus-wrap ${rail ? "" : "no-rail"}">${rail}
     <article class="fx">
       <div class="fx-h">
-        <button class="btn sm ghost" data-act="close">${ico("i-back")}${S.screen === "issues" ? "Back to list" : "Back"}</button>
-        ${list.length && !S.railOpen ? `<button class="btn sm ghost" data-act="rail">${ico("i-list")}Show list</button>` : ""}
-        ${typeTag(i)}<button class="key" data-act="toast" data-msg="Link to ${i.key} copied." style="border:0;background:none">${i.key}</button>
+        <button type="button" class="btn sm ghost" data-act="close">${ico("i-back")}${S.screen === "issues" ? "Back to list" : "Back"}</button>
+        ${list.length && !S.railOpen ? `<button type="button" class="btn sm ghost" data-act="rail">${ico("i-list")}Show list</button>` : ""}
+        ${typeTag(i)}<button type="button" class="key" data-act="toast" data-msg="Link to ${i.key} copied." style="border:0;background:none">${i.key}</button>
         <span style="margin-left:auto"></span>
-        <button class="btn sm ghost" data-act="layout" data-l="panel" title="Show the issue next to the list instead">${ico("i-board")}Side panel view</button>
-        <button class="btn sm ghost" data-act="toast" data-msg="More: copy link, move, clone, delete …">${ico("i-more")}</button></div>
+        <button type="button" class="btn sm ghost" data-act="layout" data-l="panel" title="Show the issue next to the list instead">${ico("i-board")}Side panel view</button>
+        <button type="button" class="btn sm ghost" data-act="toast" data-msg="More: copy link, move, clone, delete …">${ico("i-more")}</button></div>
       <div class="fx-body ${S.detailsOpen ? "details-open" : ""}">
         <div class="fx-main-scroll"><div class="fx-main">${P.parent}${P.title}${P.facts}
           <div class="fx-inline-details">${P.fields}</div>
@@ -1111,11 +1111,11 @@ function personAvatar(n, kind){
 
 function renderAssistant(){
   const i = byKey("WEB-142");
-  return `<div class="panel-h"><button class="btn ghost back-btn" data-act="close-ai">${ico("i-back")}Back</button>${ico("i-spark")}<b>Assistant</b><span style="margin-left:auto"></span><button class="btn ghost hide-phone" data-act="close-ai" aria-label="Close assistant">${ico("i-x")}</button></div>
+  return `<div class="panel-h"><button type="button" class="btn ghost back-btn" data-act="close-ai">${ico("i-back")}Back</button>${ico("i-spark")}<b>Assistant</b><span style="margin-left:auto"></span><button type="button" class="btn ghost hide-phone" data-act="close-ai" aria-label="Close assistant">${ico("i-x")}</button></div>
     <div class="panel-b" style="gap:12px">
       <div class="ai-ctx"><span class="muted">Looking at:</span>
-        ${S.aiCtx.includes("issue")?`<span class="chip">WEB-142<button class="x" data-act="ai-ctx" data-c="issue" aria-label="Stop sharing WEB-142">${ico("i-x")}</button></span>`:""}
-        ${S.aiCtx.includes("list")?`<span class="chip">This list<button class="x" data-act="ai-ctx" data-c="list" aria-label="Stop sharing this list">${ico("i-x")}</button></span>`:""}
+        ${S.aiCtx.includes("issue")?`<span class="chip">WEB-142<button type="button" class="x" data-act="ai-ctx" data-c="issue" aria-label="Stop sharing WEB-142">${ico("i-x")}</button></span>`:""}
+        ${S.aiCtx.includes("list")?`<span class="chip">This list<button type="button" class="x" data-act="ai-ctx" data-c="list" aria-label="Stop sharing this list">${ico("i-x")}</button></span>`:""}
         ${!S.aiCtx.length?`<span class="subtle">Nothing — ask anything</span>`:""}</div>
       <div class="ai-src"><span>Answers come from <b>Claude (Anthropic)</b>. Your organization chose this.</span><span class="muted">Never sent to AI: Cost center</span></div>
       <div class="msg me">Summarize the comments on WEB-142.</div>
@@ -1126,9 +1126,9 @@ function renderAssistant(){
         : S.aiState==="discarded" ? `<div class="proposal"><span>Discarded. Nothing was changed.</span></div>`
         : `<div class="proposal" aria-label="Proposed change"><div class="ai-label">${ico("i-spark")}Proposed change — nothing is saved until you apply it</div>
           <div class="diff"><span class="key">WEB-142</span> Priority: <span class="old">${prioTag(i.prio)}</span> → ${prioTag("Critical")}</div>
-          <div style="display:flex;gap:8px"><button class="btn primary sm" data-act="ai-apply">Apply</button><button class="btn sm" data-act="ai-discard">Discard</button></div></div>`}
+          <div style="display:flex;gap:8px"><button type="button" class="btn primary sm" data-act="ai-apply">Apply</button><button type="button" class="btn sm" data-act="ai-discard">Discard</button></div></div>`}
     </div>
-    <form class="ai-input" data-form="ai"><input id="ai-q" placeholder="Ask about this issue or list" aria-label="Ask the assistant"><button class="btn primary" type="submit">Ask</button></form>`;
+    <form class="ai-input" data-form="ai"><input type="text" id="ai-q" placeholder="Ask about this issue or list" aria-label="Ask the assistant"><button class="btn primary" type="submit">Ask</button></form>`;
 }
 
 
@@ -1148,15 +1148,15 @@ function descSection(i){
   if(lock && !ed){
     body = `<div class="editing-note">${personAvatar(lock.who,"editing")}<span><b>${personLabel(lock.who,"editing")} is editing the description</b> · since ${lock.since}</span></div>
       <div class="desc muted" style="white-space:pre-wrap">${esc(text)}</div>
-      <div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn sm" data-act="lock-ask" data-key="${i.key}">Ask ${S.viewAs==="guest"?"them":lock.who} to finish</button><button class="btn sm ghost" data-act="lock-take" data-key="${i.key}">Edit anyway</button></div>`;
+      <div style="display:flex;gap:6px;flex-wrap:wrap"><button type="button" class="btn sm" data-act="lock-ask" data-key="${i.key}">Ask ${S.viewAs==="guest"?"them":lock.who} to finish</button><button type="button" class="btn sm ghost" data-act="lock-take" data-key="${i.key}">Edit anyway</button></div>`;
   } else if(ed){
     body = `<textarea class="desc-edit" id="desc-edit" aria-label="Description">${esc(S.draft ?? text)}</textarea>
       <div class="savestate" id="savestate" aria-live="polite">${saveStateHtml()}</div>
-      <div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn sm primary" data-act="desc-done" data-key="${i.key}">Done</button>
-        <button class="btn sm ghost" data-act="lock-lose" data-key="${i.key}" title="Mockup only: shows what happens when the lock runs out">Simulate: lock runs out</button></div>`;
+      <div style="display:flex;gap:6px;flex-wrap:wrap"><button type="button" class="btn sm primary" data-act="desc-done" data-key="${i.key}">Done</button>
+        <button type="button" class="btn sm ghost" data-act="lock-lose" data-key="${i.key}" title="Mockup only: shows what happens when the lock runs out">Simulate: lock runs out</button></div>`;
   } else {
     body = `<div class="desc" style="white-space:pre-wrap">${esc(text)}</div>
-      <div><button class="btn sm" data-act="desc-edit" data-key="${i.key}">Edit description</button></div>`;
+      <div><button type="button" class="btn sm" data-act="desc-edit" data-key="${i.key}">Edit description</button></div>`;
   }
   return `<section><h3 class="section-h">Description</h3><div style="display:flex;flex-direction:column;gap:8px">${body}</div></section>`;
 }
@@ -1164,7 +1164,7 @@ function saveStateHtml(){
   switch(S.saveState){
     case "saving": return `<span class="ss-dot ip"></span>Saving…`;
     case "saved": return `<span class="ss-dot ok"></span>Saved · ${new Date().toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"})}`;
-    case "lost": return `<span class="banner" style="width:100%"><b>Not saved:</b> your editing time ran out and Ben changed the description since. Your text is kept. <button class="btn sm primary" data-act="lock-compare">Compare and save</button></span>`;
+    case "lost": return `<span class="banner" style="width:100%"><b>Not saved:</b> your editing time ran out and Ben changed the description since. Your text is kept. <button type="button" class="btn sm primary" data-act="lock-compare">Compare and save</button></span>`;
     default: return `<span class="ss-dot ok"></span>You're editing · others see “Ana is editing the description”`;
   }
 }
@@ -1192,7 +1192,7 @@ let toastTimer;
 function toast(msg, undo){
   $("#toast")?.remove(); clearTimeout(toastTimer);
   const el = document.createElement("div"); el.className = "toast"; el.id = "toast"; el.setAttribute("role","status");
-  el.innerHTML = `<span>${esc(msg)}</span>${undo?`<button id="undo">Undo</button>`:""}<button aria-label="Close message" id="tclose">${ico("i-x")}</button>`;
+  el.innerHTML = `<span>${esc(msg)}</span>${undo?`<button type="button" id="undo">Undo</button>`:""}<button type="button" aria-label="Close message" id="tclose">${ico("i-x")}</button>`;
   document.body.appendChild(el);
   if(undo) el.querySelector("#undo").onclick = () => { undo(); el.remove(); render(); };
   el.querySelector("#tclose").onclick = () => el.remove();
@@ -1202,7 +1202,7 @@ function toast(msg, undo){
 function statusMenu(anchor, key){
   const i = byKey(key);
   openPop(anchor, `<div class="pop-h">${i.key} is ${i.status}</div>` +
-    MOVES[i.status].map(([to,lab]) => `<button class="pop-item" data-act="move" data-key="${key}" data-to="${to}"><span class="pill st-${STATUS_GROUP[to]}">${to}</span>${lab}</button>`).join("") +
+    MOVES[i.status].map(([to,lab]) => `<button type="button" class="pop-item" data-act="move" data-key="${key}" data-to="${to}"><span class="pill st-${STATUS_GROUP[to]}">${to}</span>${lab}</button>`).join("") +
     `<div class="pop-note">Only the changes you're allowed to make are listed.</div>`);
 }
 function moveIssue(key, to){
@@ -1215,7 +1215,7 @@ function moveIssue(key, to){
     openDialog(`<div class="dialog-h"><h2>Mark ${key} as done</h2></div><div class="dialog-b">
       <p style="margin:0">Before this issue can be done, it needs a release.</p>
       <div class="field"><label for="rel">Planned for release <span class="req">(required)</span></label><select id="rel"><option>2.4</option><option>2.5</option></select></div></div>
-      <div class="dialog-f"><button class="btn" data-act="dialog-close">Cancel</button><button class="btn primary" data-act="move-confirm" data-key="${key}">Mark as done</button></div>`);
+      <div class="dialog-f"><button type="button" class="btn" data-act="dialog-close">Cancel</button><button type="button" class="btn primary" data-act="move-confirm" data-key="${key}">Mark as done</button></div>`);
     return;
   }
   i.status = to; render();
@@ -1224,15 +1224,15 @@ function moveIssue(key, to){
 
 function quickSearch(mode){
   S.qsMode = mode || "";
-  openDialog(`<input class="qs-input" id="qs" placeholder="${mode==="timer"?"Which issue are you working on now?":"Search issues, documents, settings, or type an action"}" aria-label="Quick search"><div id="qs-res" style="padding:6px"></div>
+  openDialog(`<input type="text" class="qs-input" id="qs" placeholder="${mode==="timer"?"Which issue are you working on now?":"Search issues, documents, settings, or type an action"}" aria-label="Quick search"><div id="qs-res" style="padding:6px"></div>
     <div class="pop-note">Tip: press Ctrl K from anywhere.</div>`);
   const draw = () => {
     const q = $("#qs").value.toLowerCase().trim();
     const iss = issues.filter(i => !q || i.key.toLowerCase().includes(q) || i.title.toLowerCase().includes(q)).slice(0,6);
     const acts = [["Create an issue","new"],["Relation map of WEB-142","map:WEB-142"],["Open my timesheet","go:time"],["Field permissions","go:settings:perm"],["Change theme","go:settings:look"],["Login flow (document)","go:docs"]]
       .filter(([l]) => !q || l.toLowerCase().includes(q));
-    $("#qs-res").innerHTML = (iss.length?`<div class="pop-h">Issues</div>`:"") + iss.map(i => `<button class="pop-item" data-act="qs-open" data-key="${i.key}">${typeTag(i,false)}<span class="key">${i.key}</span>${esc(i.title)}${S.timer?.key!==i.key?``:`<small>timer running</small>`}</button>`).join("") +
-      (acts.length?`<div class="pop-h">Go to or do</div>`:"") + acts.map(([l,a]) => `<button class="pop-item" data-act="qs-act" data-a="${a}">${l}</button>`).join("") +
+    $("#qs-res").innerHTML = (iss.length?`<div class="pop-h">Issues</div>`:"") + iss.map(i => `<button type="button" class="pop-item" data-act="qs-open" data-key="${i.key}">${typeTag(i,false)}<span class="key">${i.key}</span>${esc(i.title)}${S.timer?.key!==i.key?``:`<small>timer running</small>`}</button>`).join("") +
+      (acts.length?`<div class="pop-h">Go to or do</div>`:"") + acts.map(([l,a]) => `<button type="button" class="pop-item" data-act="qs-act" data-a="${a}">${l}</button>`).join("") +
       (!iss.length && !acts.length ? `<p class="muted" style="padding:8px 10px;margin:0">Nothing found for “${esc(q)}”.</p>` : "");
   };
   $("#qs").addEventListener("input", draw); draw();
@@ -1242,15 +1242,15 @@ function quickSearch(mode){
 const ROLES = ["Team member","Contributor","Guest"];
 const viewerRole = () => S.viewAs === "guest" ? "Guest" : "Team member";
 const NEW_FORM = [
-  {id:"title", label:"Title", req:true, roles:ROLES, html:`<input id="ni-title" placeholder="Short summary, e.g. “Save button does nothing”">`},
+  {id:"title", label:"Title", req:true, roles:ROLES, html:`<input type="text" id="ni-title" placeholder="Short summary, e.g. “Save button does nothing”">`},
   {id:"desc", label:"Description", roles:ROLES, html:`<textarea id="ni-d" placeholder="What happened? What did you expect?"></textarea>`},
   {id:"prio", label:"Priority", roles:["Team member","Contributor"], html:`<select>${PRIORITIES.map(x=>`<option ${x==="Medium"?"selected":""}>${x}</option>`).join("")}</select>`},
   {id:"sev", label:"Severity", roles:ROLES, types:["Bug"], html:`<select><option>S1 – everyone is blocked</option><option selected>S2 – many are affected</option><option>S3 – some are affected</option></select>`},
   {id:"who", label:"Assigned to", roles:["Team member"], html:`<select><option>Nobody yet</option>${Object.keys(PEOPLE).map(n=>`<option>${n}</option>`).join("")}</select>`},
-  {id:"labels", label:"Labels", roles:["Team member","Contributor"], html:`<input placeholder="e.g. login">`},
+  {id:"labels", label:"Labels", roles:["Team member","Contributor"], html:`<input type="text" placeholder="e.g. login">`},
   {id:"due", label:"Due date", roles:["Team member"], html:`<input type="date">`},
   {id:"cc", label:"Cost center", roles:["Team member"], html:`<select>${COST_CENTERS.map(([n,l])=>`<option>${n} ${l}</option>`).join("")}</select>`},
-  {id:"env", label:"Where did it happen?", roles:ROLES, types:["Bug"], html:`<input placeholder="e.g. Firefox on Windows 11">`}
+  {id:"env", label:"Where did it happen?", roles:ROLES, types:["Bug"], html:`<input type="text" placeholder="e.g. Firefox on Windows 11">`}
 ];
 function newIssueFields(type){
   const role = viewerRole();
@@ -1259,7 +1259,7 @@ function newIssueFields(type){
 }
 function newIssue(){
   const type = "Bug";
-  openDialog(`<div class="dialog-h"><h2>New issue</h2><button class="btn ghost" style="margin-left:auto" data-act="dialog-close" aria-label="Close">${ico("i-x")}</button></div>
+  openDialog(`<div class="dialog-h"><h2>New issue</h2><button type="button" class="btn ghost" style="margin-left:auto" data-act="dialog-close" aria-label="Close">${ico("i-x")}</button></div>
     <div class="dialog-b">
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px">
         <div class="field"><label for="ni-p">Project</label><select id="ni-p"><option>Website</option><option>Mobile app</option></select></div>
@@ -1267,22 +1267,22 @@ function newIssue(){
       <div class="field"><label for="ni-title">Title <span class="req">(required)</span></label>${NEW_FORM[0].html}</div>
       <div class="field"><label for="ni-d">Description</label>${NEW_FORM[1].html}</div>
       <div class="ni-grid" id="ni-fields">${newIssueFields(type)}</div>
-      <button class="btn" style="align-self:flex-start" data-act="writeup">${ico("i-spark")}Write it up for me</button>
-      <p class="muted" style="margin:0;font-size:var(--fs-sm)">The fields depend on the project, the type and your role (<b>${viewerRole()}</b>). ${S.viewAs==="guest" ? "" : `<button class="btn sm ghost" data-act="form-edit">Customize this form</button>`}</p>
+      <button type="button" class="btn" style="align-self:flex-start" data-act="writeup">${ico("i-spark")}Write it up for me</button>
+      <p class="muted" style="margin:0;font-size:var(--fs-sm)">The fields depend on the project, the type and your role (<b>${viewerRole()}</b>). ${S.viewAs==="guest" ? "" : `<button type="button" class="btn sm ghost" data-act="form-edit">Customize this form</button>`}</p>
       <span class="subtle" style="font-size:var(--fs-xs)">Your draft is kept if you close this window.</span>
     </div>
-    <div class="dialog-f"><button class="btn" data-act="dialog-close">Cancel</button><button class="btn" data-act="create" data-more="1">Create and start another</button><button class="btn primary" data-act="create">Create</button></div>`);
+    <div class="dialog-f"><button type="button" class="btn" data-act="dialog-close">Cancel</button><button type="button" class="btn" data-act="create" data-more="1">Create and start another</button><button type="button" class="btn primary" data-act="create">Create</button></div>`);
 }
 function formEditor(){
-  openDialog(`<div class="dialog-h"><h2>Customize the new-issue form</h2><span class="muted" style="margin-left:8px;font-size:var(--fs-sm)">Website · Bug</span><button class="btn ghost" style="margin-left:auto" data-act="dialog-close" aria-label="Close">${ico("i-x")}</button></div>
+  openDialog(`<div class="dialog-h"><h2>Customize the new-issue form</h2><span class="muted" style="margin-left:8px;font-size:var(--fs-sm)">Website · Bug</span><button type="button" class="btn ghost" style="margin-left:auto" data-act="dialog-close" aria-label="Close">${ico("i-x")}</button></div>
     <div class="dialog-b">
       <p class="help" style="margin:0">Drag to change the order. Choose which roles see each field. Roles that may not see a field (Field permissions) can't get it here either.</p>
       <div style="overflow-x:auto"><table class="perm" style="min-width:520px"><thead><tr><th></th><th>Field</th><th>Required</th>${ROLES.map(r=>`<th>${r}</th>`).join("")}</tr></thead><tbody>
       ${NEW_FORM.map(f => `<tr><td class="subtle" aria-hidden="true">⋮⋮</td><td><b>${f.label}</b>${f.types?` <span class="subtle">(Bugs only)</span>`:""}</td><td><input type="checkbox" class="cb" ${f.req?"checked disabled":""} aria-label="${f.label} required"></td>
         ${ROLES.map(r => `<td><input type="checkbox" class="cb" data-act-change="form-role" data-f="${f.id}" data-r="${r}" ${f.roles.includes(r)?"checked":""} ${f.id==="title"?"disabled":""} aria-label="${f.label} for ${r}"></td>`).join("")}</tr>`).join("")}</tbody></table></div>
-      <button class="btn sm" style="align-self:flex-start" data-act="toast" data-msg="Lists every field that this project and issue type can use.">${ico("i-plus")}Add a field to the form</button>
+      <button type="button" class="btn sm" style="align-self:flex-start" data-act="toast" data-msg="Lists every field that this project and issue type can use.">${ico("i-plus")}Add a field to the form</button>
     </div>
-    <div class="dialog-f"><button class="btn" data-act="new">Preview the form</button><button class="btn primary" data-act="dialog-ok" data-msg="Form saved. People see the new layout the next time they create an issue.">Save</button></div>`);
+    <div class="dialog-f"><button type="button" class="btn" data-act="new">Preview the form</button><button type="button" class="btn primary" data-act="dialog-ok" data-msg="Form saved. People see the new layout the next time they create an issue.">Save</button></div>`);
 }
 
 /* ============ render root ============ */
@@ -1393,14 +1393,14 @@ function mapBody(center){
   const g = buildGraph(center, S.mapDepth, S.mapKinds), pos = layout(g, center);
   MAP = {g, center, pos};
   const ctl = `<div class="map-ctl">
-    ${center ? `<span class="muted">How far:</span><div class="seg" role="group" aria-label="How many steps">${[1,2,3,"all"].map(d => `<button aria-pressed="${S.mapDepth === d}" data-act="map-depth" data-d="${d}">${d === "all" ? "Everything" : d + (d === 1 ? " step" : " steps")}</button>`).join("")}</div>` : ""}
-    <span class="muted">Follow:</span>${Object.entries(RELATION_KINDS).map(([k,v]) => `<button class="chip kind-chip" aria-pressed="${S.mapKinds.has(k)}" data-act="map-kind" data-k="${k}"><span class="sw k-${v.cls}"></span><span class="lbl">${v.label}</span></button>`).join("")}
-    <button class="btn sm" data-act="map-list">${S.mapList ? ico("i-map")+"Show as map" : ico("i-list")+"Show as list"}</button></div>`;
+    ${center ? `<span class="muted">How far:</span><div class="seg" role="group" aria-label="How many steps">${[1,2,3,"all"].map(d => `<button type="button" aria-pressed="${S.mapDepth === d}" data-act="map-depth" data-d="${d}">${d === "all" ? "Everything" : d + (d === 1 ? " step" : " steps")}</button>`).join("")}</div>` : ""}
+    <span class="muted">Follow:</span>${Object.entries(RELATION_KINDS).map(([k,v]) => `<button type="button" class="chip kind-chip" aria-pressed="${S.mapKinds.has(k)}" data-act="map-kind" data-k="${k}"><span class="sw k-${v.cls}"></span><span class="lbl">${v.label}</span></button>`).join("")}
+    <button type="button" class="btn sm" data-act="map-list">${S.mapList ? ico("i-map")+"Show as map" : ico("i-list")+"Show as list"}</button></div>`;
   let inner;
   if(S.mapList){
     if(center){
       const byDepth = {}; g.nodes.filter(n => n.depth > 0).forEach(n => (byDepth[n.depth] ||= []).push(n.key));
-      inner = `<div class="chains">${Object.keys(byDepth).map(d => `<section><h4>${d} step${d === "1" ? "" : "s"} away</h4><ul>${byDepth[d].map(k => `<li>${chainText(k)} <button class="btn sm ghost" data-act="open" data-key="${k}">Open</button></li>`).join("")}</ul></section>`).join("") || `<p class="muted">No related issues with these settings.</p>`}</div>`;
+      inner = `<div class="chains">${Object.keys(byDepth).map(d => `<section><h4>${d} step${d === "1" ? "" : "s"} away</h4><ul>${byDepth[d].map(k => `<li>${chainText(k)} <button type="button" class="btn sm ghost" data-act="open" data-key="${k}">Open</button></li>`).join("")}</ul></section>`).join("") || `<p class="muted">No related issues with these settings.</p>`}</div>`;
     } else {
       inner = `<ul class="chains">${g.edges.map(e => `<li><b class="mono">${e.from}</b> ${RELATION_KINDS[e.kind].out} <b class="mono">${e.to}</b></li>`).join("") || `<li class="muted">These issues have no relations to each other.</li>`}</ul>`;
     }
@@ -1413,7 +1413,7 @@ function mapBody(center){
 function renderMapScreen(){
   const c = byKey(S.mapCenter);
   return topbar(`<span class="hide-phone">Website issues ›</span><b>Relation map</b>`) + `<div class="content flush">
-    <div class="map-head"><button class="btn sm" data-act="map-back">${ico("i-back")}Back to issues</button>
+    <div class="map-head"><button type="button" class="btn sm" data-act="map-back">${ico("i-back")}Back to issues</button>
       <span>Everything connected to ${typeTag(c,false)} <b class="key">${c.key}</b> ${esc(c.title)}</span></div>
     ${mapBody(c.key)}</div>`;
 }
@@ -1450,11 +1450,11 @@ function renderCalendar(list){
   const cells = Array.from({length:35}, (_, d) => {
     const dt = calDate(d), n = dt.getUTCDate(), other = dt.getUTCMonth() !== 9;
     return `<div class="cal-d ${other ? "other" : ""} ${d === TODAY ? "today" : ""}" data-day="${d}"><span class="n">${n === 1 || d === 0 ? dt.toLocaleDateString("en",{month:"short",timeZone:"UTC"}) + " " : ""}${n}</span>` +
-      (by[d] || []).map(i => `<button class="cal-i st-${STATUS_GROUP[i.status]}" draggable="true" data-cdrag="${i.key}" data-act="open" data-key="${i.key}" title="${i.key}: ${esc(i.title)}">${i.key} ${esc(i.title)}</button>`).join("") + `</div>`;
+      (by[d] || []).map(i => `<button type="button" class="cal-i st-${STATUS_GROUP[i.status]}" draggable="true" data-cdrag="${i.key}" data-act="open" data-key="${i.key}" title="${i.key}: ${esc(i.title)}">${i.key} ${esc(i.title)}</button>`).join("") + `</div>`;
   }).join("");
   const agenda = Object.keys(by).map(Number).sort((a,b) => a-b).map(d =>
     `<div class="tl-day">${calDate(d).toLocaleDateString("en",{weekday:"long",month:"long",day:"numeric",timeZone:"UTC"})}${d === TODAY ? " · today" : ""}</div>` +
-    by[d].map(i => `<button class="lrow" data-act="open" data-key="${i.key}" style="border:1px solid var(--border);border-radius:var(--r-card);padding:10px 12px;background:var(--bg-raised)"><span style="min-width:0;flex:1"><span class="t">${esc(i.title)}</span><span class="m">${typeTag(i,false)}<span class="key">${i.key}</span>${statusPill(i,false)}</span></span></button>`).join("")).join("");
+    by[d].map(i => `<button type="button" class="lrow" data-act="open" data-key="${i.key}" style="border:1px solid var(--border);border-radius:var(--r-card);padding:10px 12px;background:var(--bg-raised)"><span style="min-width:0;flex:1"><span class="t">${esc(i.title)}</span><span class="m">${typeTag(i,false)}<span class="key">${i.key}</span>${statusPill(i,false)}</span></span></button>`).join("")).join("");
   const noDate = list.filter(i => !i.end).length;
   return `<div class="cal-wrap"><div class="cal-top"><b style="font-size:var(--fs-md)">October 2026</b><span class="muted" style="font-size:var(--fs-sm)">Issues on their due date. Drag one to another day to change it, or open it and use “Change due date”.</span></div>
     <div class="cal" role="grid" aria-label="October 2026">${["Mon","Tue","Wed","Thu","Fri","Sat","Sun"].map(x => `<div class="cal-h">${x}</div>`).join("")}${cells}</div>
@@ -1515,12 +1515,12 @@ document.addEventListener("click", e => {
     case "field-menu": {
       const i = byKey(key), f = el.dataset.field;
       const opts = f === "who" ? [...Object.keys(PEOPLE), null] : PRIORITIES;
-      openPop(el, `<div class="pop-h">${f==="who"?"Assigned to":"Priority"}</div>` + opts.map(o => `<button class="pop-item" data-act="set-field" data-key="${key}" data-field="${f}" data-val="${o??""}">${f==="who"?whoTag(o):prioTag(o)}${(f==="who"?i.who:i.prio)===o?`<small>${ico("i-check")}</small>`:""}</button>`).join(""));
+      openPop(el, `<div class="pop-h">${f==="who"?"Assigned to":"Priority"}</div>` + opts.map(o => `<button type="button" class="pop-item" data-act="set-field" data-key="${key}" data-field="${f}" data-val="${o??""}">${f==="who"?whoTag(o):prioTag(o)}${(f==="who"?i.who:i.prio)===o?`<small>${ico("i-check")}</small>`:""}</button>`).join(""));
       break; }
     case "set-field": { const i = byKey(key), f = el.dataset.field, old = i[f]; i[f] = el.dataset.val || null; closePop(); render(); toast(`${key}: ${f==="who"?"assigned to "+(i.who||"nobody"):"priority set to "+i.prio}.`, () => { i[f] = old; }); break; }
     case "timer-start": if(!S.workday && !el.dataset.skipwd){
       openDialog(`<div class="dialog-h"><h2>Start your work day too?</h2></div><div class="dialog-b"><p style="margin:0">Your work day hasn't started yet. Working hours are recorded separately from time on issues.</p></div>
-        <div class="dialog-f"><button class="btn" data-act="timer-start" data-key="${key}" data-skipwd="1">Only the timer</button><button class="btn primary" data-act="wd-start-timer" data-key="${key}">Start work day and timer</button></div>`); break; }
+        <div class="dialog-f"><button type="button" class="btn" data-act="timer-start" data-key="${key}" data-skipwd="1">Only the timer</button><button type="button" class="btn primary" data-act="wd-start-timer" data-key="${key}">Start work day and timer</button></div>`); break; }
       closeDialog(); /* falls through */
     case "timer-start-go": { const prev = S.timer; S.timer = {key, start:Date.now()}; render(); toast(prev ? `Timer switched from ${prev.key} to ${key}.` : `Timer started on ${key}.`, () => { S.timer = prev; }); break; }
     case "timer-stop": {
@@ -1529,30 +1529,30 @@ document.addEventListener("click", e => {
       openDialog(`<div class="dialog-h"><h2>Stop timer on ${S.timer.key}</h2></div><div class="dialog-b">
         <p style="margin:0">You worked <b>${fmtSpent(mins)}</b> on “${esc(byKey(S.timer.key).title)}”.</p>
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px"><div class="field"><label for="tact">Activity</label><select id="tact">${ACTIVITIES.map(a=>`<option>${a}</option>`).join("")}</select></div><div class="field"><label for="tcc">Cost center</label><select id="tcc">${COST_CENTERS.map(([n,l])=>`<option value="${n}">${n} ${l}</option>`).join("")}</select></div></div>
-        <div class="field"><label for="tdesc">What did you do? <span class="req">(optional)</span></label><input id="tdesc" placeholder="e.g. Found the token check"></div>
+        <div class="field"><label for="tdesc">What did you do? <span class="req">(optional)</span></label><input type="text" id="tdesc" placeholder="e.g. Found the token check"></div>
         <p class="muted" style="margin:0;font-size:var(--fs-sm)">Activity and cost center come from the issue. Change them if this time was different.</p></div>
-        <div class="dialog-f"><button class="btn danger" data-act="timer-discard">Throw away</button><button class="btn" data-act="dialog-close">Keep running</button><button class="btn primary" data-act="timer-save" data-min="${mins}">Save time</button></div>`);
+        <div class="dialog-f"><button type="button" class="btn danger" data-act="timer-discard">Throw away</button><button type="button" class="btn" data-act="dialog-close">Keep running</button><button type="button" class="btn primary" data-act="timer-save" data-min="${mins}">Save time</button></div>`);
       break; }
     case "timer-save": { const k = S.timer.key, m = +el.dataset.min; byKey(k).spent += m; const act = $("#tact")?.value, cc = $("#tcc")?.value; S.timer = null; closeDialog(); render(); toast(`${fmtSpent(m)} added to ${k} · ${act} · cost center ${cc}.`); break; }
     case "timer-discard": { const t = S.timer; S.timer = null; closeDialog(); render(); toast("Timer thrown away.", () => { S.timer = t; }); break; }
     case "chip-del": { const old = [...S.filters]; S.filters.splice(+el.dataset.ix,1); render(); toast("Filter removed.", () => { S.filters = old; }); break; }
     case "chip-edit": {
       const ix = +el.dataset.ix, c = S.filters[ix];
-      if(c.f === "project"){ openPop(el, `<div class="pop-h">Project</div><button class="pop-item">Website and everything in it</button><div class="pop-note">This mockup has one project.</div>`); break; }
+      if(c.f === "project"){ openPop(el, `<div class="pop-h">Project</div><button type="button" class="pop-item">Website and everything in it</button><div class="pop-note">This mockup has one project.</div>`); break; }
       openPop(el, `<div class="pop-h">${FIELDS[c.f]}</div>
-        <div style="display:flex;gap:4px;padding:4px 6px 8px"><button class="btn sm ${c.op==="is"?"primary":""}" data-act="chip-op" data-ix="${ix}" data-op="is">is</button><button class="btn sm ${c.op==="is not"?"primary":""}" data-act="chip-op" data-ix="${ix}" data-op="is not">is not</button></div>` +
-        VALUES[c.f].map(v => `<button class="pop-item" data-act="chip-val" data-ix="${ix}" data-v="${v}">${v}${c.v===v?`<small>${ico("i-check")}</small>`:""}</button>`).join(""));
+        <div style="display:flex;gap:4px;padding:4px 6px 8px"><button type="button" class="btn sm ${c.op==="is"?"primary":""}" data-act="chip-op" data-ix="${ix}" data-op="is">is</button><button type="button" class="btn sm ${c.op==="is not"?"primary":""}" data-act="chip-op" data-ix="${ix}" data-op="is not">is not</button></div>` +
+        VALUES[c.f].map(v => `<button type="button" class="pop-item" data-act="chip-val" data-ix="${ix}" data-v="${v}">${v}${c.v===v?`<small>${ico("i-check")}</small>`:""}</button>`).join(""));
       break; }
     case "chip-op": S.filters[+el.dataset.ix].op = el.dataset.op; closePop(); render(); break;
     case "chip-val": S.filters[+el.dataset.ix].v = el.dataset.v; closePop(); render(); break;
     case "chip-add": {
       const used = S.filters.map(c => c.f);
       openPop(el, `<div class="pop-h">Add a filter</div>` + Object.entries(FIELDS).filter(([k]) => k!=="project" && !used.includes(k)).map(([k,l]) =>
-        `<button class="pop-item" data-act="chip-new" data-f="${k}">${l}</button>`).join("") + `<div class="pop-note">Only fields you're allowed to see are listed.</div>`);
+        `<button type="button" class="pop-item" data-act="chip-new" data-f="${k}">${l}</button>`).join("") + `<div class="pop-note">Only fields you're allowed to see are listed.</div>`);
       break; }
     case "chip-new": { const f = el.dataset.f; S.filters.push({f, op:"is", v:f==="assignedTo"?"me":VALUES[f][0]}); closePop(); render();
       const chips = document.querySelectorAll('[data-act="chip-edit"]'); chips[chips.length-1]?.click(); break; }
-    case "sort-menu": openPop(el, `<div class="pop-h">Sort by</div>` + ["priority, highest first","newest first","due date, soonest first"].map(s => `<button class="pop-item" data-act="sort-set" data-s="${s}">${s}${S.sort===s?`<small>${ico("i-check")}</small>`:""}</button>`).join("")); break;
+    case "sort-menu": openPop(el, `<div class="pop-h">Sort by</div>` + ["priority, highest first","newest first","due date, soonest first"].map(s => `<button type="button" class="pop-item" data-act="sort-set" data-s="${s}">${s}${S.sort===s?`<small>${ico("i-check")}</small>`:""}</button>`).join("")); break;
     case "sort-set": S.sort = el.dataset.s; closePop(); render(); break;
     case "clear-filters": S.filters = S.filters.filter(c => c.f === "project"); render(); break;
     case "mode-adv": S.searchMode = "advanced"; S.advText = toText(); S.advErr = ""; render(); $("#adv")?.focus(); break;
@@ -1566,10 +1566,10 @@ document.addEventListener("click", e => {
     case "ask-use": { const r = parse(S.ask.result); S.filters = r.filters; S.searchMode = "simple"; S.ask = null; render(); toast("Search applied. Switch to Advanced to see the text."); break; }
     case "ask-edit": S.advText = S.ask.result; S.searchMode = "advanced"; S.ask = null; render(); break;
     case "save-search": openDialog(`<div class="dialog-h"><h2>Save this search</h2></div><div class="dialog-b">
-        <div class="field"><label for="ss-n">Name</label><input id="ss-n" value="Open issues in Website"></div>
+        <div class="field"><label for="ss-n">Name</label><input type="text" id="ss-n" value="Open issues in Website"></div>
         <div class="field"><label for="ss-w">Who can use it</label><select id="ss-w"><option>Only me</option><option>Group: Backend</option><option>Everyone in Website</option></select></div>
         <p class="muted" style="margin:0;font-size:var(--fs-sm)">Saves the filters and how they're shown (${S.show}).</p></div>
-        <div class="dialog-f"><button class="btn" data-act="dialog-close">Cancel</button><button class="btn primary" data-act="dialog-ok" data-msg="Search saved. Find it under Saved searches.">Save</button></div>`); break;
+        <div class="dialog-f"><button type="button" class="btn" data-act="dialog-close">Cancel</button><button type="button" class="btn primary" data-act="dialog-ok" data-msg="Search saved. Find it under Saved searches.">Save</button></div>`); break;
     case "saved-open": { const r = parse(el.dataset.q); S.filters = r.filters.some(c=>c.f==="project") ? r.filters : [{f:"project",op:"within",v:"WEB"}, ...r.filters]; S.show = el.dataset.v; S.screen = "issues"; S.searchMode="simple"; render(); break; }
     case "board-col": S.boardCol = el.dataset.col; render(); break;
     case "bulk": {
@@ -1579,7 +1579,7 @@ document.addEventListener("click", e => {
         const can = keys.filter(k => MOVES[byKey(k).status].some(([t]) => t === "Testing"));
         openDialog(`<div class="dialog-h"><h2>Send ${keys.length} issues to Testing?</h2></div><div class="dialog-b">
           <p style="margin:0"><b>${can.length}</b> will move to Testing.${keys.length-can.length ? ` <b>${keys.length-can.length}</b> will be skipped, because their workflow doesn't allow it from their current status.` : ""}</p></div>
-          <div class="dialog-f"><button class="btn" data-act="dialog-close">Cancel</button><button class="btn primary" data-act="bulk-go" data-keys="${can.join(",")}">Move ${can.length}</button></div>`);
+          <div class="dialog-f"><button type="button" class="btn" data-act="dialog-close">Cancel</button><button type="button" class="btn primary" data-act="bulk-go" data-keys="${can.join(",")}">Move ${can.length}</button></div>`);
       } else toast("In the real app this opens the label list for the selected issues.");
       break; }
     case "bulk-go": { const ks = el.dataset.keys ? el.dataset.keys.split(",") : []; const old = ks.map(k => [k, byKey(k).status]); ks.forEach(k => byKey(k).status = "Testing"); S.selected.clear(); closeDialog(); render(); toast(`${ks.length} issues moved to Testing.`, () => old.forEach(([k,s]) => byKey(k).status = s)); break; }
@@ -1622,12 +1622,12 @@ document.addEventListener("click", e => {
     case "map-depth": S.mapDepth = el.dataset.d === "all" ? "all" : +el.dataset.d; render(); break;
     case "map-kind": { const k = el.dataset.k; S.mapKinds.has(k) ? S.mapKinds.delete(k) : S.mapKinds.add(k); render(); break; }
     case "map-list": S.mapList = !S.mapList; render(); break;
-    case "rel-add": openPop(el, `<div class="pop-h">${key} …</div>` + REL_CHOICES.map(([k,dir]) => `<button class="pop-item" data-act="rel-kind" data-key="${key}" data-k="${k}" data-dir="${dir}">… ${dir === "out" ? RELATION_KINDS[k].out : RELATION_KINDS[k].in} …</button>`).join("")); break;
+    case "rel-add": openPop(el, `<div class="pop-h">${key} …</div>` + REL_CHOICES.map(([k,dir]) => `<button type="button" class="pop-item" data-act="rel-kind" data-key="${key}" data-k="${k}" data-dir="${dir}">… ${dir === "out" ? RELATION_KINDS[k].out : RELATION_KINDS[k].in} …</button>`).join("")); break;
     case "rel-kind": {
       const anchor = popAnchor, k = el.dataset.k, dir = el.dataset.dir, phrase = dir === "out" ? RELATION_KINDS[k].out : RELATION_KINDS[k].in;
       const cand = issues.filter(x => x.key !== key && !allRels().some(r => r.kind === k && ((r.from === key && r.to === x.key) || (r.to === key && r.from === x.key))));
-      openPop(anchor, `<div class="pop-h">${key} ${phrase} …</div><input class="pop-find" id="rel-find" placeholder="Find by number or title" aria-label="Find issue">` +
-        cand.map(x => `<button class="pop-item" data-act="rel-pick" data-key="${key}" data-k="${k}" data-dir="${dir}" data-o="${x.key}" data-s="${esc((x.key+" "+x.title).toLowerCase())}"><span class="key">${x.key}</span>${esc(x.title)}</button>`).join(""));
+      openPop(anchor, `<div class="pop-h">${key} ${phrase} …</div><input type="text" class="pop-find" id="rel-find" placeholder="Find by number or title" aria-label="Find issue">` +
+        cand.map(x => `<button type="button" class="pop-item" data-act="rel-pick" data-key="${key}" data-k="${k}" data-dir="${dir}" data-o="${x.key}" data-s="${esc((x.key+" "+x.title).toLowerCase())}"><span class="key">${x.key}</span>${esc(x.title)}</button>`).join(""));
       const f = $("#rel-find"); f.focus();
       f.addEventListener("input", () => { const q = f.value.toLowerCase(); document.querySelectorAll('#pop [data-act="rel-pick"]').forEach(b => b.hidden = !b.dataset.s.includes(q)); });
       break; }
@@ -1641,9 +1641,9 @@ document.addEventListener("click", e => {
     case "wd-start-timer": { S.workday = {start:Date.now(), onBreak:false, brk:0}; closeDialog(); const prev = S.timer; S.timer = {key, start:Date.now()}; render(); toast(`Work day and timer on ${key} started.`, () => { S.workday = null; S.timer = prev; }); break; }
     case "wd-menu": { const w = S.workday;
       openPop(el, `<div class="pop-h">Work day</div>` + (w.onBreak
-        ? `<button class="pop-item" data-act="wd-break-end">${ico("i-play")}End break</button>`
-        : `<button class="pop-item" data-act="wd-break">${ico("i-clock")}Start break</button>`) +
-        `<button class="pop-item" data-act="wd-end">${ico("i-stop")}End work day</button><button class="pop-item" data-act="go" data-screen="time">${ico("i-clock")}Open timesheet</button>`); break; }
+        ? `<button type="button" class="pop-item" data-act="wd-break-end">${ico("i-play")}End break</button>`
+        : `<button type="button" class="pop-item" data-act="wd-break">${ico("i-clock")}Start break</button>`) +
+        `<button type="button" class="pop-item" data-act="wd-end">${ico("i-stop")}End work day</button><button type="button" class="pop-item" data-act="go" data-screen="time">${ico("i-clock")}Open timesheet</button>`); break; }
     case "wd-break": S.workday.onBreak = true; S.workday.breakAt = Date.now(); closePop(); render(); toast("Break started. Enjoy it."); break;
     case "wd-break-end": S.workday.brk += Math.max(1, Math.round((Date.now()-S.workday.breakAt)/60000)); S.workday.onBreak = false; closePop(); render(); toast("Break ended."); break;
     case "wd-end": { const w = S.workday; closePop(); S.workday = null; if(S.timer){ toast("Stop your issue timer too — it's still running."); } render(); toast(`Work day ended: ${wdElapsedOf(w)} worked.`, () => { S.workday = w; }); break; }
@@ -1656,7 +1656,7 @@ document.addEventListener("click", e => {
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px">
           <div><div class="section-h">Ben's newer version</div><div class="desc" style="white-space:pre-wrap;border:1px solid var(--border);border-radius:var(--r-ctl);padding:8px">${esc((DESCS[S.open] ?? defaultDesc(byKey(S.open))) + "\n\nUpdate: also happens with passkeys.")}</div></div>
           <div><div class="section-h">Your text</div><div class="desc" style="white-space:pre-wrap;border:1px solid var(--accent);border-radius:var(--r-ctl);padding:8px">${esc(S.draft ?? "")}</div></div></div></div>
-        <div class="dialog-f"><button class="btn" data-act="cmp-theirs">Keep Ben's</button><button class="btn primary" data-act="cmp-mine">Use mine</button></div>`); break;
+        <div class="dialog-f"><button type="button" class="btn" data-act="cmp-theirs">Keep Ben's</button><button type="button" class="btn primary" data-act="cmp-mine">Use mine</button></div>`); break;
     case "cmp-mine": DESCS[S.open] = S.draft; S.editing = null; S.saveState = null; closeDialog(); renderPanel(); toast("Your text was saved. Ben's version stays in the history."); break;
     case "cmp-theirs": DESCS[S.open] = (DESCS[S.open] ?? defaultDesc(byKey(S.open))) + "\n\nUpdate: also happens with passkeys."; S.editing = null; S.saveState = null; closeDialog(); renderPanel(); toast("Kept Ben's version. Your text is still in your drafts."); break;
     case "layout": S.issueLayout = el.dataset.l; try{ localStorage.setItem("bugaboo-issue-layout", S.issueLayout); }catch(e){} render(); toast(S.issueLayout === "focus" ? "Focus view: the issue gets most of the screen. Change it any time in My settings › Appearance." : "Side panel view: the list stays visible next to the issue."); break;
@@ -1667,14 +1667,14 @@ document.addEventListener("click", e => {
     case "form-edit": formEditor(); break;
     case "add-field": { const role = viewerRole();
       const opts = [["Platforms","Team member,Contributor"],["Customer","Team member,Contributor"],["Found in release","Team member,Contributor,Guest"],["Due date","Team member"],["Time left","Team member"]].filter(([,r]) => r.split(",").includes(role));
-      openPop(el, `<div class="pop-h">Add a field</div>` + opts.map(([f]) => `<button class="pop-item" data-act="toast" data-msg="${f} added to ${key}.">${f}</button>`).join("") + `<div class="pop-note">Only fields your role (${role}) may fill in are listed.</div>`); break; }
+      openPop(el, `<div class="pop-h">Add a field</div>` + opts.map(([f]) => `<button type="button" class="pop-item" data-act="toast" data-msg="${f} added to ${key}.">${f}</button>`).join("") + `<div class="pop-note">Only fields your role (${role}) may fill in are listed.</div>`); break; }
     case "more": openPop(el, `<div class="pop-h">More</div>
-      <button class="pop-item" data-act="go" data-screen="saved">${ico("i-bookmark")}Saved searches</button>
-      <button class="pop-item" data-act="go" data-screen="time">${ico("i-clock")}Time</button>
-      <button class="pop-item" data-act="go" data-screen="docs">${ico("i-file")}Documents</button>
-      <button class="pop-item" data-act="go" data-screen="settings">${ico("i-settings")}Settings</button>
-      <button class="pop-item" data-act="go" data-screen="settings" data-tab="look">${ico("i-palette")}Theme</button>
-      ${S.timer?`<button class="pop-item" data-act="timer-stop">${ico("i-stop")}Stop timer (${S.timer.key})</button>`:""}`); break;
+      <button type="button" class="pop-item" data-act="go" data-screen="saved">${ico("i-bookmark")}Saved searches</button>
+      <button type="button" class="pop-item" data-act="go" data-screen="time">${ico("i-clock")}Time</button>
+      <button type="button" class="pop-item" data-act="go" data-screen="docs">${ico("i-file")}Documents</button>
+      <button type="button" class="pop-item" data-act="go" data-screen="settings">${ico("i-settings")}Settings</button>
+      <button type="button" class="pop-item" data-act="go" data-screen="settings" data-tab="look">${ico("i-palette")}Theme</button>
+      ${S.timer?`<button type="button" class="pop-item" data-act="timer-stop">${ico("i-stop")}Stop timer (${S.timer.key})</button>`:""}`); break;
   }
 });
 

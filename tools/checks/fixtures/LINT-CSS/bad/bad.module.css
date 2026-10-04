@@ -1,0 +1,19 @@
+.box {
+  color: #ff0000;
+  background: rgb(0, 0, 0);
+  border-color: red;
+  margin: 12px;
+  padding: 1rem !important;
+}
+
+.more {
+  margin: -4px;
+  margin-left: -0.5em;
+  padding: 1px;
+  font-family: Arial, sans-serif;
+}
+
+.system {
+  color: CanvasText;
+  padding: 1PX;
+}

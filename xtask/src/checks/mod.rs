@@ -9,17 +9,27 @@ mod arch_no_unsafe;
 mod build_location;
 mod dep_licenses;
 mod dep_register;
+mod dev_ports;
+mod fmt_css;
 mod fmt_md;
 mod fmt_rust;
 mod fmt_toml;
+mod fmt_ts;
 pub(crate) mod git_commit_msg;
 mod git_files;
 mod lint_ci;
+mod lint_css;
+mod lint_html;
 mod lint_links;
 mod lint_rust;
 mod lint_spell;
+mod lint_ts;
+mod lint_types;
 mod meta_catalog;
+mod node_tool;
 mod sec_secrets;
+mod sty_contrast;
+mod txt_catalog;
 
 use crate::catalog::Catalog;
 use crate::repo::Repo;
@@ -94,5 +104,14 @@ pub(crate) fn registry() -> Vec<Box<dyn Check>> {
         Box::new(dep_licenses::DepLicenses),
         Box::new(git_files::GitFiles),
         Box::new(git_commit_msg::GitCommitMsg),
+        Box::new(fmt_ts::FmtTs),
+        Box::new(fmt_css::FmtCss),
+        Box::new(lint_ts::LintTs),
+        Box::new(lint_types::LintTypes),
+        Box::new(lint_css::LintCss),
+        Box::new(lint_html::LintHtml),
+        Box::new(dev_ports::DevPorts),
+        Box::new(sty_contrast::StyContrast),
+        Box::new(txt_catalog::TxtCatalog),
     ]
 }

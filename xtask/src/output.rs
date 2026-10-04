@@ -62,3 +62,12 @@ pub(crate) fn error(message: &str) {
 pub(crate) fn info(message: &str) {
     println!("{message}");
 }
+
+pub(crate) fn generated(written: &[String]) {
+    if written.is_empty() {
+        println!("Everything is already up to date.");
+    }
+    for path in written {
+        println!("wrote {path}");
+    }
+}

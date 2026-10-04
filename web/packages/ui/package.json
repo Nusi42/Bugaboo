@@ -1,0 +1,12 @@
+{
+  "name": "@bugaboo/ui",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./tokens.css": "./src/tokens.css"
+  },
+  "peerDependencies": {
+    "react": "19.3.0"
+  }
+}
