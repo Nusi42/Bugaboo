@@ -12,7 +12,7 @@ const darkQuery = "(prefers-color-scheme: dark)";
 
 /** The person's theme choice, kept on this device and applied to the whole page. */
 export function useTheme(): readonly [ThemeChoice, (choice: ThemeChoice) => void] {
-  const [choice, setChoice] = useState<ThemeChoice>(() => readStoredChoice(localStorage));
+  const [choice, setChoice] = useState<ThemeChoice>(() => readStoredChoice(() => localStorage));
   const [deviceIsDark, setDeviceIsDark] = useState(() => matchMedia(darkQuery).matches);
 
   useEffect(() => {
@@ -31,7 +31,7 @@ export function useTheme(): readonly [ThemeChoice, (choice: ThemeChoice) => void
   }, [choice, deviceIsDark]);
 
   const choose = useCallback((next: ThemeChoice) => {
-    storeChoice(localStorage, next);
+    storeChoice(() => localStorage, next);
     setChoice(next);
   }, []);
 

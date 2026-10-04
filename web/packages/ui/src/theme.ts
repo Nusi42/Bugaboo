@@ -28,10 +28,13 @@ export interface ChoiceWriter {
   readonly setItem: (key: string, value: string) => void;
 }
 
-/** The saved choice, or the default when nothing valid is saved or storage is blocked. */
-export function readStoredChoice(storage: ChoiceReader): ThemeChoice {
+/**
+ * The saved choice, or the default when nothing valid is saved or storage is blocked.
+ * Storage is passed as a getter because merely touching `localStorage` can throw.
+ */
+export function readStoredChoice(getStorage: () => ChoiceReader): ThemeChoice {
   try {
-    const saved = storage.getItem(storageKey);
+    const saved = getStorage().getItem(storageKey);
     return isThemeChoice(saved) ? saved : defaultThemeChoice;
   } catch {
     return defaultThemeChoice;
@@ -39,9 +42,9 @@ export function readStoredChoice(storage: ChoiceReader): ThemeChoice {
 }
 
 /** Remembers the choice on this device; storage that is blocked is not an error for the person. */
-export function storeChoice(storage: ChoiceWriter, choice: ThemeChoice): void {
+export function storeChoice(getStorage: () => ChoiceWriter, choice: ThemeChoice): void {
   try {
-    storage.setItem(storageKey, choice);
+    getStorage().setItem(storageKey, choice);
   } catch {
     // The choice then only lasts until the page is closed.
   }
