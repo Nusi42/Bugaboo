@@ -20,6 +20,9 @@ pub const CONFIG_TLS_FILES_MISSING: MessageKey = MessageKey::new("config.tls-fil
 /// The message `config.tls-files-unused`.
 pub const CONFIG_TLS_FILES_UNUSED: MessageKey = MessageKey::new("config.tls-files-unused");
 
+/// The message `data-folder.account-unknown`.
+pub const DATA_FOLDER_ACCOUNT_UNKNOWN: MessageKey = MessageKey::new("data-folder.account-unknown");
+
 /// The message `error.access.forbidden`.
 pub const ERROR_ACCESS_FORBIDDEN: MessageKey = MessageKey::new("error.access.forbidden");
 
@@ -56,6 +59,9 @@ pub const HELLO_INTRO: MessageKey = MessageKey::new("hello.intro");
 
 /// The message `hello.title`.
 pub const HELLO_TITLE: MessageKey = MessageKey::new("hello.title");
+
+/// The message `server.about`.
+pub const SERVER_ABOUT: MessageKey = MessageKey::new("server.about");
 
 /// The message `server.database-built-in`.
 pub const SERVER_DATABASE_BUILT_IN: MessageKey = MessageKey::new("server.database-built-in");
@@ -472,6 +478,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "HTTPS cannot be switched off on {address}, because anyone on the network could read what is sent. Use 127.0.0.1 or ::1, or list the proxy that adds HTTPS in trusted_proxies.",
     ),
     (
+        "data-folder.account-unknown",
+        "the account that runs Bugaboo could not be identified",
+    ),
+    (
         "data-folder.create-failed",
         "The data folder {path} could not be prepared: {reason}",
     ),
@@ -513,6 +523,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "Track your work in one calm place. Pick the theme that is easiest on your eyes.",
     ),
     ("hello.title", "Hello Bugaboo"),
+    ("server.about", "Bugaboo: the issue tracker in one file"),
     (
         "server.database-built-in",
         "Database: built-in SQLite in the data folder.",

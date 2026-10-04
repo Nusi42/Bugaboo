@@ -65,6 +65,7 @@ export const messages = {
   "data-folder.create-failed": "The data folder {path} could not be prepared: {reason}",
   "data-folder.protect-failed":
     "The data folder {path} could not be made private to its owner: {reason}",
+  "data-folder.account-unknown": "the account that runs Bugaboo could not be identified",
   "tls.read-failed": "The file {path} could not be read: {reason}",
   "tls.write-failed": "The file {path} could not be written: {reason}",
   "tls.no-certificate": "The file {path} has no certificate in it.",
@@ -77,6 +78,7 @@ export const messages = {
   "server.web-app-missing":
     "The browser app is not built yet. Run `cargo xtask build`, or pass --web <folder>.",
   "server.not-found": "Not found",
+  "server.about": "Bugaboo: the issue tracker in one file",
 } as const;
 
 export type MessageKey = keyof typeof messages;

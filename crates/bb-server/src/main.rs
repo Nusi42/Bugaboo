@@ -25,7 +25,7 @@ use crate::data_folder::DataFolder;
 use bb_core::message::{self, Message};
 
 #[derive(Parser)]
-#[command(name = "bugaboo", about = "Bugaboo: the issue tracker in one file")]
+#[command(name = "bugaboo", about = Message::from(message::SERVER_ABOUT).render())]
 struct Cli {
     #[command(subcommand)]
     command: Command,

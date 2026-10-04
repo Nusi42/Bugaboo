@@ -49,6 +49,7 @@
   "config.log-level-invalid": "The log level {value} is not known. Use error, warn, info or debug.",
   "data-folder.create-failed": "The data folder {path} could not be prepared: {reason}",
   "data-folder.protect-failed": "The data folder {path} could not be made private to its owner: {reason}",
+  "data-folder.account-unknown": "the account that runs Bugaboo could not be identified",
   "tls.read-failed": "The file {path} could not be read: {reason}",
   "tls.write-failed": "The file {path} could not be written: {reason}",
   "tls.no-certificate": "The file {path} has no certificate in it.",
@@ -58,5 +59,6 @@
   "config.number-invalid": "The setting {name} must be a whole number of 1 or more, not {value}.",
   "tls.key-readable": "The private key {path} can be read by other people on this computer. Make it readable by the account that runs Bugaboo only.",
   "server.web-app-missing": "The browser app is not built yet. Run `cargo xtask build`, or pass --web <folder>.",
-  "server.not-found": "Not found"
+  "server.not-found": "Not found",
+  "server.about": "Bugaboo: the issue tracker in one file"
 }

@@ -186,7 +186,7 @@ fn current_sid() -> Result<String, String> {
         .output()
         .map_err(|error| error.to_string())?;
     parse_sid(&String::from_utf8_lossy(&output.stdout))
-        .ok_or_else(|| "the account of the running program could not be identified".to_owned())
+        .ok_or_else(|| message::Message::from(message::DATA_FOLDER_ACCOUNT_UNKNOWN).render())
 }
 
 /// The SID in the output `"DOMAIN\name","S-1-5-21-…"` of `whoami /user /fo csv /nh`.
