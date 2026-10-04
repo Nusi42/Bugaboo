@@ -1,0 +1,34 @@
+{
+  "name": "bugaboo",
+  "private": true,
+  "description": "Bugaboo browser app workspace (ADR-0009). Tool versions are pinned exactly (architecture section 9).",
+  "workspaces": [
+    "web/app",
+    "web/packages/ui",
+    "web/packages/messages"
+  ],
+  "type": "module",
+  "scripts": {
+    "build": "vite build --config web/app/vite.config.ts",
+    "preview": "vite preview --config web/app/vite.config.ts",
+    "dev": "vite --config web/app/vite.config.ts",
+    "test": "vitest run --config web/vitest.config.ts",
+    "test:e2e": "playwright test --config web/app/playwright.config.ts",
+    "typecheck": "tsc --noEmit --project web/tsconfig.json"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "4.13.0",
+    "@playwright/test": "1.63.0",
+    "@types/node": "26.6.4",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "html-validate": "11.16.2",
+    "oxfmt": "0.71.0",
+    "oxlint": "1.86.0",
+    "oxlint-tsgolint": "7.0.2003",
+    "stylelint": "17.16.0",
+    "typescript": "7.0.2",
+    "vite": "8.3.2",
+    "vitest": "5.0.3"
+  }
+}

@@ -35,3 +35,7 @@ desktop.ini
 
 # Pinned external tools installed by `cargo xtask setup` (tools/dev/tools.toml)
 /.tools/
+
+# Browser app build output and test reports (WP-02)
+/test-results/
+/playwright-report/

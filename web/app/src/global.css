@@ -1,0 +1,12 @@
+body {
+  margin: 0;
+  background: var(--bg-canvas);
+  color: var(--fg);
+  font-family: var(--font);
+  font-size: var(--fs-md);
+}
+
+:focus-visible {
+  outline: var(--ring-width) solid var(--accent);
+  outline-offset: var(--ring-offset);
+}
