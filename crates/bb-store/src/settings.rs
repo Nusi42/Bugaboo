@@ -67,6 +67,11 @@ fn validate(change: &SettingChange) -> Result<TechnicalName, SettingProblem> {
     {
         return Err(SettingProblem::OutOfBounds);
     }
+    if let SettingValue::Text(value) = &change.value
+        && !definition.list_fits(value)
+    {
+        return Err(SettingProblem::OutOfBounds);
+    }
     if change.locked && !(definition.lockable() && change.level == Level::Organization) {
         return Err(SettingProblem::NotLockable);
     }
@@ -477,6 +482,26 @@ mod tests {
                 rejected(SettingProblem::OutOfBounds)(
                     database
                         .set_setting(&event(&mut source, "a.b"), &out_of_bounds)
+                        .await,
+                );
+            }
+            // A list that is longer than the setting allows, or has an item that is too long.
+            for list in [
+                (0..101)
+                    .map(|n| format!("d{n}.test"))
+                    .collect::<Vec<_>>()
+                    .join(","),
+                format!("{}.test", "a".repeat(250)),
+            ] {
+                let too_much = change(
+                    "auth.sign-up-domains",
+                    Level::Organization,
+                    None,
+                    SettingValue::Text(list),
+                );
+                rejected(SettingProblem::OutOfBounds)(
+                    database
+                        .set_setting(&event(&mut source, "a.b"), &too_much)
                         .await,
                 );
             }

@@ -96,6 +96,13 @@ impl DefaultValue {
     }
 }
 
+/// The limits a setting can declare: the bounds of a whole number, the size of a list.
+#[derive(Clone, Copy)]
+pub(crate) struct Limits {
+    pub(crate) bounds: Option<(i64, i64)>,
+    pub(crate) list: Option<(usize, usize)>,
+}
+
 /// Everything the registry knows about one setting, whatever its type.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct SettingDefinition {
@@ -106,6 +113,7 @@ pub struct SettingDefinition {
     help: MessageKey,
     lockable: bool,
     bounds: Option<(i64, i64)>,
+    list: Option<(usize, usize)>,
 }
 
 impl SettingDefinition {
@@ -117,7 +125,7 @@ impl SettingDefinition {
         changed_by: ChangedBy,
         help: MessageKey,
         lockable: bool,
-        bounds: Option<(i64, i64)>,
+        limits: Limits,
     ) -> Self {
         Self {
             key,
@@ -126,8 +134,48 @@ impl SettingDefinition {
             changed_by,
             help,
             lockable,
-            bounds,
+            bounds: limits.bounds,
+            list: limits.list,
         }
+    }
+
+    /// For a text setting that holds a list separated by commas: the most items it may have and
+    /// the most characters of an item. A longer list or item is refused when it is stored, and cut
+    /// away when it is read.
+    #[must_use]
+    pub const fn list_limits(&self) -> Option<(usize, usize)> {
+        self.list
+    }
+
+    fn items(value: &str) -> impl Iterator<Item = &str> {
+        value
+            .split(',')
+            .map(str::trim)
+            .filter(|item| !item.is_empty())
+    }
+
+    /// Whether `value` (a list separated by commas) is within the limits of the setting, if it
+    /// has any.
+    #[must_use]
+    pub fn list_fits(&self, value: &str) -> bool {
+        self.list.is_none_or(|(most_items, longest)| {
+            Self::items(value).count() <= most_items
+                && Self::items(value).all(|item| item.chars().count() <= longest)
+        })
+    }
+
+    /// `value` with only the items that fit: the first ones, up to the most items, without those
+    /// that are too long.
+    #[must_use]
+    pub fn cap_list(&self, value: &str) -> String {
+        let Some((most_items, longest)) = self.list else {
+            return value.to_owned();
+        };
+        Self::items(value)
+            .filter(|item| item.chars().count() <= longest)
+            .take(most_items)
+            .collect::<Vec<_>>()
+            .join(",")
     }
 
     /// The smallest and the largest value a whole-number setting may have, if it is bounded. A
@@ -348,7 +396,8 @@ macro_rules! settings {
             changed_by: $changed_by:ident,
             help: $help:expr,
             lockable: $lockable:literal
-            $(, bounds: ($least:literal, $most:literal))? $(,)?
+            $(, bounds: ($least:literal, $most:literal))?
+            $(, list: ($items:literal, $length:literal))? $(,)?
         }
     )+) => {
         $(
@@ -360,10 +409,17 @@ macro_rules! settings {
                 ChangedBy::$changed_by,
                 $help,
                 $lockable,
-                {
+                $crate::settings::Limits {
                     // The last entry is the bounds when the setting declares them, else `None`.
-                    let all: [Option<(i64, i64)>; _] = [None $(, Some(($least, $most)))?];
-                    all[all.len() - 1]
+                    bounds: {
+                        let all: [Option<(i64, i64)>; _] = [None $(, Some(($least, $most)))?];
+                        all[all.len() - 1]
+                    },
+                    // The same for the limits of a list.
+                    list: {
+                        let all: [Option<(usize, usize)>; _] = [None $(, Some(($items, $length)))?];
+                        all[all.len() - 1]
+                    },
                 },
             ));
         )+
@@ -412,6 +468,28 @@ mod tests {
 
     use super::*;
     use crate::message::Message;
+
+    #[test]
+    fn auth_06_the_sign_up_domains_have_limits_that_refuse_and_cut() {
+        let domains = AUTH_SIGN_UP_DOMAINS.definition();
+        assert_eq!(domains.list_limits(), Some((100, 253)));
+        let hundred: Vec<String> = (0..100).map(|n| format!("d{n}.test")).collect();
+        assert!(domains.list_fits(&hundred.join(",")));
+        assert!(domains.list_fits(""));
+        assert!(!domains.list_fits(&format!("{},one-more.test", hundred.join(","))));
+        assert!(!domains.list_fits(&format!("{}.test", "a".repeat(250))));
+        // Reading cuts the list to what fits: the first items, without the ones that are too long.
+        let long = format!("{}.test", "a".repeat(250));
+        let stored = format!("first.test,{long},{},last.test", hundred.join(","));
+        let cut = domains.cap_list(&stored);
+        let items: Vec<&str> = cut.split(',').collect();
+        assert_eq!(items.len(), 100);
+        assert_eq!(items[0], "first.test");
+        assert!(!cut.contains("aaaa"));
+        // A setting without limits is left alone.
+        assert!(APPEARANCE_THEME.definition().list_fits(&"x,".repeat(1000)));
+        assert_eq!(APPEARANCE_THEME.definition().cap_list("a, b"), "a, b");
+    }
 
     #[test]
     fn auth_01_the_session_times_have_bounds_and_values_are_cut_to_them() {

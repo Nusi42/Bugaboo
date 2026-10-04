@@ -396,6 +396,11 @@ async fn auth_06_signing_up_is_off_by_default_and_only_administrators_change_the
             refused(change_policy(&rig, &admin.session_token, true, &more).await),
             Some(ErrorCode::InvalidRequest)
         );
+        let long = format!("{}.test", "a".repeat(250));
+        assert_eq!(
+            refused(change_policy(&rig, &admin.session_token, true, &[&long]).await),
+            Some(ErrorCode::InvalidRequest)
+        );
         Ok(())
     })
     .await

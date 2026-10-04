@@ -65,6 +65,7 @@ settings! {
         changed_by: Administrators,
         help: message::SETTING_AUTH_SIGN_UP_DOMAINS_HELP,
         lockable: false,
+        list: (100, 253),
     }
 
     /// Whether everyone has to use two-step sign-in.

@@ -453,10 +453,12 @@ impl AuthStore for AuthStorage {
                 .database
                 .resolve_setting(&AUTH_SIGN_UP_ENABLED, &scopes)
                 .await?,
-            sign_up_domains: self
-                .database
-                .resolve_setting(&AUTH_SIGN_UP_DOMAINS, &scopes)
-                .await?,
+            sign_up_domains: AUTH_SIGN_UP_DOMAINS.definition().cap_list(
+                &self
+                    .database
+                    .resolve_setting(&AUTH_SIGN_UP_DOMAINS, &scopes)
+                    .await?,
+            ),
         })
     }
 

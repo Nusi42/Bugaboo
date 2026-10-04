@@ -20,11 +20,6 @@ use super::types::{
     RevokeInvitation, SignUpPolicy, SignUpPolicyQuery,
 };
 
-/// The longest domain name (RFC 1035).
-const DOMAIN_MAX: usize = 253;
-/// The most domains the rule for signing up can list (the whole list is the value of one setting).
-const MAX_SIGN_UP_DOMAINS: usize = 100;
-
 fn view(invitation: &Invitation) -> InvitationView {
     InvitationView {
         id: invitation.id,
@@ -235,8 +230,7 @@ pub async fn change_sign_up_policy<S: AuthStore>(
         .iter()
         .flat_map(|item| domains_of(item))
     {
-        let plain = domain.len() <= DOMAIN_MAX
-            && domain.contains('.')
+        let plain = domain.contains('.')
             && !domain.starts_with('.')
             && !domain.ends_with('.')
             && !domain.contains("..")
@@ -250,14 +244,15 @@ pub async fn change_sign_up_policy<S: AuthStore>(
             domains.push(domain);
         }
     }
-    if domains.len() > MAX_SIGN_UP_DOMAINS {
-        return Err(ErrorCode::InvalidRequest.into());
-    }
     let policy = SignUpPolicy {
         enabled: input.policy.enabled,
         domains,
     };
     let list = policy.domains.join(",");
+    // The registry says how long the list and its items may be (one place for the numbers).
+    if !AUTH_SIGN_UP_DOMAINS.definition().list_fits(&list) {
+        return Err(ErrorCode::InvalidRequest.into());
+    }
     let event = ctx.event(
         by(record.person.id),
         fixed_entity("setting", "auth.sign-up-policy")?,
