@@ -4,12 +4,15 @@
 **Features:** DIST-01 (one binary, groundwork), groundwork for OPS-01, SEC-11; ADR-0002, ADR-0014, ADR-0023, ADR-0024.
 
 ## Goal
+
 The `bugaboo` binary serves the embedded browser app with strict security headers and a health endpoint; `cargo xtask dev`, `build` and `ci` work; Git hooks and Claude Code hooks call the check runner.
 
 ## Owns
+
 `crates/bb-server/**`, `crates/bb-api/**` (only what's needed for static serving, headers and health), `xtask/src/dev.rs`, `xtask/src/build.rs`, `xtask/src/ci.rs`, `lefthook.yml`, `.claude/settings.json`, `.github/workflows/ci.yml`.
 
 ## Tasks
+
 1. **Server** (`bugaboo serve --port <p> --web <dir>`): tokio + axum 0.8.9 + tower-http 0.7.1 + rust-embed 8.12.0 (versions from architecture §9). Release builds embed `web/app/dist`; debug builds read it from disk so `cargo build` works before the web build exists (a clear message if the folder is missing). Routes: `/health/live` (200, JSON `{"status":"ok"}`), the app (with SPA fallback to `index.html`), correct content types, `Cache-Control: immutable` for hashed assets.
 2. **Security headers** on every response (SEC-11): CSP `default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'; require-trusted-types-for 'script'`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: same-origin`, `Cross-Origin-Opener-Policy: same-origin`, `Cross-Origin-Resource-Policy: same-origin`, a tight `Permissions-Policy`. (HSTS comes with TLS in M1.) Integration test that checks every header. Note: Google Fonts aren't allowed here — fonts are self-hosted later; the app uses system fonts until then.
 3. **Ports** only from `tools/dev/ports.json` (read once, in one place in xtask; the server gets the port as an argument).
@@ -18,6 +21,7 @@ The `bugaboo` binary serves the embedded browser app with strict security header
 6. **Register** every new crate in `docs/third-party/README.md`.
 
 ## Acceptance
+
 - `cargo run -p bb-server -- serve --port 47200 --web <some dir>` serves files; `/health/live` answers; header test passes.
 - `cargo xtask dev` starts on 47200/47201 (once WP-02's app exists; until then the server alone).
 - `lefthook install` makes the hooks run; the Claude Code hook triggers on an edit.

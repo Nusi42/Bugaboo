@@ -47,6 +47,7 @@ What each means in practice:
 ## 1. Security & access control (SEC)
 
 ### Permission model
+
 - **SEC-01 (M)** — Central policy engine: every action is checked as *(subject, action, resource, field)*. Default deny.
 - **SEC-02 (M)** — **Users**, **groups** (nested groups are L), **roles** (named bundles of permissions) and **role assignments** at a scope: global, project, or project subtree.
 - **SEC-03 (M)** — Permission inheritance down the project hierarchy, with explicit per-project overrides (grant and *deny*), shown in a **Check access** view that explains every result.
@@ -59,6 +60,7 @@ What each means in practice:
 - **SEC-08 (M)** — Built-in starting roles: *Administrator, Project lead, Team member, Contributor, Viewer, Guest*. They are editable copies, never hard-coded.
 
 ### Platform hardening
+
 - **SEC-10 (M)** — HTTPS by default:
   - built-in TLS (rustls) using an auto-generated certificate, a provided certificate or ACME/Let's Encrypt (V1);
   - plain HTTP only on localhost or behind an explicitly configured trusted proxy.
@@ -195,6 +197,7 @@ What each means in practice:
 - **TIME-07 (V1)** — Period locking (a closed month can't be changed without a recorded reason). Approval workflow is L.
 
 ### Working hours (German working-time recording)
+
 - **TIME-08 (M)** — **Working hours per day**, separate from time on issues:
   - *Start work day*, *Start break*, *End break*, *End work day*, from the sidebar, Home, the phone bottom bar or the timesheet;
   - or typed in afterwards (start, end, breaks) in the timesheet's **Work day** rows;
@@ -206,6 +209,7 @@ What each means in practice:
 - **TIME-12 (M)** — **Who sees working hours**: everyone sees their own. Others need the separate permission *See working hours of others*, granted per group. An option makes team reports show totals only, for organizations with a works-council agreement.
 
 ### Accounting
+
 - **TIME-13 (M)** — **Activity** and **Cost center** on every time entry, as ready-made own fields (CF-08) that admins can rename, change or remove like any other field:
   - *Activity* starts with *Development, Testing, Documentation, Meetings, Support*;
   - *Cost center* is a managed list of number + name (for example *4100 Product development*);
@@ -266,6 +270,7 @@ What each means in practice:
 ## 14. AI & MCP (AI)
 
 ### Platform
+
 - **AI-01 (M)** — Provider abstraction:
   - **Anthropic Claude** is the default;
   - any **OpenAI-compatible** endpoint also works (covers Ollama, LM Studio, vLLM and Azure), so the instance can run fully local and private.
@@ -280,6 +285,7 @@ What each means in practice:
 - **AI-06 (V1)** — Usage limits and cost budgets per user and per instance.
 
 ### Assistant features
+
 - **AI-10 (M)** — Assistant side panel, available wherever you are and aware of the current issue, search or project.
 - **AI-11 (V1)** — Ask in your own words (see QRY-09).
 - **AI-12 (V1)** — Summarize an issue or a long comment thread, and catch up on what changed since your last visit.
@@ -289,6 +295,7 @@ What each means in practice:
 - **AI-16 (L)** — Release notes drafted from a release or search, and time entry descriptions drafted from activity.
 
 ### MCP server
+
 - **AI-20 (M)** — A built-in **MCP server** (streamable HTTP) so external agents (Claude Code, Claude Desktop, IDEs) can work with Bugaboo.
 - **AI-21 (M)** — MCP tools:
   - read: `search_issues` (search language), `get_issue`, `list_projects`, `get_my_work`;
@@ -408,6 +415,7 @@ the open points for the legal review are in [compliance.md](compliance.md). Not 
 a lawyer reviews this before the first release.
 
 ### Cyber Resilience Act (CRA)
+
 - **COMP-01 (M) [sold, served]** — **SBOM for every release**, in CycloneDX and SPDX, covering Rust crates, npm packages, bundled fonts and icons. Generated automatically from the lockfiles (single source), signed and published with the release (extends SEC-18).
 - **COMP-02 (M) [sold, served]** — **Third-party components register** (`docs/third-party/`): every direct dependency with purpose, license, maintainer health and alternatives considered. CI fails when a direct dependency has no entry or when an entry has no dependency, so the register can't drift. A **third-party notices** file with all license texts is generated for each release and shipped inside the binary (*About › Licenses*).
 - **COMP-03 (M) [sold, served]** — **Vulnerability handling**: a published security policy and `security.txt`, coordinated disclosure, security advisories, VEX statements that say whether a vulnerable dependency actually affects Bugaboo, and reporting of actively exploited vulnerabilities and severe incidents within the CRA deadlines (24 h / 72 h / final report; runbook in DIST-08). The CRA reporting duty already applies (since 11 September 2026).
@@ -415,10 +423,12 @@ a lawyer reviews this before the first release.
 - **COMP-05 (V1) [sold]** — **Technical documentation file** per release: architecture, risk assessment, SBOM, test reports, support period, EU declaration of conformity, CE marking information, and instructions for secure installation and operation, assembled automatically from the repository.
 
 ### Architecture & documentation
+
 - **COMP-06 (M) [sold, served]** — **Architecture documentation** kept with the code, in a fixed structure (arc42 chapters, C4 diagrams as text, decision records). It is part of the technical documentation (COMP-05) and checked in CI: a change to a module boundary, an external interface or a dependency needs a matching doc or decision-record change.
 - **COMP-07 (M) [sold, served]** — **Security and data-flow documentation**: threat model, trust boundaries, and a data-flow map of personal data (generated from the personal-data map, PRIV-02).
 
 ### AI Act
+
 - **COMP-08 (M) [sold, served]** — **People know when AI is involved**: the assistant is always labelled as AI, and everything it writes or proposes is marked *"Written with the assistant"* (AI-05, AI-10). Admins get information about the AI model in use before switching it on (PRIV-08).
 - **COMP-09 (M) [sold, served]** — **Machine-readable marking**: text the assistant wrote (or that was accepted from it) carries a stored flag *written with the assistant*, shown in the UI, kept in the history and included in every export and in the API.
 - **COMP-10 (M) [sold, served]** — **No AI decisions about people** (hard product rules, checked in review):
@@ -429,6 +439,7 @@ a lawyer reviews this before the first release.
 - **COMP-11 (M) [sold, served]** — **AI literacy guide**: a short guide for admins and users (what the assistant can and can't do, where data goes, how to check its output), linked from the assistant and from the setup screen, so customers can meet their own AI literacy duty.
 
 ### Other EU rules
+
 - **COMP-12 (V1) [served]** — **Data Act switching**: complete export of all data and configuration in open, documented formats (extends NTF-05 and CFG-07), import on the other side, no switching charges, and published information on data location (see DIST-05, DIST-06). For the sold model this is good practice rather than a duty.
 - **COMP-13 (M) [sold, served]** — **ePrivacy**: only strictly necessary cookies and storage, so no consent banner is needed (PRIV-01).
 - **COMP-14 (V1) [sold, served]** — **NIS2 support for customers**: the security log, incident timelines and exports help organizations that fall under NIS2 meet their own reporting duties, and a security information pack (SBOM, vulnerability handling, security features) answers their supplier checks.

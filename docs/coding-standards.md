@@ -10,6 +10,7 @@ the hooks in §7. Anything that cannot is checked in review.
 ## 1. Mandatory principles: SSOT, DRY, ODR
 
 ### SSOT — Single Source of Truth
+
 Every piece of knowledge has exactly one authoritative home. Everything else is
 **generated** from it or **reads** from it, never copied by hand.
 
@@ -29,6 +30,7 @@ Every piece of knowledge has exactly one authoritative home. Everything else is
 | Database schema               | Migrations                       | Query types (compile-time checked)                   |
 
 ### DRY — Don't Repeat Yourself
+
 - DRY is about **knowledge**, not text that happens to look alike. Two pieces of code that
   look the same but change for different reasons should stay separate.
 - Before writing anything, search for an existing helper, component or module. If one is
@@ -36,6 +38,7 @@ Every piece of knowledge has exactly one authoritative home. Everything else is
 - Duplicated code blocks above a threshold fail CI (§7).
 
 ### ODR — One Definition Rule
+
 - Every type, constant, enum, error code, route, permission, setting key and message key is
   **defined once**. Every other place imports or generates it.
 - No re-declared constants, no hand-mirrored enums in TypeScript, no magic numbers or

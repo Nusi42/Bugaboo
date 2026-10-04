@@ -3,9 +3,11 @@
 Status: **Accepted** · 2026-10-04
 
 ## Context
+
 AI agents implement Bugaboo. Written rules drift unless machines enforce them. One big "lint everything" step is slow, hard to understand and tempting to skip.
 
 ## Decision
+
 - **One catalogue** (`tools/checks/catalog.toml`) lists every check: ID, plain-language title, the rule it enforces, the tool, when it runs (edit · commit · push · CI · nightly · release) and which files trigger it. `cargo xtask` implements them; lefthook, Claude Code hooks and CI only call xtask.
 - **Many small checks** instead of one big one: each enforces one rule, runs only when its files change, and explains itself in one sentence with a link to the rule.
 - **Checks for the checks (META):**
@@ -20,12 +22,15 @@ AI agents implement Bugaboo. Written rules drift unless machines enforce them. O
 - **Agents** get edit-time checks after every file change, so mistakes are fixed while the context is fresh.
 
 ## Consequences
+
 - Adding a rule means: write it in the docs, add a catalogue entry, implement it in xtask, and add the two examples. The meta checks fail until all four are done.
 - The architecture documentation stays true, because drift breaks the build.
 
 ## Alternatives considered
+
 - **Review only:** doesn't scale with agents. Rejected.
 - **Separate hook scripts per tool:** differ between Windows and Linux and drift from CI. Rejected.
 
 ## Enforced by
+
 META-CATALOG, META-FIXTURES, META-COVERAGE, META-NEW-MODULE, META-RULE-TRACE, META-WIRING, META-SUPPRESS, META-SPEED (see `tools/checks/catalog.toml`).

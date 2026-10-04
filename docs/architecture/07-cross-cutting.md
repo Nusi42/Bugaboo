@@ -3,6 +3,7 @@
 ## Security
 
 ### Sign-in and sessions
+
 - **Passwords:** Argon2id (OWASP parameters: 19 MiB memory, 2 iterations, 1 lane), checked against a bundled list of breached passwords. A wrong password and an unknown e-mail get the same answer and the same timing.
 - **Passkeys:** WebAuthn (`webauthn-rs`), as a second step or on their own. **Two-step codes:** TOTP with backup codes (stored hashed).
 - **Company sign-in:** OIDC with PKCE; group claims map to Bugaboo groups.
@@ -12,16 +13,19 @@
 - **MCP:** OAuth 2.1 authorization server inside Bugaboo (authorization code + PKCE, dynamic client registration with an admin allow list), short-lived access tokens, refresh token rotation, consent screen per app.
 
 ### Browser protections
+
 - **Content Security Policy:** `default-src 'self'`; scripts and styles only from our own origin, no inline code, no `eval`; `frame-ancestors 'none'`; `require-trusted-types-for 'script'`; images from our origin and `data:` only (outside images only if an admin allows the host).
 - **Other headers:** HSTS, `X-Content-Type-Options: nosniff`, COOP/CORP, a tight Permissions-Policy, `Referrer-Policy: same-origin`.
 - **User content** is rendered by one Markdown renderer with an allow list (ADR-0011). Attachments are downloaded, never rendered inline unless they are images or PDFs converted to safe previews.
 
 ### Secrets and keys
+
 - A **master key** (outside the database) encrypts a key per secret (envelope encryption, XChaCha20-Poly1305). Secrets: mail password, AI keys, OIDC client secrets, webhook signing keys.
 - **Key rotation** is a CLI command and an admin action; old keys decrypt, new keys encrypt.
 - Backups are encrypted with a backup key derived from the master key, or with a separate key the admin keeps.
 
 ### Limits and abuse
+
 - Rate limits per IP and per account on sign-in, search, API and MCP; slow-down after failures, never a permanent lock that an attacker could trigger.
 - Request size limits; upload limits per project; search complexity limits.
 
@@ -53,6 +57,7 @@ flowchart LR
 **People:** every person shown anywhere is a `PersonRef`, resolved for the viewer into a name, a role label (*"a Team member"*) or *Someone*, according to *Who sees people* (ADR-0022). Hidden people information can't be searched or filtered either.
 
 **Enforcement points:**
+
 - Every use case asks `bb-policy` first. Every result passes through `Authorized<T>`, which applies the field mask during serialization.
 - Every search gets the visibility predicate compiled into its SQL; the field catalogue given to the parser contains only readable fields.
 - History, notifications, webhooks, exports, assistant context and live updates apply the **receiver's** mask.
