@@ -41,6 +41,39 @@ fn evaluate(tokens: &TokenFile) -> Vec<Finding> {
             }
         }
     }
+    findings.extend(distinct_findings(tokens));
+    findings
+}
+
+/// Hovered and selected backgrounds must stay visible against the surfaces and each other.
+fn distinct_findings(tokens: &TokenFile) -> Vec<Finding> {
+    let spec = &tokens.distinct;
+    let mut findings = Vec::new();
+    for theme in &tokens.themes {
+        let mut check = |first: &str, second: &str, min: f64| {
+            let (Some(a), Some(b)) = (theme.color(first), theme.color(second)) else {
+                return;
+            };
+            let ratio = contrast_ratio(a, b);
+            if ratio < min {
+                findings.push(Finding::at(
+                    TOKENS_PATH,
+                    format!(
+                        "Theme {}: `{first}` and `{second}` differ by only {ratio:.3}:1; they need {min:.2}:1 so the state stays visible.",
+                        theme.name
+                    ),
+                ));
+            }
+        };
+        for (index, state) in spec.states.iter().enumerate() {
+            for surface in &spec.surfaces {
+                check(state, surface, spec.min_against_surfaces);
+            }
+            for other in &spec.states[index + 1..] {
+                check(state, other, spec.min_between_states);
+            }
+        }
+    }
     findings
 }
 
@@ -102,6 +135,41 @@ mod tests {
         *non_text = serde_json::json!([{ "colors": ["border"], "reason": "decorative" }]);
         let error = TokenFile::parse(&value.to_string()).err().unwrap();
         assert!(format!("{error:#}").contains("border-subtle"), "{error:#}");
+    }
+
+    #[test]
+    fn a_hover_color_that_vanishes_into_a_surface_is_rejected() {
+        let repo = Repo::discover().unwrap();
+        let text = std::fs::read_to_string(repo.path(TOKENS_PATH)).unwrap();
+        let mut value: serde_json::Value = serde_json::from_str(&text).unwrap();
+        // Dusk hover one step away from the raised surface, as in the rejected retune.
+        value["themes"]["dusk"]["color"]["bg-hover"]["$value"] = "#2D323D".into();
+        let findings = evaluate(&TokenFile::parse(&value.to_string()).unwrap());
+        assert!(
+            findings
+                .iter()
+                .any(|f| f.message.contains("bg-hover") && f.message.contains("bg-raised")),
+            "{:?}",
+            findings
+                .iter()
+                .map(|f| f.message.clone())
+                .collect::<Vec<_>>()
+        );
+    }
+
+    #[test]
+    fn hover_and_selected_that_look_the_same_are_rejected() {
+        let repo = Repo::discover().unwrap();
+        let text = std::fs::read_to_string(repo.path(TOKENS_PATH)).unwrap();
+        let mut value: serde_json::Value = serde_json::from_str(&text).unwrap();
+        let same = value["themes"]["daylight"]["color"]["bg-hover"]["$value"].clone();
+        value["themes"]["daylight"]["color"]["bg-selected"]["$value"] = same;
+        let findings = evaluate(&TokenFile::parse(&value.to_string()).unwrap());
+        assert!(
+            findings
+                .iter()
+                .any(|f| f.message.contains("bg-selected") && f.message.contains("bg-hover"))
+        );
     }
 
     #[test]

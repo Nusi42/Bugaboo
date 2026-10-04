@@ -22,6 +22,34 @@ pub(crate) struct Exclusion {
     pub(crate) themes: Vec<String>,
 }
 
+/// State backgrounds (hover, selected) that must stay visible against the surfaces.
+pub(crate) struct DistinctSpec {
+    pub(crate) states: Vec<String>,
+    pub(crate) surfaces: Vec<String>,
+    /// Smallest contrast ratio between a state and each surface.
+    pub(crate) min_against_surfaces: f64,
+    /// Smallest contrast ratio between two states.
+    pub(crate) min_between_states: f64,
+}
+
+impl DistinctSpec {
+    pub(crate) fn parse(spec: &Value) -> anyhow::Result<Self> {
+        let spec = spec.as_object().context("`distinct` must be an object")?;
+        reason(spec)?;
+        let number = |key: &str| {
+            spec.get(key)
+                .and_then(Value::as_f64)
+                .with_context(|| format!("`{key}` must be a number"))
+        };
+        Ok(Self {
+            states: names(spec, "states")?,
+            surfaces: names(spec, "surfaces")?,
+            min_against_surfaces: number("minAgainstSurfaces")?,
+            min_between_states: number("minBetweenStates")?,
+        })
+    }
+}
+
 pub(crate) struct ContrastSpec {
     pub(crate) min: f64,
     pub(crate) text: Vec<String>,

@@ -5,7 +5,7 @@
 use anyhow::{Context as _, bail};
 use serde_json::{Map, Value};
 
-use super::contrast_spec::ContrastSpec;
+use super::contrast_spec::{ContrastSpec, DistinctSpec};
 use crate::repo::Repo;
 
 /// Where the token file lives, relative to the repository root.
@@ -59,6 +59,7 @@ pub(crate) struct TokenFile {
     pub(crate) default_light: String,
     pub(crate) default_dark: String,
     pub(crate) contrast: ContrastSpec,
+    pub(crate) distinct: DistinctSpec,
 }
 
 impl TokenFile {
@@ -95,6 +96,7 @@ impl TokenFile {
             default_light: string(field(defaults, "light")?, "defaultThemes.light")?,
             default_dark: string(field(defaults, "dark")?, "defaultThemes.dark")?,
             contrast,
+            distinct: DistinctSpec::parse(field(extension, "distinct")?)?,
         };
         file.validate()?;
         Ok(file)
@@ -141,6 +143,15 @@ impl TokenFile {
             );
         }
         self.contrast.check_exclusions()?;
+        let distinct = &self.distinct;
+        if let Some(unknown) = distinct
+            .states
+            .iter()
+            .chain(&distinct.surfaces)
+            .find(|name| first.color(name).is_none())
+        {
+            bail!("distinct rules use unknown color `{unknown}`");
+        }
         Ok(())
     }
 }
