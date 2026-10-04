@@ -9,12 +9,12 @@
   ],
   "type": "module",
   "scripts": {
-    "build": "vite build --config web/app/vite.config.ts",
-    "preview": "vite preview --config web/app/vite.config.ts",
-    "dev": "vite --config web/app/vite.config.ts",
-    "test": "vitest run --config web/vitest.config.ts",
-    "test:e2e": "playwright test --config web/app/playwright.config.ts",
-    "typecheck": "tsc --noEmit --project web/tsconfig.json"
+    "build": "vite build --config web/tooling/vite.config.ts",
+    "preview": "vite preview --config web/tooling/vite.config.ts",
+    "dev": "vite --config web/tooling/vite.config.ts",
+    "test": "vitest run --config web/tooling/vitest.config.ts",
+    "test:e2e": "playwright test --config web/tooling/playwright.config.ts",
+    "typecheck": "cargo xtask check only LINT-TYPES"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.13.0",

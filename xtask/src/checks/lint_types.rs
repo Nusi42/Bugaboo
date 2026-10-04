@@ -2,11 +2,16 @@
 
 use std::path::Path;
 
-use super::node_tool::run;
+use super::node_tool::{Selection, run};
 use super::{Check, Context, Finding};
 
-/// The project that covers the whole browser app.
-const PROJECT: &str = "web/tsconfig.json";
+/// Every TypeScript project of the browser app. Browser code and tooling are separate projects,
+/// so browser code cannot use Node's types by accident.
+const PROJECTS: Selection = Selection {
+    folders: &["web"],
+    files: &[],
+    endings: &["/tsconfig.json"],
+};
 
 pub(crate) struct LintTypes;
 
@@ -16,7 +21,17 @@ impl Check for LintTypes {
     }
 
     fn run(&self, context: &Context<'_>) -> anyhow::Result<Vec<Finding>> {
-        type_check(context.repo.root(), PROJECT)
+        // A change in one project can break another, so every project is checked.
+        let everything = Context {
+            repo: context.repo,
+            catalog: context.catalog,
+            files: None,
+        };
+        let mut findings = Vec::new();
+        for project in PROJECTS.pick(&everything) {
+            findings.extend(type_check(context.repo.root(), &project)?);
+        }
+        Ok(findings)
     }
 }
 

@@ -2,12 +2,12 @@ import { resolve } from "node:path";
 
 import { defineConfig } from "vitest/config";
 
-import { readPorts, repoRoot } from "./tooling/ports.ts";
+import { readPorts, repoRoot } from "./ports.ts";
 
 const ports = readPorts();
 
 export default defineConfig({
-  root: import.meta.dirname,
+  root: resolve(import.meta.dirname, ".."),
   cacheDir: resolve(repoRoot, "node_modules/.vite"),
   test: {
     include: ["**/*.test.ts"],

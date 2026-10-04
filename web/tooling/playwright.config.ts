@@ -2,13 +2,13 @@ import { resolve } from "node:path";
 
 import { defineConfig } from "@playwright/test";
 
-import { readPorts, repoRoot } from "../tooling/ports.ts";
+import { readPorts, repoRoot } from "./ports.ts";
 
 const ports = readPorts();
 const baseURL = `http://127.0.0.1:${String(ports.webPreview)}`;
 
 export default defineConfig({
-  testDir: "./e2e",
+  testDir: resolve(import.meta.dirname, "../app/e2e"),
   outputDir: resolve(repoRoot, "test-results"),
   fullyParallel: true,
   forbidOnly: true,
