@@ -5,3 +5,9 @@
   margin: 0;
   padding: var(--space-3);
 }
+
+.more {
+  margin: calc(var(--space-2) * -1);
+  border-top-width: 1px;
+  font-family: var(--font);
+}

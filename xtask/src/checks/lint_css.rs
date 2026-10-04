@@ -65,6 +65,9 @@ mod tests {
             "color-named",
             "declaration-no-important",
             "declaration-property-value-disallowed-list",
+            "\"-4px\"",
+            "\"-0.5em\"",
+            "declaration-property-value-allowed-list",
         ] {
             assert!(
                 messages.contains(rule),

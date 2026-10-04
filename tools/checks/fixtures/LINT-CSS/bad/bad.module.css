@@ -5,3 +5,10 @@
   margin: 12px;
   padding: 1rem !important;
 }
+
+.more {
+  margin: -4px;
+  margin-left: -0.5em;
+  padding: 1px;
+  font-family: Arial, sans-serif;
+}

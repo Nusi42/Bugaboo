@@ -4,9 +4,12 @@
 const lengthUnits =
   "px|rem|em|ex|ch|cap|lh|rlh|vw|vh|vmin|vmax|svw|svh|lvw|lvh|dvw|dvh|pt|pc|cm|mm|in|Q";
 // A number with a length unit that is not part of a longer word or a variable name.
-const anyLength = String.raw`/(?<![\w.#-])\d*\.?\d+(?:${lengthUnits})\b/`;
+const anyLength = String.raw`/(?<![\w.#-])-?\d*\.?\d+(?:${lengthUnits})\b/`;
 // The same, except exactly 1px, which borders and outlines may use.
-const lengthExceptHairline = String.raw`/(?<![\w.#-])(?!1px\b)\d*\.?\d+(?:${lengthUnits})\b/`;
+const lengthExceptHairline = String.raw`/(?<![\w.#-])(?!1px\b)-?\d*\.?\d+(?:${lengthUnits})\b/`;
+
+// The only properties that may use a literal 1px: the border and the outline line width.
+const hairlineProperties = String.raw`(?:border|outline|border(?:-[a-z]+)*-width|outline-width)`;
 
 /** @type {import("stylelint").Config} */
 export default {
@@ -30,9 +33,14 @@ export default {
     ],
     // Sizes: tokens only. Borders and outlines may be exactly 1px.
     "declaration-property-value-disallowed-list": {
-      "/^(?!border|outline)/": [anyLength],
-      "/^(border|outline)/": [lengthExceptHairline],
+      [`/^(?!${hairlineProperties}$)/`]: [anyLength],
+      [`/^${hairlineProperties}$/`]: [lengthExceptHairline],
     },
+    // Fonts: tokens only, and no `font` shorthand that could hide a literal family or size.
+    "declaration-property-value-allowed-list": {
+      "font-family": [String.raw`/^var\(--[\w-]+\)$/`],
+    },
+    "property-disallowed-list": ["font"],
     "declaration-no-important": true,
     // Correctness.
     "block-no-empty": true,
