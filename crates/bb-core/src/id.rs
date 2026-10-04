@@ -252,6 +252,27 @@ define_ordered_id! {
     JobId
 }
 
+define_random_id! {
+    /// The ID of a sign-in session as people see it in *Where you're signed in*. It is not the
+    /// secret in the cookie and opens nothing.
+    SessionId
+}
+
+define_random_id! {
+    /// The ID of a passkey a person registered.
+    PasskeyId
+}
+
+define_random_id! {
+    /// The ID of an invitation.
+    InvitationId
+}
+
+// Random references to records; they say nothing about a person by themselves.
+impl crate::personal::NotPersonal for SessionId {}
+impl crate::personal::NotPersonal for PasskeyId {}
+impl crate::personal::NotPersonal for InvitationId {}
+
 /// The ID of a record whose kind is named next to it, for example in an event (ADR-0007). It can
 /// hold the ID of any kind of record, so it takes any UUID version.
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -276,7 +297,16 @@ macro_rules! into_entity_id {
     };
 }
 
-into_entity_id!(UserId, ProjectId, IssueId, EventId, JobId);
+into_entity_id!(
+    UserId,
+    ProjectId,
+    IssueId,
+    EventId,
+    JobId,
+    SessionId,
+    PasskeyId,
+    InvitationId
+);
 
 #[cfg(test)]
 mod tests {

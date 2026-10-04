@@ -22,4 +22,8 @@ pub struct Person {
     /// When the account was made.
     #[personal(category = "activity", basis = "contract")]
     pub created_at: Timestamp,
+    /// Whether the person is an administrator. Roles replace this with the permissions engine
+    /// (M2); until then it is the only difference between people.
+    #[not_personal]
+    pub administrator: bool,
 }

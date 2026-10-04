@@ -43,6 +43,8 @@ undocumented_unsafe_blocks = "warn"
 # `{ workspace = true }` and add only their own features (coding-standards §1).
 [workspace.dependencies]
 anyhow = "1.0.104"
+argon2 = { version = "0.6.0", default-features = false, features = ["alloc", "password-hash"] }
+base64ct = { version = "1.8.3", features = ["alloc"] }
 axum = { version = "0.8.9", default-features = false }
 chacha20poly1305 = { version = "0.11.0", default-features = false, features = ["alloc", "zeroize"] }
 clap = { version = "4.6.7", features = ["derive"] }
@@ -74,8 +76,10 @@ serde_json = "1.0.151"
 sha2 = "0.11.0"
 syn = { version = "3.0.6", default-features = false }
 sqlx = { version = "0.9.0", default-features = false }
+subtle = "2.6.1"
 tempfile = "3.27.0"
 tokio = "1.53.2"
+totp-rs = { version = "6.0.0", default-features = false, features = ["otpauth", "qr", "zeroize"] }
 tokio-rustls = { version = "0.26.6", default-features = false, features = ["ring", "tls12"] }
 toml = "1.1.6"
 tower = "0.5.3"
@@ -84,6 +88,10 @@ trybuild = "1.0.121"
 zeroize = "1.9.0"
 uuid = { version = "1.27.0", default-features = false }
 tracing = "0.1.44"
+webauthn-authenticator-rs = { version = "=0.6.1-dev", default-features = false, features = [
+  "softpasskey",
+] }
+webauthn-rs = { version = "=0.6.1-dev", default-features = false, features = ["conditional-ui"] }
 utoipa = { version = "6.0.0", default-features = false, features = ["macros"] }
 utoipa-axum = { version = "0.3.0", default-features = false }
 tracing-subscriber = { version = "0.3.23", default-features = false, features = [
@@ -91,3 +99,11 @@ tracing-subscriber = { version = "0.3.23", default-features = false, features = 
   "json",
   "std",
 ] }
+
+# Argon2id with the OWASP parameters (19 MiB) takes seconds in an unoptimised build. The hashing
+# crates are optimised in debug builds, so the tests that sign in stay fast.
+[profile.dev.package.argon2]
+opt-level = 3
+
+[profile.dev.package.blake2]
+opt-level = 3

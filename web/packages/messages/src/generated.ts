@@ -13,6 +13,19 @@ export const messages = {
   "theme.dusk": "Dusk",
   "theme.midnight": "Midnight",
   "error.auth.wrong-credentials": "The e-mail address or the password is not right.",
+  "error.auth.wrong-second-step-code":
+    "That code is not right. Check the code in your app, or use one of your backup codes.",
+  "error.auth.wrong-setup-code":
+    "That setup code is not right. Copy it again from the window where Bugaboo is running.",
+  "error.auth.password-too-short":
+    "Choose a password with at least 12 characters. Length matters more than special characters.",
+  "error.auth.password-breached":
+    "That password is on lists of passwords that are tried first. Please choose another one.",
+  "error.auth.invitation-invalid":
+    "This invitation does not work. It may have run out or been used already. Ask for a new one.",
+  "error.auth.sign-up-refused": "You cannot sign up here. Ask an administrator to invite you.",
+  "error.auth.passkey-rejected": "The passkey could not be checked. Please try again.",
+  "error.request.wrong-token": "Your page is out of date. Reload the page and try again.",
   "error.auth.not-signed-in": "Please sign in to continue.",
   "error.access.forbidden": "You are not allowed to do that.",
   "error.resource.not-found": "We could not find that.",
@@ -34,6 +47,14 @@ export const messages = {
     "How many minutes without activity pass before people are signed out automatically.",
   "setting.security.two-step-required.help":
     "Ask everyone to use two-step sign-in. People who have not set it up are asked to do so the next time they sign in.",
+  "setting.security.session-absolute-hours.help":
+    "How many hours a sign-in can last at most, even when somebody keeps working. After that, people sign in again.",
+  "setting.security.two-step-required-roles.help":
+    "The roles whose members must use two-step sign-in, as a list separated by commas. Roles arrive in a later version; until then this has no effect.",
+  "setting.auth.sign-up-enabled.help":
+    "Let people make an account on their own, without an invitation. Bugaboo cannot check that an address belongs to the person until e-mail is available, so use this only on a network you trust.",
+  "setting.auth.sign-up-domains.help":
+    "The e-mail domains that may sign up on their own, as a list separated by commas, like example.com. Leave it empty to allow nobody.",
   "cookie.session.purpose":
     "Keeps you signed in on this device. Bugaboo removes it when you sign out or when your sign-in runs out.",
   "cookie.csrf.purpose":
