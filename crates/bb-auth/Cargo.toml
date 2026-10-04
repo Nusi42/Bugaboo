@@ -1,0 +1,10 @@
+[package]
+name = "bb-auth"
+description = "Passwords, passkeys, two-step codes, sessions, access keys, company sign-in and OAuth 2.1."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[lints]
+workspace = true

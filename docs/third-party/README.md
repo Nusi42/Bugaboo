@@ -15,9 +15,17 @@ Columns:
 |---------|---------|---------|--------|---------|--------|--------------|
 | marked | 18.0.14 | MIT | no | Turns the Markdown docs into commentable HTML pages (`tools/docs-html`). Temporary until `cargo xtask docs` uses bb-markdown. | maintained (2026-10-04) | python-markdown (needs Python on every machine); markdown-it (equivalent, more plugins we don't need) |
 
-## Server (Rust)
+## Rust
 
-Filled in with the first workspace milestone. Planned crates are listed in [architecture/09-tech-stack.md](../architecture/09-tech-stack.md).
+| Crate | Version | License | Ships? | Purpose | Health | Alternatives |
+|-------|---------|---------|--------|---------|--------|--------------|
+| anyhow | 1.0.104 | MIT OR Apache-2.0 | no (xtask) | Error handling with context in the check runner | maintained (2026-10-04) | thiserror (better for libraries; the runner only reports errors) |
+| clap | 4.6.7 | MIT OR Apache-2.0 | no (xtask) | Command line of `cargo xtask` | maintained (2026-10-04) | argh, pico-args (less help text, fewer checks) |
+| globset | 0.4.20 | Unlicense OR MIT | no (xtask) | Matching changed files against the catalogue's `files` patterns | maintained (2026-10-04) | glob (no sets, no `{a,b}`), wildmatch |
+| serde | 1.0.229 | MIT OR Apache-2.0 | no (xtask) | Reading the check catalogue and tool list | maintained (2026-10-04) | hand-written parsing (error-prone) |
+| toml | 1.1.6 | MIT OR Apache-2.0 | no (xtask) | TOML parser for the catalogue and tool list | maintained (2026-10-04) | toml_edit (only needed for writing) |
+
+Server crates are added with the milestones that use them; planned ones are listed in [architecture/09-tech-stack.md](../architecture/09-tech-stack.md).
 
 ## Browser app (npm)
 

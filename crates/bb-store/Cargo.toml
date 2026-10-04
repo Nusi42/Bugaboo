@@ -1,0 +1,10 @@
+[package]
+name = "bb-store"
+description = "Database adapter: schema, migrations, repositories and the search compiler (ADR-0003)."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[lints]
+workspace = true

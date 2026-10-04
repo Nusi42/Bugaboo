@@ -1,0 +1,13 @@
+[package]
+name = "bb-macros"
+description = "Derive macros for entities, personal-data marks and settings (ADR-0015, ADR-0018)."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[lib]
+proc-macro = true
+
+[lints]
+workspace = true

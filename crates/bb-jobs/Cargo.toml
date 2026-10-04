@@ -1,0 +1,10 @@
+[package]
+name = "bb-jobs"
+description = "The background job runner and schedules (ADR-0017)."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[lints]
+workspace = true

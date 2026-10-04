@@ -1,0 +1,10 @@
+[package]
+name = "bb-core"
+description = "Domain types, IDs, error codes, domain events and field types. Does no I/O (architecture §4)."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[lints]
+workspace = true

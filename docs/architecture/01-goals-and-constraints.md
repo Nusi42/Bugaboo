@@ -40,9 +40,9 @@ The license of Bugaboo itself is not decided. Every part we ship must therefore 
 
 | Allowed in the shipped binary | Not allowed |
 |-------------------------------|-------------|
-| MIT, Apache-2.0, BSD-2/3-Clause, ISC, Zlib, Unicode-3.0, CC0, OFL-1.1 (fonts), MPL-2.0 (file-level, unmodified) | GPL, AGPL, LGPL (static linking), SSPL, BUSL, "non-commercial" licenses |
+| MIT, Apache-2.0 (also with LLVM exception), BSD-2/3-Clause, ISC, Zlib, Unicode-3.0, CC0, Unlicense, BSL-1.0, CDLA-Permissive-2.0 (data), OFL-1.1 (fonts), MPL-2.0 (file-level, unmodified) | GPL, AGPL, LGPL (static linking), SSPL, BUSL, "non-commercial" licenses |
 
-The allow list lives in `deny.toml` and is enforced in CI (coding-standards §5).
+The exact allow list lives in `deny.toml` (the single source) and is enforced by DEP-LICENSES (coding-standards §5).
 
 ### People and process
 - Implementation is done by AI agents in milestones, guided by these documents. Everything an agent needs must be written down, and every rule that can be checked by a machine is checked by a hook.

@@ -1,0 +1,10 @@
+[package]
+name = "bb-searchlang"
+description = "The search language: parse, print, check and suggest. No I/O; also built for WebAssembly (ADR-0005)."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[lints]
+workspace = true

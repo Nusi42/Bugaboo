@@ -1,0 +1,10 @@
+[package]
+name = "bb-policy"
+description = "The authorization engine: permission catalogue, field masks, visibility and Authorized<T> (ADR-0004)."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[lints]
+workspace = true

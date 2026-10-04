@@ -32,3 +32,6 @@ desktop.ini
 
 # Machine-local Cargo settings (included optionally by .cargo/config.toml, ADR-0024)
 .cargo/config.local.toml
+
+# Pinned external tools installed by `cargo xtask setup` (tools/dev/tools.toml)
+/.tools/

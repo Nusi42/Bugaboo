@@ -1,0 +1,10 @@
+[package]
+name = "bb-markdown"
+description = "Markdown to safe HTML and issue-ID chips. No I/O; also built for WebAssembly (ADR-0011)."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[lints]
+workspace = true

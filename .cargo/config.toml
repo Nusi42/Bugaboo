@@ -1,0 +1,5 @@
+# Machine-specific settings go into .cargo/config.local.toml (ignored by Git, ADR-0024).
+include = [{ path = "config.local.toml", optional = true }]
+
+[alias]
+xtask = "run --quiet --package xtask --"
