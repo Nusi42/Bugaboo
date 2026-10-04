@@ -39,15 +39,17 @@ Read when the server starts, strongest first: command line, environment variable
 |---------|---------|---------|
 | `address` | IP address to listen on | `127.0.0.1` |
 | `port` | Port to listen on | none; the start stops without one (ADR-0023) |
-| `data_dir` | The data folder | `bugaboo-data` |
+| `data_dir` | The data folder | `bugaboo-data` next to the program |
 | `database_url` | `sqlite:…` or `postgres://…`; empty means the built-in SQLite file in the data folder | empty |
 | `tls_mode` | `self-signed`, `files` or `off` | `self-signed` |
 | `tls_cert`, `tls_key` | Certificate chain and private key (PEM), with `tls_mode = "files"` | none |
 | `tls_names` | Extra host names or addresses for the generated certificate | none |
 | `trusted_proxies` | Addresses of proxies that add HTTPS; with `tls_mode = "off"` only they may connect | none |
 | `log_level` | `error`, `warn`, `info` or `debug` | `info` |
+| `max_connections` | Most connections open at once | `1024` |
+| `header_timeout_seconds` | Time allowed for a client to send the headers of a request | `30` |
 
-`tls_mode = "off"` on an address that is not this computer is refused unless `trusted_proxies` is set. The settings file can be named with `--config` or `BUGABOO_CONFIG`; relative paths inside it are relative to the file.
+`tls_mode = "off"` on an address that is not this computer is refused unless `trusted_proxies` is set. The settings file can be named with `--config` or `BUGABOO_CONFIG`; without a name `bugaboo.toml` next to the program is read if it exists. Defaults are relative to the program's folder, not the current folder (a Windows service starts in `System32`); relative paths inside the file are relative to the file. With `tls_mode = "files"` on Linux, a key file that group or others can read is reported as a warning. Enforced by: review (the tests `ops_10_…` and `sec_10_…` in `crates/bb-server` cover it; no catalogue check yet).
 
 ### Data folder
 
@@ -59,7 +61,7 @@ backups/     backups
 tls/         the generated certificate and its key
 ```
 
-Folders that Bugaboo creates are readable by their owner only: mode `0700` on Linux, and on Windows an access list that grants only the account running Bugaboo. Key and certificate files are written with mode `0600` on Linux. A self-signed certificate is valid for one year and renewed when less than 30 days are left at start-up, or when `tls_names` changes. Enforced by: tests `sec_16_…` and `sec_10_…`.
+Folders that Bugaboo creates are readable by their owner only: mode `0700` on Linux, and on Windows an access list that grants only the account running Bugaboo. Key and certificate files are written with mode `0600` on Linux. `keys/` and `tls/` are checked on **every start** and made private again if someone loosened them (Windows: the access list is reset to the running account, found by its SID, not its name). Certificate and key are written as new files and renamed into place (key first, certificate second), and a key that does not belong to the certificate is replaced. A self-signed certificate is valid for one year and renewed when less than 30 days are left at start-up, or when `tls_names` changes. Enforced by: tests `sec_16_…` and `sec_10_…`.
 
 ### One file per system (OPS-01, DIST-01)
 
