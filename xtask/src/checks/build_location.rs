@@ -18,3 +18,27 @@ impl Check for BuildLocation {
             .collect())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use std::path::{Path, PathBuf};
+
+    use crate::location;
+
+    #[test]
+    fn bad_example() {
+        let roots = [PathBuf::from(r"C:\Users\bo\OneDrive")];
+        let message = location::check(Path::new(r"C:\Users\bo\OneDrive\code\bugaboo"), &roots);
+        assert!(message.is_some());
+    }
+
+    #[test]
+    fn good_example() {
+        let roots = [PathBuf::from(r"C:\Users\bo\OneDrive")];
+        let message = location::check(
+            Path::new(r"C:\Users\bo\the work root\bugaboo.win4"),
+            &roots,
+        );
+        assert!(message.is_none());
+    }
+}

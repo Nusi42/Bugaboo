@@ -5,11 +5,14 @@
 //! or `tools/checks/fixtures/<ID>/`).
 
 mod arch_deps;
+mod arch_map_sync;
 mod arch_no_unsafe;
 mod build_location;
 mod dep_licenses;
 mod dep_register;
 mod dev_ports;
+mod doc_adr_enforced;
+mod doc_generated;
 mod fmt_css;
 mod fmt_md;
 mod fmt_rust;
@@ -26,7 +29,15 @@ mod lint_spell;
 mod lint_ts;
 mod lint_types;
 mod meta_catalog;
+mod meta_coverage;
+mod meta_fixtures;
+mod meta_new_module;
+mod meta_rule_trace;
+mod meta_speed;
+pub(crate) mod meta_suppress;
+mod meta_wiring;
 mod node_tool;
+mod plan_trace;
 mod sec_secrets;
 mod sty_contrast;
 mod txt_catalog;
@@ -113,5 +124,16 @@ pub(crate) fn registry() -> Vec<Box<dyn Check>> {
         Box::new(dev_ports::DevPorts),
         Box::new(sty_contrast::StyContrast),
         Box::new(txt_catalog::TxtCatalog),
+        Box::new(doc_generated::DocGenerated),
+        Box::new(doc_adr_enforced::DocAdrEnforced),
+        Box::new(plan_trace::PlanTrace),
+        Box::new(arch_map_sync::ArchMapSync),
+        Box::new(meta_fixtures::MetaFixtures),
+        Box::new(meta_coverage::MetaCoverage),
+        Box::new(meta_new_module::MetaNewModule),
+        Box::new(meta_rule_trace::MetaRuleTrace),
+        Box::new(meta_wiring::MetaWiring),
+        Box::new(meta_suppress::MetaSuppress),
+        Box::new(meta_speed::MetaSpeed),
     ]
 }

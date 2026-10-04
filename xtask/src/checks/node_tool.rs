@@ -3,13 +3,12 @@
 //! The tools come from the root `package.json` / `package-lock.json` and live in
 //! `node_modules/.bin` of the work folder (ADR-0014, ADR-0024). `npm ci` installs them.
 
+use anyhow::anyhow;
 use std::fs;
 use std::path::Path;
-use std::process::Command;
-
-use anyhow::{Context as _, bail};
 
 use super::{Context, Finding};
+use crate::tools;
 
 /// Folders that never hold our sources.
 const SKIPPED_FOLDERS: [&str; 6] = [
@@ -33,30 +32,14 @@ pub(crate) struct ToolRun {
     pub(crate) output: String,
 }
 
-/// Runs `node_modules/.bin/<tool>` in `root`.
+/// Runs an installed npm tool in `root`. The tool is found by [`tools::find`], which looks in
+/// `.tools/bin` and in `node_modules/.bin`.
 pub(crate) fn run(root: &Path, tool: &str, args: &[&str]) -> anyhow::Result<ToolRun> {
-    let name = if cfg!(windows) {
-        format!("{tool}.cmd")
-    } else {
-        tool.to_owned()
-    };
-    let binary = root.join("node_modules").join(".bin").join(name);
-    if !binary.exists() {
-        bail!(
-            "`{tool}` is not installed. Run `npm ci` in {} first.",
-            root.display()
-        );
-    }
-    let out = Command::new(&binary)
-        .args(args)
-        .current_dir(root)
-        .output()
-        .with_context(|| format!("could not start {}", binary.display()))?;
-    let mut output = String::from_utf8_lossy(&out.stdout).into_owned();
-    output.push_str(&String::from_utf8_lossy(&out.stderr));
+    let program = tools::find(tool).map_err(|finding| anyhow!(finding.message))?;
+    let out = tools::run(&program, args, root)?;
     Ok(ToolRun {
-        success: out.status.success(),
-        output,
+        success: out.success,
+        output: out.text,
     })
 }
 

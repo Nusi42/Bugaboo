@@ -36,7 +36,13 @@ impl Repo {
 
     /// Every file Git knows (tracked, or untracked but not ignored), with `/` separators.
     pub(crate) fn all_files(&self) -> anyhow::Result<Vec<String>> {
-        self.git_lines(&["ls-files", "--cached", "--others", "--exclude-standard"])
+        let mut files =
+            self.git_lines(&["ls-files", "--cached", "--others", "--exclude-standard"])?;
+        // A file that is deleted but not yet staged is still listed by Git.
+        files.retain(|file| self.root.join(file).is_file());
+        files.sort();
+        files.dedup();
+        Ok(files)
     }
 
     /// Turns paths given on the command line into repository-relative paths with `/`.

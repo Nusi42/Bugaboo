@@ -365,7 +365,7 @@ rule = "architecture §4, COMP-06"
 tool = "xtask (parses 04-building-blocks.md vs workspace)"
 when = ["push", "ci"]
 files = ["**/Cargo.toml", "web/**/package.json", "docs/architecture/04-building-blocks.md"]
-status = "planned"
+status = "active"
 
 [[check]]
 id = "ARCH-DOC-CHANGE"
@@ -536,10 +536,10 @@ status = "planned"
 id = "DOC-GENERATED"
 title = "Generated files are up to date (API client, token CSS, message types, docs HTML)"
 rule = "SSOT"
-tool = "xtask gen --check"
+tool = "xtask (regenerates the docs pages and compares)"
 when = ["push", "ci"]
 files = ["*"]
-status = "planned"
+status = "active"
 
 [[check]]
 id = "DOC-ADR-ENFORCED"
@@ -548,7 +548,7 @@ rule = "META, ADR template"
 tool = "xtask (parses docs/adr)"
 when = ["commit", "ci"]
 files = ["docs/adr/**"]
-status = "planned"
+status = "active"
 
 # ───────────── Performance and quality ─────────────
 [[check]]
@@ -647,7 +647,7 @@ rule = "04-milestones.md"
 tool = "xtask (parses the feature list, the milestones and docs/milestones/**)"
 when = ["commit", "ci"]
 files = ["docs/01-feature-list.md", "docs/04-milestones.md", "docs/milestones/**"]
-status = "planned"
+status = "active"
 
 [[check]]
 id = "BUILD-LOCATION"
@@ -693,58 +693,58 @@ rule = "architecture §10"
 tool = "xtask self-test over tools/checks/fixtures/<ID>/"
 when = ["ci"]
 files = ["tools/checks/**", "xtask/**"]
-status = "planned"
+status = "active"
 
 [[check]]
 id = "META-COVERAGE"
-title = "Every file type in the repository is covered by at least one formatter or linter — a new file type means a new check"
+title = "Every file is covered by a formatter or linter, is generated, or is listed with a reason in tools/checks/coverage-exemptions.toml — a new file type means a new check"
 rule = "architecture §10"
-tool = "xtask (git ls-files vs the 'files' globs above)"
+tool = "xtask (project files vs the 'files' globs above, the generated marker and tools/checks/coverage-exemptions.toml)"
 when = ["commit", "ci"]
 files = ["*"]
-status = "planned"
+status = "active"
 
 [[check]]
 id = "META-NEW-MODULE"
-title = "A new crate, package or top-level folder needs a module-map entry and dependency rules before it can be used"
+title = "Every crate, package and top-level folder is listed in the module map (the dependency rules are ARCH-DEPS' job)"
 rule = "architecture §10, ARCH-MAP-SYNC"
 tool = "xtask"
 when = ["commit", "ci"]
 files = ["**/Cargo.toml", "**/package.json"]
-status = "planned"
+status = "active"
 
 [[check]]
 id = "META-RULE-TRACE"
-title = "Every 'must' rule in coding standards, ADRs and the architecture names its check ID or says 'review'"
+title = "Every rule in coding standards, ADRs and the architecture (must, shall, has to, may only …) names its check ID or says 'review' with a reason"
 rule = "architecture §10"
 tool = "xtask (parses docs for Enforced-by markers)"
 when = ["commit", "ci"]
 files = ["docs/**/*.md"]
-status = "planned"
+status = "active"
 
 [[check]]
 id = "META-WIRING"
-title = "lefthook, Claude Code hooks and CI call only xtask, with the same check lists"
+title = "lefthook, Claude Code hooks and CI call exactly the xtask commands they should, and only those; CI actions are pinned to a commit"
 rule = "ADR-0014"
 tool = "xtask (reads lefthook.yml, .claude/settings.json, CI workflow)"
 when = ["commit", "ci"]
 files = ["lefthook.yml", ".claude/settings.json", ".github/workflows/**"]
-status = "planned"
+status = "active"
 
 [[check]]
 id = "META-SUPPRESS"
-title = "Every suppression (allow, oxlint-disable, ast-grep ignore, VEX 'not affected') has a reason and an issue number; the total may not grow without review"
+title = "Every suppression (allow, expect, eslint/oxlint/stylelint-disable, @ts-ignore, ast-grep ignore, accepted advisories) has a reason that names an issue or a doc section; the total is compared with tools/checks/suppressions.txt and may only change together with that file"
 rule = "architecture §10"
-tool = "xtask (counts and compares with main)"
+tool = "xtask (counts and compares with tools/checks/suppressions.txt)"
 when = ["commit", "ci"]
 files = ["*"]
-status = "planned"
+status = "active"
 
 [[check]]
 id = "META-SPEED"
-title = "Checks that run on edit and commit stay fast (edit < 3 s per file, commit < 10 s) so nobody is tempted to skip them"
+title = "Checks stay fast: every edit-time check under 3 s on one file and all commit-time checks under 10 s on a sample of files, measured when this check runs"
 rule = "architecture §10"
-tool = "xtask (timings recorded in CI)"
+tool = "xtask (times the checks itself)"
 when = ["ci"]
 files = ["*"]
-status = "planned"
+status = "active"

@@ -103,3 +103,7 @@ pub(crate) fn steps_summary(total: usize, skipped: usize, failed: usize) {
 pub(crate) fn hook_feedback(report: &str) {
     eprintln!("{report}");
 }
+
+pub(crate) fn wrote(path: &str) {
+    println!("wrote {path}");
+}

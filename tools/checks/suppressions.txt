@@ -1,0 +1,5 @@
+# Suppressions counted by META-SUPPRESS. Rewritten by `cargo xtask suppressions`.
+# The total may only grow in a change that also updates this file (and the lead approves it).
+crates/bb-server/src/output.rs 1
+xtask/src/output.rs 1
+total 2
