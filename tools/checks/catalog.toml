@@ -28,17 +28,17 @@ title = "TypeScript, JavaScript and JSON are formatted"
 rule = "coding-standards §4"
 tool = "oxfmt"
 when = ["edit", "commit", "ci"]
-files = ["web/**/*.{ts,tsx,js,mjs,json}", "tools/**/*.{js,mjs,json}"]
-status = "planned"
+files = ["web/**/*.{ts,tsx,js,mjs,json}", "tools/**/*.{js,mjs,json}", "design/**/*.json", "messages/**/*.json", "package.json", ".oxfmtrc.json", ".oxlintrc.json", "docs/design/*.js"]
+status = "active"
 
 [[check]]
 id = "FMT-CSS"
 title = "CSS is formatted"
 rule = "coding-standards §4"
-tool = "oxfmt, or Biome if oxfmt lacks CSS support at setup time"
+tool = "oxfmt (formats CSS too, so the Biome fallback is not needed)"
 when = ["edit", "commit", "ci"]
 files = ["**/*.css"]
-status = "planned"
+status = "active"
 
 [[check]]
 id = "FMT-TOML"
@@ -74,8 +74,8 @@ title = "oxlint finds no problems, including type-aware rules (TypeScript 7)"
 rule = "coding-standards §4"
 tool = "oxlint + oxlint-tsgolint"
 when = ["edit", "commit", "ci"]
-files = ["web/**/*.{ts,tsx}"]
-status = "planned"
+files = ["web/**/*.{ts,tsx}", "docs/design/*.js"]
+status = "active"
 
 [[check]]
 id = "LINT-CSS"
@@ -84,7 +84,16 @@ rule = "ADR-0010"
 tool = "stylelint (CSS Modules)"
 when = ["edit", "commit", "ci"]
 files = ["web/**/*.css"]
-status = "planned"
+status = "active"
+
+[[check]]
+id = "LINT-HTML"
+title = "Hand-written HTML pages are valid and accessible"
+rule = "coding-standards §7"
+tool = "html-validate (recommended and a11y presets)"
+when = ["edit", "commit", "ci"]
+files = ["docs/02-ux-design.html", "docs/mockups/*.html"]
+status = "active"
 
 [[check]]
 id = "LINT-TYPES"
@@ -93,7 +102,7 @@ rule = "coding-standards §4"
 tool = "tsc (TypeScript 7) --noEmit"
 when = ["push", "ci"]
 files = ["web/**/*.{ts,tsx}"]
-status = "planned"
+status = "active"
 
 [[check]]
 id = "LINT-SPELL"
@@ -165,8 +174,8 @@ title = "Message catalog: no missing, unused or duplicate keys; placeholders mat
 rule = "UX-07"
 tool = "xtask (parses messages/en.json and code references)"
 when = ["edit", "commit", "ci"]
-files = ["messages/**", "web/**/*.tsx", "crates/**/*.rs"]
-status = "planned"
+files = ["messages/**", "web/**/*.{ts,tsx}", "crates/**/*.rs"]
+status = "active"
 
 [[check]]
 id = "TXT-TERMS"
@@ -193,7 +202,7 @@ rule = "THM-03, UX-04"
 tool = "xtask (reads design/tokens.json)"
 when = ["commit", "ci"]
 files = ["design/tokens.json"]
-status = "planned"
+status = "active"
 
 # ───────────── Architecture ─────────────
 [[check]]
@@ -594,7 +603,7 @@ rule = "ADR-0023"
 tool = "xtask (scans vite, vitest and playwright configs)"
 when = ["edit", "commit", "ci"]
 files = ["web/**/vite.config.*", "web/**/vitest.config.*", "web/**/playwright.config.*", "tools/dev/ports.json"]
-status = "planned"
+status = "active"
 
 [[check]]
 id = "TEST-SAMPLE-DATA"

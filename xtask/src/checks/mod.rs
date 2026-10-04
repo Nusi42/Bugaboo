@@ -5,7 +5,17 @@
 //! or `tools/checks/fixtures/<ID>/`).
 
 mod build_location;
+mod dev_ports;
+mod fmt_css;
+mod fmt_ts;
+mod lint_css;
+mod lint_html;
+mod lint_ts;
+mod lint_types;
 mod meta_catalog;
+mod node_tool;
+mod sty_contrast;
+mod txt_catalog;
 
 use crate::catalog::Catalog;
 use crate::repo::Repo;
@@ -53,5 +63,14 @@ pub(crate) fn registry() -> Vec<Box<dyn Check>> {
     vec![
         Box::new(meta_catalog::MetaCatalog),
         Box::new(build_location::BuildLocation),
+        Box::new(fmt_ts::FmtTs),
+        Box::new(fmt_css::FmtCss),
+        Box::new(lint_ts::LintTs),
+        Box::new(lint_types::LintTypes),
+        Box::new(lint_css::LintCss),
+        Box::new(lint_html::LintHtml),
+        Box::new(dev_ports::DevPorts),
+        Box::new(sty_contrast::StyContrast),
+        Box::new(txt_catalog::TxtCatalog),
     ]
 }

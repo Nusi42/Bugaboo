@@ -1,0 +1,7 @@
+.box {
+  color: var(--fg);
+  background: var(--bg-canvas);
+  border: 1px solid var(--border);
+  margin: 0;
+  padding: var(--space-3);
+}

@@ -1,0 +1,39 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["typescript", "react", "unicorn", "oxc", "import", "jsx-a11y", "vitest"],
+  "categories": {
+    "correctness": "error",
+    "suspicious": "error",
+    "perf": "error",
+    "pedantic": "error"
+  },
+  "env": { "browser": true, "es2024": true },
+  "overrides": [
+    {
+      // Playwright hands tests mutable fixtures (page, context); their types cannot be readonly.
+      "files": ["web/app/e2e/**"],
+      "rules": { "typescript/prefer-readonly-parameter-types": "off" }
+    }
+  ],
+  "rules": {
+    "no-console": "error",
+    "no-eval": "error",
+    "no-new-func": "error",
+    "no-implied-eval": "error",
+    "typescript/no-explicit-any": "error",
+    "typescript/no-non-null-assertion": "error",
+    "typescript/ban-ts-comment": "error",
+    "react/no-danger": "error",
+    // No literal text in JSX children, string expressions or attributes (title, aria-label, alt,
+    // placeholder ...): all words come from the message catalog (coding-standards section 4).
+    // Only the input type values listed here are not text.
+    "react/jsx-no-literals": ["error", { "noStrings": true, "allowedStrings": ["radio"] }],
+    // Inline styles are not allowed; styles come from CSS Modules with design tokens (ADR-0010).
+    "react/forbid-dom-props": ["error", { "forbid": ["style"] }],
+    // Two narrow exceptions to the categories above (see docs/third-party and WP-02):
+    // the modern JSX transform (tsconfig "jsx": "react-jsx") needs no React in scope, and
+    // style sheets are imported only for their effect (design tokens, global styles).
+    "react/react-in-jsx-scope": "off",
+    "import/no-unassigned-import": ["error", { "allow": ["**/*.css"] }]
+  }
+}
