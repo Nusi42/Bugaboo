@@ -28,6 +28,13 @@ The repository lives in a folder that a sync service (OneDrive or similar) keeps
 - **One shared `CARGO_TARGET_DIR` for the user:** would also change the developer's other Rust projects on the same machine. Rejected.
 - **Git worktrees of the master:** Git state would live inside the synced folder and be written by every agent at once. Clones keep each folder independent. Rejected.
 
+## Amendment (M1)
+
+- **Edit hook decides by the edited file.** The Claude Code session often runs in the master, so `$CLAUDE_PROJECT_DIR` points into the synced folder for every agent. The `PostToolUse` command therefore looks at the edited file: it finds the nearest folder above it with `.git` and `xtask/Cargo.toml`, skips files in the synced folder or outside any work folder, and runs that work folder's own `cargo xtask hook post-edit`. Enforced by META-WIRING (the command is compared byte for byte).
+- **Agent memory in the repository.** Claude Code's memory files live in `.claude/memory/` and are committed like any doc; the master's ignored `.claude/settings.local.json` sets `autoMemoryDirectory` to `bugaboo.win1/.claude/memory`, so a session started in the master reads and writes the work folder's copy (never files in the synced folder).
+- **Git hooks in every work folder.** `cargo xtask setup` installs lefthook and the hooks; the master gets none, because nothing is committed there.
+- **If the sync service (for example OneDrive) turns the master's folders into cloud placeholders,** `git merge --ff-only WIN1` fails with "unable to unlink", "cannot create directory" or "Directory not empty", and `fsutil reparsepoint query <folder>` shows a tag instead of error 4390. Recovery, with nothing open in the master: move every top-level entry except `.git` into a backup folder outside the synced folder, run `git checkout HEAD -- .` in the master, then repeat the fast-forward. No `reset --hard`, no copying files by hand. Checked by review (the lead runs the `fsutil` query when a fast-forward fails).
+
 ## Enforced by
 
-BUILD-LOCATION (see `tools/checks/catalog.toml`).
+BUILD-LOCATION and META-WIRING (see `tools/checks/catalog.toml`); the recovery steps by review.
