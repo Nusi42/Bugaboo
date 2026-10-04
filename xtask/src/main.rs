@@ -7,6 +7,8 @@
 
 mod catalog;
 mod checks;
+#[path = "gen/mod.rs"]
+mod generate;
 mod location;
 mod output;
 mod repo;
@@ -36,6 +38,19 @@ enum Command {
     },
     /// List every check in the catalogue and whether it is implemented.
     List,
+    /// Write files that are generated from a single source.
+    Gen {
+        #[command(subcommand)]
+        target: GenTarget,
+    },
+}
+
+#[derive(Subcommand)]
+enum GenTarget {
+    /// CSS variables and TypeScript names from design/tokens.json.
+    Tokens,
+    /// Typed message keys from messages/en.json.
+    Messages,
 }
 
 #[derive(Subcommand)]
@@ -77,6 +92,14 @@ fn run() -> anyhow::Result<ExitCode> {
     match cli.command {
         Command::List => {
             output::list(&catalog, &registry);
+            Ok(ExitCode::SUCCESS)
+        }
+        Command::Gen { target } => {
+            let written = match target {
+                GenTarget::Tokens => generate::tokens::run(&repo)?,
+                GenTarget::Messages => generate::messages::run(&repo)?,
+            };
+            output::generated(&written);
             Ok(ExitCode::SUCCESS)
         }
         Command::Check { scope } => {

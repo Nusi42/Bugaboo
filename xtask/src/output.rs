@@ -57,3 +57,12 @@ pub(crate) fn list(catalog: &Catalog, registry: &[Box<dyn Check>]) {
 pub(crate) fn error(message: &str) {
     eprintln!("xtask: {message}");
 }
+
+pub(crate) fn generated(written: &[String]) {
+    if written.is_empty() {
+        println!("Everything is already up to date.");
+    }
+    for path in written {
+        println!("wrote {path}");
+    }
+}
