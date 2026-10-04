@@ -6,6 +6,7 @@ Read this before every task. The docs in `docs/` are the source of truth; this f
 
 - **Never build, install or run anything in the master repository** `<master>` (OneDrive). Work only in your work folder under `<work root>\bugaboo.winN`, on your branch `WINn` (ADR-0024).
 - Commit on your branch; push your branch to `origin` when your work package is done. Never push to `main`.
+- Run `cargo xtask setup` once in a fresh or reset folder: it installs the pinned tools and the Git hooks (commit and push run the checks). Never skip the hooks (`--no-verify`).
 
 ## Before you write code
 
@@ -37,6 +38,6 @@ A new session picks up the work like this:
 
 1. Find the current milestone: the highest `docs/milestones/Mx/` without an `mx-done` tag (`git tag`). Its `README.md` has the status of every work package.
 2. Check the builder branches: `git log --oneline main..origin/WINn` in `bugaboo.win1` after `git fetch`. A package marked *building* with no running builder (builders belong to the session that started them) and commits on its branch is finished or half-finished: check `cargo xtask ci` in its folder, then review it or start a builder to finish it.
-3. Follow "How we work" in `docs/04-milestones.md`: builders (Sonnet) in `bugaboo.win2` and up, reset to `main` first; reviewers with a fresh context; merge into `WIN1`, `cargo xtask ci`, push `WIN1`, `git merge --ff-only WIN1` in the master.
+3. Follow "How we work" in `docs/04-milestones.md`: builders (Sonnet) in `bugaboo.win2` and up, reset to `main` first (`git fetch origin && git checkout -B WINn origin/main`, then `cargo xtask setup`, which also installs the Git hooks); reviewers with a fresh context; merge into `WIN1`, `cargo xtask ci`, push `WIN1`, `git merge --ff-only WIN1` in the master.
 4. Every builder prompt repeats the rules in this file and names the work package file, the folder and the branch; the builder reports the commands it ran and their results.
 5. The maintainer reviews on a phone: milestone review pages and changed design docs are published as commentable HTML pages; replies stay short and name feature IDs.
