@@ -5,6 +5,7 @@
 //! (ARCH-EVENTS). A few technical writes are not domain changes and have their own methods: the
 //! time a session was last used, the encrypted secret of the code app, and the security log.
 
+use std::fmt;
 use std::future::Future;
 
 use bb_core::event::EntityRef;
@@ -22,7 +23,7 @@ use zeroize::Zeroizing;
 use crate::ports::ChangeStore;
 
 /// A person with the password hash they sign in with.
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct Account {
     /// The person.
     pub person: Person,
@@ -31,12 +32,34 @@ pub struct Account {
 }
 
 /// A session with the person it belongs to.
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct SessionRecord {
     /// The session.
     pub session: SignInSession,
     /// The person.
     pub person: Person,
+}
+
+// A password hash, a session hash and an e-mail address never show in a log or a failed test:
+// `Debug` writes only who it is.
+impl fmt::Debug for Account {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        formatter
+            .debug_struct("Account")
+            .field("person", &self.person.id)
+            .field("has_password", &self.password_hash.is_some())
+            .finish_non_exhaustive()
+    }
+}
+
+impl fmt::Debug for SessionRecord {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        formatter
+            .debug_struct("SessionRecord")
+            .field("session", &self.session.id)
+            .field("person", &self.person.id)
+            .finish_non_exhaustive()
+    }
 }
 
 /// The settings that sign-in depends on, as the registry resolves them.
@@ -199,5 +222,54 @@ pub trait AuthStore: ChangeStore + 'static {
         fn clear_setup_code() -> ();
         /// Stores the value of a setting of the whole organization.
         fn put_setting(key: &str, value: &SettingValue, at: Timestamp) -> ();
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use bb_core::id::{SessionId, UserId};
+    use bb_core::network::NetworkPrefix;
+    use bb_core::sign_in::SessionStage;
+
+    use super::*;
+
+    #[test]
+    fn sec_16_debug_output_of_an_account_and_a_session_hides_hashes_and_addresses() {
+        let person = Person {
+            id: UserId::from_random([3; 16]),
+            display_name: "Ada Lovelace".to_owned(),
+            email: "ada@example.test".to_owned(),
+            created_at: Timestamp::UNIX_EPOCH,
+            administrator: true,
+        };
+        let account = Account {
+            person: person.clone(),
+            password_hash: Some("$argon2id$PASSWORD-HASH".to_owned()),
+        };
+        let record = SessionRecord {
+            session: SignInSession {
+                id: SessionId::from_random([4; 16]),
+                person: person.id,
+                token_hash: Digest::new([0xAB; 32]),
+                stage: SessionStage::Active,
+                created_at: Timestamp::UNIX_EPOCH,
+                last_seen_at: Timestamp::UNIX_EPOCH,
+                network: NetworkPrefix::from_stored("203.0.113.0"),
+                device: "Firefox|Windows".to_owned(),
+            },
+            person: person.clone(),
+        };
+        let shown = format!("{account:?} {record:?}");
+        for secret in [
+            "PASSWORD-HASH",
+            "argon2",
+            "ada@example.test",
+            "Ada Lovelace",
+            "abababab",
+            "203.0.113",
+        ] {
+            assert!(!shown.contains(secret), "{secret} shows in {shown}");
+        }
+        assert!(shown.contains(&person.id.to_string()));
     }
 }
