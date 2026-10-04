@@ -16,7 +16,7 @@ impl Check for SecSecrets {
 
     fn run(&self, context: &Context<'_>) -> anyhow::Result<Vec<Finding>> {
         let staged = context.files.is_some();
-        scan(context.repo.root(), staged)
+        scan(context.repo.real_root(), staged)
     }
 }
 

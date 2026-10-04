@@ -17,6 +17,9 @@ use crate::metadata::{self, Package};
 /// Tooling crates that live in the workspace but are not part of the module map.
 const OUTSIDE_THE_MAP: &[&str] = &["xtask"];
 
+/// The database test harness: allowed as a dev-dependency only.
+const TEST_SUPPORT: &str = "bb-testing";
+
 pub(crate) struct ArchDeps;
 
 impl Check for ArchDeps {
@@ -52,6 +55,19 @@ fn evaluate(packages: &[Package], map: &Map) -> Vec<Finding> {
             continue;
         };
         for dependency in &package.dependencies {
+            if dependency.name == TEST_SUPPORT {
+                // Test support may be used by any crate's tests, and by nothing else.
+                if dependency.kind.as_deref() != Some("dev") {
+                    findings.push(Finding::at(
+                        name,
+                        format!(
+                            "depends on `{TEST_SUPPORT}` outside `[dev-dependencies]`. The test \
+                             harness must never become part of a shipped crate."
+                        ),
+                    ));
+                }
+                continue;
+            }
             // Only edges between workspace members count; crates.io names are not ours.
             if members.contains(dependency.name.as_str()) && !allowed.contains(&dependency.name) {
                 findings.push(Finding::at(
@@ -99,6 +115,44 @@ mod tests {
                 package(name, deps)
             })
             .collect()
+    }
+
+    #[test]
+    fn bad_example_the_test_harness_as_a_normal_dependency() {
+        let map = parse_map(MAP).unwrap();
+        let mut harness = package("bb-testing", &[]);
+        harness.name = "bb-testing".to_owned();
+        let mut store = package("bb-store", &["bb-testing"]);
+        let mut packages = crates(&[]);
+        packages.retain(|p| p.name != "bb-store");
+        store.dependencies[0].kind = None;
+        packages.extend([store, harness]);
+        let findings = evaluate(&packages, &map);
+        assert!(
+            findings
+                .iter()
+                .any(|f| f.message.contains("outside `[dev-dependencies]`")),
+            "{:?}",
+            findings.iter().map(|f| &f.message).collect::<Vec<_>>()
+        );
+    }
+
+    #[test]
+    fn good_example_the_test_harness_as_a_dev_dependency() {
+        let map = parse_map(MAP).unwrap();
+        let mut store = package("bb-store", &["bb-testing"]);
+        store.dependencies[0].kind = Some("dev".to_owned());
+        let mut packages = crates(&[]);
+        packages.retain(|p| p.name != "bb-store");
+        packages.extend([store, package("bb-testing", &[])]);
+        let findings = evaluate(&packages, &map);
+        assert!(
+            findings
+                .iter()
+                .all(|f| !f.message.contains("dev-dependencies")),
+            "{:?}",
+            findings.iter().map(|f| &f.message).collect::<Vec<_>>()
+        );
     }
 
     #[test]

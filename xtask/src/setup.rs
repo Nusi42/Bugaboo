@@ -13,6 +13,7 @@ use std::process::Command;
 use anyhow::{Context as _, bail};
 use sha2::{Digest as _, Sha256};
 
+use crate::bundle;
 use crate::output;
 use crate::repo::Repo;
 use crate::tools::{self, Tool};
@@ -28,8 +29,9 @@ pub(crate) fn run(repo: &Repo) -> anyhow::Result<()> {
         match tool.kind.as_str() {
             "cargo" => install_cargo(root, tool, &installed)?,
             "download" => install_download(root, tool)?,
+            "bundle" => bundle::install(root, tool)?,
             other => bail!(
-                "{}: unknown kind `{other}` in {}; use `cargo` or `download`.",
+                "{}: unknown kind `{other}` in {}; use `cargo`, `download` or `bundle`.",
                 tool.name,
                 tools::TOOLS_PATH
             ),
@@ -155,7 +157,7 @@ fn install_download_with(
 }
 
 /// Downloads `url` to `destination` with curl (present on every supported system).
-fn fetch(url: &str, destination: &Path) -> anyhow::Result<()> {
+pub(crate) fn fetch(url: &str, destination: &Path) -> anyhow::Result<()> {
     let status = Command::new("curl")
         .args([
             "--fail",
@@ -335,7 +337,10 @@ fn lock_is_installed(lock: &serde_json::Value, installed: &serde_json::Value) ->
     wanted
         .iter()
         .filter(|(key, entry)| {
-            !key.is_empty() && entry.get("link").and_then(serde_json::Value::as_bool) != Some(true)
+            // Workspace folders (`web/app`) are not in npm's hidden lockfile (M0-F12); only what
+            // lives below `node_modules/` is compared.
+            key.starts_with("node_modules/")
+                && entry.get("link").and_then(serde_json::Value::as_bool) != Some(true)
         })
         .all(|(key, entry)| {
             have.and_then(|have| have.get(key)).is_some_and(|there| {
@@ -490,5 +495,19 @@ mod tests {
         assert!(lock_is_installed(&lock, &lock.clone()));
         assert!(!lock_is_installed(&lock, &newer));
         assert!(!lock_is_installed(&lock, &empty));
+    }
+
+    #[test]
+    fn npm_workspace_folders_do_not_count_as_missing_packages() {
+        let lock: serde_json::Value = serde_json::from_str(
+            r#"{"packages":{"":{},"web/app":{"version":"0.0.0"},
+                "node_modules/a":{"version":"1.0.0","integrity":"x"}}}"#,
+        )
+        .unwrap();
+        let installed: serde_json::Value = serde_json::from_str(
+            r#"{"packages":{"node_modules/a":{"version":"1.0.0","integrity":"x"}}}"#,
+        )
+        .unwrap();
+        assert!(lock_is_installed(&lock, &installed));
     }
 }

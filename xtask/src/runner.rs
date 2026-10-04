@@ -35,8 +35,14 @@ pub(crate) fn run(
         Scope::Edit(files) | Scope::Staged(files) => Some(files.as_slice()),
         Scope::Push | Scope::All | Scope::Only(_) => None,
     };
+    // Commit-time checks look at an export of what will be committed, not at later edits
+    // (M0-F09). The working tree is only read, never written.
+    let staged = match scope {
+        Scope::Staged(_) => Some(repo.export_staged()?),
+        _ => None,
+    };
     let context = Context {
-        repo,
+        repo: staged.as_ref().map_or(repo, |tree| &tree.repo),
         catalog,
         files,
     };

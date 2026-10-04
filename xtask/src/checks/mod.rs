@@ -4,6 +4,7 @@
 //! [`Check`] here, and add a failing and a passing example (`bad_example` / `good_example` tests
 //! or `tools/checks/fixtures/<ID>/`).
 
+pub(crate) mod arch_db_parity;
 mod arch_deps;
 mod arch_errors;
 mod arch_map_sync;
@@ -11,7 +12,9 @@ mod arch_no_unsafe;
 mod arch_settings;
 mod arch_wasm;
 mod build_location;
+mod data_logs;
 mod data_marks;
+pub(crate) mod data_migrations;
 mod dep_licenses;
 mod dep_register;
 mod dev_ports;
@@ -42,6 +45,7 @@ pub(crate) mod meta_suppress;
 mod meta_wiring;
 mod node_tool;
 mod plan_trace;
+mod sec_headers;
 mod sec_secrets;
 mod sty_contrast;
 mod txt_catalog;
@@ -118,7 +122,11 @@ pub(crate) fn registry() -> Vec<Box<dyn Check>> {
         Box::new(arch_settings::ArchSettings),
         Box::new(arch_wasm::ArchWasm),
         Box::new(data_marks::DataMarks),
+        Box::new(arch_db_parity::ArchDbParity),
+        Box::new(data_migrations::DataMigrations),
         Box::new(sec_secrets::SecSecrets),
+        Box::new(sec_headers::SecHeaders),
+        Box::new(data_logs::DataLogs),
         Box::new(dep_register::DepRegister),
         Box::new(dep_licenses::DepLicenses),
         Box::new(git_files::GitFiles),

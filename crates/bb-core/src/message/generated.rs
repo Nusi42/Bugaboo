@@ -5,6 +5,21 @@ use super::{Message, MessageKey, Value};
 /// The message `app.name`.
 pub const APP_NAME: MessageKey = MessageKey::new("app.name");
 
+/// The message `config.data-dir-empty`.
+pub const CONFIG_DATA_DIR_EMPTY: MessageKey = MessageKey::new("config.data-dir-empty");
+
+/// The message `config.database-invalid`.
+pub const CONFIG_DATABASE_INVALID: MessageKey = MessageKey::new("config.database-invalid");
+
+/// The message `config.port-missing`.
+pub const CONFIG_PORT_MISSING: MessageKey = MessageKey::new("config.port-missing");
+
+/// The message `config.tls-files-missing`.
+pub const CONFIG_TLS_FILES_MISSING: MessageKey = MessageKey::new("config.tls-files-missing");
+
+/// The message `config.tls-files-unused`.
+pub const CONFIG_TLS_FILES_UNUSED: MessageKey = MessageKey::new("config.tls-files-unused");
+
 /// The message `error.access.forbidden`.
 pub const ERROR_ACCESS_FORBIDDEN: MessageKey = MessageKey::new("error.access.forbidden");
 
@@ -42,6 +57,24 @@ pub const HELLO_INTRO: MessageKey = MessageKey::new("hello.intro");
 /// The message `hello.title`.
 pub const HELLO_TITLE: MessageKey = MessageKey::new("hello.title");
 
+/// The message `server.database-built-in`.
+pub const SERVER_DATABASE_BUILT_IN: MessageKey = MessageKey::new("server.database-built-in");
+
+/// The message `server.database-postgres`.
+pub const SERVER_DATABASE_POSTGRES: MessageKey = MessageKey::new("server.database-postgres");
+
+/// The message `server.database-sqlite`.
+pub const SERVER_DATABASE_SQLITE: MessageKey = MessageKey::new("server.database-sqlite");
+
+/// The message `server.not-found`.
+pub const SERVER_NOT_FOUND: MessageKey = MessageKey::new("server.not-found");
+
+/// The message `server.signal-failed`.
+pub const SERVER_SIGNAL_FAILED: MessageKey = MessageKey::new("server.signal-failed");
+
+/// The message `server.web-app-missing`.
+pub const SERVER_WEB_APP_MISSING: MessageKey = MessageKey::new("server.web-app-missing");
+
 /// The message `setting.appearance.theme.help`.
 pub const SETTING_APPEARANCE_THEME_HELP: MessageKey =
     MessageKey::new("setting.appearance.theme.help");
@@ -72,12 +105,218 @@ pub const THEME_MIDNIGHT: MessageKey = MessageKey::new("theme.midnight");
 /// The message `theme.paper`.
 pub const THEME_PAPER: MessageKey = MessageKey::new("theme.paper");
 
+/// The message `config.address-invalid`.
+#[must_use]
+pub fn config_address_invalid(value: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("config.address-invalid"),
+        vec![("value", Value::Text(value.to_string()))],
+    )
+}
+
+/// The message `config.file-invalid`.
+#[must_use]
+pub fn config_file_invalid(
+    path: impl std::fmt::Display,
+    reason: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("config.file-invalid"),
+        vec![
+            ("path", Value::Text(path.to_string())),
+            ("reason", Value::Text(reason.to_string())),
+        ],
+    )
+}
+
+/// The message `config.file-unknown-key`.
+#[must_use]
+pub fn config_file_unknown_key(
+    known: impl std::fmt::Display,
+    name: impl std::fmt::Display,
+    path: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("config.file-unknown-key"),
+        vec![
+            ("known", Value::Text(known.to_string())),
+            ("name", Value::Text(name.to_string())),
+            ("path", Value::Text(path.to_string())),
+        ],
+    )
+}
+
+/// The message `config.file-unreadable`.
+#[must_use]
+pub fn config_file_unreadable(
+    path: impl std::fmt::Display,
+    reason: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("config.file-unreadable"),
+        vec![
+            ("path", Value::Text(path.to_string())),
+            ("reason", Value::Text(reason.to_string())),
+        ],
+    )
+}
+
+/// The message `config.file-wrong-type`.
+#[must_use]
+pub fn config_file_wrong_type(
+    name: impl std::fmt::Display,
+    path: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("config.file-wrong-type"),
+        vec![
+            ("name", Value::Text(name.to_string())),
+            ("path", Value::Text(path.to_string())),
+        ],
+    )
+}
+
+/// The message `config.log-level-invalid`.
+#[must_use]
+pub fn config_log_level_invalid(value: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("config.log-level-invalid"),
+        vec![("value", Value::Text(value.to_string()))],
+    )
+}
+
+/// The message `config.number-invalid`.
+#[must_use]
+pub fn config_number_invalid(
+    name: impl std::fmt::Display,
+    value: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("config.number-invalid"),
+        vec![
+            ("name", Value::Text(name.to_string())),
+            ("value", Value::Text(value.to_string())),
+        ],
+    )
+}
+
+/// The message `config.port-invalid`.
+#[must_use]
+pub fn config_port_invalid(value: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("config.port-invalid"),
+        vec![("value", Value::Text(value.to_string()))],
+    )
+}
+
+/// The message `config.proxy-invalid`.
+#[must_use]
+pub fn config_proxy_invalid(value: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("config.proxy-invalid"),
+        vec![("value", Value::Text(value.to_string()))],
+    )
+}
+
+/// The message `config.tls-mode-invalid`.
+#[must_use]
+pub fn config_tls_mode_invalid(value: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("config.tls-mode-invalid"),
+        vec![("value", Value::Text(value.to_string()))],
+    )
+}
+
+/// The message `config.tls-off-public`.
+#[must_use]
+pub fn config_tls_off_public(address: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("config.tls-off-public"),
+        vec![("address", Value::Text(address.to_string()))],
+    )
+}
+
+/// The message `data-folder.create-failed`.
+#[must_use]
+pub fn data_folder_create_failed(
+    path: impl std::fmt::Display,
+    reason: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("data-folder.create-failed"),
+        vec![
+            ("path", Value::Text(path.to_string())),
+            ("reason", Value::Text(reason.to_string())),
+        ],
+    )
+}
+
+/// The message `data-folder.protect-failed`.
+#[must_use]
+pub fn data_folder_protect_failed(
+    path: impl std::fmt::Display,
+    reason: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("data-folder.protect-failed"),
+        vec![
+            ("path", Value::Text(path.to_string())),
+            ("reason", Value::Text(reason.to_string())),
+        ],
+    )
+}
+
 /// The message `hello.current`.
 #[must_use]
 pub fn hello_current(theme: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("hello.current"),
         vec![("theme", Value::Text(theme.to_string()))],
+    )
+}
+
+/// The message `server.error`.
+#[must_use]
+pub fn server_error(message: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("server.error"),
+        vec![("message", Value::Text(message.to_string()))],
+    )
+}
+
+/// The message `server.listening`.
+#[must_use]
+pub fn server_listening(address: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("server.listening"),
+        vec![("address", Value::Text(address.to_string()))],
+    )
+}
+
+/// The message `server.port-busy`.
+#[must_use]
+pub fn server_port_busy(port: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("server.port-busy"),
+        vec![("port", Value::Text(port.to_string()))],
+    )
+}
+
+/// The message `server.self-signed`.
+#[must_use]
+pub fn server_self_signed(path: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("server.self-signed"),
+        vec![("path", Value::Text(path.to_string()))],
+    )
+}
+
+/// The message `server.warning`.
+#[must_use]
+pub fn server_warning(message: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("server.warning"),
+        vec![("message", Value::Text(message.to_string()))],
     )
 }
 
@@ -96,9 +335,150 @@ pub fn theme_device_resolved(
     )
 }
 
+/// The message `tls.generate-failed`.
+#[must_use]
+pub fn tls_generate_failed(reason: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("tls.generate-failed"),
+        vec![("reason", Value::Text(reason.to_string()))],
+    )
+}
+
+/// The message `tls.key-readable`.
+#[must_use]
+pub fn tls_key_readable(path: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("tls.key-readable"),
+        vec![("path", Value::Text(path.to_string()))],
+    )
+}
+
+/// The message `tls.no-certificate`.
+#[must_use]
+pub fn tls_no_certificate(path: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("tls.no-certificate"),
+        vec![("path", Value::Text(path.to_string()))],
+    )
+}
+
+/// The message `tls.no-key`.
+#[must_use]
+pub fn tls_no_key(path: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("tls.no-key"),
+        vec![("path", Value::Text(path.to_string()))],
+    )
+}
+
+/// The message `tls.read-failed`.
+#[must_use]
+pub fn tls_read_failed(path: impl std::fmt::Display, reason: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("tls.read-failed"),
+        vec![
+            ("path", Value::Text(path.to_string())),
+            ("reason", Value::Text(reason.to_string())),
+        ],
+    )
+}
+
+/// The message `tls.unusable`.
+#[must_use]
+pub fn tls_unusable(reason: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("tls.unusable"),
+        vec![("reason", Value::Text(reason.to_string()))],
+    )
+}
+
+/// The message `tls.write-failed`.
+#[must_use]
+pub fn tls_write_failed(path: impl std::fmt::Display, reason: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("tls.write-failed"),
+        vec![
+            ("path", Value::Text(path.to_string())),
+            ("reason", Value::Text(reason.to_string())),
+        ],
+    )
+}
+
 /// Every message, sorted by key.
 pub(super) const CATALOG: &[(&str, &str)] = &[
     ("app.name", "Bugaboo"),
+    (
+        "config.address-invalid",
+        "The address {value} is not an IP address such as 127.0.0.1 or ::1.",
+    ),
+    (
+        "config.data-dir-empty",
+        "The data folder is empty text. Give the path of a folder.",
+    ),
+    (
+        "config.database-invalid",
+        "The database address must start with sqlite: or postgres:// (or postgresql://).",
+    ),
+    (
+        "config.file-invalid",
+        "The settings file {path} is not valid: {reason}",
+    ),
+    (
+        "config.file-unknown-key",
+        "The settings file {path} has a setting Bugaboo does not know: {name}. Known settings are: {known}.",
+    ),
+    (
+        "config.file-unreadable",
+        "The settings file {path} could not be read: {reason}",
+    ),
+    (
+        "config.file-wrong-type",
+        "The setting {name} in {path} must be a text, a number or a list of texts.",
+    ),
+    (
+        "config.log-level-invalid",
+        "The log level {value} is not known. Use error, warn, info or debug.",
+    ),
+    (
+        "config.number-invalid",
+        "The setting {name} must be a whole number of 1 or more, not {value}.",
+    ),
+    (
+        "config.port-invalid",
+        "The port {value} is not a number from 1 to 65535.",
+    ),
+    (
+        "config.port-missing",
+        "No port is set. Set port in bugaboo.toml, set BUGABOO_PORT, or start with --port.",
+    ),
+    (
+        "config.proxy-invalid",
+        "The trusted proxy {value} is not an IP address.",
+    ),
+    (
+        "config.tls-files-missing",
+        "HTTPS mode files needs both tls_cert and tls_key.",
+    ),
+    (
+        "config.tls-files-unused",
+        "tls_cert and tls_key are only used with HTTPS mode files. Remove them or change the mode.",
+    ),
+    (
+        "config.tls-mode-invalid",
+        "The HTTPS mode {value} is not known. Use self-signed, files or off.",
+    ),
+    (
+        "config.tls-off-public",
+        "HTTPS cannot be switched off on {address}, because anyone on the network could read what is sent. Use 127.0.0.1 or ::1, or list the proxy that adds HTTPS in trusted_proxies.",
+    ),
+    (
+        "data-folder.create-failed",
+        "The data folder {path} could not be prepared: {reason}",
+    ),
+    (
+        "data-folder.protect-failed",
+        "The data folder {path} could not be made private to its owner: {reason}",
+    ),
     ("error.access.forbidden", "You are not allowed to do that."),
     ("error.auth.not-signed-in", "Please sign in to continue."),
     (
@@ -134,6 +514,35 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("hello.title", "Hello Bugaboo"),
     (
+        "server.database-built-in",
+        "Database: built-in SQLite in the data folder.",
+    ),
+    ("server.database-postgres", "Database: PostgreSQL."),
+    ("server.database-sqlite", "Database: SQLite."),
+    ("server.error", "Error: {message}"),
+    (
+        "server.listening",
+        "Bugaboo is running at {address}. Stop it with Ctrl+C.",
+    ),
+    ("server.not-found", "Not found"),
+    (
+        "server.port-busy",
+        "Port {port} is busy or not allowed. Choose another port.",
+    ),
+    (
+        "server.self-signed",
+        "HTTPS uses a certificate made by Bugaboo, so browsers warn until you trust it. The certificate is in {path}.",
+    ),
+    (
+        "server.signal-failed",
+        "Bugaboo could not listen for the stop signal (Ctrl+C), so it cannot be stopped cleanly.",
+    ),
+    ("server.warning", "Warning: {message}"),
+    (
+        "server.web-app-missing",
+        "The browser app is not built yet. Run `cargo xtask build`, or pass --web <folder>.",
+    ),
+    (
         "setting.appearance.theme.help",
         "The colors Bugaboo uses on your screen. Match my device follows the light or dark setting of your device.",
     ),
@@ -152,4 +561,29 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("theme.legend", "Theme"),
     ("theme.midnight", "Midnight"),
     ("theme.paper", "Paper"),
+    (
+        "tls.generate-failed",
+        "Bugaboo could not make a certificate: {reason}",
+    ),
+    (
+        "tls.key-readable",
+        "The private key {path} can be read by other people on this computer. Make it readable by the account that runs Bugaboo only.",
+    ),
+    (
+        "tls.no-certificate",
+        "The file {path} has no certificate in it.",
+    ),
+    ("tls.no-key", "The file {path} has no private key in it."),
+    (
+        "tls.read-failed",
+        "The file {path} could not be read: {reason}",
+    ),
+    (
+        "tls.unusable",
+        "The certificate and the private key cannot be used: {reason}",
+    ),
+    (
+        "tls.write-failed",
+        "The file {path} could not be written: {reason}",
+    ),
 ];

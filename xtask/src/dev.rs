@@ -35,12 +35,24 @@ impl Ports {
     }
 
     pub(crate) fn load(root: &Path) -> anyhow::Result<Self> {
-        let path = std::env::var_os(PORTS_FILE_VARIABLE)
-            .map_or_else(|| root.join(PORTS_FILE), PathBuf::from);
-        let json = std::fs::read_to_string(&path)
-            .with_context(|| format!("could not read {}", path.display()))?;
-        Self::parse(&json)
+        Self::parse(&read_ports(root)?)
     }
+
+    /// One port by its key in the file (for tools other than `dev`, such as `db`).
+    pub(crate) fn load_port(root: &Path, key: &str) -> anyhow::Result<u16> {
+        let json: serde_json::Value = serde_json::from_str(&read_ports(root)?)
+            .with_context(|| format!("{PORTS_FILE} is not valid"))?;
+        json.get(key)
+            .and_then(serde_json::Value::as_u64)
+            .and_then(|port| u16::try_from(port).ok())
+            .with_context(|| format!("{PORTS_FILE} has no port `{key}`"))
+    }
+}
+
+fn read_ports(root: &Path) -> anyhow::Result<String> {
+    let path =
+        std::env::var_os(PORTS_FILE_VARIABLE).map_or_else(|| root.join(PORTS_FILE), PathBuf::from);
+    std::fs::read_to_string(&path).with_context(|| format!("could not read {}", path.display()))
 }
 
 /// A started program that is stopped again when this value goes away.
@@ -106,6 +118,9 @@ pub(crate) fn run(root: &Path) -> anyhow::Result<bool> {
         child: spawn(
             Command::new(server)
                 .args(["serve", "--port", &ports.server.to_string()])
+                // Development runs on this computer only, so plain HTTP is allowed (SEC-10); its
+                // data stays inside the work folder's build folder.
+                .args(["--tls", "off", "--data-dir", "target/dev-data"])
                 .current_dir(root),
             "bugaboo server",
         )?,

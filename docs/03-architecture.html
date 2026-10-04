@@ -168,6 +168,7 @@
 │   ├── bb-jobs/            background job runner and schedules
 │   ├── bb-api/             HTTP: routes, OpenAPI, security headers, rate limits, static app
 │   ├── bb-wasm/            WebAssembly bindings for searchlang, markdown, validation
+│   ├── bb-testing/         test harness: runs one test body on SQLite and PostgreSQL (dev dependency only)
 │   └── bb-server/          the `bugaboo` binary: CLI, setup wizard, service install, wiring
 ├── xtask/                  the single check/build runner (cargo xtask …)
 ├── tools/                  check catalogue, pinned tool versions, dev ports
@@ -200,6 +201,7 @@
   notify["bb-notify"]
   jobs["bb-jobs"]
   wasm["bb-wasm"]
+  testing["bb-testing&lt;br/&gt;database test harness"]
 
   server --&gt; api &amp; jobs &amp; store &amp; files &amp; ai &amp; notify &amp; auth &amp; core
   api --&gt; app &amp; auth &amp; mcp &amp; core
@@ -213,7 +215,8 @@
   ai -. implements ports .-&gt; app
   notify -. implements ports .-&gt; app
   store --&gt; search &amp; policy
-  wasm --&gt; search &amp; md</pre>
+  wasm --&gt; search &amp; md
+  store -. tests only .-&gt; testing</pre>
 <h4>Dependency rules (checked by <code>cargo xtask check only ARCH-DEPS</code>)</h4>
 <ol>
 <li><code>bb-core</code>, <code>bb-searchlang</code> and <code>bb-markdown</code> do no I/O and depend on no other Bugaboo crate except <code>bb-core</code> (searchlang and markdown not even that; <code>bb-core</code> uses <code>bb-macros</code> for derives at compile time only), so they compile to WebAssembly.</li>
@@ -250,6 +253,8 @@
 </ol>
 <h4>bb-store</h4>
 <p>sqlx connection pools, migrations (defined once with the query builder, run on both databases), repositories implementing <code>bb-app</code> ports, the <strong>search compiler</strong> (syntax tree + permission predicates → SQL), full-text search adapters, the event log and outbox, and the job queue tables.</p>
+<h4>bb-testing</h4>
+<p>Test-support crate, used only as a <strong>dev dependency</strong> (<code>[dev-dependencies]</code>) and never shipped (ARCH-DEPS fails on any other kind of dependency on it). <code>each_database</code> runs one async test body against every database named in <code>BB_TEST_DATABASES</code> (<code>sqlite</code>, <code>postgres</code>; default <code>sqlite</code>), each with a brand-new empty database that is removed afterwards (also when the test panics), hands the body a typed pool (<code>Pool::Sqlite</code> or <code>Pool::Postgres</code>), and records what ran for ARCH-DB-PARITY. It depends on no other Bugaboo crate. How it is wired to <code>cargo xtask db</code> and <code>cargo xtask ci</code> is in <span title="11-testing.md#database-tests in the repository">testing</span>.</p>
 <h4>bb-api</h4>
 <p>axum router; extractors that turn a session cookie, access key or OAuth token into an <strong>actor</strong>; CSRF and origin checks; security headers and CSP; rate limits; <code>?fields=</code> projections; cursor pagination; ETags; problem+json errors; OpenAPI generation; the embedded static app.</p>
 <h4>bb-ai and bb-mcp</h4>
@@ -406,11 +411,37 @@
 <ul>
 <li><strong>Install:</strong> download, <code>bugaboo setup</code> (data folder, port, HTTPS), <code>bugaboo service install</code>, then the browser setup with the setup code.</li>
 <li><strong>Start-up settings</strong> (address, port, data folder, certificates, database URL) live in <code>bugaboo.toml</code> or environment variables. Everything else is in the database and changed in the UI.</li>
-<li><strong>HTTPS:</strong> built-in TLS with a generated certificate, a provided certificate, or ACME. Plain HTTP only on localhost or behind an explicitly trusted proxy.</li>
+<li><strong>HTTPS (SEC-10):</strong> built-in TLS (rustls with the <code>ring</code> provider) with a generated certificate, a provided certificate, or ACME (V1). Plain HTTP is allowed only on this computer (<code>127.0.0.1</code>, <code>::1</code>) or behind explicitly named proxies. Enforced by: the start-up settings check (tests <code>sec_10_…</code> in <code>crates/bb-server</code>) and SEC-HEADERS for HSTS.</li>
 <li><strong>Master key:</strong> generated on first start, stored outside the database, readable only by the service account. It encrypts stored secrets and backups.</li>
 <li><strong>Upgrades:</strong> replace the binary; on start, Bugaboo makes a backup, then runs migrations. If a migration fails, it restores the backup and stops with a plain explanation of how to go back to the previous version.</li>
 <li><strong>Also offered:</strong> container image (non-root, read-only file system except the data volume), winget/MSI, .deb/.rpm.</li>
 </ul>
+<h4>Start-up settings (OPS-10)</h4>
+<p>Read when the server starts, strongest first: command line, environment variable, <code>bugaboo.toml</code>, built-in default. Each setting has the same name everywhere; its variable is <code>BUGABOO_</code> plus the name in capitals. Wrong values stop the start with a plain sentence (messages <code>config.*</code>).</p>
+<div class="tbl-wrap"><table class="dtable"><thead><tr><th>Setting</th><th>Meaning</th><th>Default</th></tr></thead><tbody>
+<tr><td><code>address</code></td><td>IP address to listen on</td><td><code>127.0.0.1</code></td></tr>
+<tr><td><code>port</code></td><td>Port to listen on</td><td>none; the start stops without one (ADR-0023)</td></tr>
+<tr><td><code>data_dir</code></td><td>The data folder</td><td><code>bugaboo-data</code> next to the program</td></tr>
+<tr><td><code>database_url</code></td><td><code>sqlite:…</code> or <code>postgres://…</code>; empty means the built-in SQLite file in the data folder</td><td>empty</td></tr>
+<tr><td><code>tls_mode</code></td><td><code>self-signed</code>, <code>files</code> or <code>off</code></td><td><code>self-signed</code></td></tr>
+<tr><td><code>tls_cert</code>, <code>tls_key</code></td><td>Certificate chain and private key (PEM), with <code>tls_mode = "files"</code></td><td>none</td></tr>
+<tr><td><code>tls_names</code></td><td>Extra host names or addresses for the generated certificate</td><td>none</td></tr>
+<tr><td><code>trusted_proxies</code></td><td>Addresses of proxies that add HTTPS; with <code>tls_mode = "off"</code> only they may connect</td><td>none</td></tr>
+<tr><td><code>log_level</code></td><td><code>error</code>, <code>warn</code>, <code>info</code> or <code>debug</code></td><td><code>info</code></td></tr>
+<tr><td><code>max_connections</code></td><td>Most connections open at once</td><td><code>1024</code></td></tr>
+<tr><td><code>header_timeout_seconds</code></td><td>Time allowed for a client to send the headers of a request</td><td><code>30</code></td></tr>
+</tbody></table>
+</div>
+<p><code>tls_mode = "off"</code> on an address that is not this computer is refused unless <code>trusted_proxies</code> is set. The settings file can be named with <code>--config</code> or <code>BUGABOO_CONFIG</code>; without a name <code>bugaboo.toml</code> next to the program is read if it exists. Defaults are relative to the program's folder, not the current folder (a Windows service starts in <code>System32</code>); relative paths inside the file are relative to the file. With <code>tls_mode = "files"</code> on Linux, a key file that group or others can read is reported as a warning. Enforced by: review (the tests <code>ops_10_…</code> and <code>sec_10_…</code> in <code>crates/bb-server</code> cover it; no catalogue check yet).</p>
+<h4>Data folder</h4>
+<pre><code>bugaboo.db   the built-in database (made by the store)
+files/       attachments
+keys/        the master key and other secrets
+backups/     backups
+tls/         the generated certificate and its key</code></pre>
+<p>Folders that Bugaboo creates are readable by their owner only: mode <code>0700</code> on Linux, and on Windows an access list that grants only the account running Bugaboo. Key and certificate files are written with mode <code>0600</code> on Linux. <code>keys/</code> and <code>tls/</code> are checked on <strong>every start</strong> and made private again if someone loosened them (Windows: the access list is reset to the running account, found by its SID, not its name). Certificate and key are written as new files and renamed into place (key first, certificate second), and a key that does not belong to the certificate is replaced. A self-signed certificate is valid for one year and renewed when less than 30 days are left at start-up, or when <code>tls_names</code> changes. Enforced by: tests <code>sec_16_…</code> and <code>sec_10_…</code>.</p>
+<h4>One file per system (OPS-01, DIST-01)</h4>
+<p><code>cargo xtask build</code> builds the browser app and then the release program with the browser app inside (<code>rust-embed</code>); <code>--target</code> builds for another system. Windows x64 is built on the development PC. Static Linux programs (<code>x86_64-unknown-linux-musl</code>, <code>aarch64-unknown-linux-musl</code>) are built by <code>cargo xtask ci</code> on Linux machines, which the CI workflow runs once the repository is on GitHub. Windows ARM64 waits for the MSVC ARM64 tools (follow-up M1-F01). The program has no edition or model switch: differences between self-hosted and hosted come from the settings above only.</p>
 <h3 id="s6-2"><button class="sec" data-sec>§6.2</button>Served: we run it (hosted by Bugaboo)</h3>
 <pre class="mermaid">flowchart TB
   subgraph eu["EU data centre"]
@@ -468,6 +499,11 @@
 <ul>
 <li><strong>Content Security Policy:</strong> <code>default-src 'self'</code>; scripts and styles only from our own origin, no inline code, no <code>eval</code>; <code>frame-ancestors 'none'</code>; <code>require-trusted-types-for 'script'</code>; images from our origin and <code>data:</code> only (outside images only if an admin allows the host).</li>
 <li><strong>Other headers:</strong> HSTS, <code>X-Content-Type-Options: nosniff</code>, COOP/CORP, a tight Permissions-Policy, <code>Referrer-Policy: same-origin</code>.</li>
+<li><strong>One header layer</strong> wraps the whole router, so pages, files, API answers, errors and 404s carry the same set. Enforced by: SEC-HEADERS (the check compares the header table with the values the integration tests expect, exactly; the tests assert the full set on a page, an asset, an API error and a 404).</li>
+<li><strong>HSTS</strong> is sent only when browsers reach us over HTTPS (here, or at a trusted proxy), and <strong>never with <code>includeSubDomains</code></strong> (Bugaboo does not own the other names of its host). Lifetime: <strong>one day</strong> with a certificate Bugaboo made itself, so a person who trusts that certificate on <code>localhost</code> does not pin every other local tool to HTTPS; <strong>one year</strong> with a provided certificate or behind a trusted proxy. Enforced by: SEC-HEADERS (no <code>includeSubDomains</code>) and the tests <code>sec_11_hsts_…</code>.</li>
+<li><strong>Compression:</strong> Brotli or gzip for text, but <strong>never for JSON</strong> (API answers, problem+json): a compressed answer that mixes a secret with text an attacker chooses can leak the secret (BREACH). Enforced by: review (a person decides when another content type needs the same care), backed by the test <code>sec_11_json_answers_are_not_compressed</code>.</li>
+<li><strong>Slow and many clients:</strong> a client has 30 seconds (setting <code>header_timeout_seconds</code>) to send the headers of a request, which also ends idle keep-alive connections; HTTP/2 connections are pinged at the same interval. At most 1024 connections (setting <code>max_connections</code>) and 256 TLS handshakes run at once. Request-body timeouts come with the first endpoint that reads a body (M1-F06). Enforced by: the tests <code>sec_10_…slowly…</code> and <code>sec_10_no_more_connections…</code>.</li>
+<li><strong>Client address:</strong> the address of the connection is used, with IPv4-mapped IPv6 (<code>::ffff:a.b.c.d</code>) always treated as IPv4. <code>X-Forwarded-For</code> is believed only from a listed trusted proxy, and supports <strong>exactly one trusted hop</strong>: the last entry of the last header line is what the proxy itself saw; earlier entries are what the client claimed and are ignored. Enforced by: the tests <code>sec_10_forwarded_for_…</code> and <code>sec_10_mapped_…</code>.</li>
 <li><strong>User content</strong> is rendered by one Markdown renderer with an allow list (ADR-0011). Attachments are downloaded, never rendered inline unless they are images or PDFs converted to safe previews.</li>
 </ul>
 <h4>Secrets and keys</h4>
@@ -598,8 +634,8 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 </ul>
 <h3 id="s7-10"><button class="sec" data-sec>§7.10</button>Observability</h3>
 <ul>
-<li>Structured JSON logs (<code>tracing</code>) with request IDs; no personal data in logs.</li>
-<li>Health endpoints (<code>/health/live</code>, <code>/health/ready</code>); optional Prometheus metrics, off by default and protected.</li>
+<li>Structured JSON logs (<code>tracing</code>, one object per line on standard error) with random request IDs. One line per request holds the request ID, method, route pattern, status, duration and the client network cut short (IPv4 <code>/24</code>, IPv6 <code>/48</code>); never the path as typed, the query, headers, bodies, names, e-mail addresses or free text. Enforced by: DATA-LOGS.</li>
+<li>Health endpoints: <code>/health/live</code> answers while the process runs; <code>/health/ready</code> also checks the data folder (and the database once the store exists) and answers 503 when something is missing; both are sent with <code>Cache-Control: no-store</code>; optional Prometheus metrics, off by default and protected.</li>
 <li>The admin <em>Status</em> page shows version, database, disk, jobs, backups and certificate expiry.</li>
 </ul>
 <h3 id="s7-11"><button class="sec" data-sec>§7.11</button>Performance</h3>
@@ -870,17 +906,17 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 <tr><td><code>ARCH-MAP-SYNC</code></td><td>The module map in the architecture docs lists exactly the crates and packages that exist</td><td>architecture §4, COMP-06</td><td>xtask (parses 04-building-blocks.md vs workspace)</td><td>push · ci</td></tr>
 <tr><td><code>ARCH-DOC-CHANGE</code></td><td>Changed boundaries, interfaces or dependencies come with a doc or decision-record change</td><td>COMP-06, coding-standards §5</td><td>xtask (diff against main)</td><td>push · ci</td></tr>
 <tr><td><code>ARCH-NO-UNSAFE</code></td><td>Every crate forbids unsafe code unless an ADR allows it</td><td>coding-standards §3</td><td>xtask (checks #![forbid(unsafe_code)] in crate roots)</td><td>commit · ci</td></tr>
-<tr><td><code>ARCH-DB-PARITY</code></td><td>Repository tests ran on both SQLite and PostgreSQL</td><td>ADR-0003</td><td>CI matrix + xtask (compares test reports)</td><td>ci</td></tr>
+<tr><td><code>ARCH-DB-PARITY</code></td><td>Repository tests ran on both SQLite and PostgreSQL</td><td>ADR-0003</td><td>xtask (reads target/db-parity.txt written by the test harness)</td><td>ci</td></tr>
 <tr><td><code>ARCH-PERSON-REF</code></td><td>People are only shown through PersonRef, resolved for the viewer (names, role only or Someone)</td><td>ADR-0022, PRIV-12</td><td>ast-grep + serialization test</td><td>edit · commit · ci</td></tr>
 <tr><td><code>ARCH-NO-COUNTERS</code></td><td>No public identifier or label counts up (IDs, former-user labels); no totals that include hidden items</td><td>ADR-0021, PRIV-13</td><td>ast-grep + OpenAPI review rules</td><td>commit · ci</td></tr>
 <tr><td><code>TEST-ISSUE-IDS</code></td><td>Counting and random IDs: unique, readable alphabet, old IDs redirect after moves and mode changes</td><td>ADR-0021</td><td>unit + property tests</td><td>ci</td></tr>
 <tr><td><code>SEC-SECRETS</code></td><td>No keys, tokens or passwords committed</td><td>SEC-16</td><td>gitleaks</td><td>commit · ci</td></tr>
 <tr><td><code>SEC-PATTERNS</code></td><td>No unwrap/expect/panic in production code, no dangerouslySetInnerHTML, eval or new Function</td><td>coding-standards §3, §4</td><td>ast-grep</td><td>edit · commit · ci</td></tr>
 <tr><td><code>SEC-MATRIX</code></td><td>Generated permission matrix passes for every entry point (UI API, search, MCP, assistant, e-mail, webhooks, exports)</td><td>ADR-0004</td><td>generated tests</td><td>ci</td></tr>
-<tr><td><code>SEC-HEADERS</code></td><td>Running server sends the required security headers and CSP</td><td>SEC-11</td><td>integration test</td><td>ci</td></tr>
+<tr><td><code>SEC-HEADERS</code></td><td>Running server sends the required security headers and CSP</td><td>SEC-11</td><td>xtask (header table and tests agree with SEC-11) + integration tests in crates/bb-api/tests</td><td>edit · commit · ci</td></tr>
 <tr><td><code>SEC-ADVISORIES</code></td><td>No known vulnerabilities without a VEX statement</td><td>COMP-03</td><td>cargo-deny advisories + OSV for npm</td><td>ci · nightly</td></tr>
 <tr><td><code>DATA-MARKS</code></td><td>Every stored field is marked as personal data or not</td><td>ADR-0015, PRIV-02</td><td>derive macro (compile error) + xtask report</td><td>edit · ci</td></tr>
-<tr><td><code>DATA-LOGS</code></td><td>No names, e-mail addresses or free text in log statements</td><td>architecture §7 (Observability), PRIV-01</td><td>ast-grep (tracing macros with personal fields)</td><td>edit · commit · ci</td></tr>
+<tr><td><code>DATA-LOGS</code></td><td>No names, e-mail addresses or free text in log statements</td><td>architecture §7 (Observability), PRIV-01</td><td>xtask (reads every tracing macro in product code)</td><td>edit · commit · ci</td></tr>
 <tr><td><code>DATA-MIGRATIONS</code></td><td>Schema is defined once; migrations run on both databases from one source</td><td>ADR-0003</td><td>xtask (no .sql migration files; migration test on both)</td><td>ci</td></tr>
 <tr><td><code>DEP-REGISTER</code></td><td>Every direct dependency has a third-party register entry, and every entry a dependency</td><td>COMP-02, coding-standards §5</td><td>xtask (lockfiles vs docs/third-party)</td><td>push · ci</td></tr>
 <tr><td><code>DEP-LICENSES</code></td><td>Only licenses on the allow list ship</td><td>architecture §1 (licenses)</td><td>cargo-deny licenses + npm license check against the same list</td><td>push · ci</td></tr>
@@ -926,7 +962,17 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 <tr><td>Performance</td><td><code>cargo xtask dataset large</code> + benchmarks</td><td>PERF budgets on 1 M issues</td><td>nightly</td></tr>
 </tbody></table>
 </div>
-<h3 id="s11-2"><button class="sec" data-sec>§11.2</button>Sample organization</h3>
+<h3 id="s11-2"><button class="sec" data-sec>§11.2</button>Database tests</h3>
+<p>Every repository test runs against <strong>SQLite and PostgreSQL</strong> (ADR-0003). Nothing is installed machine-wide (ADR-0024).</p>
+<ul>
+<li><strong>PostgreSQL 18.6</strong> is a pinned tool in <code>tools/dev/tools.toml</code>. On Windows <code>cargo xtask setup</code> downloads the official binaries (checksum checked) into <code>.tools/postgresql/</code>. On Linux it uses the system PostgreSQL (on the <code>PATH</code>, or under <code>/usr/lib/postgresql/*/bin</code> as on GitHub's Ubuntu runners) and explains how to install it when missing.</li>
+<li><strong><code>cargo xtask db start | stop | reset | url</code></strong> manages a throwaway cluster in <code>.tools/pg-data/</code>. It listens on <code>127.0.0.1</code> only, on the port <code>postgres</code> from <code>tools/dev/ports.json</code> (strict: a busy port is an error). Its random password lives in <code>.tools/pg-password</code>, never in the repository; on Windows the file is protected only by the inherited permissions of your user profile, on Unix it is readable by its owner only. All work folders share port 47240 (ADR-0023), so only one <code>cargo xtask ci</code> or <code>db start</code> runs at a time on a machine. <code>db url</code> prints the connection URL for tools of your own.</li>
+<li><strong><code>cargo xtask db run -- &lt;command&gt;</code></strong> starts the cluster if needed, runs the command with <code>BB_TEST_DATABASES=sqlite,postgres</code>, <code>BB_TEST_POSTGRES_URL</code> and <code>BB_DB_PARITY_FILE</code> set, stops the cluster again if it started it (also after an error), and then checks the parity record against ARCH-DB-PARITY and DATA-MIGRATIONS. Before the run it deletes the old record and any <code>bbtest_*</code> databases left behind by killed test programs; after a failure it deletes the record again, so an old or partial record never decides anything. <code>cargo xtask ci</code> runs the Rust tests this way.</li>
+<li><strong>Writing a test:</strong> <code>bb_testing::each_database("name", async |db| { … }).await</code> runs the body once per selected database. The body gets a typed pool (<code>db.pool()</code> is <code>Pool::Sqlite</code> or <code>Pool::Postgres</code>; <code>tests/example_repository.rs</code> in <code>bb-testing</code> shows the pattern). Each run gets an empty database of its own (a temporary file for SQLite, a freshly created and afterwards dropped database for PostgreSQL), so tests never see each other's data. Without <code>BB_TEST_DATABASES</code>, plain <code>cargo test</code> runs SQLite only.</li>
+<li><strong>The record</strong> <code>target/db-parity.txt</code> has one line per finished run (<code>&lt;database&gt; &lt;test name&gt;</code>). ARCH-DB-PARITY fails when a test ran on one database but not the other, or when a database did not run at all. DATA-MIGRATIONS additionally forbids <code>.sql</code> migration files and, once <code>bb-store</code> has migrations, wants its <code>migrations</code> test in the record for both databases.</li>
+</ul>
+<p>Enforced by: ARCH-DB-PARITY, DATA-MIGRATIONS.</p>
+<h3 id="s11-3"><button class="sec" data-sec>§11.3</button>Sample organization</h3>
 <p>A realistic, <strong>fully fictional</strong> organization used for development, end-to-end tests, demos and the optional "try it out" mode (OPS-12). Generated by <code>cargo xtask dataset sample</code>, deterministic from a seed (default 42), in under a minute, into SQLite or PostgreSQL.</p>
 <h4>People (50) and groups</h4>
 <ul>
@@ -956,7 +1002,7 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 </ul>
 <h4>Large dataset</h4>
 <p><code>cargo xtask dataset large --issues 1000000</code> builds the same shape at the PERF scale (500 people, 500 projects) for benchmarks.</p>
-<h3 id="s11-3"><button class="sec" data-sec>§11.3</button>Ten people at the same time</h3>
+<h3 id="s11-4"><button class="sec" data-sec>§11.4</button>Ten people at the same time</h3>
 <p>Concurrency is tested with <strong>10 simulated people</strong> from the sample organization, each in their own browser context (Playwright) or API client (<code>cargo xtask load --people 10</code>):</p>
 <div class="tbl-wrap"><table class="dtable"><thead><tr><th>Scenario</th><th>What must hold</th></tr></thead><tbody>
 <tr><td>Three people try to edit the same description</td><td>One gets the lock; the others see <em>"… is editing"</em>; <em>Edit anyway</em> moves the lock and keeps the first person's draft</td></tr>
@@ -969,7 +1015,7 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 </div>
 <p>Enforced by: TEST-CONCURRENT, TEST-EDIT-LOCKS.</p>
 <p>Each scenario runs against <strong>both SQLite and PostgreSQL</strong>. The short version (2 minutes) runs in CI; the long version (30 minutes, mixed workload) runs nightly and checks invariants afterwards: every change has an event, no lock outlives its lease, no text is lost.</p>
-<h3 id="s11-4"><button class="sec" data-sec>§11.4</button>Local ports (ADR-0023)</h3>
+<h3 id="s11-5"><button class="sec" data-sec>§11.5</button>Local ports (ADR-0023)</h3>
 <p>Your machine runs other Vite projects, so Bugaboo never uses default ports. All ports live in <strong><code>tools/dev/ports.json</code></strong> (single source); Vite, Playwright, the server and xtask read them from there, and every tool uses <code>strictPort</code>, so a busy port fails with a clear message instead of silently moving.</p>
 <div class="tbl-wrap"><table class="dtable"><thead><tr><th>Port</th><th>Used by</th></tr></thead><tbody>
 <tr><td>47200</td><td>Bugaboo server in development (API + embedded app)</td></tr>
@@ -984,10 +1030,109 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 </div>
 <p>The installed product asks for its port in the setup wizard (suggesting 8443 and checking that it's free); these development ports never appear in a customer installation.</p>
 
-<h2 id="s12"><button class="sec" data-sec>§12</button>Decision records</h2>
+<!-- 12-security.md -->
+<h2 id="s12"><button class="sec" data-sec>§12</button>Security: threat model and personal-data flows</h2>
+<p>Part of the security and data-flow documentation (COMP-07) for the CRA technical file and for customers' own risk assessments. It covers what is built so far and grows with every milestone: each milestone review checks that new entry points appear here.</p>
+<p>The method is STRIDE per trust boundary (boundaries from <a href="#s2">Context</a>). Every threat names the mitigation and what proves it: a check from the catalogue (<code>tools/checks/catalog.toml</code>), a test, or <em>review</em> when a person decides.</p>
+<h3 id="s12-1"><button class="sec" data-sec>§12.1</button>Scope (status: M1)</h3>
+<div class="tbl-wrap"><table class="dtable"><thead><tr><th>In scope now</th><th>Comes later (own section then)</th></tr></thead><tbody>
+<tr><td>HTTPS and start-up config, security headers, sign-in (password, passkey, two-step codes), sessions, invitations, first-run setup code, rate limits, the security log, stored secrets, logs</td><td>Permissions engine (M2), search language (M3), attachments (M5), MCP and the assistant (M9), webhooks and mail (M4), the served model's control plane (M14)</td></tr>
+</tbody></table>
+</div>
+<h3 id="s12-2"><button class="sec" data-sec>§12.2</button>Attack surface</h3>
+<pre class="mermaid">flowchart LR
+  browser(["Browser&lt;br/&gt;(untrusted)"])
+  console(["Server console&lt;br/&gt;(operator)"])
+  subgraph server["bugaboo process"]
+    tls["HTTPS&lt;br/&gt;rustls"]
+    hdr["Security headers&lt;br/&gt;rate limits"]
+    api["/api/v1&lt;br/&gt;problem+json"]
+    auth["Sign-in&lt;br/&gt;sessions, CSRF"]
+    store["bb-store"]
+  end
+  subgraph data["Data folder (owner-only)"]
+    db[("database")]
+    keys["keys/master.key"]
+    cert["tls/"]
+    logs["logs"]
+  end
+  browser -- "1 · HTTPS" --&gt; tls --&gt; hdr --&gt; api --&gt; auth --&gt; store --&gt; db
+  console -- "setup code&lt;br/&gt;bugaboo setup" --&gt; server
+  store --&gt; keys
+  tls --&gt; cert
+  server --&gt; logs</pre>
+<p>Entry points in M1: the HTTPS listener (pages, assets, <code>/api/v1</code>, <code>/health/*</code>), the console and <code>bugaboo.toml</code>, and the data folder on disk.</p>
+<h3 id="s12-3"><button class="sec" data-sec>§12.3</button>Threats and mitigations</h3>
+<h4>Boundary 1: browser ↔ server</h4>
+<div class="tbl-wrap"><table class="dtable"><thead><tr><th>STRIDE</th><th>Threat</th><th>Mitigation</th><th>Proven by</th></tr></thead><tbody>
+<tr><td>Spoofing</td><td>Password guessing and credential stuffing</td><td>Argon2id, breached-password list, per-account and per-IP slow-down, no permanent lockout</td><td>sign-in tests (WP-07); rate-limit test (WP-06)</td></tr>
+<tr><td>Spoofing</td><td>Finding out which e-mail addresses have accounts</td><td>Same answer and same timing for unknown accounts and wrong passwords</td><td>timing test (WP-07); ARCH-ERRORS</td></tr>
+<tr><td>Spoofing</td><td>Stolen password alone is enough</td><td>Two-step codes and passkeys; admins can require them per role</td><td>sign-in end-to-end tests (WP-08)</td></tr>
+<tr><td>Spoofing</td><td>Someone on the network claims a fresh installation</td><td>One-time setup code printed on the server console (AUTH-09)</td><td>first-run test (WP-07, WP-08)</td></tr>
+<tr><td>Spoofing</td><td>Invitation links reused or guessed</td><td>256-bit random, stored hashed, single use, 7-day expiry</td><td>invitation tests (WP-07)</td></tr>
+<tr><td>Tampering</td><td>Cross-site request forgery</td><td><code>__Host-</code> cookie with SameSite, <code>Origin</code> check, per-session token header</td><td>CSRF tests (WP-07)</td></tr>
+<tr><td>Tampering</td><td>Session fixation</td><td>New session ID after sign-in and any permission change</td><td>session tests (WP-07)</td></tr>
+<tr><td>Tampering</td><td>Script injection into pages</td><td>CSP without inline code or <code>eval</code>, Trusted Types, one Markdown renderer</td><td>SEC-HEADERS; SEC-PATTERNS</td></tr>
+<tr><td>Tampering</td><td>Clickjacking</td><td><code>frame-ancestors 'none'</code></td><td>SEC-HEADERS</td></tr>
+<tr><td>Information disclosure</td><td>Traffic read on the network</td><td>HTTPS by default; plain HTTP only on loopback or behind a configured trusted proxy; HSTS</td><td>TLS start-up tests (WP-04); SEC-HEADERS</td></tr>
+<tr><td>Information disclosure</td><td>Error messages leak internals or hidden things</td><td>problem+json with a code and message key only; details go to the log</td><td>ARCH-ERRORS</td></tr>
+<tr><td>Information disclosure</td><td>Path tricks reach files outside the app (<code>..</code>, Windows short names, odd percent-encoding)</td><td>Strict path decoding; 8.3 short names refused</td><td>static-file tests (WP-04, M0-F08)</td></tr>
+<tr><td>Denial of service</td><td>Flooding sign-in or the API</td><td>Rate limits, request size limits, cheap rejection before Argon2id work</td><td>rate-limit test (WP-06)</td></tr>
+<tr><td>Elevation of privilege</td><td>Stolen session cookie used elsewhere</td><td>HttpOnly, Secure, idle and absolute timeouts, <em>Where you're signed in</em> to end sessions</td><td>session tests (WP-07)</td></tr>
+</tbody></table>
+</div>
+<h4>Boundary 4 (operator ↔ data) and the host</h4>
+<div class="tbl-wrap"><table class="dtable"><thead><tr><th>STRIDE</th><th>Threat</th><th>Mitigation</th><th>Proven by</th></tr></thead><tbody>
+<tr><td>Information disclosure</td><td>Stored secrets read from a database copy or backup</td><td>Envelope encryption with XChaCha20-Poly1305; the master key lives outside the database</td><td>secrets tests (WP-05)</td></tr>
+<tr><td>Information disclosure</td><td>Other local users read keys or certificates</td><td><code>keys/</code> and <code>tls/</code> created owner-only (Windows ACL, Unix mode 0700/0600)</td><td>data-folder tests (WP-04)</td></tr>
+<tr><td>Information disclosure</td><td>Personal data ends up in logs</td><td>Logs hold IDs only; IP addresses shortened</td><td>DATA-LOGS</td></tr>
+<tr><td>Information disclosure</td><td>Secrets committed to the repository</td><td>Secret scanning on every commit</td><td>SEC-SECRETS</td></tr>
+<tr><td>Repudiation</td><td>An admin denies an action, or someone edits the security log</td><td>Append-only, hash-chained security log with a verify command; status page shows the result</td><td>hash-chain property test (WP-05)</td></tr>
+<tr><td>Tampering</td><td>A vulnerable or unlicensed dependency ships</td><td>Register, license allow list, advisory scan</td><td>DEP-REGISTER; DEP-LICENSES; SEC-ADVISORIES</td></tr>
+<tr><td>Tampering</td><td>Database changes outside the defined schema</td><td>Schema and migrations defined once in Rust, refused on a newer schema</td><td>DATA-MIGRATIONS; ARCH-DB-PARITY</td></tr>
+<tr><td>Elevation of privilege</td><td>Memory-safety bugs</td><td>No <code>unsafe</code> code unless an ADR allows it</td><td>ARCH-NO-UNSAFE</td></tr>
+</tbody></table>
+</div>
+<h4>Accepted risks</h4>
+<div class="tbl-wrap"><table class="dtable"><thead><tr><th>Risk</th><th>Why accepted</th><th>Revisit</th></tr></thead><tbody>
+<tr><td>An administrator of the host machine can read the master key</td><td>Anyone with full control of the host can read process memory too; protection against them is out of scope for self-hosted installations</td><td>M14 (served model: keys per customer, operator without data access)</td></tr>
+<tr><td>Self-signed certificates show a browser warning</td><td>Safer than plain HTTP; admins can provide a certificate, ACME comes in 1.0</td><td>V1 (ACME)</td></tr>
+</tbody></table>
+</div>
+<h3 id="s12-4"><button class="sec" data-sec>§12.4</button>Personal data in M1</h3>
+<p>The map below is written by hand for M1. From M1 WP-05 on, <code>cargo xtask gen privacy</code> generates the complete list from the personal-data marks (ADR-0015) into <code>docs/privacy/personal-data.md</code>; this diagram then only shows the flows.</p>
+<pre class="mermaid">flowchart LR
+  person(["Person"])
+  admin(["Admin"])
+  subgraph bb["Bugaboo"]
+    acc["Account&lt;br/&gt;name, e-mail"]
+    cred["Sign-in data&lt;br/&gt;password hash, passkeys,&lt;br/&gt;two-step secret (encrypted),&lt;br/&gt;backup codes (hashed)"]
+    sess["Sessions&lt;br/&gt;hashed ID, device label,&lt;br/&gt;shortened IP, times"]
+    inv["Invitations&lt;br/&gt;e-mail, hashed link"]
+    seclog["Security log&lt;br/&gt;person ID, action,&lt;br/&gt;shortened IP, time"]
+    logs["Server logs&lt;br/&gt;IDs only"]
+  end
+  admin -- "invites" --&gt; inv
+  inv -- "accepted" --&gt; acc
+  person -- "signs up / signs in" --&gt; acc &amp; cred
+  person -- "browser" --&gt; sess
+  acc &amp; cred &amp; sess --&gt; seclog
+  bb --&gt; logs</pre>
+<div class="tbl-wrap"><table class="dtable"><thead><tr><th>Data</th><th>Purpose</th><th>Legal basis (GDPR Art. 6)</th><th>Kept</th></tr></thead><tbody>
+<tr><td>Name, e-mail</td><td>Account, sign-in, showing who did what</td><td>(b) contract / employment</td><td>While the account exists; then <em>Remove a person</em> (M2)</td></tr>
+<tr><td>Password hash, passkeys, two-step secret, backup codes</td><td>Sign-in</td><td>(b) contract; (f) security</td><td>Until changed or the account is removed</td></tr>
+<tr><td>Sessions with shortened IP and device label</td><td>Staying signed in, <em>Where you're signed in</em></td><td>(b) contract; (f) security</td><td>Until signed out or expired</td></tr>
+<tr><td>Invitation e-mail</td><td>Sending and checking the invitation</td><td>(b) contract</td><td>Until accepted or 7 days</td></tr>
+<tr><td>Security log entries</td><td>Proving who did what (SEC-15)</td><td>(c) legal obligation; (f) security</td><td>Keep period set by the admin (default 1 year); hash chain stays valid when old entries are deleted in whole blocks</td></tr>
+<tr><td>Shortened IP in logs</td><td>Abuse defence</td><td>(f) security</td><td>7 days by default</td></tr>
+</tbody></table>
+</div>
+<p>No personal data leaves the server in M1: no mail, no AI, no outside fonts, scripts or analytics (PRIV-01).</p>
+
+<h2 id="s13"><button class="sec" data-sec>§13</button>Decision records</h2>
 <p>Each record explains one decision: the situation, what we decided, what follows from it, what else we considered, and which checks enforce it.</p>
 <!-- 0001-modular-monolith.md -->
-<h3 id="adr-0001"><button class="sec" data-sec>§12.1</button>ADR-0001: Modular monolith in one binary</h3>
+<h3 id="adr-0001"><button class="sec" data-sec>§13.1</button>ADR-0001: Modular monolith in one binary</h3>
 <p>Status: <strong>Accepted</strong> · 2026-10-04</p>
 <h4>Context</h4>
 <p>Bugaboo must be secure, fast and installable on Windows, Linux and WSL by people without operations experience. The scale target (500 people, 1 M issues) fits one machine.</p>
@@ -1008,7 +1153,7 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 <p>ARCH-DEPS, ARCH-HTTP-EDGE, ARCH-MAP-SYNC, META-NEW-MODULE (see <code>tools/checks/catalog.toml</code>).</p>
 
 <!-- 0002-http-stack.md -->
-<h3 id="adr-0002"><button class="sec" data-sec>§12.2</button>ADR-0002: HTTP stack: Tokio, axum, rustls</h3>
+<h3 id="adr-0002"><button class="sec" data-sec>§13.2</button>ADR-0002: HTTP stack: Tokio, axum, rustls</h3>
 <p>Status: <strong>Accepted</strong> · 2026-10-04</p>
 <h4>Context</h4>
 <p>We need a mature async HTTP server with good middleware, HTTPS without system OpenSSL, and easy static builds for Windows and Linux.</p>
@@ -1028,7 +1173,7 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 <p>SEC-HEADERS, DEP-LICENSES (see <code>tools/checks/catalog.toml</code>).</p>
 
 <!-- 0003-databases.md -->
-<h3 id="adr-0003"><button class="sec" data-sec>§12.3</button>ADR-0003: Databases: SQLite by default, PostgreSQL optional</h3>
+<h3 id="adr-0003"><button class="sec" data-sec>§13.3</button>ADR-0003: Databases: SQLite by default, PostgreSQL optional</h3>
 <p>Status: <strong>Accepted</strong> · 2026-10-04</p>
 <h4>Context</h4>
 <p>Installation must work with zero setup, but larger installations and the served model need a server database.</p>
@@ -1050,7 +1195,7 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 <p>ARCH-SQL-EDGE, DATA-MIGRATIONS, ARCH-DB-PARITY (see <code>tools/checks/catalog.toml</code>).</p>
 
 <!-- 0004-authorization.md -->
-<h3 id="adr-0004"><button class="sec" data-sec>§12.4</button>ADR-0004: Authorization: one policy engine and Authorized<T></h3>
+<h3 id="adr-0004"><button class="sec" data-sec>§13.4</button>ADR-0004: Authorization: one policy engine and Authorized<T></h3>
 <p>Status: <strong>Accepted</strong> · 2026-10-04</p>
 <h4>Context</h4>
 <p>Security is priority one. Permissions go down to single fields and single issues, and many entry points (UI, API, search, MCP, assistant, e-mail, webhooks, exports, live updates) must all obey them.</p>
@@ -1077,7 +1222,7 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 <p>ARCH-AUTHZ-ONLY, ARCH-API-OUT, ARCH-PERMS, SEC-MATRIX (see <code>tools/checks/catalog.toml</code>).</p>
 
 <!-- 0005-search-language.md -->
-<h3 id="adr-0005"><button class="sec" data-sec>§12.5</button>ADR-0005: Search language: one Rust crate, also in the browser</h3>
+<h3 id="adr-0005"><button class="sec" data-sec>§13.5</button>ADR-0005: Search language: one Rust crate, also in the browser</h3>
 <p>Status: <strong>Accepted</strong> · 2026-10-04</p>
 <h4>Context</h4>
 <p>People need simple filter buttons and an advanced typed search, converting exactly into each other, with the same behavior in the browser and on the server, and without copying another vendor's language.</p>
@@ -1097,7 +1242,7 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 <p>ARCH-PURE, ARCH-WASM, TEST-SEARCH-ROUNDTRIP (see <code>tools/checks/catalog.toml</code>).</p>
 
 <!-- 0006-own-field-storage.md -->
-<h3 id="adr-0006"><button class="sec" data-sec>§12.6</button>ADR-0006: Own fields stored in a typed value table</h3>
+<h3 id="adr-0006"><button class="sec" data-sec>§13.6</button>ADR-0006: Own fields stored in a typed value table</h3>
 <p>Status: <strong>Accepted</strong> · 2026-10-04</p>
 <h4>Context</h4>
 <p>Organizations add their own fields to issues, time entries, work days, documents, releases and projects. They must be filterable, sortable, permissioned per field, and fast on both databases.</p>
@@ -1117,7 +1262,7 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 <p>ARCH-DB-PARITY, PERF-BENCH; table shape: review (see <code>tools/checks/catalog.toml</code>).</p>
 
 <!-- 0007-event-log.md -->
-<h3 id="adr-0007"><button class="sec" data-sec>§12.7</button>ADR-0007: Event log and outbox as the single source of change</h3>
+<h3 id="adr-0007"><button class="sec" data-sec>§13.7</button>ADR-0007: Event log and outbox as the single source of change</h3>
 <p>Status: <strong>Accepted</strong> · 2026-10-04</p>
 <h4>Context</h4>
 <p>History, notifications, webhooks, the security log, full-text indexing and live updates all need to know what changed. Writing to each separately would duplicate logic and lose consistency.</p>
@@ -1138,7 +1283,7 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 <p>ARCH-EVENTS (see <code>tools/checks/catalog.toml</code>).</p>
 
 <!-- 0008-api-first.md -->
-<h3 id="adr-0008"><button class="sec" data-sec>§12.8</button>ADR-0008: API first: OpenAPI from Rust, TypeScript client generated</h3>
+<h3 id="adr-0008"><button class="sec" data-sec>§13.8</button>ADR-0008: API first: OpenAPI from Rust, TypeScript client generated</h3>
 <p>Status: <strong>Accepted</strong> · 2026-10-04</p>
 <h4>Context</h4>
 <p>The browser app must be a normal API client (principle 3), and API types must exist once (ODR).</p>
@@ -1158,7 +1303,7 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 <p>DOC-GENERATED, ARCH-WEB-API, ARCH-LEAN, ARCH-VERSIONED (see <code>tools/checks/catalog.toml</code>).</p>
 
 <!-- 0009-frontend-stack.md -->
-<h3 id="adr-0009"><button class="sec" data-sec>§12.9</button>ADR-0009: Browser app: React 19, Vite, TanStack, React Aria</h3>
+<h3 id="adr-0009"><button class="sec" data-sec>§13.9</button>ADR-0009: Browser app: React 19, Vite, TanStack, React Aria</h3>
 <p>Status: <strong>Accepted</strong> · 2026-10-04</p>
 <h4>Context</h4>
 <p>The UI must be slick, accessible (WCAG 2.2 AA), fast on phones, and buildable by agents with clear patterns.</p>
@@ -1184,7 +1329,7 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 <p>ARCH-WEB-FEATURES, PERF-BUNDLE, TEST-A11Y, LINT-TS (see <code>tools/checks/catalog.toml</code>).</p>
 
 <!-- 0010-design-tokens.md -->
-<h3 id="adr-0010"><button class="sec" data-sec>§12.10</button>ADR-0010: Styling through design tokens only</h3>
+<h3 id="adr-0010"><button class="sec" data-sec>§13.10</button>ADR-0010: Styling through design tokens only</h3>
 <p>Status: <strong>Accepted</strong> · 2026-10-04</p>
 <h4>Context</h4>
 <p>Four built-in themes, a theme editor, custom field looks and strict CSP, all without letting customization inject code.</p>
@@ -1208,7 +1353,7 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 <p>STY-TOKENS, LINT-CSS, STY-CONTRAST (see <code>tools/checks/catalog.toml</code>).</p>
 
 <!-- 0011-markdown.md -->
-<h3 id="adr-0011"><button class="sec" data-sec>§12.11</button>ADR-0011: One Markdown renderer for server and browser</h3>
+<h3 id="adr-0011"><button class="sec" data-sec>§13.11</button>ADR-0011: One Markdown renderer for server and browser</h3>
 <p>Status: <strong>Accepted</strong> · 2026-10-04</p>
 <h4>Context</h4>
 <p>Issue descriptions, comments and documents are Markdown written by people, so they're untrusted. The preview must match what others will see.</p>
@@ -1227,7 +1372,7 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 <p>ARCH-PURE, ARCH-WASM, SEC-PATTERNS (see <code>tools/checks/catalog.toml</code>).</p>
 
 <!-- 0012-sold-and-served.md -->
-<h3 id="adr-0012"><button class="sec" data-sec>§12.12</button>ADR-0012: One binary for sold and served</h3>
+<h3 id="adr-0012"><button class="sec" data-sec>§13.12</button>ADR-0012: One binary for sold and served</h3>
 <p>Status: <strong>Accepted</strong> · 2026-10-04</p>
 <h4>Context</h4>
 <p>Bugaboo may be sold (self-hosted) or served (hosted by us); the business model isn't decided.</p>
@@ -1251,7 +1396,7 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 <p>review (deployment design; tested end to end in the served-model milestone), DEP-LICENSES for the license file tooling (see <code>tools/checks/catalog.toml</code>).</p>
 
 <!-- 0013-ai.md -->
-<h3 id="adr-0013"><button class="sec" data-sec>§12.13</button>ADR-0013: AI: one provider interface, one tool registry, no decisions about people</h3>
+<h3 id="adr-0013"><button class="sec" data-sec>§13.13</button>ADR-0013: AI: one provider interface, one tool registry, no decisions about people</h3>
 <p>Status: <strong>Accepted</strong> · 2026-10-04</p>
 <h4>Context</h4>
 <p>AI is priority three, but must never bypass permissions, must resist prompt injection, and must stay outside the AI Act's high-risk and banned uses.</p>
@@ -1278,7 +1423,7 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 <p>ARCH-AI-TOOLS, ARCH-PERMS, SEC-MATRIX (see <code>tools/checks/catalog.toml</code>).</p>
 
 <!-- 0014-tooling.md -->
-<h3 id="adr-0014"><button class="sec" data-sec>§12.14</button>ADR-0014: One check runner for hooks, agents and CI</h3>
+<h3 id="adr-0014"><button class="sec" data-sec>§13.14</button>ADR-0014: One check runner for hooks, agents and CI</h3>
 <p>Status: <strong>Accepted</strong> · 2026-10-04</p>
 <h4>Context</h4>
 <p>Checks (formatting, linting, hard-coded text, tokens only, terminology, licenses, register, architecture docs, personal-data marks, size budgets) must behave the same on Windows, Linux and WSL, for people, AI agents and CI.</p>
@@ -1309,7 +1454,7 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 <p>META-WIRING, META-CATALOG, META-SPEED, FMT-<em>, LINT-</em> (see <code>tools/checks/catalog.toml</code>).</p>
 
 <!-- 0015-personal-data-marks.md -->
-<h3 id="adr-0015"><button class="sec" data-sec>§12.15</button>ADR-0015: Personal-data marks drive GDPR features</h3>
+<h3 id="adr-0015"><button class="sec" data-sec>§13.15</button>ADR-0015: Personal-data marks drive GDPR features</h3>
 <p>Status: <strong>Accepted</strong> · 2026-10-04</p>
 <h4>Context</h4>
 <p>GDPR features (export, removal, keep-and-delete rules, record of processing) break silently when a new feature adds personal data and forgets them.</p>
@@ -1334,7 +1479,7 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 </ul>
 
 <!-- 0016-full-text-search.md -->
-<h3 id="adr-0016"><button class="sec" data-sec>§12.16</button>ADR-0016: Full-text search inside the database</h3>
+<h3 id="adr-0016"><button class="sec" data-sec>§13.16</button>ADR-0016: Full-text search inside the database</h3>
 <p>Status: <strong>Accepted</strong> · 2026-10-04</p>
 <h4>Context</h4>
 <p>Text search must respect permissions and work on both databases at the scale target.</p>
@@ -1353,7 +1498,7 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 <p>SEC-MATRIX (search entry point), ARCH-DB-PARITY (see <code>tools/checks/catalog.toml</code>).</p>
 
 <!-- 0017-background-jobs.md -->
-<h3 id="adr-0017"><button class="sec" data-sec>§12.17</button>ADR-0017: Background jobs stored in the database</h3>
+<h3 id="adr-0017"><button class="sec" data-sec>§13.17</button>ADR-0017: Background jobs stored in the database</h3>
 <p>Status: <strong>Accepted</strong> · 2026-10-04</p>
 <h4>Context</h4>
 <p>Previews, virus scans, e-mail, webhooks, digests, backups, keep-and-delete runs and person removal need reliable background work.</p>
@@ -1372,7 +1517,7 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 <p>review; every job type has an idempotency test (part of ARCH-EVENTS test harness) (see <code>tools/checks/catalog.toml</code>).</p>
 
 <!-- 0018-settings-registry.md -->
-<h3 id="adr-0018"><button class="sec" data-sec>§12.18</button>ADR-0018: One settings registry drives storage, API and dialogs</h3>
+<h3 id="adr-0018"><button class="sec" data-sec>§13.18</button>ADR-0018: One settings registry drives storage, API and dialogs</h3>
 <p>Status: <strong>Accepted</strong> · 2026-10-04</p>
 <h4>Context</h4>
 <p>"Everything configurable in the UI" means hundreds of settings across organization, project and person levels. Hand-building each dialog violates DRY and drifts.</p>
@@ -1391,7 +1536,7 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 <p>ARCH-SETTINGS (see <code>tools/checks/catalog.toml</code>).</p>
 
 <!-- 0019-edit-locks.md -->
-<h3 id="adr-0019"><button class="sec" data-sec>§12.19</button>ADR-0019: Edit locks and confirmed saves</h3>
+<h3 id="adr-0019"><button class="sec" data-sec>§13.19</button>ADR-0019: Edit locks and confirmed saves</h3>
 <p>Status: <strong>Accepted</strong> · 2026-10-04</p>
 <h4>Context</h4>
 <p>Bugaboo has no real-time co-editing in 1.0. Without care, two people editing a long description, a comment or a document page overwrite each other, and a save that looks done can silently fail. The UI should feel instant (optimistic), but nobody may lose text.</p>
@@ -1438,7 +1583,7 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 <p>ARCH-VERSIONED, TEST-EDIT-LOCKS (see <code>tools/checks/catalog.toml</code>).</p>
 
 <!-- 0020-architecture-checks.md -->
-<h3 id="adr-0020"><button class="sec" data-sec>§12.20</button>ADR-0020: Architecture is checked by many small checks, and the checks are checked</h3>
+<h3 id="adr-0020"><button class="sec" data-sec>§13.20</button>ADR-0020: Architecture is checked by many small checks, and the checks are checked</h3>
 <p>Status: <strong>Accepted</strong> · 2026-10-04</p>
 <h4>Context</h4>
 <p>AI agents implement Bugaboo. Written rules drift unless machines enforce them. One big "lint everything" step is slow, hard to understand and tempting to skip.</p>
@@ -1474,7 +1619,7 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 <p>META-CATALOG, META-FIXTURES, META-COVERAGE, META-NEW-MODULE, META-RULE-TRACE, META-WIRING, META-SUPPRESS, META-SPEED (see <code>tools/checks/catalog.toml</code>).</p>
 
 <!-- 0021-issue-ids.md -->
-<h3 id="adr-0021"><button class="sec" data-sec>§12.21</button>ADR-0021: Issue IDs, counting or random</h3>
+<h3 id="adr-0021"><button class="sec" data-sec>§13.21</button>ADR-0021: Issue IDs, counting or random</h3>
 <p>Status: <strong>Accepted</strong> · 2026-10-04</p>
 <h4>Context</h4>
 <p>Counting IDs (<code>WEB-142</code>) are easy to say aloud, but they reveal how many issues a project has and how fast it grows. Anyone who sees two IDs a week apart can estimate activity. That can be sensitive business information, and for small teams it can say something about individual people.</p>
@@ -1511,7 +1656,7 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 </ul>
 
 <!-- 0022-who-sees-people.md -->
-<h3 id="adr-0022"><button class="sec" data-sec>§12.22</button>ADR-0022: Who sees people is part of the permission model</h3>
+<h3 id="adr-0022"><button class="sec" data-sec>§13.22</button>ADR-0022: Who sees people is part of the permission model</h3>
 <p>Status: <strong>Accepted</strong> · 2026-10-04</p>
 <h4>Context</h4>
 <p>Names of people appear in many places: reported by, assigned to, last changed by, comment and history authors, followers, "… is editing", time entries, mentions, avatars, e-mails, exports, the assistant. Under GDPR, organizations may need to hide who did what from some roles (for example external guests, or works-council agreements).</p>
@@ -1536,7 +1681,7 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 <p>ARCH-PERSON-REF, SEC-MATRIX (see <code>tools/checks/catalog.toml</code>).</p>
 
 <!-- 0023-dev-ports-and-test-setup.md -->
-<h3 id="adr-0023"><button class="sec" data-sec>§12.23</button>ADR-0023: Development ports and test setup</h3>
+<h3 id="adr-0023"><button class="sec" data-sec>§13.23</button>ADR-0023: Development ports and test setup</h3>
 <p>Status: <strong>Accepted</strong> · 2026-10-04</p>
 <h4>Context</h4>
 <p>The main development PC runs several other Vite projects (ports 5173 and 5200–5319 are taken). Default ports would clash, and Vite silently moving to another port hides the problem and breaks Playwright's server checks.</p>
@@ -1560,7 +1705,7 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 <p>DEV-PORTS, TEST-SAMPLE-DATA, TEST-CONCURRENT (see <code>tools/checks/catalog.toml</code>).</p>
 
 <!-- 0024-master-repo-and-work-folders.md -->
-<h3 id="adr-0024"><button class="sec" data-sec>§12.24</button>ADR-0024: Master repository in a synced folder, work folders outside it</h3>
+<h3 id="adr-0024"><button class="sec" data-sec>§13.24</button>ADR-0024: Master repository in a synced folder, work folders outside it</h3>
 <p>Status: <strong>Accepted</strong> · 2026-10-04</p>
 <h4>Context</h4>
 <p>The repository lives in OneDrive. Build output (Rust <code>target</code>, <code>node_modules</code>, caches, test reports) would make OneDrive sync gigabytes and lock files during builds. GitHub comes later; until then the repository is local. The developer already uses a pattern for this: a master repository plus clones in <code>&lt;work root&gt;\&lt;project&gt;.winN</code>, each on its own branch <code>WINn</code>.</p>
