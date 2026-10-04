@@ -6,6 +6,7 @@ Read this before every task. The docs in `docs/` are the source of truth; this f
 
 - **Never build, install or run anything in the master repository** `<master>` (OneDrive). Work only in your work folder under `<work root>\bugaboo.winN`, on your branch `WINn` (ADR-0024).
 - Commit on your branch; push your branch to `origin` when your work package is done. Never push to `main`.
+- **CodeGraph** works per work folder: if yours has no index (`.codegraph/codegraph.db` missing), run `codegraph init` in it, then pass your folder as `projectPath` to `codegraph_explore` (or run `codegraph explore` there). Never index the master.
 - Run `cargo xtask setup` once in a fresh or reset folder: it installs the pinned tools and the Git hooks (commit and push run the checks). Never skip the hooks (`--no-verify`). `git push --force-with-lease` runs the push checks too. When a hook fails, fix the cause and commit again; don't amend or rewrite commits you already pushed.
 
 ## Before you write code
@@ -43,5 +44,5 @@ The maintainer may close a session at any time and start a new one in the master
 5. Every builder prompt repeats the rules in this file and names the work package file, the folder and the branch; the builder reports the commands it ran and their results.
 6. **"Can I close this session?"** Answer with: running background agents and commands; uncommitted or unpushed work in each `bugaboo.winN` (`git status --short`, `git log origin/WINn..WINn`); `main` vs `WIN1`; whether `docs/STATUS.md` is current. Say "safe" only when all are clean, or when `docs/STATUS.md` names exactly what a running builder will leave behind.
 7. **Memory** lives in `bugaboo.win1/.claude/memory/` (the master's ignored `.claude/settings.local.json` points there). Commit memory changes with the next `docs/STATUS.md` update.
-8. **CodeGraph:** the index lives in `bugaboo.win1/.codegraph` (the master has none). Pass `projectPath: <work root>\bugaboo.win1` to `codegraph_explore`, or run `codegraph explore` in that folder.
+8. **CodeGraph:** the lead's index lives in `bugaboo.win1/.codegraph` (the master has none). Pass `projectPath: <work root>\bugaboo.win1` to `codegraph_explore`, or run `codegraph explore` in that folder. If `win1` has no index yet (`.codegraph/codegraph.db` missing), run `codegraph init` there.
 9. The maintainer reviews on a phone: milestone review pages and changed design docs are published as commentable HTML pages; replies stay short and name feature IDs.
