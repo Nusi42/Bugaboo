@@ -1,12 +1,13 @@
 //! Security headers on every response (SEC-11, architecture §7 "Browser protections").
 //!
-//! HSTS comes with TLS in M1.
+//! The values are defined once, here. The integration test `tests/headers.rs` writes them out
+//! again on purpose, so changing a header without changing the requirement fails (SEC-HEADERS).
 
 use axum::Router;
 use axum::http::{HeaderName, HeaderValue};
 use tower_http::set_header::SetResponseHeaderLayer;
 
-/// The only definition of the headers every response carries.
+/// Headers every response carries.
 const SECURITY_HEADERS: [(&str, &str); 6] = [
     (
         "content-security-policy",
@@ -25,11 +26,21 @@ const SECURITY_HEADERS: [(&str, &str); 6] = [
     ),
 ];
 
+/// Only sent when the browser reaches us over HTTPS: two years, subdomains included.
+pub(crate) const HSTS: (&str, &str) = (
+    "strict-transport-security",
+    "max-age=63072000; includeSubDomains",
+);
+
 /// Wraps the router so every response, including errors and fallbacks, carries the headers.
-pub(crate) fn apply(router: Router) -> Router {
+/// `https` adds HSTS (SEC-10: the connection is HTTPS, here or at a trusted proxy).
+pub(crate) fn apply(router: Router, https: bool) -> Router {
+    let hsts = https.then_some(HSTS);
     SECURITY_HEADERS
         .iter()
-        .fold(router, |router, &(name, value)| {
+        .copied()
+        .chain(hsts)
+        .fold(router, |router, (name, value)| {
             router.layer(SetResponseHeaderLayer::overriding(
                 HeaderName::from_static(name),
                 HeaderValue::from_static(value),

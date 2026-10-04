@@ -2,19 +2,27 @@
 
 use std::future::Future;
 use std::io;
+use std::net::IpAddr;
+use std::path::PathBuf;
 use std::sync::Arc;
 
 use axum::Router;
 use axum::extract::State;
-use axum::http::{HeaderValue, StatusCode, Uri, header};
+use axum::http::{HeaderMap, HeaderValue, Method, StatusCode, Uri, header};
+use axum::middleware::from_fn_with_state;
 use axum::response::{IntoResponse, Response};
 use axum::routing::get;
-use tokio::net::TcpListener;
+use tower_http::compression::predicate::{Predicate as _, SizeAbove};
+use tower_http::compression::{CompressionLayer, DefaultPredicate};
 
 use crate::headers;
+use crate::listener::{ClientAddr, Incoming};
+use crate::logging::{LogContext, log_request};
 use crate::web::{INDEX, WEB_APP_MISSING, WebSource, decode_path};
 
 const HEALTH_LIVE_BODY: &str = r#"{"status":"ok"}"#;
+const HEALTH_READY_BODY: &str = r#"{"status":"ok","checks":{"data_folder":"ok"}}"#;
+const HEALTH_NOT_READY_BODY: &str = r#"{"status":"unavailable","checks":{"data_folder":"failed"}}"#;
 const NOT_FOUND: &str = "Not found";
 /// Files Vite names by their content hash can be cached forever.
 const IMMUTABLE_PREFIX: &str = "assets/";
@@ -22,42 +30,134 @@ const CACHE_IMMUTABLE: &str = "public, max-age=31536000, immutable";
 const CACHE_REVALIDATE: &str = "no-cache";
 /// Addresses below these are never browser pages: when missing they are plain 404s.
 const NO_PAGE_FALLBACK: [&str; 3] = ["assets", "health", "api"];
+/// The API's address space: an unknown address answers 404 to every method (M0-F07).
+const API_PREFIX: &str = "api";
+/// Smaller answers are not worth compressing.
+const COMPRESS_FROM_BYTES: u64 = 256;
 
-/// The whole HTTP surface, security headers included.
-pub fn router(web: WebSource) -> Router {
-    let app = Router::new()
-        .route("/health/live", get(health_live))
-        .fallback(get(app_file))
-        .with_state(Arc::new(web));
-    headers::apply(app)
+/// What the server needs to know to answer requests.
+#[derive(Clone, Debug)]
+pub struct Options {
+    /// Where the browser app comes from.
+    pub web: WebSource,
+    /// Whether browsers reach us over HTTPS (here or at a trusted proxy): adds HSTS.
+    pub https: bool,
+    /// The data folder, for `/health/ready`.
+    pub data_folder: PathBuf,
+    /// Proxies whose `X-Forwarded-For` header may be believed for the log.
+    pub trusted_proxies: Vec<IpAddr>,
 }
 
-/// Serves `router(web)` on `listener` until `shutdown` completes.
+#[derive(Clone)]
+struct AppState {
+    web: Arc<WebSource>,
+    data_folder: Arc<PathBuf>,
+}
+
+/// The whole HTTP surface, security headers included.
+pub fn router(options: Options) -> Router {
+    let state = AppState {
+        web: Arc::new(options.web),
+        data_folder: Arc::new(options.data_folder),
+    };
+    let compress = DefaultPredicate::new()
+        .and(SizeAbove::new(COMPRESS_FROM_BYTES))
+        .and(is_text);
+    let app = Router::new()
+        .route("/health/live", get(health_live))
+        .route("/health/ready", get(health_ready))
+        .fallback(fallback)
+        .with_state(state)
+        .layer(CompressionLayer::new().compress_when(compress))
+        .layer(from_fn_with_state(
+            LogContext::new(options.trusted_proxies),
+            log_request,
+        ));
+    headers::apply(app, options.https)
+}
+
+/// Serves `router(options)` on `incoming` until `shutdown` completes.
 ///
 /// # Errors
 /// Returns the I/O error that stopped the server.
 pub async fn serve(
-    listener: TcpListener,
-    web: WebSource,
+    incoming: Incoming,
+    options: Options,
     shutdown: impl Future<Output = ()> + Send + 'static,
 ) -> io::Result<()> {
-    axum::serve(listener, router(web))
-        .with_graceful_shutdown(shutdown)
-        .await
+    axum::serve(
+        incoming,
+        router(options).into_make_service_with_connect_info::<ClientAddr>(),
+    )
+    .with_graceful_shutdown(shutdown)
+    .await
+}
+
+/// Text compresses well; images, fonts and archives are already compressed.
+fn is_text(
+    _status: StatusCode,
+    _version: axum::http::Version,
+    headers: &HeaderMap,
+    _extensions: &axum::http::Extensions,
+) -> bool {
+    headers
+        .get(header::CONTENT_TYPE)
+        .and_then(|value| value.to_str().ok())
+        .is_some_and(|kind| {
+            ["text/", "javascript", "json", "xml", "wasm"]
+                .iter()
+                .any(|part| kind.contains(part))
+        })
 }
 
 async fn health_live() -> Response {
+    json(StatusCode::OK, HEALTH_LIVE_BODY)
+}
+
+/// Ready when the data folder can be read; the database joins in with the store.
+async fn health_ready(State(state): State<AppState>) -> Response {
+    let usable = tokio::fs::read_dir(state.data_folder.as_path())
+        .await
+        .is_ok();
+    if usable {
+        json(StatusCode::OK, HEALTH_READY_BODY)
+    } else {
+        json(StatusCode::SERVICE_UNAVAILABLE, HEALTH_NOT_READY_BODY)
+    }
+}
+
+fn json(status: StatusCode, body: &'static str) -> Response {
+    (status, [(header::CONTENT_TYPE, "application/json")], body).into_response()
+}
+
+/// Everything that is not a route: files of the app for GET and HEAD, 404 below `/api` for every
+/// method, 405 for other methods elsewhere.
+async fn fallback(State(state): State<AppState>, method: Method, uri: Uri) -> Response {
+    let web = &state.web;
+    if decode_path(uri.path()).is_some_and(|path| is_api(&path)) {
+        return not_found(web).await;
+    }
+    if method == Method::GET || method == Method::HEAD {
+        return app_file(web, &uri).await;
+    }
     (
-        [(header::CONTENT_TYPE, "application/json")],
-        HEALTH_LIVE_BODY,
+        StatusCode::METHOD_NOT_ALLOWED,
+        [(header::ALLOW, "GET, HEAD")],
     )
         .into_response()
 }
 
+fn is_api(path: &str) -> bool {
+    path.trim_start_matches('/')
+        .split('/')
+        .next()
+        .is_some_and(|first| first == API_PREFIX)
+}
+
 /// A file of the app; page addresses fall back to the start page.
-async fn app_file(State(web): State<Arc<WebSource>>, uri: Uri) -> Response {
+async fn app_file(web: &WebSource, uri: &Uri) -> Response {
     let Some(path) = decode_path(uri.path()) else {
-        return not_found(&web).await;
+        return not_found(web).await;
     };
     let path = path.trim_start_matches('/');
     let wanted = if path.is_empty() { INDEX } else { path };
@@ -67,7 +167,7 @@ async fn app_file(State(web): State<Arc<WebSource>>, uri: Uri) -> Response {
         None => None,
     };
     let Some((name, asset)) = found else {
-        return not_found(&web).await;
+        return not_found(web).await;
     };
     let cache = if name.starts_with(IMMUTABLE_PREFIX) {
         CACHE_IMMUTABLE
@@ -103,7 +203,7 @@ async fn not_found(web: &WebSource) -> Response {
 #[cfg(test)]
 mod tests {
     use axum::body::Body;
-    use axum::http::Request;
+    use axum::http::{Method, Request};
     use tower::ServiceExt as _;
 
     use super::*;
@@ -120,7 +220,16 @@ mod tests {
 
     async fn get_from(web: WebSource, path: &str) -> Response {
         let request = Request::get(path).body(Body::empty()).unwrap();
-        router(web).oneshot(request).await.unwrap()
+        router(options(web)).oneshot(request).await.unwrap()
+    }
+
+    fn options(web: WebSource) -> Options {
+        Options {
+            web,
+            https: false,
+            data_folder: std::env::temp_dir(),
+            trusted_proxies: vec![],
+        }
     }
 
     async fn body(response: Response) -> String {
@@ -141,6 +250,49 @@ mod tests {
         assert_eq!(response.status(), StatusCode::OK);
         assert_eq!(header_of(&response, "content-type"), "application/json");
         assert_eq!(body(response).await, r#"{"status":"ok"}"#);
+    }
+
+    #[tokio::test]
+    async fn ops_08_health_ready_checks_the_data_folder() {
+        let data = tempfile::tempdir().unwrap();
+        let mut ready = options(WebSource::Folder("none".into()));
+        ready.data_folder = data.path().to_path_buf();
+        let request = Request::get("/health/ready").body(Body::empty()).unwrap();
+        let response = router(ready).oneshot(request).await.unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
+        assert!(body(response).await.contains(r#""data_folder":"ok""#));
+
+        let mut missing = options(WebSource::Folder("none".into()));
+        missing.data_folder = data.path().join("not-there");
+        let request = Request::get("/health/ready").body(Body::empty()).unwrap();
+        let response = router(missing).oneshot(request).await.unwrap();
+        assert_eq!(response.status(), StatusCode::SERVICE_UNAVAILABLE);
+        assert!(body(response).await.contains("unavailable"));
+    }
+
+    #[tokio::test]
+    async fn dist_01_unknown_api_addresses_are_not_found_for_every_method() {
+        let dir = app_folder();
+        for method in [
+            Method::GET,
+            Method::POST,
+            Method::PUT,
+            Method::DELETE,
+            Method::PATCH,
+        ] {
+            for path in ["/api/x", "/api", "/api/", "/%61pi/x"] {
+                let request = Request::builder()
+                    .method(method.clone())
+                    .uri(path)
+                    .body(Body::empty())
+                    .unwrap();
+                let response = router(options(WebSource::Folder(dir.path().into())))
+                    .oneshot(request)
+                    .await
+                    .unwrap();
+                assert_eq!(response.status(), StatusCode::NOT_FOUND, "{method} {path}");
+            }
+        }
     }
 
     #[tokio::test]
@@ -182,7 +334,6 @@ mod tests {
         for path in [
             "/assets/missing",
             "/assets",
-            "/health/ready",
             "/health",
             "/api/issues",
             "/api",
