@@ -63,7 +63,7 @@ impl Database {
                 .create_if_missing(true)
                 .journal_mode(SqliteJournalMode::Wal)
                 // FULL: a committed change survives a power cut (security first). It costs one
-                // more disk flush per commit than NORMAL does in WAL mode (M1-F22).
+                // more disk flush per commit than NORMAL does in WAL mode (M1-F23).
                 .synchronous(SqliteSynchronous::Full)
                 .foreign_keys(true)
                 .busy_timeout(SQLITE_BUSY_TIMEOUT);

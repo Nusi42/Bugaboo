@@ -7,6 +7,9 @@
 //! [`Database::verify_security_log`](crate::Database::verify_security_log) requires the database
 //! to have at least the newest anchored entry, with the same hash.
 //!
+//! The `logs/` folder is made private by the server with the rest of the data folder; this file
+//! does not create it, and creates the file itself owner-only on Unix.
+//!
 //! The file is written *after* the entry is committed, so it is never ahead of the database. A
 //! crash between the two leaves the file one entry behind, which is harmless. A line that is
 //! only half written (a crash while writing) is ignored; any other line without a valid
@@ -69,9 +72,6 @@ impl LogSeal {
             .key
             .sign(&[ANCHOR_DOMAIN, &seq.to_be_bytes(), hash.as_bytes()])?;
         let line = format!("{seq} {} {}\n", hex(hash.as_bytes()), hex(&signature));
-        if let Some(folder) = self.file.parent() {
-            fs::create_dir_all(folder).map_err(StoreError::AnchorFile)?;
-        }
         let mut file = open_append(&self.file).map_err(StoreError::AnchorFile)?;
         // One write call per line keeps lines whole when two appends finish together.
         file.write_all(line.as_bytes())
@@ -161,6 +161,7 @@ mod tests {
 
     fn seal() -> (tempfile::TempDir, LogSeal) {
         let folder = tempfile::tempdir().unwrap();
+        fs::create_dir(folder.path().join("logs")).unwrap();
         let seal = LogSeal::with_key(
             SigningKey::generate().unwrap(),
             folder.path().join("logs").join("security-head.log"),

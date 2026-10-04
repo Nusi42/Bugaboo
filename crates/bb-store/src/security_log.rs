@@ -56,6 +56,9 @@ impl Database {
     /// the entry with its place and hash. When two writers add at the same moment, one of them
     /// starts over.
     ///
+    /// Do not call this again after [`StoreError::AnchorFile`]: the entry is stored already, and
+    /// a second call would add it twice. Report the problem with the file instead.
+    ///
     /// # Errors
     /// Fails with [`StoreError::Contended`] after repeated collisions, with
     /// [`StoreError::AnchorFile`] when the anchor file cannot be written (the entry is stored
@@ -145,7 +148,10 @@ impl Database {
             .collect()
     }
 
-    /// Checks the whole chain with the log key, the checkpoint and the anchor file. This is what
+    /// Checks the whole chain with the log key, the checkpoint and the anchor file. Read
+    /// `Valid { anchored: false }` together with `entries` and `head`: on a log that has entries
+    /// it means nothing vouches for the end (the anchor file is missing or empty), which is a
+    /// warning; on an empty log it is normal. This is what
     /// `bugaboo security-log verify` and the status page run. It reads one consistent snapshot of
     /// the database and takes no write lock, so appends go on while it runs.
     ///
@@ -570,6 +576,7 @@ mod tests {
     /// returned guard.
     fn new_seal() -> (tempfile::TempDir, LogSeal) {
         let folder = tempfile::tempdir().unwrap();
+        std::fs::create_dir(folder.path().join("logs")).unwrap();
         let seal = LogSeal::with_key(
             SigningKey::generate().unwrap(),
             folder.path().join("logs").join("security-head.log"),

@@ -184,7 +184,7 @@ impl KeyRing {
         if create {
             fs::create_dir_all(folder).map_err(StoreError::KeyFile)?;
         }
-        let keys = if let Some(text) = read_file(&master_path)? {
+        let keys = if let Some(text) = read_complete(&master_path)? {
             parse_master(&text)?
         } else {
             let first = MasterKey::generate(key_id(1)?)?;
@@ -192,7 +192,7 @@ impl KeyRing {
             // Whoever made the file first wins; read what is really there.
             parse_master(&wait_for(&master_path)?)?
         };
-        let log_key = if let Some(text) = read_file(&log_path)? {
+        let log_key = if let Some(text) = read_complete(&log_path)? {
             parse_log(&text)?
         } else {
             write_first(&log_path, &render_log(&SigningKey::generate()?))?;
@@ -232,7 +232,7 @@ impl KeyRing {
                 return Ok(Arc::clone(&state.keys));
             }
         }
-        let text = read_file(&path)?.ok_or(StoreError::KeysMissing)?;
+        let text = read_complete(&path)?.ok_or(StoreError::KeysMissing)?;
         let keys = Arc::new(parse_master(&text)?);
         let mut state = self
             .state
@@ -321,6 +321,17 @@ fn id_number(id: &TechnicalName) -> u64 {
         .strip_prefix('k')
         .and_then(|digits| digits.parse().ok())
         .unwrap_or(0)
+}
+
+/// The text of a key file that is complete (ends with a new line), or `None` when there is no such
+/// file. A file that is empty or cut short is being written by another process that started at
+/// the same moment, so this waits for it. The bytes are wiped when the result is dropped.
+fn read_complete(path: &Path) -> Result<Option<Zeroizing<String>>, StoreError> {
+    match read_file(path)? {
+        Some(text) if text.ends_with('\n') => Ok(Some(text)),
+        Some(_) => wait_for(path).map(Some),
+        None => Ok(None),
+    }
 }
 
 /// The text of a key file, or `None` when there is no such file. The bytes are wiped when the
@@ -549,6 +560,25 @@ mod tests {
             Err(StoreError::KeysMissing)
         ));
         assert!(!folder.path().join(LOG_FILE).exists(), "nothing was made");
+    }
+
+    #[test]
+    fn a_key_file_that_is_still_being_written_is_waited_for() {
+        let folder = tempfile::tempdir().unwrap();
+        let path = folder.path().to_owned();
+        let first = KeyRing::open_or_create(&path).unwrap();
+        let expected = *first.newest().unwrap().bytes();
+        // The writer made the file but has not written it yet.
+        let master = path.join(MASTER_FILE);
+        let content = fs::read(&master).unwrap();
+        fs::write(&master, "").unwrap();
+        let writer = std::thread::spawn(move || {
+            std::thread::sleep(Duration::from_millis(300));
+            fs::write(&master, content).unwrap();
+        });
+        let second = KeyRing::open(&path, false).unwrap();
+        writer.join().unwrap();
+        assert_eq!(*second.newest().unwrap().bytes(), expected);
     }
 
     #[test]
