@@ -6,7 +6,7 @@
     ".": "./src/index.ts",
     "./tokens.css": "./src/tokens.css"
   },
-  "dependencies": {
+  "peerDependencies": {
     "react": "19.3.0"
   }
 }
