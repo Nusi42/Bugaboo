@@ -39,3 +39,6 @@ desktop.ini
 # Browser app build output and test reports (WP-02)
 /test-results/
 /playwright-report/
+
+# Local Claude Code settings (per machine; points the agent memory to bugaboo.win1/.claude/memory)
+.claude/settings.local.json

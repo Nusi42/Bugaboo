@@ -308,7 +308,7 @@ fn create_private(path: &Path, _first: bool) -> std::io::Result<fs::File> {
 }
 
 /// Refuses a key file that others can read. Only Unix has file modes; on Windows the file has
-/// the owner-only access of the `keys/` folder it is in (M1-F21).
+/// the owner-only access of the `keys/` folder it is in (M1-F22).
 fn check_permissions(path: &Path) -> Result<(), StoreError> {
     let metadata = fs::metadata(path).map_err(StoreError::KeyFile)?;
     #[cfg(unix)]

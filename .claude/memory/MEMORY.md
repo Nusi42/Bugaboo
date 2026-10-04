@@ -1,0 +1,13 @@
+- [Next steps](next-steps.md) — read docs/STATUS.md first: milestone, wave, package states, next action
+- [Review pages](user-reviews-on-phone.md) — commentable HTML pages, not local md; screenshots after each milestone (light + dark)
+- [Plain language, no vendor terms](plain-language-no-vendor-terms.md) — no Jira-style naming; UI for non-technical users; glossary is SSOT
+- [Germany: GDPR + working time](germany-gdpr-worktime.md) — GDPR everywhere; daily start/end time recording; accounting fields on time entries
+- [Clean work folders](clean-work-folders.md) — disk is tight: cargo clean a builder folder after its package is merged and green; keep .codegraph and memory
+- [SSOT/DRY/ODR merge gate](ssot-dry-odr-gate.md) — mandatory in every review, existing and new code; every reviewer and builder prompt names it
+- [Single theme file](single-theme-file.md) — all UI theming in one file like the sister project; components only data-part; build-time CSS (CSP)
+- [No private info in Git](no-private-info-in-git.md) — no profile paths, machine names, session IDs/links or personal notes; no Claude-Session trailer
+- [UX quality gate](ux-quality-gate.md) — look at every screenshot for alignment, padding, state colors before a review; follow the approved UX concept
+- [Lead checks agents itself](lead-checks-agents-itself.md) — every ~15 min check running builders; act on reports without waiting
+- [Typography and status colors](typography-and-status-colors.md) — rows clearly tinted by status group; bold only per UX §7.3, enforced by a check
+- [Restart ci after a memory stop](restart-ci-after-memory-stop.md) — a ci stopped for low memory may be restarted without asking
+- [Going public](going-public.md) — clean files, tooling and history first, push to GitHub once after the go-ahead; M6 paused meanwhile

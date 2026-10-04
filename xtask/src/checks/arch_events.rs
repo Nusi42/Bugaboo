@@ -4,7 +4,7 @@
 //! input parameter is called `cmd` (a query's is called `query`); it changes something, so its
 //! body must call `append_event`, which writes the domain event in the same transaction as the
 //! change. This check reads the code; the generated test that runs every command against the
-//! in-memory fakes and asserts the event comes with the first use cases (M1-F17).
+//! in-memory fakes and asserts the event comes with the first use cases (M1-F18).
 
 use super::{Check, Context, Finding};
 use crate::rust_source::{Source, before_tests, read_product_sources};
