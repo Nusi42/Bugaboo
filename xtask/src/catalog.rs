@@ -102,6 +102,11 @@ impl Catalog {
         &self.entries
     }
 
+    /// Every ID, in file order.
+    pub(crate) fn ids(&self) -> Vec<&str> {
+        self.entries.iter().map(|entry| entry.id.as_str()).collect()
+    }
+
     pub(crate) fn get(&self, id: &str) -> Option<&Entry> {
         self.entries.iter().find(|entry| entry.id == id)
     }

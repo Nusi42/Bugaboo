@@ -11,6 +11,8 @@ pub(crate) mod tokens;
 
 use anyhow::Context as _;
 
+use crate::catalog::Catalog;
+use crate::docs;
 use crate::repo::Repo;
 
 /// One file a generator produces.
@@ -24,6 +26,26 @@ impl Generated {
     pub(crate) fn new(path: &'static str, content: String) -> Self {
         Self { path, content }
     }
+}
+
+/// Every generated file in the repository: the docs pages, the token files and the message types.
+/// DOC-GENERATED compares all of them with the disk, so a generator is added here.
+pub(crate) fn all(repo: &Repo, catalog: &Catalog) -> anyhow::Result<Vec<Generated>> {
+    let mut files = docs::generate(repo, catalog)?;
+    files.extend(tokens::generate(&token_file::TokenFile::load(repo)?));
+    let catalog_text = std::fs::read_to_string(repo.path(messages::SOURCE_LOCALE_PATH))
+        .with_context(|| format!("could not read {}", messages::SOURCE_LOCALE_PATH))?;
+    files.push(messages::generate(&catalog_text)?);
+    Ok(files)
+}
+
+/// The paths of everything [`all`] produces, without producing it. META-COVERAGE counts these as
+/// generated.
+pub(crate) fn all_paths() -> Vec<&'static str> {
+    let mut paths = docs::generated_paths();
+    paths.extend(tokens::output_paths());
+    paths.push(messages::OUTPUT);
+    paths
 }
 
 /// Writes the files (only when they changed) and returns the paths that were written.
