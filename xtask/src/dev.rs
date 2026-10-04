@@ -2,21 +2,25 @@
 //!
 //! This file is the only place in xtask that reads `tools/dev/ports.json`.
 
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::process::{Child, Command};
+use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::thread::sleep;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use anyhow::{Context as _, bail};
 use serde::Deserialize;
 
 use crate::output;
-use crate::steps::{self, Step, WEB_APP};
+use crate::steps::{self, Profile, WEB_APP};
 
 /// Where the ports live; `BB_PORTS_FILE` overrides it for a second checkout (ADR-0023).
 const PORTS_FILE: &str = "tools/dev/ports.json";
 const PORTS_FILE_VARIABLE: &str = "BB_PORTS_FILE";
 const POLL: Duration = Duration::from_millis(250);
+/// How long a program gets to stop after being asked to, before it is killed.
+const STOP_GRACE: Duration = Duration::from_secs(5);
 
 /// The ports `dev` needs. Other keys in the file belong to other tools.
 #[derive(Debug, Deserialize, PartialEq, Eq)]
@@ -32,7 +36,7 @@ impl Ports {
 
     pub(crate) fn load(root: &Path) -> anyhow::Result<Self> {
         let path = std::env::var_os(PORTS_FILE_VARIABLE)
-            .map_or_else(|| root.join(PORTS_FILE), std::path::PathBuf::from);
+            .map_or_else(|| root.join(PORTS_FILE), PathBuf::from);
         let json = std::fs::read_to_string(&path)
             .with_context(|| format!("could not read {}", path.display()))?;
         Self::parse(&json)
@@ -51,14 +55,34 @@ impl Drop for Running {
     }
 }
 
+/// Starts the program in its own process group (Unix), so it and what it starts can be
+/// stopped together. On Windows `taskkill /T` stops the whole tree instead.
+fn spawn(command: &mut Command, what: &str) -> anyhow::Result<Child> {
+    #[cfg(unix)]
+    {
+        use std::os::unix::process::CommandExt as _;
+        command.process_group(0);
+    }
+    command
+        .spawn()
+        .with_context(|| format!("could not start the {what}"))
+}
+
 /// Stops the program and everything it started (`npm` starts `node`).
 fn stop(child: &mut Child) {
     if cfg!(windows) {
-        // `Child::kill` would leave the grandchildren running.
         let _ = Command::new("taskkill")
             .args(["/PID", &child.id().to_string(), "/T", "/F"])
             .output();
     } else {
+        // A negative id addresses the whole process group.
+        let _ = Command::new("kill")
+            .args(["-TERM", "--", &format!("-{}", child.id())])
+            .output();
+        let deadline = Instant::now() + STOP_GRACE;
+        while Instant::now() < deadline && matches!(child.try_wait(), Ok(None)) {
+            sleep(Duration::from_millis(50));
+        }
         let _ = child.kill();
     }
     let _ = child.wait();
@@ -66,57 +90,54 @@ fn stop(child: &mut Child) {
 
 pub(crate) fn run(root: &Path) -> anyhow::Result<bool> {
     let ports = Ports::load(root)?;
-    let server_build = Step::new(
-        "build the bugaboo binary",
-        "cargo",
-        &["build", "--package", "bb-server"],
-    );
-    if !steps::run(root, &[server_build])? {
+    let built = steps::run(root, &[steps::server_build(Profile::Debug)])?;
+    let Some(server) = built.executable.filter(|_| built.passed) else {
         return Ok(false);
-    }
+    };
+
+    let interrupted = Arc::new(AtomicBool::new(false));
+    let flag = Arc::clone(&interrupted);
+    ctrlc::set_handler(move || flag.store(true, Ordering::SeqCst))
+        .context("could not listen for Ctrl+C")?;
 
     let mut running = Vec::new();
-    let server_port = ports.server.to_string();
     running.push(Running {
         name: "server",
-        child: Command::new(steps::server_binary(root, "debug"))
-            .args(["serve", "--port", &server_port])
-            .current_dir(root)
-            .spawn()
-            .context("could not start the bugaboo server")?,
+        child: spawn(
+            Command::new(server)
+                .args(["serve", "--port", &ports.server.to_string()])
+                .current_dir(root),
+            "bugaboo server",
+        )?,
     });
     output::line(&format!("Server:  http://127.0.0.1:{}", ports.server));
 
     if steps::web_app_exists(root) {
-        let web_port = ports.web.to_string();
         running.push(Running {
             name: "browser app",
-            child: Command::new(steps::npm())
-                .args([
-                    "run",
-                    "dev",
-                    "-w",
-                    WEB_APP,
-                    "--",
-                    "--port",
-                    &web_port,
-                    "--strictPort",
-                ])
-                .current_dir(root)
-                .spawn()
-                .context("could not start the Vite dev server")?,
+            child: spawn(
+                Command::new(steps::npm())
+                    .args(["run", "dev", "-w", WEB_APP, "--"])
+                    .args(["--port", &ports.web.to_string(), "--strictPort"])
+                    .current_dir(root),
+                "Vite dev server",
+            )?,
         });
         output::line(&format!("Browser: http://localhost:{}", ports.web));
     } else {
         output::line("The browser app does not exist yet (web/app); running the server alone.");
     }
     output::line("Press Ctrl+C to stop.");
-    wait_for_exit(&mut running)
+    wait_for_exit(&mut running, &interrupted)
 }
 
-/// Waits until one program ends; the others are stopped when `running` is dropped.
-fn wait_for_exit(running: &mut [Running]) -> anyhow::Result<bool> {
+/// Waits until Ctrl+C or until one program ends; `running` stops the rest when dropped.
+fn wait_for_exit(running: &mut [Running], interrupted: &AtomicBool) -> anyhow::Result<bool> {
     loop {
+        if interrupted.load(Ordering::SeqCst) {
+            output::line("Stopping.");
+            return Ok(true);
+        }
         for program in running.iter_mut() {
             if let Some(status) = program
                 .child
@@ -166,5 +187,11 @@ mod tests {
         for port in [ports.server, ports.web] {
             assert!((47200..=47299).contains(&port));
         }
+    }
+
+    #[test]
+    fn dev_waiting_ends_at_once_after_ctrl_c() {
+        let interrupted = AtomicBool::new(true);
+        assert!(wait_for_exit(&mut [], &interrupted).unwrap());
     }
 }

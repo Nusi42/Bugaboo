@@ -1,6 +1,6 @@
 //! `cargo xtask hook post-edit`: the Claude Code `PostToolUse` hook.
 //!
-//! Claude Code passes the tool call as JSON on stdin (`tool_input.file_path`). We run the edit
+//! Claude Code passes the tool call as JSON on stdin (`tool_input.file_path`, or `notebook_path` for notebooks). We run the edit
 //! checks for that file; on failure the short report goes to stderr with exit code 2, which
 //! Claude Code feeds back to the agent.
 
@@ -25,12 +25,16 @@ struct HookInput {
 #[derive(Deserialize)]
 struct ToolInput {
     file_path: Option<String>,
+    /// `NotebookEdit` names its file this way.
+    notebook_path: Option<String>,
 }
 
 /// The file the agent just edited, if the hook input names one.
 pub(crate) fn edited_file(stdin: &str) -> anyhow::Result<Option<String>> {
     let input: HookInput = serde_json::from_str(stdin).context("the hook input is not JSON")?;
-    Ok(input.tool_input.and_then(|tool| tool.file_path))
+    Ok(input
+        .tool_input
+        .and_then(|tool| tool.file_path.or(tool.notebook_path)))
 }
 
 /// Keeps what went wrong: drops passing checks and cuts the rest short.
@@ -87,6 +91,12 @@ mod tests {
             edited_file(EDIT_INPUT).unwrap().as_deref(),
             Some("C:\\work\\a.rs")
         );
+    }
+
+    #[test]
+    fn notebook_edits_name_their_file_as_notebook_path() {
+        let input = r#"{"tool_input":{"notebook_path":"/w/n.ipynb"}}"#;
+        assert_eq!(edited_file(input).unwrap().as_deref(), Some("/w/n.ipynb"));
     }
 
     #[test]

@@ -2,26 +2,18 @@
 
 use std::path::Path;
 
-use crate::steps::{self, Step, WEB_APP};
+use crate::steps::{self, Profile, Step};
 
 /// Release builds embed `web/app/dist`, so the web build comes first.
 pub(crate) fn plan(root: &Path) -> Vec<Step> {
     vec![
-        Step::web(
-            root,
-            "build the browser app",
-            &["run", "build", "-w", WEB_APP],
-        ),
-        Step::new(
-            "build the bugaboo binary",
-            "cargo",
-            &["build", "--release", "--package", "bb-server"],
-        ),
+        steps::web_build(root),
+        steps::server_build(Profile::Release),
     ]
 }
 
 pub(crate) fn run(root: &Path) -> anyhow::Result<bool> {
-    steps::run(root, &plan(root))
+    Ok(steps::run(root, &plan(root))?.passed)
 }
 
 #[cfg(test)]

@@ -4,19 +4,17 @@ use std::path::Path;
 
 use anyhow::Context as _;
 
-use crate::steps::{self, Step, WEB_APP};
+use crate::steps::{self, Profile, Step, WEB_APP};
 
 pub(crate) fn plan(root: &Path) -> anyhow::Result<Vec<Step>> {
     let xtask = std::env::current_exe().context("could not find the running xtask program")?;
     Ok(vec![
         Step::new("all checks", xtask.to_string_lossy(), &["check", "all"]),
         Step::new("Rust tests", "cargo", &["test", "--workspace"]),
-        Step::web(
-            root,
-            "build the browser app",
-            &["run", "build", "-w", WEB_APP],
-        ),
+        steps::web_build(root),
         Step::web(root, "browser unit tests", &["test", "-w", WEB_APP]),
+        // The end-to-end tests start the program themselves (ADR-0023).
+        steps::server_build(Profile::Debug),
         Step::web(
             root,
             "browser end-to-end tests",
@@ -26,7 +24,7 @@ pub(crate) fn plan(root: &Path) -> anyhow::Result<Vec<Step>> {
 }
 
 pub(crate) fn run(root: &Path) -> anyhow::Result<bool> {
-    steps::run(root, &plan(root)?)
+    Ok(steps::run(root, &plan(root)?)?.passed)
 }
 
 #[cfg(test)]
@@ -44,6 +42,7 @@ mod tests {
                 "Rust tests",
                 "build the browser app",
                 "browser unit tests",
+                "build the bugaboo program",
                 "browser end-to-end tests"
             ]
         );
@@ -57,6 +56,6 @@ mod tests {
             .iter()
             .map(|s| s.skip.is_some())
             .collect();
-        assert_eq!(skipped, [false, false, true, true, true]);
+        assert_eq!(skipped, [false, false, true, true, false, true]);
     }
 }

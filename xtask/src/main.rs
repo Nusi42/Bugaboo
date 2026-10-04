@@ -102,9 +102,9 @@ fn run() -> anyhow::Result<ExitCode> {
             output::list(&catalog, &registry);
             Ok(ExitCode::SUCCESS)
         }
-        Command::Dev => Ok(exit_code(dev::run(repo.root())?)),
-        Command::Build => Ok(exit_code(build::run(repo.root())?)),
-        Command::Ci => Ok(exit_code(ci::run(repo.root())?)),
+        Command::Dev => Ok(steps::exit_code(dev::run(repo.root())?)),
+        Command::Build => Ok(steps::exit_code(build::run(repo.root())?)),
+        Command::Ci => Ok(steps::exit_code(ci::run(repo.root())?)),
         Command::Hook {
             event: HookEvent::PostEdit,
         } => {
@@ -120,15 +120,12 @@ fn run() -> anyhow::Result<ExitCode> {
                 CheckScope::All => runner::Scope::All,
                 CheckScope::Only { ids } => runner::Scope::Only(ids),
             };
-            Ok(exit_code(runner::run(&repo, &catalog, &registry, &scope)?))
+            let passed = runner::run(&repo, &catalog, &registry, &scope)?;
+            Ok(if passed {
+                ExitCode::SUCCESS
+            } else {
+                ExitCode::FAILURE
+            })
         }
-    }
-}
-
-fn exit_code(passed: bool) -> ExitCode {
-    if passed {
-        ExitCode::SUCCESS
-    } else {
-        ExitCode::FAILURE
     }
 }
