@@ -59,3 +59,10 @@
   outline: var(--ring-width) solid var(--accent);
   outline-offset: var(--ring-offset);
 }
+
+/* Forced-colors mode drops background colors, so the chosen theme needs an outline to be seen. */
+@media (forced-colors: active) {
+  .input:checked + .label {
+    outline: var(--ring-width) solid Highlight;
+  }
+}
