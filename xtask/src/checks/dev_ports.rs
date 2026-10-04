@@ -192,32 +192,67 @@ fn block_body<'a>(text: &'a str, name: &str) -> Option<&'a str> {
     None
 }
 
-/// Lines that name a default framework port. Only lines that talk about ports or addresses
-/// count, so an unrelated number such as `timeout: 3000` is fine.
+/// Words that put a line in "talking about ports or addresses" context.
+const ADDRESS_WORDS: [&str; 11] = [
+    "port",
+    "://",
+    "localhost",
+    "127.0.0.1",
+    "0.0.0.0",
+    "socketaddr",
+    "ipv4addr",
+    "ipv6addr",
+    "tcplistener",
+    "bind(",
+    "listen(",
+];
+
+/// Lines that name a default framework port. A number counts only in port context: a line that
+/// talks about ports or addresses, a `host:NNNN` inside a string, or the number after an address
+/// array such as `([127, 0, 0, 1], 8080)`. So an unrelated number such as `timeout: 3000` is fine.
 fn default_port_findings(path: &str, text: &str) -> Vec<Finding> {
     let mut findings = Vec::new();
     for (index, line) in text.lines().enumerate() {
         let lower = line.to_ascii_lowercase();
-        let about_ports = lower.contains("port")
-            || lower.contains("://")
-            || lower.contains("localhost")
-            || lower.contains("127.0.0.1");
-        if !about_ports {
+        let about_ports = ADDRESS_WORDS.iter().any(|word| lower.contains(word));
+        let in_line = numbers(line);
+        let found = DEFAULT_PORTS.iter().find(|port| {
+            let number = port.to_string();
+            in_line.contains(port)
+                && (about_ports
+                    || colon_port_in_string(line, &number)
+                    || after_address_array(line, &number))
+        });
+        let Some(number) = found else {
             continue;
-        }
-        if let Some(number) = numbers(line)
-            .into_iter()
-            .find(|n| DEFAULT_PORTS.contains(n))
-        {
-            findings.push(Finding::at(
-                format!("{path}:{}", index + 1),
-                format!(
-                    "{number} is a default framework port. Read the port from {PORTS_FILE} instead."
-                ),
-            ));
-        }
+        };
+        findings.push(Finding::at(
+            format!("{path}:{}", index + 1),
+            format!(
+                "{number} is a default framework port. Read the port from {PORTS_FILE} instead."
+            ),
+        ));
     }
     findings
+}
+
+/// `"host:3000"`: the number follows a colon that follows a host character, inside quotes.
+fn colon_port_in_string(line: &str, number: &str) -> bool {
+    line.match_indices(&format!(":{number}"))
+        .any(|(index, matched)| {
+            let after = line[index + matched.len()..].chars().next();
+            let before = line[..index].chars().next_back();
+            let in_string = line[..index].matches('"').count() % 2 == 1;
+            in_string
+                && before.is_some_and(|c| c.is_ascii_alphanumeric() || c == ']')
+                && after.is_none_or(|c| !c.is_ascii_digit())
+        })
+}
+
+/// `([127, 0, 0, 1], 8080)`: the number right after the closing bracket of an address array.
+fn after_address_array(line: &str, number: &str) -> bool {
+    line.match_indices(number)
+        .any(|(index, _)| line[..index].trim_end().ends_with("],"))
 }
 
 /// Every whole number in the text.
@@ -327,6 +362,36 @@ export default { server: { port: ports.web, strictPort: true } };
         );
         assert!(!default_port_findings("x.toml", "url = \"http://localhost:3000\"").is_empty());
         assert!(default_port_findings("x.rs", "let retries = 3000;").is_empty());
+    }
+
+    #[test]
+    fn rust_addresses_with_default_ports_fail() {
+        for bad in [
+            "let address = \"0.0.0.0:3000\";",
+            "let a = SocketAddr::from(([127, 0, 0, 1], 8080));",
+            "let l = tokio::net::TcpListener::bind((\"::\", 5173)).await?;",
+            "let a = ([0, 0, 0, 0], 4173).into();",
+            "let url = \"api.local:51204/path\";",
+        ] {
+            assert!(
+                !default_port_findings("crates/x/src/lib.rs", bad).is_empty(),
+                "{bad}"
+            );
+        }
+    }
+
+    #[test]
+    fn rust_numbers_that_are_not_ports_pass() {
+        for ok in [
+            "let timeout = Duration::from_millis(3000);",
+            "let sizes = [8080, 3000];",
+            "const RETRY_MS: u64 = 5173;",
+        ] {
+            assert!(
+                default_port_findings("crates/x/src/lib.rs", ok).is_empty(),
+                "{ok}"
+            );
+        }
     }
 
     #[test]
