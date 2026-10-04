@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cargo run --quiet --manifest-path \"$CLAUDE_PROJECT_DIR/xtask/Cargo.toml\" -- hook post-edit",
+            "timeout": 120
+          }
+        ]
+      }
+    ]
+  }
+}

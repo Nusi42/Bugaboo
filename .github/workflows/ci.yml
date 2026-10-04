@@ -1,0 +1,24 @@
+# Prepared for the move to GitHub (ADR-0024). Until then CI is `cargo xtask ci` on the
+# development PC; this workflow only runs when started by hand.
+name: ci
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 26
+      - run: cargo xtask setup
+      - run: cargo xtask ci

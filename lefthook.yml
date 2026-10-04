@@ -1,0 +1,16 @@
+# Git hooks (ADR-0014). They only call the check runner; install with `lefthook install`.
+pre-commit:
+  commands:
+    checks:
+      run: cargo xtask check staged
+
+pre-push:
+  commands:
+    checks:
+      run: cargo xtask check push
+
+# `check commit-msg` is added by WP-03 (GIT-COMMIT-MSG); until it is merged this hook fails.
+commit-msg:
+  commands:
+    conventional-commits:
+      run: cargo xtask check commit-msg {1}
