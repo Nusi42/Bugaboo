@@ -49,3 +49,9 @@ Server crates are added with the milestones that use them; planned ones are list
 | @types/node | 26.6.4 | MIT | no | Node types for the Vite, Vitest and Playwright configs | maintained (2026-10-04) | — |
 | @types/react | 19.3.0 | MIT | no | React types | maintained (2026-10-04) | — |
 | @types/react-dom | 19.3.0 | MIT | no | React DOM types | maintained (2026-10-04) | — |
+
+## Accepted risks
+
+| Advisory | Package | Severity | Why accepted | Re-check |
+|----------|---------|----------|--------------|----------|
+| [GHSA-vfj7-8cjw-p6xm](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm) | braces (3.0.3, via stylelint, globby, fast-glob, micromatch) | high (stack exhaustion through deeply nested patterns) | No patched release exists: the advisory covers every version, and the only suggested fix downgrades stylelint to 7.7.0. The package is a dev-only tool (stylelint globbing our own files); it is not shipped and never receives untrusted patterns. | 2027-01-04, or when braces, micromatch or stylelint publish a new release |
