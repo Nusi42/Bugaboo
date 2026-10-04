@@ -134,6 +134,15 @@ impl TokenFile {
         {
             bail!("contrast rules use unknown color `{unknown}`");
         }
+        if let Some((name, _)) = first
+            .colors
+            .iter()
+            .find(|(name, _)| !self.contrast.classifies(name))
+        {
+            bail!(
+                "color `{name}` is not classified: list it under contrast `text`, `backgrounds` or `nonText` (with a reason)"
+            );
+        }
         self.contrast.check_exclusions()?;
         Ok(())
     }

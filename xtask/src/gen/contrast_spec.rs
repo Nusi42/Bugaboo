@@ -28,6 +28,8 @@ pub(crate) struct ContrastSpec {
     pub(crate) backgrounds: Vec<String>,
     pub(crate) restricted: Vec<Restricted>,
     pub(crate) exclusions: Vec<Exclusion>,
+    /// Colors that are neither text nor a background for text (borders), each with a reason.
+    pub(crate) non_text: Vec<String>,
 }
 
 impl ContrastSpec {
@@ -60,6 +62,15 @@ impl ContrastSpec {
                 .iter()
                 .flat_map(|r| std::iter::once(&r.text).chain(&r.on)),
         )
+    }
+
+    /// Whether the rules say what this color is: text, a background, or not text at all.
+    pub(crate) fn classifies(&self, color: &str) -> bool {
+        self.text
+            .iter()
+            .chain(&self.backgrounds)
+            .chain(&self.non_text)
+            .any(|name| name == color)
     }
 
     /// Fails when an exclusion matches nothing (it is stale) or names no color at all.
@@ -107,6 +118,12 @@ impl ContrastSpec {
                 },
             });
         }
+        let mut non_text = Vec::new();
+        for entry in list(spec, "nonText")? {
+            let entry = entry.as_object().context("`nonText` holds objects")?;
+            reason(entry)?;
+            non_text.extend(names(entry, "colors")?);
+        }
         Ok(Self {
             min: spec
                 .get("min")
@@ -116,6 +133,7 @@ impl ContrastSpec {
             backgrounds: names(spec, "backgrounds")?,
             restricted,
             exclusions,
+            non_text,
         })
     }
 }

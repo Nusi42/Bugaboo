@@ -94,6 +94,17 @@ mod tests {
     }
 
     #[test]
+    fn a_color_without_a_classification_is_rejected() {
+        let repo = Repo::discover().unwrap();
+        let text = std::fs::read_to_string(repo.path(TOKENS_PATH)).unwrap();
+        let mut value: serde_json::Value = serde_json::from_str(&text).unwrap();
+        let non_text = &mut value["$extensions"]["bugaboo"]["contrast"]["nonText"];
+        *non_text = serde_json::json!([{ "colors": ["border"], "reason": "decorative" }]);
+        let error = TokenFile::parse(&value.to_string()).err().unwrap();
+        assert!(format!("{error:#}").contains("border-subtle"), "{error:#}");
+    }
+
+    #[test]
     fn bad_example() {
         let repo = Repo::discover().unwrap();
         let text = std::fs::read_to_string(repo.path(TOKENS_PATH)).unwrap();
