@@ -16,6 +16,7 @@ How Bugaboo gets built: in 16 milestones, each ending in something you can try. 
 | **Reviewers** | Separate agents with a fresh context | Review every work package adversarially: code, security, UX, words |
 
 ### Work packages
+
 The lead splits each milestone into **work packages** (about half a day to a day of agent work each), written to `docs/milestones/Mx/WP-nn-name.md` before any code:
 
 - **Goal** and the feature IDs it covers;
@@ -44,6 +45,7 @@ flowchart LR
 6. **Fix and merge:** findings go back to the builder; the lead merges the builder's `WINn` branch into `WIN1`, runs `cargo xtask ci` again, and fast-forwards `main` in the master repository. `main` is always green.
 
 ### Definition of done (every work package)
+
 - The listed features work as described in the feature list and UX design.
 - Acceptance tests written first and passing; no lower test coverage in touched crates.
 - All checks green; no new suppressions without reason and issue number.
@@ -54,13 +56,16 @@ flowchart LR
 - Screenshots in four themes on computer and phone for every changed screen.
 
 ### Testing in every milestone
+
 The test layers, the sample organization and the ports are described in architecture §11. In short:
+
 - **Every pull request:** unit, property, use-case and repository tests (both databases), API tests, the permission matrix, end-to-end tests for touched screens, accessibility checks.
 - **Every night:** the full end-to-end suite, the 10-person concurrency run (30 minutes), benchmarks on 1 M issues, dependency and vulnerability scans.
 - **Every milestone:** the sample organization grows with the milestone's features, so every demo runs on realistic data.
 - **Every bug found later** gets a test that would have caught it, and if it's a kind of mistake, a check.
 
 ### Milestone review (the exit gate)
+
 At the end of each milestone, the lead publishes a **milestone review page** (`docs/reviews/Mx.html`, commentable on your phone like the design pages) with:
 
 1. **What's done:** each feature ID with its status and evidence (tests, screenshots).
@@ -97,12 +102,12 @@ You comment on the page. The lead fixes what you ask for, updates the page, and 
 
 **Phase:** MVP · **Goal:** A clean, checked workspace where agents can build safely: every rule is enforced from the first line of code.
 
-**Features**
+**Features:**
 
 - `COMP-02` Third-party components register
 - `COMP-06` Architecture documentation
 
-**Work packages (outline)**
+**Work packages (outline):**
 
 - Work folders as in ADR-0024: the main checkout is the master (`main`, never built in); `<work root>/bugaboo.win1` (branch `WIN1`) for the lead and integration, `bugaboo.win2` and up for builders
 - `main` kept green by the local CI runner (`cargo xtask ci`: everything CI would run, both databases, on Windows and in WSL); nightly runs via a scheduled task. A GitHub Actions workflow is prepared but switched on only when the repository moves to GitHub
@@ -124,7 +129,7 @@ You comment on the page. The lead fixes what you ask for, updates the page, and 
 
 **Phase:** MVP · **Goal:** A secure server that installs, sets itself up and lets people sign in.
 
-**Features**
+**Features:**
 
 - `OPS-01` single self-contained binary
 - `OPS-02` Embedded database by default
@@ -150,7 +155,7 @@ You comment on the page. The lead fixes what you ask for, updates the page, and 
 - `COMP-13` ePrivacy
 - `DIST-01` One codebase and one server binary for both models.
 
-**Work packages (outline)**
+**Work packages (outline):**
 
 - bb-core basics: IDs, error codes, domain events; personal-data marks (derive macro)
 - bb-store: schema and migrations defined once, running on SQLite and PostgreSQL; event log and outbox; job queue
@@ -169,7 +174,7 @@ You comment on the page. The lead fixes what you ask for, updates the page, and 
 
 **Phase:** MVP · **Goal:** The permission engine, the project tree and the app's frame, in all four themes and on phones.
 
-**Features**
+**Features:**
 
 - `SEC-01` Central policy engine
 - `SEC-02` Users
@@ -196,7 +201,7 @@ You comment on the page. The lead fixes what you ask for, updates the page, and 
 - `PERF-03` Compression and caching validators for API responses
 - `PERF-04` Frontend budgets, enforced in CI
 
-**Work packages (outline)**
+**Work packages (outline):**
 
 - bb-policy: permission catalogue, roles, groups, assignments on the project tree, explicit deny, field masks, `Authorized<T>`, `PersonRef` (who sees people)
 - Generated permission-matrix tests (SEC-MATRIX)
@@ -216,7 +221,7 @@ You comment on the page. The lead fixes what you ask for, updates the page, and 
 
 **Phase:** MVP · **Goal:** Create, read and change issues with own fields, relations and safe editing.
 
-**Features**
+**Features:**
 
 - `ISS-01` Issues with an issue ID, title, Markdown description …
 - `ISS-01a` Issue IDs, counting or random
@@ -242,7 +247,7 @@ You comment on the page. The lead fixes what you ask for, updates the page, and 
 - `SEC-13` All user-written rich text is sanitized with an allowlist
 - `CFG-01` Layout editor
 
-**Work packages (outline)**
+**Work packages (outline):**
 
 - Issue types, issue IDs (counting and random, with redirects), sub-issues, relations with editable kinds
 - Own fields (typed value table), field editor with choices, looks and validation
@@ -261,7 +266,7 @@ You comment on the page. The lead fixes what you ask for, updates the page, and 
 
 **Phase:** MVP · **Goal:** Issues move through workflows, carry files, and people get told what matters.
 
-**Features**
+**Features:**
 
 - `WF-01` A workflow is a set of statuses and the status changes …
 - `WF-02` visual workflow editor
@@ -276,7 +281,7 @@ You comment on the page. The lead fixes what you ask for, updates the page, and 
 - `NTF-01` In-app notifications
 - `NTF-02` E-mail notifications, configurable per user and per event
 
-**Work packages (outline)**
+**Work packages (outline):**
 
 - Workflows: statuses, status groups, allowed status changes with Who can do it, Only if, Must be filled in, Ask for
 - Workflow editor: plain list and drawing view; starter workflows
@@ -291,7 +296,7 @@ You comment on the page. The lead fixes what you ask for, updates the page, and 
 
 **Phase:** MVP · **Goal:** Find anything fast, in plain words or filter buttons, without ever seeing what you shouldn't.
 
-**Features**
+**Features:**
 
 - `QRY-01` Advanced search
 - `QRY-02` Simple search
@@ -306,7 +311,7 @@ You comment on the page. The lead fixes what you ask for, updates the page, and 
 - `PERF-01` Server response targets at 1
 - `PERF-05` No N+1 queries
 
-**Work packages (outline)**
+**Work packages (outline):**
 
 - bb-searchlang: grammar, parser, printer, checker, suggestions; WebAssembly build for the editor
 - Search compiler with permission predicates and full-text search on both databases
@@ -323,7 +328,7 @@ You comment on the page. The lead fixes what you ask for, updates the page, and 
 
 **Phase:** MVP · **Goal:** Track time on issues and legally required working hours, with accounting fields.
 
-**Features**
+**Features:**
 
 - `TIME-01` Start/stop timer on any issue
 - `TIME-02` Manual time entries with date, duration, description, an …
@@ -336,7 +341,7 @@ You comment on the page. The lead fixes what you ask for, updates the page, and 
 - `TIME-13` Activity
 - `PRIV-09` Protecting employee data
 
-**Work packages (outline)**
+**Work packages (outline):**
 
 - Timer, time entries with activity and cost center, estimates and roll-ups
 - Timesheet with work-day rows and time on issues
@@ -352,7 +357,7 @@ You comment on the page. The lead fixes what you ask for, updates the page, and 
 
 **Phase:** MVP · **Goal:** Plan on a timeline and make Bugaboo look like your organization.
 
-**Features**
+**Features:**
 
 - `PLAN-01` Timeline
 - `PLAN-02` Dependencies
@@ -363,7 +368,7 @@ You comment on the page. The lead fixes what you ask for, updates the page, and 
 - `THM-04` Custom themes at instance level or personal level
 - `UX-02` Touch-friendly targets and gestures
 
-**Work packages (outline)**
+**Work packages (outline):**
 
 - Timeline (Gantt chart): rows, zoom, drag, dependencies as relations, unscheduled tray, phone list
 - Theme editor with readability ratings; personal and organization themes; import and export
@@ -377,7 +382,7 @@ You comment on the page. The lead fixes what you ask for, updates the page, and 
 
 **Phase:** MVP · **Goal:** AI that helps as the person, never more, and outside AI apps through MCP.
 
-**Features**
+**Features:**
 
 - `AI-01` Provider abstraction
 - `AI-02` Off by default.
@@ -395,7 +400,7 @@ You comment on the page. The lead fixes what you ask for, updates the page, and 
 - `COMP-11` AI literacy guide
 - `PRIV-08` Outside services
 
-**Work packages (outline)**
+**Work packages (outline):**
 
 - Provider interface (Anthropic, OpenAI-compatible, local) — off by default, with the data processing agreement step
 - One tool registry; context builder with AI exclusions and untrusted-content fencing
@@ -411,7 +416,7 @@ You comment on the page. The lead fixes what you ask for, updates the page, and 
 
 **Phase:** MVP · **Goal:** Everything needed to run the MVP for real: GDPR features, installers, backups, releases.
 
-**Features**
+**Features:**
 
 - `PRIV-03` Download my data
 - `PRIV-04` Remove a person
@@ -428,7 +433,7 @@ You comment on the page. The lead fixes what you ask for, updates the page, and 
 - `DIST-03` Operator access
 - `DIST-07` Updates
 
-**Work packages (outline)**
+**Work packages (outline):**
 
 - Download my data, Remove a person, keep-and-delete rules and jobs
 - Service install on Windows and Linux; upgrades with automatic backup; backup and restore
@@ -446,7 +451,7 @@ You comment on the page. The lead fixes what you ask for, updates the page, and 
 
 **Phase:** 1.0 · **Goal:** More ways to see and plan work.
 
-**Features**
+**Features:**
 
 - `PLAN-05` Deadline drivers
 - `PLAN-06` Board
@@ -459,7 +464,7 @@ You comment on the page. The lead fixes what you ask for, updates the page, and 
 - `QRY-07` "E-mail me this search"
 - `QRY-08` Totals for dashboards and reports
 
-**Work packages (outline)**
+**Work packages (outline):**
 
 - Board with rows and card limits; calendar; relation map with list form
 - Releases (found in, planned for); deadline drivers on the timeline
@@ -474,7 +479,7 @@ You comment on the page. The lead fixes what you ask for, updates the page, and 
 
 **Phase:** 1.0 · **Goal:** Each project's documents, as first-class as issues.
 
-**Features**
+**Features:**
 
 - `DOC-01` Documents per project
 - `DOC-02` Versioning
@@ -488,7 +493,7 @@ You comment on the page. The lead fixes what you ask for, updates the page, and 
 - `ATT-05` Optional malware-scanning hook, with files quarantined …
 - `ATT-06` Pluggable storage
 
-**Work packages (outline)**
+**Work packages (outline):**
 
 - Folders, pages (Tiptap editor) and files; versions and compare; templates; trash
 - Edit locks for pages; live issue chips; document search
@@ -502,7 +507,7 @@ You comment on the page. The lead fixes what you ask for, updates the page, and 
 
 **Phase:** 1.0 · **Goal:** Company sign-in, automation hooks and the rest of the assistant.
 
-**Features**
+**Features:**
 
 - `AUTH-04` SSO via OIDC, with mapping from identity-provider groups …
 - `AUTH-08` Bot accounts
@@ -521,7 +526,7 @@ You comment on the page. The lead fixes what you ask for, updates the page, and 
 - `SEC-19` Security self-check page that flags weak configuration …
 - `SEC-20` Encrypted backups
 
-**Work packages (outline)**
+**Work packages (outline):**
 
 - Company sign-in (OIDC) with group mapping; bot accounts
 - Webhooks; public REST API with OpenAPI; CSV and JSON export
@@ -536,7 +541,7 @@ You comment on the page. The lead fixes what you ask for, updates the page, and 
 
 **Phase:** 1.0 · **Goal:** The configuration depth for larger organizations.
 
-**Features**
+**Features:**
 
 - `CF-02` Cascading select
 - `CF-05` Conditional styling rules
@@ -554,7 +559,7 @@ You comment on the page. The lead fixes what you ask for, updates the page, and 
 - `TIME-11` Export of working hours for payroll and HR
 - `UX-03` Installable PWA, with read-only offline cache of recently …
 
-**Work packages (outline)**
+**Work packages (outline):**
 
 - Two-level choices, look rules, Then automatically …, workflow versions with migration helper
 - Issue templates, clone and move, project archive and templates, configuration export and import
@@ -570,7 +575,7 @@ You comment on the page. The lead fixes what you ask for, updates the page, and 
 
 **Phase:** 1.0 · **Goal:** Ready to sell, ready to host.
 
-**Features**
+**Features:**
 
 - `DIST-02` Served = one isolated instance per customer
 - `DIST-04` Sold model licensing
@@ -588,7 +593,7 @@ You comment on the page. The lead fixes what you ask for, updates the page, and 
 - `PRIV-07` Record of processing
 - `PRIV-11` Data breach help
 
-**Work packages (outline)**
+**Work packages (outline):**
 
 - Control plane (minimal) and isolated instances per customer in the EU
 - License files for the sold model; signed update check
@@ -604,12 +609,12 @@ You comment on the page. The lead fixes what you ask for, updates the page, and 
 
 **Phase:** 1.0 · **Goal:** Screens update by themselves, then the 1.0 release.
 
-**Features**
+**Features:**
 
 - `ISS-14` Live updates
 - `PERF-06` Live updates send small change events, not full objects
 
-**Work packages (outline)**
+**Work packages (outline):**
 
 - Live updates over Server-Sent Events, filtered per viewer
 - 1.0 hardening: performance tuning, full accessibility and security reviews, legal review, release

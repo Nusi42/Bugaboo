@@ -20,7 +20,7 @@ rule = "coding-standards §3"
 tool = "rustfmt (rustfmt.toml)"
 when = ["edit", "commit", "ci"]
 files = ["**/*.rs"]
-status = "planned"
+status = "active"
 
 [[check]]
 id = "FMT-TS"
@@ -47,7 +47,7 @@ rule = "coding-standards §2"
 tool = "taplo"
 when = ["edit", "commit", "ci"]
 files = ["**/*.toml"]
-status = "planned"
+status = "active"
 
 [[check]]
 id = "FMT-MD"
@@ -56,7 +56,7 @@ rule = "coding-standards §2"
 tool = "rumdl"
 when = ["edit", "commit", "ci"]
 files = ["**/*.md"]
-status = "planned"
+status = "active"
 
 # ───────────── Linting ─────────────
 [[check]]
@@ -66,7 +66,7 @@ rule = "coding-standards §3"
 tool = "cargo clippy -D warnings"
 when = ["push", "ci"]
 files = ["**/*.rs", "**/Cargo.toml"]
-status = "planned"
+status = "active"
 
 [[check]]
 id = "LINT-TS"
@@ -102,7 +102,7 @@ rule = "coding-standards §2"
 tool = "typos"
 when = ["commit", "ci"]
 files = ["*"]
-status = "planned"
+status = "active"
 
 [[check]]
 id = "LINT-LINKS"
@@ -111,7 +111,7 @@ rule = "coding-standards §2"
 tool = "lychee (offline mode for repo links)"
 when = ["ci"]
 files = ["**/*.md"]
-status = "planned"
+status = "active"
 
 [[check]]
 id = "LINT-CI"
@@ -120,7 +120,7 @@ rule = "ADR-0014"
 tool = "actionlint"
 when = ["commit", "ci"]
 files = [".github/workflows/*.yml"]
-status = "planned"
+status = "active"
 
 [[check]]
 id = "LINT-DRY"
@@ -203,7 +203,7 @@ rule = "architecture §4 (dependency rules), ADR-0001"
 tool = "xtask (cargo metadata vs allowed edges)"
 when = ["push", "ci"]
 files = ["**/Cargo.toml"]
-status = "planned"
+status = "active"
 
 [[check]]
 id = "ARCH-PURE"
@@ -364,8 +364,8 @@ title = "Every crate forbids unsafe code unless an ADR allows it"
 rule = "coding-standards §3"
 tool = "xtask (checks #![forbid(unsafe_code)] in crate roots)"
 when = ["commit", "ci"]
-files = ["crates/*/src/lib.rs", "crates/*/src/main.rs"]
-status = "planned"
+files = ["**/Cargo.toml", "crates/*/src/lib.rs", "crates/*/src/main.rs", "xtask/src/main.rs"]
+status = "active"
 
 [[check]]
 id = "ARCH-DB-PARITY"
@@ -411,7 +411,7 @@ rule = "SEC-16"
 tool = "gitleaks"
 when = ["commit", "ci"]
 files = ["*"]
-status = "planned"
+status = "active"
 
 [[check]]
 id = "SEC-PATTERNS"
@@ -485,7 +485,7 @@ rule = "COMP-02, coding-standards §5"
 tool = "xtask (lockfiles vs docs/third-party)"
 when = ["push", "ci"]
 files = ["Cargo.lock", "**/package-lock.json", "docs/third-party/**"]
-status = "planned"
+status = "active"
 
 [[check]]
 id = "DEP-LICENSES"
@@ -494,7 +494,7 @@ rule = "architecture §1 (licenses)"
 tool = "cargo-deny licenses + npm license check against the same list"
 when = ["push", "ci"]
 files = ["Cargo.lock", "**/package-lock.json", "deny.toml"]
-status = "planned"
+status = "active"
 
 [[check]]
 id = "DEP-UNUSED"
@@ -593,7 +593,12 @@ title = "No default framework ports; every port comes from tools/dev/ports.json 
 rule = "ADR-0023"
 tool = "xtask (scans vite, vitest and playwright configs)"
 when = ["edit", "commit", "ci"]
-files = ["web/**/vite.config.*", "web/**/vitest.config.*", "web/**/playwright.config.*", "tools/dev/ports.json"]
+files = [
+  "web/**/vite.config.*",
+  "web/**/vitest.config.*",
+  "web/**/playwright.config.*",
+  "tools/dev/ports.json",
+]
 status = "planned"
 
 [[check]]
@@ -636,10 +641,10 @@ status = "active"
 id = "GIT-COMMIT-MSG"
 title = "Commit messages follow Conventional Commits"
 rule = "coding-standards §2"
-tool = "xtask (commit-msg hook)"
-when = ["commit"]
+tool = "xtask (commit-msg hook: `check commit-msg <file>`; push and CI: commits not on main)"
+when = ["push", "ci"]
 files = ["*"]
-status = "planned"
+status = "active"
 
 [[check]]
 id = "GIT-FILES"
@@ -648,7 +653,7 @@ rule = "coding-standards §7"
 tool = "xtask"
 when = ["commit", "ci"]
 files = ["*"]
-status = "planned"
+status = "active"
 
 # ───────────── Meta: checks that guard the checks ─────────────
 [[check]]

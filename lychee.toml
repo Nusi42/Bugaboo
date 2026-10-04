@@ -1,0 +1,5 @@
+# Link check (LINT-LINKS): repository links only, so it works offline and never flakes.
+offline = true
+# Check that the heading a link points to (file.md#heading) exists.
+include_fragments = "anchor-only"
+no_progress = true

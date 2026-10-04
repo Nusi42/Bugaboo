@@ -8,9 +8,14 @@
 mod catalog;
 mod checks;
 mod location;
+mod metadata;
 mod output;
 mod repo;
 mod runner;
+mod setup;
+#[cfg(test)]
+mod testutil;
+mod tools;
 
 use std::path::PathBuf;
 use std::process::ExitCode;
@@ -36,6 +41,8 @@ enum Command {
     },
     /// List every check in the catalogue and whether it is implemented.
     List,
+    /// Install the pinned external tools into `.tools/` (tools/dev/tools.toml).
+    Setup,
 }
 
 #[derive(Subcommand)]
@@ -51,6 +58,11 @@ enum CheckScope {
     Push,
     /// Every check that CI runs.
     All,
+    /// Check one commit message file (Git commit-msg hook): `check commit-msg <file>`.
+    CommitMsg {
+        /// The file Git wrote the message to.
+        file: PathBuf,
+    },
     /// Only the checks with these IDs.
     Only {
         /// Check IDs, for example `META-CATALOG`.
@@ -79,6 +91,11 @@ fn run() -> anyhow::Result<ExitCode> {
             output::list(&catalog, &registry);
             Ok(ExitCode::SUCCESS)
         }
+        Command::Setup => {
+            setup::run(&repo)?;
+            output::info("All tools are installed in .tools/.");
+            Ok(ExitCode::SUCCESS)
+        }
         Command::Check { scope } => {
             let scope = match scope {
                 CheckScope::Edit { files } => runner::Scope::Edit(repo.relative_paths(&files)),
@@ -86,6 +103,7 @@ fn run() -> anyhow::Result<ExitCode> {
                 CheckScope::Push => runner::Scope::Push,
                 CheckScope::All => runner::Scope::All,
                 CheckScope::Only { ids } => runner::Scope::Only(ids),
+                CheckScope::CommitMsg { file } => return commit_msg(&file),
             };
             let passed = runner::run(&repo, &catalog, &registry, &scope)?;
             Ok(if passed {
@@ -95,4 +113,17 @@ fn run() -> anyhow::Result<ExitCode> {
             })
         }
     }
+}
+
+/// `check commit-msg <file>`: the Git commit-msg hook (GIT-COMMIT-MSG).
+fn commit_msg(file: &std::path::Path) -> anyhow::Result<ExitCode> {
+    let problems = checks::git_commit_msg::check_file(file)?;
+    for problem in &problems {
+        output::info(problem);
+    }
+    Ok(if problems.is_empty() {
+        ExitCode::SUCCESS
+    } else {
+        ExitCode::FAILURE
+    })
 }

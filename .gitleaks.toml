@@ -1,0 +1,3 @@
+# Secret scan (SEC-SECRETS): the default rules of gitleaks, nothing switched off.
+[extend]
+useDefault = true

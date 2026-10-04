@@ -3,9 +3,11 @@
 Status: **Accepted** · 2026-10-04
 
 ## Context
+
 Bugaboo has no real-time co-editing in 1.0. Without care, two people editing a long description, a comment or a document page overwrite each other, and a save that looks done can silently fail. The UI should feel instant (optimistic), but nobody may lose text.
 
 ## Decision
+
 **Two mechanisms, one for each kind of value:**
 
 1. **Short values** (status, priority, people, dates, choices): no lock. The change shows at once and is sent with the entity's **version** (`If-Match`). A stale version gets a conflict answer.
@@ -18,6 +20,7 @@ Bugaboo has no real-time co-editing in 1.0. Without care, two people editing a l
    - Admins can release a stuck lock; it's recorded in the security log.
 
 **Confirmed saves (both kinds):**
+
 - The screen shows the change immediately and marks it *Saving…*.
 - The server's answer **confirms** it (*Saved*), or the UI explains exactly what happened and keeps the person's text:
   - *conflict* — "Ben changed this a moment ago. [Compare]";
@@ -26,14 +29,17 @@ Bugaboo has no real-time co-editing in 1.0. Without care, two people editing a l
 - **Watching open items:** until live updates exist (ISS-14), the browser checks the versions of what's on screen every 30 s and on focus (one small request). If someone changed something you just saved, you see *"Ben changed the description after you. [Show changes]"*.
 
 ## Consequences
+
 - Nobody loses text silently; every failure has a plain explanation and a way forward.
 - Locks need no live-update channel; plain HTTP heartbeats work everywhere.
 - Lock records hold person IDs; they are deleted when they expire (no keep period).
 
 ## Alternatives considered
+
 - **Real-time co-editing (CRDT, Yjs):** much more complex; planned for later (DOC-10).
 - **Locks taken when opening:** block people who only read. Rejected.
 - **In-memory locks:** lost on restart and invisible to admins. Rejected; the database is cheap enough.
 
 ## Enforced by
+
 ARCH-VERSIONED, TEST-EDIT-LOCKS (see `tools/checks/catalog.toml`).

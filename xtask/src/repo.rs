@@ -34,6 +34,11 @@ impl Repo {
         self.git_lines(&["diff", "--cached", "--name-only", "--diff-filter=ACMR"])
     }
 
+    /// Every file Git knows (tracked, or untracked but not ignored), with `/` separators.
+    pub(crate) fn all_files(&self) -> anyhow::Result<Vec<String>> {
+        self.git_lines(&["ls-files", "--cached", "--others", "--exclude-standard"])
+    }
+
     /// Turns paths given on the command line into repository-relative paths with `/`.
     pub(crate) fn relative_paths(&self, paths: &[PathBuf]) -> Vec<String> {
         paths
@@ -47,6 +52,7 @@ impl Repo {
 
     fn git_lines(&self, args: &[&str]) -> anyhow::Result<Vec<String>> {
         let out = Command::new("git")
+            .args(["-c", "core.quotepath=false"])
             .args(args)
             .current_dir(&self.root)
             .output()

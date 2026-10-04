@@ -4,12 +4,15 @@
 **Features:** COMP-06 (architecture docs stay true), PLAN-TRACE; ADR-0020.
 
 ## Goal
+
 The commentable HTML pages are built by `cargo xtask docs` (Rust), and the meta checks guard the catalogue, the docs and the checks themselves.
 
 ## Owns
+
 `xtask/src/docs/**`, and these checks in `xtask/src/checks/`: `doc_generated.rs`, `doc_adr_enforced.rs`, `plan_trace.rs`, `arch_map_sync.rs`, `meta_fixtures.rs`, `meta_coverage.rs`, `meta_new_module.rs`, `meta_rule_trace.rs`, `meta_wiring.rs`, `meta_suppress.rs`, `meta_speed.rs`. You remove `tools/docs-html/` (and its register row) once the Rust builder produces the same pages.
 
 ## Tasks
+
 1. **`cargo xtask docs`**: port `tools/docs-html/build.mjs` to Rust using `pulldown-cmark` (latest stable). Output must match the current pages in structure: `docs/03-architecture.html` (chapters, numbered sections, decision records, the check table from the catalogue) and `docs/04-milestones.html`. Mermaid code blocks become `<pre class="mermaid">`. Links between Markdown files become in-page anchors. Generated files start with a "generated, don't edit" comment.
 2. **Checks** (catalogue entries set to active, each with bad and good examples):
    - DOC-GENERATED: regenerating docs (and, once they exist, tokens and messages from WP-02) produces no diff.
@@ -26,6 +29,7 @@ The commentable HTML pages are built by `cargo xtask docs` (Rust), and the meta 
 3. **Register** `pulldown-cmark` (and anything else new); remove the `marked` row with `tools/docs-html`.
 
 ## Acceptance
+
 - `cargo xtask docs` regenerates both pages; opening them shows the same content as today's published pages.
 - `cargo xtask check all` passes with these checks active; each bad example fails.
 - `cargo fmt --check`, Clippy with `-D warnings`, `cargo test --workspace`: 0 warnings, 0 failures.

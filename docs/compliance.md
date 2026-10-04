@@ -31,6 +31,7 @@ digital elements" (hardware and software) sold in the EU: secure design, vulnera
 handling, security updates for a support period, documentation and a CE mark.
 
 **Does it apply to us?**
+
 - **Sold:** yes. The downloadable server program is a product with digital elements once we
   offer it commercially. Free, non-commercial open source is exempt; open-source projects
   backed by a foundation or company ("stewards") have a lighter set of duties. Our license
@@ -44,6 +45,7 @@ handling, security updates for a support period, documentation and a CE mark.
   identity management) could be argued to touch our sign-in features.
 
 **What it asks of us.**
+
 - Design and ship securely, with secure defaults, and assess cybersecurity risks.
 - Know every component inside: a **software bill of materials (SBOM)**.
 - Handle vulnerabilities: a way to report them, fix them, publish advisories.
@@ -78,6 +80,7 @@ most likely the **provider** of the assistant feature, and our customers are **d
 who use it at work. *Exact roles: to be confirmed in the legal review.*
 
 **What it asks of us.**
+
 - **Transparency** (Art. 50): people must know when they are talking to an AI, and
   AI-generated text must be marked, including in a machine-readable way.
 - **AI literacy** (Art. 4): organizations using AI must make sure their staff understand it
@@ -112,6 +115,7 @@ requires organisations in important sectors to manage cybersecurity risks, repor
 incidents, and make their management personally responsible for it.
 
 **Does it apply to us?**
+
 - **Served:** probably yes, **if we are medium-sized or larger** (roughly 50+ employees or
   more than €10 million turnover). Cloud computing services and managed service providers are
   listed sectors. A small company is usually outside, unless the national law says otherwise.
@@ -121,6 +125,7 @@ incidents, and make their management personally responsible for it.
   handling, security features).
 
 **What it asks of an organisation in scope.**
+
 - Risk management measures: access control, encryption, backups, incident handling,
   supply-chain security, training, and more.
 - **Incident reporting:** early warning within **24 hours**, notification within
@@ -144,11 +149,13 @@ which doesn't concern us. One part is about **switching between data processing 
 customers must be able to leave a cloud service and take their data with them.
 
 **Does it apply to us?**
+
 - **Served:** yes, the switching rules apply to us as a provider of a data processing
   service.
 - **Sold:** mostly no (we don't process the data). Easy export is still good practice.
 
 **What it asks of us (served).**
+
 - Let customers switch to another provider or to their own servers, with all their data and
   configuration, in open formats.
 - Contracts must state notice periods (at most 2 months) and a transition period (normally
@@ -173,6 +180,7 @@ customers must be able to leave a cloud service and take their data with them.
 personal data: names, e-mail addresses, comments, working hours, sign-in logs.
 
 **Who is who.**
+
 - **Sold:** the customer is the **controller**. We are not involved, because we have no
   access to their data. If they let our support look at their system, we act as their
   **processor** for that support case.

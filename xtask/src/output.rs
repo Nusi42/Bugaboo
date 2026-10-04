@@ -57,3 +57,8 @@ pub(crate) fn list(catalog: &Catalog, registry: &[Box<dyn Check>]) {
 pub(crate) fn error(message: &str) {
     eprintln!("xtask: {message}");
 }
+
+/// A plain progress or information line.
+pub(crate) fn info(message: &str) {
+    println!("{message}");
+}

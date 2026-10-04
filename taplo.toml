@@ -1,0 +1,8 @@
+# TOML formatting (FMT-TOML). Defaults of taplo, except as noted.
+include = ["**/*.toml"]
+# Generated or installed files that are not ours to format.
+exclude = ["target/**", ".tools/**", "**/node_modules/**"]
+
+[formatting]
+# Same line width as rustfmt.toml (one width for all code files).
+column_width = 100

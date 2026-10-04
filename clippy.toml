@@ -6,4 +6,13 @@ allow-print-in-tests = true
 allow-dbg-in-tests = true
 
 # Product names that are not code; ".." keeps Clippy's built-in list.
-doc-valid-idents = ["OpenAPI", "WebAssembly", "PostgreSQL", "SQLite", "TypeScript", "OneDrive", "GitHub", ".."]
+doc-valid-idents = [
+  "OpenAPI",
+  "WebAssembly",
+  "PostgreSQL",
+  "SQLite",
+  "TypeScript",
+  "OneDrive",
+  "GitHub",
+  "..",
+]

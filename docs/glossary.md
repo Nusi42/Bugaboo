@@ -3,6 +3,7 @@
 Status: **Draft for review** · This file is the **single source of truth for naming**.
 
 Rules:
+
 1. **Plain language always.** Write for someone less technical than the average person.
    Use a technical word only if it is genuinely common outside software tools (for example
    *issue*, *workflow*, *dashboard*, *passkey*).

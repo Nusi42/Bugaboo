@@ -46,6 +46,7 @@ flowchart TB
   app["bb-app<br/>use cases + ports"]
   policy["bb-policy"]
   core["bb-core"]
+  macros["bb-macros"]
   search["bb-searchlang"]
   md["bb-markdown"]
   store["bb-store"]
@@ -62,6 +63,7 @@ flowchart TB
   jobs --> app
   app --> policy & core & search & md
   policy --> core
+  core -.-> macros
   store -. implements ports .-> app
   files -. implements ports .-> app
   ai -. implements ports .-> app
@@ -70,7 +72,8 @@ flowchart TB
   wasm --> search & md
 ```
 
-### Dependency rules (checked by `cargo xtask check deps`)
+### Dependency rules (checked by `cargo xtask check only ARCH-DEPS`)
+
 1. `bb-core`, `bb-searchlang` and `bb-markdown` do no I/O and depend on no other Bugaboo crate except `bb-core` (searchlang and markdown not even that), so they compile to WebAssembly.
 2. `bb-app` knows **ports** (traits) only. It never imports `bb-store`, `bb-files`, `bb-ai` or `bb-notify`. Tests run use cases against in-memory fakes.
 3. Only `bb-policy` can create `Authorized<T>`. Its constructor is private to the crate.
@@ -80,9 +83,11 @@ flowchart TB
 ## The core modules
 
 ### bb-core
+
 Newtype IDs (`IssueId`, `ProjectId`, …, all UUIDv7 inside, readable keys like `WEB-142` outside), field types and values, domain entities, **domain events**, and the **error code catalogue** (one Rust enum; becomes OpenAPI, the TypeScript union and message keys). Entities carry personal-data marks (ADR-0015).
 
 ### bb-policy
+
 - **Permission catalogue** (one Rust enum with plain-language descriptions as message keys).
 - **Evaluation:** given an actor and a project, computes the effective permission set and the **field mask** (hidden / can see / can change per field, per issue type). Cached per request.
 - **Visibility:** project tree, restricted issues, documents.
@@ -90,9 +95,11 @@ Newtype IDs (`IssueId`, `ProjectId`, …, all UUIDv7 inside, readable keys like 
 - **`Authorized<T>`:** the only way data leaves the domain. It carries the field mask, so projections drop hidden fields automatically.
 
 ### bb-searchlang
+
 Lexer, parser, syntax tree, canonical printer, checker and suggestions. Knows nothing about databases or permissions: the caller passes a **field catalogue** (the fields this person may read), so a hidden field fails exactly like an unknown one. Simple search (filter buttons) edits the same syntax tree.
 
 ### bb-app — use cases by feature
+
 `projects`, `issues`, `relations`, `fields`, `workflows`, `tags`, `releases`, `search`, `boards`, `timeline`, `calendar`, `relation_map`, `time` (timers, time entries, working hours, rules), `documents`, `attachments`, `notifications`, `assistant`, `privacy`, `settings`, `themes`, `people` (users, groups, roles), `admin`.
 
 Every use case has the same shape:
@@ -110,12 +117,15 @@ pub async fn change_status(
 4. Return the result through `Authorized<T>`.
 
 ### bb-store
+
 sqlx connection pools, migrations (defined once with the query builder, run on both databases), repositories implementing `bb-app` ports, the **search compiler** (syntax tree + permission predicates → SQL), full-text search adapters, the event log and outbox, and the job queue tables.
 
 ### bb-api
+
 axum router; extractors that turn a session cookie, access key or OAuth token into an **actor**; CSRF and origin checks; security headers and CSP; rate limits; `?fields=` projections; cursor pagination; ETags; problem+json errors; OpenAPI generation; the embedded static app.
 
 ### bb-ai and bb-mcp
+
 One **tool registry** (search issues, get issue, create, change status, comment, log time, …). Each tool maps to a `bb-app` use case, so permissions and validation are identical. `bb-mcp` exposes the registry to outside AI apps; the assistant uses the same registry but returns **proposals** for writes instead of running them.
 
 ## Browser app (web/app)

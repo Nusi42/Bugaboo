@@ -4,12 +4,15 @@
 **Features:** groundwork for UX-07 (message catalog), THM-01/02 (themes), PERF-04 (bundle budget later), ADR-0009, ADR-0010, ADR-0023.
 
 ## Goal
+
 A browser app skeleton that already obeys every frontend rule: TypeScript 7, React 19, Vite 8, formatted by oxfmt, linted by oxlint with type-aware tsgolint, CSS checked by stylelint, unit-tested with Vitest, end-to-end tested with Playwright, all on the ports from `tools/dev/ports.json`. Colors come only from generated design tokens; text only from the message catalog.
 
 ## Owns
+
 `package.json`, `package-lock.json` (npm workspaces), `web/**`, `design/tokens.json`, `messages/**`, `docs/design/tokens.css` (becomes generated), frontend tool configs at the root (oxlint, oxfmt, stylelint), `xtask/src/gen/**`, and these checks in `xtask/src/checks/`: `fmt_ts.rs`, `fmt_css.rs`, `lint_ts.rs`, `lint_types.rs`, `lint_css.rs`, `dev_ports.rs`, `sty_contrast.rs`, `txt_catalog.rs`.
 
 ## Tasks
+
 1. **npm workspaces** at the root: `web/app`, `web/packages/ui`, `web/packages/messages`. Exact pinned versions (architecture §9): react/react-dom 19.3.0, typescript 7.0.2, vite 8.3.2, vitest 5.0.3, @playwright/test 1.63.0, @axe-core/playwright 4.13.0, oxlint 1.86.0, oxlint-tsgolint 7.0.2003, oxfmt 0.71.0, stylelint 17.16.0. No `^` or `~` ranges.
 2. **TypeScript:** `strict`, `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`, `noImplicitOverride`, `noFallthroughCasesInSwitch`, `verbatimModuleSyntax`. One shared base `tsconfig`.
 3. **oxlint** with type-aware rules on (tsgolint), categories correctness, suspicious, perf and pedantic as errors; rules banning `console`, `any`, non-null `!`, `@ts-ignore`, `dangerouslySetInnerHTML`, `eval`; react and react-hooks plugins. **oxfmt** for TS/TSX/JS/JSON/CSS (if oxfmt can't format CSS, use Biome for CSS only and record that in the register). **stylelint** for CSS Modules: no hex/rgb/hsl colors, no named colors, no `!important`, lengths only via `var(--…)` tokens (except 0 and 1px borders).
@@ -21,6 +24,7 @@ A browser app skeleton that already obeys every frontend rule: TypeScript 7, Rea
 9. **Register** every new npm package in `docs/third-party/README.md`.
 
 ## Acceptance
+
 - `npm ci` then `npm run build` and `npm test` (Vitest) pass; `npx playwright test` passes on 47202.
 - `cargo xtask check only FMT-TS FMT-CSS LINT-TS LINT-TYPES LINT-CSS DEV-PORTS STY-CONTRAST TXT-CATALOG` passes; each check's bad example fails.
 - `cargo fmt --check`, `cargo clippy --workspace --all-targets -- -D warnings`, `cargo test --workspace` stay at 0 warnings / 0 failures.
