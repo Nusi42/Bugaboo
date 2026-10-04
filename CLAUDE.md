@@ -6,7 +6,7 @@ Read this before every task. The docs in `docs/` are the source of truth; this f
 
 - **Never build, install or run anything in the master repository** `<master>` (OneDrive). Work only in your work folder under `<work root>\bugaboo.winN`, on your branch `WINn` (ADR-0024).
 - Commit on your branch; push your branch to `origin` when your work package is done. Never push to `main`.
-- Run `cargo xtask setup` once in a fresh or reset folder: it installs the pinned tools and the Git hooks (commit and push run the checks). Never skip the hooks (`--no-verify`).
+- Run `cargo xtask setup` once in a fresh or reset folder: it installs the pinned tools and the Git hooks (commit and push run the checks). Never skip the hooks (`--no-verify`). `git push --force-with-lease` runs the push checks too. When a hook fails, fix the cause and commit again; don't amend or rewrite commits you already pushed.
 
 ## Before you write code
 
@@ -34,10 +34,12 @@ Read this before every task. The docs in `docs/` are the source of truth; this f
 
 ## If you are the lead (the main session)
 
-A new session picks up the work like this:
+The maintainer may close a session at any time and start a new one in the master with "continue where we left off". Everything needed to continue is in the repository:
 
-1. Find the current milestone: the highest `docs/milestones/Mx/` without an `mx-done` tag (`git tag`). Its `README.md` has the status of every work package.
-2. Check the builder branches: `git log --oneline main..origin/WINn` in `bugaboo.win1` after `git fetch`. A package marked *building* with no running builder (builders belong to the session that started them) and commits on its branch is finished or half-finished: check `cargo xtask ci` in its folder, then review it or start a builder to finish it.
-3. Follow "How we work" in `docs/04-milestones.md`: builders (Sonnet) in `bugaboo.win2` and up, reset to `main` first (`git fetch origin && git checkout -B WINn origin/main`, then `cargo xtask setup`, which also installs the Git hooks); reviewers with a fresh context; merge into `WIN1` with Git's own subject (`git merge --no-ff origin/WINn -m "Merge branch 'WINn' (Mx WP-nn name)"`; the commit-message check accepts only that form for merges), `cargo xtask ci`, push `WIN1`, `git merge --ff-only WIN1` in the master.
-4. Every builder prompt repeats the rules in this file and names the work package file, the folder and the branch; the builder reports the commands it ran and their results.
-5. The maintainer reviews on a phone: milestone review pages and changed design docs are published as commentable HTML pages; replies stay short and name feature IDs.
+1. **Read [`docs/STATUS.md`](docs/STATUS.md) first.** It says the current milestone and wave, each work package's state and folder, open questions for the owner, and the very next action.
+2. **Agents belong to the session that started them.** A new session finds no running builders or reviewers. Resume a package marked *building* by checking its branch (pushed commits?) and its folder (uncommitted work?) as `docs/STATUS.md` describes — never by waiting for it.
+3. **Update `docs/STATUS.md` after every step** (builder started, report in, review in, merge, decision), commit it on `WIN1` and fast-forward `main`, so the master's copy is always current. A commit that changes only docs needs the Git hooks to pass; code needs `cargo xtask ci` before `main` moves.
+4. Follow "How we work" in `docs/04-milestones.md`: builders (Sonnet) in `bugaboo.win2` and up, reset to `main` first (`git fetch origin && git checkout -B WINn origin/main`, then `cargo xtask setup`, which also installs the Git hooks); reviewers with a fresh context; merge into `WIN1` with Git's own subject (`git merge --no-ff origin/WINn -m "Merge branch 'WINn' (Mx WP-nn name)"`; the commit-message check accepts only that form for merges), `cargo xtask ci`, push `WIN1`, `git merge --ff-only WIN1` in the master.
+5. Every builder prompt repeats the rules in this file and names the work package file, the folder and the branch; the builder reports the commands it ran and their results.
+6. **"Can I close this session?"** Answer with: running background agents and commands; uncommitted or unpushed work in each `bugaboo.winN` (`git status --short`, `git log origin/WINn..WINn`); `main` vs `WIN1`; whether `docs/STATUS.md` is current. Say "safe" only when all are clean, or when `docs/STATUS.md` names exactly what a running builder will leave behind.
+7. The maintainer reviews on a phone: milestone review pages and changed design docs are published as commentable HTML pages; replies stay short and name feature IDs.
