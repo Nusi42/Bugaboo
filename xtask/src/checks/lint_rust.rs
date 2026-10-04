@@ -27,8 +27,15 @@ fn check_root(root: &Path) -> anyhow::Result<Vec<Finding>> {
     let mut findings = Vec::new();
     for target in native_targets(root)? {
         let mut args = vec!["clippy", "--workspace", "--all-targets"];
+        let mut config = None;
         if let Some(target) = &target {
             args.extend(["--target", target.as_str()]);
+            if target != &host_target(root)? {
+                config = skip_c_build(root, target);
+            }
+        }
+        if let Some(config) = &config {
+            args.extend(["--config", config.as_str()]);
         }
         args.extend(["--", "-D", "warnings"]);
         let output = tools::run(Path::new("cargo"), &args, root)?;
@@ -41,6 +48,37 @@ fn check_root(root: &Path) -> anyhow::Result<Vec<Finding>> {
         findings.extend(tools::findings_from(Ok(output), &message));
     }
     Ok(findings)
+}
+
+/// The target of this machine, from `rustc -vV`.
+fn host_target(root: &Path) -> anyhow::Result<String> {
+    let output = tools::run(Path::new("rustc"), &["-vV"], root)?;
+    Ok(output
+        .text
+        .lines()
+        .find_map(|line| line.strip_prefix("host: "))
+        .unwrap_or_default()
+        .trim()
+        .to_owned())
+}
+
+/// `ring` (the TLS crypto, ADR-0002) compiles C and assembly for its target in a build script.
+/// Linting never links, so for a target other than this machine that step is switched off for
+/// this run only (a Cargo `links` override): no C compiler for the other system is needed. Real
+/// builds are not touched. Returns the `--config` value, or `None` when `ring` is not used.
+fn skip_c_build(root: &Path, target: &str) -> Option<String> {
+    let lock: toml::Value =
+        toml::from_str(&std::fs::read_to_string(root.join("Cargo.lock")).ok()?).ok()?;
+    let version = lock
+        .get("package")?
+        .as_array()?
+        .iter()
+        .find(|package| package.get("name").and_then(toml::Value::as_str) == Some("ring"))?
+        .get("version")?
+        .as_str()?;
+    // The name ring gives its native library in its `Cargo.toml` (`links`).
+    let links = format!("ring_core_{}_", version.replace('.', "_"));
+    Some(format!("target.{target}.{links}.rustc-link-lib=[]"))
 }
 
 /// Native targets from `rust-toolchain.toml` (WebAssembly is ARCH-WASM's job). Without that file
@@ -98,6 +136,23 @@ targets = [\"wasm32-unknown-unknown\", \"x86_64-unknown-linux-gnu\"]
         assert_eq!(
             native_targets(temp.path()).unwrap(),
             [Some("x86_64-unknown-linux-gnu".to_owned())]
+        );
+    }
+
+    #[test]
+    fn the_c_build_of_ring_is_skipped_by_name_and_version() {
+        let temp = TempDir::new("lint-rust-ring");
+        assert_eq!(skip_c_build(temp.path(), "x86_64-unknown-linux-gnu"), None);
+        temp.write(
+            "Cargo.lock",
+            "[[package]]
+name = \"ring\"
+version = \"0.17.14\"
+",
+        );
+        assert_eq!(
+            skip_c_build(temp.path(), "x86_64-unknown-linux-gnu").as_deref(),
+            Some("target.x86_64-unknown-linux-gnu.ring_core_0_17_14_.rustc-link-lib=[]")
         );
     }
 
