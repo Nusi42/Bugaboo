@@ -207,7 +207,8 @@
   api --&gt; app &amp; auth &amp; mcp &amp; core
   mcp --&gt; app &amp; ai
   jobs --&gt; app
-  app --&gt; policy &amp; core &amp; search &amp; md
+  app --&gt; policy &amp; core &amp; search &amp; md &amp; auth
+  auth --&gt; core
   policy --&gt; core
   core -.-&gt; macros
   store -. implements ports .-&gt; app
