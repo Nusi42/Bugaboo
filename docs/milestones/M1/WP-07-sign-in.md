@@ -18,6 +18,15 @@
 7. **Brute-force protection (SEC-14, per account):** back-off per account and per IP (with WP-06 limits), never a permanent lockout that enables denial of service; every sign-in event goes to the security log (WP-05).
 8. **Tests:** both databases; timing test for unknown vs known accounts (statistical, tolerant); WebAuthn with a soft authenticator.
 
+## Notes from waves 1 and 2 (read before starting)
+
+- **Inherited follow-ups:** M1-F14 (`Person` table and final fields), M1-F27 (decide what the per-account limit counts: failed attempts only, reset on success, so nobody can lock another person out by guessing), M1-F33 (CSRF token bound to the session: HMAC of the session ID under a key from `keys/`, rotated with every new session ID, constant-time compare, unsafe methods without a valid token refused), M1-F17 (staged-check export looks like a project root to rumdl and other path-sensitive tools; small tooling fix).
+- **Server start:** sign-in needs the database at runtime. Wire `bugaboo serve` to open the database, run the migrations and `Database::open_keys` before listening (the start-up part of M1-F19 and M1-F24); `/health/ready` and the status page stay for WP-08.
+- **Writes go through the port:** use cases live in `bb-app` and change data only through `ChangeStore::record_change` (ARCH-EVENTS); schema changes are new Rust migrations in `bb-store` with column-level personal-data marks (`stored_tables!`, DATA-MARKS).
+- **Security log:** every sign-in event (success, failure, lockout, two-step, passkey, invitation, setup code, session ended) is appended with `append_security_log`; never retry on `AnchorFile`.
+- **API:** handlers use `ApiJson` / `ApiQuery` / `ApiPath`, errors only from `ErrorCode`, cookies only through `cookies.rs`, rate limits through `limit_sign_in` and `AccountLimit`; every route in the OpenAPI document; regenerate with `cargo xtask gen api`.
+- **Tests on both databases** through `bb-testing` and `cargo xtask db run`; one end-to-end sign-in over TLS + HTTP/2 like WP-06's origin test.
+
 ## Acceptance
 
 - Integration tests for every flow incl. failure paths; no error reveals whether an account exists.
