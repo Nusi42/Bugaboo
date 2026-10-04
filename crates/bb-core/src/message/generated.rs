@@ -20,6 +20,12 @@ pub const CONFIG_TLS_FILES_MISSING: MessageKey = MessageKey::new("config.tls-fil
 /// The message `config.tls-files-unused`.
 pub const CONFIG_TLS_FILES_UNUSED: MessageKey = MessageKey::new("config.tls-files-unused");
 
+/// The message `cookie.csrf.purpose`.
+pub const COOKIE_CSRF_PURPOSE: MessageKey = MessageKey::new("cookie.csrf.purpose");
+
+/// The message `cookie.session.purpose`.
+pub const COOKIE_SESSION_PURPOSE: MessageKey = MessageKey::new("cookie.session.purpose");
+
 /// The message `data-folder.account-unknown`.
 pub const DATA_FOLDER_ACCOUNT_UNKNOWN: MessageKey = MessageKey::new("data-folder.account-unknown");
 
@@ -42,8 +48,18 @@ pub const ERROR_RATE_LIMIT_EXCEEDED: MessageKey = MessageKey::new("error.rate-li
 /// The message `error.request.invalid`.
 pub const ERROR_REQUEST_INVALID: MessageKey = MessageKey::new("error.request.invalid");
 
+/// The message `error.request.method-not-allowed`.
+pub const ERROR_REQUEST_METHOD_NOT_ALLOWED: MessageKey =
+    MessageKey::new("error.request.method-not-allowed");
+
+/// The message `error.request.timed-out`.
+pub const ERROR_REQUEST_TIMED_OUT: MessageKey = MessageKey::new("error.request.timed-out");
+
 /// The message `error.request.too-large`.
 pub const ERROR_REQUEST_TOO_LARGE: MessageKey = MessageKey::new("error.request.too-large");
+
+/// The message `error.request.wrong-origin`.
+pub const ERROR_REQUEST_WRONG_ORIGIN: MessageKey = MessageKey::new("error.request.wrong-origin");
 
 /// The message `error.resource.not-found`.
 pub const ERROR_RESOURCE_NOT_FOUND: MessageKey = MessageKey::new("error.resource.not-found");
@@ -481,6 +497,14 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "HTTPS cannot be switched off on {address}, because anyone on the network could read what is sent. Use 127.0.0.1 or ::1, or list the proxy that adds HTTPS in trusted_proxies.",
     ),
     (
+        "cookie.csrf.purpose",
+        "Protects you from other websites that try to make Bugaboo do something in your name.",
+    ),
+    (
+        "cookie.session.purpose",
+        "Keeps you signed in on this device. Bugaboo removes it when you sign out or when your sign-in runs out.",
+    ),
+    (
         "data-folder.account-unknown",
         "the account that runs Bugaboo could not be identified",
     ),
@@ -510,7 +534,19 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "error.request.invalid",
         "Something in your request is not valid. Check what you typed and try again.",
     ),
+    (
+        "error.request.method-not-allowed",
+        "Bugaboo does not do that here.",
+    ),
+    (
+        "error.request.timed-out",
+        "Your request took too long to arrive. Please try again.",
+    ),
     ("error.request.too-large", "That is too big to send."),
+    (
+        "error.request.wrong-origin",
+        "That did not come from a Bugaboo page. Reload the page and try again.",
+    ),
     ("error.resource.not-found", "We could not find that."),
     (
         "error.server.internal",

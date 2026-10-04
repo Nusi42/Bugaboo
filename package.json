@@ -5,7 +5,8 @@
   "workspaces": [
     "web/app",
     "web/packages/ui",
-    "web/packages/messages"
+    "web/packages/messages",
+    "web/packages/api-client"
   ],
   "type": "module",
   "scripts": {

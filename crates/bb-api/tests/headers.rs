@@ -5,16 +5,21 @@
 
 // Dependencies of the library that this test does not use itself (`unused_crate_dependencies`).
 use bb_core as _;
+use h2 as _;
 use hyper_util as _;
 use mime_guess as _;
 use rcgen as _;
 use rust_embed as _;
 use rustls as _;
+use serde as _;
+use serde_json as _;
 use tokio as _;
 use tokio_rustls as _;
 use tower_http as _;
 use tracing as _;
 use tracing_subscriber as _;
+use utoipa as _;
+use utoipa_axum as _;
 
 mod common;
 
@@ -43,6 +48,7 @@ mod headers {
             header_timeout: std::time::Duration::from_secs(30),
             data_folder: std::env::temp_dir(),
             trusted_proxies: vec![],
+            limits: bb_api::LimitsConfig::default(),
         }
     }
 
@@ -81,7 +87,8 @@ mod headers {
             assert_headers(&response, path);
         }
         let post = send(WebSource::Folder(dir.path().into()), Method::POST, "/api/x").await;
-        assert_eq!(post.status(), StatusCode::NOT_FOUND);
+        // A change without an origin is refused before the address is looked at; the headers stay.
+        assert_eq!(post.status(), StatusCode::FORBIDDEN);
         assert_headers(&post, "POST /api/x");
     }
 

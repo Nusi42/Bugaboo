@@ -26,3 +26,11 @@ export function t<K extends MessageKey>(key: K, ...values: ValuesOf<K>): string 
   const result = formatter.format<string>(values[0]);
   return Array.isArray(result) ? result.join("") : result;
 }
+
+/**
+ * Whether `text` is the key of a message in this catalog. The server may name a key that this
+ * version of the app does not have yet, so a key from outside is checked before it is used.
+ */
+export function isMessageKey(text: string): text is MessageKey {
+  return Object.hasOwn(messages, text);
+}

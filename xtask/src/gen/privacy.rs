@@ -400,7 +400,7 @@ fn field_row(field: &Field) -> Vec<String> {
 }
 
 /// A Markdown table with padded columns.
-fn table(header: &[&str], rows: &[Vec<String>]) -> String {
+pub(super) fn table(header: &[&str], rows: &[Vec<String>]) -> String {
     let escape = |cell: &str| cell.replace('|', "\\|");
     let mut all: Vec<Vec<String>> = vec![header.iter().map(|h| (*h).to_owned()).collect()];
     all.extend(

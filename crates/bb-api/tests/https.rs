@@ -2,16 +2,19 @@
 //! set including HSTS, compression, and the plain-HTTP rules for trusted proxies.
 
 // Dependencies of the library that this test does not use itself (`unused_crate_dependencies`).
-use axum as _;
 use bb_core as _;
 use hyper_util as _;
 use mime_guess as _;
 use rcgen as _;
 use rust_embed as _;
+use serde as _;
+use serde_json as _;
 use tower as _;
 use tower_http as _;
 use tracing as _;
 use tracing_subscriber as _;
+use utoipa as _;
+use utoipa_axum as _;
 
 mod common;
 
@@ -21,6 +24,7 @@ mod https {
     use std::sync::Arc;
     use std::time::Duration;
 
+    use axum::http::{Request, StatusCode};
     use bb_api::tls::{TlsSource, server_config};
     use bb_api::{Incoming, ListenerOptions, Options, WebSource, serve};
     use rustls::pki_types::pem::PemObject as _;
@@ -91,6 +95,7 @@ mod https {
             header_timeout: Duration::from_secs(1),
             data_folder: tls_folder.path().to_path_buf(),
             trusted_proxies: vec![],
+            limits: bb_api::LimitsConfig::default(),
         };
         let (stop, stopped) = oneshot::channel::<()>();
         tokio::spawn(serve(incoming, options, async move {
@@ -161,6 +166,63 @@ mod https {
                     "{name} on {path}: {head}"
                 );
             }
+        }
+    }
+
+    /// One request over HTTP/2 on TLS, as a browser sends it: no Host header, the authority is in
+    /// the address. Returns the status.
+    async fn h2_post(server: &Running, origin: Option<&str>) -> StatusCode {
+        let tcp = TcpStream::connect(server.address).await.unwrap();
+        let mut roots = RootCertStore::empty();
+        let cert =
+            CertificateDer::from_pem_file(server.tls_folder.path().join("self-signed-cert.pem"))
+                .unwrap();
+        roots.add(cert).unwrap();
+        let mut client =
+            ClientConfig::builder_with_provider(Arc::new(rustls::crypto::ring::default_provider()))
+                .with_safe_default_protocol_versions()
+                .unwrap()
+                .with_root_certificates(roots)
+                .with_no_client_auth();
+        client.alpn_protocols = vec![b"h2".to_vec()];
+        let name = ServerName::try_from("localhost").unwrap();
+        let tls = TlsConnector::from(Arc::new(client))
+            .connect(name, tcp)
+            .await
+            .unwrap();
+        assert_eq!(tls.get_ref().1.alpn_protocol(), Some(&b"h2"[..]));
+        let (sender, connection) = h2::client::handshake(tls).await.unwrap();
+        tokio::spawn(connection);
+        let port = server.address.port();
+        let mut request = Request::post(format!("https://localhost:{port}/api/v1/status"));
+        if let Some(origin) = origin {
+            request = request.header("origin", origin);
+        }
+        let (response, _) = sender
+            .ready()
+            .await
+            .unwrap()
+            .send_request(request.body(()).unwrap(), true)
+            .unwrap();
+        response.await.unwrap().status()
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn sec_06_over_tls_and_http2_the_origin_check_uses_the_authority_and_the_scheme() {
+        let server = start(true, None).await;
+        let port = server.address.port();
+        // Same origin: passes the check (the route only answers GET, so: 405, not 403).
+        let same = h2_post(&server, Some(&format!("https://localhost:{port}"))).await;
+        assert_eq!(same, StatusCode::METHOD_NOT_ALLOWED);
+        // Another site, another scheme, another port, or no origin at all: refused.
+        for origin in [
+            Some("https://evil.test".to_owned()),
+            Some(format!("http://localhost:{port}")),
+            Some(format!("https://localhost:{}", port.wrapping_add(1))),
+            None,
+        ] {
+            let status = h2_post(&server, origin.as_deref()).await;
+            assert_eq!(status, StatusCode::FORBIDDEN, "{origin:?}");
         }
     }
 

@@ -18,6 +18,10 @@ export const messages = {
   "error.resource.not-found": "We could not find that.",
   "error.request.invalid":
     "Something in your request is not valid. Check what you typed and try again.",
+  "error.request.wrong-origin":
+    "That did not come from a Bugaboo page. Reload the page and try again.",
+  "error.request.method-not-allowed": "Bugaboo does not do that here.",
+  "error.request.timed-out": "Your request took too long to arrive. Please try again.",
   "error.request.too-large": "That is too big to send.",
   "error.edit.version-changed":
     "Someone changed this while you were working. Use Compare and save to keep your changes.",
@@ -30,6 +34,10 @@ export const messages = {
     "How many minutes without activity pass before people are signed out automatically.",
   "setting.security.two-step-required.help":
     "Ask everyone to use two-step sign-in. People who have not set it up are asked to do so the next time they sign in.",
+  "cookie.session.purpose":
+    "Keeps you signed in on this device. Bugaboo removes it when you sign out or when your sign-in runs out.",
+  "cookie.csrf.purpose":
+    "Protects you from other websites that try to make Bugaboo do something in your name.",
   "server.listening": "Bugaboo is running at {address}. Stop it with Ctrl+C.",
   "server.database-built-in": "Database: built-in SQLite in the data folder.",
   "server.database-sqlite": "Database: SQLite.",

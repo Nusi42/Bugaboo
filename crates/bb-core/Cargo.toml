@@ -6,16 +6,19 @@ edition.workspace = true
 rust-version.workspace = true
 publish.workspace = true
 
+[features]
+# Describes the API types for OpenAPI (utoipa); only the HTTP layer turns it on.
+openapi = ["dep:utoipa"]
+# `SequentialIds`, the predictable ID source for tests. Only `[dev-dependencies]` switch it on.
+fake-ids = []
+
 [dependencies]
 bb-macros = { path = "../bb-macros" }
 jiff = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
+utoipa = { workspace = true, optional = true }
 uuid = { workspace = true, features = ["std"] }
-
-[features]
-# `SequentialIds`, the predictable ID source for tests. Only `[dev-dependencies]` switch it on.
-fake-ids = []
 
 [dev-dependencies]
 trybuild = { workspace = true }

@@ -1,0 +1,222 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Bugaboo API",
+    "description": "The API of Bugaboo. The browser app uses exactly this API. Every error is application/problem+json with a stable code and a message key.",
+    "version": "0.0.0"
+  },
+  "paths": {
+    "/api/v1/openapi.json": {
+      "get": {
+        "tags": ["server"],
+        "summary": "The description of this API (OpenAPI 3.1), for tools and for the generated browser client.",
+        "operationId": "getOpenApi",
+        "responses": {
+          "200": {
+            "description": "The OpenAPI document of this API.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/status": {
+      "get": {
+        "tags": ["server"],
+        "summary": "Whether the server is up. Open to everyone, and the example route of the API skeleton.",
+        "operationId": "getStatus",
+        "responses": {
+          "200": {
+            "description": "The server is running.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServerStatus"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ErrorCode": {
+        "type": "string",
+        "description": "What went wrong. Clients react to this text, which never changes.",
+        "enum": [
+          "auth.wrong_credentials",
+          "auth.not_signed_in",
+          "access.forbidden",
+          "resource.not_found",
+          "request.invalid",
+          "request.wrong_origin",
+          "request.method_not_allowed",
+          "request.timed_out",
+          "request.too_large",
+          "edit.version_changed",
+          "rate_limit.exceeded",
+          "server.unavailable",
+          "server.internal"
+        ]
+      },
+      "Problem": {
+        "type": "object",
+        "description": "The body of an error answer, as plain data. The HTTP layer only sends it.\n\nClients react to `code` and show the message for `message_key` and `params` in their own\nlanguage. `title` is the English text, only a fallback for clients that cannot do that. The\nfields are private and the only way to make a `Problem` is from an [`ErrorCode`], so no answer\ncarries a text or a status that does not belong to its code.",
+        "required": ["type", "title", "status", "code", "message_key", "params"],
+        "properties": {
+          "code": {
+            "$ref": "#/components/schemas/ErrorCode",
+            "description": "What went wrong."
+          },
+          "message_key": {
+            "type": "string",
+            "description": "The key of the message to show, in the message catalog."
+          },
+          "params": {
+            "type": "object",
+            "description": "Values for the placeholders of the message. Empty today: error messages have none.",
+            "additionalProperties": {},
+            "propertyNames": {
+              "type": "string"
+            }
+          },
+          "request_id": {
+            "type": ["string", "null"],
+            "description": "The ID of the request, also in the `x-request-id` header, to quote when asking for help."
+          },
+          "status": {
+            "type": "integer",
+            "format": "int32",
+            "description": "The HTTP status.",
+            "minimum": 0
+          },
+          "title": {
+            "type": "string",
+            "description": "The English text, a fallback for clients that cannot look up the message."
+          },
+          "type": {
+            "type": "string",
+            "description": "A stable address of the kind of error, `urn:bugaboo:error:<code>`."
+          }
+        }
+      },
+      "ServerStatus": {
+        "type": "object",
+        "description": "What `GET /api/v1/status` answers: the server is up.",
+        "required": ["status"],
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/StatusValue",
+            "description": "Always `ok`; an answer at all means the server is running."
+          }
+        }
+      },
+      "StatusValue": {
+        "type": "string",
+        "description": "The only value a status can have today.",
+        "enum": ["ok"]
+      }
+    },
+    "securitySchemes": {
+      "csrfToken": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-csrf-token"
+      },
+      "sessionCookie": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "__Host-bb_session"
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "server",
+      "description": "The server itself."
+    }
+  ]
+}
