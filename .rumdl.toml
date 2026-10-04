@@ -1,0 +1,9 @@
+# Markdown style (FMT-MD). Defaults of rumdl, except as noted; every change has its reason.
+
+[MD013]
+# The docs are written one paragraph per line (diff-friendly, no re-wrapping on edits), so prose is
+# not wrapped. Headings still have to fit the line length; tables are exempt (default).
+paragraphs = false
+line-length = 100
+# Diagrams (Mermaid) and directory trees cannot be wrapped.
+code-blocks = false
