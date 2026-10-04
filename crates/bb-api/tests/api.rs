@@ -2,6 +2,8 @@
 //! and the rules every API answer follows.
 
 // Dependencies of the library that this test does not use itself (`unused_crate_dependencies`).
+use bb_app as _;
+use bb_auth as _;
 use bb_core as _;
 use h2 as _;
 use hyper_util as _;
@@ -39,6 +41,7 @@ mod api {
             data_folder: std::env::temp_dir(),
             trusted_proxies: proxies.iter().map(|p| p.parse().unwrap()).collect(),
             limits,
+            auth: bb_api::AuthHandle::none(),
         }
     }
 
@@ -196,6 +199,7 @@ mod api {
         let limits = LimitsConfig {
             requests_per_minute: 3,
             sign_in_attempts_per_minute: 3,
+            ..LimitsConfig::default()
         };
         let app = router(options(limits, &[]));
         for _ in 0..3 {
@@ -247,6 +251,7 @@ mod api {
         let limits = LimitsConfig {
             requests_per_minute: 1,
             sign_in_attempts_per_minute: 1,
+            ..LimitsConfig::default()
         };
         let app = router(options(limits, &["10.0.0.5"]));
         // An ordinary client that invents a different forwarded address each time is still one

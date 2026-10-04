@@ -13,15 +13,30 @@ path = "src/main.rs"
 [dependencies]
 anyhow = { workspace = true }
 bb-api = { path = "../bb-api" }
+bb-app = { path = "../bb-app" }
+bb-auth = { path = "../bb-auth" }
 bb-core = { path = "../bb-core" }
+bb-store = { path = "../bb-store" }
 clap = { workspace = true }
+jiff = { workspace = true }
 tokio = { workspace = true, features = ["macros", "net", "rt-multi-thread", "signal"] }
 toml = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 
 [dev-dependencies]
+argon2 = { workspace = true }
+axum = { workspace = true, features = ["http1", "http2", "tokio"] }
+base64ct = { workspace = true }
+bb-testing = { path = "../bb-testing" }
+h2 = { workspace = true }
+rustls = { workspace = true }
+serde_json = { workspace = true }
 tempfile = { workspace = true }
+tokio = { workspace = true, features = ["io-util", "sync", "time"] }
+tokio-rustls = { workspace = true }
+tower = { workspace = true, features = ["util"] }
+webauthn-authenticator-rs = { workspace = true }
 
 [lints]
 workspace = true

@@ -14,6 +14,9 @@ pub const CONFIG_DATABASE_INVALID: MessageKey = MessageKey::new("config.database
 /// The message `config.port-missing`.
 pub const CONFIG_PORT_MISSING: MessageKey = MessageKey::new("config.port-missing");
 
+/// The message `config.public-url-proxy`.
+pub const CONFIG_PUBLIC_URL_PROXY: MessageKey = MessageKey::new("config.public-url-proxy");
+
 /// The message `config.tls-files-missing`.
 pub const CONFIG_TLS_FILES_MISSING: MessageKey = MessageKey::new("config.tls-files-missing");
 
@@ -32,12 +35,37 @@ pub const DATA_FOLDER_ACCOUNT_UNKNOWN: MessageKey = MessageKey::new("data-folder
 /// The message `error.access.forbidden`.
 pub const ERROR_ACCESS_FORBIDDEN: MessageKey = MessageKey::new("error.access.forbidden");
 
+/// The message `error.auth.invitation-invalid`.
+pub const ERROR_AUTH_INVITATION_INVALID: MessageKey =
+    MessageKey::new("error.auth.invitation-invalid");
+
 /// The message `error.auth.not-signed-in`.
 pub const ERROR_AUTH_NOT_SIGNED_IN: MessageKey = MessageKey::new("error.auth.not-signed-in");
+
+/// The message `error.auth.passkey-rejected`.
+pub const ERROR_AUTH_PASSKEY_REJECTED: MessageKey = MessageKey::new("error.auth.passkey-rejected");
+
+/// The message `error.auth.password-breached`.
+pub const ERROR_AUTH_PASSWORD_BREACHED: MessageKey =
+    MessageKey::new("error.auth.password-breached");
+
+/// The message `error.auth.password-too-short`.
+pub const ERROR_AUTH_PASSWORD_TOO_SHORT: MessageKey =
+    MessageKey::new("error.auth.password-too-short");
+
+/// The message `error.auth.sign-up-refused`.
+pub const ERROR_AUTH_SIGN_UP_REFUSED: MessageKey = MessageKey::new("error.auth.sign-up-refused");
 
 /// The message `error.auth.wrong-credentials`.
 pub const ERROR_AUTH_WRONG_CREDENTIALS: MessageKey =
     MessageKey::new("error.auth.wrong-credentials");
+
+/// The message `error.auth.wrong-second-step-code`.
+pub const ERROR_AUTH_WRONG_SECOND_STEP_CODE: MessageKey =
+    MessageKey::new("error.auth.wrong-second-step-code");
+
+/// The message `error.auth.wrong-setup-code`.
+pub const ERROR_AUTH_WRONG_SETUP_CODE: MessageKey = MessageKey::new("error.auth.wrong-setup-code");
 
 /// The message `error.edit.version-changed`.
 pub const ERROR_EDIT_VERSION_CHANGED: MessageKey = MessageKey::new("error.edit.version-changed");
@@ -60,6 +88,9 @@ pub const ERROR_REQUEST_TOO_LARGE: MessageKey = MessageKey::new("error.request.t
 
 /// The message `error.request.wrong-origin`.
 pub const ERROR_REQUEST_WRONG_ORIGIN: MessageKey = MessageKey::new("error.request.wrong-origin");
+
+/// The message `error.request.wrong-token`.
+pub const ERROR_REQUEST_WRONG_TOKEN: MessageKey = MessageKey::new("error.request.wrong-token");
 
 /// The message `error.resource.not-found`.
 pub const ERROR_RESOURCE_NOT_FOUND: MessageKey = MessageKey::new("error.resource.not-found");
@@ -94,6 +125,9 @@ pub const SERVER_KEYS_MISSING: MessageKey = MessageKey::new("server.keys-missing
 /// The message `server.not-found`.
 pub const SERVER_NOT_FOUND: MessageKey = MessageKey::new("server.not-found");
 
+/// The message `server.setup-code-hint`.
+pub const SERVER_SETUP_CODE_HINT: MessageKey = MessageKey::new("server.setup-code-hint");
+
 /// The message `server.signal-failed`.
 pub const SERVER_SIGNAL_FAILED: MessageKey = MessageKey::new("server.signal-failed");
 
@@ -104,9 +138,25 @@ pub const SERVER_WEB_APP_MISSING: MessageKey = MessageKey::new("server.web-app-m
 pub const SETTING_APPEARANCE_THEME_HELP: MessageKey =
     MessageKey::new("setting.appearance.theme.help");
 
+/// The message `setting.auth.sign-up-domains.help`.
+pub const SETTING_AUTH_SIGN_UP_DOMAINS_HELP: MessageKey =
+    MessageKey::new("setting.auth.sign-up-domains.help");
+
+/// The message `setting.auth.sign-up-enabled.help`.
+pub const SETTING_AUTH_SIGN_UP_ENABLED_HELP: MessageKey =
+    MessageKey::new("setting.auth.sign-up-enabled.help");
+
+/// The message `setting.security.session-absolute-hours.help`.
+pub const SETTING_SECURITY_SESSION_ABSOLUTE_HOURS_HELP: MessageKey =
+    MessageKey::new("setting.security.session-absolute-hours.help");
+
 /// The message `setting.security.session-idle-minutes.help`.
 pub const SETTING_SECURITY_SESSION_IDLE_MINUTES_HELP: MessageKey =
     MessageKey::new("setting.security.session-idle-minutes.help");
+
+/// The message `setting.security.two-step-required-roles.help`.
+pub const SETTING_SECURITY_TWO_STEP_REQUIRED_ROLES_HELP: MessageKey =
+    MessageKey::new("setting.security.two-step-required-roles.help");
 
 /// The message `setting.security.two-step-required.help`.
 pub const SETTING_SECURITY_TWO_STEP_REQUIRED_HELP: MessageKey =
@@ -243,6 +293,24 @@ pub fn config_proxy_invalid(value: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `config.public-url-invalid`.
+#[must_use]
+pub fn config_public_url_invalid(value: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("config.public-url-invalid"),
+        vec![("value", Value::Text(value.to_string()))],
+    )
+}
+
+/// The message `config.public-url-needed`.
+#[must_use]
+pub fn config_public_url_needed(address: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("config.public-url-needed"),
+        vec![("address", Value::Text(address.to_string()))],
+    )
+}
+
 /// The message `config.tls-mode-invalid`.
 #[must_use]
 pub fn config_tls_mode_invalid(value: impl std::fmt::Display) -> Message {
@@ -300,6 +368,15 @@ pub fn hello_current(theme: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `server.database-failed`.
+#[must_use]
+pub fn server_database_failed(reason: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("server.database-failed"),
+        vec![("reason", Value::Text(reason.to_string()))],
+    )
+}
+
 /// The message `server.error`.
 #[must_use]
 pub fn server_error(message: impl std::fmt::Display) -> Message {
@@ -333,6 +410,15 @@ pub fn server_self_signed(path: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("server.self-signed"),
         vec![("path", Value::Text(path.to_string()))],
+    )
+}
+
+/// The message `server.setup-code`.
+#[must_use]
+pub fn server_setup_code(code: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("server.setup-code"),
+        vec![("code", Value::Text(code.to_string()))],
     )
 }
 
@@ -481,6 +567,18 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "The trusted proxy {value} is not an IP address.",
     ),
     (
+        "config.public-url-invalid",
+        "The public address {value} is not a web address like https://bugaboo.example.com.",
+    ),
+    (
+        "config.public-url-needed",
+        "Bugaboo listens on {address}, so it cannot know the address people type in the browser. Set public_url, for example https://bugaboo.example.com.",
+    ),
+    (
+        "config.public-url-proxy",
+        "A proxy is listed in trusted_proxies, so people reach Bugaboo through the address of the proxy, which Bugaboo cannot know. Set public_url, for example https://bugaboo.example.com.",
+    ),
+    (
         "config.tls-files-missing",
         "HTTPS mode files needs both tls_cert and tls_key.",
     ),
@@ -517,10 +615,38 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "The data folder {path} could not be made private to its owner: {reason}",
     ),
     ("error.access.forbidden", "You are not allowed to do that."),
+    (
+        "error.auth.invitation-invalid",
+        "This invitation does not work. It may have run out or been used already. Ask for a new one.",
+    ),
     ("error.auth.not-signed-in", "Please sign in to continue."),
+    (
+        "error.auth.passkey-rejected",
+        "The passkey could not be checked. Please try again.",
+    ),
+    (
+        "error.auth.password-breached",
+        "That password is on lists of passwords that are tried first. Please choose another one.",
+    ),
+    (
+        "error.auth.password-too-short",
+        "Choose a password with at least 12 characters. Length matters more than special characters.",
+    ),
+    (
+        "error.auth.sign-up-refused",
+        "You cannot sign up here. Ask an administrator to invite you.",
+    ),
     (
         "error.auth.wrong-credentials",
         "The e-mail address or the password is not right.",
+    ),
+    (
+        "error.auth.wrong-second-step-code",
+        "That code is not right. Check the code in your app, or use one of your backup codes.",
+    ),
+    (
+        "error.auth.wrong-setup-code",
+        "That setup code is not right. Copy it again from the window where Bugaboo is running.",
     ),
     (
         "error.edit.version-changed",
@@ -547,6 +673,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "error.request.wrong-origin",
         "That did not come from a Bugaboo page. Reload the page and try again.",
     ),
+    (
+        "error.request.wrong-token",
+        "Your sign-in does not fit this page any more. Sign in again and then try again.",
+    ),
     ("error.resource.not-found", "We could not find that."),
     (
         "error.server.internal",
@@ -566,6 +696,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "server.database-built-in",
         "Database: built-in SQLite in the data folder.",
+    ),
+    (
+        "server.database-failed",
+        "Bugaboo could not open its database: {reason}",
     ),
     ("server.database-postgres", "Database: PostgreSQL."),
     ("server.database-sqlite", "Database: SQLite."),
@@ -588,6 +722,14 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "HTTPS uses a certificate made by Bugaboo, so browsers warn until you trust it. The certificate is in {path}.",
     ),
     (
+        "server.setup-code",
+        "Setup is open. Open Bugaboo in your browser and enter this setup code to make the first administrator: {code}",
+    ),
+    (
+        "server.setup-code-hint",
+        "The code works once and changes every time Bugaboo starts.",
+    ),
+    (
         "server.signal-failed",
         "Bugaboo could not listen for the stop signal (Ctrl+C), so it cannot be stopped cleanly.",
     ),
@@ -601,8 +743,24 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "The colors Bugaboo uses on your screen. Match my device follows the light or dark setting of your device.",
     ),
     (
+        "setting.auth.sign-up-domains.help",
+        "The e-mail domains that may sign up on their own, as a list separated by commas, like example.com. Leave the list empty to let every address sign up while signing up is on, so write your domains in first.",
+    ),
+    (
+        "setting.auth.sign-up-enabled.help",
+        "Let people make an account on their own, without an invitation. Bugaboo cannot check that an address belongs to the person until e-mail is available, so use this only on a network you trust.",
+    ),
+    (
+        "setting.security.session-absolute-hours.help",
+        "How many hours a sign-in can last at most, even when somebody keeps working. After that, people sign in again. Between 1 hour and 30 days (720 hours).",
+    ),
+    (
         "setting.security.session-idle-minutes.help",
-        "How many minutes without activity pass before people are signed out automatically.",
+        "How many minutes without activity pass before people are signed out automatically. Between 5 minutes and 24 hours.",
+    ),
+    (
+        "setting.security.two-step-required-roles.help",
+        "The roles whose members must use two-step sign-in, as a list separated by commas. Roles arrive in a later version; until then this has no effect.",
     ),
     (
         "setting.security.two-step-required.help",

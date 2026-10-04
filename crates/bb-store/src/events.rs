@@ -174,12 +174,18 @@ impl bb_app::ports::ChangeStore for Database {
     type Transaction = Transaction;
     type Error = StoreError;
 
-    fn record_change<T>(
-        &self,
-        event: &DomainEvent,
-        change: impl AsyncFnOnce(&mut Transaction) -> Result<T, StoreError>,
-    ) -> impl Future<Output = Result<T, StoreError>> {
-        Self::record_change(self, event, change)
+    fn record_change<'a, T: Send + 'a>(
+        &'a self,
+        event: &'a DomainEvent,
+        change: impl for<'t> FnOnce(
+            &'t mut Transaction,
+        ) -> bb_app::ports::BoxFuture<'t, Result<T, StoreError>>
+        + Send
+        + 'a,
+    ) -> impl Future<Output = Result<T, StoreError>> + Send + 'a {
+        Self::record_change(self, event, async move |transaction| {
+            change(transaction).await
+        })
     }
 }
 
@@ -442,7 +448,7 @@ mod tests {
         event: &DomainEvent,
     ) -> Result<(), StoreError> {
         store
-            .record_change(event, async |_transaction| Ok(()))
+            .record_change(event, |_transaction| Box::pin(async { Ok(()) }))
             .await
     }
 

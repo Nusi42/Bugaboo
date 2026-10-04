@@ -11,6 +11,7 @@
 mod api;
 pub mod cookies;
 pub mod errors;
+mod failures;
 mod headers;
 pub mod limits;
 mod listener;
@@ -20,12 +21,12 @@ mod router;
 pub mod tls;
 mod web;
 
-pub use api::{BODY_LIMIT_BYTES, TIME_LIMIT, VERSION_PATH};
+pub use api::{AuthHandle, BODY_LIMIT_BYTES, TIME_LIMIT, VERSION_PATH};
 pub use errors::{ApiError, ApiJson};
+pub use failures::{DEFAULT_SIGN_IN_FAILURES_PER_MINUTE, FailureLimits, MAX_WAIT};
 pub use headers::{HSTS_MAX_AGE_SELF_SIGNED, HSTS_MAX_AGE_TRUSTED};
 pub use limits::{
-    AccountLimit, DEFAULT_REQUESTS_PER_MINUTE, DEFAULT_SIGN_IN_ATTEMPTS_PER_MINUTE, Limits,
-    LimitsConfig,
+    DEFAULT_REQUESTS_PER_MINUTE, DEFAULT_SIGN_IN_ATTEMPTS_PER_MINUTE, Limits, LimitsConfig,
 };
 pub use listener::{
     Accepted, ClientAddr, Connection, DEFAULT_MAX_CONNECTIONS, Incoming, ListenerOptions,

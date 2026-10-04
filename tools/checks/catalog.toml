@@ -305,9 +305,13 @@ status = "planned"
 id = "ARCH-LEAN"
 title = "Every list endpoint supports fields=, cursor paging and a page-size cap"
 rule = "PERF-02"
-tool = "xtask (reads the generated OpenAPI document: every GET with an items list takes fields, cursor and a limit with a maximum, and answers next_cursor)"
+tool = "xtask (reads the generated OpenAPI document: every GET with a list, that is any array property or an answer that is a bare array (refused: it has no room for next_cursor), takes fields, cursor and a limit with a maximum and answers next_cursor; the few small lists named in tools/checks/lean-exemptions.toml have a hard cap and a truncated flag)"
 when = ["push", "ci"]
-files = ["crates/bb-api/**", "web/packages/api-client/openapi.json"]
+files = [
+  "crates/bb-api/**",
+  "web/packages/api-client/openapi.json",
+  "tools/checks/lean-exemptions.toml",
+]
 status = "active"
 
 [[check]]

@@ -54,6 +54,20 @@ macro_rules! error_codes {
 error_codes! {
     /// The e-mail address or the password is wrong. Never says which one.
     WrongCredentials => ("auth.wrong_credentials", 401, message::ERROR_AUTH_WRONG_CREDENTIALS),
+    /// The code of the second step (code app or backup code) is wrong or was used already.
+    WrongSecondStepCode => ("auth.wrong_second_step_code", 401, message::ERROR_AUTH_WRONG_SECOND_STEP_CODE),
+    /// The setup code of the first start is wrong.
+    WrongSetupCode => ("auth.wrong_setup_code", 401, message::ERROR_AUTH_WRONG_SETUP_CODE),
+    /// The new password is shorter than 12 characters.
+    PasswordTooShort => ("auth.password_too_short", 400, message::ERROR_AUTH_PASSWORD_TOO_SHORT),
+    /// The new password is in the list of passwords that are tried first.
+    PasswordBreached => ("auth.password_breached", 400, message::ERROR_AUTH_PASSWORD_BREACHED),
+    /// The invitation link does not work: unknown, used, taken back or expired. Never says which.
+    InvitationInvalid => ("auth.invitation_invalid", 400, message::ERROR_AUTH_INVITATION_INVALID),
+    /// Signing up on one's own is not possible here. Never says why.
+    SignUpRefused => ("auth.sign_up_refused", 403, message::ERROR_AUTH_SIGN_UP_REFUSED),
+    /// A passkey or a passkey ceremony did not check out.
+    PasskeyRejected => ("auth.passkey_rejected", 400, message::ERROR_AUTH_PASSKEY_REJECTED),
     /// The request needs a signed-in person.
     NotSignedIn => ("auth.not_signed_in", 401, message::ERROR_AUTH_NOT_SIGNED_IN),
     /// The person can see the thing but may not do this to it.
@@ -64,6 +78,8 @@ error_codes! {
     InvalidRequest => ("request.invalid", 400, message::ERROR_REQUEST_INVALID),
     /// A change request that does not come from one of Bugaboo's own pages.
     WrongOrigin => ("request.wrong_origin", 403, message::ERROR_REQUEST_WRONG_ORIGIN),
+    /// A change request without the right token of the session (CSRF).
+    WrongToken => ("request.wrong_token", 403, message::ERROR_REQUEST_WRONG_TOKEN),
     /// The address exists but does not do that (wrong HTTP method).
     MethodNotAllowed => ("request.method_not_allowed", 405, message::ERROR_REQUEST_METHOD_NOT_ALLOWED),
     /// The request took too long to arrive.

@@ -6,6 +6,7 @@ mod config;
 mod data_folder;
 mod log;
 mod output;
+mod wiring;
 
 use std::future::Future;
 use std::net::SocketAddr;
@@ -132,6 +133,9 @@ async fn serve(args: ServeArgs) -> anyhow::Result<()> {
     let hsts_max_age = hsts_max_age(&settings);
     // Installed before listening, so a failure is reported instead of stopping silently.
     let shutdown = shutdown_signal()?;
+    // The database, the keys and the sign-in services come first: when one of them fails the
+    // server stops here, before it listens (M1-F19, M1-F24).
+    let wired = wiring::wire(&settings, &data).await?;
     let address = SocketAddr::new(settings.address, settings.port);
     let tcp = TcpListener::bind(address)
         .await
@@ -152,6 +156,11 @@ async fn serve(args: ServeArgs) -> anyhow::Result<()> {
         "https"
     };
     output::line(&message::server_listening(format!("{scheme}://{address}")).render());
+    if let Some(code) = &wired.setup_code {
+        // Only to the terminal, never to the log file: the code is a secret until it is used.
+        output::line(&message::server_setup_code(code).render());
+        output::line(&Message::from(message::SERVER_SETUP_CODE_HINT).render());
+    }
     tracing::info!(https = hsts_max_age.is_some(), "server started");
 
     let options = Options {
@@ -161,6 +170,7 @@ async fn serve(args: ServeArgs) -> anyhow::Result<()> {
         data_folder: data.root().to_path_buf(),
         trusted_proxies: settings.trusted_proxies,
         limits: settings.limits,
+        auth: wired.auth,
     };
     bb_api::serve(incoming, options, shutdown).await?;
     tracing::info!("server stopped");
@@ -280,6 +290,10 @@ fn shutdown_signal() -> anyhow::Result<impl Future<Output = ()> + Send + 'static
 }
 
 #[cfg(test)]
+#[path = "tests/sign_in/mod.rs"]
+mod sign_in_tests;
+
+#[cfg(test)]
 mod tests {
     use super::*;
 
@@ -343,7 +357,12 @@ mod tests {
         assert_eq!(hsts_max_age(&own), Some(HSTS_MAX_AGE_SELF_SIGNED));
         let local = settings(&["port=1", "tls_mode=off"]);
         assert_eq!(hsts_max_age(&local), None);
-        let proxied = settings(&["port=1", "tls_mode=off", "trusted_proxies=10.0.0.5"]);
+        let proxied = settings(&[
+            "port=1",
+            "tls_mode=off",
+            "trusted_proxies=10.0.0.5",
+            "public_url=https://bugaboo.example.test",
+        ]);
         assert_eq!(hsts_max_age(&proxied), Some(HSTS_MAX_AGE_TRUSTED));
         let provided = settings(&["port=1", "tls_mode=files", "tls_cert=a", "tls_key=b"]);
         assert_eq!(hsts_max_age(&provided), Some(HSTS_MAX_AGE_TRUSTED));

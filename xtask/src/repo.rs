@@ -121,6 +121,12 @@ impl Repo {
         let prefix = format!("--prefix={}/", dir.to_string_lossy().replace('\\', "/"));
         self.git_bytes(&["checkout-index", "--all", "--force", &prefix])?;
         link_directory(&self.root.join("node_modules"), &dir.join("node_modules"));
+        // Tools that look for `.git` to find the root of the project (rumdl and others) must
+        // find the export, not the real repository above `target/`, or their path rules would
+        // see `target/staged-tree/...` (M1-F17). An empty folder is enough for that; Git itself
+        // is only ever run in the real repository.
+        fs::create_dir_all(dir.join(".git"))
+            .context("could not mark the staged files as a project root")?;
         Ok(StagedTree {
             repo: Self {
                 root: self.root.clone(),
@@ -226,6 +232,10 @@ mod tests {
             assert!(!tree.repo.path("untracked.txt").exists());
             assert_eq!(tree.repo.all_files().unwrap(), ["a.txt", "b.txt"]);
             assert_eq!(tree.repo.real_root(), temp.path());
+            // The export is its own project root for the tools that look for `.git` (M1-F17).
+            let marker = tree.repo.path(".git");
+            assert!(marker.is_dir());
+            assert_eq!(fs::read_dir(&marker).unwrap().count(), 0);
         }
         assert_eq!(snapshot(temp.path()), before, "the working tree changed");
         assert!(!temp.path().join("target").join("staged-tree").exists());

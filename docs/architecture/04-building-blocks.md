@@ -64,7 +64,8 @@ flowchart TB
   api --> app & auth & mcp & core
   mcp --> app & ai
   jobs --> app
-  app --> policy & core & search & md
+  app --> policy & core & search & md & auth
+  auth --> core
   policy --> core
   core -.-> macros
   store -. implements ports .-> app

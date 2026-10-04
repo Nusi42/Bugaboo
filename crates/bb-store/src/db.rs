@@ -12,7 +12,7 @@ use std::time::Duration;
 use jiff::Timestamp;
 use sea_query::{
     DeleteStatement, Iden, InsertStatement, PostgresQueryBuilder, SchemaStatementBuilder,
-    SelectStatement, SqliteQueryBuilder, UpdateStatement,
+    SelectStatement, SqliteQueryBuilder, Table, UpdateStatement,
 };
 use sea_query_sqlx::{SqlxBinder as _, SqlxValues};
 use sqlx::postgres::{PgConnectOptions, PgPoolOptions, PgRow};
@@ -29,6 +29,22 @@ const SQLITE_BUSY_TIMEOUT: Duration = Duration::from_secs(10);
 const SQLITE_MAX_CONNECTIONS: u32 = 8;
 /// The most connections PostgreSQL gets when the number of processors is unknown.
 const POSTGRES_FALLBACK_CONNECTIONS: u32 = 8;
+
+/// Opens a SQLite pool in WAL mode with foreign keys on and a busy timeout.
+async fn open_sqlite(options: SqliteConnectOptions) -> Result<SqlitePool, StoreError> {
+    let options = options
+        .create_if_missing(true)
+        .journal_mode(SqliteJournalMode::Wal)
+        // FULL: a committed change survives a power cut (security first). It costs one
+        // more disk flush per commit than NORMAL does in WAL mode (M1-F23).
+        .synchronous(SqliteSynchronous::Full)
+        .foreign_keys(true)
+        .busy_timeout(SQLITE_BUSY_TIMEOUT);
+    Ok(SqlitePoolOptions::new()
+        .max_connections(SQLITE_MAX_CONNECTIONS)
+        .connect_with(options)
+        .await?)
+}
 
 /// The two databases Bugaboo supports.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -59,20 +75,7 @@ impl Database {
     /// Fails for another kind of URL or when the database cannot be reached.
     pub async fn connect(url: &str) -> Result<Self, StoreError> {
         let pool = if url.starts_with("sqlite:") {
-            let options = SqliteConnectOptions::from_str(url)?
-                .create_if_missing(true)
-                .journal_mode(SqliteJournalMode::Wal)
-                // FULL: a committed change survives a power cut (security first). It costs one
-                // more disk flush per commit than NORMAL does in WAL mode (M1-F23).
-                .synchronous(SqliteSynchronous::Full)
-                .foreign_keys(true)
-                .busy_timeout(SQLITE_BUSY_TIMEOUT);
-            Pool::Sqlite(
-                SqlitePoolOptions::new()
-                    .max_connections(SQLITE_MAX_CONNECTIONS)
-                    .connect_with(options)
-                    .await?,
-            )
+            Pool::Sqlite(open_sqlite(SqliteConnectOptions::from_str(url)?).await?)
         } else if url.starts_with("postgres:") || url.starts_with("postgresql:") {
             let options = PgConnectOptions::from_str(url)?;
             let connections = std::thread::available_parallelism()
@@ -91,6 +94,17 @@ impl Database {
         Ok(Self { pool })
     }
 
+    /// Opens the SQLite database in `file` (made if missing), the built-in database of the data
+    /// folder. The path is used as it is: it is not read as a URL.
+    ///
+    /// # Errors
+    /// Fails when the database cannot be opened.
+    pub async fn connect_file(file: &std::path::Path) -> Result<Self, StoreError> {
+        Ok(Self {
+            pool: Pool::Sqlite(open_sqlite(SqliteConnectOptions::new().filename(file)).await?),
+        })
+    }
+
     /// Which database this is.
     #[must_use]
     pub const fn dialect(&self) -> Dialect {
@@ -106,6 +120,22 @@ impl Database {
             Pool::Sqlite(pool) => pool.close().await,
             Pool::Postgres(pool) => pool.close().await,
         }
+    }
+
+    /// Renames a table. For tests only: they break one table on purpose, to see how a use case
+    /// behaves when the database fails half way, and put it right again afterwards. Nothing in
+    /// the program calls it.
+    ///
+    /// # Errors
+    /// Fails when the table does not exist or the name is taken.
+    #[doc(hidden)]
+    pub async fn rename_table_for_tests(&self, from: &str, to: &str) -> Result<(), StoreError> {
+        let rename = Table::rename()
+            .table(sea_query::Alias::new(from), sea_query::Alias::new(to))
+            .to_owned();
+        let mut transaction = self.begin().await?;
+        transaction.execute_schema(&rename).await?;
+        transaction.commit().await
     }
 
     /// Asks the database a trivial question; for the *ready* health check.

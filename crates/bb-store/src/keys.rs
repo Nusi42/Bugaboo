@@ -7,6 +7,10 @@
 //!   [`crate::secrets`]).
 //! - `log.key` holds the **log key**: 64 hex digits. It signs the hash chain and the checkpoints
 //!   of the security log. It never changes, so rotating the master key does not touch the log.
+//! - `csrf.key` holds the **CSRF key**: 64 hex digits. The token of a session is an HMAC of the
+//!   session ID under this key (SEC-12). It never changes, and no stored data depends on it: if the
+//!   file is lost, a new one is made and people sign in again (the old tokens stop matching), so
+//!   it is made even when the database already has data.
 //!
 //! Keys are made on the first start only. If the database already holds secrets or a security log
 //! and a key file is missing, [`Database::open_keys`](crate::Database::open_keys) refuses instead
@@ -35,6 +39,8 @@ use crate::error::{SecretProblem, StoreError};
 const MASTER_FILE: &str = "master.key";
 /// The log key file's name.
 const LOG_FILE: &str = "log.key";
+/// The CSRF key file's name.
+const CSRF_FILE: &str = "csrf.key";
 /// The same master file while it is being replaced.
 const NEW_MASTER_FILE: &str = "master.key.new";
 /// The size of a key.
@@ -106,6 +112,13 @@ impl SigningKey {
         Ok(Self(Zeroizing::new(random_bytes()?)))
     }
 
+    /// The bytes of the key, for code that makes its own HMACs under it (the CSRF token of
+    /// `bb-auth`). They are wiped from memory when dropped.
+    #[must_use]
+    pub fn to_bytes(&self) -> Zeroizing<[u8; KEY_LENGTH]> {
+        self.0.clone()
+    }
+
     /// The HMAC-SHA256 of `parts` joined, under this key.
     pub(crate) fn sign(&self, parts: &[&[u8]]) -> Result<[u8; 32], StoreError> {
         let mut mac = self.mac()?;
@@ -154,6 +167,7 @@ impl Stamp {
 pub struct KeyRing {
     folder: PathBuf,
     log_key: SigningKey,
+    csrf_key: SigningKey,
     state: RwLock<State>,
 }
 
@@ -198,10 +212,19 @@ impl KeyRing {
             write_first(&log_path, &render_log(&SigningKey::generate()?))?;
             parse_log(&wait_for(&log_path)?)?
         };
+        // Nothing stored depends on the CSRF key, so it is made whenever it is missing.
+        let csrf_path = folder.join(CSRF_FILE);
+        let csrf_key = if let Some(text) = read_complete(&csrf_path)? {
+            parse_log(&text)?
+        } else {
+            write_first(&csrf_path, &render_log(&SigningKey::generate()?))?;
+            parse_log(&wait_for(&csrf_path)?)?
+        };
         let stamp = Stamp::of(&master_path)?;
         Ok(Self {
             folder: folder.to_owned(),
             log_key,
+            csrf_key,
             state: RwLock::new(State {
                 keys: Arc::new(keys),
                 stamp,
@@ -277,6 +300,12 @@ impl KeyRing {
     #[must_use]
     pub fn log_key(&self) -> SigningKey {
         self.log_key.clone()
+    }
+
+    /// The CSRF key that the token of a session is made with. It never changes.
+    #[must_use]
+    pub fn csrf_key(&self) -> SigningKey {
+        self.csrf_key.clone()
     }
 
     /// Adds a new key and saves the file. Old keys stay, so everything still decrypts. This is

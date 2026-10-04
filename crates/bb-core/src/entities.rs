@@ -14,6 +14,13 @@ crate::entities! {
     crate::security_log::SecurityLogCheckpoint,
     crate::security_log::SecurityLogEntry,
     crate::settings::StoredSetting,
+    crate::sign_in::BackupCode,
+    crate::sign_in::Invitation,
+    crate::sign_in::PasswordLogin,
+    crate::sign_in::SetupCode,
+    crate::sign_in::SignInSession,
+    crate::sign_in::StoredPasskey,
+    crate::sign_in::TwoStep,
 }
 
 #[cfg(test)]

@@ -17,6 +17,7 @@ use bb_core::message::{self, Message};
 use tower_http::compression::predicate::{Predicate as _, SizeAbove};
 use tower_http::compression::{CompressionLayer, DefaultPredicate};
 
+use crate::api::AuthHandle;
 use crate::limits::{Limits, LimitsConfig};
 use crate::{api, headers};
 use hyper_util::rt::{TokioExecutor, TokioIo, TokioTimer};
@@ -60,33 +61,44 @@ pub struct Options {
     pub trusted_proxies: Vec<IpAddr>,
     /// How often one client may call the API (SEC-14).
     pub limits: LimitsConfig,
+    /// The use cases of signing in; `AuthHandle::none()` when there is no database yet.
+    pub auth: AuthHandle,
 }
 
 #[derive(Clone)]
 struct AppState {
     web: Arc<WebSource>,
     data_folder: Arc<PathBuf>,
+    auth: AuthHandle,
+}
+
+impl axum::extract::FromRef<AppState> for AuthHandle {
+    fn from_ref(state: &AppState) -> Self {
+        state.auth.clone()
+    }
 }
 
 /// The whole HTTP surface, security headers included.
 pub fn router(options: Options) -> Router {
     let hsts_max_age = options.hsts_max_age;
+    let limits = Limits::new(options.limits);
     let state = AppState {
         web: Arc::new(options.web),
         data_folder: Arc::new(options.data_folder),
+        auth: options.auth,
     };
-    let limits = Limits::new(options.limits);
+    let auth = state.auth.clone();
     let compress = DefaultPredicate::new()
         .and(SizeAbove::new(COMPRESS_FROM_BYTES))
         .and(is_text);
     let app = Router::new()
         .route("/health/live", get(health_live))
         .route("/health/ready", get(health_ready))
-        .merge(api::routes().split_for_parts().0)
+        .merge(api::routes(&limits).split_for_parts().0)
         .fallback(fallback)
         .method_not_allowed_fallback(api::method_not_allowed)
         .with_state(state);
-    let app = api::rules(app, limits)
+    let app = api::rules(app, limits, auth)
         .layer(CompressionLayer::new().compress_when(compress))
         .layer(from_fn_with_state(
             LogContext::new(&options.trusted_proxies),
@@ -301,6 +313,7 @@ mod tests {
             data_folder: std::env::temp_dir(),
             trusted_proxies: vec![],
             limits: LimitsConfig::default(),
+            auth: AuthHandle::none(),
         }
     }
 

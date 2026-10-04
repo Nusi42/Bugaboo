@@ -1,0 +1,200 @@
+//! The start of the server: the database is opened and migrated, the keys are opened, and the
+//! setup code of the first start is made (AUTH-09, SEC-16, M1-F19, M1-F24).
+
+use std::path::Path;
+use std::time::Duration;
+
+use axum::Router;
+use axum::body::Body;
+use axum::http::{Request, StatusCode, header};
+use bb_api::{LimitsConfig, Options, WebSource, router};
+use bb_testing::{TestResult, each_database};
+use serde_json::{Value, json};
+use tower::ServiceExt as _;
+
+use super::{Wired, wire};
+use crate::config::{Settings, Sources, resolve};
+use crate::data_folder::DataFolder;
+
+type Failure = Box<dyn std::error::Error + Send + Sync>;
+
+fn settings(data: &Path, database: Option<&str>) -> Result<Settings, Failure> {
+    let mut cli = vec![
+        ("port", "47200".to_owned()),
+        ("data_dir", data.to_string_lossy().into_owned()),
+    ];
+    if let Some(url) = database {
+        cli.push(("database_url", url.to_owned()));
+    }
+    Ok(resolve(&Sources {
+        file: None,
+        env: &|_| None,
+        cli: &cli,
+        base: data,
+    })?)
+}
+
+fn app(wired: Wired, data: &Path) -> Router {
+    router(Options {
+        web: WebSource::Folder("no/such/folder".into()),
+        hsts_max_age: None,
+        header_timeout: Duration::from_secs(30),
+        data_folder: data.to_path_buf(),
+        trusted_proxies: vec![],
+        limits: LimitsConfig::default(),
+        auth: wired.auth,
+    })
+}
+
+async fn call(
+    app: &Router,
+    method: &str,
+    path: &str,
+    body: Option<Value>,
+) -> Result<(StatusCode, Value), Failure> {
+    let request = Request::builder()
+        .method(method)
+        .uri(path)
+        .header(header::HOST, "localhost:47200")
+        .header(header::ORIGIN, "http://localhost:47200")
+        .header(header::CONTENT_TYPE, "application/json")
+        .body(body.map_or_else(Body::empty, |value| Body::from(value.to_string())))?;
+    let response = app.clone().oneshot(request).await?;
+    let status = response.status();
+    let bytes = axum::body::to_bytes(response.into_body(), usize::MAX).await?;
+    Ok((
+        status,
+        serde_json::from_slice(&bytes).unwrap_or(Value::Null),
+    ))
+}
+
+fn setup_body(code: &str) -> Value {
+    json!({
+        "code": code,
+        "display_name": "Ada Admin",
+        "email": "ada@example.test",
+        "password": "Tr4mpoline-Quiet-Harbor-81",
+    })
+}
+
+#[tokio::test]
+async fn auth_09_every_start_makes_a_new_setup_code_until_an_administrator_exists() -> TestResult {
+    each_database("auth_09_start_up", async |db| {
+        let folder = tempfile::tempdir()?;
+        let data = DataFolder::prepare(&folder.path().join("data"))?;
+        let settings = settings(data.root(), Some(db.url()))?;
+
+        // The first start: migrated, keys made, a code to print.
+        let first = wire(&settings, &data).await?;
+        let first_code = first
+            .setup_code
+            .clone()
+            .ok_or("no setup code at the first start")?;
+        assert_eq!(first_code.len(), 19, "four groups of four");
+        for file in ["master.key", "log.key", "csrf.key"] {
+            assert!(data.keys().join(file).is_file(), "{file}");
+        }
+        let (status, body) =
+            call(&app(first, data.root()), "GET", "/api/v1/auth/status", None).await?;
+        assert_eq!(status, StatusCode::OK);
+        assert_eq!(body["setup_needed"], true);
+
+        // The next start makes a new code, and the old one is dead.
+        let second = wire(&settings, &data).await?;
+        let second_code = second
+            .setup_code
+            .clone()
+            .ok_or("no setup code at the second start")?;
+        assert_ne!(first_code, second_code);
+        let second_app = app(second, data.root());
+        let (status, body) = call(
+            &second_app,
+            "POST",
+            "/api/v1/auth/setup",
+            Some(setup_body(&first_code)),
+        )
+        .await?;
+        assert_eq!(status, StatusCode::UNAUTHORIZED);
+        assert_eq!(body["code"], "auth.wrong_setup_code");
+        let (status, _) = call(
+            &second_app,
+            "POST",
+            "/api/v1/auth/setup",
+            Some(setup_body(&second_code)),
+        )
+        .await?;
+        assert_eq!(status, StatusCode::OK);
+        assert!(
+            data.security_log_anchor().is_file(),
+            "the end of the log is written down"
+        );
+
+        // Once an administrator exists there is nothing to print, whatever the start.
+        let third = wire(&settings, &data).await?;
+        assert!(third.setup_code.is_none());
+        let (_, body) = call(&app(third, data.root()), "GET", "/api/v1/auth/status", None).await?;
+        assert_eq!(body["setup_needed"], false);
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn m1_f24_the_built_in_database_is_a_file_in_the_data_folder() -> TestResult {
+    let folder = tempfile::tempdir()?;
+    let data = DataFolder::prepare(&folder.path().join("data"))?;
+    let wired = wire(&settings(data.root(), None)?, &data).await?;
+    assert!(wired.setup_code.is_some());
+    assert!(data.database_file().is_file());
+    Ok(())
+}
+
+#[tokio::test]
+async fn sec_16_missing_keys_stop_the_start_instead_of_making_new_ones() -> TestResult {
+    let folder = tempfile::tempdir()?;
+    let data = DataFolder::prepare(&folder.path().join("data"))?;
+    let settings = settings(data.root(), None)?;
+    let wired = wire(&settings, &data).await?;
+    let code = wired.setup_code.clone().ok_or("no code")?;
+    let (status, _) = call(
+        &app(wired, data.root()),
+        "POST",
+        "/api/v1/auth/setup",
+        Some(setup_body(&code)),
+    )
+    .await?;
+    assert_eq!(status, StatusCode::OK);
+    // The database holds a security log now; its key file is lost.
+    std::fs::remove_file(data.keys().join("log.key"))?;
+    let error = wire(&settings, &data)
+        .await
+        .err()
+        .ok_or("the start went on without the log key")?;
+    let text = format!("{error:#}");
+    assert!(
+        text.contains("key files") && text.contains("backup"),
+        "{text}"
+    );
+    assert!(!data.keys().join("log.key").exists(), "no new key was made");
+    Ok(())
+}
+
+#[tokio::test]
+async fn ops_08_a_database_that_cannot_be_opened_stops_the_start_with_a_plain_explanation()
+-> TestResult {
+    let folder = tempfile::tempdir()?;
+    let data = DataFolder::prepare(&folder.path().join("data"))?;
+    let missing = folder.path().join("no-such-folder").join("x.db");
+    let url = format!("sqlite:{}", missing.to_string_lossy().replace('\\', "/"));
+    let settings = settings(data.root(), Some(&url))?;
+    let error = wire(&settings, &data)
+        .await
+        .err()
+        .ok_or("the start went on")?;
+    let text = format!("{error:#}");
+    assert!(
+        text.starts_with("Bugaboo could not open its database"),
+        "{text}"
+    );
+    Ok(())
+}

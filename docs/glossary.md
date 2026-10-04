@@ -126,6 +126,16 @@ Rules:
 | **Bot account**          | An account for automation, not a person                            | service account                    |
 | **Access key**           | A secret for scripts and apps to sign in as you                    | personal access token, PAT         |
 | **Connected apps**       | Apps you allowed to use your account, including AI apps            | OAuth clients                      |
+| **Sign in / Sign out**   | Open or end your use of Bugaboo with your password or a passkey    | log in, log out, login, logout     |
+| **Sign out everywhere**  | End all your sessions at once, this one included                   | revoke all tokens, global logout   |
+| **Session**              | One place where you are signed in, for example one browser. *Where you're signed in* lists them and lets you end any | login session, token (in UI) |
+| **Where you're signed in** | The list of your sessions, with the browser, the system and when each was last used | active sessions, devices, logins |
+| **Sign up**              | Make your own account without an invitation, when an administrator allows it | register, registration, self-service signup |
+| **Invitation**           | A link an administrator makes so that one person can make their account; it works once and runs out after 7 days | invite code, signup token |
+| **Passkey**              | A way to sign in with your device (fingerprint, face or screen lock) instead of typing a password; can also be the second step | security key, WebAuthn, FIDO (in UI) |
+| **Code app**             | An app on your phone that shows a new six-digit code every 30 seconds; the first kind of second step | authenticator, authenticator app, OTP app, TOTP (in UI) |
+| **Second step**          | The check after the password: a code from the code app, a backup code or a passkey | verification step, challenge, factor |
+| **Public address**       | The web address people type to reach Bugaboo, set by the person who runs the server; passkeys belong to its host name | public URL, base URL, external URL |
 | **Two-step sign-in**     | A second check after the password (code app or passkey)            | MFA, 2FA, TOTP (in UI)             |
 | **Backup codes**         | One-time codes for when the second step is not available           | recovery codes                     |
 | **Setup code**           | The one-time code printed by the server for first setup            | setup token                        |

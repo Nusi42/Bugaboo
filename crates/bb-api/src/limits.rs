@@ -4,17 +4,20 @@
 //! ever lets a client try again sooner than a minute):
 //!
 //! - every request to `/api` counts against its **client network**;
-//! - sign-in attempts count against the client network too, with a much smaller limit
-//!   ([`limit_sign_in`], put on the sign-in routes);
-//! - sign-in attempts also count against the **account** they try ([`AccountLimit`]), so many
-//!   addresses cannot take turns on one account. The account is kept only as a keyed hash of
-//!   the lower-case name, never as the name.
+//! - every try of the sign-in family counts against the client's **network** too, with a generous
+//!   cap against floods ([`limit_sign_in`], put on the sign-in routes);
+//! - **failed** tries are limited per account, person and network in `crate::failures`
+//!   (`FailureLimits`): only failures count and a success clears them, so nobody can lock another
+//!   person out by merely trying their address (M1-F27).
 //!
-//! The client network is the address [`crate::logging`] works out from the connection and, for a
-//! trusted proxy, its `X-Forwarded-For` entry (never the raw header). IPv6 clients are counted
-//! by their `/64`, because one machine owns that many addresses. Going over a limit answers
+//! Two sizes of "network" are used, each defined once. The sign-in cap and the failure keys use
+//! `bb_core::network::NetworkPrefix` (IPv4 `/24`, IPv6 `/48`: the shortened address the security
+//! log also keeps), so both mean the same group of clients. The limit on all requests is more
+//! generous and counts per client address (IPv6 by the `/64`, because one machine owns that many
+//! addresses). The client address is the one [`crate::logging`] works out from the connection
+//! and, for a trusted proxy, its `X-Forwarded-For` entry (never the raw header). Going over a limit answers
 //! `429` with `Retry-After` and the message `error.rate-limit.exceeded`; it never locks anything
-//! for longer than the minute (an attacker cannot lock a person out for good).
+//! for longer than the minute here (the growing wait for failures is in `crate::failures`).
 //!
 //! Own code instead of `tower_governor`: the fixed window below is thirty lines, needs no other
 //! dependency, reads the canonical client address that the logging layer already works out, and
@@ -23,18 +26,20 @@
 //! these limits.
 
 use std::collections::HashMap;
-use std::hash::{BuildHasher as _, Hash, RandomState};
+use std::hash::Hash;
 use std::net::{IpAddr, Ipv4Addr};
 use std::sync::{Arc, Mutex, PoisonError};
 use std::time::{Duration, Instant};
 
-use axum::extract::{FromRequestParts, Request, State};
-use axum::http::request::Parts;
+use axum::extract::{Request, State};
 use axum::middleware::Next;
 use axum::response::{IntoResponse as _, Response};
 use bb_core::ErrorCode;
 
+use bb_core::network::NetworkPrefix;
+
 use crate::errors::ApiError;
+use crate::failures::DEFAULT_SIGN_IN_FAILURES_PER_MINUTE;
 use crate::logging::ClientIp;
 
 /// How long a window lasts.
@@ -52,16 +57,20 @@ const SWEEP_EVERY: Duration = Duration::from_secs(1);
 /// Requests of the whole API, per client network and minute, when nothing else is set.
 pub const DEFAULT_REQUESTS_PER_MINUTE: u32 = 600;
 
-/// Sign-in attempts per client network and per account and minute, when nothing else is set.
-pub const DEFAULT_SIGN_IN_ATTEMPTS_PER_MINUTE: u32 = 10;
+/// All sign-in-family tries (right or wrong) per client network and minute, when nothing else is
+/// set. This is a generous cap against floods; the failures are limited much more tightly
+/// (`crate::failures`, [`DEFAULT_SIGN_IN_FAILURES_PER_MINUTE`]).
+pub const DEFAULT_SIGN_IN_ATTEMPTS_PER_MINUTE: u32 = 60;
 
 /// The limits, from the start-up settings (OPS-10; they move to the settings registry later).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct LimitsConfig {
     /// Requests to `/api` per client network and minute.
     pub requests_per_minute: u32,
-    /// Sign-in attempts per client network and per account and minute.
+    /// All sign-in-family tries per client network and minute.
     pub sign_in_attempts_per_minute: u32,
+    /// Failed tries per account, person and client network and window.
+    pub sign_in_failures_per_minute: u32,
 }
 
 impl Default for LimitsConfig {
@@ -69,6 +78,7 @@ impl Default for LimitsConfig {
         Self {
             requests_per_minute: DEFAULT_REQUESTS_PER_MINUTE,
             sign_in_attempts_per_minute: DEFAULT_SIGN_IN_ATTEMPTS_PER_MINUTE,
+            sign_in_failures_per_minute: DEFAULT_SIGN_IN_FAILURES_PER_MINUTE,
         }
     }
 }
@@ -119,33 +129,25 @@ impl<K: Hash + Eq + Clone> Window<K> {
         }
     }
 
+    fn lock(&self) -> std::sync::MutexGuard<'_, Table<K>> {
+        self.table.lock().unwrap_or_else(PoisonError::into_inner)
+    }
+
     /// Counts one event. `Err` holds the seconds to wait (at least one) when the key is over
     /// the limit.
     fn hit(&self, key: K, now: Instant) -> Result<(), u64> {
-        let mut table = self.table.lock().unwrap_or_else(PoisonError::into_inner);
-        let table = &mut *table;
-        let entries = &mut table.entries;
+        let mut table = self.lock();
         let mut key = key;
-        if entries.len() >= MAX_CLIENTS && !entries.contains_key(&key) {
-            let due = table
-                .last_sweep
-                .is_none_or(|last| now.saturating_duration_since(last) >= SWEEP_EVERY);
-            if due {
-                entries.retain(|_, entry| now.duration_since(entry.started) < PERIOD);
-                table.last_sweep = Some(now);
-                #[cfg(test)]
-                {
-                    table.sweeps += 1;
-                }
-            }
-            if entries.len() >= MAX_CLIENTS {
+        if table.entries.len() >= MAX_CLIENTS && !table.entries.contains_key(&key) {
+            make_room(&mut table, now);
+            if table.entries.len() >= MAX_CLIENTS {
                 match &self.overflow {
                     Overflow::Share(shared) => key = shared.clone(),
                     Overflow::Refuse => return Err(PERIOD.as_secs()),
                 }
             }
         }
-        let entry = entries.entry(key).or_insert(Entry {
+        let entry = table.entries.entry(key).or_insert(Entry {
             started: now,
             count: 0,
         });
@@ -156,22 +158,41 @@ impl<K: Hash + Eq + Clone> Window<K> {
             };
         }
         if entry.count >= self.limit {
-            let wait = PERIOD.saturating_sub(now.duration_since(entry.started));
-            let seconds = wait.as_secs() + u64::from(wait.subsec_nanos() > 0);
-            return Err(seconds.max(1));
+            return Err(seconds_left(entry.started, now));
         }
         entry.count += 1;
         Ok(())
     }
 }
 
+/// The seconds a key that started its window at `started` still has to wait: at least one.
+fn seconds_left(started: Instant, now: Instant) -> u64 {
+    let wait = PERIOD.saturating_sub(now.duration_since(started));
+    (wait.as_secs() + u64::from(wait.subsec_nanos() > 0)).max(1)
+}
+
+/// Throws out the counters whose window is over, when the table is full. A full table is swept
+/// at most once per [`SWEEP_EVERY`]; counters that are still running are never thrown away.
+fn make_room<K>(table: &mut Table<K>, now: Instant) {
+    let due = table
+        .last_sweep
+        .is_none_or(|last| now.saturating_duration_since(last) >= SWEEP_EVERY);
+    if due {
+        table
+            .entries
+            .retain(|_, entry| now.duration_since(entry.started) < PERIOD);
+        table.last_sweep = Some(now);
+        #[cfg(test)]
+        {
+            table.sweeps += 1;
+        }
+    }
+}
+
 /// All limits of the server.
 pub struct Limits {
     requests: Window<IpAddr>,
-    sign_in_networks: Window<IpAddr>,
-    accounts: Window<u64>,
-    /// Random for each start, so the hash of an account name cannot be computed elsewhere.
-    hasher: RandomState,
+    sign_in_networks: Window<NetworkPrefix>,
 }
 
 impl Limits {
@@ -181,8 +202,6 @@ impl Limits {
         Arc::new(Self {
             requests: Window::new(config.requests_per_minute, Overflow::Share(OVERFLOW_CLIENT)),
             sign_in_networks: Window::new(config.sign_in_attempts_per_minute, Overflow::Refuse),
-            accounts: Window::new(config.sign_in_attempts_per_minute, Overflow::Refuse),
-            hasher: RandomState::new(),
         })
     }
 
@@ -208,22 +227,8 @@ impl Limits {
 
     fn check_sign_in_at(&self, client: IpAddr, now: Instant) -> Result<(), ApiError> {
         self.sign_in_networks
-            .hit(network_of(client), now)
+            .hit(NetworkPrefix::from_address(client), now)
             .map_err(too_many)
-    }
-
-    /// Counts one sign-in attempt against `account` (the e-mail address as typed; spelling in
-    /// upper or lower case counts as the same account).
-    ///
-    /// # Errors
-    /// `429` with `Retry-After` when the account is over its limit.
-    pub fn check_account(&self, account: &str) -> Result<(), ApiError> {
-        self.check_account_at(account, Instant::now())
-    }
-
-    fn check_account_at(&self, account: &str, now: Instant) -> Result<(), ApiError> {
-        let key = self.hasher.hash_one(account.trim().to_lowercase());
-        self.accounts.hit(key, now).map_err(too_many)
     }
 }
 
@@ -257,12 +262,11 @@ fn client_of(request: &Request) -> IpAddr {
         .map_or(UNKNOWN_CLIENT, |ClientIp(address)| *address)
 }
 
-/// The middleware of the whole API: counts a request below `/api` against its client network and
-/// hands the limits to the handlers ([`AccountLimit`]). Pages, files and health checks are not
-/// counted.
+/// The middleware of the whole API: counts a request below `/api` against its client network.
+/// Pages, files and health checks are not counted.
 pub(crate) async fn limit_requests(
     State(limits): State<Arc<Limits>>,
-    mut request: Request,
+    request: Request,
     next: Next,
 ) -> Response {
     if !crate::api::is_api(request.uri().path()) {
@@ -271,7 +275,6 @@ pub(crate) async fn limit_requests(
     if let Err(error) = limits.check_request(client_of(&request)) {
         return error.into_response();
     }
-    request.extensions_mut().insert(limits);
     next.run(request).await
 }
 
@@ -288,33 +291,6 @@ pub async fn limit_sign_in(
     next.run(request).await
 }
 
-/// The per-account limit for a sign-in handler: once the handler knows which account is tried,
-/// `account_limit.check(&email)?` counts the attempt.
-pub struct AccountLimit(Arc<Limits>);
-
-impl AccountLimit {
-    /// Counts one attempt against `account`.
-    ///
-    /// # Errors
-    /// `429` with `Retry-After` when the account is over its limit.
-    pub fn check(&self, account: &str) -> Result<(), ApiError> {
-        self.0.check_account(account)
-    }
-}
-
-impl<S: Send + Sync> FromRequestParts<S> for AccountLimit {
-    type Rejection = ApiError;
-
-    async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self, ApiError> {
-        parts
-            .extensions
-            .get::<Arc<Limits>>()
-            .cloned()
-            .map(Self)
-            .ok_or_else(|| ApiError::internal(&"the rate limits are not set up for this route"))
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -323,6 +299,7 @@ mod tests {
         Limits::new(LimitsConfig {
             requests_per_minute: requests,
             sign_in_attempts_per_minute: sign_in,
+            ..LimitsConfig::default()
         })
     }
 
@@ -394,14 +371,29 @@ mod tests {
         assert!(limits.check_sign_in_at(client, now).is_err());
         // The general limit is not used up by sign-in.
         limits.check_request_at(client, now).unwrap();
-        // Many networks cannot take turns on one account; spelling does not matter.
-        limits.check_account_at("Ada@Example.test", now).unwrap();
-        limits.check_account_at(" ada@example.test ", now).unwrap();
-        let error = limits
-            .check_account_at("ADA@example.test", now)
-            .unwrap_err();
-        assert_eq!(error.code(), ErrorCode::TooManyRequests);
-        limits.check_account_at("bob@example.test", now).unwrap();
+    }
+
+    #[test]
+    fn sec_14_the_sign_in_cap_counts_per_network_in_the_size_the_failure_keys_use() {
+        let limits = limits(1000, 2);
+        let now = Instant::now();
+        // IPv4: the `/24`. Two clients of one network share the cap, another network does not.
+        limits.check_sign_in_at(ip("203.0.113.7"), now).unwrap();
+        limits.check_sign_in_at(ip("203.0.113.200"), now).unwrap();
+        assert!(limits.check_sign_in_at(ip("203.0.113.9"), now).is_err());
+        limits.check_sign_in_at(ip("203.0.114.7"), now).unwrap();
+        // IPv6: the `/48`, also for an IPv4 address written as IPv6.
+        limits.check_sign_in_at(ip("2001:db8:1:2::1"), now).unwrap();
+        limits
+            .check_sign_in_at(ip("2001:db8:1:ffff::9"), now)
+            .unwrap();
+        assert!(limits.check_sign_in_at(ip("2001:db8:1:5::3"), now).is_err());
+        limits.check_sign_in_at(ip("2001:db8:2::1"), now).unwrap();
+        assert!(
+            limits
+                .check_sign_in_at(ip("::ffff:203.0.113.7"), now)
+                .is_err()
+        );
     }
 
     #[test]

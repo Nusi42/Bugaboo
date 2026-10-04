@@ -12,9 +12,10 @@ use bb_core::event::DomainEvent;
 use bb_core::id::{EntityId, ProjectId, UserId};
 use bb_core::settings::{DefaultValue, Level, Setting, SettingKind, SettingValue, StoredSetting};
 use bb_core::technical::TechnicalName;
+use jiff::Timestamp;
 use sea_query::{Expr, ExprTrait as _, OnConflict, Query};
 
-use crate::db::{Database, Row, to_micros};
+use crate::db::{Database, Row, Transaction, to_micros};
 use crate::error::{SettingProblem, StoreError};
 use crate::schema::SettingRow as Columns;
 
@@ -60,6 +61,17 @@ fn validate(change: &SettingChange) -> Result<TechnicalName, SettingProblem> {
     if !fits {
         return Err(SettingProblem::WrongType);
     }
+    if let (Some((least, most)), SettingValue::Integer(value)) =
+        (definition.bounds(), &change.value)
+        && !(least..=most).contains(value)
+    {
+        return Err(SettingProblem::OutOfBounds);
+    }
+    if let SettingValue::Text(value) = &change.value
+        && !definition.list_fits(value)
+    {
+        return Err(SettingProblem::OutOfBounds);
+    }
     if change.locked && !(definition.lockable() && change.level == Level::Organization) {
         return Err(SettingProblem::NotLockable);
     }
@@ -70,6 +82,62 @@ fn validate(change: &SettingChange) -> Result<TechnicalName, SettingProblem> {
 fn known(key: &str) -> Result<TechnicalName, SettingProblem> {
     let definition = bb_core::settings::find(key).ok_or(SettingProblem::UnknownKey)?;
     TechnicalName::new(definition.key()).map_err(|_| SettingProblem::UnknownKey)
+}
+
+/// Writes the value of a change inside the transaction of a change.
+async fn upsert(
+    transaction: &mut Transaction,
+    key: &TechnicalName,
+    change: &SettingChange,
+    at: Timestamp,
+) -> Result<(), StoreError> {
+    let value = serde_json::to_string(&change.value)?;
+    let mut insert = Query::insert();
+    insert
+        .into_table(Columns::Table)
+        .columns([
+            Columns::Key,
+            Columns::Level,
+            Columns::Scope,
+            Columns::Value,
+            Columns::Locked,
+            Columns::UpdatedAt,
+        ])
+        .values([
+            Expr::val(key.as_str()),
+            Expr::val(change.level.code()),
+            Expr::val(scope_bytes(change.scope)),
+            Expr::val(value),
+            Expr::val(change.locked),
+            Expr::val(to_micros(at)),
+        ])
+        .map_err(|_| StoreError::Corrupt("a setting"))?
+        .on_conflict(
+            OnConflict::columns([Columns::Key, Columns::Level, Columns::Scope])
+                .update_columns([Columns::Value, Columns::Locked, Columns::UpdatedAt])
+                .to_owned(),
+        );
+    transaction.execute(&insert).await?;
+    Ok(())
+}
+
+/// Stores the value of a setting of the whole organization inside the transaction of a change
+/// that has its own event (the sign-in use cases change who may sign up this way).
+pub(crate) async fn put_organization_setting(
+    transaction: &mut Transaction,
+    key: &str,
+    value: &SettingValue,
+    at: Timestamp,
+) -> Result<(), StoreError> {
+    let change = SettingChange {
+        key: key.to_owned(),
+        level: Level::Organization,
+        scope: None,
+        value: value.clone(),
+        locked: false,
+    };
+    let key = validate(&change).map_err(StoreError::SettingRejected)?;
+    upsert(transaction, &key, &change, at).await
 }
 
 fn scope_bytes(scope: Option<EntityId>) -> Vec<u8> {
@@ -88,35 +156,8 @@ impl Database {
         change: &SettingChange,
     ) -> Result<(), StoreError> {
         let key = validate(change).map_err(StoreError::SettingRejected)?;
-        let value = serde_json::to_string(&change.value)?;
         self.record_change(event, async |transaction| {
-            let mut insert = Query::insert();
-            insert
-                .into_table(Columns::Table)
-                .columns([
-                    Columns::Key,
-                    Columns::Level,
-                    Columns::Scope,
-                    Columns::Value,
-                    Columns::Locked,
-                    Columns::UpdatedAt,
-                ])
-                .values([
-                    Expr::val(key.as_str()),
-                    Expr::val(change.level.code()),
-                    Expr::val(scope_bytes(change.scope)),
-                    Expr::val(value.clone()),
-                    Expr::val(change.locked),
-                    Expr::val(to_micros(event.time)),
-                ])
-                .map_err(|_| StoreError::Corrupt("a setting"))?
-                .on_conflict(
-                    OnConflict::columns([Columns::Key, Columns::Level, Columns::Scope])
-                        .update_columns([Columns::Value, Columns::Locked, Columns::UpdatedAt])
-                        .to_owned(),
-                );
-            transaction.execute(&insert).await?;
-            Ok(())
+            upsert(transaction, &key, change, event.time).await
         })
         .await
     }
@@ -430,6 +471,40 @@ mod tests {
             rejected(SettingProblem::UnknownKey)(
                 database.set_setting(&event(&mut source, "a.b"), &unknown).await,
             );
+            // A session that lasts a second, or a year, is a mistake: the bounds of the setting hold.
+            for value in [1, 0, -5, 100_000] {
+                let out_of_bounds = change(
+                    "security.session-idle-minutes",
+                    Level::Organization,
+                    None,
+                    SettingValue::Integer(value),
+                );
+                rejected(SettingProblem::OutOfBounds)(
+                    database
+                        .set_setting(&event(&mut source, "a.b"), &out_of_bounds)
+                        .await,
+                );
+            }
+            // A list that is longer than the setting allows, or has an item that is too long.
+            for list in [
+                (0..101)
+                    .map(|n| format!("d{n}.test"))
+                    .collect::<Vec<_>>()
+                    .join(","),
+                format!("{}.test", "a".repeat(250)),
+            ] {
+                let too_much = change(
+                    "auth.sign-up-domains",
+                    Level::Organization,
+                    None,
+                    SettingValue::Text(list),
+                );
+                rejected(SettingProblem::OutOfBounds)(
+                    database
+                        .set_setting(&event(&mut source, "a.b"), &too_much)
+                        .await,
+                );
+            }
             let wrong_level = change(
                 "security.session-idle-minutes",
                 Level::Person,

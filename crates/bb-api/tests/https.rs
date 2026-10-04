@@ -2,6 +2,8 @@
 //! set including HSTS, compression, and the plain-HTTP rules for trusted proxies.
 
 // Dependencies of the library that this test does not use itself (`unused_crate_dependencies`).
+use bb_app as _;
+use bb_auth as _;
 use bb_core as _;
 use hyper_util as _;
 use mime_guess as _;
@@ -96,6 +98,7 @@ mod https {
             data_folder: tls_folder.path().to_path_buf(),
             trusted_proxies: vec![],
             limits: bb_api::LimitsConfig::default(),
+            auth: bb_api::AuthHandle::none(),
         };
         let (stop, stopped) = oneshot::channel::<()>();
         tokio::spawn(serve(incoming, options, async move {

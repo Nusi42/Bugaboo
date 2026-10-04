@@ -22,6 +22,7 @@ pub mod personal;
 pub mod secret;
 pub mod security_log;
 pub mod settings;
+pub mod sign_in;
 pub mod technical;
 
 pub use error_code::{ErrorCode, Problem};
