@@ -3,6 +3,7 @@
 //! Each generator is deterministic and writes already-formatted files, so the format checks pass
 //! without a second formatting step.
 
+pub(crate) mod contrast_spec;
 pub(crate) mod icu;
 pub(crate) mod messages;
 pub(crate) mod token_file;

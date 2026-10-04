@@ -5,6 +5,7 @@
 use anyhow::{Context as _, bail};
 use serde_json::{Map, Value};
 
+use super::contrast_spec::ContrastSpec;
 use crate::repo::Repo;
 
 /// Where the token file lives, relative to the repository root.
@@ -52,19 +53,12 @@ impl Theme {
     }
 }
 
-/// "Text color `text` must be readable on each color of `on`."
-pub(crate) struct ContrastRule {
-    pub(crate) text: String,
-    pub(crate) on: Vec<String>,
-    pub(crate) min: f64,
-}
-
 pub(crate) struct TokenFile {
     pub(crate) base: Vec<BaseToken>,
     pub(crate) themes: Vec<Theme>,
     pub(crate) default_light: String,
     pub(crate) default_dark: String,
-    pub(crate) contrast: Vec<ContrastRule>,
+    pub(crate) contrast: ContrastSpec,
 }
 
 impl TokenFile {
@@ -94,10 +88,7 @@ impl TokenFile {
             "$extensions.bugaboo",
         )?;
         let defaults = object(field(extension, "defaultThemes")?, "defaultThemes")?;
-        let contrast = array(field(extension, "contrast")?, "contrast")?
-            .iter()
-            .map(parse_contrast)
-            .collect::<anyhow::Result<Vec<_>>>()?;
+        let contrast = ContrastSpec::parse(field(extension, "contrast")?)?;
         let file = Self {
             base,
             themes,
@@ -133,13 +124,14 @@ impl TokenFile {
                 bail!("default theme `{name}` is not one of the themes");
             }
         }
-        for rule in &self.contrast {
-            for name in std::iter::once(&rule.text).chain(&rule.on) {
-                if first.color(name).is_none() {
-                    bail!("contrast rule uses unknown color `{name}`");
-                }
-            }
+        if let Some(unknown) = self
+            .contrast
+            .named_colors()
+            .find(|name| first.color(name).is_none())
+        {
+            bail!("contrast rules use unknown color `{unknown}`");
         }
+        self.contrast.check_exclusions()?;
         Ok(())
     }
 }
@@ -207,21 +199,6 @@ fn parse_shadow_layer(layer: &Value) -> anyhow::Result<ShadowLayer> {
         offset_y: part("offsetY")?,
         blur: part("blur")?,
         spread: part("spread")?,
-    })
-}
-
-fn parse_contrast(rule: &Value) -> anyhow::Result<ContrastRule> {
-    let rule = object(rule, "contrast rule")?;
-    let min = field(rule, "min")?
-        .as_f64()
-        .context("`min` of a contrast rule must be a number")?;
-    Ok(ContrastRule {
-        text: string(field(rule, "text")?, "text")?,
-        on: array(field(rule, "on")?, "on")?
-            .iter()
-            .map(|item| string(item, "on"))
-            .collect::<anyhow::Result<_>>()?,
-        min,
     })
 }
 

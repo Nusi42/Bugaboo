@@ -1,7 +1,8 @@
 //! STY-CONTRAST: every text and background pair of the four built-in themes passes WCAG AA.
 //!
-//! The pairs are listed in `design/tokens.json` (`$extensions.bugaboo.contrast`), next to the
-//! colors they judge (THM-03, UX-04).
+//! Every text color is checked on every background color. The few combinations that are never
+//! used are written down, with the reason, in `design/tokens.json` (`$extensions.bugaboo.contrast`)
+//! (THM-03, UX-04).
 
 use super::{Check, Context, Finding};
 use crate::generate::token_file::{TOKENS_PATH, TokenFile};
@@ -20,25 +21,23 @@ impl Check for StyContrast {
 
 fn evaluate(tokens: &TokenFile) -> Vec<Finding> {
     let mut findings = Vec::new();
+    let spec = &tokens.contrast;
     for theme in &tokens.themes {
-        for rule in &tokens.contrast {
-            let Some(text) = theme.color(&rule.text) else {
+        for (text_name, background_name) in spec.pairs(&theme.name) {
+            let (Some(text), Some(background)) =
+                (theme.color(text_name), theme.color(background_name))
+            else {
                 continue;
             };
-            for background_name in &rule.on {
-                let Some(background) = theme.color(background_name) else {
-                    continue;
-                };
-                let ratio = contrast_ratio(text, background);
-                if ratio < rule.min {
-                    findings.push(Finding::at(
-                        TOKENS_PATH,
-                        format!(
-                            "Theme {}: `{}` on `{background_name}` has contrast {ratio:.2}:1; it needs {:.1}:1. Change one of the two colors.",
-                            theme.name, rule.text, rule.min
-                        ),
-                    ));
-                }
+            let ratio = contrast_ratio(text, background);
+            if ratio < spec.min {
+                findings.push(Finding::at(
+                    TOKENS_PATH,
+                    format!(
+                        "Theme {}: `{text_name}` on `{background_name}` has contrast {ratio:.2}:1; it needs {:.1}:1. Change one of the two colors, or record why this pair is never used.",
+                        theme.name, spec.min
+                    ),
+                ));
             }
         }
     }
@@ -81,6 +80,17 @@ mod tests {
         let findings = evaluate(&tokens);
         let messages: Vec<&str> = findings.iter().map(|f| f.message.as_str()).collect();
         assert!(findings.is_empty(), "{messages:#?}");
+    }
+
+    #[test]
+    fn every_text_color_is_checked_on_every_neutral_surface() {
+        let tokens = TokenFile::load(&Repo::discover().unwrap()).unwrap();
+        let pairs = tokens.contrast.pairs("daylight");
+        for text in ["fg", "fg-muted", "fg-subtle", "warning", "accent-fg"] {
+            for surface in ["bg-canvas", "bg-hover", "bg-selected", "bg-sunken"] {
+                assert!(pairs.contains(&(text, surface)), "{text} on {surface}");
+            }
+        }
     }
 
     #[test]
