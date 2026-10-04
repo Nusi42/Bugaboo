@@ -9,11 +9,14 @@ use std::collections::BTreeMap;
 use std::fmt;
 use std::net::IpAddr;
 use std::path::{Path, PathBuf};
+use std::time::Duration;
+
+use bb_api::DEFAULT_MAX_CONNECTIONS;
 
 use crate::text::t;
 
 /// Every start-up setting, once. The environment variable of `port` is `BUGABOO_PORT`.
-const KEYS: [&str; 10] = [
+const KEYS: [&str; 12] = [
     "address",
     "port",
     "data_dir",
@@ -24,6 +27,8 @@ const KEYS: [&str; 10] = [
     "tls_names",
     "trusted_proxies",
     "log_level",
+    "max_connections",
+    "header_timeout_seconds",
 ];
 /// Settings that name files or folders: relative paths in the settings file are relative to it.
 const PATH_KEYS: [&str; 3] = ["data_dir", "tls_cert", "tls_key"];
@@ -37,6 +42,7 @@ const DEFAULT_ADDRESS: &str = "127.0.0.1";
 const DEFAULT_DATA_DIR: &str = "bugaboo-data";
 const DEFAULT_TLS_MODE: &str = "self-signed";
 const DEFAULT_LOG_LEVEL: &str = "info";
+const DEFAULT_HEADER_TIMEOUT_SECONDS: u64 = 30;
 
 /// How the server gets its HTTPS certificate (SEC-10).
 #[derive(Debug, PartialEq, Eq)]
@@ -70,6 +76,8 @@ pub(crate) struct Settings {
     pub(crate) tls_names: Vec<String>,
     pub(crate) trusted_proxies: Vec<IpAddr>,
     pub(crate) log_level: LogLevel,
+    pub(crate) max_connections: usize,
+    pub(crate) header_timeout: Duration,
 }
 
 /// Where the settings come from.
@@ -80,6 +88,9 @@ pub(crate) struct Sources<'a> {
     pub(crate) env: &'a dyn Fn(&str) -> Option<String>,
     /// Values from the command line, by setting name.
     pub(crate) cli: &'a [(&'static str, String)],
+    /// The folder of the program. Defaults for the data folder and the settings file are
+    /// relative to it, not to the current folder (a Windows service starts in System32).
+    pub(crate) base: &'a Path,
 }
 
 /// What is wrong with the start-up settings.
@@ -100,6 +111,7 @@ pub(crate) enum ConfigError {
     TlsOffPublic(IpAddr),
     ProxyInvalid(String),
     LogLevelInvalid(String),
+    NumberInvalid { name: &'static str, value: String },
 }
 
 impl ConfigError {
@@ -141,6 +153,9 @@ impl ConfigError {
             ),
             Self::ProxyInvalid(value) => t("config.proxy-invalid", &[("value", value)]),
             Self::LogLevelInvalid(value) => t("config.log-level-invalid", &[("value", value)]),
+            Self::NumberInvalid { name, value } => {
+                t("config.number-invalid", &[("name", name), ("value", value)])
+            }
         }
     }
 }
@@ -160,10 +175,13 @@ pub(crate) fn env_name(key: &str) -> String {
 
 /// Reads the settings file text, if there is one: the named file must exist, the default file
 /// is optional.
-pub(crate) fn read_file(named: Option<PathBuf>) -> Result<Option<(PathBuf, String)>, ConfigError> {
+pub(crate) fn read_file(
+    named: Option<PathBuf>,
+    base: &Path,
+) -> Result<Option<(PathBuf, String)>, ConfigError> {
     let (path, required) = match named {
         Some(path) => (path, true),
-        None => (PathBuf::from(DEFAULT_FILE), false),
+        None => (base.join(DEFAULT_FILE), false),
     };
     match std::fs::read_to_string(&path) {
         Ok(text) => Ok(Some((path, text))),
@@ -189,7 +207,7 @@ pub(crate) fn resolve(sources: &Sources<'_>) -> Result<Settings, ConfigError> {
     for (key, value) in sources.cli {
         values.insert(key, value.clone());
     }
-    settings_from(&values)
+    settings_from(&values, sources.base)
 }
 
 fn from_file(path: &Path, text: &str) -> Result<BTreeMap<&'static str, String>, ConfigError> {
@@ -251,7 +269,10 @@ fn list(text: &str) -> Vec<String> {
         .collect()
 }
 
-fn settings_from(values: &BTreeMap<&'static str, String>) -> Result<Settings, ConfigError> {
+fn settings_from(
+    values: &BTreeMap<&'static str, String>,
+    base: &Path,
+) -> Result<Settings, ConfigError> {
     let get = |key: &str| values.get(key).map(String::as_str);
     let port_text = get("port").ok_or(ConfigError::PortMissing)?;
     let port = port_text
@@ -267,10 +288,17 @@ fn settings_from(values: &BTreeMap<&'static str, String>) -> Result<Settings, Co
         .parse::<IpAddr>()
         .map_err(|_| ConfigError::AddressInvalid(address_text.to_owned()))?;
 
-    let data_dir = get("data_dir").unwrap_or(DEFAULT_DATA_DIR);
-    if data_dir.trim().is_empty() {
-        return Err(ConfigError::DataDirEmpty);
-    }
+    let data_dir = match get("data_dir") {
+        Some(given) if given.trim().is_empty() => return Err(ConfigError::DataDirEmpty),
+        Some(given) => PathBuf::from(given),
+        None => base.join(DEFAULT_DATA_DIR),
+    };
+    let max_connections = whole_number(values, "max_connections", DEFAULT_MAX_CONNECTIONS as u64)?;
+    let header_seconds = whole_number(
+        values,
+        "header_timeout_seconds",
+        DEFAULT_HEADER_TIMEOUT_SECONDS,
+    )?;
 
     let database_url = get("database_url").map(str::to_owned);
     if let Some(url) = &database_url
@@ -312,13 +340,34 @@ fn settings_from(values: &BTreeMap<&'static str, String>) -> Result<Settings, Co
     Ok(Settings {
         address,
         port,
-        data_dir: PathBuf::from(data_dir),
+        data_dir,
         database_url,
         tls,
         tls_names: list(get("tls_names").unwrap_or_default()),
         trusted_proxies,
         log_level,
+        max_connections: usize::try_from(max_connections).unwrap_or(usize::MAX),
+        header_timeout: Duration::from_secs(header_seconds),
     })
+}
+
+/// A whole number of at least 1, or `default` when the setting is not given.
+fn whole_number(
+    values: &BTreeMap<&'static str, String>,
+    name: &'static str,
+    default: u64,
+) -> Result<u64, ConfigError> {
+    let Some(text) = values.get(name) else {
+        return Ok(default);
+    };
+    text.trim()
+        .parse::<u64>()
+        .ok()
+        .filter(|number| *number >= 1)
+        .ok_or_else(|| ConfigError::NumberInvalid {
+            name,
+            value: text.clone(),
+        })
 }
 
 fn tls_from(mode: &str, cert: Option<&str>, key: Option<&str>) -> Result<TlsMode, ConfigError> {
@@ -370,6 +419,7 @@ mod tests {
             file: file.map(|text| (Path::new("conf/bugaboo.toml"), text)),
             env: &lookup,
             cli: &cli,
+            base: Path::new("exe"),
         })
     }
 
@@ -379,7 +429,9 @@ mod tests {
         assert_eq!(settings.port, 47200);
         assert_eq!(settings.address, "127.0.0.1".parse::<IpAddr>().unwrap());
         assert_eq!(settings.tls, TlsMode::SelfSigned);
-        assert_eq!(settings.data_dir, PathBuf::from(DEFAULT_DATA_DIR));
+        assert_eq!(settings.data_dir, Path::new("exe").join(DEFAULT_DATA_DIR));
+        assert_eq!(settings.max_connections, DEFAULT_MAX_CONNECTIONS);
+        assert_eq!(settings.header_timeout, Duration::from_secs(30));
         assert!(settings.trusted_proxies.is_empty());
         assert_eq!(settings.log_level, LogLevel::Info);
     }
@@ -390,7 +442,8 @@ mod tests {
             resolve(&Sources {
                 file: None,
                 env: &no_env,
-                cli: &[]
+                cli: &[],
+                base: Path::new("exe"),
             })
             .unwrap_err(),
             ConfigError::PortMissing
@@ -488,6 +541,8 @@ mod tests {
             ("trusted_proxies", "proxy.example", "not an IP address"),
             ("log_level", "loud", "log level"),
             ("data_dir", " ", "empty"),
+            ("max_connections", "0", "whole number"),
+            ("header_timeout_seconds", "soon", "whole number"),
         ] {
             let error = resolve_with(None, &[], &[("port", "1"), (key, value)]).unwrap_err();
             assert!(error.message().contains(expected), "{key}: {error}");
@@ -507,8 +562,30 @@ mod tests {
 
     #[test]
     fn ops_10_a_named_settings_file_must_exist() {
-        let missing = read_file(Some(PathBuf::from("no/such/bugaboo.toml"))).unwrap_err();
+        let missing = read_file(
+            Some(PathBuf::from("no/such/bugaboo.toml")),
+            Path::new("exe"),
+        )
+        .unwrap_err();
         assert!(matches!(missing, ConfigError::FileUnreadable { .. }));
+    }
+
+    #[test]
+    fn ops_10_limits_can_be_changed() {
+        let cli = [
+            ("port", "1"),
+            ("max_connections", "50"),
+            ("header_timeout_seconds", "5"),
+        ];
+        let settings = resolve_with(None, &[], &cli).unwrap();
+        assert_eq!(settings.max_connections, 50);
+        assert_eq!(settings.header_timeout, Duration::from_secs(5));
+    }
+
+    #[test]
+    fn ops_10_the_default_settings_file_is_next_to_the_program() {
+        let missing = read_file(None, Path::new("no/such/folder")).unwrap();
+        assert!(missing.is_none());
     }
 
     #[test]

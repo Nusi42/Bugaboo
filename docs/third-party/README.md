@@ -32,6 +32,7 @@ Columns:
 | zip | 8.6.0 | MIT | no (xtask) | Reading the `.zip` archives of downloaded tools on Windows | maintained (2026-10-04) | PowerShell `Expand-Archive` (not on Linux) |
 | ctrlc | 3.5.2 | MIT OR Apache-2.0 | no (xtask) | Stops the dev servers cleanly on Ctrl+C or termination (`cargo xtask dev`) | maintained (2026-10-04) | own signal handling (needs unsafe or platform code) |
 | axum | 0.8.9 | MIT | yes | HTTP routing and server (ADR-0002) | maintained (2026-10-04) | actix-web (smaller tower middleware ecosystem) |
+| hyper-util | 0.1.21 | MIT | yes | Serves each connection with a header-read timeout and HTTP/2 keep-alive (slow-client protection, SEC-10); the same code axum uses underneath | maintained (2026-10-04) | axum::serve (cannot set timeouts); own HTTP handling (far more code) |
 | mime_guess | 2.0.5 | MIT | yes | Content type from a file name when serving the browser app | maintained (2026-10-04) | own table (would be a copy of knowledge that exists) |
 | rust-embed | 8.12.0 | MIT | yes | Embeds the built browser app in the binary (DIST-01); reads from disk in debug builds | maintained (2026-10-04) | include_dir (no debug-from-disk mode), build script with include_bytes (more code) |
 | tempfile | 3.27.0 | MIT OR Apache-2.0 | no (tests) | Temporary folders in tests | maintained (2026-10-04) | hand-made folders in the system temp folder (leaks on failure) |

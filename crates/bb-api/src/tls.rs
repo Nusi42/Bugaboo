@@ -6,7 +6,7 @@
 
 use std::fmt;
 use std::fs;
-use std::io;
+use std::io::{self, Write as _};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -123,15 +123,22 @@ pub fn server_config(source: &TlsSource) -> Result<Arc<ServerConfig>, TlsError> 
         }
         TlsSource::Files { cert, key } => (cert.clone(), key.clone()),
     };
-    let chain = CertificateDer::pem_file_iter(&cert)
-        .map_err(|error| pem_error(&cert, error, false))?
+    load(&cert, &key)
+}
+
+/// Reads a certificate chain and key and builds the settings. Fails when the key does not
+/// belong to the certificate.
+fn load(cert: &Path, key: &Path) -> Result<Arc<ServerConfig>, TlsError> {
+    let chain = CertificateDer::pem_file_iter(cert)
+        .map_err(|error| pem_error(cert, error, false))?
         .collect::<Result<Vec<_>, _>>()
-        .map_err(|error| pem_error(&cert, error, false))?;
+        .map_err(|error| pem_error(cert, error, false))?;
     if chain.is_empty() {
-        return Err(TlsError::NoCertificate { path: cert });
+        return Err(TlsError::NoCertificate {
+            path: cert.to_path_buf(),
+        });
     }
-    let key_der =
-        PrivateKeyDer::from_pem_file(&key).map_err(|error| pem_error(&key, error, true))?;
+    let key_der = PrivateKeyDer::from_pem_file(key).map_err(|error| pem_error(key, error, true))?;
     let unusable = |error: rustls::Error| TlsError::Unusable {
         reason: error.to_string(),
     };
@@ -155,25 +162,43 @@ fn pem_error(path: &Path, error: rustls::pki_types::pem::Error, key: bool) -> Tl
     }
 }
 
-/// Makes sure `folder` holds a certificate that is valid for the wanted names and will still
-/// be valid in `RENEW_BEFORE_DAYS` days; otherwise writes a new one (and a new key).
+/// Makes sure `folder` holds a certificate and key that belong together, are valid for the
+/// wanted names and will still be valid in `RENEW_BEFORE_DAYS` days; otherwise writes new
+/// ones. Files that are kept get owner-only permissions again.
 fn ensure_self_signed(folder: &Path, extra: &[String], now: i64) -> Result<(), TlsError> {
     let wanted = wanted_names(extra);
     let cert_path = folder.join(CERT_FILE);
+    let key_path = folder.join(KEY_FILE);
+    let names_path = folder.join(NAMES_FILE);
     let end = fs::read_to_string(&cert_path).ok().and_then(|pem| {
         let der = CertificateDer::from_pem_slice(pem.as_bytes()).ok()?;
         not_after(&der)
     });
-    let same_names = fs::read_to_string(folder.join(NAMES_FILE))
+    let same_names = fs::read_to_string(&names_path)
         .is_ok_and(|text| text.lines().eq(wanted.iter().map(String::as_str)));
     let fresh = end.is_some_and(|end| end - now > RENEW_BEFORE_DAYS * SECONDS_PER_DAY);
-    if fresh && same_names && folder.join(KEY_FILE).is_file() {
+    // A key that does not match (a half-finished write, a copied file) is replaced too.
+    if fresh && same_names && load(&cert_path, &key_path).is_ok() {
+        #[cfg(unix)]
+        for path in [&key_path, &cert_path, &names_path] {
+            restrict_file(path)?;
+        }
         return Ok(());
     }
     let (cert_pem, key_pem) = generate(&wanted, now)?;
-    write_private(&folder.join(KEY_FILE), key_pem.as_bytes())?;
+    // Key first and certificate second: a certificate on disk always has its key. The names
+    // come last, so a stop in between only causes one more renewal.
+    write_private(&key_path, key_pem.as_bytes())?;
     write_private(&cert_path, cert_pem.as_bytes())?;
-    write_private(&folder.join(NAMES_FILE), wanted.join("\n").as_bytes())?;
+    write_private(
+        &names_path,
+        wanted
+            .join(
+                "
+",
+            )
+            .as_bytes(),
+    )?;
     Ok(())
 }
 
@@ -209,31 +234,51 @@ fn generate(names: &[String], now: i64) -> Result<(String, String), TlsError> {
     Ok((cert.pem(), key.serialize_pem()))
 }
 
-/// Writes a secret file that only the owner can read (architecture §6).
+/// Writes a secret file that only the owner can read (architecture §6), all at once: the
+/// bytes go into a new file next to it, which then replaces the old one, so a stop in the
+/// middle never leaves half a file.
 fn write_private(path: &Path, bytes: &[u8]) -> Result<(), TlsError> {
     let failed = |source| TlsError::Write {
         path: path.to_path_buf(),
         source,
     };
-    #[cfg(unix)]
+    let mut temporary = path.as_os_str().to_owned();
+    temporary.push(".new");
+    let temporary = PathBuf::from(temporary);
     {
-        use std::io::Write as _;
-        use std::os::unix::fs::OpenOptionsExt as _;
-        let mut file = fs::OpenOptions::new()
-            .write(true)
-            .create(true)
-            .truncate(true)
-            .mode(0o600)
-            .open(path)
-            .map_err(failed)?;
-        file.write_all(bytes).map_err(failed)
+        let mut file = create_private(&temporary).map_err(failed)?;
+        file.write_all(bytes).map_err(failed)?;
+        file.sync_all().map_err(failed)?;
     }
-    // On Windows the `tls` folder carries an access list for its owner only, which new files
-    // inherit (the program sets it up with the rest of the data folder).
-    #[cfg(not(unix))]
-    {
-        fs::write(path, bytes).map_err(failed)
-    }
+    fs::rename(&temporary, path).map_err(failed)
+}
+
+#[cfg(unix)]
+fn create_private(path: &Path) -> io::Result<fs::File> {
+    use std::os::unix::fs::OpenOptionsExt as _;
+    fs::OpenOptions::new()
+        .write(true)
+        .create(true)
+        .truncate(true)
+        .mode(0o600)
+        .open(path)
+}
+
+/// On Windows the `tls` folder carries an access list for its owner only, which new files
+/// inherit (the program sets it up with the rest of the data folder).
+#[cfg(not(unix))]
+fn create_private(path: &Path) -> io::Result<fs::File> {
+    fs::File::create(path)
+}
+
+/// Owner-only again for a file that already exists (Linux: mode 0600).
+#[cfg(unix)]
+fn restrict_file(path: &Path) -> Result<(), TlsError> {
+    use std::os::unix::fs::PermissionsExt as _;
+    fs::set_permissions(path, fs::Permissions::from_mode(0o600)).map_err(|source| TlsError::Write {
+        path: path.to_path_buf(),
+        source,
+    })
 }
 
 fn now_seconds() -> i64 {
@@ -417,6 +462,48 @@ mod tests {
             server_config(&junk),
             Err(TlsError::NoCertificate { .. })
         ));
+    }
+
+    #[test]
+    fn sec_10_a_self_signed_pair_that_does_not_match_is_replaced() {
+        let folder = tempfile::tempdir().unwrap();
+        let other = tempfile::tempdir().unwrap();
+        let now = now_seconds();
+        ensure_self_signed(folder.path(), &[], now).unwrap();
+        ensure_self_signed(other.path(), &[], now).unwrap();
+        fs::copy(other.path().join(KEY_FILE), folder.path().join(KEY_FILE)).unwrap();
+        assert!(
+            load(
+                &certificate_path(folder.path()),
+                &folder.path().join(KEY_FILE)
+            )
+            .is_err()
+        );
+        ensure_self_signed(folder.path(), &[], now).unwrap();
+        assert!(
+            load(
+                &certificate_path(folder.path()),
+                &folder.path().join(KEY_FILE)
+            )
+            .is_ok()
+        );
+        assert!(!folder.path().join("self-signed-key.pem.new").exists());
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn sec_10_kept_files_become_owner_only_again() {
+        use std::os::unix::fs::PermissionsExt as _;
+        let folder = tempfile::tempdir().unwrap();
+        let now = now_seconds();
+        ensure_self_signed(folder.path(), &[], now).unwrap();
+        let key = folder.path().join(KEY_FILE);
+        fs::set_permissions(&key, fs::Permissions::from_mode(0o644)).unwrap();
+        ensure_self_signed(folder.path(), &[], now).unwrap();
+        assert_eq!(
+            fs::metadata(&key).unwrap().permissions().mode() & 0o777,
+            0o600
+        );
     }
 
     #[test]

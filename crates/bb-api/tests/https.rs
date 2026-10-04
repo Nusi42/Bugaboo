@@ -3,6 +3,7 @@
 
 // Dependencies of the library that this test does not use itself (`unused_crate_dependencies`).
 use axum as _;
+use hyper_util as _;
 use mime_guess as _;
 use rcgen as _;
 use rust_embed as _;
@@ -17,6 +18,7 @@ mod common;
 mod https {
     use std::net::{IpAddr, SocketAddr};
     use std::sync::Arc;
+    use std::time::Duration;
 
     use bb_api::tls::{TlsSource, server_config};
     use bb_api::{Incoming, ListenerOptions, Options, WebSource, serve};
@@ -28,7 +30,7 @@ mod https {
     use tokio::sync::oneshot;
     use tokio_rustls::TlsConnector;
 
-    use super::common::{EXPECTED, HSTS};
+    use super::common::{EXPECTED, HSTS_NAME, HSTS_SELF_SIGNED, HSTS_TRUSTED};
 
     const LOOPBACK: &str = "127.0.0.1:0";
 
@@ -48,6 +50,14 @@ mod https {
     }
 
     async fn start(tls: bool, only_from: Option<Vec<IpAddr>>) -> Running {
+        start_with(tls, only_from, 1024).await
+    }
+
+    async fn start_with(
+        tls: bool,
+        only_from: Option<Vec<IpAddr>>,
+        max_connections: usize,
+    ) -> Running {
         let app = tempfile::tempdir().unwrap();
         let big = "<p>Bugaboo keeps work in one calm place.</p>".repeat(100);
         std::fs::write(app.path().join("index.html"), big).unwrap();
@@ -59,6 +69,7 @@ mod https {
             })
             .unwrap()
         });
+        let behind_proxy = only_from.is_some();
         let tcp = TcpListener::bind(LOOPBACK).await.unwrap();
         let address = tcp.local_addr().unwrap();
         let incoming = Incoming::start(
@@ -66,12 +77,17 @@ mod https {
             ListenerOptions {
                 tls: config,
                 only_from,
+                max_connections,
             },
-        )
-        .unwrap();
+        );
         let options = Options {
             web: WebSource::Folder(app.path().to_path_buf()),
-            https: tls,
+            hsts_max_age: if tls {
+                Some(bb_api::HSTS_MAX_AGE_SELF_SIGNED)
+            } else {
+                behind_proxy.then_some(bb_api::HSTS_MAX_AGE_TRUSTED)
+            },
+            header_timeout: Duration::from_secs(1),
             data_folder: tls_folder.path().to_path_buf(),
             trusted_proxies: vec![],
         };
@@ -138,7 +154,7 @@ mod https {
         for path in ["/", "/api/x", "/missing.js"] {
             let response = fetch(&server, true, &get(path, "")).await;
             let head = head_of(&response);
-            for (name, value) in EXPECTED.iter().chain([&HSTS]) {
+            for (name, value) in EXPECTED.iter().chain([&(HSTS_NAME, HSTS_SELF_SIGNED)]) {
                 assert!(
                     head.contains(&format!("{name}: {}", value.to_lowercase())),
                     "{name} on {path}: {head}"
@@ -184,5 +200,71 @@ mod https {
             response.is_empty(),
             "an address that is not trusted got an answer"
         );
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn sec_10_a_mapped_form_of_a_trusted_proxy_is_trusted() {
+        let mapped: IpAddr = "::ffff:127.0.0.1".parse().unwrap();
+        let server = start(false, Some(vec![mapped])).await;
+        let response = fetch(&server, false, &get("/health/live", "")).await;
+        assert!(String::from_utf8_lossy(&response).contains("200 OK"));
+        // Behind a trusted proxy the connection counts as HTTPS: the full HSTS lifetime.
+        assert!(head_of(&response).contains(&format!("{HSTS_NAME}: {HSTS_TRUSTED}")));
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn sec_11_json_answers_are_not_compressed() {
+        let server = start(true, None).await;
+        let response = fetch(
+            &server,
+            true,
+            &get(
+                "/health/ready",
+                "Accept-Encoding: gzip, br
+",
+            ),
+        )
+        .await;
+        assert!(!head_of(&response).contains("content-encoding"));
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn sec_10_a_client_that_sends_its_headers_too_slowly_is_disconnected() {
+        let server = start(false, None).await;
+        let mut stream = TcpStream::connect(server.address).await.unwrap();
+        stream
+            .write_all(
+                b"GET / HTTP/1.1
+Host: local",
+            )
+            .await
+            .unwrap();
+        let mut out = Vec::new();
+        let ended =
+            tokio::time::timeout(Duration::from_secs(10), stream.read_to_end(&mut out)).await;
+        assert!(ended.is_ok(), "the server kept a half-sent request open");
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn sec_10_no_more_connections_than_allowed_are_served_at_once() {
+        let server = start_with(false, None, 1).await;
+        let first = TcpStream::connect(server.address).await.unwrap();
+        let mut second = TcpStream::connect(server.address).await.unwrap();
+        second
+            .write_all(get("/health/live", "").as_bytes())
+            .await
+            .unwrap();
+        let mut out = Vec::new();
+        let waiting =
+            tokio::time::timeout(Duration::from_millis(400), second.read_to_end(&mut out)).await;
+        assert!(
+            waiting.is_err(),
+            "a second connection was served at the limit"
+        );
+        drop(first);
+        let answer =
+            tokio::time::timeout(Duration::from_secs(5), second.read_to_end(&mut out)).await;
+        assert!(answer.is_ok());
+        assert!(String::from_utf8_lossy(&out).contains("200 OK"));
     }
 }

@@ -47,6 +47,7 @@ axum = { version = "0.8.9", default-features = false }
 clap = { version = "4.6.7", features = ["derive"] }
 ctrlc = { version = "3.5.2", features = ["termination"] }
 globset = "0.4.20"
+hyper-util = { version = "0.1.21", default-features = false }
 mime_guess = "2.0.5"
 rcgen = { version = "0.14.10", default-features = false, features = ["crypto", "pem", "ring"] }
 rust-embed = "8.12.0"

@@ -4,6 +4,7 @@
 //! without changing the requirement (SEC-11, architecture §7) fails this test (SEC-HEADERS).
 
 // Dependencies of the library that this test does not use itself (`unused_crate_dependencies`).
+use hyper_util as _;
 use mime_guess as _;
 use rcgen as _;
 use rust_embed as _;
@@ -23,7 +24,7 @@ mod headers {
     use axum::response::Response;
     use bb_api::{Options, WebSource, router};
 
-    use super::common::{EXPECTED, HSTS};
+    use super::common::{EXPECTED, HSTS_NAME, HSTS_SELF_SIGNED, HSTS_TRUSTED};
     use tower::ServiceExt as _;
 
     fn app_folder() -> tempfile::TempDir {
@@ -34,10 +35,11 @@ mod headers {
         dir
     }
 
-    fn options(web: WebSource, https: bool) -> Options {
+    fn options(web: WebSource, hsts_max_age: Option<u64>) -> Options {
         Options {
             web,
-            https,
+            hsts_max_age,
+            header_timeout: std::time::Duration::from_secs(30),
             data_folder: std::env::temp_dir(),
             trusted_proxies: vec![],
         }
@@ -53,7 +55,7 @@ mod headers {
     }
 
     async fn send(web: WebSource, method: Method, path: &str) -> Response {
-        send_with(options(web, false), method, path).await
+        send_with(options(web, None), method, path).await
     }
 
     fn assert_headers(response: &Response, what: &str) {
@@ -83,17 +85,33 @@ mod headers {
     }
 
     #[tokio::test]
-    async fn sec_11_hsts_only_when_the_connection_is_https() {
+    async fn sec_11_hsts_depends_on_https_and_on_who_made_the_certificate() {
         let dir = app_folder();
         let web = || WebSource::Folder(dir.path().into());
-        let secure = send_with(options(web(), true), Method::GET, "/").await;
-        assert_eq!(
-            secure.headers().get(HSTS.0).map(|v| v.to_str().unwrap()),
-            Some(HSTS.1)
-        );
-        assert_headers(&secure, "https");
-        let plain = send_with(options(web(), false), Method::GET, "/").await;
-        assert!(plain.headers().get(HSTS.0).is_none());
+        for (seconds, expected) in [
+            (bb_api::HSTS_MAX_AGE_SELF_SIGNED, HSTS_SELF_SIGNED),
+            (bb_api::HSTS_MAX_AGE_TRUSTED, HSTS_TRUSTED),
+        ] {
+            let secure = send_with(options(web(), Some(seconds)), Method::GET, "/").await;
+            let value = secure.headers().get(HSTS_NAME).unwrap().to_str().unwrap();
+            assert_eq!(value, expected);
+            assert!(!value.to_lowercase().contains("includesubdomains"));
+            assert_headers(&secure, "https");
+        }
+        let plain = send_with(options(web(), None), Method::GET, "/").await;
+        assert!(plain.headers().get(HSTS_NAME).is_none());
+    }
+
+    #[tokio::test]
+    async fn ops_08_health_answers_are_never_cached() {
+        let dir = app_folder();
+        let response = send(
+            WebSource::Folder(dir.path().into()),
+            Method::GET,
+            "/health/live",
+        )
+        .await;
+        assert_eq!(response.headers().get("cache-control").unwrap(), "no-store");
     }
 
     #[tokio::test]

@@ -13,7 +13,10 @@ mod router;
 pub mod tls;
 mod web;
 
-pub use listener::{ClientAddr, Connection, Incoming, ListenerOptions};
+pub use headers::{HSTS_MAX_AGE_SELF_SIGNED, HSTS_MAX_AGE_TRUSTED};
+pub use listener::{
+    Accepted, ClientAddr, Connection, DEFAULT_MAX_CONNECTIONS, Incoming, ListenerOptions,
+};
 pub use router::{Options, router, serve};
 pub use web::{WEB_APP_MISSING, WebSource};
 

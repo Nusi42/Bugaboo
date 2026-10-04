@@ -41,5 +41,7 @@
   "tls.no-certificate": "The file {path} has no certificate in it.",
   "tls.no-key": "The file {path} has no private key in it.",
   "tls.unusable": "The certificate and the private key cannot be used: {reason}",
-  "tls.generate-failed": "Bugaboo could not make a certificate: {reason}"
+  "tls.generate-failed": "Bugaboo could not make a certificate: {reason}",
+  "config.number-invalid": "The setting {name} must be a whole number of 1 or more, not {value}.",
+  "tls.key-readable": "The private key {path} can be read by other people on this computer. Make it readable by the account that runs Bugaboo only."
 }

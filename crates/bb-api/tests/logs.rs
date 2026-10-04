@@ -2,6 +2,7 @@
 //! can identify a person.
 
 // Dependencies of the library that this test does not use itself (`unused_crate_dependencies`).
+use hyper_util as _;
 use mime_guess as _;
 use rcgen as _;
 use rust_embed as _;
@@ -48,7 +49,8 @@ mod logs {
 
         let app = router(Options {
             web: WebSource::Folder("no/such/folder".into()),
-            https: false,
+            hsts_max_age: None,
+            header_timeout: std::time::Duration::from_secs(30),
             data_folder: std::env::temp_dir(),
             trusted_proxies: vec![],
         });
@@ -58,7 +60,7 @@ mod logs {
             .body(Body::empty())
             .unwrap();
         request.extensions_mut().insert(ConnectInfo(ClientAddr(
-            "203.0.113.77:51000".parse().unwrap(),
+            "[::ffff:203.0.113.77]:51000".parse().unwrap(),
         )));
         let response = app.oneshot(request).await.unwrap();
         let id = response
@@ -74,7 +76,7 @@ mod logs {
         assert!(line.starts_with('{') && line.ends_with('}'), "{line}");
         assert!(line.contains(&format!("\"request_id\":\"{id}\"")), "{line}");
         assert!(line.contains("\"status\":404"), "{line}");
-        assert!(line.contains("\"client\":\"203.0.113.0\""), "{line}");
+        assert!(line.contains("\"net\":\"203.0.113.0\""), "{line}");
         for personal in [
             "jane",
             "example.org",

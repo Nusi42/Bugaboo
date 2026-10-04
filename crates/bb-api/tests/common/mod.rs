@@ -19,8 +19,8 @@ pub(crate) const EXPECTED: [(&str, &str); 6] = [
     ),
 ];
 
-/// Added when the connection is HTTPS.
-pub(crate) const HSTS: (&str, &str) = (
-    "strict-transport-security",
-    "max-age=63072000; includeSubDomains",
-);
+/// Added when the connection is HTTPS: never with `includeSubDomains`; one day for a
+/// certificate Bugaboo made itself, one year for a provided certificate or a trusted proxy.
+pub(crate) const HSTS_NAME: &str = "strict-transport-security";
+pub(crate) const HSTS_SELF_SIGNED: &str = "max-age=86400";
+pub(crate) const HSTS_TRUSTED: &str = "max-age=31536000";

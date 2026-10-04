@@ -1,7 +1,7 @@
 //! Security headers on every response (SEC-11, architecture §7 "Browser protections").
 //!
-//! The values are defined once, here. The integration test `tests/headers.rs` writes them out
-//! again on purpose, so changing a header without changing the requirement fails (SEC-HEADERS).
+//! The values are defined once, here. The integration tests in `tests/` write them out again on
+//! purpose, so changing a header without changing the requirement fails (SEC-HEADERS).
 
 use axum::Router;
 use axum::http::{HeaderName, HeaderValue};
@@ -26,24 +26,33 @@ const SECURITY_HEADERS: [(&str, &str); 6] = [
     ),
 ];
 
-/// Only sent when the browser reaches us over HTTPS: two years, subdomains included.
-pub(crate) const HSTS: (&str, &str) = (
-    "strict-transport-security",
-    "max-age=63072000; includeSubDomains",
-);
+/// Sent only when browsers reach us over HTTPS (here, or at a proxy we trust). Never with
+/// `includeSubDomains`: Bugaboo does not own the other names of its host.
+const HSTS_NAME: &str = "strict-transport-security";
+
+/// With a certificate Bugaboo made itself: one day. A person who trusts that certificate on
+/// `localhost` must not pin every other local tool to HTTPS for a long time.
+pub const HSTS_MAX_AGE_SELF_SIGNED: u64 = 86_400;
+
+/// With a certificate the owner provided, or HTTPS at a trusted proxy: one year.
+pub const HSTS_MAX_AGE_TRUSTED: u64 = 31_536_000;
 
 /// Wraps the router so every response, including errors and fallbacks, carries the headers.
-/// `https` adds HSTS (SEC-10: the connection is HTTPS, here or at a trusted proxy).
-pub(crate) fn apply(router: Router, https: bool) -> Router {
-    let hsts = https.then_some(HSTS);
-    SECURITY_HEADERS
+/// `hsts_max_age` is the HSTS lifetime in seconds, or `None` when the connection is not HTTPS.
+pub(crate) fn apply(router: Router, hsts_max_age: Option<u64>) -> Router {
+    let hsts = hsts_max_age.map(|seconds| (HSTS_NAME, format!("max-age={seconds}")));
+    let fixed = SECURITY_HEADERS
         .iter()
-        .copied()
-        .chain(hsts)
-        .fold(router, |router, (name, value)| {
-            router.layer(SetResponseHeaderLayer::overriding(
+        .map(|&(name, value)| (name, value.to_owned()));
+    fixed.chain(hsts).fold(router, |router, (name, value)| {
+        match HeaderValue::from_str(&value) {
+            Ok(value) => router.layer(SetResponseHeaderLayer::overriding(
                 HeaderName::from_static(name),
-                HeaderValue::from_static(value),
-            ))
-        })
+                value,
+            )),
+            // Every value is ASCII text written above; an invalid one would be a coding
+            // mistake that the header tests catch.
+            Err(_) => router,
+        }
+    })
 }

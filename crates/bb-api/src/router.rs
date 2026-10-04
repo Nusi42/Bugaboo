@@ -5,18 +5,25 @@ use std::io;
 use std::net::IpAddr;
 use std::path::PathBuf;
 use std::sync::Arc;
+use std::time::Duration;
 
-use axum::Router;
-use axum::extract::State;
+use axum::extract::{ConnectInfo, State};
 use axum::http::{HeaderMap, HeaderValue, Method, StatusCode, Uri, header};
 use axum::middleware::from_fn_with_state;
 use axum::response::{IntoResponse, Response};
 use axum::routing::get;
+use axum::{Extension, Router};
 use tower_http::compression::predicate::{Predicate as _, SizeAbove};
 use tower_http::compression::{CompressionLayer, DefaultPredicate};
 
 use crate::headers;
-use crate::listener::{ClientAddr, Incoming};
+use hyper_util::rt::{TokioExecutor, TokioIo, TokioTimer};
+use hyper_util::server::conn::auto::Builder;
+use hyper_util::service::TowerToHyperService;
+use tokio::sync::watch;
+use tokio::task::JoinSet;
+
+use crate::listener::{Accepted, ClientAddr, Incoming};
 use crate::logging::{LogContext, log_request};
 use crate::web::{INDEX, WEB_APP_MISSING, WebSource, decode_path};
 
@@ -34,14 +41,20 @@ const NO_PAGE_FALLBACK: [&str; 3] = ["assets", "health", "api"];
 const API_PREFIX: &str = "api";
 /// Smaller answers are not worth compressing.
 const COMPRESS_FROM_BYTES: u64 = 256;
+/// Running requests get this long to finish when the server stops.
+const SHUTDOWN_GRACE: Duration = Duration::from_secs(10);
 
 /// What the server needs to know to answer requests.
 #[derive(Clone, Debug)]
 pub struct Options {
     /// Where the browser app comes from.
     pub web: WebSource,
-    /// Whether browsers reach us over HTTPS (here or at a trusted proxy): adds HSTS.
-    pub https: bool,
+    /// HSTS lifetime in seconds when browsers reach us over HTTPS (here or at a trusted proxy);
+    /// `None` for plain HTTP. See [`crate::HSTS_MAX_AGE_SELF_SIGNED`].
+    pub hsts_max_age: Option<u64>,
+    /// How long a client may take to send the headers of a request. This also ends idle
+    /// connections that wait for a next request.
+    pub header_timeout: Duration,
     /// The data folder, for `/health/ready`.
     pub data_folder: PathBuf,
     /// Proxies whose `X-Forwarded-For` header may be believed for the log.
@@ -56,6 +69,7 @@ struct AppState {
 
 /// The whole HTTP surface, security headers included.
 pub fn router(options: Options) -> Router {
+    let hsts_max_age = options.hsts_max_age;
     let state = AppState {
         web: Arc::new(options.web),
         data_folder: Arc::new(options.data_folder),
@@ -70,27 +84,70 @@ pub fn router(options: Options) -> Router {
         .with_state(state)
         .layer(CompressionLayer::new().compress_when(compress))
         .layer(from_fn_with_state(
-            LogContext::new(options.trusted_proxies),
+            LogContext::new(&options.trusted_proxies),
             log_request,
         ));
-    headers::apply(app, options.https)
+    headers::apply(app, hsts_max_age)
 }
 
-/// Serves `router(options)` on `incoming` until `shutdown` completes.
+/// Serves `router(options)` on `incoming` until `shutdown` completes, then lets running
+/// requests finish (at most [`SHUTDOWN_GRACE`]).
 ///
 /// # Errors
-/// Returns the I/O error that stopped the server.
+/// Never fails today; the result type is kept for errors of the listener.
 pub async fn serve(
-    incoming: Incoming,
+    mut incoming: Incoming,
     options: Options,
     shutdown: impl Future<Output = ()> + Send + 'static,
 ) -> io::Result<()> {
-    axum::serve(
-        incoming,
-        router(options).into_make_service_with_connect_info::<ClientAddr>(),
-    )
-    .with_graceful_shutdown(shutdown)
-    .await
+    let header_timeout = options.header_timeout;
+    let app = router(options);
+    let (stop, stopped) = watch::channel(false);
+    let mut tasks = JoinSet::new();
+    tokio::pin!(shutdown);
+    loop {
+        let accepted = tokio::select! {
+            () = &mut shutdown => break,
+            accepted = incoming.accept() => accepted,
+        };
+        let Some(accepted) = accepted else { break };
+        let service = TowerToHyperService::new(
+            app.clone()
+                .layer(Extension(ConnectInfo(ClientAddr(accepted.peer)))),
+        );
+        let mut stopped = stopped.clone();
+        tasks.spawn(async move {
+            let Accepted { io, permit, .. } = accepted;
+            let mut builder = Builder::new(TokioExecutor::new());
+            builder
+                .http1()
+                .timer(TokioTimer::new())
+                .header_read_timeout(header_timeout);
+            builder
+                .http2()
+                .timer(TokioTimer::new())
+                .keep_alive_interval(header_timeout)
+                .keep_alive_timeout(header_timeout);
+            let connection = builder.serve_connection_with_upgrades(TokioIo::new(io), service);
+            tokio::pin!(connection);
+            tokio::select! {
+                _ = connection.as_mut() => {}
+                _ = stopped.changed() => {
+                    connection.as_mut().graceful_shutdown();
+                    let _ = connection.await;
+                }
+            }
+            drop(permit);
+        });
+        // Finished connections are collected as we go.
+        while tasks.try_join_next().is_some() {}
+    }
+    let _ = stop.send(true);
+    let _ = tokio::time::timeout(SHUTDOWN_GRACE, async {
+        while tasks.join_next().await.is_some() {}
+    })
+    .await;
+    Ok(())
 }
 
 /// Text compresses well; images, fonts and archives are already compressed.
@@ -104,9 +161,12 @@ fn is_text(
         .get(header::CONTENT_TYPE)
         .and_then(|value| value.to_str().ok())
         .is_some_and(|kind| {
-            ["text/", "javascript", "json", "xml", "wasm"]
-                .iter()
-                .any(|part| kind.contains(part))
+            // JSON (API answers, problem+json) is never compressed: a compressed answer that
+            // mixes a secret with text the attacker chooses can leak the secret (BREACH).
+            !kind.contains("json")
+                && ["text/", "javascript", "xml", "wasm"]
+                    .iter()
+                    .any(|part| kind.contains(part))
         })
 }
 
@@ -127,14 +187,23 @@ async fn health_ready(State(state): State<AppState>) -> Response {
 }
 
 fn json(status: StatusCode, body: &'static str) -> Response {
-    (status, [(header::CONTENT_TYPE, "application/json")], body).into_response()
+    (
+        status,
+        [
+            (header::CONTENT_TYPE, "application/json"),
+            // A health answer must always be fresh.
+            (header::CACHE_CONTROL, "no-store"),
+        ],
+        body,
+    )
+        .into_response()
 }
 
 /// Everything that is not a route: files of the app for GET and HEAD, 404 below `/api` for every
 /// method, 405 for other methods elsewhere.
 async fn fallback(State(state): State<AppState>, method: Method, uri: Uri) -> Response {
     let web = &state.web;
-    if decode_path(uri.path()).is_some_and(|path| is_api(&path)) {
+    if is_api(uri.path()) {
         return not_found(web).await;
     }
     if method == Method::GET || method == Method::HEAD {
@@ -147,11 +216,15 @@ async fn fallback(State(state): State<AppState>, method: Method, uri: Uri) -> Re
         .into_response()
 }
 
+/// Whether the address belongs to the API. Escapes are decoded first; an address with a
+/// malformed escape is judged as written, and `.` and `..` parts are ignored, so no spelling
+/// of an API address ends up as a page or a 405.
 fn is_api(path: &str) -> bool {
-    path.trim_start_matches('/')
+    let decoded = decode_path(path).unwrap_or_else(|| path.to_owned());
+    decoded
         .split('/')
-        .next()
-        .is_some_and(|first| first == API_PREFIX)
+        .find(|part| !part.is_empty() && *part != "." && *part != "..")
+        .is_some_and(|first| first.eq_ignore_ascii_case(API_PREFIX))
 }
 
 /// A file of the app; page addresses fall back to the start page.
@@ -226,7 +299,8 @@ mod tests {
     fn options(web: WebSource) -> Options {
         Options {
             web,
-            https: false,
+            hsts_max_age: None,
+            header_timeout: Duration::from_secs(30),
             data_folder: std::env::temp_dir(),
             trusted_proxies: vec![],
         }
@@ -280,7 +354,16 @@ mod tests {
             Method::DELETE,
             Method::PATCH,
         ] {
-            for path in ["/api/x", "/api", "/api/", "/%61pi/x"] {
+            for path in [
+                "/api/x",
+                "/api",
+                "/api/",
+                "/%61pi/x",
+                "/api/%zz",
+                "/./api/x",
+                "/%2e/api/x",
+                "/API/x",
+            ] {
                 let request = Request::builder()
                     .method(method.clone())
                     .uri(path)

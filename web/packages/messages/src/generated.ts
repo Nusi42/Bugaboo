@@ -53,6 +53,9 @@ export const messages = {
   "tls.no-key": "The file {path} has no private key in it.",
   "tls.unusable": "The certificate and the private key cannot be used: {reason}",
   "tls.generate-failed": "Bugaboo could not make a certificate: {reason}",
+  "config.number-invalid": "The setting {name} must be a whole number of 1 or more, not {value}.",
+  "tls.key-readable":
+    "The private key {path} can be read by other people on this computer. Make it readable by the account that runs Bugaboo only.",
 } as const;
 
 export type MessageKey = keyof typeof messages;
@@ -68,6 +71,7 @@ export interface MessageArguments {
   "config.file-unreadable": { path: string | number; reason: string | number };
   "config.file-wrong-type": { name: string | number; path: string | number };
   "config.log-level-invalid": { value: string | number };
+  "config.number-invalid": { name: string | number; value: string | number };
   "config.port-invalid": { value: string | number };
   "config.proxy-invalid": { value: string | number };
   "config.tls-mode-invalid": { value: string | number };
@@ -82,6 +86,7 @@ export interface MessageArguments {
   "server.warning": { message: string | number };
   "theme.device-resolved": { device: string | number; theme: string | number };
   "tls.generate-failed": { reason: string | number };
+  "tls.key-readable": { path: string | number };
   "tls.no-certificate": { path: string | number };
   "tls.no-key": { path: string | number };
   "tls.read-failed": { path: string | number; reason: string | number };

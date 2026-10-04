@@ -15,7 +15,9 @@ use std::process::ExitCode;
 
 use anyhow::Context as _;
 use bb_api::tls::{TlsError, TlsSource, certificate_path, server_config};
-use bb_api::{Incoming, ListenerOptions, Options, WebSource};
+use bb_api::{
+    HSTS_MAX_AGE_SELF_SIGNED, HSTS_MAX_AGE_TRUSTED, Incoming, ListenerOptions, Options, WebSource,
+};
 use clap::{Args, Parser, Subcommand};
 use tokio::net::TcpListener;
 
@@ -95,14 +97,25 @@ fn load_settings(args: &ServeArgs) -> Result<Settings, ConfigError> {
         .config
         .clone()
         .or_else(|| std::env::var_os(FILE_ENV).map(PathBuf::from));
-    let file = config::read_file(named)?;
+    let base = program_folder();
+    let file = config::read_file(named, &base)?;
     config::resolve(&Sources {
         file: file
             .as_ref()
             .map(|(path, text)| (path.as_path(), text.as_str())),
         env: &|name| std::env::var(name).ok(),
         cli: &args.settings(),
+        base: &base,
     })
+}
+
+/// The folder of the program. Defaults are relative to it, not to the current folder: a
+/// Windows service starts in `System32`, a systemd unit in `/`.
+fn program_folder() -> PathBuf {
+    std::env::current_exe()
+        .ok()
+        .and_then(|exe| exe.parent().map(PathBuf::from))
+        .unwrap_or_else(|| PathBuf::from("."))
 }
 
 async fn serve(args: ServeArgs) -> anyhow::Result<()> {
@@ -111,15 +124,14 @@ async fn serve(args: ServeArgs) -> anyhow::Result<()> {
     let source = args.web.map_or(WebSource::Embedded, WebSource::Folder);
     let data = DataFolder::prepare(&settings.data_dir)?;
     let listener_options = listener_options(&settings, &data)?;
-    // Browsers reach us over HTTPS here, or at a proxy we trust to add it.
-    let https = listener_options.tls.is_some() || !settings.trusted_proxies.is_empty();
+    let hsts_max_age = hsts_max_age(&settings);
     // Installed before listening, so a failure is reported instead of stopping silently.
     let shutdown = shutdown_signal()?;
     let address = SocketAddr::new(settings.address, settings.port);
     let tcp = TcpListener::bind(address)
         .await
         .with_context(|| t("server.port-busy", &[("port", &settings.port.to_string())]))?;
-    let incoming = Incoming::start(tcp, listener_options)?;
+    let incoming = Incoming::start(tcp, listener_options);
 
     if !source.has_index().await {
         output::warning(bb_api::WEB_APP_MISSING);
@@ -141,11 +153,12 @@ async fn serve(args: ServeArgs) -> anyhow::Result<()> {
         "server.listening",
         &[("address", &format!("{scheme}://{address}"))],
     ));
-    tracing::info!(listen = %address, https, "server started");
+    tracing::info!(https = hsts_max_age.is_some(), "server started");
 
     let options = Options {
         web: source,
-        https,
+        hsts_max_age,
+        header_timeout: settings.header_timeout,
         data_folder: data.root().to_path_buf(),
         trusted_proxies: settings.trusted_proxies,
     };
@@ -156,6 +169,17 @@ async fn serve(args: ServeArgs) -> anyhow::Result<()> {
 
 /// What the listener does with connections: HTTPS with the configured certificate, or plain
 /// HTTP that only trusted proxies may use.
+/// How long browsers are told to insist on HTTPS: a day with a certificate Bugaboo made (a
+/// person who trusts it for `localhost` must not pin their other local tools), a year with a
+/// provided certificate or behind a trusted proxy, nothing for plain HTTP on this computer.
+fn hsts_max_age(settings: &Settings) -> Option<u64> {
+    match settings.tls {
+        TlsMode::SelfSigned => Some(HSTS_MAX_AGE_SELF_SIGNED),
+        TlsMode::Files { .. } => Some(HSTS_MAX_AGE_TRUSTED),
+        TlsMode::Off => (!settings.trusted_proxies.is_empty()).then_some(HSTS_MAX_AGE_TRUSTED),
+    }
+}
+
 fn listener_options(settings: &Settings, data: &DataFolder) -> anyhow::Result<ListenerOptions> {
     let source = match &settings.tls {
         TlsMode::Off => {
@@ -163,22 +187,39 @@ fn listener_options(settings: &Settings, data: &DataFolder) -> anyhow::Result<Li
                 tls: None,
                 only_from: (!settings.trusted_proxies.is_empty())
                     .then(|| settings.trusted_proxies.clone()),
+                max_connections: settings.max_connections,
             });
         }
         TlsMode::SelfSigned => TlsSource::SelfSigned {
             folder: data.tls(),
             names: settings.tls_names.clone(),
         },
-        TlsMode::Files { cert, key } => TlsSource::Files {
-            cert: cert.clone(),
-            key: key.clone(),
-        },
+        TlsMode::Files { cert, key } => {
+            // Windows folders carry their own access lists; there is no mode to read.
+            #[cfg(unix)]
+            if let Some(warning) = key_readable_warning(key) {
+                output::warning(&warning);
+            }
+            TlsSource::Files {
+                cert: cert.clone(),
+                key: key.clone(),
+            }
+        }
     };
     let config = server_config(&source).map_err(|error| anyhow::anyhow!(tls_message(&error)))?;
     Ok(ListenerOptions {
         tls: Some(config),
         only_from: None,
+        max_connections: settings.max_connections,
     })
+}
+
+/// A private key that other people on this Linux computer can read (group or world bits).
+#[cfg(unix)]
+fn key_readable_warning(key: &std::path::Path) -> Option<String> {
+    use std::os::unix::fs::PermissionsExt as _;
+    let mode = std::fs::metadata(key).ok()?.permissions().mode();
+    (mode & 0o077 != 0).then(|| t("tls.key-readable", &[("path", &key.display().to_string())]))
 }
 
 fn tls_message(error: &TlsError) -> String {
@@ -271,6 +312,45 @@ mod tests {
             args.settings(),
             [("port", "1".to_owned()), ("tls_mode", "off".to_owned())]
         );
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn sec_10_a_key_that_others_can_read_is_reported() {
+        use std::os::unix::fs::PermissionsExt as _;
+        let folder = tempfile::tempdir().unwrap();
+        let key = folder.path().join("key.pem");
+        std::fs::write(&key, "x").unwrap();
+        std::fs::set_permissions(&key, std::fs::Permissions::from_mode(0o640)).unwrap();
+        assert!(key_readable_warning(&key).is_some());
+        std::fs::set_permissions(&key, std::fs::Permissions::from_mode(0o600)).unwrap();
+        assert!(key_readable_warning(&key).is_none());
+    }
+
+    #[test]
+    fn sec_11_hsts_lifetime_follows_who_made_the_certificate() {
+        let settings = |args: &[&'static str]| {
+            let sources = args
+                .iter()
+                .map(|pair| pair.split_once('=').unwrap())
+                .map(|(k, v)| (k, v.to_owned()))
+                .collect::<Vec<_>>();
+            config::resolve(&Sources {
+                file: None,
+                env: &|_| None,
+                cli: &sources,
+                base: std::path::Path::new("exe"),
+            })
+            .unwrap()
+        };
+        let own = settings(&["port=1"]);
+        assert_eq!(hsts_max_age(&own), Some(HSTS_MAX_AGE_SELF_SIGNED));
+        let local = settings(&["port=1", "tls_mode=off"]);
+        assert_eq!(hsts_max_age(&local), None);
+        let proxied = settings(&["port=1", "tls_mode=off", "trusted_proxies=10.0.0.5"]);
+        assert_eq!(hsts_max_age(&proxied), Some(HSTS_MAX_AGE_TRUSTED));
+        let provided = settings(&["port=1", "tls_mode=files", "tls_cert=a", "tls_key=b"]);
+        assert_eq!(hsts_max_age(&provided), Some(HSTS_MAX_AGE_TRUSTED));
     }
 
     #[test]
