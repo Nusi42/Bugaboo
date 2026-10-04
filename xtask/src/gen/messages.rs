@@ -6,6 +6,7 @@ use std::fmt::Write as _;
 use anyhow::{Context as _, bail};
 
 use super::icu::{ArgKind, placeholders};
+use super::messages_rust;
 use super::{Generated, write_all};
 use crate::repo::Repo;
 
@@ -24,10 +25,16 @@ pub(crate) fn run(repo: &Repo) -> anyhow::Result<Vec<String>> {
     let path = repo.path(SOURCE_LOCALE_PATH);
     let text = std::fs::read_to_string(&path)
         .with_context(|| format!("could not read {}", path.display()))?;
-    write_all(repo, &[generate(&text)?])
+    write_all(repo, &generate(repo, &text)?)
 }
 
-pub(crate) fn generate(catalog_text: &str) -> anyhow::Result<Generated> {
+/// The paths [`generate`] writes.
+pub(crate) fn output_paths() -> Vec<&'static str> {
+    vec![OUTPUT, messages_rust::OUTPUT]
+}
+
+/// The TypeScript and the Rust output from the one catalog.
+pub(crate) fn generate(repo: &Repo, catalog_text: &str) -> anyhow::Result<Vec<Generated>> {
     let messages: Vec<(String, String)> = read_catalog(catalog_text)?;
     let mut out = String::from(TS_HEADER);
     out.push_str("\nexport const messages = {\n");
@@ -80,7 +87,11 @@ pub(crate) fn generate(catalog_text: &str) -> anyhow::Result<Generated> {
         }
         out.push_str("}\n");
     }
-    Ok(Generated::new(OUTPUT, out))
+    let rust = messages_rust::generate(repo, &messages)?;
+    Ok(vec![
+        Generated::new(OUTPUT, out),
+        Generated::new(messages_rust::OUTPUT, rust),
+    ])
 }
 
 /// The catalogue as ordered key and text pairs. Duplicate keys are an error here too.
@@ -141,28 +152,36 @@ mod tests {
     fn generated_file_is_up_to_date() {
         let repo = Repo::discover().unwrap();
         let text = std::fs::read_to_string(repo.path(SOURCE_LOCALE_PATH)).unwrap();
-        let output = generate(&text).unwrap();
-        let on_disk = std::fs::read_to_string(repo.path(output.path)).unwrap();
-        assert_eq!(
-            on_disk, output.content,
-            "{} is stale; run `cargo xtask gen messages`",
-            output.path
-        );
+        for output in generate(&repo, &text).unwrap() {
+            let on_disk = std::fs::read_to_string(repo.path(output.path)).unwrap();
+            assert_eq!(
+                on_disk.replace("\r\n", "\n"),
+                output.content,
+                "{} is stale; run `cargo xtask gen messages`",
+                output.path
+            );
+        }
     }
 
     #[test]
     fn placeholders_become_typed_arguments() {
-        let output = generate(r#"{"a.b": "Hi {name}", "a.c": "Plain"}"#).unwrap();
+        let repo = Repo::discover().unwrap();
+        let output = generate(&repo, r#"{"a.b": "Hi {name}", "a.c": "Plain"}"#).unwrap();
         assert!(
-            output
+            output[0]
                 .content
                 .contains("\"a.b\": { name: string | number };")
         );
-        assert!(!output.content.contains("\"a.c\": {"));
+        assert!(!output[0].content.contains("\"a.c\": {"));
+        assert!(
+            output[1]
+                .content
+                .contains("pub fn a_b(name: impl std::fmt::Display)")
+        );
     }
 
     #[test]
     fn duplicate_keys_are_rejected() {
-        assert!(generate(r#"{"a.b": "x", "a.b": "y"}"#).is_err());
+        assert!(generate(&Repo::discover().unwrap(), r#"{"a.b": "x", "a.b": "y"}"#).is_err());
     }
 }

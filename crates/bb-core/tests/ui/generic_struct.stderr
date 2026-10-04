@@ -1,0 +1,5 @@
+error: an entity cannot have generic parameters; the personal-data map needs one fixed shape
+ --> tests/ui/generic_struct.rs:4:19
+  |
+4 | pub struct Wrapper<T> {
+  |                   ^

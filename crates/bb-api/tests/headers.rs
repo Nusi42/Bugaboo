@@ -4,6 +4,7 @@
 //! without changing the requirement (SEC-11, architecture §7) fails this test (SEC-HEADERS).
 
 // Dependencies of the library that this test does not use itself (`unused_crate_dependencies`).
+use bb_core as _;
 use hyper_util as _;
 use mime_guess as _;
 use rcgen as _;

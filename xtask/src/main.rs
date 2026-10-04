@@ -22,6 +22,7 @@ mod metadata;
 mod output;
 mod repo;
 mod runner;
+mod rust_source;
 mod setup;
 mod steps;
 #[cfg(test)]
@@ -92,6 +93,8 @@ enum GenTarget {
     Tokens,
     /// Typed message keys from messages/en.json.
     Messages,
+    /// The personal-data page docs/privacy/personal-data.md from the marks in the code.
+    Privacy,
 }
 #[derive(Subcommand)]
 enum DbAction {
@@ -187,6 +190,7 @@ fn run() -> anyhow::Result<ExitCode> {
             let written = match target {
                 GenTarget::Tokens => generate::tokens::run(&repo)?,
                 GenTarget::Messages => generate::messages::run(&repo)?,
+                GenTarget::Privacy => generate::privacy::run(&repo)?,
             };
             output::generated(&written);
             Ok(ExitCode::SUCCESS)

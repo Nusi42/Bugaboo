@@ -17,7 +17,7 @@
 use std::fmt;
 use std::path::{Path, PathBuf};
 
-use crate::text::t;
+use bb_core::message;
 
 const FILES: &str = "files";
 const KEYS: &str = "keys";
@@ -40,14 +40,12 @@ pub(crate) enum DataFolderError {
 impl DataFolderError {
     pub(crate) fn message(&self) -> String {
         match self {
-            Self::Create { path, reason } => t(
-                "data-folder.create-failed",
-                &[("path", &path.display().to_string()), ("reason", reason)],
-            ),
-            Self::Protect { path, reason } => t(
-                "data-folder.protect-failed",
-                &[("path", &path.display().to_string()), ("reason", reason)],
-            ),
+            Self::Create { path, reason } => {
+                message::data_folder_create_failed(path.display(), reason).render()
+            }
+            Self::Protect { path, reason } => {
+                message::data_folder_protect_failed(path.display(), reason).render()
+            }
         }
     }
 }

@@ -1,0 +1,5 @@
+error: field `email` of `Person` has more than one personal-data mark; keep exactly one
+ --> tests/ui/two_marks.rs:6:5
+  |
+6 |     #[personal(category = "identity", basis = "contract")]
+  |     ^

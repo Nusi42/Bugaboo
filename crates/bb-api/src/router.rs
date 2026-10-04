@@ -13,6 +13,7 @@ use axum::middleware::from_fn_with_state;
 use axum::response::{IntoResponse, Response};
 use axum::routing::get;
 use axum::{Extension, Router};
+use bb_core::message::{self, Message};
 use tower_http::compression::predicate::{Predicate as _, SizeAbove};
 use tower_http::compression::{CompressionLayer, DefaultPredicate};
 
@@ -25,12 +26,11 @@ use tokio::task::JoinSet;
 
 use crate::listener::{Accepted, ClientAddr, Incoming};
 use crate::logging::{LogContext, log_request};
-use crate::web::{INDEX, WEB_APP_MISSING, WebSource, decode_path};
+use crate::web::{INDEX, WebSource, decode_path};
 
 const HEALTH_LIVE_BODY: &str = r#"{"status":"ok"}"#;
 const HEALTH_READY_BODY: &str = r#"{"status":"ok","checks":{"data_folder":"ok"}}"#;
 const HEALTH_NOT_READY_BODY: &str = r#"{"status":"unavailable","checks":{"data_folder":"failed"}}"#;
-const NOT_FOUND: &str = "Not found";
 /// Files Vite names by their content hash can be cached forever.
 const IMMUTABLE_PREFIX: &str = "assets/";
 const CACHE_IMMUTABLE: &str = "public, max-age=31536000, immutable";
@@ -265,11 +265,12 @@ fn is_page(path: &str) -> bool {
 
 /// A plain 404; only a missing start page says that the app has not been built.
 async fn not_found(web: &WebSource) -> Response {
-    let body = if web.has_index().await {
-        NOT_FOUND
+    let key = if web.has_index().await {
+        message::SERVER_NOT_FOUND
     } else {
-        WEB_APP_MISSING
+        message::SERVER_WEB_APP_MISSING
     };
+    let body = Message::from(key).render();
     (StatusCode::NOT_FOUND, body).into_response()
 }
 
@@ -470,7 +471,10 @@ mod tests {
         assert!(!web.has_index().await);
         let response = get_from(web, "/").await;
         assert_eq!(response.status(), StatusCode::NOT_FOUND);
-        assert_eq!(body(response).await, WEB_APP_MISSING);
+        assert_eq!(
+            body(response).await,
+            Message::from(message::SERVER_WEB_APP_MISSING).render()
+        );
 
         let dir = app_folder();
         let response = get_from(WebSource::Folder(dir.path().into()), "/nope.js").await;

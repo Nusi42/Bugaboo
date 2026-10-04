@@ -6,7 +6,6 @@ mod config;
 mod data_folder;
 mod log;
 mod output;
-mod text;
 
 use std::future::Future;
 use std::net::SocketAddr;
@@ -23,7 +22,7 @@ use tokio::net::TcpListener;
 
 use crate::config::{ConfigError, FILE_ENV, Settings, Sources, TlsMode};
 use crate::data_folder::DataFolder;
-use crate::text::t;
+use bb_core::message::{self, Message};
 
 #[derive(Parser)]
 #[command(name = "bugaboo", about = "Bugaboo: the issue tracker in one file")]
@@ -130,18 +129,15 @@ async fn serve(args: ServeArgs) -> anyhow::Result<()> {
     let address = SocketAddr::new(settings.address, settings.port);
     let tcp = TcpListener::bind(address)
         .await
-        .with_context(|| t("server.port-busy", &[("port", &settings.port.to_string())]))?;
+        .with_context(|| message::server_port_busy(settings.port).render())?;
     let incoming = Incoming::start(tcp, listener_options);
 
     if !source.has_index().await {
-        output::warning(bb_api::WEB_APP_MISSING);
+        output::warning(&Message::from(message::SERVER_WEB_APP_MISSING).render());
     }
     if settings.tls == TlsMode::SelfSigned {
         let path = certificate_path(&data.tls());
-        output::line(&t(
-            "server.self-signed",
-            &[("path", &path.display().to_string())],
-        ));
+        output::line(&message::server_self_signed(path.display()).render());
     }
     output::line(&database_line(settings.database_url.as_deref()));
     let scheme = if settings.tls == TlsMode::Off {
@@ -149,10 +145,7 @@ async fn serve(args: ServeArgs) -> anyhow::Result<()> {
     } else {
         "https"
     };
-    output::line(&t(
-        "server.listening",
-        &[("address", &format!("{scheme}://{address}"))],
-    ));
+    output::line(&message::server_listening(format!("{scheme}://{address}")).render());
     tracing::info!(https = hsts_max_age.is_some(), "server started");
 
     let options = Options {
@@ -219,40 +212,36 @@ fn listener_options(settings: &Settings, data: &DataFolder) -> anyhow::Result<Li
 fn key_readable_warning(key: &std::path::Path) -> Option<String> {
     use std::os::unix::fs::PermissionsExt as _;
     let mode = std::fs::metadata(key).ok()?.permissions().mode();
-    (mode & 0o077 != 0).then(|| t("tls.key-readable", &[("path", &key.display().to_string())]))
+    (mode & 0o077 != 0).then(|| message::tls_key_readable(key.display()).render())
 }
 
 fn tls_message(error: &TlsError) -> String {
     let shown = |path: &std::path::Path| path.display().to_string();
     match error {
-        TlsError::Read { path, source } => t(
-            "tls.read-failed",
-            &[("path", &shown(path)), ("reason", &source.to_string())],
-        ),
-        TlsError::Write { path, source } => t(
-            "tls.write-failed",
-            &[("path", &shown(path)), ("reason", &source.to_string())],
-        ),
-        TlsError::NoCertificate { path } => t("tls.no-certificate", &[("path", &shown(path))]),
-        TlsError::NoKey { path } => t("tls.no-key", &[("path", &shown(path))]),
-        TlsError::Unusable { reason } => t("tls.unusable", &[("reason", reason)]),
-        TlsError::Generate { reason } => t("tls.generate-failed", &[("reason", reason)]),
+        TlsError::Read { path, source } => message::tls_read_failed(shown(path), source).render(),
+        TlsError::Write { path, source } => message::tls_write_failed(shown(path), source).render(),
+        TlsError::NoCertificate { path } => message::tls_no_certificate(shown(path)).render(),
+        TlsError::NoKey { path } => message::tls_no_key(shown(path)).render(),
+        TlsError::Unusable { reason } => message::tls_unusable(reason).render(),
+        TlsError::Generate { reason } => message::tls_generate_failed(reason).render(),
     }
 }
 
 /// Which database is in use, without ever showing the address (it may hold a password).
 fn database_line(url: Option<&str>) -> String {
     match url {
-        None => t("server.database-built-in", &[]),
-        Some(url) if url.starts_with("sqlite:") => t("server.database-sqlite", &[]),
-        Some(_) => t("server.database-postgres", &[]),
+        None => Message::from(message::SERVER_DATABASE_BUILT_IN).render(),
+        Some(url) if url.starts_with("sqlite:") => {
+            Message::from(message::SERVER_DATABASE_SQLITE).render()
+        }
+        Some(_) => Message::from(message::SERVER_DATABASE_POSTGRES).render(),
     }
 }
 
 /// Completes when the system asks the server to stop: Ctrl+C, and on Unix SIGTERM (what
 /// service managers send); on Windows also Ctrl+Break, closing the console and shutdown.
 fn shutdown_signal() -> anyhow::Result<impl Future<Output = ()> + Send + 'static> {
-    let failed = || t("server.signal-failed", &[]);
+    let failed = || Message::from(message::SERVER_SIGNAL_FAILED).render();
     #[cfg(unix)]
     {
         use tokio::signal::unix::{SignalKind, signal};

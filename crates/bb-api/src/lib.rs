@@ -18,7 +18,7 @@ pub use listener::{
     Accepted, ClientAddr, Connection, DEFAULT_MAX_CONNECTIONS, Incoming, ListenerOptions,
 };
 pub use router::{Options, router, serve};
-pub use web::{WEB_APP_MISSING, WebSource};
+pub use web::WebSource;
 
 // Used by the integration tests in `tests/` only (`unused_crate_dependencies`).
 #[cfg(test)]

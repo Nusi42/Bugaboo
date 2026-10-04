@@ -8,7 +8,7 @@ Status: **Accepted** · 2026-10-04
 
 ## Decision
 
-Define each setting once with a `setting!` macro: key, type, default, allowed levels (organization / project / person), who may change it, help-text message key, and whether admins can lock it. The registry generates storage access, API endpoints, OpenAPI schema and the metadata the UI uses to render settings dialogs (grouped by topic, with search).
+Define each setting once with the `settings!` macro, which is used only in the registry file of `bb-core`: key, type, default, allowed levels (organization / project / person), who may change it, help-text message key, and whether admins can lock it. The registry generates storage access, API endpoints, OpenAPI schema and the metadata the UI uses to render settings dialogs (grouped by topic, with search).
 
 ## Consequences
 

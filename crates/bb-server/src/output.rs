@@ -6,16 +6,16 @@
     reason = "command-line output; this module is the only place that prints (coding-standards §3)"
 )]
 
-use crate::text::t;
+use bb_core::message;
 
 pub(crate) fn line(message: &str) {
     println!("{message}");
 }
 
-pub(crate) fn warning(message: &str) {
-    eprintln!("{}", t("server.warning", &[("message", message)]));
+pub(crate) fn warning(text: &str) {
+    eprintln!("{}", message::server_warning(text));
 }
 
-pub(crate) fn error(message: &str) {
-    eprintln!("{}", t("server.error", &[("message", message)]));
+pub(crate) fn error(text: &str) {
+    eprintln!("{}", message::server_error(text));
 }

@@ -8,6 +8,7 @@ publish.workspace = true
 
 [dependencies]
 axum = { workspace = true, features = ["http1", "http2", "matched-path", "tokio"] }
+bb-core = { path = "../bb-core" }
 hyper-util = { workspace = true, features = ["http1", "http2", "server-auto", "service", "tokio"] }
 mime_guess = { workspace = true }
 rcgen = { workspace = true }

@@ -6,10 +6,14 @@
 
 pub(crate) mod arch_db_parity;
 mod arch_deps;
+mod arch_errors;
 mod arch_map_sync;
 mod arch_no_unsafe;
+mod arch_settings;
+mod arch_wasm;
 mod build_location;
 mod data_logs;
+mod data_marks;
 pub(crate) mod data_migrations;
 mod dep_licenses;
 mod dep_register;
@@ -114,6 +118,10 @@ pub(crate) fn registry() -> Vec<Box<dyn Check>> {
         Box::new(lint_ci::LintCi),
         Box::new(arch_deps::ArchDeps),
         Box::new(arch_no_unsafe::ArchNoUnsafe),
+        Box::new(arch_errors::ArchErrors),
+        Box::new(arch_settings::ArchSettings),
+        Box::new(arch_wasm::ArchWasm),
+        Box::new(data_marks::DataMarks),
         Box::new(arch_db_parity::ArchDbParity),
         Box::new(data_migrations::DataMigrations),
         Box::new(sec_secrets::SecSecrets),

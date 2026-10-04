@@ -4,10 +4,6 @@ use std::path::{Path, PathBuf};
 
 use rust_embed::RustEmbed;
 
-/// What to tell the person when the browser app has not been built (`cargo xtask build`).
-pub const WEB_APP_MISSING: &str =
-    "The browser app is not built yet. Run `cargo xtask build`, or pass --web <folder>.";
-
 /// The file every page address falls back to (single-page app).
 pub(crate) const INDEX: &str = "index.html";
 

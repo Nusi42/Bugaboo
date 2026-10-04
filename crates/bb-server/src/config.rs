@@ -13,7 +13,7 @@ use std::time::Duration;
 
 use bb_api::DEFAULT_MAX_CONNECTIONS;
 
-use crate::text::t;
+use bb_core::message::{self, Message};
 
 /// Every start-up setting, once. The environment variable of `port` is `BUGABOO_PORT`.
 const KEYS: [&str; 12] = [
@@ -119,42 +119,31 @@ impl ConfigError {
     pub(crate) fn message(&self) -> String {
         let shown = |path: &Path| path.display().to_string();
         match self {
-            Self::FileUnreadable { path, reason } => t(
-                "config.file-unreadable",
-                &[("path", &shown(path)), ("reason", reason)],
-            ),
-            Self::FileInvalid { path, reason } => t(
-                "config.file-invalid",
-                &[("path", &shown(path)), ("reason", reason)],
-            ),
-            Self::UnknownKey { path, name } => t(
-                "config.file-unknown-key",
-                &[
-                    ("path", &shown(path)),
-                    ("name", name),
-                    ("known", &KEYS.join(", ")),
-                ],
-            ),
-            Self::WrongType { path, name } => t(
-                "config.file-wrong-type",
-                &[("path", &shown(path)), ("name", name)],
-            ),
-            Self::PortMissing => t("config.port-missing", &[]),
-            Self::PortInvalid(value) => t("config.port-invalid", &[("value", value)]),
-            Self::AddressInvalid(value) => t("config.address-invalid", &[("value", value)]),
-            Self::DataDirEmpty => t("config.data-dir-empty", &[]),
-            Self::DatabaseInvalid => t("config.database-invalid", &[]),
-            Self::TlsModeInvalid(value) => t("config.tls-mode-invalid", &[("value", value)]),
-            Self::TlsFilesMissing => t("config.tls-files-missing", &[]),
-            Self::TlsFilesUnused => t("config.tls-files-unused", &[]),
-            Self::TlsOffPublic(address) => t(
-                "config.tls-off-public",
-                &[("address", &address.to_string())],
-            ),
-            Self::ProxyInvalid(value) => t("config.proxy-invalid", &[("value", value)]),
-            Self::LogLevelInvalid(value) => t("config.log-level-invalid", &[("value", value)]),
+            Self::FileUnreadable { path, reason } => {
+                message::config_file_unreadable(shown(path), reason).render()
+            }
+            Self::FileInvalid { path, reason } => {
+                message::config_file_invalid(shown(path), reason).render()
+            }
+            Self::UnknownKey { path, name } => {
+                message::config_file_unknown_key(KEYS.join(", "), name, shown(path)).render()
+            }
+            Self::WrongType { path, name } => {
+                message::config_file_wrong_type(name, shown(path)).render()
+            }
+            Self::PortMissing => Message::from(message::CONFIG_PORT_MISSING).render(),
+            Self::PortInvalid(value) => message::config_port_invalid(value).render(),
+            Self::AddressInvalid(value) => message::config_address_invalid(value).render(),
+            Self::DataDirEmpty => Message::from(message::CONFIG_DATA_DIR_EMPTY).render(),
+            Self::DatabaseInvalid => Message::from(message::CONFIG_DATABASE_INVALID).render(),
+            Self::TlsModeInvalid(value) => message::config_tls_mode_invalid(value).render(),
+            Self::TlsFilesMissing => Message::from(message::CONFIG_TLS_FILES_MISSING).render(),
+            Self::TlsFilesUnused => Message::from(message::CONFIG_TLS_FILES_UNUSED).render(),
+            Self::TlsOffPublic(address) => message::config_tls_off_public(address).render(),
+            Self::ProxyInvalid(value) => message::config_proxy_invalid(value).render(),
+            Self::LogLevelInvalid(value) => message::config_log_level_invalid(value).render(),
             Self::NumberInvalid { name, value } => {
-                t("config.number-invalid", &[("name", name), ("value", value)])
+                message::config_number_invalid(name, value).render()
             }
         }
     }

@@ -1,9 +1,10 @@
 //! TXT-CATALOG: the message catalog has no missing, unused or duplicate keys, and the
 //! placeholders of every language match (UX-07).
 //!
-//! Code shows text only through `t("key")`. A key counts as used when its exact text appears as
-//! a string in non-test code under `web/` or `crates/`; a `t("…")` call with an unknown key is
-//! missing.
+//! Code shows text only through `t("key")` (browser) or the generated constants and functions of
+//! `bb-core` (Rust). A key counts as used when its exact text appears as a string in non-test code
+//! under `web/` or `crates/`, or when Rust code names its constant or function
+//! (`SERVER_NOT_FOUND`, `server_port_busy`); a `t("…")` call with an unknown key is missing.
 
 use std::collections::{BTreeMap, HashSet};
 use std::fs;
@@ -12,6 +13,8 @@ use super::node_tool::Selection;
 use super::{Check, Context, Finding};
 use crate::generate::icu::{Placeholders, placeholders};
 use crate::generate::messages::{SOURCE_LOCALE_PATH, parse_pairs};
+use crate::generate::messages_rust::{constant_name, function_name};
+use crate::rust_source::before_tests;
 
 const MESSAGES_FOLDER: &str = "messages";
 
@@ -23,7 +26,14 @@ const CODE: Selection = Selection {
 };
 
 /// Test files check behavior; their strings must not keep a key alive.
-const TEST_MARKERS: [&str; 5] = [".test.", ".spec.", "/e2e/", "/tests/", "generated.ts"];
+const TEST_MARKERS: [&str; 6] = [
+    ".test.",
+    ".spec.",
+    "/e2e/",
+    "/tests/",
+    "generated.ts",
+    "generated.rs",
+];
 
 /// One piece of code: where it is and what it says.
 struct Source {
@@ -194,15 +204,30 @@ fn check_usage(
     let mut used: HashSet<&str> = HashSet::new();
     for file in sources {
         let is_test = TEST_MARKERS.iter().any(|marker| file.path.contains(marker));
-        for literal in string_literals(&file.text, is_rust(&file.path)) {
+        let text = if is_rust(&file.path) {
+            product_code(&file.text)
+        } else {
+            file.text.clone()
+        };
+        for literal in string_literals(&text, is_rust(&file.path)) {
             if !is_test && let Some((key, _)) = source.get_key_value(literal.as_str()) {
                 used.insert(key.as_str());
+            }
+        }
+        if is_rust(&file.path) && !is_test {
+            let names = identifiers(&text);
+            for key in source.keys() {
+                if names.contains(constant_name(key).as_str())
+                    || names.contains(function_name(key).as_str())
+                {
+                    used.insert(key.as_str());
+                }
             }
         }
         if is_rust(&file.path) || file.path.contains("generated.ts") {
             continue;
         }
-        for key in called_keys(&file.text) {
+        for key in called_keys(&text) {
             if !source.contains_key(&key) {
                 findings.push(Finding::at(
                     &file.path,
@@ -241,6 +266,23 @@ fn called_keys(code: &str) -> Vec<String> {
         }
     }
     keys
+}
+
+/// The Rust code that ships: without the unit tests at the end of the file and without comment
+/// lines, so a key that only a test or a comment mentions still counts as unused.
+fn product_code(text: &str) -> String {
+    before_tests(text)
+        .lines()
+        .filter(|line| !line.trim_start().starts_with("//"))
+        .collect::<Vec<_>>()
+        .join("\n")
+}
+
+/// The words of Rust code: everything made of letters, digits and underscores.
+fn identifiers(code: &str) -> HashSet<&str> {
+    code.split(|c: char| !(c.is_alphanumeric() || c == '_'))
+        .filter(|word| !word.is_empty())
+        .collect()
 }
 
 /// Every `"…"` (and, for TypeScript, `'…'`) on a single line.
@@ -350,6 +392,42 @@ mod tests {
         let locales = [locale(r#"{"a.b": "x"}"#)];
         let code = [source("web/a.test.ts", r#"expect(t("a.b"))"#)];
         assert!(messages(&evaluate(&locales, &code)).contains("never used"));
+    }
+
+    #[test]
+    fn rust_code_uses_a_key_by_naming_its_constant_or_function() {
+        let locales = [locale(
+            r#"{"a.not-found": "x", "a.port": "Port {n}", "a.lonely": "y"}"#,
+        )];
+        let code = [
+            source(
+                "crates/bb-api/src/a.rs",
+                "let a = message::A_NOT_FOUND; let b = message::a_port(5);",
+            ),
+            source(
+                "crates/bb-core/src/message/generated.rs",
+                "pub const A_LONELY: MessageKey = MessageKey::new(\"a.lonely\");",
+            ),
+        ];
+        let text = messages(&evaluate(&locales, &code));
+        assert!(!text.contains("`a.not-found`"), "{text}");
+        assert!(!text.contains("`a.port`"), "{text}");
+        assert!(text.contains("`a.lonely` is never used"), "{text}");
+    }
+
+    #[test]
+    fn rust_tests_and_comments_do_not_keep_a_key_alive() {
+        let locales = [locale(
+            r#"{"a.in-test": "x", "a.in-comment": "y", "a.real": "z"}"#,
+        )];
+        let code = [source(
+            "crates/bb-api/src/a.rs",
+            "// A_IN_COMMENT\nlet a = message::A_REAL;\n#[cfg(test)]\nmod tests { fn t() { message::A_IN_TEST; } }\n",
+        )];
+        let text = messages(&evaluate(&locales, &code));
+        assert!(text.contains("`a.in-test` is never used"), "{text}");
+        assert!(text.contains("`a.in-comment` is never used"), "{text}");
+        assert!(!text.contains("`a.real`"), "{text}");
     }
 
     #[test]
