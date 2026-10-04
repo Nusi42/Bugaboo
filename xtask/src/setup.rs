@@ -37,7 +37,31 @@ pub(crate) fn run(repo: &Repo) -> anyhow::Result<()> {
             ),
         }
     }
-    install_npm(root)
+    install_npm(root)?;
+    install_git_hooks(root)
+}
+
+/// Makes Git run the checks on commit and push (`lefthook.yml`), using the pinned lefthook.
+/// Running it again only rewrites the same hook files.
+fn install_git_hooks(root: &Path) -> anyhow::Result<()> {
+    if !root.join(".git").exists() || !root.join("lefthook.yml").is_file() {
+        return Ok(());
+    }
+    let lefthook = tools::bin_dir(root).join(if cfg!(windows) {
+        "lefthook.exe"
+    } else {
+        "lefthook"
+    });
+    let status = Command::new(&lefthook)
+        .arg("install")
+        .current_dir(root)
+        .status()
+        .with_context(|| format!("could not run {}", lefthook.display()))?;
+    if !status.success() {
+        bail!("lefthook install failed (see the messages above).");
+    }
+    output::info("ok       Git hooks (lefthook)");
+    Ok(())
 }
 
 /// The crate names and versions already in `.tools`, from `cargo install --list`.
@@ -199,7 +223,8 @@ pub(crate) fn verify_sha256(bytes: &[u8], expected: &str, source: &str) -> anyho
     )
 }
 
-/// Returns the bytes of the file named `binary` inside a `.zip` or `.tar.gz` archive.
+/// Returns the bytes of the file named `binary` inside a `.zip` or `.tar.gz` archive, or the
+/// whole program when the download is a single `.gz` file.
 pub(crate) fn extract_binary(
     archive_name: &str,
     bytes: &[u8],
@@ -232,8 +257,16 @@ pub(crate) fn extract_binary(
                 break;
             }
         }
+    } else if Path::new(archive_name)
+        .extension()
+        .is_some_and(|ext| ext.eq_ignore_ascii_case("gz"))
+    {
+        // A single compressed program (no archive around it), as lefthook publishes it.
+        let mut data = Vec::new();
+        flate2::read::GzDecoder::new(bytes).read_to_end(&mut data)?;
+        found = Some(data);
     } else {
-        bail!("{archive_name}: only .zip and .tar.gz archives are supported.");
+        bail!("{archive_name}: only .zip, .tar.gz and .gz downloads are supported.");
     }
     found.with_context(|| format!("{archive_name} does not contain `{binary}`."))
 }
@@ -415,6 +448,19 @@ mod tests {
             b"tar-binary"
         );
         assert!(extract_binary("t.tar.gz", &tar_bytes, "other").is_err());
+
+        let mut gz_bytes = Vec::new();
+        {
+            let mut encoder =
+                flate2::write::GzEncoder::new(&mut gz_bytes, flate2::Compression::fast());
+            encoder.write_all(b"gz-binary").unwrap();
+            encoder.finish().unwrap();
+        }
+        assert_eq!(
+            extract_binary("tool_Windows_x86_64.gz", &gz_bytes, "tool.exe").unwrap(),
+            b"gz-binary"
+        );
+        assert!(extract_binary("t.rar", b"", "tool").is_err());
     }
 
     fn fake_tool(sha: &str) -> Tool {

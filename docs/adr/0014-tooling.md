@@ -9,7 +9,7 @@ Checks (formatting, linting, hard-coded text, tokens only, terminology, licenses
 ## Decision
 
 - **`cargo xtask`** is the single entry point: `cargo xtask check staged`, `check all`, `gen …`, `release …`. It's Rust, so it runs wherever the code builds.
-- **lefthook** runs `check staged` on commit and `check all` on push.
+- **lefthook** runs `check staged` on commit, `check push` on push and the commit-message check; `cargo xtask setup` installs it and the hooks.
 - **Claude Code hooks** (`.claude/settings.json`) run the relevant checks after each file edit, so agents get immediate feedback.
 - **CI** runs `check all` plus slow checks (benchmarks, end-to-end, SBOM).
 - **Rust:** `rustfmt` formats, `clippy` lints (warnings are errors, selected pedantic lints on).

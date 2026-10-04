@@ -1427,7 +1427,7 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 <h4>Decision</h4>
 <ul>
 <li><strong><code>cargo xtask</code></strong> is the single entry point: <code>cargo xtask check staged</code>, <code>check all</code>, <code>gen …</code>, <code>release …</code>. It's Rust, so it runs wherever the code builds.</li>
-<li><strong>lefthook</strong> runs <code>check staged</code> on commit and <code>check all</code> on push.</li>
+<li><strong>lefthook</strong> runs <code>check staged</code> on commit, <code>check push</code> on push and the commit-message check; <code>cargo xtask setup</code> installs it and the hooks.</li>
 <li><strong>Claude Code hooks</strong> (<code>.claude/settings.json</code>) run the relevant checks after each file edit, so agents get immediate feedback.</li>
 <li><strong>CI</strong> runs <code>check all</code> plus slow checks (benchmarks, end-to-end, SBOM).</li>
 <li><strong>Rust:</strong> <code>rustfmt</code> formats, <code>clippy</code> lints (warnings are errors, selected pedantic lints on).</li>

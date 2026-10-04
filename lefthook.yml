@@ -1,4 +1,5 @@
-# Git hooks (ADR-0014). They only call the check runner; install with `lefthook install`.
+# Git hooks (ADR-0014). They only call the check runner. `cargo xtask setup` installs them
+# with the pinned lefthook from tools/dev/tools.toml.
 pre-commit:
   commands:
     checks:
@@ -9,7 +10,6 @@ pre-push:
     checks:
       run: cargo xtask check push
 
-# `check commit-msg` is added by WP-03 (GIT-COMMIT-MSG); until it is merged this hook fails.
 commit-msg:
   commands:
     conventional-commits:
