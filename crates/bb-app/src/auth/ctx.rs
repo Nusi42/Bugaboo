@@ -180,11 +180,16 @@ impl IdSource for ClockIds<'_> {
 }
 
 /// A reserved try (see [`FailureLimit`]).
+#[derive(Clone)]
 pub(crate) struct Slot {
     key: String,
     network: Option<String>,
     tipped: bool,
 }
+
+/// The keys of a client network start with this: they are shared by many people, so the limit
+/// keeps a window of a minute for them and does not let the windows grow.
+pub const NETWORK_KEY_PREFIX: &str = "net:";
 
 /// How many wrong codes a half-finished sign-in takes before it is ended.
 pub(crate) const SECOND_STEP_TRIES: u32 = 10;
@@ -290,7 +295,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             .request
             .network
             .as_ref()
-            .map(|network| format!("net:{network}"));
+            .map(|network| format!("{NETWORK_KEY_PREFIX}{network}"));
         let network_tipped = match &network {
             Some(network) => limiter.reserve(network).map_err(wait_error)?,
             None => false,
@@ -308,6 +313,27 @@ impl<S: AuthStore> Ctx<'_, S> {
                 Err(wait_error(wait))
             }
         }
+    }
+
+    /// The reserved try gets its slot back: the server failed before the try could be checked, so
+    /// it says nothing about the account (a request that was dropped stays counted).
+    pub(crate) fn slot_given_back(&self, slot: &Slot) {
+        self.services.limiter.release(&slot.key);
+        if let Some(network) = &slot.network {
+            self.services.limiter.release(network);
+        }
+    }
+
+    /// `result`, after the slot was given back when it is an internal failure.
+    pub(crate) fn unless_internal<T>(
+        &self,
+        slot: &Slot,
+        result: Result<T, AppError>,
+    ) -> Result<T, AppError> {
+        if matches!(result, Err(AppError::Internal(_))) {
+            self.slot_given_back(slot);
+        }
+        result
     }
 
     /// The reserved try was a failure. When it used up an allowance, that is written down once.
@@ -342,7 +368,6 @@ impl<S: AuthStore> Ctx<'_, S> {
         if self.services.limiter.tally(&key) < SECOND_STEP_TRIES {
             return Ok(());
         }
-        self.services.limiter.forget(&key);
         let id = pending.session.id;
         let event = self.event(
             Actor::Person(person),
@@ -355,6 +380,8 @@ impl<S: AuthStore> Ctx<'_, S> {
             })
             .await
             .map_err(|error| change_failed::<S>(&error, None))?;
+        // Forgotten only now: when the sign-in could not be ended, the next try counts on.
+        self.services.limiter.forget(&key);
         self.note(
             SecurityAction::SecondStepGivenUp,
             Some(person),
@@ -510,18 +537,23 @@ impl<S: AuthStore> Ctx<'_, S> {
         person: &Person,
         password: String,
     ) -> Result<(), AppError> {
-        let slot = self.reserve(person_key(person.id))?;
-        let account = self
-            .store()
-            .account_by_email(&person.email)
-            .await
-            .map_err(|error| internal::<S>(&error))?;
-        let stored = account.and_then(|account| account.password_hash);
-        let verdict = self
-            .services
-            .hasher
-            .verify(Zeroizing::new(password), stored)
-            .await?;
+        // Its own key: only a finished second step clears the key of the second step.
+        let slot = self.reserve(format!("password:{}", person.id))?;
+        let checked = async {
+            let account = self
+                .store()
+                .account_by_email(&person.email)
+                .await
+                .map_err(|error| internal::<S>(&error))?;
+            let stored = account.and_then(|account| account.password_hash);
+            Ok(self
+                .services
+                .hasher
+                .verify(Zeroizing::new(password), stored)
+                .await?)
+        }
+        .await;
+        let verdict = self.unless_internal(&slot, checked)?;
         if verdict.matches {
             self.slot_succeeded(slot);
             Ok(())
@@ -589,7 +621,8 @@ pub(crate) fn fixed_entity(kind: &str, name: &str) -> Result<EntityRef, AppError
     entity(kind, id)
 }
 
-/// The key under which failures of a signed-in or half signed-in person are counted.
+/// The key under which the wrong codes of a half-finished sign-in are counted. Only a finished
+/// second step clears it.
 pub(crate) fn person_key(person: UserId) -> String {
     format!("person:{person}")
 }

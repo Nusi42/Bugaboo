@@ -6,9 +6,12 @@
 //!   written down. A success gives the reservation back (`release`, for keys that many people
 //!   share, like a network) or clears the key (`clear`, for one account), so only real failures
 //!   stay counted (M1-F27).
-//! - A key has a **window** of a minute and `limit` tries in it. A key that used up a whole window
-//!   gets a window twice as long the next time it fails, up to [`MAX_WAIT`]: a growing wait,
-//!   never a lock for good. A window that passes without using up the allowance starts over.
+//! - A key has a **window** of a minute and `limit` tries in it. Every window that ends with at
+//!   least one failure makes the next one twice as long, up to [`MAX_WAIT`]: a growing wait, never
+//!   a lock for good. Pacing the tries just under the allowance does not help, because the
+//!   windows grow all the same. The growth is forgotten after a success (`clear`) or after a quiet
+//!   time of [`MAX_WAIT`]. Keys of a network (`bb_app::auth::NETWORK_KEY_PREFIX`) are shared by
+//!   many people and keep a window of a minute: they limit a flood, they do not grow.
 //! - A **tally** counts tries without a window (the wrong codes of one half-finished sign-in).
 //! - The keys are kept as keyed hashes in memory (a restart forgets them, which only lets a client
 //!   try again sooner). A table that is full of running counters refuses new keys (fail closed);
@@ -19,7 +22,7 @@ use std::hash::{BuildHasher as _, RandomState};
 use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 use std::time::{Duration, Instant};
 
-use bb_app::auth::FailureLimit;
+use bb_app::auth::{FailureLimit, NETWORK_KEY_PREFIX};
 
 /// Failed tries per key and window when nothing else is set (accounts, people and networks).
 pub const DEFAULT_SIGN_IN_FAILURES_PER_MINUTE: u32 = 10;
@@ -38,14 +41,16 @@ struct Tracker {
     window: Duration,
     count: u32,
     strikes: u32,
+    /// Whether the windows of this key grow (not those of a network).
+    grows: bool,
 }
 
 impl Tracker {
-    /// When the key can be forgotten: after its window, and after the time a next window would
-    /// still double it when it used up its allowance.
-    fn forget_at(&self, limit: u32) -> Instant {
+    /// When the key can be forgotten: after its window, and, while failures are still counted in
+    /// it, after the quiet time in which a next window still grows.
+    fn forget_at(&self) -> Instant {
         let end = self.started + self.window;
-        if self.count >= limit {
+        if self.grows && self.count >= 1 {
             end + MAX_WAIT
         } else {
             end
@@ -100,13 +105,13 @@ impl FailureLimits {
     }
 
     fn reserve_at(&self, key: &str, now: Instant) -> Result<bool, u64> {
+        let grows = !key.starts_with(NETWORK_KEY_PREFIX);
         let key = self.key(key);
         let mut tables = self.lock();
         if tables.trackers.len() >= MAX_KEYS && !tables.trackers.contains_key(&key) {
-            let limit = self.limit;
             tables
                 .trackers
-                .retain(|_, tracker| now < tracker.forget_at(limit));
+                .retain(|_, tracker| now < tracker.forget_at());
             if tables.trackers.len() >= MAX_KEYS {
                 return Err(BASE_WINDOW.as_secs());
             }
@@ -116,11 +121,12 @@ impl FailureLimits {
             window: BASE_WINDOW,
             count: 0,
             strikes: 0,
+            grows,
         });
         if now >= tracker.started + tracker.window {
-            // A window that used up its allowance makes the next one longer, as long as the key
-            // keeps failing; one that did not starts over.
-            let strikes = if tracker.count >= self.limit && now < tracker.forget_at(self.limit) {
+            // A window that ended with a failure makes the next one longer, however few failures
+            // it had, as long as the key keeps failing; a quiet time forgives.
+            let strikes = if grows && tracker.count >= 1 && now < tracker.forget_at() {
                 tracker.strikes.saturating_add(1)
             } else {
                 0
@@ -130,6 +136,7 @@ impl FailureLimits {
                 window: window_after(strikes),
                 count: 0,
                 strikes,
+                grows,
             };
         }
         if tracker.count >= self.limit {
@@ -248,12 +255,40 @@ mod tests {
     }
 
     #[test]
-    fn sec_14_a_window_that_was_not_used_up_starts_over_and_a_quiet_key_is_forgiven() {
+    fn sec_14_pacing_the_tries_just_under_the_allowance_does_not_dodge_the_growing_wait() {
         let failures = FailureLimits::new(3);
-        let now = Instant::now();
+        let start = Instant::now();
+        let mut now = start;
+        let mut window = 60;
+        // Two failures a window, never the third: the windows grow all the same.
+        for expected in [60, 120, 240, 480] {
+            failures.reserve_at("ada@example.test", now).unwrap();
+            failures.reserve_at("ada@example.test", now).unwrap();
+            now += secs(window);
+            window = expected * 2;
+        }
+        // The fifth window is the one after four with failures: 15 minutes at most, here 960 -> 900.
         failures.reserve_at("ada@example.test", now).unwrap();
-        // One failure in the window: the next window is the first again, not a longer one.
-        let later = now + secs(61);
+        failures.reserve_at("ada@example.test", now).unwrap();
+        failures.reserve_at("ada@example.test", now).unwrap();
+        assert_eq!(
+            failures.reserve_at("ada@example.test", now).unwrap_err(),
+            900
+        );
+        // A key that did not pace gets the first window again only after a quiet time ...
+        let quiet = now + secs(900) + MAX_WAIT + secs(1);
+        failures.reserve_at("ada@example.test", quiet).unwrap();
+        failures.reserve_at("ada@example.test", quiet).unwrap();
+        failures.reserve_at("ada@example.test", quiet).unwrap();
+        assert_eq!(
+            failures.reserve_at("ada@example.test", quiet).unwrap_err(),
+            60
+        );
+        // ... or after a success.
+        let mut later = quiet + secs(60);
+        failures.reserve_at("ada@example.test", later).unwrap();
+        failures.clear("ada@example.test");
+        later += secs(1);
         for _ in 0..3 {
             failures.reserve_at("ada@example.test", later).unwrap();
         }
@@ -261,17 +296,22 @@ mod tests {
             failures.reserve_at("ada@example.test", later).unwrap_err(),
             60
         );
-        // Used up a window, then quiet for longer than the longest wait: forgiven.
-        let much_later = later + MAX_WAIT + secs(120);
-        for _ in 0..3 {
-            failures.reserve_at("ada@example.test", much_later).unwrap();
+    }
+
+    #[test]
+    fn sec_14_the_window_of_a_network_stays_a_minute_however_often_it_fails() {
+        let failures = FailureLimits::new(2);
+        let mut now = Instant::now();
+        let mut waits = Vec::new();
+        for _ in 0..4 {
+            failures.reserve_at("net:203.0.113.0", now).unwrap();
+            failures.reserve_at("net:203.0.113.0", now).unwrap();
+            let wait = failures.reserve_at("net:203.0.113.0", now).unwrap_err();
+            waits.push(wait);
+            now += secs(wait);
         }
-        assert_eq!(
-            failures
-                .reserve_at("ada@example.test", much_later)
-                .unwrap_err(),
-            60
-        );
+        // Many people share a network, so it limits a flood and never grows into a long wait.
+        assert_eq!(waits, [60, 60, 60, 60]);
     }
 
     #[test]
@@ -293,8 +333,12 @@ mod tests {
         }
         assert!(failures.reserve_at("new key", now).is_err());
         assert!(failures.reserve_at("key7", now).is_ok());
-        // Counters that ran out make room.
-        assert!(failures.reserve_at("new key", now + secs(61)).is_ok());
+        // Counters whose window and quiet time are over make room.
+        assert!(
+            failures
+                .reserve_at("new key", now + MAX_WAIT + secs(61))
+                .is_ok()
+        );
     }
 
     #[test]

@@ -133,28 +133,33 @@ pub async fn sign_in<S: AuthStore>(ctx: &Ctx<'_, S>, input: SignIn) -> Result<St
             .collect::<String>()
     );
     let slot = ctx.reserve(key)?;
-    let account = match EmailAddress::parse(&email) {
-        Some(address) => ctx
-            .store()
-            .account_by_email(address.as_str())
-            .await
-            .map_err(|error| internal::<S>(&error))?,
-        None => None,
-    };
     let password = Zeroizing::new(password);
-    // Text that can never be a password is refused before any work is done; this tells nothing
-    // about the account.
-    let verdict = if password.chars().count() > MAX_LENGTH {
-        Verdict {
-            matches: false,
-            needs_rehash: false,
-        }
-    } else {
-        let stored = account
-            .as_ref()
-            .and_then(|account| account.password_hash.clone());
-        ctx.services.hasher.verify(password.clone(), stored).await?
-    };
+    let checked = async {
+        let account = match EmailAddress::parse(&email) {
+            Some(address) => ctx
+                .store()
+                .account_by_email(address.as_str())
+                .await
+                .map_err(|error| internal::<S>(&error))?,
+            None => None,
+        };
+        // Text that can never be a password is refused before any work is done; this tells
+        // nothing about the account.
+        let verdict = if password.chars().count() > MAX_LENGTH {
+            Verdict {
+                matches: false,
+                needs_rehash: false,
+            }
+        } else {
+            let stored = account
+                .as_ref()
+                .and_then(|account| account.password_hash.clone());
+            ctx.services.hasher.verify(password.clone(), stored).await?
+        };
+        Ok::<_, AppError>((account, verdict))
+    }
+    .await;
+    let (account, verdict) = ctx.unless_internal(&slot, checked)?;
     let Some(account) = account.filter(|_| verdict.matches) else {
         ctx.slot_failed(slot, None).await;
         ctx.note(SecurityAction::SignInFailed, None, None).await;
@@ -238,37 +243,42 @@ pub async fn second_step<S: AuthStore>(
     let now = ctx.now();
     let wrong = || AppError::Refused(ErrorCode::WrongSecondStepCode);
 
-    let two_step = ctx
-        .store()
-        .two_step(person.id)
-        .await
-        .map_err(|error| internal::<S>(&error))?
-        .filter(|step| step.confirmed);
-    let mut accepted_step = None;
-    let mut backup = None;
-    if let Some(two_step) = &two_step {
-        if is_app_code(&input.code) {
-            if let Some(secret) = ctx
-                .store()
-                .totp_secret(person.id)
-                .await
-                .map_err(|error| internal::<S>(&error))?
-            {
-                let secret = TotpSecret::from_bytes(&secret);
-                accepted_step = secret.check(
-                    &input
-                        .code
-                        .chars()
-                        .filter(|c| !c.is_whitespace())
-                        .collect::<String>(),
-                    now,
-                    two_step.last_step,
-                )?;
+    let looked = async {
+        let two_step = ctx
+            .store()
+            .two_step(person.id)
+            .await
+            .map_err(|error| internal::<S>(&error))?
+            .filter(|step| step.confirmed);
+        let mut accepted_step = None;
+        let mut backup = None;
+        if let Some(two_step) = &two_step {
+            if is_app_code(&input.code) {
+                if let Some(secret) = ctx
+                    .store()
+                    .totp_secret(person.id)
+                    .await
+                    .map_err(|error| internal::<S>(&error))?
+                {
+                    let secret = TotpSecret::from_bytes(&secret);
+                    accepted_step = secret.check(
+                        &input
+                            .code
+                            .chars()
+                            .filter(|c| !c.is_whitespace())
+                            .collect::<String>(),
+                        now,
+                        two_step.last_step,
+                    )?;
+                }
+            } else {
+                backup = code_hash(Purpose::BackupCode, &input.code);
             }
-        } else {
-            backup = code_hash(Purpose::BackupCode, &input.code);
         }
+        Ok::<_, AppError>((accepted_step, backup))
     }
+    .await;
+    let (accepted_step, backup) = ctx.unless_internal(&slot, looked)?;
     if accepted_step.is_none() && backup.is_none() {
         ctx.second_step_failed(slot, &pending, SecurityAction::SecondStepFailed)
             .await?;
@@ -309,6 +319,8 @@ pub async fn second_step<S: AuthStore>(
         if matches!(error, AppError::Refused(_)) {
             ctx.second_step_failed(slot, &pending, SecurityAction::SecondStepFailed)
                 .await?;
+        } else {
+            ctx.slot_given_back(&slot);
         }
         return Err(error);
     }
@@ -341,7 +353,7 @@ pub async fn passkey_second_step<S: AuthStore>(
         .await?;
     let person = pending.person.clone();
     let slot = ctx.reserve(person_key(person.id))?;
-    let (stored, credentials) = ctx.credentials(person.id).await?;
+    let (stored, credentials) = ctx.unless_internal(&slot, ctx.credentials(person.id).await)?;
     let rejected = || AppError::Refused(ErrorCode::PasskeyRejected);
     let check = match bb_auth::ChallengeId::parse(&input.challenge_id) {
         Some(id) => ctx.passkeys()?.finish_authentication(
@@ -360,7 +372,10 @@ pub async fn passkey_second_step<S: AuthStore>(
                 .await?;
             return Err(rejected());
         }
-        Err(error) => return Err(error.into()),
+        Err(error) => {
+            ctx.slot_given_back(&slot);
+            return Err(error.into());
+        }
     };
     let Some(used) = stored
         .iter()
@@ -385,7 +400,7 @@ pub async fn passkey_second_step<S: AuthStore>(
         pending.session.id,
         ctx.now(),
     );
-    store
+    let changed_session = store
         .record_change(&event, move |transaction| {
             Box::pin(async move {
                 S::use_passkey(transaction, used_id, data.as_deref(), now).await?;
@@ -394,7 +409,8 @@ pub async fn passkey_second_step<S: AuthStore>(
             })
         })
         .await
-        .map_err(|error| change_failed::<S>(&error, None))?;
+        .map_err(|error| change_failed::<S>(&error, None));
+    ctx.unless_internal(&slot, changed_session)?;
     ctx.second_step_done(slot, &pending);
     ctx.note(
         SecurityAction::SecondStepSucceeded,

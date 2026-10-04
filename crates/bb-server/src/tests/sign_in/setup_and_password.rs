@@ -482,3 +482,44 @@ async fn auth_09_wrong_setup_codes_are_counted_per_network_not_for_everybody() -
     })
     .await
 }
+
+#[tokio::test]
+async fn sec_14_a_failure_of_the_server_does_not_use_up_the_tries_at_setup() -> Outcome {
+    each_database("sec_14_internal_setup", async |db| {
+        let rig = Rig::start(db, 3).await?;
+        let setup = |code: &str| CompleteSetup {
+            code: code.to_owned(),
+            display_name: "Ada".to_owned(),
+            email: "ada@example.test".to_owned(),
+            password: PASSWORD.to_owned(),
+            previous_session: None,
+        };
+        rig.database
+            .rename_table_for_tests("setup_code", "setup_code_off")
+            .await?;
+        for _ in 0..5 {
+            let result = rig
+                .api()
+                .complete_setup(Rig::info(), setup("0000-0000-0000-0000"))
+                .await;
+            assert!(matches!(result, Err(AppError::Internal(_))), "{result:?}");
+        }
+        rig.database
+            .rename_table_for_tests("setup_code_off", "setup_code")
+            .await?;
+        for _ in 0..3 {
+            let result = rig
+                .api()
+                .complete_setup(Rig::info(), setup("0000-0000-0000-0000"))
+                .await;
+            assert_eq!(refused(result), Some(ErrorCode::WrongSetupCode));
+        }
+        let result = rig
+            .api()
+            .complete_setup(Rig::info(), setup(&rig.setup_code))
+            .await;
+        assert!(matches!(result, Err(AppError::Limited { .. })));
+        Ok(())
+    })
+    .await
+}

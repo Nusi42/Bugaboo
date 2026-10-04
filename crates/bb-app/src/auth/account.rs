@@ -136,16 +136,21 @@ pub async fn complete_setup<S: AuthStore>(
             .map_or_else(|| "-".to_owned(), ToString::to_string)
     ))?;
     let wrong = || AppError::Refused(ErrorCode::WrongSetupCode);
-    let stored = ctx
-        .store()
-        .setup_code()
-        .await
-        .map_err(|error| internal::<S>(&error))?;
-    let administrators = ctx
-        .store()
-        .administrators()
-        .await
-        .map_err(|error| internal::<S>(&error))?;
+    let looked = async {
+        let stored = ctx
+            .store()
+            .setup_code()
+            .await
+            .map_err(|error| internal::<S>(&error))?;
+        let administrators = ctx
+            .store()
+            .administrators()
+            .await
+            .map_err(|error| internal::<S>(&error))?;
+        Ok::<_, AppError>((stored, administrators))
+    }
+    .await;
+    let (stored, administrators) = ctx.unless_internal(&slot, looked)?;
     let typed = code_hash(Purpose::SetupCode, &input.code);
     let right = administrators == 0
         && matches!(

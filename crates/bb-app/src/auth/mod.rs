@@ -17,7 +17,7 @@ use std::future::Future;
 use std::pin::Pin;
 
 pub use account::{accept_invitation, change_password, complete_setup, issue_setup_code, sign_up};
-pub use ctx::{AppError, AuthServices, Ctx, FailureLimit, RequestInfo};
+pub use ctx::{AppError, AuthServices, Ctx, FailureLimit, NETWORK_KEY_PREFIX, RequestInfo};
 pub use invitations::{
     change_sign_up_policy, create_invitation, invitation_lookup, invitations, revoke_invitation,
     sign_up_policy,

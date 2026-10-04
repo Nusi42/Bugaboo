@@ -12,7 +12,7 @@ use std::time::Duration;
 use jiff::Timestamp;
 use sea_query::{
     DeleteStatement, Iden, InsertStatement, PostgresQueryBuilder, SchemaStatementBuilder,
-    SelectStatement, SqliteQueryBuilder, UpdateStatement,
+    SelectStatement, SqliteQueryBuilder, Table, UpdateStatement,
 };
 use sea_query_sqlx::{SqlxBinder as _, SqlxValues};
 use sqlx::postgres::{PgConnectOptions, PgPoolOptions, PgRow};
@@ -120,6 +120,22 @@ impl Database {
             Pool::Sqlite(pool) => pool.close().await,
             Pool::Postgres(pool) => pool.close().await,
         }
+    }
+
+    /// Renames a table. For tests only: they break one table on purpose, to see how a use case
+    /// behaves when the database fails half way, and put it right again afterwards. Nothing in
+    /// the program calls it.
+    ///
+    /// # Errors
+    /// Fails when the table does not exist or the name is taken.
+    #[doc(hidden)]
+    pub async fn rename_table_for_tests(&self, from: &str, to: &str) -> Result<(), StoreError> {
+        let rename = Table::rename()
+            .table(sea_query::Alias::new(from), sea_query::Alias::new(to))
+            .to_owned();
+        let mut transaction = self.begin().await?;
+        transaction.execute_schema(&rename).await?;
+        transaction.commit().await
     }
 
     /// Asks the database a trivial question; for the *ready* health check.

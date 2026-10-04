@@ -1,8 +1,9 @@
 //! Two-step sign-in with a code app and backup codes (AUTH-03).
 
 use bb_app::auth::{
-    AppError, AuthApi as _, AuthStore as _, AuthenticateQuery, ConfirmCodeApp, RemoveCodeApp,
-    RenewBackupCodes, SecondStep, SessionsQuery, StartCodeApp, Started, TwoStepQuery,
+    AppError, AuthApi as _, AuthStore as _, AuthenticateQuery, ConfirmCodeApp, PasskeySecondStep,
+    RemoveCodeApp, RenewBackupCodes, SecondStep, SessionsQuery, StartCodeApp, Started,
+    TwoStepQuery,
 };
 use bb_app::context::Clock as _;
 use bb_auth::TotpSecret;
@@ -563,5 +564,184 @@ async fn sec_12_a_stolen_session_cannot_add_a_code_app_without_the_password() ->
         );
         Ok(())
     })
+    .await
+}
+
+/// Breaks a table of the database on purpose and puts it right again.
+pub(super) async fn broken<T>(
+    rig: &Rig,
+    table: &str,
+    run: impl Future<Output = T>,
+) -> Result<T, Box<dyn std::error::Error + Send + Sync>> {
+    let off = format!("{table}_off");
+    rig.database.rename_table_for_tests(table, &off).await?;
+    let result = run.await;
+    rig.database.rename_table_for_tests(&off, table).await?;
+    Ok(result)
+}
+
+fn is_internal<T>(result: &Result<T, AppError>) -> bool {
+    matches!(result, Err(AppError::Internal(_)))
+}
+
+#[tokio::test]
+async fn sec_14_a_failure_of_the_server_does_not_use_up_the_tries_of_a_person() -> Outcome {
+    each_database("sec_14_internal_gives_the_try_back", async |db| {
+        let rig = Rig::start(db, 3).await?;
+        let admin = rig.admin("ada@example.test").await?;
+        let person = admin.person.id;
+        set_up(&rig, person, &admin.session_token).await?;
+        rig.clock.advance(30);
+        let pending = rig.sign_in("ada@example.test", PASSWORD).await?;
+
+        // The second step: the code app cannot be read, five times. None of it is a failed try.
+        let results = broken(&rig, "two_step", async {
+            let mut results = Vec::new();
+            for _ in 0..5 {
+                results.push(second_step(&rig, &pending, "000000").await);
+            }
+            results
+        })
+        .await?;
+        assert!(results.iter().all(is_internal), "{results:?}");
+        // A passkey as the second step, with the passkeys unreadable, is the same.
+        let results = broken(&rig, "passkey", async {
+            let mut results = Vec::new();
+            for _ in 0..5 {
+                results.push(
+                    rig.api()
+                        .passkey_second_step(
+                            Rig::info(),
+                            PasskeySecondStep {
+                                session_token: pending.session_token.clone(),
+                                challenge_id: "x".to_owned(),
+                                credential: serde_json::Value::Null,
+                            },
+                        )
+                        .await,
+                );
+            }
+            results
+        })
+        .await?;
+        assert!(results.iter().all(is_internal), "{results:?}");
+        // The allowance is untouched: three wrong codes are checked, the fourth waits.
+        for _ in 0..3 {
+            assert_eq!(
+                refused(second_step(&rig, &pending, "000000").await),
+                Some(ErrorCode::WrongSecondStepCode)
+            );
+        }
+        let fourth = second_step(&rig, &pending, "000000").await;
+        assert!(
+            matches!(fourth, Err(AppError::Limited { .. })),
+            "{fourth:?}"
+        );
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn sec_14_a_failure_of_the_server_does_not_use_up_the_tries_at_sign_in_and_before_a_change()
+-> Outcome {
+    each_database("sec_14_internal_sign_in_and_password_again", async |db| {
+        let rig = Rig::start(db, 3).await?;
+        let admin = rig.admin("ada@example.test").await?;
+        // The passwords cannot be read: signing in and typing the password again both fail.
+        let results = broken(&rig, "password_login", async {
+            let mut results = Vec::new();
+            for _ in 0..5 {
+                results.push(
+                    rig.sign_in("ada@example.test", "Wrong-Password-1")
+                        .await
+                        .map(|_| ()),
+                );
+                results.push(
+                    rig.api()
+                        .start_code_app(
+                            Rig::info(),
+                            StartCodeApp {
+                                session_token: admin.session_token.clone(),
+                                password: PASSWORD.to_owned(),
+                            },
+                        )
+                        .await
+                        .map(|_| ()),
+                );
+            }
+            results
+        })
+        .await?;
+        assert!(results.iter().all(is_internal), "{results:?}");
+        for _ in 0..3 {
+            assert_eq!(
+                refused(rig.sign_in("ada@example.test", "Wrong-Password-1").await),
+                Some(ErrorCode::WrongCredentials)
+            );
+        }
+        let fourth = rig.sign_in("ada@example.test", PASSWORD).await;
+        assert!(
+            matches!(fourth, Err(AppError::Limited { .. })),
+            "{fourth:?}"
+        );
+        // The same for typing the password again: three wrong ones, then the wait.
+        for _ in 0..3 {
+            let wrong = rig
+                .api()
+                .start_code_app(
+                    Rig::info(),
+                    StartCodeApp {
+                        session_token: admin.session_token.clone(),
+                        password: "Wrong-Password-1".to_owned(),
+                    },
+                )
+                .await;
+            assert_eq!(refused(wrong), Some(ErrorCode::WrongCredentials));
+        }
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn sec_14_only_a_finished_second_step_clears_the_wrong_codes_of_a_person() -> Outcome {
+    each_database(
+        "sec_14_person_key_only_cleared_by_second_step",
+        async |db| {
+            let rig = Rig::start(db, 3).await?;
+            let admin = rig.admin("ada@example.test").await?;
+            let person = admin.person.id;
+            set_up(&rig, person, &admin.session_token).await?;
+            rig.clock.advance(30);
+            let pending = rig.sign_in("ada@example.test", PASSWORD).await?;
+            for _ in 0..2 {
+                assert!(second_step(&rig, &pending, "000000").await.is_err());
+            }
+            // The person, signed in elsewhere, types the password again and gets it right: that is
+            // not a finished second step, so the wrong codes of the other sign-in stay counted.
+            let again = rig
+                .api()
+                .start_code_app(
+                    Rig::info(),
+                    StartCodeApp {
+                        session_token: admin.session_token.clone(),
+                        password: PASSWORD.to_owned(),
+                    },
+                )
+                .await;
+            assert_eq!(refused(again), Some(ErrorCode::InvalidRequest));
+            assert_eq!(
+                refused(second_step(&rig, &pending, "000000").await),
+                Some(ErrorCode::WrongSecondStepCode)
+            );
+            let fourth = second_step(&rig, &pending, "000000").await;
+            assert!(
+                matches!(fourth, Err(AppError::Limited { .. })),
+                "{fourth:?}"
+            );
+            Ok(())
+        },
+    )
     .await
 }

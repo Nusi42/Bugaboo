@@ -4,17 +4,20 @@
 //! ever lets a client try again sooner than a minute):
 //!
 //! - every request to `/api` counts against its **client network**;
-//! - every try of the sign-in family counts against the client network too, with a generous cap
-//!   against floods ([`limit_sign_in`], put on the sign-in routes);
+//! - every try of the sign-in family counts against the client's **network** too, with a generous
+//!   cap against floods ([`limit_sign_in`], put on the sign-in routes);
 //! - **failed** tries are limited per account, person and network in `crate::failures`
 //!   (`FailureLimits`): only failures count and a success clears them, so nobody can lock another
 //!   person out by merely trying their address (M1-F27).
 //!
-//! The client network is the address [`crate::logging`] works out from the connection and, for a
-//! trusted proxy, its `X-Forwarded-For` entry (never the raw header). IPv6 clients are counted
-//! by their `/64`, because one machine owns that many addresses. Going over a limit answers
+//! Two sizes of "network" are used, each defined once. The sign-in cap and the failure keys use
+//! `bb_core::network::NetworkPrefix` (IPv4 `/24`, IPv6 `/48`: the shortened address the security
+//! log also keeps), so both mean the same group of clients. The limit on all requests is more
+//! generous and counts per client address (IPv6 by the `/64`, because one machine owns that many
+//! addresses). The client address is the one [`crate::logging`] works out from the connection
+//! and, for a trusted proxy, its `X-Forwarded-For` entry (never the raw header). Going over a limit answers
 //! `429` with `Retry-After` and the message `error.rate-limit.exceeded`; it never locks anything
-//! for longer than the minute (an attacker cannot lock a person out for good).
+//! for longer than the minute here (the growing wait for failures is in `crate::failures`).
 //!
 //! Own code instead of `tower_governor`: the fixed window below is thirty lines, needs no other
 //! dependency, reads the canonical client address that the logging layer already works out, and
@@ -32,6 +35,8 @@ use axum::extract::{Request, State};
 use axum::middleware::Next;
 use axum::response::{IntoResponse as _, Response};
 use bb_core::ErrorCode;
+
+use bb_core::network::NetworkPrefix;
 
 use crate::errors::ApiError;
 use crate::failures::DEFAULT_SIGN_IN_FAILURES_PER_MINUTE;
@@ -187,7 +192,7 @@ fn make_room<K>(table: &mut Table<K>, now: Instant) {
 /// All limits of the server.
 pub struct Limits {
     requests: Window<IpAddr>,
-    sign_in_networks: Window<IpAddr>,
+    sign_in_networks: Window<NetworkPrefix>,
 }
 
 impl Limits {
@@ -222,7 +227,7 @@ impl Limits {
 
     fn check_sign_in_at(&self, client: IpAddr, now: Instant) -> Result<(), ApiError> {
         self.sign_in_networks
-            .hit(network_of(client), now)
+            .hit(NetworkPrefix::from_address(client), now)
             .map_err(too_many)
     }
 }
@@ -366,6 +371,29 @@ mod tests {
         assert!(limits.check_sign_in_at(client, now).is_err());
         // The general limit is not used up by sign-in.
         limits.check_request_at(client, now).unwrap();
+    }
+
+    #[test]
+    fn sec_14_the_sign_in_cap_counts_per_network_in_the_size_the_failure_keys_use() {
+        let limits = limits(1000, 2);
+        let now = Instant::now();
+        // IPv4: the `/24`. Two clients of one network share the cap, another network does not.
+        limits.check_sign_in_at(ip("203.0.113.7"), now).unwrap();
+        limits.check_sign_in_at(ip("203.0.113.200"), now).unwrap();
+        assert!(limits.check_sign_in_at(ip("203.0.113.9"), now).is_err());
+        limits.check_sign_in_at(ip("203.0.114.7"), now).unwrap();
+        // IPv6: the `/48`, also for an IPv4 address written as IPv6.
+        limits.check_sign_in_at(ip("2001:db8:1:2::1"), now).unwrap();
+        limits
+            .check_sign_in_at(ip("2001:db8:1:ffff::9"), now)
+            .unwrap();
+        assert!(limits.check_sign_in_at(ip("2001:db8:1:5::3"), now).is_err());
+        limits.check_sign_in_at(ip("2001:db8:2::1"), now).unwrap();
+        assert!(
+            limits
+                .check_sign_in_at(ip("::ffff:203.0.113.7"), now)
+                .is_err()
+        );
     }
 
     #[test]

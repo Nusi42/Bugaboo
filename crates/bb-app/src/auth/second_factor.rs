@@ -7,7 +7,7 @@ use bb_core::id::PasskeyId;
 use bb_core::sign_in::{SecurityAction, SessionStage, StoredPasskey, TwoStep};
 use serde_json::json;
 
-use super::ctx::{AppError, Ctx, by, change_failed, changed, entity, internal, person_key, set_to};
+use super::ctx::{AppError, Ctx, by, change_failed, changed, entity, internal, set_to};
 use super::store::AuthStore;
 use super::types::{
     AddPasskey, BackupCodes, CodeAppSetup, ConfirmCodeApp, Done, MAX_PASSKEYS_LISTED,
@@ -302,21 +302,22 @@ pub async fn confirm_code_app<S: AuthStore>(
         .map_err(|error| internal::<S>(&error))?
         .ok_or(ErrorCode::InvalidRequest)?;
     let typed: String = input.code.chars().filter(|c| !c.is_whitespace()).collect();
-    let slot = ctx.reserve(person_key(person))?;
-    let Some(step) =
-        TotpSecret::from_bytes(&secret).check(&typed, ctx.now(), two_step.last_step)?
-    else {
+    let slot = ctx.reserve(format!("code-app:{person}"))?;
+    let checked = TotpSecret::from_bytes(&secret)
+        .check(&typed, ctx.now(), two_step.last_step)
+        .map_err(AppError::from);
+    let Some(step) = ctx.unless_internal(&slot, checked)? else {
         ctx.slot_failed(slot, Some(person)).await;
         return Err(ErrorCode::WrongSecondStepCode.into());
     };
-    let (shown, hashes) = new_backup_codes()?;
+    let (shown, hashes) = ctx.unless_internal(&slot, new_backup_codes())?;
     let event = ctx.event(
         by(person),
         entity("person", person)?,
         vec![changed("two_step")],
     )?;
     let store = ctx.store();
-    store
+    let written = store
         .record_change(&event, move |transaction| {
             Box::pin(async move {
                 if !S::accept_totp_step(transaction, person, step).await? {
@@ -327,7 +328,8 @@ pub async fn confirm_code_app<S: AuthStore>(
             })
         })
         .await
-        .map_err(|error| change_failed::<S>(&error, Some(ErrorCode::WrongSecondStepCode)))?;
+        .map_err(|error| change_failed::<S>(&error, Some(ErrorCode::WrongSecondStepCode)));
+    ctx.unless_internal(&slot, written)?;
     ctx.slot_succeeded(slot);
     ctx.note(SecurityAction::TwoStepEnabled, Some(person), None)
         .await;
