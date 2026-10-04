@@ -18,10 +18,13 @@ const GIT_HOOKS: [(&str, &str); 3] = [
     ("commit-msg", "cargo xtask check commit-msg {1}"),
 ];
 
-/// The only command the Claude Code `PostToolUse` hook runs. The OneDrive guard comes first and
-/// needs no build, because it has to stop everything before cargo compiles xtask in the master
-/// repository (ADR-0024).
-const POST_EDIT: &str = r#"case "$CLAUDE_PROJECT_DIR" in *OneDrive*) exit 0;; esac; cd "$CLAUDE_PROJECT_DIR" && cargo xtask hook post-edit"#;
+/// The only command the Claude Code `PostToolUse` hook runs. The session (and every agent it
+/// starts) may run in the master repository, so the command decides from the EDITED FILE, not
+/// from `$CLAUDE_PROJECT_DIR`: it finds the nearest folder above the file that has `.git` and
+/// `xtask/Cargo.toml`, skips files in OneDrive and files outside any work folder, and runs that
+/// work folder's own `cargo xtask hook post-edit` (ADR-0024). It needs no build before the
+/// OneDrive test, so nothing is ever compiled in the master.
+const POST_EDIT: &str = r#"in=$(cat); f=$(printf '%s' "$in" | sed -n 's/.*"\(file_path\|notebook_path\)" *: *"\([^"]*\)".*/\2/p' | head -n 1 | tr '\134' '/' | sed 's#//*#/#g'); [ -n "$f" ] || exit 0; d=$(dirname "$f"); while [ ! -f "$d/xtask/Cargo.toml" ] || [ ! -e "$d/.git" ]; do p=$(dirname "$d"); [ "$p" = "$d" ] && exit 0; d=$p; done; case "$d" in *OneDrive*) exit 0;; esac; cd "$d" && printf '%s' "$in" | cargo xtask hook post-edit"#;
 
 /// The tools whose use triggers the `PostToolUse` hook.
 const POST_EDIT_MATCHER: &str = "Edit|Write|MultiEdit|NotebookEdit";
