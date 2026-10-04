@@ -160,8 +160,19 @@ pub(crate) struct Output {
 
 /// Runs a program in `cwd` and collects its output.
 pub(crate) fn run(program: &Path, args: &[&str], cwd: &Path) -> anyhow::Result<Output> {
+    run_with_env(program, args, cwd, &[])
+}
+
+/// Like [`run`], with extra environment variables.
+pub(crate) fn run_with_env(
+    program: &Path,
+    args: &[&str],
+    cwd: &Path,
+    env: &[(&str, &str)],
+) -> anyhow::Result<Output> {
     let out = Command::new(program)
         .args(args)
+        .envs(env.iter().copied())
         .current_dir(cwd)
         .output()
         .with_context(|| format!("could not start {}", program.display()))?;

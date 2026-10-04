@@ -118,6 +118,9 @@ pub(crate) fn run(root: &Path) -> anyhow::Result<bool> {
         child: spawn(
             Command::new(server)
                 .args(["serve", "--port", &ports.server.to_string()])
+                // Development runs on this computer only, so plain HTTP is allowed (SEC-10); its
+                // data stays inside the work folder's build folder.
+                .args(["--tls", "off", "--data-dir", "target/dev-data"])
                 .current_dir(root),
             "bugaboo server",
         )?,

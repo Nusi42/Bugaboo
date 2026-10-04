@@ -17,5 +17,6 @@ The structure follows the arc42 template (shortened) with C4-style diagrams as M
 | 9 | [Tech stack](09-tech-stack.md) |
 | 10 | [Architecture checks](10-checks.md) |
 | 11 | [Testing, sample data and local ports](11-testing.md) |
+| 12 | [Security: threat model and personal-data flows](12-security.md) |
 
 The commentable HTML version (`../03-architecture.html`) is **generated** from these files and the ADRs by `cargo xtask docs` — edit the Markdown, never the HTML.

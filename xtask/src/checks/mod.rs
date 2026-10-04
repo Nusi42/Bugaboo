@@ -9,6 +9,7 @@ mod arch_deps;
 mod arch_map_sync;
 mod arch_no_unsafe;
 mod build_location;
+mod data_logs;
 pub(crate) mod data_migrations;
 mod dep_licenses;
 mod dep_register;
@@ -40,6 +41,7 @@ pub(crate) mod meta_suppress;
 mod meta_wiring;
 mod node_tool;
 mod plan_trace;
+mod sec_headers;
 mod sec_secrets;
 mod sty_contrast;
 mod txt_catalog;
@@ -115,6 +117,8 @@ pub(crate) fn registry() -> Vec<Box<dyn Check>> {
         Box::new(arch_db_parity::ArchDbParity),
         Box::new(data_migrations::DataMigrations),
         Box::new(sec_secrets::SecSecrets),
+        Box::new(sec_headers::SecHeaders),
+        Box::new(data_logs::DataLogs),
         Box::new(dep_register::DepRegister),
         Box::new(dep_licenses::DepLicenses),
         Box::new(git_files::GitFiles),

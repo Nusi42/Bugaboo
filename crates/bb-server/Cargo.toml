@@ -14,7 +14,14 @@ path = "src/main.rs"
 anyhow = { workspace = true }
 bb-api = { path = "../bb-api" }
 clap = { workspace = true }
+serde_json = { workspace = true }
 tokio = { workspace = true, features = ["macros", "net", "rt-multi-thread", "signal"] }
+toml = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }
 
 [lints]
 workspace = true

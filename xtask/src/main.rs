@@ -13,6 +13,7 @@ mod ci;
 mod db;
 mod dev;
 mod docs;
+mod fakecc;
 #[path = "gen/mod.rs"]
 mod generate;
 mod hook;
@@ -52,8 +53,12 @@ enum Command {
     },
     /// Start the Vite dev server and the Bugaboo server on the ports from tools/dev/ports.json.
     Dev,
-    /// Build the browser app, then the release binary.
-    Build,
+    /// Build the browser app, then the release binary (one file, browser app inside).
+    Build {
+        /// Build for another system, such as x86_64-unknown-linux-musl (DIST-01).
+        #[arg(long)]
+        target: Option<String>,
+    },
     /// Everything CI runs: checks, tests, browser build, browser tests.
     Ci,
     /// The throwaway PostgreSQL for the repository tests (architecture §11, "Database tests").
@@ -139,6 +144,9 @@ enum CheckScope {
 }
 
 fn main() -> ExitCode {
+    if fakecc::requested() {
+        return fakecc::run();
+    }
     match run() {
         Ok(code) => code,
         Err(error) => {
@@ -184,7 +192,10 @@ fn run() -> anyhow::Result<ExitCode> {
             Ok(ExitCode::SUCCESS)
         }
         Command::Dev => Ok(steps::exit_code(dev::run(repo.root())?)),
-        Command::Build => Ok(steps::exit_code(build::run(repo.root())?)),
+        Command::Build { target } => Ok(steps::exit_code(build::run(
+            repo.root(),
+            target.as_deref(),
+        )?)),
         Command::Ci => Ok(steps::exit_code(ci::run(repo.root())?)),
         Command::Db { action } => {
             let action = match action {

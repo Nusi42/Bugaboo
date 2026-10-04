@@ -30,3 +30,13 @@ Read this before every task. The docs in `docs/` are the source of truth; this f
 - **Rust:** no `unsafe`, no `unwrap`/`expect`/`panic!`/`dbg!`/`println!` outside tests and CLI output; errors are typed.
 - **Commits:** Conventional Commits (`feat(xtask): …`, `fix(web): …`), one logical change each, ending with the attribution lines the session gives you.
 - **A new check** needs four things: the rule in the docs, an entry in `tools/checks/catalog.toml`, the implementation in `xtask/src/checks/`, and a failing plus a passing example (a fixture folder or `bad_example`/`good_example` tests).
+
+## If you are the lead (the main session)
+
+A new session picks up the work like this:
+
+1. Find the current milestone: the highest `docs/milestones/Mx/` without an `mx-done` tag (`git tag`). Its `README.md` has the status of every work package.
+2. Check the builder branches: `git log --oneline main..origin/WINn` in `bugaboo.win1` after `git fetch`. A package marked *building* with no running builder (builders belong to the session that started them) and commits on its branch is finished or half-finished: check `cargo xtask ci` in its folder, then review it or start a builder to finish it.
+3. Follow "How we work" in `docs/04-milestones.md`: builders (Sonnet) in `bugaboo.win2` and up, reset to `main` first; reviewers with a fresh context; merge into `WIN1`, `cargo xtask ci`, push `WIN1`, `git merge --ff-only WIN1` in the master.
+4. Every builder prompt repeats the rules in this file and names the work package file, the folder and the branch; the builder reports the commands it ran and their results.
+5. The maintainer reviews on a phone: milestone review pages and changed design docs are published as commentable HTML pages; replies stay short and name feature IDs.

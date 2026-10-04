@@ -453,10 +453,10 @@ status = "planned"
 id = "SEC-HEADERS"
 title = "Running server sends the required security headers and CSP"
 rule = "SEC-11"
-tool = "integration test"
-when = ["ci"]
+tool = "xtask (header table and tests agree with SEC-11) + integration tests in crates/bb-api/tests"
+when = ["edit", "commit", "ci"]
 files = ["crates/bb-api/**"]
-status = "planned"
+status = "active"
 
 [[check]]
 id = "SEC-ADVISORIES"
@@ -481,10 +481,10 @@ status = "planned"
 id = "DATA-LOGS"
 title = "No names, e-mail addresses or free text in log statements"
 rule = "architecture §7 (Observability), PRIV-01"
-tool = "ast-grep (tracing macros with personal fields)"
+tool = "xtask (reads every tracing macro in product code)"
 when = ["edit", "commit", "ci"]
 files = ["crates/**/*.rs"]
-status = "planned"
+status = "active"
 
 [[check]]
 id = "DATA-MIGRATIONS"

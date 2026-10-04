@@ -38,7 +38,7 @@ impl Check for DepRegister {
         let npm = npm_dependencies(root, &files)?;
         let mut findings = compare(&rows, &rust, &npm);
         let locked = Locked {
-            rust: cargo_lock_versions(&fs::read_to_string(root.join("Cargo.lock"))?)?,
+            rust: metadata::load_direct_versions(root)?,
             npm: npm_lock_versions(root, &files)?,
         };
         findings.extend(compare_versions(&rows, &locked));
@@ -54,7 +54,8 @@ struct Rows {
     npm: BTreeMap<String, String>,
 }
 
-/// Name -> every version the lockfiles contain.
+/// Name -> the versions the lockfiles pin for direct dependencies (Rust: only what workspace
+/// members depend on, so a transitive duplicate cannot satisfy a row, M0-F10).
 type Versions = BTreeMap<String, BTreeSet<String>>;
 
 struct Locked {
@@ -141,29 +142,6 @@ fn npm_dependencies(root: &Path, files: &[String]) -> anyhow::Result<BTreeSet<St
         }
     }
     Ok(names)
-}
-
-/// Every `[[package]]` name and version in `Cargo.lock`.
-fn cargo_lock_versions(text: &str) -> anyhow::Result<Versions> {
-    let lock: toml::Value = toml::from_str(text).context("Cargo.lock is not valid TOML")?;
-    let mut versions = Versions::new();
-    for package in lock
-        .get("package")
-        .and_then(toml::Value::as_array)
-        .into_iter()
-        .flatten()
-    {
-        if let (Some(name), Some(version)) = (
-            package.get("name").and_then(toml::Value::as_str),
-            package.get("version").and_then(toml::Value::as_str),
-        ) {
-            versions
-                .entry(name.to_owned())
-                .or_default()
-                .insert(version.to_owned());
-        }
-    }
-    Ok(versions)
 }
 
 /// Versions of top-level packages (`node_modules/<name>`) in every `package-lock.json`.
@@ -353,9 +331,7 @@ mod tests {
     }
 
     #[test]
-    fn lockfiles_are_read() {
-        let rust = cargo_lock_versions("[[package]]\nname = \"a\"\nversion = \"1.2.3\"\n").unwrap();
-        assert!(rust["a"].contains("1.2.3"));
+    fn the_npm_lockfile_is_read() {
         let temp = TempDir::new("register-npm-lock");
         temp.write(
             "package-lock.json",

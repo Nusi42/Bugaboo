@@ -337,7 +337,10 @@ fn lock_is_installed(lock: &serde_json::Value, installed: &serde_json::Value) ->
     wanted
         .iter()
         .filter(|(key, entry)| {
-            !key.is_empty() && entry.get("link").and_then(serde_json::Value::as_bool) != Some(true)
+            // Workspace folders (`web/app`) are not in npm's hidden lockfile (M0-F12); only what
+            // lives below `node_modules/` is compared.
+            key.starts_with("node_modules/")
+                && entry.get("link").and_then(serde_json::Value::as_bool) != Some(true)
         })
         .all(|(key, entry)| {
             have.and_then(|have| have.get(key)).is_some_and(|there| {
@@ -492,5 +495,19 @@ mod tests {
         assert!(lock_is_installed(&lock, &lock.clone()));
         assert!(!lock_is_installed(&lock, &newer));
         assert!(!lock_is_installed(&lock, &empty));
+    }
+
+    #[test]
+    fn npm_workspace_folders_do_not_count_as_missing_packages() {
+        let lock: serde_json::Value = serde_json::from_str(
+            r#"{"packages":{"":{},"web/app":{"version":"0.0.0"},
+                "node_modules/a":{"version":"1.0.0","integrity":"x"}}}"#,
+        )
+        .unwrap();
+        let installed: serde_json::Value = serde_json::from_str(
+            r#"{"packages":{"node_modules/a":{"version":"1.0.0","integrity":"x"}}}"#,
+        )
+        .unwrap();
+        assert!(lock_is_installed(&lock, &installed));
     }
 }

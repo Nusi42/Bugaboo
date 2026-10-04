@@ -9,7 +9,7 @@
 
 ## Tasks
 
-1. **Passwords (AUTH-01):** Argon2id (argon2 0.6) with parameters from OWASP's current guidance, stored as PHC strings, re-hash on sign-in when parameters change; minimum length 12, no composition rules; check against a bundled breached-password list (k-anonymity range file, no network call); constant-time comparison and equal timing for unknown accounts.
+1. **Passwords (AUTH-01):** Argon2id (argon2 0.6) with the parameters in architecture §7 (19 MiB, 2 iterations, 1 lane), stored as PHC strings, re-hash on sign-in when parameters change; minimum length 12, no composition rules; check against a bundled breached-password list (k-anonymity range file, no network call); constant-time comparison and equal timing for unknown accounts.
 2. **Sessions (SEC-12):** random 256-bit session IDs stored hashed; `__Host-` cookie via the WP-06 cookie module; idle and absolute timeouts; new ID after sign-in and privilege change; people can list their sessions and end any of them ("sign out everywhere" included); CSRF with synchronizer token for unsafe methods plus `Origin` check.
 3. **Two-step codes (AUTH-03):** TOTP (totp-rs 6) with QR in the setup flow, ten single-use backup codes stored hashed; admins can require it per role (the setting is declared now; it takes effect once roles exist in M2).
 4. **Passkeys (AUTH-02):** webauthn-rs 0.5.5 registration and sign-in; relying party ID from start-up config; usable both as the second step and for signing in without a password.

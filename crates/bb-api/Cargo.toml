@@ -7,16 +7,22 @@ rust-version.workspace = true
 publish.workspace = true
 
 [dependencies]
-axum = { workspace = true, features = ["http1", "tokio"] }
+axum = { workspace = true, features = ["http1", "http2", "matched-path", "tokio"] }
+hyper-util = { workspace = true, features = ["http1", "http2", "server-auto", "service", "tokio"] }
 mime_guess = { workspace = true }
+rcgen = { workspace = true }
 rust-embed = { workspace = true }
-tokio = { workspace = true, features = ["fs", "net"] }
-tower-http = { workspace = true, features = ["set-header"] }
+rustls = { workspace = true }
+tokio = { workspace = true, features = ["fs", "net", "rt", "sync", "time"] }
+tokio-rustls = { workspace = true }
+tower-http = { workspace = true, features = ["compression-br", "compression-gzip", "set-header"] }
+tracing = { workspace = true }
 
 [dev-dependencies]
 tempfile = { workspace = true }
-tokio = { workspace = true, features = ["macros", "rt"] }
+tokio = { workspace = true, features = ["io-util", "macros", "rt-multi-thread"] }
 tower = { workspace = true, features = ["util"] }
+tracing-subscriber = { workspace = true }
 
 [lints]
 workspace = true
