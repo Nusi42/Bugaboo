@@ -35,4 +35,6 @@ pub use web::WebSource;
 
 // Used by the integration tests in `tests/` only (`unused_crate_dependencies`).
 #[cfg(test)]
+use h2 as _;
+#[cfg(test)]
 use tracing_subscriber as _;

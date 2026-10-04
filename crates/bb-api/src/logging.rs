@@ -21,6 +21,7 @@ use crate::listener::ClientAddr;
 /// Returned on every response, so a person can quote it when asking for help.
 pub(crate) const REQUEST_ID_HEADER: &str = "x-request-id";
 const FORWARDED_FOR: &str = "x-forwarded-for";
+const FORWARDED_PROTO: &str = "x-forwarded-proto";
 /// Logged for requests that no route pattern matched (files of the browser app, unknown paths).
 const NO_ROUTE: &str = "-";
 /// Random bytes in a request ID (shown as twice as many hex digits).
@@ -35,6 +36,17 @@ pub(crate) struct RequestId(pub(crate) String);
 /// [`client_of`] works out, never the raw header.
 #[derive(Clone, Copy, Debug)]
 pub(crate) struct ClientIp(pub(crate) IpAddr);
+
+/// Whether the connection itself is encrypted; put into every request by the server.
+#[derive(Clone, Copy, Debug)]
+pub(crate) struct ConnectionTls(pub(crate) bool);
+
+/// The scheme browsers used to reach the server: `https` when the connection is TLS, or when a
+/// trusted proxy says so (`X-Forwarded-Proto`, with the same trust rule as the client address:
+/// only from a listed proxy, only the last entry of the last line); otherwise `http`, which only
+/// happens on this computer or between a proxy and the server.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) struct Scheme(pub(crate) &'static str);
 
 /// What the request log needs to know about the deployment.
 #[derive(Clone)]
@@ -78,6 +90,8 @@ pub(crate) async fn log_request(
         .to_owned();
     let client = client_of(&request, &context.trusted_proxies);
     let network = client.map(truncate);
+    let scheme = scheme_of(&request, &context.trusted_proxies);
+    request.extensions_mut().insert(scheme);
     request.extensions_mut().insert(RequestId(id.clone()));
     if let Some(address) = client {
         request.extensions_mut().insert(ClientIp(address));
@@ -126,18 +140,38 @@ fn client_of(request: &Request, trusted: &[IpAddr]) -> Option<IpAddr> {
     Some(forwarded.unwrap_or(peer))
 }
 
-/// IPv4 keeps three bytes, IPv6 the first 48 bits; the rest is replaced by zeros.
-pub(crate) fn truncate(address: IpAddr) -> String {
-    match address.to_canonical() {
-        IpAddr::V4(v4) => {
-            let [a, b, c, _] = v4.octets();
-            format!("{a}.{b}.{c}.0")
-        }
-        IpAddr::V6(v6) => {
-            let [a, b, c, ..] = v6.segments();
-            format!("{a:x}:{b:x}:{c:x}::")
-        }
+fn scheme_of(request: &Request, trusted: &[IpAddr]) -> Scheme {
+    const HTTPS: Scheme = Scheme("https");
+    if request
+        .extensions()
+        .get::<ConnectionTls>()
+        .is_some_and(|tls| tls.0)
+    {
+        return HTTPS;
     }
+    let from_trusted_proxy = request
+        .extensions()
+        .get::<ConnectInfo<ClientAddr>>()
+        .is_some_and(|ConnectInfo(ClientAddr(peer))| trusted.contains(&peer.ip().to_canonical()));
+    let says_https = request
+        .headers()
+        .get_all(FORWARDED_PROTO)
+        .iter()
+        .next_back()
+        .and_then(|line| line.to_str().ok())
+        .and_then(|line| line.rsplit(',').next())
+        .is_some_and(|last| last.trim().eq_ignore_ascii_case("https"));
+    if from_trusted_proxy && says_https {
+        HTTPS
+    } else {
+        Scheme("http")
+    }
+}
+
+/// The address cut short (IPv4 `/24`, IPv6 `/48`); the rule lives in `bb-core` because the
+/// security log uses the same one.
+pub(crate) fn truncate(address: IpAddr) -> String {
+    bb_core::network::NetworkPrefix::from_address(address).to_string()
 }
 
 #[cfg(test)]
@@ -169,6 +203,29 @@ mod tests {
             truncate("::ffff:203.0.113.77".parse().unwrap()),
             "203.0.113.0"
         );
+    }
+
+    #[test]
+    fn sec_06_the_scheme_is_https_for_tls_or_a_trusted_proxy_only() {
+        let trusted = [IpAddr::from([10, 0, 0, 5])];
+        let scheme = |peer: &str, proto: &[&str], tls: bool| {
+            let mut request = request(peer, &[]);
+            for line in proto {
+                request
+                    .headers_mut()
+                    .append(FORWARDED_PROTO, line.parse().unwrap());
+            }
+            request.extensions_mut().insert(ConnectionTls(tls));
+            scheme_of(&request, &trusted).0
+        };
+        assert_eq!(scheme("198.51.100.9:1", &[], true), "https");
+        assert_eq!(scheme("198.51.100.9:1", &[], false), "http");
+        // The header is believed only from a trusted proxy, and only its last entry.
+        assert_eq!(scheme("198.51.100.9:1", &["https"], false), "http");
+        assert_eq!(scheme("10.0.0.5:1", &["https"], false), "https");
+        assert_eq!(scheme("10.0.0.5:1", &["https, http"], false), "http");
+        assert_eq!(scheme("10.0.0.5:1", &["http", "HTTPS"], false), "https");
+        assert_eq!(scheme("[::ffff:10.0.0.5]:1", &["https"], false), "https");
     }
 
     #[test]

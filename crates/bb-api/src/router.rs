@@ -25,8 +25,8 @@ use hyper_util::service::TowerToHyperService;
 use tokio::sync::watch;
 use tokio::task::JoinSet;
 
-use crate::listener::{Accepted, ClientAddr, Incoming};
-use crate::logging::{LogContext, log_request};
+use crate::listener::{Accepted, ClientAddr, Connection, Incoming};
+use crate::logging::{ConnectionTls, LogContext, log_request};
 use crate::web::{INDEX, WebSource, decode_path};
 
 const HEALTH_LIVE_BODY: &str = r#"{"status":"ok"}"#;
@@ -116,9 +116,11 @@ pub async fn serve(
             accepted = incoming.accept() => accepted,
         };
         let Some(accepted) = accepted else { break };
+        let tls = matches!(accepted.io, Connection::Tls(_));
         let service = TowerToHyperService::new(
             app.clone()
-                .layer(Extension(ConnectInfo(ClientAddr(accepted.peer)))),
+                .layer(Extension(ConnectInfo(ClientAddr(accepted.peer))))
+                .layer(Extension(ConnectionTls(tls))),
         );
         let mut stopped = stopped.clone();
         tasks.spawn(async move {

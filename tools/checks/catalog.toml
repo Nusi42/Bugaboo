@@ -278,19 +278,19 @@ status = "active"
 id = "ARCH-SQL-EDGE"
 title = "Only bb-store touches the database; no SQL text built with format! anywhere"
 rule = "ADR-0003, SEC-17"
-tool = "xtask (cargo metadata) + ast-grep"
+tool = "xtask (cargo metadata for dependencies; source scan for sqlx calls and SQL built as text)"
 when = ["edit", "commit", "ci"]
-files = ["crates/**/*.rs"]
-status = "planned"
+files = ["crates/**/*.rs", "**/Cargo.toml"]
+status = "active"
 
 [[check]]
 id = "ARCH-EVENTS"
 title = "Every command use case appends a domain event"
 rule = "ADR-0007"
-tool = "generated test: runs every command against fakes and asserts an event"
-when = ["ci"]
+tool = "xtask (every command use case in bb-app calls record_change of the ChangeStore port; comments and strings do not count); the generated test that runs each command against the fakes follows with the first use cases (M1-F18)"
+when = ["edit", "commit", "ci"]
 files = ["crates/bb-app/**"]
-status = "planned"
+status = "active"
 
 [[check]]
 id = "ARCH-VERSIONED"
@@ -338,7 +338,7 @@ status = "active"
 id = "ARCH-SETTINGS"
 title = "Settings are only read and written through the settings registry"
 rule = "ADR-0018"
-tool = "xtask (declarations and key literals; the storage part comes with the store)"
+tool = "xtask (declarations and key literals; the table of setting values is named in the settings repository only)"
 when = ["edit", "commit", "ci"]
 files = ["crates/**/*.rs"]
 status = "active"
@@ -401,7 +401,7 @@ status = "active"
 id = "ARCH-DB-PARITY"
 title = "Repository tests ran on both SQLite and PostgreSQL"
 rule = "ADR-0003"
-tool = "xtask (reads target/db-parity.txt written by the test harness)"
+tool = "xtask (`db run` checks target/db-parity.txt right after the tests; the check verifies ci runs the tests through `db run`)"
 when = ["ci"]
 files = ["crates/bb-store/**", "crates/bb-testing/**"]
 status = "active"

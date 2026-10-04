@@ -46,6 +46,9 @@ const PERIOD: Duration = Duration::from_mins(1);
 /// [`Overflow`].
 const MAX_CLIENTS: usize = 100_000;
 
+/// A full table is swept for expired counters at most this often.
+const SWEEP_EVERY: Duration = Duration::from_secs(1);
+
 /// Requests of the whole API, per client network and minute, when nothing else is set.
 pub const DEFAULT_REQUESTS_PER_MINUTE: u32 = 600;
 
@@ -88,7 +91,18 @@ enum Overflow<K> {
 struct Window<K> {
     limit: u32,
     overflow: Overflow<K>,
-    entries: Mutex<HashMap<K, Entry>>,
+    table: Mutex<Table<K>>,
+}
+
+/// The counters of one window.
+struct Table<K> {
+    entries: HashMap<K, Entry>,
+    /// When expired entries were last swept out. A full table is swept at most once per
+    /// [`SWEEP_EVERY`], so a flood cannot make every request scan 100,000 entries.
+    last_sweep: Option<Instant>,
+    /// How many sweeps ran (tests count them).
+    #[cfg(test)]
+    sweeps: u32,
 }
 
 impl<K: Hash + Eq + Clone> Window<K> {
@@ -96,17 +110,34 @@ impl<K: Hash + Eq + Clone> Window<K> {
         Self {
             limit,
             overflow,
-            entries: Mutex::new(HashMap::new()),
+            table: Mutex::new(Table {
+                entries: HashMap::new(),
+                last_sweep: None,
+                #[cfg(test)]
+                sweeps: 0,
+            }),
         }
     }
 
     /// Counts one event. `Err` holds the seconds to wait (at least one) when the key is over
     /// the limit.
     fn hit(&self, key: K, now: Instant) -> Result<(), u64> {
-        let mut entries = self.entries.lock().unwrap_or_else(PoisonError::into_inner);
+        let mut table = self.table.lock().unwrap_or_else(PoisonError::into_inner);
+        let table = &mut *table;
+        let entries = &mut table.entries;
         let mut key = key;
         if entries.len() >= MAX_CLIENTS && !entries.contains_key(&key) {
-            entries.retain(|_, entry| now.duration_since(entry.started) < PERIOD);
+            let due = table
+                .last_sweep
+                .is_none_or(|last| now.saturating_duration_since(last) >= SWEEP_EVERY);
+            if due {
+                entries.retain(|_, entry| now.duration_since(entry.started) < PERIOD);
+                table.last_sweep = Some(now);
+                #[cfg(test)]
+                {
+                    table.sweeps += 1;
+                }
+            }
             if entries.len() >= MAX_CLIENTS {
                 match &self.overflow {
                     Overflow::Share(shared) => key = shared.clone(),
@@ -404,12 +435,32 @@ mod tests {
         // New clients share one counter: the first passes, the next are over the limit.
         window.hit(u32::MAX - 1, now).unwrap();
         assert!(window.hit(u32::MAX - 2, now).is_err());
-        assert!(window.entries.lock().unwrap().len() <= MAX_CLIENTS + 1);
+        assert!(window.table.lock().unwrap().entries.len() <= MAX_CLIENTS + 1);
         assert!(window.hit(7, now).is_err());
         // Expired counters make room again.
         let later = now + PERIOD + Duration::from_secs(1);
         window.hit(u32::MAX - 3, later).unwrap();
         window.hit(8, later).unwrap();
+    }
+
+    #[test]
+    fn sec_14_a_full_table_is_swept_at_most_once_a_second_not_on_every_request() {
+        let window: Window<u32> = Window::new(1, Overflow::Share(u32::MAX));
+        let now = Instant::now();
+        fill(&window, now);
+        for new in 0..1000 {
+            let _ = window.hit(
+                u32::try_from(MAX_CLIENTS).unwrap() + new,
+                now + Duration::from_millis(u64::from(new)),
+            );
+        }
+        // 1000 requests over about one second: one sweep, maybe two at the second's edge.
+        let sweeps = window.table.lock().unwrap().sweeps;
+        assert!((1..=2).contains(&sweeps), "{sweeps}");
+        // Much later the sweep runs again and frees the expired counters.
+        let later = now + PERIOD + Duration::from_secs(5);
+        window.hit(u32::MAX - 5, later).unwrap();
+        assert!(window.table.lock().unwrap().entries.len() < 10);
     }
 
     #[test]

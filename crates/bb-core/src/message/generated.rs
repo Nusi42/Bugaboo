@@ -88,6 +88,9 @@ pub const SERVER_DATABASE_POSTGRES: MessageKey = MessageKey::new("server.databas
 /// The message `server.database-sqlite`.
 pub const SERVER_DATABASE_SQLITE: MessageKey = MessageKey::new("server.database-sqlite");
 
+/// The message `server.keys-missing`.
+pub const SERVER_KEYS_MISSING: MessageKey = MessageKey::new("server.keys-missing");
+
 /// The message `server.not-found`.
 pub const SERVER_NOT_FOUND: MessageKey = MessageKey::new("server.not-found");
 
@@ -567,6 +570,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("server.database-postgres", "Database: PostgreSQL."),
     ("server.database-sqlite", "Database: SQLite."),
     ("server.error", "Error: {message}"),
+    (
+        "server.keys-missing",
+        "The data folder has stored secrets or a security log, but its key files in the keys folder are missing. Restore them from your backup. Bugaboo does not make new keys, because the stored secrets could never be read again.",
+    ),
     (
         "server.listening",
         "Bugaboo is running at {address}. Stop it with Ctrl+C.",

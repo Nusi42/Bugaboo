@@ -2,8 +2,9 @@
 //!
 //! The test harness (`bb-testing`) appends one line per finished run to `target/db-parity.txt`:
 //! `<database> <test name>`. `cargo xtask db run` (used by `cargo xtask ci`) deletes the record
-//! before the tests and checks it afterwards. Without a record the tests have not run yet, so a
-//! plain `check all` passes; a record that exists has to show every test on both databases.
+//! before the tests and checks it right afterwards; only that run decides. A record left on disk
+//! can be from an older state of the code, so `check all` never reads it: the check here makes
+//! sure `cargo xtask ci` runs the Rust tests through `db run`, where the record is checked.
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
@@ -24,15 +25,28 @@ impl Check for ArchDbParity {
     }
 
     fn run(&self, context: &Context<'_>) -> anyhow::Result<Vec<Finding>> {
-        let path = context.repo.path(RECORD_PATH);
-        let Ok(record) = fs::read_to_string(&path) else {
-            return Ok(Vec::new());
-        };
-        Ok(problems(&record)
+        let path = context.repo.path(CI_SOURCE);
+        let text = fs::read_to_string(&path).unwrap_or_default();
+        Ok(wiring_problem(&text)
+            .map(|message| Finding::at(CI_SOURCE, message))
             .into_iter()
-            .map(|message| Finding::at(RECORD_PATH, message))
             .collect())
     }
+}
+
+/// The file that lists the steps of `cargo xtask ci`.
+const CI_SOURCE: &str = "xtask/src/ci.rs";
+
+/// The step that runs the repository tests on both databases and then checks the record.
+const TEST_STEP: &str = r#"&["db", "run", "--", "cargo", "test", "--workspace"]"#;
+
+/// Why the CI steps would not check the record, if they would not.
+fn wiring_problem(ci_source: &str) -> Option<String> {
+    (!ci_source.contains(TEST_STEP)).then(|| {
+        format!(
+            "`cargo xtask ci` has to run the Rust tests as `{TEST_STEP}`, so the tests run on both databases and the record is checked right after them."
+        )
+    })
 }
 
 /// The tests that ran, per database.
@@ -105,5 +119,17 @@ mod tests {
     #[test]
     fn bad_example_an_empty_record_means_nothing_ran() {
         assert_eq!(problems("").len(), 1);
+    }
+
+    #[test]
+    fn bad_example_ci_without_db_run_is_reported() {
+        let ci = r#"steps(&["cargo", "test", "--workspace"])"#;
+        assert!(wiring_problem(ci).is_some());
+    }
+
+    #[test]
+    fn good_example_ci_runs_the_tests_through_db_run() {
+        let ci = r#"step("Rust tests", &["db", "run", "--", "cargo", "test", "--workspace"])"#;
+        assert!(wiring_problem(ci).is_none());
     }
 }

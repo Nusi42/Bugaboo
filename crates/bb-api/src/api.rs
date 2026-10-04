@@ -28,6 +28,7 @@ use utoipa_axum::routes;
 
 use crate::errors::{self, ApiError};
 use crate::limits::{self, Limits};
+use crate::logging::Scheme;
 use crate::openapi;
 use crate::web::decode_path;
 
@@ -133,22 +134,32 @@ async fn origin_check(request: Request, next: Next) -> Response {
         *request.method(),
         Method::GET | Method::HEAD | Method::OPTIONS
     );
-    if unsafe_method && is_api(request.uri().path()) && !is_same_origin(request.headers()) {
+    if unsafe_method && is_api(request.uri().path()) && !is_same_origin(&request) {
         return ApiError::new(ErrorCode::WrongOrigin).into_response();
     }
     next.run(request).await
 }
 
-fn is_same_origin(headers: &axum::http::HeaderMap) -> bool {
+/// The server's own origin is the scheme the browser used (see [`Scheme`]) and the authority it
+/// asked for: the one in the address of the request when there is one (HTTP/2 and absolute-form
+/// requests carry no `Host` header), else the `Host` header.
+fn is_same_origin(request: &Request) -> bool {
+    let headers = request.headers();
     let text = |name| headers.get(name).and_then(|value| value.to_str().ok());
     if let Some(origin) = text(header::ORIGIN) {
+        let authority = request
+            .uri()
+            .authority()
+            .map(axum::http::uri::Authority::as_str)
+            .or_else(|| text(header::HOST));
+        let scheme = request
+            .extensions()
+            .get::<Scheme>()
+            .map_or("http", |scheme| scheme.0);
         // `null` and anything that is not scheme://host[:port] never match.
-        let Some(host) = text(header::HOST) else {
-            return false;
-        };
-        return origin
-            .split_once("://")
-            .is_some_and(|(_, authority)| authority.eq_ignore_ascii_case(host));
+        return authority.is_some_and(|authority| {
+            origin.eq_ignore_ascii_case(&format!("{scheme}://{authority}"))
+        });
     }
     text(axum::http::HeaderName::from_static("sec-fetch-site")) == Some("same-origin")
 }
@@ -185,6 +196,15 @@ mod tests {
     use crate::errors::ApiJson;
 
     fn change(origin: Option<&str>, fetch_site: Option<&str>, method: &str) -> Request<Body> {
+        change_with(origin, fetch_site, method, "https")
+    }
+
+    fn change_with(
+        origin: Option<&str>,
+        fetch_site: Option<&str>,
+        method: &str,
+        scheme: &'static str,
+    ) -> Request<Body> {
         let mut request = Request::builder()
             .method(method)
             .uri("/api/v1/echo")
@@ -196,7 +216,9 @@ mod tests {
         if let Some(site) = fetch_site {
             request = request.header("sec-fetch-site", site);
         }
-        request.body(Body::from("{}")).unwrap()
+        let mut request = request.body(Body::from("{}")).unwrap();
+        request.extensions_mut().insert(Scheme(scheme));
+        request
     }
 
     #[tokio::test]
@@ -228,6 +250,46 @@ mod tests {
             assert_eq!(response.status(), StatusCode::FORBIDDEN);
             assert_eq!(code_of(response).await, "request.wrong_origin");
         }
+    }
+
+    #[tokio::test]
+    async fn sec_06_the_scheme_must_match_too() {
+        // An http origin against an https server, and the other way round, is another origin.
+        let http_origin = change(Some("http://bugaboo.test:47200"), None, "POST");
+        let response = app().oneshot(http_origin).await.unwrap();
+        assert_eq!(response.status(), StatusCode::FORBIDDEN);
+        let secure_origin = change_with(Some("https://bugaboo.test:47200"), None, "POST", "http");
+        let response = app().oneshot(secure_origin).await.unwrap();
+        assert_eq!(response.status(), StatusCode::FORBIDDEN);
+        let plain = change_with(Some("http://bugaboo.test:47200"), None, "POST", "http");
+        let response = app().oneshot(plain).await.unwrap();
+        assert_ne!(response.status(), StatusCode::FORBIDDEN);
+    }
+
+    #[tokio::test]
+    async fn sec_06_the_authority_of_the_address_counts_when_there_is_no_host_header() {
+        // HTTP/2 and absolute-form requests have no Host header; the address holds the authority.
+        let mut request = Request::builder()
+            .method("POST")
+            .uri("https://bugaboo.test:47200/api/v1/echo")
+            .header(header::ORIGIN, "https://bugaboo.test:47200")
+            .header(header::CONTENT_TYPE, "application/json")
+            .body(Body::from("{}"))
+            .unwrap();
+        request.extensions_mut().insert(Scheme("https"));
+        assert!(request.headers().get(header::HOST).is_none());
+        let response = app().oneshot(request).await.unwrap();
+        assert_ne!(response.status(), StatusCode::FORBIDDEN);
+
+        let mut other = Request::builder()
+            .method("POST")
+            .uri("https://bugaboo.test:47200/api/v1/echo")
+            .header(header::ORIGIN, "https://evil.test")
+            .body(Body::from("{}"))
+            .unwrap();
+        other.extensions_mut().insert(Scheme("https"));
+        let response = app().oneshot(other).await.unwrap();
+        assert_eq!(response.status(), StatusCode::FORBIDDEN);
     }
 
     #[tokio::test]
@@ -270,7 +332,7 @@ mod tests {
     fn post_json(body: Vec<u8>) -> Request<Body> {
         Request::post("/api/v1/echo")
             .header(header::HOST, "bugaboo.test")
-            .header(header::ORIGIN, "https://bugaboo.test")
+            .header(header::ORIGIN, "http://bugaboo.test")
             .header(header::CONTENT_TYPE, "application/json")
             .body(Body::from(body))
             .unwrap()

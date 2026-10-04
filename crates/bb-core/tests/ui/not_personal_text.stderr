@@ -11,10 +11,10 @@ error[E0277]: `String` may hold personal data, so a field of this type cannot be
             Box<T>
             Category
             Channel
+            Digest
             EntityId
             EntityKind
             EntityRef
-            EventId
           and $N others
 note: required by a bound in `not_personal`
  --> tests/ui/not_personal_text.rs:3:10

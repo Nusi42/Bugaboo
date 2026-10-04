@@ -49,3 +49,7 @@ reason = "Deliberately bad and good examples of checks; only those checks look a
 [[exempt]]
 path = "crates/*/tests/ui/*.stderr"
 reason = "The compiler messages that the compile-fail tests expect (DATA-MARKS); written by trybuild and compared with the real output on every test run."
+
+[[exempt]]
+path = "tools/dev/refuse-build.cmd"
+reason = "Three-line Windows batch file that only refuses builds in the master (ADR-0024); no batch linter exists, review reads every change."

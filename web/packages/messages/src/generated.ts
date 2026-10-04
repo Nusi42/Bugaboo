@@ -86,6 +86,8 @@ export const messages = {
   "server.web-app-missing":
     "The browser app is not built yet. Run `cargo xtask build`, or pass --web <folder>.",
   "server.not-found": "Not found",
+  "server.keys-missing":
+    "The data folder has stored secrets or a security log, but its key files in the keys folder are missing. Restore them from your backup. Bugaboo does not make new keys, because the stored secrets could never be read again.",
   "server.about": "Bugaboo: the issue tracker in one file",
 } as const;
 
