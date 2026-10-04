@@ -7,16 +7,20 @@ rust-version.workspace = true
 publish.workspace = true
 
 [dependencies]
-anyhow = "1.0.104"
-clap = { version = "4.6.7", features = ["derive"] }
+anyhow = { workspace = true }
+clap = { workspace = true }
+ctrlc = { workspace = true }
 flate2 = "1.1.10"
-globset = "0.4.20"
-serde = { version = "1.0.229", features = ["derive"] }
-serde_json = { version = "1.0.151", features = ["preserve_order"] }
+globset = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true, features = ["preserve_order"] }
 sha2 = "0.11.0"
 tar = "0.4.46"
-toml = "1.1.6"
+toml = { workspace = true }
 zip = { version = "8.6.0", default-features = false, features = ["deflate"] }
+
+[dev-dependencies]
+tempfile = { workspace = true }
 
 [lints]
 workspace = true

@@ -5,20 +5,26 @@
 
 #![forbid(unsafe_code)]
 
+mod build;
 mod catalog;
 mod checks;
+mod ci;
+mod dev;
 #[path = "gen/mod.rs"]
 mod generate;
+mod hook;
 mod location;
 mod metadata;
 mod output;
 mod repo;
 mod runner;
 mod setup;
+mod steps;
 #[cfg(test)]
 mod testutil;
 mod tools;
 
+use std::io::Read as _;
 use std::path::PathBuf;
 use std::process::ExitCode;
 
@@ -41,6 +47,17 @@ enum Command {
         #[command(subcommand)]
         scope: CheckScope,
     },
+    /// Start the Vite dev server and the Bugaboo server on the ports from tools/dev/ports.json.
+    Dev,
+    /// Build the browser app, then the release binary.
+    Build,
+    /// Everything CI runs: checks, tests, browser build, browser tests.
+    Ci,
+    /// Entry points for Claude Code hooks.
+    Hook {
+        #[command(subcommand)]
+        event: HookEvent,
+    },
     /// List every check in the catalogue and whether it is implemented.
     List,
     /// Install the pinned external tools into `.tools/` (tools/dev/tools.toml).
@@ -58,6 +75,12 @@ enum GenTarget {
     Tokens,
     /// Typed message keys from messages/en.json.
     Messages,
+}
+/// Claude Code hook events.
+#[derive(Subcommand)]
+enum HookEvent {
+    /// After an agent edited a file: run the checks for it (reads the hook JSON on stdin).
+    PostEdit,
 }
 
 #[derive(Subcommand)]
@@ -118,6 +141,16 @@ fn run() -> anyhow::Result<ExitCode> {
             };
             output::generated(&written);
             Ok(ExitCode::SUCCESS)
+        }
+        Command::Dev => Ok(steps::exit_code(dev::run(repo.root())?)),
+        Command::Build => Ok(steps::exit_code(build::run(repo.root())?)),
+        Command::Ci => Ok(steps::exit_code(ci::run(repo.root())?)),
+        Command::Hook {
+            event: HookEvent::PostEdit,
+        } => {
+            let mut stdin = String::new();
+            std::io::stdin().read_to_string(&mut stdin)?;
+            hook::post_edit(repo.root(), &stdin)
         }
         Command::Check { scope } => {
             let scope = match scope {

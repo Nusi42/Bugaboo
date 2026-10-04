@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "case \"$CLAUDE_PROJECT_DIR\" in *OneDrive*) exit 0;; esac; cd \"$CLAUDE_PROJECT_DIR\" && cargo xtask hook post-edit",
+            "timeout": 120
+          }
+        ]
+      }
+    ]
+  }
+}
