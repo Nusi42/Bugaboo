@@ -72,8 +72,8 @@
     --bg-surface: #252932;
     --bg-raised: #2d323c;
     --bg-sunken: #191b21;
-    --bg-hover: #333945;
-    --bg-selected: #3a3560;
+    --bg-hover: #2d323d;
+    --bg-selected: #322d52;
     --border: #3b414d;
     --border-subtle: #313641;
     --fg: #e5e8ed;
@@ -117,8 +117,8 @@
   --bg-surface: #252932;
   --bg-raised: #2d323c;
   --bg-sunken: #191b21;
-  --bg-hover: #333945;
-  --bg-selected: #3a3560;
+  --bg-hover: #2d323d;
+  --bg-selected: #322d52;
   --border: #3b414d;
   --border-subtle: #313641;
   --fg: #e5e8ed;
@@ -249,8 +249,8 @@
   --bg-surface: #252932;
   --bg-raised: #2d323c;
   --bg-sunken: #191b21;
-  --bg-hover: #333945;
-  --bg-selected: #3a3560;
+  --bg-hover: #2d323d;
+  --bg-selected: #322d52;
   --border: #3b414d;
   --border-subtle: #313641;
   --fg: #e5e8ed;
