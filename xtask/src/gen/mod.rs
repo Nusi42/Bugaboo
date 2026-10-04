@@ -3,6 +3,7 @@
 //! Each generator is deterministic and writes already-formatted files, so the format checks pass
 //! without a second formatting step.
 
+pub(crate) mod api;
 pub(crate) mod contrast_spec;
 pub(crate) mod icu;
 pub(crate) mod messages;
@@ -39,6 +40,7 @@ pub(crate) fn all(repo: &Repo, catalog: &Catalog) -> anyhow::Result<Vec<Generate
         .with_context(|| format!("could not read {}", messages::SOURCE_LOCALE_PATH))?;
     files.extend(messages::generate(repo, &catalog_text)?);
     files.extend(privacy::generate(repo)?);
+    files.extend(api::generate(repo)?);
     Ok(files)
 }
 
@@ -49,6 +51,7 @@ pub(crate) fn all_paths() -> Vec<&'static str> {
     paths.extend(tokens::output_paths());
     paths.extend(messages::output_paths());
     paths.push(privacy::OUTPUT);
+    paths.extend(api::output_paths());
     paths
 }
 

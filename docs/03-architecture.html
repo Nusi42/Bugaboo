@@ -177,7 +177,7 @@
 ├── web/                    browser app (TypeScript)
 │   ├── app/                the React app: routes and feature folders
 │   └── packages/
-│       ├── api-client/     generated from OpenAPI — never edited by hand
+│       ├── api-client/     types generated from OpenAPI (never edited by hand) and the thin client on top
 │       ├── ui/             shared components on React Aria + generated token CSS
 │       ├── wasm/           generated bindings to bb-wasm
 │       └── messages/       generated, typed message keys
@@ -222,8 +222,8 @@
 <li><code>bb-core</code>, <code>bb-searchlang</code> and <code>bb-markdown</code> do no I/O and depend on no other Bugaboo crate except <code>bb-core</code> (searchlang and markdown not even that; <code>bb-core</code> uses <code>bb-macros</code> for derives at compile time only), so they compile to WebAssembly.</li>
 <li><code>bb-app</code> knows <strong>ports</strong> (traits) only. It never imports <code>bb-store</code>, <code>bb-files</code>, <code>bb-ai</code> or <code>bb-notify</code>. Tests run use cases against in-memory fakes.</li>
 <li>Only <code>bb-policy</code> can create <code>Authorized&lt;T&gt;</code>. Its constructor is private to the crate.</li>
-<li>Only <code>bb-api</code> and <code>bb-mcp</code> speak HTTP. Only <code>bb-server</code> wires adapters to ports.</li>
-<li>The browser app talks to the server only through <code>@bugaboo/api-client</code>.</li>
+<li>Only <code>bb-api</code> and <code>bb-mcp</code> speak HTTP. Only <code>bb-server</code> wires adapters to ports (<code>cargo xtask check only ARCH-HTTP-EDGE</code>).</li>
+<li>The browser app talks to the server only through <code>@bugaboo/api-client</code> (<code>cargo xtask check only ARCH-WEB-API</code>), and has no hand-written types for what the server sends (<code>LINT-API-TYPES</code>).</li>
 </ol>
 <h3 id="s4-3"><button class="sec" data-sec>§4.3</button>The core modules</h3>
 <h4>bb-core</h4>
@@ -256,7 +256,7 @@
 <h4>bb-testing</h4>
 <p>Test-support crate, used only as a <strong>dev dependency</strong> (<code>[dev-dependencies]</code>) and never shipped (ARCH-DEPS fails on any other kind of dependency on it). <code>each_database</code> runs one async test body against every database named in <code>BB_TEST_DATABASES</code> (<code>sqlite</code>, <code>postgres</code>; default <code>sqlite</code>), each with a brand-new empty database that is removed afterwards (also when the test panics), hands the body a typed pool (<code>Pool::Sqlite</code> or <code>Pool::Postgres</code>), and records what ran for ARCH-DB-PARITY. It depends on no other Bugaboo crate. How it is wired to <code>cargo xtask db</code> and <code>cargo xtask ci</code> is in <span title="11-testing.md#database-tests in the repository">testing</span>.</p>
 <h4>bb-api</h4>
-<p>axum router; extractors that turn a session cookie, access key or OAuth token into an <strong>actor</strong>; CSRF and origin checks; security headers and CSP; rate limits; <code>?fields=</code> projections; cursor pagination; ETags; problem+json errors; OpenAPI generation; the embedded static app.</p>
+<p>axum router; extractors that turn a session cookie, access key or OAuth token into an <strong>actor</strong>; CSRF and origin checks; security headers and CSP; rate limits (<code>limits</code>); the one cookie module (<code>cookies</code>); <code>?fields=</code> projections; cursor pagination; ETags; problem+json errors (<code>errors</code>: <code>ApiError</code>, <code>ApiJson</code>); OpenAPI generation from the handlers' <code>#[utoipa::path]</code> descriptions (<code>openapi</code>, served at <code>/api/v1/openapi.json</code>, printed by <code>bugaboo openapi</code>, written to <code>web/packages/api-client/openapi.json</code> by <code>cargo xtask gen api</code>); the embedded static app.</p>
 <h4>bb-ai and bb-mcp</h4>
 <p>One <strong>tool registry</strong> (search issues, get issue, create, change status, comment, log time, …). Each tool maps to a <code>bb-app</code> use case, so permissions and validation are identical. <code>bb-mcp</code> exposes the registry to outside AI apps; the assistant uses the same registry but returns <strong>proposals</strong> for writes instead of running them.</p>
 <h3 id="s4-4"><button class="sec" data-sec>§4.4</button>Browser app (web/app)</h3>
@@ -430,6 +430,8 @@
 <tr><td><code>log_level</code></td><td><code>error</code>, <code>warn</code>, <code>info</code> or <code>debug</code></td><td><code>info</code></td></tr>
 <tr><td><code>max_connections</code></td><td>Most connections open at once</td><td><code>1024</code></td></tr>
 <tr><td><code>header_timeout_seconds</code></td><td>Time allowed for a client to send the headers of a request</td><td><code>30</code></td></tr>
+<tr><td><code>rate_limit_per_minute</code></td><td>API requests one client network may make per minute</td><td><code>600</code></td></tr>
+<tr><td><code>sign_in_attempts_per_minute</code></td><td>Sign-in attempts per minute, for one client network and for one account</td><td><code>10</code></td></tr>
 </tbody></table>
 </div>
 <p><code>tls_mode = "off"</code> on an address that is not this computer is refused unless <code>trusted_proxies</code> is set. The settings file can be named with <code>--config</code> or <code>BUGABOO_CONFIG</code>; without a name <code>bugaboo.toml</code> next to the program is read if it exists. Defaults are relative to the program's folder, not the current folder (a Windows service starts in <code>System32</code>); relative paths inside the file are relative to the file. With <code>tls_mode = "files"</code> on Linux, a key file that group or others can read is reported as a warning. Enforced by: review (the tests <code>ops_10_…</code> and <code>sec_10_…</code> in <code>crates/bb-server</code> cover it; no catalogue check yet).</p>
@@ -491,7 +493,8 @@ tls/         the generated certificate and its key</code></pre>
 <li><strong>Passkeys:</strong> WebAuthn (<code>webauthn-rs</code>), as a second step or on their own. <strong>Two-step codes:</strong> TOTP with backup codes (stored hashed).</li>
 <li><strong>Company sign-in:</strong> OIDC with PKCE; group claims map to Bugaboo groups.</li>
 <li><strong>Sessions:</strong> random 256-bit IDs, stored hashed; cookie <code>__Host-bb_session</code> (Secure, HttpOnly, SameSite=Lax). New session ID after sign-in and after any permission change; idle and absolute timeouts; <em>Where you're signed in</em> lists and ends sessions.</li>
-<li><strong>CSRF:</strong> SameSite cookies plus an <code>Origin</code> check plus a per-session token header on every change request.</li>
+<li><strong>CSRF:</strong> SameSite cookies plus an <code>Origin</code> check plus a per-session token header (<code>x-csrf-token</code>) on every change request. The token is also in the cookie <code>__Host-bb_csrf</code> (SameSite=Strict; the page reads it and sends it back in the header, which the generated client does for every change). Enforced by: SEC-COOKIES (the cookie table), and the CSRF tests (WP-07).</li>
+<li><strong>Cookies:</strong> only strictly necessary ones (the session and the CSRF token), so no consent banner is needed (COMP-13, PRIV-01). One module, <code>crates/bb-api/src/cookies.rs</code>, holds the table and is the only code that sets a cookie. Every name starts with <code>__Host-</code>, so browsers insist on <code>Secure</code>, <code>Path=/</code> and no <code>Domain</code>; the module adds <code>HttpOnly</code> where script has no business reading the cookie. <code>cargo xtask gen api</code> writes the list "Cookies we use" to <code>userDocs/cookies.md</code> from the same table. Enforced by: SEC-COOKIES (reads the table; finds <code>Set-Cookie</code>, cookie libraries and <code>document.cookie</code> writes anywhere else).</li>
 <li><strong>Access keys</strong> (scripts, apps): <code>bb_</code> + prefix + secret; only a hash is stored; shown once; scoped, can expire, can only narrow the owner's permissions.</li>
 <li><strong>MCP:</strong> OAuth 2.1 authorization server inside Bugaboo (authorization code + PKCE, dynamic client registration with an admin allow list), short-lived access tokens, refresh token rotation, consent screen per app.</li>
 </ul>
@@ -502,7 +505,7 @@ tls/         the generated certificate and its key</code></pre>
 <li><strong>One header layer</strong> wraps the whole router, so pages, files, API answers, errors and 404s carry the same set. Enforced by: SEC-HEADERS (the check compares the header table with the values the integration tests expect, exactly; the tests assert the full set on a page, an asset, an API error and a 404).</li>
 <li><strong>HSTS</strong> is sent only when browsers reach us over HTTPS (here, or at a trusted proxy), and <strong>never with <code>includeSubDomains</code></strong> (Bugaboo does not own the other names of its host). Lifetime: <strong>one day</strong> with a certificate Bugaboo made itself, so a person who trusts that certificate on <code>localhost</code> does not pin every other local tool to HTTPS; <strong>one year</strong> with a provided certificate or behind a trusted proxy. Enforced by: SEC-HEADERS (no <code>includeSubDomains</code>) and the tests <code>sec_11_hsts_…</code>.</li>
 <li><strong>Compression:</strong> Brotli or gzip for text, but <strong>never for JSON</strong> (API answers, problem+json): a compressed answer that mixes a secret with text an attacker chooses can leak the secret (BREACH). Enforced by: review (a person decides when another content type needs the same care), backed by the test <code>sec_11_json_answers_are_not_compressed</code>.</li>
-<li><strong>Slow and many clients:</strong> a client has 30 seconds (setting <code>header_timeout_seconds</code>) to send the headers of a request, which also ends idle keep-alive connections; HTTP/2 connections are pinged at the same interval. At most 1024 connections (setting <code>max_connections</code>) and 256 TLS handshakes run at once. Request-body timeouts come with the first endpoint that reads a body (M1-F06). Enforced by: the tests <code>sec_10_…slowly…</code> and <code>sec_10_no_more_connections…</code>.</li>
+<li><strong>Slow and many clients:</strong> a client has 30 seconds (setting <code>header_timeout_seconds</code>) to send the headers of a request, which also ends idle keep-alive connections; HTTP/2 connections are pinged at the same interval. At most 1024 connections (setting <code>max_connections</code>) and 256 TLS handshakes run at once. Every API request has 30 seconds to finish, which also stops a request body that arrives too slowly (M1-F06). Enforced by: the tests <code>sec_10_…slowly…</code> and <code>sec_10_no_more_connections…</code>.</li>
 <li><strong>Client address:</strong> the address of the connection is used, with IPv4-mapped IPv6 (<code>::ffff:a.b.c.d</code>) always treated as IPv4. <code>X-Forwarded-For</code> is believed only from a listed trusted proxy, and supports <strong>exactly one trusted hop</strong>: the last entry of the last header line is what the proxy itself saw; earlier entries are what the client claimed and are ignored. Enforced by: the tests <code>sec_10_forwarded_for_…</code> and <code>sec_10_mapped_…</code>.</li>
 <li><strong>User content</strong> is rendered by one Markdown renderer with an allow list (ADR-0011). Attachments are downloaded, never rendered inline unless they are images or PDFs converted to safe previews.</li>
 </ul>
@@ -515,7 +518,8 @@ tls/         the generated certificate and its key</code></pre>
 <h4>Limits and abuse</h4>
 <ul>
 <li>Rate limits per IP and per account on sign-in, search, API and MCP; slow-down after failures, never a permanent lock that an attacker could trigger.</li>
-<li>Request size limits; upload limits per project; search complexity limits.</li>
+<li><strong>Rate limits (SEC-14)</strong> are counted per minute, in memory, per client network (an IPv4 address, an IPv6 <code>/64</code>; the canonical client address from above, never the raw header): all <code>/api</code> requests (setting <code>rate_limit_per_minute</code>, default 600) and sign-in attempts (setting <code>sign_in_attempts_per_minute</code>, default 10) per client network and per account, where the account is kept only as a keyed hash. Going over a limit answers 429 with <code>Retry-After</code> and the message <code>error.rate-limit.exceeded</code>; nothing is locked for longer than the minute. The limiter is Bugaboo's own fixed window instead of <code>tower_governor</code>: it needs no other dependency, reads the canonical client address that the logging layer works out, and gives sign-in the per-account hook that a one-key-per-layer limiter does not. Enforced by: review, backed by the tests <code>sec_14_*</code> in <code>crates/bb-api</code> (unit tests of the windows, integration tests for the 429 and for the client address).</li>
+<li>Request size limits; upload limits per project; search complexity limits. API request bodies are limited to 1 MiB unless a route sets its own limit; a bigger body answers <code>request.too_large</code>. Enforced by: review, backed by the test <code>sec_14_a_body_up_to_the_limit_is_read_and_a_bigger_one_is_refused_as_problem_json</code>.</li>
 </ul>
 <h3 id="s7-2"><button class="sec" data-sec>§7.2</button>Authorization model</h3>
 <pre class="mermaid">flowchart LR
@@ -628,7 +632,8 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 <h3 id="s7-9"><button class="sec" data-sec>§7.9</button>Errors</h3>
 <ul>
 <li>One <code>ErrorCode</code> enum in <code>bb-core</code> (for example <code>issue.not_found</code>, <code>issue.version_conflict</code>, <code>search.unknown_field</code>).</li>
-<li>The API answers with <code>application/problem+json</code>: code, plain-language message key and parameters, request ID.</li>
+<li>The API answers with <code>application/problem+json</code>: <code>type</code>, <code>title</code>, <code>status</code>, <code>code</code>, <code>message_key</code>, <code>params</code> and the <code>request_id</code> (the same as the <code>x-request-id</code> header). Handlers return an <code>ApiError</code> made from an <code>ErrorCode</code>: the status, the title and the message key come from the table, and a cause inside the server goes to the log (<code>ApiError::internal</code>), never into the answer. Every route in the OpenAPI document lists the standard answers 429, 500 and 503. Enforced by: ARCH-ERRORS (finds error answers built from a text written in the code, and compares the generated API description with the table).</li>
+<li>The <code>Display</code> texts of error types such as <code>TlsError</code> are English in code and reach only the log or the terminal; a person reads catalogue messages. Enforced by: ARCH-ERRORS (an error answer cannot be made from a text).</li>
 <li>The TypeScript client gets the codes as a union type; the UI shows the message from the catalog.</li>
 <li>An error message in the catalog has no placeholder, so an error cannot carry a name or number the person may not see; anything hidden answers with <code>resource.not_found</code>, exactly as if it did not exist. Enforced by: ARCH-ERRORS.</li>
 </ul>
@@ -722,12 +727,12 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 <tr><td>Async runtime</td><td>tokio</td><td>1.53.2</td><td>MIT</td></tr>
 <tr><td>HTTP</td><td>axum</td><td>0.8.9</td><td>MIT</td></tr>
 <tr><td>HTTP middleware</td><td>tower-http</td><td>0.7.1</td><td>MIT</td></tr>
-<tr><td>Rate limits</td><td>tower_governor</td><td>0.8.0</td><td>MIT/Apache-2.0</td></tr>
+<tr><td>Rate limits</td><td>own fixed-window limiter in <code>bb-api</code> (<code>tower_governor</code> 0.8.0 was considered, see architecture §7)</td><td>none</td><td>none</td></tr>
 <tr><td>TLS</td><td>rustls / tokio-rustls</td><td>0.23.45 / 0.26.6</td><td>Apache-2.0/MIT/ISC</td></tr>
 <tr><td>Certificates (ACME)</td><td>instant-acme</td><td>0.8.5</td><td>Apache-2.0</td></tr>
 <tr><td>Database access</td><td>sqlx</td><td>0.9.0</td><td>MIT/Apache-2.0</td></tr>
 <tr><td>Query builder</td><td>sea-query + sea-query-sqlx</td><td>1.0.2 + 0.9.1</td><td>MIT/Apache-2.0</td></tr>
-<tr><td>OpenAPI</td><td>utoipa</td><td>6.0.0</td><td>MIT/Apache-2.0</td></tr>
+<tr><td>OpenAPI</td><td>utoipa + utoipa-axum</td><td>6.0.0 + 0.3.0</td><td>MIT/Apache-2.0</td></tr>
 <tr><td>Serialization</td><td>serde</td><td>1.0.229</td><td>MIT/Apache-2.0</td></tr>
 <tr><td>Config file</td><td>toml</td><td>1.1.6</td><td>MIT/Apache-2.0</td></tr>
 <tr><td>CLI</td><td>clap</td><td>4.6.7</td><td>MIT/Apache-2.0</td></tr>
@@ -770,6 +775,7 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 <tr><td>Relation map layout</td><td>d3-force</td><td>3.0.0</td><td>ISC</td></tr>
 <tr><td>Message formatting</td><td>intl-messageformat</td><td>12.1.2</td><td>BSD-3-Clause</td></tr>
 <tr><td>API types</td><td>openapi-typescript</td><td>7.13.0</td><td>MIT</td></tr>
+<tr><td>API client</td><td>openapi-fetch + openapi-react-query</td><td>0.17.0 + 0.5.4</td><td>MIT</td></tr>
 </tbody></table>
 </div>
 <h3 id="s9-4"><button class="sec" data-sec>§9.4</button>Quality and compliance tooling</h3>
@@ -881,7 +887,7 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 <tr><td><code>LINT-CI</code></td><td>CI workflow files are valid</td><td>ADR-0014</td><td>actionlint</td><td>commit · ci</td></tr>
 <tr><td><code>LINT-DRY</code></td><td>No copy-pasted code blocks above the duplication threshold</td><td>coding-standards §1 (DRY)</td><td>jscpd (Rust and TypeScript)</td><td>ci</td></tr>
 <tr><td><code>LINT-HYGIENE</code></td><td>No console.log, no any, no non-null !, no @ts-ignore, no TODO without an issue number, no dbg!/println!</td><td>coding-standards §2, §3, §4</td><td>oxlint rules + ast-grep</td><td>edit · commit · ci</td></tr>
-<tr><td><code>LINT-API-TYPES</code></td><td>No hand-written API response types in the browser app</td><td>ADR-0008</td><td>ast-grep (types named like API schemas outside api-client)</td><td>edit · commit · ci</td></tr>
+<tr><td><code>LINT-API-TYPES</code></td><td>No hand-written API response types in the browser app</td><td>ADR-0008</td><td>xtask (type and interface names in web/app against the schemas of the generated OpenAPI document, and names that say they are server answers)</td><td>edit · commit · ci</td></tr>
 <tr><td><code>TXT-LITERAL</code></td><td>No hard-coded user-facing text in components or API messages</td><td>UX-07, coding-standards §4</td><td>ast-grep rules (JSX text, aria-*, title, alt, placeholder; Rust error strings)</td><td>edit · commit · ci</td></tr>
 <tr><td><code>TXT-CATALOG</code></td><td>Message catalog: no missing, unused or duplicate keys; placeholders match</td><td>UX-07</td><td>xtask (parses messages/en.json and code references)</td><td>edit · commit · ci</td></tr>
 <tr><td><code>TXT-TERMS</code></td><td>No words from the glossary's 'Don't say' column in UI text, user docs or API names</td><td>glossary.md</td><td>xtask (reads glossary tables)</td><td>edit · commit · ci</td></tr>
@@ -892,16 +898,16 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 <tr><td><code>ARCH-WASM</code></td><td>The crates shared with the browser (bb-core, bb-searchlang, bb-markdown) still build for WebAssembly</td><td>ADR-0001, ADR-0005, ADR-0011</td><td>cargo check --target wasm32-unknown-unknown (minimal form: the size budget with wasm-opt, PERF-04, comes with bb-wasm)</td><td>push · ci</td></tr>
 <tr><td><code>ARCH-AUTHZ-ONLY</code></td><td>Authorized&lt;T&gt; is only created inside bb-policy</td><td>ADR-0004</td><td>ast-grep + private constructor (compile error)</td><td>edit · commit · ci</td></tr>
 <tr><td><code>ARCH-API-OUT</code></td><td>API and MCP handlers return only Authorized views, never domain or database types</td><td>ADR-0004</td><td>trait bound on responses + ast-grep</td><td>edit · commit · ci</td></tr>
-<tr><td><code>ARCH-HTTP-EDGE</code></td><td>Only bb-api and bb-mcp use HTTP crates; only bb-server wires adapters</td><td>architecture §4</td><td>xtask (cargo metadata)</td><td>push · ci</td></tr>
+<tr><td><code>ARCH-HTTP-EDGE</code></td><td>Only bb-api and bb-mcp use HTTP crates; only bb-server wires adapters</td><td>architecture §4</td><td>xtask (cargo metadata: normal and build dependencies on HTTP crates and on the adapter crates)</td><td>push · ci</td></tr>
 <tr><td><code>ARCH-SQL-EDGE</code></td><td>Only bb-store touches the database; no SQL text built with format! anywhere</td><td>ADR-0003, SEC-17</td><td>xtask (cargo metadata) + ast-grep</td><td>edit · commit · ci</td></tr>
 <tr><td><code>ARCH-EVENTS</code></td><td>Every command use case appends a domain event</td><td>ADR-0007</td><td>generated test: runs every command against fakes and asserts an event</td><td>ci</td></tr>
 <tr><td><code>ARCH-VERSIONED</code></td><td>Every change endpoint requires a version (If-Match) and long-text endpoints an edit-lock token</td><td>ADR-0019</td><td>xtask (reads generated OpenAPI)</td><td>push · ci</td></tr>
-<tr><td><code>ARCH-LEAN</code></td><td>Every list endpoint supports fields=, cursor paging and a page-size cap</td><td>PERF-02</td><td>xtask (reads generated OpenAPI)</td><td>push · ci</td></tr>
+<tr><td><code>ARCH-LEAN</code></td><td>Every list endpoint supports fields=, cursor paging and a page-size cap</td><td>PERF-02</td><td>xtask (reads the generated OpenAPI document: every GET with an items list takes fields, cursor and a limit with a maximum, and answers next_cursor)</td><td>push · ci</td></tr>
 <tr><td><code>ARCH-PERMS</code></td><td>Every endpoint and MCP tool declares its permission; every permission is used and explained</td><td>SEC-01, ADR-0004</td><td>xtask (OpenAPI x-permission + permission catalogue)</td><td>push · ci</td></tr>
-<tr><td><code>ARCH-ERRORS</code></td><td>Every error code has a message key; API errors are problem+json with a code</td><td>architecture §7 (Errors)</td><td>xtask (reads the code table with syn and the catalog; error answers built from a literal text are found only as (StatusCode::X, "text"), the rest of the API part comes with WP-06)</td><td>push · ci</td></tr>
+<tr><td><code>ARCH-ERRORS</code></td><td>Every error code has a message key; API errors are problem+json with a code</td><td>architecture §7 (Errors)</td><td>xtask (reads the code table with syn and the catalog; finds error answers built from a text written in the code, also across lines and with more elements, and bare error statuses; reads the generated OpenAPI document: the ErrorCode schema equals the table and every route documents the standard problem+json answers)</td><td>push · ci</td></tr>
 <tr><td><code>ARCH-SETTINGS</code></td><td>Settings are only read and written through the settings registry</td><td>ADR-0018</td><td>xtask (declarations and key literals; the storage part comes with the store)</td><td>edit · commit · ci</td></tr>
 <tr><td><code>ARCH-AI-TOOLS</code></td><td>AI tools exist only in the tool registry and never reach people-ranking, assignment or working-hours use cases</td><td>ADR-0013, COMP-10</td><td>xtask (registry allow list) + ast-grep</td><td>edit · commit · ci</td></tr>
-<tr><td><code>ARCH-WEB-API</code></td><td>The browser app calls the server only through @bugaboo/api-client (no raw fetch)</td><td>ADR-0008</td><td>oxlint no-restricted-globals/imports + ast-grep</td><td>edit · commit · ci</td></tr>
+<tr><td><code>ARCH-WEB-API</code></td><td>The browser app calls the server only through @bugaboo/api-client (no raw fetch)</td><td>ADR-0008</td><td>xtask (scans web/ outside the client package for fetch, XMLHttpRequest, WebSocket, EventSource, sendBeacon, HTTP libraries and imports into the client package); oxlint no-restricted-globals in .oxlintrc.json is a second guard</td><td>edit · commit · ci</td></tr>
 <tr><td><code>ARCH-WEB-FEATURES</code></td><td>Browser feature folders import each other only through their public index</td><td>architecture §4 (browser app)</td><td>oxlint import rules</td><td>edit · commit · ci</td></tr>
 <tr><td><code>ARCH-MAP-SYNC</code></td><td>The module map in the architecture docs lists exactly the crates and packages that exist</td><td>architecture §4, COMP-06</td><td>xtask (parses 04-building-blocks.md vs workspace)</td><td>push · ci</td></tr>
 <tr><td><code>ARCH-DOC-CHANGE</code></td><td>Changed boundaries, interfaces or dependencies come with a doc or decision-record change</td><td>COMP-06, coding-standards §5</td><td>xtask (diff against main)</td><td>push · ci</td></tr>
@@ -914,6 +920,7 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 <tr><td><code>SEC-PATTERNS</code></td><td>No unwrap/expect/panic in production code, no dangerouslySetInnerHTML, eval or new Function</td><td>coding-standards §3, §4</td><td>ast-grep</td><td>edit · commit · ci</td></tr>
 <tr><td><code>SEC-MATRIX</code></td><td>Generated permission matrix passes for every entry point (UI API, search, MCP, assistant, e-mail, webhooks, exports)</td><td>ADR-0004</td><td>generated tests</td><td>ci</td></tr>
 <tr><td><code>SEC-HEADERS</code></td><td>Running server sends the required security headers and CSP</td><td>SEC-11</td><td>xtask (header table and tests agree with SEC-11) + integration tests in crates/bb-api/tests</td><td>edit · commit · ci</td></tr>
+<tr><td><code>SEC-COOKIES</code></td><td>Cookies are set only by the cookie module, with a __Host- name and a stated purpose</td><td>COMP-13, PRIV-01</td><td>xtask (reads the cookie table in crates/bb-api/src/cookies.rs; finds Set-Cookie, cookie libraries and document.cookie writes elsewhere)</td><td>edit · commit · ci</td></tr>
 <tr><td><code>SEC-ADVISORIES</code></td><td>No known vulnerabilities without a VEX statement</td><td>COMP-03</td><td>cargo-deny advisories + OSV for npm</td><td>ci · nightly</td></tr>
 <tr><td><code>DATA-MARKS</code></td><td>Every stored field is marked as personal data or not</td><td>ADR-0015, PRIV-02</td><td>derive macro (compile error) + xtask report</td><td>edit · ci</td></tr>
 <tr><td><code>DATA-LOGS</code></td><td>No names, e-mail addresses or free text in log statements</td><td>architecture §7 (Observability), PRIV-01</td><td>xtask (reads every tracing macro in product code)</td><td>edit · commit · ci</td></tr>
@@ -946,7 +953,7 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 <tr><td><code>META-SUPPRESS</code></td><td>Every suppression (allow, expect, eslint/oxlint/stylelint-disable, @ts-ignore, ast-grep ignore, accepted advisories) has a reason that names an issue or a doc section; the total is compared with tools/checks/suppressions.txt and may only change together with that file</td><td>architecture §10</td><td>xtask (counts and compares with tools/checks/suppressions.txt)</td><td>commit · ci</td></tr>
 <tr><td><code>META-SPEED</code></td><td>Checks stay fast: every edit-time check under 3 s on one file and all commit-time checks under 10 s on a sample of files, measured when this check runs</td><td>architecture §10</td><td>xtask (times the checks itself)</td><td>ci</td></tr>
 </tbody></table></div>
-<p>79 checks, generated from <code>tools/checks/catalog.toml</code>.</p>
+<p>80 checks, generated from <code>tools/checks/catalog.toml</code>.</p>
 
 <!-- 11-testing.md -->
 <h2 id="s11"><button class="sec" data-sec>§11</button>Testing, sample data and local ports</h2>

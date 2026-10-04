@@ -18,12 +18,12 @@ Latest stable versions, checked against crates.io and npm on **2026-10-04**. Loc
 | Async runtime | tokio | 1.53.2 | MIT |
 | HTTP | axum | 0.8.9 | MIT |
 | HTTP middleware | tower-http | 0.7.1 | MIT |
-| Rate limits | tower_governor | 0.8.0 | MIT/Apache-2.0 |
+| Rate limits | own fixed-window limiter in `bb-api` (`tower_governor` 0.8.0 was considered, see architecture §7) | none | none |
 | TLS | rustls / tokio-rustls | 0.23.45 / 0.26.6 | Apache-2.0/MIT/ISC |
 | Certificates (ACME) | instant-acme | 0.8.5 | Apache-2.0 |
 | Database access | sqlx | 0.9.0 | MIT/Apache-2.0 |
 | Query builder | sea-query + sea-query-sqlx | 1.0.2 + 0.9.1 | MIT/Apache-2.0 |
-| OpenAPI | utoipa | 6.0.0 | MIT/Apache-2.0 |
+| OpenAPI | utoipa + utoipa-axum | 6.0.0 + 0.3.0 | MIT/Apache-2.0 |
 | Serialization | serde | 1.0.229 | MIT/Apache-2.0 |
 | Config file | toml | 1.1.6 | MIT/Apache-2.0 |
 | CLI | clap | 4.6.7 | MIT/Apache-2.0 |
@@ -68,6 +68,7 @@ Exact license strings are confirmed by `cargo deny` and recorded in the third-pa
 | Relation map layout | d3-force | 3.0.0 | ISC |
 | Message formatting | intl-messageformat | 12.1.2 | BSD-3-Clause |
 | API types | openapi-typescript | 7.13.0 | MIT |
+| API client | openapi-fetch + openapi-react-query | 0.17.0 + 0.5.4 | MIT |
 
 ## Quality and compliance tooling
 

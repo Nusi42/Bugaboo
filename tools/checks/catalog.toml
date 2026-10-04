@@ -162,10 +162,10 @@ status = "planned"
 id = "LINT-API-TYPES"
 title = "No hand-written API response types in the browser app"
 rule = "ADR-0008"
-tool = "ast-grep (types named like API schemas outside api-client)"
+tool = "xtask (type and interface names in web/app against the schemas of the generated OpenAPI document, and names that say they are server answers)"
 when = ["edit", "commit", "ci"]
-files = ["web/app/**/*.{ts,tsx}"]
-status = "planned"
+files = ["web/app/**/*.{ts,tsx}", "web/packages/api-client/openapi.json"]
+status = "active"
 
 # ───────────── Text, words and style ─────────────
 [[check]]
@@ -269,10 +269,10 @@ status = "planned"
 id = "ARCH-HTTP-EDGE"
 title = "Only bb-api and bb-mcp use HTTP crates; only bb-server wires adapters"
 rule = "architecture §4"
-tool = "xtask (cargo metadata)"
+tool = "xtask (cargo metadata: normal and build dependencies on HTTP crates and on the adapter crates)"
 when = ["push", "ci"]
 files = ["**/Cargo.toml"]
-status = "planned"
+status = "active"
 
 [[check]]
 id = "ARCH-SQL-EDGE"
@@ -305,10 +305,10 @@ status = "planned"
 id = "ARCH-LEAN"
 title = "Every list endpoint supports fields=, cursor paging and a page-size cap"
 rule = "PERF-02"
-tool = "xtask (reads generated OpenAPI)"
+tool = "xtask (reads the generated OpenAPI document: every GET with an items list takes fields, cursor and a limit with a maximum, and answers next_cursor)"
 when = ["push", "ci"]
-files = ["crates/bb-api/**"]
-status = "planned"
+files = ["crates/bb-api/**", "web/packages/api-client/openapi.json"]
+status = "active"
 
 [[check]]
 id = "ARCH-PERMS"
@@ -323,9 +323,15 @@ status = "planned"
 id = "ARCH-ERRORS"
 title = "Every error code has a message key; API errors are problem+json with a code"
 rule = "architecture §7 (Errors)"
-tool = "xtask (reads the code table with syn and the catalog; error answers built from a literal text are found only as (StatusCode::X, \"text\"), the rest of the API part comes with WP-06)"
+tool = "xtask (reads the code table with syn and the catalog; finds error answers built from a text written in the code, also across lines and with more elements, and bare error statuses; reads the generated OpenAPI document: the ErrorCode schema equals the table and every route documents the standard problem+json answers)"
 when = ["push", "ci"]
-files = ["crates/bb-core/**", "messages/**", "crates/bb-api/**"]
+files = [
+  "crates/bb-core/**",
+  "messages/**",
+  "crates/bb-api/**",
+  "crates/bb-server/**",
+  "web/packages/api-client/openapi.json",
+]
 status = "active"
 
 [[check]]
@@ -350,10 +356,10 @@ status = "planned"
 id = "ARCH-WEB-API"
 title = "The browser app calls the server only through @bugaboo/api-client (no raw fetch)"
 rule = "ADR-0008"
-tool = "oxlint no-restricted-globals/imports + ast-grep"
+tool = "xtask (scans web/ outside the client package for fetch, XMLHttpRequest, WebSocket, EventSource, sendBeacon, HTTP libraries and imports into the client package); oxlint no-restricted-globals in .oxlintrc.json is a second guard"
 when = ["edit", "commit", "ci"]
-files = ["web/app/**"]
-status = "planned"
+files = ["web/**/*.{ts,tsx}"]
+status = "active"
 
 [[check]]
 id = "ARCH-WEB-FEATURES"
@@ -462,6 +468,15 @@ rule = "SEC-11"
 tool = "xtask (header table and tests agree with SEC-11) + integration tests in crates/bb-api/tests"
 when = ["edit", "commit", "ci"]
 files = ["crates/bb-api/**"]
+status = "active"
+
+[[check]]
+id = "SEC-COOKIES"
+title = "Cookies are set only by the cookie module, with a __Host- name and a stated purpose"
+rule = "COMP-13, PRIV-01"
+tool = "xtask (reads the cookie table in crates/bb-api/src/cookies.rs; finds Set-Cookie, cookie libraries and document.cookie writes elsewhere)"
+when = ["edit", "commit", "ci"]
+files = ["crates/**/*.rs", "web/**/*.{ts,tsx}", "messages/**"]
 status = "active"
 
 [[check]]

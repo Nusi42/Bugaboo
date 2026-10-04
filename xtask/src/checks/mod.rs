@@ -7,10 +7,13 @@
 pub(crate) mod arch_db_parity;
 mod arch_deps;
 mod arch_errors;
+mod arch_http_edge;
+mod arch_lean;
 mod arch_map_sync;
 mod arch_no_unsafe;
 mod arch_settings;
 mod arch_wasm;
+mod arch_web_api;
 mod build_location;
 mod data_logs;
 mod data_marks;
@@ -27,6 +30,7 @@ mod fmt_toml;
 mod fmt_ts;
 pub(crate) mod git_commit_msg;
 mod git_files;
+mod lint_api_types;
 mod lint_ci;
 mod lint_css;
 mod lint_html;
@@ -45,10 +49,12 @@ pub(crate) mod meta_suppress;
 mod meta_wiring;
 mod node_tool;
 mod plan_trace;
+mod sec_cookies;
 mod sec_headers;
 mod sec_secrets;
 mod sty_contrast;
 mod txt_catalog;
+mod web_source;
 
 use crate::catalog::Catalog;
 use crate::repo::Repo;
@@ -121,11 +127,15 @@ pub(crate) fn registry() -> Vec<Box<dyn Check>> {
         Box::new(arch_errors::ArchErrors),
         Box::new(arch_settings::ArchSettings),
         Box::new(arch_wasm::ArchWasm),
+        Box::new(arch_http_edge::ArchHttpEdge),
+        Box::new(arch_lean::ArchLean),
+        Box::new(arch_web_api::ArchWebApi),
         Box::new(data_marks::DataMarks),
         Box::new(arch_db_parity::ArchDbParity),
         Box::new(data_migrations::DataMigrations),
         Box::new(sec_secrets::SecSecrets),
         Box::new(sec_headers::SecHeaders),
+        Box::new(sec_cookies::SecCookies),
         Box::new(data_logs::DataLogs),
         Box::new(dep_register::DepRegister),
         Box::new(dep_licenses::DepLicenses),
@@ -135,6 +145,7 @@ pub(crate) fn registry() -> Vec<Box<dyn Check>> {
         Box::new(fmt_css::FmtCss),
         Box::new(lint_ts::LintTs),
         Box::new(lint_types::LintTypes),
+        Box::new(lint_api_types::LintApiTypes),
         Box::new(lint_css::LintCss),
         Box::new(lint_html::LintHtml),
         Box::new(dev_ports::DevPorts),

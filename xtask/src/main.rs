@@ -95,6 +95,8 @@ enum GenTarget {
     Messages,
     /// The personal-data page docs/privacy/personal-data.md from the marks in the code.
     Privacy,
+    /// The API description, the browser client's types and the cookie list, from bb-api.
+    Api,
 }
 #[derive(Subcommand)]
 enum DbAction {
@@ -191,6 +193,7 @@ fn run() -> anyhow::Result<ExitCode> {
                 GenTarget::Tokens => generate::tokens::run(&repo)?,
                 GenTarget::Messages => generate::messages::run(&repo)?,
                 GenTarget::Privacy => generate::privacy::run(&repo)?,
+                GenTarget::Api => generate::api::run(&repo)?,
             };
             output::generated(&written);
             Ok(ExitCode::SUCCESS)

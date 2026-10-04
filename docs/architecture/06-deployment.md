@@ -48,6 +48,8 @@ Read when the server starts, strongest first: command line, environment variable
 | `log_level` | `error`, `warn`, `info` or `debug` | `info` |
 | `max_connections` | Most connections open at once | `1024` |
 | `header_timeout_seconds` | Time allowed for a client to send the headers of a request | `30` |
+| `rate_limit_per_minute` | API requests one client network may make per minute | `600` |
+| `sign_in_attempts_per_minute` | Sign-in attempts per minute, for one client network and for one account | `10` |
 
 `tls_mode = "off"` on an address that is not this computer is refused unless `trusted_proxies` is set. The settings file can be named with `--config` or `BUGABOO_CONFIG`; without a name `bugaboo.toml` next to the program is read if it exists. Defaults are relative to the program's folder, not the current folder (a Windows service starts in `System32`); relative paths inside the file are relative to the file. With `tls_mode = "files"` on Linux, a key file that group or others can read is reported as a warning. Enforced by: review (the tests `ops_10_…` and `sec_10_…` in `crates/bb-server` cover it; no catalogue check yet).
 

@@ -8,7 +8,8 @@
 - **Passkeys:** WebAuthn (`webauthn-rs`), as a second step or on their own. **Two-step codes:** TOTP with backup codes (stored hashed).
 - **Company sign-in:** OIDC with PKCE; group claims map to Bugaboo groups.
 - **Sessions:** random 256-bit IDs, stored hashed; cookie `__Host-bb_session` (Secure, HttpOnly, SameSite=Lax). New session ID after sign-in and after any permission change; idle and absolute timeouts; *Where you're signed in* lists and ends sessions.
-- **CSRF:** SameSite cookies plus an `Origin` check plus a per-session token header on every change request.
+- **CSRF:** SameSite cookies plus an `Origin` check plus a per-session token header (`x-csrf-token`) on every change request. The token is also in the cookie `__Host-bb_csrf` (SameSite=Strict; the page reads it and sends it back in the header, which the generated client does for every change). Enforced by: SEC-COOKIES (the cookie table), and the CSRF tests (WP-07).
+- **Cookies:** only strictly necessary ones (the session and the CSRF token), so no consent banner is needed (COMP-13, PRIV-01). One module, `crates/bb-api/src/cookies.rs`, holds the table and is the only code that sets a cookie. Every name starts with `__Host-`, so browsers insist on `Secure`, `Path=/` and no `Domain`; the module adds `HttpOnly` where script has no business reading the cookie. `cargo xtask gen api` writes the list "Cookies we use" to `userDocs/cookies.md` from the same table. Enforced by: SEC-COOKIES (reads the table; finds `Set-Cookie`, cookie libraries and `document.cookie` writes anywhere else).
 - **Access keys** (scripts, apps): `bb_` + prefix + secret; only a hash is stored; shown once; scoped, can expire, can only narrow the owner's permissions.
 - **MCP:** OAuth 2.1 authorization server inside Bugaboo (authorization code + PKCE, dynamic client registration with an admin allow list), short-lived access tokens, refresh token rotation, consent screen per app.
 
@@ -19,7 +20,7 @@
 - **One header layer** wraps the whole router, so pages, files, API answers, errors and 404s carry the same set. Enforced by: SEC-HEADERS (the check compares the header table with the values the integration tests expect, exactly; the tests assert the full set on a page, an asset, an API error and a 404).
 - **HSTS** is sent only when browsers reach us over HTTPS (here, or at a trusted proxy), and **never with `includeSubDomains`** (Bugaboo does not own the other names of its host). Lifetime: **one day** with a certificate Bugaboo made itself, so a person who trusts that certificate on `localhost` does not pin every other local tool to HTTPS; **one year** with a provided certificate or behind a trusted proxy. Enforced by: SEC-HEADERS (no `includeSubDomains`) and the tests `sec_11_hsts_…`.
 - **Compression:** Brotli or gzip for text, but **never for JSON** (API answers, problem+json): a compressed answer that mixes a secret with text an attacker chooses can leak the secret (BREACH). Enforced by: review (a person decides when another content type needs the same care), backed by the test `sec_11_json_answers_are_not_compressed`.
-- **Slow and many clients:** a client has 30 seconds (setting `header_timeout_seconds`) to send the headers of a request, which also ends idle keep-alive connections; HTTP/2 connections are pinged at the same interval. At most 1024 connections (setting `max_connections`) and 256 TLS handshakes run at once. Request-body timeouts come with the first endpoint that reads a body (M1-F06). Enforced by: the tests `sec_10_…slowly…` and `sec_10_no_more_connections…`.
+- **Slow and many clients:** a client has 30 seconds (setting `header_timeout_seconds`) to send the headers of a request, which also ends idle keep-alive connections; HTTP/2 connections are pinged at the same interval. At most 1024 connections (setting `max_connections`) and 256 TLS handshakes run at once. Every API request has 30 seconds to finish, which also stops a request body that arrives too slowly (M1-F06). Enforced by: the tests `sec_10_…slowly…` and `sec_10_no_more_connections…`.
 - **Client address:** the address of the connection is used, with IPv4-mapped IPv6 (`::ffff:a.b.c.d`) always treated as IPv4. `X-Forwarded-For` is believed only from a listed trusted proxy, and supports **exactly one trusted hop**: the last entry of the last header line is what the proxy itself saw; earlier entries are what the client claimed and are ignored. Enforced by: the tests `sec_10_forwarded_for_…` and `sec_10_mapped_…`.
 - **User content** is rendered by one Markdown renderer with an allow list (ADR-0011). Attachments are downloaded, never rendered inline unless they are images or PDFs converted to safe previews.
 
@@ -32,7 +33,8 @@
 ### Limits and abuse
 
 - Rate limits per IP and per account on sign-in, search, API and MCP; slow-down after failures, never a permanent lock that an attacker could trigger.
-- Request size limits; upload limits per project; search complexity limits.
+- **Rate limits (SEC-14)** are counted per minute, in memory, per client network (an IPv4 address, an IPv6 `/64`; the canonical client address from above, never the raw header): all `/api` requests (setting `rate_limit_per_minute`, default 600) and sign-in attempts (setting `sign_in_attempts_per_minute`, default 10) per client network and per account, where the account is kept only as a keyed hash. Going over a limit answers 429 with `Retry-After` and the message `error.rate-limit.exceeded`; nothing is locked for longer than the minute. The limiter is Bugaboo's own fixed window instead of `tower_governor`: it needs no other dependency, reads the canonical client address that the logging layer works out, and gives sign-in the per-account hook that a one-key-per-layer limiter does not. Enforced by: review, backed by the tests `sec_14_*` in `crates/bb-api` (unit tests of the windows, integration tests for the 429 and for the client address).
+- Request size limits; upload limits per project; search complexity limits. API request bodies are limited to 1 MiB unless a route sets its own limit; a bigger body answers `request.too_large`. Enforced by: review, backed by the test `sec_14_a_body_up_to_the_limit_is_read_and_a_bigger_one_is_refused_as_problem_json`.
 
 ## Authorization model
 
@@ -160,7 +162,8 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit
 ## Errors
 
 - One `ErrorCode` enum in `bb-core` (for example `issue.not_found`, `issue.version_conflict`, `search.unknown_field`).
-- The API answers with `application/problem+json`: code, plain-language message key and parameters, request ID.
+- The API answers with `application/problem+json`: `type`, `title`, `status`, `code`, `message_key`, `params` and the `request_id` (the same as the `x-request-id` header). Handlers return an `ApiError` made from an `ErrorCode`: the status, the title and the message key come from the table, and a cause inside the server goes to the log (`ApiError::internal`), never into the answer. Every route in the OpenAPI document lists the standard answers 429, 500 and 503. Enforced by: ARCH-ERRORS (finds error answers built from a text written in the code, and compares the generated API description with the table).
+- The `Display` texts of error types such as `TlsError` are English in code and reach only the log or the terminal; a person reads catalogue messages. Enforced by: ARCH-ERRORS (an error answer cannot be made from a text).
 - The TypeScript client gets the codes as a union type; the UI shows the message from the catalog.
 - An error message in the catalog has no placeholder, so an error cannot carry a name or number the person may not see; anything hidden answers with `resource.not_found`, exactly as if it did not exist. Enforced by: ARCH-ERRORS.
 

@@ -30,7 +30,7 @@ bugaboo/
 ├── web/                    browser app (TypeScript)
 │   ├── app/                the React app: routes and feature folders
 │   └── packages/
-│       ├── api-client/     generated from OpenAPI — never edited by hand
+│       ├── api-client/     types generated from OpenAPI (never edited by hand) and the thin client on top
 │       ├── ui/             shared components on React Aria + generated token CSS
 │       ├── wasm/           generated bindings to bb-wasm
 │       └── messages/       generated, typed message keys
@@ -81,8 +81,8 @@ flowchart TB
 1. `bb-core`, `bb-searchlang` and `bb-markdown` do no I/O and depend on no other Bugaboo crate except `bb-core` (searchlang and markdown not even that; `bb-core` uses `bb-macros` for derives at compile time only), so they compile to WebAssembly.
 2. `bb-app` knows **ports** (traits) only. It never imports `bb-store`, `bb-files`, `bb-ai` or `bb-notify`. Tests run use cases against in-memory fakes.
 3. Only `bb-policy` can create `Authorized<T>`. Its constructor is private to the crate.
-4. Only `bb-api` and `bb-mcp` speak HTTP. Only `bb-server` wires adapters to ports.
-5. The browser app talks to the server only through `@bugaboo/api-client`.
+4. Only `bb-api` and `bb-mcp` speak HTTP. Only `bb-server` wires adapters to ports (`cargo xtask check only ARCH-HTTP-EDGE`).
+5. The browser app talks to the server only through `@bugaboo/api-client` (`cargo xtask check only ARCH-WEB-API`), and has no hand-written types for what the server sends (`LINT-API-TYPES`).
 
 ## The core modules
 
@@ -130,7 +130,7 @@ Test-support crate, used only as a **dev dependency** (`[dev-dependencies]`) and
 
 ### bb-api
 
-axum router; extractors that turn a session cookie, access key or OAuth token into an **actor**; CSRF and origin checks; security headers and CSP; rate limits; `?fields=` projections; cursor pagination; ETags; problem+json errors; OpenAPI generation; the embedded static app.
+axum router; extractors that turn a session cookie, access key or OAuth token into an **actor**; CSRF and origin checks; security headers and CSP; rate limits (`limits`); the one cookie module (`cookies`); `?fields=` projections; cursor pagination; ETags; problem+json errors (`errors`: `ApiError`, `ApiJson`); OpenAPI generation from the handlers' `#[utoipa::path]` descriptions (`openapi`, served at `/api/v1/openapi.json`, printed by `bugaboo openapi`, written to `web/packages/api-client/openapi.json` by `cargo xtask gen api`); the embedded static app.
 
 ### bb-ai and bb-mcp
 
