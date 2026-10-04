@@ -78,6 +78,15 @@ fn is_windows_reserved(part: &str) -> bool {
     WINDOWS_RESERVED.contains(&stem.as_str()) || numbered("COM") || numbered("LPT")
 }
 
+/// Windows lets `INDEX~1.HTM` stand for `index.html` inside a folder (an "8.3 short name"). Such
+/// a name never belongs to the app, so it is refused (M0-F08): a stem of at most eight
+/// characters that ends in `~` and digits.
+fn is_short_name(part: &str) -> bool {
+    let stem = part.rsplit_once('.').map_or(part, |(stem, _)| stem);
+    let digits = stem.len() - stem.trim_end_matches(|c: char| c.is_ascii_digit()).len();
+    digits > 0 && stem.len() <= 8 && stem[..stem.len() - digits].ends_with('~')
+}
+
 /// A path is safe if every part is a plain name: no `..`, no separators or stream markers,
 /// no names Windows treats specially. Applies on every platform so behavior is the same.
 fn is_safe(path: &str) -> bool {
@@ -89,18 +98,21 @@ fn is_safe(path: &str) -> bool {
                 && !part.contains(['\\', ':', '\0'])
                 && !part.ends_with(['.', ' '])
                 && !is_windows_reserved(part)
+                && !is_short_name(part)
         })
 }
 
-/// Turns `%XX` escapes into the bytes they stand for. `None` if the result is not UTF-8.
+/// Turns `%XX` escapes (exactly two hex digits) into the bytes they stand for.
+/// `None` if an escape is malformed or the result is not UTF-8.
 pub(crate) fn decode_path(path: &str) -> Option<String> {
     let bytes = path.as_bytes();
     let mut decoded = Vec::with_capacity(bytes.len());
     let mut index = 0;
     while let Some(&byte) = bytes.get(index) {
         if byte == b'%' {
-            let hex = path.get(index + 1..index + 3)?;
-            decoded.push(u8::from_str_radix(hex, 16).ok()?);
+            let high = hex_digit(*bytes.get(index + 1)?)?;
+            let low = hex_digit(*bytes.get(index + 2)?)?;
+            decoded.push(high * 16 + low);
             index += 3;
         } else {
             decoded.push(byte);
@@ -108,6 +120,16 @@ pub(crate) fn decode_path(path: &str) -> Option<String> {
         }
     }
     String::from_utf8(decoded).ok()
+}
+
+/// `u8::from_str_radix` would also accept a sign (`%+1`), so the digits are read by hand.
+fn hex_digit(byte: u8) -> Option<u8> {
+    match byte {
+        b'0'..=b'9' => Some(byte - b'0'),
+        b'a'..=b'f' => Some(byte - b'a' + 10),
+        b'A'..=b'F' => Some(byte - b'A' + 10),
+        _ => None,
+    }
 }
 
 fn content_type(path: &str) -> String {
@@ -131,6 +153,9 @@ mod tests {
             "my file.txt",
             "console.log",
             "COM10",
+            "app~name.js",
+            "a~1b.txt",
+            "waytoolong~1.txt",
         ] {
             assert!(is_safe(good), "{good}");
         }
@@ -156,6 +181,10 @@ mod tests {
             "LPT9.x",
             "dir/NUL",
             "con .txt",
+            "INDEX~1.HTM",
+            "index~1.html",
+            "assets/APP-1A~2.JS",
+            "PROGRA~1",
         ] {
             assert!(!is_safe(bad), "{bad}");
         }
@@ -170,5 +199,10 @@ mod tests {
         assert_eq!(decode_path("%"), None);
         assert_eq!(decode_path("%zz"), None);
         assert_eq!(decode_path("%FF"), None);
+        // A sign is not a hex digit (M0-F08).
+        assert_eq!(decode_path("%+1"), None);
+        assert_eq!(decode_path("%-1"), None);
+        assert_eq!(decode_path("a%2"), None);
+        assert_eq!(decode_path("%4A").as_deref(), Some("J"));
     }
 }

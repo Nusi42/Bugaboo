@@ -13,8 +13,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-latest, ubuntu-latest]
+        # ubuntu-24.04-arm runs everything on ARM64 and builds the static ARM64 Linux program.
+        os: [windows-latest, ubuntu-latest, ubuntu-24.04-arm]
     runs-on: ${{ matrix.os }}
+    env:
+      # ring compiles a little C code. For the static Linux programs the runner's own compiler
+      # does that, so no extra packages are installed (DIST-01). Not yet run on GitHub (M0-F02).
+      CC_x86_64_unknown_linux_musl: gcc
+      CC_aarch64_unknown_linux_musl: gcc
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0

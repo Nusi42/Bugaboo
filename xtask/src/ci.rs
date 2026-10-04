@@ -6,8 +6,31 @@ use anyhow::Context as _;
 
 use crate::steps::{self, Profile, Step};
 
+/// The static Linux program of this machine's kind (OPS-01, DIST-01): one file for any distro.
+const fn static_linux_target() -> &'static str {
+    if cfg!(target_arch = "aarch64") {
+        "aarch64-unknown-linux-musl"
+    } else {
+        "x86_64-unknown-linux-musl"
+    }
+}
+
+/// Steps that only make sense on Linux: the static program is built and kept as proof that
+/// the one-file build works there. The Windows runner builds its program with `cargo xtask build`.
+fn linux_only(step: Step) -> Step {
+    if cfg!(target_os = "linux") {
+        step
+    } else {
+        Step {
+            skip: Some("only on Linux"),
+            ..step
+        }
+    }
+}
+
 pub(crate) fn plan(root: &Path) -> anyhow::Result<Vec<Step>> {
     let xtask = std::env::current_exe().context("could not find the running xtask program")?;
+    let target = static_linux_target();
     Ok(vec![
         Step::new("all checks", xtask.to_string_lossy(), &["check", "all"]),
         Step::new("Rust tests", "cargo", &["test", "--workspace"]),
@@ -16,6 +39,16 @@ pub(crate) fn plan(root: &Path) -> anyhow::Result<Vec<Step>> {
         // The end-to-end tests start the program themselves (ADR-0023).
         steps::server_build(Profile::Debug),
         Step::web(root, "browser end-to-end tests", &["run", "test:e2e"]),
+        linux_only(Step::new(
+            "add the static Linux target",
+            "rustup",
+            &["target", "add", target],
+        )),
+        linux_only(Step::new(
+            "build the static Linux program",
+            xtask.to_string_lossy(),
+            &["build", "--target", target],
+        )),
     ])
 }
 
@@ -39,7 +72,9 @@ mod tests {
                 "build the browser app",
                 "browser unit tests",
                 "build the bugaboo program",
-                "browser end-to-end tests"
+                "browser end-to-end tests",
+                "add the static Linux target",
+                "build the static Linux program"
             ]
         );
     }
@@ -52,6 +87,10 @@ mod tests {
             .iter()
             .map(|s| s.skip.is_some())
             .collect();
-        assert_eq!(skipped, [false, false, true, true, false, true]);
+        let on_linux = !cfg!(target_os = "linux");
+        assert_eq!(
+            skipped,
+            [false, false, true, true, false, true, on_linux, on_linux]
+        );
     }
 }

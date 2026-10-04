@@ -1,39 +1,31 @@
 //! SEC-11: the running router sends every security header on every kind of response.
 //!
 //! The expected values are written out here on purpose, so changing a header in the code
-//! without changing the requirement (WP-05, architecture §7) fails this test.
+//! without changing the requirement (SEC-11, architecture §7) fails this test (SEC-HEADERS).
 
 // Dependencies of the library that this test does not use itself (`unused_crate_dependencies`).
+use hyper_util as _;
 use mime_guess as _;
+use rcgen as _;
 use rust_embed as _;
+use rustls as _;
 use tokio as _;
+use tokio_rustls as _;
 use tower_http as _;
+use tracing as _;
+use tracing_subscriber as _;
+
+mod common;
 
 #[cfg(test)] // Clippy lets tests unwrap only inside test modules (clippy.toml).
 mod headers {
     use axum::body::Body;
     use axum::http::{Method, Request, StatusCode};
     use axum::response::Response;
-    use bb_api::{WebSource, router};
-    use tower::ServiceExt as _;
+    use bb_api::{Options, WebSource, router};
 
-    const EXPECTED: [(&str, &str); 6] = [
-        (
-            "content-security-policy",
-            "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; \
-             font-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; \
-             form-action 'self'; require-trusted-types-for 'script'",
-        ),
-        ("x-content-type-options", "nosniff"),
-        ("referrer-policy", "same-origin"),
-        ("cross-origin-opener-policy", "same-origin"),
-        ("cross-origin-resource-policy", "same-origin"),
-        (
-            "permissions-policy",
-            "accelerometer=(), camera=(), display-capture=(), geolocation=(), gyroscope=(), \
-             magnetometer=(), microphone=(), payment=(), usb=(), browsing-topics=()",
-        ),
-    ];
+    use super::common::{EXPECTED, HSTS_NAME, HSTS_SELF_SIGNED, HSTS_TRUSTED};
+    use tower::ServiceExt as _;
 
     fn app_folder() -> tempfile::TempDir {
         let dir = tempfile::tempdir().unwrap();
@@ -43,13 +35,27 @@ mod headers {
         dir
     }
 
-    async fn send(web: WebSource, method: Method, path: &str) -> Response {
+    fn options(web: WebSource, hsts_max_age: Option<u64>) -> Options {
+        Options {
+            web,
+            hsts_max_age,
+            header_timeout: std::time::Duration::from_secs(30),
+            data_folder: std::env::temp_dir(),
+            trusted_proxies: vec![],
+        }
+    }
+
+    async fn send_with(options: Options, method: Method, path: &str) -> Response {
         let request = Request::builder()
             .method(method)
             .uri(path)
             .body(Body::empty())
             .unwrap();
-        router(web).oneshot(request).await.unwrap()
+        router(options).oneshot(request).await.unwrap()
+    }
+
+    async fn send(web: WebSource, method: Method, path: &str) -> Response {
+        send_with(options(web, None), method, path).await
     }
 
     fn assert_headers(response: &Response, what: &str) {
@@ -57,6 +63,69 @@ mod headers {
             let actual = response.headers().get(name).map(|v| v.to_str().unwrap());
             assert_eq!(actual, Some(value), "{name} on {what}");
         }
+    }
+
+    #[tokio::test]
+    async fn sec_11_headers_on_a_page_an_asset_an_api_error_and_a_404() {
+        let dir = app_folder();
+        let cases = [
+            ("/", StatusCode::OK),
+            ("/assets/app-1a2b.js", StatusCode::OK),
+            ("/api/anything", StatusCode::NOT_FOUND),
+            ("/missing.js", StatusCode::NOT_FOUND),
+        ];
+        for (path, status) in cases {
+            let response = send(WebSource::Folder(dir.path().into()), Method::GET, path).await;
+            assert_eq!(response.status(), status, "{path}");
+            assert_headers(&response, path);
+        }
+        let post = send(WebSource::Folder(dir.path().into()), Method::POST, "/api/x").await;
+        assert_eq!(post.status(), StatusCode::NOT_FOUND);
+        assert_headers(&post, "POST /api/x");
+    }
+
+    #[tokio::test]
+    async fn sec_11_hsts_depends_on_https_and_on_who_made_the_certificate() {
+        let dir = app_folder();
+        let web = || WebSource::Folder(dir.path().into());
+        for (seconds, expected) in [
+            (bb_api::HSTS_MAX_AGE_SELF_SIGNED, HSTS_SELF_SIGNED),
+            (bb_api::HSTS_MAX_AGE_TRUSTED, HSTS_TRUSTED),
+        ] {
+            let secure = send_with(options(web(), Some(seconds)), Method::GET, "/").await;
+            let value = secure.headers().get(HSTS_NAME).unwrap().to_str().unwrap();
+            assert_eq!(value, expected);
+            assert!(!value.to_lowercase().contains("includesubdomains"));
+            assert_headers(&secure, "https");
+        }
+        let plain = send_with(options(web(), None), Method::GET, "/").await;
+        assert!(plain.headers().get(HSTS_NAME).is_none());
+    }
+
+    #[tokio::test]
+    async fn ops_08_health_answers_are_never_cached() {
+        let dir = app_folder();
+        let response = send(
+            WebSource::Folder(dir.path().into()),
+            Method::GET,
+            "/health/live",
+        )
+        .await;
+        assert_eq!(response.headers().get("cache-control").unwrap(), "no-store");
+    }
+
+    #[tokio::test]
+    async fn ops_08_every_response_has_a_request_id() {
+        let dir = app_folder();
+        let first = send(WebSource::Folder(dir.path().into()), Method::GET, "/").await;
+        let second = send(
+            WebSource::Folder(dir.path().into()),
+            Method::GET,
+            "/missing.js",
+        )
+        .await;
+        let id = |response: &Response| response.headers().get("x-request-id").unwrap().clone();
+        assert_ne!(id(&first), id(&second));
     }
 
     #[tokio::test]
@@ -76,7 +145,7 @@ mod headers {
             "/missing.js",
             "/assets/missing.js",
             "/api/x",
-            "/health/ready",
+            "/health/other",
         ] {
             let response = send(WebSource::Folder(dir.path().into()), Method::GET, path).await;
             assert_eq!(response.status(), StatusCode::NOT_FOUND, "{path}");

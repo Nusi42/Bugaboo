@@ -406,11 +406,37 @@
 <ul>
 <li><strong>Install:</strong> download, <code>bugaboo setup</code> (data folder, port, HTTPS), <code>bugaboo service install</code>, then the browser setup with the setup code.</li>
 <li><strong>Start-up settings</strong> (address, port, data folder, certificates, database URL) live in <code>bugaboo.toml</code> or environment variables. Everything else is in the database and changed in the UI.</li>
-<li><strong>HTTPS:</strong> built-in TLS with a generated certificate, a provided certificate, or ACME. Plain HTTP only on localhost or behind an explicitly trusted proxy.</li>
+<li><strong>HTTPS (SEC-10):</strong> built-in TLS (rustls with the <code>ring</code> provider) with a generated certificate, a provided certificate, or ACME (V1). Plain HTTP is allowed only on this computer (<code>127.0.0.1</code>, <code>::1</code>) or behind explicitly named proxies. Enforced by: the start-up settings check (tests <code>sec_10_…</code> in <code>crates/bb-server</code>) and SEC-HEADERS for HSTS.</li>
 <li><strong>Master key:</strong> generated on first start, stored outside the database, readable only by the service account. It encrypts stored secrets and backups.</li>
 <li><strong>Upgrades:</strong> replace the binary; on start, Bugaboo makes a backup, then runs migrations. If a migration fails, it restores the backup and stops with a plain explanation of how to go back to the previous version.</li>
 <li><strong>Also offered:</strong> container image (non-root, read-only file system except the data volume), winget/MSI, .deb/.rpm.</li>
 </ul>
+<h4>Start-up settings (OPS-10)</h4>
+<p>Read when the server starts, strongest first: command line, environment variable, <code>bugaboo.toml</code>, built-in default. Each setting has the same name everywhere; its variable is <code>BUGABOO_</code> plus the name in capitals. Wrong values stop the start with a plain sentence (messages <code>config.*</code>).</p>
+<div class="tbl-wrap"><table class="dtable"><thead><tr><th>Setting</th><th>Meaning</th><th>Default</th></tr></thead><tbody>
+<tr><td><code>address</code></td><td>IP address to listen on</td><td><code>127.0.0.1</code></td></tr>
+<tr><td><code>port</code></td><td>Port to listen on</td><td>none; the start stops without one (ADR-0023)</td></tr>
+<tr><td><code>data_dir</code></td><td>The data folder</td><td><code>bugaboo-data</code> next to the program</td></tr>
+<tr><td><code>database_url</code></td><td><code>sqlite:…</code> or <code>postgres://…</code>; empty means the built-in SQLite file in the data folder</td><td>empty</td></tr>
+<tr><td><code>tls_mode</code></td><td><code>self-signed</code>, <code>files</code> or <code>off</code></td><td><code>self-signed</code></td></tr>
+<tr><td><code>tls_cert</code>, <code>tls_key</code></td><td>Certificate chain and private key (PEM), with <code>tls_mode = "files"</code></td><td>none</td></tr>
+<tr><td><code>tls_names</code></td><td>Extra host names or addresses for the generated certificate</td><td>none</td></tr>
+<tr><td><code>trusted_proxies</code></td><td>Addresses of proxies that add HTTPS; with <code>tls_mode = "off"</code> only they may connect</td><td>none</td></tr>
+<tr><td><code>log_level</code></td><td><code>error</code>, <code>warn</code>, <code>info</code> or <code>debug</code></td><td><code>info</code></td></tr>
+<tr><td><code>max_connections</code></td><td>Most connections open at once</td><td><code>1024</code></td></tr>
+<tr><td><code>header_timeout_seconds</code></td><td>Time allowed for a client to send the headers of a request</td><td><code>30</code></td></tr>
+</tbody></table>
+</div>
+<p><code>tls_mode = "off"</code> on an address that is not this computer is refused unless <code>trusted_proxies</code> is set. The settings file can be named with <code>--config</code> or <code>BUGABOO_CONFIG</code>; without a name <code>bugaboo.toml</code> next to the program is read if it exists. Defaults are relative to the program's folder, not the current folder (a Windows service starts in <code>System32</code>); relative paths inside the file are relative to the file. With <code>tls_mode = "files"</code> on Linux, a key file that group or others can read is reported as a warning. Enforced by: review (the tests <code>ops_10_…</code> and <code>sec_10_…</code> in <code>crates/bb-server</code> cover it; no catalogue check yet).</p>
+<h4>Data folder</h4>
+<pre><code>bugaboo.db   the built-in database (made by the store)
+files/       attachments
+keys/        the master key and other secrets
+backups/     backups
+tls/         the generated certificate and its key</code></pre>
+<p>Folders that Bugaboo creates are readable by their owner only: mode <code>0700</code> on Linux, and on Windows an access list that grants only the account running Bugaboo. Key and certificate files are written with mode <code>0600</code> on Linux. <code>keys/</code> and <code>tls/</code> are checked on <strong>every start</strong> and made private again if someone loosened them (Windows: the access list is reset to the running account, found by its SID, not its name). Certificate and key are written as new files and renamed into place (key first, certificate second), and a key that does not belong to the certificate is replaced. A self-signed certificate is valid for one year and renewed when less than 30 days are left at start-up, or when <code>tls_names</code> changes. Enforced by: tests <code>sec_16_…</code> and <code>sec_10_…</code>.</p>
+<h4>One file per system (OPS-01, DIST-01)</h4>
+<p><code>cargo xtask build</code> builds the browser app and then the release program with the browser app inside (<code>rust-embed</code>); <code>--target</code> builds for another system. Windows x64 is built on the development PC. Static Linux programs (<code>x86_64-unknown-linux-musl</code>, <code>aarch64-unknown-linux-musl</code>) are built by <code>cargo xtask ci</code> on Linux machines, which the CI workflow runs once the repository is on GitHub. Windows ARM64 waits for the MSVC ARM64 tools (follow-up M1-F01). The program has no edition or model switch: differences between self-hosted and hosted come from the settings above only.</p>
 <h3 id="s6-2"><button class="sec" data-sec>§6.2</button>Served: we run it (hosted by Bugaboo)</h3>
 <pre class="mermaid">flowchart TB
   subgraph eu["EU data centre"]
@@ -468,6 +494,11 @@
 <ul>
 <li><strong>Content Security Policy:</strong> <code>default-src 'self'</code>; scripts and styles only from our own origin, no inline code, no <code>eval</code>; <code>frame-ancestors 'none'</code>; <code>require-trusted-types-for 'script'</code>; images from our origin and <code>data:</code> only (outside images only if an admin allows the host).</li>
 <li><strong>Other headers:</strong> HSTS, <code>X-Content-Type-Options: nosniff</code>, COOP/CORP, a tight Permissions-Policy, <code>Referrer-Policy: same-origin</code>.</li>
+<li><strong>One header layer</strong> wraps the whole router, so pages, files, API answers, errors and 404s carry the same set. Enforced by: SEC-HEADERS (the check compares the header table with the values the integration tests expect, exactly; the tests assert the full set on a page, an asset, an API error and a 404).</li>
+<li><strong>HSTS</strong> is sent only when browsers reach us over HTTPS (here, or at a trusted proxy), and <strong>never with <code>includeSubDomains</code></strong> (Bugaboo does not own the other names of its host). Lifetime: <strong>one day</strong> with a certificate Bugaboo made itself, so a person who trusts that certificate on <code>localhost</code> does not pin every other local tool to HTTPS; <strong>one year</strong> with a provided certificate or behind a trusted proxy. Enforced by: SEC-HEADERS (no <code>includeSubDomains</code>) and the tests <code>sec_11_hsts_…</code>.</li>
+<li><strong>Compression:</strong> Brotli or gzip for text, but <strong>never for JSON</strong> (API answers, problem+json): a compressed answer that mixes a secret with text an attacker chooses can leak the secret (BREACH). Enforced by: review (a person decides when another content type needs the same care), backed by the test <code>sec_11_json_answers_are_not_compressed</code>.</li>
+<li><strong>Slow and many clients:</strong> a client has 30 seconds (setting <code>header_timeout_seconds</code>) to send the headers of a request, which also ends idle keep-alive connections; HTTP/2 connections are pinged at the same interval. At most 1024 connections (setting <code>max_connections</code>) and 256 TLS handshakes run at once. Request-body timeouts come with the first endpoint that reads a body (M1-F06). Enforced by: the tests <code>sec_10_…slowly…</code> and <code>sec_10_no_more_connections…</code>.</li>
+<li><strong>Client address:</strong> the address of the connection is used, with IPv4-mapped IPv6 (<code>::ffff:a.b.c.d</code>) always treated as IPv4. <code>X-Forwarded-For</code> is believed only from a listed trusted proxy, and supports <strong>exactly one trusted hop</strong>: the last entry of the last header line is what the proxy itself saw; earlier entries are what the client claimed and are ignored. Enforced by: the tests <code>sec_10_forwarded_for_…</code> and <code>sec_10_mapped_…</code>.</li>
 <li><strong>User content</strong> is rendered by one Markdown renderer with an allow list (ADR-0011). Attachments are downloaded, never rendered inline unless they are images or PDFs converted to safe previews.</li>
 </ul>
 <h4>Secrets and keys</h4>
@@ -595,8 +626,8 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 </ul>
 <h3 id="s7-10"><button class="sec" data-sec>§7.10</button>Observability</h3>
 <ul>
-<li>Structured JSON logs (<code>tracing</code>) with request IDs; no personal data in logs.</li>
-<li>Health endpoints (<code>/health/live</code>, <code>/health/ready</code>); optional Prometheus metrics, off by default and protected.</li>
+<li>Structured JSON logs (<code>tracing</code>, one object per line on standard error) with random request IDs. One line per request holds the request ID, method, route pattern, status, duration and the client network cut short (IPv4 <code>/24</code>, IPv6 <code>/48</code>); never the path as typed, the query, headers, bodies, names, e-mail addresses or free text. Enforced by: DATA-LOGS.</li>
+<li>Health endpoints: <code>/health/live</code> answers while the process runs; <code>/health/ready</code> also checks the data folder (and the database once the store exists) and answers 503 when something is missing; both are sent with <code>Cache-Control: no-store</code>; optional Prometheus metrics, off by default and protected.</li>
 <li>The admin <em>Status</em> page shows version, database, disk, jobs, backups and certificate expiry.</li>
 </ul>
 <h3 id="s7-11"><button class="sec" data-sec>§7.11</button>Performance</h3>
@@ -874,10 +905,10 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 <tr><td><code>SEC-SECRETS</code></td><td>No keys, tokens or passwords committed</td><td>SEC-16</td><td>gitleaks</td><td>commit · ci</td></tr>
 <tr><td><code>SEC-PATTERNS</code></td><td>No unwrap/expect/panic in production code, no dangerouslySetInnerHTML, eval or new Function</td><td>coding-standards §3, §4</td><td>ast-grep</td><td>edit · commit · ci</td></tr>
 <tr><td><code>SEC-MATRIX</code></td><td>Generated permission matrix passes for every entry point (UI API, search, MCP, assistant, e-mail, webhooks, exports)</td><td>ADR-0004</td><td>generated tests</td><td>ci</td></tr>
-<tr><td><code>SEC-HEADERS</code></td><td>Running server sends the required security headers and CSP</td><td>SEC-11</td><td>integration test</td><td>ci</td></tr>
+<tr><td><code>SEC-HEADERS</code></td><td>Running server sends the required security headers and CSP</td><td>SEC-11</td><td>xtask (header table and tests agree with SEC-11) + integration tests in crates/bb-api/tests</td><td>edit · commit · ci</td></tr>
 <tr><td><code>SEC-ADVISORIES</code></td><td>No known vulnerabilities without a VEX statement</td><td>COMP-03</td><td>cargo-deny advisories + OSV for npm</td><td>ci · nightly</td></tr>
 <tr><td><code>DATA-MARKS</code></td><td>Every stored field is marked as personal data or not</td><td>ADR-0015, PRIV-02</td><td>derive macro (compile error) + xtask report</td><td>edit · ci</td></tr>
-<tr><td><code>DATA-LOGS</code></td><td>No names, e-mail addresses or free text in log statements</td><td>architecture §7 (Observability), PRIV-01</td><td>ast-grep (tracing macros with personal fields)</td><td>edit · commit · ci</td></tr>
+<tr><td><code>DATA-LOGS</code></td><td>No names, e-mail addresses or free text in log statements</td><td>architecture §7 (Observability), PRIV-01</td><td>xtask (reads every tracing macro in product code)</td><td>edit · commit · ci</td></tr>
 <tr><td><code>DATA-MIGRATIONS</code></td><td>Schema is defined once; migrations run on both databases from one source</td><td>ADR-0003</td><td>xtask (no .sql migration files; migration test on both)</td><td>ci</td></tr>
 <tr><td><code>DEP-REGISTER</code></td><td>Every direct dependency has a third-party register entry, and every entry a dependency</td><td>COMP-02, coding-standards §5</td><td>xtask (lockfiles vs docs/third-party)</td><td>push · ci</td></tr>
 <tr><td><code>DEP-LICENSES</code></td><td>Only licenses on the allow list ship</td><td>architecture §1 (licenses)</td><td>cargo-deny licenses + npm license check against the same list</td><td>push · ci</td></tr>

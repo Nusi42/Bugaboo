@@ -19,3 +19,7 @@ extend-glob = ["*.html"]
 [type.html.extend-words]
 nd = "nd"
 pn = "pn"
+
+# The `/fo` (format) switch of Windows' whoami.exe, written in the data folder code.
+[type.rust.extend-words]
+fo = "fo"

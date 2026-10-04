@@ -66,6 +66,85 @@ pub(crate) fn load(root: &Path) -> anyhow::Result<Vec<Package>> {
     parse(&String::from_utf8_lossy(&out.stdout))
 }
 
+/// One package of the full `cargo metadata` output.
+#[derive(Deserialize)]
+struct Resolved {
+    id: String,
+    name: String,
+    version: String,
+    /// `None` for packages that are folders in this repository.
+    source: Option<String>,
+}
+
+#[derive(Deserialize)]
+struct Link {
+    pkg: String,
+}
+
+#[derive(Deserialize)]
+struct Node {
+    id: String,
+    deps: Vec<Link>,
+}
+
+#[derive(Deserialize)]
+struct Graph {
+    nodes: Vec<Node>,
+}
+
+#[derive(Deserialize)]
+struct FullMetadata {
+    packages: Vec<Resolved>,
+    workspace_members: Vec<String>,
+    resolve: Graph,
+}
+
+/// Name -> the versions that workspace members really depend on directly (the locked packages).
+pub(crate) type DirectVersions =
+    std::collections::BTreeMap<String, std::collections::BTreeSet<String>>;
+
+/// Runs `cargo metadata` with the resolved graph and returns the locked version of every
+/// external package a workspace member lists as a dependency.
+pub(crate) fn load_direct_versions(root: &Path) -> anyhow::Result<DirectVersions> {
+    let out = Command::new("cargo")
+        .args(["metadata", "--locked", "--format-version", "1"])
+        .current_dir(root)
+        .output()
+        .context("could not run cargo; is Rust installed?")?;
+    if !out.status.success() {
+        bail!(
+            "cargo metadata failed: {}",
+            String::from_utf8_lossy(&out.stderr).trim()
+        );
+    }
+    direct_versions(&String::from_utf8_lossy(&out.stdout))
+}
+
+pub(crate) fn direct_versions(json: &str) -> anyhow::Result<DirectVersions> {
+    let metadata: FullMetadata = serde_json::from_str(json).context("unreadable cargo metadata")?;
+    let mut versions = DirectVersions::new();
+    for node in metadata
+        .resolve
+        .nodes
+        .iter()
+        .filter(|node| metadata.workspace_members.contains(&node.id))
+    {
+        for link in &node.deps {
+            let package = metadata
+                .packages
+                .iter()
+                .find(|package| package.id == link.pkg && package.source.is_some());
+            if let Some(package) = package {
+                versions
+                    .entry(package.name.clone())
+                    .or_default()
+                    .insert(package.version.clone());
+            }
+        }
+    }
+    Ok(versions)
+}
+
 pub(crate) fn parse(json: &str) -> anyhow::Result<Vec<Package>> {
     let metadata: Metadata = serde_json::from_str(json).context("unreadable cargo metadata")?;
     Ok(metadata.packages)
@@ -99,6 +178,25 @@ pub(crate) mod fixtures {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn direct_versions_ignore_transitive_duplicates() {
+        let json = r#"{
+            "packages": [
+              {"id":"app 0.0.0 (path+file:///a)","name":"app","version":"0.0.0","source":null},
+              {"id":"x 1.0.0 (registry+r)","name":"x","version":"1.0.0","source":"registry+r"},
+              {"id":"x 2.0.0 (registry+r)","name":"x","version":"2.0.0","source":"registry+r"}
+            ],
+            "workspace_members": ["app 0.0.0 (path+file:///a)"],
+            "resolve": {"nodes": [
+              {"id":"app 0.0.0 (path+file:///a)","deps":[{"pkg":"x 2.0.0 (registry+r)"}]},
+              {"id":"x 2.0.0 (registry+r)","deps":[{"pkg":"x 1.0.0 (registry+r)"}]}
+            ]}
+        }"#;
+        let versions = direct_versions(json).unwrap();
+        assert_eq!(versions["x"].iter().collect::<Vec<_>>(), ["2.0.0"]);
+        assert!(!versions.contains_key("app"));
+    }
 
     #[test]
     fn this_workspace_is_readable() {
