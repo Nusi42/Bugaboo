@@ -7,9 +7,9 @@ M1 has more dependencies between its parts than M0, so it runs in **waves**. A w
 | Wave | WP | Name | Who | Folder / branch | Status |
 |------|----|------|-----|-----------------|--------|
 | 1 | [WP-01](WP-01-threat-model.md) | Threat model and data-flow docs, plan | Lead | `bugaboo.win1` / `WIN1` | merged |
-| 1 | [WP-02](WP-02-core-foundations.md) | Core foundations: IDs, error codes, personal-data marks, events, settings, messages in Rust | Builder | `bugaboo.win2` / `WIN2` | building |
-| 1 | [WP-03](WP-03-database-tooling.md) | Database tooling: local PostgreSQL, test harness for both databases | Builder | `bugaboo.win3` / `WIN3` | building |
-| 1 | [WP-04](WP-04-server-hardening.md) | Server hardening: HTTPS, security headers, one binary, start-up config, health, logs, M0 follow-ups | Builder | `bugaboo.win4` / `WIN4` | building |
+| 1 | [WP-02](WP-02-core-foundations.md) | Core foundations: IDs, error codes, personal-data marks, events, settings, messages in Rust | Builder | `bugaboo.win2` / `WIN2` | fixing |
+| 1 | [WP-03](WP-03-database-tooling.md) | Database tooling: local PostgreSQL, test harness for both databases | Builder | `bugaboo.win3` / `WIN3` | merged |
+| 1 | [WP-04](WP-04-server-hardening.md) | Server hardening: HTTPS, security headers, one binary, start-up config, health, logs, M0 follow-ups | Builder | `bugaboo.win4` / `WIN4` | merged |
 | 2 | [WP-05](WP-05-store.md) | Store: schema once for both databases, event log and outbox, jobs, security log, secrets | Builder | `bugaboo.win2` / `WIN2` | waiting |
 | 2 | [WP-06](WP-06-api-skeleton.md) | API skeleton: OpenAPI, generated TypeScript client, problem+json, rate limits | Builder | `bugaboo.win3` / `WIN3` | waiting |
 | 3 | [WP-07](WP-07-sign-in.md) | Signing in: passwords, sessions, CSRF, two-step codes, passkeys, invitations, setup code | Builder | `bugaboo.win4` / `WIN4` | waiting |

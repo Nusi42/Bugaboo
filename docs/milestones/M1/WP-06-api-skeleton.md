@@ -19,6 +19,13 @@ One documented API surface. The browser only talks to it through a generated cli
 4. **Cookies (COMP-13, PRIV-01):** only essential cookies (session, CSRF); a single cookie policy module that sets `__Host-`, `Secure`, `HttpOnly`, `SameSite=Strict/Lax` — no other code sets cookies (check). No consent banner needed; a short "cookies we use" list is generated for user docs.
 5. **Browser client:** thin fetch wrapper using the generated types, CSRF header, problem+json → message key; TanStack Query integration hook. ARCH-WEB-API: no `fetch(` to `/api` outside this package; LINT-API-TYPES: no hand-written API response types.
 
+## Notes from Wave 1 (read before starting)
+
+- **Problem body (WP-02):** `bb_core::Problem` already has code, message key, params and status, with an optional request ID; bb-api fills in the request ID (WP-04's `x-request-id`). Complete ARCH-ERRORS' API part (it only catches single-line literals today).
+- **Compression:** JSON answers are never compressed (BREACH; architecture §7). Keep it that way for API answers that carry tokens.
+- **Client address for rate limits:** use the canonical peer address WP-04 computes (one trusted proxy hop, last `X-Forwarded-For` entry), never the raw header.
+- **Server texts:** use the generated `bb_core::message` API; no strings in handlers.
+
 ## Acceptance
 
 - Contract test: spec on disk equals the served spec; TS types compile; an example endpoint round-trips through the client in a Vitest test.

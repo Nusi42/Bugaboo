@@ -21,6 +21,14 @@
 6. **Settings storage:** values per level from the WP-02 registry; unknown keys rejected.
 7. **Tests:** every repository test runs on both databases through the WP-03 harness; property test for the hash chain (any changed row breaks verification).
 
+## Notes from Wave 1 (read before starting)
+
+- **Test harness (WP-03):** `bb-testing::each_database` hands out typed pools (`Pool::Sqlite` / `Pool::Postgres`); use them with sea-query-sqlx, not an Any driver. `bb-testing` may only be a dev-dependency (ARCH-DEPS). Run tests through `cargo xtask db run -- cargo test …` or `cargo xtask ci`.
+- **Migration test name:** DATA-MIGRATIONS requires a test named `migrations` that runs on both databases once `crates/bb-store/src/migrations*` exists.
+- **IDs and time (WP-02):** `bb-core` is pure: IDs are built from a timestamp and random bytes passed in. Put the real clock and random source into the use-case context here (or in `bb-app`, per the module map), never into `bb-core`. People's IDs are fully random (no time in them).
+- **Personal-data marks:** every stored struct derives `Entity` and is listed in `entities!`; a stored struct without marks is a finding (extend DATA-MARKS so a table definition without an `Entity` fails).
+- **Settings:** `Setting::resolve` reports a wrongly typed stored value as an error; log it (ID only) and use the default only after that.
+
 ## Acceptance
 
 - `cargo xtask ci` green with both databases recorded; ARCH-DB-PARITY and DATA-MIGRATIONS green.
