@@ -22,7 +22,7 @@ const messages = stylelint.utils.ruleMessages(ruleName, {
     `Unexpected system color "${word}". Use a token, or move it into @media (forced-colors: active).`,
 });
 const systemColor =
-  /(?<![\w-])(?:AccentColor|AccentColorText|ActiveText|ButtonBorder|ButtonFace|ButtonText|Canvas|CanvasText|Field|FieldText|GrayText|Highlight|HighlightText|LinkText|Mark|MarkText|SelectedItem|SelectedItemText|VisitedText)(?![\w-])/i;
+  /(?<![\w-])(?:AccentColor|AccentColorText|ActiveText|ButtonBorder|ButtonFace|ButtonText|Canvas|CanvasText|Field|FieldText|GrayText|Highlight|HighlightText|LinkText|Mark|MarkText|SelectedItem|SelectedItemText|VisitedText)(?![\w-])/iu;
 const systemColorsPlugin = stylelint.createPlugin(ruleName, (enabled) => (root, result) => {
   if (!enabled) {
     return;
@@ -36,7 +36,7 @@ const systemColorsPlugin = stylelint.createPlugin(ruleName, (enabled) => (root, 
       if (
         node.type === "atrule" &&
         node.name === "media" &&
-        /forced-colors\s*:\s*active/i.test(node.params)
+        /forced-colors\s*:\s*active/iu.test(node.params)
       ) {
         return;
       }
