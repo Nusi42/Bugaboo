@@ -13,7 +13,7 @@ use anyhow::{Context as _, bail};
 use serde::Deserialize;
 
 use crate::output;
-use crate::steps::{self, Profile, WEB_APP};
+use crate::steps::{self, Profile};
 
 /// Where the ports live; `BB_PORTS_FILE` overrides it for a second checkout (ADR-0023).
 const PORTS_FILE: &str = "tools/dev/ports.json";
@@ -117,7 +117,7 @@ pub(crate) fn run(root: &Path) -> anyhow::Result<bool> {
             name: "browser app",
             child: spawn(
                 Command::new(steps::npm())
-                    .args(["run", "dev", "-w", WEB_APP, "--"])
+                    .args(["run", "dev", "--"])
                     .args(["--port", &ports.web.to_string(), "--strictPort"])
                     .current_dir(root),
                 "Vite dev server",

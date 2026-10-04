@@ -4,7 +4,7 @@ use std::path::Path;
 
 use anyhow::Context as _;
 
-use crate::steps::{self, Profile, Step, WEB_APP};
+use crate::steps::{self, Profile, Step};
 
 pub(crate) fn plan(root: &Path) -> anyhow::Result<Vec<Step>> {
     let xtask = std::env::current_exe().context("could not find the running xtask program")?;
@@ -12,14 +12,10 @@ pub(crate) fn plan(root: &Path) -> anyhow::Result<Vec<Step>> {
         Step::new("all checks", xtask.to_string_lossy(), &["check", "all"]),
         Step::new("Rust tests", "cargo", &["test", "--workspace"]),
         steps::web_build(root),
-        Step::web(root, "browser unit tests", &["test", "-w", WEB_APP]),
+        Step::web(root, "browser unit tests", &["test"]),
         // The end-to-end tests start the program themselves (ADR-0023).
         steps::server_build(Profile::Debug),
-        Step::web(
-            root,
-            "browser end-to-end tests",
-            &["exec", "-w", WEB_APP, "--", "playwright", "test"],
-        ),
+        Step::web(root, "browser end-to-end tests", &["run", "test:e2e"]),
     ])
 }
 
