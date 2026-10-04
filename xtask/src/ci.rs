@@ -33,7 +33,12 @@ pub(crate) fn plan(root: &Path) -> anyhow::Result<Vec<Step>> {
     let target = static_linux_target();
     Ok(vec![
         Step::new("all checks", xtask.to_string_lossy(), &["check", "all"]),
-        Step::new("Rust tests", "cargo", &["test", "--workspace"]),
+        // SQLite and PostgreSQL: the cluster is started, used and stopped around the tests.
+        Step::new(
+            "Rust tests",
+            xtask.to_string_lossy(),
+            &["db", "run", "--", "cargo", "test", "--workspace"],
+        ),
         steps::web_build(root),
         Step::web(root, "browser unit tests", &["test"]),
         // The end-to-end tests start the program themselves (ADR-0023).

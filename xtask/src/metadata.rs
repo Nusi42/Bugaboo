@@ -21,6 +21,9 @@ pub(crate) struct Dependency {
     pub(crate) name: String,
     /// Set when the dependency is a folder in this repository.
     pub(crate) path: Option<PathBuf>,
+    /// `None` for a normal dependency, else `dev` or `build`.
+    #[serde(default)]
+    pub(crate) kind: Option<String>,
 }
 
 /// A library, binary or other target of a package.
@@ -165,6 +168,7 @@ pub(crate) mod fixtures {
                 .map(|dep| Dependency {
                     name: (*dep).to_owned(),
                     path: Some(PathBuf::from(format!("crates/{dep}"))),
+                    kind: None,
                 })
                 .collect(),
             targets: vec![Target {

@@ -389,10 +389,10 @@ status = "active"
 id = "ARCH-DB-PARITY"
 title = "Repository tests ran on both SQLite and PostgreSQL"
 rule = "ADR-0003"
-tool = "CI matrix + xtask (compares test reports)"
+tool = "xtask (reads target/db-parity.txt written by the test harness)"
 when = ["ci"]
-files = ["crates/bb-store/**"]
-status = "planned"
+files = ["crates/bb-store/**", "crates/bb-testing/**"]
+status = "active"
 
 [[check]]
 id = "ARCH-PERSON-REF"
@@ -493,7 +493,7 @@ rule = "ADR-0003"
 tool = "xtask (no .sql migration files; migration test on both)"
 when = ["ci"]
 files = ["crates/bb-store/**"]
-status = "planned"
+status = "active"
 
 # ───────────── Dependencies and compliance ─────────────
 [[check]]

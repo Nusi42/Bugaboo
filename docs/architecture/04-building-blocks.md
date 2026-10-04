@@ -21,6 +21,7 @@ bugaboo/
 │   ├── bb-jobs/            background job runner and schedules
 │   ├── bb-api/             HTTP: routes, OpenAPI, security headers, rate limits, static app
 │   ├── bb-wasm/            WebAssembly bindings for searchlang, markdown, validation
+│   ├── bb-testing/         test harness: runs one test body on SQLite and PostgreSQL (dev dependency only)
 │   └── bb-server/          the `bugaboo` binary: CLI, setup wizard, service install, wiring
 ├── xtask/                  the single check/build runner (cargo xtask …)
 ├── tools/                  check catalogue, pinned tool versions, dev ports
@@ -57,6 +58,7 @@ flowchart TB
   notify["bb-notify"]
   jobs["bb-jobs"]
   wasm["bb-wasm"]
+  testing["bb-testing<br/>database test harness"]
 
   server --> api & jobs & store & files & ai & notify & auth
   api --> app & auth & mcp
@@ -71,6 +73,7 @@ flowchart TB
   notify -. implements ports .-> app
   store --> search & policy
   wasm --> search & md
+  store -. tests only .-> testing
 ```
 
 ### Dependency rules (checked by `cargo xtask check only ARCH-DEPS`)
@@ -120,6 +123,10 @@ pub async fn change_status(
 ### bb-store
 
 sqlx connection pools, migrations (defined once with the query builder, run on both databases), repositories implementing `bb-app` ports, the **search compiler** (syntax tree + permission predicates → SQL), full-text search adapters, the event log and outbox, and the job queue tables.
+
+### bb-testing
+
+Test-support crate, used only as a **dev dependency** (`[dev-dependencies]`) and never shipped (ARCH-DEPS fails on any other kind of dependency on it). `each_database` runs one async test body against every database named in `BB_TEST_DATABASES` (`sqlite`, `postgres`; default `sqlite`), each with a brand-new empty database that is removed afterwards (also when the test panics), hands the body a typed pool (`Pool::Sqlite` or `Pool::Postgres`), and records what ran for ARCH-DB-PARITY. It depends on no other Bugaboo crate. How it is wired to `cargo xtask db` and `cargo xtask ci` is in [testing](11-testing.md#database-tests).
 
 ### bb-api
 
