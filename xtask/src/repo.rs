@@ -6,48 +6,48 @@ use std::process::Command;
 
 use anyhow::{Context as _, bail};
 
-/// The working files that were swapped for their staged content; dropping restores them.
-pub(crate) struct StagedView {
-    /// The working file, and the copy of its unstaged content (`None`: the file did not exist).
-    saved: Vec<(PathBuf, Option<PathBuf>)>,
-    backup: PathBuf,
-}
-
-impl StagedView {
-    fn save(&mut self, path: &Path, name: &str, working: Option<Vec<u8>>) -> anyhow::Result<()> {
-        let copy = match working {
-            Some(bytes) => {
-                let copy = self.backup.join(name);
-                fs::create_dir_all(copy.parent().unwrap_or(&self.backup))?;
-                fs::write(&copy, bytes)
-                    .with_context(|| format!("could not back up {name} before checking"))?;
-                Some(copy)
-            }
-            None => None,
-        };
-        self.saved.push((path.to_path_buf(), copy));
-        Ok(())
-    }
-}
-
-impl Drop for StagedView {
-    fn drop(&mut self) {
-        for (path, copy) in &self.saved {
-            // Best effort: the backup folder keeps the unstaged content if restoring fails.
-            let _ = match copy {
-                Some(copy) => fs::copy(copy, path).map(|_| ()),
-                None => fs::remove_file(path),
-            };
-        }
-        if !self.saved.is_empty() {
-            let _ = fs::remove_dir_all(&self.backup);
-        }
-    }
-}
-
 /// A Bugaboo repository (a work folder or a check fixture).
 pub(crate) struct Repo {
     root: PathBuf,
+    /// Set while checking staged content: a read-only export of the index.
+    view: Option<PathBuf>,
+}
+
+/// An export of the staged files; dropping it removes the export (and only the export).
+pub(crate) struct StagedTree {
+    pub(crate) repo: Repo,
+    dir: PathBuf,
+}
+
+impl Drop for StagedTree {
+    fn drop(&mut self) {
+        remove_export(&self.dir);
+    }
+}
+
+/// Removes an export. The `node_modules` link is removed as a link first, so the real folder
+/// it points to can never be touched.
+fn remove_export(dir: &Path) {
+    let link = dir.join("node_modules");
+    let _ = fs::remove_dir(&link).or_else(|_| fs::remove_file(&link));
+    let _ = fs::remove_dir_all(dir);
+}
+
+/// A folder link: a symbolic link on Unix, a junction on Windows (no special rights needed).
+fn link_directory(target: &Path, link: &Path) {
+    if !target.is_dir() {
+        return;
+    }
+    #[cfg(unix)]
+    let _ = std::os::unix::fs::symlink(target, link);
+    #[cfg(windows)]
+    let _ = Command::new("cmd")
+        .arg("/C")
+        .arg("mklink")
+        .arg("/J")
+        .arg(link)
+        .arg(target)
+        .output();
 }
 
 impl Repo {
@@ -58,15 +58,21 @@ impl Repo {
             .parent()
             .context("xtask must live in a folder inside the repository")?
             .to_path_buf();
-        Ok(Self { root })
+        Ok(Self { root, view: None })
     }
 
+    /// Where the files to check are: the working tree, or the export of the staged files.
     pub(crate) fn root(&self) -> &Path {
+        self.view.as_deref().unwrap_or(&self.root)
+    }
+
+    /// The real repository, for Git itself (it has the `.git` folder).
+    pub(crate) fn real_root(&self) -> &Path {
         &self.root
     }
 
     pub(crate) fn path(&self, relative: &str) -> PathBuf {
-        self.root.join(relative)
+        self.root().join(relative)
     }
 
     /// Files staged for the next commit, as repository-relative paths with `/`.
@@ -76,10 +82,14 @@ impl Repo {
 
     /// Every file Git knows (tracked, or untracked but not ignored), with `/` separators.
     pub(crate) fn all_files(&self) -> anyhow::Result<Vec<String>> {
-        let mut files =
-            self.git_lines(&["ls-files", "--cached", "--others", "--exclude-standard"])?;
+        // In an export only the index counts: untracked files are not part of the commit.
+        let mut files = if self.view.is_some() {
+            self.git_lines(&["ls-files", "--cached"])?
+        } else {
+            self.git_lines(&["ls-files", "--cached", "--others", "--exclude-standard"])?
+        };
         // A file that is deleted but not yet staged is still listed by Git.
-        files.retain(|file| self.root.join(file).is_file());
+        files.retain(|file| self.root().join(file).is_file());
         files.sort();
         files.dedup();
         Ok(files)
@@ -96,22 +106,28 @@ impl Repo {
             .collect()
     }
 
-    /// Makes the working tree show exactly what is staged, until the returned guard is dropped
-    /// (M0-F09). Files with changes that are not staged are put back afterwards, byte for byte.
-    pub(crate) fn staged_view(&self, staged: &[String]) -> anyhow::Result<StagedView> {
-        let changed = self.git_lines(&["diff", "--name-only"])?;
-        let mut view = StagedView {
-            saved: Vec::new(),
-            backup: self.root.join("target").join("staged-backup"),
-        };
-        for file in staged.iter().filter(|file| changed.contains(file)) {
-            let path = self.root.join(file);
-            let working = fs::read(&path).ok();
-            let content = self.git_bytes(&["show", &format!(":{file}")])?;
-            view.save(&path, file, working)?;
-            fs::write(&path, content).with_context(|| format!("could not write {file}"))?;
-        }
-        Ok(view)
+    /// Exports the index (what the next commit will contain) into `target/staged-tree` and
+    /// returns a repository whose files are that export (M0-F09).
+    ///
+    /// The developer's working tree is never written to: no file is swapped, so a crash, a
+    /// Ctrl+C or an editor autosave cannot lose anything. Tools still come from the real
+    /// repository (`.tools/`), and `node_modules` is linked into the export so tools that look
+    /// for it next to the files find it. Checks that need Git itself (secrets, commit message,
+    /// file sizes) use [`Repo::real_root`].
+    pub(crate) fn export_staged(&self) -> anyhow::Result<StagedTree> {
+        let dir = self.root.join("target").join("staged-tree");
+        remove_export(&dir);
+        fs::create_dir_all(&dir).context("could not create the folder for the staged files")?;
+        let prefix = format!("--prefix={}/", dir.to_string_lossy().replace('\\', "/"));
+        self.git_bytes(&["checkout-index", "--all", "--force", &prefix])?;
+        link_directory(&self.root.join("node_modules"), &dir.join("node_modules"));
+        Ok(StagedTree {
+            repo: Self {
+                root: self.root.clone(),
+                view: Some(dir.clone()),
+            },
+            dir,
+        })
     }
 
     fn git_bytes(&self, args: &[&str]) -> anyhow::Result<Vec<u8>> {
@@ -161,46 +177,68 @@ mod tests {
     fn repo_at(temp: &TempDir) -> Repo {
         Repo {
             root: temp.path().to_path_buf(),
+            view: None,
         }
     }
 
+    /// Every file below `dir` (except Git's folder and build output) with its bytes.
+    fn snapshot(dir: &Path) -> Vec<(PathBuf, Vec<u8>)> {
+        let mut found = Vec::new();
+        let mut open = vec![dir.to_path_buf()];
+        while let Some(folder) = open.pop() {
+            for entry in fs::read_dir(&folder).unwrap().flatten() {
+                let path = entry.path();
+                let name = entry.file_name();
+                if name == ".git" || name == "target" {
+                    continue;
+                }
+                if path.is_dir() {
+                    open.push(path);
+                } else {
+                    found.push((path.clone(), fs::read(&path).unwrap()));
+                }
+            }
+        }
+        found.sort();
+        found
+    }
+
     #[test]
-    fn good_example_the_staged_view_shows_staged_content_and_restores_the_rest() {
-        let temp = TempDir::new("staged-view");
-        temp.write(
-            "a.txt",
-            "committed
-",
-        );
+    fn good_example_the_export_has_the_staged_files_and_the_working_tree_is_untouched() {
+        let temp = TempDir::new("staged-tree");
+        temp.write("a.txt", "committed\n");
+        temp.write("b.txt", "b committed\n");
         assert!(temp.git(&["init", "--quiet"]));
         assert!(temp.git(&["add", "."]));
         assert!(temp.git(&["commit", "--quiet", "-m", "chore: test"]));
-        temp.write(
-            "a.txt", "staged
-",
-        );
+        temp.write("a.txt", "staged\n");
         assert!(temp.git(&["add", "a.txt"]));
-        temp.write(
-            "a.txt",
-            "staged
-plus unstaged
-",
-        );
+        temp.write("a.txt", "staged\nplus unstaged\n");
+        temp.write("b.txt", "only unstaged\n");
+        temp.write("untracked.txt", "new\n");
+        let before = snapshot(temp.path());
         let repo = repo_at(&temp);
         {
-            let _view = repo.staged_view(&["a.txt".to_owned()]).unwrap();
-            assert_eq!(
-                fs::read_to_string(temp.path().join("a.txt")).unwrap(),
-                "staged
-"
-            );
+            let tree = repo.export_staged().unwrap();
+            let read = |name: &str| fs::read_to_string(tree.repo.path(name)).unwrap();
+            assert_eq!(read("a.txt"), "staged\n");
+            assert_eq!(read("b.txt"), "b committed\n");
+            assert!(!tree.repo.path("untracked.txt").exists());
+            assert_eq!(tree.repo.all_files().unwrap(), ["a.txt", "b.txt"]);
+            assert_eq!(tree.repo.real_root(), temp.path());
         }
-        assert_eq!(
-            fs::read_to_string(temp.path().join("a.txt")).unwrap(),
-            "staged
-plus unstaged
-"
-        );
-        assert!(!temp.path().join("target").join("staged-backup").exists());
+        assert_eq!(snapshot(temp.path()), before, "the working tree changed");
+        assert!(!temp.path().join("target").join("staged-tree").exists());
+    }
+
+    #[test]
+    fn a_linked_node_modules_survives_removing_the_export() {
+        let temp = TempDir::new("staged-links");
+        temp.write("a.txt", "x\n");
+        temp.write("node_modules/pkg/index.js", "keep me\n");
+        assert!(temp.git(&["init", "--quiet"]));
+        assert!(temp.git(&["add", "a.txt"]));
+        drop(repo_at(&temp).export_staged().unwrap());
+        assert!(temp.path().join("node_modules/pkg/index.js").is_file());
     }
 }

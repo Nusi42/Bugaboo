@@ -30,7 +30,7 @@ impl Check for GitCommitMsg {
     }
 
     fn run(&self, context: &Context<'_>) -> anyhow::Result<Vec<Finding>> {
-        let root = context.repo.root();
+        let root = context.repo.real_root();
         let mut findings = Vec::new();
         for (short_hash, subject) in branch_subjects(root)? {
             for problem in problems(&subject) {

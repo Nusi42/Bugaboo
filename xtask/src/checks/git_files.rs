@@ -28,7 +28,7 @@ impl Check for GitFiles {
 
     fn run(&self, context: &Context<'_>) -> anyhow::Result<Vec<Finding>> {
         let only = context.files_for(self.id())?;
-        check_root(context.repo.root(), only.as_deref())
+        check_root(context.repo.real_root(), only.as_deref())
     }
 }
 
