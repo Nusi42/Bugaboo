@@ -10,14 +10,11 @@
   } catch {
     /* Storage is blocked: the choice lasts until the page closes. */
   }
-  function hostIsDark() {
-    const t = root.dataset.theme;
-    if (t === "dark") return true;
-    if (t === "light") return false;
-    return matchMedia("(prefers-color-scheme: dark)").matches;
-  }
+  /* "Match my device" sets no data-look: the generated token CSS then follows the device (and the
+     host's data-theme), so no theme name is repeated here. */
   function applyLook() {
-    root.dataset.look = look === "system" ? (hostIsDark() ? "dusk" : "daylight") : look;
+    if (look === "system") delete root.dataset.look;
+    else root.dataset.look = look;
   }
   const sel = document.querySelector("#look");
   sel.value = look;
@@ -29,11 +26,6 @@
       /* Storage is blocked: the choice lasts until the page closes. */
     }
     applyLook();
-  });
-  matchMedia("(prefers-color-scheme: dark)").addEventListener("change", applyLook);
-  new MutationObserver(applyLook).observe(root, {
-    attributes: true,
-    attributeFilter: ["data-theme"],
   });
   applyLook();
 
