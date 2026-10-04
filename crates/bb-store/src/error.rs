@@ -39,6 +39,8 @@ pub enum StoreError {
     Secret(SecretProblem),
     /// Another writer was faster too many times in a row; the caller may try again.
     Contended,
+    /// A change decided not to go ahead (a check inside its transaction failed) and was undone.
+    Aborted,
     /// The name is kept for the store itself (for example the head of the outbox).
     ReservedName,
     /// The anchor file of the security log could not be read or written.
@@ -104,6 +106,7 @@ impl fmt::Display for StoreError {
                 write!(formatter, "the setting was refused: {problem:?}")
             }
             Self::Secret(problem) => write!(formatter, "the secret operation failed: {problem:?}"),
+            Self::Aborted => formatter.write_str("the change stopped itself and was undone"),
             Self::ReservedName => formatter.write_str("this name is reserved for the store"),
             Self::Contended => formatter.write_str("too many writers at once; try again"),
             Self::KeyFile(error) => write!(formatter, "a key file failed: {error}"),

@@ -1,0 +1,875 @@
+//! The adapter of the sign-in port (`bb_app::auth::AuthStore`): people, passwords, sessions,
+//! second steps, passkeys, invitations and the setup code.
+//!
+//! Writes are associated functions that run inside the transaction of a change
+//! ([`Database::record_change`]), so a change and its event are committed together. The few
+//! reads and writes that are not domain changes use the pool directly: marking a session as used,
+//! the encrypted code app secret and the security log.
+
+use std::sync::Arc;
+
+use bb_app::auth::{Account, AuthSettings, AuthStore, SecurityEvent, SessionRecord};
+use bb_app::ports::{BoxFuture, ChangeStore};
+use bb_core::event::DomainEvent;
+use bb_core::id::{IdError, InvitationId, PasskeyId, SessionId, UserId};
+use bb_core::network::NetworkPrefix;
+use bb_core::person::Person;
+use bb_core::security_log::Digest;
+use bb_core::settings::{
+    AUTH_SIGN_UP_DOMAINS, AUTH_SIGN_UP_ENABLED, SECURITY_SESSION_ABSOLUTE_HOURS,
+    SECURITY_SESSION_IDLE_MINUTES, SettingValue,
+};
+use bb_core::sign_in::{
+    Invitation, SessionStage, SetupCode, SignInSession, StoredPasskey, TwoStep,
+};
+use bb_core::technical::TechnicalName;
+use jiff::Timestamp;
+use sea_query::{Expr, ExprTrait as _, Order, Query};
+use zeroize::Zeroizing;
+
+use crate::anchor::LogSeal;
+use crate::db::{Database, Row, Transaction, to_micros};
+use crate::error::{SecretProblem, StoreError};
+use crate::keys::KeyRing;
+use crate::schema::{
+    BackupCode, Computed, Invitation as InvitationColumns, PasskeyRow, PasswordLogin, PersonRow,
+    SetupCodeRow, SignInSession as SessionColumns, TwoStep as TwoStepColumns,
+};
+use crate::security_log::NewSecurityLogEntry;
+use crate::settings::{Scopes, put_organization_setting};
+
+/// How many open invitations are listed at most. Administrators make them one at a time; this only
+/// keeps a list from growing without end.
+const MAX_OPEN_INVITATIONS: u64 = 200;
+
+/// The prefix of the name of a code app secret in the secrets table.
+const TOTP_SECRET_PREFIX: &str = "totp.";
+
+/// The sign-in storage: the database, the keys that protect secrets in it, and the seal of the
+/// security log.
+#[derive(Clone, Debug)]
+pub struct AuthStorage {
+    database: Database,
+    keys: Arc<KeyRing>,
+    seal: Arc<LogSeal>,
+}
+
+impl AuthStorage {
+    /// The storage on `database`.
+    #[must_use]
+    pub fn new(database: Database, keys: Arc<KeyRing>, seal: LogSeal) -> Self {
+        Self {
+            database,
+            keys,
+            seal: Arc::new(seal),
+        }
+    }
+
+    /// The database underneath.
+    #[must_use]
+    pub const fn database(&self) -> &Database {
+        &self.database
+    }
+}
+
+impl ChangeStore for AuthStorage {
+    type Transaction = Transaction;
+    type Error = StoreError;
+
+    fn record_change<'a, T: Send + 'a>(
+        &'a self,
+        event: &'a DomainEvent,
+        change: impl for<'t> FnOnce(&'t mut Transaction) -> BoxFuture<'t, Result<T, StoreError>>
+        + Send
+        + 'a,
+    ) -> impl Future<Output = Result<T, StoreError>> + Send + 'a {
+        ChangeStore::record_change(&self.database, event, change)
+    }
+}
+
+fn corrupt(what: &'static str) -> impl Fn(IdError) -> StoreError {
+    move |_| StoreError::Corrupt(what)
+}
+
+fn digest(bytes: &[u8]) -> Result<Digest, StoreError> {
+    Digest::from_slice(bytes).ok_or(StoreError::Corrupt("a hash"))
+}
+
+fn read_person(row: &Row) -> Result<Person, StoreError> {
+    Ok(Person {
+        id: UserId::from_bytes(row.id_bytes(PersonRow::Id)?).map_err(corrupt("a person ID"))?,
+        display_name: row.get(PersonRow::DisplayName)?,
+        email: row.get(PersonRow::Email)?,
+        created_at: row.time(PersonRow::CreatedAt)?,
+        administrator: row.get(PersonRow::Administrator)?,
+    })
+}
+
+fn person_columns() -> [PersonRow; 5] {
+    [
+        PersonRow::Id,
+        PersonRow::DisplayName,
+        PersonRow::Email,
+        PersonRow::CreatedAt,
+        PersonRow::Administrator,
+    ]
+}
+
+fn session_columns() -> [SessionColumns; 8] {
+    [
+        SessionColumns::Id,
+        SessionColumns::Person,
+        SessionColumns::TokenHash,
+        SessionColumns::Stage,
+        SessionColumns::CreatedAt,
+        SessionColumns::LastSeenAt,
+        SessionColumns::Network,
+        SessionColumns::Device,
+    ]
+}
+
+fn read_session(row: &Row) -> Result<SignInSession, StoreError> {
+    Ok(SignInSession {
+        id: SessionId::from_bytes(row.id_bytes(SessionColumns::Id)?)
+            .map_err(corrupt("a session ID"))?,
+        person: UserId::from_bytes(row.id_bytes(SessionColumns::Person)?)
+            .map_err(corrupt("a person ID"))?,
+        token_hash: digest(&row.get::<Vec<u8>>(SessionColumns::TokenHash)?)?,
+        stage: SessionStage::from_code(&row.get::<String>(SessionColumns::Stage)?)
+            .ok_or(StoreError::Corrupt("a session stage"))?,
+        created_at: row.time(SessionColumns::CreatedAt)?,
+        last_seen_at: row.time(SessionColumns::LastSeenAt)?,
+        network: row
+            .get::<Option<String>>(SessionColumns::Network)?
+            .map(|text| NetworkPrefix::from_stored(&text).ok_or(StoreError::Corrupt("a network")))
+            .transpose()?,
+        device: row.get(SessionColumns::Device)?,
+    })
+}
+
+fn passkey_columns() -> [PasskeyRow; 7] {
+    [
+        PasskeyRow::Id,
+        PasskeyRow::Person,
+        PasskeyRow::CredentialId,
+        PasskeyRow::Data,
+        PasskeyRow::Label,
+        PasskeyRow::CreatedAt,
+        PasskeyRow::LastUsedAt,
+    ]
+}
+
+fn read_passkey(row: &Row) -> Result<StoredPasskey, StoreError> {
+    Ok(StoredPasskey {
+        id: PasskeyId::from_bytes(row.id_bytes(PasskeyRow::Id)?)
+            .map_err(corrupt("a passkey ID"))?,
+        person: UserId::from_bytes(row.id_bytes(PasskeyRow::Person)?)
+            .map_err(corrupt("a person ID"))?,
+        credential_id: row.get(PasskeyRow::CredentialId)?,
+        data: row.get(PasskeyRow::Data)?,
+        label: row.get(PasskeyRow::Label)?,
+        created_at: row.time(PasskeyRow::CreatedAt)?,
+        last_used_at: row.optional_time(PasskeyRow::LastUsedAt)?,
+    })
+}
+
+fn invitation_columns() -> [InvitationColumns; 7] {
+    [
+        InvitationColumns::Id,
+        InvitationColumns::TokenHash,
+        InvitationColumns::Email,
+        InvitationColumns::InvitedBy,
+        InvitationColumns::CreatedAt,
+        InvitationColumns::ExpiresAt,
+        InvitationColumns::UsedAt,
+    ]
+}
+
+fn read_invitation(row: &Row) -> Result<Invitation, StoreError> {
+    Ok(Invitation {
+        id: InvitationId::from_bytes(row.id_bytes(InvitationColumns::Id)?)
+            .map_err(corrupt("an invitation ID"))?,
+        token_hash: digest(&row.get::<Vec<u8>>(InvitationColumns::TokenHash)?)?,
+        email: row.get(InvitationColumns::Email)?,
+        invited_by: UserId::from_bytes(row.id_bytes(InvitationColumns::InvitedBy)?)
+            .map_err(corrupt("a person ID"))?,
+        created_at: row.time(InvitationColumns::CreatedAt)?,
+        expires_at: row.time(InvitationColumns::ExpiresAt)?,
+        used_at: row.optional_time(InvitationColumns::UsedAt)?,
+    })
+}
+
+fn person_bytes(person: UserId) -> Vec<u8> {
+    person.to_bytes().to_vec()
+}
+
+fn totp_name(person: UserId) -> Result<TechnicalName, StoreError> {
+    TechnicalName::new(&format!("{TOTP_SECRET_PREFIX}{person}"))
+        .map_err(|_| StoreError::Corrupt("a secret name"))
+}
+
+impl AuthStorage {
+    async fn person_by_id(&self, id: UserId) -> Result<Option<Person>, StoreError> {
+        let mut select = Query::select();
+        select
+            .columns(person_columns())
+            .from(PersonRow::Table)
+            .and_where(Expr::col(PersonRow::Id).eq(person_bytes(id)));
+        self.database
+            .fetch_optional(&select)
+            .await?
+            .as_ref()
+            .map(read_person)
+            .transpose()
+    }
+
+    async fn count(&self, select: &sea_query::SelectStatement) -> Result<i64, StoreError> {
+        match self.database.fetch_optional(select).await? {
+            Some(row) => row.get(Computed::Total),
+            None => Ok(0),
+        }
+    }
+}
+
+impl AuthStore for AuthStorage {
+    fn is_duplicate(error: &StoreError) -> bool {
+        error.is_duplicate()
+    }
+
+    fn aborted() -> StoreError {
+        StoreError::Aborted
+    }
+
+    fn is_aborted(error: &StoreError) -> bool {
+        matches!(error, StoreError::Aborted)
+    }
+
+    fn describe(error: &StoreError) -> String {
+        error.to_string()
+    }
+
+    async fn account_by_email(&self, email: &str) -> Result<Option<Account>, StoreError> {
+        let mut select = Query::select();
+        select
+            .columns(person_columns().map(|column| (PersonRow::Table, column)))
+            .column((PasswordLogin::Table, PasswordLogin::Hash))
+            .from(PersonRow::Table)
+            .left_join(
+                PasswordLogin::Table,
+                Expr::col((PersonRow::Table, PersonRow::Id))
+                    .equals((PasswordLogin::Table, PasswordLogin::Person)),
+            )
+            .and_where(Expr::col((PersonRow::Table, PersonRow::Email)).eq(email));
+        let Some(row) = self.database.fetch_optional(&select).await? else {
+            return Ok(None);
+        };
+        Ok(Some(Account {
+            person: read_person(&row)?,
+            password_hash: row.get::<Option<String>>(PasswordLogin::Hash)?,
+        }))
+    }
+
+    async fn person(&self, id: UserId) -> Result<Option<Person>, StoreError> {
+        self.person_by_id(id).await
+    }
+
+    async fn session_by_hash(&self, hash: &Digest) -> Result<Option<SessionRecord>, StoreError> {
+        let mut select = Query::select();
+        select
+            .columns(session_columns())
+            .from(SessionColumns::Table)
+            .and_where(Expr::col(SessionColumns::TokenHash).eq(hash.as_bytes().to_vec()));
+        let Some(row) = self.database.fetch_optional(&select).await? else {
+            return Ok(None);
+        };
+        let session = read_session(&row)?;
+        let Some(person) = self.person_by_id(session.person).await? else {
+            return Ok(None);
+        };
+        Ok(Some(SessionRecord { session, person }))
+    }
+
+    async fn sessions_of(&self, person: UserId) -> Result<Vec<SignInSession>, StoreError> {
+        let mut select = Query::select();
+        select
+            .columns(session_columns())
+            .from(SessionColumns::Table)
+            .and_where(Expr::col(SessionColumns::Person).eq(person_bytes(person)))
+            .order_by(SessionColumns::CreatedAt, Order::Desc)
+            .order_by(SessionColumns::Id, Order::Asc);
+        self.database
+            .fetch_all(&select)
+            .await?
+            .iter()
+            .map(read_session)
+            .collect()
+    }
+
+    async fn administrators(&self) -> Result<i64, StoreError> {
+        let mut select = Query::select();
+        select
+            .expr_as(Expr::col(PersonRow::Id).count(), Computed::Total)
+            .from(PersonRow::Table)
+            .and_where(Expr::col(PersonRow::Administrator).eq(true));
+        self.count(&select).await
+    }
+
+    async fn setup_code(&self) -> Result<Option<SetupCode>, StoreError> {
+        let mut select = Query::select();
+        select
+            .columns([SetupCodeRow::CodeHash, SetupCodeRow::CreatedAt])
+            .from(SetupCodeRow::Table)
+            .limit(1);
+        let Some(row) = self.database.fetch_optional(&select).await? else {
+            return Ok(None);
+        };
+        Ok(Some(SetupCode {
+            code_hash: digest(&row.get::<Vec<u8>>(SetupCodeRow::CodeHash)?)?,
+            created_at: row.time(SetupCodeRow::CreatedAt)?,
+        }))
+    }
+
+    async fn two_step(&self, person: UserId) -> Result<Option<TwoStep>, StoreError> {
+        let mut select = Query::select();
+        select
+            .columns([
+                TwoStepColumns::Person,
+                TwoStepColumns::Confirmed,
+                TwoStepColumns::LastStep,
+                TwoStepColumns::CreatedAt,
+            ])
+            .from(TwoStepColumns::Table)
+            .and_where(Expr::col(TwoStepColumns::Person).eq(person_bytes(person)));
+        let Some(row) = self.database.fetch_optional(&select).await? else {
+            return Ok(None);
+        };
+        Ok(Some(TwoStep {
+            person,
+            confirmed: row.get(TwoStepColumns::Confirmed)?,
+            last_step: row.get(TwoStepColumns::LastStep)?,
+            created_at: row.time(TwoStepColumns::CreatedAt)?,
+        }))
+    }
+
+    async fn totp_secret(&self, person: UserId) -> Result<Option<Zeroizing<Vec<u8>>>, StoreError> {
+        match self
+            .database
+            .get_secret(&self.keys, &totp_name(person)?)
+            .await
+        {
+            Ok(secret) => Ok(Some(secret)),
+            Err(StoreError::Secret(SecretProblem::Missing)) => Ok(None),
+            Err(error) => Err(error),
+        }
+    }
+
+    async fn backup_codes_left(&self, person: UserId) -> Result<i64, StoreError> {
+        let mut select = Query::select();
+        select
+            .expr_as(Expr::col(BackupCode::CodeHash).count(), Computed::Total)
+            .from(BackupCode::Table)
+            .and_where(Expr::col(BackupCode::Person).eq(person_bytes(person)))
+            .and_where(Expr::col(BackupCode::UsedAt).is_null());
+        self.count(&select).await
+    }
+
+    async fn passkeys_of(&self, person: UserId) -> Result<Vec<StoredPasskey>, StoreError> {
+        let mut select = Query::select();
+        select
+            .columns(passkey_columns())
+            .from(PasskeyRow::Table)
+            .and_where(Expr::col(PasskeyRow::Person).eq(person_bytes(person)))
+            .order_by(PasskeyRow::CreatedAt, Order::Asc)
+            .order_by(PasskeyRow::Id, Order::Asc);
+        self.database
+            .fetch_all(&select)
+            .await?
+            .iter()
+            .map(read_passkey)
+            .collect()
+    }
+
+    async fn invitation_by_hash(&self, hash: &Digest) -> Result<Option<Invitation>, StoreError> {
+        let mut select = Query::select();
+        select
+            .columns(invitation_columns())
+            .from(InvitationColumns::Table)
+            .and_where(Expr::col(InvitationColumns::TokenHash).eq(hash.as_bytes().to_vec()));
+        self.database
+            .fetch_optional(&select)
+            .await?
+            .as_ref()
+            .map(read_invitation)
+            .transpose()
+    }
+
+    async fn open_invitations(&self, now: Timestamp) -> Result<Vec<Invitation>, StoreError> {
+        let mut select = Query::select();
+        select
+            .columns(invitation_columns())
+            .from(InvitationColumns::Table)
+            .and_where(Expr::col(InvitationColumns::UsedAt).is_null())
+            .and_where(Expr::col(InvitationColumns::ExpiresAt).gt(to_micros(now)))
+            .order_by(InvitationColumns::CreatedAt, Order::Desc)
+            .order_by(InvitationColumns::Id, Order::Asc)
+            .limit(MAX_OPEN_INVITATIONS);
+        self.database
+            .fetch_all(&select)
+            .await?
+            .iter()
+            .map(read_invitation)
+            .collect()
+    }
+
+    async fn auth_settings(&self) -> Result<AuthSettings, StoreError> {
+        let scopes = Scopes::default();
+        Ok(AuthSettings {
+            session_idle_minutes: self
+                .database
+                .resolve_setting(&SECURITY_SESSION_IDLE_MINUTES, &scopes)
+                .await?,
+            session_absolute_hours: self
+                .database
+                .resolve_setting(&SECURITY_SESSION_ABSOLUTE_HOURS, &scopes)
+                .await?,
+            sign_up_enabled: self
+                .database
+                .resolve_setting(&AUTH_SIGN_UP_ENABLED, &scopes)
+                .await?,
+            sign_up_domains: self
+                .database
+                .resolve_setting(&AUTH_SIGN_UP_DOMAINS, &scopes)
+                .await?,
+        })
+    }
+
+    async fn touch_session(&self, id: SessionId, at: Timestamp) -> Result<(), StoreError> {
+        let mut update = Query::update();
+        update
+            .table(SessionColumns::Table)
+            .value(SessionColumns::LastSeenAt, to_micros(at))
+            .and_where(Expr::col(SessionColumns::Id).eq(id.to_bytes().to_vec()))
+            .and_where(Expr::col(SessionColumns::LastSeenAt).lt(to_micros(at)));
+        self.database.execute(&update).await.map(|_| ())
+    }
+
+    async fn put_totp_secret(
+        &self,
+        person: UserId,
+        secret: &[u8],
+        at: Timestamp,
+    ) -> Result<(), StoreError> {
+        self.database
+            .put_secret(&self.keys, &totp_name(person)?, secret, at)
+            .await
+    }
+
+    async fn delete_totp_secret(&self, person: UserId) -> Result<(), StoreError> {
+        self.database
+            .delete_secret(&totp_name(person)?)
+            .await
+            .map(|_| ())
+    }
+
+    async fn append_security_log(&self, event: &SecurityEvent) -> Result<(), StoreError> {
+        let entry = NewSecurityLogEntry {
+            time: event.time,
+            person: event.person,
+            action: TechnicalName::new(event.action.code())
+                .map_err(|_| StoreError::Corrupt("a security action"))?,
+            subject: event.subject.clone(),
+            network: event.network.clone(),
+        };
+        self.database
+            .append_security_log(&self.seal, &entry)
+            .await
+            .map(|_| ())
+    }
+
+    async fn insert_person(
+        transaction: &mut Transaction,
+        person: &Person,
+        password_hash: &str,
+        at: Timestamp,
+    ) -> Result<(), StoreError> {
+        let mut insert = Query::insert();
+        insert
+            .into_table(PersonRow::Table)
+            .columns(person_columns())
+            .values([
+                Expr::val(person_bytes(person.id)),
+                Expr::val(person.display_name.as_str()),
+                Expr::val(person.email.as_str()),
+                Expr::val(to_micros(person.created_at)),
+                Expr::val(person.administrator),
+            ])
+            .map_err(|_| StoreError::Corrupt("a person"))?;
+        transaction.execute(&insert).await?;
+        let mut login = Query::insert();
+        login
+            .into_table(PasswordLogin::Table)
+            .columns([
+                PasswordLogin::Person,
+                PasswordLogin::Hash,
+                PasswordLogin::ChangedAt,
+            ])
+            .values([
+                Expr::val(person_bytes(person.id)),
+                Expr::val(password_hash),
+                Expr::val(to_micros(at)),
+            ])
+            .map_err(|_| StoreError::Corrupt("a password"))?;
+        transaction.execute(&login).await.map(|_| ())
+    }
+
+    async fn set_password(
+        transaction: &mut Transaction,
+        person: UserId,
+        password_hash: &str,
+        at: Timestamp,
+    ) -> Result<(), StoreError> {
+        let mut update = Query::update();
+        update
+            .table(PasswordLogin::Table)
+            .value(PasswordLogin::Hash, password_hash)
+            .value(PasswordLogin::ChangedAt, to_micros(at))
+            .and_where(Expr::col(PasswordLogin::Person).eq(person_bytes(person)));
+        if transaction.execute(&update).await? > 0 {
+            return Ok(());
+        }
+        // A person who signed in without a password so far (a passkey, company sign-in) gets one.
+        let mut login = Query::insert();
+        login
+            .into_table(PasswordLogin::Table)
+            .columns([
+                PasswordLogin::Person,
+                PasswordLogin::Hash,
+                PasswordLogin::ChangedAt,
+            ])
+            .values([
+                Expr::val(person_bytes(person)),
+                Expr::val(password_hash),
+                Expr::val(to_micros(at)),
+            ])
+            .map_err(|_| StoreError::Corrupt("a password"))?;
+        transaction.execute(&login).await.map(|_| ())
+    }
+
+    async fn insert_session(
+        transaction: &mut Transaction,
+        session: &SignInSession,
+    ) -> Result<(), StoreError> {
+        let mut insert = Query::insert();
+        insert
+            .into_table(SessionColumns::Table)
+            .columns(session_columns())
+            .values([
+                Expr::val(session.id.to_bytes().to_vec()),
+                Expr::val(person_bytes(session.person)),
+                Expr::val(session.token_hash.as_bytes().to_vec()),
+                Expr::val(session.stage.code()),
+                Expr::val(to_micros(session.created_at)),
+                Expr::val(to_micros(session.last_seen_at)),
+                Expr::val(session.network.as_ref().map(NetworkPrefix::as_str)),
+                Expr::val(session.device.as_str()),
+            ])
+            .map_err(|_| StoreError::Corrupt("a session"))?;
+        transaction.execute(&insert).await.map(|_| ())
+    }
+
+    async fn delete_session(
+        transaction: &mut Transaction,
+        id: SessionId,
+    ) -> Result<bool, StoreError> {
+        let mut delete = Query::delete();
+        delete
+            .from_table(SessionColumns::Table)
+            .and_where(Expr::col(SessionColumns::Id).eq(id.to_bytes().to_vec()));
+        Ok(transaction.execute(&delete).await? > 0)
+    }
+
+    async fn delete_sessions_of(
+        transaction: &mut Transaction,
+        person: UserId,
+        except: Option<SessionId>,
+    ) -> Result<u64, StoreError> {
+        let mut delete = Query::delete();
+        delete
+            .from_table(SessionColumns::Table)
+            .and_where(Expr::col(SessionColumns::Person).eq(person_bytes(person)));
+        if let Some(except) = except {
+            delete.and_where(Expr::col(SessionColumns::Id).ne(except.to_bytes().to_vec()));
+        }
+        transaction.execute(&delete).await
+    }
+
+    async fn purge_sessions(
+        transaction: &mut Transaction,
+        idle_before: Timestamp,
+        absolute_before: Timestamp,
+        pending_before: Timestamp,
+    ) -> Result<u64, StoreError> {
+        let active = Expr::col(SessionColumns::Stage)
+            .eq(SessionStage::Active.code())
+            .and(
+                Expr::col(SessionColumns::LastSeenAt)
+                    .lt(to_micros(idle_before))
+                    .or(Expr::col(SessionColumns::CreatedAt).lt(to_micros(absolute_before))),
+            );
+        let pending = Expr::col(SessionColumns::Stage)
+            .eq(SessionStage::SecondStepPending.code())
+            .and(Expr::col(SessionColumns::CreatedAt).lt(to_micros(pending_before)));
+        let mut delete = Query::delete();
+        delete
+            .from_table(SessionColumns::Table)
+            .and_where(active.or(pending));
+        transaction.execute(&delete).await
+    }
+
+    async fn upsert_two_step(
+        transaction: &mut Transaction,
+        step: &TwoStep,
+    ) -> Result<(), StoreError> {
+        let mut delete = Query::delete();
+        delete
+            .from_table(TwoStepColumns::Table)
+            .and_where(Expr::col(TwoStepColumns::Person).eq(person_bytes(step.person)));
+        transaction.execute(&delete).await?;
+        let mut insert = Query::insert();
+        insert
+            .into_table(TwoStepColumns::Table)
+            .columns([
+                TwoStepColumns::Person,
+                TwoStepColumns::Confirmed,
+                TwoStepColumns::LastStep,
+                TwoStepColumns::CreatedAt,
+            ])
+            .values([
+                Expr::val(person_bytes(step.person)),
+                Expr::val(step.confirmed),
+                Expr::val(step.last_step),
+                Expr::val(to_micros(step.created_at)),
+            ])
+            .map_err(|_| StoreError::Corrupt("a second step"))?;
+        transaction.execute(&insert).await.map(|_| ())
+    }
+
+    async fn confirm_two_step(
+        transaction: &mut Transaction,
+        person: UserId,
+    ) -> Result<(), StoreError> {
+        let mut update = Query::update();
+        update
+            .table(TwoStepColumns::Table)
+            .value(TwoStepColumns::Confirmed, true)
+            .and_where(Expr::col(TwoStepColumns::Person).eq(person_bytes(person)));
+        transaction.execute(&update).await.map(|_| ())
+    }
+
+    async fn delete_two_step(
+        transaction: &mut Transaction,
+        person: UserId,
+    ) -> Result<(), StoreError> {
+        let mut codes = Query::delete();
+        codes
+            .from_table(BackupCode::Table)
+            .and_where(Expr::col(BackupCode::Person).eq(person_bytes(person)));
+        transaction.execute(&codes).await?;
+        let mut delete = Query::delete();
+        delete
+            .from_table(TwoStepColumns::Table)
+            .and_where(Expr::col(TwoStepColumns::Person).eq(person_bytes(person)));
+        transaction.execute(&delete).await.map(|_| ())
+    }
+
+    async fn accept_totp_step(
+        transaction: &mut Transaction,
+        person: UserId,
+        step: i64,
+    ) -> Result<bool, StoreError> {
+        // One statement checks and writes, so two requests with the same code cannot both pass.
+        let mut update = Query::update();
+        update
+            .table(TwoStepColumns::Table)
+            .value(TwoStepColumns::LastStep, step)
+            .and_where(Expr::col(TwoStepColumns::Person).eq(person_bytes(person)))
+            .and_where(Expr::col(TwoStepColumns::LastStep).lt(step));
+        Ok(transaction.execute(&update).await? > 0)
+    }
+
+    async fn replace_backup_codes(
+        transaction: &mut Transaction,
+        person: UserId,
+        hashes: &[Digest],
+    ) -> Result<(), StoreError> {
+        let mut delete = Query::delete();
+        delete
+            .from_table(BackupCode::Table)
+            .and_where(Expr::col(BackupCode::Person).eq(person_bytes(person)));
+        transaction.execute(&delete).await?;
+        for hash in hashes {
+            let mut insert = Query::insert();
+            insert
+                .into_table(BackupCode::Table)
+                .columns([BackupCode::Person, BackupCode::CodeHash, BackupCode::UsedAt])
+                .values([
+                    Expr::val(person_bytes(person)),
+                    Expr::val(hash.as_bytes().to_vec()),
+                    Expr::val(Option::<i64>::None),
+                ])
+                .map_err(|_| StoreError::Corrupt("a backup code"))?;
+            transaction.execute(&insert).await?;
+        }
+        Ok(())
+    }
+
+    async fn use_backup_code(
+        transaction: &mut Transaction,
+        person: UserId,
+        hash: &Digest,
+        at: Timestamp,
+    ) -> Result<bool, StoreError> {
+        let mut update = Query::update();
+        update
+            .table(BackupCode::Table)
+            .value(BackupCode::UsedAt, to_micros(at))
+            .and_where(Expr::col(BackupCode::Person).eq(person_bytes(person)))
+            .and_where(Expr::col(BackupCode::CodeHash).eq(hash.as_bytes().to_vec()))
+            .and_where(Expr::col(BackupCode::UsedAt).is_null());
+        Ok(transaction.execute(&update).await? > 0)
+    }
+
+    async fn insert_passkey(
+        transaction: &mut Transaction,
+        passkey: &StoredPasskey,
+    ) -> Result<(), StoreError> {
+        let mut insert = Query::insert();
+        insert
+            .into_table(PasskeyRow::Table)
+            .columns(passkey_columns())
+            .values([
+                Expr::val(passkey.id.to_bytes().to_vec()),
+                Expr::val(person_bytes(passkey.person)),
+                Expr::val(passkey.credential_id.clone()),
+                Expr::val(passkey.data.as_str()),
+                Expr::val(passkey.label.as_str()),
+                Expr::val(to_micros(passkey.created_at)),
+                Expr::val(passkey.last_used_at.map(to_micros)),
+            ])
+            .map_err(|_| StoreError::Corrupt("a passkey"))?;
+        transaction.execute(&insert).await.map(|_| ())
+    }
+
+    async fn use_passkey(
+        transaction: &mut Transaction,
+        id: PasskeyId,
+        data: Option<&str>,
+        at: Timestamp,
+    ) -> Result<(), StoreError> {
+        let mut update = Query::update();
+        update
+            .table(PasskeyRow::Table)
+            .value(PasskeyRow::LastUsedAt, to_micros(at))
+            .and_where(Expr::col(PasskeyRow::Id).eq(id.to_bytes().to_vec()));
+        if let Some(data) = data {
+            update.value(PasskeyRow::Data, data);
+        }
+        transaction.execute(&update).await.map(|_| ())
+    }
+
+    async fn delete_passkey(
+        transaction: &mut Transaction,
+        person: UserId,
+        id: PasskeyId,
+    ) -> Result<bool, StoreError> {
+        let mut delete = Query::delete();
+        delete
+            .from_table(PasskeyRow::Table)
+            .and_where(Expr::col(PasskeyRow::Id).eq(id.to_bytes().to_vec()))
+            .and_where(Expr::col(PasskeyRow::Person).eq(person_bytes(person)));
+        Ok(transaction.execute(&delete).await? > 0)
+    }
+
+    async fn insert_invitation(
+        transaction: &mut Transaction,
+        invitation: &Invitation,
+    ) -> Result<(), StoreError> {
+        let mut insert = Query::insert();
+        insert
+            .into_table(InvitationColumns::Table)
+            .columns(invitation_columns())
+            .values([
+                Expr::val(invitation.id.to_bytes().to_vec()),
+                Expr::val(invitation.token_hash.as_bytes().to_vec()),
+                Expr::val(invitation.email.as_str()),
+                Expr::val(person_bytes(invitation.invited_by)),
+                Expr::val(to_micros(invitation.created_at)),
+                Expr::val(to_micros(invitation.expires_at)),
+                Expr::val(invitation.used_at.map(to_micros)),
+            ])
+            .map_err(|_| StoreError::Corrupt("an invitation"))?;
+        transaction.execute(&insert).await.map(|_| ())
+    }
+
+    async fn delete_invitation(
+        transaction: &mut Transaction,
+        id: InvitationId,
+    ) -> Result<bool, StoreError> {
+        let mut delete = Query::delete();
+        delete
+            .from_table(InvitationColumns::Table)
+            .and_where(Expr::col(InvitationColumns::Id).eq(id.to_bytes().to_vec()));
+        Ok(transaction.execute(&delete).await? > 0)
+    }
+
+    async fn use_invitation(
+        transaction: &mut Transaction,
+        id: InvitationId,
+        now: Timestamp,
+    ) -> Result<bool, StoreError> {
+        let mut update = Query::update();
+        update
+            .table(InvitationColumns::Table)
+            .value(InvitationColumns::UsedAt, to_micros(now))
+            .and_where(Expr::col(InvitationColumns::Id).eq(id.to_bytes().to_vec()))
+            .and_where(Expr::col(InvitationColumns::UsedAt).is_null())
+            .and_where(Expr::col(InvitationColumns::ExpiresAt).gt(to_micros(now)));
+        Ok(transaction.execute(&update).await? > 0)
+    }
+
+    async fn put_setup_code(
+        transaction: &mut Transaction,
+        code: &SetupCode,
+    ) -> Result<(), StoreError> {
+        let delete = Query::delete().from_table(SetupCodeRow::Table).to_owned();
+        transaction.execute(&delete).await?;
+        let mut insert = Query::insert();
+        insert
+            .into_table(SetupCodeRow::Table)
+            .columns([SetupCodeRow::CodeHash, SetupCodeRow::CreatedAt])
+            .values([
+                Expr::val(code.code_hash.as_bytes().to_vec()),
+                Expr::val(to_micros(code.created_at)),
+            ])
+            .map_err(|_| StoreError::Corrupt("a setup code"))?;
+        transaction.execute(&insert).await.map(|_| ())
+    }
+
+    async fn take_setup_code(transaction: &mut Transaction) -> Result<bool, StoreError> {
+        let delete = Query::delete().from_table(SetupCodeRow::Table).to_owned();
+        Ok(transaction.execute(&delete).await? > 0)
+    }
+
+    async fn put_setting(
+        transaction: &mut Transaction,
+        key: &str,
+        value: &SettingValue,
+        at: Timestamp,
+    ) -> Result<(), StoreError> {
+        put_organization_setting(transaction, key, value, at).await
+    }
+}
+
+#[cfg(test)]
+#[path = "tests/auth.rs"]
+mod tests;

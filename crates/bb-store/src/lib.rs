@@ -8,6 +8,7 @@
 #![forbid(unsafe_code)]
 
 mod anchor;
+mod auth;
 mod chain;
 mod db;
 mod error;
@@ -21,6 +22,7 @@ mod security_log;
 mod settings;
 
 pub use anchor::LogSeal;
+pub use auth::AuthStorage;
 pub use chain::{BreakReason, Verification};
 pub use db::{Database, Dialect, Transaction};
 pub use error::{SecretProblem, SettingProblem, StoreError};

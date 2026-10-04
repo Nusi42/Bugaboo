@@ -30,6 +30,22 @@ const SQLITE_MAX_CONNECTIONS: u32 = 8;
 /// The most connections PostgreSQL gets when the number of processors is unknown.
 const POSTGRES_FALLBACK_CONNECTIONS: u32 = 8;
 
+/// Opens a SQLite pool in WAL mode with foreign keys on and a busy timeout.
+async fn open_sqlite(options: SqliteConnectOptions) -> Result<SqlitePool, StoreError> {
+    let options = options
+        .create_if_missing(true)
+        .journal_mode(SqliteJournalMode::Wal)
+        // FULL: a committed change survives a power cut (security first). It costs one
+        // more disk flush per commit than NORMAL does in WAL mode (M1-F23).
+        .synchronous(SqliteSynchronous::Full)
+        .foreign_keys(true)
+        .busy_timeout(SQLITE_BUSY_TIMEOUT);
+    Ok(SqlitePoolOptions::new()
+        .max_connections(SQLITE_MAX_CONNECTIONS)
+        .connect_with(options)
+        .await?)
+}
+
 /// The two databases Bugaboo supports.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Dialect {
@@ -59,20 +75,7 @@ impl Database {
     /// Fails for another kind of URL or when the database cannot be reached.
     pub async fn connect(url: &str) -> Result<Self, StoreError> {
         let pool = if url.starts_with("sqlite:") {
-            let options = SqliteConnectOptions::from_str(url)?
-                .create_if_missing(true)
-                .journal_mode(SqliteJournalMode::Wal)
-                // FULL: a committed change survives a power cut (security first). It costs one
-                // more disk flush per commit than NORMAL does in WAL mode (M1-F23).
-                .synchronous(SqliteSynchronous::Full)
-                .foreign_keys(true)
-                .busy_timeout(SQLITE_BUSY_TIMEOUT);
-            Pool::Sqlite(
-                SqlitePoolOptions::new()
-                    .max_connections(SQLITE_MAX_CONNECTIONS)
-                    .connect_with(options)
-                    .await?,
-            )
+            Pool::Sqlite(open_sqlite(SqliteConnectOptions::from_str(url)?).await?)
         } else if url.starts_with("postgres:") || url.starts_with("postgresql:") {
             let options = PgConnectOptions::from_str(url)?;
             let connections = std::thread::available_parallelism()
@@ -89,6 +92,17 @@ impl Database {
             return Err(StoreError::UnsupportedDatabase);
         };
         Ok(Self { pool })
+    }
+
+    /// Opens the SQLite database in `file` (made if missing), the built-in database of the data
+    /// folder. The path is used as it is: it is not read as a URL.
+    ///
+    /// # Errors
+    /// Fails when the database cannot be opened.
+    pub async fn connect_file(file: &std::path::Path) -> Result<Self, StoreError> {
+        Ok(Self {
+            pool: Pool::Sqlite(open_sqlite(SqliteConnectOptions::new().filename(file)).await?),
+        })
     }
 
     /// Which database this is.

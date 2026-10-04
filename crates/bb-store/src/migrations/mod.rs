@@ -24,6 +24,7 @@ use crate::error::StoreError;
 use crate::schema::Migration;
 
 mod m0001_initial;
+mod m0002_sign_in;
 
 /// The advisory lock PostgreSQL processes take while they migrate.
 const MIGRATION_LOCK: i64 = 0x4242_4D49_4752_0001;
@@ -81,11 +82,18 @@ impl Definition {
 }
 
 /// Every migration, in order. A new one is added at the end and never changed afterwards.
-const ALL: &[Definition] = &[Definition {
-    version: 1,
-    name: "initial",
-    steps: m0001_initial::steps,
-}];
+const ALL: &[Definition] = &[
+    Definition {
+        version: 1,
+        name: "initial",
+        steps: m0001_initial::steps,
+    },
+    Definition {
+        version: 2,
+        name: "sign_in",
+        steps: || Ok(m0002_sign_in::steps()),
+    },
+];
 
 /// The number of the newest migration this program knows.
 #[must_use]
@@ -261,7 +269,7 @@ fn read_record(row: &Row) -> Result<MigrationRecord, StoreError> {
 #[cfg(test)]
 mod tests {
     use bb_testing::{TestResult, each_database};
-    use sea_query::{Alias, Query};
+    use sea_query::{Alias, ExprTrait as _, Query};
 
     use super::*;
     use crate::test_support::at;
@@ -286,13 +294,16 @@ mod tests {
     async fn migrations() -> TestResult {
         each_database("migrations", async |db| {
             let database = Database::connect(db.url()).await?;
-            assert_eq!(database.migrate(at(0)).await?, [1]);
+            assert_eq!(database.migrate(at(0)).await?, [1, 2]);
             assert_eq!(database.migrate(at(1)).await?, Vec::<i64>::new());
             let applied = database.applied_migrations().await?;
-            assert_eq!(applied.len(), 1);
+            assert_eq!(applied.len(), 2);
             assert_eq!(applied[0].name.as_str(), "initial");
-            assert_eq!(applied[0].applied_at, at(0));
-            assert_eq!(applied[0].checksum, ALL[0].checksum()?);
+            assert_eq!(applied[1].name.as_str(), "sign_in");
+            for (record, definition) in applied.iter().zip(ALL) {
+                assert_eq!(record.applied_at, at(0));
+                assert_eq!(record.checksum, definition.checksum()?);
+            }
             // Every table of the schema exists and belongs to an entity.
             for table in crate::schema::tables() {
                 let mut select = Query::select();
@@ -332,7 +343,11 @@ mod tests {
             for task in tasks {
                 applied += task.await??.len();
             }
-            assert_eq!(applied, 1, "exactly one process applied migration 1");
+            assert_eq!(
+                applied,
+                ALL.len(),
+                "each migration was applied by exactly one process"
+            );
             Ok(())
         })
         .await
@@ -365,7 +380,7 @@ mod tests {
                     error,
                     StoreError::SchemaTooNew {
                         found: 99,
-                        known: 1
+                        known: 2
                     }
                 ),
                 "{error}"
@@ -385,7 +400,10 @@ mod tests {
                 (Migration::Checksum, sea_query::Value::from(vec![1_u8; 32])),
             ] {
                 let mut update = Query::update();
-                update.table(Migration::Table).value(column, value);
+                update
+                    .table(Migration::Table)
+                    .value(column, value)
+                    .and_where(Expr::col(Migration::Version).eq(1_i64));
                 database.execute(&update).await?;
                 let error = database.migrate(at(1)).await.unwrap_err();
                 assert!(
@@ -397,7 +415,8 @@ mod tests {
                 restore
                     .table(Migration::Table)
                     .value(Migration::Name, "initial")
-                    .value(Migration::Checksum, ALL[0].checksum()?.as_bytes().to_vec());
+                    .value(Migration::Checksum, ALL[0].checksum()?.as_bytes().to_vec())
+                    .and_where(Expr::col(Migration::Version).eq(1_i64));
                 database.execute(&restore).await?;
             }
             assert!(database.migrate(at(2)).await?.is_empty());
@@ -414,7 +433,8 @@ mod tests {
             let mut update = Query::update();
             update
                 .table(Migration::Table)
-                .value(Migration::Version, 0_i64);
+                .value(Migration::Version, 0_i64)
+                .and_where(Expr::col(Migration::Version).eq(2_i64));
             database.execute(&update).await?;
             let error = database.migrate(at(1)).await.unwrap_err();
             assert!(
