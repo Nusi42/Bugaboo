@@ -28,7 +28,9 @@ test.describe("thm_01 hello screen", () => {
     );
     expect(overflow).toBeLessThanOrEqual(0);
   });
+});
 
+test.describe("thm_02 Match my device", () => {
   test("Match my device follows the device and the choice is remembered", async ({ page }) => {
     await page.emulateMedia({ colorScheme: "dark" });
     await page.goto("/");
@@ -53,6 +55,18 @@ test.describe("thm_01 hello screen", () => {
     await expect(page.locator("html")).toHaveAttribute("data-look", "dusk");
     await expect(device).toHaveAccessibleName(
       t("theme.device-resolved", { device: t("theme.device"), theme: t("theme.dusk") }),
+    );
+  });
+
+  test("Match my device names the device's theme even when another theme is chosen", async ({
+    page,
+  }) => {
+    await page.emulateMedia({ colorScheme: "light" });
+    await page.goto("/");
+    await page.getByRole("radio", { name: t("theme.midnight"), exact: true }).check();
+    await expect(page.locator("html")).toHaveAttribute("data-look", "midnight");
+    await expect(page.getByRole("radio", { name: t("theme.device") })).toHaveAccessibleName(
+      t("theme.device-resolved", { device: t("theme.device"), theme: t("theme.daylight") }),
     );
   });
 });

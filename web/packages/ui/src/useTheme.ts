@@ -15,6 +15,8 @@ export interface ThemeState {
   readonly choice: ThemeChoice;
   /** The theme that is showing right now. */
   readonly resolved: ThemeId;
+  /** The theme "Match my device" would show with the device's current setting. */
+  readonly deviceTheme: ThemeId;
   readonly choose: (choice: ThemeChoice) => void;
 }
 
@@ -23,6 +25,7 @@ export function useTheme(): ThemeState {
   const [choice, setChoice] = useState<ThemeChoice>(() => readStoredChoice(() => localStorage));
   const [deviceIsDark, setDeviceIsDark] = useState(() => matchMedia(deviceDarkQuery).matches);
   const resolved = resolveTheme(choice, deviceIsDark);
+  const deviceTheme = resolveTheme("device", deviceIsDark);
 
   useEffect(() => {
     const query = matchMedia(deviceDarkQuery);
@@ -45,5 +48,5 @@ export function useTheme(): ThemeState {
     setChoice(next);
   }, []);
 
-  return { choice, resolved, choose };
+  return { choice, resolved, deviceTheme, choose };
 }

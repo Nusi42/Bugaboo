@@ -11,12 +11,12 @@ const themeLabels = {
 } as const;
 
 export function App() {
-  const { choice, resolved, choose } = useTheme();
+  const { choice, resolved, deviceTheme, choose } = useTheme();
   const labels: Readonly<Record<ThemeChoice, string>> = {
     ...themeLabels,
     device: t("theme.device-resolved", {
       device: t("theme.device"),
-      theme: themeLabels[resolved],
+      theme: themeLabels[deviceTheme],
     }),
   };
   return (
