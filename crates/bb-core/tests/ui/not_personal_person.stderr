@@ -1,0 +1,28 @@
+error[E0277]: `Person` may hold personal data, so a field of this type cannot be `#[not_personal]`
+  --> tests/ui/not_personal_person.rs:12:16
+   |
+12 |     pub owner: Person,
+   |                ^^^^^^ mark this field `#[personal(category = "...", basis = "...")]`
+   |
+help: the trait `NotPersonal` is not implemented for `Person`
+  --> tests/ui/not_personal_person.rs:4:1
+   |
+ 4 | pub struct Person {
+   | ^^^^^^^^^^^^^^^^^
+   = note: or implement `NotPersonal` for the type, if it can never hold personal data (DATA-MARKS)
+   = help: the following other types implement trait `NotPersonal`:
+             Basis
+             Box<T>
+             Category
+             Channel
+             EntityId
+             EntityKind
+             EntityRef
+             EventId
+           and $N others
+note: required by a bound in `_::{closure#0}::not_personal`
+  --> tests/ui/not_personal_person.rs:9:10
+   |
+ 9 | #[derive(Entity)]
+   |          ^^^^^^ required by this bound in `not_personal`
+   = note: this error originates in the derive macro `Entity` (in Nightly builds, run with -Z macro-backtrace for more info)

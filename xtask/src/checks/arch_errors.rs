@@ -58,7 +58,13 @@ fn evaluate(sources: &[Source], messages: &[(String, String)]) -> Vec<Finding> {
             TABLE_PATH,
             "The table of error codes is missing.",
         )),
-        Some((_, text)) => findings.extend(check_table(&read_table(text), messages)),
+        Some((_, text)) => match read_table(text) {
+            Ok(table) => findings.extend(check_table(&table, messages)),
+            Err(problem) => findings.push(Finding::at(
+                TABLE_PATH,
+                format!("The table of error codes {problem}."),
+            )),
+        },
     }
     for (path, text) in sources {
         if HTTP_CODE.iter().any(|folder| path.starts_with(folder)) {
@@ -68,24 +74,65 @@ fn evaluate(sources: &[Source], messages: &[(String, String)]) -> Vec<Finding> {
     findings
 }
 
-/// The lines of the form `Variant => ("code", 401, message::CONSTANT),`.
-fn read_table(text: &str) -> Vec<Entry> {
-    text.lines()
-        .filter_map(|line| {
-            let (variant, rest) = line.trim().split_once("=> (")?;
-            let rest = rest.trim_end().trim_end_matches(',').strip_suffix(')')?;
-            let mut parts = rest.splitn(3, ',').map(str::trim);
-            let code = parts.next()?.strip_prefix('"')?.strip_suffix('"')?;
-            let status = parts.next()?.parse().ok()?;
-            let constant = parts.next()?.rsplit("::").next()?;
-            Some(Entry {
-                variant: variant.trim().to_owned(),
-                code: code.to_owned(),
-                status,
-                constant: constant.to_owned(),
-            })
-        })
-        .collect()
+/// One line of the macro `error_codes! { Variant => ("code", 401, message::CONSTANT), … }`.
+struct Row(Entry);
+
+impl syn::parse::Parse for Row {
+    fn parse(input: syn::parse::ParseStream<'_>) -> syn::Result<Self> {
+        syn::Attribute::parse_outer(input)?;
+        let variant: syn::Ident = input.parse()?;
+        input.parse::<syn::Token![=>]>()?;
+        let inner;
+        syn::parenthesized!(inner in input);
+        let code: syn::LitStr = inner.parse()?;
+        inner.parse::<syn::Token![,]>()?;
+        let status: syn::LitInt = inner.parse()?;
+        inner.parse::<syn::Token![,]>()?;
+        let message: syn::Path = inner.parse()?;
+        let constant = message
+            .segments
+            .last()
+            .map(|segment| segment.ident.to_string())
+            .unwrap_or_default();
+        Ok(Self(Entry {
+            variant: variant.to_string(),
+            code: code.value(),
+            status: status.base10_parse()?,
+            constant,
+        }))
+    }
+}
+
+/// The table, read as Rust. A table that cannot be read is an error, not an empty table.
+fn read_table(text: &str) -> Result<Vec<Entry>, String> {
+    let file = syn::parse_file(text).map_err(|error| format!("is not valid Rust: {error}"))?;
+    let mut entries = Vec::new();
+    let mut found = false;
+    for item in &file.items {
+        let syn::Item::Macro(item) = item else {
+            continue;
+        };
+        if item
+            .mac
+            .path
+            .segments
+            .last()
+            .is_none_or(|s| s.ident != "error_codes")
+        {
+            continue;
+        }
+        found = true;
+        let rows = item
+            .mac
+            .parse_body_with(syn::punctuated::Punctuated::<Row, syn::Token![,]>::parse_terminated)
+            .map_err(|error| format!("has a line that is not `Name => (\"code\", status, message::CONSTANT)`: {error}"))?;
+        entries.extend(rows.into_iter().map(|row| row.0));
+    }
+    if found {
+        Ok(entries)
+    } else {
+        Err("has no `error_codes! { … }` table".to_owned())
+    }
 }
 
 fn check_table(table: &[Entry], messages: &[(String, String)]) -> Vec<Finding> {
@@ -227,7 +274,13 @@ mod tests {
 
     #[test]
     fn bad_example() {
-        let table = "    A => (\"auth.x\", 401, message::ERROR_A),\n    B => (\"auth.x\", 200, message::ERROR_A),\n    C => (\"Auth\", 404, message::ERROR_MISSING),\n    D => (\"x.y\", 404, message::ERROR_D),\n";
+        let table = r#"error_codes! {
+    A => ("auth.x", 401, message::ERROR_A),
+    B => ("auth.x", 200, message::ERROR_A),
+    C => ("Auth", 404, message::ERROR_MISSING),
+    D => ("x.y", 404, message::ERROR_D),
+}
+"#;
         let found = run(
             table,
             &[("error.a", "No."), ("error.d", "Hello {name}")],
@@ -241,6 +294,32 @@ mod tests {
         assert!(found.contains("ERROR_MISSING"), "{found}");
         assert!(found.contains("has a placeholder"), "{found}");
         assert!(found.contains("text written in the code"), "{found}");
+    }
+
+    #[test]
+    fn a_missing_or_unreadable_table_is_an_error_not_an_empty_table() {
+        let none = run(
+            "fn unrelated() {}
+",
+            &GOOD_MESSAGES,
+            "",
+        )
+        .join(
+            "
+",
+        );
+        assert!(none.contains("has no `error_codes!"), "{none}");
+        let broken = run(
+            "error_codes! { A => (\"x.y\" 401, m::A) }
+",
+            &GOOD_MESSAGES,
+            "",
+        )
+        .join(
+            "
+",
+        );
+        assert!(broken.contains("has a line that is not"), "{broken}");
     }
 
     #[test]

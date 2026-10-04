@@ -9,6 +9,7 @@
 //! placeholder, so no name, ID or count can leak through it. ARCH-ERRORS checks the table and the
 //! catalog.
 
+use std::collections::BTreeMap;
 use std::fmt;
 use std::str::FromStr;
 
@@ -21,7 +22,6 @@ macro_rules! error_codes {
     ($($(#[$doc:meta])* $variant:ident => ($code:literal, $status:literal, $message:path)),+ $(,)?) => {
         /// Something that can go wrong, as the API reports it.
         #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-        #[non_exhaustive]
         pub enum ErrorCode {
             $($(#[$doc])* $variant),+
         }
@@ -121,24 +121,26 @@ impl<'de> Deserialize<'de> for ErrorCode {
 pub const PROBLEM_CONTENT_TYPE: &str = "application/problem+json";
 
 /// The body of an error answer, as plain data. The HTTP layer only sends it.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+///
+/// Clients react to `code` and show the message for `message_key` and `params` in their own
+/// language. `title` is the English text, only a fallback for clients that cannot do that. The
+/// fields are private and the only way to make a `Problem` is from an [`ErrorCode`], so no answer
+/// carries a text or a status that does not belong to its code.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct Problem {
-    /// A stable address for this kind of error.
     #[serde(rename = "type")]
-    pub kind: String,
-    /// The message for people, in English until languages are chosen per request.
-    pub title: String,
-    /// The HTTP status.
-    pub status: u16,
-    /// The error code clients react to.
-    pub code: ErrorCode,
-    /// More help, if there is any; also from the message catalog.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub detail: Option<String>,
+    kind: String,
+    title: String,
+    status: u16,
+    code: ErrorCode,
+    message_key: MessageKey,
+    params: BTreeMap<String, serde_json::Value>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    request_id: Option<String>,
 }
 
 impl Problem {
-    /// The error answer for `code`.
+    /// The error answer for `code`. `params` stays empty: error messages have no placeholders.
     #[must_use]
     pub fn new(code: ErrorCode) -> Self {
         Self {
@@ -146,15 +148,47 @@ impl Problem {
             title: Message::from(code.message()).render(),
             status: code.status(),
             code,
-            detail: None,
+            message_key: code.message(),
+            params: BTreeMap::new(),
+            request_id: None,
         }
     }
 
-    /// Adds a longer explanation. It is a catalog message like every other text.
+    /// Adds the ID of the request, so a person can quote it to support. Set by `bb-api`.
     #[must_use]
-    pub fn with_detail(mut self, detail: &Message) -> Self {
-        self.detail = Some(detail.render());
+    pub fn with_request_id(mut self, request_id: impl Into<String>) -> Self {
+        self.request_id = Some(request_id.into());
         self
+    }
+
+    /// The error code.
+    #[must_use]
+    pub const fn code(&self) -> ErrorCode {
+        self.code
+    }
+
+    /// The HTTP status.
+    #[must_use]
+    pub const fn status(&self) -> u16 {
+        self.status
+    }
+
+    /// The key of the message to show.
+    #[must_use]
+    pub const fn message_key(&self) -> MessageKey {
+        self.message_key
+    }
+
+    /// The English text, a fallback for clients that cannot look up the message.
+    #[must_use]
+    pub fn title(&self) -> &str {
+        &self.title
+    }
+
+    /// The ID of the request, if `bb-api` set one.
+    #[must_use]
+    pub fn request_id(&self) -> Option<&str> {
+        self.request_id.as_deref()
     }
 }
 
@@ -213,7 +247,13 @@ mod tests {
             json["title"],
             "The e-mail address or the password is not right."
         );
-        assert!(json.get("detail").is_none());
+        assert_eq!(json["message_key"], "error.auth.wrong-credentials");
+        assert_eq!(json["params"], serde_json::json!({}));
+        assert!(json.get("request_id").is_none());
+        let traced = Problem::new(ErrorCode::NotFound).with_request_id("r-1");
+        assert_eq!(serde_json::to_value(&traced).unwrap()["request_id"], "r-1");
+        assert_eq!(traced.request_id(), Some("r-1"));
+        assert_eq!(traced.status(), 404);
     }
 
     #[test]

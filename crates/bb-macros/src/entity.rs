@@ -1,7 +1,10 @@
 //! The expansion of `#[derive(Entity)]`.
+//!
+//! The macro knows no words: a category or basis is looked up in `bb_core` by the code that is
+//! evaluated at compile time, so the words are defined once, in `bb_core::personal`.
 
 use proc_macro2::{Span, TokenStream};
-use quote::quote;
+use quote::{quote, quote_spanned};
 use syn::spanned::Spanned as _;
 use syn::{Attribute, Data, DeriveInput, Field, Fields, Ident, LitStr};
 
@@ -33,10 +36,14 @@ pub(crate) fn expand(input: &DeriveInput) -> syn::Result<TokenStream> {
     let entity = &input.ident;
     let name = entity.to_string();
     let mut marks = Vec::new();
+    let mut assertions = Vec::new();
     let mut errors: Option<syn::Error> = None;
     for field in &fields.named {
         match field_mark(entity, field) {
-            Ok(tokens) => marks.push(tokens),
+            Ok((mark, assertion)) => {
+                marks.push(mark);
+                assertions.extend(assertion);
+            }
             Err(error) => match &mut errors {
                 Some(all) => all.combine(error),
                 None => errors = Some(error),
@@ -51,10 +58,17 @@ pub(crate) fn expand(input: &DeriveInput) -> syn::Result<TokenStream> {
             const MARKS: ::bb_core::personal::EntityMarks =
                 ::bb_core::personal::EntityMarks::new(#name, &[#(#marks),*]);
         }
+
+        // A field marked `#[not_personal]` must have a type that cannot hold personal data.
+        const _: fn() = || {
+            fn not_personal<T: ?Sized + ::bb_core::personal::NotPersonal>() {}
+            #(#assertions)*
+        };
     })
 }
 
-fn field_mark(entity: &Ident, field: &Field) -> syn::Result<TokenStream> {
+/// The mark of one field, and for `#[not_personal]` the proof that its type may carry it.
+fn field_mark(entity: &Ident, field: &Field) -> syn::Result<(TokenStream, Option<TokenStream>)> {
     let Some(ident) = &field.ident else {
         return Err(syn::Error::new(
             field.span(),
@@ -62,13 +76,21 @@ fn field_mark(entity: &Ident, field: &Field) -> syn::Result<TokenStream> {
         ));
     };
     let name = ident.to_string();
-    let mark = read_mark(entity, ident, &field.attrs)?;
-    Ok(match mark {
-        Mark::NotPersonal => quote! { ::bb_core::personal::FieldMark::not_personal(#name) },
+    Ok(match read_mark(entity, ident, &field.attrs)? {
+        Mark::NotPersonal => {
+            let ty = &field.ty;
+            (
+                quote! { ::bb_core::personal::FieldMark::not_personal(#name) },
+                Some(quote_spanned! { ty.span() => not_personal::<#ty>(); }),
+            )
+        }
         Mark::Personal { category, basis } => {
-            let category = variant(&category, "Category")?;
-            let basis = variant(&basis, "Basis")?;
-            quote! { ::bb_core::personal::FieldMark::personal(#name, #category, #basis) }
+            let category = word(&category, "Category");
+            let basis = word(&basis, "Basis");
+            (
+                quote! { ::bb_core::personal::FieldMark::personal(#name, #category, #basis) },
+                None,
+            )
         }
     })
 }
@@ -131,32 +153,9 @@ fn read_personal(attr: &Attribute) -> syn::Result<Mark> {
     }
 }
 
-/// `employee_time` becomes `Category::EmployeeTime`. The variant gets the span of the text the
-/// author wrote, so an unknown word is reported on that word.
-fn variant(text: &LitStr, enum_name: &str) -> syn::Result<TokenStream> {
-    let value = text.value();
-    let plain = value.starts_with(|c: char| c.is_ascii_lowercase())
-        && value
-            .chars()
-            .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '_')
-        && !value.contains("__")
-        && !value.ends_with('_');
-    if !plain {
-        return Err(syn::Error::new(
-            text.span(),
-            "use lower-case words joined by underscores, like \"employee_time\"",
-        ));
-    }
-    let camel: String = value
-        .split('_')
-        .map(|word| {
-            let mut chars = word.chars();
-            chars.next().map_or_else(String::new, |first| {
-                first.to_uppercase().chain(chars).collect()
-            })
-        })
-        .collect();
+/// The word as a value of its enum. An unknown word stops the build at the word, in the constant
+/// evaluation of `bb_core`.
+fn word(text: &LitStr, enum_name: &str) -> TokenStream {
     let enum_ident = Ident::new(enum_name, text.span());
-    let variant = Ident::new(&camel, text.span());
-    Ok(quote! { ::bb_core::personal::#enum_ident::#variant })
+    quote_spanned! { text.span() => ::bb_core::personal::#enum_ident::from_code_const(#text) }
 }

@@ -117,7 +117,9 @@ mod tests {
     use super::*;
     use crate::rust_source::Source;
 
-    const VOCABULARY: &str = "pub enum Category { Identity, EmployeeTime }\npub enum Basis { Contract, LegalObligation }\n";
+    const VOCABULARY: &str = "words! { pub enum Category { Identity => \"identity\", EmployeeTime => \"employee_time\" } }
+words! { pub enum Basis { Contract => \"contract\", LegalObligation => \"legal_obligation\" } }
+";
     const LIST: &str = "crate::entities! { crate::person::Person }";
 
     fn findings(person: &str, list: &str) -> Vec<Finding> {

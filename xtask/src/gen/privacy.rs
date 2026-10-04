@@ -216,21 +216,58 @@ fn doc(attrs: &[Attribute]) -> String {
     lines.join(" ")
 }
 
+/// The enums declared with `words! { … }`: each variant with its word, written once in the source.
+struct WordsEnum {
+    name: String,
+    words: Vec<Word>,
+}
+
+impl syn::parse::Parse for WordsEnum {
+    fn parse(input: syn::parse::ParseStream<'_>) -> syn::Result<Self> {
+        Attribute::parse_outer(input)?;
+        input.parse::<syn::Visibility>()?;
+        input.parse::<syn::Token![enum]>()?;
+        let name: syn::Ident = input.parse()?;
+        let body;
+        syn::braced!(body in input);
+        let mut words = Vec::new();
+        while !body.is_empty() {
+            let attrs = Attribute::parse_outer(&body)?;
+            body.parse::<syn::Ident>()?;
+            body.parse::<syn::Token![=>]>()?;
+            let code: syn::LitStr = body.parse()?;
+            words.push(Word {
+                code: code.value(),
+                doc: doc(&attrs),
+            });
+            if !body.is_empty() {
+                body.parse::<syn::Token![,]>()?;
+            }
+        }
+        Ok(Self {
+            name: name.to_string(),
+            words,
+        })
+    }
+}
+
 fn read_vocabulary(items: &[Item]) -> Vocabulary {
     let mut vocabulary = Vocabulary::default();
     for item in items {
-        if let Item::Enum(item) = item {
-            let words: Vec<Word> = item
-                .variants
-                .iter()
-                .map(|variant| Word {
-                    code: snake_case(&variant.ident.to_string()),
-                    doc: doc(&variant.attrs),
-                })
-                .collect();
-            match item.ident.to_string().as_str() {
-                "Category" => vocabulary.categories = words,
-                "Basis" => vocabulary.bases = words,
+        let Item::Macro(item) = item else { continue };
+        if item
+            .mac
+            .path
+            .segments
+            .last()
+            .is_none_or(|s| s.ident != "words")
+        {
+            continue;
+        }
+        if let Ok(parsed) = item.mac.parse_body::<WordsEnum>() {
+            match parsed.name.as_str() {
+                "Category" => vocabulary.categories = parsed.words,
+                "Basis" => vocabulary.bases = parsed.words,
                 _ => {}
             }
         }
@@ -267,21 +304,15 @@ fn read_list(items: &[Item]) -> Vec<String> {
     names
 }
 
-/// `EmployeeTime` becomes `employee_time`, the way the derive macro reads the words.
-fn snake_case(name: &str) -> String {
-    let mut out = String::new();
-    for (index, c) in name.chars().enumerate() {
-        if c.is_ascii_uppercase() {
-            if index > 0 {
-                out.push('_');
-            }
-            out.push(c.to_ascii_lowercase());
-        } else {
-            out.push(c);
-        }
-    }
-    out
-}
+/// What the marks cannot promise, written on the page so nobody reads more into it than is there.
+const LIMITS: &str = "
+## Limits of the marks
+
+- A field is marked `#[not_personal]` only if its type is on a short list (numbers, truth values, moments, IDs of records, the words on this page, and types that say so). Text and containers of unknown content are not on it, so they are marked as personal data.
+- The ID of a person is personal data: a pseudonym that is fully random. After a person is removed it is kept only as the link to the *Former user …* tombstone.
+- A general record ID (`EntityId`) can point to a person's record. It counts as not personal here, and the person is covered by the marks on the actor and the changes of the event.
+- The marks say whether a field holds personal data. Whether its category and legal basis are the right ones is decided in review.
+";
 
 /// The page. Tables are padded so the Markdown formatter leaves them alone.
 pub(crate) fn render(model: &Model) -> String {
@@ -341,6 +372,7 @@ pub(crate) fn render(model: &Model) -> String {
             &rows,
         ));
     }
+    out.push_str(LIMITS);
     out
 }
 
@@ -413,7 +445,17 @@ pub(crate) fn require_vocabulary(model: &Model) -> anyhow::Result<()> {
 mod tests {
     use super::*;
 
-    const VOCABULARY: &str = "pub enum Category { /// Who.\n Identity, EmployeeTime }\npub enum Basis { /// A contract.\n Contract }\n";
+    const VOCABULARY: &str = r#"
+words! { pub enum Category {
+    /// Who.
+    Identity => "identity",
+    EmployeeTime => "employee_time",
+} }
+words! { pub enum Basis {
+    /// A contract.
+    Contract => "contract",
+} }
+"#;
 
     fn model(entity: &str) -> Model {
         read_model(&[
@@ -495,11 +537,5 @@ mod tests {
                 output.path
             );
         }
-    }
-
-    #[test]
-    fn camel_case_words_become_snake_case() {
-        assert_eq!(snake_case("EmployeeTime"), "employee_time");
-        assert_eq!(snake_case("Identity"), "identity");
     }
 }

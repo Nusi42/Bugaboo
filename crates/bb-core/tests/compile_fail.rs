@@ -49,4 +49,8 @@ fn priv_02_unmarked_or_wrongly_marked_fields_do_not_compile() {
     cases.compile_fail("tests/ui/missing_basis.rs");
     cases.compile_fail("tests/ui/unknown_category.rs");
     cases.compile_fail("tests/ui/not_a_struct.rs");
+    cases.compile_fail("tests/ui/tuple_struct.rs");
+    cases.compile_fail("tests/ui/generic_struct.rs");
+    cases.compile_fail("tests/ui/not_personal_person.rs");
+    cases.compile_fail("tests/ui/not_personal_text.rs");
 }

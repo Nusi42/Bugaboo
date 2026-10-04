@@ -76,21 +76,70 @@ impl DefaultValue {
 /// Everything the registry knows about one setting, whatever its type.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct SettingDefinition {
-    /// The key, `topic.name`: lower-case words joined by hyphens, like `security.two-step-required`.
-    pub key: &'static str,
-    /// The value when nobody set anything.
-    pub default: DefaultValue,
-    /// The levels it can be set on.
-    pub levels: &'static [Level],
-    /// Who may change it.
-    pub changed_by: ChangedBy,
-    /// The message that explains it in the settings dialog.
-    pub help: MessageKey,
-    /// Whether administrators can lock the value so lower levels cannot override it.
-    pub lockable: bool,
+    key: &'static str,
+    default: DefaultValue,
+    levels: &'static [Level],
+    changed_by: ChangedBy,
+    help: MessageKey,
+    lockable: bool,
 }
 
 impl SettingDefinition {
+    /// Only the `settings!` macro builds definitions, so the registry is the one list.
+    const fn new(
+        key: &'static str,
+        default: DefaultValue,
+        levels: &'static [Level],
+        changed_by: ChangedBy,
+        help: MessageKey,
+        lockable: bool,
+    ) -> Self {
+        Self {
+            key,
+            default,
+            levels,
+            changed_by,
+            help,
+            lockable,
+        }
+    }
+
+    /// The key, `topic.name`: lower-case words joined by hyphens, like `security.two-step-required`.
+    #[must_use]
+    pub const fn key(&self) -> &'static str {
+        self.key
+    }
+
+    /// The value when nobody set anything.
+    #[must_use]
+    pub const fn default(&self) -> DefaultValue {
+        self.default
+    }
+
+    /// The levels it can be set on, from organization down to person.
+    #[must_use]
+    pub const fn levels(&self) -> &'static [Level] {
+        self.levels
+    }
+
+    /// Who may change it.
+    #[must_use]
+    pub const fn changed_by(&self) -> ChangedBy {
+        self.changed_by
+    }
+
+    /// The message that explains it in the settings dialog.
+    #[must_use]
+    pub const fn help(&self) -> MessageKey {
+        self.help
+    }
+
+    /// Whether administrators can lock the value so lower levels cannot override it.
+    #[must_use]
+    pub const fn lockable(&self) -> bool {
+        self.lockable
+    }
+
     /// The topic the settings dialog groups it under: the first part of the key.
     #[must_use]
     pub fn topic(&self) -> &'static str {
@@ -99,6 +148,25 @@ impl SettingDefinition {
             .map_or(self.key, |(topic, _)| topic)
     }
 }
+
+/// A stored value has another type than the setting declares.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct WrongType {
+    /// The key of the setting.
+    pub key: &'static str,
+}
+
+impl std::fmt::Display for WrongType {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            formatter,
+            "the stored value of `{}` has the wrong type",
+            self.key
+        )
+    }
+}
+
+impl std::error::Error for WrongType {}
 
 /// A type a setting can have. Only [`Bool`], [`Integer`] and [`Text`] exist.
 pub trait SettingKind {
@@ -203,15 +271,28 @@ impl<T: SettingKind> Setting<T> {
     }
 
     /// The default value.
-    #[must_use]
-    pub fn default_value(&self) -> Option<T::Value> {
-        T::default_of(self.definition.default)
+    ///
+    /// # Errors
+    /// Fails if the declared default has another type than the setting. The macro makes that
+    /// impossible, so it would be a defect in the registry.
+    pub fn default_value(&self) -> Result<T::Value, WrongType> {
+        T::default_of(self.definition.default).ok_or(WrongType {
+            key: self.definition.key,
+        })
     }
 
-    /// The value to use: the stored one if it has the right type, otherwise the default.
-    #[must_use]
-    pub fn resolve(&self, stored: Option<&SettingValue>) -> Option<T::Value> {
-        stored.and_then(T::read).or_else(|| self.default_value())
+    /// The value to use: the stored one, or the default when nothing is stored.
+    ///
+    /// # Errors
+    /// Fails when a value is stored but has another type than the setting declares. The caller
+    /// decides what to do; the wrong value is not silently replaced by the default.
+    pub fn resolve(&self, stored: Option<&SettingValue>) -> Result<T::Value, WrongType> {
+        match stored {
+            Some(value) => T::read(value).ok_or(WrongType {
+                key: self.definition.key,
+            }),
+            None => self.default_value(),
+        }
     }
 }
 
@@ -230,14 +311,14 @@ macro_rules! settings {
     )+) => {
         $(
             $(#[$doc])*
-            pub const $name: Setting<$kind> = Setting::new(SettingDefinition {
-                key: $key,
-                default: $kind::default_value($default),
-                levels: &[$(Level::$level),+],
-                changed_by: ChangedBy::$changed_by,
-                help: $help,
-                lockable: $lockable,
-            });
+            pub const $name: Setting<$kind> = Setting::new(SettingDefinition::new(
+                $key,
+                $kind::default_value($default),
+                &[$(Level::$level),+],
+                ChangedBy::$changed_by,
+                $help,
+                $lockable,
+            ));
         )+
 
         /// Every setting, in the order of the declarations.
@@ -249,7 +330,9 @@ pub(crate) use settings;
 /// The registry entry for `key`, if there is one.
 #[must_use]
 pub fn find(key: &str) -> Option<&'static SettingDefinition> {
-    ALL.iter().copied().find(|definition| definition.key == key)
+    ALL.iter()
+        .copied()
+        .find(|definition| definition.key() == key)
 }
 
 #[cfg(test)]
@@ -264,11 +347,11 @@ mod tests {
         let mut seen = HashSet::new();
         for definition in ALL {
             assert!(
-                seen.insert(definition.key),
+                seen.insert(definition.key()),
                 "{} is declared twice",
-                definition.key
+                definition.key()
             );
-            let (topic, name) = definition.key.split_once('.').unwrap();
+            let (topic, name) = definition.key().split_once('.').unwrap();
             for part in [topic, name] {
                 assert!(
                     part.starts_with(|c: char| c.is_ascii_lowercase())
@@ -276,7 +359,7 @@ mod tests {
                             .chars()
                             .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-'),
                     "{}",
-                    definition.key
+                    definition.key()
                 );
             }
             assert_eq!(definition.topic(), topic);
@@ -287,49 +370,48 @@ mod tests {
     fn every_setting_explains_itself_and_has_a_level() {
         for definition in ALL {
             assert!(
-                !Message::from(definition.help).render().is_empty(),
+                !Message::from(definition.help()).render().is_empty(),
                 "{}",
-                definition.key
+                definition.key()
             );
-            assert!(!definition.levels.is_empty(), "{}", definition.key);
+            assert!(!definition.levels().is_empty(), "{}", definition.key());
             assert!(
-                definition.levels.windows(2).all(|pair| pair[0] < pair[1]),
+                definition.levels().windows(2).all(|pair| pair[0] < pair[1]),
                 "{}: list the levels from organization down to person",
-                definition.key
+                definition.key()
             );
         }
     }
 
     #[test]
     fn a_lockable_setting_has_a_lower_level_to_lock() {
-        for definition in ALL.iter().filter(|definition| definition.lockable) {
+        for definition in ALL.iter().filter(|definition| definition.lockable()) {
             assert!(
-                definition.levels.len() > 1 && definition.levels[0] == Level::Organization,
+                definition.levels().len() > 1 && definition.levels()[0] == Level::Organization,
                 "{}",
-                definition.key
+                definition.key()
             );
         }
     }
 
     #[test]
     fn the_default_has_the_declared_type() {
-        assert_eq!(APPEARANCE_THEME.default_value().as_deref(), Some("device"));
-        assert_eq!(SECURITY_SESSION_IDLE_MINUTES.default_value(), Some(30));
-        assert_eq!(SECURITY_TWO_STEP_REQUIRED.default_value(), Some(false));
+        assert_eq!(APPEARANCE_THEME.default_value().as_deref(), Ok("device"));
+        assert_eq!(SECURITY_SESSION_IDLE_MINUTES.default_value(), Ok(30));
+        assert_eq!(SECURITY_TWO_STEP_REQUIRED.default_value(), Ok(false));
     }
 
     #[test]
-    fn resolve_uses_the_stored_value_only_when_it_has_the_right_type() {
+    fn resolve_uses_the_stored_value_and_reports_one_of_the_wrong_type() {
         let stored = SettingValue::Integer(10);
-        assert_eq!(
-            SECURITY_SESSION_IDLE_MINUTES.resolve(Some(&stored)),
-            Some(10)
-        );
-        assert_eq!(SECURITY_SESSION_IDLE_MINUTES.resolve(None), Some(30));
+        assert_eq!(SECURITY_SESSION_IDLE_MINUTES.resolve(Some(&stored)), Ok(10));
+        assert_eq!(SECURITY_SESSION_IDLE_MINUTES.resolve(None), Ok(30));
         let wrong = SettingValue::Text("soon".to_owned());
         assert_eq!(
             SECURITY_SESSION_IDLE_MINUTES.resolve(Some(&wrong)),
-            Some(30)
+            Err(WrongType {
+                key: "security.session-idle-minutes"
+            })
         );
     }
 

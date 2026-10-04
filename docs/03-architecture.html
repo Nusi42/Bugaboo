@@ -853,7 +853,7 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 <tr><td><code>STY-CONTRAST</code></td><td>Every text/background pair in the built-in themes passes WCAG AA</td><td>THM-03, UX-04</td><td>xtask (reads design/tokens.json)</td><td>commit · ci</td></tr>
 <tr><td><code>ARCH-DEPS</code></td><td>Crates depend only on what the module map allows</td><td>architecture §4 (dependency rules), ADR-0001</td><td>xtask (cargo metadata vs allowed edges)</td><td>push · ci</td></tr>
 <tr><td><code>ARCH-PURE</code></td><td>bb-core, bb-searchlang and bb-markdown do no I/O (no tokio, sqlx, std::fs, std::net)</td><td>architecture §4, ADR-0005, ADR-0011</td><td>xtask (dependency bans) + ast-grep</td><td>edit · push · ci</td></tr>
-<tr><td><code>ARCH-WASM</code></td><td>The browser-shared crates still build for WebAssembly within the size budget</td><td>ADR-0005, ADR-0011, PERF-04</td><td>cargo build --target wasm32-unknown-unknown + wasm-opt size check</td><td>ci</td></tr>
+<tr><td><code>ARCH-WASM</code></td><td>The crates shared with the browser (bb-core, bb-searchlang, bb-markdown) still build for WebAssembly</td><td>ADR-0001, ADR-0005, ADR-0011</td><td>cargo check --target wasm32-unknown-unknown (minimal form: the size budget with wasm-opt, PERF-04, comes with bb-wasm)</td><td>push · ci</td></tr>
 <tr><td><code>ARCH-AUTHZ-ONLY</code></td><td>Authorized&lt;T&gt; is only created inside bb-policy</td><td>ADR-0004</td><td>ast-grep + private constructor (compile error)</td><td>edit · commit · ci</td></tr>
 <tr><td><code>ARCH-API-OUT</code></td><td>API and MCP handlers return only Authorized views, never domain or database types</td><td>ADR-0004</td><td>trait bound on responses + ast-grep</td><td>edit · commit · ci</td></tr>
 <tr><td><code>ARCH-HTTP-EDGE</code></td><td>Only bb-api and bb-mcp use HTTP crates; only bb-server wires adapters</td><td>architecture §4</td><td>xtask (cargo metadata)</td><td>push · ci</td></tr>
@@ -862,7 +862,7 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 <tr><td><code>ARCH-VERSIONED</code></td><td>Every change endpoint requires a version (If-Match) and long-text endpoints an edit-lock token</td><td>ADR-0019</td><td>xtask (reads generated OpenAPI)</td><td>push · ci</td></tr>
 <tr><td><code>ARCH-LEAN</code></td><td>Every list endpoint supports fields=, cursor paging and a page-size cap</td><td>PERF-02</td><td>xtask (reads generated OpenAPI)</td><td>push · ci</td></tr>
 <tr><td><code>ARCH-PERMS</code></td><td>Every endpoint and MCP tool declares its permission; every permission is used and explained</td><td>SEC-01, ADR-0004</td><td>xtask (OpenAPI x-permission + permission catalogue)</td><td>push · ci</td></tr>
-<tr><td><code>ARCH-ERRORS</code></td><td>Every error code has a message key; API errors are problem+json with a code</td><td>architecture §7 (Errors)</td><td>xtask</td><td>push · ci</td></tr>
+<tr><td><code>ARCH-ERRORS</code></td><td>Every error code has a message key; API errors are problem+json with a code</td><td>architecture §7 (Errors)</td><td>xtask (reads the code table with syn and the catalog; error answers built from a literal text are found only as (StatusCode::X, "text"), the rest of the API part comes with WP-06)</td><td>push · ci</td></tr>
 <tr><td><code>ARCH-SETTINGS</code></td><td>Settings are only read and written through the settings registry</td><td>ADR-0018</td><td>xtask (declarations and key literals; the storage part comes with the store)</td><td>edit · commit · ci</td></tr>
 <tr><td><code>ARCH-AI-TOOLS</code></td><td>AI tools exist only in the tool registry and never reach people-ranking, assignment or working-hours use cases</td><td>ADR-0013, COMP-10</td><td>xtask (registry allow list) + ast-grep</td><td>edit · commit · ci</td></tr>
 <tr><td><code>ARCH-WEB-API</code></td><td>The browser app calls the server only through @bugaboo/api-client (no raw fetch)</td><td>ADR-0008</td><td>oxlint no-restricted-globals/imports + ast-grep</td><td>edit · commit · ci</td></tr>
@@ -1326,6 +1326,12 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 </ul>
 <h4>Enforced by</h4>
 <p>DATA-MARKS, DATA-LOGS (see <code>tools/checks/catalog.toml</code>).</p>
+<h4>Amendment (M1)</h4>
+<ul>
+<li>A person's ID is itself personal data: a pseudonym, marked <code>#[personal(category = "identity", basis = "legitimate_interests")]</code>. After <em>Remove a person</em> it is kept only as the link to the <em>Former user …</em> tombstone.</li>
+<li><code>#[not_personal]</code> is accepted only for field types that cannot hold personal data (they implement <code>NotPersonal</code>: numbers, moments, IDs of records, the words of the marks, and types that say so). Free text is never on that list. Remaining limits are written on the generated page <code>docs/privacy/personal-data.md</code>.</li>
+<li>Checked by DATA-MARKS and by the compile-fail tests in <code>crates/bb-core/tests/compile_fail.rs</code> (<code>not_personal_person</code>, <code>not_personal_text</code>).</li>
+</ul>
 
 <!-- 0016-full-text-search.md -->
 <h3 id="adr-0016"><button class="sec" data-sec>§12.16</button>ADR-0016: Full-text search inside the database</h3>
@@ -1371,7 +1377,7 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 <h4>Context</h4>
 <p>"Everything configurable in the UI" means hundreds of settings across organization, project and person levels. Hand-building each dialog violates DRY and drifts.</p>
 <h4>Decision</h4>
-<p>Define each setting once with a <code>setting!</code> macro: key, type, default, allowed levels (organization / project / person), who may change it, help-text message key, and whether admins can lock it. The registry generates storage access, API endpoints, OpenAPI schema and the metadata the UI uses to render settings dialogs (grouped by topic, with search).</p>
+<p>Define each setting once with the <code>settings!</code> macro, which is used only in the registry file of <code>bb-core</code>: key, type, default, allowed levels (organization / project / person), who may change it, help-text message key, and whether admins can lock it. The registry generates storage access, API endpoints, OpenAPI schema and the metadata the UI uses to render settings dialogs (grouped by topic, with search).</p>
 <h4>Consequences</h4>
 <ul>
 <li>A new setting appears in the right dialog automatically, with its explanation.</li>
@@ -1497,6 +1503,12 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 </ul>
 <h4>Enforced by</h4>
 <p>TEST-ISSUE-IDS, ARCH-NO-COUNTERS (see <code>tools/checks/catalog.toml</code>).</p>
+<h4>Amendment (M1)</h4>
+<ul>
+<li>Records keep a UUIDv7 (time-ordered). A person's ID is a fully random UUIDv4 instead, so it does not show when the account was made.</li>
+<li><code>bb-core</code> does no I/O and builds for WebAssembly, so it never reads the clock or the system's random source. An ID is made from a time and random bytes that the caller passes in (<code>from_parts</code>, <code>IdSource</code>); the server's context supplies the real ones (WP-05).</li>
+<li>Checked by ARCH-WASM (<code>bb-core</code> builds for <code>wasm32-unknown-unknown</code>) and the tests <code>person_ids_are_random_version_4</code> and <code>from_parts_puts_the_time_into_the_id</code> in <code>crates/bb-core/src/id.rs</code>.</li>
+</ul>
 
 <!-- 0022-who-sees-people.md -->
 <h3 id="adr-0022"><button class="sec" data-sec>§12.22</button>ADR-0022: Who sees people is part of the permission model</h3>

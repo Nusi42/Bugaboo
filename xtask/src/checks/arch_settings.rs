@@ -1,7 +1,7 @@
 //! ARCH-SETTINGS (pattern part): settings are declared only in the settings registry and read only
 //! through its typed handles (ADR-0018).
 //!
-//! Two patterns are found in the code of the product crates: a `settings!` declaration outside
+//! Two patterns are found in the code of the product crates and the browser app: a `settings!` declaration outside
 //! `crates/bb-core/src/settings/`, and the key of a registered setting written as text anywhere
 //! else (which would be a way around the registry). The part that watches storage comes with the
 //! store (WP-05).
@@ -9,6 +9,7 @@
 use std::collections::BTreeSet;
 
 use super::{Check, Context, Finding};
+use crate::repo::Repo;
 use crate::rust_source::{Source, before_tests, read_product_sources};
 
 /// The only place settings are declared.
@@ -22,8 +23,39 @@ impl Check for ArchSettings {
     }
 
     fn run(&self, context: &Context<'_>) -> anyhow::Result<Vec<Finding>> {
-        Ok(evaluate(&read_product_sources(context.repo)?))
+        let mut sources = read_product_sources(context.repo)?;
+        sources.extend(read_web_sources(context.repo)?);
+        Ok(evaluate(&sources))
     }
+}
+
+/// The browser app's own code (not its tests or generated files): it must not read settings by key
+/// text either.
+fn read_web_sources(repo: &Repo) -> anyhow::Result<Vec<Source>> {
+    let mut sources = Vec::new();
+    for file in repo.all_files()? {
+        let is_code = file.starts_with("web/")
+            && [".ts", ".tsx", ".mts"]
+                .iter()
+                .any(|ending| file.ends_with(ending))
+            && ![".test.", ".spec.", "/e2e/", "generated.", "node_modules"]
+                .iter()
+                .any(|marker| file.contains(marker));
+        if is_code {
+            let text = std::fs::read_to_string(repo.path(&file))?;
+            sources.push((file, text.replace("\r\n", "\n")));
+        }
+    }
+    Ok(sources)
+}
+
+/// Whether `line` has `key` as the whole text of a string: in double, single or backtick quotes, or
+/// in a raw string (`r#"key"#`).
+fn has_key_literal(line: &str, key: &str) -> bool {
+    line.match_indices(key).any(|(at, _)| {
+        let quote = |c: Option<char>| matches!(c, Some('"' | '\x27' | '`'));
+        quote(line[..at].chars().next_back()) && quote(line[at + key.len()..].chars().next())
+    })
 }
 
 fn evaluate(sources: &[Source]) -> Vec<Finding> {
@@ -31,7 +63,7 @@ fn evaluate(sources: &[Source]) -> Vec<Finding> {
     let mut keys = BTreeSet::new();
     for (path, text) in sources
         .iter()
-        .filter(|(path, _)| path.starts_with(REGISTRY_FOLDER))
+        .filter(|(path, _)| path.starts_with(REGISTRY_FOLDER) && path.ends_with("/catalog.rs"))
     {
         for key in declared_keys(text) {
             if !keys.insert(key.clone()) {
@@ -56,7 +88,7 @@ fn evaluate(sources: &[Source]) -> Vec<Finding> {
                 ));
             }
             for key in &keys {
-                if line.contains(&format!("\"{key}\"")) {
+                if has_key_literal(line, key) {
                     findings.push(Finding::at(
                         &place,
                         format!("The key of the setting `{key}` is written as text. Read it through its handle in `bb_core::settings`."),
@@ -131,8 +163,30 @@ mod tests {
     }
 
     #[test]
+    fn keys_are_found_in_every_kind_of_string_and_in_the_browser_code() {
+        for line in [
+            "get(\"appearance.theme\")",
+            "get('appearance.theme')",
+            "get(`appearance.theme`)",
+            "get(r#\"appearance.theme\"#)",
+        ] {
+            assert!(has_key_literal(line, "appearance.theme"), "{line}");
+        }
+        assert!(!has_key_literal(
+            "let a = \"appearance.theme.help\";",
+            "appearance.theme"
+        ));
+        assert!(!has_key_literal("// appearance.theme", "appearance.theme"));
+        let web = (
+            "web/app/src/a.ts".to_owned(),
+            "load('appearance.theme');\n".to_owned(),
+        );
+        assert!(found(&[registry(DECLARATION), web]).contains("written as text"));
+    }
+
+    #[test]
     fn the_settings_of_this_repository_pass() {
-        let repo = crate::repo::Repo::discover().unwrap();
+        let repo = Repo::discover().unwrap();
         let sources = read_product_sources(&repo).unwrap();
         assert!(found(&sources).is_empty(), "{}", found(&sources));
     }

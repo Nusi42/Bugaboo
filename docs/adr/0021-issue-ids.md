@@ -29,3 +29,9 @@ Counting IDs (`WEB-142`) are easy to say aloud, but they reveal how many issues 
 ## Enforced by
 
 TEST-ISSUE-IDS, ARCH-NO-COUNTERS (see `tools/checks/catalog.toml`).
+
+## Amendment (M1)
+
+- Records keep a UUIDv7 (time-ordered). A person's ID is a fully random UUIDv4 instead, so it does not show when the account was made.
+- `bb-core` does no I/O and builds for WebAssembly, so it never reads the clock or the system's random source. An ID is made from a time and random bytes that the caller passes in (`from_parts`, `IdSource`); the server's context supplies the real ones (WP-05).
+- Checked by ARCH-WASM (`bb-core` builds for `wasm32-unknown-unknown`) and the tests `person_ids_are_random_version_4` and `from_parts_puts_the_time_into_the_id` in `crates/bb-core/src/id.rs`.

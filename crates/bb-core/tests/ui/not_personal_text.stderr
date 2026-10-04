@@ -1,0 +1,24 @@
+error[E0277]: `String` may hold personal data, so a field of this type cannot be `#[not_personal]`
+ --> tests/ui/not_personal_text.rs:6:16
+  |
+6 |     pub title: String,
+  |                ^^^^^^ mark this field `#[personal(category = "...", basis = "...")]`
+  |
+  = help: the trait `NotPersonal` is not implemented for `String`
+  = note: or implement `NotPersonal` for the type, if it can never hold personal data (DATA-MARKS)
+  = help: the following other types implement trait `NotPersonal`:
+            Basis
+            Box<T>
+            Category
+            Channel
+            EntityId
+            EntityKind
+            EntityRef
+            EventId
+          and $N others
+note: required by a bound in `not_personal`
+ --> tests/ui/not_personal_text.rs:3:10
+  |
+3 | #[derive(Entity)]
+  |          ^^^^^^ required by this bound in `not_personal`
+  = note: this error originates in the derive macro `Entity` (in Nightly builds, run with -Z macro-backtrace for more info)

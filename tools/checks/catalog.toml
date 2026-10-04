@@ -234,12 +234,18 @@ status = "planned"
 
 [[check]]
 id = "ARCH-WASM"
-title = "The browser-shared crates still build for WebAssembly within the size budget"
-rule = "ADR-0005, ADR-0011, PERF-04"
-tool = "cargo build --target wasm32-unknown-unknown + wasm-opt size check"
-when = ["ci"]
-files = ["crates/bb-searchlang/**", "crates/bb-markdown/**", "crates/bb-wasm/**"]
-status = "planned"
+title = "The crates shared with the browser (bb-core, bb-searchlang, bb-markdown) still build for WebAssembly"
+rule = "ADR-0001, ADR-0005, ADR-0011"
+tool = "cargo check --target wasm32-unknown-unknown (minimal form: the size budget with wasm-opt, PERF-04, comes with bb-wasm)"
+when = ["push", "ci"]
+files = [
+  "crates/bb-core/**",
+  "crates/bb-searchlang/**",
+  "crates/bb-markdown/**",
+  "crates/bb-wasm/**",
+  "Cargo.toml",
+]
+status = "active"
 
 [[check]]
 id = "ARCH-AUTHZ-ONLY"
@@ -317,7 +323,7 @@ status = "planned"
 id = "ARCH-ERRORS"
 title = "Every error code has a message key; API errors are problem+json with a code"
 rule = "architecture §7 (Errors)"
-tool = "xtask"
+tool = "xtask (reads the code table with syn and the catalog; error answers built from a literal text are found only as (StatusCode::X, \"text\"), the rest of the API part comes with WP-06)"
 when = ["push", "ci"]
 files = ["crates/bb-core/**", "messages/**", "crates/bb-api/**"]
 status = "active"

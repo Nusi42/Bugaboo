@@ -8,8 +8,10 @@ use crate::personal::Entity;
 /// A person who can sign in to Bugaboo.
 #[derive(Clone, Debug, PartialEq, Eq, Entity)]
 pub struct Person {
-    /// The person's ID. It stays the same when the person is removed.
-    #[not_personal]
+    /// The person's ID, fully random so it does not show when the account was made. It is a
+    /// pseudonym for the person; after the person is removed it is kept only as the link to the
+    /// "Former user …" tombstone.
+    #[personal(category = "identity", basis = "legitimate_interests")]
     pub id: UserId,
     /// The name others see, as far as *Who sees people* allows (ADR-0022).
     #[personal(category = "identity", basis = "contract")]

@@ -5,91 +5,72 @@
 //! data*, *Remove a person*, the keep-and-delete rules and the record of processing read. The
 //! generated page `docs/privacy/personal-data.md` is written from the same marks.
 
+use jiff::Timestamp;
+
 pub use bb_macros::Entity;
 
-/// What kind of personal data a field holds. The words are the ones in `#[personal(category = …)]`.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub enum Category {
-    /// Who a person is: name, e-mail address, avatar.
-    Identity,
-    /// What proves who a person is: password hash, passkeys, backup codes.
-    Credentials,
-    /// What a person did and when: who changed what, who is assigned.
-    Activity,
-    /// What a person wrote: comments, descriptions, reasons.
-    Content,
-    /// Working hours and the accounting fields of time entries.
-    EmployeeTime,
-    /// What identifies a device or connection: network address, browser, session.
-    Technical,
-}
-
-impl Category {
-    /// Every category, in the order the personal-data page lists them.
-    pub const ALL: [Self; 6] = [
-        Self::Identity,
-        Self::Credentials,
-        Self::Activity,
-        Self::Content,
-        Self::EmployeeTime,
-        Self::Technical,
-    ];
-
-    /// The word used in `#[personal(category = "…")]`.
-    #[must_use]
-    pub const fn code(self) -> &'static str {
-        match self {
-            Self::Identity => "identity",
-            Self::Credentials => "credentials",
-            Self::Activity => "activity",
-            Self::Content => "content",
-            Self::EmployeeTime => "employee_time",
-            Self::Technical => "technical",
-        }
+words! {
+    /// What kind of personal data a field holds. The words are the ones in
+    /// `#[personal(category = …)]`.
+    pub enum Category {
+        /// Who a person is: name, e-mail address, avatar.
+        Identity => "identity",
+        /// What proves who a person is: password hash, passkeys, backup codes.
+        Credentials => "credentials",
+        /// What a person did and when: who changed what, who is assigned.
+        Activity => "activity",
+        /// What a person wrote: comments, descriptions, reasons.
+        Content => "content",
+        /// Working hours and the accounting fields of time entries.
+        EmployeeTime => "employee_time",
+        /// What identifies a device or connection: network address, browser, session.
+        Technical => "technical",
     }
 }
 
-/// Why the data may be processed: the six legal bases of GDPR Article 6.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub enum Basis {
-    /// The person agreed (Art. 6(1)(a)).
-    Consent,
-    /// Needed for a contract with the person (Art. 6(1)(b)).
-    Contract,
-    /// A law requires it (Art. 6(1)(c)).
-    LegalObligation,
-    /// Needed to protect someone's life (Art. 6(1)(d)).
-    VitalInterests,
-    /// Needed for a task in the public interest (Art. 6(1)(e)).
-    PublicTask,
-    /// The organization has a good reason that does not override the person's rights (Art. 6(1)(f)).
-    LegitimateInterests,
-}
-
-impl Basis {
-    /// Every basis, in the order of the article.
-    pub const ALL: [Self; 6] = [
-        Self::Consent,
-        Self::Contract,
-        Self::LegalObligation,
-        Self::VitalInterests,
-        Self::PublicTask,
-        Self::LegitimateInterests,
-    ];
-
-    /// The word used in `#[personal(basis = "…")]`.
-    #[must_use]
-    pub const fn code(self) -> &'static str {
-        match self {
-            Self::Consent => "consent",
-            Self::Contract => "contract",
-            Self::LegalObligation => "legal_obligation",
-            Self::VitalInterests => "vital_interests",
-            Self::PublicTask => "public_task",
-            Self::LegitimateInterests => "legitimate_interests",
-        }
+words! {
+    /// Why the data may be processed: the six legal bases of GDPR Article 6. The words are the
+    /// ones in `#[personal(basis = …)]`.
+    pub enum Basis {
+        /// The person agreed (Art. 6(1)(a)).
+        Consent => "consent",
+        /// Needed for a contract with the person (Art. 6(1)(b)).
+        Contract => "contract",
+        /// A law requires it (Art. 6(1)(c)).
+        LegalObligation => "legal_obligation",
+        /// Needed to protect someone's life (Art. 6(1)(d)).
+        VitalInterests => "vital_interests",
+        /// Needed for a task in the public interest (Art. 6(1)(e)).
+        PublicTask => "public_task",
+        /// The organization has a good reason that does not override the person's rights (Art. 6(1)(f)).
+        LegitimateInterests => "legitimate_interests",
     }
 }
+
+/// A type that cannot hold personal data, so a field of this type may be marked `#[not_personal]`.
+///
+/// It is implemented for numbers, truth values, moments, the IDs of records (not the ID of a
+/// person), the words of the marks, and for types that say so explicitly. Text is not on the
+/// list: free text can hold anything, so it is marked `#[personal(…)]`.
+#[diagnostic::on_unimplemented(
+    message = "`{Self}` may hold personal data, so a field of this type cannot be `#[not_personal]`",
+    label = "mark this field `#[personal(category = \"...\", basis = \"...\")]`",
+    note = "or implement `NotPersonal` for the type, if it can never hold personal data (DATA-MARKS)"
+)]
+pub trait NotPersonal {}
+
+macro_rules! not_personal {
+    ($($ty:ty),+ $(,)?) => { $(impl NotPersonal for $ty {})+ };
+}
+
+not_personal!(
+    bool, u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32, f64, char,
+    Timestamp,
+);
+
+impl<T: NotPersonal> NotPersonal for Option<T> {}
+impl<T: NotPersonal> NotPersonal for Vec<T> {}
+impl<T: NotPersonal + ?Sized> NotPersonal for Box<T> {}
 
 /// What an entity's field holds, as written on the field.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -153,6 +134,7 @@ pub struct EntityMarks {
 
 impl EntityMarks {
     /// The marks of the entity `name`. Written by `#[derive(Entity)]`.
+    #[doc(hidden)]
     #[must_use]
     pub const fn new(name: &'static str, fields: &'static [FieldMark]) -> Self {
         Self { name, fields }
@@ -200,22 +182,6 @@ macro_rules! entities {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn codes_are_unique_lower_case_words() {
-        let mut seen = std::collections::HashSet::new();
-        for code in Category::ALL
-            .iter()
-            .map(|c| c.code())
-            .chain(Basis::ALL.iter().map(|b| b.code()))
-        {
-            assert!(
-                code.chars().all(|c| c.is_ascii_lowercase() || c == '_'),
-                "{code}"
-            );
-            assert!(seen.insert(code), "{code} is used twice");
-        }
-    }
 
     #[test]
     fn marks_count_the_personal_fields() {

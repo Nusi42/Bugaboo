@@ -34,8 +34,8 @@ mod tests {
     }
 
     #[test]
-    fn the_person_entity_marks_name_address_and_creation_as_personal() {
+    fn the_person_entity_marks_id_name_address_and_creation_as_personal() {
         let person = ALL.iter().find(|entity| entity.name() == "Person").unwrap();
-        assert_eq!(person.personal_count(), 3);
+        assert_eq!(person.personal_count(), 4);
     }
 }

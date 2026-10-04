@@ -23,42 +23,19 @@ pub enum Actor {
     System,
 }
 
-/// Where the change came from.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum Channel {
-    /// The browser app.
-    Ui,
-    /// The API, called by a script or app.
-    Api,
-    /// An outside AI app connected through MCP.
-    Mcp,
-    /// The built-in assistant.
-    Assistant,
-    /// Bugaboo itself.
-    System,
-}
-
-impl Channel {
-    /// Every channel.
-    pub const ALL: [Self; 5] = [
-        Self::Ui,
-        Self::Api,
-        Self::Mcp,
-        Self::Assistant,
-        Self::System,
-    ];
-
-    /// The word used in the API and the event log.
-    #[must_use]
-    pub const fn code(self) -> &'static str {
-        match self {
-            Self::Ui => "ui",
-            Self::Api => "api",
-            Self::Mcp => "mcp",
-            Self::Assistant => "assistant",
-            Self::System => "system",
-        }
+words! {
+    /// Where the change came from.
+    pub enum Channel {
+        /// The browser app.
+        Ui => "ui",
+        /// The API, called by a script or app.
+        Api => "api",
+        /// An outside AI app connected through MCP.
+        Mcp => "mcp",
+        /// The built-in assistant.
+        Assistant => "assistant",
+        /// Bugaboo itself.
+        System => "system",
     }
 }
 
@@ -130,6 +107,10 @@ pub struct EntityRef {
     pub id: EntityId,
 }
 
+// A kind name and an ID of a record: no personal data of their own (see `EntityId`).
+impl crate::personal::NotPersonal for EntityKind {}
+impl crate::personal::NotPersonal for EntityRef {}
+
 /// One field that changed, with its value before and after. `None` means the field had no value.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct FieldChange {
@@ -159,7 +140,8 @@ pub struct DomainEvent {
     /// The record it is about.
     #[not_personal]
     pub entity: EntityRef,
-    /// The fields that changed. They can hold anything a person typed.
+    /// The fields that changed. They can hold anything a person typed, but never credentials,
+    /// password hashes or secrets: use cases leave those fields out of the changes (review).
     #[personal(category = "content", basis = "legitimate_interests")]
     pub changes: Vec<FieldChange>,
     /// Why, when the person said so.
@@ -172,17 +154,19 @@ mod tests {
     use serde_json::json;
 
     use super::*;
+    use crate::id::SequentialIds;
     use crate::personal::{Category, FieldMark, Personal};
 
     fn sample() -> DomainEvent {
+        let mut ids = SequentialIds::default();
         DomainEvent {
-            id: EventId::new(),
+            id: EventId::generate(&mut ids).unwrap(),
             time: "2026-10-04T08:30:00Z".parse().unwrap(),
-            actor: Actor::Person(UserId::new()),
+            actor: Actor::Person(UserId::generate(&mut ids)),
             channel: Channel::Ui,
             entity: EntityRef {
                 kind: EntityKind::new("issue").unwrap(),
-                id: UserId::new().into(),
+                id: UserId::generate(&mut ids).into(),
             },
             changes: vec![FieldChange {
                 field: "status".to_owned(),
@@ -216,7 +200,7 @@ mod tests {
             serde_json::to_value(Actor::System).unwrap(),
             json!({"kind": "system"})
         );
-        let person = UserId::new();
+        let person = UserId::generate(&mut SequentialIds::default());
         assert_eq!(
             serde_json::to_value(Actor::Person(person)).unwrap(),
             json!({"kind": "person", "id": person.to_string()})

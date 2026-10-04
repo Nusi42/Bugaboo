@@ -5,6 +5,9 @@
 // The derive macros write `::bb_core::…`, which inside this crate means the crate itself.
 extern crate self as bb_core;
 
+#[macro_use]
+mod words;
+
 pub mod entities;
 pub mod error_code;
 pub mod event;
@@ -16,6 +19,7 @@ pub mod settings;
 
 pub use error_code::{ErrorCode, Problem};
 pub use event::DomainEvent;
+pub use words::UnknownWord;
 
 // Used by the integration test in tests/compile_fail.rs only (`unused_crate_dependencies`).
 #[cfg(test)]

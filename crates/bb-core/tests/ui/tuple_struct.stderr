@@ -1,0 +1,5 @@
+error: an entity needs named fields, so every field can carry its personal-data mark
+ --> tests/ui/tuple_struct.rs:4:12
+  |
+4 | pub struct Person(u32, String);
+  |            ^^^^^^

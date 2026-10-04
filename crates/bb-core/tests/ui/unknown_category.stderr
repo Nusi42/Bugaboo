@@ -1,5 +1,29 @@
-error[E0599]: no variant, associated function, or constant named `Secrets` found for enum `Category` in the current scope
+error[E0080]: evaluation panicked: not a known Category word; see the list in bb_core
  --> tests/ui/unknown_category.rs:5:27
   |
 5 |     #[personal(category = "secrets", basis = "contract")]
-  |                           ^^^^^^^^^ variant, associated function, or constant not found in `Category`
+  |                           ^^^^^^^^^ evaluation of `<Person as bb_core::personal::Entity>::MARKS` failed inside this call
+  |
+note: inside `Category::from_code_const`
+ --> $RUST/core/src/panic.rs
+  |
+  = note: the failure occurred here
+  |
+ ::: src/personal.rs
+  |
+  | / words! {
+  | |     /// What kind of personal data a field holds. The words are the ones in
+  | |     /// `#[personal(category = …)]`.
+  | |     pub enum Category {
+... |
+  | | }
+  | |_- in this macro invocation
+  = note: this error originates in the macro `$crate::panic::panic_2021` which comes from the expansion of the macro `words` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+note: erroneous constant encountered
+ --> tests/ui/unknown_category.rs:3:10
+  |
+3 | #[derive(Entity)]
+  |          ^^^^^^
+  |
+  = note: this note originates in the derive macro `Entity` (in Nightly builds, run with -Z macro-backtrace for more info)
