@@ -1,8 +1,10 @@
 //! The security log (SEC-15): who did what that matters for security, in an append-only chain.
 //!
-//! Every entry stores the hash of the entry before it, so a changed, removed or inserted entry
-//! breaks the chain. Old entries are deleted in whole blocks, leaving a signed checkpoint (the
-//! hash of the last deleted entry) so the rest still verifies. The hashing is in `bb-store`.
+//! Every entry stores the keyed hash (HMAC-SHA256 under a log key that is not in the database) of
+//! the entry before it, so a changed, removed or inserted entry breaks the chain, and somebody who
+//! can only change the database cannot make a new chain that verifies. Old entries are deleted in
+//! whole blocks, leaving a signed checkpoint (the hash of the last deleted entry) so the rest still
+//! verifies. The hashing is in `bb-store`.
 
 use core::fmt;
 
@@ -53,7 +55,11 @@ impl fmt::Debug for Digest {
 // Bytes of a hash; nothing in them says anything about a person.
 impl crate::personal::NotPersonal for Digest {}
 
-/// One entry of the security log.
+/// One entry of the security log. The person and the shortened network address are kept on the legal basis of legitimate
+/// interests (GDPR Art. 6(1)(f), with the security of processing of Art. 32): proving who did what
+/// and finding attacks. "Remove a person" does not rewrite the log, because a rewritten log would
+/// no longer verify; the person's ID is a pseudonym (the account becomes a tombstone) and the
+/// entry goes with the rest of its block when the keep period (default 1 year) ends.
 #[derive(Clone, Debug, PartialEq, Eq, Entity)]
 pub struct SecurityLogEntry {
     /// The place in the chain, counting from 1 without gaps.
@@ -63,21 +69,21 @@ pub struct SecurityLogEntry {
     #[not_personal]
     pub time: Timestamp,
     /// Who did it, or `None` when nobody was signed in (for example a failed sign-in).
-    #[personal(category = "identity", basis = "legal_obligation")]
+    #[personal(category = "identity", basis = "legitimate_interests")]
     pub person: Option<UserId>,
     /// What happened, like `sign_in.failed`.
     #[not_personal]
     pub action: TechnicalName,
-    /// What it was about, if one record.
-    #[not_personal]
+    /// What it was about, if one record. It can be a person's account, so it counts as personal.
+    #[personal(category = "identity", basis = "legitimate_interests")]
     pub subject: Option<EntityRef>,
     /// Where it came from, shortened (IPv4 `/24`, IPv6 `/48`).
-    #[personal(category = "technical", basis = "legal_obligation")]
+    #[personal(category = "technical", basis = "legitimate_interests")]
     pub network: Option<NetworkPrefix>,
-    /// The hash of the entry before this one (all zeros for the first entry ever).
+    /// The keyed hash (HMAC-SHA256) of the entry before this one (all zeros for the first entry ever).
     #[not_personal]
     pub previous_hash: Digest,
-    /// The hash of this entry, made from the previous hash and all fields above.
+    /// The keyed hash of this entry, made from the previous hash and all fields above.
     #[not_personal]
     pub hash: Digest,
 }
@@ -92,7 +98,7 @@ pub struct SecurityLogCheckpoint {
     /// The hash of the last deleted entry.
     #[not_personal]
     pub hash: Digest,
-    /// The signature over place and hash, made with a key derived from the master key.
+    /// The signature over place, hash and time, made with the log key.
     #[not_personal]
     pub signature: Digest,
     /// When the entries were deleted.

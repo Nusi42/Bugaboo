@@ -18,11 +18,11 @@ use jiff::Timestamp;
 use sea_query::{Expr, ExprTrait as _, Order, Query};
 use zeroize::Zeroizing;
 
+use crate::db::Transaction;
 use crate::db::{Database, Row, to_micros};
 use crate::error::{SecretProblem, StoreError};
-use crate::keys::{KEY_LENGTH, KeyRing, random_bytes};
-use crate::schema::Secret as Columns;
-use crate::security_log::resign_checkpoint;
+use crate::keys::{KEY_LENGTH, KeyRing, MasterKey, random_bytes};
+use crate::schema::{Secret as Columns, SecurityLog, SecurityLogCheckpoint};
 
 const VALUE_LABEL: &[u8] = b"bugaboo.secret.value.v1";
 const KEY_LABEL: &[u8] = b"bugaboo.secret.key.v1";
@@ -74,7 +74,7 @@ fn unwrap_key(
     secret: &StoredSecret,
 ) -> Result<Zeroizing<[u8; KEY_LENGTH]>, StoreError> {
     let master = keys
-        .get(&secret.key_id)
+        .get(&secret.key_id)?
         .ok_or(StoreError::Secret(SecretProblem::UnknownKey))?;
     let plain = open(
         master.bytes(),
@@ -88,7 +88,44 @@ fn unwrap_key(
 }
 
 impl Database {
-    /// Stores a secret, replacing the one with the same name.
+    /// Opens the key files in `folder` (the `keys/` folder of the data folder). The files are
+    /// made only on the very first start, when the database holds nothing that needs them. If the
+    /// database has secrets or a security log and a key file is missing, this refuses, because
+    /// new keys could never read what the old ones protected (SEC-16).
+    ///
+    /// # Errors
+    /// Fails with [`StoreError::KeysMissing`] as described, and when a file cannot be read or is
+    /// damaged.
+    pub async fn open_keys(&self, folder: &std::path::Path) -> Result<KeyRing, StoreError> {
+        let has_data = self.has_key_bound_data().await?;
+        KeyRing::open(folder, !has_data)
+    }
+
+    /// Whether the database holds anything that only the key files can make sense of.
+    async fn has_key_bound_data(&self) -> Result<bool, StoreError> {
+        let mut secrets = Query::select();
+        secrets.column(Columns::Name).from(Columns::Table).limit(1);
+        let mut entries = Query::select();
+        entries
+            .column(SecurityLog::Seq)
+            .from(SecurityLog::Table)
+            .limit(1);
+        let mut checkpoints = Query::select();
+        checkpoints
+            .column(SecurityLogCheckpoint::Seq)
+            .from(SecurityLogCheckpoint::Table)
+            .limit(1);
+        for select in [&secrets, &entries, &checkpoints] {
+            if self.fetch_optional(select).await?.is_some() {
+                return Ok(true);
+            }
+        }
+        Ok(false)
+    }
+
+    /// Stores a secret, replacing the one with the same name. The master key is taken from the
+    /// key file as it is now; if a rotation retired that key while the secret was written, the
+    /// write is done again with the new key.
     ///
     /// # Errors
     /// Fails when the system gives no secure random bytes, or when the database fails.
@@ -99,7 +136,23 @@ impl Database {
         value: &[u8],
         now: Timestamp,
     ) -> Result<(), StoreError> {
-        let master = keys.newest()?;
+        for _ in 0..3 {
+            let master = keys.newest()?;
+            self.store_secret(&master, name, value, now).await?;
+            if keys.get(master.id())?.is_some() {
+                return Ok(());
+            }
+        }
+        Err(StoreError::Contended)
+    }
+
+    async fn store_secret(
+        &self,
+        master: &MasterKey,
+        name: &TechnicalName,
+        value: &[u8],
+        now: Timestamp,
+    ) -> Result<(), StoreError> {
         let secret_key = Zeroizing::new(random_bytes::<KEY_LENGTH>()?);
         let nonce = random_bytes::<NONCE_LENGTH>()?;
         let wrapped_nonce = random_bytes::<NONCE_LENGTH>()?;
@@ -209,53 +262,68 @@ impl Database {
     }
 
     /// Rotates the master key: adds a new one to the key file, wraps the key of every secret
-    /// with it (the values are not touched), signs the security log's checkpoint with it, and
-    /// then drops the old master keys nothing uses. Returns how many secrets were re-wrapped.
+    /// with it (the values are not touched), and then drops the old master keys nothing uses.
+    /// Returns how many secrets were re-wrapped. The log key does not change, so the security
+    /// log is not touched.
     ///
-    /// If the program stops half way, the key file has both keys and everything still
-    /// decrypts; the next rotation finishes the job.
+    /// A secret that is replaced while the rotation runs is not overwritten with an old copy:
+    /// each row is changed only if it is still the one that was read (so PostgreSQL, where two
+    /// transactions can run side by side, cannot lose the newer value). If the row changed, it is
+    /// read again.
+    ///
+    /// If the program stops half way, the key file has both keys and everything still decrypts;
+    /// the next rotation finishes the job. Other processes (a running server) read the key file
+    /// again when it changes, so they stop using the retired key; run a rotation while no secret
+    /// is being changed (it is a rare administrator action).
     ///
     /// # Errors
-    /// Fails when a secret cannot be unwrapped (the old keys are kept then), when the key file
-    /// cannot be written, and when the database fails.
+    /// Fails when a secret cannot be unwrapped (the old keys are kept then), when a secret keeps
+    /// changing under the rotation ([`StoreError::Contended`]), when the key file cannot be
+    /// written, and when the database fails.
     pub async fn rotate_master_key(
         &self,
-        keys: &mut KeyRing,
+        keys: &KeyRing,
         now: Timestamp,
     ) -> Result<u64, StoreError> {
         keys.add_key()?;
-        let newest = keys.newest()?.clone();
+        let newest = keys.newest()?;
         let mut transaction = self.begin().await?;
-        let mut select = Query::select();
-        select.columns(all_columns()).from(Columns::Table);
-        let secrets: Vec<StoredSecret> = transaction
-            .fetch_all(&select)
+        let mut names = Query::select();
+        names.column(Columns::Name).from(Columns::Table);
+        let names: Vec<String> = transaction
+            .fetch_all(&names)
             .await?
             .iter()
-            .map(read_secret)
+            .map(|row| row.get(Columns::Name))
             .collect::<Result<_, _>>()?;
         let mut rewrapped = 0;
-        for secret in &secrets {
-            let secret_key = unwrap_key(keys, secret)?;
-            let nonce = random_bytes::<NONCE_LENGTH>()?;
-            let wrapped = seal(
-                newest.bytes(),
-                &nonce,
-                &context(KEY_LABEL, &secret.name, Some(newest.id())),
-                secret_key.as_slice(),
-            )?;
-            let mut update = Query::update();
-            update
-                .table(Columns::Table)
-                .value(Columns::KeyId, newest.id().as_str())
-                .value(Columns::WrappedKey, wrapped)
-                .value(Columns::WrappedNonce, nonce.to_vec())
-                .value(Columns::UpdatedAt, to_micros(now))
-                .and_where(Expr::col(Columns::Name).eq(secret.name.as_str()));
-            transaction.execute(&update).await?;
-            rewrapped += 1;
+        for name in &names {
+            let mut done = false;
+            for _ in 0..3 {
+                let mut select = Query::select();
+                select
+                    .columns(all_columns())
+                    .from(Columns::Table)
+                    .and_where(Expr::col(Columns::Name).eq(name.as_str()));
+                let Some(row) = transaction.fetch_optional(&select).await? else {
+                    done = true;
+                    break;
+                };
+                let secret = read_secret(&row)?;
+                if secret.key_id == *newest.id() {
+                    done = true;
+                    break;
+                }
+                if rewrap_one(&mut transaction, keys, &newest, &secret, now).await? {
+                    rewrapped += 1;
+                    done = true;
+                    break;
+                }
+            }
+            if !done {
+                return Err(StoreError::Contended);
+            }
         }
-        resign_checkpoint(&mut transaction, keys).await?;
         transaction.commit().await?;
         let in_use = self.key_ids_in_use().await?;
         keys.retire_unused(&in_use)?;
@@ -278,6 +346,36 @@ impl Database {
             })
             .collect()
     }
+}
+
+/// Wraps the key of `secret` with `newest`, but only if the row is still exactly the one that was
+/// read. Returns `false` when it changed in the meantime (a newer value must not be overwritten).
+async fn rewrap_one(
+    transaction: &mut Transaction,
+    keys: &KeyRing,
+    newest: &MasterKey,
+    secret: &StoredSecret,
+    now: Timestamp,
+) -> Result<bool, StoreError> {
+    let secret_key = unwrap_key(keys, secret)?;
+    let nonce = random_bytes::<NONCE_LENGTH>()?;
+    let wrapped = seal(
+        newest.bytes(),
+        &nonce,
+        &context(KEY_LABEL, &secret.name, Some(newest.id())),
+        secret_key.as_slice(),
+    )?;
+    let mut update = Query::update();
+    update
+        .table(Columns::Table)
+        .value(Columns::KeyId, newest.id().as_str())
+        .value(Columns::WrappedKey, wrapped)
+        .value(Columns::WrappedNonce, nonce.to_vec())
+        .value(Columns::UpdatedAt, to_micros(now))
+        .and_where(Expr::col(Columns::Name).eq(secret.name.as_str()))
+        .and_where(Expr::col(Columns::KeyId).eq(secret.key_id.as_str()))
+        .and_where(Expr::col(Columns::WrappedKey).eq(secret.wrapped_key.clone()));
+    Ok(transaction.execute(&update).await? == 1)
 }
 
 fn all_columns() -> [Columns; 7] {
@@ -313,6 +411,7 @@ mod tests {
     use bb_testing::{TestResult, each_database};
 
     use super::*;
+    use crate::anchor::LogSeal;
     use crate::chain::Verification;
     use crate::security_log::NewSecurityLogEntry;
     use crate::test_support::{at, open};
@@ -436,8 +535,13 @@ mod tests {
     async fn sec_16_rotation_wraps_every_key_again_and_drops_the_old_master_key() -> TestResult {
         each_database("sec_16_rotation", async |db| {
             let database = open(db).await?;
-            let (folder, mut ring) = keys();
-            let old_ring = KeyRing::open_or_create(folder.path())?;
+            let (folder, ring) = keys();
+            // A copy of the key files from before the rotation, like an old backup.
+            let backup = tempfile::tempdir()?;
+            for file in ["master.key", "log.key"] {
+                std::fs::copy(folder.path().join(file), backup.path().join(file))?;
+            }
+            let old_ring = KeyRing::open(backup.path(), false)?;
             for (secret, value) in [("a.one", "1"), ("b.two", "22"), ("c.three", "333")] {
                 database
                     .put_secret(&ring, &name(secret), value.as_bytes(), at(1))
@@ -445,24 +549,28 @@ mod tests {
             }
             let before = stored(&database, "b.two").await;
 
-            // A checkpoint signed by the old key must survive the rotation.
+            // The security log is signed with the log key, which a rotation does not touch.
+            let seal = LogSeal::new(&ring, folder.path().join("head.log"));
             for number in 0..4 {
                 database
-                    .append_security_log(&NewSecurityLogEntry {
-                        time: at(number),
-                        person: None,
-                        action: name("sign_in.ok"),
-                        subject: None,
-                        network: None,
-                    })
+                    .append_security_log(
+                        &seal,
+                        &NewSecurityLogEntry {
+                            time: at(number),
+                            person: None,
+                            action: name("sign_in.ok"),
+                            subject: None,
+                            network: None,
+                        },
+                    )
                     .await?;
             }
-            database.prune_in_blocks(&ring, at(100), at(100), 3).await?;
+            database.prune_in_blocks(&seal, at(100), at(100), 3).await?;
 
-            assert_eq!(database.rotate_master_key(&mut ring, at(5)).await?, 3);
-            assert_eq!(ring.ids(), [name("k2")], "k1 is not used any more");
+            assert_eq!(database.rotate_master_key(&ring, at(5)).await?, 3);
+            assert_eq!(ring.ids()?, [name("k2")], "k1 is not used any more");
             assert_eq!(
-                KeyRing::open_or_create(folder.path())?.ids(),
+                KeyRing::open(folder.path(), false)?.ids()?,
                 [name("k2")],
                 "the key file has only the new key"
             );
@@ -477,20 +585,20 @@ mod tests {
                 let found = database.get_secret(&ring, &name(secret)).await?;
                 assert_eq!(found.as_slice(), value.as_bytes());
             }
-            // The old key file no longer opens the secrets.
+            // The old key files no longer open the secrets.
             assert!(
                 database
                     .get_secret(&old_ring, &name("a.one"))
                     .await
                     .is_err()
             );
-            // New values use the new key, and the log still verifies with it.
+            // New values use the new key, and the log still verifies.
             database
                 .put_secret(&ring, &name("d.four"), b"4", at(6))
                 .await?;
             assert_eq!(stored(&database, "d.four").await.key_id, name("k2"));
             assert!(matches!(
-                database.verify_security_log(&ring).await?,
+                database.verify_security_log(&seal).await?,
                 Verification::Valid { .. }
             ));
             Ok(())
@@ -502,14 +610,14 @@ mod tests {
     async fn a_rotation_that_stops_half_way_keeps_everything_readable() -> TestResult {
         each_database("sec_16_half_rotation", async |db| {
             let database = open(db).await?;
-            let (folder, mut ring) = keys();
+            let (folder, ring) = keys();
             database
                 .put_secret(&ring, &name("a.one"), b"1", at(1))
                 .await?;
             // Step one of a rotation only: the new key is in the file, nothing re-wrapped yet.
             ring.add_key()?;
-            let reopened = KeyRing::open_or_create(folder.path())?;
-            assert_eq!(reopened.ids(), [name("k1"), name("k2")]);
+            let reopened = KeyRing::open(folder.path(), false)?;
+            assert_eq!(reopened.ids()?, [name("k1"), name("k2")]);
             assert_eq!(
                 database
                     .get_secret(&reopened, &name("a.one"))
@@ -518,13 +626,96 @@ mod tests {
                 b"1"
             );
             // The next rotation finishes the job.
-            let mut ring = reopened;
-            assert_eq!(database.rotate_master_key(&mut ring, at(2)).await?, 1);
-            assert_eq!(ring.ids(), [name("k3")]);
+            assert_eq!(database.rotate_master_key(&reopened, at(2)).await?, 1);
+            assert_eq!(reopened.ids()?, [name("k3")]);
             assert_eq!(
-                database.get_secret(&ring, &name("a.one")).await?.as_slice(),
+                database
+                    .get_secret(&reopened, &name("a.one"))
+                    .await?
+                    .as_slice(),
                 b"1"
             );
+            Ok(())
+        })
+        .await
+    }
+
+    #[tokio::test]
+    async fn a_running_server_never_encrypts_with_a_key_the_command_line_retired() -> TestResult {
+        each_database("sec_16_retired_key", async |db| {
+            let database = open(db).await?;
+            let (folder, server) = keys();
+            let command_line = KeyRing::open(folder.path(), false)?;
+            database
+                .put_secret(&server, &name("a.one"), b"1", at(1))
+                .await?;
+            assert_eq!(database.rotate_master_key(&command_line, at(2)).await?, 1);
+            // The server's ring has not been restarted, but it follows the key file.
+            database
+                .put_secret(&server, &name("b.two"), b"2", at(3))
+                .await?;
+            assert_eq!(stored(&database, "b.two").await.key_id, name("k2"));
+            assert_eq!(
+                database
+                    .get_secret(&server, &name("a.one"))
+                    .await?
+                    .as_slice(),
+                b"1"
+            );
+            Ok(())
+        })
+        .await
+    }
+
+    #[tokio::test]
+    async fn bad_example_a_rotation_does_not_overwrite_a_secret_that_changed_meanwhile()
+    -> TestResult {
+        each_database("sec_16_rotation_lost_update", async |db| {
+            let database = open(db).await?;
+            let (_folder, ring) = keys();
+            database
+                .put_secret(&ring, &name("a.one"), b"old", at(1))
+                .await?;
+            let read_by_rotation = stored(&database, "a.one").await;
+            ring.add_key()?;
+            // Somebody replaces the secret after the rotation read it.
+            database
+                .put_secret(&ring, &name("a.one"), b"new", at(2))
+                .await?;
+            let newest = ring.newest()?;
+            let mut transaction = database.begin().await?;
+            let changed =
+                rewrap_one(&mut transaction, &ring, &newest, &read_by_rotation, at(3)).await?;
+            transaction.commit().await?;
+            assert!(!changed, "the row was not the one that was read");
+            assert_eq!(
+                database.get_secret(&ring, &name("a.one")).await?.as_slice(),
+                b"new"
+            );
+            Ok(())
+        })
+        .await
+    }
+
+    #[tokio::test]
+    async fn sec_16_missing_keys_stop_the_start_when_the_database_needs_them() -> TestResult {
+        each_database("sec_16_keys_missing", async |db| {
+            let database = open(db).await?;
+            let folder = tempfile::tempdir()?;
+            let keys_folder = folder.path().join("keys");
+            // First start, empty database: the keys are made.
+            let ring = database.open_keys(&keys_folder).await?;
+            database
+                .put_secret(&ring, &name("a.one"), b"1", at(1))
+                .await?;
+            // The same database, the key files gone: no new keys, a clear refusal.
+            std::fs::remove_dir_all(&keys_folder)?;
+            let refused = database.open_keys(&keys_folder).await;
+            assert!(
+                matches!(refused, Err(StoreError::KeysMissing)),
+                "{refused:?}"
+            );
+            assert!(!keys_folder.exists(), "nothing was made");
             Ok(())
         })
         .await

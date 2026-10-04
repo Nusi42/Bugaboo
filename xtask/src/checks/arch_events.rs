@@ -1,18 +1,28 @@
-//! ARCH-EVENTS: every command use case appends a domain event (ADR-0007).
+//! ARCH-EVENTS: every command use case writes through the change port, which appends the domain
+//! event in the same transaction (ADR-0007).
 //!
-//! A use case in `bb-app` is a `pub async fn` with the context first. A *command* is one whose
-//! input parameter is called `cmd` (a query's is called `query`); it changes something, so its
-//! body must call `append_event`, which writes the domain event in the same transaction as the
-//! change. This check reads the code; the generated test that runs every command against the
-//! in-memory fakes and asserts the event comes with the first use cases (M1-F18).
+//! The port is the trait `ChangeStore` in `bb-app` (its method `record_change` runs the change,
+//! appends the event and the outbox entry, and commits them together; `bb-store` implements it).
+//! A *use case* is an `async fn` of any visibility in `bb-app` that takes the context (a
+//! parameter whose type mentions `Ctx`). It is a *query* when its input type ends in `Query`;
+//! every other use case is a command, and its body must call `record_change`. Comments and
+//! string literals are removed before the code is read, so a mention of the call does not count.
+//! Calling a command a query is a way around the rule; review looks at the names (the type of the
+//! input is part of the signature, not just a parameter name). This check reads the code; the
+//! generated test that runs every command against the in-memory fakes and asserts the event
+//! comes with the first use cases (M1-F18).
 
 use super::{Check, Context, Finding};
 use crate::rust_source::{Source, before_tests, read_product_sources};
 
-/// Where the use cases live.
+/// Where the use cases and the port live.
 const USE_CASES_FOLDER: &str = "crates/bb-app/src/";
-/// The call that appends the event.
-const APPEND: &str = "append_event(";
+/// The port every command writes through.
+const PORT: &str = "trait ChangeStore";
+/// The method of the port that writes a change with its event.
+const RECORD: &str = "record_change";
+/// The ending of the input type of a use case that only reads.
+const QUERY_SUFFIX: &str = "Query";
 
 pub(crate) struct ArchEvents;
 
@@ -24,6 +34,111 @@ impl Check for ArchEvents {
     fn run(&self, context: &Context<'_>) -> anyhow::Result<Vec<Finding>> {
         Ok(evaluate(&read_product_sources(context.repo)?))
     }
+}
+
+/// The code with comments and the insides of strings and character literals replaced by spaces
+/// (new lines stay, so line numbers still fit).
+fn strip(text: &str) -> String {
+    let chars: Vec<char> = text.chars().collect();
+    let mut out = String::with_capacity(text.len());
+    let blank = |c: char| if c == '\n' { '\n' } else { ' ' };
+    let mut at = 0;
+    while at < chars.len() {
+        let c = chars[at];
+        let next = chars.get(at + 1).copied();
+        if c == '/' && next == Some('/') {
+            while at < chars.len() && chars[at] != '\n' {
+                out.push(' ');
+                at += 1;
+            }
+        } else if c == '/' && next == Some('*') {
+            let mut depth = 0;
+            while at < chars.len() {
+                if chars[at] == '/' && chars.get(at + 1) == Some(&'*') {
+                    depth += 1;
+                    out.push_str("  ");
+                    at += 2;
+                } else if chars[at] == '*' && chars.get(at + 1) == Some(&'/') {
+                    depth -= 1;
+                    out.push_str("  ");
+                    at += 2;
+                    if depth == 0 {
+                        break;
+                    }
+                } else {
+                    out.push(blank(chars[at]));
+                    at += 1;
+                }
+            }
+        } else if c == 'r'
+            && matches!(next, Some('"' | '#'))
+            && raw_string_hashes(&chars, at).is_some()
+        {
+            let hashes = raw_string_hashes(&chars, at).unwrap_or(0);
+            let end_marker: Vec<char> = std::iter::once('"')
+                .chain(std::iter::repeat_n('#', hashes))
+                .collect();
+            out.push(' ');
+            at += 1 + hashes + 1;
+            out.push_str(&" ".repeat(hashes + 1));
+            while at < chars.len()
+                && chars[at..]
+                    .iter()
+                    .take(end_marker.len())
+                    .ne(end_marker.iter())
+            {
+                out.push(blank(chars[at]));
+                at += 1;
+            }
+            let rest = end_marker.len().min(chars.len() - at);
+            out.push_str(&" ".repeat(rest));
+            at += rest;
+        } else if c == '"' {
+            out.push(' ');
+            at += 1;
+            while at < chars.len() && chars[at] != '"' {
+                if chars[at] == '\\' && at + 1 < chars.len() {
+                    out.push(' ');
+                    at += 1;
+                }
+                out.push(blank(chars[at]));
+                at += 1;
+            }
+            out.push(' ');
+            at += 1;
+        } else if c == '\'' && is_char_literal(&chars, at) {
+            out.push(' ');
+            at += 1;
+            while at < chars.len() && chars[at] != '\'' {
+                if chars[at] == '\\' {
+                    out.push(' ');
+                    at += 1;
+                }
+                out.push(' ');
+                at += 1;
+            }
+            out.push(' ');
+            at += 1;
+        } else {
+            out.push(c);
+            at += 1;
+        }
+    }
+    out
+}
+
+/// How many `#` follow the `r` of a raw string that starts at `at`, if it is one.
+fn raw_string_hashes(chars: &[char], at: usize) -> Option<usize> {
+    let hashes = chars[at + 1..].iter().take_while(|c| **c == '#').count();
+    (chars.get(at + 1 + hashes) == Some(&'"')).then_some(hashes)
+}
+
+/// Whether the `'` at `at` starts a character literal (and not a lifetime).
+fn is_char_literal(chars: &[char], at: usize) -> bool {
+    matches!(
+        (chars.get(at + 1), chars.get(at + 2)),
+        (Some('\\'), _) | (Some(_), Some('\''))
+    )
 }
 
 /// The text between the bracket at the start of `text` and its partner, brackets included.
@@ -42,25 +157,76 @@ fn balanced(text: &str, open: char, close: char) -> Option<&str> {
     None
 }
 
-/// Whether a parameter list has a parameter named `cmd`.
-fn has_command_parameter(parameters: &str) -> bool {
-    parameters.split([',', '(', ')']).any(|parameter| {
-        parameter
-            .trim()
-            .strip_prefix("cmd")
-            .is_some_and(|rest| rest.trim_start().starts_with(':'))
-    })
+/// The types of the parameters of a parameter list `( … )`.
+fn parameter_types(parameters: &str) -> Vec<String> {
+    let inner = &parameters[1..parameters.len() - 1];
+    let mut types = Vec::new();
+    let mut depth = 0_i32;
+    let mut current = String::new();
+    for character in inner.chars() {
+        match character {
+            '(' | '<' | '[' | '{' => depth += 1,
+            ')' | '>' | ']' | '}' => depth -= 1,
+            ',' if depth == 0 => {
+                types.push(std::mem::take(&mut current));
+                continue;
+            }
+            _ => {}
+        }
+        current.push(character);
+    }
+    types.push(current);
+    types
+        .into_iter()
+        .filter_map(|parameter| {
+            parameter
+                .split_once(':')
+                .map(|(_, ty)| ty.trim().to_owned())
+        })
+        .collect()
+}
+
+/// Whether `ty` mentions the word `word`.
+fn mentions(ty: &str, word: &str) -> bool {
+    ty.split(|c: char| !(c.is_alphanumeric() || c == '_'))
+        .any(|part| part == word)
+}
+
+/// Whether the type is a query type: the last name in it ends in `Query`.
+fn is_query(ty: &str) -> bool {
+    let without_generics = ty.split('<').next().unwrap_or(ty);
+    let name = without_generics
+        .split(|c: char| !(c.is_alphanumeric() || c == '_'))
+        .rfind(|part| !part.is_empty() && *part != "mut" && *part != "impl");
+    name.is_some_and(|name| name.ends_with(QUERY_SUFFIX))
 }
 
 fn evaluate(sources: &[Source]) -> Vec<Finding> {
     let mut findings = Vec::new();
-    for (path, text) in sources
+    let in_app: Vec<&Source> = sources
         .iter()
         .filter(|(path, _)| path.starts_with(USE_CASES_FOLDER))
-    {
-        let code = before_tests(text);
-        for (at, _) in code.match_indices("pub async fn ") {
-            let rest = &code[at + "pub async fn ".len()..];
+        .collect();
+    if in_app.is_empty() {
+        return findings;
+    }
+    let defines_port = in_app.iter().any(|(_, text)| {
+        let code = strip(before_tests(text));
+        code.contains(PORT) && code.contains(&format!("fn {RECORD}"))
+    });
+    if !defines_port {
+        findings.push(Finding::at(
+            USE_CASES_FOLDER,
+            format!(
+                "`bb-app` does not define the port `{PORT}` with a method `{RECORD}`. Commands \
+                 write through it, and `bb-store` implements it (ADR-0007)."
+            ),
+        ));
+    }
+    for (path, text) in in_app {
+        let code = strip(before_tests(text));
+        for (at, _) in code.match_indices("async fn ") {
+            let rest = &code[at + "async fn ".len()..];
             let name: String = rest
                 .chars()
                 .take_while(|c| c.is_alphanumeric() || *c == '_')
@@ -69,7 +235,8 @@ fn evaluate(sources: &[Source]) -> Vec<Finding> {
             let Some(parameters) = balanced(&rest[open..], '(', ')') else {
                 continue;
             };
-            if !has_command_parameter(parameters) {
+            let types = parameter_types(parameters);
+            if !types.iter().any(|ty| mentions(ty, "Ctx")) || types.iter().any(|ty| is_query(ty)) {
                 continue;
             }
             let after = &rest[open + parameters.len()..];
@@ -79,13 +246,15 @@ fn evaluate(sources: &[Source]) -> Vec<Finding> {
             let Some(body) = balanced(&after[body_start..], '{', '}') else {
                 continue;
             };
-            if !body.contains(APPEND) {
+            if !body.contains(&format!("{RECORD}(")) {
                 let line = code[..at].matches('\n').count() + 1;
                 findings.push(Finding::at(
                     format!("{path}:{line}"),
                     format!(
-                        "The command `{name}` never calls `{APPEND}…)`. Every command appends a \
-                         domain event in the same transaction as its change (ADR-0007)."
+                        "The command `{name}` never calls `{RECORD}`. Every command writes \
+                         through the `ChangeStore` port, which appends the domain event in the \
+                         same transaction as the change (ADR-0007). If it only reads, its \
+                         input type ends in `{QUERY_SUFFIX}`."
                     ),
                 ));
             }
@@ -98,43 +267,88 @@ fn evaluate(sources: &[Source]) -> Vec<Finding> {
 mod tests {
     use super::*;
 
+    const PORT_SOURCE: &str =
+        "pub trait ChangeStore {\n    fn record_change<T>(&self, e: &Event) -> T;\n}\n";
+
     fn found(text: &str) -> Vec<String> {
-        let source = ("crates/bb-app/src/issues.rs".to_owned(), text.to_owned());
-        evaluate(&[source])
+        let sources = vec![
+            (
+                "crates/bb-app/src/ports.rs".to_owned(),
+                PORT_SOURCE.to_owned(),
+            ),
+            ("crates/bb-app/src/issues.rs".to_owned(), text.to_owned()),
+        ];
+        evaluate(&sources)
             .into_iter()
             .map(|finding| finding.message)
             .collect()
     }
 
     #[test]
-    fn good_example_a_command_that_appends_its_event() {
-        let text = "pub async fn change_status(ctx: &Ctx, cmd: ChangeStatus) -> Result<(), AppError> {\n    let event = build(&cmd);\n    ctx.append_event(event).await?;\n    Ok(())\n}\n";
+    fn good_example_a_command_that_writes_through_the_port() {
+        let text = "pub async fn change_status(ctx: &Ctx, cmd: ChangeStatus) -> Result<(), AppError> {\n    ctx.store().record_change(&event, async |tx| Ok(())).await?;\n    Ok(())\n}\n";
         assert!(found(text).is_empty());
     }
 
     #[test]
-    fn good_example_queries_and_helpers_need_no_event() {
-        let text = "pub async fn show_issue(ctx: &Ctx, query: ShowIssue) -> Result<View, AppError> {\n    Ok(view())\n}\nfn helper(cmd: u32) {}\n";
+    fn good_example_queries_and_other_functions_need_no_event() {
+        let text = "pub async fn show_issue(ctx: &Ctx, input: ShowIssueQuery) -> Result<View, AppError> {\n    Ok(view())\n}\nasync fn helper(number: u32) {}\npub(crate) async fn list(ctx: &impl Ctx, q: &ListQuery<'_>) {}\n";
         assert!(found(text).is_empty());
     }
 
     #[test]
-    fn bad_example_a_command_without_an_event() {
-        let text = "pub async fn rename_project(\n    ctx: &Ctx,\n    cmd: RenameProject,\n) -> Result<(), AppError> {\n    store(&cmd).await?;\n    Ok(())\n}\n";
+    fn bad_example_a_command_without_the_port_whatever_it_is_called() {
+        let text = "pub async fn rename_project(\n    ctx: &Ctx,\n    input: RenameProject,\n) -> Result<(), AppError> {\n    store(&input).await?;\n    Ok(())\n}\nasync fn private_command(context: &Ctx<'_>, thing: Thing) {}\npub(crate) async fn crate_command(ctx: &Ctx, x: u8) {}\n";
         let messages = found(text);
-        assert_eq!(messages.len(), 1);
+        assert_eq!(messages.len(), 3, "{messages:?}");
         assert!(messages[0].contains("`rename_project`"), "{messages:?}");
+    }
+
+    #[test]
+    fn bad_example_a_mention_in_a_comment_or_string_is_not_a_call() {
+        let text = "pub async fn sneaky(ctx: &Ctx, cmd: Do) {\n    // ctx.store().record_change(&event, f)\n    let _ = \"record_change(\";\n    /* record_change( */\n    let _ = r#\"record_change(\"#;\n}\n";
+        assert_eq!(found(text).len(), 1);
+    }
+
+    #[test]
+    fn bad_example_the_port_itself_is_missing() {
+        let sources = vec![(
+            "crates/bb-app/src/lib.rs".to_owned(),
+            "pub fn nothing() {}\n".to_owned(),
+        )];
+        let messages: Vec<String> = evaluate(&sources).into_iter().map(|f| f.message).collect();
+        assert!(
+            messages[0].contains("does not define the port"),
+            "{messages:?}"
+        );
+    }
+
+    #[test]
+    fn strings_comments_and_lifetimes_are_told_apart() {
+        let code = strip(
+            "let a = 'x'; let b: &'a str = \"WWW // d\"; // QQQ
+/* ZZZ */ keep",
+        );
+        assert!(code.contains("let a"));
+        assert!(code.contains("&'a str"));
+        for gone in ["WWW", "QQQ", "ZZZ", "'x'"] {
+            assert!(!code.contains(gone), "{gone} in {code:?}");
+        }
+        assert!(code.contains("keep"));
+        assert_eq!(code.lines().count(), 2, "new lines stay");
     }
 
     #[test]
     fn other_crates_and_tests_are_not_use_cases() {
         let other = (
             "crates/bb-api/src/x.rs".to_owned(),
-            "pub async fn go(cmd: u32) {}\n".to_owned(),
+            "pub async fn go(ctx: &Ctx, cmd: u32) {}\n".to_owned(),
         );
         let in_tests = (
             "crates/bb-app/src/y.rs".to_owned(),
-            "#[cfg(test)]\nmod tests { pub async fn go(cmd: u32) {} }\n".to_owned(),
+            format!(
+                "{PORT_SOURCE}#[cfg(test)]\nmod tests {{ async fn go(ctx: &Ctx, cmd: u32) {{}} }}\n"
+            ),
         );
         assert!(evaluate(&[other, in_tests]).is_empty());
     }

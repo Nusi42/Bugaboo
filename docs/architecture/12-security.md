@@ -67,7 +67,8 @@ Entry points in M1: the HTTPS listener (pages, assets, `/api/v1`, `/health/*`), 
 | Information disclosure | Other local users read keys or certificates | `keys/` and `tls/` created owner-only (Windows ACL, Unix mode 0700/0600) | data-folder tests (WP-04) |
 | Information disclosure | Personal data ends up in logs | Logs hold IDs only; IP addresses shortened | DATA-LOGS |
 | Information disclosure | Secrets committed to the repository | Secret scanning on every commit | SEC-SECRETS |
-| Repudiation | An admin denies an action, or someone edits the security log | Append-only, hash-chained security log with a verify command; status page shows the result | hash-chain property test (WP-05) |
+| Repudiation | An admin denies an action, or someone edits the security log | Append-only security log, hash-chained with an HMAC under a log key that is not in the database (`keys/log.key`, never rotated), so somebody who can only change the database cannot make a changed chain verify again; every append is also written to an append-only anchor file outside the database (`logs/security-head.log`), so cutting off or replacing the end is found; a verify command, and the status page shows the result | hash-chain property tests `sec_15_any_changed_row_breaks_the_chain` and `sec_15_a_rewritten_tail_without_the_key_does_not_verify`; security-log tests (WP-05) |
+| Repudiation | Somebody who holds the host's key files (`keys/log.key`) and the anchor file rewrites the log | Not stopped: this protects against attackers who reach the database only (SQL injection, a stolen database copy or backup), not against somebody with control of the host. The status page shows the head so an administrator can compare it with an earlier note | Out of scope for self-hosted installations (see the table of limits below); the served model keeps keys per customer (M14) |
 | Tampering | A vulnerable or unlicensed dependency ships | Register, license allow list, advisory scan | DEP-REGISTER; DEP-LICENSES; SEC-ADVISORIES |
 | Tampering | Database changes outside the defined schema | Schema and migrations defined once in Rust, refused on a newer schema | DATA-MIGRATIONS; ARCH-DB-PARITY |
 | Elevation of privilege | Memory-safety bugs | No `unsafe` code unless an ADR allows it | ARCH-NO-UNSAFE |
@@ -77,6 +78,7 @@ Entry points in M1: the HTTPS listener (pages, assets, `/api/v1`, `/health/*`), 
 | Risk | Why accepted | Revisit |
 |------|-------------|---------|
 | An administrator of the host machine can read the master key | Anyone with full control of the host can read process memory too; protection against them is out of scope for self-hosted installations | M14 (served model: keys per customer, operator without data access) |
+| Somebody who controls the host (and so reads `keys/log.key` and can rewrite `logs/security-head.log`) can forge the security log | The log protects against attackers who reach only the database; the same control lets them read process memory and the master key | M14 (served model: keys per customer, operator without data access) |
 | Self-signed certificates show a browser warning | Safer than plain HTTP; admins can provide a certificate, ACME comes in 1.0 | V1 (ACME) |
 
 ## Personal data in M1
@@ -109,7 +111,7 @@ flowchart LR
 | Password hash, passkeys, two-step secret, backup codes | Sign-in | (b) contract; (f) security | Until changed or the account is removed |
 | Sessions with shortened IP and device label | Staying signed in, *Where you're signed in* | (b) contract; (f) security | Until signed out or expired |
 | Invitation e-mail | Sending and checking the invitation | (b) contract | Until accepted or 7 days |
-| Security log entries | Proving who did what (SEC-15) | (c) legal obligation; (f) security | Keep period set by the admin (default 1 year); hash chain stays valid when old entries are deleted in whole blocks |
+| Security log entries | Proving who did what, and finding attacks (SEC-15) | (f) legitimate interests, with the security of processing of Art. 32 | Keep period set by the admin (default 1 year); hash chain stays valid when old entries are deleted in whole blocks. "Remove a person" does not rewrite the log (a rewritten log would no longer verify): the person's ID becomes a pseudonym for a tombstone, and the entry goes when its block passes the keep period |
 | Shortened IP in logs | Abuse defence | (f) security | 7 days by default |
 
 No personal data leaves the server in M1: no mail, no AI, no outside fonts, scripts or analytics (PRIV-01).

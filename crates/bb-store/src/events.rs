@@ -169,6 +169,20 @@ impl Database {
     }
 }
 
+/// The store is the adapter of the port the use cases write through (ARCH-EVENTS).
+impl bb_app::ports::ChangeStore for Database {
+    type Transaction = Transaction;
+    type Error = StoreError;
+
+    fn record_change<T>(
+        &self,
+        event: &DomainEvent,
+        change: impl AsyncFnOnce(&mut Transaction) -> Result<T, StoreError>,
+    ) -> impl Future<Output = Result<T, StoreError>> {
+        Self::record_change(self, event, change)
+    }
+}
+
 async fn transaction_has_no_row(
     transaction: &mut Transaction,
     consumer: &TechnicalName,
@@ -417,6 +431,28 @@ mod tests {
                 .collect();
             assert_eq!(positions, (1..=12).collect::<Vec<i64>>());
             let _ = source.now();
+            Ok(())
+        })
+        .await
+    }
+
+    /// What a use case sees: only the port, not the database.
+    async fn through_the_port(
+        store: &impl bb_app::ports::ChangeStore<Error = StoreError>,
+        event: &DomainEvent,
+    ) -> Result<(), StoreError> {
+        store
+            .record_change(event, async |_transaction| Ok(()))
+            .await
+    }
+
+    #[tokio::test]
+    async fn the_store_is_the_adapter_of_the_change_port() -> TestResult {
+        each_database("adr_0007_change_port", async |db| {
+            let database = open(db).await?;
+            let event = event(&mut ids(), 5);
+            through_the_port(&database, &event).await?;
+            assert_eq!(database.events_about(&event.entity, 10).await?.len(), 1);
             Ok(())
         })
         .await

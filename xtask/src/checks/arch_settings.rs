@@ -19,8 +19,19 @@ use crate::rust_source::{Source, before_tests, read_product_sources};
 /// The only place settings are declared.
 const REGISTRY_FOLDER: &str = "crates/bb-core/src/settings/";
 
-/// The name of the table of setting values in the schema.
+/// The name of the table of setting values in the schema, and the table itself as it is written
+/// in text (the name of the table is `setting`).
 const STORAGE_TABLE: &str = "SettingRow";
+const STORAGE_TABLE_NAME: &str = "\"setting\"";
+/// What turns a text into a table name in a query.
+const TABLE_NAME_CALLS: [&str; 6] = [
+    "Alias::new",
+    ".from(",
+    ".table(",
+    "into_table(",
+    "from_table(",
+    "Iden",
+];
 /// The files that may name the table: the repository, the schema and the migrations.
 const STORAGE_FILES: [&str; 3] = [
     "crates/bb-store/src/settings.rs",
@@ -78,7 +89,9 @@ fn storage_findings(sources: &[Source]) -> Vec<Finding> {
         path.starts_with("crates/") && !STORAGE_FILES.iter().any(|file| path.starts_with(file))
     }) {
         for (index, line) in text.lines().enumerate() {
-            if !line.trim_start().starts_with("//") && line.contains(STORAGE_TABLE) {
+            let by_name = line.contains(STORAGE_TABLE_NAME)
+                && TABLE_NAME_CALLS.iter().any(|call| line.contains(call));
+            if !line.trim_start().starts_with("//") && (line.contains(STORAGE_TABLE) || by_name) {
                 findings.push(Finding::at(
                     format!("{path}:{}", index + 1),
                     format!(
@@ -209,6 +222,23 @@ mod tests {
             "pub(crate) enum SettingRow { Table }\n".to_owned(),
         );
         assert!(found(&[registry(DECLARATION), repository, schema]).is_empty());
+    }
+
+    #[test]
+    fn bad_example_other_code_names_the_table_as_text() {
+        let around = (
+            "crates/bb-store/src/jobs.rs".to_owned(),
+            "select.from(Alias::new(\"setting\"));
+let text = \"setting\";
+"
+            .to_owned(),
+        );
+        let report = found(&[registry(DECLARATION), around]);
+        assert_eq!(
+            report.matches("table of setting values").count(),
+            1,
+            "{report}"
+        );
     }
 
     #[test]

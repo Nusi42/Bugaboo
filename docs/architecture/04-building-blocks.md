@@ -117,7 +117,7 @@ pub async fn change_status(
 
 1. Ask `bb-policy` whether the actor may do it.
 2. Load, change and validate inside one transaction.
-3. Append domain events (same transaction). A command use case (its input parameter is called `cmd`) calls `ctx.append_event(…)`; a query (`query`) does not. Enforced by: ARCH-EVENTS.
+3. Append domain events (same transaction). A command use case writes only through the `ChangeStore` port (`record_change`), which `bb-store` implements; a use case whose input type ends in `Query` only reads. Enforced by: ARCH-EVENTS.
 4. Return the result through `Authorized<T>`.
 
 ### bb-store

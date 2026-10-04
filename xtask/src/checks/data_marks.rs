@@ -11,7 +11,7 @@
 //! entity must carry marks and be in the `entities!` list. A table that is created in a migration
 //! without being listed is found as well (ADR-0015, ADR-0003).
 
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 
 use super::{Check, Context, Finding};
 use crate::generate::privacy::{self, Mark, Model};
@@ -38,38 +38,95 @@ const SCHEMA_PATH: &str = "crates/bb-store/src/schema.rs";
 /// Where the tables are created.
 const MIGRATIONS_FOLDER: &str = "crates/bb-store/src/migrations";
 
-/// The `Table => Entity` lines of the `stored_tables!` list: the table's enum and the entity's
-/// name (the last part of its path).
-fn listed_tables(schema: &str) -> Vec<(String, String)> {
+/// One entry of the `stored_tables!` list: a table, the entity stored in it, and the field behind
+/// each of its columns.
+struct ListedTable {
+    table: String,
+    entity: String,
+    columns: Vec<(String, String)>,
+}
+
+/// The entries of the `stored_tables!` list:
+///
+/// ```text
+/// Table => path::Entity {
+///     Column => field,
+/// },
+/// ```
+fn listed_tables(schema: &str) -> Vec<ListedTable> {
     let Some(start) = schema.find("stored_tables! {\n") else {
         return Vec::new();
     };
-    schema[start..]
-        .lines()
-        .skip(1)
-        .take_while(|line| !line.starts_with('}'))
-        .filter_map(|line| {
-            let (table, entity) = line.split_once("=>")?;
-            let entity = entity.trim().trim_end_matches(',');
-            Some((
-                table.trim().to_owned(),
-                entity.rsplit("::").next()?.trim().to_owned(),
-            ))
-        })
-        .collect()
+    let mut tables: Vec<ListedTable> = Vec::new();
+    let mut open = false;
+    for line in schema[start..].lines().skip(1) {
+        let line = line.trim();
+        if line.starts_with('}') && !open {
+            break;
+        }
+        if open {
+            if line.starts_with('}') {
+                open = false;
+                continue;
+            }
+            for pair in line.split(',') {
+                if let (Some((column, field)), Some(table)) =
+                    (pair.split_once("=>"), tables.last_mut())
+                {
+                    table
+                        .columns
+                        .push((column.trim().to_owned(), field.trim().to_owned()));
+                }
+            }
+        } else if let Some((table, rest)) = line.split_once("=>") {
+            let entity = rest.trim().trim_end_matches('{').trim();
+            tables.push(ListedTable {
+                table: table.trim().to_owned(),
+                entity: entity
+                    .rsplit("::")
+                    .next()
+                    .unwrap_or(entity)
+                    .trim()
+                    .to_owned(),
+                columns: Vec::new(),
+            });
+            open = rest.trim_end().ends_with('{');
+        }
+    }
+    tables
 }
 
-/// The enums of the schema that stand for a table: they have a `Table` variant.
-fn table_enums(schema: &str) -> Vec<String> {
+/// The enums of the schema that stand for a table (they have a `Table` variant) with their other
+/// variants, which are its columns.
+fn table_enums(schema: &str) -> Vec<(String, Vec<String>)> {
     let before_macro = schema.split("macro_rules!").next().unwrap_or(schema);
     let mut enums = Vec::new();
-    let mut current: Option<String> = None;
+    let mut current: Option<(String, Vec<String>, bool)> = None;
     for line in before_macro.lines() {
         let line = line.trim();
         if let Some(rest) = line.strip_prefix("pub(crate) enum ") {
-            current = rest.split_whitespace().next().map(str::to_owned);
-        } else if line == "Table," {
-            enums.extend(current.take());
+            let name = rest
+                .split_whitespace()
+                .next()
+                .unwrap_or_default()
+                .to_owned();
+            current = Some((name, Vec::new(), false));
+        } else if line.starts_with('}') {
+            if let Some((name, columns, is_table)) = current.take()
+                && is_table
+            {
+                enums.push((name, columns));
+            }
+        } else if let Some((_, columns, is_table)) = current.as_mut()
+            && !line.starts_with('#')
+            && !line.starts_with("//")
+            && let Some(variant) = line.strip_suffix(',')
+        {
+            if variant == "Table" {
+                *is_table = true;
+            } else {
+                columns.push(variant.to_owned());
+            }
         }
     }
     enums
@@ -99,11 +156,15 @@ fn evaluate_tables(model: &Model, sources: &[crate::rust_source::Source]) -> Vec
         return Vec::new();
     };
     let listed = listed_tables(schema);
-    let entities: BTreeSet<&str> = model.entities.iter().map(|e| e.name.as_str()).collect();
+    let entities: BTreeMap<&str, &Vec<privacy::Field>> = model
+        .entities
+        .iter()
+        .map(|entity| (entity.name.as_str(), &entity.fields))
+        .collect();
     let in_list: BTreeSet<&str> = model.listed.iter().map(String::as_str).collect();
     let mut findings = Vec::new();
-    for table in table_enums(schema) {
-        if !listed.iter().any(|(name, _)| *name == table) {
+    for (table, variants) in table_enums(schema) {
+        let Some(entry) = listed.iter().find(|entry| entry.table == table) else {
             findings.push(Finding::at(
                 SCHEMA_PATH,
                 format!(
@@ -112,10 +173,45 @@ fn evaluate_tables(model: &Model, sources: &[crate::rust_source::Source]) -> Vec
                      personal-data marks (ADR-0015)."
                 ),
             ));
+            continue;
+        };
+        for variant in &variants {
+            if !entry.columns.iter().any(|(column, _)| column == variant) {
+                findings.push(Finding::at(
+                    SCHEMA_PATH,
+                    format!(
+                        "The column `{table}::{variant}` is not covered by a marked field. Add \
+                         `{variant} => field` to its entry in `stored_tables!`; the field of \
+                         `{}` carries the personal-data mark (ADR-0015).",
+                        entry.entity
+                    ),
+                ));
+            }
+        }
+        for (column, field) in &entry.columns {
+            if !variants.contains(column) {
+                findings.push(Finding::at(
+                    SCHEMA_PATH,
+                    format!("`stored_tables!` names the column `{table}::{column}`, which the table has not."),
+                ));
+            }
+            if let Some(fields) = entities.get(entry.entity.as_str())
+                && !fields.iter().any(|candidate| candidate.name == *field)
+            {
+                findings.push(Finding::at(
+                    SCHEMA_PATH,
+                    format!(
+                        "The column `{table}::{column}` points to `{field}`, which `{}` has no \
+                         field called.",
+                        entry.entity
+                    ),
+                ));
+            }
         }
     }
-    for (table, entity) in &listed {
-        if !entities.contains(entity.as_str()) {
+    for entry in &listed {
+        let (table, entity) = (&entry.table, &entry.entity);
+        if !entities.contains_key(entity.as_str()) {
             findings.push(Finding::at(
                 SCHEMA_PATH,
                 format!(
@@ -139,7 +235,7 @@ fn evaluate_tables(model: &Model, sources: &[crate::rust_source::Source]) -> Vec
         .filter(|(path, _)| path.starts_with(MIGRATIONS_FOLDER))
     {
         for table in created_tables(text) {
-            if !listed.iter().any(|(name, _)| *name == table) {
+            if !listed.iter().any(|entry| entry.table == table) {
                 findings.push(Finding::at(
                     path,
                     format!(
@@ -286,7 +382,7 @@ words! { pub enum Basis { Contract => \"contract\", LegalObligation => \"legal_o
         assert!(all.contains("`Ghost` is in the `entities!` list"), "{all}");
     }
 
-    const SCHEMA_GOOD: &str = "pub(crate) enum Event {\n    Table,\n    Id,\n}\nmacro_rules! stored_tables {\n    () => {};\n}\nstored_tables! {\n    Event => bb_core::event::DomainEvent,\n}\n";
+    const SCHEMA_GOOD: &str = "pub(crate) enum Event {\n    Table,\n    Id,\n    Time,\n}\nmacro_rules! stored_tables {\n    () => {};\n}\nstored_tables! {\n    Event => bb_core::event::DomainEvent {\n        Id => id,\n        Time => id,\n    },\n}\n";
     const LIST_GOOD: &str = "crate::entities! { crate::event::DomainEvent }";
     const MIGRATION_GOOD: &str = "Table::create()\n    .table(Event::Table)\n    .col(x)\n";
 
@@ -322,6 +418,29 @@ words! { pub enum Basis { Contract => \"contract\", LegalObligation => \"legal_o
         let all = table_findings(&schema, &migration, LIST_GOOD);
         assert!(all.contains("The table `Orphan` has no entity"), "{all}");
         assert!(all.contains("creates the table `Orphan`"), "{all}");
+    }
+
+    #[test]
+    fn bad_example_a_column_without_a_marked_field() {
+        let schema = SCHEMA_GOOD.replace("    Time,\n}", "    Time,\n    Extra,\n}");
+        let all = table_findings(&schema, MIGRATION_GOOD, LIST_GOOD);
+        assert!(
+            all.contains("The column `Event::Extra` is not covered"),
+            "{all}"
+        );
+    }
+
+    #[test]
+    fn bad_example_a_column_that_points_to_a_missing_field_or_does_not_exist() {
+        let wrong_field = SCHEMA_GOOD.replace("Time => id", "Time => nothing");
+        let all = table_findings(&wrong_field, MIGRATION_GOOD, LIST_GOOD);
+        assert!(all.contains("points to `nothing`"), "{all}");
+        let no_column = SCHEMA_GOOD.replace(
+            "        Time => id,\n",
+            "        Time => id,\n        Ghost => id,\n",
+        );
+        let all = table_findings(&no_column, MIGRATION_GOOD, LIST_GOOD);
+        assert!(all.contains("names the column `Event::Ghost`"), "{all}");
     }
 
     #[test]

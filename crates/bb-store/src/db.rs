@@ -62,7 +62,9 @@ impl Database {
             let options = SqliteConnectOptions::from_str(url)?
                 .create_if_missing(true)
                 .journal_mode(SqliteJournalMode::Wal)
-                .synchronous(SqliteSynchronous::Normal)
+                // FULL: a committed change survives a power cut (security first). It costs one
+                // more disk flush per commit than NORMAL does in WAL mode (M1-F22).
+                .synchronous(SqliteSynchronous::Full)
                 .foreign_keys(true)
                 .busy_timeout(SQLITE_BUSY_TIMEOUT);
             Pool::Sqlite(
@@ -124,6 +126,21 @@ impl Database {
             inner: match &self.pool {
                 Pool::Sqlite(pool) => TxInner::Sqlite(pool.begin_with("BEGIN IMMEDIATE").await?),
                 Pool::Postgres(pool) => TxInner::Postgres(pool.begin().await?),
+            },
+        })
+    }
+
+    /// Starts a read-only transaction that sees one consistent snapshot. It takes no write lock
+    /// on SQLite (readers and the writer do not wait for each other in WAL mode) and uses
+    /// repeatable read on PostgreSQL.
+    pub(crate) async fn begin_read(&self) -> Result<Transaction, StoreError> {
+        Ok(Transaction {
+            inner: match &self.pool {
+                Pool::Sqlite(pool) => TxInner::Sqlite(pool.begin().await?),
+                Pool::Postgres(pool) => TxInner::Postgres(
+                    pool.begin_with("BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY")
+                        .await?,
+                ),
             },
         })
     }
@@ -270,6 +287,21 @@ impl Transaction {
         Ok(self.fetch_all(statement).await?.into_iter().next())
     }
 
+    /// Takes a lock that lasts until the end of the transaction, so processes that do the same
+    /// thing (migrate) run one after the other. Dialect-specific on purpose (ADR-0003): on
+    /// SQLite the transaction already holds the write lock (`BEGIN IMMEDIATE`), so nothing is
+    /// needed; PostgreSQL has many writers and needs an advisory lock.
+    pub(crate) async fn advisory_lock(&mut self, key: i64) -> Result<(), StoreError> {
+        if matches!(self.inner, TxInner::Postgres(_)) {
+            let mut select = SelectStatement::new();
+            select.expr(
+                sea_query::Func::cust(sea_query::Alias::new("pg_advisory_xact_lock")).arg(key),
+            );
+            self.fetch_all(&select).await?;
+        }
+        Ok(())
+    }
+
     /// Runs a schema statement (create a table or an index) built for this database.
     pub(crate) async fn execute_schema(
         &mut self,
@@ -402,7 +434,7 @@ pub(crate) fn from_micros(micros: i64) -> Result<Timestamp, StoreError> {
 #[cfg(test)]
 impl Database {
     /// The journal mode and the foreign-key switch of a SQLite connection, for the tests.
-    pub(crate) async fn sqlite_pragmas(&self) -> Result<(String, i64), StoreError> {
+    pub(crate) async fn sqlite_pragmas(&self) -> Result<(String, i64, i64), StoreError> {
         let Pool::Sqlite(pool) = &self.pool else {
             return Err(StoreError::UnsupportedDatabase);
         };
@@ -412,6 +444,9 @@ impl Database {
         let keys = sqlx::query_scalar::<_, i64>("PRAGMA foreign_keys")
             .fetch_one(pool)
             .await?;
-        Ok((mode, keys))
+        let sync = sqlx::query_scalar::<_, i64>("PRAGMA synchronous")
+            .fetch_one(pool)
+            .await?;
+        Ok((mode, keys, sync))
     }
 }

@@ -339,6 +339,7 @@ dependencies = [
 name = "bb-store"
 version = "0.0.0"
 dependencies = [
+ "bb-app",
  "bb-core",
  "bb-testing",
  "chacha20poly1305",

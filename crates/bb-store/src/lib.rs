@@ -7,6 +7,7 @@
 
 #![forbid(unsafe_code)]
 
+mod anchor;
 mod chain;
 mod db;
 mod error;
@@ -19,13 +20,14 @@ mod secrets;
 mod security_log;
 mod settings;
 
+pub use anchor::LogSeal;
 pub use chain::{BreakReason, Verification};
 pub use db::{Database, Dialect, Transaction};
 pub use error::{SecretProblem, SettingProblem, StoreError};
 pub use jobs::{FailureOutcome, NewJob, backoff};
 pub use keys::{KeyRing, MasterKey, SigningKey};
 pub use migrations::latest_version;
-pub use schema::tables;
+pub use schema::{StoredTable, tables};
 pub use security_log::NewSecurityLogEntry;
 pub use settings::{Scopes, SettingChange};
 

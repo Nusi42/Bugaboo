@@ -282,6 +282,11 @@ pub(crate) async fn enqueue(
     job: &NewJob,
     now: Timestamp,
 ) -> Result<(), StoreError> {
+    if job.max_attempts < 1 {
+        return Err(StoreError::InvalidInput(
+            "a job must be allowed to run at least once",
+        ));
+    }
     let mut insert = Query::insert();
     insert
         .into_table(Columns::Table)
@@ -563,6 +568,22 @@ mod tests {
             let distinct: HashSet<JobId> = all.iter().copied().collect();
             assert_eq!(all.len(), 20);
             assert_eq!(distinct.len(), 20, "no job was handed out twice");
+            Ok(())
+        })
+        .await
+    }
+
+    #[tokio::test]
+    async fn bad_example_a_job_that_may_run_zero_times_is_refused() -> TestResult {
+        each_database("adr_0017_zero_attempts", async |db| {
+            let database = open(db).await?;
+            let id = JobId::generate(&mut ids())?;
+            let refused = database.enqueue_job(id, &mail(at(0), 0), at(0)).await;
+            assert!(
+                matches!(refused, Err(StoreError::InvalidInput(_))),
+                "{refused:?}"
+            );
+            assert_eq!(database.queued_job_count().await?, 0);
             Ok(())
         })
         .await

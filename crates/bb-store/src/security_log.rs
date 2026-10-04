@@ -1,10 +1,17 @@
 //! The security log (SEC-15) in the database: appending, verifying and deleting old blocks.
 //!
-//! Entries are only ever added. After the keep period an administrator-set job deletes the oldest
-//! *whole blocks* of [`BLOCK_SIZE`] entries and leaves one signed checkpoint behind: the place
-//! and hash of the last deleted entry, signed with a key derived from the master key. The
-//! entries that remain still verify, because the first of them points to the checkpoint's hash.
-//! A checkpoint that is missing or forged, or entries missing without one, show as a break.
+//! Entries are only ever added. Each entry stores the keyed hash (HMAC-SHA256 under the log key,
+//! see [`crate::chain`]) of the entry before it, and after every append the newest place and hash
+//! are written to the anchor file ([`crate::anchor`]), so somebody who can only change the
+//! database can neither rewrite entries nor cut the end off.
+//!
+//! After the keep period a job deletes the oldest *whole blocks* of [`BLOCK_SIZE`] entries and
+//! leaves one signed checkpoint behind: the place and hash of the last deleted entry and the time,
+//! signed with the log key. The entries that remain still verify, because the first of them points
+//! to the checkpoint's hash. Before it deletes anything, the job verifies the blocks it is about
+//! to delete and the link to the first entry it keeps, in the same transaction, and refuses when
+//! something does not fit. A checkpoint that is missing or forged, or entries missing without one,
+//! show as a break.
 
 use bb_core::event::{EntityKind, EntityRef};
 use bb_core::id::{EntityId, UserId};
@@ -14,13 +21,14 @@ use bb_core::technical::TechnicalName;
 use jiff::Timestamp;
 use sea_query::{Expr, ExprTrait as _, Order, Query};
 
+use crate::anchor::{Anchored, LogSeal};
 use crate::chain::{
     BLOCK_SIZE, BreakReason, CHECKPOINT_DOMAIN, START, Verification, Verifier, checkpoint_message,
     hash_of,
 };
 use crate::db::{Database, Row, Transaction, to_micros};
 use crate::error::{SecretProblem, StoreError};
-use crate::keys::KeyRing;
+use crate::keys::SigningKey;
 use crate::schema::{Computed, SecurityLog as Columns, SecurityLogCheckpoint as Checkpoint};
 
 /// How often an append starts over when another writer was faster.
@@ -44,26 +52,37 @@ pub struct NewSecurityLogEntry {
 }
 
 impl Database {
-    /// Adds an entry to the end of the chain and returns it with its place and hash. When two
-    /// writers add at the same moment, one of them starts over.
+    /// Adds an entry to the end of the chain, writes the new end to the anchor file, and returns
+    /// the entry with its place and hash. When two writers add at the same moment, one of them
+    /// starts over.
     ///
     /// # Errors
-    /// Fails with [`StoreError::Contended`] after repeated collisions, and when the database
-    /// fails.
+    /// Fails with [`StoreError::Contended`] after repeated collisions, with
+    /// [`StoreError::AnchorFile`] when the anchor file cannot be written (the entry is stored
+    /// then), and when the database fails.
     pub async fn append_security_log(
         &self,
+        seal: &LogSeal,
         new: &NewSecurityLogEntry,
     ) -> Result<SecurityLogEntry, StoreError> {
         for _ in 0..APPEND_ATTEMPTS {
-            match self.try_append(new).await {
+            match self.try_append(seal.key(), new).await {
                 Err(error) if error.is_duplicate() => {}
-                other => return other,
+                Ok(entry) => {
+                    seal.record(entry.seq, &entry.hash)?;
+                    return Ok(entry);
+                }
+                Err(error) => return Err(error),
             }
         }
         Err(StoreError::Contended)
     }
 
-    async fn try_append(&self, new: &NewSecurityLogEntry) -> Result<SecurityLogEntry, StoreError> {
+    async fn try_append(
+        &self,
+        key: &SigningKey,
+        new: &NewSecurityLogEntry,
+    ) -> Result<SecurityLogEntry, StoreError> {
         let mut transaction = self.begin().await?;
         let (seq, previous) = match last_entry(&mut transaction).await? {
             Some((seq, hash)) => (seq + 1, hash),
@@ -82,7 +101,7 @@ impl Database {
             previous_hash: previous,
             hash: START,
         };
-        entry.hash = hash_of(&previous, &entry);
+        entry.hash = hash_of(key, &previous, &entry)?;
 
         let mut insert = Query::insert();
         insert
@@ -119,42 +138,44 @@ impl Database {
         after_seq: i64,
         limit: u64,
     ) -> Result<Vec<SecurityLogEntry>, StoreError> {
-        let mut select = Query::select();
-        select
-            .columns(entry_columns())
-            .from(Columns::Table)
-            .and_where(Expr::col(Columns::Seq).gt(after_seq))
-            .order_by(Columns::Seq, Order::Asc)
-            .limit(limit);
-        self.fetch_all(&select)
+        self.fetch_all(&entries_after(after_seq, limit))
             .await?
             .iter()
             .map(read_entry)
             .collect()
     }
 
-    /// Checks the whole chain, including the checkpoint, if there is one. This is what
-    /// `bugaboo security-log verify` and the status page run.
+    /// Checks the whole chain with the log key, the checkpoint and the anchor file. This is what
+    /// `bugaboo security-log verify` and the status page run. It reads one consistent snapshot of
+    /// the database and takes no write lock, so appends go on while it runs.
     ///
     /// # Errors
-    /// Fails when the database fails or an entry is unreadable. A broken chain is not an error;
-    /// it is the answer ([`Verification::Broken`]).
-    pub async fn verify_security_log(&self, keys: &KeyRing) -> Result<Verification, StoreError> {
-        let mut transaction = self.begin().await?;
+    /// Fails when the database or the anchor file cannot be read, or an entry is unreadable. A
+    /// broken chain is not an error; it is the answer ([`Verification::Broken`]).
+    pub async fn verify_security_log(&self, seal: &LogSeal) -> Result<Verification, StoreError> {
+        // The anchor is read first: it is never ahead of the database, so whatever it says
+        // is in the snapshot taken afterwards.
+        let anchor = seal.latest()?;
+        if anchor == Anchored::Forged {
+            return Ok(Verification::Broken {
+                seq: 0,
+                reason: BreakReason::Anchor,
+            });
+        }
+        let mut transaction = self.begin_read().await?;
         let checkpoint = read_checkpoint(&mut transaction).await?;
-        transaction.commit().await?;
         let mut verifier = if let Some(checkpoint) = &checkpoint {
-            if !checkpoint_is_signed(keys, checkpoint) {
+            if !checkpoint_is_signed(seal.key(), checkpoint) {
                 return Ok(Verification::Broken {
                     seq: checkpoint.seq,
                     reason: BreakReason::Checkpoint,
                 });
             }
-            Verifier::new(checkpoint.seq + 1, checkpoint.hash)
+            Verifier::new(seal.key(), checkpoint.seq + 1, checkpoint.hash)
         } else {
             // Without a checkpoint the log must start at 1; a later start means entries were
             // deleted without leaving one.
-            if let Some(first) = self.security_log_entries(0, 1).await?.first()
+            if let Some(first) = read_page(&mut transaction, 0, 1).await?.first()
                 && first.seq != 1
             {
                 return Ok(Verification::Broken {
@@ -162,11 +183,16 @@ impl Database {
                     reason: BreakReason::Checkpoint,
                 });
             }
-            Verifier::new(1, START)
+            Verifier::new(seal.key(), 1, START)
         };
+        let anchored_seq = match anchor {
+            Anchored::At(seq, _) => Some(seq),
+            _ => None,
+        };
+        let mut hash_at_anchor = None;
         let mut after = checkpoint.as_ref().map_or(0, |checkpoint| checkpoint.seq);
         loop {
-            let page = self.security_log_entries(after, PAGE).await?;
+            let page = read_page(&mut transaction, after, PAGE).await?;
             let Some(last) = page.last() else {
                 break;
             };
@@ -178,42 +204,81 @@ impl Database {
                         reason,
                     });
                 }
+                if Some(entry.seq) == anchored_seq {
+                    hash_at_anchor = Some(entry.hash);
+                }
             }
         }
-        Ok(verifier.finish())
+        let Verification::Valid { entries, head, .. } = verifier.finish() else {
+            return Ok(Verification::Broken {
+                seq: 0,
+                reason: BreakReason::Gap,
+            });
+        };
+        let Anchored::At(anchor_seq, anchor_hash) = anchor else {
+            return Ok(Verification::Valid {
+                entries,
+                head,
+                anchored: false,
+            });
+        };
+        // The database must reach the anchor and have the same entry there. An anchor older than
+        // the checkpoint cannot be compared any more (its entry was deleted on purpose).
+        let reached = head
+            .map(|(seq, _)| seq)
+            .or(checkpoint.as_ref().map(|checkpoint| checkpoint.seq))
+            .unwrap_or(0);
+        let found = match &checkpoint {
+            Some(checkpoint) if anchor_seq == checkpoint.seq => Some(checkpoint.hash),
+            Some(checkpoint) if anchor_seq < checkpoint.seq => Some(anchor_hash),
+            _ => hash_at_anchor,
+        };
+        if reached < anchor_seq || found != Some(anchor_hash) {
+            return Ok(Verification::Broken {
+                seq: anchor_seq,
+                reason: BreakReason::Truncated,
+            });
+        }
+        Ok(Verification::Valid {
+            entries,
+            head,
+            anchored: true,
+        })
     }
 
     /// Deletes the oldest whole blocks whose entries are all older than `before`, and signs a
-    /// checkpoint for what was deleted. At least one newer entry always stays. Returns how many
-    /// entries were deleted.
+    /// checkpoint for what was deleted. At least one newer entry always stays. The blocks to be
+    /// deleted and the link to the first entry kept are verified first, in the same transaction.
+    /// Returns how many entries were deleted.
     ///
     /// # Errors
-    /// Fails when the database fails or the existing checkpoint does not verify (nothing is
-    /// deleted then).
+    /// Fails with [`SecretProblem::Tampered`] when the existing checkpoint, the blocks or the
+    /// link do not verify (nothing is deleted then), and when the database fails.
     pub async fn prune_security_log(
         &self,
-        keys: &KeyRing,
+        seal: &LogSeal,
         before: Timestamp,
         now: Timestamp,
     ) -> Result<u64, StoreError> {
-        self.prune_in_blocks(keys, before, now, BLOCK_SIZE).await
+        self.prune_in_blocks(seal, before, now, BLOCK_SIZE).await
     }
 
     /// [`Self::prune_security_log`] with a block size; the tests use a small one. The size must
     /// stay the same for the life of a log, because blocks are counted from its first entry.
     pub(crate) async fn prune_in_blocks(
         &self,
-        keys: &KeyRing,
+        seal: &LogSeal,
         before: Timestamp,
         now: Timestamp,
         block_size: i64,
     ) -> Result<u64, StoreError> {
+        let tampered = || StoreError::Secret(SecretProblem::Tampered);
         let mut transaction = self.begin().await?;
         let checkpoint = read_checkpoint(&mut transaction).await?;
         if let Some(checkpoint) = &checkpoint
-            && !checkpoint_is_signed(keys, checkpoint)
+            && !checkpoint_is_signed(seal.key(), checkpoint)
         {
-            return Err(StoreError::Secret(SecretProblem::Tampered));
+            return Err(tampered());
         }
         let Some((head, _)) = last_entry(&mut transaction).await? else {
             return Ok(0);
@@ -248,18 +313,39 @@ impl Database {
             return Ok(0);
         };
 
-        let mut select = Query::select();
-        select
-            .column(Columns::Hash)
-            .from(Columns::Table)
-            .and_where(Expr::col(Columns::Seq).eq(last));
-        let row = transaction
-            .fetch_optional(&select)
+        // Verify what is about to be deleted, from the checkpoint (or the start) up to `last`.
+        let mut verifier = match &checkpoint {
+            Some(checkpoint) => Verifier::new(seal.key(), checkpoint.seq + 1, checkpoint.hash),
+            None => Verifier::new(seal.key(), 1, START),
+        };
+        let mut after = checkpoint.as_ref().map_or(0, |checkpoint| checkpoint.seq);
+        while after < last {
+            let limit = u64::try_from(std::cmp::min(
+                last - after,
+                i64::try_from(PAGE).unwrap_or(i64::MAX),
+            ))
+            .unwrap_or(PAGE);
+            let page = read_page(&mut transaction, after, limit).await?;
+            if page.is_empty() {
+                return Err(tampered());
+            }
+            for entry in &page {
+                verifier.check(entry).map_err(|_| tampered())?;
+                after = entry.seq;
+            }
+        }
+        let deleted_head = verifier.head();
+        // The first entry that stays must point to the hash of the last one that goes.
+        let first_kept = read_page(&mut transaction, last, 1)
             .await?
-            .ok_or(StoreError::Corrupt("a security log entry"))?;
-        let hash = digest(&row, Columns::Hash)?;
-        let signature = sign_checkpoint(keys, last, &hash)?;
+            .into_iter()
+            .next()
+            .ok_or_else(tampered)?;
+        if first_kept.seq != last + 1 || first_kept.previous_hash != deleted_head {
+            return Err(tampered());
+        }
 
+        let signature = sign_checkpoint(seal.key(), last, &deleted_head, now)?;
         let mut delete = Query::delete();
         delete
             .from_table(Columns::Table)
@@ -269,7 +355,7 @@ impl Database {
             &mut transaction,
             &SecurityLogCheckpoint {
                 seq: last,
-                hash,
+                hash: deleted_head,
                 signature,
                 created_at: now,
             },
@@ -280,45 +366,28 @@ impl Database {
     }
 }
 
-/// Signs the existing checkpoint again with the newest key, after a rotation added one.
-pub(crate) async fn resign_checkpoint(
-    transaction: &mut Transaction,
-    keys: &KeyRing,
-) -> Result<(), StoreError> {
-    let Some(checkpoint) = read_checkpoint(transaction).await? else {
-        return Ok(());
-    };
-    if !checkpoint_is_signed(keys, &checkpoint) {
-        return Err(StoreError::Secret(SecretProblem::Tampered));
-    }
-    let signature = sign_checkpoint(keys, checkpoint.seq, &checkpoint.hash)?;
-    replace_checkpoint(
-        transaction,
-        &SecurityLogCheckpoint {
-            signature,
-            ..checkpoint
-        },
+fn sign_checkpoint(
+    key: &SigningKey,
+    seq: i64,
+    hash: &Digest,
+    created_at: Timestamp,
+) -> Result<Digest, StoreError> {
+    key.sign(&[
+        CHECKPOINT_DOMAIN,
+        &checkpoint_message(seq, hash, created_at),
+    ])
+    .map(Digest::new)
+}
+
+/// Whether the log key signed this checkpoint.
+fn checkpoint_is_signed(key: &SigningKey, checkpoint: &SecurityLogCheckpoint) -> bool {
+    key.verify(
+        &[
+            CHECKPOINT_DOMAIN,
+            &checkpoint_message(checkpoint.seq, &checkpoint.hash, checkpoint.created_at),
+        ],
+        checkpoint.signature.as_bytes(),
     )
-    .await
-}
-
-fn sign_checkpoint(keys: &KeyRing, seq: i64, hash: &Digest) -> Result<Digest, StoreError> {
-    let key = keys.newest()?.signing_key()?;
-    let signature = key.sign(&[CHECKPOINT_DOMAIN, &checkpoint_message(seq, hash)])?;
-    Ok(Digest::new(signature))
-}
-
-/// Whether any key of the ring signed this checkpoint.
-fn checkpoint_is_signed(keys: &KeyRing, checkpoint: &SecurityLogCheckpoint) -> bool {
-    let message = checkpoint_message(checkpoint.seq, &checkpoint.hash);
-    keys.all().iter().any(|key| {
-        key.signing_key().is_ok_and(|signing| {
-            signing.verify(
-                &[CHECKPOINT_DOMAIN, &message],
-                checkpoint.signature.as_bytes(),
-            )
-        })
-    })
 }
 
 async fn replace_checkpoint(
@@ -391,6 +460,31 @@ async fn last_entry(transaction: &mut Transaction) -> Result<Option<(i64, Digest
         .transpose()
 }
 
+fn entries_after(after_seq: i64, limit: u64) -> sea_query::SelectStatement {
+    let mut select = Query::select();
+    select
+        .columns(entry_columns())
+        .from(Columns::Table)
+        .and_where(Expr::col(Columns::Seq).gt(after_seq))
+        .order_by(Columns::Seq, Order::Asc)
+        .limit(limit);
+    select
+}
+
+/// A page of entries inside a transaction.
+async fn read_page(
+    transaction: &mut Transaction,
+    after_seq: i64,
+    limit: u64,
+) -> Result<Vec<SecurityLogEntry>, StoreError> {
+    transaction
+        .fetch_all(&entries_after(after_seq, limit))
+        .await?
+        .iter()
+        .map(read_entry)
+        .collect()
+}
+
 fn digest(row: &Row, column: impl sea_query::Iden + Copy) -> Result<Digest, StoreError> {
     let bytes: Vec<u8> = row.get(column)?;
     Digest::from_slice(&bytes).ok_or(StoreError::Corrupt("a hash"))
@@ -459,34 +553,57 @@ mod tests {
         }
     }
 
-    async fn append_many(database: &Database, count: i64) -> Result<(), StoreError> {
+    async fn append_many(
+        database: &Database,
+        seal: &LogSeal,
+        count: i64,
+    ) -> Result<(), StoreError> {
         for number in 1..=count {
             database
-                .append_security_log(&new_entry(number, "sign_in.ok"))
+                .append_security_log(seal, &new_entry(number, "sign_in.ok"))
                 .await?;
         }
         Ok(())
     }
 
-    fn keys() -> (tempfile::TempDir, KeyRing) {
+    /// A seal with a key of its own and an anchor file in a folder that lives as long as the
+    /// returned guard.
+    fn new_seal() -> (tempfile::TempDir, LogSeal) {
         let folder = tempfile::tempdir().unwrap();
-        let ring = KeyRing::open_or_create(folder.path()).unwrap();
-        (folder, ring)
+        let seal = LogSeal::with_key(
+            SigningKey::generate().unwrap(),
+            folder.path().join("logs").join("security-head.log"),
+        );
+        (folder, seal)
+    }
+
+    async fn update_entry(database: &Database, seq: i64, column: Columns, value: sea_query::Value) {
+        let mut update = Query::update();
+        update
+            .table(Columns::Table)
+            .value(column, value)
+            .and_where(Expr::col(Columns::Seq).eq(seq));
+        database.execute(&update).await.unwrap();
+    }
+
+    fn broken(seq: i64, reason: BreakReason) -> Verification {
+        Verification::Broken { seq, reason }
     }
 
     #[tokio::test]
     async fn sec_15_entries_are_chained_and_verify() -> TestResult {
         each_database("sec_15_chain_verifies", async |db| {
             let database = open(db).await?;
-            let (_folder, ring) = keys();
+            let (_folder, seal) = new_seal();
             assert_eq!(
-                database.verify_security_log(&ring).await?,
+                database.verify_security_log(&seal).await?,
                 Verification::Valid {
                     entries: 0,
-                    head: None
+                    head: None,
+                    anchored: false
                 }
             );
-            append_many(&database, 5).await?;
+            append_many(&database, &seal, 5).await?;
             let entries = database.security_log_entries(0, 10).await?;
             assert_eq!(
                 entries.iter().map(|entry| entry.seq).collect::<Vec<_>>(),
@@ -496,10 +613,11 @@ mod tests {
             assert_eq!(entries[1].previous_hash, entries[0].hash);
             assert_eq!(entries[0].network.as_ref().unwrap().as_str(), "203.0.113.0");
             assert_eq!(
-                database.verify_security_log(&ring).await?,
+                database.verify_security_log(&seal).await?,
                 Verification::Valid {
                     entries: 5,
-                    head: Some((5, entries[4].hash))
+                    head: Some((5, entries[4].hash)),
+                    anchored: true
                 }
             );
             Ok(())
@@ -511,7 +629,7 @@ mod tests {
     async fn bad_example_a_changed_row_is_found_in_every_column() -> TestResult {
         each_database("sec_15_tampering", async |db| {
             let database = open(db).await?;
-            let (_folder, ring) = keys();
+            let (_folder, seal) = new_seal();
             let changes: [(Columns, sea_query::Value); 4] = [
                 (Columns::Time, 1_i64.into()),
                 (Columns::Action, "sign_in.failed".into()),
@@ -525,25 +643,119 @@ mod tests {
                 let mut delete = Query::delete();
                 delete.from_table(Columns::Table);
                 database.execute(&delete).await?;
-                append_many(&database, 4).await?;
+                append_many(&database, &seal, 4).await?;
                 assert!(matches!(
-                    database.verify_security_log(&ring).await?,
+                    database.verify_security_log(&seal).await?,
                     Verification::Valid { entries: 4, .. }
                 ));
+                update_entry(&database, 3, column, value).await;
+                assert_eq!(
+                    database.verify_security_log(&seal).await?,
+                    broken(3, BreakReason::ChangedContent)
+                );
+            }
+            Ok(())
+        })
+        .await
+    }
+
+    #[tokio::test]
+    async fn sec_15_somebody_with_only_the_database_cannot_hash_the_log_again() -> TestResult {
+        each_database("sec_15_rehashed_tail", async |db| {
+            let database = open(db).await?;
+            let (_folder, seal) = new_seal();
+            append_many(&database, &seal, 5).await?;
+            // Change entry 2 and make entries 2..5 fit again with a key of their own.
+            let attacker = SigningKey::generate()?;
+            let mut entries = database.security_log_entries(0, 10).await?;
+            entries[1].action = TechnicalName::new("sign_in.failed").unwrap();
+            let mut previous = entries[0].hash;
+            for entry in &mut entries[1..] {
+                entry.previous_hash = previous;
+                entry.hash = hash_of(&attacker, &previous, entry)?;
+                previous = entry.hash;
                 let mut update = Query::update();
                 update
                     .table(Columns::Table)
-                    .value(column, value)
-                    .and_where(Expr::col(Columns::Seq).eq(3_i64));
+                    .value(Columns::Action, entry.action.as_str())
+                    .value(
+                        Columns::PreviousHash,
+                        entry.previous_hash.as_bytes().to_vec(),
+                    )
+                    .value(Columns::Hash, entry.hash.as_bytes().to_vec())
+                    .and_where(Expr::col(Columns::Seq).eq(entry.seq));
                 database.execute(&update).await?;
-                assert_eq!(
-                    database.verify_security_log(&ring).await?,
-                    Verification::Broken {
-                        seq: 3,
-                        reason: BreakReason::ChangedContent
-                    }
-                );
             }
+            assert_eq!(
+                database.verify_security_log(&seal).await?,
+                broken(2, BreakReason::ChangedContent)
+            );
+            Ok(())
+        })
+        .await
+    }
+
+    #[tokio::test]
+    async fn sec_15_cutting_off_the_end_or_replacing_it_is_found_through_the_anchor() -> TestResult
+    {
+        each_database("sec_15_anchor", async |db| {
+            let database = open(db).await?;
+            let (_folder, seal) = new_seal();
+            append_many(&database, &seal, 5).await?;
+            let mut delete = Query::delete();
+            delete
+                .from_table(Columns::Table)
+                .and_where(Expr::col(Columns::Seq).gt(3_i64));
+            database.execute(&delete).await?;
+            assert_eq!(
+                database.verify_security_log(&seal).await?,
+                broken(5, BreakReason::Truncated)
+            );
+
+            // The whole log replaced by another one that is right under the same key (somebody
+            // with the key but not the anchor file): the anchor knows the old hash.
+            let mut everything = Query::delete();
+            everything.from_table(Columns::Table);
+            database.execute(&everything).await?;
+            let (_other_folder, other) = new_seal();
+            let same_key = LogSeal::with_key(seal.key().clone(), other.file.clone());
+            for number in 1..=5 {
+                database
+                    .append_security_log(&same_key, &new_entry(number + 50, "sign_in.ok"))
+                    .await?;
+            }
+            assert_eq!(
+                database.verify_security_log(&seal).await?,
+                broken(5, BreakReason::Truncated)
+            );
+            Ok(())
+        })
+        .await
+    }
+
+    #[tokio::test]
+    async fn the_anchor_file_can_be_forged_or_lost_but_not_unnoticed() -> TestResult {
+        each_database("sec_15_anchor_file", async |db| {
+            let database = open(db).await?;
+            let (_folder, seal) = new_seal();
+            append_many(&database, &seal, 3).await?;
+            // A line signed with another key.
+            let stranger = LogSeal::with_key(SigningKey::generate()?, seal.file.clone());
+            stranger.record(9, &Digest::new([9; 32]))?;
+            assert_eq!(
+                database.verify_security_log(&seal).await?,
+                broken(0, BreakReason::Anchor)
+            );
+            // The file deleted: the log verifies but says it is not anchored.
+            std::fs::remove_file(&seal.file)?;
+            assert!(matches!(
+                database.verify_security_log(&seal).await?,
+                Verification::Valid {
+                    entries: 3,
+                    anchored: false,
+                    ..
+                }
+            ));
             Ok(())
         })
         .await
@@ -553,19 +765,16 @@ mod tests {
     async fn bad_example_a_removed_entry_leaves_a_gap_and_a_missing_start_is_found() -> TestResult {
         each_database("sec_15_removed_entries", async |db| {
             let database = open(db).await?;
-            let (_folder, ring) = keys();
-            append_many(&database, 5).await?;
+            let (_folder, seal) = new_seal();
+            append_many(&database, &seal, 5).await?;
             let mut delete = Query::delete();
             delete
                 .from_table(Columns::Table)
                 .and_where(Expr::col(Columns::Seq).eq(3_i64));
             database.execute(&delete).await?;
             assert_eq!(
-                database.verify_security_log(&ring).await?,
-                Verification::Broken {
-                    seq: 4,
-                    reason: BreakReason::Gap
-                }
+                database.verify_security_log(&seal).await?,
+                broken(4, BreakReason::Gap)
             );
             // The first entries removed without a checkpoint.
             let mut delete = Query::delete();
@@ -574,11 +783,8 @@ mod tests {
                 .and_where(Expr::col(Columns::Seq).lte(3_i64));
             database.execute(&delete).await?;
             assert_eq!(
-                database.verify_security_log(&ring).await?,
-                Verification::Broken {
-                    seq: 4,
-                    reason: BreakReason::Checkpoint
-                }
+                database.verify_security_log(&seal).await?,
+                broken(4, BreakReason::Checkpoint)
             );
             Ok(())
         })
@@ -589,28 +795,29 @@ mod tests {
     async fn sec_15_old_blocks_are_deleted_and_the_rest_still_verifies() -> TestResult {
         each_database("sec_15_prune_blocks", async |db| {
             let database = open(db).await?;
-            let (_folder, ring) = keys();
-            append_many(&database, 8).await?;
+            let (_folder, seal) = new_seal();
+            append_many(&database, &seal, 8).await?;
 
             // Nothing is older than the cut-off: nothing is deleted.
-            assert_eq!(database.prune_in_blocks(&ring, at(0), at(100), 3).await?, 0);
+            assert_eq!(database.prune_in_blocks(&seal, at(0), at(100), 3).await?, 0);
             // Entries 1..=7 are older; blocks 1-3 and 4-6 are whole, block 7-9 is not.
-            assert_eq!(database.prune_in_blocks(&ring, at(8), at(100), 3).await?, 6);
+            assert_eq!(database.prune_in_blocks(&seal, at(8), at(100), 3).await?, 6);
             let left = database.security_log_entries(0, 10).await?;
             assert_eq!(
                 left.iter().map(|entry| entry.seq).collect::<Vec<_>>(),
                 [7, 8]
             );
             assert!(matches!(
-                database.verify_security_log(&ring).await?,
+                database.verify_security_log(&seal).await?,
                 Verification::Valid {
                     entries: 2,
-                    head: Some((8, _))
+                    head: Some((8, _)),
+                    anchored: true
                 }
             ));
 
             // Appending goes on from the end; the log still verifies.
-            append_many(&database, 2).await?;
+            append_many(&database, &seal, 2).await?;
             assert_eq!(
                 database
                     .security_log_entries(0, 10)
@@ -621,21 +828,48 @@ mod tests {
                 10
             );
             assert!(matches!(
-                database.verify_security_log(&ring).await?,
+                database.verify_security_log(&seal).await?,
                 Verification::Valid { entries: 4, .. }
             ));
             // The newest entry always stays, even when its block is whole and old.
             assert_eq!(
                 database
-                    .prune_in_blocks(&ring, at(1000), at(100), 3)
+                    .prune_in_blocks(&seal, at(1000), at(100), 3)
                     .await?,
                 3
             );
             assert_eq!(database.security_log_entries(0, 10).await?.len(), 1);
             assert!(matches!(
-                database.verify_security_log(&ring).await?,
+                database.verify_security_log(&seal).await?,
                 Verification::Valid { entries: 1, .. }
             ));
+            Ok(())
+        })
+        .await
+    }
+
+    #[tokio::test]
+    async fn bad_example_prune_refuses_to_delete_blocks_that_do_not_verify() -> TestResult {
+        each_database("sec_15_prune_verifies", async |db| {
+            let database = open(db).await?;
+            let (_folder, seal) = new_seal();
+            append_many(&database, &seal, 8).await?;
+            let tampered = |result: Result<u64, StoreError>| {
+                assert!(
+                    matches!(result, Err(StoreError::Secret(SecretProblem::Tampered))),
+                    "{result:?}"
+                );
+            };
+
+            // A changed entry inside a block that would be deleted.
+            update_entry(&database, 2, Columns::Action, "sign_in.failed".into()).await;
+            tampered(database.prune_in_blocks(&seal, at(8), at(100), 3).await);
+            assert_eq!(database.security_log_entries(0, 10).await?.len(), 8);
+
+            // A first kept entry that does not point to the last deleted one.
+            update_entry(&database, 2, Columns::Action, "sign_in.ok".into()).await;
+            update_entry(&database, 7, Columns::PreviousHash, vec![1_u8; 32].into()).await;
+            tampered(database.prune_in_blocks(&seal, at(8), at(100), 3).await);
             Ok(())
         })
         .await
@@ -645,18 +879,15 @@ mod tests {
     async fn bad_example_a_forged_or_removed_checkpoint_is_found() -> TestResult {
         each_database("sec_15_forged_checkpoint", async |db| {
             let database = open(db).await?;
-            let (_folder, ring) = keys();
-            append_many(&database, 8).await?;
-            database.prune_in_blocks(&ring, at(8), at(100), 3).await?;
+            let (_folder, seal) = new_seal();
+            append_many(&database, &seal, 8).await?;
+            database.prune_in_blocks(&seal, at(8), at(100), 3).await?;
 
             // Another installation's key cannot vouch for this one.
-            let (_other_folder, other) = keys();
+            let (_other_folder, other) = new_seal();
             assert_eq!(
                 database.verify_security_log(&other).await?,
-                Verification::Broken {
-                    seq: 6,
-                    reason: BreakReason::Checkpoint
-                }
+                broken(6, BreakReason::Checkpoint)
             );
             assert!(
                 database
@@ -665,18 +896,24 @@ mod tests {
                     .is_err()
             );
 
-            // A moved checkpoint no longer matches its signature.
+            // A moved checkpoint, or a changed time, no longer matches its signature.
+            let mut update = Query::update();
+            update
+                .table(Checkpoint::Table)
+                .value(Checkpoint::CreatedAt, 5_i64);
+            database.execute(&update).await?;
+            assert_eq!(
+                database.verify_security_log(&seal).await?,
+                broken(6, BreakReason::Checkpoint)
+            );
             let mut update = Query::update();
             update
                 .table(Checkpoint::Table)
                 .value(Checkpoint::Seq, 5_i64);
             database.execute(&update).await?;
             assert_eq!(
-                database.verify_security_log(&ring).await?,
-                Verification::Broken {
-                    seq: 5,
-                    reason: BreakReason::Checkpoint
-                }
+                database.verify_security_log(&seal).await?,
+                broken(5, BreakReason::Checkpoint)
             );
 
             // No checkpoint at all, but the first entries are gone.
@@ -684,11 +921,8 @@ mod tests {
             delete.from_table(Checkpoint::Table);
             database.execute(&delete).await?;
             assert_eq!(
-                database.verify_security_log(&ring).await?,
-                Verification::Broken {
-                    seq: 7,
-                    reason: BreakReason::Checkpoint
-                }
+                database.verify_security_log(&seal).await?,
+                broken(7, BreakReason::Checkpoint)
             );
             Ok(())
         })
@@ -696,16 +930,18 @@ mod tests {
     }
 
     #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
-    async fn writers_at_the_same_time_extend_one_chain() -> TestResult {
+    async fn writers_at_the_same_time_extend_one_chain_and_verify_needs_no_write_lock() -> TestResult
+    {
         each_database("sec_15_concurrent_appends", async |db| {
             let database = open(db).await?;
-            let (_folder, ring) = keys();
+            let (_folder, seal) = new_seal();
             let mut tasks = Vec::new();
             for number in 0..8 {
                 let database = database.clone();
+                let seal = seal.clone();
                 tasks.push(tokio::spawn(async move {
                     database
-                        .append_security_log(&new_entry(number, "sign_in.ok"))
+                        .append_security_log(&seal, &new_entry(number, "sign_in.ok"))
                         .await
                 }));
             }
@@ -713,12 +949,20 @@ mod tests {
                 task.await??;
             }
             assert!(matches!(
-                database.verify_security_log(&ring).await?,
+                database.verify_security_log(&seal).await?,
                 Verification::Valid {
                     entries: 8,
-                    head: Some((8, _))
+                    head: Some((8, _)),
+                    anchored: true
                 }
             ));
+            // A writer holds the write lock: verifying still works (one snapshot, no lock).
+            let writer = database.begin().await?;
+            assert!(matches!(
+                database.verify_security_log(&seal).await?,
+                Verification::Valid { entries: 8, .. }
+            ));
+            drop(writer);
             Ok(())
         })
         .await

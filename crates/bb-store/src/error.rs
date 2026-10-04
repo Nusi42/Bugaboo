@@ -25,8 +25,14 @@ pub enum StoreError {
     },
     /// A stored value cannot be read back (a bad ID, time, name or hash).
     Corrupt(&'static str),
-    /// A value that is stored as JSON could not be written or read.
-    Json(serde_json::Error),
+    /// A value that is stored as JSON could not be written or read. Only the kind of problem is
+    /// kept: the text of a JSON error can quote the value, and stored values must not reach logs.
+    Json(serde_json::error::Category),
+    /// The input is not acceptable (for example a job that may run zero times).
+    InvalidInput(&'static str),
+    /// The database has secrets or a security log, but a key file is missing. New keys would
+    /// never read what the old ones protected, so the program stops (SEC-16).
+    KeysMissing,
     /// The setting key is not in the registry, or the level or the type of the value does not fit.
     SettingRejected(SettingProblem),
     /// A secret could not be encrypted or decrypted, or the key file is unusable.
@@ -35,6 +41,8 @@ pub enum StoreError {
     Contended,
     /// The name is kept for the store itself (for example the head of the outbox).
     ReservedName,
+    /// The anchor file of the security log could not be read or written.
+    AnchorFile(std::io::Error),
     /// The master key file could not be read or written.
     KeyFile(std::io::Error),
 }
@@ -87,14 +95,21 @@ impl fmt::Display for StoreError {
                 "the recorded migration {version} is not the one this program has"
             ),
             Self::Corrupt(what) => write!(formatter, "a stored value is unusable: {what}"),
-            Self::Json(error) => write!(formatter, "a JSON value is unusable: {error}"),
+            Self::Json(kind) => write!(formatter, "a JSON value is unusable ({kind:?})"),
+            Self::InvalidInput(what) => write!(formatter, "not acceptable: {what}"),
+            Self::KeysMissing => formatter.write_str(
+                &bb_core::message::Message::from(bb_core::message::SERVER_KEYS_MISSING).render(),
+            ),
             Self::SettingRejected(problem) => {
                 write!(formatter, "the setting was refused: {problem:?}")
             }
             Self::Secret(problem) => write!(formatter, "the secret operation failed: {problem:?}"),
             Self::ReservedName => formatter.write_str("this name is reserved for the store"),
             Self::Contended => formatter.write_str("too many writers at once; try again"),
-            Self::KeyFile(error) => write!(formatter, "the master key file failed: {error}"),
+            Self::KeyFile(error) => write!(formatter, "a key file failed: {error}"),
+            Self::AnchorFile(error) => {
+                write!(formatter, "the security log anchor file failed: {error}")
+            }
         }
     }
 }
@@ -103,8 +118,7 @@ impl std::error::Error for StoreError {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
             Self::Database(error) => Some(error),
-            Self::Json(error) => Some(error),
-            Self::KeyFile(error) => Some(error),
+            Self::KeyFile(error) | Self::AnchorFile(error) => Some(error),
             _ => None,
         }
     }
@@ -118,7 +132,7 @@ impl From<sqlx::Error> for StoreError {
 
 impl From<serde_json::Error> for StoreError {
     fn from(error: serde_json::Error) -> Self {
-        Self::Json(error)
+        Self::Json(error.classify())
     }
 }
 
@@ -127,5 +141,21 @@ impl StoreError {
     #[must_use]
     pub fn is_duplicate(&self) -> bool {
         matches!(self, Self::Database(sqlx::Error::Database(error)) if error.is_unique_violation())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_json_error_never_carries_the_stored_value() {
+        let error = serde_json::from_str::<u32>("\"hunter2-secret-value\"").unwrap_err();
+        assert!(
+            error.to_string().contains("hunter2"),
+            "the library quotes the value"
+        );
+        let store: StoreError = error.into();
+        assert!(!format!("{store} {store:?}").contains("hunter2"));
     }
 }
