@@ -9,6 +9,7 @@
 //! - the client network is counted against the rate limit (`crate::limits`);
 //! - a request has [`TIME_LIMIT`] to finish, which also ends a body that arrives too slowly
 //!   (M1-F06), and a body may be [`BODY_LIMIT_BYTES`] big;
+//! - a request that changes something must come from one of Bugaboo's own pages ([`origin_check`]);
 //! - every error answer is problem+json with the request ID (`crate::errors`).
 
 use std::sync::Arc;
@@ -16,6 +17,7 @@ use std::time::Duration;
 
 use axum::Router;
 use axum::extract::{DefaultBodyLimit, Request};
+use axum::http::{Method, header};
 use axum::middleware::{Next, from_fn, from_fn_with_state};
 use axum::response::{IntoResponse as _, Response};
 use bb_core::ErrorCode;
@@ -85,7 +87,7 @@ async fn get_status() -> axum::Json<ServerStatus> {
 )]
 async fn get_openapi() -> Response {
     (
-        [(axum::http::header::CONTENT_TYPE, "application/json")],
+        [(header::CONTENT_TYPE, "application/json")],
         openapi::json(),
     )
         .into_response()
@@ -115,10 +117,40 @@ pub(crate) fn is_api(path: &str) -> bool {
 /// untouched.
 pub(crate) fn rules(router: Router, limits: Arc<Limits>) -> Router {
     router
+        .layer(from_fn(origin_check))
         .layer(from_fn(time_limit))
         .layer(from_fn_with_state(limits, limits::limit_requests))
         .layer(DefaultBodyLimit::max(BODY_LIMIT_BYTES))
         .layer(from_fn(errors::add_request_id))
+}
+
+/// Refuses a request that changes something (any method but GET, HEAD and OPTIONS) below `/api`
+/// unless it comes from the server's own origin: `Origin` names the same host as `Host`, or, when
+/// the browser sent no `Origin`, `Sec-Fetch-Site` is `same-origin`. With neither the request is
+/// refused (fail closed). This is the second layer after `SameSite` cookies and the CSRF token.
+async fn origin_check(request: Request, next: Next) -> Response {
+    let unsafe_method = !matches!(
+        *request.method(),
+        Method::GET | Method::HEAD | Method::OPTIONS
+    );
+    if unsafe_method && is_api(request.uri().path()) && !is_same_origin(request.headers()) {
+        return ApiError::new(ErrorCode::WrongOrigin).into_response();
+    }
+    next.run(request).await
+}
+
+fn is_same_origin(headers: &axum::http::HeaderMap) -> bool {
+    let text = |name| headers.get(name).and_then(|value| value.to_str().ok());
+    if let Some(origin) = text(header::ORIGIN) {
+        // `null` and anything that is not scheme://host[:port] never match.
+        let Some(host) = text(header::HOST) else {
+            return false;
+        };
+        return origin
+            .split_once("://")
+            .is_some_and(|(_, authority)| authority.eq_ignore_ascii_case(host));
+    }
+    text(axum::http::HeaderName::from_static("sec-fetch-site")) == Some("same-origin")
 }
 
 /// Stops an API request that takes longer than [`TIME_LIMIT`].
@@ -151,6 +183,63 @@ mod tests {
 
     use super::*;
     use crate::errors::ApiJson;
+
+    fn change(origin: Option<&str>, fetch_site: Option<&str>, method: &str) -> Request<Body> {
+        let mut request = Request::builder()
+            .method(method)
+            .uri("/api/v1/echo")
+            .header(header::HOST, "bugaboo.test:47200")
+            .header(header::CONTENT_TYPE, "application/json");
+        if let Some(origin) = origin {
+            request = request.header(header::ORIGIN, origin);
+        }
+        if let Some(site) = fetch_site {
+            request = request.header("sec-fetch-site", site);
+        }
+        request.body(Body::from("{}")).unwrap()
+    }
+
+    #[tokio::test]
+    async fn sec_06_changes_must_come_from_the_servers_own_origin() {
+        let own = Some("https://bugaboo.test:47200");
+        let allowed = [
+            change(own, None, "POST"),
+            change(own, Some("cross-site"), "POST"),
+            change(None, Some("same-origin"), "DELETE"),
+            change(Some("HTTPS://BUGABOO.TEST:47200"), None, "POST"),
+        ];
+        for request in allowed {
+            let method = request.method().clone();
+            let response = app().oneshot(request).await.unwrap();
+            assert_ne!(response.status(), StatusCode::FORBIDDEN, "{method}");
+        }
+        let refused = [
+            change(Some("https://evil.test"), None, "POST"),
+            change(Some("https://evil.test"), Some("same-origin"), "POST"),
+            change(Some("https://bugaboo.test"), None, "POST"),
+            change(Some("null"), None, "PUT"),
+            change(None, Some("cross-site"), "POST"),
+            change(None, Some("same-site"), "PATCH"),
+            change(None, Some("none"), "POST"),
+            change(None, None, "POST"),
+        ];
+        for request in refused {
+            let response = app().oneshot(request).await.unwrap();
+            assert_eq!(response.status(), StatusCode::FORBIDDEN);
+            assert_eq!(code_of(response).await, "request.wrong_origin");
+        }
+    }
+
+    #[tokio::test]
+    async fn sec_06_reads_and_pages_need_no_origin() {
+        for method in ["GET", "HEAD", "OPTIONS"] {
+            let response = app().oneshot(change(None, None, method)).await.unwrap();
+            assert_ne!(response.status(), StatusCode::FORBIDDEN, "{method}");
+        }
+        let page = Request::post("/slow-page").body(Body::empty()).unwrap();
+        let response = app().oneshot(page).await.unwrap();
+        assert_ne!(response.status(), StatusCode::FORBIDDEN);
+    }
     use crate::limits::LimitsConfig;
 
     async fn echo(ApiJson(value): ApiJson<serde_json::Value>) -> axum::Json<serde_json::Value> {
@@ -180,6 +269,8 @@ mod tests {
 
     fn post_json(body: Vec<u8>) -> Request<Body> {
         Request::post("/api/v1/echo")
+            .header(header::HOST, "bugaboo.test")
+            .header(header::ORIGIN, "https://bugaboo.test")
             .header(header::CONTENT_TYPE, "application/json")
             .body(Body::from(body))
             .unwrap()

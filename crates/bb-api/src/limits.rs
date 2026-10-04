@@ -41,7 +41,9 @@ use crate::logging::ClientIp;
 const PERIOD: Duration = Duration::from_mins(1);
 
 /// Each window remembers at most this many clients. A flood of invented addresses must not be
-/// able to use up the memory; when the table is full and nothing has expired, it starts over.
+/// able to use up the memory. When the table is full, expired entries go first; counters of
+/// clients that are still within their minute are never thrown away. If it is still full, see
+/// [`Overflow`].
 const MAX_CLIENTS: usize = 100_000;
 
 /// Requests of the whole API, per client network and minute, when nothing else is set.
@@ -73,16 +75,27 @@ struct Entry {
     count: u32,
 }
 
+/// What a window does with a new key when its table is full of unexpired counters.
+enum Overflow<K> {
+    /// All such keys share one counter. Used for the general limit: a flood of invented clients
+    /// ends up sharing one limit, while the clients already counted keep theirs.
+    Share(K),
+    /// The new key is refused (counts as over the limit). Used for sign-in: fail closed.
+    Refuse,
+}
+
 /// Counts events per key in fixed windows.
 struct Window<K> {
     limit: u32,
+    overflow: Overflow<K>,
     entries: Mutex<HashMap<K, Entry>>,
 }
 
-impl<K: Hash + Eq> Window<K> {
-    fn new(limit: u32) -> Self {
+impl<K: Hash + Eq + Clone> Window<K> {
+    fn new(limit: u32, overflow: Overflow<K>) -> Self {
         Self {
             limit,
+            overflow,
             entries: Mutex::new(HashMap::new()),
         }
     }
@@ -91,10 +104,14 @@ impl<K: Hash + Eq> Window<K> {
     /// the limit.
     fn hit(&self, key: K, now: Instant) -> Result<(), u64> {
         let mut entries = self.entries.lock().unwrap_or_else(PoisonError::into_inner);
+        let mut key = key;
         if entries.len() >= MAX_CLIENTS && !entries.contains_key(&key) {
             entries.retain(|_, entry| now.duration_since(entry.started) < PERIOD);
             if entries.len() >= MAX_CLIENTS {
-                entries.clear();
+                match &self.overflow {
+                    Overflow::Share(shared) => key = shared.clone(),
+                    Overflow::Refuse => return Err(PERIOD.as_secs()),
+                }
             }
         }
         let entry = entries.entry(key).or_insert(Entry {
@@ -131,9 +148,9 @@ impl Limits {
     #[must_use]
     pub fn new(config: LimitsConfig) -> Arc<Self> {
         Arc::new(Self {
-            requests: Window::new(config.requests_per_minute),
-            sign_in_networks: Window::new(config.sign_in_attempts_per_minute),
-            accounts: Window::new(config.sign_in_attempts_per_minute),
+            requests: Window::new(config.requests_per_minute, Overflow::Share(OVERFLOW_CLIENT)),
+            sign_in_networks: Window::new(config.sign_in_attempts_per_minute, Overflow::Refuse),
+            accounts: Window::new(config.sign_in_attempts_per_minute, Overflow::Refuse),
             hasher: RandomState::new(),
         })
     }
@@ -194,6 +211,9 @@ fn network_of(address: IpAddr) -> IpAddr {
         v4 @ IpAddr::V4(_) => v4,
     }
 }
+
+/// The shared counter for clients that do not fit in a full table (an address no client has).
+const OVERFLOW_CLIENT: IpAddr = IpAddr::V6(std::net::Ipv6Addr::UNSPECIFIED);
 
 /// A request without a known client address (never the case behind the real listener) is
 /// counted with all others like it, so a wiring mistake limits instead of opening everything.
@@ -368,14 +388,41 @@ mod tests {
         assert!(wait_of(&error) >= 1);
     }
 
-    #[test]
-    fn sec_14_a_flood_of_invented_clients_cannot_grow_the_table_without_end() {
-        let window: Window<u32> = Window::new(1);
-        let now = Instant::now();
-        for key in 0..u32::try_from(MAX_CLIENTS + 10).unwrap() {
-            let _ = window.hit(key, now);
+    fn fill(window: &Window<u32>, now: Instant) {
+        for key in 0..u32::try_from(MAX_CLIENTS).unwrap() {
+            window.hit(key, now).unwrap();
         }
-        let size = window.entries.lock().unwrap().len();
-        assert!(size <= MAX_CLIENTS, "{size}");
+    }
+
+    #[test]
+    fn sec_14_a_full_table_never_forgets_counters_that_are_still_running() {
+        let window: Window<u32> = Window::new(1, Overflow::Share(u32::MAX));
+        let now = Instant::now();
+        fill(&window, now);
+        // A client already counted keeps its counter, also while the table is full.
+        assert!(window.hit(7, now).is_err());
+        // New clients share one counter: the first passes, the next are over the limit.
+        window.hit(u32::MAX - 1, now).unwrap();
+        assert!(window.hit(u32::MAX - 2, now).is_err());
+        assert!(window.entries.lock().unwrap().len() <= MAX_CLIENTS + 1);
+        assert!(window.hit(7, now).is_err());
+        // Expired counters make room again.
+        let later = now + PERIOD + Duration::from_secs(1);
+        window.hit(u32::MAX - 3, later).unwrap();
+        window.hit(8, later).unwrap();
+    }
+
+    #[test]
+    fn sec_14_sign_in_refuses_new_keys_when_the_table_is_full() {
+        let window: Window<u32> = Window::new(5, Overflow::Refuse);
+        let now = Instant::now();
+        fill(&window, now);
+        let wait = window.hit(u32::MAX, now).unwrap_err();
+        assert_eq!(wait, PERIOD.as_secs());
+        // Known keys still work; after expiry a new key is accepted.
+        window.hit(3, now).unwrap();
+        window
+            .hit(u32::MAX, now + PERIOD + Duration::from_secs(1))
+            .unwrap();
     }
 }

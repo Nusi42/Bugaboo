@@ -7,7 +7,7 @@ rust-version.workspace = true
 publish.workspace = true
 
 [dependencies]
-axum = { workspace = true, features = ["http1", "http2", "json", "matched-path", "tokio"] }
+axum = { workspace = true, features = ["http1", "http2", "json", "matched-path", "query", "tokio"] }
 bb-core = { path = "../bb-core", features = ["openapi"] }
 hyper-util = { workspace = true, features = ["http1", "http2", "server-auto", "service", "tokio"] }
 mime_guess = { workspace = true }

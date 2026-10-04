@@ -49,6 +49,7 @@ export interface components {
       | "access.forbidden"
       | "resource.not_found"
       | "request.invalid"
+      | "request.wrong_origin"
       | "request.method_not_allowed"
       | "request.timed_out"
       | "request.too_large"

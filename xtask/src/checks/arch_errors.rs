@@ -33,6 +33,18 @@ const HTTP_CODE: [&str; 2] = ["crates/bb-api/", "crates/bb-server/"];
 /// Every route documents these answers: going over a limit and failing inside.
 const STANDARD_STATUSES: [&str; 3] = ["429", "500", "503"];
 
+/// The handlers; their extractors must be the `Api*` wrappers.
+const EXTRACTOR_CODE: &str = "crates/bb-api/";
+/// Defines the wrappers, so it may use the extractors they wrap.
+const WRAPPERS_PATH: &str = "crates/bb-api/src/errors.rs";
+/// Extractors whose own rejections are plain text, with the wrapper to use instead.
+const EXTRACTORS: [(&str, &str); 4] = [
+    ("Json", "ApiJson"),
+    ("Query", "ApiQuery"),
+    ("Path", "ApiPath"),
+    ("Form", "ApiForm"),
+];
+
 /// The messages of error codes start with this word.
 const KEY_PREFIX: &str = "error.";
 
@@ -82,6 +94,9 @@ fn evaluate(sources: &[Source], messages: &[(String, String)], spec: Option<&str
     for (path, text) in sources {
         if HTTP_CODE.iter().any(|folder| path.starts_with(folder)) {
             findings.extend(check_answers(path, before_tests(text)));
+        }
+        if path.starts_with(EXTRACTOR_CODE) && path != WRAPPERS_PATH {
+            findings.extend(check_extractors(path, before_tests(text)));
         }
     }
     findings
@@ -325,6 +340,53 @@ fn check_answers(path: &str, code: &str) -> Vec<Finding> {
     findings
 }
 
+/// The parameters of every function: the text between its parentheses, up to the arrow.
+fn parameter_lists(code: &str) -> Vec<(usize, &str)> {
+    let mut lists = Vec::new();
+    for (at, _) in code.match_indices("fn ") {
+        let before_ok = code[..at]
+            .chars()
+            .last()
+            .is_none_or(|c| !c.is_alphanumeric() && c != '_');
+        let Some(open) = code[at..].find('(').map(|offset| at + offset) else {
+            continue;
+        };
+        if !before_ok || code[at..open].contains(['{', ';']) {
+            continue;
+        }
+        let elements = tuple_elements(&code[open + 1..]);
+        let length: usize = elements.iter().map(|e| e.len() + 1).sum();
+        let end = (open + length).min(code.len());
+        lists.push((at, &code[open + 1..end]));
+    }
+    lists
+}
+
+/// Finds handler parameters that use an extractor with plain-text rejections instead of the
+/// wrapper that answers as problem+json. Using `Json` to build an answer is fine; only
+/// the parameters are looked at.
+fn check_extractors(path: &str, code: &str) -> Vec<Finding> {
+    let mut findings = Vec::new();
+    for (at, parameters) in parameter_lists(code) {
+        for (extractor, wrapper) in EXTRACTORS {
+            let used = parameters.match_indices(extractor).any(|(position, _)| {
+                let before = parameters[..position].chars().last();
+                let after = parameters[position + extractor.len()..].chars().next();
+                before.is_none_or(|c| !c.is_alphanumeric() && c != '_')
+                    && matches!(after, Some('<' | '('))
+            });
+            if used {
+                let line = code[..at].matches('\n').count() + 1;
+                findings.push(Finding::at(
+                    format!("{path}:{line}"),
+                    format!("A handler takes `{extractor}` as an extractor, whose rejections are plain text. Use `{wrapper}` (bb-api errors), which answers as problem+json."),
+                ));
+            }
+        }
+    }
+    findings
+}
+
 /// The generated API description agrees with the table and documents the standard answers.
 fn check_spec(spec: Option<&str>, table: &[Entry]) -> Vec<Finding> {
     let Some(text) = spec else {
@@ -480,6 +542,34 @@ mod tests {
         ] {
             let found = run(TABLE, &GOOD_MESSAGES, good);
             assert!(found.is_empty(), "{good}: {found:?}");
+        }
+    }
+
+    #[test]
+    fn handlers_must_use_the_wrapped_extractors() {
+        let run = |code: &str| {
+            let sources = vec![
+                (TABLE_PATH.to_owned(), TABLE.to_owned()),
+                ("crates/bb-api/src/api.rs".to_owned(), code.to_owned()),
+            ];
+            evaluate(&sources, &messages(&GOOD_MESSAGES), Some(GOOD_SPEC)).len()
+        };
+        for bad in [
+            "async fn a(Json(body): Json<Input>) {}",
+            "async fn a(axum::Json(body): axum::Json<Input>) {}",
+            "async fn a(state: State<S>, Query(q): Query<Q>) {}",
+            "async fn a(axum::extract::Path(id): axum::extract::Path<u32>) {}",
+            "async fn a(Form(f): Form<F>) {}",
+        ] {
+            assert!(run(bad) >= 1, "{bad}");
+        }
+        for good in [
+            "async fn a(ApiJson(body): ApiJson<Input>) {}",
+            "async fn a(ApiQuery(q): ApiQuery<Q>, ApiPath(id): ApiPath<u32>) {}",
+            "async fn a() -> axum::Json<Status> { axum::Json(Status) }",
+            "async fn a(path: PathBuf) {}",
+        ] {
+            assert_eq!(run(good), 0, "{good}");
         }
     }
 

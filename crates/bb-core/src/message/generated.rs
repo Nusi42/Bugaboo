@@ -58,6 +58,9 @@ pub const ERROR_REQUEST_TIMED_OUT: MessageKey = MessageKey::new("error.request.t
 /// The message `error.request.too-large`.
 pub const ERROR_REQUEST_TOO_LARGE: MessageKey = MessageKey::new("error.request.too-large");
 
+/// The message `error.request.wrong-origin`.
+pub const ERROR_REQUEST_WRONG_ORIGIN: MessageKey = MessageKey::new("error.request.wrong-origin");
+
 /// The message `error.resource.not-found`.
 pub const ERROR_RESOURCE_NOT_FOUND: MessageKey = MessageKey::new("error.resource.not-found");
 
@@ -537,6 +540,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "Your request took too long to arrive. Please try again.",
     ),
     ("error.request.too-large", "That is too big to send."),
+    (
+        "error.request.wrong-origin",
+        "That did not come from a Bugaboo page. Reload the page and try again.",
+    ),
     ("error.resource.not-found", "We could not find that."),
     (
         "error.server.internal",

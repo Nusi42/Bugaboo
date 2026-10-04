@@ -42,7 +42,10 @@ mod api {
     }
 
     fn request(method: &str, path: &str, peer: &str, forwarded: Option<&str>) -> Request<Body> {
-        let mut request = Request::builder().method(method).uri(path);
+        let mut request = Request::builder()
+            .method(method)
+            .uri(path)
+            .header("sec-fetch-site", "same-origin");
         if let Some(forwarded) = forwarded {
             request = request.header("x-forwarded-for", forwarded);
         }
@@ -162,6 +165,28 @@ mod api {
         assert!(wrong_method.headers().contains_key(header::ALLOW));
         let body = json(wrong_method).await;
         assert_eq!(body["code"], "request.method_not_allowed");
+        assert!(body["request_id"].is_string());
+    }
+
+    #[tokio::test]
+    async fn sec_06_a_change_from_another_site_is_refused_as_problem_json() {
+        let app = router(options(LimitsConfig::default(), &[]));
+        let mut cross = request("POST", "/api/v1/status", "198.51.100.1:1", None);
+        cross.headers_mut().remove("sec-fetch-site");
+        cross
+            .headers_mut()
+            .insert(header::ORIGIN, "https://evil.test".parse().unwrap());
+        cross
+            .headers_mut()
+            .insert(header::HOST, "bugaboo.test".parse().unwrap());
+        let response = app.oneshot(cross).await.unwrap();
+        assert_eq!(response.status(), StatusCode::FORBIDDEN);
+        assert_eq!(
+            header_of(&response, "content-type"),
+            "application/problem+json"
+        );
+        let body = json(response).await;
+        assert_eq!(body["code"], "request.wrong_origin");
         assert!(body["request_id"].is_string());
     }
 

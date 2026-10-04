@@ -62,6 +62,8 @@ error_codes! {
     NotFound => ("resource.not_found", 404, message::ERROR_RESOURCE_NOT_FOUND),
     /// The request is not valid.
     InvalidRequest => ("request.invalid", 400, message::ERROR_REQUEST_INVALID),
+    /// A change request that does not come from one of Bugaboo's own pages.
+    WrongOrigin => ("request.wrong_origin", 403, message::ERROR_REQUEST_WRONG_ORIGIN),
     /// The address exists but does not do that (wrong HTTP method).
     MethodNotAllowed => ("request.method_not_allowed", 405, message::ERROR_REQUEST_METHOD_NOT_ALLOWED),
     /// The request took too long to arrive.

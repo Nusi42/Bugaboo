@@ -10,6 +10,27 @@
   "env": { "browser": true, "es2024": true },
   "overrides": [
     {
+      // The browser's Request and Response (their headers are changed through methods) cannot be
+      // made readonly, and openapi-fetch hands its middleware one mutable request. Only the API
+      // client handles them; every other parameter type is still checked.
+      "files": ["web/packages/api-client/**"],
+      "rules": {
+        "typescript/prefer-readonly-parameter-types": [
+          "error",
+          {
+            "allow": [
+              { "from": "lib", "name": ["Request", "Response"] },
+              {
+                "from": "package",
+                "package": "openapi-fetch",
+                "name": ["MiddlewareCallbackParams"]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
       // The app, the shared components and the messages never talk to the server themselves:
       // only @bugaboo/api-client does (ADR-0008). ARCH-WEB-API checks the same in xtask.
       "files": ["web/app/src/**", "web/packages/ui/**", "web/packages/messages/**"],
@@ -32,15 +53,12 @@
   "rules": {
     // Named exports only (coding-standards section 4); the config override above is the exception.
     "import/no-default-export": "error",
-    // Playwright's own fixture types (page, context ...) and the browser's Request and Response
-    // (their headers are changed through methods) cannot be made readonly, and openapi-fetch
-    // hands its middleware one mutable request; every other parameter type is still checked.
+    // Playwright's own fixture types (page, context ...) cannot be made readonly; every other
+    // parameter type is still checked. The API client has its own, narrower list (overrides).
     "typescript/prefer-readonly-parameter-types": [
       "error",
       {
         "allow": [
-          { "from": "lib", "name": ["Request", "Response"] },
-          { "from": "package", "package": "openapi-fetch", "name": ["MiddlewareCallbackParams"] },
           {
             "from": "package",
             "package": "playwright",

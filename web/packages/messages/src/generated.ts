@@ -18,6 +18,8 @@ export const messages = {
   "error.resource.not-found": "We could not find that.",
   "error.request.invalid":
     "Something in your request is not valid. Check what you typed and try again.",
+  "error.request.wrong-origin":
+    "That did not come from a Bugaboo page. Reload the page and try again.",
   "error.request.method-not-allowed": "Bugaboo does not do that here.",
   "error.request.timed-out": "Your request took too long to arrive. Please try again.",
   "error.request.too-large": "That is too big to send.",

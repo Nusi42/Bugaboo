@@ -86,7 +86,8 @@ mod headers {
             assert_headers(&response, path);
         }
         let post = send(WebSource::Folder(dir.path().into()), Method::POST, "/api/x").await;
-        assert_eq!(post.status(), StatusCode::NOT_FOUND);
+        // A change without an origin is refused before the address is looked at; the headers stay.
+        assert_eq!(post.status(), StatusCode::FORBIDDEN);
         assert_headers(&post, "POST /api/x");
     }
 

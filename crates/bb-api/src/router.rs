@@ -363,6 +363,7 @@ mod tests {
                 let request = Request::builder()
                     .method(method.clone())
                     .uri(path)
+                    .header("sec-fetch-site", "same-origin")
                     .body(Body::empty())
                     .unwrap();
                 let response = router(options(WebSource::Folder(dir.path().into())))
