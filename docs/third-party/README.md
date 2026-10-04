@@ -19,11 +19,12 @@ Columns:
 
 | Crate | Version | License | Ships? | Purpose | Health | Alternatives |
 |-------|---------|---------|--------|---------|--------|--------------|
-| anyhow | 1.0.104 | MIT OR Apache-2.0 | yes (bb-server), no (xtask) | Error handling with context in the check runner | maintained (2026-10-04) | thiserror (better for libraries; the runner only reports errors) |
-| clap | 4.6.7 | MIT OR Apache-2.0 | yes (bb-server), no (xtask) | Command line of `bugaboo` and `cargo xtask` | maintained (2026-10-04) | argh, pico-args (less help text, fewer checks) |
+| anyhow | 1.0.104 | MIT OR Apache-2.0 | no (xtask) | Error handling with context in the check runner | maintained (2026-10-04) | thiserror (better for libraries; the runner only reports errors) |
+| clap | 4.6.7 | MIT OR Apache-2.0 | no (xtask) | Command line of `cargo xtask` | maintained (2026-10-04) | argh, pico-args (less help text, fewer checks) |
 | globset | 0.4.20 | Unlicense OR MIT | no (xtask) | Matching changed files against the catalogue's `files` patterns | maintained (2026-10-04) | glob (no sets, no `{a,b}`), wildmatch |
 | serde | 1.0.229 | MIT OR Apache-2.0 | no (xtask) | Reading the check catalogue and tool list | maintained (2026-10-04) | hand-written parsing (error-prone) |
 | toml | 1.1.6 | MIT OR Apache-2.0 | no (xtask) | TOML parser for the catalogue and tool list | maintained (2026-10-04) | toml_edit (only needed for writing) |
+| ctrlc | 3.5.2 | MIT OR Apache-2.0 | no (xtask) | Stops the dev servers cleanly on Ctrl+C or termination (`cargo xtask dev`) | maintained (2026-10-04) | own signal handling (needs unsafe or platform code) |
 | axum | 0.8.9 | MIT | yes | HTTP routing and server (ADR-0002) | maintained (2026-10-04) | actix-web (smaller tower middleware ecosystem) |
 | mime_guess | 2.0.5 | MIT | yes | Content type from a file name when serving the browser app | maintained (2026-10-04) | own table (would be a copy of knowledge that exists) |
 | rust-embed | 8.12.0 | MIT | yes | Embeds the built browser app in the binary (DIST-01); reads from disk in debug builds | maintained (2026-10-04) | include_dir (no debug-from-disk mode), build script with include_bytes (more code) |

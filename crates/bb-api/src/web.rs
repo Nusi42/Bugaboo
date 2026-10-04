@@ -57,14 +57,57 @@ impl WebSource {
 }
 
 async fn read_file(folder: &Path, path: &str) -> Option<Vec<u8>> {
-    tokio::fs::read(folder.join(path)).await.ok()
+    let full = folder.join(path);
+    // Directories (and anything else that is not a plain file) are never served.
+    if !tokio::fs::metadata(&full).await.ok()?.is_file() {
+        return None;
+    }
+    tokio::fs::read(full).await.ok()
 }
 
+/// Device names Windows treats as devices in any folder, with or without an extension.
+const WINDOWS_RESERVED: [&str; 4] = ["CON", "PRN", "AUX", "NUL"];
+
+fn is_windows_reserved(part: &str) -> bool {
+    let stem = part.split('.').next().unwrap_or_default().trim_end();
+    let stem = stem.to_ascii_uppercase();
+    let numbered = |prefix: &str| {
+        stem.strip_prefix(prefix)
+            .is_some_and(|n| matches!(n.as_bytes(), [b'1'..=b'9']))
+    };
+    WINDOWS_RESERVED.contains(&stem.as_str()) || numbered("COM") || numbered("LPT")
+}
+
+/// A path is safe if every part is a plain name: no `..`, no separators or stream markers,
+/// no names Windows treats specially. Applies on every platform so behavior is the same.
 fn is_safe(path: &str) -> bool {
     !path.is_empty()
-        && path
-            .split('/')
-            .all(|part| !part.is_empty() && part != ".." && !part.contains(['\\', ':', '\0']))
+        && path.split('/').all(|part| {
+            !part.is_empty()
+                && part != "."
+                && part != ".."
+                && !part.contains(['\\', ':', '\0'])
+                && !part.ends_with(['.', ' '])
+                && !is_windows_reserved(part)
+        })
+}
+
+/// Turns `%XX` escapes into the bytes they stand for. `None` if the result is not UTF-8.
+pub(crate) fn decode_path(path: &str) -> Option<String> {
+    let bytes = path.as_bytes();
+    let mut decoded = Vec::with_capacity(bytes.len());
+    let mut index = 0;
+    while let Some(&byte) = bytes.get(index) {
+        if byte == b'%' {
+            let hex = path.get(index + 1..index + 3)?;
+            decoded.push(u8::from_str_radix(hex, 16).ok()?);
+            index += 3;
+        } else {
+            decoded.push(byte);
+            index += 1;
+        }
+    }
+    String::from_utf8(decoded).ok()
 }
 
 fn content_type(path: &str) -> String {
@@ -73,5 +116,59 @@ fn content_type(path: &str) -> String {
         format!("{mime}; charset=utf-8")
     } else {
         mime.to_string()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn sec_11_safe_paths_accept_plain_names_only() {
+        for good in [
+            "index.html",
+            "assets/app-1a2b.js",
+            "my file.txt",
+            "console.log",
+            "COM10",
+        ] {
+            assert!(is_safe(good), "{good}");
+        }
+        for bad in [
+            "",
+            "..",
+            "a/../b",
+            "./a",
+            "a//b",
+            "a\\b",
+            "c:x",
+            "a.",
+            "a ",
+            "x\0y",
+            "CON",
+            "con",
+            "Aux.txt",
+            "nul.tar.gz",
+            "PRN",
+            "com1",
+            "COM9.js",
+            "lpt1",
+            "LPT9.x",
+            "dir/NUL",
+            "con .txt",
+        ] {
+            assert!(!is_safe(bad), "{bad}");
+        }
+    }
+
+    #[test]
+    fn sec_11_percent_escapes_are_decoded_before_the_safety_check() {
+        assert_eq!(decode_path("my%20file.txt").as_deref(), Some("my file.txt"));
+        assert_eq!(decode_path("%2e%2e/x").as_deref(), Some("../x"));
+        assert_eq!(decode_path("..%5Cx.js").as_deref(), Some("..\\x.js"));
+        assert_eq!(decode_path("%C3%A4").as_deref(), Some("\u{e4}"));
+        assert_eq!(decode_path("%"), None);
+        assert_eq!(decode_path("%zz"), None);
+        assert_eq!(decode_path("%FF"), None);
     }
 }

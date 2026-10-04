@@ -7,7 +7,7 @@ use axum::http::{HeaderName, HeaderValue};
 use tower_http::set_header::SetResponseHeaderLayer;
 
 /// The only definition of the headers every response carries.
-pub(crate) const SECURITY_HEADERS: [(&str, &str); 6] = [
+const SECURITY_HEADERS: [(&str, &str); 6] = [
     (
         "content-security-policy",
         "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; \
@@ -21,7 +21,7 @@ pub(crate) const SECURITY_HEADERS: [(&str, &str); 6] = [
     (
         "permissions-policy",
         "accelerometer=(), camera=(), display-capture=(), geolocation=(), gyroscope=(), \
-         magnetometer=(), microphone=(), payment=(), usb=(), interest-cohort=()",
+         magnetometer=(), microphone=(), payment=(), usb=(), browsing-topics=()",
     ),
 ];
 

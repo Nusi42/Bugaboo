@@ -11,10 +11,10 @@ name = "bugaboo"
 path = "src/main.rs"
 
 [dependencies]
-anyhow = "1.0.104"
+anyhow = { workspace = true }
 bb-api = { path = "../bb-api" }
-clap = { version = "4.6.7", features = ["derive"] }
-tokio = { version = "1.53.2", features = ["macros", "net", "rt-multi-thread", "signal"] }
+clap = { workspace = true }
+tokio = { workspace = true, features = ["macros", "net", "rt-multi-thread", "signal"] }
 
 [lints]
 workspace = true

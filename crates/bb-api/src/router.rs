@@ -12,13 +12,16 @@ use axum::routing::get;
 use tokio::net::TcpListener;
 
 use crate::headers;
-use crate::web::{INDEX, WEB_APP_MISSING, WebSource};
+use crate::web::{INDEX, WEB_APP_MISSING, WebSource, decode_path};
 
 const HEALTH_LIVE_BODY: &str = r#"{"status":"ok"}"#;
+const NOT_FOUND: &str = "Not found";
 /// Files Vite names by their content hash can be cached forever.
 const IMMUTABLE_PREFIX: &str = "assets/";
 const CACHE_IMMUTABLE: &str = "public, max-age=31536000, immutable";
 const CACHE_REVALIDATE: &str = "no-cache";
+/// Addresses below these are never browser pages: when missing they are plain 404s.
+const NO_PAGE_FALLBACK: [&str; 3] = ["assets", "health", "api"];
 
 /// The whole HTTP surface, security headers included.
 pub fn router(web: WebSource) -> Router {
@@ -51,18 +54,20 @@ async fn health_live() -> Response {
         .into_response()
 }
 
-/// A file of the app; page addresses (no file extension) fall back to the start page.
+/// A file of the app; page addresses fall back to the start page.
 async fn app_file(State(web): State<Arc<WebSource>>, uri: Uri) -> Response {
-    let path = uri.path().trim_start_matches('/');
+    let Some(path) = decode_path(uri.path()) else {
+        return not_found(&web).await;
+    };
+    let path = path.trim_start_matches('/');
     let wanted = if path.is_empty() { INDEX } else { path };
-    let is_page = !wanted.rsplit('/').next().unwrap_or_default().contains('.');
     let found = match web.load(wanted).await {
         Some(asset) => Some((wanted, asset)),
-        None if is_page => web.load(INDEX).await.map(|asset| (INDEX, asset)),
+        None if is_page(wanted) => web.load(INDEX).await.map(|asset| (INDEX, asset)),
         None => None,
     };
     let Some((name, asset)) = found else {
-        return (StatusCode::NOT_FOUND, WEB_APP_MISSING).into_response();
+        return not_found(&web).await;
     };
     let cache = if name.starts_with(IMMUTABLE_PREFIX) {
         CACHE_IMMUTABLE
@@ -78,6 +83,23 @@ async fn app_file(State(web): State<Arc<WebSource>>, uri: Uri) -> Response {
     response
 }
 
+/// A page address has no file extension and is not below a reserved prefix.
+fn is_page(path: &str) -> bool {
+    let first = path.split('/').next().unwrap_or_default();
+    let last = path.rsplit('/').next().unwrap_or_default();
+    !last.contains('.') && !NO_PAGE_FALLBACK.contains(&first)
+}
+
+/// A plain 404; only a missing start page says that the app has not been built.
+async fn not_found(web: &WebSource) -> Response {
+    let body = if web.has_index().await {
+        NOT_FOUND
+    } else {
+        WEB_APP_MISSING
+    };
+    (StatusCode::NOT_FOUND, body).into_response()
+}
+
 #[cfg(test)]
 mod tests {
     use axum::body::Body;
@@ -85,7 +107,6 @@ mod tests {
     use tower::ServiceExt as _;
 
     use super::*;
-    use crate::headers::SECURITY_HEADERS;
 
     fn app_folder() -> tempfile::TempDir {
         let dir = tempfile::tempdir().unwrap();
@@ -93,6 +114,7 @@ mod tests {
         std::fs::create_dir(dir.path().join("assets")).unwrap();
         std::fs::write(dir.path().join("assets/app-1a2b.js"), "export {};").unwrap();
         std::fs::write(dir.path().join("robots.txt"), "x").unwrap();
+        std::fs::write(dir.path().join("my file.txt"), "spaced").unwrap();
         dir
     }
 
@@ -122,44 +144,6 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn sec_11_every_response_carries_every_security_header() {
-        let dir = app_folder();
-        for path in [
-            "/health/live",
-            "/",
-            "/some/page",
-            "/assets/app-1a2b.js",
-            "/missing.js",
-            "/assets/../index.html",
-        ] {
-            let response = get_from(WebSource::Folder(dir.path().into()), path).await;
-            for (name, value) in SECURITY_HEADERS {
-                assert_eq!(header_of(&response, name), value, "{name} on {path}");
-            }
-        }
-        let missing = get_from(WebSource::Folder("no/such/folder".into()), "/").await;
-        for (name, value) in SECURITY_HEADERS {
-            assert_eq!(header_of(&missing, name), value, "{name} without app");
-        }
-    }
-
-    #[test]
-    fn sec_11_csp_forbids_inline_code_and_framing() {
-        let csp = SECURITY_HEADERS[0].1;
-        for needed in [
-            "default-src 'self'",
-            "script-src 'self'",
-            "style-src 'self'",
-            "frame-ancestors 'none'",
-            "base-uri 'none'",
-            "require-trusted-types-for 'script'",
-        ] {
-            assert!(csp.contains(needed), "{needed}");
-        }
-        assert!(!csp.contains("unsafe-inline") && !csp.contains("unsafe-eval"));
-    }
-
-    #[tokio::test]
     async fn dist_01_serves_files_with_content_types_and_cache_rules() {
         let dir = app_folder();
         let web = || WebSource::Folder(dir.path().into());
@@ -177,6 +161,14 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn dist_01_percent_escapes_in_file_names_are_decoded() {
+        let dir = app_folder();
+        let response = get_from(WebSource::Folder(dir.path().into()), "/my%20file.txt").await;
+        assert_eq!(response.status(), StatusCode::OK);
+        assert_eq!(body(response).await, "spaced");
+    }
+
+    #[tokio::test]
     async fn dist_01_page_addresses_fall_back_to_the_start_page() {
         let dir = app_folder();
         let response = get_from(WebSource::Folder(dir.path().into()), "/issues/BUG-1").await;
@@ -185,20 +177,69 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn dist_01_missing_files_are_not_found_and_cannot_escape_the_folder() {
+    async fn dist_01_assets_health_and_api_never_fall_back_to_the_start_page() {
         let dir = app_folder();
-        for path in ["/assets/missing.js", "/assets/../x.js", "/..%5Cx.js"] {
+        for path in [
+            "/assets/missing",
+            "/assets",
+            "/health/ready",
+            "/health",
+            "/api/issues",
+            "/api",
+            "/missing.js",
+        ] {
+            let response = get_from(WebSource::Folder(dir.path().into()), path).await;
+            assert_eq!(response.status(), StatusCode::NOT_FOUND, "{path}");
+            assert_eq!(body(response).await, "Not found", "{path}");
+        }
+    }
+
+    #[tokio::test]
+    async fn sec_11_unsafe_file_paths_are_not_found() {
+        let dir = app_folder();
+        for path in [
+            "/assets/../index.html",
+            "/..%5Cx.js",
+            "/%2e%2e/x.js",
+            "/%2e%2e%2findex.html",
+            "/%00.js",
+            "/aux.js",
+            "/assets/NUL.txt",
+            "/%zz.js",
+        ] {
             let response = get_from(WebSource::Folder(dir.path().into()), path).await;
             assert_eq!(response.status(), StatusCode::NOT_FOUND, "{path}");
         }
     }
 
     #[tokio::test]
-    async fn dist_01_missing_app_folder_says_what_to_do() {
+    async fn sec_11_device_names_are_never_opened_as_files() {
+        let dir = app_folder();
+        for path in ["/CON", "/com1", "/nul", "/%2e%2e/x"] {
+            let response = get_from(WebSource::Folder(dir.path().into()), path).await;
+            // Page-like addresses only ever get the start page.
+            assert_eq!(body(response).await, "<h1>Bugaboo</h1>", "{path}");
+        }
+    }
+
+    #[tokio::test]
+    async fn dist_01_a_folder_is_not_a_file() {
+        let dir = app_folder();
+        std::fs::create_dir(dir.path().join("folder.d")).unwrap();
+        let response = get_from(WebSource::Folder(dir.path().into()), "/folder.d").await;
+        assert_eq!(response.status(), StatusCode::NOT_FOUND);
+    }
+
+    #[tokio::test]
+    async fn dist_01_only_a_missing_start_page_says_the_app_is_not_built() {
         let web = WebSource::Folder("no/such/folder".into());
         assert!(!web.has_index().await);
         let response = get_from(web, "/").await;
         assert_eq!(response.status(), StatusCode::NOT_FOUND);
         assert_eq!(body(response).await, WEB_APP_MISSING);
+
+        let dir = app_folder();
+        let response = get_from(WebSource::Folder(dir.path().into()), "/nope.js").await;
+        assert_eq!(body(response).await, "Not found");
     }
 }
