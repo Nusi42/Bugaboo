@@ -43,6 +43,7 @@ fn app(wired: Wired, data: &Path) -> Router {
         trusted_proxies: vec![],
         limits: LimitsConfig::default(),
         auth: wired.auth,
+        probe: wired.probe,
     })
 }
 

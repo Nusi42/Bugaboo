@@ -6,6 +6,7 @@ mod config;
 mod data_folder;
 mod log;
 mod output;
+mod probe;
 mod wiring;
 
 use std::future::Future;
@@ -171,6 +172,7 @@ async fn serve(args: ServeArgs) -> anyhow::Result<()> {
         trusted_proxies: settings.trusted_proxies,
         limits: settings.limits,
         auth: wired.auth,
+        probe: wired.probe,
     };
     bb_api::serve(incoming, options, shutdown).await?;
     tracing::info!("server stopped");

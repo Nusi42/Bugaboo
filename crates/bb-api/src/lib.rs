@@ -21,7 +21,7 @@ mod router;
 pub mod tls;
 mod web;
 
-pub use api::{AuthHandle, BODY_LIMIT_BYTES, TIME_LIMIT, VERSION_PATH};
+pub use api::{AuthHandle, BODY_LIMIT_BYTES, ProbeHandle, TIME_LIMIT, VERSION_PATH};
 pub use errors::{ApiError, ApiJson};
 pub use failures::{DEFAULT_SIGN_IN_FAILURES_PER_MINUTE, FailureLimits, MAX_WAIT};
 pub use headers::{HSTS_MAX_AGE_SELF_SIGNED, HSTS_MAX_AGE_TRUSTED};

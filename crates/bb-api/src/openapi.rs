@@ -16,7 +16,7 @@ use utoipa::openapi::security::{ApiKey, ApiKeyValue, SecurityScheme};
 use utoipa::openapi::{ContentBuilder, HeaderBuilder, ObjectBuilder, Ref, Type};
 use utoipa::{Modify, OpenApi};
 
-use crate::api::AuthHandle;
+use crate::api::{AuthHandle, ProbeHandle};
 use crate::cookies::{CSRF_HEADER, Cookie};
 
 /// The name of the security scheme for the session cookie.
@@ -35,7 +35,8 @@ const CSRF_SCHEME: &str = "csrfToken";
     components(schemas(Problem, ErrorCode)),
     tags(
         (name = "server", description = "The server itself."),
-        (name = "auth", description = "Signing in, sessions, second step, passkeys, invitations and setup.")
+        (name = "auth", description = "Signing in, sessions, second step, passkeys, invitations and setup."),
+        (name = "admin", description = "What only administrators see: the state of the server.")
     )
 )]
 struct ApiDoc;
@@ -48,12 +49,31 @@ pub(crate) fn base() -> utoipa::openapi::OpenApi {
     document
 }
 
+/// The state the routes are described with: nothing is served, so nothing is behind the handles.
+#[derive(Clone)]
+struct Described {
+    auth: AuthHandle,
+    probe: ProbeHandle,
+}
+
+impl axum::extract::FromRef<Described> for AuthHandle {
+    fn from_ref(state: &Described) -> Self {
+        state.auth.clone()
+    }
+}
+
+impl axum::extract::FromRef<Described> for ProbeHandle {
+    fn from_ref(state: &Described) -> Self {
+        state.probe.clone()
+    }
+}
+
 /// The finished document.
 #[must_use]
 pub fn document() -> utoipa::openapi::OpenApi {
     // The limits only decide how a route is wrapped; the description is the same for any numbers.
     let limits = crate::limits::Limits::new(crate::limits::LimitsConfig::default());
-    let mut document = crate::api::routes::<AuthHandle>(&limits).into_openapi();
+    let mut document = crate::api::routes::<Described>(&limits).into_openapi();
     // After the routes are in: the standard answers go to every route.
     StandardParts.modify(&mut document);
     document

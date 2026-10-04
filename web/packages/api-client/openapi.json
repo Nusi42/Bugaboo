@@ -6,6 +6,83 @@
     "version": "0.0.0"
   },
   "paths": {
+    "/api/v1/admin/status": {
+      "get": {
+        "tags": ["admin"],
+        "summary": "How the server is doing: version, uptime, database, certificate and the check of the security\nlog. Administrators only.",
+        "operationId": "getServerState",
+        "responses": {
+          "200": {
+            "description": "The state of the server.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServerStateBody"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed (access.forbidden, request.wrong_token).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/auth/invitation/accept": {
       "post": {
         "tags": ["auth"],
@@ -2715,6 +2792,17 @@
           }
         }
       },
+      "CertificateBody": {
+        "type": "object",
+        "description": "The HTTPS certificate the server uses itself.",
+        "required": ["expires_at"],
+        "properties": {
+          "expires_at": {
+            "type": "string",
+            "description": "When it stops being valid."
+          }
+        }
+      },
       "ChallengeBody": {
         "type": "object",
         "description": "A challenge for a passkey, as the passkey library writes it.",
@@ -2789,6 +2877,26 @@
             "description": "The page the link opens, with the secret after the `#`. Put the address of this server\nin front. The secret is not stored and cannot be shown again."
           }
         }
+      },
+      "DatabaseBody": {
+        "type": "object",
+        "description": "The database.",
+        "required": ["kind", "ok"],
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/DatabaseKindBody",
+            "description": "Which one it is. The address is never shown: it can hold a password."
+          },
+          "ok": {
+            "type": "boolean",
+            "description": "Whether it answered."
+          }
+        }
+      },
+      "DatabaseKindBody": {
+        "type": "string",
+        "description": "Which database the server uses.",
+        "enum": ["built_in", "sqlite", "postgres"]
       },
       "ErrorCode": {
         "type": "string",
@@ -2901,6 +3009,16 @@
             "description": "The e-mail address to invite."
           }
         }
+      },
+      "LogBreakBody": {
+        "type": "string",
+        "description": "Why the chain of the security log does not verify.",
+        "enum": ["gap", "broken_link", "changed_content", "checkpoint", "truncated", "anchor"]
+      },
+      "LogResult": {
+        "type": "string",
+        "description": "The result of checking the security log.",
+        "enum": ["valid", "broken", "unreadable"]
       },
       "PasskeyAnswerBody": {
         "type": "object",
@@ -3057,6 +3175,92 @@
           "secret": {
             "type": "string",
             "description": "The secret from the link (the part after the `#`)."
+          }
+        }
+      },
+      "SecurityLogBody": {
+        "type": "object",
+        "description": "What checking the security log found.",
+        "required": ["result"],
+        "properties": {
+          "anchored": {
+            "type": ["boolean", "null"],
+            "description": "Whether the file that vouches for the end of the log exists. A log with entries and no\nanchor is a warning: nothing then shows that the end was not cut off."
+          },
+          "broken_at": {
+            "type": ["integer", "null"],
+            "format": "int64",
+            "description": "The place of the first entry that does not verify (when it breaks)."
+          },
+          "entries": {
+            "type": ["integer", "null"],
+            "format": "int64",
+            "description": "How many entries were checked (when it verifies).",
+            "minimum": 0
+          },
+          "head_hash": {
+            "type": ["string", "null"],
+            "description": "The start of the hash of the last entry, to compare with a copy kept elsewhere."
+          },
+          "head_seq": {
+            "type": ["integer", "null"],
+            "format": "int64",
+            "description": "The place of the last entry (when it verifies and has entries)."
+          },
+          "reason": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/LogBreakBody",
+                "description": "What is wrong with it (when it breaks)."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "result": {
+            "$ref": "#/components/schemas/LogResult",
+            "description": "The outcome."
+          }
+        }
+      },
+      "ServerStateBody": {
+        "type": "object",
+        "description": "The state of the server, as the status page shows it.",
+        "required": ["version", "started_at", "uptime_seconds", "database", "security_log"],
+        "properties": {
+          "certificate": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/CertificateBody",
+                "description": "The HTTPS certificate; missing when the server does not speak HTTPS itself (plain HTTP\nbehind a proxy) or the certificate cannot be read."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "database": {
+            "$ref": "#/components/schemas/DatabaseBody",
+            "description": "The database."
+          },
+          "security_log": {
+            "$ref": "#/components/schemas/SecurityLogBody",
+            "description": "The check of the security log."
+          },
+          "started_at": {
+            "type": "string",
+            "description": "When the server started."
+          },
+          "uptime_seconds": {
+            "type": "integer",
+            "format": "int64",
+            "description": "How many seconds it has been running.",
+            "minimum": 0
+          },
+          "version": {
+            "type": "string",
+            "description": "The version of the program."
           }
         }
       },
@@ -3281,6 +3485,10 @@
     {
       "name": "auth",
       "description": "Signing in, sessions, second step, passkeys, invitations and setup."
+    },
+    {
+      "name": "admin",
+      "description": "What only administrators see: the state of the server."
     }
   ]
 }

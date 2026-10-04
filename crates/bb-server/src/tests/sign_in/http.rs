@@ -12,7 +12,9 @@ use axum::body::Body;
 use axum::extract::ConnectInfo;
 use axum::http::{HeaderMap, Request, StatusCode, header};
 use base64ct::{Base64UrlUnpadded, Encoding as _};
-use bb_api::{AuthHandle, ClientAddr, LimitsConfig, Options, WebSource, openapi, router};
+use bb_api::{
+    AuthHandle, ClientAddr, LimitsConfig, Options, ProbeHandle, WebSource, openapi, router,
+};
 use bb_app::auth::AuthStore as _;
 use bb_app::context::Clock as _;
 use bb_auth::TotpSecret;
@@ -24,7 +26,7 @@ use webauthn_authenticator_rs::softpasskey::SoftPasskey;
 
 use super::rig::{OTHER_PASSWORD, Outcome, PASSWORD, PUBLIC_URL, Rig};
 
-type Failure = Box<dyn std::error::Error + Send + Sync>;
+pub(super) type Failure = Box<dyn std::error::Error + Send + Sync>;
 
 /// The third number of the next browser's address (a network is the first three numbers).
 static NEXT_HOST: AtomicU8 = AtomicU8::new(1);
@@ -33,18 +35,18 @@ const SESSION: &str = "__Host-bb_session";
 const CSRF: &str = "__Host-bb_csrf";
 
 /// What the server answered.
-struct Reply {
-    status: StatusCode,
+pub(super) struct Reply {
+    pub(super) status: StatusCode,
     headers: HeaderMap,
-    body: Value,
+    pub(super) body: Value,
 }
 
 impl Reply {
-    fn code(&self) -> &str {
+    pub(super) fn code(&self) -> &str {
         self.body["code"].as_str().unwrap_or_default()
     }
 
-    fn header(&self, name: &str) -> &str {
+    pub(super) fn header(&self, name: &str) -> &str {
         self.headers
             .get(name)
             .and_then(|value| value.to_str().ok())
@@ -72,14 +74,14 @@ enum Token<'a> {
 }
 
 /// A browser: it keeps cookies and sends the token like the app does.
-struct Browser {
+pub(super) struct Browser {
     app: Router,
     jar: BTreeMap<String, String>,
     called: Arc<Mutex<BTreeSet<String>>>,
     peer: SocketAddr,
 }
 
-fn options(rig: &Rig, limits: LimitsConfig, auth: bool) -> Options {
+pub(super) fn options(rig: &Rig, limits: LimitsConfig, auth: bool) -> Options {
     Options {
         web: WebSource::Folder("no/such/folder".into()),
         hsts_max_age: None,
@@ -92,11 +94,12 @@ fn options(rig: &Rig, limits: LimitsConfig, auth: bool) -> Options {
         } else {
             AuthHandle::none()
         },
+        probe: ProbeHandle::none(),
     }
 }
 
 impl Browser {
-    fn new(app: &Router, called: &Arc<Mutex<BTreeSet<String>>>) -> Self {
+    pub(super) fn new(app: &Router, called: &Arc<Mutex<BTreeSet<String>>>) -> Self {
         Self {
             app: app.clone(),
             jar: BTreeMap::new(),
@@ -110,7 +113,7 @@ impl Browser {
         }
     }
 
-    async fn send(
+    pub(super) async fn send(
         &mut self,
         method: &str,
         path: &str,
@@ -208,7 +211,7 @@ impl Browser {
     }
 }
 
-fn setup_body(rig: &Rig) -> Value {
+pub(super) fn setup_body(rig: &Rig) -> Value {
     json!({
         "code": rig.setup_code,
         "display_name": "Ada Admin",
@@ -217,17 +220,20 @@ fn setup_body(rig: &Rig) -> Value {
     })
 }
 
-async fn rig_and_app(db: &TestDatabase, failures: u32) -> Result<(Rig, Router), Failure> {
+pub(super) async fn rig_and_app(
+    db: &TestDatabase,
+    failures: u32,
+) -> Result<(Rig, Router), Failure> {
     let rig = Rig::start(db, failures).await?;
     let app = router(options(&rig, LimitsConfig::default(), true));
     Ok((rig, app))
 }
 
-fn called() -> Arc<Mutex<BTreeSet<String>>> {
+pub(super) fn called() -> Arc<Mutex<BTreeSet<String>>> {
     Arc::new(Mutex::new(BTreeSet::new()))
 }
 
-fn sign_in_body(email: &str, password: &str) -> Value {
+pub(super) fn sign_in_body(email: &str, password: &str) -> Value {
     json!({"email": email, "password": password})
 }
 

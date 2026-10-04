@@ -63,6 +63,7 @@ mod logs {
             trusted_proxies: vec![],
             limits: bb_api::LimitsConfig::default(),
             auth: bb_api::AuthHandle::none(),
+            probe: bb_api::ProbeHandle::none(),
         });
         let mut request = Request::get("/users/jane.doe@example.org/profile?name=Jane+Doe")
             .header("authorization", "Bearer secret-token-123")

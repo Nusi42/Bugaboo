@@ -33,11 +33,13 @@ use crate::logging::Scheme;
 use crate::openapi;
 use crate::web::decode_path;
 
+mod admin;
 mod auth;
 mod auth_factors;
 mod auth_people;
 mod auth_sign_in;
 
+pub use admin::ProbeHandle;
 pub use auth::AuthHandle;
 
 /// The first part of every API address.
@@ -108,11 +110,13 @@ pub(crate) fn routes<S>(limits: &Arc<Limits>) -> OpenApiRouter<S>
 where
     S: Clone + Send + Sync + 'static,
     AuthHandle: axum::extract::FromRef<S>,
+    ProbeHandle: axum::extract::FromRef<S>,
 {
     OpenApiRouter::with_openapi(openapi::base())
         .routes(routes!(get_status))
         .routes(routes!(get_openapi))
         .merge(auth::routes(limits))
+        .merge(admin::routes())
 }
 
 /// Whether the address belongs to the API. Escapes are decoded first; an address with a
