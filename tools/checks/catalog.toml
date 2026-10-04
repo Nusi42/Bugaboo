@@ -28,7 +28,7 @@ title = "TypeScript, JavaScript and JSON are formatted"
 rule = "coding-standards §4"
 tool = "oxfmt"
 when = ["edit", "commit", "ci"]
-files = ["web/**/*.{ts,tsx,js,mjs,json}", "tools/**/*.{js,mjs,json}", "design/**/*.json", "messages/**/*.json", "package.json", ".oxfmtrc.json", ".oxlintrc.json", "docs/design/*.js"]
+files = ["web/**/*.{ts,tsx,js,mjs,json}", "tools/**/*.{js,mjs,json}", "design/**/*.json", "messages/**/*.json", "*.{json,mjs,ts}", ".oxfmtrc.json", ".oxlintrc.json", "docs/design/*.js"]
 status = "active"
 
 [[check]]
@@ -74,7 +74,7 @@ title = "oxlint finds no problems, including type-aware rules (TypeScript 7)"
 rule = "coding-standards §4"
 tool = "oxlint + oxlint-tsgolint"
 when = ["edit", "commit", "ci"]
-files = ["web/**/*.{ts,tsx}", "docs/design/*.js"]
+files = ["web/**/*.{ts,tsx}", "docs/design/*.js", "*.{mjs,ts}"]
 status = "active"
 
 [[check]]
@@ -92,7 +92,7 @@ title = "Hand-written HTML pages are valid and accessible"
 rule = "coding-standards §7"
 tool = "html-validate (recommended and a11y presets)"
 when = ["edit", "commit", "ci"]
-files = ["docs/02-ux-design.html", "docs/mockups/*.html"]
+files = ["docs/02-ux-design.html", "docs/mockups/*.html", "web/app/index.html"]
 status = "active"
 
 [[check]]

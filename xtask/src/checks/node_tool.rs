@@ -62,7 +62,8 @@ pub(crate) fn run(root: &Path, tool: &str, args: &[&str]) -> anyhow::Result<Tool
 
 /// The files of a check: where to look and which endings count.
 pub(crate) struct Selection {
-    /// Folders to search, relative to the root. `""` is the whole repository.
+    /// Folders to search, relative to the root. `""` is the whole repository, `"."` only the
+    /// files directly in the root.
     pub(crate) folders: &'static [&'static str],
     /// Single files outside those folders, relative to the root.
     pub(crate) files: &'static [&'static str],
@@ -82,6 +83,7 @@ impl Selection {
         }
         let in_folder = self.folders.iter().any(|folder| {
             folder.is_empty()
+                || (*folder == "." && !path.contains('/'))
                 || path
                     .strip_prefix(folder)
                     .is_some_and(|rest| rest.starts_with('/'))
@@ -102,7 +104,11 @@ impl Selection {
             );
         } else {
             for folder in self.folders {
-                walk(root, &root.join(folder), &mut picked);
+                if *folder == "." {
+                    root_files(root, &mut picked);
+                } else {
+                    walk(root, &root.join(folder), &mut picked);
+                }
             }
             picked.retain(|path| self.wants(path));
             picked.extend(
@@ -115,6 +121,18 @@ impl Selection {
         picked.sort();
         picked.dedup();
         picked
+    }
+}
+
+/// The files directly in the repository root.
+fn root_files(root: &Path, found: &mut Vec<String>) {
+    let Ok(entries) = fs::read_dir(root) else {
+        return;
+    };
+    for entry in entries.flatten() {
+        if entry.path().is_file() {
+            found.push(entry.file_name().to_string_lossy().into_owned());
+        }
     }
 }
 

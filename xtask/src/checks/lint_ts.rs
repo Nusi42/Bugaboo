@@ -6,9 +6,9 @@ use super::node_tool::{Selection, run, unix_findings};
 use super::{Check, Context, Finding};
 
 const SELECTION: Selection = Selection {
-    folders: &["web", "docs/design"],
+    folders: &[".", "web", "docs/design"],
     files: &[],
-    endings: &[".ts", ".tsx", ".js"],
+    endings: &[".ts", ".tsx", ".js", ".mjs"],
 };
 
 pub(crate) struct LintTs;
@@ -25,12 +25,14 @@ impl Check for LintTs {
 
 /// Warnings count as errors: the rule is zero warnings, zero errors.
 ///
-/// TypeScript files get the type-aware rules. Plain JavaScript (the docs page script) has no
+/// TypeScript files get the type-aware rules. Plain JavaScript (the docs page script, root configs) has no
 /// types to check, so it gets every other rule.
 fn lint(root: &Path, files: &[String]) -> anyhow::Result<Vec<Finding>> {
-    let (scripts, typed): (Vec<&String>, Vec<&String>) = files
-        .iter()
-        .partition(|file| Path::new(file).extension().is_some_and(|e| e == "js"));
+    let (scripts, typed): (Vec<&String>, Vec<&String>) = files.iter().partition(|file| {
+        Path::new(file)
+            .extension()
+            .is_some_and(|e| e == "js" || e == "mjs")
+    });
     let mut findings = lint_group(root, &typed, true)?;
     findings.extend(lint_group(root, &scripts, false)?);
     Ok(findings)

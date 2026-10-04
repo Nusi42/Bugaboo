@@ -4,8 +4,8 @@ use super::node_tool::{Selection, unformatted};
 use super::{Check, Context, Finding};
 
 const SELECTION: Selection = Selection {
-    folders: &["web", "tools", "design", "messages", "docs/design"],
-    files: &["package.json", ".oxfmtrc.json", ".oxlintrc.json"],
+    folders: &[".", "web", "tools", "design", "messages", "docs/design"],
+    files: &[],
     endings: &[".ts", ".tsx", ".js", ".mjs", ".json"],
 };
 
