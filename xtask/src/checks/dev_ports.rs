@@ -138,7 +138,6 @@ fn check_config(path: &str, text: &str) -> Vec<Finding> {
             "A port is typed as a number. Use `readPorts()` so it comes from {PORTS_FILE}."
         ));
     }
-    let strict = text.matches("strictPort: true").count();
     if path.contains("playwright.config") {
         if text.contains("webServer") && !text.contains("reuseExistingServer: false") {
             problem(
@@ -153,20 +152,44 @@ fn check_config(path: &str, text: &str) -> Vec<Finding> {
             &["api"]
         };
         for block in blocks {
-            if !text.contains(&format!("{block}: {{")) {
+            let Some(body) = block_body(text, block) else {
                 problem(format!(
                     "Add `{block}: {{ port: ports.<name>, strictPort: true }}`; every dev server needs its port from {PORTS_FILE}."
                 ));
+                continue;
+            };
+            if !body.contains("port: ports.") {
+                problem(format!(
+                    "The `{block}` block must set `port: ports.<name>`, read from {PORTS_FILE}."
+                ));
             }
-        }
-        if strict < blocks.len() || text.matches("port:").count() > strict {
-            problem(
-                "Every `port:` needs `strictPort: true` next to it, so a busy port fails loudly."
-                    .to_owned(),
-            );
+            if !body.contains("strictPort: true") {
+                problem(format!(
+                    "The `{block}` block must set `strictPort: true`, so a busy port fails loudly."
+                ));
+            }
         }
     }
     findings
+}
+
+/// The text between the braces of `name: { … }`, if the block exists.
+fn block_body<'a>(text: &'a str, name: &str) -> Option<&'a str> {
+    let start = text.find(&format!("{name}: {{"))? + name.len() + 3;
+    let mut depth = 1_usize;
+    for (offset, character) in text[start..].char_indices() {
+        match character {
+            '{' => depth += 1,
+            '}' => {
+                depth -= 1;
+                if depth == 0 {
+                    return Some(&text[start..start + offset]);
+                }
+            }
+            _ => {}
+        }
+    }
+    None
 }
 
 /// Lines that name a default framework port. Only lines that talk about ports or addresses
@@ -260,6 +283,14 @@ const ports = readPorts();
 export default { server: { port: ports.web, strictPort: true } };
 ";
         assert!(messages("web/app/vite.config.ts", no_preview).contains("preview"));
+    }
+
+    #[test]
+    fn block_without_a_port_from_ports_fails() {
+        let no_port = GOOD.replace("port: ports.webPreview, ", "");
+        assert!(messages("web/app/vite.config.ts", &no_port).contains("preview"));
+        let literal = GOOD.replace("port: ports.webPreview", "port: 47299");
+        assert!(messages("web/app/vite.config.ts", &literal).contains("preview"));
     }
 
     #[test]
