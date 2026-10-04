@@ -1,0 +1,353 @@
+//! Database test harness: runs one async test body against SQLite and PostgreSQL, each time with
+//! a brand-new empty database (ADR-0003, architecture §11 "Database tests").
+//!
+//! ```no_run
+//! #[tokio::test]
+//! async fn adds_an_issue() -> bb_testing::TestResult {
+//!     bb_testing::each_database("adds_an_issue", async |db| {
+//!         let pool = db.pool(); // an `sqlx::AnyPool`; `db.url()` is there for typed pools
+//!         // ... the same assertions for every database ...
+//!         Ok(())
+//!     })
+//!     .await
+//! }
+//! ```
+//!
+//! Which databases run is chosen by `BB_TEST_DATABASES` (`sqlite`, `postgres`, or both separated
+//! by a comma; default `sqlite`). `cargo xtask db run -- cargo test` and `cargo xtask ci` set
+//! everything up, including `BB_TEST_POSTGRES_URL` (the throwaway cluster) and `BB_DB_PARITY_FILE`
+//! (the record that ARCH-DB-PARITY reads). A test whose body panics leaves its PostgreSQL database
+//! behind; `cargo xtask db reset` clears the cluster.
+
+#![forbid(unsafe_code)]
+
+use std::error::Error;
+use std::fmt::Write as _;
+use std::fs::OpenOptions;
+use std::io::Write as _;
+use std::path::Path;
+use std::sync::Once;
+use std::sync::atomic::{AtomicU64, Ordering};
+use std::time::{SystemTime, UNIX_EPOCH};
+
+use sqlx::any::AnyPoolOptions;
+use sqlx::{AnyPool, AssertSqlSafe, Connection as _, Executor as _, PgConnection};
+
+/// Names the databases to run on, comma separated.
+const DATABASES_VARIABLE: &str = "BB_TEST_DATABASES";
+/// The URL of the throwaway PostgreSQL (its maintenance database).
+const POSTGRES_URL_VARIABLE: &str = "BB_TEST_POSTGRES_URL";
+/// The file that records which test ran on which database.
+const RECORD_VARIABLE: &str = "BB_DB_PARITY_FILE";
+
+/// What a test body returns.
+pub type TestResult = Result<(), Box<dyn Error + Send + Sync>>;
+
+/// The databases Bugaboo supports.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum DatabaseKind {
+    /// SQLite in a temporary file.
+    Sqlite,
+    /// PostgreSQL, a fresh database in the throwaway cluster.
+    Postgres,
+}
+
+impl DatabaseKind {
+    /// The name used in `BB_TEST_DATABASES` and in the parity record.
+    #[must_use]
+    pub const fn name(self) -> &'static str {
+        match self {
+            Self::Sqlite => "sqlite",
+            Self::Postgres => "postgres",
+        }
+    }
+}
+
+/// One empty database for one test run.
+#[derive(Debug)]
+pub struct TestDatabase {
+    kind: DatabaseKind,
+    url: String,
+    pool: AnyPool,
+}
+
+impl TestDatabase {
+    /// Which database this is, for the rare dialect-specific assertion.
+    #[must_use]
+    pub const fn kind(&self) -> DatabaseKind {
+        self.kind
+    }
+
+    /// The connection URL of this database, for code that builds its own typed pool.
+    #[must_use]
+    pub fn url(&self) -> &str {
+        &self.url
+    }
+
+    /// A pool for this database. Placeholders are `$1`, `$2`, … on both databases.
+    #[must_use]
+    pub const fn pool(&self) -> &AnyPool {
+        &self.pool
+    }
+}
+
+/// Runs `body` once for every database selected by `BB_TEST_DATABASES`, each with a new empty
+/// database that is removed afterwards. `test_name` is what the parity record shows.
+///
+/// # Errors
+///
+/// Returns the first error of the setup, the body or the cleanup.
+pub async fn each_database<F>(test_name: &str, body: F) -> TestResult
+where
+    F: AsyncFn(&TestDatabase) -> TestResult,
+{
+    install_drivers();
+    let selected = selected(std::env::var(DATABASES_VARIABLE).ok().as_deref())?;
+    for kind in selected {
+        match kind {
+            DatabaseKind::Sqlite => run_sqlite(test_name, &body).await?,
+            DatabaseKind::Postgres => run_postgres(test_name, &body).await?,
+        }
+        record(kind, test_name)?;
+    }
+    Ok(())
+}
+
+fn install_drivers() {
+    static ONCE: Once = Once::new();
+    ONCE.call_once(sqlx::any::install_default_drivers);
+}
+
+/// Reads the value of `BB_TEST_DATABASES`; no value means SQLite only.
+fn selected(value: Option<&str>) -> Result<Vec<DatabaseKind>, String> {
+    let Some(value) = value else {
+        return Ok(vec![DatabaseKind::Sqlite]);
+    };
+    let mut kinds = Vec::new();
+    for name in value
+        .split(',')
+        .map(str::trim)
+        .filter(|name| !name.is_empty())
+    {
+        let kind = match name {
+            "sqlite" => DatabaseKind::Sqlite,
+            "postgres" => DatabaseKind::Postgres,
+            other => {
+                return Err(format!(
+                    "{DATABASES_VARIABLE} names the unknown database `{other}`. Use `sqlite`, \
+                     `postgres` or both separated by a comma."
+                ));
+            }
+        };
+        if !kinds.contains(&kind) {
+            kinds.push(kind);
+        }
+    }
+    if kinds.is_empty() {
+        return Err(format!(
+            "{DATABASES_VARIABLE} is empty. Use `sqlite`, `postgres` or both separated by a comma."
+        ));
+    }
+    Ok(kinds)
+}
+
+async fn run_sqlite<F>(test_name: &str, body: &F) -> TestResult
+where
+    F: AsyncFn(&TestDatabase) -> TestResult,
+{
+    // The folder (and with it the database file) is deleted when this function ends.
+    let folder = tempfile::Builder::new().prefix("bb-test-").tempdir()?;
+    let url = sqlite_url(&folder.path().join("test.db"));
+    let pool = AnyPoolOptions::new()
+        .max_connections(5)
+        .connect(&url)
+        .await?;
+    let database = TestDatabase {
+        kind: DatabaseKind::Sqlite,
+        url,
+        pool,
+    };
+    let result = body(&database).await;
+    database.pool.close().await;
+    result.map_err(|error| with_context(test_name, DatabaseKind::Sqlite, &*error))
+}
+
+async fn run_postgres<F>(test_name: &str, body: &F) -> TestResult
+where
+    F: AsyncFn(&TestDatabase) -> TestResult,
+{
+    let admin_url = std::env::var(POSTGRES_URL_VARIABLE).map_err(|_| {
+        format!(
+            "{POSTGRES_URL_VARIABLE} is not set, but {DATABASES_VARIABLE} asks for postgres. Run \
+             the tests with `cargo xtask db run -- cargo test` (or `cargo xtask ci`)."
+        )
+    })?;
+    let name = unique_database_name();
+    let mut admin = PgConnection::connect(&admin_url).await?;
+    // The name is made here from digits and letters only (`unique_database_name`), so it is safe.
+    admin
+        .execute(AssertSqlSafe(format!("CREATE DATABASE \"{name}\"")))
+        .await?;
+    let url = with_database(&admin_url, &name);
+    let outcome = run_on_new_postgres(&url, body).await;
+    let dropped = admin
+        .execute(AssertSqlSafe(format!(
+            "DROP DATABASE IF EXISTS \"{name}\" WITH (FORCE)"
+        )))
+        .await;
+    outcome.map_err(|error| with_context(test_name, DatabaseKind::Postgres, &*error))?;
+    dropped?;
+    Ok(())
+}
+
+async fn run_on_new_postgres<F>(url: &str, body: &F) -> TestResult
+where
+    F: AsyncFn(&TestDatabase) -> TestResult,
+{
+    let pool = AnyPoolOptions::new()
+        .max_connections(5)
+        .connect(url)
+        .await?;
+    let database = TestDatabase {
+        kind: DatabaseKind::Postgres,
+        url: url.to_owned(),
+        pool,
+    };
+    let result = body(&database).await;
+    database.pool.close().await;
+    result
+}
+
+fn with_context(
+    test_name: &str,
+    kind: DatabaseKind,
+    error: &(dyn Error + Send + Sync),
+) -> Box<dyn Error + Send + Sync> {
+    format!("{test_name} failed on {}: {error}", kind.name()).into()
+}
+
+/// A database name that cannot clash with another test run, even in parallel processes.
+fn unique_database_name() -> String {
+    static COUNTER: AtomicU64 = AtomicU64::new(0);
+    let nanos = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map_or(0, |time| time.as_nanos());
+    format!(
+        "bbtest_{}_{}_{nanos}",
+        std::process::id(),
+        COUNTER.fetch_add(1, Ordering::Relaxed)
+    )
+}
+
+/// The URL with its database (the last path segment) replaced; a query string is kept.
+fn with_database(url: &str, database: &str) -> String {
+    let (base, query) = url
+        .split_once('?')
+        .map_or((url, None), |(base, query)| (base, Some(query)));
+    let server = base.rsplit_once('/').map_or(base, |(server, _)| server);
+    let mut result = format!("{server}/{database}");
+    if let Some(query) = query {
+        result.push('?');
+        result.push_str(query);
+    }
+    result
+}
+
+/// `sqlite:<path>?mode=rwc` (no `//`, which would read `C:` as a host name) with the characters that mean something in a URL escaped.
+fn sqlite_url(path: &Path) -> String {
+    let mut url = String::from("sqlite:");
+    for character in path.to_string_lossy().replace('\\', "/").chars() {
+        match character {
+            ' ' | '%' | '?' | '#' => {
+                let _ = write!(url, "%{:02X}", u32::from(character));
+            }
+            other => url.push(other),
+        }
+    }
+    url.push_str("?mode=rwc");
+    url
+}
+
+/// Appends `<database> <test name>` to the parity record, when one is configured.
+fn record(kind: DatabaseKind, test_name: &str) -> TestResult {
+    let Ok(path) = std::env::var(RECORD_VARIABLE) else {
+        return Ok(());
+    };
+    let line = format!(
+        "{} {}\n",
+        kind.name(),
+        test_name.replace(char::is_whitespace, "_")
+    );
+    // One write call per line keeps lines whole when test programs run side by side.
+    OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(path)?
+        .write_all(line.as_bytes())?;
+    Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    // Only the test programs in tests/ use tokio; named here to keep the lint on.
+    use tokio as _;
+
+    #[test]
+    fn without_a_setting_only_sqlite_runs() {
+        assert_eq!(selected(None).unwrap(), [DatabaseKind::Sqlite]);
+    }
+
+    #[test]
+    fn both_databases_can_be_selected_in_any_order_without_repeats() {
+        assert_eq!(
+            selected(Some(" postgres, sqlite ,postgres")).unwrap(),
+            [DatabaseKind::Postgres, DatabaseKind::Sqlite]
+        );
+    }
+
+    #[test]
+    fn bad_example_unknown_or_empty_selections_are_refused() {
+        assert!(selected(Some("mysql")).unwrap_err().contains("mysql"));
+        assert!(selected(Some(" , ")).is_err());
+    }
+
+    #[test]
+    fn the_database_of_a_url_is_replaced_and_the_query_kept() {
+        assert_eq!(
+            with_database("postgres://u:p@127.0.0.1:1/postgres", "t1"),
+            "postgres://u:p@127.0.0.1:1/t1"
+        );
+        assert_eq!(
+            with_database("postgres://u:p@h:1/postgres?sslmode=disable", "t1"),
+            "postgres://u:p@h:1/t1?sslmode=disable"
+        );
+    }
+
+    #[test]
+    fn sqlite_urls_use_forward_slashes_and_escape_url_characters() {
+        let url = sqlite_url(Path::new("C:\\Users\\a b\\test.db"));
+        assert_eq!(url, "sqlite:C:/Users/a%20b/test.db?mode=rwc");
+    }
+
+    #[test]
+    fn database_names_are_unique_and_safe_in_sql() {
+        let first = unique_database_name();
+        assert_ne!(first, unique_database_name());
+        assert!(first.chars().all(|c| c.is_ascii_alphanumeric() || c == '_'));
+    }
+
+    #[test]
+    fn names_in_the_record_have_no_spaces() {
+        let folder = tempfile::tempdir().unwrap();
+        let file = folder.path().join("record.txt");
+        // Not set through the environment (tests run in parallel): write the same line format.
+        let line = format!(
+            "{} {}\n",
+            DatabaseKind::Postgres.name(),
+            "a b".replace(' ', "_")
+        );
+        std::fs::write(&file, &line).unwrap();
+        assert_eq!(std::fs::read_to_string(&file).unwrap(), "postgres a_b\n");
+    }
+}
