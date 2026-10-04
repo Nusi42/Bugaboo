@@ -22,6 +22,7 @@ settings! {
         changed_by: Administrators,
         help: message::SETTING_SECURITY_SESSION_IDLE_MINUTES_HELP,
         lockable: false,
+        bounds: (5, 1440),
     }
 
     /// How many hours a sign-in can last at most, however busy the person is.
@@ -32,6 +33,7 @@ settings! {
         changed_by: Administrators,
         help: message::SETTING_SECURITY_SESSION_ABSOLUTE_HOURS_HELP,
         lockable: false,
+        bounds: (1, 720),
     }
 
     /// The roles whose members must use two-step sign-in (a list separated by commas). Takes

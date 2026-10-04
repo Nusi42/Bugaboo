@@ -18,9 +18,9 @@ use zeroize::Zeroizing;
 use super::ctx::{AppError, Ctx, by, change_failed, changed, entity, internal, person_key, set_to};
 use super::store::AuthStore;
 use super::types::{
-    AuthStatus, AuthenticateQuery, Authenticated, Done, EndSession, PasskeySecondStep, PersonView,
-    SecondStep, SecondStepMethods, SessionView, SessionsQuery, SignIn, SignOut, SignOutEverywhere,
-    Started, StatusQuery,
+    AuthStatus, AuthenticateQuery, Authenticated, Done, EndSession, MAX_SESSIONS_LISTED,
+    PasskeySecondStep, PersonView, SecondStep, SecondStepMethods, SessionList, SessionView,
+    SessionsQuery, SignIn, SignOut, SignOutEverywhere, Started, StatusQuery,
 };
 
 /// Long text in the key of a failure counter is cut here: the key only has to tell accounts
@@ -118,7 +118,11 @@ pub(crate) async fn purge<S: AuthStore>(
 /// `auth.wrong_credentials` for an unknown address and a wrong password alike, 429 when the
 /// account has used up its failed tries.
 pub async fn sign_in<S: AuthStore>(ctx: &Ctx<'_, S>, input: SignIn) -> Result<Started, AppError> {
-    let SignIn { email, password } = input;
+    let SignIn {
+        email,
+        password,
+        previous_session,
+    } = input;
     let key = format!(
         "account:{}",
         email
@@ -128,7 +132,7 @@ pub async fn sign_in<S: AuthStore>(ctx: &Ctx<'_, S>, input: SignIn) -> Result<St
             .take(KEY_CHARS)
             .collect::<String>()
     );
-    ctx.limit_open(&key)?;
+    let slot = ctx.reserve(key)?;
     let account = match EmailAddress::parse(&email) {
         Some(address) => ctx
             .store()
@@ -152,11 +156,11 @@ pub async fn sign_in<S: AuthStore>(ctx: &Ctx<'_, S>, input: SignIn) -> Result<St
         ctx.services.hasher.verify(password.clone(), stored).await?
     };
     let Some(account) = account.filter(|_| verdict.matches) else {
-        ctx.limit_failed(&key, None).await;
+        ctx.slot_failed(slot, None).await;
         ctx.note(SecurityAction::SignInFailed, None, None).await;
         return Err(ErrorCode::WrongCredentials.into());
     };
-    ctx.services.limiter.succeeded(&key);
+    ctx.slot_succeeded(slot);
 
     let person = account.person;
     let methods = ctx.second_step_methods(person.id).await?;
@@ -172,17 +176,21 @@ pub async fn sign_in<S: AuthStore>(ctx: &Ctx<'_, S>, input: SignIn) -> Result<St
     } else {
         None
     };
-    let event = ctx.event(
-        by(person.id),
-        entity("session", new.session.id)?,
-        vec![set_to("stage", json!(stage.code()))],
-    )?;
+    let old = ctx.previous_session(previous_session.as_deref()).await?;
+    let mut changes = vec![set_to("stage", json!(stage.code()))];
+    if old.is_some() {
+        changes.push(changed("previous_session"));
+    }
+    let event = ctx.event(by(person.id), entity("session", new.session.id)?, changes)?;
     let (store, session, person_id, now) = (ctx.store(), new.session.clone(), person.id, ctx.now());
     let purge_settings = settings.clone();
     store
         .record_change(&event, move |transaction| {
             Box::pin(async move {
                 purge::<S>(transaction, &purge_settings, now).await?;
+                if let Some(old) = old {
+                    S::delete_session(transaction, old).await?;
+                }
                 if let Some(hash) = &rehash {
                     S::set_password(transaction, person_id, hash, now).await?;
                 }
@@ -225,9 +233,8 @@ pub async fn second_step<S: AuthStore>(
     let pending = ctx
         .session(&input.session_token, SessionStage::SecondStepPending)
         .await?;
-    let person = pending.person;
-    let key = person_key(person.id);
-    ctx.limit_open(&key)?;
+    let person = pending.person.clone();
+    let slot = ctx.reserve(person_key(person.id))?;
     let now = ctx.now();
     let wrong = || AppError::Refused(ErrorCode::WrongSecondStepCode);
 
@@ -263,9 +270,8 @@ pub async fn second_step<S: AuthStore>(
         }
     }
     if accepted_step.is_none() && backup.is_none() {
-        ctx.limit_failed(&key, Some(person.id)).await;
-        ctx.note(SecurityAction::SecondStepFailed, Some(person.id), None)
-            .await;
+        ctx.second_step_failed(slot, &pending, SecurityAction::SecondStepFailed)
+            .await?;
         return Err(wrong());
     }
 
@@ -301,13 +307,12 @@ pub async fn second_step<S: AuthStore>(
     if let Err(error) = result {
         let error = change_failed::<S>(&error, Some(ErrorCode::WrongSecondStepCode));
         if matches!(error, AppError::Refused(_)) {
-            ctx.limit_failed(&key, Some(person.id)).await;
-            ctx.note(SecurityAction::SecondStepFailed, Some(person.id), None)
-                .await;
+            ctx.second_step_failed(slot, &pending, SecurityAction::SecondStepFailed)
+                .await?;
         }
         return Err(error);
     }
-    ctx.services.limiter.succeeded(&key);
+    ctx.second_step_done(slot, &pending);
     if accepted_step.is_none() {
         ctx.note(SecurityAction::BackupCodeUsed, Some(person.id), None)
             .await;
@@ -334,9 +339,8 @@ pub async fn passkey_second_step<S: AuthStore>(
     let pending = ctx
         .session(&input.session_token, SessionStage::SecondStepPending)
         .await?;
-    let person = pending.person;
-    let key = person_key(person.id);
-    ctx.limit_open(&key)?;
+    let person = pending.person.clone();
+    let slot = ctx.reserve(person_key(person.id))?;
     let (stored, credentials) = ctx.credentials(person.id).await?;
     let rejected = || AppError::Refused(ErrorCode::PasskeyRejected);
     let check = match bb_auth::ChallengeId::parse(&input.challenge_id) {
@@ -352,17 +356,20 @@ pub async fn passkey_second_step<S: AuthStore>(
     let check = match check {
         Ok(check) => check,
         Err(bb_auth::AuthError::Challenge | bb_auth::AuthError::Passkey) => {
-            ctx.limit_failed(&key, Some(person.id)).await;
-            ctx.note(SecurityAction::PasskeySignInFailed, Some(person.id), None)
-                .await;
+            ctx.second_step_failed(slot, &pending, SecurityAction::PasskeySignInFailed)
+                .await?;
             return Err(rejected());
         }
         Err(error) => return Err(error.into()),
     };
-    let used = stored
+    let Some(used) = stored
         .iter()
         .find(|passkey| passkey.credential_id == check.credential_id)
-        .ok_or_else(rejected)?;
+    else {
+        ctx.second_step_failed(slot, &pending, SecurityAction::PasskeySignInFailed)
+            .await?;
+        return Err(rejected());
+    };
     let (used_id, data) = (used.id, check.updated.map(|updated| updated.data));
 
     let new = ctx.new_session(person.id, SessionStage::Active)?;
@@ -388,7 +395,7 @@ pub async fn passkey_second_step<S: AuthStore>(
         })
         .await
         .map_err(|error| change_failed::<S>(&error, None))?;
-    ctx.services.limiter.succeeded(&key);
+    ctx.second_step_done(slot, &pending);
     ctx.note(
         SecurityAction::SecondStepSucceeded,
         Some(person.id),
@@ -510,7 +517,7 @@ pub async fn end_session<S: AuthStore>(
 pub async fn sessions<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: SessionsQuery,
-) -> Result<Vec<SessionView>, AppError> {
+) -> Result<SessionList, AppError> {
     let record = ctx.active(&input.session_token).await?;
     let settings = ctx.settings().await?;
     let now = ctx.now().as_second();
@@ -519,7 +526,7 @@ pub async fn sessions<S: AuthStore>(
         .sessions_of(record.person.id)
         .await
         .map_err(|error| internal::<S>(&error))?;
-    Ok(all
+    let mut sessions: Vec<SessionView> = all
         .into_iter()
         .filter(|session| {
             session.stage == SessionStage::Active
@@ -540,5 +547,11 @@ pub async fn sessions<S: AuthStore>(
                 system: device.system.map(str::to_owned),
             }
         })
-        .collect())
+        .collect();
+    let truncated = sessions.len() > MAX_SESSIONS_LISTED;
+    sessions.truncate(MAX_SESSIONS_LISTED);
+    Ok(SessionList {
+        sessions,
+        truncated,
+    })
 }

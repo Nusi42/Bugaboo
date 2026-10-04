@@ -37,6 +37,8 @@ words! {
         SecondStepSucceeded => "second_step.succeeded",
         /// The second step was wrong.
         SecondStepFailed => "second_step.failed",
+        /// A half-finished sign-in was ended after too many wrong codes.
+        SecondStepGivenUp => "second_step.given_up",
         /// A backup code was used up.
         BackupCodeUsed => "backup_code.used",
         /// A person signed in with a passkey alone.

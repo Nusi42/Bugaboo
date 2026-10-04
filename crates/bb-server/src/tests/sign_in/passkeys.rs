@@ -37,6 +37,7 @@ async fn add(
             Rig::info(),
             PasskeyRegistrationQuery {
                 session_token: session.to_owned(),
+                password: PASSWORD.to_owned(),
             },
         )
         .await?;
@@ -50,6 +51,7 @@ async fn add(
                 challenge_id: challenge.challenge_id,
                 credential: serde_json::to_value(answer)?,
                 label: label.to_owned(),
+                password: PASSWORD.to_owned(),
             },
         )
         .await?)
@@ -301,6 +303,7 @@ async fn auth_02_a_passkey_signs_in_on_its_own() -> Outcome {
                 PasskeySignIn {
                     challenge_id: challenge_id.to_owned(),
                     credential,
+                    previous_session: None,
                 },
             )
         };
@@ -386,10 +389,55 @@ async fn auth_02_without_a_host_name_in_the_public_address_passkeys_are_off() ->
                 Rig::info(),
                 PasskeyRegistrationQuery {
                     session_token: admin.session_token,
+                    password: PASSWORD.to_owned(),
                 },
             )
             .await;
         assert_eq!(refused(registration), Some(ErrorCode::PasskeyRejected));
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn sec_12_a_stolen_session_cannot_add_a_passkey_without_the_password() -> Outcome {
+    each_database("sec_12_passkey_needs_password", async |db| {
+        let rig = Rig::start(db, 10).await?;
+        let admin = rig.admin("ada@example.test").await?;
+        let stolen = admin.session_token.clone();
+        let options = |password: &str| {
+            rig.api().passkey_registration_options(
+                Rig::info(),
+                PasskeyRegistrationQuery {
+                    session_token: stolen.clone(),
+                    password: password.to_owned(),
+                },
+            )
+        };
+        assert_eq!(
+            refused(options("Wrong-Password-1").await),
+            Some(ErrorCode::WrongCredentials)
+        );
+        // Even with a challenge the person asked for, the thief needs the password to add it.
+        let challenge = options(PASSWORD).await?;
+        let mut thief = SoftPasskey::new(true);
+        let answer =
+            thief.do_registration(origin()?, serde_json::from_value(challenge.options)?)?;
+        let result = rig
+            .api()
+            .add_passkey(
+                Rig::info(),
+                AddPasskey {
+                    session_token: stolen.clone(),
+                    challenge_id: challenge.challenge_id,
+                    credential: serde_json::to_value(answer)?,
+                    label: "Thief".to_owned(),
+                    password: "Wrong-Password-1".to_owned(),
+                },
+            )
+            .await;
+        assert_eq!(refused(result), Some(ErrorCode::WrongCredentials));
+        assert!(rig.storage.passkeys_of(admin.person.id).await?.is_empty());
         Ok(())
     })
     .await

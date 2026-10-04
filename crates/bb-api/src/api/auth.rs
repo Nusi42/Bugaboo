@@ -134,6 +134,18 @@ impl<S: Send + Sync> FromRequestParts<S> for Session {
     }
 }
 
+/// The secret in the session cookie when there is one: signing in from a browser that still has
+/// a session ends that old session. No cookie is no problem.
+pub(crate) struct PreviousSession(pub(crate) Option<String>);
+
+impl<S: Send + Sync> FromRequestParts<S> for PreviousSession {
+    type Rejection = ApiError;
+
+    async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self, ApiError> {
+        Ok(Self(Cookie::Session.read(&parts.headers)))
+    }
+}
+
 /// Who a person is, as the browser app shows them.
 #[derive(Serialize, ToSchema)]
 pub(crate) struct PersonBody {
@@ -172,8 +184,9 @@ pub(crate) struct SecondStepBody {
 /// The answer to signing in. The cookies come with it.
 #[derive(Serialize, ToSchema)]
 pub(crate) struct SignedInBody {
-    /// Who signed in.
-    person: PersonBody,
+    /// Who signed in. Left out while the second step is still to do: a password alone shows
+    /// nothing about the person.
+    person: Option<PersonBody>,
     /// When present, the password was right but the person still has to finish with one of
     /// these ways before anything else opens.
     second_step: Option<SecondStepBody>,
@@ -182,7 +195,10 @@ pub(crate) struct SignedInBody {
 /// The answer for a new session: the body, the session cookie and the CSRF cookie.
 pub(crate) fn signed_in(started: &Started) -> Result<Response, ApiError> {
     let body = SignedInBody {
-        person: PersonBody::from(&started.person),
+        person: started
+            .second_step_needed
+            .is_none()
+            .then(|| PersonBody::from(&started.person)),
         second_step: started.second_step_needed.map(|methods| SecondStepBody {
             code_app: methods.code_app,
             passkey: methods.passkey,

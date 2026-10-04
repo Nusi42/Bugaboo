@@ -127,6 +127,7 @@ impl Rig {
                     display_name: "Ada Admin".to_owned(),
                     email: email.to_owned(),
                     password: PASSWORD.to_owned(),
+                    previous_session: None,
                 },
             )
             .await
@@ -155,6 +156,7 @@ impl Rig {
                     secret: secret_of(&created.link_path),
                     display_name: "Bob Builder".to_owned(),
                     password: PASSWORD.to_owned(),
+                    previous_session: None,
                 },
             )
             .await
@@ -168,6 +170,7 @@ impl Rig {
                 SignIn {
                     email: email.to_owned(),
                     password: password.to_owned(),
+                    previous_session: None,
                 },
             )
             .await

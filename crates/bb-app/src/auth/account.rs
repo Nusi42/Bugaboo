@@ -13,7 +13,9 @@ use bb_core::sign_in::{SecurityAction, SessionStage, SetupCode};
 use serde_json::json;
 use zeroize::Zeroizing;
 
-use super::ctx::{AppError, Ctx, by, change_failed, changed, entity, internal, set_to};
+use super::ctx::{
+    AppError, Ctx, by, change_failed, changed, entity, fixed_entity, internal, set_to,
+};
 use super::store::AuthStore;
 use super::types::{
     AcceptInvitation, ChangePassword, CompleteSetup, IssueSetupCode, SignUp, Started,
@@ -21,8 +23,6 @@ use super::types::{
 
 /// The longest display name, in characters.
 const DISPLAY_NAME_MAX: usize = 100;
-/// Failed setup codes are counted under this key.
-const SETUP_KEY: &str = "setup";
 
 /// The password as a new password: the rules of AUTH-01, as the error a person can read.
 pub(crate) fn check_new_password(password: &str) -> Result<(), AppError> {
@@ -99,7 +99,7 @@ pub async fn issue_setup_code<S: AuthStore>(
     });
     let event = ctx.event(
         Actor::System,
-        entity("setup_code", UserId::generate(&mut ctx.ids()))?,
+        fixed_entity("setup_code", "first-start")?,
         vec![changed("setup_code")],
     )?;
     let store = ctx.store();
@@ -108,7 +108,7 @@ pub async fn issue_setup_code<S: AuthStore>(
             Box::pin(async move {
                 match &entry {
                     Some(entry) => S::put_setup_code(transaction, entry).await,
-                    None => S::take_setup_code(transaction).await.map(|_| ()),
+                    None => S::clear_setup_code(transaction).await,
                 }
             })
         })
@@ -127,7 +127,14 @@ pub async fn complete_setup<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: CompleteSetup,
 ) -> Result<Started, AppError> {
-    ctx.limit_open(SETUP_KEY)?;
+    // Wrong codes are counted per network, so nobody far away can lock the person at the console out.
+    let slot = ctx.reserve(format!(
+        "setup:{}",
+        ctx.request
+            .network
+            .as_ref()
+            .map_or_else(|| "-".to_owned(), ToString::to_string)
+    ))?;
     let wrong = || AppError::Refused(ErrorCode::WrongSetupCode);
     let stored = ctx
         .store()
@@ -145,11 +152,13 @@ pub async fn complete_setup<S: AuthStore>(
             (&stored, &typed),
             (Some(stored), Some(typed)) if same_digest(&stored.code_hash, typed)
         );
-    if !right {
-        ctx.limit_failed(SETUP_KEY, None).await;
+    let (true, Some(typed)) = (right, typed) else {
+        ctx.slot_failed(slot, None).await;
         ctx.note(SecurityAction::SetupFailed, None, None).await;
         return Err(wrong());
-    }
+    };
+    // The code is right: whatever is wrong with the rest is no guess at the code.
+    ctx.slot_succeeded(slot);
     let email = EmailAddress::parse(&input.email).ok_or(ErrorCode::InvalidRequest)?;
     let display_name = clean_display_name(&input.display_name)?;
     check_new_password(&input.password)?;
@@ -159,6 +168,9 @@ pub async fn complete_setup<S: AuthStore>(
         .hash(Zeroizing::new(input.password))
         .await?;
     let person = ctx.new_person(display_name, &email, true);
+    let old = ctx
+        .previous_session(input.previous_session.as_deref())
+        .await?;
     let new = ctx.new_session(person.id, SessionStage::Active)?;
     let settings = ctx.settings().await?;
     let event = ctx.event(
@@ -171,8 +183,11 @@ pub async fn complete_setup<S: AuthStore>(
     store
         .record_change(&event, move |transaction| {
             Box::pin(async move {
-                if !S::take_setup_code(transaction).await? {
+                if !S::take_setup_code(transaction, &typed).await? {
                     return Err(S::aborted());
+                }
+                if let Some(old) = old {
+                    S::delete_session(transaction, old).await?;
                 }
                 S::insert_person(transaction, &stored_person, &hash, now).await?;
                 S::insert_session(transaction, &session).await
@@ -180,7 +195,6 @@ pub async fn complete_setup<S: AuthStore>(
         })
         .await
         .map_err(|error| change_failed::<S>(&error, Some(ErrorCode::WrongSetupCode)))?;
-    ctx.services.limiter.succeeded(SETUP_KEY);
     ctx.note(
         SecurityAction::SetupCompleted,
         Some(person.id),
@@ -214,6 +228,9 @@ pub async fn sign_up<S: AuthStore>(ctx: &Ctx<'_, S>, input: SignUp) -> Result<St
         .hash(Zeroizing::new(input.password))
         .await?;
     let person = ctx.new_person(display_name, &email, false);
+    let old = ctx
+        .previous_session(input.previous_session.as_deref())
+        .await?;
     let new = ctx.new_session(person.id, SessionStage::Active)?;
     let event = ctx.event(
         by(person.id),
@@ -225,6 +242,9 @@ pub async fn sign_up<S: AuthStore>(ctx: &Ctx<'_, S>, input: SignUp) -> Result<St
     let result = store
         .record_change(&event, move |transaction| {
             Box::pin(async move {
+                if let Some(old) = old {
+                    S::delete_session(transaction, old).await?;
+                }
                 S::insert_person(transaction, &stored_person, &hash, now).await?;
                 S::insert_session(transaction, &session).await
             })
@@ -282,6 +302,9 @@ pub async fn accept_invitation<S: AuthStore>(
         .hash(Zeroizing::new(input.password))
         .await?;
     let person = ctx.new_person(display_name, &email, false);
+    let old = ctx
+        .previous_session(input.previous_session.as_deref())
+        .await?;
     let new = ctx.new_session(person.id, SessionStage::Active)?;
     let settings = ctx.settings().await?;
     let event = ctx.event(
@@ -300,6 +323,9 @@ pub async fn accept_invitation<S: AuthStore>(
             Box::pin(async move {
                 if !S::use_invitation(transaction, invitation_id, now).await? {
                     return Err(S::aborted());
+                }
+                if let Some(old) = old {
+                    S::delete_session(transaction, old).await?;
                 }
                 S::insert_person(transaction, &stored_person, &hash, now).await?;
                 S::insert_session(transaction, &session).await

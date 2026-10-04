@@ -39,6 +39,7 @@ async fn accept(
                 secret: secret.to_owned(),
                 display_name: "Bob".to_owned(),
                 password: password.to_owned(),
+                previous_session: None,
             },
         )
         .await
@@ -127,10 +128,12 @@ async fn auth_06_an_administrator_invites_and_the_link_works_once() -> Outcome {
                 Rig::info(),
                 InvitationsQuery {
                     session_token: admin.session_token.clone(),
+                    cursor: None,
+                    limit: 50,
                 },
             )
             .await?;
-        assert!(open.is_empty());
+        assert!(open.items.is_empty());
         assert_eq!(
             action_count(&rig, SecurityAction::InvitationCreated).await?,
             1
@@ -169,6 +172,8 @@ async fn auth_06_only_administrators_manage_invitations() -> Outcome {
                 Rig::info(),
                 InvitationsQuery {
                     session_token: session.to_owned(),
+                    cursor: None,
+                    limit: 50,
                 },
             )
             .await;
@@ -180,9 +185,12 @@ async fn auth_06_only_administrators_manage_invitations() -> Outcome {
                 Rig::info(),
                 InvitationsQuery {
                     session_token: admin.session_token.clone(),
+                    cursor: None,
+                    limit: 50,
                 },
             )
-            .await?[0]
+            .await?
+            .items[0]
             .id;
         let revoke = |token: &str, id| {
             rig.api().revoke_invitation(
@@ -251,10 +259,15 @@ async fn auth_06_an_invitation_runs_out_after_seven_days() -> Outcome {
                 Rig::info(),
                 InvitationsQuery {
                     session_token: admin.session_token,
+                    cursor: None,
+                    limit: 50,
                 },
             )
             .await?;
-        assert!(open.is_empty(), "an invitation that ran out is not open");
+        assert!(
+            open.items.is_empty(),
+            "an invitation that ran out is not open"
+        );
         Ok(())
     })
     .await
@@ -294,6 +307,7 @@ async fn sign_up(
                 email: email.to_owned(),
                 display_name: "Eve".to_owned(),
                 password: password.to_owned(),
+                previous_session: None,
             },
         )
         .await
@@ -370,6 +384,18 @@ async fn auth_06_signing_up_is_off_by_default_and_only_administrators_change_the
             );
         }
         assert!(!policy(&rig, &admin.session_token).await?.enabled);
+        // The list is the value of one setting and is bounded: 100 are fine, 101 are refused.
+        let hundred: Vec<String> = (0..100)
+            .map(|number| format!("d{number}.example.test"))
+            .collect();
+        let hundred: Vec<&str> = hundred.iter().map(String::as_str).collect();
+        change_policy(&rig, &admin.session_token, true, &hundred).await?;
+        let mut more = hundred.clone();
+        more.push("one-more.example.test");
+        assert_eq!(
+            refused(change_policy(&rig, &admin.session_token, true, &more).await),
+            Some(ErrorCode::InvalidRequest)
+        );
         Ok(())
     })
     .await
@@ -435,6 +461,102 @@ async fn auth_06_signing_up_follows_the_rule_of_the_administrator() -> Outcome {
             action_count(&rig, SecurityAction::SignUpPolicyChanged).await?,
             3
         );
+        Ok(())
+    })
+    .await
+}
+
+async fn page(
+    rig: &Rig,
+    session: &str,
+    cursor: Option<String>,
+    limit: u32,
+) -> Result<bb_app::auth::InvitationPage, bb_app::auth::AppError> {
+    rig.api()
+        .invitations(
+            Rig::info(),
+            InvitationsQuery {
+                session_token: session.to_owned(),
+                cursor,
+                limit,
+            },
+        )
+        .await
+}
+
+#[tokio::test]
+async fn perf_02_invitations_are_listed_page_by_page_without_a_hidden_cap() -> Outcome {
+    each_database("perf_02_invitation_pages", async |db| {
+        let rig = Rig::start(db, 10).await?;
+        let admin = rig.admin("ada@example.test").await?;
+        let session = admin.session_token.as_str();
+        let mut made = Vec::new();
+        for number in 0..7 {
+            // Two invitations in the same second share a time: the ID breaks the tie.
+            if number % 2 == 0 {
+                rig.clock.advance(1);
+            }
+            invite(&rig, session, &format!("person{number}@example.test")).await?;
+            made.push(format!("person{number}@example.test"));
+        }
+        // Pages of three: 3, 3, 1, each with the cursor of the next, none twice.
+        let mut seen = Vec::new();
+        let mut seen_times = Vec::new();
+        let mut cursor = None;
+        let mut sizes = Vec::new();
+        loop {
+            let one = page(&rig, session, cursor.clone(), 3).await?;
+            sizes.push(one.items.len());
+            seen.extend(one.items.iter().map(|invitation| invitation.email.clone()));
+            seen_times.extend(one.items.iter().map(|invitation| invitation.created_at));
+            match one.next_cursor {
+                Some(next) => cursor = Some(next),
+                None => break,
+            }
+        }
+        assert_eq!(sizes, [3, 3, 1]);
+        let mut sorted = seen.clone();
+        sorted.sort();
+        sorted.dedup();
+        assert_eq!(sorted.len(), 7, "{seen:?}");
+        // Newest first, over all the pages.
+        assert_eq!(seen_times.len(), 7);
+        assert!(
+            seen_times.windows(2).all(|pair| pair[0] >= pair[1]),
+            "{seen_times:?}"
+        );
+        // A page is never bigger than the maximum, and zero means one.
+        assert_eq!(page(&rig, session, None, 100_000).await?.items.len(), 7);
+        assert_eq!(page(&rig, session, None, 0).await?.items.len(), 1);
+        // A cursor that is not one is refused.
+        for bad in [
+            "",
+            "x",
+            "1.2",
+            "1.not-an-id",
+            "99999999999999999999.00000000-0000-4000-8000-000000000000",
+        ] {
+            assert_eq!(
+                refused(page(&rig, session, Some(bad.to_owned()), 3).await),
+                Some(ErrorCode::InvalidRequest),
+                "{bad}"
+            );
+        }
+        // More than 200 open invitations are all reachable (there is no silent cap).
+        for number in 7..205 {
+            invite(&rig, session, &format!("person{number}@example.test")).await?;
+        }
+        let mut total = 0;
+        let mut cursor = None;
+        loop {
+            let one = page(&rig, session, cursor.clone(), 100).await?;
+            total += one.items.len();
+            match one.next_cursor {
+                Some(next) => cursor = Some(next),
+                None => break,
+            }
+        }
+        assert_eq!(total, 205);
         Ok(())
     })
     .await

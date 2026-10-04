@@ -357,7 +357,12 @@ mod tests {
         assert_eq!(hsts_max_age(&own), Some(HSTS_MAX_AGE_SELF_SIGNED));
         let local = settings(&["port=1", "tls_mode=off"]);
         assert_eq!(hsts_max_age(&local), None);
-        let proxied = settings(&["port=1", "tls_mode=off", "trusted_proxies=10.0.0.5"]);
+        let proxied = settings(&[
+            "port=1",
+            "tls_mode=off",
+            "trusted_proxies=10.0.0.5",
+            "public_url=https://bugaboo.example.test",
+        ]);
         assert_eq!(hsts_max_age(&proxied), Some(HSTS_MAX_AGE_TRUSTED));
         let provided = settings(&["port=1", "tls_mode=files", "tls_cert=a", "tls_key=b"]);
         assert_eq!(hsts_max_age(&provided), Some(HSTS_MAX_AGE_TRUSTED));

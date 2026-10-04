@@ -105,6 +105,7 @@ pub struct SettingDefinition {
     changed_by: ChangedBy,
     help: MessageKey,
     lockable: bool,
+    bounds: Option<(i64, i64)>,
 }
 
 impl SettingDefinition {
@@ -116,6 +117,7 @@ impl SettingDefinition {
         changed_by: ChangedBy,
         help: MessageKey,
         lockable: bool,
+        bounds: Option<(i64, i64)>,
     ) -> Self {
         Self {
             key,
@@ -124,7 +126,23 @@ impl SettingDefinition {
             changed_by,
             help,
             lockable,
+            bounds,
         }
+    }
+
+    /// The smallest and the largest value a whole-number setting may have, if it is bounded. A
+    /// value outside is refused when it is stored, and cut to the bounds when it is read (a
+    /// session that lasts a second, or a year, is a mistake).
+    #[must_use]
+    pub const fn bounds(&self) -> Option<(i64, i64)> {
+        self.bounds
+    }
+
+    /// `value` cut to the bounds of the setting, if it has any.
+    #[must_use]
+    pub fn clamp(&self, value: i64) -> i64 {
+        self.bounds
+            .map_or(value, |(least, most)| value.clamp(least, most))
     }
 
     /// The key, `topic.name`: lower-case words joined by hyphens, like `security.two-step-required`.
@@ -329,7 +347,8 @@ macro_rules! settings {
             levels: [$($level:ident),+ $(,)?],
             changed_by: $changed_by:ident,
             help: $help:expr,
-            lockable: $lockable:literal $(,)?
+            lockable: $lockable:literal
+            $(, bounds: ($least:literal, $most:literal))? $(,)?
         }
     )+) => {
         $(
@@ -341,6 +360,11 @@ macro_rules! settings {
                 ChangedBy::$changed_by,
                 $help,
                 $lockable,
+                {
+                    // The last entry is the bounds when the setting declares them, else `None`.
+                    let all: [Option<(i64, i64)>; _] = [None $(, Some(($least, $most)))?];
+                    all[all.len() - 1]
+                },
             ));
         )+
 
@@ -388,6 +412,30 @@ mod tests {
 
     use super::*;
     use crate::message::Message;
+
+    #[test]
+    fn auth_01_the_session_times_have_bounds_and_values_are_cut_to_them() {
+        let idle = SECURITY_SESSION_IDLE_MINUTES.definition();
+        let absolute = SECURITY_SESSION_ABSOLUTE_HOURS.definition();
+        assert_eq!(idle.bounds(), Some((5, 1440)));
+        assert_eq!(absolute.bounds(), Some((1, 720)));
+        assert_eq!(
+            [idle.clamp(0), idle.clamp(30), idle.clamp(10_000)],
+            [5, 30, 1440]
+        );
+        assert_eq!(
+            [
+                absolute.clamp(-1),
+                absolute.clamp(24),
+                absolute.clamp(9_999)
+            ],
+            [1, 24, 720]
+        );
+        // The defaults are inside their own bounds, and a setting without bounds is left alone.
+        assert_eq!(idle.clamp(30), 30);
+        assert_eq!(APPEARANCE_THEME.definition().bounds(), None);
+        assert_eq!(APPEARANCE_THEME.definition().clamp(-99), -99);
+    }
 
     #[test]
     fn keys_are_unique_topic_dot_name_words() {

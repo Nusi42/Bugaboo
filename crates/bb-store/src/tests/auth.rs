@@ -308,7 +308,7 @@ async fn auth_03_a_backup_code_and_an_invitation_work_once() -> TestResult {
             .await?
             .ok_or("no invitation")?;
         assert_eq!(found.used_at, Some(at(50)));
-        assert!(storage.open_invitations(at(10)).await?.is_empty());
+        assert!(storage.open_invitations(at(10), None, 10).await?.is_empty());
         Ok(())
     })
     .await
@@ -333,12 +333,18 @@ async fn auth_09_a_new_setup_code_replaces_the_old_and_is_taken_once() -> TestRe
         }
         let waiting = storage.setup_code().await?.ok_or("no setup code")?;
         assert_eq!(waiting.code_hash, Digest::new([2; 32]));
+        // The hash of an older code does not use up the newer one.
+        let old = change(&storage, &mut source, |tx| {
+            Box::pin(async move { AuthStorage::take_setup_code(tx, &Digest::new([1; 32])).await })
+        })
+        .await?;
+        assert!(!old);
         let first = change(&storage, &mut source, |tx| {
-            Box::pin(async move { AuthStorage::take_setup_code(tx).await })
+            Box::pin(async move { AuthStorage::take_setup_code(tx, &Digest::new([2; 32])).await })
         })
         .await?;
         let second = change(&storage, &mut source, |tx| {
-            Box::pin(async move { AuthStorage::take_setup_code(tx).await })
+            Box::pin(async move { AuthStorage::take_setup_code(tx, &Digest::new([2; 32])).await })
         })
         .await?;
         assert!(first && !second);

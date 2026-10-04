@@ -63,6 +63,8 @@ pub enum SettingProblem {
     WrongType,
     /// The setting cannot be locked.
     NotLockable,
+    /// A whole number outside the bounds the setting declares.
+    OutOfBounds,
 }
 
 /// Why a secret operation failed.

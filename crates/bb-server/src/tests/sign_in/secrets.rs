@@ -4,11 +4,14 @@
 use std::fmt::Write as _;
 
 use bb_app::auth::{
-    AuthStore as _, ChangePassword, ConfirmCodeApp, CreateInvitation, RemoveCodeApp,
-    RenewBackupCodes, RevokeInvitation, SessionsQuery, SignOut, StartCodeApp,
+    AuthStore as _, ChangePassword, ChangeSignUpPolicy, ConfirmCodeApp, CreateInvitation,
+    RemoveCodeApp, RenewBackupCodes, RevokeInvitation, SessionsQuery, SignOut, SignUpPolicy,
+    StartCodeApp,
 };
 use bb_app::context::Clock as _;
 use bb_auth::TotpSecret;
+use bb_core::event::{EntityKind, EntityRef};
+use bb_core::id::EntityId;
 use bb_core::technical::TechnicalName;
 use bb_store::Verification;
 use bb_testing::each_database;
@@ -116,6 +119,7 @@ async fn adr_0007_the_code_app_appends_one_event_per_change() -> Outcome {
         let mut count = Counter::start(&rig).await?;
         let start = StartCodeApp {
             session_token: session.clone(),
+            password: PASSWORD.to_owned(),
         };
         rig.api().start_code_app(Rig::info(), start).await?;
         count.one_more("start the code app").await?;
@@ -128,6 +132,7 @@ async fn adr_0007_the_code_app_appends_one_event_per_change() -> Outcome {
         let confirm = ConfirmCodeApp {
             session_token: session.clone(),
             code,
+            password: PASSWORD.to_owned(),
         };
         rig.api().confirm_code_app(Rig::info(), confirm).await?;
         count.one_more("confirm the code app").await?;
@@ -160,6 +165,7 @@ async fn sec_16_no_secret_is_written_to_an_event_or_to_the_security_log() -> Out
                 Rig::info(),
                 StartCodeApp {
                     session_token: session.clone(),
+                    password: PASSWORD.to_owned(),
                 },
             )
             .await?;
@@ -176,6 +182,7 @@ async fn sec_16_no_secret_is_written_to_an_event_or_to_the_security_log() -> Out
                 ConfirmCodeApp {
                     session_token: session.clone(),
                     code,
+                    password: PASSWORD.to_owned(),
                 },
             )
             .await?;
@@ -270,6 +277,39 @@ async fn sec_15_the_security_log_of_signing_in_verifies_and_names_what_happened(
                 return Err(format!("the log breaks at {seq}: {reason:?}").into());
             }
         }
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn adr_0007_events_about_a_fixed_thing_name_the_same_record() -> Outcome {
+    each_database("adr_0007_fixed_entity", async |db| {
+        let rig = Rig::start(db, 10).await?;
+        let admin = rig.admin("ada@example.test").await?;
+        for enabled in [true, false] {
+            let change = ChangeSignUpPolicy {
+                session_token: admin.session_token.clone(),
+                policy: SignUpPolicy {
+                    enabled,
+                    domains: vec![],
+                },
+            };
+            rig.api().change_sign_up_policy(Rig::info(), change).await?;
+        }
+        // The two changes of the rule are two events about one record, so its history is in one
+        // place. The same goes for the setup code of the first start.
+        let setting = EntityRef {
+            kind: EntityKind::new("setting")?,
+            id: EntityId::from_bytes(bb_auth::stable_id("setting", "auth.sign-up-policy"))?,
+        };
+        assert_eq!(rig.database.events_about(&setting, 10).await?.len(), 2);
+        let setup = EntityRef {
+            kind: EntityKind::new("setup_code")?,
+            id: EntityId::from_bytes(bb_auth::stable_id("setup_code", "first-start"))?,
+        };
+        // Made when the server started.
+        assert_eq!(rig.database.events_about(&setup, 10).await?.len(), 1);
         Ok(())
     })
     .await

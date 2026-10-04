@@ -19,7 +19,7 @@ use super::auth::{
     AuthHandle, ForbiddenAnswer, Info, InvalidAnswer, NotFoundAnswer, NotSignedInAnswer, Session,
     done, private,
 };
-use super::auth_sign_in::{ChallengeBody, CodeBody};
+use super::auth_sign_in::ChallengeBody;
 use crate::errors::{ApiError, ApiJson, ApiPath};
 
 /// A password typed again before a sensitive change.
@@ -60,8 +60,11 @@ pub(crate) struct TwoStepBody {
     code_app: bool,
     /// How many backup codes are left.
     backup_codes_left: i64,
-    /// The passkeys. A person has only a few, so the list is not paged.
+    /// The passkeys. A person has at most 20, so the list is not paged: it has a hard cap, and
+    /// `truncated` says when the cap cut it off (M1-F44).
     passkeys: Vec<PasskeyBody>,
+    /// There are more passkeys than the list holds.
+    truncated: bool,
 }
 
 /// What the setup screen of the code app shows.
@@ -82,6 +85,15 @@ pub(crate) struct BackupCodesBody {
     codes: Vec<String>,
 }
 
+/// The first code of the code app, and the password typed again.
+#[derive(Deserialize, ToSchema)]
+pub(crate) struct ConfirmCodeBody {
+    /// The code the app shows.
+    code: String,
+    /// The password.
+    password: String,
+}
+
 /// A passkey the device made, with the name the person gives it.
 #[derive(Deserialize, ToSchema)]
 pub(crate) struct AddPasskeyBody {
@@ -92,6 +104,8 @@ pub(crate) struct AddPasskeyBody {
     credential: Value,
     /// The name of the passkey, like "Work laptop".
     label: String,
+    /// The password, typed again.
+    password: String,
 }
 
 /// How the second step is set up.
@@ -115,15 +129,18 @@ async fn get_two_step(
         code_app: status.code_app,
         backup_codes_left: status.backup_codes_left,
         passkeys: status.passkeys.iter().map(PasskeyBody::from).collect(),
+        truncated: status.truncated,
     }))
 }
 
-/// Starts setting up the code app. It is not asked for until the first code is confirmed.
+/// Starts setting up the code app. It is not asked for until the first code is confirmed. The
+/// password is typed again, so a stolen session cannot add a way to sign in.
 #[utoipa::path(
     post,
     path = "/api/v1/auth/two-step/code-app",
     operation_id = "startCodeApp",
     tag = "auth",
+    request_body = PasswordOnlyBody,
     responses(
         (status = 200, description = "What the setup screen shows.", body = CodeAppBody),
         InvalidAnswer,
@@ -135,10 +152,17 @@ async fn start_code_app(
     State(auth): State<AuthHandle>,
     Info(info): Info,
     Session(session_token): Session,
+    ApiJson(body): ApiJson<PasswordOnlyBody>,
 ) -> Result<Response, ApiError> {
     let setup = auth
         .api()?
-        .start_code_app(info, StartCodeApp { session_token })
+        .start_code_app(
+            info,
+            StartCodeApp {
+                session_token,
+                password: body.password,
+            },
+        )
         .await?;
     Ok(private(CodeAppBody {
         otpauth_url: setup.otpauth_url,
@@ -153,7 +177,7 @@ async fn start_code_app(
     path = "/api/v1/auth/two-step/code-app/confirm",
     operation_id = "confirmCodeApp",
     tag = "auth",
-    request_body = CodeBody,
+    request_body = ConfirmCodeBody,
     responses(
         (status = 200, description = "Set up; the backup codes are shown once.", body = BackupCodesBody),
         InvalidAnswer,
@@ -165,7 +189,7 @@ async fn confirm_code_app(
     State(auth): State<AuthHandle>,
     Info(info): Info,
     Session(session_token): Session,
-    ApiJson(body): ApiJson<CodeBody>,
+    ApiJson(body): ApiJson<ConfirmCodeBody>,
 ) -> Result<Response, ApiError> {
     let codes = auth
         .api()?
@@ -174,6 +198,7 @@ async fn confirm_code_app(
             ConfirmCodeApp {
                 session_token,
                 code: body.code,
+                password: body.password,
             },
         )
         .await?;
@@ -244,22 +269,31 @@ async fn renew_backup_codes(
     Ok(private(BackupCodesBody { codes: codes.0 }))
 }
 
-/// Starts adding a passkey.
+/// Starts adding a passkey. The password is typed again, so a stolen session cannot add a way
+/// to sign in.
 #[utoipa::path(
     post,
     path = "/api/v1/auth/passkeys/options",
     operation_id = "startAddPasskey",
     tag = "auth",
+    request_body = PasswordOnlyBody,
     responses((status = 200, description = "The challenge for the device.", body = ChallengeBody), NotSignedInAnswer, ForbiddenAnswer)
 )]
 async fn passkey_registration_options(
     State(auth): State<AuthHandle>,
     Info(info): Info,
     Session(session_token): Session,
+    ApiJson(body): ApiJson<PasswordOnlyBody>,
 ) -> Result<Response, ApiError> {
     let challenge = auth
         .api()?
-        .passkey_registration_options(info, PasskeyRegistrationQuery { session_token })
+        .passkey_registration_options(
+            info,
+            PasskeyRegistrationQuery {
+                session_token,
+                password: body.password,
+            },
+        )
         .await?;
     Ok(private(ChallengeBody::from(challenge)))
 }
@@ -293,6 +327,7 @@ async fn add_passkey(
                 challenge_id: body.challenge_id,
                 credential: body.credential,
                 label: body.label,
+                password: body.password,
             },
         )
         .await?;

@@ -1,6 +1,7 @@
 //! What the sign-in use cases take and give back. Inputs that change something are named after
 //! what they do; inputs that only read end in `Query` (ARCH-EVENTS).
 
+use std::fmt;
 use std::time::Duration;
 
 use bb_core::id::{InvitationId, PasskeyId, SessionId, UserId};
@@ -33,7 +34,7 @@ impl From<&Person> for PersonView {
 }
 
 /// A session that was just made: the two values the browser gets in cookies.
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct Started {
     /// The secret for the `__Host-bb_session` cookie.
     pub session_token: String,
@@ -129,12 +130,14 @@ pub struct TwoStepStatus {
     pub code_app: bool,
     /// How many backup codes are left.
     pub backup_codes_left: i64,
-    /// The passkeys.
+    /// The passkeys, at most [`MAX_PASSKEYS_LISTED`].
     pub passkeys: Vec<PasskeyView>,
+    /// There are more passkeys than the list holds.
+    pub truncated: bool,
 }
 
 /// What the setup screen of the code app shows.
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct CodeAppSetup {
     /// The address the code app reads.
     pub otpauth_url: String,
@@ -158,7 +161,7 @@ pub struct InvitationView {
 }
 
 /// A new invitation: the secret is shown only now.
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct CreatedInvitation {
     /// The invitation.
     pub invitation: InvitationView,
@@ -184,6 +187,9 @@ pub struct SignIn {
     pub email: String,
     /// The password as typed.
     pub password: String,
+    /// The secret of the session cookie the browser still has, if any: signing in ends that old
+    /// session.
+    pub previous_session: Option<String>,
 }
 
 /// Finish signing in with a code from the code app or a backup code.
@@ -210,6 +216,9 @@ pub struct PasskeySignIn {
     pub challenge_id: String,
     /// What the device answered.
     pub credential: Value,
+    /// The secret of the session cookie the browser still has, if any: signing in ends that old
+    /// session.
+    pub previous_session: Option<String>,
 }
 
 /// End one session (the one of the request).
@@ -242,10 +251,13 @@ pub struct ChangePassword {
     pub new_password: String,
 }
 
-/// Start setting up the code app.
+/// Start setting up the code app. A new way to sign in asks for the password again, so a stolen
+/// session cannot add one.
 pub struct StartCodeApp {
     /// The secret of the session of the request.
     pub session_token: String,
+    /// The password, asked again for this.
+    pub password: String,
 }
 
 /// Finish setting up the code app with the first code.
@@ -254,6 +266,8 @@ pub struct ConfirmCodeApp {
     pub session_token: String,
     /// The code as typed.
     pub code: String,
+    /// The password, asked again for this.
+    pub password: String,
 }
 
 /// Switch the code app off.
@@ -282,6 +296,8 @@ pub struct AddPasskey {
     pub credential: Value,
     /// The name the person gives it.
     pub label: String,
+    /// The password, asked again for this.
+    pub password: String,
 }
 
 /// Remove a passkey.
@@ -318,6 +334,9 @@ pub struct AcceptInvitation {
     pub display_name: String,
     /// The password the person chooses.
     pub password: String,
+    /// The secret of the session cookie the browser still has, if any: signing in ends that old
+    /// session.
+    pub previous_session: Option<String>,
 }
 
 /// Make an account without an invitation.
@@ -328,6 +347,9 @@ pub struct SignUp {
     pub display_name: String,
     /// The password the person chooses.
     pub password: String,
+    /// The secret of the session cookie the browser still has, if any: signing in ends that old
+    /// session.
+    pub previous_session: Option<String>,
 }
 
 /// Change who may sign up on their own.
@@ -348,6 +370,9 @@ pub struct CompleteSetup {
     pub email: String,
     /// The password of the administrator.
     pub password: String,
+    /// The secret of the session cookie the browser still has, if any: signing in ends that old
+    /// session.
+    pub previous_session: Option<String>,
 }
 
 /// Make a new setup code, if setup is still open (the server does this at every start).
@@ -385,16 +410,48 @@ pub struct PasskeySecondStepQuery {
 /// A challenge for signing in with a passkey alone.
 pub struct PasskeySignInQuery;
 
-/// A challenge for adding a passkey.
+/// A challenge for adding a passkey. The password is asked again, so a stolen session cannot
+/// add one.
 pub struct PasskeyRegistrationQuery {
     /// The secret of the session of the request.
     pub session_token: String,
+    /// The password, asked again for this.
+    pub password: String,
 }
 
-/// The open invitations.
+/// The open invitations, one page at a time.
 pub struct InvitationsQuery {
     /// The secret of the session of the request (an administrator).
     pub session_token: String,
+    /// Where the page after the last one starts (`next_cursor` of the page before), if any.
+    pub cursor: Option<String>,
+    /// How many invitations a page holds at most; more than [`MAX_PAGE`] is cut to it.
+    pub limit: u32,
+}
+
+/// The most invitations a page holds.
+pub const MAX_PAGE: u32 = 100;
+/// The most sessions *Where you're signed in* lists.
+pub const MAX_SESSIONS_LISTED: usize = 50;
+/// The most passkeys the second-step answer lists (the most a person can have).
+pub const MAX_PASSKEYS_LISTED: usize = 20;
+
+/// A page of invitations.
+#[derive(Clone, Debug)]
+pub struct InvitationPage {
+    /// The invitations, newest first.
+    pub items: Vec<InvitationView>,
+    /// The cursor of the next page, if there is one.
+    pub next_cursor: Option<String>,
+}
+
+/// The sessions of a person.
+#[derive(Clone, Debug)]
+pub struct SessionList {
+    /// Newest first, at most [`MAX_SESSIONS_LISTED`].
+    pub sessions: Vec<SessionView>,
+    /// There are more sessions than the list holds.
+    pub truncated: bool,
 }
 
 /// What an invitation link is for, shown on the page the link opens.
@@ -417,9 +474,96 @@ pub struct SignUpPolicyQuery {
 }
 
 /// The backup codes made by [`RenewBackupCodes`] and [`ConfirmCodeApp`], shown once.
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct BackupCodes(pub Vec<String>);
 
 /// Nothing to report; the request worked.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Done;
+
+// The secrets of a new session, a code app and a new invitation never show in a log or a failed
+// test: `Debug` writes who it is for and hides the rest.
+impl fmt::Debug for Started {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        formatter
+            .debug_struct("Started")
+            .field("person", &self.person.id)
+            .field("second_step_needed", &self.second_step_needed)
+            .finish_non_exhaustive()
+    }
+}
+
+impl fmt::Debug for CodeAppSetup {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        formatter.write_str("CodeAppSetup(<hidden>)")
+    }
+}
+
+impl fmt::Debug for CreatedInvitation {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        formatter
+            .debug_struct("CreatedInvitation")
+            .field("invitation", &self.invitation.id)
+            .finish_non_exhaustive()
+    }
+}
+
+impl fmt::Debug for BackupCodes {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(formatter, "BackupCodes({} hidden)", self.0.len())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn sec_16_debug_output_of_secrets_shows_none_of_them() {
+        let person = PersonView {
+            id: UserId::from_random([7; 16]),
+            display_name: "Ada".to_owned(),
+            email: "ada@example.test".to_owned(),
+            administrator: true,
+        };
+        let started = Started {
+            session_token: "SESSION-SECRET".to_owned(),
+            csrf_token: "CSRF-SECRET".to_owned(),
+            lifetime: Duration::from_mins(1),
+            person: person.clone(),
+            second_step_needed: None,
+        };
+        let setup = CodeAppSetup {
+            otpauth_url: "otpauth://totp/OTPAUTH-SECRET".to_owned(),
+            qr_png_base64: "QR-SECRET".to_owned(),
+            secret: "TOTP-SECRET".to_owned(),
+        };
+        let created = CreatedInvitation {
+            invitation: InvitationView {
+                id: InvitationId::from_random([9; 16]),
+                email: "bob@example.test".to_owned(),
+                created_at: Timestamp::UNIX_EPOCH,
+                expires_at: Timestamp::UNIX_EPOCH,
+            },
+            link_path: "/invitation#LINK-SECRET".to_owned(),
+        };
+        let codes = BackupCodes(vec!["BACKUP-SECRET".to_owned(), "BACKUP-TWO".to_owned()]);
+        let shown = format!("{started:?} {setup:?} {created:?} {codes:?}");
+        for secret in [
+            "SESSION-SECRET",
+            "CSRF-SECRET",
+            "OTPAUTH-SECRET",
+            "QR-SECRET",
+            "TOTP-SECRET",
+            "LINK-SECRET",
+            "BACKUP-SECRET",
+            "BACKUP-TWO",
+            "ada@example.test",
+            "bob@example.test",
+        ] {
+            assert!(!shown.contains(secret), "{secret} shows in {shown}");
+        }
+        assert!(shown.contains(&person.id.to_string()));
+        assert!(shown.contains("BackupCodes(2 hidden)"));
+    }
+}

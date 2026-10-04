@@ -1,8 +1,8 @@
 //! The setup code of the first start (AUTH-09) and signing in with a password (AUTH-01, SEC-14).
 
 use bb_app::auth::{
-    AppError, AuthStore as _, AuthenticateQuery, CompleteSetup, IssueSetupCode, StatusQuery,
-    issue_setup_code,
+    AppError, AuthApi as _, AuthStore as _, AuthenticateQuery, CompleteSetup, IssueSetupCode,
+    RequestInfo, SignIn, StatusQuery, issue_setup_code,
 };
 use bb_core::ErrorCode;
 use bb_core::sign_in::SecurityAction;
@@ -34,6 +34,7 @@ async fn auth_09_a_new_setup_code_is_made_at_every_start_and_only_the_newest_wor
             display_name: "Ada".to_owned(),
             email: "ada@example.test".to_owned(),
             password: PASSWORD.to_owned(),
+            previous_session: None,
         };
         let old = rig.api().complete_setup(Rig::info(), with(&first)).await;
         assert_eq!(refused(old), Some(ErrorCode::WrongSetupCode));
@@ -63,6 +64,7 @@ async fn auth_09_a_wrong_setup_code_is_refused_counted_and_written_to_the_log() 
                         display_name: "Ada".to_owned(),
                         email: "ada@example.test".to_owned(),
                         password: PASSWORD.to_owned(),
+                        previous_session: None,
                     },
                 )
                 .await;
@@ -101,6 +103,7 @@ async fn auth_09_the_setup_code_makes_an_administrator_once_and_setup_is_closed_
                         display_name: "Ada".to_owned(),
                         email: "ada@example.test".to_owned(),
                         password: password.to_owned(),
+                        previous_session: None,
                     },
                 )
                 .await;
@@ -116,6 +119,7 @@ async fn auth_09_the_setup_code_makes_an_administrator_once_and_setup_is_closed_
                     display_name: "  ".to_owned(),
                     email: "ada@example.test".to_owned(),
                     password: PASSWORD.to_owned(),
+                    previous_session: None,
                 },
             )
             .await;
@@ -297,6 +301,183 @@ async fn auth_01_a_hash_made_with_other_parameters_is_renewed_at_the_next_sign_i
         assert!(after.contains("m=19456,t=2,p=1"), "{after}");
         // The new hash still checks out.
         rig.sign_in("ada@example.test", PASSWORD).await?;
+        Ok(())
+    })
+    .await
+}
+
+/// How many of `tries` parallel requests got an answer of a kind, and how many were limited.
+fn tally(
+    results: Vec<Result<bb_app::auth::Started, AppError>>,
+    wrong: ErrorCode,
+) -> (usize, usize) {
+    let mut refused_with = 0;
+    let mut limited = 0;
+    for result in results {
+        match result {
+            Err(AppError::Refused(code)) if code == wrong => refused_with += 1,
+            Err(AppError::Limited { .. }) => limited += 1,
+            other => unreachable!("an answer nobody expected: {other:?}"),
+        }
+    }
+    (refused_with, limited)
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn sec_14_parallel_wrong_tries_at_one_account_get_no_more_than_the_allowance() -> Outcome {
+    each_database("sec_14_parallel_account", async |db| {
+        let rig = Rig::start(db, 3).await?;
+        rig.admin("ada@example.test").await?;
+        let mut tasks = Vec::new();
+        for _ in 0..20 {
+            let api = rig.services.clone();
+            tasks.push(tokio::spawn(async move {
+                api.sign_in(
+                    Rig::info(),
+                    SignIn {
+                        email: "ada@example.test".to_owned(),
+                        password: "Wrong-Password-1".to_owned(),
+                        previous_session: None,
+                    },
+                )
+                .await
+            }));
+        }
+        let mut results = Vec::new();
+        for task in tasks {
+            results.push(task.await?);
+        }
+        // The tries are reserved before they are checked, so twenty at once are not twenty
+        // guesses: three get through to be checked, the rest wait.
+        assert_eq!(tally(results, ErrorCode::WrongCredentials), (3, 17));
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn sec_14_a_success_gives_the_try_back_also_when_tries_run_at_the_same_time() -> Outcome {
+    each_database("sec_14_parallel_success", async |db| {
+        let rig = Rig::start(db, 3).await?;
+        rig.admin("ada@example.test").await?;
+        // Right passwords at the same time: none of them counts as a failure afterwards.
+        let mut tasks = Vec::new();
+        for _ in 0..3 {
+            let api = rig.services.clone();
+            tasks.push(tokio::spawn(async move {
+                api.sign_in(
+                    Rig::info(),
+                    SignIn {
+                        email: "ada@example.test".to_owned(),
+                        password: PASSWORD.to_owned(),
+                        previous_session: None,
+                    },
+                )
+                .await
+            }));
+        }
+        for task in tasks {
+            task.await??;
+        }
+        for _ in 0..3 {
+            assert_eq!(
+                refused(rig.sign_in("ada@example.test", "Wrong-Password-1").await),
+                Some(ErrorCode::WrongCredentials)
+            );
+        }
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn sec_12_signing_in_again_ends_the_session_the_browser_still_had() -> Outcome {
+    each_database("sec_12_previous_session", async |db| {
+        let rig = Rig::start(db, 10).await?;
+        let first = rig.admin("ada@example.test").await?;
+        let second = rig.sign_in("ada@example.test", PASSWORD).await?;
+        // A browser that still has the cookie of the first one signs in again.
+        let third = rig
+            .api()
+            .sign_in(
+                Rig::info(),
+                SignIn {
+                    email: "ada@example.test".to_owned(),
+                    password: PASSWORD.to_owned(),
+                    previous_session: Some(first.session_token.clone()),
+                },
+            )
+            .await?;
+        let signed_in = |token: &str| {
+            rig.api().authenticate(
+                Rig::info(),
+                AuthenticateQuery {
+                    session_token: token.to_owned(),
+                },
+            )
+        };
+        assert!(signed_in(&first.session_token).await.is_err());
+        assert!(signed_in(&second.session_token).await.is_ok());
+        assert!(signed_in(&third.session_token).await.is_ok());
+        // A cookie that opens nothing, or text that is no secret, changes nothing.
+        for previous in ["garbage".to_owned(), first.session_token.clone()] {
+            rig.api()
+                .sign_in(
+                    Rig::info(),
+                    SignIn {
+                        email: "ada@example.test".to_owned(),
+                        password: PASSWORD.to_owned(),
+                        previous_session: Some(previous),
+                    },
+                )
+                .await?;
+        }
+        assert!(signed_in(&second.session_token).await.is_ok());
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn auth_09_wrong_setup_codes_are_counted_per_network_not_for_everybody() -> Outcome {
+    each_database("auth_09_setup_per_network", async |db| {
+        let rig = Rig::start(db, 3).await?;
+        let from =
+            |network: &str| -> Result<RequestInfo, Box<dyn std::error::Error + Send + Sync>> {
+                Ok(RequestInfo {
+                    network: Some(bb_core::network::NetworkPrefix::from_address(
+                        network.parse()?,
+                    )),
+                    device: bb_auth::Device::default(),
+                })
+            };
+        let setup = |code: String| CompleteSetup {
+            code,
+            display_name: "Ada".to_owned(),
+            email: "ada@example.test".to_owned(),
+            password: PASSWORD.to_owned(),
+            previous_session: None,
+        };
+        // Somebody far away uses up the allowance of their network ...
+        for _ in 0..3 {
+            let result = rig
+                .api()
+                .complete_setup(
+                    from("198.51.100.7")?,
+                    setup("0000-0000-0000-0000".to_owned()),
+                )
+                .await;
+            assert_eq!(refused(result), Some(ErrorCode::WrongSetupCode));
+        }
+        let blocked = rig
+            .api()
+            .complete_setup(from("198.51.100.8")?, setup(rig.setup_code.clone()))
+            .await;
+        assert!(matches!(blocked, Err(AppError::Limited { .. })));
+        // ... and the person at the console, on another network, can still set up.
+        rig.api()
+            .complete_setup(from("203.0.113.5")?, setup(rig.setup_code.clone()))
+            .await?;
         Ok(())
     })
     .await

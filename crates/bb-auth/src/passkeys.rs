@@ -30,8 +30,23 @@ use crate::error::{AuthError, random};
 
 /// How long a person has to answer a challenge.
 pub const CHALLENGE_LIFETIME: Duration = Duration::from_mins(5);
-/// How many challenges wait at the same time.
+/// How many challenges of one kind wait at the same time.
 const MAX_PENDING: usize = 1000;
+/// How many challenges of one kind wait for one client network at the same time. Anonymous
+/// passkey sign-ins can be started by anybody; one network cannot fill a pool.
+const MAX_PENDING_PER_NETWORK: usize = 20;
+
+/// The kinds of ceremony. Each has its own pool, so starting many anonymous sign-ins cannot
+/// keep the second step or the registration of a passkey from starting.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum Kind {
+    /// Adding a passkey (a signed-in person).
+    Registration,
+    /// A passkey as the second step (a person who typed the password).
+    SecondStep,
+    /// Signing in with a passkey alone (anybody).
+    Anonymous,
+}
 
 /// The address people reach the server at (`public_url`), cut down to its origin
 /// (`scheme://host[:port]`). Only `http` and `https` addresses with a host, and without a path
@@ -159,6 +174,8 @@ enum Ceremony {
 
 struct Pending {
     expires: i64,
+    kind: Kind,
+    network: Option<String>,
     person: Option<UserId>,
     ceremony: Ceremony,
 }
@@ -212,15 +229,25 @@ impl Passkeys {
     fn put(
         &self,
         now: Timestamp,
+        kind: Kind,
+        network: Option<&str>,
         person: Option<UserId>,
         ceremony: Ceremony,
     ) -> Result<ChallengeId, AuthError> {
         let id = ChallengeId(random()?);
         let lifetime = i64::try_from(CHALLENGE_LIFETIME.as_secs()).unwrap_or(i64::MAX);
         let mut pending = self.pending.lock().unwrap_or_else(PoisonError::into_inner);
-        if pending.len() >= MAX_PENDING {
+        let full = |pending: &HashMap<ChallengeId, Pending>| {
+            let of_kind = pending.values().filter(|entry| entry.kind == kind);
+            let of_network = of_kind
+                .clone()
+                .filter(|entry| entry.network.as_deref() == network)
+                .count();
+            of_kind.count() >= MAX_PENDING || of_network >= MAX_PENDING_PER_NETWORK
+        };
+        if full(&pending) {
             pending.retain(|_, entry| entry.expires > now.as_second());
-            if pending.len() >= MAX_PENDING {
+            if full(&pending) {
                 return Err(AuthError::TooManyChallenges);
             }
         }
@@ -228,6 +255,8 @@ impl Passkeys {
             id,
             Pending {
                 expires: now.as_second().saturating_add(lifetime),
+                kind,
+                network: network.map(str::to_owned),
                 person,
                 ceremony,
             },
@@ -262,6 +291,7 @@ impl Passkeys {
     pub fn start_registration(
         &self,
         now: Timestamp,
+        network: Option<&str>,
         person: UserId,
         name: &str,
         display_name: &str,
@@ -280,7 +310,13 @@ impl Passkeys {
                 (!exclude.is_empty()).then_some(exclude),
             )
             .map_err(|_| AuthError::Passkey)?;
-        let id = self.put(now, Some(person), Ceremony::Register(state))?;
+        let id = self.put(
+            now,
+            Kind::Registration,
+            network,
+            Some(person),
+            Ceremony::Register(state),
+        )?;
         Ok((id, json(&options)?))
     }
 
@@ -314,6 +350,7 @@ impl Passkeys {
     pub fn start_authentication(
         &self,
         now: Timestamp,
+        network: Option<&str>,
         person: UserId,
         stored: &[StoredCredential],
     ) -> Result<(ChallengeId, Value), AuthError> {
@@ -321,7 +358,13 @@ impl Passkeys {
             .webauthn
             .start_passkey_authentication(&credentials(stored)?)
             .map_err(|_| AuthError::Passkey)?;
-        let id = self.put(now, Some(person), Ceremony::Authenticate(state))?;
+        let id = self.put(
+            now,
+            Kind::SecondStep,
+            network,
+            Some(person),
+            Ceremony::Authenticate(state),
+        )?;
         Ok((id, json(&options)?))
     }
 
@@ -355,12 +398,22 @@ impl Passkeys {
     ///
     /// # Errors
     /// Fails when the challenge cannot be made.
-    pub fn start_discoverable(&self, now: Timestamp) -> Result<(ChallengeId, Value), AuthError> {
+    pub fn start_discoverable(
+        &self,
+        now: Timestamp,
+        network: Option<&str>,
+    ) -> Result<(ChallengeId, Value), AuthError> {
         let (options, state) = self
             .webauthn
             .start_discoverable_authentication()
             .map_err(|_| AuthError::Passkey)?;
-        let id = self.put(now, None, Ceremony::Discoverable(state))?;
+        let id = self.put(
+            now,
+            Kind::Anonymous,
+            network,
+            None,
+            Ceremony::Discoverable(state),
+        )?;
         Ok((id, json(&options)?))
     }
 
@@ -489,7 +542,7 @@ mod tests {
 
     fn register(passkeys: &Passkeys, device: &mut SoftPasskey, person: UserId) -> StoredCredential {
         let (id, options) = passkeys
-            .start_registration(now(), person, "ada@example.com", "Ada", &[])
+            .start_registration(now(), None, person, "ada@example.com", "Ada", &[])
             .unwrap();
         let options = serde_json::from_value(options).unwrap();
         let answer = device.do_registration(origin(), options).unwrap();
@@ -524,7 +577,7 @@ mod tests {
         assert!(!stored.credential_id.is_empty());
 
         let (id, options) = passkeys
-            .start_authentication(now(), person, std::slice::from_ref(&stored))
+            .start_authentication(now(), None, person, std::slice::from_ref(&stored))
             .unwrap();
         let answer = device
             .do_authentication(origin(), serde_json::from_value(options).unwrap())
@@ -570,7 +623,7 @@ mod tests {
         let person = person();
         let stored = register(&passkeys, &mut device, person);
 
-        let (id, options) = passkeys.start_discoverable(now()).unwrap();
+        let (id, options) = passkeys.start_discoverable(now(), None).unwrap();
         assert_eq!(
             options["publicKey"]["allowCredentials"],
             serde_json::json!([])
@@ -592,7 +645,7 @@ mod tests {
         let person = person();
         let stored = register(&passkeys, &mut device, person);
         let (id, options) = passkeys
-            .start_authentication(now(), person, std::slice::from_ref(&stored))
+            .start_authentication(now(), None, person, std::slice::from_ref(&stored))
             .unwrap();
         let answer = serde_json::to_value(
             device
@@ -627,9 +680,48 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn sec_14_one_network_and_one_kind_of_ceremony_cannot_fill_the_waiting_challenges() {
+        let passkeys = Passkeys::new(&party()).unwrap();
+        let mut device = device();
+        let person = person();
+        let stored = register(&passkeys, &mut device, person);
+        let busy = Some("203.0.113.0");
+        // One network can start only so many anonymous sign-ins; another network still can.
+        for _ in 0..MAX_PENDING_PER_NETWORK {
+            passkeys.start_discoverable(now(), busy).unwrap();
+        }
+        assert_eq!(
+            passkeys.start_discoverable(now(), busy).unwrap_err(),
+            AuthError::TooManyChallenges
+        );
+        passkeys
+            .start_discoverable(now(), Some("198.51.100.0"))
+            .unwrap();
+        // Many networks together fill the pool of anonymous sign-ins ...
+        let mut network = 0;
+        while passkeys
+            .start_discoverable(now(), Some(&format!("net-{network}")))
+            .is_ok()
+        {
+            network += 1;
+        }
+        assert!(network > 10, "the pool took {network} networks");
+        // ... and the second step and adding a passkey, even from the busy network, still start.
+        passkeys
+            .start_authentication(now(), busy, person, std::slice::from_ref(&stored))
+            .unwrap();
+        passkeys
+            .start_registration(now(), busy, person, "ada@example.com", "Ada", &[])
+            .unwrap();
+        // Challenges that ran out make room again.
+        let later = Timestamp::from_second(now().as_second() + 301).unwrap();
+        passkeys.start_discoverable(later, busy).unwrap();
+    }
+
+    #[tokio::test]
     async fn sec_12_an_old_challenge_is_refused() {
         let passkeys = Passkeys::new(&party()).unwrap();
-        let (id, _) = passkeys.start_discoverable(now()).unwrap();
+        let (id, _) = passkeys.start_discoverable(now(), None).unwrap();
         let later = Timestamp::from_second(now().as_second() + 301).unwrap();
         assert_eq!(
             passkeys.finish_discoverable(later, id, &serde_json::json!({}), &[]),
@@ -645,7 +737,7 @@ mod tests {
         let mut device = device();
         let person = person();
         let (id, options) = passkeys
-            .start_registration(now(), person, "ada@example.com", "Ada", &[])
+            .start_registration(now(), None, person, "ada@example.com", "Ada", &[])
             .unwrap();
         let answer = device
             .do_registration(origin(), serde_json::from_value(options).unwrap())

@@ -163,8 +163,40 @@
     "/api/v1/auth/invitations": {
       "get": {
         "tags": ["auth"],
-        "summary": "The open invitations. Administrators only.",
+        "summary": "The open invitations, a page at a time. Administrators only.",
         "operationId": "listInvitations",
+        "parameters": [
+          {
+            "name": "fields",
+            "in": "query",
+            "description": "The fields each invitation holds, separated by commas: `id`, `email`, `created_at`, `expires_at`. Everything when left out.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "description": "Where the page starts: the `next_cursor` of the page before.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "How many invitations a page holds at most (default 50).",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "maximum": 100,
+              "minimum": 1
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "The open invitations.",
@@ -724,8 +756,18 @@
     "/api/v1/auth/passkeys/options": {
       "post": {
         "tags": ["auth"],
-        "summary": "Starts adding a passkey.",
+        "summary": "Starts adding a passkey. The password is typed again, so a stolen session cannot add a way\nto sign in.",
         "operationId": "startAddPasskey",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PasswordOnlyBody"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
             "description": "The challenge for the device.",
@@ -2210,8 +2252,18 @@
     "/api/v1/auth/two-step/code-app": {
       "post": {
         "tags": ["auth"],
-        "summary": "Starts setting up the code app. It is not asked for until the first code is confirmed.",
+        "summary": "Starts setting up the code app. It is not asked for until the first code is confirmed. The\npassword is typed again, so a stolen session cannot add a way to sign in.",
         "operationId": "startCodeApp",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PasswordOnlyBody"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
             "description": "What the setup screen shows.",
@@ -2303,7 +2355,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CodeBody"
+                "$ref": "#/components/schemas/ConfirmCodeBody"
               }
             }
           },
@@ -2610,7 +2662,7 @@
       "AddPasskeyBody": {
         "type": "object",
         "description": "A passkey the device made, with the name the person gives it.",
-        "required": ["challenge_id", "credential", "label"],
+        "required": ["challenge_id", "credential", "label", "password"],
         "properties": {
           "challenge_id": {
             "type": "string",
@@ -2623,6 +2675,10 @@
           "label": {
             "type": "string",
             "description": "The name of the passkey, like \"Work laptop\"."
+          },
+          "password": {
+            "type": "string",
+            "description": "The password, typed again."
           }
         }
       },
@@ -2704,6 +2760,21 @@
           }
         }
       },
+      "ConfirmCodeBody": {
+        "type": "object",
+        "description": "The first code of the code app, and the password typed again.",
+        "required": ["code", "password"],
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "The code the app shows."
+          },
+          "password": {
+            "type": "string",
+            "description": "The password."
+          }
+        }
+      },
       "CreatedInvitationBody": {
         "type": "object",
         "description": "A new invitation: the secret is shown only now.",
@@ -2769,6 +2840,28 @@
           }
         }
       },
+      "InvitationItem": {
+        "type": "object",
+        "description": "An invitation in a list: only the fields that were asked for.",
+        "properties": {
+          "created_at": {
+            "type": ["string", "null"],
+            "description": "When it was made."
+          },
+          "email": {
+            "type": ["string", "null"],
+            "description": "The address it is for."
+          },
+          "expires_at": {
+            "type": ["string", "null"],
+            "description": "When it stops working."
+          },
+          "id": {
+            "type": ["string", "null"],
+            "description": "The ID of the invitation."
+          }
+        }
+      },
       "InvitationLookupBody": {
         "type": "object",
         "description": "Which address an invitation is for.",
@@ -2782,15 +2875,19 @@
       },
       "InvitationsBody": {
         "type": "object",
-        "description": "The open invitations.",
-        "required": ["invitations"],
+        "description": "One page of the open invitations, newest first.",
+        "required": ["items"],
         "properties": {
-          "invitations": {
+          "items": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/InvitationBody"
+              "$ref": "#/components/schemas/InvitationItem"
             },
-            "description": "Newest first. Only invitations that are still open are listed, at most 200."
+            "description": "The invitations of this page. Only invitations that are still open are listed."
+          },
+          "next_cursor": {
+            "type": ["string", "null"],
+            "description": "The cursor of the next page; missing on the last page."
           }
         }
       },
@@ -3012,14 +3109,18 @@
       "SessionsBody": {
         "type": "object",
         "description": "The sessions of a person.",
-        "required": ["sessions"],
+        "required": ["sessions", "truncated"],
         "properties": {
           "sessions": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/SessionBody"
             },
-            "description": "Newest first. A person has only a few, so the list is not paged."
+            "description": "Newest first. A person has only a few, so the list is not paged: it has a hard cap, and\n`truncated` says when the cap cut it off (M1-F44)."
+          },
+          "truncated": {
+            "type": "boolean",
+            "description": "There are more sessions than the list holds."
           }
         }
       },
@@ -3101,11 +3202,17 @@
       "SignedInBody": {
         "type": "object",
         "description": "The answer to signing in. The cookies come with it.",
-        "required": ["person"],
         "properties": {
           "person": {
-            "$ref": "#/components/schemas/PersonBody",
-            "description": "Who signed in."
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/PersonBody",
+                "description": "Who signed in. Left out while the second step is still to do: a password alone shows\nnothing about the person."
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "second_step": {
             "oneOf": [
@@ -3128,7 +3235,7 @@
       "TwoStepBody": {
         "type": "object",
         "description": "How the second step of a person is set up.",
-        "required": ["code_app", "backup_codes_left", "passkeys"],
+        "required": ["code_app", "backup_codes_left", "passkeys", "truncated"],
         "properties": {
           "backup_codes_left": {
             "type": "integer",
@@ -3144,7 +3251,11 @@
             "items": {
               "$ref": "#/components/schemas/PasskeyBody"
             },
-            "description": "The passkeys. A person has only a few, so the list is not paged."
+            "description": "The passkeys. A person has at most 20, so the list is not paged: it has a hard cap, and\n`truncated` says when the cap cut it off (M1-F44)."
+          },
+          "truncated": {
+            "type": "boolean",
+            "description": "There are more passkeys than the list holds."
           }
         }
       }

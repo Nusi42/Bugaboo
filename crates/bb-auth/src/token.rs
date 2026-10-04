@@ -99,6 +99,22 @@ impl SecretToken {
     }
 }
 
+/// 16 bytes made from the name of a fixed thing (a setting, the setup code of the first start), so
+/// every event about it names the same record. Not a secret; only a stable ID.
+#[must_use]
+pub fn stable_id(kind: &str, name: &str) -> [u8; 16] {
+    let mut hasher = Sha256::new();
+    hasher.update(b"bugaboo.fixed-record.v1");
+    hasher.update([0_u8]);
+    hasher.update(kind.as_bytes());
+    hasher.update([0_u8]);
+    hasher.update(name.as_bytes());
+    let hash = hasher.finalize();
+    let mut bytes = [0_u8; 16];
+    bytes.copy_from_slice(&hash[..16]);
+    bytes
+}
+
 /// Whether two hashes are the same; takes the same time whatever they are.
 #[must_use]
 pub fn same_digest(a: &Digest, b: &Digest) -> bool {
@@ -108,6 +124,13 @@ pub fn same_digest(a: &Digest, b: &Digest) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn adr_0007_a_fixed_record_has_one_id_that_depends_on_its_kind_and_name() {
+        assert_eq!(stable_id("setting", "a"), stable_id("setting", "a"));
+        assert_ne!(stable_id("setting", "a"), stable_id("setting", "b"));
+        assert_ne!(stable_id("setting", "a"), stable_id("setup_code", "a"));
+    }
 
     #[test]
     fn sec_12_a_secret_survives_text_and_is_different_every_time() {

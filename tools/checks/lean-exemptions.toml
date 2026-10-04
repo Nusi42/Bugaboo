@@ -1,0 +1,21 @@
+# Lists that are plain arrays and not paged `items` (ARCH-LEAN, architecture section 10).
+# Each is small by nature and has a hard cap instead; its answer says when the cap cut it off
+# (`truncated`). The reason names the follow-up that tracks it. An entry that matches no list
+# in the API description fails. `whole_value = true` marks an array that is the value of one
+# setting, bounded when it is written; it needs no `truncated` flag.
+
+[[exempt]]
+route = "GET /api/v1/auth/sessions"
+property = "sessions"
+reason = "The sessions of one person are few; the list has a hard cap and says when it was cut (M1-F44)."
+
+[[exempt]]
+route = "GET /api/v1/auth/two-step"
+property = "passkeys"
+reason = "A person has at most 20 passkeys; the list has a hard cap and says when it was cut (M1-F44)."
+
+[[exempt]]
+route = "GET /api/v1/auth/sign-up-policy"
+property = "domains"
+whole_value = true
+reason = "The domains are the value of one setting, read and written as a whole; writing more than 100 is refused (M1-F44)."

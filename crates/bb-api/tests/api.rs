@@ -199,6 +199,7 @@ mod api {
         let limits = LimitsConfig {
             requests_per_minute: 3,
             sign_in_attempts_per_minute: 3,
+            ..LimitsConfig::default()
         };
         let app = router(options(limits, &[]));
         for _ in 0..3 {
@@ -250,6 +251,7 @@ mod api {
         let limits = LimitsConfig {
             requests_per_minute: 1,
             sign_in_attempts_per_minute: 1,
+            ..LimitsConfig::default()
         };
         let app = router(options(limits, &["10.0.0.5"]));
         // An ordinary client that invents a different forwarded address each time is still one

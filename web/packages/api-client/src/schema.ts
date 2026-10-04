@@ -45,7 +45,7 @@ export interface paths {
       readonly path?: never;
       readonly cookie?: never;
     };
-    /** The open invitations. Administrators only. */
+    /** The open invitations, a page at a time. Administrators only. */
     readonly get: operations["listInvitations"];
     readonly put?: never;
     /** Makes an invitation. The link is shown once. Administrators only. */
@@ -150,7 +150,10 @@ export interface paths {
     };
     readonly get?: never;
     readonly put?: never;
-    /** Starts adding a passkey. */
+    /**
+     * Starts adding a passkey. The password is typed again, so a stolen session cannot add a way
+     *     to sign in.
+     */
     readonly post: operations["startAddPasskey"];
     readonly delete?: never;
     readonly options?: never;
@@ -430,7 +433,10 @@ export interface paths {
     };
     readonly get?: never;
     readonly put?: never;
-    /** Starts setting up the code app. It is not asked for until the first code is confirmed. */
+    /**
+     * Starts setting up the code app. It is not asked for until the first code is confirmed. The
+     *     password is typed again, so a stolen session cannot add a way to sign in.
+     */
     readonly post: operations["startCodeApp"];
     readonly delete?: never;
     readonly options?: never;
@@ -527,6 +533,8 @@ export interface components {
       readonly credential: Record<string, never>;
       /** @description The name of the passkey, like "Work laptop". */
       readonly label: string;
+      /** @description The password, typed again. */
+      readonly password: string;
     };
     /** @description What the app needs to know before anybody signs in. */
     readonly AuthStatusBody: {
@@ -562,6 +570,13 @@ export interface components {
     readonly CodeBody: {
       /** @description A code from the code app (six digits) or a backup code. */
       readonly code: string;
+    };
+    /** @description The first code of the code app, and the password typed again. */
+    readonly ConfirmCodeBody: {
+      /** @description The code the app shows. */
+      readonly code: string;
+      /** @description The password. */
+      readonly password: string;
     };
     /** @description A new invitation: the secret is shown only now. */
     readonly CreatedInvitationBody: {
@@ -610,15 +625,28 @@ export interface components {
       /** @description The ID of the invitation. */
       readonly id: string;
     };
+    /** @description An invitation in a list: only the fields that were asked for. */
+    readonly InvitationItem: {
+      /** @description When it was made. */
+      readonly created_at?: string | null;
+      /** @description The address it is for. */
+      readonly email?: string | null;
+      /** @description When it stops working. */
+      readonly expires_at?: string | null;
+      /** @description The ID of the invitation. */
+      readonly id?: string | null;
+    };
     /** @description Which address an invitation is for. */
     readonly InvitationLookupBody: {
       /** @description The address the account will get. */
       readonly email: string;
     };
-    /** @description The open invitations. */
+    /** @description One page of the open invitations, newest first. */
     readonly InvitationsBody: {
-      /** @description Newest first. Only invitations that are still open are listed, at most 200. */
-      readonly invitations: readonly components["schemas"]["InvitationBody"][];
+      /** @description The invitations of this page. Only invitations that are still open are listed. */
+      readonly items: readonly components["schemas"]["InvitationItem"][];
+      /** @description The cursor of the next page; missing on the last page. */
+      readonly next_cursor?: string | null;
     };
     /** @description Somebody to invite. */
     readonly InviteBody: {
@@ -733,8 +761,13 @@ export interface components {
     };
     /** @description The sessions of a person. */
     readonly SessionsBody: {
-      /** @description Newest first. A person has only a few, so the list is not paged. */
+      /**
+       * @description Newest first. A person has only a few, so the list is not paged: it has a hard cap, and
+       *     `truncated` says when the cap cut it off (M1-F44).
+       */
       readonly sessions: readonly components["schemas"]["SessionBody"][];
+      /** @description There are more sessions than the list holds. */
+      readonly truncated: boolean;
     };
     /** @description The first administrator, with the setup code. */
     readonly SetupBody: {
@@ -772,8 +805,7 @@ export interface components {
     };
     /** @description The answer to signing in. The cookies come with it. */
     readonly SignedInBody: {
-      /** @description Who signed in. */
-      readonly person: components["schemas"]["PersonBody"];
+      readonly person?: components["schemas"]["PersonBody"] | null;
       readonly second_step?: components["schemas"]["SecondStepBody"] | null;
     };
     /**
@@ -790,8 +822,13 @@ export interface components {
       readonly backup_codes_left: number;
       /** @description Whether a code app is set up. */
       readonly code_app: boolean;
-      /** @description The passkeys. A person has only a few, so the list is not paged. */
+      /**
+       * @description The passkeys. A person has at most 20, so the list is not paged: it has a hard cap, and
+       *     `truncated` says when the cap cut it off (M1-F44).
+       */
       readonly passkeys: readonly components["schemas"]["PasskeyBody"][];
+      /** @description There are more passkeys than the list holds. */
+      readonly truncated: boolean;
     };
   };
   responses: never;
@@ -928,7 +965,14 @@ export interface operations {
   };
   readonly listInvitations: {
     readonly parameters: {
-      readonly query?: never;
+      readonly query?: {
+        /** @description The fields each invitation holds, separated by commas: `id`, `email`, `created_at`, `expires_at`. Everything when left out. */
+        readonly fields?: string;
+        /** @description Where the page starts: the `next_cursor` of the page before. */
+        readonly cursor?: string;
+        /** @description How many invitations a page holds at most (default 50). */
+        readonly limit?: number;
+      };
       readonly header?: never;
       readonly path?: never;
       readonly cookie?: never;
@@ -1406,7 +1450,11 @@ export interface operations {
       readonly path?: never;
       readonly cookie?: never;
     };
-    readonly requestBody?: never;
+    readonly requestBody: {
+      readonly content: {
+        readonly "application/json": components["schemas"]["PasswordOnlyBody"];
+      };
+    };
     readonly responses: {
       /** @description The challenge for the device. */
       readonly 200: {
@@ -2664,7 +2712,11 @@ export interface operations {
       readonly path?: never;
       readonly cookie?: never;
     };
-    readonly requestBody?: never;
+    readonly requestBody: {
+      readonly content: {
+        readonly "application/json": components["schemas"]["PasswordOnlyBody"];
+      };
+    };
     readonly responses: {
       /** @description What the setup screen shows. */
       readonly 200: {
@@ -2742,7 +2794,7 @@ export interface operations {
     };
     readonly requestBody: {
       readonly content: {
-        readonly "application/json": components["schemas"]["CodeBody"];
+        readonly "application/json": components["schemas"]["ConfirmCodeBody"];
       };
     };
     readonly responses: {

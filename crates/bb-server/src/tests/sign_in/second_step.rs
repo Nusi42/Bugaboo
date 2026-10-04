@@ -1,8 +1,8 @@
 //! Two-step sign-in with a code app and backup codes (AUTH-03).
 
 use bb_app::auth::{
-    AppError, AuthStore as _, AuthenticateQuery, ConfirmCodeApp, RemoveCodeApp, RenewBackupCodes,
-    SecondStep, SessionsQuery, StartCodeApp, Started, TwoStepQuery,
+    AppError, AuthApi as _, AuthStore as _, AuthenticateQuery, ConfirmCodeApp, RemoveCodeApp,
+    RenewBackupCodes, SecondStep, SessionsQuery, StartCodeApp, Started, TwoStepQuery,
 };
 use bb_app::context::Clock as _;
 use bb_auth::TotpSecret;
@@ -37,6 +37,7 @@ async fn set_up(
             Rig::info(),
             StartCodeApp {
                 session_token: session.to_owned(),
+                password: PASSWORD.to_owned(),
             },
         )
         .await?;
@@ -47,6 +48,7 @@ async fn set_up(
             ConfirmCodeApp {
                 session_token: session.to_owned(),
                 code: code_now(rig, person).await?,
+                password: PASSWORD.to_owned(),
             },
         )
         .await?;
@@ -88,6 +90,7 @@ async fn auth_03_the_code_app_is_set_up_with_a_qr_picture_and_asked_for_once_con
                 Rig::info(),
                 StartCodeApp {
                     session_token: admin.session_token.clone(),
+                    password: PASSWORD.to_owned(),
                 },
             )
             .await?;
@@ -123,6 +126,7 @@ async fn auth_03_the_code_app_is_set_up_with_a_qr_picture_and_asked_for_once_con
                 ConfirmCodeApp {
                     session_token: admin.session_token.clone(),
                     code: "000000".to_owned(),
+                    password: PASSWORD.to_owned(),
                 },
             )
             .await;
@@ -134,6 +138,7 @@ async fn auth_03_the_code_app_is_set_up_with_a_qr_picture_and_asked_for_once_con
                 ConfirmCodeApp {
                     session_token: admin.session_token.clone(),
                     code: code_now(&rig, person).await?,
+                    password: PASSWORD.to_owned(),
                 },
             )
             .await?;
@@ -157,6 +162,7 @@ async fn auth_03_the_code_app_is_set_up_with_a_qr_picture_and_asked_for_once_con
                 Rig::info(),
                 StartCodeApp {
                     session_token: admin.session_token.clone(),
+                    password: PASSWORD.to_owned(),
                 },
             )
             .await;
@@ -372,6 +378,189 @@ async fn sec_14_wrong_second_step_codes_are_limited_per_person() -> Outcome {
         let blocked = second_step(&rig, &pending, &code_now(&rig, person).await?).await;
         assert!(matches!(blocked, Err(AppError::Limited { retry_after }) if retry_after > 0));
         assert_eq!(action_count(&rig, SecurityAction::SignInLimited).await?, 1);
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn sec_14_parallel_wrong_codes_at_one_half_finished_sign_in_get_no_more_than_the_allowance()
+-> Outcome {
+    each_database("sec_14_parallel_second_step", async |db| {
+        let rig = Rig::start(db, 3).await?;
+        let admin = rig.admin("ada@example.test").await?;
+        set_up(&rig, admin.person.id, &admin.session_token).await?;
+        rig.clock.advance(30);
+        let pending = rig.sign_in("ada@example.test", PASSWORD).await?;
+        let mut tasks = Vec::new();
+        for _ in 0..20 {
+            let api = rig.services.clone();
+            let token = pending.session_token.clone();
+            tasks.push(tokio::spawn(async move {
+                api.second_step(
+                    Rig::info(),
+                    SecondStep {
+                        session_token: token,
+                        code: "000000".to_owned(),
+                    },
+                )
+                .await
+            }));
+        }
+        let (mut wrong, mut limited) = (0, 0);
+        for task in tasks {
+            match task.await? {
+                Err(AppError::Refused(ErrorCode::WrongSecondStepCode)) => wrong += 1,
+                Err(AppError::Limited { .. }) => limited += 1,
+                other => unreachable!("an answer nobody expected: {other:?}"),
+            }
+        }
+        assert_eq!((wrong, limited), (3, 17));
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn sec_14_parallel_wrong_passwords_before_a_sensitive_change_get_no_more_than_the_allowance()
+-> Outcome {
+    each_database("sec_14_parallel_password_again", async |db| {
+        let rig = Rig::start(db, 3).await?;
+        let admin = rig.admin("ada@example.test").await?;
+        let mut tasks = Vec::new();
+        for _ in 0..20 {
+            let api = rig.services.clone();
+            let token = admin.session_token.clone();
+            tasks.push(tokio::spawn(async move {
+                api.start_code_app(
+                    Rig::info(),
+                    StartCodeApp {
+                        session_token: token,
+                        password: "Wrong-Password-1".to_owned(),
+                    },
+                )
+                .await
+            }));
+        }
+        let (mut wrong, mut limited) = (0, 0);
+        for task in tasks {
+            match task.await? {
+                Err(AppError::Refused(ErrorCode::WrongCredentials)) => wrong += 1,
+                Err(AppError::Limited { .. }) => limited += 1,
+                other => unreachable!("an answer nobody expected: {other:?}"),
+            }
+        }
+        assert_eq!((wrong, limited), (3, 17));
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn sec_14_ten_wrong_codes_end_the_half_finished_sign_in_and_are_written_down() -> Outcome {
+    each_database("sec_14_second_step_given_up", async |db| {
+        // The window allows many tries here, so only the count of wrong codes ends the sign-in.
+        let rig = Rig::start(db, 1000).await?;
+        let admin = rig.admin("ada@example.test").await?;
+        set_up(&rig, admin.person.id, &admin.session_token).await?;
+        rig.clock.advance(30);
+        let pending = rig.sign_in("ada@example.test", PASSWORD).await?;
+        for number in 1..=10 {
+            let result = second_step(&rig, &pending, "000000").await;
+            assert_eq!(
+                refused(result),
+                Some(ErrorCode::WrongSecondStepCode),
+                "{number}"
+            );
+        }
+        // The sign-in is over: even the right code finds nothing to finish.
+        let result = second_step(&rig, &pending, &code_now(&rig, admin.person.id).await?).await;
+        assert_eq!(refused(result), Some(ErrorCode::NotSignedIn));
+        assert_eq!(
+            action_count(&rig, SecurityAction::SecondStepGivenUp).await?,
+            1
+        );
+        // The password starts a new sign-in, whose count starts at zero.
+        let again = rig.sign_in("ada@example.test", PASSWORD).await?;
+        for _ in 0..9 {
+            assert!(second_step(&rig, &again, "000000").await.is_err());
+        }
+        let opened = second_step(&rig, &again, &code_now(&rig, admin.person.id).await?).await;
+        assert!(opened.is_ok());
+        Ok(())
+    })
+    .await
+}
+
+/// Finishes the setup of the code app with the code it shows now and this password.
+async fn confirm_with(
+    rig: &Rig,
+    person: UserId,
+    session: &str,
+    password: &str,
+) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    rig.api()
+        .confirm_code_app(
+            Rig::info(),
+            ConfirmCodeApp {
+                session_token: session.to_owned(),
+                code: code_now(rig, person).await?,
+                password: password.to_owned(),
+            },
+        )
+        .await?;
+    Ok(())
+}
+
+#[tokio::test]
+async fn sec_12_a_stolen_session_cannot_add_a_code_app_without_the_password() -> Outcome {
+    each_database("sec_12_code_app_needs_password", async |db| {
+        let rig = Rig::start(db, 10).await?;
+        let admin = rig.admin("ada@example.test").await?;
+        let person = admin.person.id;
+        let stolen = admin.session_token.clone();
+        // Starting it asks for the password.
+        for password in ["", "Wrong-Password-1"] {
+            let result = rig
+                .api()
+                .start_code_app(
+                    Rig::info(),
+                    StartCodeApp {
+                        session_token: stolen.clone(),
+                        password: password.to_owned(),
+                    },
+                )
+                .await;
+            assert_eq!(refused(result), Some(ErrorCode::WrongCredentials));
+        }
+        assert!(rig.storage.two_step(person).await?.is_none());
+        assert!(rig.storage.totp_secret(person).await?.is_none());
+        // The person starts it; a thief with the session, who also sees the secret, still cannot
+        // finish it without the password, so no second step is switched on behind their back.
+        rig.api()
+            .start_code_app(
+                Rig::info(),
+                StartCodeApp {
+                    session_token: stolen.clone(),
+                    password: PASSWORD.to_owned(),
+                },
+            )
+            .await?;
+        let result = confirm_with(&rig, person, &stolen, "Wrong-Password-1").await;
+        assert!(result.is_err());
+        assert!(
+            !rig.storage
+                .two_step(person)
+                .await?
+                .is_some_and(|step| step.confirmed)
+        );
+        confirm_with(&rig, person, &stolen, PASSWORD).await?;
+        assert!(
+            rig.storage
+                .two_step(person)
+                .await?
+                .is_some_and(|step| step.confirmed)
+        );
         Ok(())
     })
     .await

@@ -10,10 +10,10 @@ use serde_json::json;
 use super::ctx::{AppError, Ctx, by, change_failed, changed, entity, internal, person_key, set_to};
 use super::store::AuthStore;
 use super::types::{
-    AddPasskey, BackupCodes, CodeAppSetup, ConfirmCodeApp, Done, PasskeyChallenge,
-    PasskeyRegistrationQuery, PasskeySecondStepQuery, PasskeySignIn, PasskeySignInQuery,
-    PasskeyView, RemoveCodeApp, RemovePasskey, RenewBackupCodes, StartCodeApp, Started,
-    TwoStepQuery, TwoStepStatus,
+    AddPasskey, BackupCodes, CodeAppSetup, ConfirmCodeApp, Done, MAX_PASSKEYS_LISTED,
+    PasskeyChallenge, PasskeyRegistrationQuery, PasskeySecondStepQuery, PasskeySignIn,
+    PasskeySignInQuery, PasskeyView, RemoveCodeApp, RemovePasskey, RenewBackupCodes, StartCodeApp,
+    Started, TwoStepQuery, TwoStepStatus,
 };
 
 /// How many backup codes a person gets.
@@ -60,7 +60,12 @@ pub async fn two_step<S: AuthStore>(
     Ok(TwoStepStatus {
         code_app,
         backup_codes_left,
-        passkeys: passkeys.iter().map(view).collect(),
+        passkeys: passkeys
+            .iter()
+            .take(MAX_PASSKEYS_LISTED)
+            .map(view)
+            .collect(),
+        truncated: passkeys.len() > MAX_PASSKEYS_LISTED,
     })
 }
 
@@ -94,7 +99,12 @@ pub async fn passkey_second_step_options<S: AuthStore>(
     }
     let (id, options) = ctx
         .passkeys()?
-        .start_authentication(ctx.now(), pending.person.id, &credentials)
+        .start_authentication(
+            ctx.now(),
+            ctx.network_name().as_deref(),
+            pending.person.id,
+            &credentials,
+        )
         .map_err(challenge_failed)?;
     Ok(PasskeyChallenge {
         challenge_id: id.encode(),
@@ -113,7 +123,7 @@ pub async fn passkey_sign_in_options<S: AuthStore>(
 ) -> Result<PasskeyChallenge, AppError> {
     let (id, options) = ctx
         .passkeys()?
-        .start_discoverable(ctx.now())
+        .start_discoverable(ctx.now(), ctx.network_name().as_deref())
         .map_err(challenge_failed)?;
     Ok(PasskeyChallenge {
         challenge_id: id.encode(),
@@ -168,6 +178,9 @@ pub async fn passkey_sign_in<S: AuthStore>(
 
     let new = ctx.new_session(person.id, SessionStage::Active)?;
     let settings = ctx.settings().await?;
+    let old = ctx
+        .previous_session(input.previous_session.as_deref())
+        .await?;
     let event = ctx.event(
         by(person.id),
         entity("session", new.session.id)?,
@@ -180,6 +193,9 @@ pub async fn passkey_sign_in<S: AuthStore>(
             Box::pin(async move {
                 S::use_passkey(transaction, used_id, data.as_deref(), now).await?;
                 super::session::purge::<S>(transaction, &purge_settings, now).await?;
+                if let Some(old) = old {
+                    S::delete_session(transaction, old).await?;
+                }
                 S::insert_session(transaction, &session).await
             })
         })
@@ -204,6 +220,7 @@ pub async fn start_code_app<S: AuthStore>(
     input: StartCodeApp,
 ) -> Result<CodeAppSetup, AppError> {
     let record = ctx.active(&input.session_token).await?;
+    ctx.confirm_password(&record.person, input.password).await?;
     let person = record.person;
     if ctx
         .store()
@@ -269,9 +286,8 @@ pub async fn confirm_code_app<S: AuthStore>(
     input: ConfirmCodeApp,
 ) -> Result<BackupCodes, AppError> {
     let record = ctx.active(&input.session_token).await?;
+    ctx.confirm_password(&record.person, input.password).await?;
     let person = record.person.id;
-    let key = person_key(person);
-    ctx.limit_open(&key)?;
     let two_step = ctx
         .store()
         .two_step(person)
@@ -286,10 +302,11 @@ pub async fn confirm_code_app<S: AuthStore>(
         .map_err(|error| internal::<S>(&error))?
         .ok_or(ErrorCode::InvalidRequest)?;
     let typed: String = input.code.chars().filter(|c| !c.is_whitespace()).collect();
+    let slot = ctx.reserve(person_key(person))?;
     let Some(step) =
         TotpSecret::from_bytes(&secret).check(&typed, ctx.now(), two_step.last_step)?
     else {
-        ctx.limit_failed(&key, Some(person)).await;
+        ctx.slot_failed(slot, Some(person)).await;
         return Err(ErrorCode::WrongSecondStepCode.into());
     };
     let (shown, hashes) = new_backup_codes()?;
@@ -311,7 +328,7 @@ pub async fn confirm_code_app<S: AuthStore>(
         })
         .await
         .map_err(|error| change_failed::<S>(&error, Some(ErrorCode::WrongSecondStepCode)))?;
-    ctx.services.limiter.succeeded(&key);
+    ctx.slot_succeeded(slot);
     ctx.note(SecurityAction::TwoStepEnabled, Some(person), None)
         .await;
     Ok(BackupCodes(shown))
@@ -396,11 +413,13 @@ pub async fn passkey_registration_options<S: AuthStore>(
     input: PasskeyRegistrationQuery,
 ) -> Result<PasskeyChallenge, AppError> {
     let record = ctx.active(&input.session_token).await?;
+    ctx.confirm_password(&record.person, input.password).await?;
     let (_, credentials) = ctx.credentials(record.person.id).await?;
     let (id, options) = ctx
         .passkeys()?
         .start_registration(
             ctx.now(),
+            ctx.network_name().as_deref(),
             record.person.id,
             &record.person.email,
             &record.person.display_name,
@@ -423,6 +442,7 @@ pub async fn add_passkey<S: AuthStore>(
     input: AddPasskey,
 ) -> Result<PasskeyView, AppError> {
     let record = ctx.active(&input.session_token).await?;
+    ctx.confirm_password(&record.person, input.password).await?;
     let person = record.person.id;
     let label = input.label.trim().to_owned();
     if label.is_empty()

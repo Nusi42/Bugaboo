@@ -62,18 +62,18 @@ pub(crate) async fn wire(settings: &Settings, data: &DataFolder) -> anyhow::Resu
     let name = Message::from(message::APP_NAME).render();
     // Passkeys are tied to a host name; a server reached by an IP address cannot offer them.
     let passkeys = RelyingParty::from_public_url(&settings.public_url, &name)
-        .ok()
-        .and_then(|party| Passkeys::new(&party).ok());
-    if passkeys.is_none() {
-        tracing::warn!("passkeys are off: the public address has no host name");
-    }
+        .and_then(|party| Passkeys::new(&party))
+        .inspect_err(|error| {
+            tracing::warn!(cause = %error, "passkeys are off: the public address cannot be used for them");
+        })
+        .ok();
     let services = AuthServices::new(
         storage,
         Arc::new(SystemClock),
         PasswordHasher::new().map_err(|error| anyhow!(error.to_string()))?,
         passkeys,
         csrf,
-        FailureLimits::new(settings.limits.sign_in_attempts_per_minute),
+        FailureLimits::new(settings.limits.sign_in_failures_per_minute),
         name,
     );
     let setup_code = issue_setup_code(&services.ctx(RequestInfo::default()), IssueSetupCode)

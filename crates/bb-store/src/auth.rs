@@ -24,7 +24,7 @@ use bb_core::sign_in::{
 };
 use bb_core::technical::TechnicalName;
 use jiff::Timestamp;
-use sea_query::{Expr, ExprTrait as _, Order, Query};
+use sea_query::{Cond, Expr, ExprTrait as _, Order, Query};
 use zeroize::Zeroizing;
 
 use crate::anchor::LogSeal;
@@ -37,10 +37,6 @@ use crate::schema::{
 };
 use crate::security_log::NewSecurityLogEntry;
 use crate::settings::{Scopes, put_organization_setting};
-
-/// How many open invitations are listed at most. Administrators make them one at a time; this only
-/// keeps a list from growing without end.
-const MAX_OPEN_INVITATIONS: u64 = 200;
 
 /// The prefix of the name of a code app secret in the secrets table.
 const TOTP_SECRET_PREFIX: &str = "totp.";
@@ -403,7 +399,12 @@ impl AuthStore for AuthStorage {
             .transpose()
     }
 
-    async fn open_invitations(&self, now: Timestamp) -> Result<Vec<Invitation>, StoreError> {
+    async fn open_invitations(
+        &self,
+        now: Timestamp,
+        after: Option<(Timestamp, InvitationId)>,
+        limit: u64,
+    ) -> Result<Vec<Invitation>, StoreError> {
         let mut select = Query::select();
         select
             .columns(invitation_columns())
@@ -412,7 +413,20 @@ impl AuthStore for AuthStorage {
             .and_where(Expr::col(InvitationColumns::ExpiresAt).gt(to_micros(now)))
             .order_by(InvitationColumns::CreatedAt, Order::Desc)
             .order_by(InvitationColumns::Id, Order::Asc)
-            .limit(MAX_OPEN_INVITATIONS);
+            .limit(limit);
+        if let Some((created, id)) = after {
+            // Keyset paging: what comes after the last one in this order.
+            let micros = to_micros(created);
+            select.cond_where(
+                Cond::any()
+                    .add(Expr::col(InvitationColumns::CreatedAt).lt(micros))
+                    .add(
+                        Cond::all()
+                            .add(Expr::col(InvitationColumns::CreatedAt).eq(micros))
+                            .add(Expr::col(InvitationColumns::Id).gt(id.to_bytes().to_vec())),
+                    ),
+            );
+        }
         self.database
             .fetch_all(&select)
             .await?
@@ -424,14 +438,17 @@ impl AuthStore for AuthStorage {
     async fn auth_settings(&self) -> Result<AuthSettings, StoreError> {
         let scopes = Scopes::default();
         Ok(AuthSettings {
-            session_idle_minutes: self
-                .database
-                .resolve_setting(&SECURITY_SESSION_IDLE_MINUTES, &scopes)
-                .await?,
-            session_absolute_hours: self
-                .database
-                .resolve_setting(&SECURITY_SESSION_ABSOLUTE_HOURS, &scopes)
-                .await?,
+            // A value that was stored before the bounds, or by hand, is cut to them.
+            session_idle_minutes: SECURITY_SESSION_IDLE_MINUTES.definition().clamp(
+                self.database
+                    .resolve_setting(&SECURITY_SESSION_IDLE_MINUTES, &scopes)
+                    .await?,
+            ),
+            session_absolute_hours: SECURITY_SESSION_ABSOLUTE_HOURS.definition().clamp(
+                self.database
+                    .resolve_setting(&SECURITY_SESSION_ABSOLUTE_HOURS, &scopes)
+                    .await?,
+            ),
             sign_up_enabled: self
                 .database
                 .resolve_setting(&AUTH_SIGN_UP_ENABLED, &scopes)
@@ -855,9 +872,22 @@ impl AuthStore for AuthStorage {
         transaction.execute(&insert).await.map(|_| ())
     }
 
-    async fn take_setup_code(transaction: &mut Transaction) -> Result<bool, StoreError> {
-        let delete = Query::delete().from_table(SetupCodeRow::Table).to_owned();
+    async fn take_setup_code(
+        transaction: &mut Transaction,
+        hash: &Digest,
+    ) -> Result<bool, StoreError> {
+        // The hash is matched here, inside the transaction, so a code that was replaced while the
+        // request was running is not used up by a request that typed the old one.
+        let mut delete = Query::delete();
+        delete
+            .from_table(SetupCodeRow::Table)
+            .and_where(Expr::col(SetupCodeRow::CodeHash).eq(hash.as_bytes().to_vec()));
         Ok(transaction.execute(&delete).await? > 0)
+    }
+
+    async fn clear_setup_code(transaction: &mut Transaction) -> Result<(), StoreError> {
+        let delete = Query::delete().from_table(SetupCodeRow::Table).to_owned();
+        transaction.execute(&delete).await.map(|_| ())
     }
 
     async fn put_setting(

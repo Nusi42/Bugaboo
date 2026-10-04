@@ -70,21 +70,32 @@ impl fmt::Display for AppError {
 
 impl std::error::Error for AppError {}
 
-/// The limit on failed tries (SEC-14): a key (an account or a person) may fail a few times a
-/// minute; success clears it. Only failures count, so nobody can lock another person out by
-/// merely trying their address (M1-F27). The HTTP layer implements it with fixed windows.
+/// The limit on failed tries (SEC-14). A try is **reserved before it is checked** and counts as a
+/// failure from that moment, so requests that arrive at the same time cannot all slip through
+/// before the first failure is written down. A success gives the reservation back, so only real
+/// failures stay counted: nobody can lock another person out by merely trying their address
+/// (M1-F27). A key that keeps using up its allowance waits longer each time, up to a cap, and
+/// never for good. The HTTP layer implements it in memory.
 pub trait FailureLimit: Send + Sync {
-    /// `Err` with the seconds to wait when the key has used up its failures.
+    /// Reserves one try of `key`. `Ok(true)` when this try used up the allowance (the next one
+    /// waits).
     ///
     /// # Errors
-    /// The seconds to wait.
-    fn check(&self, key: &str) -> Result<(), u64>;
+    /// The seconds to wait when the key has used up its allowance.
+    fn reserve(&self, key: &str) -> Result<bool, u64>;
 
-    /// Counts a failure. `true` when this failure used up the allowance.
-    fn failed(&self, key: &str) -> bool;
+    /// Gives one reserved try back (a success on a key that many people share, like a network).
+    fn release(&self, key: &str);
 
-    /// Clears the failures of the key.
-    fn succeeded(&self, key: &str);
+    /// Clears the key (the person signed in).
+    fn clear(&self, key: &str);
+
+    /// Counts a try of `key` without a window and returns the count so far (the wrong codes of
+    /// one half-finished sign-in). `u32::MAX` when the count cannot be kept.
+    fn tally(&self, key: &str) -> u32;
+
+    /// Forgets the count of `key`.
+    fn forget(&self, key: &str);
 }
 
 /// What is known about the request that is being served.
@@ -168,6 +179,16 @@ impl IdSource for ClockIds<'_> {
     }
 }
 
+/// A reserved try (see [`FailureLimit`]).
+pub(crate) struct Slot {
+    key: String,
+    network: Option<String>,
+    tipped: bool,
+}
+
+/// How many wrong codes a half-finished sign-in takes before it is ended.
+pub(crate) const SECOND_STEP_TRIES: u32 = 10;
+
 /// A session that is made but not stored yet: the caller stores it inside its own change.
 pub(crate) struct NewSession {
     pub(crate) token: SecretToken,
@@ -223,6 +244,10 @@ impl<S: AuthStore> Ctx<'_, S> {
         person: Option<UserId>,
         subject: Option<EntityRef>,
     ) {
+        let subject_kind = subject
+            .as_ref()
+            .map(|subject| subject.kind.as_str().to_owned());
+        let subject_id = subject.as_ref().map(|subject| subject.id);
         let event = SecurityEvent {
             time: self.now(),
             person,
@@ -231,8 +256,12 @@ impl<S: AuthStore> Ctx<'_, S> {
             network: self.request.network.clone(),
         };
         if let Err(error) = self.store().append_security_log(&event).await {
+            // IDs only: who and what it was about, never a secret or a name.
             tracing::error!(
                 action = action.code(),
+                person = ?person,
+                subject_kind = subject_kind.as_deref(),
+                subject_id = ?subject_id,
                 cause = %S::describe(&error),
                 "the security log could not be written"
             );
@@ -247,19 +276,117 @@ impl<S: AuthStore> Ctx<'_, S> {
             .map_err(|error| internal::<S>(&error))
     }
 
-    /// Whether the key may try again; counts nothing.
-    pub(crate) fn limit_open(&self, key: &str) -> Result<(), AppError> {
-        self.services
-            .limiter
-            .check(key)
-            .map_err(|retry_after| AppError::Limited { retry_after })
+    /// The client network as text, for the pools of waiting passkey challenges.
+    pub(crate) fn network_name(&self) -> Option<String> {
+        self.request.network.as_ref().map(ToString::to_string)
     }
 
-    /// Counts a failure of `key` and, when it used up the allowance, writes that down.
-    pub(crate) async fn limit_failed(&self, key: &str, person: Option<UserId>) {
-        if self.services.limiter.failed(key) {
+    /// Reserves a try of `key` (an account, a person, a setup) and of the client network. The
+    /// try counts as a failure until [`Self::slot_succeeded`] says otherwise.
+    pub(crate) fn reserve(&self, key: String) -> Result<Slot, AppError> {
+        let limiter = &self.services.limiter;
+        let wait_error = |retry_after| AppError::Limited { retry_after };
+        let network = self
+            .request
+            .network
+            .as_ref()
+            .map(|network| format!("net:{network}"));
+        let network_tipped = match &network {
+            Some(network) => limiter.reserve(network).map_err(wait_error)?,
+            None => false,
+        };
+        match limiter.reserve(&key) {
+            Ok(tipped) => Ok(Slot {
+                key,
+                network,
+                tipped: tipped || network_tipped,
+            }),
+            Err(wait) => {
+                if let Some(network) = &network {
+                    limiter.release(network);
+                }
+                Err(wait_error(wait))
+            }
+        }
+    }
+
+    /// The reserved try was a failure. When it used up an allowance, that is written down once.
+    pub(crate) async fn slot_failed(&self, slot: Slot, person: Option<UserId>) {
+        if slot.tipped {
             self.note(SecurityAction::SignInLimited, person, None).await;
         }
+    }
+
+    /// The reserved try was no failure: the account is cleared, the network gets its try back.
+    pub(crate) fn slot_succeeded(&self, slot: Slot) {
+        let Slot { key, network, .. } = slot;
+        self.services.limiter.clear(&key);
+        if let Some(network) = &network {
+            self.services.limiter.release(network);
+        }
+    }
+
+    /// A wrong try at the second step of the half-finished sign-in `pending`. After
+    /// [`SECOND_STEP_TRIES`] wrong tries the sign-in is ended and that is written down: whoever
+    /// has the password has to start again, and the password steps have their own limit.
+    pub(crate) async fn second_step_failed(
+        &self,
+        slot: Slot,
+        pending: &SessionRecord,
+        action: SecurityAction,
+    ) -> Result<(), AppError> {
+        let person = pending.person.id;
+        self.slot_failed(slot, Some(person)).await;
+        self.note(action, Some(person), None).await;
+        let key = format!("pending:{}", pending.session.id);
+        if self.services.limiter.tally(&key) < SECOND_STEP_TRIES {
+            return Ok(());
+        }
+        self.services.limiter.forget(&key);
+        let id = pending.session.id;
+        let event = self.event(
+            Actor::Person(person),
+            entity("session", id)?,
+            vec![changed("session")],
+        )?;
+        self.store()
+            .record_change(&event, move |transaction| {
+                Box::pin(async move { S::delete_session(transaction, id).await.map(|_| ()) })
+            })
+            .await
+            .map_err(|error| change_failed::<S>(&error, None))?;
+        self.note(
+            SecurityAction::SecondStepGivenUp,
+            Some(person),
+            Some(entity("session", id)?),
+        )
+        .await;
+        Ok(())
+    }
+
+    /// The second step was done: the reserved try is no failure and the count of wrong tries goes.
+    pub(crate) fn second_step_done(&self, slot: Slot, pending: &SessionRecord) {
+        self.services
+            .limiter
+            .forget(&format!("pending:{}", pending.session.id));
+        self.slot_succeeded(slot);
+    }
+
+    /// The session of the cookie a browser still has when it signs in again, if it is one:
+    /// signing in ends it.
+    pub(crate) async fn previous_session(
+        &self,
+        token_text: Option<&str>,
+    ) -> Result<Option<SessionId>, AppError> {
+        let Some(token) = token_text.and_then(SecretToken::parse) else {
+            return Ok(None);
+        };
+        Ok(self
+            .store()
+            .session_by_hash(&token.hash(Purpose::Session))
+            .await
+            .map_err(|error| internal::<S>(&error))?
+            .map(|record| record.session.id))
     }
 
     /// Makes a session for `person`; the caller stores it in its own change.
@@ -383,8 +510,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         person: &Person,
         password: String,
     ) -> Result<(), AppError> {
-        let key = person_key(person.id);
-        self.limit_open(&key)?;
+        let slot = self.reserve(person_key(person.id))?;
         let account = self
             .store()
             .account_by_email(&person.email)
@@ -397,10 +523,10 @@ impl<S: AuthStore> Ctx<'_, S> {
             .verify(Zeroizing::new(password), stored)
             .await?;
         if verdict.matches {
-            self.services.limiter.succeeded(&key);
+            self.slot_succeeded(slot);
             Ok(())
         } else {
-            self.limit_failed(&key, Some(person.id)).await;
+            self.slot_failed(slot, Some(person.id)).await;
             Err(AppError::Refused(ErrorCode::WrongCredentials))
         }
     }
@@ -453,6 +579,14 @@ pub(crate) fn entity(kind: &str, id: impl Into<EntityId>) -> Result<EntityRef, A
         kind: EntityKind::new(kind).map_err(|_| AppError::Internal("an entity kind".into()))?,
         id: id.into(),
     })
+}
+
+/// The record that is one fixed thing (a setting, the setup code of the first start): its ID is
+/// made from its name, so every event about it names the same record.
+pub(crate) fn fixed_entity(kind: &str, name: &str) -> Result<EntityRef, AppError> {
+    let id = EntityId::from_bytes(bb_auth::stable_id(kind, name))
+        .map_err(|error| AppError::Internal(error.to_string()))?;
+    entity(kind, id)
 }
 
 /// The key under which failures of a signed-in or half signed-in person are counted.

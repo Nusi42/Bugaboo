@@ -14,6 +14,9 @@ pub const CONFIG_DATABASE_INVALID: MessageKey = MessageKey::new("config.database
 /// The message `config.port-missing`.
 pub const CONFIG_PORT_MISSING: MessageKey = MessageKey::new("config.port-missing");
 
+/// The message `config.public-url-proxy`.
+pub const CONFIG_PUBLIC_URL_PROXY: MessageKey = MessageKey::new("config.public-url-proxy");
+
 /// The message `config.tls-files-missing`.
 pub const CONFIG_TLS_FILES_MISSING: MessageKey = MessageKey::new("config.tls-files-missing");
 
@@ -572,6 +575,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "Bugaboo listens on {address}, so it cannot know the address people type in the browser. Set public_url, for example https://bugaboo.example.com.",
     ),
     (
+        "config.public-url-proxy",
+        "A proxy is listed in trusted_proxies, so people reach Bugaboo through the address of the proxy, which Bugaboo cannot know. Set public_url, for example https://bugaboo.example.com.",
+    ),
+    (
         "config.tls-files-missing",
         "HTTPS mode files needs both tls_cert and tls_key.",
     ),
@@ -668,7 +675,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "error.request.wrong-token",
-        "Your page is out of date. Reload the page and try again.",
+        "Your sign-in does not fit this page any more. Sign in again and then try again.",
     ),
     ("error.resource.not-found", "We could not find that."),
     (
@@ -737,7 +744,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "setting.auth.sign-up-domains.help",
-        "The e-mail domains that may sign up on their own, as a list separated by commas, like example.com. Leave it empty to allow nobody.",
+        "The e-mail domains that may sign up on their own, as a list separated by commas, like example.com. Leave the list empty to let every address sign up while signing up is on, so write your domains in first.",
     ),
     (
         "setting.auth.sign-up-enabled.help",
@@ -745,11 +752,11 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "setting.security.session-absolute-hours.help",
-        "How many hours a sign-in can last at most, even when somebody keeps working. After that, people sign in again.",
+        "How many hours a sign-in can last at most, even when somebody keeps working. After that, people sign in again. Between 1 hour and 30 days (720 hours).",
     ),
     (
         "setting.security.session-idle-minutes.help",
-        "How many minutes without activity pass before people are signed out automatically.",
+        "How many minutes without activity pass before people are signed out automatically. Between 5 minutes and 24 hours.",
     ),
     (
         "setting.security.two-step-required-roles.help",

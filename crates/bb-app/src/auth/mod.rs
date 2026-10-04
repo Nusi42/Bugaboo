@@ -88,7 +88,7 @@ use_cases! {
     /// Ends one session of the person.
     end_session(EndSession) -> Done;
     /// Lists the sessions of the person.
-    sessions(SessionsQuery) -> Vec<SessionView>;
+    sessions(SessionsQuery) -> SessionList;
     /// Changes the password.
     change_password(ChangePassword) -> Started;
     /// How the second step is set up.
@@ -112,7 +112,7 @@ use_cases! {
     /// Takes an invitation back.
     revoke_invitation(RevokeInvitation) -> Done;
     /// Lists the open invitations.
-    invitations(InvitationsQuery) -> Vec<InvitationView>;
+    invitations(InvitationsQuery) -> InvitationPage;
     /// Shows which address an invitation is for.
     invitation_lookup(InvitationLookupQuery) -> InvitationLookup;
     /// Makes an account from an invitation.

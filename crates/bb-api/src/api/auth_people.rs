@@ -15,10 +15,10 @@ use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 
 use super::auth::{
-    AuthHandle, ForbiddenAnswer, Info, InvalidAnswer, NotFoundAnswer, NotSignedInAnswer, Session,
-    SignedInBody, done, private, signed_in,
+    AuthHandle, ForbiddenAnswer, Info, InvalidAnswer, NotFoundAnswer, NotSignedInAnswer,
+    PreviousSession, Session, SignedInBody, done, private, signed_in,
 };
-use crate::errors::{ApiError, ApiJson, ApiPath};
+use crate::errors::{ApiError, ApiJson, ApiPath, ApiQuery};
 
 /// The first administrator, with the setup code.
 #[derive(Deserialize, ToSchema)]
@@ -76,6 +76,52 @@ pub(crate) struct InviteBody {
     email: String,
 }
 
+/// What a list of invitations may be asked for.
+#[derive(Deserialize)]
+pub(crate) struct InvitationsParams {
+    /// The fields each invitation holds, separated by commas: `id`, `email`, `created_at`,
+    /// `expires_at`. Everything when left out.
+    fields: Option<String>,
+    /// Where the page starts: the `next_cursor` of the page before.
+    cursor: Option<String>,
+    /// How many invitations a page holds at most (default 50).
+    limit: Option<u32>,
+}
+
+/// The fields of an invitation that can be asked for, once.
+const INVITATION_FIELDS: [&str; 4] = ["id", "email", "created_at", "expires_at"];
+/// How many invitations a page holds when the request does not say.
+const DEFAULT_PAGE: u32 = 50;
+
+/// An invitation in a list: only the fields that were asked for.
+#[derive(Serialize, ToSchema)]
+pub(crate) struct InvitationItem {
+    /// The ID of the invitation.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    id: Option<String>,
+    /// The address it is for.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    email: Option<String>,
+    /// When it was made.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    created_at: Option<String>,
+    /// When it stops working.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    expires_at: Option<String>,
+}
+
+impl InvitationItem {
+    fn of(invitation: &bb_app::auth::InvitationView, fields: &[&str]) -> Self {
+        let asked = |name: &str| fields.contains(&name);
+        Self {
+            id: asked("id").then(|| invitation.id.to_string()),
+            email: asked("email").then(|| invitation.email.clone()),
+            created_at: asked("created_at").then(|| invitation.created_at.to_string()),
+            expires_at: asked("expires_at").then(|| invitation.expires_at.to_string()),
+        }
+    }
+}
+
 /// An invitation as the administrator sees it.
 #[derive(Serialize, ToSchema)]
 pub(crate) struct InvitationBody {
@@ -100,11 +146,14 @@ impl From<&bb_app::auth::InvitationView> for InvitationBody {
     }
 }
 
-/// The open invitations.
+/// One page of the open invitations, newest first.
 #[derive(Serialize, ToSchema)]
 pub(crate) struct InvitationsBody {
-    /// Newest first. Only invitations that are still open are listed, at most 200.
-    invitations: Vec<InvitationBody>,
+    /// The invitations of this page. Only invitations that are still open are listed.
+    items: Vec<InvitationItem>,
+    /// The cursor of the next page; missing on the last page.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    next_cursor: Option<String>,
 }
 
 /// A new invitation: the secret is shown only now.
@@ -143,6 +192,7 @@ pub(crate) struct SignUpPolicyBody {
 async fn complete_setup(
     State(auth): State<AuthHandle>,
     Info(info): Info,
+    PreviousSession(previous_session): PreviousSession,
     ApiJson(body): ApiJson<SetupBody>,
 ) -> Result<Response, ApiError> {
     let started = auth
@@ -154,6 +204,7 @@ async fn complete_setup(
                 display_name: body.display_name,
                 email: body.email,
                 password: body.password,
+                previous_session,
             },
         )
         .await?;
@@ -176,6 +227,7 @@ async fn complete_setup(
 async fn sign_up(
     State(auth): State<AuthHandle>,
     Info(info): Info,
+    PreviousSession(previous_session): PreviousSession,
     ApiJson(body): ApiJson<SignUpBody>,
 ) -> Result<Response, ApiError> {
     let started = auth
@@ -186,6 +238,7 @@ async fn sign_up(
                 email: body.email,
                 display_name: body.display_name,
                 password: body.password,
+                previous_session,
             },
         )
         .await?;
@@ -234,6 +287,7 @@ async fn look_up_invitation(
 async fn accept_invitation(
     State(auth): State<AuthHandle>,
     Info(info): Info,
+    PreviousSession(previous_session): PreviousSession,
     ApiJson(body): ApiJson<AcceptBody>,
 ) -> Result<Response, ApiError> {
     let started = auth
@@ -244,31 +298,60 @@ async fn accept_invitation(
                 secret: body.secret,
                 display_name: body.display_name,
                 password: body.password,
+                previous_session,
             },
         )
         .await?;
     signed_in(&started)
 }
 
-/// The open invitations. Administrators only.
+/// The open invitations, a page at a time. Administrators only.
 #[utoipa::path(
     get,
     path = "/api/v1/auth/invitations",
     operation_id = "listInvitations",
     tag = "auth",
+    params(
+        ("fields" = Option<String>, Query, description = "The fields each invitation holds, separated by commas: `id`, `email`, `created_at`, `expires_at`. Everything when left out."),
+        ("cursor" = Option<String>, Query, description = "Where the page starts: the `next_cursor` of the page before."),
+        ("limit" = Option<u32>, Query, minimum = 1, maximum = 100, description = "How many invitations a page holds at most (default 50).")
+    ),
     responses((status = 200, description = "The open invitations.", body = InvitationsBody), NotSignedInAnswer, ForbiddenAnswer)
 )]
 async fn list_invitations(
     State(auth): State<AuthHandle>,
     Info(info): Info,
     Session(session_token): Session,
+    ApiQuery(params): ApiQuery<InvitationsParams>,
 ) -> Result<Response, ApiError> {
-    let open = auth
+    let fields: Vec<&str> = match params.fields.as_deref() {
+        None => INVITATION_FIELDS.to_vec(),
+        Some(text) => text.split(',').map(str::trim).collect(),
+    };
+    if fields
+        .iter()
+        .any(|field| !INVITATION_FIELDS.contains(field))
+    {
+        return Err(ApiError::new(ErrorCode::InvalidRequest));
+    }
+    let page = auth
         .api()?
-        .invitations(info, InvitationsQuery { session_token })
+        .invitations(
+            info,
+            InvitationsQuery {
+                session_token,
+                cursor: params.cursor,
+                limit: params.limit.unwrap_or(DEFAULT_PAGE),
+            },
+        )
         .await?;
     Ok(private(InvitationsBody {
-        invitations: open.iter().map(InvitationBody::from).collect(),
+        items: page
+            .items
+            .iter()
+            .map(|invitation| InvitationItem::of(invitation, &fields))
+            .collect(),
+        next_cursor: page.next_cursor,
     }))
 }
 

@@ -78,6 +78,7 @@ async fn sec_12_people_list_their_sessions_and_end_any_of_them() -> Outcome {
                 SignIn {
                     email: "ada@example.test".to_owned(),
                     password: PASSWORD.to_owned(),
+                    previous_session: None,
                 },
             )
             .await?;
@@ -89,7 +90,7 @@ async fn sec_12_people_list_their_sessions_and_end_any_of_them() -> Outcome {
                 },
             )
         };
-        let sessions = list(&ada_second.session_token).await?;
+        let sessions = list(&ada_second.session_token).await?.sessions;
         assert_eq!(sessions.len(), 2);
         let current: Vec<_> = sessions.iter().filter(|session| session.current).collect();
         assert_eq!(current.len(), 1);
@@ -102,7 +103,7 @@ async fn sec_12_people_list_their_sessions_and_end_any_of_them() -> Outcome {
             .ok_or("no other session")?;
 
         // Somebody else's session is not found, and is not touched.
-        let bobs = list(&bob.session_token).await?;
+        let bobs = list(&bob.session_token).await?.sessions;
         let foreign = rig
             .api()
             .end_session(
@@ -127,7 +128,7 @@ async fn sec_12_people_list_their_sessions_and_end_any_of_them() -> Outcome {
             )
             .await?;
         assert!(!signed_in(&rig, &admin.session_token).await);
-        assert_eq!(list(&ada_second.session_token).await?.len(), 1);
+        assert_eq!(list(&ada_second.session_token).await?.sessions.len(), 1);
         assert!(
             rig.database
                 .security_log_entries(0, 100)
@@ -286,6 +287,38 @@ async fn sec_12_changing_the_password_ends_other_sessions_and_gives_a_new_secret
                 .iter()
                 .any(|entry| entry.action.as_str() == SecurityAction::PasswordChanged.code())
         );
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn perf_02_the_list_of_sessions_has_a_cap_and_says_when_it_cut() -> Outcome {
+    each_database("perf_02_sessions_cap", async |db| {
+        let rig = Rig::start(db, 1000).await?;
+        let first = rig.admin("ada@example.test").await?;
+        let list = |token: &str| {
+            rig.api().sessions(
+                Rig::info(),
+                SessionsQuery {
+                    session_token: token.to_owned(),
+                },
+            )
+        };
+        let few = list(&first.session_token).await?;
+        assert_eq!((few.sessions.len(), few.truncated), (1, false));
+        let mut newest = first.session_token.clone();
+        for _ in 0..54 {
+            newest = rig
+                .sign_in("ada@example.test", PASSWORD)
+                .await?
+                .session_token;
+        }
+        // 55 sessions: the list holds the 50 newest and says that it is not everything.
+        let many = list(&newest).await?;
+        assert_eq!(many.sessions.len(), 50);
+        assert!(many.truncated);
+        assert!(many.sessions.iter().any(|session| session.current));
         Ok(())
     })
     .await

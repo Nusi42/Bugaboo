@@ -61,6 +61,12 @@ fn validate(change: &SettingChange) -> Result<TechnicalName, SettingProblem> {
     if !fits {
         return Err(SettingProblem::WrongType);
     }
+    if let (Some((least, most)), SettingValue::Integer(value)) =
+        (definition.bounds(), &change.value)
+        && !(least..=most).contains(value)
+    {
+        return Err(SettingProblem::OutOfBounds);
+    }
     if change.locked && !(definition.lockable() && change.level == Level::Organization) {
         return Err(SettingProblem::NotLockable);
     }
@@ -460,6 +466,20 @@ mod tests {
             rejected(SettingProblem::UnknownKey)(
                 database.set_setting(&event(&mut source, "a.b"), &unknown).await,
             );
+            // A session that lasts a second, or a year, is a mistake: the bounds of the setting hold.
+            for value in [1, 0, -5, 100_000] {
+                let out_of_bounds = change(
+                    "security.session-idle-minutes",
+                    Level::Organization,
+                    None,
+                    SettingValue::Integer(value),
+                );
+                rejected(SettingProblem::OutOfBounds)(
+                    database
+                        .set_setting(&event(&mut source, "a.b"), &out_of_bounds)
+                        .await,
+                );
+            }
             let wrong_level = change(
                 "security.session-idle-minutes",
                 Level::Person,

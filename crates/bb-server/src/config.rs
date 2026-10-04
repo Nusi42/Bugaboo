@@ -13,13 +13,13 @@ use std::time::Duration;
 
 use bb_api::{
     DEFAULT_MAX_CONNECTIONS, DEFAULT_REQUESTS_PER_MINUTE, DEFAULT_SIGN_IN_ATTEMPTS_PER_MINUTE,
-    LimitsConfig,
+    DEFAULT_SIGN_IN_FAILURES_PER_MINUTE, LimitsConfig,
 };
 
 use bb_core::message::{self, Message};
 
 /// Every start-up setting, once. The environment variable of `port` is `BUGABOO_PORT`.
-const KEYS: [&str; 15] = [
+const KEYS: [&str; 16] = [
     "address",
     "port",
     "data_dir",
@@ -35,6 +35,7 @@ const KEYS: [&str; 15] = [
     "header_timeout_seconds",
     "rate_limit_per_minute",
     "sign_in_attempts_per_minute",
+    "sign_in_failures_per_minute",
 ];
 /// Settings that name files or folders: relative paths in the settings file are relative to it.
 const PATH_KEYS: [&str; 3] = ["data_dir", "tls_cert", "tls_key"];
@@ -116,6 +117,7 @@ pub(crate) enum ConfigError {
     DatabaseInvalid,
     PublicUrlInvalid(String),
     PublicUrlNeeded(IpAddr),
+    PublicUrlNeededBehindProxy,
     TlsModeInvalid(String),
     TlsFilesMissing,
     TlsFilesUnused,
@@ -149,6 +151,9 @@ impl ConfigError {
             Self::DatabaseInvalid => Message::from(message::CONFIG_DATABASE_INVALID).render(),
             Self::PublicUrlInvalid(value) => message::config_public_url_invalid(value).render(),
             Self::PublicUrlNeeded(address) => message::config_public_url_needed(address).render(),
+            Self::PublicUrlNeededBehindProxy => {
+                Message::from(message::CONFIG_PUBLIC_URL_PROXY).render()
+            }
             Self::TlsModeInvalid(value) => message::config_tls_mode_invalid(value).render(),
             Self::TlsFilesMissing => Message::from(message::CONFIG_TLS_FILES_MISSING).render(),
             Self::TlsFilesUnused => Message::from(message::CONFIG_TLS_FILES_UNUSED).render(),
@@ -313,6 +318,11 @@ fn settings_from(
             "sign_in_attempts_per_minute",
             DEFAULT_SIGN_IN_ATTEMPTS_PER_MINUTE,
         )?,
+        sign_in_failures_per_minute: rate_limit(
+            values,
+            "sign_in_failures_per_minute",
+            DEFAULT_SIGN_IN_FAILURES_PER_MINUTE,
+        )?,
     };
 
     let database_url = get("database_url").map(str::to_owned);
@@ -343,7 +353,7 @@ fn settings_from(
         return Err(ConfigError::TlsOffPublic(address));
     }
 
-    let public_url = public_url_from(get("public_url"), address, port, &tls)?;
+    let public_url = public_url_from(get("public_url"), address, port, &tls, &trusted_proxies)?;
 
     let log_text = get("log_level").unwrap_or(DEFAULT_LOG_LEVEL);
     let log_level = match log_text.trim().to_ascii_lowercase().as_str() {
@@ -378,10 +388,15 @@ fn public_url_from(
     address: IpAddr,
     port: u16,
     tls: &TlsMode,
+    trusted_proxies: &[IpAddr],
 ) -> Result<String, ConfigError> {
     if let Some(text) = given {
         return bb_auth::public_origin(text)
             .ok_or_else(|| ConfigError::PublicUrlInvalid(text.to_owned()));
+    }
+    // People reach a server behind a proxy through the proxy's address, whatever it listens on.
+    if !trusted_proxies.is_empty() {
+        return Err(ConfigError::PublicUrlNeededBehindProxy);
     }
     if !address.to_canonical().is_loopback() {
         return Err(ConfigError::PublicUrlNeeded(address));
@@ -533,6 +548,7 @@ public_url = \"https://bugaboo.example.test\"";
             &[
                 ("BUGABOO_PORT", "1"),
                 ("BUGABOO_TRUSTED_PROXIES", "10.0.0.1, ::1"),
+                ("BUGABOO_PUBLIC_URL", "https://bugaboo.example.test"),
             ],
             &[],
         )
@@ -586,6 +602,27 @@ public_url = \"https://bugaboo.example.test\"";
         )
         .unwrap();
         assert_eq!(given.public_url, "https://bugaboo.example.test:8443");
+    }
+
+    #[test]
+    fn auth_02_a_server_behind_a_proxy_must_be_told_its_public_address() {
+        // Even on this computer: people reach it through the address of the proxy.
+        let cli = [
+            ("port", "1"),
+            ("tls_mode", "off"),
+            ("trusted_proxies", "10.0.0.5"),
+        ];
+        let error = resolve_with(None, &[], &cli).unwrap_err();
+        assert!(matches!(error, ConfigError::PublicUrlNeededBehindProxy));
+        assert!(error.message().contains("public_url"));
+        let with = [
+            ("port", "1"),
+            ("tls_mode", "off"),
+            ("trusted_proxies", "10.0.0.5"),
+            ("public_url", "https://bugaboo.example.test"),
+        ];
+        let settings = resolve_with(None, &[], &with).unwrap();
+        assert_eq!(settings.public_url, "https://bugaboo.example.test");
     }
 
     #[test]

@@ -18,7 +18,7 @@ use utoipa_axum::routes;
 
 use super::auth::{
     AuthHandle, ForbiddenAnswer, Info, InvalidAnswer, NotFoundAnswer, NotSignedInAnswer,
-    PersonBody, Session, SignedInBody, done, private, signed_in,
+    PersonBody, PreviousSession, Session, SignedInBody, done, private, signed_in,
 };
 use crate::cookies::Cookie;
 use crate::errors::{ApiError, ApiJson, ApiPath};
@@ -110,8 +110,11 @@ pub(crate) struct SessionBody {
 /// The sessions of a person.
 #[derive(Serialize, ToSchema)]
 pub(crate) struct SessionsBody {
-    /// Newest first. A person has only a few, so the list is not paged.
+    /// Newest first. A person has only a few, so the list is not paged: it has a hard cap, and
+    /// `truncated` says when the cap cut it off (M1-F44).
     sessions: Vec<SessionBody>,
+    /// There are more sessions than the list holds.
+    truncated: bool,
 }
 
 /// Whether setup is open and whether people may sign up. Open to everyone.
@@ -151,6 +154,7 @@ async fn get_auth_status(
 async fn sign_in(
     State(auth): State<AuthHandle>,
     Info(info): Info,
+    PreviousSession(previous_session): PreviousSession,
     ApiJson(body): ApiJson<SignInBody>,
 ) -> Result<Response, ApiError> {
     let started = auth
@@ -160,6 +164,7 @@ async fn sign_in(
             SignIn {
                 email: body.email,
                 password: body.password,
+                previous_session,
             },
         )
         .await?;
@@ -290,6 +295,7 @@ async fn passkey_sign_in_options(
 async fn passkey_sign_in(
     State(auth): State<AuthHandle>,
     Info(info): Info,
+    PreviousSession(previous_session): PreviousSession,
     ApiJson(body): ApiJson<PasskeyAnswerBody>,
 ) -> Result<Response, ApiError> {
     let started = auth
@@ -299,6 +305,7 @@ async fn passkey_sign_in(
             PasskeySignIn {
                 challenge_id: body.challenge_id,
                 credential: body.credential,
+                previous_session,
             },
         )
         .await?;
@@ -362,7 +369,9 @@ async fn list_sessions(
         .sessions(info, SessionsQuery { session_token })
         .await?;
     Ok(private(SessionsBody {
+        truncated: sessions.truncated,
         sessions: sessions
+            .sessions
             .iter()
             .map(|session| SessionBody {
                 id: session.id.to_string(),

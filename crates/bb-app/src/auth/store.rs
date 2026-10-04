@@ -128,8 +128,13 @@ pub trait AuthStore: ChangeStore + 'static {
         fn passkeys_of(person: UserId) -> Vec<StoredPasskey>;
         /// The invitation with this secret hash.
         fn invitation_by_hash(hash: &Digest) -> Option<Invitation>;
-        /// The invitations that have not been used and have not run out.
-        fn open_invitations(now: Timestamp) -> Vec<Invitation>;
+        /// The invitations that have not been used and have not run out, newest first (then by
+        /// ID), after the position `after` (the last one of the page before), at most `limit`.
+        fn open_invitations(
+            now: Timestamp,
+            after: Option<(Timestamp, InvitationId)>,
+            limit: u64
+        ) -> Vec<Invitation>;
         /// The sign-in settings.
         fn auth_settings() -> AuthSettings;
         /// Records when a session was last used. Bookkeeping, not a domain change.
@@ -187,8 +192,11 @@ pub trait AuthStore: ChangeStore + 'static {
         fn use_invitation(id: InvitationId, now: Timestamp) -> bool;
         /// Stores the hash of the setup code, replacing an older one.
         fn put_setup_code(code: &SetupCode) -> ();
-        /// Removes the setup code; `false` if somebody else removed it first.
-        fn take_setup_code() -> bool;
+        /// Removes the setup code with this hash; `false` if there is none (somebody else used it
+        /// first, or the hash is another one).
+        fn take_setup_code(hash: &Digest) -> bool;
+        /// Removes the setup code, whatever it is (setup is over).
+        fn clear_setup_code() -> ();
         /// Stores the value of a setting of the whole organization.
         fn put_setting(key: &str, value: &SettingValue, at: Timestamp) -> ();
     }

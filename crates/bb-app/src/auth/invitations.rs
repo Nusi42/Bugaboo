@@ -3,24 +3,27 @@
 
 use bb_auth::{EmailAddress, Purpose, SecretToken};
 use bb_core::ErrorCode;
-use bb_core::id::{InvitationId, UserId};
+use bb_core::id::InvitationId;
 use bb_core::settings::{AUTH_SIGN_UP_DOMAINS, AUTH_SIGN_UP_ENABLED, SettingValue};
 use bb_core::sign_in::{Invitation, SecurityAction};
 use jiff::Timestamp;
 use serde_json::json;
 
 use super::ctx::{
-    AppError, Ctx, INVITATION_SECONDS, by, change_failed, changed, entity, internal, set_to,
+    AppError, Ctx, INVITATION_SECONDS, by, change_failed, changed, entity, fixed_entity, internal,
+    set_to,
 };
 use super::store::AuthStore;
 use super::types::{
     ChangeSignUpPolicy, CreateInvitation, CreatedInvitation, Done, InvitationLookup,
-    InvitationLookupQuery, InvitationView, InvitationsQuery, RevokeInvitation, SignUpPolicy,
-    SignUpPolicyQuery,
+    InvitationLookupQuery, InvitationPage, InvitationView, InvitationsQuery, MAX_PAGE,
+    RevokeInvitation, SignUpPolicy, SignUpPolicyQuery,
 };
 
 /// The longest domain name (RFC 1035).
 const DOMAIN_MAX: usize = 253;
+/// The most domains the rule for signing up can list (the whole list is the value of one setting).
+const MAX_SIGN_UP_DOMAINS: usize = 100;
 
 fn view(invitation: &Invitation) -> InvitationView {
     InvitationView {
@@ -126,21 +129,47 @@ pub async fn revoke_invitation<S: AuthStore>(
     Ok(Done)
 }
 
-/// The open invitations.
+/// Where a page ends, as text: the time the last invitation was made (microseconds) and its ID.
+fn write_cursor(last: &Invitation) -> String {
+    format!("{}.{}", last.created_at.as_microsecond(), last.id)
+}
+
+fn read_cursor(text: &str) -> Result<(Timestamp, InvitationId), ()> {
+    let (micros, id) = text.split_once('.').ok_or(())?;
+    let created = Timestamp::from_microsecond(micros.parse().map_err(|_| ())?).map_err(|_| ())?;
+    Ok((created, id.parse().map_err(|_| ())?))
+}
+
+/// The open invitations, one page at a time (newest first).
 ///
 /// # Errors
-/// `access.forbidden` for people who are not administrators.
+/// `access.forbidden` for people who are not administrators, `request.invalid` for a cursor that
+/// is not one.
 pub async fn invitations<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: InvitationsQuery,
-) -> Result<Vec<InvitationView>, AppError> {
+) -> Result<InvitationPage, AppError> {
     ctx.administrator(&input.session_token).await?;
-    let open = ctx
+    let limit = u64::from(input.limit.clamp(1, MAX_PAGE));
+    let after = input
+        .cursor
+        .as_deref()
+        .map(read_cursor)
+        .transpose()
+        .map_err(|()| AppError::Refused(ErrorCode::InvalidRequest))?;
+    // One more than the page, to know whether there is a next one.
+    let mut found = ctx
         .store()
-        .open_invitations(ctx.now())
+        .open_invitations(ctx.now(), after, limit + 1)
         .await
         .map_err(|error| internal::<S>(&error))?;
-    Ok(open.iter().map(view).collect())
+    let more = u64::try_from(found.len()).is_ok_and(|count| count > limit);
+    found.truncate(usize::try_from(limit).unwrap_or(usize::MAX));
+    let next_cursor = more.then(|| found.last().map(write_cursor)).flatten();
+    Ok(InvitationPage {
+        items: found.iter().map(view).collect(),
+        next_cursor,
+    })
 }
 
 /// Which address an invitation link is for, so the page can show it.
@@ -221,6 +250,9 @@ pub async fn change_sign_up_policy<S: AuthStore>(
             domains.push(domain);
         }
     }
+    if domains.len() > MAX_SIGN_UP_DOMAINS {
+        return Err(ErrorCode::InvalidRequest.into());
+    }
     let policy = SignUpPolicy {
         enabled: input.policy.enabled,
         domains,
@@ -228,7 +260,7 @@ pub async fn change_sign_up_policy<S: AuthStore>(
     let list = policy.domains.join(",");
     let event = ctx.event(
         by(record.person.id),
-        entity("setting", UserId::generate(&mut ctx.ids()))?,
+        fixed_entity("setting", "auth.sign-up-policy")?,
         vec![
             set_to("auth_sign_up_enabled", json!(policy.enabled)),
             set_to("auth_sign_up_domains", json!(list)),

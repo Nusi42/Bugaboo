@@ -26,7 +26,7 @@ use super::rig::{OTHER_PASSWORD, Outcome, PASSWORD, PUBLIC_URL, Rig};
 
 type Failure = Box<dyn std::error::Error + Send + Sync>;
 
-/// The last number of the next browser's address.
+/// The third number of the next browser's address (a network is the first three numbers).
 static NEXT_HOST: AtomicU8 = AtomicU8::new(1);
 
 const SESSION: &str = "__Host-bb_session";
@@ -104,7 +104,7 @@ impl Browser {
             // Every browser is on a network of its own, so the limit per network of one test
             // browser does not use up another's.
             peer: SocketAddr::from((
-                [203, 0, 113, NEXT_HOST.fetch_add(1, Ordering::SeqCst)],
+                [203, 0, NEXT_HOST.fetch_add(1, Ordering::SeqCst), 9],
                 50_000,
             )),
         }
@@ -427,15 +427,16 @@ async fn sec_14_failed_sign_ins_are_turned_away_with_a_wait_and_the_answers_look
         browser
             .send("POST", "/api/v1/auth/setup", Some(setup_body(&rig)))
             .await?;
-        let mut guesser = Browser::new(&app, &called());
-        let wrong = guesser
+        // Every try comes from another network, so only the account is limited here.
+        let fresh = || Browser::new(&app, &called());
+        let wrong = fresh()
             .send(
                 "POST",
                 "/api/v1/auth/sign-in",
                 Some(sign_in_body("ada@example.test", "Wrong-Password-1")),
             )
             .await?;
-        let unknown = guesser
+        let unknown = fresh()
             .send(
                 "POST",
                 "/api/v1/auth/sign-in",
@@ -449,11 +450,10 @@ async fn sec_14_failed_sign_ins_are_turned_away_with_a_wait_and_the_answers_look
             assert_eq!(wrong.body[field], unknown.body[field], "{field}");
         }
         assert_eq!(wrong.code(), "auth.wrong_credentials");
-        assert!(guesser.jar.is_empty());
 
         // Ada's account has two more tries; then even her right password waits.
         for _ in 0..2 {
-            let reply = guesser
+            let reply = fresh()
                 .send(
                     "POST",
                     "/api/v1/auth/sign-in",
@@ -462,7 +462,7 @@ async fn sec_14_failed_sign_ins_are_turned_away_with_a_wait_and_the_answers_look
                 .await?;
             assert_eq!(reply.status, StatusCode::UNAUTHORIZED);
         }
-        let reply = guesser
+        let reply = fresh()
             .send(
                 "POST",
                 "/api/v1/auth/sign-in",
@@ -480,6 +480,63 @@ async fn sec_14_failed_sign_ins_are_turned_away_with_a_wait_and_the_answers_look
 }
 
 #[tokio::test]
+async fn sec_14_failures_of_one_network_are_limited_whatever_the_account() -> Outcome {
+    each_database("sec_14_http_network_failures", async |db| {
+        let (rig, app) = rig_and_app(db, 3).await?;
+        Browser::new(&app, &called())
+            .send("POST", "/api/v1/auth/setup", Some(setup_body(&rig)))
+            .await?;
+        let mut guesser = Browser::new(&app, &called());
+        // Three wrong tries at three different accounts use up the network.
+        for number in 0..3 {
+            let reply = guesser
+                .send(
+                    "POST",
+                    "/api/v1/auth/sign-in",
+                    Some(sign_in_body(
+                        &format!("person{number}@example.test"),
+                        "Wrong-Password-1",
+                    )),
+                )
+                .await?;
+            assert_eq!(reply.status, StatusCode::UNAUTHORIZED);
+        }
+        // Now even a right password from this network waits ...
+        let reply = guesser
+            .send(
+                "POST",
+                "/api/v1/auth/sign-in",
+                Some(sign_in_body("ada@example.test", PASSWORD)),
+            )
+            .await?;
+        assert_eq!(reply.status, StatusCode::TOO_MANY_REQUESTS);
+        // ... and another network is not affected.
+        let mut other = Browser::new(&app, &called());
+        let reply = other
+            .send(
+                "POST",
+                "/api/v1/auth/sign-in",
+                Some(sign_in_body("ada@example.test", PASSWORD)),
+            )
+            .await?;
+        assert_eq!(reply.status, StatusCode::OK);
+        // Many successes from one network never count: they give their try back.
+        for _ in 0..5 {
+            let reply = other
+                .send(
+                    "POST",
+                    "/api/v1/auth/sign-in",
+                    Some(sign_in_body("ada@example.test", PASSWORD)),
+                )
+                .await?;
+            assert_eq!(reply.status, StatusCode::OK);
+        }
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
 async fn sec_14_one_network_is_limited_in_its_tries_whatever_the_account() -> Outcome {
     each_database("sec_14_http_network_limit", async |db| {
         let rig = Rig::start(db, 100).await?;
@@ -488,6 +545,7 @@ async fn sec_14_one_network_is_limited_in_its_tries_whatever_the_account() -> Ou
             LimitsConfig {
                 requests_per_minute: 1000,
                 sign_in_attempts_per_minute: 4,
+                ..LimitsConfig::default()
             },
             true,
         ));
@@ -645,7 +703,7 @@ async fn invitations(tour: &mut Tour) -> Outcome {
             None,
         )
         .await?;
-    assert_eq!(reply.body["invitations"].as_array().map(Vec::len), Some(1));
+    assert_eq!(reply.body["items"].as_array().map(Vec::len), Some(1));
     let mut bob = Browser::new(app, used);
     let reply = bob
         .route(
@@ -674,7 +732,7 @@ async fn invitations(tour: &mut Tour) -> Outcome {
         .await?;
     assert!(ok(&reply));
     let listed = ada.send("GET", &format!("{api}/invitations"), None).await?;
-    let id = text(&listed, "/invitations/0/id")?;
+    let id = text(&listed, "/items/0/id")?;
     let reply = ada
         .route(
             "DELETE",
@@ -749,7 +807,7 @@ async fn code_app(tour: &mut Tour) -> Outcome {
             "POST",
             "/api/v1/auth/two-step/code-app",
             &format!("{api}/two-step/code-app"),
-            None,
+            Some(json!({"password": PASSWORD})),
         )
         .await?;
     assert!(
@@ -762,7 +820,7 @@ async fn code_app(tour: &mut Tour) -> Outcome {
             "POST",
             "/api/v1/auth/two-step/code-app/confirm",
             &format!("{api}/two-step/code-app/confirm"),
-            Some(json!({"code": totp(rig, "ada@example.test").await?})),
+            Some(json!({"code": totp(rig, "ada@example.test").await?, "password": PASSWORD})),
         )
         .await?;
     assert_eq!(reply.body["codes"].as_array().map(Vec::len), Some(10));
@@ -836,7 +894,7 @@ async fn passkeys(tour: &mut Tour) -> Outcome {
             "POST",
             "/api/v1/auth/passkeys/options",
             &format!("{api}/passkeys/options"),
-            None,
+            Some(json!({"password": PASSWORD})),
         )
         .await?;
     let challenge = text(&reply, "/challenge_id")?;
@@ -849,7 +907,7 @@ async fn passkeys(tour: &mut Tour) -> Outcome {
             "POST",
             "/api/v1/auth/passkeys",
             &format!("{api}/passkeys"),
-            Some(json!({"challenge_id": challenge, "credential": answer, "label": "Laptop"})),
+            Some(json!({"challenge_id": challenge, "credential": answer, "label": "Laptop", "password": PASSWORD})),
         )
         .await?;
     let passkey_id = text(&reply, "/id")?;
@@ -1066,6 +1124,136 @@ async fn auth_01_every_route_of_signing_in_works_over_http() -> Outcome {
         passkeys(&mut tour).await?;
         sessions_and_password(&mut tour).await?;
         every_route_was_used(&tour)
+    })
+    .await
+}
+
+#[tokio::test]
+async fn perf_02_the_invitation_list_takes_fields_cursor_and_limit_over_http() -> Outcome {
+    each_database("perf_02_http_invitation_list", async |db| {
+        let (rig, app) = rig_and_app(db, 10).await?;
+        let mut ada = Browser::new(&app, &called());
+        ada.send("POST", "/api/v1/auth/setup", Some(setup_body(&rig)))
+            .await?;
+        for number in 0..3 {
+            let reply = ada
+                .send(
+                    "POST",
+                    "/api/v1/auth/invitations",
+                    Some(json!({"email": format!("person{number}@example.test")})),
+                )
+                .await?;
+            assert!(ok(&reply));
+        }
+        // Two fields, two to a page: only those keys, and a cursor for the rest.
+        let first = ada
+            .send(
+                "GET",
+                "/api/v1/auth/invitations?fields=id,email&limit=2",
+                None,
+            )
+            .await?;
+        assert_eq!(first.status, StatusCode::OK);
+        let items = first.body["items"].as_array().ok_or("no items")?;
+        assert_eq!(items.len(), 2);
+        for item in items {
+            let mut keys: Vec<&String> = item.as_object().ok_or("no object")?.keys().collect();
+            keys.sort();
+            assert_eq!(keys, ["email", "id"]);
+        }
+        let cursor = text(&first, "/next_cursor")?;
+        let last = ada
+            .send(
+                "GET",
+                &format!("/api/v1/auth/invitations?limit=2&cursor={cursor}"),
+                None,
+            )
+            .await?;
+        assert_eq!(last.body["items"].as_array().map(Vec::len), Some(1));
+        assert_eq!(last.body["next_cursor"], Value::Null);
+        assert!(
+            last.body["items"][0]["expires_at"].is_string(),
+            "all fields by default"
+        );
+        // A field that does not exist, and a cursor that is not one, are refused.
+        for bad in ["fields=password", "cursor=nonsense", "limit=many"] {
+            let reply = ada
+                .send("GET", &format!("/api/v1/auth/invitations?{bad}"), None)
+                .await?;
+            assert_eq!(reply.status, StatusCode::BAD_REQUEST, "{bad}");
+            assert_eq!(reply.code(), "request.invalid", "{bad}");
+        }
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn sec_12_a_password_alone_shows_nothing_about_the_person_until_the_second_step_is_done()
+-> Outcome {
+    each_database("sec_12_http_hidden_person", async |db| {
+        let (rig, app) = rig_and_app(db, 10).await?;
+        let used = called();
+        let mut ada = Browser::new(&app, &used);
+        ada.send("POST", "/api/v1/auth/setup", Some(setup_body(&rig)))
+            .await?;
+        ada.send(
+            "POST",
+            "/api/v1/auth/two-step/code-app",
+            Some(json!({"password": PASSWORD})),
+        )
+        .await?;
+        let confirmed = ada
+            .send(
+                "POST",
+                "/api/v1/auth/two-step/code-app/confirm",
+                Some(json!({"code": totp(&rig, "ada@example.test").await?, "password": PASSWORD})),
+            )
+            .await?;
+        assert!(ok(&confirmed));
+        rig.clock.advance(30);
+        let mut laptop = Browser::new(&app, &used);
+        let password_only = laptop
+            .send(
+                "POST",
+                "/api/v1/auth/sign-in",
+                Some(sign_in_body("ada@example.test", PASSWORD)),
+            )
+            .await?;
+        assert_eq!(password_only.status, StatusCode::OK);
+        assert_eq!(password_only.body["person"], Value::Null);
+        assert!(password_only.body["second_step"].is_object());
+        let shown = password_only.body.to_string();
+        for private in ["Ada Admin", "ada@example.test", "administrator"] {
+            assert!(!shown.contains(private), "{private}");
+        }
+        let finished = laptop
+            .send(
+                "POST",
+                "/api/v1/auth/second-step",
+                Some(json!({"code": totp(&rig, "ada@example.test").await?})),
+            )
+            .await?;
+        assert_eq!(finished.body["person"]["email"], "ada@example.test");
+        assert_eq!(finished.body["second_step"], Value::Null);
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn perf_02_the_lists_with_a_hard_cap_say_whether_they_were_cut() -> Outcome {
+    each_database("perf_02_http_capped_lists", async |db| {
+        let (rig, app) = rig_and_app(db, 10).await?;
+        let mut ada = Browser::new(&app, &called());
+        ada.send("POST", "/api/v1/auth/setup", Some(setup_body(&rig)))
+            .await?;
+        let sessions = ada.send("GET", "/api/v1/auth/sessions", None).await?;
+        assert_eq!(sessions.body["truncated"], false);
+        let two_step = ada.send("GET", "/api/v1/auth/two-step", None).await?;
+        assert_eq!(two_step.body["truncated"], false);
+        assert!(two_step.body["passkeys"].is_array());
+        Ok(())
     })
     .await
 }
