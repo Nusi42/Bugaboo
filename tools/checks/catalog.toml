@@ -1,0 +1,724 @@
+# Bugaboo check catalogue — the single source of every automated check.
+#
+# `cargo xtask` implements each entry; lefthook, Claude Code hooks and CI only ever call xtask.
+# The meta checks (META-*) keep this file, the implementations and the docs in sync.
+#
+# Fields:
+#   id      stable ID, referenced from docs ("Enforced by: ARCH-04")
+#   title   what it catches, in plain words
+#   rule    where the rule is written down (doc § or ADR)
+#   tool    how it is checked
+#   when    edit (Claude Code hook after each edit) · commit · push · ci · nightly · release
+#   files   which files trigger it (globs); "*" = always
+#   status  planned · active   (all planned until the M0 milestone builds xtask)
+
+# ───────────── Formatting ─────────────
+[[check]]
+id = "FMT-RUST"
+title = "Rust code is formatted"
+rule = "coding-standards §3"
+tool = "rustfmt (rustfmt.toml)"
+when = ["edit", "commit", "ci"]
+files = ["**/*.rs"]
+status = "planned"
+
+[[check]]
+id = "FMT-TS"
+title = "TypeScript, JavaScript and JSON are formatted"
+rule = "coding-standards §4"
+tool = "oxfmt"
+when = ["edit", "commit", "ci"]
+files = ["web/**/*.{ts,tsx,js,mjs,json}", "tools/**/*.{js,mjs,json}"]
+status = "planned"
+
+[[check]]
+id = "FMT-CSS"
+title = "CSS is formatted"
+rule = "coding-standards §4"
+tool = "oxfmt, or Biome if oxfmt lacks CSS support at setup time"
+when = ["edit", "commit", "ci"]
+files = ["**/*.css"]
+status = "planned"
+
+[[check]]
+id = "FMT-TOML"
+title = "TOML files are formatted"
+rule = "coding-standards §2"
+tool = "taplo"
+when = ["edit", "commit", "ci"]
+files = ["**/*.toml"]
+status = "planned"
+
+[[check]]
+id = "FMT-MD"
+title = "Markdown docs follow one style"
+rule = "coding-standards §2"
+tool = "rumdl"
+when = ["edit", "commit", "ci"]
+files = ["**/*.md"]
+status = "planned"
+
+# ───────────── Linting ─────────────
+[[check]]
+id = "LINT-RUST"
+title = "Clippy finds no warnings (selected pedantic lints on)"
+rule = "coding-standards §3"
+tool = "cargo clippy -D warnings"
+when = ["push", "ci"]
+files = ["**/*.rs", "**/Cargo.toml"]
+status = "planned"
+
+[[check]]
+id = "LINT-TS"
+title = "oxlint finds no problems, including type-aware rules (TypeScript 7)"
+rule = "coding-standards §4"
+tool = "oxlint + oxlint-tsgolint"
+when = ["edit", "commit", "ci"]
+files = ["web/**/*.{ts,tsx}"]
+status = "planned"
+
+[[check]]
+id = "LINT-CSS"
+title = "CSS uses only token variables; no raw colors, sizes or !important"
+rule = "ADR-0010"
+tool = "stylelint (CSS Modules)"
+when = ["edit", "commit", "ci"]
+files = ["web/**/*.css"]
+status = "planned"
+
+[[check]]
+id = "LINT-TYPES"
+title = "TypeScript type check passes"
+rule = "coding-standards §4"
+tool = "tsc (TypeScript 7) --noEmit"
+when = ["push", "ci"]
+files = ["web/**/*.{ts,tsx}"]
+status = "planned"
+
+[[check]]
+id = "LINT-SPELL"
+title = "No spelling mistakes in code, UI text and docs"
+rule = "coding-standards §2"
+tool = "typos"
+when = ["commit", "ci"]
+files = ["*"]
+status = "planned"
+
+[[check]]
+id = "LINT-LINKS"
+title = "Links in the docs point somewhere real"
+rule = "coding-standards §2"
+tool = "lychee (offline mode for repo links)"
+when = ["ci"]
+files = ["**/*.md"]
+status = "planned"
+
+[[check]]
+id = "LINT-CI"
+title = "CI workflow files are valid"
+rule = "ADR-0014"
+tool = "actionlint"
+when = ["commit", "ci"]
+files = [".github/workflows/*.yml"]
+status = "planned"
+
+[[check]]
+id = "LINT-DRY"
+title = "No copy-pasted code blocks above the duplication threshold"
+rule = "coding-standards §1 (DRY)"
+tool = "jscpd (Rust and TypeScript)"
+when = ["ci"]
+files = ["crates/**/*.rs", "web/**/*.{ts,tsx}"]
+status = "planned"
+
+[[check]]
+id = "LINT-HYGIENE"
+title = "No console.log, no any, no non-null !, no @ts-ignore, no TODO without an issue number, no dbg!/println!"
+rule = "coding-standards §2, §3, §4"
+tool = "oxlint rules + ast-grep"
+when = ["edit", "commit", "ci"]
+files = ["crates/**/*.rs", "web/**/*.{ts,tsx}"]
+status = "planned"
+
+[[check]]
+id = "LINT-API-TYPES"
+title = "No hand-written API response types in the browser app"
+rule = "ADR-0008"
+tool = "ast-grep (types named like API schemas outside api-client)"
+when = ["edit", "commit", "ci"]
+files = ["web/app/**/*.{ts,tsx}"]
+status = "planned"
+
+# ───────────── Text, words and style ─────────────
+[[check]]
+id = "TXT-LITERAL"
+title = "No hard-coded user-facing text in components or API messages"
+rule = "UX-07, coding-standards §4"
+tool = "ast-grep rules (JSX text, aria-*, title, alt, placeholder; Rust error strings)"
+when = ["edit", "commit", "ci"]
+files = ["web/**/*.tsx", "crates/**/*.rs"]
+status = "planned"
+
+[[check]]
+id = "TXT-CATALOG"
+title = "Message catalog: no missing, unused or duplicate keys; placeholders match"
+rule = "UX-07"
+tool = "xtask (parses messages/en.json and code references)"
+when = ["edit", "commit", "ci"]
+files = ["messages/**", "web/**/*.tsx", "crates/**/*.rs"]
+status = "planned"
+
+[[check]]
+id = "TXT-TERMS"
+title = "No words from the glossary's 'Don't say' column in UI text, user docs or API names"
+rule = "glossary.md"
+tool = "xtask (reads glossary tables)"
+when = ["edit", "commit", "ci"]
+files = ["messages/**", "userDocs/**", "crates/bb-api/**"]
+status = "planned"
+
+[[check]]
+id = "STY-TOKENS"
+title = "Only design tokens in code: no hex/rgb colors, no inline style attributes"
+rule = "ADR-0010"
+tool = "ast-grep + stylelint"
+when = ["edit", "commit", "ci"]
+files = ["web/**/*.{tsx,css}"]
+status = "planned"
+
+[[check]]
+id = "STY-CONTRAST"
+title = "Every text/background pair in the built-in themes passes WCAG AA"
+rule = "THM-03, UX-04"
+tool = "xtask (reads design/tokens.json)"
+when = ["commit", "ci"]
+files = ["design/tokens.json"]
+status = "planned"
+
+# ───────────── Architecture ─────────────
+[[check]]
+id = "ARCH-DEPS"
+title = "Crates depend only on what the module map allows"
+rule = "architecture §4 (dependency rules), ADR-0001"
+tool = "xtask (cargo metadata vs allowed edges)"
+when = ["push", "ci"]
+files = ["**/Cargo.toml"]
+status = "planned"
+
+[[check]]
+id = "ARCH-PURE"
+title = "bb-core, bb-searchlang and bb-markdown do no I/O (no tokio, sqlx, std::fs, std::net)"
+rule = "architecture §4, ADR-0005, ADR-0011"
+tool = "xtask (dependency bans) + ast-grep"
+when = ["edit", "push", "ci"]
+files = ["crates/bb-core/**", "crates/bb-searchlang/**", "crates/bb-markdown/**"]
+status = "planned"
+
+[[check]]
+id = "ARCH-WASM"
+title = "The browser-shared crates still build for WebAssembly within the size budget"
+rule = "ADR-0005, ADR-0011, PERF-04"
+tool = "cargo build --target wasm32-unknown-unknown + wasm-opt size check"
+when = ["ci"]
+files = ["crates/bb-searchlang/**", "crates/bb-markdown/**", "crates/bb-wasm/**"]
+status = "planned"
+
+[[check]]
+id = "ARCH-AUTHZ-ONLY"
+title = "Authorized<T> is only created inside bb-policy"
+rule = "ADR-0004"
+tool = "ast-grep + private constructor (compile error)"
+when = ["edit", "commit", "ci"]
+files = ["crates/**/*.rs"]
+status = "planned"
+
+[[check]]
+id = "ARCH-API-OUT"
+title = "API and MCP handlers return only Authorized views, never domain or database types"
+rule = "ADR-0004"
+tool = "trait bound on responses + ast-grep"
+when = ["edit", "commit", "ci"]
+files = ["crates/bb-api/**", "crates/bb-mcp/**"]
+status = "planned"
+
+[[check]]
+id = "ARCH-HTTP-EDGE"
+title = "Only bb-api and bb-mcp use HTTP crates; only bb-server wires adapters"
+rule = "architecture §4"
+tool = "xtask (cargo metadata)"
+when = ["push", "ci"]
+files = ["**/Cargo.toml"]
+status = "planned"
+
+[[check]]
+id = "ARCH-SQL-EDGE"
+title = "Only bb-store touches the database; no SQL text built with format! anywhere"
+rule = "ADR-0003, SEC-17"
+tool = "xtask (cargo metadata) + ast-grep"
+when = ["edit", "commit", "ci"]
+files = ["crates/**/*.rs"]
+status = "planned"
+
+[[check]]
+id = "ARCH-EVENTS"
+title = "Every command use case appends a domain event"
+rule = "ADR-0007"
+tool = "generated test: runs every command against fakes and asserts an event"
+when = ["ci"]
+files = ["crates/bb-app/**"]
+status = "planned"
+
+[[check]]
+id = "ARCH-VERSIONED"
+title = "Every change endpoint requires a version (If-Match) and long-text endpoints an edit-lock token"
+rule = "ADR-0019"
+tool = "xtask (reads generated OpenAPI)"
+when = ["push", "ci"]
+files = ["crates/bb-api/**"]
+status = "planned"
+
+[[check]]
+id = "ARCH-LEAN"
+title = "Every list endpoint supports fields=, cursor paging and a page-size cap"
+rule = "PERF-02"
+tool = "xtask (reads generated OpenAPI)"
+when = ["push", "ci"]
+files = ["crates/bb-api/**"]
+status = "planned"
+
+[[check]]
+id = "ARCH-PERMS"
+title = "Every endpoint and MCP tool declares its permission; every permission is used and explained"
+rule = "SEC-01, ADR-0004"
+tool = "xtask (OpenAPI x-permission + permission catalogue)"
+when = ["push", "ci"]
+files = ["crates/bb-api/**", "crates/bb-mcp/**", "crates/bb-policy/**"]
+status = "planned"
+
+[[check]]
+id = "ARCH-ERRORS"
+title = "Every error code has a message key; API errors are problem+json with a code"
+rule = "architecture §7 (Errors)"
+tool = "xtask"
+when = ["push", "ci"]
+files = ["crates/bb-core/**", "messages/**"]
+status = "planned"
+
+[[check]]
+id = "ARCH-SETTINGS"
+title = "Settings are only read and written through the settings registry"
+rule = "ADR-0018"
+tool = "ast-grep"
+when = ["edit", "commit", "ci"]
+files = ["crates/**/*.rs"]
+status = "planned"
+
+[[check]]
+id = "ARCH-AI-TOOLS"
+title = "AI tools exist only in the tool registry and never reach people-ranking, assignment or working-hours use cases"
+rule = "ADR-0013, COMP-10"
+tool = "xtask (registry allow list) + ast-grep"
+when = ["edit", "commit", "ci"]
+files = ["crates/bb-ai/**", "crates/bb-mcp/**"]
+status = "planned"
+
+[[check]]
+id = "ARCH-WEB-API"
+title = "The browser app calls the server only through @bugaboo/api-client (no raw fetch)"
+rule = "ADR-0008"
+tool = "oxlint no-restricted-globals/imports + ast-grep"
+when = ["edit", "commit", "ci"]
+files = ["web/app/**"]
+status = "planned"
+
+[[check]]
+id = "ARCH-WEB-FEATURES"
+title = "Browser feature folders import each other only through their public index"
+rule = "architecture §4 (browser app)"
+tool = "oxlint import rules"
+when = ["edit", "commit", "ci"]
+files = ["web/app/src/features/**"]
+status = "planned"
+
+[[check]]
+id = "ARCH-MAP-SYNC"
+title = "The module map in the architecture docs lists exactly the crates and packages that exist"
+rule = "architecture §4, COMP-06"
+tool = "xtask (parses 04-building-blocks.md vs workspace)"
+when = ["push", "ci"]
+files = ["**/Cargo.toml", "web/**/package.json", "docs/architecture/04-building-blocks.md"]
+status = "planned"
+
+[[check]]
+id = "ARCH-DOC-CHANGE"
+title = "Changed boundaries, interfaces or dependencies come with a doc or decision-record change"
+rule = "COMP-06, coding-standards §5"
+tool = "xtask (diff against main)"
+when = ["push", "ci"]
+files = ["**/Cargo.toml", "web/**/package.json", "crates/bb-api/**"]
+status = "planned"
+
+[[check]]
+id = "ARCH-NO-UNSAFE"
+title = "Every crate forbids unsafe code unless an ADR allows it"
+rule = "coding-standards §3"
+tool = "xtask (checks #![forbid(unsafe_code)] in crate roots)"
+when = ["commit", "ci"]
+files = ["crates/*/src/lib.rs", "crates/*/src/main.rs"]
+status = "planned"
+
+[[check]]
+id = "ARCH-DB-PARITY"
+title = "Repository tests ran on both SQLite and PostgreSQL"
+rule = "ADR-0003"
+tool = "CI matrix + xtask (compares test reports)"
+when = ["ci"]
+files = ["crates/bb-store/**"]
+status = "planned"
+
+[[check]]
+id = "ARCH-PERSON-REF"
+title = "People are only shown through PersonRef, resolved for the viewer (names, role only or Someone)"
+rule = "ADR-0022, PRIV-12"
+tool = "ast-grep + serialization test"
+when = ["edit", "commit", "ci"]
+files = ["crates/**/*.rs"]
+status = "planned"
+
+[[check]]
+id = "ARCH-NO-COUNTERS"
+title = "No public identifier or label counts up (IDs, former-user labels); no totals that include hidden items"
+rule = "ADR-0021, PRIV-13"
+tool = "ast-grep + OpenAPI review rules"
+when = ["commit", "ci"]
+files = ["crates/**/*.rs"]
+status = "planned"
+
+[[check]]
+id = "TEST-ISSUE-IDS"
+title = "Counting and random IDs: unique, readable alphabet, old IDs redirect after moves and mode changes"
+rule = "ADR-0021"
+tool = "unit + property tests"
+when = ["ci"]
+files = ["crates/bb-app/**", "crates/bb-store/**"]
+status = "planned"
+
+# ───────────── Security ─────────────
+[[check]]
+id = "SEC-SECRETS"
+title = "No keys, tokens or passwords committed"
+rule = "SEC-16"
+tool = "gitleaks"
+when = ["commit", "ci"]
+files = ["*"]
+status = "planned"
+
+[[check]]
+id = "SEC-PATTERNS"
+title = "No unwrap/expect/panic in production code, no dangerouslySetInnerHTML, eval or new Function"
+rule = "coding-standards §3, §4"
+tool = "ast-grep"
+when = ["edit", "commit", "ci"]
+files = ["crates/**/*.rs", "web/**/*.{ts,tsx}"]
+status = "planned"
+
+[[check]]
+id = "SEC-MATRIX"
+title = "Generated permission matrix passes for every entry point (UI API, search, MCP, assistant, e-mail, webhooks, exports)"
+rule = "ADR-0004"
+tool = "generated tests"
+when = ["ci"]
+files = ["crates/**"]
+status = "planned"
+
+[[check]]
+id = "SEC-HEADERS"
+title = "Running server sends the required security headers and CSP"
+rule = "SEC-11"
+tool = "integration test"
+when = ["ci"]
+files = ["crates/bb-api/**"]
+status = "planned"
+
+[[check]]
+id = "SEC-ADVISORIES"
+title = "No known vulnerabilities without a VEX statement"
+rule = "COMP-03"
+tool = "cargo-deny advisories + OSV for npm"
+when = ["ci", "nightly"]
+files = ["Cargo.lock", "**/package-lock.json"]
+status = "planned"
+
+# ───────────── Data and privacy ─────────────
+[[check]]
+id = "DATA-MARKS"
+title = "Every stored field is marked as personal data or not"
+rule = "ADR-0015, PRIV-02"
+tool = "derive macro (compile error) + xtask report"
+when = ["edit", "ci"]
+files = ["crates/bb-core/**", "crates/bb-store/**"]
+status = "planned"
+
+[[check]]
+id = "DATA-LOGS"
+title = "No names, e-mail addresses or free text in log statements"
+rule = "architecture §7 (Observability), PRIV-01"
+tool = "ast-grep (tracing macros with personal fields)"
+when = ["edit", "commit", "ci"]
+files = ["crates/**/*.rs"]
+status = "planned"
+
+[[check]]
+id = "DATA-MIGRATIONS"
+title = "Schema is defined once; migrations run on both databases from one source"
+rule = "ADR-0003"
+tool = "xtask (no .sql migration files; migration test on both)"
+when = ["ci"]
+files = ["crates/bb-store/**"]
+status = "planned"
+
+# ───────────── Dependencies and compliance ─────────────
+[[check]]
+id = "DEP-REGISTER"
+title = "Every direct dependency has a third-party register entry, and every entry a dependency"
+rule = "COMP-02, coding-standards §5"
+tool = "xtask (lockfiles vs docs/third-party)"
+when = ["push", "ci"]
+files = ["Cargo.lock", "**/package-lock.json", "docs/third-party/**"]
+status = "planned"
+
+[[check]]
+id = "DEP-LICENSES"
+title = "Only licenses on the allow list ship"
+rule = "architecture §1 (licenses)"
+tool = "cargo-deny licenses + npm license check against the same list"
+when = ["push", "ci"]
+files = ["Cargo.lock", "**/package-lock.json", "deny.toml"]
+status = "planned"
+
+[[check]]
+id = "DEP-UNUSED"
+title = "No unused dependencies"
+rule = "coding-standards §2"
+tool = "cargo-machete + knip-style check for npm"
+when = ["ci"]
+files = ["**/Cargo.toml", "**/package.json"]
+status = "planned"
+
+[[check]]
+id = "DEP-SBOM"
+title = "Release has CycloneDX and SPDX SBOMs and third-party notices"
+rule = "COMP-01, COMP-02"
+tool = "cargo-cyclonedx + @cyclonedx/cyclonedx-npm + cargo-about"
+when = ["release"]
+files = ["*"]
+status = "planned"
+
+[[check]]
+id = "DOC-GENERATED"
+title = "Generated files are up to date (API client, token CSS, message types, docs HTML)"
+rule = "SSOT"
+tool = "xtask gen --check"
+when = ["push", "ci"]
+files = ["*"]
+status = "planned"
+
+[[check]]
+id = "DOC-ADR-ENFORCED"
+title = "Every decision record says how it is enforced (check IDs, or 'review' with a reason)"
+rule = "META, ADR template"
+tool = "xtask (parses docs/adr)"
+when = ["commit", "ci"]
+files = ["docs/adr/**"]
+status = "planned"
+
+# ───────────── Performance and quality ─────────────
+[[check]]
+id = "PERF-BUNDLE"
+title = "Initial JavaScript ≤ 250 KB (Brotli); WebAssembly ≤ 150 KB"
+rule = "PERF-04"
+tool = "xtask (reads Vite build stats)"
+when = ["ci"]
+files = ["web/**"]
+status = "planned"
+
+[[check]]
+id = "PERF-N1"
+title = "List endpoints run a bounded number of queries"
+rule = "PERF-05"
+tool = "tests with a query counter"
+when = ["ci"]
+files = ["crates/bb-store/**", "crates/bb-app/**"]
+status = "planned"
+
+[[check]]
+id = "PERF-BENCH"
+title = "Latency budgets hold on the 1 M-issue dataset"
+rule = "PERF-01"
+tool = "xtask dataset + benchmarks"
+when = ["nightly"]
+files = ["*"]
+status = "planned"
+
+[[check]]
+id = "TEST-A11Y"
+title = "No accessibility violations on key screens in all four themes"
+rule = "UX-04"
+tool = "Playwright + axe"
+when = ["ci"]
+files = ["web/**"]
+status = "planned"
+
+[[check]]
+id = "TEST-SEARCH-ROUNDTRIP"
+title = "Simple ⇄ Advanced search never loses information"
+rule = "QRY-02, ADR-0005"
+tool = "proptest: parse(print(tree)) == tree"
+when = ["ci"]
+files = ["crates/bb-searchlang/**"]
+status = "planned"
+
+[[check]]
+id = "TEST-EDIT-LOCKS"
+title = "Edit locks and confirmed saves: lost lock, take-over, conflict and offline cases keep the person's text"
+rule = "ADR-0019, ISS-17"
+tool = "integration + Playwright tests"
+when = ["ci"]
+files = ["crates/bb-app/**", "web/**"]
+status = "planned"
+
+[[check]]
+id = "DEV-PORTS"
+title = "No default framework ports; every port comes from tools/dev/ports.json and is strict"
+rule = "ADR-0023"
+tool = "xtask (scans vite, vitest and playwright configs)"
+when = ["edit", "commit", "ci"]
+files = ["web/**/vite.config.*", "web/**/vitest.config.*", "web/**/playwright.config.*", "tools/dev/ports.json"]
+status = "planned"
+
+[[check]]
+id = "TEST-SAMPLE-DATA"
+title = "The sample organization builds from its seed, is identical on both databases, and contains only fictional data"
+rule = "architecture §11, ADR-0023"
+tool = "xtask dataset sample --check"
+when = ["ci"]
+files = ["xtask/**", "crates/bb-store/**"]
+status = "planned"
+
+[[check]]
+id = "TEST-CONCURRENT"
+title = "Ten people working at once: no lost text, no half-saved changes, locks expire, conflicts explained"
+rule = "architecture §11, ADR-0019"
+tool = "Playwright (10 contexts) + xtask load --people 10; short in CI, long nightly"
+when = ["ci", "nightly"]
+files = ["crates/**", "web/**"]
+status = "planned"
+
+[[check]]
+id = "PLAN-TRACE"
+title = "Every M and V1 feature is in exactly one milestone, MVP features only in MVP milestones, and every work package names its features"
+rule = "04-milestones.md"
+tool = "xtask (parses the feature list, the milestones and docs/milestones/**)"
+when = ["commit", "ci"]
+files = ["docs/01-feature-list.md", "docs/04-milestones.md", "docs/milestones/**"]
+status = "planned"
+
+[[check]]
+id = "BUILD-LOCATION"
+title = "Nothing is built, installed or tested inside a OneDrive folder (the master repository); work happens in the work root"
+rule = "ADR-0024"
+tool = "xtask (path check before every build, test, dev and install command)"
+when = ["edit", "commit", "ci"]
+files = ["*"]
+status = "planned"
+
+[[check]]
+id = "GIT-COMMIT-MSG"
+title = "Commit messages follow Conventional Commits"
+rule = "coding-standards §2"
+tool = "xtask (commit-msg hook)"
+when = ["commit"]
+files = ["*"]
+status = "planned"
+
+[[check]]
+id = "GIT-FILES"
+title = "No large binaries and no CRLF line endings committed"
+rule = "coding-standards §7"
+tool = "xtask"
+when = ["commit", "ci"]
+files = ["*"]
+status = "planned"
+
+# ───────────── Meta: checks that guard the checks ─────────────
+[[check]]
+id = "META-CATALOG"
+title = "Every check in this catalogue is implemented in xtask, and every implemented check is in this catalogue"
+rule = "architecture §10"
+tool = "xtask self-test"
+when = ["commit", "ci"]
+files = ["tools/checks/catalog.toml", "xtask/**"]
+status = "planned"
+
+[[check]]
+id = "META-FIXTURES"
+title = "Every check has a 'bad' example that must fail and a 'good' example that must pass"
+rule = "architecture §10"
+tool = "xtask self-test over tools/checks/fixtures/<ID>/"
+when = ["ci"]
+files = ["tools/checks/**", "xtask/**"]
+status = "planned"
+
+[[check]]
+id = "META-COVERAGE"
+title = "Every file type in the repository is covered by at least one formatter or linter — a new file type means a new check"
+rule = "architecture §10"
+tool = "xtask (git ls-files vs the 'files' globs above)"
+when = ["commit", "ci"]
+files = ["*"]
+status = "planned"
+
+[[check]]
+id = "META-NEW-MODULE"
+title = "A new crate, package or top-level folder needs a module-map entry and dependency rules before it can be used"
+rule = "architecture §10, ARCH-MAP-SYNC"
+tool = "xtask"
+when = ["commit", "ci"]
+files = ["**/Cargo.toml", "**/package.json"]
+status = "planned"
+
+[[check]]
+id = "META-RULE-TRACE"
+title = "Every 'must' rule in coding standards, ADRs and the architecture names its check ID or says 'review'"
+rule = "architecture §10"
+tool = "xtask (parses docs for Enforced-by markers)"
+when = ["commit", "ci"]
+files = ["docs/**/*.md"]
+status = "planned"
+
+[[check]]
+id = "META-WIRING"
+title = "lefthook, Claude Code hooks and CI call only xtask, with the same check lists"
+rule = "ADR-0014"
+tool = "xtask (reads lefthook.yml, .claude/settings.json, CI workflow)"
+when = ["commit", "ci"]
+files = ["lefthook.yml", ".claude/settings.json", ".github/workflows/**"]
+status = "planned"
+
+[[check]]
+id = "META-SUPPRESS"
+title = "Every suppression (allow, oxlint-disable, ast-grep ignore, VEX 'not affected') has a reason and an issue number; the total may not grow without review"
+rule = "architecture §10"
+tool = "xtask (counts and compares with main)"
+when = ["commit", "ci"]
+files = ["*"]
+status = "planned"
+
+[[check]]
+id = "META-SPEED"
+title = "Checks that run on edit and commit stay fast (edit < 3 s per file, commit < 10 s) so nobody is tempted to skip them"
+rule = "architecture §10"
+tool = "xtask (timings recorded in CI)"
+when = ["ci"]
+files = ["*"]
+status = "planned"

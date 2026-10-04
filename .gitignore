@@ -1,0 +1,34 @@
+# Rust
+/target/
+**/target/
+
+# Node / frontend
+node_modules/
+dist/
+*.tsbuildinfo
+.vite/
+coverage/
+
+# Local runtime data — never commit databases, attachments, keys or secrets
+/data/
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.pem
+*.key
+.env
+.env.*
+!.env.example
+
+# Editors / OS
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.swp
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Machine-local Cargo settings (included optionally by .cargo/config.toml, ADR-0024)
+.cargo/config.local.toml

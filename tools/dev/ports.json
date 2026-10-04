@@ -1,0 +1,11 @@
+{
+  "$comment": "Single source for every local development and test port (ADR-0023). Chosen from 47200-47299: free on the main dev PC and outside Windows' reserved and dynamic ranges. Tools use strictPort and fail loudly if a port is busy. Change ports only here.",
+  "server": 47200,
+  "web": 47201,
+  "webPreview": 47202,
+  "e2eServer": 47203,
+  "vitestUi": 47204,
+  "e2eWorkersFrom": 47210,
+  "e2eWorkersTo": 47229,
+  "loadTestServer": 47230
+}

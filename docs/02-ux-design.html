@@ -1,0 +1,1378 @@
+<title>Bugaboo UX Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Mono:wght@400;600&family=Atkinson+Hyperlegible+Next:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="components.css">
+<link rel="stylesheet" href="docpage.css">
+<style>
+/* Layout: sticky header + contents rail (wide) / collapsible contents (phone) + one reading column.
+   Mini-screens are framed demos built from the shared components; all colors come from tokens.css. */
+
+/* reading type */
+.target{border-left:3px solid var(--accent);padding:4px 0 4px 14px;margin:20px 0;max-width:70ch}
+.principles{list-style:none;padding:0!important;display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;counter-reset:p}
+.principles li{counter-increment:p;border:1px solid var(--border);border-radius:var(--r-card);padding:12px 14px 12px 46px;position:relative;background:var(--bg-raised);margin:0;max-width:none}
+.principles li::before{content:counter(p);position:absolute;left:12px;top:12px;width:24px;height:24px;border-radius:50%;background:var(--accent-soft);color:var(--accent-fg);font-weight:700;font-size:12px;display:grid;place-items:center;font-family:var(--mono)}
+.tree{list-style:none;padding-left:0!important;font-size:var(--fs-sm);border:1px solid var(--border);border-radius:var(--r-card);padding:12px 14px!important;background:var(--bg-surface);max-width:560px}
+.tree ul{list-style:none;padding-left:18px;border-left:1px dashed var(--border);margin:2px 0 2px 7px}
+.tree li{display:block;margin:3px 0;max-width:none}
+.tree .lbl{display:inline-flex;align-items:center;gap:6px;font-weight:600}
+.tree .d{color:var(--fg-muted);font-weight:400}
+
+/* demo frames */
+.demo{margin:18px 0 22px;display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start}
+.frame{border:1px solid var(--border);border-radius:12px;background:var(--bg-canvas);box-shadow:var(--shadow);overflow:hidden;min-width:0;flex:1 1 520px;max-width:100%}
+.frame-cap{font-size:11px;color:var(--fg-subtle);text-transform:uppercase;letter-spacing:.07em;font-weight:700;padding:6px 12px;border-bottom:1px solid var(--border-subtle);background:var(--bg-surface);display:flex;gap:8px;align-items:center}
+.frame-body{overflow-x:auto}
+.frame-body>.scr{min-width:640px}
+.frame.phone{flex:0 0 300px;border-radius:28px;border:7px solid var(--border)}
+.frame.phone .frame-body>.scr{min-width:0}
+.frame.narrow{flex:1 1 340px}
+.frame.narrow .frame-body>.scr{min-width:0}
+.cap-note{font-size:var(--fs-sm);color:var(--fg-muted);margin:-10px 0 18px;max-width:70ch}
+
+/* mini app pieces */
+.scr{font-size:13px;background:var(--bg-canvas);color:var(--fg)}
+.scr .btn{padding:5px 10px;font-size:12.5px}
+.scr .btn.sm{padding:3px 8px;font-size:12px}
+.scr .seg button{padding:4px 9px;font-size:12px}
+.scr .pill{font-size:12px;padding:1px 8px}
+.scr .key{font-size:12px}
+.scr .chip{font-size:12px;padding:3px 3px 3px 9px}
+.scr .chip.add{padding:3px 9px}
+.app3{display:grid;grid-template-columns:150px minmax(0,1fr) 230px;min-height:320px}
+.app2{display:grid;grid-template-columns:150px minmax(0,1fr);min-height:280px}
+.sb{background:var(--bg-surface);border-right:1px solid var(--border);padding:10px 8px;display:flex;flex-direction:column;gap:1px}
+.sb .ttl{display:flex;align-items:center;gap:6px;font-weight:700;padding:2px 6px 8px}
+.ni{display:flex;align-items:center;gap:7px;padding:5px 7px;border-radius:6px}
+.ni.on{background:var(--bg-selected);color:var(--accent-fg);font-weight:600}
+.ni .cnt{margin-left:auto;font-size:10px;background:var(--accent);color:var(--on-accent);border-radius:999px;padding:0 6px;font-weight:700}
+.nl{font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:var(--fg-subtle);padding:8px 7px 2px;font-weight:700}
+.timer-mini{margin-top:auto;display:flex;align-items:center;gap:6px;padding:6px 8px;border-radius:6px;background:var(--accent-soft);color:var(--accent-fg);font-weight:600;font-size:12px}
+.mainc{display:flex;flex-direction:column;min-width:0}
+.tb{display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.tb .crumb{color:var(--fg-muted)}
+.tb .crumb b{color:var(--fg)}
+.sbar{display:flex;gap:6px;padding:8px 12px;border-bottom:1px solid var(--border-subtle);flex-wrap:wrap;align-items:center}
+.r{display:flex;align-items:center;gap:8px;padding:7px 12px;border-bottom:1px solid var(--border-subtle)}
+.r .t{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:500}
+.r.sel{background:var(--bg-selected)}
+.r.hd{background:var(--bg-surface);font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--fg-subtle);font-weight:700}
+.pn{border-left:1px solid var(--border);padding:12px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.pn h5{margin:0;font-size:15px;line-height:1.3}
+.mini-fields{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 10px;font-size:12px;align-items:center}
+.mini-fields dt{color:var(--fg-muted)}
+.mini-fields dd{margin:0;min-width:0}
+.sh{font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--fg-muted);font-weight:700;margin:4px 0 4px}
+.blk{border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.blk .r:last-child{border-bottom:0}
+.rel-kind{min-width:96px;color:var(--fg-muted);font-size:12px}
+.ph-top{display:flex;align-items:center;gap:6px;padding:10px 12px;border-bottom:1px solid var(--border);font-weight:600}
+.ph-body{min-height:300px}
+.bb{display:grid;grid-template-columns:repeat(5,1fr);border-top:1px solid var(--border);background:var(--bg-surface)}
+.bb span{display:flex;flex-direction:column;align-items:center;font-size:10px;padding:6px 0 8px;color:var(--fg-muted);gap:2px}
+.bb .on{color:var(--accent-fg);font-weight:700}
+.bb .new .ico{background:var(--accent);color:var(--on-accent);border-radius:50%;padding:3px;width:22px;height:22px}
+.actbar{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--border);background:var(--bg-surface);text-align:center;font-size:11px}
+.actbar span{padding:8px 0;display:flex;flex-direction:column;align-items:center;gap:2px}
+.lrow{padding:10px 12px;border-bottom:1px solid var(--border-subtle)}
+.lrow .t{font-weight:600;margin:2px 0 4px}
+.lrow .m{display:flex;gap:8px;flex-wrap:wrap;align-items:center;font-size:12px;color:var(--fg-muted)}
+.banner{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:8px 10px;border-radius:8px;background:var(--warning-soft);color:var(--fg);border:1px solid var(--warning);font-size:12px}
+.bubble{background:var(--bg-surface);border:1px solid var(--border-subtle);border-radius:10px;padding:7px 10px;font-size:12px}
+.box{background:var(--bg-raised);border:1px solid var(--border);border-radius:var(--r-card);overflow:hidden}
+.box-h{display:flex;align-items:center;gap:6px;padding:9px 12px;border-bottom:1px solid var(--border-subtle);font-weight:700}
+.box-h .muted{margin-left:auto;font-weight:400;font-size:11px}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;padding:12px}
+.timer-card{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--accent);background:var(--accent-soft);border-radius:var(--r-card);margin:12px 12px 0;flex-wrap:wrap}
+.timer-card .clock{font-family:var(--mono);font-size:20px;font-weight:600;color:var(--accent-fg)}
+.checklist{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:12px 12px 0;padding:10px 12px;border:1px dashed var(--border);border-radius:var(--r-card)}
+.okmark{width:18px;height:18px;border-radius:50%;background:var(--success);color:var(--bg-canvas);display:inline-grid;place-items:center;font-size:11px;font-weight:700}
+.bulk{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:10px auto;width:max-content;max-width:calc(100% - 24px);background:var(--bg-raised);border:1px solid var(--border);box-shadow:var(--shadow);border-radius:var(--r-card);padding:7px 9px}
+.preview-msg{margin:0 12px 12px;border:1px solid var(--border);border-radius:var(--r-card);padding:10px 12px;background:var(--bg-raised);font-size:12.5px}
+.adv-box{font-family:var(--mono);font-size:12.5px;line-height:1.6;border:1px solid var(--border);border-radius:var(--r-ctl);padding:8px 10px;background:var(--bg-raised);white-space:pre-wrap}
+.adv-box .err{text-decoration:underline wavy var(--danger);text-underline-offset:3px}
+.errline{color:var(--danger);font-size:12px;display:flex;gap:6px;align-items:center;margin-top:6px}
+.ask-res{border:1px solid var(--border);background:var(--accent-soft);border-radius:var(--r-ctl);padding:8px 10px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:12px}
+.ask-res code{flex:1;min-width:0;font-family:var(--mono)}
+.pop-demo{border:1px solid var(--border);border-radius:var(--r-card);background:var(--bg-raised);box-shadow:var(--shadow);padding:5px;min-width:200px;font-size:12.5px}
+.pop-demo .h{font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--fg-subtle);font-weight:700;padding:5px 8px 3px}
+.pop-demo .it{display:flex;gap:8px;align-items:center;padding:6px 8px;border-radius:6px}
+.pop-demo .it.on{background:var(--bg-hover)}
+.pop-demo input{width:100%;padding:6px 8px;border:1px solid var(--accent);border-radius:6px;background:var(--bg-canvas);margin:2px 0 4px;font-size:12.5px}
+.flow{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-start}
+.flow .step{display:flex;flex-direction:column;gap:6px;flex:1 1 200px;min-width:0}
+.flow .step>span{font-size:var(--fs-xs);font-weight:700;color:var(--fg-muted)}
+.toast-demo{display:inline-flex;gap:10px;align-items:center;background:var(--fg);color:var(--bg-canvas);border-radius:var(--r-card);padding:8px 12px;font-size:12.5px}
+.toast-demo u{font-weight:700}
+.dialog-demo{border:1px solid var(--border);border-radius:14px;background:var(--bg-raised);box-shadow:var(--shadow);max-width:460px;margin:14px auto}
+.dialog-demo .dh{display:flex;align-items:center;padding:10px 14px;border-bottom:1px solid var(--border-subtle);font-weight:700}
+.dialog-demo .db{padding:12px 14px;display:flex;flex-direction:column;gap:10px}
+.dialog-demo .df{padding:10px 14px;border-top:1px solid var(--border-subtle);display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap}
+.scr .field input,.scr .field select,.scr .field textarea{padding:6px 9px;font-size:12.5px}
+.scr .field textarea{min-height:56px}
+.board{display:grid;grid-template-columns:repeat(4,minmax(150px,1fr));gap:10px;padding:12px}
+.col{background:var(--bg-surface);border:1px solid var(--border-subtle);border-radius:var(--r-card);padding-bottom:8px;display:flex;flex-direction:column;gap:7px}
+.col.fade{opacity:.4}
+.col.ok{outline:2px dashed var(--accent);outline-offset:-2px}
+.col-h{display:flex;align-items:center;gap:6px;padding:8px 9px 2px;font-weight:600}
+.col-h .lim{margin-left:auto;font-size:11px;color:var(--fg-muted)}
+.col-h .lim.over{color:var(--warning);font-weight:700}
+.card{margin:0 8px;background:var(--bg-raised);border:1px solid var(--border);border-radius:8px;padding:8px;display:flex;flex-direction:column;gap:6px;font-size:12px}
+.card .t{font-weight:500;font-size:12.5px}
+.card .m{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.card.drag{transform:rotate(-2deg);box-shadow:var(--shadow);border-color:var(--accent)}
+.tl{display:grid;grid-template-columns:190px 1fr;font-size:12px}
+.tl .hdr{background:var(--bg-surface);border-bottom:1px solid var(--border);padding:6px 8px;color:var(--fg-muted);font-weight:600;font-size:11px}
+.tl .wk{display:grid;grid-template-columns:repeat(5,1fr);padding:0}
+.tl .wk span{padding:6px 8px;border-left:1px solid var(--border-subtle)}
+.tl .nm{padding:6px 8px;border-bottom:1px solid var(--border-subtle);display:flex;gap:6px;align-items:center;white-space:nowrap;overflow:hidden}
+.tl .nm.child{padding-left:22px}
+.tl .ln{position:relative;border-bottom:1px solid var(--border-subtle);min-height:31px;background-image:repeating-linear-gradient(to right,transparent 0,transparent calc(20% - 1px),var(--border-subtle) calc(20% - 1px),var(--border-subtle) 20%)}
+.bar{position:absolute;top:7px;height:17px;border-radius:4px;background:var(--st-ip);color:var(--on-accent);font-size:10px;padding:0 5px;display:flex;align-items:center;font-family:var(--mono);white-space:nowrap;overflow:hidden}
+.bar.ns{background:var(--fg-subtle)}.bar.dn{background:var(--st-done)}
+.bar.goal{background:var(--accent);height:8px;top:12px}
+.ms{position:absolute;top:9px;width:13px;height:13px;transform:translateX(-6px) rotate(45deg);background:var(--warning);border-radius:2px}
+.today{position:absolute;top:0;bottom:0;width:2px;background:var(--danger);opacity:.7}
+.dep{position:absolute;height:2px;background:var(--fg-muted);top:15px}
+.docs3{display:grid;grid-template-columns:150px minmax(0,1fr) 150px;min-height:280px}
+.doc-page{padding:14px 18px;min-width:0}
+.doc-page h5{font-size:20px;margin:4px 0 8px}
+.doc-page p{font-size:12.5px;line-height:1.6;margin:6px 0}
+.tbtn{display:flex;gap:2px;flex-wrap:wrap;border:1px solid var(--border);border-radius:6px;padding:3px;background:var(--bg-surface);width:max-content;max-width:100%;font-size:11.5px}
+.tbtn span{padding:2px 6px;border-radius:4px}
+.live{display:inline-flex;gap:5px;align-items:center;border:1px solid var(--border);border-radius:6px;padding:1px 6px;background:var(--bg-raised)}
+.dside{border-left:1px solid var(--border);padding:12px 10px;font-size:12px;display:flex;flex-direction:column;gap:12px}
+.lockb{margin-left:auto;display:inline-flex;gap:3px;align-items:center;font-size:10.5px;color:var(--warning)}
+.ts{border-collapse:collapse;width:100%;font-size:12px}
+.ts th,.ts td{padding:6px;border-bottom:1px solid var(--border-subtle);text-align:center;font-variant-numeric:tabular-nums}
+.ts th{background:var(--bg-surface);color:var(--fg-muted);font-size:11px}
+.ts td:first-child,.ts th:first-child{text-align:left}
+.ts .cell{display:inline-block;min-width:44px;padding:3px 4px;border:1px solid var(--border-subtle);border-radius:5px;font-family:var(--mono);background:var(--bg-canvas)}
+.ts .cell.focus{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft)}
+.ts tfoot td{font-weight:700;background:var(--bg-surface)}
+.ts th.today{color:var(--accent-fg)}
+.bars{display:flex;flex-direction:column;gap:6px;padding:12px;font-size:12px}
+.bars div{display:grid;grid-template-columns:70px 1fr 30px;gap:8px;align-items:center}
+.bars i{display:block;height:10px;border-radius:3px}
+.msg{max-width:92%;padding:8px 10px;border-radius:10px;line-height:1.5;font-size:12.5px}
+.msg.me{align-self:flex-end;background:var(--accent);color:var(--on-accent)}
+.msg.ai{align-self:flex-start;background:var(--bg-surface);border:1px solid var(--border-subtle)}
+.ai-l{font-size:10.5px;color:var(--fg-subtle);display:flex;gap:4px;align-items:center}
+.prop{border:1px solid var(--accent);border-radius:var(--r-card);padding:10px;background:var(--bg-raised);display:flex;flex-direction:column;gap:8px;font-size:12.5px}
+.prop .old{text-decoration:line-through;color:var(--fg-muted)}
+.src{font-size:12px;background:var(--bg-surface);border:1px solid var(--border-subtle);border-radius:var(--r-ctl);padding:6px 9px}
+.cards-pick{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;padding:12px}
+.cards-pick div{border:1px solid var(--border);border-radius:8px;padding:8px 10px;background:var(--bg-raised);font-size:12px}
+.cards-pick b{display:block;font-size:12.5px}
+.cards-pick div.on{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft)}
+.perm{border-collapse:collapse;width:100%;font-size:12.5px}
+.perm th,.perm td{padding:8px 10px;border-bottom:1px solid var(--border-subtle);text-align:left}
+.perm th{background:var(--bg-surface);font-size:10.5px;color:var(--fg-muted);text-transform:uppercase;letter-spacing:.05em}
+.perm select{padding:4px 6px;border-radius:6px;border:1px solid var(--border);background:var(--bg-raised);font-size:12px}
+.perm select.hid{color:var(--fg-subtle)}.perm select.see{color:var(--st-ip)}.perm select.chg{color:var(--success);font-weight:600}
+.explain{background:var(--bg-surface);border:1px solid var(--border-subtle);border-radius:var(--r-card);padding:10px 12px;line-height:1.6;font-size:12.5px;margin:12px}
+.wfrow{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:9px 12px;border-bottom:1px solid var(--border-subtle)}
+.te{display:grid;grid-template-columns:200px minmax(0,1fr);min-height:260px}
+.te-l{border-right:1px solid var(--border);padding:10px;font-size:12px;display:flex;flex-direction:column;gap:4px;background:var(--bg-surface)}
+.te-l .g{font-weight:700;margin-top:6px}
+.te-l .row{display:flex;align-items:center;gap:6px}
+.sw{width:14px;height:14px;border-radius:4px;border:1px solid var(--border);display:inline-block;flex:none}
+.rd{margin-left:auto;font-size:10.5px;font-weight:700}
+.rd.ok{color:var(--success)}.rd.bad{color:var(--danger)}
+.te-r{padding:12px;display:flex;flex-direction:column;gap:10px}
+.stepper{list-style:none;padding:0!important;counter-reset:s;display:flex;flex-direction:column;gap:8px}
+.stepper li{counter-increment:s;display:grid;grid-template-columns:28px minmax(0,1fr);gap:10px;margin:0;align-items:start}
+.stepper li::before{content:counter(s);width:26px;height:26px;border-radius:50%;border:2px solid var(--accent);color:var(--accent-fg);display:grid;place-items:center;font-weight:700;font-size:12px;font-family:var(--mono)}
+.signin{max-width:320px;margin:14px auto;display:flex;flex-direction:column;gap:8px;padding:16px;border:1px solid var(--border);border-radius:14px;background:var(--bg-raised)}
+.signin .or{text-align:center;font-size:11px;color:var(--fg-subtle)}
+.state{border:1px dashed var(--border);border-radius:var(--r-card);padding:14px;text-align:center;font-size:13px;flex:1 1 220px}
+.offline{background:var(--warning-soft);color:var(--fg);border-bottom:1px solid var(--warning);padding:6px 10px;font-size:12px}
+
+.wd{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 10px;border:1px solid var(--success);background:var(--success-soft);border-radius:var(--r-card);font-size:12.5px}
+.ts .cell.warnc{border-color:var(--warning);background:var(--warning-soft)}
+.ts .warnt{color:var(--warning)}
+.ts tr.wh td{background:var(--bg-surface)}
+
+.editing-note{display:flex;gap:8px;align-items:center;padding:7px 10px;border:1px dashed var(--accent);background:var(--accent-soft);border-radius:8px;font-size:12.5px}
+.savestate{display:flex;gap:8px;align-items:center;font-size:12.5px;color:var(--fg-muted)}
+.ss-dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+.ss-dot.ip{background:var(--st-ip)}.ss-dot.ok{background:var(--success)}
+
+.fv{display:grid;grid-template-columns:44px 170px minmax(0,1fr);min-height:330px}
+.fv-icons{background:var(--bg-surface);border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;gap:6px;padding:10px 0}
+.fv-ic{width:30px;height:30px;border-radius:6px;display:grid;place-items:center;color:var(--fg-muted)}
+.fv-ic.on{background:var(--bg-selected);color:var(--accent-fg)}
+.fv-rail{border-right:1px solid var(--border);background:var(--bg-surface);font-size:12px}
+.fv-rh{display:flex;padding:8px 9px;border-bottom:1px solid var(--border-subtle)}
+.fv-ri{display:flex;flex-direction:column;gap:1px;padding:6px 9px;border-bottom:1px solid var(--border-subtle)}
+.fv-ri.on{background:var(--bg-selected)}
+.fv-main{display:flex;flex-direction:column;min-width:0}
+.fv-h{display:flex;gap:8px;align-items:center;padding:7px 12px;border-bottom:1px solid var(--border-subtle);font-size:12px}
+.fv-body{display:grid;grid-template-columns:minmax(0,1fr) 150px}
+.fv-col{padding:14px 18px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.fv-det{border-left:1px solid var(--border-subtle);padding:14px 10px}
+.fv-facts{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.fv-fact{display:inline-flex;gap:5px;align-items:center;border:1px solid var(--border);border-radius:999px;padding:1px 8px;font-size:11.5px;background:var(--bg-raised)}
+.fv-fact .fl{color:var(--fg-subtle);font-size:10.5px}
+
+/* relation map */
+.map-ctl{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px 12px;border-bottom:1px solid var(--border-subtle)}
+.kchip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border);background:var(--bg-surface);border-radius:999px;padding:3px 10px;font-size:12px}
+.kchip[aria-pressed="false"]{opacity:.5;text-decoration:line-through}
+.kline{width:18px;height:0;border-top:2px solid var(--fg-muted);display:inline-block}
+.map-svg{display:block;width:100%;height:auto;background:var(--bg-surface)}
+.edge{fill:none;stroke-width:2;transition:opacity .15s,stroke-width .15s}
+.k-blocks{stroke:var(--warning)}.k-causes{stroke:var(--danger)}.k-dup{stroke:var(--fg-subtle);stroke-dasharray:5 4}.k-rel{stroke:var(--fg-muted)}.k-part{stroke:var(--accent)}
+.elabel{font-size:11px;fill:var(--fg-muted);paint-order:stroke;stroke:var(--bg-surface);stroke-width:4px;stroke-linejoin:round;font-family:var(--font)}
+.node{cursor:pointer;transition:opacity .15s}
+.node rect{fill:var(--bg-raised);stroke:var(--border);stroke-width:1.2}
+.node:hover rect,.node:focus rect{stroke:var(--accent);stroke-width:2}
+.node:focus{outline:none}
+.node.center rect{fill:var(--accent-soft);stroke:var(--accent);stroke-width:2.5}
+.nkey{font-family:var(--mono);font-size:11px;fill:var(--fg-muted)}
+.ntitle{font-size:12px;fill:var(--fg);font-weight:600;font-family:var(--font)}
+.nd-ns{fill:var(--st-ns)}.nd-ip{fill:var(--st-ip)}.nd-dn{fill:var(--st-done)}
+.map-svg.hl-on .edge:not(.hl),.map-svg.hl-on .elabel:not(.hl),.map-svg.hl-on .node:not(.hl){opacity:.2}
+.map-svg .edge.hl{stroke-width:3.4}
+.map-svg.hide-blocks .k-blocks,.map-svg.hide-blocks .l-blocks,.map-svg.hide-causes .k-causes,.map-svg.hide-causes .l-causes,.map-svg.hide-dup .k-dup,.map-svg.hide-dup .l-dup,.map-svg.hide-rel .k-rel,.map-svg.hide-rel .l-rel,.map-svg.hide-part .k-part,.map-svg.hide-part .l-part{display:none}
+.chains{padding:12px;display:flex;flex-direction:column;gap:6px;font-size:12.5px;line-height:1.6}
+.chains .stp{font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--fg-subtle);font-weight:700;margin-top:6px}
+.circle-warn{display:flex;gap:8px;align-items:flex-start;margin:0 12px 12px;padding:8px 10px;border:1px solid var(--warning);background:var(--warning-soft);border-radius:8px;font-size:12px}
+
+/* calendar */
+.cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:1px;background:var(--border-subtle);border-top:1px solid var(--border-subtle)}
+.cal .h{background:var(--bg-surface);padding:5px 6px;font-size:10.5px;font-weight:700;color:var(--fg-muted)}
+.cal .d{background:var(--bg-raised);min-height:78px;padding:4px;display:flex;flex-direction:column;gap:3px;min-width:0}
+.cal .d.out{background:var(--bg-surface)}
+.cal .d .n{font-size:11px;font-weight:600;color:var(--fg-muted);align-self:flex-start;padding:0 5px}
+.cal .d.today .n{background:var(--accent);color:var(--on-accent);border-radius:999px}
+.cal .it{display:block;font-size:10.5px;padding:1px 5px;border-radius:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cal .it.msn{background:var(--warning-soft);color:var(--warning);font-weight:700}
+.cal .it.drag{outline:2px dashed var(--accent)}
+.agenda{display:flex;flex-direction:column}
+.agenda .day{font-size:11px;font-weight:700;color:var(--fg-muted);padding:8px 12px 2px;text-transform:uppercase;letter-spacing:.06em}
+.agenda .day.today{color:var(--accent-fg)}
+
+/* theme section */
+.theme-strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin:16px 0}
+.tcard{border:1px solid var(--border);border-radius:var(--r-card);overflow:hidden;background:var(--bg-canvas);color:var(--fg)}
+.tcard .tc-h{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:var(--bg-surface);border-bottom:1px solid var(--border);font-weight:700;font-size:13px}
+.tcard .tc-b{padding:10px;display:flex;flex-direction:column;gap:8px;font-size:12.5px}
+.tcard .tc-b .row{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.swatch{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:11.5px;white-space:nowrap}
+.swatch i{width:18px;height:18px;border-radius:4px;border:1px solid var(--border);display:inline-block}
+.specimen{border:1px solid var(--border);border-radius:var(--r-card);padding:14px 16px;background:var(--bg-raised);margin:12px 0;display:flex;flex-direction:column;gap:6px}
+.specimen .big{font-size:30px;font-weight:700;line-height:1.1}
+.specimen .mono-s{font-family:var(--mono);font-size:15px}
+.scale{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin:10px 0}
+.scale span{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:11px;color:var(--fg-muted);font-family:var(--mono)}
+.scale i{display:block;background:var(--accent-soft);border:1px solid var(--accent)}
+.dodont{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px;margin:12px 0}
+.dodont div{border:1px solid var(--border);border-radius:var(--r-card);padding:10px 12px;font-size:var(--fs-sm);background:var(--bg-raised)}
+.dodont .y{border-left:4px solid var(--success)}
+.dodont .n{border-left:4px solid var(--danger)}
+.dodont b{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px}
+.dodont .y b{color:var(--success)}.dodont .n b{color:var(--danger)}
+.decision{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--border-subtle);max-width:72ch}
+.decision .okmark{margin-top:3px;flex:none}
+@media (max-width:600px){
+  .grid2{grid-template-columns:minmax(0,1fr)}
+}
+</style>
+
+<header class="top"><div class="top-in">
+  <div class="brand"><svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="17" r="11" style="fill:var(--accent)"/><path d="M16 6v22" style="stroke:var(--bg-canvas)" stroke-width="2"/><circle cx="11.5" cy="14" r="2.2" style="fill:var(--bg-canvas)"/><circle cx="20.5" cy="14" r="2.2" style="fill:var(--bg-canvas)"/><circle cx="12" cy="21.5" r="1.8" style="fill:var(--bg-canvas)"/><circle cx="20" cy="21.5" r="1.8" style="fill:var(--bg-canvas)"/><path d="M12 6.5 9 3M20 6.5 23 3" style="stroke:var(--accent)" stroke-width="2" stroke-linecap="round" fill="none"/></svg>Bugaboo <small>UX design</small></div>
+  <label class="look-pick" for="look">Theme
+    <select id="look"><option value="system">Match my device</option><option value="daylight">Daylight</option><option value="paper">Paper</option><option value="dusk">Dusk</option><option value="midnight">Midnight</option></select></label>
+</div></header>
+
+<div class="layout">
+  <nav class="toc" aria-label="Contents"><div class="toc-h">Contents</div><div id="toc"></div></nav>
+  <main class="doc">
+    <details class="toc-phone"><summary>Contents</summary><nav id="toc-phone" class="toc" style="display:block;position:static;max-height:none;padding:0"></nav></details>
+
+    <h1>Bugaboo UX design</h1>
+    <div class="status-line"><span class="pill st-done">Accepted</span><span>Phase 2 of 5</span><span>·</span><span>2026-10-04</span></div>
+    <p class="lede">How Bugaboo looks, feels and behaves. Feature IDs (like ISS-04) refer to the feature list. All names follow the glossary. The <a href="a published page, not linked here" target="_blank" rel="noopener">clickable mockup</a> shows the same design in action; this page is the source of truth.</p>
+
+    <div class="note feedback"><b>How to give feedback</b>Use this page's comment button. Mention the section number shown next to each heading (for example <span class="sec" style="vertical-align:0">§4.4</span>), or select text and comment on it. Tapping a section number copies it, ready to paste into your comment.</div>
+
+    <div class="target"><b>Design target:</b> people <i>less</i> technical than the average person. If someone who has never used a bug tracker can't figure out a screen without help, the screen is wrong. Experts get speed through shortcuts and Advanced search, but never at the cost of simplicity for everyone else.</div>
+
+    <!-- ================= 1 ================= -->
+    <h2 id="s1"><button class="sec" data-sec>§1</button>UX principles</h2>
+    <p>The numbers matter: other sections refer to them (for example "principle 6").</p>
+    <ol class="principles">
+      <li><b>Plain words.</b> Every label, button and message uses everyday language from the glossary. No jargon, no abbreviations, and no names copied from other products.</li>
+      <li><b>Words next to icons.</b> Icons always come with a text label, except where the meaning is universal and a tooltip explains it (close ✕, search).</li>
+      <li><b>One obvious next step.</b> Every screen has one main action that stands out. Rare or advanced options sit behind <i>More options</i>.</li>
+      <li><b>It works without setup.</b> A new project comes with ready-made issue types, statuses, fields and roles. Nobody has to configure anything before creating the first issue.</li>
+      <li><b>Edit where you see it.</b> Click any value you may change to change it. There are no separate "edit pages".</li>
+      <li><b>Show, then do.</b> Before anything affects many items or other people, say in plain words what will happen: <i>"12 issues will move to Done. 2 will be skipped because you can't change them."</i></li>
+      <li><b>Undo instead of "Are you sure?".</b> Reversible actions happen at once and offer <i>Undo</i>. Confirmations are only for things that cannot be undone.</li>
+      <li><b>No dead ends.</b> Empty screens say what to do next. Errors say what happened and how to fix it. Every setting has a one-line explanation and a <i>Learn more</i> link.</li>
+      <li><b>Shortcuts are extras, never required.</b> Every keyboard shortcut and gesture (swipe, long-press, drag) also has a visible button or menu item.</li>
+      <li><b>Hidden stays hidden; read-only is explained.</b> Things you may not see are not shown at all: no empty slots, no greyed-out placeholders, no counts. Things you may see but not change look normal, and hovering or tapping says why: <i>"Only team members can change Priority."</i></li>
+      <li><b>The assistant suggests, people decide.</b> AI output is always labelled, and every change it proposes is shown before anything is saved.</li>
+      <li><b>Feels instant, sends little.</b> Changes show immediately and save in the background. Each screen asks the server only for what it shows (PERF-02).</li>
+    </ol>
+
+    <!-- ================= 2 ================= -->
+    <h2 id="s2"><button class="sec" data-sec>§2</button>Structure</h2>
+    <ul class="tree">
+      <li><span class="lbl">Bugaboo</span>
+        <ul>
+          <li><span class="lbl"><svg class="ico"><use href="#i-home"/></svg>Home</span> <span class="d">my issues, my timer, mentions, recent</span></li>
+          <li><span class="lbl"><svg class="ico"><use href="#i-bell"/></svg>Notifications</span></li>
+          <li><span class="lbl"><svg class="ico"><use href="#i-bookmark"/></svg>Saved searches</span> <span class="d">mine and shared with me</span></li>
+          <li><span class="lbl"><svg class="ico"><use href="#i-board"/></svg>Dashboards</span></li>
+          <li><span class="lbl"><svg class="ico"><use href="#i-clock"/></svg>Time</span> <span class="d">timesheet, reports</span></li>
+          <li><span class="lbl"><svg class="ico"><use href="#i-folder"/></svg>Projects</span> <span class="d">a tree; each project has:</span>
+            <ul>
+              <li><span class="lbl">Overview</span></li>
+              <li><span class="lbl">Issues</span> <span class="d">show as List · Board · Timeline · Calendar · Map</span></li>
+              <li><span class="lbl">Documents</span> <span class="d">folders, pages, files</span></li>
+              <li><span class="lbl">Releases</span></li>
+              <li><span class="lbl">Time</span></li>
+              <li><span class="lbl">Project settings</span> <span class="d">only for project leads</span></li>
+            </ul></li>
+          <li><span class="lbl"><svg class="ico"><use href="#i-settings"/></svg>Organization settings</span> <span class="d">only for administrators</span></li>
+          <li><span class="lbl">My settings</span> <span class="d">appearance, sign-in &amp; security, connected apps, access keys</span></li>
+        </ul></li>
+    </ul>
+
+    <h3 id="s2-1"><button class="sec" data-sec>§2.1</button>Addresses (URLs)</h3>
+    <p>Readable, stable and shareable.</p>
+    <div class="tbl-wrap"><table class="dtable"><thead><tr><th>Address</th><th>Screen</th></tr></thead><tbody>
+      <tr><td><code>/</code></td><td>Home</td></tr>
+      <tr><td><code>/notifications</code></td><td>Notifications</td></tr>
+      <tr><td><code>/i/WEB-142</code> or <code>/i/WEB-K7Q2X</code></td><td>Issue, by counting or random ID (keeps working if the issue moves or the project switches between counting and random IDs)</td></tr>
+      <tr><td><code>/p/WEB</code></td><td>Project overview</td></tr>
+      <tr><td><code>/p/WEB/issues?show=board&amp;s=…</code></td><td>Project issues, with how they're shown and the search</td></tr>
+      <tr><td><code>/i/WEB-142/map</code></td><td>Relation map of an issue</td></tr>
+      <tr><td><code>/p/WEB/docs/specs/login-flow</code></td><td>Document page</td></tr>
+      <tr><td><code>/s/&lt;id&gt;</code></td><td>Saved search</td></tr>
+      <tr><td><code>/time</code></td><td>Timesheet</td></tr>
+      <tr><td><code>/settings/…</code> · <code>/p/WEB/settings/…</code> · <code>/me/…</code></td><td>Organization, project and my settings</td></tr>
+    </tbody></table></div>
+    <p>Opening an address you have no access to shows the same <i>"Not found"</i> page as an address that doesn't exist. Hidden issues, documents and projects are never revealed.</p>
+
+    <!-- ================= 3 ================= -->
+    <h2 id="s3"><button class="sec" data-sec>§3</button>Layout</h2>
+
+    <h3 id="s3-1"><button class="sec" data-sec>§3.1</button>Computer (1280 px and wider)</h3>
+    <div class="demo"><div class="frame"><div class="frame-cap">Computer</div><div class="frame-body"><div class="scr app3">
+      <div class="sb">
+        <div class="ttl">Bugaboo</div>
+        <div class="ni"><svg class="ico"><use href="#i-search"/></svg>Search <kbd style="margin-left:auto">Ctrl K</kbd></div>
+        <div class="ni"><svg class="ico"><use href="#i-home"/></svg>Home</div>
+        <div class="ni"><svg class="ico"><use href="#i-bell"/></svg>Notifications<span class="cnt">3</span></div>
+        <div class="ni"><svg class="ico"><use href="#i-bookmark"/></svg>Saved searches</div>
+        <div class="ni"><svg class="ico"><use href="#i-clock"/></svg>Time</div>
+        <div class="nl">Projects</div>
+        <div class="ni"><svg class="ico"><use href="#i-folder"/></svg>ACME</div>
+        <div class="ni on" style="padding-left:20px">Website issues</div>
+        <div class="ni" style="padding-left:20px">Website documents</div>
+        <div class="timer-mini"><span class="dot-live"></span>WEB-142 <span class="mono" style="margin-left:auto">0:42</span></div>
+        <div class="ni"><svg class="ico"><use href="#i-settings"/></svg>Settings</div>
+      </div>
+      <div class="mainc">
+        <div class="tb"><span class="crumb">ACME › <b>Website issues</b></span>
+          <div class="seg" style="margin-left:auto"><button aria-pressed="true">List</button><button>Board</button><button>Timeline</button><button>Calendar</button><button>Map</button></div></div>
+        <div class="sbar"><span class="chip"><button><b>Project:</b> Website</button></span><span class="chip"><button><b>Status:</b> not Done</button><span class="x"><svg class="ico"><use href="#i-x"/></svg></span></span><span class="chip add">+ Add filter</span></div>
+        <div class="r"><span class="type bug"><svg class="ico"><use href="#i-bug"/></svg></span><span class="key">WEB-139</span><span class="t">App crashes when saving a long comment</span><span class="pill st-ns">Open</span></div>
+        <div class="r sel"><span class="type bug"><svg class="ico"><use href="#i-bug"/></svg></span><span class="key">WEB-142</span><span class="t">Login fails after password reset</span><span class="pill st-ip">In progress</span></div>
+        <div class="r"><span class="type feature"><svg class="ico"><use href="#i-feature"/></svg></span><span class="key">WEB-141</span><span class="t">Sign in with a passkey</span><span class="pill st-ip">In progress</span></div>
+        <div class="r"><span class="type task"><svg class="ico"><use href="#i-task"/></svg></span><span class="key">WEB-140</span><span class="t">Design the new sign-in page</span><span class="pill st-ip">Testing</span></div>
+      </div>
+      <div class="pn"><div style="display:flex;gap:6px;align-items:center"><span class="type bug"><svg class="ico"><use href="#i-bug"/></svg>Bug</span><span class="key">WEB-142</span><span class="muted" style="margin-left:auto">Side panel</span></div>
+        <h5>Login fails after password reset</h5><span><span class="pill st-ip">In progress</span></span>
+        <dl class="mini-fields"><dt>Assigned to</dt><dd><span class="who"><span class="av c5">A</span>Ana</span></dd><dt>Priority</dt><dd><span class="prio High"><svg class="ico"><use href="#i-up"/></svg>High</span></dd><dt>Planned for</dt><dd>Release 2.4</dd></dl>
+      </div>
+    </div></div></div></div>
+    <ul>
+      <li><b>Sidebar:</b> search, the main sections, pinned items, the project tree, the running timer and settings. It can be narrowed to icons.</li>
+      <li><b>Top bar:</b> where you are (<i>ACME › Website › Issues</i>), the <b>Show as</b> switch (<i>List · Board · Timeline · Calendar · Map</i>), and buttons for <i>Customize</i>, <i>Share</i>, <i>Export</i> and <i>Save search</i>.</li>
+      <li><b>Opening an issue:</b> in the <b>focus view</b> by default (§3.4), which gives the issue most of the screen. People who prefer to keep the list in view can choose the <b>side panel view</b> instead (My settings › Appearance, or the button in the issue header).</li>
+      <li><b>Assistant:</b> an <i>Assistant</i> button in the top bar opens a panel on the right. If the side panel is also open, the two share the space as tabs.</li>
+    </ul>
+
+    <h3 id="s3-2"><button class="sec" data-sec>§3.2</button>Tablet (768–1279 px)</h3>
+    <ul>
+      <li>The sidebar slides in from a <i>Menu</i> button.</li>
+      <li>Turned sideways, list and side panel sit next to each other. Upright, the issue opens over the list as a full-height sheet with a clear <i>Back</i> button.</li>
+    </ul>
+
+    <h3 id="s3-3"><button class="sec" data-sec>§3.3</button>Phone (narrower than 768 px)</h3>
+    <div class="demo"><div class="frame phone"><div class="frame-cap">Phone</div><div class="frame-body"><div class="scr">
+      <div class="ph-top"><svg class="ico"><use href="#i-back"/></svg>Back<span style="flex:1;text-align:center">Website issues</span><svg class="ico"><use href="#i-more"/></svg></div>
+      <div class="sbar" style="flex-wrap:nowrap;overflow:hidden"><span class="chip" style="flex:none"><button>Not done</button><span class="x"><svg class="ico"><use href="#i-x"/></svg></span></span><span class="chip" style="flex:none"><button>Mine</button><span class="x"><svg class="ico"><use href="#i-x"/></svg></span></span><span class="chip add" style="flex:none">+ Filter</span></div>
+      <div class="ph-body">
+        <div class="lrow"><span class="key">WEB-142</span><div class="t">Login fails after password reset</div><div class="m"><span class="pill st-ip">In progress</span><span class="prio High"><svg class="ico"><use href="#i-up"/></svg>High</span><span>Ana · 2 days ago</span></div></div>
+        <div class="lrow"><span class="key">WEB-139</span><div class="t">App crashes when saving a long comment</div><div class="m"><span class="pill st-ns">Open</span><span class="prio Critical"><svg class="ico"><use href="#i-up2"/></svg>Critical</span><span>Ben</span></div></div>
+        <div class="lrow"><span class="key">WEB-141</span><div class="t">Sign in with a passkey</div><div class="m"><span class="pill st-ip">In progress</span><span>Ana</span></div></div>
+      </div>
+      <div class="bb"><span><svg class="ico"><use href="#i-home"/></svg>Home</span><span class="on"><svg class="ico"><use href="#i-search"/></svg>Search</span><span class="new"><svg class="ico"><use href="#i-plus"/></svg>New</span><span><svg class="ico"><use href="#i-bell"/></svg>Notifications</span><span><svg class="ico"><use href="#i-more"/></svg>More</span></div>
+    </div></div></div>
+    <div style="flex:1 1 280px;min-width:0">
+      <ul style="margin-top:0">
+        <li><b>One screen at a time</b>, with a <i>Back</i> button and the phone's back gesture.</li>
+        <li><b>Bottom bar with labels:</b> <i>Home · Search · New · Notifications · More</i>. <i>More</i> holds Saved searches, Time, Projects, Documents and Settings.</li>
+        <li><b>Sheets from the bottom</b> replace small pop-ups (choosing a person, a status, filters).</li>
+        <li><b>Issue page:</b> one column. Fields are grouped under <i>Details</i>. A bottom bar offers <i>Status · Comment · Timer · More</i>.</li>
+        <li><b>Swipe</b> on a list item for quick actions. The same actions are also in the item's <i>More</i> menu.</li>
+        <li><b>Timeline</b> and <b>Calendar</b> become day-by-day lists. Dates are changed in the issue's date fields, not by dragging.</li>
+        <li><b>Board</b> shows one column at a time, with column names as tabs. Cards move with their <i>Move to …</i> button.</li>
+        <li><b>Relation map</b> starts in its list form, with a <i>Show as picture</i> button.</li>
+        <li>Settings work on phones too. The workflow and layout editors switch to their simple list form.</li>
+      </ul></div></div>
+
+    <h3 id="s3-4"><button class="sec" data-sec>§3.4</button>Two ways to show an open issue</h3>
+    <p>Descriptions and comments need room to read and write. The <b>focus view</b> is the default; the <b>side panel view</b> stays available for people who mostly skim lists.</p>
+    <div class="demo"><div class="frame"><div class="frame-cap">Focus view (default) · computer</div><div class="frame-body"><div class="scr fv">
+      <div class="fv-icons"><span class="fv-ic on"><svg class="ico"><use href="#i-search"/></svg></span><span class="fv-ic"><svg class="ico"><use href="#i-home"/></svg></span><span class="fv-ic"><svg class="ico"><use href="#i-bell"/></svg></span><span class="fv-ic"><svg class="ico"><use href="#i-clock"/></svg></span><span class="fv-ic"><svg class="ico"><use href="#i-folder"/></svg></span></div>
+      <div class="fv-rail"><div class="fv-rh"><b>Website issues</b><span class="muted" style="margin-left:auto;font-size:11px">Hide list</span></div>
+        <div class="fv-ri on"><span class="key">WEB-142</span><span>Login fails after reset</span></div><div class="fv-ri"><span class="key">WEB-139</span><span>Crash on long comment</span></div><div class="fv-ri"><span class="key">WEB-141</span><span>Sign in with a passkey</span></div><div class="fv-ri"><span class="key">WEB-144</span><span>Chart labels in dark themes</span></div></div>
+      <div class="fv-main">
+        <div class="fv-h"><span class="muted">‹ Back to list</span><span class="type bug"><svg class="ico"><use href="#i-bug"/></svg>Bug</span><span class="key">WEB-142</span><span style="margin-left:auto" class="muted">Side panel view</span></div>
+        <div class="fv-body"><div class="fv-col">
+          <div style="font-size:20px;font-weight:700;line-height:1.25">Login fails after password reset</div>
+          <div class="fv-facts"><span class="pill st-ip">In progress</span><span class="fv-fact"><span class="fl">Assigned to</span>Ana</span><span class="fv-fact"><span class="fl">Priority</span><span class="prio High">High</span></span><span class="fv-fact"><span class="fl">Due</span>Oct 12</span><span class="fv-fact"><span class="fl">Planned for</span>2.4</span></div>
+          <div class="sh">Description</div>
+          <div style="font-size:13px;line-height:1.65">After resetting the password, signing in with the new password shows "Something went wrong". Steps: 1. Click "Forgot password". 2. Set a new password. 3. Sign in.</div>
+          <div class="sh">Activity</div>
+          <div class="bubble"><b>Ben</b> · 10 min ago<br>@Ana can you check the reset e-mail link? 14 customers have reported this since Friday.</div>
+        </div>
+        <div class="fv-det"><div class="sh">Details</div><dl class="mini-fields"><dt>Severity</dt><dd><span class="tag c4">S2</span></dd><dt>Labels</dt><dd><span class="tag c5">login</span></dd><dt>Estimated</dt><dd>4 h</dd><dt>Spent</dt><dd>1 h 20</dd><dt>Cost center</dt><dd>4100</dd><dt>Reported by</dt><dd>Ben</dd></dl></div></div>
+      </div>
+    </div></div></div></div>
+    <ul>
+      <li><b>Focus view:</b> the issue takes the main area. The sidebar shrinks to icons, and a slim <b>list of the current search</b> stays on the left (<kbd>j</kbd>/<kbd>k</kbd> move through it; <i>Hide list</i> gives even more room).</li>
+      <li>The most used fields sit in a <b>facts bar</b> under the title (status, assigned to, priority, due date, release, labels, timer). Everything else is in a <b>Details</b> column on wide screens, with <b>its own scrollbar</b>, so long details never push the description away; on smaller screens they sit behind <i>All details</i>.</li>
+      <li>Description and comments get a comfortable reading width (about 75 characters per line) and larger text.</li>
+      <li><b>Side panel view:</b> the issue opens next to the list, as before. Good for quickly checking many issues; <i>Focus view</i> in its header switches over.</li>
+      <li>Phones always show the issue full screen.</li>
+    </ul>
+
+    <!-- ================= 4 ================= -->
+    <h2 id="s4"><button class="sec" data-sec>§4</button>Key screens</h2>
+
+    <h3 id="s4-1"><button class="sec" data-sec>§4.1</button>Home</h3>
+    <div class="demo"><div class="frame"><div class="frame-cap">Computer · first weeks</div><div class="frame-body"><div class="scr">
+      <div class="tb"><b style="font-size:16px">Good morning, Ana</b><span class="muted">Sunday, October 4</span></div>
+      <div class="checklist"><b style="flex-basis:100%">Getting started</b><span><span class="okmark">✓</span> Create your first issue</span><span><span class="okmark">✓</span> Invite people</span><span class="btn sm">Pick your theme</span><span class="btn sm ghost">Hide this</span></div>
+      <div class="timer-card"><span class="dot-live"></span><div style="flex:1;min-width:160px"><div class="muted" style="font-size:11px">Timer running on</div><b>WEB-142 · Login fails after password reset</b></div><span class="clock">0:42:10</span><span class="btn primary sm"><svg class="ico"><use href="#i-stop"/></svg>Stop</span><span class="btn sm">Switch issue</span></div>
+      <div class="grid2">
+        <div class="box"><div class="box-h">My issues<span class="muted">Assigned to me</span></div>
+          <div class="r hd">In progress</div>
+          <div class="r"><span class="key">WEB-142</span><span class="t">Login fails after password reset</span></div>
+          <div class="r"><span class="key">WEB-141</span><span class="t">Sign in with a passkey</span></div>
+          <div class="r hd">Not started</div><div class="r subtle">Nothing here.</div></div>
+        <div class="box"><div class="box-h">Mentions<span class="muted">2 unread</span></div>
+          <div class="r"><span class="av c2">B</span><span class="t"><b>Ben</b> in WEB-142: "@Ana can you check the reset e-mail link?"</span></div>
+          <div class="r"><span class="av c3">C</span><span class="t"><b>Chloe</b> in <i>Login flow</i>: "@Ana is step 3 still right?"</span></div></div>
+      </div>
+    </div></div></div></div>
+    <p>Top to bottom (two columns on computers):</p>
+    <ul>
+      <li><b>Timer</b> (if running): issue, elapsed time, <i>Stop</i>, <i>Switch issue</i>.</li>
+      <li><b>My issues</b>: assigned to me, grouped by <i>Not started / In progress / Done recently</i>.</li>
+      <li><b>Mentions</b>: where someone mentioned me, unread first.</li>
+      <li><b>Recently opened</b> issues and documents.</li>
+      <li><b>Due soon</b>: issues and releases due in the next 7 days.</li>
+    </ul>
+    <p>Each block is a saved search underneath. <i>Customize</i> lets people reorder, remove or add blocks. On the <b>first visit</b>, a short checklist with big buttons (<i>Create your first issue</i>, <i>Invite people</i>, <i>Pick your theme</i>) helps people start. It disappears once done or hidden.</p>
+
+    <h3 id="s4-2"><button class="sec" data-sec>§4.2</button>Issue list</h3>
+    <div class="demo"><div class="frame"><div class="frame-cap">Computer · two issues ticked</div><div class="frame-body"><div class="scr">
+      <div class="r hd"><span style="width:18px"></span><span style="width:80px">Issue</span><span class="t">Title</span><span style="width:90px">Status</span><span style="width:80px">Priority</span><span style="width:90px">Assigned to</span></div>
+      <div class="r sel"><input type="checkbox" class="cb" checked aria-label="Select WEB-139"><span class="key" style="width:80px">WEB-139</span><span class="t">App crashes when saving a long comment</span><span style="width:90px"><span class="pill st-ns">Open</span></span><span class="prio Critical" style="width:80px"><svg class="ico"><use href="#i-up2"/></svg>Critical</span><span style="width:90px" class="who"><span class="av c2">B</span>Ben</span></div>
+      <div class="r sel"><input type="checkbox" class="cb" checked aria-label="Select WEB-142"><span class="key" style="width:80px">WEB-142</span><span class="t">Login fails after password reset</span><span style="width:90px"><span class="pill st-ip">In progress</span></span><span class="prio High" style="width:80px"><svg class="ico"><use href="#i-up"/></svg>High</span><span style="width:90px" class="who"><span class="av c5">A</span>Ana</span></div>
+      <div class="r"><input type="checkbox" class="cb" aria-label="Select WEB-144"><span class="key" style="width:80px">WEB-144</span><span class="t">Chart labels are hard to read in dark themes</span><span style="width:90px"><span class="pill st-ns">Open</span></span><span class="prio Medium" style="width:80px"><svg class="ico"><use href="#i-eq"/></svg>Medium</span><span style="width:90px" class="who"><span class="av c4">M</span>Malik</span></div>
+      <div class="bulk"><b>2 selected</b><span class="btn sm">Change fields</span><span class="btn sm">Change status</span><span class="btn sm">Move to project</span><span class="btn sm">Add label</span><span class="btn sm danger">Delete</span></div>
+      <div class="preview-msg"><b>Send 2 issues to Testing?</b><br>1 will move to Testing. 1 will be skipped, because its workflow doesn't allow it from <i>Open</i>. <span class="btn sm primary" style="margin-left:6px">Move 1</span></div>
+    </div></div></div></div>
+    <ul>
+      <li>Columns are chosen with <i>Customize → Columns</i> (a checklist with drag to reorder). Resize columns by dragging their edges, and sort by clicking the column name.</li>
+      <li><i>Group by</i> any field you can see; each group shows its number of issues.</li>
+      <li><b>Change in place:</b> click a status, person, priority or date to change it right there.</li>
+      <li><b>Select several:</b> each row has a checkbox. A bar appears at the bottom: <i>Change fields · Change status · Move to project · Add label · Delete</i>. Before applying, it says what will happen and which issues will be skipped (principle 6).</li>
+      <li>The list loads more while you scroll. Very long lists stay fast because only the visible rows are drawn.</li>
+      <li><b>Spacing:</b> <i>Comfortable</i> (default, two lines per issue) or <i>Compact</i> (one line).</li>
+    </ul>
+
+    <h3 id="s4-3"><button class="sec" data-sec>§4.3</button>Search bar: Simple and Advanced <span class="ids">QRY</span></h3>
+    <p>One search bar sits above every list, board, timeline, calendar and map.</p>
+    <div class="demo"><div class="frame"><div class="frame-cap">Simple search (default)</div><div class="frame-body"><div class="scr">
+      <div class="sbar"><span class="chip"><button><b>Project:</b> Website</button></span><span class="chip"><button><b>Status:</b> not Done</button><span class="x"><svg class="ico"><use href="#i-x"/></svg></span></span><span class="chip"><button><b>Assigned to:</b> me</button><span class="x"><svg class="ico"><use href="#i-x"/></svg></span></span><span class="chip"><button><b>Any of:</b> Bug, label crash</button><span class="x"><svg class="ico"><use href="#i-x"/></svg></span></span><span class="chip raw"><button>changed in last 7 days</button><span class="x"><svg class="ico"><use href="#i-x"/></svg></span></span><span class="chip add">+ Add filter</span>
+        <span style="margin-left:auto;display:flex;gap:6px"><span class="btn ghost sm"><svg class="ico"><use href="#i-spark"/></svg>Ask</span><span class="btn ghost sm">Advanced</span><span class="btn sm"><svg class="ico"><use href="#i-bookmark"/></svg>Save search</span></span></div>
+    </div></div></div></div>
+    <ul>
+      <li>Each condition is a <b>filter button</b>. Click it to change it, or ✕ to remove it.</li>
+      <li><b>+ Add filter</b> lists the fields you can see, the most common first, with a search box for the rest.</li>
+      <li><b>"Any of"</b> buttons cover "this OR that". Opening one shows the conditions inside.</li>
+      <li>Conditions that Simple search has no picker for appear as a button with their typed text (dashed), editable as text right there. Because of this, switching between Simple and Advanced never loses anything.</li>
+    </ul>
+    <div class="demo"><div class="frame narrow"><div class="frame-cap">Advanced search</div><div class="frame-body"><div class="scr" style="padding:12px">
+      <div class="adv-box">project within WEB and status is not Done and <span class="err">prio</span> is High
+sort by priority, highest first</div>
+      <div class="errline"><svg class="ico"><use href="#i-x"/></svg>There is no field called "prio". Did you mean "priority"?</div>
+    </div></div></div>
+    <div class="frame narrow"><div class="frame-cap">Ask in your own words (assistant)</div><div class="frame-body"><div class="scr" style="padding:12px;display:flex;flex-direction:column;gap:8px">
+      <div class="field"><input value="bugs Ana fixed last week" aria-label="Ask in your own words" readonly></div>
+      <div class="ask-res"><span class="ai-l"><svg class="ico"><use href="#i-spark"/></svg>Suggested by the assistant</span><code>type is Bug and status is Done and assignedTo is Ana and changed in last 7 days</code><span class="btn sm primary">Use this search</span><span class="btn sm">Edit first</span></div>
+    </div></div></div></div>
+    <ul>
+      <li><b>Advanced search:</b> words are suggested while you type; mistakes are underlined with a plain explanation. It behaves exactly like the server because it uses the same rules (QRY-03).</li>
+      <li>A field you are not allowed to see gets the same message as a field that doesn't exist (QRY-05).</li>
+      <li><i>Help</i> opens a short cheat sheet with examples.</li>
+      <li><b>Ask in your own words</b> (only if the assistant is switched on): type a normal sentence. The assistant shows the search it made, and it only runs after you click <i>Use this search</i>.</li>
+      <li><b>Saving:</b> <i>Save search</i> stores the filters together with how results are shown (columns, grouping, board, timeline, calendar or map). <i>Share</i> lists only the groups and projects you are allowed to share with.</li>
+    </ul>
+
+    <h3 id="s4-4"><button class="sec" data-sec>§4.4</button>Issue page <span class="ids">ISS-04</span></h3>
+    <div class="demo"><div class="frame"><div class="frame-cap">Computer · full page</div><div class="frame-body"><div class="scr" style="display:grid;grid-template-columns:minmax(0,1fr) 220px">
+      <div style="padding:14px;display:flex;flex-direction:column;gap:12px;min-width:0">
+        <div style="display:flex;gap:6px;align-items:center"><span class="type bug"><svg class="ico"><use href="#i-bug"/></svg>Bug</span><span class="key">WEB-142</span><span style="margin-left:auto" class="btn ghost sm"><svg class="ico"><use href="#i-spark"/></svg>Ask</span><span class="btn ghost sm"><svg class="ico"><use href="#i-more"/></svg></span></div>
+        <h5 style="font-size:19px;margin:0">Login fails after password reset</h5>
+        <div class="banner"><svg class="ico"><use href="#i-clock"/></svg>Ben changed Priority to Critical 2 minutes ago.<span class="btn sm">Keep Ben's</span><span class="btn sm">Use mine</span></div>
+        <div><div class="sh">Description</div><div style="font-size:12.5px;line-height:1.55">After resetting the password, signing in with the new password shows "Something went wrong". <b>Steps:</b> 1. Click "Forgot password" 2. Set a new password 3. Sign in.</div></div>
+        <div><span class="btn sm ghost" style="padding-left:0"><svg class="ico"><use href="#i-goal"/></svg>Part of: Goal: New login experience</span></div>
+        <div><div class="sh">Sub-issues (0)</div><div class="muted" style="font-size:12px">None yet · <u>Add sub-issue</u></div></div>
+        <div><div class="sh">Related issues (4)</div>
+          <div class="blk">
+            <div class="r"><span class="rel-kind">blocks</span><span class="key">WEB-147</span><span class="t">Write the release notes for 2.4</span><span class="pill st-ns">Open</span></div>
+            <div class="r"><span class="rel-kind">is caused by</span><span class="key">WEB-150</span><span class="t">Reset e-mail link expires too early</span><span class="pill st-ip">In progress</span></div>
+            <div class="r"><span class="rel-kind">has duplicate</span><span class="key">WEB-151</span><span class="t">Can't sign in after changing password</span><span class="pill st-done">Done</span></div>
+            <div class="r"><span class="rel-kind">related to</span><span class="key">WEB-141</span><span class="t">Sign in with a passkey</span><span class="pill st-ip">In progress</span></div>
+          </div>
+          <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap"><span class="btn sm"><svg class="ico"><use href="#i-plus"/></svg>Add relation</span><span class="btn sm"><svg class="ico"><use href="#i-map"/></svg>Show relation map</span></div></div>
+        <div><div class="sh">Activity</div>
+          <div class="tabs" role="tablist"><button aria-selected="true">Everything</button><button>Comments</button><button>Changes</button><button>Time</button></div>
+          <div style="display:flex;gap:8px"><span class="av c2">B</span><div class="bubble"><b>Ben</b> · 10 min ago<br>@Ana can you check the reset e-mail link? 14 customers have reported this since Friday.</div></div></div>
+      </div>
+      <div style="border-left:1px solid var(--border);padding:14px 12px;display:flex;flex-direction:column;gap:10px">
+        <div class="sh">Status</div><span><span class="pill st-ip">In progress ▾</span></span>
+        <dl class="mini-fields">
+          <dt>Assigned to</dt><dd><span class="who"><span class="av c5">A</span>Ana</span></dd>
+          <dt>Priority</dt><dd><span class="prio High"><svg class="ico"><use href="#i-up"/></svg>High</span></dd>
+          <dt>Severity</dt><dd><span class="tag c4">S2</span></dd>
+          <dt>Labels</dt><dd><span class="tag c5">login</span></dd>
+          <dt>Planned for</dt><dd>Release 2.4</dd>
+          <dt>Due date</dt><dd class="num">Oct 12</dd>
+          <dt>Estimated</dt><dd class="num">4 h</dd>
+          <dt>Spent</dt><dd class="num">1 h 20 <span class="btn sm" style="padding:1px 5px"><svg class="ico"><use href="#i-play"/></svg></span></dd>
+          <dt>Cost center</dt><dd>4100 <svg class="ico subtle"><use href="#i-lock"/></svg></dd>
+          <dt>Activity</dt><dd><span class="tag c2">Development</span></dd>
+          <dt>Followers</dt><dd>3 · Follow</dd>
+          <dt>Reported by</dt><dd><span class="who"><span class="av c2">B</span>Ben</span></dd>
+        </dl>
+        <div class="muted" style="font-size:11px">Cost center: only team members and administrators can change this.</div>
+      </div>
+    </div></div></div>
+    <div class="frame phone"><div class="frame-cap">Phone</div><div class="frame-body"><div class="scr">
+      <div class="ph-top"><svg class="ico"><use href="#i-back"/></svg>Back<span class="key" style="margin-left:auto">WEB-142</span></div>
+      <div class="ph-body" style="padding:12px;display:flex;flex-direction:column;gap:10px">
+        <b style="font-size:16px;line-height:1.3">Login fails after password reset</b>
+        <span><span class="pill st-ip">In progress</span></span>
+        <div class="blk"><div class="r"><span class="muted" style="flex:1">Details</span><span class="muted">Ana · High · 2.4 ▾</span></div></div>
+        <div><div class="sh">Related issues (4)</div><div class="blk">
+          <div class="r"><span class="rel-kind" style="min-width:70px">blocks</span><span class="key">WEB-147</span></div>
+          <div class="r"><span class="rel-kind" style="min-width:70px">is caused by</span><span class="key">WEB-150</span></div>
+          <div class="r"><span class="muted">+ 2 more</span></div></div></div>
+        <div class="bubble"><b>Ben</b> · 10 min ago<br>@Ana can you check the reset e-mail link?</div>
+      </div>
+      <div class="actbar"><span><span class="pill st-ip" style="padding:0 6px">Status</span></span><span>Comment</span><span><svg class="ico"><use href="#i-play"/></svg>Timer</span><span>More</span></div>
+    </div></div></div></div>
+    <ul>
+      <li><b>Header:</b> type and issue ID (click to copy a link), the title (click to change it), a <i>More</i> menu, <i>Open full page</i> and <i>Close</i>.</li>
+      <li><b>Status button:</b> shows the current status in its group's color. Clicking it lists only the status changes you can make right now, in words: <i>"Start working"</i>, <i>"Send to testing"</i>. If the workflow needs information first, a small form asks only for that (<i>Ask for</i>, WF-04).</li>
+      <li><b>Main column:</b> description, then sections from the layout (CFG-01), then sub-issues, related issues, files and documents, then activity.</li>
+      <li><b>Fields panel:</b> the fields from the layout. Empty fields you may change show as a quiet <i>"Add due date"</i>. Empty fields you can't change are left out. Read-only fields show a lock and say why.</li>
+      <li><b>Activity:</b> comments, changes and time entries in one timeline. Changes to fields you can't see are not listed.</li>
+      <li><b>Timer:</b> the play button next to <i>Spent</i>.</li>
+      <li><b>Accounting:</b> <i>Cost center</i> and <i>Activity</i> on the issue are the defaults for every time entry booked on it. If the issue has none, the project's (or its parent project's) are used. Each time entry can still be changed (§4.9).</li>
+      <li><b>When someone else changed it meanwhile:</b> saving shows a message instead of overwriting: <i>"Ben changed Priority to Critical 2 minutes ago. [Keep Ben's] [Use mine]"</i>.</li>
+    </ul>
+    <h4>Editing long text: locks and confirmed saves <span class="ids">ISS-17, ADR-0019</span></h4>
+    <div class="demo"><div class="frame narrow"><div class="frame-cap">Ben's screen while Ana edits</div><div class="frame-body"><div class="scr" style="padding:12px;display:flex;flex-direction:column;gap:8px">
+      <div class="sh">Description</div>
+      <div class="editing-note"><span class="av c5">A</span><span><b>Ana is editing the description</b> · since 2 min</span></div>
+      <div style="font-size:12.5px;line-height:1.55;color:var(--fg-muted)">After resetting the password, signing in with the new password shows "Something went wrong" …</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap"><span class="btn sm">Ask Ana to finish</span><span class="btn sm ghost">Edit anyway</span></div>
+    </div></div></div>
+    <div class="frame narrow"><div class="frame-cap">Ana's screen · the three save states</div><div class="frame-body"><div class="scr" style="padding:12px;display:flex;flex-direction:column;gap:8px">
+      <div class="savestate"><span class="ss-dot ip"></span>Saving…</div>
+      <div class="savestate"><span class="ss-dot ok"></span>Saved · 10:42</div>
+      <div class="banner"><svg class="ico"><use href="#i-alert"/></svg><span><b>Not saved:</b> your editing time ran out while you were offline, and Ben changed the description since. Your text is kept.</span><span class="btn sm primary">Compare and save</span></div>
+      <div class="banner" style="background:var(--bg-surface);border-color:var(--border)"><svg class="ico"><use href="#i-clock"/></svg><span>Ben changed the description after you, 1 min ago.</span><span class="btn sm">Show changes</span></div>
+    </div></div></div></div>
+    <ul>
+      <li><b>Long text</b> (description, long-text fields, a comment being edited, document pages, workflow, layout and theme editors) is locked to one person while they type. The lock starts with the first keystroke, so just reading never blocks anyone.</li>
+      <li><b>Others see who is editing</b> and since when, or <i>"Someone is editing"</i> if their role may not see names (§5.2). They can <i>Ask Ana to finish</i> (sends her a notification) or, if allowed, <i>Edit anyway</i>: Ana is told, and her unsaved text is kept as her draft.</li>
+      <li><b>The lock keeps itself alive</b> while the editor is open. If the tab closes or the connection drops, it frees itself within a minute.</li>
+      <li><b>Nothing is lost:</b> while typing, drafts are kept in the browser and privately on the server.</li>
+      <li><b>Every change is confirmed:</b> it shows at once as <i>Saving…</i>, then <i>Saved</i>. If the server says no (someone changed it, the lock ran out, offline), the screen says what happened in plain words, keeps the text, and offers <i>Compare and save</i>.</li>
+      <li><b>Short values</b> (status, priority, people, dates) don't lock. They save instantly and are checked against the latest version.</li>
+      <li>Until live updates arrive, open issues are checked every 30 seconds and when you come back to the tab: <i>"Ben changed the description after you."</i></li>
+    </ul>
+    <h4>Related issues</h4>
+    <ul>
+      <li>Grouped by what the relation means, read from this issue's side: <i>blocks</i>, <i>is blocked by</i>, <i>duplicate of</i>, <i>has duplicate</i>, <i>causes</i>, <i>is caused by</i>, <i>related to</i>. Every relation shows on both issues, each in its own direction.</li>
+      <li>Relations can cross projects. You only see a relation when you may see <b>both</b> issues.</li>
+      <li><b>Sub-issues</b> stay a separate block, because they describe a parent and its parts, not a relation between equals.</li>
+      <li>Two buttons under the block: <i>Add relation</i> and <i>Show relation map</i> (§4.15).</li>
+    </ul>
+    <div class="demo"><div class="frame"><div class="frame-cap">Add relation · three small steps</div><div class="frame-body"><div class="scr" style="padding:12px"><div class="flow">
+      <div class="step"><span>1 · Pick the kind</span><div class="pop-demo"><div class="h">WEB-142 …</div><div class="it on">blocks …</div><div class="it">is blocked by …</div><div class="it">is a duplicate of …</div><div class="it">causes …</div><div class="it">is caused by …</div><div class="it">is related to …</div></div></div>
+      <div class="step"><span>2 · Find the issue</span><div class="pop-demo"><div class="h">WEB-142 blocks …</div><input value="release notes" aria-label="Find an issue by number or title" readonly><div class="it on"><span class="key">WEB-147</span>Write the release notes for 2.4</div><div class="it"><span class="key">WEB-133</span>Release notes template</div></div></div>
+      <div class="step"><span>3 · Done, with Undo</span><div class="toast-demo">WEB-142 now blocks WEB-147. <u>Undo</u></div><div class="muted" style="font-size:12px">The relation also shows on WEB-147 as "is blocked by WEB-142", and both histories record it.</div></div>
+    </div></div></div></div></div>
+
+    <h3 id="s4-5"><button class="sec" data-sec>§4.5</button>New issue</h3>
+    <div class="demo"><div class="frame narrow"><div class="frame-cap">Dialog (full screen on phones)</div><div class="frame-body"><div class="scr" style="padding:6px 10px">
+      <div class="dialog-demo" style="margin:8px auto"><div class="dh">New issue</div><div class="db">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div class="field"><label>Project</label><select><option>Website</option></select></div><div class="field"><label>Type</label><select><option>Bug</option></select></div></div>
+        <div class="field"><label>Title <span class="req">(required)</span></label><input placeholder="Short summary, e.g. “Save button does nothing”"></div>
+        <div class="field"><label>Description</label><textarea placeholder="What happened? What did you expect?"></textarea></div>
+        <span><span class="btn sm"><svg class="ico"><use href="#i-spark"/></svg>Write it up for me</span></span>
+        <span class="subtle" style="font-size:11px">Your draft is kept if you close this window.</span></div>
+        <div class="df"><span class="btn sm">Cancel</span><span class="btn sm">Create and start another</span><span class="btn sm primary">Create</span></div></div>
+    </div></div></div></div>
+    <ul>
+      <li>A dialog on computers, a full screen on phones. Opened with <i>+ New</i> (sidebar, bottom bar) or the <kbd>c</kbd> key.</li>
+      <li>Asks in this order: <b>project → type → (optional) template → fields from the new-issue form</b>. Required fields say <i>required</i> in words, not only with a star.</li>
+      <li><b>The form is editable</b> (§5.5): admins choose its fields, order and which <b>roles</b> see each field, per project and issue type. A Guest might only get <i>Title</i>, <i>Description</i> and <i>Where did it happen?</i>; a Team member also gets priority, assignment, due date and cost center. Field permissions always win. Admins open the editor right from the dialog with <i>Customize this form</i>.</li>
+      <li><b>"Write it up for me"</b> (AI-13): paste an error message or rough notes; the assistant fills title, steps, expected and actual result for you to check before creating.</li>
+      <li><b>Nothing gets lost:</b> the draft is kept if the dialog closes or the page reloads (ISS-11).</li>
+      <li>Buttons: <i>Create</i> and <i>Create and start another</i>.</li>
+    </ul>
+
+    <h3 id="s4-6"><button class="sec" data-sec>§4.6</button>Board <span class="ids">PLAN-06</span></h3>
+    <div class="demo"><div class="frame"><div class="frame-cap">Computer · dragging WEB-139</div><div class="frame-body"><div class="scr"><div class="board">
+      <div class="col"><div class="col-h"><span class="pill st-ns">Open</span><span class="lim">2</span></div>
+        <div class="card drag"><div class="m"><span class="key">WEB-139</span><span class="btn sm ghost" style="margin-left:auto">Move to …</span></div><div class="t">App crashes when saving a long comment</div><div class="m"><span class="prio Critical"><svg class="ico"><use href="#i-up2"/></svg>Critical</span><span class="av c2">B</span></div></div>
+        <div class="card"><div class="m"><span class="key">WEB-144</span></div><div class="t">Chart labels are hard to read in dark themes</div></div></div>
+      <div class="col ok"><div class="col-h"><span class="pill st-ip">In progress</span><span class="lim over">4 of 3</span></div>
+        <div class="card"><div class="m"><span class="key">WEB-142</span></div><div class="t">Login fails after password reset</div></div>
+        <div class="card"><div class="m"><span class="key">WEB-141</span></div><div class="t">Sign in with a passkey</div></div></div>
+      <div class="col fade" title="WEB-139 can't go from Open straight to Testing"><div class="col-h"><span class="pill st-ip">Testing</span><span class="lim">2</span></div>
+        <div class="card"><div class="m"><span class="key">WEB-140</span></div><div class="t">Design the new sign-in page</div></div></div>
+      <div class="col"><div class="col-h"><span class="pill st-done">Done</span><span class="lim">1</span></div>
+        <div class="card"><div class="m"><span class="key">WEB-146</span></div><div class="t">Search ignores accents in names</div></div></div>
+    </div></div></div></div></div>
+    <ul>
+      <li>Columns are statuses by default, or any choice field. Optional <b>rows</b> split the board by a field (for example, by person).</li>
+      <li>Drag a card to another column to change its status. Columns it can't go to fade while dragging, and pointing at one explains why. Every card also has a <i>Move to …</i> button.</li>
+      <li><b>Card limit</b> shows as <i>3 of 5</i> in the column title. Going over turns the title orange but is allowed.</li>
+      <li>Cards show the issue ID, title and up to 4 fields (<i>Customize → Card</i>).</li>
+    </ul>
+
+    <h3 id="s4-7"><button class="sec" data-sec>§4.7</button>Timeline (Gantt chart) <span class="ids">PLAN-01…05, PLAN-08</span></h3>
+    <div class="demo"><div class="frame"><div class="frame-cap">Computer · weeks</div><div class="frame-body"><div class="scr"><div class="tl">
+      <div class="hdr">Issue</div><div class="hdr wk"><span>Sep 28</span><span>Oct 5</span><span>Oct 12</span><span>Oct 19</span><span>Oct 26</span></div>
+      <div class="nm" style="font-weight:700;background:var(--bg-surface)"><svg class="ico"><use href="#i-goal"/></svg>Goal: New login experience</div><div class="ln"><div class="today" style="left:17%"></div><div class="bar goal" style="left:3%;width:91%"></div></div>
+      <div class="nm child"><span class="key">WEB-140</span>Design sign-in page</div><div class="ln"><div class="today" style="left:17%"></div><div class="bar" style="left:3%;width:29%">WEB-140</div></div>
+      <div class="nm child"><span class="key">WEB-141</span>Passkey sign-in</div><div class="ln"><div class="today" style="left:17%"></div><div class="bar" style="left:34%;width:34%">WEB-141</div></div>
+      <div class="nm child"><span class="key">WEB-142</span>Login after reset</div><div class="ln"><div class="today" style="left:17%"></div><div class="bar" style="left:11%;width:23%">WEB-142</div></div>
+      <div class="nm"><svg class="ico"><use href="#i-goal"/></svg>Release 2.4</div><div class="ln"><div class="today" style="left:17%"></div><div class="ms" style="left:72%"></div></div>
+      <div class="nm"><span class="key">WEB-147</span>Release notes</div><div class="ln"><div class="today" style="left:17%"></div><div class="bar ns" style="left:60%;width:11%">WEB-147</div></div>
+    </div></div></div></div></div>
+    <ul>
+      <li>Left: rows that can be folded (grouped by goal, project, person, release or field). Right: the dates. The red line is today.</li>
+      <li>Drag a bar to move it, drag its ends to make it longer or shorter, and drag from a bar's end to another bar to say <i>"must finish first"</i>. <i>Undo</i> is always offered.</li>
+      <li>Dependencies are kinds of relation that also affect dates, so the timeline, the issue page and the relation map all show the same relations.</li>
+      <li>Zoom with <i>Days · Weeks · Months · Quarters</i>. <i>Today</i> jumps to today.</li>
+      <li><b>Deadline drivers</b> (1.0): a switch that highlights the issues whose delay would move the end date.</li>
+      <li>Issues without dates wait in a <i>Not scheduled yet</i> tray. Drag one onto the chart to give it dates.</li>
+      <li>Every drag has a typed alternative: <i>Set dates …</i> and <i>Add dependency …</i> in the bar's menu.</li>
+      <li>Restricted issues are left out completely: no empty bars and no arrows to something you can't see (PLAN-08).</li>
+    </ul>
+
+    <h3 id="s4-8"><button class="sec" data-sec>§4.8</button>Documents <span class="ids">DOC</span></h3>
+    <div class="demo"><div class="frame"><div class="frame-cap">Computer</div><div class="frame-body"><div class="scr docs3">
+      <div class="sb"><div class="ni"><svg class="ico"><use href="#i-search"/></svg>Find</div><div class="ni"><svg class="ico"><use href="#i-folder"/></svg><b>Specs</b></div><div class="ni on" style="padding-left:20px">Login flow</div><div class="ni" style="padding-left:20px">Search</div><div class="ni"><svg class="ico"><use href="#i-folder"/></svg><b>How-tos</b></div><div class="ni"><svg class="ico"><use href="#i-folder"/></svg><b>Files</b></div><div class="ni" style="padding-left:20px;font-size:11.5px">wireframes.pdf<span class="lockb"><svg class="ico" style="width:12px;height:12px"><use href="#i-lock"/></svg>Ben</span></div><div class="ni" style="color:var(--accent-fg)">+ New</div></div>
+      <div class="doc-page"><div class="muted" style="font-size:11px">Specs › Login flow · Version 7 · changed by Ana 2 days ago</div><h5>Login flow</h5>
+        <div class="tbtn"><span>Heading</span><span>Bold</span><span>List</span><span>Checklist</span><span>Table</span><span>Image</span><span>Code</span></div>
+        <p>People sign in with a <b>passkey</b> first. If they don't have one yet, they use e-mail and password.</p>
+        <p>Known problem: <span class="live"><span class="key">WEB-142</span><span class="pill st-ip">In progress</span></span></p></div>
+      <div class="dside"><div><div class="sh">On this page</div>Known problems<br>Steps</div><div><div class="sh">Related issues</div><span class="key">WEB-142</span><br><span class="key">WEB-141</span></div><div><div class="sh">Versions</div>7 · Ana<br>6 · Ben<br>5 · Ana</div></div>
+    </div></div></div></div>
+    <ul>
+      <li><b>Left:</b> folders, pages and files; drag to move. <b>Middle:</b> the page or a file preview. <b>Right:</b> contents of this page, related issues and versions (each can be hidden).</li>
+      <li><b>Writing:</b> a normal text editor with a toolbar (<i>Heading, Bold, List, Checklist, Table, Image, Code</i>). Markdown shortcuts work for those who know them. Typing an issue ID turns it into a live link that shows the issue's status (DOC-04), but only to people who may see that issue.</li>
+      <li><b>Versions:</b> pick any two to compare them. <i>Restore</i> makes a new version from an old one; nothing is ever lost.</li>
+      <li><b>Files:</b> preview (images, PDF, text), <i>Upload new version</i>, and <i>Lock for editing</i>, which shows a badge with who locked it and since when.</li>
+      <li><b>Phone:</b> the folder list is the first screen; a page opens full screen, and contents, related issues and versions sit behind an info button.</li>
+    </ul>
+
+    <h3 id="s4-9"><button class="sec" data-sec>§4.9</button>Time and working hours <span class="ids">TIME, PRIV-09</span></h3>
+    <p>Bugaboo records two different things, and keeps them apart on purpose:</p>
+    <ul>
+      <li><b>Working hours:</b> when your work day started and ended, and your breaks. German law requires employers to record this for every working day.</li>
+      <li><b>Time on issues:</b> what you spent your time on, with an <b>activity</b> and a <b>cost center</b> for accounting.</li>
+    </ul>
+    <div class="demo"><div class="frame narrow" style="flex-basis:360px"><div class="frame-cap">Sidebar and Home · work day running</div><div class="frame-body"><div class="scr" style="padding:12px;display:flex;flex-direction:column;gap:8px">
+      <div class="wd"><span class="dot-live"></span><div style="flex:1;min-width:0"><b>Working since 8:02</b><div class="muted" style="font-size:11px">Break 12:10–12:40 · 6 h 51 so far</div></div><span class="btn sm">Start break</span><span class="btn sm">End work day</span></div>
+      <div class="timer-mini" style="margin:0"><span class="dot-live"></span>WEB-142 <span class="mono" style="margin-left:auto">0:42</span></div>
+      <div class="muted" style="font-size:11.5px">Starting an issue timer before the work day asks: <i>"Start your work day too?"</i></div>
+    </div></div></div>
+    <div class="frame narrow" style="flex-basis:360px"><div class="frame-cap">Stopping the timer</div><div class="frame-body"><div class="scr"><div class="dialog-demo" style="margin:10px auto"><div class="dh">Stop timer on WEB-142</div><div class="db">
+      <div style="font-size:12.5px">You worked <b>42 min</b> on "Login fails after password reset".</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div class="field"><label>Activity</label><select><option>Development</option></select></div><div class="field"><label>Cost center</label><select><option>4100 Product development</option></select></div></div>
+      <div class="field"><label>What did you do? <span class="req">(optional)</span></label><input value="Found the token check" readonly></div>
+      <div class="muted" style="font-size:11px">Activity and cost center come from the issue. Change them here if this time was different.</div></div>
+      <div class="df"><span class="btn sm danger">Throw away</span><span class="btn sm primary">Save time</span></div></div></div></div></div></div>
+
+    <div class="demo"><div class="frame"><div class="frame-cap">Timesheet · week of September 28</div><div class="frame-body"><div class="scr" style="padding:10px">
+      <table class="ts"><thead><tr><th>Work day</th><th>Mon 28</th><th>Tue 29</th><th>Wed 30</th><th>Thu 1</th><th>Fri 2</th><th>Sat 3</th><th class="today">Sun 4 · today</th><th>Total</th></tr></thead>
+        <tbody>
+          <tr><td>Start</td><td><span class="cell">8:05</span></td><td><span class="cell">8:30</span></td><td><span class="cell">9:00</span></td><td><span class="cell">7:40</span></td><td><span class="cell">8:02</span></td><td></td><td></td><td></td></tr>
+          <tr><td>End</td><td><span class="cell">16:50</span></td><td><span class="cell">17:10</span></td><td><span class="cell">13:00</span></td><td><span class="cell">18:30</span></td><td><span class="cell focus">17:15</span></td><td></td><td></td><td></td></tr>
+          <tr><td>Breaks</td><td><span class="cell">0:45</span></td><td><span class="cell">0:30</span></td><td><span class="cell">0:00</span></td><td><span class="cell warnc">0:15</span></td><td><span class="cell">0:30</span></td><td></td><td></td><td></td></tr>
+          <tr class="wh"><td><b>Working hours</b></td><td>8:00</td><td>8:10</td><td>4:00</td><td><b class="warnt">10:35</b></td><td>8:43</td><td></td><td></td><td><b>39:28</b></td></tr>
+        </tbody></table>
+      <div class="banner" style="margin:8px 0"><svg class="ico"><use href="#i-alert"/></svg><span><b>Thursday:</b> 10 h 35 min worked and only 15 min break. The German working-time rules allow 10 hours a day at most, with 45 min break after 9 hours. This is a warning; the day is recorded as it happened.</span></div>
+      <table class="ts"><thead><tr><th>Time on issues</th><th>Activity</th><th>Cost center</th><th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th><th>Total</th></tr></thead>
+        <tbody>
+          <tr><td><span class="key">WEB-142</span> Login after reset</td><td><span class="tag c2">Development</span></td><td class="mono">4100</td><td></td><td></td><td></td><td></td><td><span class="cell">1:20</span></td><td><b>1:20</b></td></tr>
+          <tr><td><span class="key">WEB-141</span> Passkey sign-in</td><td><span class="tag c2">Development</span></td><td class="mono">4100</td><td><span class="cell">2:00</span></td><td><span class="cell">1:30</span></td><td></td><td><span class="cell">1:30</span></td><td></td><td><b>5:00</b></td></tr>
+          <tr><td><span class="key">WEB-140</span> Sign-in design</td><td><span class="tag c3">Testing</span></td><td class="mono">4100</td><td></td><td></td><td><span class="cell">0:45</span></td><td><span class="cell">0:30</span></td><td></td><td><b>1:15</b></td></tr>
+          <tr><td><span class="key">WEB-147</span> Release notes</td><td><span class="tag c6">Documentation</span></td><td class="mono">4300</td><td></td><td></td><td></td><td><span class="cell">2:00</span></td><td></td><td><b>2:00</b></td></tr>
+        </tbody><tfoot><tr><td colspan="3">Booked on issues</td><td>2:00</td><td>1:30</td><td>0:45</td><td>4:00</td><td>1:20</td><td>9:35</td></tr>
+        <tr><td colspan="3">Working hours not booked on issues</td><td>6:00</td><td>6:40</td><td>3:15</td><td>6:35</td><td>7:23</td><td>29:53</td></tr></tfoot></table>
+    </div></div></div></div>
+    <h4>Working hours</h4>
+    <ul>
+      <li><b>Start work day</b>, <b>Start break</b>, <b>End break</b> and <b>End work day</b> are one tap away: in the sidebar on computers, at the top of Home and in the bottom bar's timer on phones.</li>
+      <li>Forgot to tap? Type start, end and breaks into the timesheet's <b>Work day</b> rows afterwards.</li>
+      <li><b>Working-time rules</b> (Germany preset, editable by admins): at most 10 hours a day, 30 min break after 6 hours and 45 min after 9, 11 hours of rest between two days. A broken rule shows a plain warning on that day. It never blocks recording, because the record must show what really happened.</li>
+      <li><b>Changing a past day</b> asks for a reason. The old value stays in the history, and if someone else changed it, the person gets a notification.</li>
+      <li><b>Who sees it:</b> everyone sees their own working hours. Seeing other people's needs the separate permission <i>See working hours of others</i>. Team reports can be set to show totals only. Working hours are never used for scores or rankings.</li>
+      <li><b>Kept for</b> 2 years in the Germany preset, then deleted automatically (§5.7).</li>
+    </ul>
+    <h4>Time on issues</h4>
+    <ul>
+      <li>The <b>timer</b> is always visible: at the bottom of the sidebar on computers, at the top of Home on phones. Tap it for <i>Stop · Switch issue · Change start time · Throw away</i>.</li>
+      <li><b>Stopping the timer</b> asks for an optional note and shows <b>Activity</b> and <b>Cost center</b>, already filled in from the issue (or its project).</li>
+      <li><b>Activity</b> (<i>Development, Testing, Documentation, Meetings, Support</i>) and <b>Cost center</b> (number and name) are ordinary fields: admins can rename them, change the lists, make them required, or add more fields to time entries.</li>
+      <li><b>Timesheet:</b> one row per issue, one column per day. Type <code>1:30</code>, <code>1.5</code> or <code>90m</code>; all mean ninety minutes. The footer compares <i>working hours</i> with <i>time booked on issues</i>, so gaps are easy to spot.</li>
+      <li><b>Reports:</b> use the same search bar. Group by person, project, issue, activity, cost center, any own field, or week. Shown as table and bar chart, with <i>Download as spreadsheet (CSV)</i>.</li>
+      <li><b>Closed months</b> (1.0): once a month is closed, changes need a reason.</li>
+    </ul>
+
+    <h3 id="s4-10"><button class="sec" data-sec>§4.10</button>Dashboards <span class="ids">CFG-03</span></h3>
+    <div class="demo"><div class="frame narrow"><div class="frame-cap">One box: "Open bugs by priority"</div><div class="frame-body"><div class="scr">
+      <div class="box-h">Open bugs by priority<span class="muted">Website</span></div>
+      <div class="bars">
+        <div><span>Critical</span><i style="width:30%;background:var(--danger)"></i><span class="num">3</span></div>
+        <div><span>High</span><i style="width:60%;background:var(--warning)"></i><span class="num">6</span></div>
+        <div><span>Medium</span><i style="width:90%;background:var(--st-ip)"></i><span class="num">9</span></div>
+        <div><span>Low</span><i style="width:40%;background:var(--fg-subtle)"></i><span class="num">4</span></div>
+      </div></div></div></div></div>
+    <ul>
+      <li>Boxes on a grid: search results, numbers and charts, time totals, a small timeline, my timer, and recent activity. Drag to place, drag the corner to resize.</li>
+      <li><i>Add box</i> offers ready-made boxes with previews (<i>"Open bugs by priority"</i>, <i>"My time this week"</i>), so nobody has to build one from scratch.</li>
+      <li>Phones show the boxes stacked in one column.</li>
+    </ul>
+
+    <h3 id="s4-11"><button class="sec" data-sec>§4.11</button>Notifications <span class="ids">NTF-01</span></h3>
+    <ul>
+      <li>Grouped by issue or document, newest first: <i>"WEB-142 · Ana mentioned you · Ben changed the status"</i>.</li>
+      <li>Each one has <i>Open</i> (jumps to the exact comment or change) and <i>Mark as read</i>.</li>
+      <li><i>Customize</i> (top right) opens the notification settings directly.</li>
+    </ul>
+
+    <h3 id="s4-12"><button class="sec" data-sec>§4.12</button>Assistant <span class="ids">AI</span></h3>
+    <div class="demo"><div class="frame narrow" style="flex-basis:360px"><div class="frame-cap">Assistant panel</div><div class="frame-body"><div class="scr" style="padding:12px;display:flex;flex-direction:column;gap:9px">
+      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;font-size:12px"><span class="muted">Looking at:</span><span class="chip">WEB-142<span class="x"><svg class="ico"><use href="#i-x"/></svg></span></span><span class="chip">This list<span class="x"><svg class="ico"><use href="#i-x"/></svg></span></span></div>
+      <div class="src">Answers come from <b>Claude (Anthropic)</b>. Your organization chose this.<br><span class="muted">Never sent to AI: Cost center</span></div>
+      <div class="msg me">Summarize the comments on WEB-142.</div>
+      <div><div class="ai-l"><svg class="ico"><use href="#i-spark"/></svg>Assistant</div><div class="msg ai">Signing in fails right after a password reset. 14 customers reported it since Friday. I suggest raising the priority.</div></div>
+      <div class="prop"><div class="ai-l"><svg class="ico"><use href="#i-spark"/></svg>Proposed change. Nothing is saved until you apply it.</div><div><span class="key">WEB-142</span> Priority: <span class="old">High</span> → <span class="prio Critical"><svg class="ico"><use href="#i-up2"/></svg>Critical</span></div><div style="display:flex;gap:6px"><span class="btn sm primary">Apply</span><span class="btn sm">Discard</span></div></div>
+    </div></div></div>
+    <div style="flex:1 1 280px;min-width:0"><ul style="margin-top:0">
+      <li>Opens from <i>Assistant</i> in the top bar or from small sparkle buttons where they help (<i>Summarize comments</i>, <i>Write it up for me</i>, <i>Suggest fields</i>).</li>
+      <li><b>What it can see</b> is shown at the top. Each item can be removed.</li>
+      <li><b>Where your data goes</b> is always shown: <i>"Answers come from Claude (Anthropic)"</i> or <i>"Answers come from a model on your own server"</i>. Fields never sent to AI are listed (AI-03).</li>
+      <li><b>Proposed changes</b> appear as cards with <i>Apply</i> and <i>Discard</i>. Nothing is saved until <i>Apply</i>.</li>
+      <li><b>Suggestions</b> for a new issue appear next to the fields as ✓ / ✕ buttons.</li>
+      <li>Answers never load outside images, and links show their full address (AI-05).</li>
+      <li>When AI is switched off, all assistant buttons and the panel are gone. Administrators see one <i>Set up the assistant</i> item in Organization settings.</li>
+    </ul></div></div>
+
+    <h3 id="s4-13"><button class="sec" data-sec>§4.13</button>My settings</h3>
+    <ul>
+      <li><b>Appearance:</b> <i>Match my device</i> (default), <i>Always light</i>, <i>Always dark</i>; pick a light theme and a dark theme from previews (see §7.2); spacing; <i>Less motion</i>; <i>Larger text</i>.</li>
+      <li><b>Region:</b> time zone, date and number format, first day of the week.</li>
+      <li><b>Sign-in &amp; security:</b> password, passkeys, two-step sign-in, backup codes, and <i>Where you're signed in</i> with <i>Sign out</i> per device.</li>
+      <li><b>Connected apps:</b> apps and AI apps (MCP) you allowed, what they may do, when last used, and <i>Remove</i>. <b>Access keys:</b> create one (name, what it may do, expiry), copy it once, and delete it.</li>
+      <li><b>Keyboard shortcuts:</b> see and change them.</li>
+      <li><b>My data:</b> <i>Download my data</i> (everything Bugaboo stores about you, as readable pages and as a file other programs can read), what is kept and for how long, and who can see your working hours.</li>
+    </ul>
+
+    <h3 id="s4-14"><button class="sec" data-sec>§4.14</button>First start and signing in</h3>
+    <div class="demo"><div style="flex:1 1 320px;min-width:0">
+      <h4 style="margin-top:0">Setup in the browser (after installing)</h4>
+      <ol class="stepper">
+        <li><div><b>Welcome:</b> type the setup code shown by the server (AUTH-09). The page explains where to find it.</div></li>
+        <li><div><b>Your administrator account:</b> a passkey is suggested first; a password plus two-step sign-in also works.</div></li>
+        <li><div><b>Name and address:</b> organization name and web address. The page explains the connection security (HTTPS) in plain words.</div></li>
+        <li><div><b>E-mail</b> (can skip): mail server details, with a <i>Send me a test e-mail</i> button.</div></li>
+        <li><div><b>Assistant</b> (can skip; off unless switched on): provider, key, and what would be sent.</div></li>
+        <li><div><b>First project:</b> a name, a short name and a starting template.</div></li>
+        <li><div><b>Done:</b> a checklist of recommended safety steps (SEC-19).</div></li>
+      </ol></div>
+      <div class="frame narrow" style="flex:0 1 340px"><div class="frame-cap">Sign-in</div><div class="frame-body"><div class="scr"><div class="signin">
+        <b style="text-align:center;font-size:16px">Sign in to Bugaboo</b>
+        <span class="btn primary" style="justify-content:center">Sign in with a passkey</span>
+        <div class="or">or</div>
+        <div class="field"><label>E-mail</label><input value="ana@acme.example" readonly></div>
+        <div class="field"><label>Password</label><input type="password" value="xxxxxxxxxx" readonly></div>
+        <span class="btn" style="justify-content:center">Sign in</span>
+        <div class="errline" style="justify-content:center">E-mail or password is wrong.</div>
+        <span class="btn ghost sm" style="justify-content:center">Sign in with your company account</span>
+      </div></div></div></div></div>
+    <p>A wrong password and an unknown e-mail get the same message, so nobody can find out who has an account.</p>
+
+    <h3 id="s4-15"><button class="sec" data-sec>§4.15</button>Relation map <span class="ids">ISS-16</span></h3>
+    <p>A picture of everything connected to an issue: in any direction, through any number of steps. It answers questions like <i>"what is all this waiting on?"</i> and <i>"what else breaks if this slips?"</i>.</p>
+    <div class="demo"><div class="frame" style="flex-basis:640px"><div class="frame-cap">Relation map of WEB-142 · point at an issue</div><div class="frame-body"><div class="scr" style="min-width:600px">
+      <div class="map-ctl">
+        <span class="muted" style="font-size:12px">Steps away</span><div class="seg" role="group" aria-label="Steps away"><button aria-pressed="false">1</button><button aria-pressed="true">2</button><button aria-pressed="false">3</button><button aria-pressed="false">Everything</button></div>
+        <span class="muted" style="font-size:12px;margin-left:6px">Follow</span>
+        <button class="kchip" aria-pressed="true" data-kind="blocks"><span class="kline" style="border-color:var(--warning)"></span>blocks</button>
+        <button class="kchip" aria-pressed="true" data-kind="causes"><span class="kline" style="border-color:var(--danger)"></span>causes</button>
+        <button class="kchip" aria-pressed="true" data-kind="dup"><span class="kline" style="border-top-style:dashed;border-color:var(--fg-subtle)"></span>duplicate</button>
+        <button class="kchip" aria-pressed="true" data-kind="rel"><span class="kline"></span>related</button>
+        <button class="kchip" aria-pressed="true" data-kind="part"><span class="kline" style="border-color:var(--accent)"></span>part of</button>
+        <button class="btn sm" id="map-list-btn" style="margin-left:auto">Show as list</button>
+      </div>
+      <div id="map-pic">
+      <svg class="map-svg" id="map-svg" viewBox="0 0 740 400" role="img" aria-label="Relation map of WEB-142">
+        <defs>
+          <marker id="ar-blocks" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="9" markerHeight="9" orient="auto"><path d="M0 0 10 5 0 10z" style="fill:var(--warning)"/></marker>
+          <marker id="ar-causes" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="9" markerHeight="9" orient="auto"><path d="M0 0 10 5 0 10z" style="fill:var(--danger)"/></marker>
+          <marker id="ar-part" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0 10 5 0 10z" style="fill:var(--accent)"/></marker>
+          <marker id="ar-dup" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0 10 5 0 10z" style="fill:var(--fg-subtle)"/></marker>
+        </defs>
+        <!-- edges: arrows sit at the middle of each line (marker-mid) -->
+        <polyline class="edge k-part" id="e-142-145" points="370,198 370,124 370,50" marker-mid="url(#ar-part)"/>
+        <polyline class="edge k-part" id="e-140-145" points="135,110 252,80 370,50" marker-mid="url(#ar-part)"/>
+        <polyline class="edge k-blocks" id="e-140-141" points="135,110 135,180 135,250" marker-mid="url(#ar-blocks)"/>
+        <polyline class="edge k-rel" id="e-141-142" points="135,250 252,224 370,198"/>
+        <polyline class="edge k-blocks" id="e-142-147" points="370,198 487,198 605,198" marker-mid="url(#ar-blocks)"/>
+        <polyline class="edge k-blocks" id="e-148-147" points="605,340 605,269 605,198" marker-mid="url(#ar-blocks)"/>
+        <polyline class="edge k-causes" id="e-150-142" points="370,345 370,271 370,198" marker-mid="url(#ar-causes)"/>
+        <polyline class="edge k-dup" id="e-151-142" points="605,55 487,126 370,198" marker-mid="url(#ar-dup)"/>
+        <text class="elabel l-part" data-e="e-142-145" x="378" y="128">part of</text>
+        <text class="elabel l-part" data-e="e-140-145" x="230" y="70">part of</text>
+        <text class="elabel l-blocks" data-e="e-140-141" x="143" y="176">blocks</text>
+        <text class="elabel l-rel" data-e="e-141-142" x="232" y="246">related to</text>
+        <text class="elabel l-blocks" data-e="e-142-147" x="470" y="190">blocks</text>
+        <text class="elabel l-blocks" data-e="e-148-147" x="613" y="275">blocks</text>
+        <text class="elabel l-causes" data-e="e-150-142" x="378" y="276">causes</text>
+        <text class="elabel l-dup" data-e="e-151-142" x="495" y="116">duplicate of</text>
+        <g class="node" tabindex="0" role="button" data-chain="e-142-145" transform="translate(295,27)"><rect width="150" height="46" rx="8"/><circle cx="12" cy="15" r="4" class="nd-ip"/><text class="nkey" x="22" y="19">WEB-145 · Goal</text><text class="ntitle" x="12" y="37">New login experience</text></g>
+        <g class="node" tabindex="0" role="button" data-chain="e-140-141 e-141-142" transform="translate(60,87)"><rect width="150" height="46" rx="8"/><circle cx="12" cy="15" r="4" class="nd-ip"/><text class="nkey" x="22" y="19">WEB-140</text><text class="ntitle" x="12" y="37">Design sign-in page</text></g>
+        <g class="node" tabindex="0" role="button" data-chain="e-141-142" transform="translate(60,227)"><rect width="150" height="46" rx="8"/><circle cx="12" cy="15" r="4" class="nd-ip"/><text class="nkey" x="22" y="19">WEB-141</text><text class="ntitle" x="12" y="37">Sign in with a passkey</text></g>
+        <g class="node center" tabindex="0" role="button" data-chain="" transform="translate(295,175)"><rect width="150" height="46" rx="8"/><circle cx="12" cy="15" r="4" class="nd-ip"/><text class="nkey" x="22" y="19">WEB-142 · start</text><text class="ntitle" x="12" y="37">Login fails after reset</text></g>
+        <g class="node" tabindex="0" role="button" data-chain="e-142-147" transform="translate(530,175)"><rect width="150" height="46" rx="8"/><circle cx="12" cy="15" r="4" class="nd-ns"/><text class="nkey" x="22" y="19">WEB-147</text><text class="ntitle" x="12" y="37">Release notes for 2.4</text></g>
+        <g class="node" tabindex="0" role="button" data-chain="e-148-147 e-142-147" transform="translate(530,317)"><rect width="150" height="46" rx="8"/><circle cx="12" cy="15" r="4" class="nd-ip"/><text class="nkey" x="22" y="19">WEB-148</text><text class="ntitle" x="12" y="37">Timesheet download</text></g>
+        <g class="node" tabindex="0" role="button" data-chain="e-150-142" transform="translate(295,322)"><rect width="150" height="46" rx="8"/><circle cx="12" cy="15" r="4" class="nd-ip"/><text class="nkey" x="22" y="19">WEB-150</text><text class="ntitle" x="12" y="37">Reset link expires early</text></g>
+        <g class="node" tabindex="0" role="button" data-chain="e-151-142" transform="translate(530,32)"><rect width="150" height="46" rx="8"/><circle cx="12" cy="15" r="4" class="nd-dn"/><text class="nkey" x="22" y="19">WEB-151</text><text class="ntitle" x="12" y="37">Can't sign in after change</text></g>
+      </svg>
+      </div>
+      <div class="chains" id="map-list" hidden>
+        <div class="stp">1 step away</div>
+        <div><span class="key">WEB-142</span> blocks <span class="key">WEB-147</span> <span class="muted">Write the release notes for 2.4</span></div>
+        <div><span class="key">WEB-142</span> is caused by <span class="key">WEB-150</span> <span class="muted">Reset e-mail link expires too early</span></div>
+        <div><span class="key">WEB-142</span> has duplicate <span class="key">WEB-151</span> <span class="muted">Can't sign in after changing password</span></div>
+        <div><span class="key">WEB-142</span> is related to <span class="key">WEB-141</span> <span class="muted">Sign in with a passkey</span></div>
+        <div><span class="key">WEB-142</span> is part of <span class="key">WEB-145</span> <span class="muted">Goal: New login experience</span></div>
+        <div class="stp">2 steps away</div>
+        <div><span class="key">WEB-142</span> blocks <span class="key">WEB-147</span>, which is blocked by <span class="key">WEB-148</span> <span class="muted">Download the timesheet as a spreadsheet</span></div>
+        <div><span class="key">WEB-142</span> is related to <span class="key">WEB-141</span>, which is blocked by <span class="key">WEB-140</span> <span class="muted">Design the new sign-in page</span></div>
+      </div>
+      <div class="circle-warn"><svg class="ico" style="color:var(--warning)"><use href="#i-alert"/></svg><span><b>Circle found</b> (example from another project): WEB-160 blocks WEB-161, which blocks WEB-160. Neither can start until one of these relations is removed.</span></div>
+    </div></div></div></div>
+    <p class="cap-note">Try it: point at (or tap) WEB-148 to see how it connects back to WEB-142. The <i>Follow</i> chips switch kinds of relation on and off, and <i>Show as list</i> switches to sentences.</p>
+    <ul>
+      <li><b>Opening it:</b> <i>Show relation map</i> on any issue (§4.4), or <b>Show as → Map</b> for any search, which draws all results and the relations between them.</li>
+      <li><b>Steps away:</b> 1, 2, 3 or <i>Everything</i>. The starting issue sits in the middle with a highlighted border.</li>
+      <li><b>Follow:</b> switch each kind of relation on or off. Each kind has its own line: <i>blocks</i> (orange, arrow), <i>causes</i> (red, arrow), <i>duplicate</i> (dashed grey), <i>related</i> (grey, no arrow, because it has no direction), <i>part of</i> (violet, towards the parent). Colors are never the only signal: every line also has its words.</li>
+      <li><b>Point at an issue</b> to highlight the chain that connects it back to the start; everything else fades. <b>Click an issue</b> to move it to the middle, so you can walk along a chain. Its details open in the side panel.</li>
+      <li><b>Circles</b> in <i>blocks</i> chains (A blocks B blocks A) are flagged with a warning, because nothing in a circle can start.</li>
+      <li><b>List form:</b> the same chains as sentences, grouped by steps away. This is the default on phones and what screen readers get.</li>
+      <li><b>Security:</b> only issues you may see appear. Chains never pass through hidden issues, so a map can't reveal that a hidden issue exists, not even as a gap.</li>
+      <li><b>Speed and size:</b> the server walks the relations, with a step limit and at most 200 issues per map. It sends only number, title, status and the relations. If there are more, the map says so and suggests fewer steps or fewer kinds.</li>
+    </ul>
+
+    <h3 id="s4-16"><button class="sec" data-sec>§4.16</button>Calendar <span class="ids">PLAN-09</span></h3>
+    <div class="demo"><div class="frame"><div class="frame-cap">Computer · October 2026 · moving WEB-139</div><div class="frame-body"><div class="scr">
+      <div class="tb"><span class="btn sm">‹</span><b>October 2026</b><span class="btn sm">›</span><span class="btn sm">Today</span><div class="seg" style="margin-left:auto"><button aria-pressed="true">Month</button><button aria-pressed="false">Week</button></div></div>
+      <div class="cal" id="cal"></div>
+    </div></div></div>
+    <div class="frame phone"><div class="frame-cap">Phone · day by day</div><div class="frame-body"><div class="scr">
+      <div class="ph-top">Calendar<span class="muted" style="margin-left:auto;font-weight:400">October</span></div>
+      <div class="agenda" id="agenda"></div>
+    </div></div></div></div>
+    <ul>
+      <li>Shows issues on a <b>month</b> or <b>week</b> calendar by due date. Releases and milestones appear too.</li>
+      <li><b>Drag</b> an issue to another day to change its due date, with <i>Undo</i>. Every issue also has a <i>Change due date …</i> button for people who don't drag.</li>
+      <li><b>Today</b> is highlighted; the <i>Today</i> button jumps back to it.</li>
+      <li>Uses the same search bar, so the calendar can show any search.</li>
+      <li><b>Phones</b> show a day-by-day list instead of a grid.</li>
+    </ul>
+
+    <!-- ================= 5 ================= -->
+    <h2 id="s5"><button class="sec" data-sec>§5</button>Settings screens</h2>
+
+    <h3 id="s5-1"><button class="sec" data-sec>§5.1</button>Organization settings</h3>
+    <ul>
+      <li>Left menu by topic, in plain words:
+        <ul>
+          <li><b>People:</b> People, Groups, Roles &amp; permissions</li>
+          <li><b>Work:</b> Projects, Issue types, Fields, Workflows, Kinds of relation, Layouts, Labels &amp; tags, Releases, Templates</li>
+          <li><b>Look:</b> Themes, Logo &amp; name</li>
+          <li><b>Connections:</b> Assistant &amp; AI apps, E-mail &amp; notifications, Webhooks, Company sign-in (SSO)</li>
+          <li><b>Privacy:</b> Keep and delete rules, Remove a person, Data exports, Outside services, Record of processing</li>
+          <li><b>System:</b> Safety check, Security log, Backups, Status, About (version, support period, licenses of all third-party parts, SBOM download)</li>
+        </ul></li>
+      <li>Every topic works the same way: a searchable list, and clicking an item opens it. Simple items open in a side panel; big editors (workflows, layouts) get a full page.</li>
+      <li><b>Issue IDs:</b> each project chooses <b>random</b> IDs (<code>WEB-K7Q2X</code>, the default for new projects) or <b>counting</b> IDs (<code>WEB-142</code>). Random IDs don't show how many issues exist or how fast they grow. Switching keeps old IDs working.</li>
+      <li><b>"Used by"</b> is shown before changing or deleting anything shared: <i>"Used in 4 projects and 2 saved searches."</i></li>
+      <li><b>Search finds settings too:</b> typing <i>"e-mail"</i> in search lists the e-mail settings.</li>
+      <li>Each setting has a one-line explanation under its name.</li>
+    </ul>
+
+    <h3 id="s5-2"><button class="sec" data-sec>§5.2</button>Roles and permissions <span class="ids">SEC-03, SEC-04, SEC-07</span></h3>
+    <div class="demo"><div class="frame"><div class="frame-cap">Field permissions · try the dropdowns</div><div class="frame-body"><div class="scr">
+      <table class="perm"><thead><tr><th>Field</th><th>Administrator</th><th>Team member</th><th>Contributor</th><th>Guest</th></tr></thead><tbody id="perm"></tbody></table>
+      <div class="explain"><b>Check access: can Ana change Priority in Website?</b><br>Yes. Ana is in the group <b>Backend</b>, which has the role <b>Team member</b> in <b>ACME</b>. Website is inside ACME, so the role applies here too.</div>
+    </div></div></div></div>
+    <ul>
+      <li><b>Role page:</b> permissions grouped by topic (<i>Issues, Documents, Time, Projects, Settings</i>), each a checkbox with a plain sentence: <i>"Change issues other people created"</i>.</li>
+      <li><b>Who has which role:</b> per project, people or groups and their role. Rows that come from a parent project say so (<i>"from ACME"</i>) and can be changed for this project.</li>
+      <li><b>Field permissions:</b> each cell is a three-choice dropdown with the words <i>Hidden / Can see / Can change</i>. <i>Hidden</i> means the field doesn't exist for that role: not in issues, searches, e-mails, maps or the assistant. Different rules per issue type sit under <i>More options</i>.</li>
+      <li><b>Check access:</b> choose a person and a project to see what they can do, with the reason in a sentence.</li>
+      <li><b>See as …:</b> shows any screen as a chosen person or role sees it, inside a clearly marked frame where nothing can be changed. Each use is recorded in the security log.</li>
+    </ul>
+
+    <h4>Who sees people <span class="ids">PRIV-12, ADR-0022</span></h4>
+    <div class="demo"><div class="frame"><div class="frame-cap">Roles and permissions › Who sees people</div><div class="frame-body"><div class="scr">
+      <table class="perm"><thead><tr><th>What</th><th>Team member</th><th>Contributor</th><th>Guest</th></tr></thead><tbody>
+        <tr><td><b>Assigned to</b></td><td>Names</td><td>Names</td><td>Role only</td></tr>
+        <tr><td><b>Reported by</b></td><td>Names</td><td>Names</td><td>Hidden</td></tr>
+        <tr><td><b>Comment and history authors</b></td><td>Names</td><td>Names</td><td>Role only</td></tr>
+        <tr><td><b>"… is editing"</b></td><td>Names</td><td>Names</td><td>Hidden</td></tr>
+        <tr><td><b>Followers</b></td><td>Names</td><td>Role only</td><td>Hidden</td></tr>
+        <tr><td><b>Time entries</b></td><td>Names</td><td>Hidden</td><td>Hidden</td></tr>
+      </tbody></table>
+      <div class="explain"><b>A Guest sees:</b> "Assigned to <i>a Team member</i>", "<i>Someone</i> is editing the description", comments by "<i>a Team member</i>". Names, avatars and e-mail addresses never reach their browser.</div>
+    </div></div></div></div>
+    <ul>
+      <li>For each kind of people information, each role gets <b>Names</b>, <b>Role only</b> (<i>"a Team member"</i>) or <b>Hidden</b> (<i>"Someone"</i>). Set on a project and inherited by its sub-projects.</li>
+      <li>It applies everywhere: issue pages, lists, history, notifications and e-mails, exports, the assistant, AI apps (MCP) and the relation map.</li>
+      <li>If you can't see names for something, you can't search, sort or filter by it either, and you can only mention groups or roles.</li>
+      <li><i>See as …</i> shows exactly what a role sees, so admins can check their settings.</li>
+    </ul>
+
+    <h3 id="s5-3"><button class="sec" data-sec>§5.3</button>Fields <span class="ids">CF</span></h3>
+    <div class="demo"><div class="frame"><div class="frame-cap">New field · "What kind of information?"</div><div class="frame-body"><div class="scr"><div class="cards-pick">
+      <div><b>Text</b>"Customer name"</div><div><b>Long text</b>"Notes"</div><div><b>Number</b>"Affected users"</div><div><b>Yes / No</b>"Needs a refund"</div>
+      <div><b>Date</b>"Promised by"</div><div><b>Duration</b>"Time to fix"</div><div class="on"><b>Pick one</b>"Severity"</div><div><b>Pick several</b>"Platforms"</div>
+      <div><b>Pick one, then one more</b>"Country → City"</div><div><b>Person</b>"Tester"</div><div><b>Release</b>"Found in release"</div><div><b>Web link</b>"Customer page"</div>
+    </div></div></div></div></div>
+    <ul>
+      <li>Creating a field starts with <b>"What kind of information?"</b>, shown as cards with examples. Also available: <i>Date and time</i>, <i>People</i>, <i>Group</i>, <i>Issue</i>.</li>
+      <li>Field page tabs: <i>Basics</i> (name, help text, required, default) · <i>Choices</i> · <i>Rules</i> (allowed range, length, pattern) · <i>Look</i> · <i>Where it's used</i> · <i>Who can see it</i> · <i>Assistant</i> (never send to AI).</li>
+      <li><b>Choices:</b> drag to reorder; each gets a color and an icon. <i>Combine with another choice</i> moves all issues over; <i>Retire</i> hides it for new issues but keeps old values.</li>
+      <li><b>Look</b> (CF-04): pick how values are shown (<i>Badge, Pill, Plain text, Progress bar, Avatar</i>) with a live preview in all four themes side by side.</li>
+      <li><b>Look rules</b> (CF-05): <i>"When Severity is Critical and status is not Done, show as Danger."</i> Rules use the same filter buttons as Simple search. The first matching rule wins.</li>
+    </ul>
+
+    <h3 id="s5-4"><button class="sec" data-sec>§5.4</button>Workflow editor <span class="ids">WF</span></h3>
+    <div class="demo"><div class="frame"><div class="frame-cap">Workflow for Bugs · plain list (default)</div><div class="frame-body"><div class="scr">
+      <div class="wfrow"><span class="muted">From</span><span class="pill st-ns">Open</span><span class="muted">you can go to:</span><span class="btn sm">In progress · "Start working"</span><span class="btn sm">Done · "Won't fix"</span></div>
+      <div class="wfrow"><span class="muted">From</span><span class="pill st-ip">In progress</span><span class="muted">you can go to:</span><span class="btn sm">Testing · "Send to testing"</span><span class="btn sm">Open · "Stop working on it"</span></div>
+      <div class="wfrow"><span class="muted">From</span><span class="pill st-ip">Testing</span><span class="muted">you can go to:</span><span class="btn sm">Done · "Mark as done"</span><span class="btn sm">In progress · "Send back to work"</span></div>
+      <div class="wfrow" style="border-bottom:0"><span class="muted">From</span><span class="pill st-done">Done</span><span class="muted">you can go to:</span><span class="btn sm">Open · "Reopen"</span></div>
+    </div></div></div></div>
+    <ul>
+      <li>The default view is a <b>plain list</b> of statuses, each with its allowed next statuses and the button text people will see.</li>
+      <li><b>Drawing view</b> (optional): statuses as boxes, allowed changes as arrows; drag between boxes to add a change.</li>
+      <li>Clicking a status change opens its rules, each in plain words: <b>Who can do it</b>, <b>Only if …</b>, <b>Must be filled in</b>, <b>Ask for</b>, <b>Then automatically …</b>.</li>
+      <li>Changes are a <b>draft</b> until <i>Publish</i>. If a removed status still has issues, publishing asks where those issues should go.</li>
+      <li><b>Try it:</b> pick an issue and a person to see which status changes they would get, and why.</li>
+    </ul>
+
+    <h3 id="s5-5"><button class="sec" data-sec>§5.5</button>Layouts <span class="ids">CFG-01</span></h3>
+    <ul>
+      <li>Drag fields from a list onto the issue page, the new-issue form or the board card.</li>
+      <li><b>Per role:</b> each field in a layout has a role checklist (for example Team member ✓, Contributor ✓, Guest ✗). Field permissions always win: a layout can never show a field to a role that may not see it.</li>
+      <li><i>Add a field</i> on an issue lists only the fields the person's role may fill in.</li>
+      <li><i>See as</i> a role, to check what people with that role will see.</li>
+    </ul>
+
+    <h3 id="s5-6"><button class="sec" data-sec>§5.6</button>Theme editor <span class="ids">THM-03</span></h3>
+    <div class="demo"><div class="frame"><div class="frame-cap">Theme: Dusk (my copy)</div><div class="frame-body"><div class="scr te">
+      <div class="te-l">
+        <div class="g">Backgrounds</div>
+        <div class="row"><i class="sw" style="background:var(--bg-canvas)"></i>Page</div>
+        <div class="row"><i class="sw" style="background:var(--bg-surface)"></i>Panels</div>
+        <div class="g">Text</div>
+        <div class="row"><i class="sw" style="background:var(--fg)"></i>Main text<span class="rd ok">✓ Easy</span></div>
+        <div class="row"><i class="sw" style="background:var(--fg-muted)"></i>Quiet text<span class="rd ok">✓ OK</span></div>
+        <div class="row"><i class="sw" style="background:var(--border)"></i>Hint text<span class="rd bad">✗ Hard to read</span></div>
+        <div class="g">▸ Highlight color</div><div class="g">▸ Status &amp; tag colors</div><div class="g">▸ Font &amp; corners</div>
+      </div>
+      <div class="te-r"><div class="muted" style="font-size:11px">Preview</div>
+        <div class="box"><div class="r"><span class="key">WEB-142</span><span class="t">Login fails after password reset</span><span class="pill st-ip">In progress</span></div><div class="r"><span class="tag c5">login</span><span class="tag c1">crash</span><span style="margin-left:auto" class="btn sm primary">Button</span></div></div>
+        <div style="font-size:12px"><b>Readability:</b> 42 pairs easy to read, <span style="color:var(--danger);font-weight:700">1 hard to read</span>. Fix it to share this theme with everyone.</div></div>
+    </div></div></div></div>
+    <ul>
+      <li>Color groups on the left with plain names; a live preview of real Bugaboo screens on the right.</li>
+      <li>Each text color shows a <b>readability</b> rating (<i>Easy / OK / Hard to read</i>) based on WCAG contrast. Themes for everyone can't be saved while anything is <i>Hard to read</i>; personal themes can, with a warning.</li>
+      <li><i>Make a copy</i>, <i>Download</i>, <i>Upload</i>. The four built-in themes are copied before editing.</li>
+    </ul>
+
+    <h3 id="s5-7"><button class="sec" data-sec>§5.7</button>Privacy and GDPR <span class="ids">PRIV</span></h3>
+    <p>Bugaboo is built so an organization can run it in line with the GDPR. The organization running Bugaboo stays responsible; Bugaboo makes the right thing the easy thing.</p>
+    <div class="demo"><div class="frame"><div class="frame-cap">Organization settings › Privacy › Keep and delete rules</div><div class="frame-body"><div class="scr">
+      <table class="perm"><thead><tr><th>Kind of data</th><th>Kept for</th><th>Then</th><th>Why</th></tr></thead><tbody>
+        <tr><td><b>Working hours</b></td><td>2 years</td><td>Deleted</td><td class="muted">German working-time recording</td></tr>
+        <tr><td><b>Time on issues</b></td><td>10 years</td><td>Deleted</td><td class="muted">Accounting; your organization sets the period</td></tr>
+        <tr><td><b>Security log</b></td><td>1 year</td><td>Deleted</td><td class="muted">Finding and explaining security problems</td></tr>
+        <tr><td><b>IP addresses in logs</b></td><td>7 days</td><td>Deleted</td><td class="muted">Stopping attacks on sign-in</td></tr>
+        <tr><td><b>Notifications</b></td><td>90 days</td><td>Deleted</td><td class="muted">Not needed longer</td></tr>
+        <tr><td><b>Trash</b></td><td>30 days</td><td>Deleted</td><td class="muted">Time to restore by mistake</td></tr>
+      </tbody></table>
+      <div class="explain"><b>Remove a person: Malik Weber</b><br>The account is deleted and "Malik Weber" becomes <b>Former user K7Q2</b> everywhere. Comments written by this person: <u>keep, anonymized</u> ▾.<br><span class="muted">The working hours of this person must be kept until 2028-10-01 by law. They are then deleted automatically.</span><div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap"><span class="btn sm">Cancel</span><span class="btn sm danger">Remove Malik Weber</span></div></div>
+    </div></div></div></div>
+    <ul>
+      <li><b>Nothing extra is collected:</b> no tracking, no analytics, no outside scripts or fonts. Only the cookies needed to stay signed in, so there's no cookie banner.</li>
+      <li><b>Download my data:</b> every person can download everything Bugaboo stores about them (My settings). Admins can create the same export for anyone; that's recorded in the security log.</li>
+      <li><b>Remove a person:</b> as above. The screen says in plain words what is deleted now, what is anonymized, and what must be kept by law and until when.</li>
+      <li><b>Keep and delete rules:</b> one table, every kind of data, sensible defaults, automatic deletion. Changing a rule shows what it will delete before it does.</li>
+      <li><b>Outside services:</b> the assistant, e-mail and other providers stay off until an admin switches them on. For an external AI provider, the admin first confirms a data processing agreement and sees which data goes where (provider and country). A model on your own server is offered as the private choice.</li>
+      <li><b>Employee data:</b> working hours and time entries are treated as sensitive. People see their own; seeing others' needs explicit permission; no scores, no rankings, and no AI that evaluates, ranks or assigns work to people (AI Act; this can't be switched on).</li>
+      <li><b>Record of processing</b> (1.0): Bugaboo drafts the GDPR Art. 30 record and a privacy notice from the features that are switched on.</li>
+      <li><b>Under the hood:</b> every stored field that holds personal data is marked once in the data model. Export, removal, deletion rules and the record of processing all come from those marks, so a new feature can't forget them.</li>
+    </ul>
+
+    <!-- ================= 6 ================= -->
+    <h2 id="s6"><button class="sec" data-sec>§6</button>Interaction rules</h2>
+    <div class="tbl-wrap"><table class="dtable"><thead><tr><th>Situation</th><th>What the screen does</th></tr></thead><tbody>
+      <tr><td>Change one value</td><td>Change it in place. It saves when you press Enter or click elsewhere; Esc cancels.</td></tr>
+      <tr><td>Short task (under a minute)</td><td>Dialog (full screen on phones)</td></tr>
+      <tr><td>Settings with a preview</td><td>Side panel, or a full page for big editors</td></tr>
+      <tr><td>Delete or archive something (reversible)</td><td>Done at once, with <i>Undo</i> for 10 seconds; deleted items go to the trash</td></tr>
+      <tr><td>Something that cannot be undone</td><td>A dialog that says exactly what will happen. Very big impact: type the name to confirm</td></tr>
+      <tr><td>Long job (import, changing 1,000+ issues)</td><td>Runs in the background with progress, and a notification when finished</td></tr>
+      <tr><td>Choosing from a list</td><td>A list with a search box; recent choices first</td></tr>
+      <tr><td>Every change</td><td>Shown at once as <i>Saving…</i>, then <i>Saved</i> when the server confirms; if not, a plain explanation and the text is kept (§4.4)</td></tr>
+      <tr><td>Long text someone else is editing</td><td>Read-only with <i>"Ana is editing …"</i>; <i>Ask to finish</i> or, if allowed, <i>Edit anyway</i></td></tr>
+    </tbody></table></div>
+
+    <h3 id="s6-1"><button class="sec" data-sec>§6.1</button>States</h3>
+    <div class="demo">
+      <div class="state"><b>Empty</b><p style="margin:6px auto 10px">No issues match these filters.</p><span class="btn sm">Clear filters</span> <span class="btn sm primary">Create an issue</span></div>
+      <div class="state"><b>Error</b><p style="margin:6px auto 10px">Couldn't save. Ben changed Priority a moment ago.</p><span class="btn sm">Show me</span><div class="subtle" style="font-size:11px;margin-top:8px">Code BUG-409</div></div>
+      <div class="state" style="padding:0;overflow:hidden;text-align:left"><div class="offline">You're offline. Changes will be possible again when you're back online.</div><div style="padding:10px 12px"><b>Offline</b><p style="margin:6px 0 0;font-size:12.5px">Recently opened issues stay readable (UX-03).</p></div></div>
+    </div>
+    <ul>
+      <li><b>Loading:</b> grey shapes of the coming content. Nothing shows for the first 0.3 s, to avoid flicker.</li>
+      <li><b>Empty:</b> one sentence and a button.</li>
+      <li><b>Error:</b> shown next to the cause, in plain words, with what to do. A short code for support sits at the end, never a technical dump.</li>
+      <li><b>Offline:</b> a slim bar; recently opened issues stay readable.</li>
+    </ul>
+
+    <h3 id="s6-2"><button class="sec" data-sec>§6.2</button>Quick search and shortcuts <span class="ids">CFG-08, UX-05</span></h3>
+    <p><kbd>Ctrl K</kbd> (or the search box) finds issues by number or title, documents, saved searches, projects, settings and actions (<i>"create issue"</i>, <i>"start timer"</i>). All shortcuts are optional (principle 9) and listed under <kbd>?</kbd> and in My settings.</p>
+    <div class="tbl-wrap"><table class="dtable"><thead><tr><th>Keys</th><th>Action</th><th>Keys</th><th>Action</th></tr></thead><tbody>
+      <tr><td><kbd>Ctrl K</kbd></td><td>Quick search</td><td><kbd>j</kbd> / <kbd>k</kbd></td><td>Next / previous issue</td></tr>
+      <tr><td><kbd>c</kbd></td><td>New issue</td><td><kbd>Enter</kbd></td><td>Open</td></tr>
+      <tr><td><kbd>/</kbd></td><td>Search bar</td><td><kbd>s</kbd></td><td>Change status</td></tr>
+      <tr><td><kbd>g</kbd> <kbd>h</kbd></td><td>Go home</td><td><kbd>a</kbd></td><td>Assign</td></tr>
+      <tr><td><kbd>g</kbd> <kbd>n</kbd></td><td>Go to notifications</td><td><kbd>t</kbd></td><td>Start / stop timer</td></tr>
+      <tr><td><kbd>g</kbd> <kbd>t</kbd></td><td>Go to timesheet</td><td><kbd>l</kbd></td><td>Labels</td></tr>
+      <tr><td><kbd>Ctrl J</kbd></td><td>Assistant</td><td><kbd>m</kbd></td><td>Relation map of this issue</td></tr>
+      <tr><td><kbd>?</kbd></td><td>Show all shortcuts</td><td></td><td></td></tr>
+    </tbody></table></div>
+
+    <!-- ================= 7 ================= -->
+    <h2 id="s7"><button class="sec" data-sec>§7</button>Visual design</h2>
+
+    <h3 id="s7-1"><button class="sec" data-sec>§7.1</button>Design tokens <span class="ids">THM, SSOT</span></h3>
+    <p>Code uses only named tokens, never raw colors or sizes; the hooks enforce this. The tokens live in one file (<code>docs/design/tokens.css</code> today, generated from the token source later), and this page reads its colors from that same file. Tokens have three levels:</p>
+    <ol>
+      <li><b>Base palettes:</b> grey 0–1000, highlight color, red, orange, yellow, green, teal, blue, violet, pink; fonts, sizes, corner radii, shadows.</li>
+      <li><b>Meaning tokens</b> (what the theme editor mostly changes):
+        <ul>
+          <li>backgrounds: <code>bg.canvas</code>, <code>bg.surface</code>, <code>bg.raised</code>, <code>bg.sunken</code>, <code>bg.hover</code>, <code>bg.selected</code></li>
+          <li>text: <code>fg.default</code>, <code>fg.muted</code>, <code>fg.subtle</code>, <code>fg.onAccent</code></li>
+          <li>lines: <code>border.default</code>, <code>border.subtle</code>, <code>focus.ring</code></li>
+          <li>highlight: <code>accent.solid</code>, <code>accent.soft</code>, <code>accent.fg</code></li>
+          <li>messages: <code>success.*</code>, <code>warning.*</code>, <code>danger.*</code>, <code>info.*</code></li>
+          <li>status groups: <code>status.notStarted.*</code>, <code>status.inProgress.*</code>, <code>status.done.*</code></li>
+          <li>tag colors: <code>cat.1</code> … <code>cat.12</code>, each a background/text pair, used for labels, tags, choices and charts</li>
+          <li>relation lines: <code>relation.blocks</code>, <code>relation.causes</code>, <code>relation.duplicate</code>, <code>relation.related</code>, <code>relation.partOf</code></li>
+        </ul></li>
+      <li><b>Component tokens</b> (only where needed), for example <code>button.primary.bg</code>.</li>
+    </ol>
+    <p>Each tag color is checked for readability in every built-in theme. A color picked once reads well in all four themes, which is why choices store a token (<code>cat.4</code>), not a color value.</p>
+
+    <h3 id="s7-2"><button class="sec" data-sec>§7.2</button>The four built-in themes <span class="ids">THM-01</span></h3>
+    <div class="theme-strip" id="theme-strip">
+      <div class="tcard" data-force-look="daylight"><div class="tc-h">Daylight<span class="muted" style="font-weight:400;font-size:11px">light · default light</span></div><div class="tc-b"><div class="row"><span class="key">WEB-142</span><b>Login fails after reset</b></div><div class="row"><span class="pill st-ns">Open</span><span class="pill st-ip">In progress</span><span class="pill st-done">Done</span></div><div class="row"><span class="tag c1">crash</span><span class="tag c2">search</span><span class="tag c3">time</span><span class="tag c4">themes</span><span class="tag c5">login</span><span class="tag c6">design</span></div><div class="row"><span class="btn sm primary">Create</span><span class="btn sm">Cancel</span><span class="prio Critical"><svg class="ico"><use href="#i-up2"/></svg>Critical</span></div></div></div>
+      <div class="tcard" data-force-look="paper"><div class="tc-h">Paper<span class="muted" style="font-weight:400;font-size:11px">light · warm, softer</span></div><div class="tc-b"><div class="row"><span class="key">WEB-142</span><b>Login fails after reset</b></div><div class="row"><span class="pill st-ns">Open</span><span class="pill st-ip">In progress</span><span class="pill st-done">Done</span></div><div class="row"><span class="tag c1">crash</span><span class="tag c2">search</span><span class="tag c3">time</span><span class="tag c4">themes</span><span class="tag c5">login</span><span class="tag c6">design</span></div><div class="row"><span class="btn sm primary">Create</span><span class="btn sm">Cancel</span><span class="prio Critical"><svg class="ico"><use href="#i-up2"/></svg>Critical</span></div></div></div>
+      <div class="tcard" data-force-look="dusk"><div class="tc-h">Dusk<span class="muted" style="font-weight:400;font-size:11px">dark · default dark</span></div><div class="tc-b"><div class="row"><span class="key">WEB-142</span><b>Login fails after reset</b></div><div class="row"><span class="pill st-ns">Open</span><span class="pill st-ip">In progress</span><span class="pill st-done">Done</span></div><div class="row"><span class="tag c1">crash</span><span class="tag c2">search</span><span class="tag c3">time</span><span class="tag c4">themes</span><span class="tag c5">login</span><span class="tag c6">design</span></div><div class="row"><span class="btn sm primary">Create</span><span class="btn sm">Cancel</span><span class="prio Critical"><svg class="ico"><use href="#i-up2"/></svg>Critical</span></div></div></div>
+      <div class="tcard" data-force-look="midnight"><div class="tc-h">Midnight<span class="muted" style="font-weight:400;font-size:11px">dark · pure black</span></div><div class="tc-b"><div class="row"><span class="key">WEB-142</span><b>Login fails after reset</b></div><div class="row"><span class="pill st-ns">Open</span><span class="pill st-ip">In progress</span><span class="pill st-done">Done</span></div><div class="row"><span class="tag c1">crash</span><span class="tag c2">search</span><span class="tag c3">time</span><span class="tag c4">themes</span><span class="tag c5">login</span><span class="tag c6">design</span></div><div class="row"><span class="btn sm primary">Create</span><span class="btn sm">Cancel</span><span class="prio Critical"><svg class="ico"><use href="#i-up2"/></svg>Critical</span></div></div></div>
+    </div>
+    <p>These samples are always shown in their own theme, whatever theme you picked at the top. The values below are read live from the token file:</p>
+    <div class="tbl-wrap"><table class="dtable" id="theme-table"><thead><tr><th>Token</th><th>Daylight</th><th>Paper</th><th>Dusk</th><th>Midnight</th></tr></thead><tbody></tbody></table></div>
+    <ul>
+      <li><b>Daylight:</b> clean, neutral light with the violet highlight. The default light theme.</li>
+      <li><b>Paper:</b> warm off-white with softer contrast and an ink-blue highlight, for long reading and writing.</li>
+      <li><b>Dusk:</b> dim blue-grey dark. The default dark theme, comfortable in normal light.</li>
+      <li><b>Midnight:</b> pure black for phone screens and dark rooms, with slightly brighter text.</li>
+    </ul>
+    <p>Final values are tuned and contrast-checked during implementation; the samples fix the character of each theme.</p>
+
+    <h3 id="s7-3"><button class="sec" data-sec>§7.3</button>Text</h3>
+    <div class="specimen">
+      <span class="big">Login fails after reset</span>
+      <span>Atkinson Hyperlegible Next: designed by the Braille Institute so that similar letters are easy to tell apart. <b>Il1 O0 rn m</b></span>
+      <span class="mono-s">WEB-142 · status is not Done · 1:30 · Il1 O0</span>
+      <span class="muted" style="font-size:12px">Atkinson Hyperlegible Mono: issue IDs, Advanced search, time values and code.</span>
+    </div>
+    <ul>
+      <li><b>Font:</b> <i>Atkinson Hyperlegible Next</i>, shipped with Bugaboo; no requests to outside font services. <b>Monospace:</b> <i>Atkinson Hyperlegible Mono</i>. Both use the SIL Open Font License. (This design page loads them from Google Fonts only because it is a preview.)</li>
+      <li><b>Sizes:</b> 12 / 13 / 14 (computer default) / 16 (phone default) / 20 / 24 / 30 px. <i>Larger text</i> in My settings scales everything.</li>
+      <li>Numbers line up in tables, time values and the timeline.</li>
+    </ul>
+
+    <h3 id="s7-4"><button class="sec" data-sec>§7.4</button>Shape, spacing, motion</h3>
+    <div class="scale" aria-label="Spacing steps">
+      <span><i style="width:4px;height:4px"></i>4</span><span><i style="width:8px;height:8px"></i>8</span><span><i style="width:12px;height:12px"></i>12</span><span><i style="width:16px;height:16px"></i>16</span><span><i style="width:24px;height:24px"></i>24</span><span><i style="width:32px;height:32px"></i>32</span><span><i style="width:48px;height:48px"></i>48</span>
+    </div>
+    <ul>
+      <li><b>Spacing:</b> steps of 4 px (4, 8, 12, 16, 24, 32, 48).</li>
+      <li><b>Corners:</b> 6 px for buttons and inputs, 10 px for cards and dialogs, round for tags and avatars. This is a theme token.</li>
+      <li><b>Layers:</b> three levels (raised, floating, dialog). Light themes use soft shadows; dark themes use lighter backgrounds.</li>
+      <li><b>Motion:</b> short (0.12–0.2 s), only to show what changed (a panel sliding in, an item moving). Off with <i>Less motion</i> or the device setting.</li>
+    </ul>
+
+    <h3 id="s7-5"><button class="sec" data-sec>§7.5</button>Icons</h3>
+    <p style="display:flex;gap:14px;flex-wrap:wrap;align-items:center">
+      <span class="who"><svg class="ico lg"><use href="#i-home"/></svg>Home</span><span class="who"><svg class="ico lg"><use href="#i-bell"/></svg>Notifications</span><span class="who"><svg class="ico lg"><use href="#i-clock"/></svg>Time</span><span class="who type bug"><svg class="ico lg"><use href="#i-bug"/></svg>Bug</span><span class="who type task"><svg class="ico lg"><use href="#i-task"/></svg>Task</span><span class="who type feature"><svg class="ico lg"><use href="#i-feature"/></svg>Feature</span><span class="who type goal"><svg class="ico lg"><use href="#i-goal"/></svg>Goal</span></p>
+    <ul>
+      <li><b>Lucide</b> icons (ISC license); only the ones used are shipped.</li>
+      <li>16 px in lists, 20 px in navigation, always with a text label (principle 2).</li>
+    </ul>
+
+    <!-- ================= 8 ================= -->
+    <h2 id="s8"><button class="sec" data-sec>§8</button>Accessibility <span class="ids">UX-04</span></h2>
+    <ul>
+      <li><b>WCAG 2.2 AA</b> in every built-in theme, checked automatically on every build (axe) and by hand with screen readers (NVDA, VoiceOver) at each milestone.</li>
+      <li>Everything works with the keyboard. The focus outline is always visible.</li>
+      <li><b>Color never stands alone:</b> statuses have words, priorities have icons, relation lines have words, timeline warnings have symbols.</li>
+      <li>Every drag has a button alternative (<i>Move to …</i>, <i>Set dates …</i>, <i>Change due date …</i>, <i>Add relation</i>).</li>
+      <li>The relation map has a list form with the same information as sentences.</li>
+      <li>Screen readers announce results (<i>"12 issues changed"</i>, <i>"Saved"</i>).</li>
+      <li>Touch targets are at least 44 × 44 px.</li>
+    </ul>
+
+    <!-- ================= 9 ================= -->
+    <h2 id="s9"><button class="sec" data-sec>§9</button>Writing the words</h2>
+    <p>All text lives in the message catalog (UX-07) and uses the glossary.</p>
+    <div class="dodont">
+      <div class="y"><b>Say</b>Issue moved to Done.</div><div class="n"><b>Not</b>The operation completed successfully.</div>
+      <div class="y"><b>Say</b>Couldn't save. Ben changed Priority a moment ago. [Show me]</div><div class="n"><b>Not</b>Error 409: conflict detected.</div>
+      <div class="y"><b>Say</b>Delete 3 issues</div><div class="n"><b>Not</b>OK</div>
+      <div class="y"><b>Say</b>Not found, or you don't have access.</div><div class="n"><b>Not</b>This issue is restricted to the Security group.</div>
+    </div>
+    <ul>
+      <li><b>Short, plain, active.</b></li>
+      <li><b>Say what happened and what to do.</b></li>
+      <li><b>Talk like a helpful colleague:</b> no blame, no jargon, no internal words.</li>
+      <li><b>Buttons say what they do.</b></li>
+      <li><b>Safety messages never reveal hidden things.</b></li>
+      <li><b>Sentence case</b> everywhere. Dates and numbers follow the reader's region.</li>
+    </ul>
+
+    <!-- ================= 10 ================= -->
+    <h2 id="s10"><button class="sec" data-sec>§10</button>Decisions and open questions</h2>
+    <div class="decision"><span class="okmark">✓</span><div><b>Calendar</b> is in 1.0 (PLAN-09, §4.16).</div></div>
+    <div class="decision"><span class="okmark">✓</span><div><b>Relation map</b> is in 1.0 (ISS-16, §4.15). Relations can be added on every issue (ISS-04, §4.4).</div></div>
+    <div class="decision"><span class="okmark">✓</span><div><b>Highlight color:</b> violet.</div></div>
+    <div class="decision"><span class="okmark">✓</span><div><b>Fonts:</b> Atkinson Hyperlegible Next for text, Atkinson Hyperlegible Mono for numbers and code.</div></div>
+    <div class="decision"><span class="okmark">✓</span><div><b>Working hours</b> (start, end, breaks per day) are recorded separately from time on issues, with German working-time rules as a preset (§4.9, TIME-08…12).</div></div>
+    <div class="decision"><span class="okmark">✓</span><div><b>Activity</b> and <b>cost center</b> on every time entry, fully customizable, with defaults from the issue and project (§4.9, TIME-13).</div></div>
+    <div class="decision"><span class="okmark">✓</span><div><b>GDPR</b> is built into every feature (§5.7, PRIV).</div></div>
+    <div class="decision"><span class="okmark">✓</span><div><b>EU law:</b> built to meet the Cyber Resilience Act, AI Act transparency, accessibility, ePrivacy and Data Act rules. Every release ships with an SBOM, third-party licenses and architecture documentation (feature list COMP).</div></div>
+    <div class="decision"><span class="okmark">✓</span><div><b>Editing:</b> no real-time co-editing in 1.0. Long text is locked to one person while they type, drafts are never lost, and every save is confirmed (§4.4, ISS-17).</div></div>
+    <div class="decision"><span class="okmark">✓</span><div><b>Focus view</b> is the default way to open an issue; the side panel view stays as an option (§3.4).</div></div>
+    <div class="decision"><span class="okmark">✓</span><div><b>Who sees people</b> is set per role: names, role only or hidden (§5.2, PRIV-12).</div></div>
+    <div class="decision"><span class="okmark">✓</span><div><b>Issue IDs</b> can be random or counting per project; random by default (§5.1, ADR-0021).</div></div>
+    <h3 id="s10-1"><button class="sec" data-sec>§10.1</button>Open questions</h3>
+    <p>None yet. Comment on this page.</p>
+  </main>
+</div>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></symbol>
+  <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></symbol>
+  <symbol id="i-bookmark" viewBox="0 0 24 24"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+  <symbol id="i-folder" viewBox="0 0 24 24"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.7-.9l-.8-1.2A2 2 0 0 0 7.9 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"/></symbol>
+  <symbol id="i-settings" viewBox="0 0 24 24"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></symbol>
+  <symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4.5v15l12-7.5z"/></symbol>
+  <symbol id="i-stop" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="1.5"/></symbol>
+  <symbol id="i-file" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h5"/></symbol>
+  <symbol id="i-list" viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></symbol>
+  <symbol id="i-board" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18M15 3v18"/></symbol>
+  <symbol id="i-timeline" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 7h8M10 12h8M7 17h5"/></symbol>
+  <symbol id="i-more" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="19" cy="12" r="1.2"/></symbol>
+  <symbol id="i-bug" viewBox="0 0 24 24"><path d="M9 7.1V6a3 3 0 0 1 6 0v1.1"/><path d="M12 20c-3.3 0-6-2.7-6-6v-3a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v3c0 3.3-2.7 6-6 6zM12 20v-9M6 13H2M22 13h-4M6.5 9 3.5 7M17.5 9l3-2M6.5 17.5 4 20M17.5 17.5 20 20"/></symbol>
+  <symbol id="i-task" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="m8.5 12 2.5 2.5 4.5-5"/></symbol>
+  <symbol id="i-feature" viewBox="0 0 24 24"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7V16h8v-1.3A7 7 0 0 0 12 2z"/></symbol>
+  <symbol id="i-goal" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></symbol>
+  <symbol id="i-expand" viewBox="0 0 24 24"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></symbol>
+  <symbol id="i-up2" viewBox="0 0 24 24"><path d="m6 11 6-6 6 6M6 18l6-6 6 6"/></symbol>
+  <symbol id="i-up" viewBox="0 0 24 24"><path d="m6 15 6-6 6 6"/></symbol>
+  <symbol id="i-eq" viewBox="0 0 24 24"><path d="M5 9h14M5 15h14"/></symbol>
+  <symbol id="i-down" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 5 5L20 7"/></symbol>
+  <symbol id="i-palette" viewBox="0 0 24 24"><circle cx="13.5" cy="6.5" r="1.5"/><circle cx="17.5" cy="10.5" r="1.5"/><circle cx="8.5" cy="7.5" r="1.5"/><circle cx="6.5" cy="12.5" r="1.5"/><path d="M12 2a10 10 0 0 0 0 20c1.1 0 2-.9 2-2 0-.5-.2-1-.5-1.3-.3-.4-.5-.8-.5-1.3 0-1.1.9-2 2-2h2.4A5.6 5.6 0 0 0 22 9.8C22 5.5 17.5 2 12 2z"/></symbol>
+  <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></symbol>
+  <symbol id="i-map" viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4"/></symbol>
+  <symbol id="i-calendar" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/></symbol>
+</svg>
+
+<script src="docpage.js"></script>
+<script>
+"use strict";
+/* ---------- theme samples and table, read live from tokens.css (single source) ---------- */
+function themeRule(name) {
+  for (const sheet of document.styleSheets) {
+    let rules;
+    try { rules = sheet.cssRules; } catch (e) { continue; }
+    for (const r of rules) {
+      if (r.selectorText && r.selectorText.replace(/\s/g, "") === ':root[data-look="' + name + '"]') return r.style;
+    }
+  }
+  return null;
+}
+function paintThemes() {
+  document.querySelectorAll("[data-force-look]").forEach(el => {
+    const st = themeRule(el.dataset.forceLook);
+    if (!st) return;
+    for (let i = 0; i < st.length; i++) {
+      const p = st[i];
+      if (p.startsWith("--")) el.style.setProperty(p, st.getPropertyValue(p).trim());
+    }
+    el.style.colorScheme = st.getPropertyValue("color-scheme") || "";
+  });
+  const rows = [["bg.canvas", "--bg-canvas"], ["bg.surface", "--bg-surface"], ["bg.raised", "--bg-raised"], ["border.default", "--border"],
+    ["fg.default", "--fg"], ["fg.muted", "--fg-muted"], ["accent.solid", "--accent"], ["status.inProgress", "--st-ip"], ["relation.blocks", "--warning"], ["relation.causes", "--danger"]];
+  const looks = ["daylight", "paper", "dusk", "midnight"].map(themeRule);
+  const tb = document.querySelector("#theme-table tbody");
+  if (looks.some(x => !x)) { tb.innerHTML = '<tr><td colspan="5">Values are in docs/design/tokens.css.</td></tr>'; return; }
+  tb.innerHTML = rows.map(([name, v]) => "<tr><td><code>" + name + "</code></td>" +
+    looks.map(st => { const c = st.getPropertyValue(v).trim(); return '<td><span class="swatch"><i style="background:' + c + '"></i>' + c.toUpperCase() + "</span></td>"; }).join("") + "</tr>").join("");
+}
+if (document.readyState === "complete") paintThemes(); else addEventListener("load", paintThemes);
+
+/* ---------- relation map: highlight chain, kinds, list form ---------- */
+const svg = document.getElementById("map-svg");
+function setHl(node, on) {
+  svg.classList.toggle("hl-on", on);
+  svg.querySelectorAll(".hl").forEach(x => x.classList.remove("hl"));
+  if (!on) return;
+  node.classList.add("hl");
+  svg.querySelector(".node.center").classList.add("hl");
+  (node.dataset.chain || "").split(" ").filter(Boolean).forEach(id => {
+    const e = document.getElementById(id);
+    if (!e) return;
+    e.classList.add("hl");
+    svg.querySelectorAll('[data-e="' + id + '"]').forEach(l => l.classList.add("hl"));
+    const pts = e.getAttribute("points").split(" ");
+    [pts[0], pts[pts.length - 1]].forEach(p => {
+      const [x, y] = p.split(",").map(Number);
+      svg.querySelectorAll(".node").forEach(n => {
+        const m = n.getAttribute("transform").match(/translate\(([\d.]+),([\d.]+)\)/);
+        const nx = +m[1], ny = +m[2];
+        if (x >= nx - 2 && x <= nx + 152 && y >= ny - 2 && y <= ny + 48) n.classList.add("hl");
+      });
+    });
+  });
+}
+svg.querySelectorAll(".node").forEach(n => {
+  n.addEventListener("mouseenter", () => setHl(n, true));
+  n.addEventListener("mouseleave", () => setHl(n, false));
+  n.addEventListener("focus", () => setHl(n, true));
+  n.addEventListener("blur", () => setHl(n, false));
+  n.addEventListener("click", () => setHl(n, true));
+});
+document.querySelectorAll(".kchip").forEach(c => c.addEventListener("click", () => {
+  const on = c.getAttribute("aria-pressed") !== "true";
+  c.setAttribute("aria-pressed", String(on));
+  svg.classList.toggle("hide-" + c.dataset.kind, !on);
+}));
+const listBtn = document.getElementById("map-list-btn");
+listBtn.addEventListener("click", () => {
+  const list = document.getElementById("map-list"), pic = document.getElementById("map-pic");
+  const showList = list.hidden;
+  list.hidden = !showList; pic.hidden = showList;
+  listBtn.textContent = showList ? "Show as picture" : "Show as list";
+});
+
+/* ---------- calendar (example data) ---------- */
+(function () {
+  const start = Date.UTC(2026, 8, 28), TODAY = 6;
+  const items = [
+    [3, "WEB-146 Search accents", "st-done"], [9, "WEB-148 Timesheet download", "st-ip"], [10, "WEB-140 Sign-in design", "st-ip"],
+    [11, "WEB-142 Login after reset", "st-ip"], [12, "WEB-139 Crash on save", "st-ns drag"], [18, "WEB-141 Passkey sign-in", "st-ip"],
+    [18, "WEB-144 Chart labels", "st-ns"], [24, "WEB-147 Release notes", "st-ns"], [25, "Release 2.4", "msn"], [32, "WEB-145 Goal: new login", "st-ip"]
+  ];
+  const day = d => new Date(start + d * 864e5);
+  let html = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map(d => '<div class="h">' + d + "</div>").join("");
+  for (let d = 0; d < 35; d++) {
+    const dt = day(d), out = dt.getUTCMonth() !== 9;
+    html += '<div class="d' + (out ? " out" : "") + (d === TODAY ? " today" : "") + '"><span class="n">' + dt.getUTCDate() + "</span>" +
+      items.filter(i => i[0] === d).map(i => '<span class="it ' + (i[2] === "msn" ? "msn" : "pill " + i[2]) + '" style="border-radius:4px">' + i[1] + "</span>").join("") + "</div>";
+  }
+  document.getElementById("cal").innerHTML = html;
+  const fmt = d => day(d).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", timeZone: "UTC" });
+  const days = [...new Set(items.map(i => i[0]))].filter(d => d >= TODAY).slice(0, 5);
+  document.getElementById("agenda").innerHTML = '<div class="day today">Today · ' + fmt(TODAY) + '</div><div class="lrow muted" style="font-size:12px">Nothing due today.</div>' +
+    days.map(d => '<div class="day">' + fmt(d) + "</div>" + items.filter(i => i[0] === d).map(i => '<div class="lrow"><div class="t" style="font-size:13px">' + i[1] + '</div><div class="m"><span class="btn sm">Change due date …</span></div></div>').join("")).join("");
+})();
+
+/* ---------- field permissions demo ---------- */
+(function () {
+  const roles = ["Administrator", "Team member", "Contributor", "Guest"];
+  const rows = [["Priority", ["chg", "chg", "see", "see"]], ["Severity", ["chg", "chg", "chg", "hid"]], ["Cost center", ["chg", "see", "hid", "hid"]], ["Time spent", ["chg", "chg", "see", "hid"]]];
+  const opt = v => [["hid", "Hidden"], ["see", "Can see"], ["chg", "Can change"]].map(([k, l]) => '<option value="' + k + '"' + (k === v ? " selected" : "") + ">" + l + "</option>").join("");
+  const tb = document.getElementById("perm");
+  tb.innerHTML = rows.map(([f, vals]) => "<tr><td><b>" + f + "</b></td>" + vals.map((v, i) => '<td><select class="' + v + '" aria-label="' + f + " for " + roles[i] + '">' + opt(v) + "</select></td>").join("") + "</tr>").join("");
+  tb.addEventListener("change", e => { if (e.target.tagName === "SELECT") e.target.className = e.target.value; });
+})();
+
+/* ---------- demo segmented controls toggle ---------- */
+document.querySelectorAll(".demo .seg").forEach(seg => seg.addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  seg.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+}));
+</script>
