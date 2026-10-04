@@ -4,8 +4,6 @@
 //! sources of truth), and, once `bb-store` has a migrations module, its `migrations` test has run
 //! on both databases according to the parity record (see ARCH-DB-PARITY).
 
-use std::fs;
-
 use super::arch_db_parity::{self, DATABASES, RECORD_PATH};
 use super::{Check, Context, Finding};
 use crate::repo::Repo;
@@ -30,13 +28,14 @@ impl Check for DataMigrations {
     }
 
     fn run(&self, context: &Context<'_>) -> anyhow::Result<Vec<Finding>> {
-        let record = fs::read_to_string(context.repo.path(RECORD_PATH)).ok();
-        evaluate_repo(context.repo, record.as_deref())
+        // The record rule runs only in `cargo xtask db run`, right after the tests: a record on
+        // disk can be from an older state of the code (see ARCH-DB-PARITY).
+        evaluate_repo(context.repo, None)
     }
 }
 
-/// Both rules on the repository, with the parity record of the test run if there is one. Used by
-/// the check and, after the tests, by `cargo xtask db run`.
+/// Both rules on the repository, with the parity record of the test run if there is one. The check
+/// passes no record (static rule only); `cargo xtask db run` passes the fresh one after the tests.
 pub(crate) fn evaluate_repo(repo: &Repo, record: Option<&str>) -> anyhow::Result<Vec<Finding>> {
     let files = repo.all_files()?;
     let has_migrations = MIGRATIONS_SOURCES
