@@ -1,9 +1,49 @@
 //! The repository the checks run on, and the Git questions they ask.
 
+use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
 use anyhow::{Context as _, bail};
+
+/// The working files that were swapped for their staged content; dropping restores them.
+pub(crate) struct StagedView {
+    /// The working file, and the copy of its unstaged content (`None`: the file did not exist).
+    saved: Vec<(PathBuf, Option<PathBuf>)>,
+    backup: PathBuf,
+}
+
+impl StagedView {
+    fn save(&mut self, path: &Path, name: &str, working: Option<Vec<u8>>) -> anyhow::Result<()> {
+        let copy = match working {
+            Some(bytes) => {
+                let copy = self.backup.join(name);
+                fs::create_dir_all(copy.parent().unwrap_or(&self.backup))?;
+                fs::write(&copy, bytes)
+                    .with_context(|| format!("could not back up {name} before checking"))?;
+                Some(copy)
+            }
+            None => None,
+        };
+        self.saved.push((path.to_path_buf(), copy));
+        Ok(())
+    }
+}
+
+impl Drop for StagedView {
+    fn drop(&mut self) {
+        for (path, copy) in &self.saved {
+            // Best effort: the backup folder keeps the unstaged content if restoring fails.
+            let _ = match copy {
+                Some(copy) => fs::copy(copy, path).map(|_| ()),
+                None => fs::remove_file(path),
+            };
+        }
+        if !self.saved.is_empty() {
+            let _ = fs::remove_dir_all(&self.backup);
+        }
+    }
+}
 
 /// A Bugaboo repository (a work folder or a check fixture).
 pub(crate) struct Repo {
@@ -56,6 +96,40 @@ impl Repo {
             .collect()
     }
 
+    /// Makes the working tree show exactly what is staged, until the returned guard is dropped
+    /// (M0-F09). Files with changes that are not staged are put back afterwards, byte for byte.
+    pub(crate) fn staged_view(&self, staged: &[String]) -> anyhow::Result<StagedView> {
+        let changed = self.git_lines(&["diff", "--name-only"])?;
+        let mut view = StagedView {
+            saved: Vec::new(),
+            backup: self.root.join("target").join("staged-backup"),
+        };
+        for file in staged.iter().filter(|file| changed.contains(file)) {
+            let path = self.root.join(file);
+            let working = fs::read(&path).ok();
+            let content = self.git_bytes(&["show", &format!(":{file}")])?;
+            view.save(&path, file, working)?;
+            fs::write(&path, content).with_context(|| format!("could not write {file}"))?;
+        }
+        Ok(view)
+    }
+
+    fn git_bytes(&self, args: &[&str]) -> anyhow::Result<Vec<u8>> {
+        let out = Command::new("git")
+            .args(args)
+            .current_dir(&self.root)
+            .output()
+            .context("could not run git; is it installed and on the PATH?")?;
+        if !out.status.success() {
+            bail!(
+                "git {} failed: {}",
+                args.join(" "),
+                String::from_utf8_lossy(&out.stderr).trim()
+            );
+        }
+        Ok(out.stdout)
+    }
+
     fn git_lines(&self, args: &[&str]) -> anyhow::Result<Vec<String>> {
         let out = Command::new("git")
             .args(["-c", "core.quotepath=false"])
@@ -76,5 +150,57 @@ impl Repo {
             .filter(|line| !line.is_empty())
             .map(str::to_owned)
             .collect())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::testutil::TempDir;
+
+    fn repo_at(temp: &TempDir) -> Repo {
+        Repo {
+            root: temp.path().to_path_buf(),
+        }
+    }
+
+    #[test]
+    fn good_example_the_staged_view_shows_staged_content_and_restores_the_rest() {
+        let temp = TempDir::new("staged-view");
+        temp.write(
+            "a.txt",
+            "committed
+",
+        );
+        assert!(temp.git(&["init", "--quiet"]));
+        assert!(temp.git(&["add", "."]));
+        assert!(temp.git(&["commit", "--quiet", "-m", "chore: test"]));
+        temp.write(
+            "a.txt", "staged
+",
+        );
+        assert!(temp.git(&["add", "a.txt"]));
+        temp.write(
+            "a.txt",
+            "staged
+plus unstaged
+",
+        );
+        let repo = repo_at(&temp);
+        {
+            let _view = repo.staged_view(&["a.txt".to_owned()]).unwrap();
+            assert_eq!(
+                fs::read_to_string(temp.path().join("a.txt")).unwrap(),
+                "staged
+"
+            );
+        }
+        assert_eq!(
+            fs::read_to_string(temp.path().join("a.txt")).unwrap(),
+            "staged
+plus unstaged
+"
+        );
+        assert!(!temp.path().join("target").join("staged-backup").exists());
     }
 }

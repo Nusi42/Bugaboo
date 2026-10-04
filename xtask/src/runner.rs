@@ -35,6 +35,11 @@ pub(crate) fn run(
         Scope::Edit(files) | Scope::Staged(files) => Some(files.as_slice()),
         Scope::Push | Scope::All | Scope::Only(_) => None,
     };
+    // Commit-time checks look at what will be committed, not at later edits (M0-F09).
+    let _staged = match scope {
+        Scope::Staged(files) => Some(repo.staged_view(files)?),
+        _ => None,
+    };
     let context = Context {
         repo,
         catalog,
