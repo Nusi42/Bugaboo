@@ -22,6 +22,7 @@ pub(crate) fn run(repo: &Repo) -> anyhow::Result<()> {
     let list = tools::load(repo)?;
     let root = repo.root();
     fs::create_dir_all(tools::bin_dir(root))?;
+    clean_old_binaries(&tools::bin_dir(root));
     let installed = installed_cargo_tools(root)?;
     for tool in &list {
         match tool.kind.as_str() {
@@ -68,7 +69,8 @@ fn install_cargo(
         .crate_name
         .as_deref()
         .with_context(|| format!("{}: kind `cargo` needs a `crate` name", tool.name))?;
-    if installed.get(crate_name) == Some(&tool.version) {
+    let binary = tools::bin_dir(root).join(tools::exe(&tool.name));
+    if installed.get(crate_name) == Some(&tool.version) && binary.is_file() {
         output::info(&format!(
             "ok       {} {} (already installed)",
             tool.name, tool.version
@@ -94,14 +96,25 @@ fn install_cargo(
         .context("could not run cargo")?;
     if !status.success() {
         bail!(
-            "cargo install of {crate_name} {} failed (see the messages above).",
-            tool.version
+            "cargo install of {crate_name} {} failed (see the messages above). On Windows this \
+             also happens while the tool is running: close {} and run `cargo xtask setup` again.",
+            tool.version,
+            binary.display()
         );
     }
     Ok(())
 }
 
 fn install_download(root: &Path, tool: &Tool) -> anyhow::Result<()> {
+    install_download_with(root, tool, &fetch)
+}
+
+/// Downloads with `get` (curl in real runs, a local copy in the tests).
+fn install_download_with(
+    root: &Path,
+    tool: &Tool,
+    get: &dyn Fn(&str, &Path) -> anyhow::Result<()>,
+) -> anyhow::Result<()> {
     let binary = if cfg!(windows) {
         format!("{}.exe", tool.name)
     } else {
@@ -125,7 +138,7 @@ fn install_download(root: &Path, tool: &Tool) -> anyhow::Result<()> {
     let cache = root.join(tools::TOOLS_DIR).join("cache");
     fs::create_dir_all(&cache)?;
     let archive = cache.join(file_name);
-    fetch(&download.url, &archive)?;
+    get(&download.url, &archive)?;
     let bytes = fs::read(&archive)?;
     if let Err(error) = verify_sha256(&bytes, &download.sha256, &download.url) {
         // A bad file must never be reused on the next run.
@@ -133,9 +146,7 @@ fn install_download(root: &Path, tool: &Tool) -> anyhow::Result<()> {
         return Err(error);
     }
     let contents = extract_binary(file_name, &bytes, &binary)?;
-    fs::create_dir_all(tools::bin_dir(root))?;
-    fs::write(&target, contents)?;
-    make_executable(&target)?;
+    place_binary(&target, &contents)?;
     if let Some(folder) = marker.parent() {
         fs::create_dir_all(folder)?;
     }
@@ -151,6 +162,10 @@ fn fetch(url: &str, destination: &Path) -> anyhow::Result<()> {
             "--location",
             "--silent",
             "--show-error",
+            "--proto",
+            "=https",
+            "--proto-redir",
+            "=https",
             "--retry",
             "2",
             "--output",
@@ -225,31 +240,67 @@ fn file_name_of(path: &str) -> &str {
     path.rsplit(['/', '\\']).next().unwrap_or(path)
 }
 
-#[cfg(unix)]
-fn make_executable(path: &Path) -> anyhow::Result<()> {
-    use std::os::unix::fs::PermissionsExt as _;
-    fs::set_permissions(path, fs::Permissions::from_mode(0o755))?;
+/// Puts `contents` at `target` even while an older copy is running (Windows locks running
+/// programs but allows renaming them): write `.new`, move the old file to `.old`, rename `.new`.
+fn place_binary(target: &Path, contents: &[u8]) -> anyhow::Result<()> {
+    if let Some(folder) = target.parent() {
+        fs::create_dir_all(folder)?;
+    }
+    let new = with_suffix(target, ".new");
+    let old = with_suffix(target, ".old");
+    fs::write(&new, contents)?;
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt as _;
+        fs::set_permissions(&new, fs::Permissions::from_mode(0o755))?;
+    }
+    let _ = fs::remove_file(&old);
+    if target.exists() {
+        fs::rename(target, &old).with_context(|| {
+            format!(
+                "could not move the old {} aside; close it and retry",
+                target.display()
+            )
+        })?;
+    }
+    fs::rename(&new, target)?;
     Ok(())
 }
 
-#[cfg(not(unix))]
-#[allow(
-    clippy::unnecessary_wraps,
-    reason = "same signature as the Unix version (setup.rs)"
-)]
-fn make_executable(_path: &Path) -> anyhow::Result<()> {
-    Ok(())
+fn with_suffix(path: &Path, suffix: &str) -> std::path::PathBuf {
+    let mut name = path.as_os_str().to_owned();
+    name.push(suffix);
+    name.into()
 }
 
-/// `npm ci` when the repository has a root `package.json`.
+/// Removes the `.old` copies left by an earlier update (they were still running then).
+fn clean_old_binaries(bin: &Path) {
+    let Ok(entries) = fs::read_dir(bin) else {
+        return;
+    };
+    for entry in entries.flatten() {
+        if entry.path().extension().is_some_and(|ext| ext == "old") {
+            let _ = fs::remove_file(entry.path());
+        }
+    }
+}
+
+/// `npm ci` when the repository has a root `package.json` and `node_modules` is out of date.
+///
+/// `--ignore-scripts`: no package runs install scripts on this machine. None needs them today;
+/// a package that truly does must be listed here with the reason.
 fn install_npm(root: &Path) -> anyhow::Result<()> {
     if !root.join("package.json").is_file() {
+        return Ok(());
+    }
+    if npm_is_current(root) {
+        output::info("ok       npm packages (already installed)");
         return Ok(());
     }
     output::info("install  npm packages (npm ci)");
     let npm = if cfg!(windows) { "npm.cmd" } else { "npm" };
     let status = Command::new(npm)
-        .arg("ci")
+        .args(["ci", "--ignore-scripts"])
         .current_dir(root)
         .status()
         .context("could not run npm; is Node.js installed?")?;
@@ -257,6 +308,41 @@ fn install_npm(root: &Path) -> anyhow::Result<()> {
         bail!("npm ci failed (see the messages above).");
     }
     Ok(())
+}
+
+/// Whether npm's own record of what is installed (`node_modules/.package-lock.json`) has every
+/// package of `package-lock.json` at the same version and checksum.
+fn npm_is_current(root: &Path) -> bool {
+    let read = |path: std::path::PathBuf| {
+        fs::read_to_string(path)
+            .ok()
+            .and_then(|text| serde_json::from_str::<serde_json::Value>(&text).ok())
+    };
+    match (
+        read(root.join("package-lock.json")),
+        read(root.join("node_modules").join(".package-lock.json")),
+    ) {
+        (Some(lock), Some(installed)) => lock_is_installed(&lock, &installed),
+        _ => false,
+    }
+}
+
+fn lock_is_installed(lock: &serde_json::Value, installed: &serde_json::Value) -> bool {
+    let Some(wanted) = lock.get("packages").and_then(serde_json::Value::as_object) else {
+        return false;
+    };
+    let have = installed.get("packages");
+    wanted
+        .iter()
+        .filter(|(key, entry)| {
+            !key.is_empty() && entry.get("link").and_then(serde_json::Value::as_bool) != Some(true)
+        })
+        .all(|(key, entry)| {
+            have.and_then(|have| have.get(key)).is_some_and(|there| {
+                there.get("version") == entry.get("version")
+                    && there.get("integrity") == entry.get("integrity")
+            })
+        })
 }
 
 #[cfg(test)]
@@ -326,27 +412,83 @@ mod tests {
         assert!(extract_binary("t.tar.gz", &tar_bytes, "other").is_err());
     }
 
+    fn fake_tool(sha: &str) -> Tool {
+        let entry = format!(
+            "[[tool]]\nname = \"tool\"\nkind = \"download\"\nversion = \"1.0.0\"\n\
+             windows-x64 = {{ url = \"https://example.test/tool.tar.gz\", sha256 = \"{sha}\" }}\n\
+             linux-x64 = {{ url = \"https://example.test/tool.tar.gz\", sha256 = \"{sha}\" }}\n"
+        );
+        tools::parse(&entry).unwrap().remove(0)
+    }
+
     #[test]
     fn bad_example_download_with_wrong_checksum_installs_nothing() {
         let temp = TempDir::new("setup-bad-checksum");
-        let archive = temp.write("source/tool.tar.gz", b"not really an archive");
-        let url = format!(
-            "file:///{}",
-            archive
-                .to_string_lossy()
-                .replace('\\', "/")
-                .trim_start_matches('/')
-        );
-        let zeros = "0".repeat(64);
-        let entry = format!(
-            "[[tool]]\nname = \"tool\"\nkind = \"download\"\nversion = \"1.0.0\"\n\
-             windows-x64 = {{ url = \"{url}\", sha256 = \"{zeros}\" }}\n\
-             linux-x64 = {{ url = \"{url}\", sha256 = \"{zeros}\" }}\n"
-        );
-        let list = tools::parse(&entry).unwrap();
-        let error = install_download(temp.path(), &list[0]).unwrap_err();
+        let tool = fake_tool(&"0".repeat(64));
+        let get = |_: &str, to: &Path| {
+            fs::write(to, b"not really an archive")?;
+            Ok(())
+        };
+        let error = install_download_with(temp.path(), &tool, &get).unwrap_err();
         assert!(error.to_string().contains("Checksum mismatch"), "{error}");
-        assert!(!tools::bin_dir(temp.path()).join("tool").exists());
-        assert!(!tools::bin_dir(temp.path()).join("tool.exe").exists());
+        assert!(
+            !tools::bin_dir(temp.path())
+                .join(tools::exe("tool"))
+                .exists()
+        );
+    }
+
+    #[test]
+    fn good_example_download_installs_and_a_running_copy_can_be_replaced() {
+        let temp = TempDir::new("setup-good-download");
+        let mut tar_bytes = Vec::new();
+        {
+            let encoder =
+                flate2::write::GzEncoder::new(&mut tar_bytes, flate2::Compression::fast());
+            let mut builder = tar::Builder::new(encoder);
+            let mut header = tar::Header::new_gnu();
+            header.set_size(2);
+            header.set_mode(0o755);
+            header.set_cksum();
+            builder
+                .append_data(&mut header, tools::exe("tool"), &b"v1"[..])
+                .unwrap();
+            builder.into_inner().unwrap().finish().unwrap();
+        }
+        let mut digest = String::new();
+        for byte in &Sha256::digest(&tar_bytes) {
+            let _ = write!(digest, "{byte:02x}");
+        }
+        let tool = fake_tool(&digest);
+        let get = |_: &str, to: &Path| {
+            fs::write(to, &tar_bytes)?;
+            Ok(())
+        };
+        let target = tools::bin_dir(temp.path()).join(tools::exe("tool"));
+        install_download_with(temp.path(), &tool, &get).unwrap();
+        assert_eq!(fs::read(&target).unwrap(), b"v1");
+        // Second run: nothing to do. An update keeps the old file as `.old` until the next run.
+        install_download_with(temp.path(), &tool, &get).unwrap();
+        place_binary(&target, b"v2").unwrap();
+        assert_eq!(fs::read(&target).unwrap(), b"v2");
+        assert!(with_suffix(&target, ".old").exists());
+        clean_old_binaries(&tools::bin_dir(temp.path()));
+        assert!(!with_suffix(&target, ".old").exists());
+    }
+
+    #[test]
+    fn npm_is_current_only_when_every_package_is_installed_at_the_locked_version() {
+        let lock: serde_json::Value = serde_json::from_str(
+            r#"{"packages":{"":{},"node_modules/a":{"version":"1.0.0","integrity":"x"}}}"#,
+        )
+        .unwrap();
+        let newer: serde_json::Value = serde_json::from_str(
+            r#"{"packages":{"node_modules/a":{"version":"2.0.0","integrity":"x"}}}"#,
+        )
+        .unwrap();
+        let empty = serde_json::json!({"packages":{}});
+        assert!(lock_is_installed(&lock, &lock.clone()));
+        assert!(!lock_is_installed(&lock, &newer));
+        assert!(!lock_is_installed(&lock, &empty));
     }
 }

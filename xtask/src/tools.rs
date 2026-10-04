@@ -73,6 +73,17 @@ pub(crate) fn load(repo: &Repo) -> anyhow::Result<Vec<Tool>> {
 
 pub(crate) fn parse(text: &str) -> anyhow::Result<Vec<Tool>> {
     let file: File = toml::from_str(text)?;
+    for tool in &file.tool {
+        for download in [&tool.windows_x64, &tool.linux_x64].into_iter().flatten() {
+            if !download.url.starts_with("https://") {
+                anyhow::bail!(
+                    "{}: the download URL {} must use https.",
+                    tool.name,
+                    download.url
+                );
+            }
+        }
+    }
     Ok(file.tool)
 }
 
@@ -90,7 +101,7 @@ pub(crate) fn bin_dir(root: &Path) -> PathBuf {
     root.join(TOOLS_DIR).join("bin")
 }
 
-fn exe(name: &str) -> String {
+pub(crate) fn exe(name: &str) -> String {
     if cfg!(windows) {
         format!("{name}.exe")
     } else {
@@ -197,6 +208,13 @@ mod tests {
             );
             assert!(tool.linux_x64.is_some(), "{} lacks linux-x64", tool.name);
         }
+    }
+
+    #[test]
+    fn bad_example_plain_http_download_is_refused() {
+        let text = "[[tool]]\nname = \"t\"\nkind = \"download\"\nversion = \"1\"\n\
+                    linux-x64 = { url = \"http://example.test/t.tar.gz\", sha256 = \"00\" }\n";
+        assert!(parse(text).is_err());
     }
 
     #[test]
