@@ -5,8 +5,8 @@ Points found in the M0 reviews that were accepted for later. Each names where it
 | ID | What | Why later | Planned in |
 |----|------|-----------|------------|
 | M0-F01 | Server and xtask user-facing strings are constants in code, not in `messages/en.json` | The server's message lookup comes with the API error codes | M1 |
-| M0-F02 | No Linux machine has run the code yet (Clippy checks the Linux code on Windows; tests haven't run on Linux) | WSL has no Linux distribution installed; installing one is the maintainer's decision | When WSL or GitHub CI is available |
-| M0-F03 | Faint and muted text are very close in Paper and Daylight (about 1.1:1 apart) | Contrast rules are met; the visual hierarchy is a design choice | M7 (theme editor) |
+| M0-F02 | No Linux machine has run the code yet (Clippy checks the Linux code on Windows; tests haven't run on Linux) | Decision: not to install a Linux distribution in WSL | When the repository moves to GitHub (Linux CI runner) |
+| M0-F03 | Faint and muted text are very close in Paper and Daylight (about 1.1:1 apart) | Contrast rules are met; the themes are accepted for now | M7 (theme editor) |
 | M0-F04 | `web/app/index.html` `<title>` repeats the app name from the message catalog | Static HTML can't read the catalog yet | M2 (app shell) |
 | M0-F05 | One frame with the device theme is possible before the chosen theme applies (deferred module script under a strict CSP) | Acceptable visually; a fix needs an inline script, which the CSP forbids | review again in M2 |
 | M0-F06 | Accepted dev-only risk: npm advisory for `braces` (via stylelint), no patched version exists | Never shipped; recorded in the third-party register with a re-check date | re-check monthly |

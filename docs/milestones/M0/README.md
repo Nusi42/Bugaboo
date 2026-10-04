@@ -1,6 +1,6 @@
 # M0 — Foundation: work packages
 
-Status: **all work packages merged**. Accepted review points: [follow-ups](follow-ups.md).
+Status: **approved by the product owner**, tagged `m0-done`. Review page: <a published page, not linked here>. Accepted review points: [follow-ups](follow-ups.md).
 
 Goal and exit demo: see [04-milestones.md](../../04-milestones.md) (M0). Every package follows the Definition of done there and the rules in [`CLAUDE.md`](../../../CLAUDE.md): **0 warnings, 0 errors, no disabled useful rules.**
 
