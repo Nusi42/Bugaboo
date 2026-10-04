@@ -7,8 +7,9 @@ rust-version.workspace = true
 publish.workspace = true
 
 [dependencies]
-sqlx = { workspace = true, features = ["any", "sqlite", "postgres", "runtime-tokio", "tls-rustls"] }
+sqlx = { workspace = true, features = ["sqlite", "postgres", "runtime-tokio", "tls-rustls"] }
 tempfile = { workspace = true }
+tokio = { workspace = true, features = ["rt"] }
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }

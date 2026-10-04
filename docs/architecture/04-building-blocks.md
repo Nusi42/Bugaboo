@@ -126,7 +126,7 @@ sqlx connection pools, migrations (defined once with the query builder, run on b
 
 ### bb-testing
 
-Test-support crate, used only as a **dev dependency** (`[dev-dependencies]`) and never shipped. `each_database` runs one async test body against every database named in `BB_TEST_DATABASES` (`sqlite`, `postgres`; default `sqlite`), each with a brand-new empty database that is removed afterwards, and records what ran for ARCH-DB-PARITY. It depends on no other Bugaboo crate. How it is wired to `cargo xtask db` and `cargo xtask ci` is in [testing](11-testing.md#database-tests).
+Test-support crate, used only as a **dev dependency** (`[dev-dependencies]`) and never shipped (ARCH-DEPS fails on any other kind of dependency on it). `each_database` runs one async test body against every database named in `BB_TEST_DATABASES` (`sqlite`, `postgres`; default `sqlite`), each with a brand-new empty database that is removed afterwards (also when the test panics), hands the body a typed pool (`Pool::Sqlite` or `Pool::Postgres`), and records what ran for ARCH-DB-PARITY. It depends on no other Bugaboo crate. How it is wired to `cargo xtask db` and `cargo xtask ci` is in [testing](11-testing.md#database-tests).
 
 ### bb-api
 

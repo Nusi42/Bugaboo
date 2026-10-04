@@ -69,7 +69,7 @@ name = "postgresql"
 kind = "bundle"
 version = "18.6"
 folders = ["bin", "lib", "share"]
-system-programs = ["initdb", "pg_ctl", "pg_isready", "postgres"]
+system-programs = ["initdb", "pg_ctl", "pg_isready", "psql", "postgres"]
 system-folders = ["/usr/lib/postgresql/*/bin"]
-system-hint = "Install PostgreSQL 16 or newer, for example `sudo apt-get install postgresql` (the server is not started; xtask runs its own cluster)."
+system-hint = "Install PostgreSQL 16 or newer, for example `sudo apt-get install postgresql postgresql-client` (the server is not started; xtask runs its own cluster)."
 windows-x64 = { url = "https://get.enterprisedb.com/postgresql/postgresql-18.6-1-windows-x64-binaries.zip", sha256 = "fbe23da234ee31547bf8a36d29dfd81e82b849df2d2b78d2eecb43d360252f8c" }

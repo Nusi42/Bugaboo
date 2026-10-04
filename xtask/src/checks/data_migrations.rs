@@ -8,6 +8,7 @@ use std::fs;
 
 use super::arch_db_parity::{self, DATABASES, RECORD_PATH};
 use super::{Check, Context, Finding};
+use crate::repo::Repo;
 
 /// Where the migrations will live (WP-05); the second rule applies once this exists.
 const MIGRATIONS_SOURCES: [&str; 2] = [
@@ -29,14 +30,19 @@ impl Check for DataMigrations {
     }
 
     fn run(&self, context: &Context<'_>) -> anyhow::Result<Vec<Finding>> {
-        let repo = context.repo;
-        let files = repo.all_files()?;
-        let has_migrations = MIGRATIONS_SOURCES
-            .iter()
-            .any(|path| repo.path(path).exists());
-        let record = fs::read_to_string(repo.path(RECORD_PATH)).ok();
-        Ok(evaluate(&files, has_migrations, record.as_deref()))
+        let record = fs::read_to_string(context.repo.path(RECORD_PATH)).ok();
+        evaluate_repo(context.repo, record.as_deref())
     }
+}
+
+/// Both rules on the repository, with the parity record of the test run if there is one. Used by
+/// the check and, after the tests, by `cargo xtask db run`.
+pub(crate) fn evaluate_repo(repo: &Repo, record: Option<&str>) -> anyhow::Result<Vec<Finding>> {
+    let files = repo.all_files()?;
+    let has_migrations = MIGRATIONS_SOURCES
+        .iter()
+        .any(|path| repo.path(path).exists());
+    Ok(evaluate(&files, has_migrations, record))
 }
 
 fn evaluate(files: &[String], has_migrations: bool, record: Option<&str>) -> Vec<Finding> {

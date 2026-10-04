@@ -17,6 +17,7 @@ use anyhow::{Context as _, bail};
 
 use crate::bundle;
 use crate::checks::arch_db_parity::{self, DATABASES, RECORD_PATH};
+use crate::checks::data_migrations;
 use crate::dev::Ports;
 use crate::output;
 use crate::repo::Repo;
@@ -83,7 +84,7 @@ pub(crate) fn run(repo: &Repo, action: &Action) -> anyhow::Result<bool> {
             ));
         }
         Action::Url => output::line(&cluster.url()?),
-        Action::Run(command) => return cluster.run_command(repo.root(), command),
+        Action::Run(command) => return cluster.run_command(repo, command),
     }
     Ok(true)
 }
@@ -285,30 +286,44 @@ impl Cluster {
     /// The URL of the maintenance database `postgres`; the test harness creates its own
     /// databases from there.
     fn url(&self) -> anyhow::Result<String> {
+        Ok(connection_url(&self.password()?, self.port))
+    }
+
+    fn password(&self) -> anyhow::Result<String> {
         let password = fs::read_to_string(self.password_file()).with_context(|| {
             format!(
                 "There is no test database yet. Run `cargo xtask db start` first ({}).",
                 self.password_file().display()
             )
         })?;
-        Ok(connection_url(password.trim(), self.port))
+        Ok(password.trim().to_owned())
     }
 
     /// `cargo xtask db run -- <command>`: starts the cluster when needed, runs the command with
     /// the test variables set, stops the cluster again if it was started here, then checks the
-    /// parity record.
-    fn run_command(&self, root: &Path, command: &[String]) -> anyhow::Result<bool> {
+    /// parity record against both rules (ARCH-DB-PARITY and DATA-MIGRATIONS).
+    ///
+    /// The record is deleted before the run and after any failure, so an old or partial record
+    /// never decides anything.
+    fn run_command(&self, repo: &Repo, command: &[String]) -> anyhow::Result<bool> {
         let Some((program, args)) = command.split_first() else {
             bail!("Give a command after `--`, for example `cargo xtask db run -- cargo test`.");
         };
-        let was_running = self.is_running()?;
-        self.start()?;
+        let root = repo.root();
         let record = root.join(RECORD_PATH);
+        remove_record(&record)?;
+        let was_running = self.is_running()?;
+        // Stops the cluster again on every way out, an early error included.
+        let guard = (!was_running).then(|| StopGuard {
+            cluster: self,
+            armed: true,
+        });
+        self.start()?;
+        self.sweep_leftovers()?;
         if let Some(folder) = record.parent() {
             fs::create_dir_all(folder)?;
         }
-        let _ = fs::remove_file(&record);
-        let result = Command::new(program)
+        let ran = Command::new(program)
             .args(args)
             .current_dir(root)
             .env(DATABASES_VARIABLE, DATABASES.join(","))
@@ -316,18 +331,115 @@ impl Cluster {
             .env(RECORD_VARIABLE, &record)
             .status()
             .with_context(|| format!("could not start `{program}`"));
-        if !was_running {
-            self.stop()?;
-        }
-        if !result?.success() {
+        // A failure to stop must not hide how the tests went.
+        let stopped = guard.map_or(Ok(()), StopGuard::stop_now);
+        let passed = match ran {
+            Ok(status) if status.success() => true,
+            Ok(_) => false,
+            Err(error) => {
+                remove_record(&record)?;
+                return Err(error);
+            }
+        };
+        if !passed {
+            remove_record(&record)?;
+            if let Err(error) = stopped {
+                output::info(&format!("Also, PostgreSQL did not stop: {error:#}"));
+            }
             return Ok(false);
         }
+        stopped?;
         let text = fs::read_to_string(&record).unwrap_or_default();
-        let problems = arch_db_parity::problems(&text);
+        let problems = parity_problems(repo, &text)?;
         for problem in &problems {
-            output::info(&format!("ARCH-DB-PARITY: {problem}"));
+            output::info(problem);
+        }
+        if !problems.is_empty() {
+            remove_record(&record)?;
         }
         Ok(problems.is_empty())
+    }
+
+    /// Drops test databases that earlier runs left behind (`bbtest_*`, for example after a
+    /// killed test program).
+    fn sweep_leftovers(&self) -> anyhow::Result<()> {
+        let password = self.password()?;
+        let psql = self.program("psql")?;
+        let run = |sql: &str| -> anyhow::Result<String> {
+            let out = Command::new(&psql)
+                .args(["-h", HOST, "-p", &self.port.to_string(), "-U", USER])
+                .args(["-d", "postgres", "-X", "-A", "-t", "-c", sql])
+                .env("PGPASSWORD", &password)
+                .stdin(Stdio::null())
+                .output()
+                .context("could not run psql")?;
+            if !out.status.success() {
+                bail!(
+                    "psql failed: {}",
+                    String::from_utf8_lossy(&out.stderr).trim()
+                );
+            }
+            Ok(String::from_utf8_lossy(&out.stdout).into_owned())
+        };
+        let names = run("SELECT datname FROM pg_database WHERE datname LIKE 'bbtest\\_%'")?;
+        for name in names.lines().map(str::trim).filter(|name| !name.is_empty()) {
+            // Only names the harness makes: letters, digits and underscores.
+            if name.chars().all(|c| c.is_ascii_alphanumeric() || c == '_') {
+                run(&format!("DROP DATABASE IF EXISTS \"{name}\" WITH (FORCE)"))?;
+            }
+        }
+        Ok(())
+    }
+}
+
+/// Stops the cluster that this run started when it goes out of scope.
+struct StopGuard<'a> {
+    cluster: &'a Cluster,
+    armed: bool,
+}
+
+impl StopGuard<'_> {
+    /// Stops now and reports how that went.
+    fn stop_now(mut self) -> anyhow::Result<()> {
+        self.armed = false;
+        self.cluster.stop().map(|_| ())
+    }
+}
+
+impl Drop for StopGuard<'_> {
+    fn drop(&mut self) {
+        if self.armed
+            && let Err(error) = self.cluster.stop()
+        {
+            output::info(&format!("PostgreSQL did not stop: {error:#}"));
+        }
+    }
+}
+
+/// Both rules that read the record, as plain sentences; empty when everything is fine.
+fn parity_problems(repo: &Repo, record: &str) -> anyhow::Result<Vec<String>> {
+    let mut problems: Vec<String> = arch_db_parity::problems(record)
+        .into_iter()
+        .map(|problem| format!("ARCH-DB-PARITY: {problem}"))
+        .collect();
+    for finding in data_migrations::evaluate_repo(repo, Some(record))? {
+        problems.push(format!("DATA-MIGRATIONS: {}", finding.message));
+    }
+    Ok(problems)
+}
+
+/// Deletes the parity record; a record that cannot be deleted is an error, because it could
+/// then be mistaken for the result of this run.
+fn remove_record(path: &Path) -> anyhow::Result<()> {
+    match fs::remove_file(path) {
+        Ok(()) => Ok(()),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(()),
+        Err(error) => Err(error).with_context(|| {
+            format!(
+                "could not delete the old record {}; delete it by hand and run again",
+                path.display()
+            )
+        }),
     }
 }
 
@@ -337,11 +449,11 @@ fn connection_url(password: &str, port: u16) -> String {
 }
 
 /// The server settings: loopback only, this port, no Unix socket, and no waiting for the disk
-/// (the data is thrown away anyway).
+/// (the data is thrown away anyway). Many test programs run side by side, hence 300 connections.
 fn server_options(port: u16) -> String {
     format!(
         "-p {port} -c listen_addresses={HOST} -c unix_socket_directories= -c fsync=off \
-         -c synchronous_commit=off -c full_page_writes=off"
+         -c synchronous_commit=off -c full_page_writes=off -c max_connections=300"
     )
 }
 
@@ -454,10 +566,32 @@ mod tests {
     }
 
     #[test]
+    fn the_server_allows_many_test_connections() {
+        assert!(server_options(1).contains("max_connections=300"));
+    }
+
+    #[test]
+    fn bad_example_a_record_that_cannot_be_deleted_is_an_error() {
+        let temp = TempDir::new("db-record");
+        // A folder where the record should be: deleting it as a file fails.
+        let path = temp.path().join("record");
+        fs::create_dir(&path).unwrap();
+        assert!(remove_record(&path).is_err());
+        assert!(remove_record(&temp.path().join("absent")).is_ok());
+    }
+
+    #[test]
+    fn a_partial_record_fails_both_rules_are_evaluated() {
+        let repo = Repo::discover().unwrap();
+        let problems = parity_problems(&repo, "sqlite only_one\n").unwrap();
+        assert!(problems.iter().any(|p| p.starts_with("ARCH-DB-PARITY")));
+    }
+
+    #[test]
     fn a_missing_command_is_explained() {
         let repo = Repo::discover().unwrap();
         let cluster = Cluster::locate(&repo).unwrap();
-        let error = cluster.run_command(repo.root(), &[]).unwrap_err();
+        let error = cluster.run_command(&repo, &[]).unwrap_err();
         assert!(error.to_string().contains("after `--`"));
     }
 }

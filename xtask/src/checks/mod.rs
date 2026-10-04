@@ -9,7 +9,7 @@ mod arch_deps;
 mod arch_map_sync;
 mod arch_no_unsafe;
 mod build_location;
-mod data_migrations;
+pub(crate) mod data_migrations;
 mod dep_licenses;
 mod dep_register;
 mod dev_ports;

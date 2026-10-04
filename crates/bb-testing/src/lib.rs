@@ -5,8 +5,9 @@
 //! #[tokio::test]
 //! async fn adds_an_issue() -> bb_testing::TestResult {
 //!     bb_testing::each_database("adds_an_issue", async |db| {
-//!         let pool = db.pool(); // an `sqlx::AnyPool`; `db.url()` is there for typed pools
-//!         // ... the same assertions for every database ...
+//!         // `db.pool()` is a typed pool (`Pool::Sqlite` or `Pool::Postgres`); see the
+//!         // example tests in `tests/example_repository.rs`.
+//!         let _ = db.kind();
 //!         Ok(())
 //!     })
 //!     .await
@@ -16,8 +17,8 @@
 //! Which databases run is chosen by `BB_TEST_DATABASES` (`sqlite`, `postgres`, or both separated
 //! by a comma; default `sqlite`). `cargo xtask db run -- cargo test` and `cargo xtask ci` set
 //! everything up, including `BB_TEST_POSTGRES_URL` (the throwaway cluster) and `BB_DB_PARITY_FILE`
-//! (the record that ARCH-DB-PARITY reads). A test whose body panics leaves its PostgreSQL database
-//! behind; `cargo xtask db reset` clears the cluster.
+//! (the record that ARCH-DB-PARITY reads). A PostgreSQL database is dropped after the test also
+//! when the body panics.
 
 #![forbid(unsafe_code)]
 
@@ -26,12 +27,12 @@ use std::fmt::Write as _;
 use std::fs::OpenOptions;
 use std::io::Write as _;
 use std::path::Path;
-use std::sync::Once;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use sqlx::any::AnyPoolOptions;
-use sqlx::{AnyPool, AssertSqlSafe, Connection as _, Executor as _, PgConnection};
+use sqlx::postgres::PgPoolOptions;
+use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};
+use sqlx::{AssertSqlSafe, Connection as _, Executor as _, PgConnection, PgPool, SqlitePool};
 
 /// Names the databases to run on, comma separated.
 const DATABASES_VARIABLE: &str = "BB_TEST_DATABASES";
@@ -63,12 +64,32 @@ impl DatabaseKind {
     }
 }
 
-/// One empty database for one test run.
+/// The typed connection pool of a test database. Queries are written once (sea-query, ADR-0003)
+/// and run on whichever pool the database has.
 #[derive(Debug)]
+pub enum Pool {
+    /// A SQLite pool.
+    Sqlite(SqlitePool),
+    /// A PostgreSQL pool.
+    Postgres(PgPool),
+}
+
+/// One empty database for one test run.
 pub struct TestDatabase {
     kind: DatabaseKind,
     url: String,
-    pool: AnyPool,
+    pool: Pool,
+}
+
+// Written by hand: the URL of a PostgreSQL database holds the password.
+impl std::fmt::Debug for TestDatabase {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter
+            .debug_struct("TestDatabase")
+            .field("kind", &self.kind)
+            .field("url", &"<hidden>")
+            .finish_non_exhaustive()
+    }
 }
 
 impl TestDatabase {
@@ -78,21 +99,41 @@ impl TestDatabase {
         self.kind
     }
 
-    /// The connection URL of this database, for code that builds its own typed pool.
+    /// The connection URL of this database (it contains the password for PostgreSQL), for code
+    /// that builds its own pool.
     #[must_use]
     pub fn url(&self) -> &str {
         &self.url
     }
 
-    /// A pool for this database. Placeholders are `$1`, `$2`, … on both databases.
+    /// The typed pool of this database.
     #[must_use]
-    pub const fn pool(&self) -> &AnyPool {
+    pub const fn pool(&self) -> &Pool {
         &self.pool
+    }
+
+    /// The SQLite pool, if this is the SQLite database.
+    #[must_use]
+    pub const fn sqlite_pool(&self) -> Option<&SqlitePool> {
+        match &self.pool {
+            Pool::Sqlite(pool) => Some(pool),
+            Pool::Postgres(_) => None,
+        }
+    }
+
+    /// The PostgreSQL pool, if this is the PostgreSQL database.
+    #[must_use]
+    pub const fn postgres_pool(&self) -> Option<&PgPool> {
+        match &self.pool {
+            Pool::Postgres(pool) => Some(pool),
+            Pool::Sqlite(_) => None,
+        }
     }
 }
 
 /// Runs `body` once for every database selected by `BB_TEST_DATABASES`, each with a new empty
-/// database that is removed afterwards. `test_name` is what the parity record shows.
+/// database that is removed afterwards, also when the body panics. `test_name` is what the
+/// parity record shows.
 ///
 /// # Errors
 ///
@@ -101,21 +142,17 @@ pub async fn each_database<F>(test_name: &str, body: F) -> TestResult
 where
     F: AsyncFn(&TestDatabase) -> TestResult,
 {
-    install_drivers();
     let selected = selected(std::env::var(DATABASES_VARIABLE).ok().as_deref())?;
     for kind in selected {
         match kind {
             DatabaseKind::Sqlite => run_sqlite(test_name, &body).await?,
             DatabaseKind::Postgres => run_postgres(test_name, &body).await?,
         }
-        record(kind, test_name)?;
+        if let Ok(path) = std::env::var(RECORD_VARIABLE) {
+            record_to(Path::new(&path), kind, test_name)?;
+        }
     }
     Ok(())
-}
-
-fn install_drivers() {
-    static ONCE: Once = Once::new();
-    ONCE.call_once(sqlx::any::install_default_drivers);
 }
 
 /// Reads the value of `BB_TEST_DATABASES`; no value means SQLite only.
@@ -157,19 +194,69 @@ where
 {
     // The folder (and with it the database file) is deleted when this function ends.
     let folder = tempfile::Builder::new().prefix("bb-test-").tempdir()?;
-    let url = sqlite_url(&folder.path().join("test.db"));
-    let pool = AnyPoolOptions::new()
+    let file = folder.path().join("test.db");
+    let options = SqliteConnectOptions::new()
+        .filename(&file)
+        .create_if_missing(true);
+    let pool = SqlitePoolOptions::new()
         .max_connections(5)
-        .connect(&url)
+        .connect_with(options)
         .await?;
     let database = TestDatabase {
         kind: DatabaseKind::Sqlite,
-        url,
-        pool,
+        url: sqlite_url(&file),
+        pool: Pool::Sqlite(pool.clone()),
     };
     let result = body(&database).await;
-    database.pool.close().await;
+    pool.close().await;
     result.map_err(|error| with_context(test_name, DatabaseKind::Sqlite, &*error))
+}
+
+/// Removes a PostgreSQL test database when it goes out of scope, also while a panic unwinds.
+struct PostgresGuard {
+    admin_url: String,
+    name: String,
+    dropped: bool,
+}
+
+impl PostgresGuard {
+    /// Drops the database on a fresh connection.
+    async fn drop_now(&mut self) -> Result<(), sqlx::Error> {
+        self.dropped = true;
+        drop_database(&self.admin_url, &self.name).await
+    }
+}
+
+impl Drop for PostgresGuard {
+    fn drop(&mut self) {
+        if self.dropped {
+            return;
+        }
+        // Only reached when the body panicked or setup failed half way. There is no way to wait
+        // inside `drop`, so a thread with its own small runtime does the work.
+        let (admin_url, name) = (self.admin_url.clone(), self.name.clone());
+        let _ = std::thread::spawn(move || {
+            if let Ok(runtime) = tokio::runtime::Builder::new_current_thread()
+                .enable_all()
+                .build()
+            {
+                let _ = runtime.block_on(drop_database(&admin_url, &name));
+            }
+        })
+        .join();
+    }
+}
+
+async fn drop_database(admin_url: &str, name: &str) -> Result<(), sqlx::Error> {
+    let mut admin = PgConnection::connect(admin_url).await?;
+    // The name is made here from digits and letters only (`unique_database_name`), so it is safe.
+    let dropped = admin
+        .execute(AssertSqlSafe(format!(
+            "DROP DATABASE IF EXISTS \"{name}\" WITH (FORCE)"
+        )))
+        .await;
+    admin.close().await?;
+    dropped.map(|_| ())
 }
 
 async fn run_postgres<F>(test_name: &str, body: &F) -> TestResult
@@ -183,18 +270,22 @@ where
         )
     })?;
     let name = unique_database_name();
+    let mut guard = PostgresGuard {
+        admin_url: admin_url.clone(),
+        name: name.clone(),
+        dropped: false,
+    };
     let mut admin = PgConnection::connect(&admin_url).await?;
     // The name is made here from digits and letters only (`unique_database_name`), so it is safe.
-    admin
+    let created = admin
         .execute(AssertSqlSafe(format!("CREATE DATABASE \"{name}\"")))
-        .await?;
+        .await;
+    // Closed at once: a test holds no connection it does not need (max_connections).
+    admin.close().await?;
+    created?;
     let url = with_database(&admin_url, &name);
     let outcome = run_on_new_postgres(&url, body).await;
-    let dropped = admin
-        .execute(AssertSqlSafe(format!(
-            "DROP DATABASE IF EXISTS \"{name}\" WITH (FORCE)"
-        )))
-        .await;
+    let dropped = guard.drop_now().await;
     outcome.map_err(|error| with_context(test_name, DatabaseKind::Postgres, &*error))?;
     dropped?;
     Ok(())
@@ -204,17 +295,14 @@ async fn run_on_new_postgres<F>(url: &str, body: &F) -> TestResult
 where
     F: AsyncFn(&TestDatabase) -> TestResult,
 {
-    let pool = AnyPoolOptions::new()
-        .max_connections(5)
-        .connect(url)
-        .await?;
+    let pool = PgPoolOptions::new().max_connections(5).connect(url).await?;
     let database = TestDatabase {
         kind: DatabaseKind::Postgres,
         url: url.to_owned(),
-        pool,
+        pool: Pool::Postgres(pool.clone()),
     };
     let result = body(&database).await;
-    database.pool.close().await;
+    pool.close().await;
     result
 }
 
@@ -226,7 +314,8 @@ fn with_context(
     format!("{test_name} failed on {}: {error}", kind.name()).into()
 }
 
-/// A database name that cannot clash with another test run, even in parallel processes.
+/// A database name that cannot clash with another test run, even in parallel processes. All
+/// names start with `bbtest_`, which is how `cargo xtask db run` finds leftovers.
 fn unique_database_name() -> String {
     static COUNTER: AtomicU64 = AtomicU64::new(0);
     let nanos = SystemTime::now()
@@ -253,7 +342,8 @@ fn with_database(url: &str, database: &str) -> String {
     result
 }
 
-/// `sqlite:<path>?mode=rwc` (no `//`, which would read `C:` as a host name) with the characters that mean something in a URL escaped.
+/// `sqlite:<path>?mode=rwc` (no `//`, which would read `C:` as a host name) with the characters
+/// that mean something in a URL escaped.
 fn sqlite_url(path: &Path) -> String {
     let mut url = String::from("sqlite:");
     for character in path.to_string_lossy().replace('\\', "/").chars() {
@@ -268,11 +358,8 @@ fn sqlite_url(path: &Path) -> String {
     url
 }
 
-/// Appends `<database> <test name>` to the parity record, when one is configured.
-fn record(kind: DatabaseKind, test_name: &str) -> TestResult {
-    let Ok(path) = std::env::var(RECORD_VARIABLE) else {
-        return Ok(());
-    };
+/// Appends `<database> <test name>` to the parity record.
+fn record_to(path: &Path, kind: DatabaseKind, test_name: &str) -> TestResult {
     let line = format!(
         "{} {}\n",
         kind.name(),
@@ -290,8 +377,6 @@ fn record(kind: DatabaseKind, test_name: &str) -> TestResult {
 #[cfg(test)]
 mod tests {
     use super::*;
-    // Only the test programs in tests/ use tokio; named here to keep the lint on.
-    use tokio as _;
 
     #[test]
     fn without_a_setting_only_sqlite_runs() {
@@ -334,20 +419,30 @@ mod tests {
     fn database_names_are_unique_and_safe_in_sql() {
         let first = unique_database_name();
         assert_ne!(first, unique_database_name());
+        assert!(first.starts_with("bbtest_"));
         assert!(first.chars().all(|c| c.is_ascii_alphanumeric() || c == '_'));
     }
 
     #[test]
-    fn names_in_the_record_have_no_spaces() {
+    fn the_record_gets_one_line_per_run_and_names_have_no_spaces() {
         let folder = tempfile::tempdir().unwrap();
         let file = folder.path().join("record.txt");
-        // Not set through the environment (tests run in parallel): write the same line format.
-        let line = format!(
-            "{} {}\n",
-            DatabaseKind::Postgres.name(),
-            "a b".replace(' ', "_")
+        record_to(&file, DatabaseKind::Postgres, "a b").unwrap();
+        record_to(&file, DatabaseKind::Sqlite, "a b").unwrap();
+        assert_eq!(
+            std::fs::read_to_string(&file).unwrap(),
+            "postgres a_b\nsqlite a_b\n"
         );
-        std::fs::write(&file, &line).unwrap();
-        assert_eq!(std::fs::read_to_string(&file).unwrap(), "postgres a_b\n");
+    }
+
+    #[tokio::test]
+    async fn debug_output_hides_the_password() {
+        let pool = SqlitePoolOptions::new().connect_lazy_with(SqliteConnectOptions::new());
+        let database = TestDatabase {
+            kind: DatabaseKind::Postgres,
+            url: "postgres://u:secret@h/d".to_owned(),
+            pool: Pool::Sqlite(pool),
+        };
+        assert!(!format!("{database:?}").contains("secret"));
     }
 }
