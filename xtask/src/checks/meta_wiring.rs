@@ -377,7 +377,7 @@ commit-msg:
         let wrong_command = settings(POST_EDIT_MATCHER, "cargo xtask hook post-edit");
         let found = check_settings("settings.json", &wrong_command);
         assert_eq!(found.len(), 1);
-        assert!(found[0].message.contains("only `case"));
+        assert!(found[0].message.contains("only `in=$(cat)"));
         let wrong_matcher = settings("Edit", POST_EDIT);
         let found = check_settings("settings.json", &wrong_matcher);
         assert_eq!(found.len(), 1);
