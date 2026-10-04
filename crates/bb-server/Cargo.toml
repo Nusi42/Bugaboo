@@ -10,5 +10,11 @@ publish.workspace = true
 name = "bugaboo"
 path = "src/main.rs"
 
+[dependencies]
+anyhow = "1.0.104"
+bb-api = { path = "../bb-api" }
+clap = { version = "4.6.7", features = ["derive"] }
+tokio = { version = "1.53.2", features = ["macros", "net", "rt-multi-thread", "signal"] }
+
 [lints]
 workspace = true
