@@ -5,13 +5,19 @@
 
 #![forbid(unsafe_code)]
 
+mod build;
 mod catalog;
 mod checks;
+mod ci;
+mod dev;
+mod hook;
 mod location;
 mod output;
 mod repo;
 mod runner;
+mod steps;
 
+use std::io::Read as _;
 use std::path::PathBuf;
 use std::process::ExitCode;
 
@@ -34,8 +40,25 @@ enum Command {
         #[command(subcommand)]
         scope: CheckScope,
     },
+    /// Start the Vite dev server and the Bugaboo server on the ports from tools/dev/ports.json.
+    Dev,
+    /// Build the browser app, then the release binary.
+    Build,
+    /// Everything CI runs: checks, tests, browser build, browser tests.
+    Ci,
+    /// Entry points for Claude Code hooks.
+    Hook {
+        #[command(subcommand)]
+        event: HookEvent,
+    },
     /// List every check in the catalogue and whether it is implemented.
     List,
+}
+/// Claude Code hook events.
+#[derive(Subcommand)]
+enum HookEvent {
+    /// After an agent edited a file: run the checks for it (reads the hook JSON on stdin).
+    PostEdit,
 }
 
 #[derive(Subcommand)]
@@ -79,6 +102,16 @@ fn run() -> anyhow::Result<ExitCode> {
             output::list(&catalog, &registry);
             Ok(ExitCode::SUCCESS)
         }
+        Command::Dev => Ok(exit_code(dev::run(repo.root())?)),
+        Command::Build => Ok(exit_code(build::run(repo.root())?)),
+        Command::Ci => Ok(exit_code(ci::run(repo.root())?)),
+        Command::Hook {
+            event: HookEvent::PostEdit,
+        } => {
+            let mut stdin = String::new();
+            std::io::stdin().read_to_string(&mut stdin)?;
+            hook::post_edit(repo.root(), &stdin)
+        }
         Command::Check { scope } => {
             let scope = match scope {
                 CheckScope::Edit { files } => runner::Scope::Edit(repo.relative_paths(&files)),
@@ -87,12 +120,15 @@ fn run() -> anyhow::Result<ExitCode> {
                 CheckScope::All => runner::Scope::All,
                 CheckScope::Only { ids } => runner::Scope::Only(ids),
             };
-            let passed = runner::run(&repo, &catalog, &registry, &scope)?;
-            Ok(if passed {
-                ExitCode::SUCCESS
-            } else {
-                ExitCode::FAILURE
-            })
+            Ok(exit_code(runner::run(&repo, &catalog, &registry, &scope)?))
         }
+    }
+}
+
+fn exit_code(passed: bool) -> ExitCode {
+    if passed {
+        ExitCode::SUCCESS
+    } else {
+        ExitCode::FAILURE
     }
 }

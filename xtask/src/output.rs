@@ -57,3 +57,35 @@ pub(crate) fn list(catalog: &Catalog, registry: &[Box<dyn Check>]) {
 pub(crate) fn error(message: &str) {
     eprintln!("xtask: {message}");
 }
+
+pub(crate) fn line(message: &str) {
+    println!("{message}");
+}
+
+pub(crate) fn step_start(number: usize, total: usize, name: &str) {
+    println!("[{number}/{total}] {name}");
+}
+
+pub(crate) fn step_skipped(name: &str, reason: &str) {
+    println!("skip  {name}: {reason}");
+}
+
+pub(crate) fn step_end(name: &str, passed: bool, took: Duration) {
+    let state = if passed { "ok  " } else { "FAIL" };
+    println!("{state}  {name}  ({:.1} s)", took.as_secs_f32());
+}
+
+pub(crate) fn steps_summary(total: usize, skipped: usize, failed: usize) {
+    if failed > 0 {
+        println!("Failed. Fix the step marked FAIL above and run it again.");
+    } else if skipped > 0 {
+        println!("All {} steps passed, {skipped} skipped.", total - skipped);
+    } else {
+        println!("All {total} steps passed.");
+    }
+}
+
+/// What the agent sees after a failed edit check (Claude Code shows stderr on exit code 2).
+pub(crate) fn hook_feedback(report: &str) {
+    eprintln!("{report}");
+}
