@@ -11,12 +11,15 @@ use std::net::IpAddr;
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 
-use bb_api::DEFAULT_MAX_CONNECTIONS;
+use bb_api::{
+    DEFAULT_MAX_CONNECTIONS, DEFAULT_REQUESTS_PER_MINUTE, DEFAULT_SIGN_IN_ATTEMPTS_PER_MINUTE,
+    LimitsConfig,
+};
 
 use bb_core::message::{self, Message};
 
 /// Every start-up setting, once. The environment variable of `port` is `BUGABOO_PORT`.
-const KEYS: [&str; 12] = [
+const KEYS: [&str; 14] = [
     "address",
     "port",
     "data_dir",
@@ -29,6 +32,8 @@ const KEYS: [&str; 12] = [
     "log_level",
     "max_connections",
     "header_timeout_seconds",
+    "rate_limit_per_minute",
+    "sign_in_attempts_per_minute",
 ];
 /// Settings that name files or folders: relative paths in the settings file are relative to it.
 const PATH_KEYS: [&str; 3] = ["data_dir", "tls_cert", "tls_key"];
@@ -78,6 +83,7 @@ pub(crate) struct Settings {
     pub(crate) log_level: LogLevel,
     pub(crate) max_connections: usize,
     pub(crate) header_timeout: Duration,
+    pub(crate) limits: LimitsConfig,
 }
 
 /// Where the settings come from.
@@ -289,6 +295,19 @@ fn settings_from(
         DEFAULT_HEADER_TIMEOUT_SECONDS,
     )?;
 
+    let limits = LimitsConfig {
+        requests_per_minute: rate_limit(
+            values,
+            "rate_limit_per_minute",
+            DEFAULT_REQUESTS_PER_MINUTE,
+        )?,
+        sign_in_attempts_per_minute: rate_limit(
+            values,
+            "sign_in_attempts_per_minute",
+            DEFAULT_SIGN_IN_ATTEMPTS_PER_MINUTE,
+        )?,
+    };
+
     let database_url = get("database_url").map(str::to_owned);
     if let Some(url) = &database_url
         && !["sqlite:", "postgres://", "postgresql://"]
@@ -337,6 +356,20 @@ fn settings_from(
         log_level,
         max_connections: usize::try_from(max_connections).unwrap_or(usize::MAX),
         header_timeout: Duration::from_secs(header_seconds),
+        limits,
+    })
+}
+
+/// A rate limit: a whole number of at least 1, or `default` when the setting is not given.
+fn rate_limit(
+    values: &BTreeMap<&'static str, String>,
+    name: &'static str,
+    default: u32,
+) -> Result<u32, ConfigError> {
+    let number = whole_number(values, name, u64::from(default))?;
+    u32::try_from(number).map_err(|_| ConfigError::NumberInvalid {
+        name,
+        value: number.to_string(),
     })
 }
 
@@ -569,6 +602,25 @@ mod tests {
         let settings = resolve_with(None, &[], &cli).unwrap();
         assert_eq!(settings.max_connections, 50);
         assert_eq!(settings.header_timeout, Duration::from_secs(5));
+    }
+
+    #[test]
+    fn sec_14_rate_limits_have_defaults_and_can_be_changed() {
+        let settings = resolve_with(None, &[], &[("port", "1")]).unwrap();
+        assert_eq!(settings.limits, LimitsConfig::default());
+        let cli = [
+            ("port", "1"),
+            ("rate_limit_per_minute", "50"),
+            ("sign_in_attempts_per_minute", "3"),
+        ];
+        let settings = resolve_with(None, &[], &cli).unwrap();
+        assert_eq!(settings.limits.requests_per_minute, 50);
+        assert_eq!(settings.limits.sign_in_attempts_per_minute, 3);
+        for bad in ["0", "many", "99999999999"] {
+            let cli = [("port", "1"), ("rate_limit_per_minute", bad)];
+            let error = resolve_with(None, &[], &cli).unwrap_err();
+            assert!(matches!(error, ConfigError::NumberInvalid { .. }), "{bad}");
+        }
     }
 
     #[test]

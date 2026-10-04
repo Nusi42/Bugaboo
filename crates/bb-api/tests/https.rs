@@ -8,10 +8,14 @@ use hyper_util as _;
 use mime_guess as _;
 use rcgen as _;
 use rust_embed as _;
+use serde as _;
+use serde_json as _;
 use tower as _;
 use tower_http as _;
 use tracing as _;
 use tracing_subscriber as _;
+use utoipa as _;
+use utoipa_axum as _;
 
 mod common;
 
@@ -91,6 +95,7 @@ mod https {
             header_timeout: Duration::from_secs(1),
             data_folder: tls_folder.path().to_path_buf(),
             trusted_proxies: vec![],
+            limits: bb_api::LimitsConfig::default(),
         };
         let (stop, stopped) = oneshot::channel::<()>();
         tokio::spawn(serve(incoming, options, async move {

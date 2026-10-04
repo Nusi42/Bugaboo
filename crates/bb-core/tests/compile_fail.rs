@@ -6,6 +6,8 @@ use bb_macros as _;
 use jiff as _;
 use serde as _;
 use serde_json as _;
+#[cfg(feature = "openapi")]
+use utoipa as _;
 use uuid as _;
 
 use bb_core::personal::{Basis, Category, Entity, FieldMark};

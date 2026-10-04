@@ -52,6 +52,8 @@ Columns:
 | rcgen | 0.14.10 | MIT OR Apache-2.0 | yes | Makes the self-signed HTTPS certificate on first start (SEC-10); built with the `ring` provider only | maintained (2026-10-04) | openssl (C dependency); a certificate made at build time (would be shared by every installation) |
 | tracing | 0.1.44 | MIT | yes | Structured log events with request IDs (OPS-08, architecture §7) | maintained (2026-10-04) | log (no structured fields, no spans) |
 | tracing-subscriber | 0.3.23 | MIT | yes | Writes the log events as JSON lines (OPS-08); built with `fmt` and `json` only | maintained (2026-10-04) | own formatter (more code, JSON escaping to get right) |
+| utoipa | 6.0.0 | MIT OR Apache-2.0 | yes | Describes every route and type of the API once, in Rust, as OpenAPI 3.1 (ADR-0008); built with the `macros` feature only. `bb-core` has it as an optional dependency (feature `openapi`) so its error types can be described without any other crate using it | maintained (2026-10-04) | hand-written OpenAPI file (drifts from the routes); aide (smaller community, ties the spec to axum types) |
+| utoipa-axum | 0.3.0 | MIT OR Apache-2.0 | yes | Registers a route and its OpenAPI description in one call, so the router and the document cannot disagree (ADR-0008) | maintained (2026-10-04) | utoipa alone with a second list of paths (can drift) |
 
 Server crates are added with the milestones that use them; planned ones are listed in [architecture/09-tech-stack.md](../architecture/09-tech-stack.md).
 

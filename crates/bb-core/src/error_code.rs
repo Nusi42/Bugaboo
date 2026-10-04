@@ -62,6 +62,10 @@ error_codes! {
     NotFound => ("resource.not_found", 404, message::ERROR_RESOURCE_NOT_FOUND),
     /// The request is not valid.
     InvalidRequest => ("request.invalid", 400, message::ERROR_REQUEST_INVALID),
+    /// The address exists but does not do that (wrong HTTP method).
+    MethodNotAllowed => ("request.method_not_allowed", 405, message::ERROR_REQUEST_METHOD_NOT_ALLOWED),
+    /// The request took too long to arrive.
+    TimedOut => ("request.timed_out", 408, message::ERROR_REQUEST_TIMED_OUT),
     /// The request is bigger than allowed.
     TooLarge => ("request.too_large", 413, message::ERROR_REQUEST_TOO_LARGE),
     /// Someone else changed the thing since the person loaded it (ADR-0019).
@@ -73,6 +77,24 @@ error_codes! {
     /// The server failed; the person did nothing wrong.
     Internal => ("server.internal", 500, message::ERROR_SERVER_INTERNAL),
 }
+
+/// In the API description the code is one of the known texts, so clients get a union type.
+#[cfg(feature = "openapi")]
+impl utoipa::PartialSchema for ErrorCode {
+    fn schema() -> utoipa::openapi::RefOr<utoipa::openapi::schema::Schema> {
+        use utoipa::openapi::schema::{ObjectBuilder, Type};
+        ObjectBuilder::new()
+            .schema_type(Type::String)
+            .description(Some(
+                "What went wrong. Clients react to this text, which never changes.",
+            ))
+            .enum_values(Some(Self::ALL.iter().map(|code| code.code())))
+            .into()
+    }
+}
+
+#[cfg(feature = "openapi")]
+impl utoipa::ToSchema for ErrorCode {}
 
 /// The text is not the code of any error.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -127,14 +149,23 @@ pub const PROBLEM_CONTENT_TYPE: &str = "application/problem+json";
 /// fields are private and the only way to make a `Problem` is from an [`ErrorCode`], so no answer
 /// carries a text or a status that does not belong to its code.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
 pub struct Problem {
+    /// A stable address of the kind of error, `urn:bugaboo:error:<code>`.
     #[serde(rename = "type")]
     kind: String,
+    /// The English text, a fallback for clients that cannot look up the message.
     title: String,
+    /// The HTTP status.
     status: u16,
+    /// What went wrong.
     code: ErrorCode,
+    /// The key of the message to show, in the message catalog.
+    #[cfg_attr(feature = "openapi", schema(value_type = String))]
     message_key: MessageKey,
+    /// Values for the placeholders of the message. Empty today: error messages have none.
     params: BTreeMap<String, serde_json::Value>,
+    /// The ID of the request, also in the `x-request-id` header, to quote when asking for help.
     #[serde(skip_serializing_if = "Option::is_none")]
     request_id: Option<String>,
 }

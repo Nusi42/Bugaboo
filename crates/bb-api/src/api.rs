@@ -1,0 +1,239 @@
+//! The API below `/api/v1`: its routes, and the rules every API request goes through.
+//!
+//! Each route is described once, with `#[utoipa::path]` on its handler; [`routes`] collects
+//! them, and the router and the OpenAPI document (`crate::openapi`) both come from that list, so
+//! they cannot disagree (ADR-0008). Changes that break clients need a new version prefix and an
+//! ADR.
+//!
+//! Rules for all API requests, applied by [`rules`]:
+//! - the client network is counted against the rate limit (`crate::limits`);
+//! - a request has [`TIME_LIMIT`] to finish, which also ends a body that arrives too slowly
+//!   (M1-F06), and a body may be [`BODY_LIMIT_BYTES`] big;
+//! - every error answer is problem+json with the request ID (`crate::errors`).
+
+use std::sync::Arc;
+use std::time::Duration;
+
+use axum::Router;
+use axum::extract::{DefaultBodyLimit, Request};
+use axum::middleware::{Next, from_fn, from_fn_with_state};
+use axum::response::{IntoResponse as _, Response};
+use bb_core::ErrorCode;
+use serde::Serialize;
+use utoipa::ToSchema;
+use utoipa_axum::router::OpenApiRouter;
+use utoipa_axum::routes;
+
+use crate::errors::{self, ApiError};
+use crate::limits::{self, Limits};
+use crate::openapi;
+use crate::web::decode_path;
+
+/// The first part of every API address.
+pub(crate) const API_PREFIX: &str = "api";
+
+/// The version prefix of the routes below (ADR-0008).
+pub const VERSION_PATH: &str = "/api/v1";
+
+/// A request that has not finished after this long is stopped. Routes that need longer (file
+/// uploads, exports) get their own, larger limit when they exist.
+pub const TIME_LIMIT: Duration = Duration::from_secs(30);
+
+/// The biggest request body the API accepts, unless a route sets its own limit.
+pub const BODY_LIMIT_BYTES: usize = 1024 * 1024;
+
+/// What `GET /api/v1/status` answers: the server is up.
+#[derive(Serialize, ToSchema)]
+pub(crate) struct ServerStatus {
+    /// Always `ok`; an answer at all means the server is running.
+    status: StatusValue,
+}
+
+/// The only value a status can have today.
+#[derive(Serialize, ToSchema)]
+#[serde(rename_all = "lowercase")]
+enum StatusValue {
+    Ok,
+}
+
+/// Whether the server is up. Open to everyone, and the example route of the API skeleton.
+#[utoipa::path(
+    get,
+    path = "/api/v1/status",
+    operation_id = "getStatus",
+    tag = "server",
+    responses((status = 200, description = "The server is running.", body = ServerStatus))
+)]
+async fn get_status() -> axum::Json<ServerStatus> {
+    axum::Json(ServerStatus {
+        status: StatusValue::Ok,
+    })
+}
+
+/// The description of this API (OpenAPI 3.1), for tools and for the generated browser client.
+#[utoipa::path(
+    get,
+    path = "/api/v1/openapi.json",
+    operation_id = "getOpenApi",
+    tag = "server",
+    responses((
+        status = 200,
+        description = "The OpenAPI document of this API.",
+        content_type = "application/json",
+        body = Object
+    ))
+)]
+async fn get_openapi() -> Response {
+    (
+        [(axum::http::header::CONTENT_TYPE, "application/json")],
+        openapi::json(),
+    )
+        .into_response()
+}
+
+/// Every route of the API with its description.
+pub(crate) fn routes<S: Clone + Send + Sync + 'static>() -> OpenApiRouter<S> {
+    OpenApiRouter::with_openapi(openapi::base())
+        .routes(routes!(get_status))
+        .routes(routes!(get_openapi))
+}
+
+/// Whether the address belongs to the API. Escapes are decoded first; an address with a
+/// malformed escape is judged as written, and `.` and `..` parts are ignored, so no spelling
+/// of an API address ends up as a page or a 405.
+pub(crate) fn is_api(path: &str) -> bool {
+    let decoded = decode_path(path).unwrap_or_else(|| path.to_owned());
+    decoded
+        .split('/')
+        .find(|part| !part.is_empty() && *part != "." && *part != "..")
+        .is_some_and(|first| first.eq_ignore_ascii_case(API_PREFIX))
+}
+
+/// Puts the rules for API requests around `router`.
+///
+/// The layers apply to requests below `/api` only; pages, files and health checks pass through
+/// untouched.
+pub(crate) fn rules(router: Router, limits: Arc<Limits>) -> Router {
+    router
+        .layer(from_fn(time_limit))
+        .layer(from_fn_with_state(limits, limits::limit_requests))
+        .layer(DefaultBodyLimit::max(BODY_LIMIT_BYTES))
+        .layer(from_fn(errors::add_request_id))
+}
+
+/// Stops an API request that takes longer than [`TIME_LIMIT`].
+async fn time_limit(request: Request, next: Next) -> Response {
+    if !is_api(request.uri().path()) {
+        return next.run(request).await;
+    }
+    match tokio::time::timeout(TIME_LIMIT, next.run(request)).await {
+        Ok(response) => response,
+        Err(_) => ApiError::new(ErrorCode::TimedOut).into_response(),
+    }
+}
+
+/// The answer for a wrong method on a known address.
+pub(crate) async fn method_not_allowed() -> ApiError {
+    ApiError::new(ErrorCode::MethodNotAllowed)
+}
+
+/// The answer for an address below `/api` that does not exist.
+pub(crate) fn not_found() -> Response {
+    ApiError::new(ErrorCode::NotFound).into_response()
+}
+
+#[cfg(test)]
+mod tests {
+    use axum::body::Body;
+    use axum::http::{Request, StatusCode, header};
+    use axum::routing::{get, post};
+    use tower::ServiceExt as _;
+
+    use super::*;
+    use crate::errors::ApiJson;
+    use crate::limits::LimitsConfig;
+
+    async fn echo(ApiJson(value): ApiJson<serde_json::Value>) -> axum::Json<serde_json::Value> {
+        axum::Json(value)
+    }
+
+    async fn slow() {
+        tokio::time::sleep(Duration::from_hours(1)).await;
+    }
+
+    /// Routes that read a body and that never finish, with the rules of the API around them.
+    fn app() -> Router {
+        let routes = Router::new()
+            .route("/api/v1/echo", post(echo))
+            .route("/api/v1/slow", get(slow))
+            .route("/slow-page", get(slow));
+        rules(routes, Limits::new(LimitsConfig::default()))
+    }
+
+    async fn code_of(response: Response) -> String {
+        let bytes = axum::body::to_bytes(response.into_body(), usize::MAX)
+            .await
+            .unwrap();
+        let body: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+        body["code"].as_str().unwrap().to_owned()
+    }
+
+    fn post_json(body: Vec<u8>) -> Request<Body> {
+        Request::post("/api/v1/echo")
+            .header(header::CONTENT_TYPE, "application/json")
+            .body(Body::from(body))
+            .unwrap()
+    }
+
+    #[tokio::test]
+    async fn sec_14_a_body_up_to_the_limit_is_read_and_a_bigger_one_is_refused_as_problem_json() {
+        let small = app()
+            .oneshot(post_json(br#"{"a":1}"#.to_vec()))
+            .await
+            .unwrap();
+        assert_eq!(small.status(), StatusCode::OK);
+
+        let mut big = br#"{"a":""#.to_vec();
+        big.extend(std::iter::repeat_n(b'x', BODY_LIMIT_BYTES));
+        big.extend_from_slice(br#""}"#);
+        let refused = app().oneshot(post_json(big)).await.unwrap();
+        assert_eq!(refused.status(), StatusCode::PAYLOAD_TOO_LARGE);
+        assert_eq!(
+            refused.headers()[header::CONTENT_TYPE],
+            "application/problem+json"
+        );
+        assert_eq!(code_of(refused).await, "request.too_large");
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn sec_10_an_api_request_that_takes_too_long_is_stopped_but_a_page_is_not() {
+        let slow = Request::get("/api/v1/slow").body(Body::empty()).unwrap();
+        let stopped = app().oneshot(slow).await.unwrap();
+        assert_eq!(stopped.status(), StatusCode::REQUEST_TIMEOUT);
+        assert_eq!(code_of(stopped).await, "request.timed_out");
+
+        // Not an API address: no time limit of the API applies (the hour passes in paused time).
+        let page = Request::get("/slow-page").body(Body::empty()).unwrap();
+        let finished = app().oneshot(page).await.unwrap();
+        assert_eq!(finished.status(), StatusCode::OK);
+    }
+
+    #[test]
+    fn dist_01_every_spelling_of_an_api_address_is_an_api_address() {
+        for path in [
+            "/api",
+            "/api/",
+            "/api/x",
+            "/API/x",
+            "/%61pi/x",
+            "/./api/x",
+            "/%2e/api/x",
+            "/api/%zz",
+        ] {
+            assert!(is_api(path), "{path}");
+        }
+        for path in ["/", "/health/live", "/apiary", "/assets/api", "/issues/api"] {
+            assert!(!is_api(path), "{path}");
+        }
+    }
+}

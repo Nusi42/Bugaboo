@@ -35,6 +35,8 @@ struct Cli {
 enum Command {
     /// Start the server.
     Serve(ServeArgs),
+    /// Print the description of the API (OpenAPI) and stop.
+    Openapi,
 }
 
 /// Start-up settings can also come from `bugaboo.toml` or `BUGABOO_…` variables; values given
@@ -81,6 +83,10 @@ async fn main() -> ExitCode {
     let cli = Cli::parse();
     let result = match cli.command {
         Command::Serve(args) => serve(args).await,
+        Command::Openapi => {
+            output::raw(bb_api::openapi::json());
+            Ok(())
+        }
     };
     match result {
         Ok(()) => ExitCode::SUCCESS,
@@ -154,6 +160,7 @@ async fn serve(args: ServeArgs) -> anyhow::Result<()> {
         header_timeout: settings.header_timeout,
         data_folder: data.root().to_path_buf(),
         trusted_proxies: settings.trusted_proxies,
+        limits: settings.limits,
     };
     bb_api::serve(incoming, options, shutdown).await?;
     tracing::info!("server stopped");

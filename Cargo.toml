@@ -68,6 +68,8 @@ tower-http = "0.7.1"
 trybuild = "1.0.121"
 uuid = { version = "1.27.0", default-features = false }
 tracing = "0.1.44"
+utoipa = { version = "6.0.0", default-features = false, features = ["macros"] }
+utoipa-axum = { version = "0.3.0", default-features = false }
 tracing-subscriber = { version = "0.3.23", default-features = false, features = [
   "fmt",
   "json",

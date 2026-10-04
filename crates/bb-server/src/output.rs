@@ -12,6 +12,11 @@ pub(crate) fn line(message: &str) {
     println!("{message}");
 }
 
+/// Exactly this text, without a line break added (machine-readable output).
+pub(crate) fn raw(text: &str) {
+    print!("{text}");
+}
+
 pub(crate) fn warning(text: &str) {
     eprintln!("{}", message::server_warning(text));
 }

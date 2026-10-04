@@ -17,7 +17,8 @@ use bb_core::message::{self, Message};
 use tower_http::compression::predicate::{Predicate as _, SizeAbove};
 use tower_http::compression::{CompressionLayer, DefaultPredicate};
 
-use crate::headers;
+use crate::limits::{Limits, LimitsConfig};
+use crate::{api, headers};
 use hyper_util::rt::{TokioExecutor, TokioIo, TokioTimer};
 use hyper_util::server::conn::auto::Builder;
 use hyper_util::service::TowerToHyperService;
@@ -37,8 +38,6 @@ const CACHE_IMMUTABLE: &str = "public, max-age=31536000, immutable";
 const CACHE_REVALIDATE: &str = "no-cache";
 /// Addresses below these are never browser pages: when missing they are plain 404s.
 const NO_PAGE_FALLBACK: [&str; 3] = ["assets", "health", "api"];
-/// The API's address space: an unknown address answers 404 to every method (M0-F07).
-const API_PREFIX: &str = "api";
 /// Smaller answers are not worth compressing.
 const COMPRESS_FROM_BYTES: u64 = 256;
 /// Running requests get this long to finish when the server stops.
@@ -59,6 +58,8 @@ pub struct Options {
     pub data_folder: PathBuf,
     /// Proxies whose `X-Forwarded-For` header may be believed for the log.
     pub trusted_proxies: Vec<IpAddr>,
+    /// How often one client may call the API (SEC-14).
+    pub limits: LimitsConfig,
 }
 
 #[derive(Clone)]
@@ -74,14 +75,18 @@ pub fn router(options: Options) -> Router {
         web: Arc::new(options.web),
         data_folder: Arc::new(options.data_folder),
     };
+    let limits = Limits::new(options.limits);
     let compress = DefaultPredicate::new()
         .and(SizeAbove::new(COMPRESS_FROM_BYTES))
         .and(is_text);
     let app = Router::new()
         .route("/health/live", get(health_live))
         .route("/health/ready", get(health_ready))
+        .merge(api::routes().split_for_parts().0)
         .fallback(fallback)
-        .with_state(state)
+        .method_not_allowed_fallback(api::method_not_allowed)
+        .with_state(state);
+    let app = api::rules(app, limits)
         .layer(CompressionLayer::new().compress_when(compress))
         .layer(from_fn_with_state(
             LogContext::new(&options.trusted_proxies),
@@ -199,12 +204,12 @@ fn json(status: StatusCode, body: &'static str) -> Response {
         .into_response()
 }
 
-/// Everything that is not a route: files of the app for GET and HEAD, 404 below `/api` for every
-/// method, 405 for other methods elsewhere.
+/// Everything that is not a route: files of the app for GET and HEAD, problem+json 404 below
+/// `/api` for every method (M0-F07), 405 for other methods elsewhere.
 async fn fallback(State(state): State<AppState>, method: Method, uri: Uri) -> Response {
     let web = &state.web;
-    if is_api(uri.path()) {
-        return not_found(web).await;
+    if api::is_api(uri.path()) {
+        return api::not_found();
     }
     if method == Method::GET || method == Method::HEAD {
         return app_file(web, &uri).await;
@@ -214,17 +219,6 @@ async fn fallback(State(state): State<AppState>, method: Method, uri: Uri) -> Re
         [(header::ALLOW, "GET, HEAD")],
     )
         .into_response()
-}
-
-/// Whether the address belongs to the API. Escapes are decoded first; an address with a
-/// malformed escape is judged as written, and `.` and `..` parts are ignored, so no spelling
-/// of an API address ends up as a page or a 405.
-fn is_api(path: &str) -> bool {
-    let decoded = decode_path(path).unwrap_or_else(|| path.to_owned());
-    decoded
-        .split('/')
-        .find(|part| !part.is_empty() && *part != "." && *part != "..")
-        .is_some_and(|first| first.eq_ignore_ascii_case(API_PREFIX))
 }
 
 /// A file of the app; page addresses fall back to the start page.
@@ -304,6 +298,7 @@ mod tests {
             header_timeout: Duration::from_secs(30),
             data_folder: std::env::temp_dir(),
             trusted_proxies: vec![],
+            limits: LimitsConfig::default(),
         }
     }
 
@@ -415,17 +410,24 @@ mod tests {
     #[tokio::test]
     async fn dist_01_assets_health_and_api_never_fall_back_to_the_start_page() {
         let dir = app_folder();
-        for path in [
-            "/assets/missing",
-            "/assets",
-            "/health",
-            "/api/issues",
-            "/api",
-            "/missing.js",
-        ] {
+        for path in ["/assets/missing", "/assets", "/health", "/missing.js"] {
             let response = get_from(WebSource::Folder(dir.path().into()), path).await;
             assert_eq!(response.status(), StatusCode::NOT_FOUND, "{path}");
             assert_eq!(body(response).await, "Not found", "{path}");
+        }
+        // Below /api the answer is problem+json, never the start page or plain text.
+        for path in ["/api/issues", "/api"] {
+            let response = get_from(WebSource::Folder(dir.path().into()), path).await;
+            assert_eq!(response.status(), StatusCode::NOT_FOUND, "{path}");
+            assert_eq!(
+                header_of(&response, "content-type"),
+                "application/problem+json",
+                "{path}"
+            );
+            assert!(
+                body(response).await.contains("resource.not_found"),
+                "{path}"
+            );
         }
     }
 

@@ -8,9 +8,13 @@ use mime_guess as _;
 use rcgen as _;
 use rust_embed as _;
 use rustls as _;
+use serde as _;
+use serde_json as _;
 use tempfile as _;
 use tokio_rustls as _;
 use tower_http as _;
+use utoipa as _;
+use utoipa_axum as _;
 
 #[cfg(test)] // Clippy lets tests unwrap only inside test modules (clippy.toml).
 mod logs {
@@ -54,6 +58,7 @@ mod logs {
             header_timeout: std::time::Duration::from_secs(30),
             data_folder: std::env::temp_dir(),
             trusted_proxies: vec![],
+            limits: bb_api::LimitsConfig::default(),
         });
         let mut request = Request::get("/users/jane.doe@example.org/profile?name=Jane+Doe")
             .header("authorization", "Bearer secret-token-123")

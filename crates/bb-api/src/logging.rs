@@ -26,6 +26,16 @@ const NO_ROUTE: &str = "-";
 /// Random bytes in a request ID (shown as twice as many hex digits).
 const ID_BYTES: usize = 8;
 
+/// The ID of the request, put into the request for the code that answers it (error answers
+/// carry it, `errors`).
+#[derive(Clone, Debug)]
+pub(crate) struct RequestId(pub(crate) String);
+
+/// Who is on the other end, put into the request for the rate limits (SEC-14): the address
+/// [`client_of`] works out, never the raw header.
+#[derive(Clone, Copy, Debug)]
+pub(crate) struct ClientIp(pub(crate) IpAddr);
+
 /// What the request log needs to know about the deployment.
 #[derive(Clone)]
 pub(crate) struct LogContext {
@@ -56,7 +66,7 @@ fn request_id() -> String {
 /// The middleware: gives the request an ID, logs the finished request, sets the ID header.
 pub(crate) async fn log_request(
     State(context): State<LogContext>,
-    request: Request,
+    mut request: Request,
     next: Next,
 ) -> Response {
     let id = request_id();
@@ -66,7 +76,12 @@ pub(crate) async fn log_request(
         .get::<MatchedPath>()
         .map_or(NO_ROUTE, MatchedPath::as_str)
         .to_owned();
-    let network = client_of(&request, &context.trusted_proxies).map(truncate);
+    let client = client_of(&request, &context.trusted_proxies);
+    let network = client.map(truncate);
+    request.extensions_mut().insert(RequestId(id.clone()));
+    if let Some(address) = client {
+        request.extensions_mut().insert(ClientIp(address));
+    }
     let span = tracing::info_span!("request", request_id = %id);
     let started = Instant::now();
     let mut response = next.run(request).instrument(span.clone()).await;

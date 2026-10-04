@@ -10,11 +10,15 @@ use mime_guess as _;
 use rcgen as _;
 use rust_embed as _;
 use rustls as _;
+use serde as _;
+use serde_json as _;
 use tokio as _;
 use tokio_rustls as _;
 use tower_http as _;
 use tracing as _;
 use tracing_subscriber as _;
+use utoipa as _;
+use utoipa_axum as _;
 
 mod common;
 
@@ -43,6 +47,7 @@ mod headers {
             header_timeout: std::time::Duration::from_secs(30),
             data_folder: std::env::temp_dir(),
             trusted_proxies: vec![],
+            limits: bb_api::LimitsConfig::default(),
         }
     }
 
