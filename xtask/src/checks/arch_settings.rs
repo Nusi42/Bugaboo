@@ -3,8 +3,12 @@
 //!
 //! Two patterns are found in the code of the product crates and the browser app: a `settings!` declaration outside
 //! `crates/bb-core/src/settings/`, and the key of a registered setting written as text anywhere
-//! else (which would be a way around the registry). The part that watches storage comes with the
-//! store (WP-05).
+//! else (which would be a way around the registry).
+//!
+//! The storage part: the table of setting values (`SettingRow` in `bb-store`) is read and written
+//! in `crates/bb-store/src/settings.rs` only, which checks every key, level and type against the
+//! registry. Its name appearing anywhere else (except the schema and the migrations that create
+//! it) is a way around the registry.
 
 use std::collections::BTreeSet;
 
@@ -14,6 +18,26 @@ use crate::rust_source::{Source, before_tests, read_product_sources};
 
 /// The only place settings are declared.
 const REGISTRY_FOLDER: &str = "crates/bb-core/src/settings/";
+
+/// The name of the table of setting values in the schema, and the table itself as it is written
+/// in text (the name of the table is `setting`).
+const STORAGE_TABLE: &str = "SettingRow";
+const STORAGE_TABLE_NAME: &str = "\"setting\"";
+/// What turns a text into a table name in a query.
+const TABLE_NAME_CALLS: [&str; 6] = [
+    "Alias::new",
+    ".from(",
+    ".table(",
+    "into_table(",
+    "from_table(",
+    "Iden",
+];
+/// The files that may name the table: the repository, the schema and the migrations.
+const STORAGE_FILES: [&str; 3] = [
+    "crates/bb-store/src/settings.rs",
+    "crates/bb-store/src/schema.rs",
+    "crates/bb-store/src/migrations/",
+];
 
 pub(crate) struct ArchSettings;
 
@@ -58,8 +82,33 @@ fn has_key_literal(line: &str, key: &str) -> bool {
     })
 }
 
-fn evaluate(sources: &[Source]) -> Vec<Finding> {
+/// Code outside the settings repository that names the table of setting values.
+fn storage_findings(sources: &[Source]) -> Vec<Finding> {
     let mut findings = Vec::new();
+    for (path, text) in sources.iter().filter(|(path, _)| {
+        path.starts_with("crates/") && !STORAGE_FILES.iter().any(|file| path.starts_with(file))
+    }) {
+        for (index, line) in text.lines().enumerate() {
+            let by_name = line.contains(STORAGE_TABLE_NAME)
+                && TABLE_NAME_CALLS.iter().any(|call| line.contains(call));
+            if !line.trim_start().starts_with("//") && (line.contains(STORAGE_TABLE) || by_name) {
+                findings.push(Finding::at(
+                    format!("{path}:{}", index + 1),
+                    format!(
+                        "The table of setting values (`{STORAGE_TABLE}`) is read and written in \
+                         {} only, which checks the registry. Use `Database::set_setting`, \
+                         `stored_setting` or `resolve_setting`.",
+                        STORAGE_FILES[0]
+                    ),
+                ));
+            }
+        }
+    }
+    findings
+}
+
+fn evaluate(sources: &[Source]) -> Vec<Finding> {
+    let mut findings = storage_findings(sources);
     let mut keys = BTreeSet::new();
     for (path, text) in sources
         .iter()
@@ -160,6 +209,47 @@ mod tests {
             1,
             "tests may name keys"
         );
+    }
+
+    #[test]
+    fn good_example_the_settings_repository_names_its_table() {
+        let repository = (
+            "crates/bb-store/src/settings.rs".to_owned(),
+            "use crate::schema::SettingRow as Columns;\n".to_owned(),
+        );
+        let schema = (
+            "crates/bb-store/src/schema.rs".to_owned(),
+            "pub(crate) enum SettingRow { Table }\n".to_owned(),
+        );
+        assert!(found(&[registry(DECLARATION), repository, schema]).is_empty());
+    }
+
+    #[test]
+    fn bad_example_other_code_names_the_table_as_text() {
+        let around = (
+            "crates/bb-store/src/jobs.rs".to_owned(),
+            "select.from(Alias::new(\"setting\"));
+let text = \"setting\";
+"
+            .to_owned(),
+        );
+        let report = found(&[registry(DECLARATION), around]);
+        assert_eq!(
+            report.matches("table of setting values").count(),
+            1,
+            "{report}"
+        );
+    }
+
+    #[test]
+    fn bad_example_other_code_reads_the_table_of_setting_values() {
+        let around = (
+            "crates/bb-store/src/jobs.rs".to_owned(),
+            "// SettingRow is fine in a comment\nselect.from(SettingRow::Table);\n".to_owned(),
+        );
+        let report = found(&[registry(DECLARATION), around]);
+        assert!(report.contains("table of setting values"), "{report}");
+        assert_eq!(report.matches("table of setting values").count(), 1);
     }
 
     #[test]

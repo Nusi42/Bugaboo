@@ -13,6 +13,10 @@ serde = { workspace = true }
 serde_json = { workspace = true }
 uuid = { workspace = true, features = ["std"] }
 
+[features]
+# `SequentialIds`, the predictable ID source for tests. Only `[dev-dependencies]` switch it on.
+fake-ids = []
+
 [dev-dependencies]
 trybuild = { workspace = true }
 

@@ -111,18 +111,10 @@ fn client_of(request: &Request, trusted: &[IpAddr]) -> Option<IpAddr> {
     Some(forwarded.unwrap_or(peer))
 }
 
-/// IPv4 keeps three bytes, IPv6 the first 48 bits; the rest is replaced by zeros.
+/// The address cut short (IPv4 `/24`, IPv6 `/48`); the rule lives in `bb-core` because the
+/// security log uses the same one.
 pub(crate) fn truncate(address: IpAddr) -> String {
-    match address.to_canonical() {
-        IpAddr::V4(v4) => {
-            let [a, b, c, _] = v4.octets();
-            format!("{a}.{b}.{c}.0")
-        }
-        IpAddr::V6(v6) => {
-            let [a, b, c, ..] = v6.segments();
-            format!("{a:x}:{b:x}:{c:x}::")
-        }
-    }
+    bb_core::network::NetworkPrefix::from_address(address).to_string()
 }
 
 #[cfg(test)]

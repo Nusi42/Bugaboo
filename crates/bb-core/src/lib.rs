@@ -12,10 +12,17 @@ pub mod entities;
 pub mod error_code;
 pub mod event;
 pub mod id;
+pub mod job;
 pub mod message;
+pub mod migration;
+pub mod network;
+pub mod outbox;
 pub mod person;
 pub mod personal;
+pub mod secret;
+pub mod security_log;
 pub mod settings;
+pub mod technical;
 
 pub use error_code::{ErrorCode, Problem};
 pub use event::DomainEvent;

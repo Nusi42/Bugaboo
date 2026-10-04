@@ -54,17 +54,21 @@ pub trait IdSource {
 }
 
 /// A predictable [`IdSource`] for tests and in-memory fakes: it counts up and is not random, so
-/// it must never make IDs in production.
+/// it must never make IDs in production. It exists only in this crate's own tests and behind the
+/// `fake-ids` feature, which only `[dev-dependencies]` switch on.
+#[cfg(any(test, feature = "fake-ids"))]
 #[derive(Clone, Debug, Default)]
 pub struct SequentialIds {
     counter: u64,
 }
 
+#[cfg(any(test, feature = "fake-ids"))]
 impl SequentialIds {
     /// The first moment it hands out: 2026-01-01T00:00:00Z.
     const START_MILLIS: i64 = 1_767_225_600_000;
 }
 
+#[cfg(any(test, feature = "fake-ids"))]
 impl IdSource for SequentialIds {
     fn now(&mut self) -> Timestamp {
         self.counter += 1;
@@ -243,6 +247,11 @@ define_ordered_id! {
     EventId
 }
 
+define_ordered_id! {
+    /// The ID of a background job (ADR-0017).
+    JobId
+}
+
 /// The ID of a record whose kind is named next to it, for example in an event (ADR-0007). It can
 /// hold the ID of any kind of record, so it takes any UUID version.
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -267,7 +276,7 @@ macro_rules! into_entity_id {
     };
 }
 
-into_entity_id!(UserId, ProjectId, IssueId, EventId);
+into_entity_id!(UserId, ProjectId, IssueId, EventId, JobId);
 
 #[cfg(test)]
 mod tests {

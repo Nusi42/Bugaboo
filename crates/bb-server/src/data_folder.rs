@@ -6,12 +6,13 @@
 //! keys/        the master key and other secrets
 //! backups/     backups
 //! tls/         the certificate and key made by Bugaboo
+//! logs/        files the security log keeps outside the database (its anchor file)
 //! ```
 //!
 //! Folders this program creates are readable by their owner only: on Linux mode `0700`, on
 //! Windows an access list that removes inherited rights and grants only the current account
-//! (found by its SID, which no language or domain setting can change). `keys/` and `tls/` hold
-//! secrets, so on every start they are checked and, if someone loosened them, made private
+//! (found by its SID, which no language or domain setting can change). `keys/`, `tls/` and `logs/`
+//! hold secrets or proof, so on every start they are checked and, if someone loosened them, made private
 //! again.
 
 use std::fmt;
@@ -23,6 +24,7 @@ const FILES: &str = "files";
 const KEYS: &str = "keys";
 const BACKUPS: &str = "backups";
 const TLS: &str = "tls";
+const LOGS: &str = "logs";
 
 /// The prepared data folder.
 #[derive(Debug)]
@@ -63,10 +65,10 @@ impl DataFolder {
     /// folders with secrets are private to their owner.
     pub(crate) fn prepare(root: &Path) -> Result<Self, DataFolderError> {
         create_private(root)?;
-        for name in [FILES, KEYS, BACKUPS, TLS] {
+        for name in [FILES, KEYS, BACKUPS, TLS, LOGS] {
             create_private(&root.join(name))?;
         }
-        for name in [KEYS, TLS] {
+        for name in [KEYS, TLS, LOGS] {
             let path = root.join(name);
             ensure_private(&path).map_err(|reason| DataFolderError::Protect { path, reason })?;
         }
@@ -207,7 +209,7 @@ mod tests {
         let temp = tempfile::tempdir().unwrap();
         let root = temp.path().join("data");
         let folder = DataFolder::prepare(&root).unwrap();
-        for name in [FILES, KEYS, BACKUPS, TLS] {
+        for name in [FILES, KEYS, BACKUPS, TLS, LOGS] {
             assert!(root.join(name).is_dir(), "{name}");
         }
         assert_eq!(folder.tls(), root.join("tls"));
@@ -230,7 +232,7 @@ mod tests {
                 .mode()
                 & 0o777
         };
-        for name in ["", KEYS, TLS] {
+        for name in ["", KEYS, TLS, LOGS] {
             assert_eq!(mode(name), 0o700, "{name}");
         }
         // Someone loosens the secrets; the next start makes them private again.
@@ -238,8 +240,14 @@ mod tests {
         std::fs::write(&secret, "x").unwrap();
         std::fs::set_permissions(&secret, std::fs::Permissions::from_mode(0o644)).unwrap();
         std::fs::set_permissions(root.join(KEYS), std::fs::Permissions::from_mode(0o755)).unwrap();
+        let anchor = root.join(LOGS).join("security-head.log");
+        std::fs::write(&anchor, "x").unwrap();
+        std::fs::set_permissions(&anchor, std::fs::Permissions::from_mode(0o644)).unwrap();
+        std::fs::set_permissions(root.join(LOGS), std::fs::Permissions::from_mode(0o755)).unwrap();
         DataFolder::prepare(&root).unwrap();
         assert_eq!(mode(KEYS), 0o700);
+        assert_eq!(mode(LOGS), 0o700);
+        assert_eq!(mode("logs/security-head.log"), 0o600);
         assert_eq!(mode("keys/master.key"), 0o600);
     }
 
@@ -262,10 +270,11 @@ mod tests {
         let temp = tempfile::tempdir().unwrap();
         let root = temp.path().join("data");
         DataFolder::prepare(&root).unwrap();
-        for name in [KEYS, TLS] {
+        for name in [KEYS, TLS, LOGS] {
             assert_eq!(entries(&root.join(name)), 1, "{name}");
         }
-        // Someone opens the keys folder again; the next start closes it.
+        // Someone opens the keys and logs folders again; the next start closes them.
+        let logs = root.join(LOGS);
         let keys = root.join(KEYS);
         let sid = current_sid().unwrap();
         let reset = std::process::Command::new("icacls")
@@ -274,9 +283,20 @@ mod tests {
             .output()
             .unwrap();
         assert!(reset.status.success());
+        let reset_logs = std::process::Command::new("icacls")
+            .arg(&logs)
+            .args(["/inheritance:e", "/grant", "*S-1-5-32-545:(OI)(CI)R"])
+            .output()
+            .unwrap();
+        assert!(reset_logs.status.success());
         assert!(entries(&keys) > 1, "the test could not open the folder");
+        assert!(
+            entries(&logs) > 1,
+            "the test could not open the logs folder"
+        );
         DataFolder::prepare(&root).unwrap();
         assert_eq!(entries(&keys), 1, "owner {sid} only");
+        assert_eq!(entries(&logs), 1, "owner {sid} only");
     }
 
     #[cfg(windows)]
