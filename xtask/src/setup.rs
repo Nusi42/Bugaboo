@@ -13,6 +13,7 @@ use std::process::Command;
 use anyhow::{Context as _, bail};
 use sha2::{Digest as _, Sha256};
 
+use crate::bundle;
 use crate::output;
 use crate::repo::Repo;
 use crate::tools::{self, Tool};
@@ -28,8 +29,9 @@ pub(crate) fn run(repo: &Repo) -> anyhow::Result<()> {
         match tool.kind.as_str() {
             "cargo" => install_cargo(root, tool, &installed)?,
             "download" => install_download(root, tool)?,
+            "bundle" => bundle::install(root, tool)?,
             other => bail!(
-                "{}: unknown kind `{other}` in {}; use `cargo` or `download`.",
+                "{}: unknown kind `{other}` in {}; use `cargo`, `download` or `bundle`.",
                 tool.name,
                 tools::TOOLS_PATH
             ),
@@ -155,7 +157,7 @@ fn install_download_with(
 }
 
 /// Downloads `url` to `destination` with curl (present on every supported system).
-fn fetch(url: &str, destination: &Path) -> anyhow::Result<()> {
+pub(crate) fn fetch(url: &str, destination: &Path) -> anyhow::Result<()> {
     let status = Command::new("curl")
         .args([
             "--fail",

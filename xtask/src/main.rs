@@ -6,9 +6,11 @@
 #![forbid(unsafe_code)]
 
 mod build;
+mod bundle;
 mod catalog;
 mod checks;
 mod ci;
+mod db;
 mod dev;
 mod docs;
 #[path = "gen/mod.rs"]
@@ -54,6 +56,11 @@ enum Command {
     Build,
     /// Everything CI runs: checks, tests, browser build, browser tests.
     Ci,
+    /// The throwaway PostgreSQL for the repository tests (architecture §11, "Database tests").
+    Db {
+        #[command(subcommand)]
+        action: DbAction,
+    },
     /// Entry points for Claude Code hooks.
     Hook {
         #[command(subcommand)]
@@ -81,6 +88,24 @@ enum GenTarget {
     /// Typed message keys from messages/en.json.
     Messages,
 }
+#[derive(Subcommand)]
+enum DbAction {
+    /// Start the test PostgreSQL (creates it on first use).
+    Start,
+    /// Stop the test PostgreSQL.
+    Stop,
+    /// Throw the test PostgreSQL away and start a new one.
+    Reset,
+    /// Print the connection URL (it contains the random password; do not share it).
+    Url,
+    /// Run a command with SQLite and PostgreSQL tests switched on: `db run -- cargo test`.
+    Run {
+        /// The command and its arguments.
+        #[arg(required = true, trailing_var_arg = true, allow_hyphen_values = true)]
+        command: Vec<String>,
+    },
+}
+
 /// Claude Code hook events.
 #[derive(Subcommand)]
 enum HookEvent {
@@ -161,6 +186,16 @@ fn run() -> anyhow::Result<ExitCode> {
         Command::Dev => Ok(steps::exit_code(dev::run(repo.root())?)),
         Command::Build => Ok(steps::exit_code(build::run(repo.root())?)),
         Command::Ci => Ok(steps::exit_code(ci::run(repo.root())?)),
+        Command::Db { action } => {
+            let action = match action {
+                DbAction::Start => db::Action::Start,
+                DbAction::Stop => db::Action::Stop,
+                DbAction::Reset => db::Action::Reset,
+                DbAction::Url => db::Action::Url,
+                DbAction::Run { command } => db::Action::Run(command),
+            };
+            Ok(steps::exit_code(db::run(&repo, &action)?))
+        }
         Command::Hook {
             event: HookEvent::PostEdit,
         } => {

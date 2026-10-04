@@ -37,6 +37,18 @@ pub(crate) struct Tool {
     pub(crate) windows_x64: Option<Download>,
     #[serde(rename = "linux-x64")]
     pub(crate) linux_x64: Option<Download>,
+    /// `bundle` tools: the folders of the archive that are unpacked into `.tools/<name>/`.
+    #[serde(default)]
+    pub(crate) folders: Vec<String>,
+    /// `bundle` tools: programs that must exist when the platform has no download.
+    #[serde(default, rename = "system-programs")]
+    pub(crate) system_programs: Vec<String>,
+    /// `bundle` tools: extra folders (one `*` allowed) searched besides the PATH.
+    #[serde(default, rename = "system-folders")]
+    pub(crate) system_folders: Vec<String>,
+    /// `bundle` tools: how to install the system program, shown when it is missing.
+    #[serde(rename = "system-hint")]
+    pub(crate) system_hint: Option<String>,
 }
 
 /// A prebuilt archive and the checksum it must have.
@@ -47,14 +59,23 @@ pub(crate) struct Download {
 }
 
 impl Tool {
+    /// The archive for the platform xtask runs on, if the list has one.
+    pub(crate) fn download_if_any(&self) -> Option<&Download> {
+        if cfg!(windows) {
+            self.windows_x64.as_ref()
+        } else {
+            self.linux_x64.as_ref()
+        }
+    }
+
     /// The archive for the platform xtask runs on.
     pub(crate) fn download(&self) -> anyhow::Result<&Download> {
-        let (platform, entry) = if cfg!(windows) {
-            ("windows-x64", &self.windows_x64)
+        let platform = if cfg!(windows) {
+            "windows-x64"
         } else {
-            ("linux-x64", &self.linux_x64)
+            "linux-x64"
         };
-        entry.as_ref().with_context(|| {
+        self.download_if_any().with_context(|| {
             format!(
                 "{} has no download for {platform} in {TOOLS_PATH}. Add one with its sha256.",
                 self.name

@@ -4,6 +4,10 @@
 #
 # kind = "cargo"    → cargo install --locked --root .tools <crate>@<version>
 # kind = "download" → fetch the archive for this platform, verify sha256, unpack the binary into .tools/bin
+# kind = "bundle"   → fetch the archive for this platform, verify sha256, unpack the listed `folders`
+#                     into .tools/<name>/. A platform without a download entry uses the program
+#                     already installed on the machine (`system-programs`); `system-hint` says how
+#                     to install it. The programs are looked up on the PATH and in `system-folders`.
 
 [[tool]]
 name = "cargo-deny"
@@ -54,3 +58,18 @@ kind = "download"
 version = "1.7.12"
 windows-x64 = { url = "https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_windows_amd64.zip", sha256 = "6e7241b51e6817ea6a047693d8e6fed13b31819c9a0dd6c5a726e1592d22f6e9" }
 linux-x64 = { url = "https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_linux_amd64.tar.gz", sha256 = "8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8" }
+
+# PostgreSQL for the repository tests (ADR-0003, `cargo xtask db`). Windows: the official EDB
+# binaries. EDB publishes no checksum, so the sha256 below was computed once by us from the
+# downloaded file (`sha256sum postgresql-18.6-1-windows-x64-binaries.zip`, 343,808,005 bytes,
+# 2026-10-04). Only bin, lib and share are unpacked (the archive also holds pgAdmin and docs).
+# Linux: the system PostgreSQL, as installed on GitHub's Ubuntu runners.
+[[tool]]
+name = "postgresql"
+kind = "bundle"
+version = "18.6"
+folders = ["bin", "lib", "share"]
+system-programs = ["initdb", "pg_ctl", "pg_isready", "postgres"]
+system-folders = ["/usr/lib/postgresql/*/bin"]
+system-hint = "Install PostgreSQL 16 or newer, for example `sudo apt-get install postgresql` (the server is not started; xtask runs its own cluster)."
+windows-x64 = { url = "https://get.enterprisedb.com/postgresql/postgresql-18.6-1-windows-x64-binaries.zip", sha256 = "fbe23da234ee31547bf8a36d29dfd81e82b849df2d2b78d2eecb43d360252f8c" }

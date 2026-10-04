@@ -4,10 +4,12 @@
 //! [`Check`] here, and add a failing and a passing example (`bad_example` / `good_example` tests
 //! or `tools/checks/fixtures/<ID>/`).
 
+pub(crate) mod arch_db_parity;
 mod arch_deps;
 mod arch_map_sync;
 mod arch_no_unsafe;
 mod build_location;
+mod data_migrations;
 mod dep_licenses;
 mod dep_register;
 mod dev_ports;
@@ -110,6 +112,8 @@ pub(crate) fn registry() -> Vec<Box<dyn Check>> {
         Box::new(lint_ci::LintCi),
         Box::new(arch_deps::ArchDeps),
         Box::new(arch_no_unsafe::ArchNoUnsafe),
+        Box::new(arch_db_parity::ArchDbParity),
+        Box::new(data_migrations::DataMigrations),
         Box::new(sec_secrets::SecSecrets),
         Box::new(dep_register::DepRegister),
         Box::new(dep_licenses::DepLicenses),

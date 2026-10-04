@@ -3,6 +3,7 @@
 use std::path::Path;
 
 use super::{Check, Context, Finding};
+use crate::metadata;
 use crate::tools;
 
 pub(crate) struct LintRust;
@@ -26,11 +27,21 @@ impl Check for LintRust {
 fn check_root(root: &Path) -> anyhow::Result<Vec<Finding>> {
     let mut findings = Vec::new();
     for target in native_targets(root)? {
-        let mut args = vec!["clippy", "--workspace", "--all-targets"];
+        let mut args = vec![
+            "clippy".to_owned(),
+            "--workspace".to_owned(),
+            "--all-targets".to_owned(),
+        ];
         if let Some(target) = &target {
-            args.extend(["--target", target.as_str()]);
+            args.extend(["--target".to_owned(), target.clone()]);
+            if target != &host_target(root)? {
+                for package in needing_a_c_compiler(root, target)? {
+                    args.extend(["--exclude".to_owned(), package]);
+                }
+            }
         }
-        args.extend(["--", "-D", "warnings"]);
+        args.extend(["--".to_owned(), "-D".to_owned(), "warnings".to_owned()]);
+        let args: Vec<&str> = args.iter().map(String::as_str).collect();
         let output = tools::run(Path::new("cargo"), &args, root)?;
         let message = match &target {
             Some(target) => format!(
@@ -41,6 +52,52 @@ fn check_root(root: &Path) -> anyhow::Result<Vec<Finding>> {
         findings.extend(tools::findings_from(Ok(output), &message));
     }
     Ok(findings)
+}
+
+/// The target this machine builds for natively.
+fn host_target(root: &Path) -> anyhow::Result<String> {
+    let output = tools::run(Path::new("rustc"), &["-vV"], root)?;
+    Ok(output
+        .text
+        .lines()
+        .find_map(|line| line.strip_prefix("host: "))
+        .unwrap_or_default()
+        .trim()
+        .to_owned())
+}
+
+/// The workspace members that compile C code in a build script (`ring`, SQLite, ...) when built
+/// for `target`. Another system's C compiler is rarely installed, so those members are left out
+/// of the check for a target other than the native one; the native check covers them completely
+/// (and runs on Linux and Windows machines alike).
+fn needing_a_c_compiler(root: &Path, target: &str) -> anyhow::Result<Vec<String>> {
+    let mut found = Vec::new();
+    for package in metadata::load(root)? {
+        let tree = tools::run(
+            Path::new("cargo"),
+            &[
+                "tree",
+                "--package",
+                &package.name,
+                "--target",
+                target,
+                "--edges",
+                "normal,build,dev",
+                "--prefix",
+                "none",
+            ],
+            root,
+        )?;
+        if uses_the_cc_crate(&tree.text) {
+            found.push(package.name);
+        }
+    }
+    Ok(found)
+}
+
+/// Whether `cargo tree --prefix none` output lists the `cc` crate, the C compiler driver.
+fn uses_the_cc_crate(tree: &str) -> bool {
+    tree.lines().any(|line| line.starts_with("cc v"))
 }
 
 /// Native targets from `rust-toolchain.toml` (WebAssembly is ARCH-WASM's job). Without that file
@@ -99,6 +156,21 @@ targets = [\"wasm32-unknown-unknown\", \"x86_64-unknown-linux-gnu\"]
             native_targets(temp.path()).unwrap(),
             [Some("x86_64-unknown-linux-gnu".to_owned())]
         );
+    }
+
+    #[test]
+    fn crates_with_the_cc_crate_are_found_in_the_tree() {
+        assert!(uses_the_cc_crate(
+            "bb-testing v0.0.0 (/x)
+ring v0.17.14
+cc v1.6.0
+"
+        ));
+        assert!(!uses_the_cc_crate(
+            "bb-core v0.0.0 (/x)
+serde v1.0.229
+"
+        ));
     }
 
     #[test]
