@@ -68,6 +68,8 @@ mod tests {
             "\"-4px\"",
             "\"-0.5em\"",
             "declaration-property-value-allowed-list",
+            "system-colors-only-in-forced-colors",
+            "\"1PX\"",
         ] {
             assert!(
                 messages.contains(rule),

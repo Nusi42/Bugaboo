@@ -11,3 +11,13 @@
   border-top-width: 1px;
   font-family: var(--font);
 }
+
+.picked {
+  border-top: 1px solid var(--border);
+}
+
+@media (forced-colors: active) {
+  .picked {
+    outline: var(--ring-width) solid Highlight;
+  }
+}
