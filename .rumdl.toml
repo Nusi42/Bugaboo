@@ -12,5 +12,4 @@ code-blocks = false
 [per-file-ignores]
 # Agent memory files (ADR-0024 amendment) follow Claude Code's own format: YAML front matter and a
 # one-line-per-memory index, never a title heading.
-# `**/` so the rule also matches inside the staged export (target/staged-tree, M1-F17).
-"**/.claude/memory/*.md" = ["MD041"]
+".claude/memory/*.md" = ["MD041"]
