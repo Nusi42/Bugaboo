@@ -127,6 +127,43 @@ impl Cookie {
         HeaderValue::from_str(&text).map_err(|_| InvalidCookieValue)
     }
 
+    /// Adds the cookie with `value` to `response`.
+    ///
+    /// # Errors
+    /// [`InvalidCookieValue`] as for [`Self::set`].
+    pub fn put(
+        self,
+        response: &mut axum::response::Response,
+        value: &str,
+        max_age: Option<Duration>,
+    ) -> Result<(), InvalidCookieValue> {
+        response
+            .headers_mut()
+            .append(axum::http::header::SET_COOKIE, self.set(value, max_age)?);
+        Ok(())
+    }
+
+    /// Adds the header that makes the browser forget the cookie to `response`.
+    pub fn forget(self, response: &mut axum::response::Response) {
+        response
+            .headers_mut()
+            .append(axum::http::header::SET_COOKIE, self.clear());
+    }
+
+    /// The value the browser sent for this cookie, if it sent one. A request may carry several
+    /// `Cookie` headers (HTTP/2 splits them), so all of them are read.
+    #[must_use]
+    pub fn read(self, headers: &axum::http::HeaderMap) -> Option<String> {
+        headers
+            .get_all(axum::http::header::COOKIE)
+            .iter()
+            .filter_map(|line| line.to_str().ok())
+            .flat_map(|line| line.split(';'))
+            .filter_map(|pair| pair.trim().split_once('='))
+            .find(|(name, _)| *name == self.name())
+            .map(|(_, value)| value.to_owned())
+    }
+
     /// The `Set-Cookie` header that makes the browser forget the cookie (sign-out).
     #[must_use]
     pub fn clear(self) -> HeaderValue {
@@ -195,6 +232,29 @@ mod tests {
             text(&Cookie::Session.clear()),
             "__Host-bb_session=; Path=/; Secure; HttpOnly; SameSite=Lax; Max-Age=0"
         );
+    }
+
+    #[test]
+    fn comp_13_the_value_of_a_cookie_is_read_from_all_cookie_headers() {
+        let mut headers = axum::http::HeaderMap::new();
+        headers.append(
+            axum::http::header::COOKIE,
+            HeaderValue::from_static("other=1; __Host-bb_session=abc"),
+        );
+        headers.append(
+            axum::http::header::COOKIE,
+            HeaderValue::from_static("__Host-bb_csrf=def"),
+        );
+        assert_eq!(Cookie::Session.read(&headers).as_deref(), Some("abc"));
+        assert_eq!(Cookie::Csrf.read(&headers).as_deref(), Some("def"));
+        assert_eq!(Cookie::Session.read(&axum::http::HeaderMap::new()), None);
+        // A longer name that only ends the same way is another cookie.
+        let mut other = axum::http::HeaderMap::new();
+        other.append(
+            axum::http::header::COOKIE,
+            HeaderValue::from_static("x__Host-bb_session=abc"),
+        );
+        assert_eq!(Cookie::Session.read(&other), None);
     }
 
     #[test]

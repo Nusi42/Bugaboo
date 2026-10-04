@@ -409,6 +409,8 @@ name = "bb-api"
 version = "0.0.0"
 dependencies = [
  "axum",
+ "bb-app",
+ "bb-auth",
  "bb-core",
  "h2",
  "hyper-util",

@@ -9,7 +9,8 @@
 //! - the client network is counted against the rate limit (`crate::limits`);
 //! - a request has [`TIME_LIMIT`] to finish, which also ends a body that arrives too slowly
 //!   (M1-F06), and a body may be [`BODY_LIMIT_BYTES`] big;
-//! - a request that changes something must come from one of Bugaboo's own pages ([`origin_check`]);
+//! - a request that changes something must come from one of Bugaboo's own pages ([`origin_check`])
+//!   and, when it carries a session, with the token of that session (`auth::csrf_check`);
 //! - every error answer is problem+json with the request ID (`crate::errors`).
 
 use std::sync::Arc;
@@ -31,6 +32,13 @@ use crate::limits::{self, Limits};
 use crate::logging::Scheme;
 use crate::openapi;
 use crate::web::decode_path;
+
+mod auth;
+mod auth_factors;
+mod auth_people;
+mod auth_sign_in;
+
+pub use auth::AuthHandle;
 
 /// The first part of every API address.
 pub(crate) const API_PREFIX: &str = "api";
@@ -94,11 +102,17 @@ async fn get_openapi() -> Response {
         .into_response()
 }
 
-/// Every route of the API with its description.
-pub(crate) fn routes<S: Clone + Send + Sync + 'static>() -> OpenApiRouter<S> {
+/// Every route of the API with its description. `limits` holds the per-network limit for the
+/// routes that try a password, a code or a secret.
+pub(crate) fn routes<S>(limits: &Arc<Limits>) -> OpenApiRouter<S>
+where
+    S: Clone + Send + Sync + 'static,
+    AuthHandle: axum::extract::FromRef<S>,
+{
     OpenApiRouter::with_openapi(openapi::base())
         .routes(routes!(get_status))
         .routes(routes!(get_openapi))
+        .merge(auth::routes(limits))
 }
 
 /// Whether the address belongs to the API. Escapes are decoded first; an address with a
@@ -116,8 +130,10 @@ pub(crate) fn is_api(path: &str) -> bool {
 ///
 /// The layers apply to requests below `/api` only; pages, files and health checks pass through
 /// untouched.
-pub(crate) fn rules(router: Router, limits: Arc<Limits>) -> Router {
+pub(crate) fn rules(router: Router, limits: Arc<Limits>, auth: AuthHandle) -> Router {
     router
+        // Innermost of the checks on changes: the origin is judged first, then the token.
+        .layer(from_fn_with_state(auth, auth::csrf_check))
         .layer(from_fn(origin_check))
         .layer(from_fn(time_limit))
         .layer(from_fn_with_state(limits, limits::limit_requests))
@@ -318,7 +334,11 @@ mod tests {
             .route("/api/v1/echo", post(echo))
             .route("/api/v1/slow", get(slow))
             .route("/slow-page", get(slow));
-        rules(routes, Limits::new(LimitsConfig::default()))
+        rules(
+            routes,
+            Limits::new(LimitsConfig::default()),
+            AuthHandle::none(),
+        )
     }
 
     async fn code_of(response: Response) -> String {

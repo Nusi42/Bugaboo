@@ -6,9 +6,10 @@
 //! - every request to `/api` counts against its **client network**;
 //! - sign-in attempts count against the client network too, with a much smaller limit
 //!   ([`limit_sign_in`], put on the sign-in routes);
-//! - sign-in attempts also count against the **account** they try ([`AccountLimit`]), so many
-//!   addresses cannot take turns on one account. The account is kept only as a keyed hash of
-//!   the lower-case name, never as the name.
+//! - **failed** tries count against the **account** or person they were for
+//!   ([`FailureLimits`]), so many addresses cannot take turns on one account. Only failures
+//!   count and a success clears them, so nobody can lock another person out by merely trying
+//!   their address (M1-F27). The key is kept only as a keyed hash, never as the name.
 //!
 //! The client network is the address [`crate::logging`] works out from the connection and, for a
 //! trusted proxy, its `X-Forwarded-For` entry (never the raw header). IPv6 clients are counted
@@ -28,10 +29,10 @@ use std::net::{IpAddr, Ipv4Addr};
 use std::sync::{Arc, Mutex, PoisonError};
 use std::time::{Duration, Instant};
 
-use axum::extract::{FromRequestParts, Request, State};
-use axum::http::request::Parts;
+use axum::extract::{Request, State};
 use axum::middleware::Next;
 use axum::response::{IntoResponse as _, Response};
+use bb_app::auth::FailureLimit;
 use bb_core::ErrorCode;
 
 use crate::errors::ApiError;
@@ -119,33 +120,25 @@ impl<K: Hash + Eq + Clone> Window<K> {
         }
     }
 
+    fn lock(&self) -> std::sync::MutexGuard<'_, Table<K>> {
+        self.table.lock().unwrap_or_else(PoisonError::into_inner)
+    }
+
     /// Counts one event. `Err` holds the seconds to wait (at least one) when the key is over
     /// the limit.
     fn hit(&self, key: K, now: Instant) -> Result<(), u64> {
-        let mut table = self.table.lock().unwrap_or_else(PoisonError::into_inner);
-        let table = &mut *table;
-        let entries = &mut table.entries;
+        let mut table = self.lock();
         let mut key = key;
-        if entries.len() >= MAX_CLIENTS && !entries.contains_key(&key) {
-            let due = table
-                .last_sweep
-                .is_none_or(|last| now.saturating_duration_since(last) >= SWEEP_EVERY);
-            if due {
-                entries.retain(|_, entry| now.duration_since(entry.started) < PERIOD);
-                table.last_sweep = Some(now);
-                #[cfg(test)]
-                {
-                    table.sweeps += 1;
-                }
-            }
-            if entries.len() >= MAX_CLIENTS {
+        if table.entries.len() >= MAX_CLIENTS && !table.entries.contains_key(&key) {
+            make_room(&mut table, now);
+            if table.entries.len() >= MAX_CLIENTS {
                 match &self.overflow {
                     Overflow::Share(shared) => key = shared.clone(),
                     Overflow::Refuse => return Err(PERIOD.as_secs()),
                 }
             }
         }
-        let entry = entries.entry(key).or_insert(Entry {
+        let entry = table.entries.entry(key).or_insert(Entry {
             started: now,
             count: 0,
         });
@@ -156,12 +149,93 @@ impl<K: Hash + Eq + Clone> Window<K> {
             };
         }
         if entry.count >= self.limit {
-            let wait = PERIOD.saturating_sub(now.duration_since(entry.started));
-            let seconds = wait.as_secs() + u64::from(wait.subsec_nanos() > 0);
-            return Err(seconds.max(1));
+            return Err(seconds_left(entry.started, now));
         }
         entry.count += 1;
         Ok(())
+    }
+
+    /// Whether the key may go on: `Err` holds the seconds to wait when it has used up its
+    /// events in this window. Counts nothing. A new key is refused when the table is full of
+    /// running counters and the window fails closed.
+    fn blocked(&self, key: &K, now: Instant) -> Result<(), u64> {
+        if self.limit == 0 {
+            return Err(PERIOD.as_secs());
+        }
+        let mut table = self.lock();
+        match table.entries.get(key) {
+            Some(entry) if now.duration_since(entry.started) < PERIOD => {
+                if entry.count >= self.limit {
+                    Err(seconds_left(entry.started, now))
+                } else {
+                    Ok(())
+                }
+            }
+            Some(_) => Ok(()),
+            None => {
+                if table.entries.len() >= MAX_CLIENTS {
+                    make_room(&mut table, now);
+                }
+                match (&self.overflow, table.entries.len() >= MAX_CLIENTS) {
+                    (Overflow::Refuse, true) => Err(PERIOD.as_secs()),
+                    _ => Ok(()),
+                }
+            }
+        }
+    }
+
+    /// Counts one failure. Returns `true` when this failure used up the allowance (so the key
+    /// is blocked from now on). A new key is not counted when the table is full of running
+    /// counters; it is refused in [`Self::blocked`] instead.
+    fn fail(&self, key: K, now: Instant) -> bool {
+        let mut table = self.lock();
+        if table.entries.len() >= MAX_CLIENTS && !table.entries.contains_key(&key) {
+            make_room(&mut table, now);
+            if table.entries.len() >= MAX_CLIENTS {
+                return false;
+            }
+        }
+        let entry = table.entries.entry(key).or_insert(Entry {
+            started: now,
+            count: 0,
+        });
+        if now.duration_since(entry.started) >= PERIOD {
+            *entry = Entry {
+                started: now,
+                count: 0,
+            };
+        }
+        entry.count = entry.count.saturating_add(1);
+        entry.count == self.limit
+    }
+
+    /// Forgets the key (the person signed in).
+    fn clear(&self, key: &K) {
+        self.lock().entries.remove(key);
+    }
+}
+
+/// The seconds a key that started its window at `started` still has to wait: at least one.
+fn seconds_left(started: Instant, now: Instant) -> u64 {
+    let wait = PERIOD.saturating_sub(now.duration_since(started));
+    (wait.as_secs() + u64::from(wait.subsec_nanos() > 0)).max(1)
+}
+
+/// Throws out the counters whose window is over, when the table is full. A full table is swept
+/// at most once per [`SWEEP_EVERY`]; counters that are still running are never thrown away.
+fn make_room<K>(table: &mut Table<K>, now: Instant) {
+    let due = table
+        .last_sweep
+        .is_none_or(|last| now.saturating_duration_since(last) >= SWEEP_EVERY);
+    if due {
+        table
+            .entries
+            .retain(|_, entry| now.duration_since(entry.started) < PERIOD);
+        table.last_sweep = Some(now);
+        #[cfg(test)]
+        {
+            table.sweeps += 1;
+        }
     }
 }
 
@@ -169,9 +243,6 @@ impl<K: Hash + Eq + Clone> Window<K> {
 pub struct Limits {
     requests: Window<IpAddr>,
     sign_in_networks: Window<IpAddr>,
-    accounts: Window<u64>,
-    /// Random for each start, so the hash of an account name cannot be computed elsewhere.
-    hasher: RandomState,
 }
 
 impl Limits {
@@ -181,8 +252,6 @@ impl Limits {
         Arc::new(Self {
             requests: Window::new(config.requests_per_minute, Overflow::Share(OVERFLOW_CLIENT)),
             sign_in_networks: Window::new(config.sign_in_attempts_per_minute, Overflow::Refuse),
-            accounts: Window::new(config.sign_in_attempts_per_minute, Overflow::Refuse),
-            hasher: RandomState::new(),
         })
     }
 
@@ -210,20 +279,6 @@ impl Limits {
         self.sign_in_networks
             .hit(network_of(client), now)
             .map_err(too_many)
-    }
-
-    /// Counts one sign-in attempt against `account` (the e-mail address as typed; spelling in
-    /// upper or lower case counts as the same account).
-    ///
-    /// # Errors
-    /// `429` with `Retry-After` when the account is over its limit.
-    pub fn check_account(&self, account: &str) -> Result<(), ApiError> {
-        self.check_account_at(account, Instant::now())
-    }
-
-    fn check_account_at(&self, account: &str, now: Instant) -> Result<(), ApiError> {
-        let key = self.hasher.hash_one(account.trim().to_lowercase());
-        self.accounts.hit(key, now).map_err(too_many)
     }
 }
 
@@ -257,12 +312,11 @@ fn client_of(request: &Request) -> IpAddr {
         .map_or(UNKNOWN_CLIENT, |ClientIp(address)| *address)
 }
 
-/// The middleware of the whole API: counts a request below `/api` against its client network and
-/// hands the limits to the handlers ([`AccountLimit`]). Pages, files and health checks are not
-/// counted.
+/// The middleware of the whole API: counts a request below `/api` against its client network.
+/// Pages, files and health checks are not counted.
 pub(crate) async fn limit_requests(
     State(limits): State<Arc<Limits>>,
-    mut request: Request,
+    request: Request,
     next: Next,
 ) -> Response {
     if !crate::api::is_api(request.uri().path()) {
@@ -271,7 +325,6 @@ pub(crate) async fn limit_requests(
     if let Err(error) = limits.check_request(client_of(&request)) {
         return error.into_response();
     }
-    request.extensions_mut().insert(limits);
     next.run(request).await
 }
 
@@ -288,30 +341,51 @@ pub async fn limit_sign_in(
     next.run(request).await
 }
 
-/// The per-account limit for a sign-in handler: once the handler knows which account is tried,
-/// `account_limit.check(&email)?` counts the attempt.
-pub struct AccountLimit(Arc<Limits>);
+/// The limit on failed tries per account or person, used by the sign-in use cases
+/// (`bb_app::auth::FailureLimit`). Failures are counted in a fixed window; a key that has used up
+/// its failures is refused until the window ends. A table that is full of running counters
+/// refuses new keys (fail closed), like the sign-in windows.
+pub struct FailureLimits {
+    window: Window<u64>,
+    /// Random for each start, so the hash of an account name cannot be computed elsewhere.
+    hasher: RandomState,
+}
 
-impl AccountLimit {
-    /// Counts one attempt against `account`.
-    ///
-    /// # Errors
-    /// `429` with `Retry-After` when the account is over its limit.
-    pub fn check(&self, account: &str) -> Result<(), ApiError> {
-        self.0.check_account(account)
+impl FailureLimits {
+    /// A limit that allows `failures_per_minute` failures per key and minute. `0` refuses every
+    /// key.
+    #[must_use]
+    pub fn new(failures_per_minute: u32) -> Arc<Self> {
+        Arc::new(Self {
+            window: Window::new(failures_per_minute, Overflow::Refuse),
+            hasher: RandomState::new(),
+        })
+    }
+
+    fn key(&self, key: &str) -> u64 {
+        self.hasher.hash_one(key.trim().to_lowercase())
+    }
+
+    fn check_at(&self, key: &str, now: Instant) -> Result<(), u64> {
+        self.window.blocked(&self.key(key), now)
+    }
+
+    fn failed_at(&self, key: &str, now: Instant) -> bool {
+        self.window.fail(self.key(key), now)
     }
 }
 
-impl<S: Send + Sync> FromRequestParts<S> for AccountLimit {
-    type Rejection = ApiError;
+impl FailureLimit for FailureLimits {
+    fn check(&self, key: &str) -> Result<(), u64> {
+        self.check_at(key, Instant::now())
+    }
 
-    async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self, ApiError> {
-        parts
-            .extensions
-            .get::<Arc<Limits>>()
-            .cloned()
-            .map(Self)
-            .ok_or_else(|| ApiError::internal(&"the rate limits are not set up for this route"))
+    fn failed(&self, key: &str) -> bool {
+        self.failed_at(key, Instant::now())
+    }
+
+    fn succeeded(&self, key: &str) {
+        self.window.clear(&self.key(key));
     }
 }
 
@@ -394,14 +468,57 @@ mod tests {
         assert!(limits.check_sign_in_at(client, now).is_err());
         // The general limit is not used up by sign-in.
         limits.check_request_at(client, now).unwrap();
-        // Many networks cannot take turns on one account; spelling does not matter.
-        limits.check_account_at("Ada@Example.test", now).unwrap();
-        limits.check_account_at(" ada@example.test ", now).unwrap();
-        let error = limits
-            .check_account_at("ADA@example.test", now)
+    }
+
+    #[test]
+    fn sec_14_only_failed_tries_count_against_an_account_and_success_clears_them() {
+        let failures = FailureLimits::new(3);
+        let now = Instant::now();
+        // Trying the address without failing never uses anything up (M1-F27).
+        for _ in 0..50 {
+            failures.check_at("ada@example.test", now).unwrap();
+        }
+        // Two failures leave the account open; the third uses up the allowance and says so.
+        assert!(!failures.failed_at("Ada@Example.test", now));
+        assert!(!failures.failed_at(" ada@example.test ", now));
+        failures.check_at("ada@example.test", now).unwrap();
+        assert!(failures.failed_at("ADA@example.test", now));
+        let wait = failures
+            .check_at("ada@example.test", now + Duration::from_secs(20))
             .unwrap_err();
-        assert_eq!(error.code(), ErrorCode::TooManyRequests);
-        limits.check_account_at("bob@example.test", now).unwrap();
+        assert_eq!(wait, 40);
+        // Another account is not affected, and the window ends after a minute.
+        failures.check_at("bob@example.test", now).unwrap();
+        failures
+            .check_at("ada@example.test", now + Duration::from_secs(61))
+            .unwrap();
+    }
+
+    #[test]
+    fn sec_14_a_success_clears_the_failures_of_the_key() {
+        let failures = FailureLimits::new(2);
+        let now = Instant::now();
+        assert!(!failures.failed_at("ada@example.test", now));
+        failures.succeeded("ada@example.test");
+        assert!(!failures.failed_at("ada@example.test", now));
+        failures.check_at("ada@example.test", now).unwrap();
+        assert!(failures.failed_at("ada@example.test", now));
+        assert!(failures.check_at("ada@example.test", now).is_err());
+        failures.succeeded("ada@example.test");
+        failures.check_at("ada@example.test", now).unwrap();
+    }
+
+    #[test]
+    fn sec_14_failures_of_a_full_table_fail_closed_for_new_keys() {
+        let window: Window<u32> = Window::new(5, Overflow::Refuse);
+        let now = Instant::now();
+        fill(&window, now);
+        assert!(window.blocked(&u32::MAX, now).is_err());
+        assert!(window.blocked(&3, now).is_ok());
+        assert!(!window.fail(u32::MAX, now), "not counted, and not stored");
+        window
+            .blocked(&u32::MAX, now + PERIOD + Duration::from_secs(1))
+            .unwrap();
     }
 
     #[test]

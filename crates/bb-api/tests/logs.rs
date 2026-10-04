@@ -2,6 +2,8 @@
 //! can identify a person.
 
 // Dependencies of the library that this test does not use itself (`unused_crate_dependencies`).
+use bb_app as _;
+use bb_auth as _;
 use bb_core as _;
 use h2 as _;
 use hyper_util as _;
@@ -60,6 +62,7 @@ mod logs {
             data_folder: std::env::temp_dir(),
             trusted_proxies: vec![],
             limits: bb_api::LimitsConfig::default(),
+            auth: bb_api::AuthHandle::none(),
         });
         let mut request = Request::get("/users/jane.doe@example.org/profile?name=Jane+Doe")
             .header("authorization", "Bearer secret-token-123")
