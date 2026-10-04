@@ -44,6 +44,7 @@ Server crates are added with the milestones that use them; planned ones are list
 | oxlint-tsgolint | 7.0.2003 | MIT | no | Type-aware rules for oxlint, built on the TypeScript 7 compiler | maintained (2026-10-04) | typescript-eslint type-aware rules (TypeScript 6 only) |
 | oxfmt | 0.71.0 | MIT | no | Formats TypeScript, JSON and CSS (ADR-0014); also covers CSS, so Biome is not needed | maintained (2026-10-04) | Biome (kept as fallback, not installed); Prettier (slower) |
 | stylelint | 17.16.0 | MIT | no | Keeps CSS Modules to design tokens (LINT-CSS, ADR-0010) | maintained (2026-10-04) | Biome CSS lint (no rule for banning raw sizes by property) |
+| @vitejs/plugin-react | 6.1.1 | MIT | no | React support for Vite 8 (Oxc-based JSX transform and fast refresh) | maintained (2026-10-04) | none needed before; Vite alone compiles JSX but gives no fast refresh |
 | html-validate | 11.16.2 | MIT | no | Validates the hand-written HTML pages (LINT-HTML)  | maintained (2026-10-04) | Nu HTML Checker (needs Java); htmlhint (fewer accessibility rules) |
 | @types/node | 26.6.4 | MIT | no | Node types for the Vite, Vitest and Playwright configs | maintained (2026-10-04) | — |
 | @types/react | 19.3.0 | MIT | no | React types | maintained (2026-10-04) | — |

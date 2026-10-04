@@ -33,6 +33,8 @@
     "typescript/no-non-null-assertion": "error",
     "typescript/ban-ts-comment": "error",
     "react/no-danger": "error",
+    // Component files export only components, so hot reload keeps component state.
+    "react/only-export-components": "error",
     // No literal text in JSX children, string expressions or attributes (title, aria-label, alt,
     // placeholder ...): all words come from the message catalog (coding-standards section 4).
     // Only the input type values listed here are not text.
