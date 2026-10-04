@@ -27,6 +27,29 @@ pub enum Level {
     Person,
 }
 
+impl Level {
+    /// The word used when a level is stored.
+    #[must_use]
+    pub const fn code(self) -> &'static str {
+        match self {
+            Self::Organization => "organization",
+            Self::Project => "project",
+            Self::Person => "person",
+        }
+    }
+
+    /// The level stored under `code`.
+    #[must_use]
+    pub fn from_code(code: &str) -> Option<Self> {
+        [Self::Organization, Self::Project, Self::Person]
+            .into_iter()
+            .find(|level| level.code() == code)
+    }
+}
+
+// The three fixed levels.
+impl crate::personal::NotPersonal for Level {}
+
 /// The least privileged group that may change a setting. Administrators can always change it.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum ChangedBy {
@@ -326,6 +349,30 @@ macro_rules! settings {
     };
 }
 pub(crate) use settings;
+
+/// One stored value of a setting, on one level (ADR-0018). The key must be one of the registry
+/// ([`find`]); `bb-store` is the only place that reads or writes these (ARCH-SETTINGS).
+#[derive(Clone, Debug, PartialEq, Eq, crate::personal::Entity)]
+pub struct StoredSetting {
+    /// The key of the setting, as declared in the registry.
+    #[not_personal]
+    pub key: crate::technical::TechnicalName,
+    /// The level the value is set on.
+    #[not_personal]
+    pub level: Level,
+    /// The project or person the value is for; `None` on the organization level.
+    #[not_personal]
+    pub scope: Option<crate::id::EntityId>,
+    /// The value. On the person level it is that person's own choice, so it counts as their data.
+    #[personal(category = "content", basis = "contract")]
+    pub value: SettingValue,
+    /// Whether the value is locked: lower levels cannot override it.
+    #[not_personal]
+    pub locked: bool,
+    /// When it was last changed.
+    #[not_personal]
+    pub updated_at: jiff::Timestamp,
+}
 
 /// The registry entry for `key`, if there is one.
 #[must_use]

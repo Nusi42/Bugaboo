@@ -26,7 +26,9 @@
 ### Secrets and keys
 
 - A **master key** (outside the database) encrypts a key per secret (envelope encryption, XChaCha20-Poly1305). Secrets: mail password, AI keys, OIDC client secrets, webhook signing keys.
-- **Key rotation** is a CLI command and an admin action; old keys decrypt, new keys encrypt.
+- **Where the keys live:** `keys/master.key` in the data folder (created owner-only by the server). One line per key, `<id> <64 hex digits>`, oldest first; the newest key wraps new secrets. The file is made on first start, replaced atomically on a change, and on Unix refused when anybody but its owner can read it. Keys are held in memory as `Zeroizing` bytes and never show in `Debug` output. Enforced by: the key and secret tests of `bb-store` (SEC-16).
+- **Stored form:** each secret has its own random 256-bit key; the value is encrypted with it (24-byte random nonce), and that key is wrapped by the master key (own nonce). The ID of the master key is stored with the secret, and the secret's name (and the key ID) are authenticated data, so a row copied to another name or changed in any byte does not decrypt. Enforced by: the key and secret tests of `bb-store`.
+- **Key rotation** is a CLI command and an admin action (`Database::rotate_master_key`): add a key to the file, wrap every secret's key again with it in one transaction (values are not touched), sign the security log's checkpoint with it, and only then drop old keys that nothing uses. A stop half way leaves a state that still decrypts. Old keys decrypt, new keys encrypt. Enforced by: the rotation tests of `bb-store`.
 - Backups are encrypted with a backup key derived from the master key, or with a separate key the admin keeps.
 
 ### Limits and abuse
@@ -116,6 +118,14 @@ Every change appends a **domain event** in the same transaction: who (actor), ho
 | Live updates | tell open screens that something changed (built last) |
 
 Consumers are idempotent and resume from their last position after a restart.
+
+**In `bb-store`:** `Database::record_change` is the only way to write domain data: it runs the change, appends the event and the outbox entry, and commits all three or none. Outbox positions are handed out from a counter row that the change transaction locks until it commits, so positions become visible in order and a consumer that has seen position 7 cannot miss a 6 that commits later (the price: changes commit one after the other). Each consumer stores the last position it finished (`outbox_done`). Enforced by: the event tests of `bb-store`; ARCH-EVENTS (a command use case in `bb-app` must call `append_event`); ARCH-SQL-EDGE (no other crate may write to the database).
+
+**Background jobs** (ADR-0017) are rows in the `job` table. A worker leases due jobs with one `UPDATE … RETURNING` statement (`FOR UPDATE SKIP LOCKED` on PostgreSQL); a lease that runs out puts the job back, every start counts as an attempt, failures wait 30 seconds doubled each time (at most an hour), and after the last attempt the job goes to the dead-letter list, which an administrator can requeue. Enforced by: the job tests of `bb-store`.
+
+**The security log** (SEC-15) is append-only. Each entry stores the SHA-256 hash of the entry before it, over all its fields in a length-prefixed encoding. After the keep period, whole blocks of 1000 entries are deleted from the start, and a checkpoint is left: the place and hash of the last deleted entry, signed with HMAC-SHA256 under a key derived from the master key, so the remaining entries still verify. The newest entry is never deleted. `verify_security_log` reports the first entry that does not verify (a gap, a broken link, changed content, or a missing or forged checkpoint). Cutting entries off the *end* cannot be seen by the chain itself; the status page shows the head (place and hash) so it can be compared with an earlier note. Network addresses are stored shortened (IPv4 `/24`, IPv6 `/48`). Enforced by: the hash-chain property test (`sec_15_any_changed_row_breaks_the_chain`) and the security-log tests of `bb-store`.
+
+**Storage types:** every whole number is a `BIGINT`, every moment is microseconds since 1970 in a `BIGINT`, IDs are 16-byte blobs and JSON is text, so both databases hand back the same Rust types. SQLite runs in WAL mode with foreign keys on and a busy timeout; every write transaction starts with `BEGIN IMMEDIATE` (one writer at a time). PostgreSQL pools are sized to the number of processors. Every table is the home of an entity with personal-data marks. Enforced by: DATA-MARKS (tables), DATA-MIGRATIONS and ARCH-DB-PARITY (the `migrations` test and every repository test run on both databases).
 
 ## Privacy engineering (ADR-0015)
 

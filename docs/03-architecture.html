@@ -203,7 +203,7 @@
   wasm["bb-wasm"]
   testing["bb-testing&lt;br/&gt;database test harness"]
 
-  server --&gt; api &amp; jobs &amp; store &amp; files &amp; ai &amp; notify &amp; auth &amp; core
+  server --&gt; api &amp; jobs &amp; store &amp; files &amp; ai &amp; notify &amp; auth &amp; app &amp; core
   api --&gt; app &amp; auth &amp; mcp &amp; core
   mcp --&gt; app &amp; ai
   jobs --&gt; app
@@ -214,7 +214,7 @@
   files -. implements ports .-&gt; app
   ai -. implements ports .-&gt; app
   notify -. implements ports .-&gt; app
-  store --&gt; search &amp; policy
+  store --&gt; search &amp; policy &amp; core
   wasm --&gt; search &amp; md
   store -. tests only .-&gt; testing</pre>
 <h4>Dependency rules (checked by <code>cargo xtask check only ARCH-DEPS</code>)</h4>
@@ -248,11 +248,12 @@
 <ol>
 <li>Ask <code>bb-policy</code> whether the actor may do it.</li>
 <li>Load, change and validate inside one transaction.</li>
-<li>Append domain events (same transaction).</li>
+<li>Append domain events (same transaction). A command use case (its input parameter is called <code>cmd</code>) calls <code>ctx.append_event(…)</code>; a query (<code>query</code>) does not. Enforced by: ARCH-EVENTS.</li>
 <li>Return the result through <code>Authorized&lt;T&gt;</code>.</li>
 </ol>
 <h4>bb-store</h4>
-<p>sqlx connection pools, migrations (defined once with the query builder, run on both databases), repositories implementing <code>bb-app</code> ports, the <strong>search compiler</strong> (syntax tree + permission predicates → SQL), full-text search adapters, the event log and outbox, and the job queue tables.</p>
+<p>sqlx connection pools, migrations (defined once with the query builder, run on both databases), repositories implementing <code>bb-app</code> ports, the <strong>search compiler</strong> (syntax tree + permission predicates → SQL), full-text search adapters, the event log and outbox, the job queue tables, the security log (hash chain), stored secrets (envelope encryption) and setting values. It is the only crate that touches a database; it takes the time and the IDs from its caller and gets no clock of its own. Enforced by: ARCH-SQL-EDGE (no other crate may depend on a database library, and no SQL text is built with <code>format!</code>), DATA-MARKS (every table belongs to an entity with personal-data marks), ARCH-SETTINGS (setting values are read and written only in <code>settings.rs</code>).</p>
+<p><code>bb-app</code> also holds the real clock and secure random source (<code>context::SystemClock</code>, <code>context::SystemIds</code>), because <code>bb-core</code> does no I/O; <code>bb-server</code> passes them to the use cases and the store.</p>
 <h4>bb-testing</h4>
 <p>Test-support crate, used only as a <strong>dev dependency</strong> (<code>[dev-dependencies]</code>) and never shipped (ARCH-DEPS fails on any other kind of dependency on it). <code>each_database</code> runs one async test body against every database named in <code>BB_TEST_DATABASES</code> (<code>sqlite</code>, <code>postgres</code>; default <code>sqlite</code>), each with a brand-new empty database that is removed afterwards (also when the test panics), hands the body a typed pool (<code>Pool::Sqlite</code> or <code>Pool::Postgres</code>), and records what ran for ARCH-DB-PARITY. It depends on no other Bugaboo crate. How it is wired to <code>cargo xtask db</code> and <code>cargo xtask ci</code> is in <span title="11-testing.md#database-tests in the repository">testing</span>.</p>
 <h4>bb-api</h4>
@@ -509,7 +510,9 @@ tls/         the generated certificate and its key</code></pre>
 <h4>Secrets and keys</h4>
 <ul>
 <li>A <strong>master key</strong> (outside the database) encrypts a key per secret (envelope encryption, XChaCha20-Poly1305). Secrets: mail password, AI keys, OIDC client secrets, webhook signing keys.</li>
-<li><strong>Key rotation</strong> is a CLI command and an admin action; old keys decrypt, new keys encrypt.</li>
+<li><strong>Where the keys live:</strong> <code>keys/master.key</code> in the data folder (created owner-only by the server). One line per key, <code>&lt;id&gt; &lt;64 hex digits&gt;</code>, oldest first; the newest key wraps new secrets. The file is made on first start, replaced atomically on a change, and on Unix refused when anybody but its owner can read it. Keys are held in memory as <code>Zeroizing</code> bytes and never show in <code>Debug</code> output. Enforced by: the key and secret tests of <code>bb-store</code> (SEC-16).</li>
+<li><strong>Stored form:</strong> each secret has its own random 256-bit key; the value is encrypted with it (24-byte random nonce), and that key is wrapped by the master key (own nonce). The ID of the master key is stored with the secret, and the secret's name (and the key ID) are authenticated data, so a row copied to another name or changed in any byte does not decrypt. Enforced by: the key and secret tests of <code>bb-store</code>.</li>
+<li><strong>Key rotation</strong> is a CLI command and an admin action (<code>Database::rotate_master_key</code>): add a key to the file, wrap every secret's key again with it in one transaction (values are not touched), sign the security log's checkpoint with it, and only then drop old keys that nothing uses. A stop half way leaves a state that still decrypts. Old keys decrypt, new keys encrypt. Enforced by: the rotation tests of <code>bb-store</code>.</li>
 <li>Backups are encrypted with a backup key derived from the master key, or with a separate key the admin keeps.</li>
 </ul>
 <h4>Limits and abuse</h4>
@@ -589,6 +592,10 @@ tls/         the generated certificate and its key</code></pre>
 </tbody></table>
 </div>
 <p>Consumers are idempotent and resume from their last position after a restart.</p>
+<p><strong>In <code>bb-store</code>:</strong> <code>Database::record_change</code> is the only way to write domain data: it runs the change, appends the event and the outbox entry, and commits all three or none. Outbox positions are handed out from a counter row that the change transaction locks until it commits, so positions become visible in order and a consumer that has seen position 7 cannot miss a 6 that commits later (the price: changes commit one after the other). Each consumer stores the last position it finished (<code>outbox_done</code>). Enforced by: the event tests of <code>bb-store</code>; ARCH-EVENTS (a command use case in <code>bb-app</code> must call <code>append_event</code>); ARCH-SQL-EDGE (no other crate may write to the database).</p>
+<p><strong>Background jobs</strong> (ADR-0017) are rows in the <code>job</code> table. A worker leases due jobs with one <code>UPDATE … RETURNING</code> statement (<code>FOR UPDATE SKIP LOCKED</code> on PostgreSQL); a lease that runs out puts the job back, every start counts as an attempt, failures wait 30 seconds doubled each time (at most an hour), and after the last attempt the job goes to the dead-letter list, which an administrator can requeue. Enforced by: the job tests of <code>bb-store</code>.</p>
+<p><strong>The security log</strong> (SEC-15) is append-only. Each entry stores the SHA-256 hash of the entry before it, over all its fields in a length-prefixed encoding. After the keep period, whole blocks of 1000 entries are deleted from the start, and a checkpoint is left: the place and hash of the last deleted entry, signed with HMAC-SHA256 under a key derived from the master key, so the remaining entries still verify. The newest entry is never deleted. <code>verify_security_log</code> reports the first entry that does not verify (a gap, a broken link, changed content, or a missing or forged checkpoint). Cutting entries off the <em>end</em> cannot be seen by the chain itself; the status page shows the head (place and hash) so it can be compared with an earlier note. Network addresses are stored shortened (IPv4 <code>/24</code>, IPv6 <code>/48</code>). Enforced by: the hash-chain property test (<code>sec_15_any_changed_row_breaks_the_chain</code>) and the security-log tests of <code>bb-store</code>.</p>
+<p><strong>Storage types:</strong> every whole number is a <code>BIGINT</code>, every moment is microseconds since 1970 in a <code>BIGINT</code>, IDs are 16-byte blobs and JSON is text, so both databases hand back the same Rust types. SQLite runs in WAL mode with foreign keys on and a busy timeout; every write transaction starts with <code>BEGIN IMMEDIATE</code> (one writer at a time). PostgreSQL pools are sized to the number of processors. Every table is the home of an entity with personal-data marks. Enforced by: DATA-MARKS (tables), DATA-MIGRATIONS and ARCH-DB-PARITY (the <code>migrations</code> test and every repository test run on both databases).</p>
 <h3 id="s7-5"><button class="sec" data-sec>§7.5</button>Privacy engineering (ADR-0015)</h3>
 <ul>
 <li>Every stored field is <strong>marked</strong> in the entity definition: personal data or not, category (contact, employee time, content, technical), and the legal basis note. Unmarked fields fail the build.</li>
@@ -893,13 +900,13 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 <tr><td><code>ARCH-AUTHZ-ONLY</code></td><td>Authorized&lt;T&gt; is only created inside bb-policy</td><td>ADR-0004</td><td>ast-grep + private constructor (compile error)</td><td>edit · commit · ci</td></tr>
 <tr><td><code>ARCH-API-OUT</code></td><td>API and MCP handlers return only Authorized views, never domain or database types</td><td>ADR-0004</td><td>trait bound on responses + ast-grep</td><td>edit · commit · ci</td></tr>
 <tr><td><code>ARCH-HTTP-EDGE</code></td><td>Only bb-api and bb-mcp use HTTP crates; only bb-server wires adapters</td><td>architecture §4</td><td>xtask (cargo metadata)</td><td>push · ci</td></tr>
-<tr><td><code>ARCH-SQL-EDGE</code></td><td>Only bb-store touches the database; no SQL text built with format! anywhere</td><td>ADR-0003, SEC-17</td><td>xtask (cargo metadata) + ast-grep</td><td>edit · commit · ci</td></tr>
-<tr><td><code>ARCH-EVENTS</code></td><td>Every command use case appends a domain event</td><td>ADR-0007</td><td>generated test: runs every command against fakes and asserts an event</td><td>ci</td></tr>
+<tr><td><code>ARCH-SQL-EDGE</code></td><td>Only bb-store touches the database; no SQL text built with format! anywhere</td><td>ADR-0003, SEC-17</td><td>xtask (cargo metadata for dependencies; source scan for sqlx calls and SQL built as text)</td><td>edit · commit · ci</td></tr>
+<tr><td><code>ARCH-EVENTS</code></td><td>Every command use case appends a domain event</td><td>ADR-0007</td><td>xtask (every command use case calls append_event); the generated test that runs each command against the fakes follows with the first use cases (M1-F17)</td><td>edit · commit · ci</td></tr>
 <tr><td><code>ARCH-VERSIONED</code></td><td>Every change endpoint requires a version (If-Match) and long-text endpoints an edit-lock token</td><td>ADR-0019</td><td>xtask (reads generated OpenAPI)</td><td>push · ci</td></tr>
 <tr><td><code>ARCH-LEAN</code></td><td>Every list endpoint supports fields=, cursor paging and a page-size cap</td><td>PERF-02</td><td>xtask (reads generated OpenAPI)</td><td>push · ci</td></tr>
 <tr><td><code>ARCH-PERMS</code></td><td>Every endpoint and MCP tool declares its permission; every permission is used and explained</td><td>SEC-01, ADR-0004</td><td>xtask (OpenAPI x-permission + permission catalogue)</td><td>push · ci</td></tr>
 <tr><td><code>ARCH-ERRORS</code></td><td>Every error code has a message key; API errors are problem+json with a code</td><td>architecture §7 (Errors)</td><td>xtask (reads the code table with syn and the catalog; error answers built from a literal text are found only as (StatusCode::X, "text"), the rest of the API part comes with WP-06)</td><td>push · ci</td></tr>
-<tr><td><code>ARCH-SETTINGS</code></td><td>Settings are only read and written through the settings registry</td><td>ADR-0018</td><td>xtask (declarations and key literals; the storage part comes with the store)</td><td>edit · commit · ci</td></tr>
+<tr><td><code>ARCH-SETTINGS</code></td><td>Settings are only read and written through the settings registry</td><td>ADR-0018</td><td>xtask (declarations and key literals; the table of setting values is named in the settings repository only)</td><td>edit · commit · ci</td></tr>
 <tr><td><code>ARCH-AI-TOOLS</code></td><td>AI tools exist only in the tool registry and never reach people-ranking, assignment or working-hours use cases</td><td>ADR-0013, COMP-10</td><td>xtask (registry allow list) + ast-grep</td><td>edit · commit · ci</td></tr>
 <tr><td><code>ARCH-WEB-API</code></td><td>The browser app calls the server only through @bugaboo/api-client (no raw fetch)</td><td>ADR-0008</td><td>oxlint no-restricted-globals/imports + ast-grep</td><td>edit · commit · ci</td></tr>
 <tr><td><code>ARCH-WEB-FEATURES</code></td><td>Browser feature folders import each other only through their public index</td><td>architecture §4 (browser app)</td><td>oxlint import rules</td><td>edit · commit · ci</td></tr>

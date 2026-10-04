@@ -5,7 +5,15 @@
 
 crate::entities! {
     crate::event::DomainEvent,
+    crate::job::Job,
+    crate::migration::MigrationRecord,
+    crate::outbox::OutboxEntry,
+    crate::outbox::OutboxPosition,
     crate::person::Person,
+    crate::secret::StoredSecret,
+    crate::security_log::SecurityLogCheckpoint,
+    crate::security_log::SecurityLogEntry,
+    crate::settings::StoredSetting,
 }
 
 #[cfg(test)]

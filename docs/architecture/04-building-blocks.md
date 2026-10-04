@@ -60,7 +60,7 @@ flowchart TB
   wasm["bb-wasm"]
   testing["bb-testing<br/>database test harness"]
 
-  server --> api & jobs & store & files & ai & notify & auth & core
+  server --> api & jobs & store & files & ai & notify & auth & app & core
   api --> app & auth & mcp & core
   mcp --> app & ai
   jobs --> app
@@ -71,7 +71,7 @@ flowchart TB
   files -. implements ports .-> app
   ai -. implements ports .-> app
   notify -. implements ports .-> app
-  store --> search & policy
+  store --> search & policy & core
   wasm --> search & md
   store -. tests only .-> testing
 ```
@@ -117,12 +117,14 @@ pub async fn change_status(
 
 1. Ask `bb-policy` whether the actor may do it.
 2. Load, change and validate inside one transaction.
-3. Append domain events (same transaction).
+3. Append domain events (same transaction). A command use case (its input parameter is called `cmd`) calls `ctx.append_event(…)`; a query (`query`) does not. Enforced by: ARCH-EVENTS.
 4. Return the result through `Authorized<T>`.
 
 ### bb-store
 
-sqlx connection pools, migrations (defined once with the query builder, run on both databases), repositories implementing `bb-app` ports, the **search compiler** (syntax tree + permission predicates → SQL), full-text search adapters, the event log and outbox, and the job queue tables.
+sqlx connection pools, migrations (defined once with the query builder, run on both databases), repositories implementing `bb-app` ports, the **search compiler** (syntax tree + permission predicates → SQL), full-text search adapters, the event log and outbox, the job queue tables, the security log (hash chain), stored secrets (envelope encryption) and setting values. It is the only crate that touches a database; it takes the time and the IDs from its caller and gets no clock of its own. Enforced by: ARCH-SQL-EDGE (no other crate may depend on a database library, and no SQL text is built with `format!`), DATA-MARKS (every table belongs to an entity with personal-data marks), ARCH-SETTINGS (setting values are read and written only in `settings.rs`).
+
+`bb-app` also holds the real clock and secure random source (`context::SystemClock`, `context::SystemIds`), because `bb-core` does no I/O; `bb-server` passes them to the use cases and the store.
 
 ### bb-testing
 
