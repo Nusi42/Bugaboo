@@ -35,6 +35,22 @@ const CONFIGS: Selection = Selection {
     ],
 };
 
+/// Rust and TOML files that could name a port. This check's own list of default ports is not
+/// scanned.
+const OTHER: Selection = Selection {
+    folders: &["crates", "xtask", "tools", ".cargo"],
+    files: &[
+        "Cargo.toml",
+        "deny.toml",
+        "clippy.toml",
+        "rustfmt.toml",
+        "rust-toolchain.toml",
+    ],
+    endings: &[".rs", ".toml"],
+};
+
+const THIS_FILE: &str = "xtask/src/checks/dev_ports.rs";
+
 pub(crate) struct DevPorts;
 
 impl Check for DevPorts {
@@ -52,6 +68,12 @@ impl Check for DevPorts {
         for path in CONFIGS.pick(context) {
             let text = fs::read_to_string(root.join(&path))?;
             findings.extend(check_config(&path, &text));
+        }
+        for path in OTHER.pick(context) {
+            if path != THIS_FILE {
+                let text = fs::read_to_string(root.join(&path))?;
+                findings.extend(default_port_findings(&path, &text));
+            }
         }
         Ok(findings)
     }
@@ -95,17 +117,7 @@ fn check_ports_file(text: &str) -> Vec<Finding> {
 }
 
 fn check_config(path: &str, text: &str) -> Vec<Finding> {
-    let mut findings = Vec::new();
-    for number in numbers(text) {
-        if DEFAULT_PORTS.contains(&number) {
-            findings.push(Finding::at(
-                path,
-                format!(
-                    "{number} is a default framework port. Read the port from {PORTS_FILE} instead."
-                ),
-            ));
-        }
-    }
+    let mut findings = default_port_findings(path, text);
     if path.ends_with("package.json") {
         if text.contains("--port") {
             findings.push(Finding::at(
@@ -115,33 +127,72 @@ fn check_config(path: &str, text: &str) -> Vec<Finding> {
         }
         return findings;
     }
-    let port_keys = text.matches("port:").count();
+    let mut problem = |message: String| findings.push(Finding::at(path, message));
+    if !text.contains("readPorts(") {
+        problem(format!(
+            "This config must read its ports from {PORTS_FILE} with `readPorts()`."
+        ));
+    }
     if has_literal_port(text) {
-        findings.push(Finding::at(
-            path,
-            format!(
-                "A port is typed as a number. Use `readPorts()` so it comes from {PORTS_FILE}."
-            ),
+        problem(format!(
+            "A port is typed as a number. Use `readPorts()` so it comes from {PORTS_FILE}."
         ));
     }
-    if port_keys > 0 && !text.contains("readPorts(") {
-        findings.push(Finding::at(
-            path,
-            format!("This config sets a port but does not read {PORTS_FILE}; use `readPorts()`."),
-        ));
-    }
+    let strict = text.matches("strictPort: true").count();
     if path.contains("playwright.config") {
         if text.contains("webServer") && !text.contains("reuseExistingServer: false") {
+            problem(
+                "Set `reuseExistingServer: false`, so a busy port fails loudly (strict port)."
+                    .to_owned(),
+            );
+        }
+    } else {
+        let blocks: &[&str] = if path.contains("vite.config") {
+            &["server", "preview"]
+        } else {
+            &["api"]
+        };
+        for block in blocks {
+            if !text.contains(&format!("{block}: {{")) {
+                problem(format!(
+                    "Add `{block}: {{ port: ports.<name>, strictPort: true }}`; every dev server needs its port from {PORTS_FILE}."
+                ));
+            }
+        }
+        if strict < blocks.len() || text.matches("port:").count() > strict {
+            problem(
+                "Every `port:` needs `strictPort: true` next to it, so a busy port fails loudly."
+                    .to_owned(),
+            );
+        }
+    }
+    findings
+}
+
+/// Lines that name a default framework port. Only lines that talk about ports or addresses
+/// count, so an unrelated number such as `timeout: 3000` is fine.
+fn default_port_findings(path: &str, text: &str) -> Vec<Finding> {
+    let mut findings = Vec::new();
+    for (index, line) in text.lines().enumerate() {
+        let lower = line.to_ascii_lowercase();
+        let about_ports = lower.contains("port")
+            || lower.contains("://")
+            || lower.contains("localhost")
+            || lower.contains("127.0.0.1");
+        if !about_ports {
+            continue;
+        }
+        if let Some(number) = numbers(line)
+            .into_iter()
+            .find(|n| DEFAULT_PORTS.contains(n))
+        {
             findings.push(Finding::at(
-                path,
-                "Set `reuseExistingServer: false`, so a busy port fails loudly (strict port).",
+                format!("{path}:{}", index + 1),
+                format!(
+                    "{number} is a default framework port. Read the port from {PORTS_FILE} instead."
+                ),
             ));
         }
-    } else if port_keys > text.matches("strictPort: true").count() {
-        findings.push(Finding::at(
-            path,
-            "Every `port:` needs `strictPort: true` next to it, so a busy port fails loudly.",
-        ));
     }
     findings
 }
@@ -171,7 +222,10 @@ mod tests {
     use super::*;
     use crate::repo::Repo;
 
-    const GOOD: &str = "import { readPorts } from './ports.ts';\nconst ports = readPorts();\nexport default { server: { port: ports.web, strictPort: true } };\n";
+    const GOOD: &str = "import { readPorts } from './ports.ts';
+const ports = readPorts();
+export default { server: { port: ports.web, strictPort: true }, preview: { port: ports.webPreview, strictPort: true } };
+";
 
     #[test]
     fn good_example() {
@@ -181,22 +235,67 @@ mod tests {
         assert!(check_ports_file(&ports).is_empty());
     }
 
-    #[test]
-    fn default_and_literal_ports_fail() {
-        let bad = "export default { server: { port: 5173 } };\n";
-        let messages: String = check_config("web/app/vite.config.ts", bad)
+    fn messages(path: &str, text: &str) -> String {
+        check_config(path, text)
             .iter()
             .map(|finding| finding.message.clone())
-            .collect();
-        assert!(messages.contains("default framework port"));
-        assert!(messages.contains("typed as a number"));
-        assert!(messages.contains("strictPort"));
+            .collect()
+    }
+
+    #[test]
+    fn default_and_literal_ports_fail() {
+        let bad = "export default { server: { port: 5173 } };
+";
+        let text = messages("web/app/vite.config.ts", bad);
+        assert!(text.contains("default framework port"));
+        assert!(text.contains("typed as a number"));
+        assert!(text.contains("strictPort"));
+        assert!(text.contains("readPorts"));
+    }
+
+    #[test]
+    fn missing_preview_block_fails() {
+        let no_preview = "import { readPorts } from './p.ts';
+const ports = readPorts();
+export default { server: { port: ports.web, strictPort: true } };
+";
+        assert!(messages("web/app/vite.config.ts", no_preview).contains("preview"));
+    }
+
+    #[test]
+    fn config_without_read_ports_fails() {
+        assert!(
+            messages(
+                "web/app/vitest.config.ts",
+                "export default {};
+"
+            )
+            .contains("readPorts")
+        );
     }
 
     #[test]
     fn port_that_is_not_strict_fails() {
         let loose = GOOD.replace(", strictPort: true", "");
         assert!(!check_config("web/app/vite.config.ts", &loose).is_empty());
+    }
+
+    #[test]
+    fn unrelated_numbers_are_not_ports() {
+        let ok = format!(
+            "{GOOD}const timeout = 3000;
+"
+        );
+        assert!(check_config("web/app/vite.config.ts", &ok).is_empty());
+    }
+
+    #[test]
+    fn rust_and_toml_default_ports_fail() {
+        assert!(
+            !default_port_findings("crates/bb-server/src/main.rs", "let port = 8080;").is_empty()
+        );
+        assert!(!default_port_findings("x.toml", "url = \"http://localhost:3000\"").is_empty());
+        assert!(default_port_findings("x.rs", "let retries = 3000;").is_empty());
     }
 
     #[test]

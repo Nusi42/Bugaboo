@@ -602,7 +602,7 @@ title = "No default framework ports; every port comes from tools/dev/ports.json 
 rule = "ADR-0023"
 tool = "xtask (scans vite, vitest and playwright configs)"
 when = ["edit", "commit", "ci"]
-files = ["web/**/vite.config.*", "web/**/vitest.config.*", "web/**/playwright.config.*", "tools/dev/ports.json"]
+files = ["web/**/vite.config.*", "web/**/vitest.config.*", "web/**/playwright.config.*", "tools/dev/ports.json", "package.json", "crates/**/*.rs", "**/*.toml"]
 status = "active"
 
 [[check]]
