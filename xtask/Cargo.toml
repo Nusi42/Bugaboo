@@ -11,12 +11,12 @@ anyhow = { workspace = true }
 clap = { workspace = true }
 ctrlc = { workspace = true }
 flate2 = "1.1.10"
-getrandom = "0.4.3"
+getrandom = { workspace = true }
 globset = { workspace = true }
 pulldown-cmark = { version = "0.13.4", default-features = false, features = ["html"] }
 serde = { workspace = true }
 serde_json = { workspace = true, features = ["preserve_order"] }
-sha2 = "0.11.0"
+sha2 = { workspace = true }
 syn = { workspace = true, features = ["full", "parsing", "derive"] }
 tar = "0.4.46"
 toml = { workspace = true }

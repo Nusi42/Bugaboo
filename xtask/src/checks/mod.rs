@@ -7,9 +7,11 @@
 pub(crate) mod arch_db_parity;
 mod arch_deps;
 mod arch_errors;
+mod arch_events;
 mod arch_map_sync;
 mod arch_no_unsafe;
 mod arch_settings;
+mod arch_sql_edge;
 mod arch_wasm;
 mod build_location;
 mod data_logs;
@@ -120,6 +122,8 @@ pub(crate) fn registry() -> Vec<Box<dyn Check>> {
         Box::new(arch_no_unsafe::ArchNoUnsafe),
         Box::new(arch_errors::ArchErrors),
         Box::new(arch_settings::ArchSettings),
+        Box::new(arch_sql_edge::ArchSqlEdge),
+        Box::new(arch_events::ArchEvents),
         Box::new(arch_wasm::ArchWasm),
         Box::new(data_marks::DataMarks),
         Box::new(arch_db_parity::ArchDbParity),
