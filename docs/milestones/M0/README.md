@@ -1,5 +1,7 @@
 # M0 — Foundation: work packages
 
+Status: **all work packages merged**. Accepted review points: [follow-ups](follow-ups.md).
+
 Goal and exit demo: see [04-milestones.md](../../04-milestones.md) (M0). Every package follows the Definition of done there and the rules in [`CLAUDE.md`](../../../CLAUDE.md): **0 warnings, 0 errors, no disabled useful rules.**
 
 | WP | Name | Who | Folder / branch | Depends on |

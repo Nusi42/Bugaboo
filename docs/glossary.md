@@ -144,7 +144,7 @@ Rules:
 | **Project settings**     | Settings of one project                                            | project admin                      |
 | **Organization settings**| Settings for the whole Bugaboo server                              | admin console, instance settings   |
 | **Layout**               | Which fields appear where: *issue layout*, *new-issue form*, *card layout* | screen, screen scheme      |
-| **Theme**                | Colors and fonts. *Match my device*, *Light*, *Dark*               | skin                               |
+| **Theme**                | Colors and fonts. Built in: *Daylight* and *Paper* (light), *Dusk* and *Midnight* (dark). *Match my device* uses your light or dark choice depending on the device setting | skin |
 | **Assistant**            | The built-in AI helper                                             | copilot, agent (in UI)             |
 | **Suggestions**          | Values the assistant proposes, shown for you to accept or reject   | triage                             |
 | **AI apps (MCP)**        | Outside AI tools connected through MCP                             | —                                  |

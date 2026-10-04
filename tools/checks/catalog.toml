@@ -70,7 +70,7 @@ status = "active"
 # ───────────── Linting ─────────────
 [[check]]
 id = "LINT-RUST"
-title = "Clippy finds no warnings (selected pedantic lints on)"
+title = "Clippy finds no warnings (selected pedantic lints on), for the Windows and the Linux code"
 rule = "coding-standards §3"
 tool = "cargo clippy -D warnings"
 when = ["push", "ci"]

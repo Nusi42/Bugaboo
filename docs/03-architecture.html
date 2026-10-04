@@ -832,7 +832,7 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 <tr><td><code>FMT-CSS</code></td><td>CSS is formatted</td><td>coding-standards §4</td><td>oxfmt (formats CSS too, so the Biome fallback is not needed)</td><td>edit · commit · ci</td></tr>
 <tr><td><code>FMT-TOML</code></td><td>TOML files are formatted</td><td>coding-standards §2</td><td>taplo</td><td>edit · commit · ci</td></tr>
 <tr><td><code>FMT-MD</code></td><td>Markdown docs follow one style</td><td>coding-standards §2</td><td>rumdl</td><td>edit · commit · ci</td></tr>
-<tr><td><code>LINT-RUST</code></td><td>Clippy finds no warnings (selected pedantic lints on)</td><td>coding-standards §3</td><td>cargo clippy -D warnings</td><td>push · ci</td></tr>
+<tr><td><code>LINT-RUST</code></td><td>Clippy finds no warnings (selected pedantic lints on), for the Windows and the Linux code</td><td>coding-standards §3</td><td>cargo clippy -D warnings</td><td>push · ci</td></tr>
 <tr><td><code>LINT-TS</code></td><td>oxlint finds no problems, including type-aware rules (TypeScript 7)</td><td>coding-standards §4</td><td>oxlint + oxlint-tsgolint</td><td>edit · commit · ci</td></tr>
 <tr><td><code>LINT-CSS</code></td><td>CSS uses only token variables; no raw colors, sizes or !important</td><td>ADR-0010</td><td>stylelint (CSS Modules)</td><td>edit · commit · ci</td></tr>
 <tr><td><code>LINT-HTML</code></td><td>Hand-written HTML pages are valid and accessible</td><td>coding-standards §7</td><td>html-validate (recommended and a11y presets)</td><td>edit · commit · ci</td></tr>
