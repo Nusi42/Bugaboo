@@ -15,9 +15,9 @@ AI agents implement Bugaboo. Written rules drift unless machines enforce them. O
   - every check has a failing and a passing example;
   - every file type in the repository is covered by a formatter or linter, so a new kind of file forces a new check;
   - a new crate, package or folder needs a module-map entry first;
-  - every "must" rule in the docs names its check or says "review";
+  - every "must" rule in the docs names its check or says "review" with a reason (META-RULE-TRACE);
   - all three callers use the same lists;
-  - suppressions need a reason and an issue ID, and may not quietly grow;
+  - suppressions need a reason and an issue ID, and may not quietly grow (META-SUPPRESS);
   - edit- and commit-time checks stay fast.
 - **Agents** get edit-time checks after every file change, so mistakes are fixed while the context is fresh.
 

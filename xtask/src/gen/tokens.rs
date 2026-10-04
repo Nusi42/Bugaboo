@@ -14,6 +14,13 @@ const TS_HEADER: &str =
 const CSS_OUTPUTS: [&str; 2] = ["web/packages/ui/src/tokens.css", "docs/design/tokens.css"];
 const TS_OUTPUT: &str = "web/packages/ui/src/tokens.ts";
 
+/// The paths [`generate`] writes.
+pub(crate) fn output_paths() -> Vec<&'static str> {
+    let mut paths = CSS_OUTPUTS.to_vec();
+    paths.push(TS_OUTPUT);
+    paths
+}
+
 pub(crate) fn run(repo: &Repo) -> anyhow::Result<Vec<String>> {
     let tokens = TokenFile::load(repo)?;
     write_all(repo, &generate(&tokens))

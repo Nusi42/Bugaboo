@@ -53,7 +53,7 @@ Every piece of knowledge has exactly one authoritative home. Everything else is
   needs a reason.
 - **Errors are values:** domain errors are typed and handled. Never silently swallow one.
 - **No dead code:** no commented-out code, unused exports or unused dependencies.
-- **No orphan TODOs:** every `TODO` must reference an issue (`TODO(BUG-123): …`).
+- **No orphan TODOs:** every `TODO` must reference an issue (`TODO(BUG-123): …`). Enforced by: LINT-HYGIENE.
 - **Feature traceability:** tests name the feature ID they cover (e.g. `sec_06_…`).
 - **Commits:** follow Conventional Commits (`feat(qry): …`, `fix(sec): …`), and make each commit a single logical change.
 
@@ -67,7 +67,7 @@ Every piece of knowledge has exactly one authoritative home. Everything else is
 - Use newtypes for IDs and units (`IssueId`, `Minutes`), never bare `i64` or `String`.
 - **Authorization is in the type system:** data can only leave the domain layer wrapped in
   a type that proves the policy engine checked it. Code that bypasses the check must not
-  compile. (Details in the architecture doc.)
+  compile. (Details in the architecture doc.) Enforced by: ARCH-AUTHZ-ONLY.
 - SQL only through the query builder or compile-time checked queries. Never build SQL by
   string formatting.
 
@@ -83,7 +83,7 @@ Every piece of knowledge has exactly one authoritative home. Everything else is
 - Function components and hooks only. Named exports. Feature-folder structure.
 - Formatted by **oxfmt**; linted by **oxlint** with type-aware **tsgolint** rules; type-checked by `tsc` (TypeScript 7).
 - **No hard-coded user-facing text:** JSX text, `aria-*`, `title`, `alt` and `placeholder`
-  values must come from the message catalog.
+  values must come from the message catalog. Enforced by: TXT-LITERAL.
 - **No hard-coded styles:** no hex/rgb colors, pixel magic numbers or inline `style=` for
   theming. Only design tokens.
 - No `dangerouslySetInnerHTML`, `eval`, `new Function`, or inline event-handler strings

@@ -1,0 +1,47 @@
+# Files that no formatter or linter covers, each with the reason (META-COVERAGE, architecture §10).
+# An entry is an exact path or a path glob. Generated files need no entry: they are in the
+# generator's output list (`docs::generated_paths`) and DOC-GENERATED keeps them up to date. An entry that matches no file fails.
+
+[[exempt]]
+path = "Cargo.lock"
+reason = "Written by Cargo; never edited by hand."
+
+[[exempt]]
+path = ".gitignore"
+reason = "A plain list of patterns; no formatter exists, and review reads every change."
+
+[[exempt]]
+path = ".gitattributes"
+reason = "A plain list of patterns; no formatter exists, and review reads every change."
+
+[[exempt]]
+path = ".codegraph/.gitignore"
+reason = "Written by the CodeGraph tool; not part of Bugaboo."
+
+[[exempt]]
+path = "tools/checks/suppressions.txt"
+reason = "Written by `cargo xtask suppressions` and compared with the code by META-SUPPRESS."
+
+[[exempt]]
+path = ".editorconfig"
+reason = "A plain list of editor settings; no formatter exists, and review reads every change."
+
+[[exempt]]
+path = ".node-version"
+reason = "One line with the Node version, read by CI and checked by the tool installer."
+
+[[exempt]]
+path = ".npmrc"
+reason = "A few npm settings; no formatter exists, and review reads every change."
+
+[[exempt]]
+path = "lefthook.yml"
+reason = "Checked by META-WIRING, which allows only the exact xtask commands."
+
+[[exempt]]
+path = ".claude/settings.json"
+reason = "Checked by META-WIRING, which allows only the exact hook command and matcher."
+
+[[exempt]]
+path = "tools/checks/fixtures/**"
+reason = "Deliberately bad and good examples of checks; only those checks look at them."

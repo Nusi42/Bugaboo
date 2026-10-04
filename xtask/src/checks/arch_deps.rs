@@ -4,16 +4,15 @@
 //! `docs/architecture/04-building-blocks.md`, so the document is the single source:
 //! `a --> b` and `a -.-> b` mean "a may depend on b", `a --> b & c` lists several targets.
 
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeSet;
 use std::fs;
 
-use anyhow::{Context as _, bail};
+use anyhow::Context as _;
 
 use super::{Check, Context, Finding};
+use crate::docs::building_blocks::{Map, parse_module_map};
+use crate::docs::source::BUILDING_BLOCKS as MAP_DOC;
 use crate::metadata::{self, Package};
-
-/// The document with the module map, relative to the repository root.
-const MAP_DOC: &str = "docs/architecture/04-building-blocks.md";
 
 /// Tooling crates that live in the workspace but are not part of the module map.
 const OUTSIDE_THE_MAP: &[&str] = &["xtask"];
@@ -29,64 +28,9 @@ impl Check for ArchDeps {
         let root = context.repo.root();
         let text = fs::read_to_string(root.join(MAP_DOC))
             .with_context(|| format!("could not read {MAP_DOC}"))?;
-        let map = parse_map(&text)?;
+        let map = parse_module_map(&text)?;
         Ok(evaluate(&metadata::load(root)?, &map))
     }
-}
-
-/// Crate name -> the crates it may depend on.
-type Map = BTreeMap<String, BTreeSet<String>>;
-
-/// Reads the first Mermaid flowchart that follows the "Module map" heading.
-fn parse_map(markdown: &str) -> anyhow::Result<Map> {
-    let after = markdown
-        .split_once("## Module map")
-        .map(|(_, rest)| rest)
-        .with_context(|| format!("{MAP_DOC} has no \"Module map\" heading"))?;
-    let block = after
-        .split_once("```mermaid")
-        .and_then(|(_, rest)| rest.split_once("```"))
-        .map(|(block, _)| block)
-        .with_context(|| format!("{MAP_DOC} has no Mermaid flowchart under \"Module map\""))?;
-
-    let mut names = BTreeMap::new(); // box id -> crate name
-    let mut edges = Vec::new();
-    for line in block.lines().map(str::trim) {
-        if let Some((id, rest)) = line.split_once("[\"") {
-            let label = rest.split("\"]").next().unwrap_or("");
-            let name = label.split("<br/>").next().unwrap_or(label);
-            names.insert(id.trim().to_owned(), name.to_owned());
-        } else if let Some((left, right)) = split_edge(line) {
-            edges.push((left.to_owned(), right.to_owned()));
-        }
-    }
-    let mut map: Map = names
-        .values()
-        .map(|name| (name.clone(), BTreeSet::new()))
-        .collect();
-    for (left, right) in &edges {
-        for from in left.split('&').map(str::trim) {
-            for to in right.split('&').map(str::trim) {
-                let (Some(from), Some(to)) = (names.get(from), names.get(to)) else {
-                    bail!(
-                        "{MAP_DOC}: the edge `{left} -> {right}` uses a box that is not declared"
-                    );
-                };
-                map.entry(from.clone()).or_default().insert(to.clone());
-            }
-        }
-    }
-    Ok(map)
-}
-
-/// Splits `a --> b`, `a -.-> b` and `a -. text .-> b` into the two sides.
-fn split_edge(line: &str) -> Option<(&str, &str)> {
-    if let Some(at) = line.find("-->") {
-        return Some((&line[..at], &line[at + 3..]));
-    }
-    let at = line.find("-.")?;
-    let end = line[at + 1..].find(".->")? + at + 1;
-    Some((&line[..at], &line[end + 3..]))
 }
 
 fn evaluate(packages: &[Package], map: &Map) -> Vec<Finding> {
@@ -136,6 +80,7 @@ fn evaluate(packages: &[Package], map: &Map) -> Vec<Finding> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::docs::building_blocks::parse_module_map as parse_map;
     use crate::metadata::fixtures::package;
 
     const MAP: &str = "## Module map\n\n```mermaid\nflowchart TB\n  app[\"bb-app<br/>use cases\"]\n  \

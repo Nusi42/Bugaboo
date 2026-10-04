@@ -301,7 +301,7 @@ export default { server: { port: ports.web, strictPort: true }, preview: { port:
     }
 
     #[test]
-    fn default_and_literal_ports_fail() {
+    fn bad_example_default_and_literal_ports_fail() {
         let bad = "export default { server: { port: 5173 } };
 ";
         let text = messages("web/app/vite.config.ts", bad);

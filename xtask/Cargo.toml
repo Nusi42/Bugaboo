@@ -12,6 +12,7 @@ clap = { workspace = true }
 ctrlc = { workspace = true }
 flate2 = "1.1.10"
 globset = { workspace = true }
+pulldown-cmark = { version = "0.13.4", default-features = false, features = ["html"] }
 serde = { workspace = true }
 serde_json = { workspace = true, features = ["preserve_order"] }
 sha2 = "0.11.0"

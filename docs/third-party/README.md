@@ -14,7 +14,6 @@ Columns:
 
 | Package | Version | License | Ships? | Purpose | Health | Alternatives |
 |---------|---------|---------|--------|---------|--------|--------------|
-| marked | 18.0.14 | MIT | no | Turns the Markdown docs into commentable HTML pages (`tools/docs-html`). Temporary until `cargo xtask docs` uses bb-markdown. | maintained (2026-10-04) | python-markdown (needs Python on every machine); markdown-it (equivalent, more plugins we don't need) |
 
 ## Rust
 
@@ -24,6 +23,7 @@ Columns:
 | clap | 4.6.7 | MIT OR Apache-2.0 | yes (bb-server), no (xtask) | Command line of `cargo xtask` | maintained (2026-10-04) | argh, pico-args (less help text, fewer checks) |
 | flate2 | 1.1.10 | MIT OR Apache-2.0 | no (xtask) | Unpacking the `.tar.gz` archives of downloaded tools in `cargo xtask setup` | maintained (2026-10-04) | system `tar` (differs between Windows and Linux) |
 | globset | 0.4.20 | Unlicense OR MIT | no (xtask) | Matching changed files against the catalogue's `files` patterns | maintained (2026-10-04) | glob (no sets, no `{a,b}`), wildmatch |
+| pulldown-cmark | 0.13.4 | MIT | no (xtask) | Turns the Markdown docs into the commentable HTML pages (`cargo xtask docs`); built without its command-line feature | maintained (2026-10-04) | comrak (heavier, many extensions we don't need); markdown-rs (less used); bb-markdown (the product renderer; xtask must not depend on product crates) |
 | serde | 1.0.229 | MIT OR Apache-2.0 | no (xtask) | Reading the check catalogue and tool list | maintained (2026-10-04) | hand-written parsing (error-prone) |
 | serde_json | 1.0.151 | MIT OR Apache-2.0 | no (xtask) | Reading `cargo metadata`, `package.json` / `package-lock.json`, design/tokens.json, tools/dev/ports.json, the message catalog and the Claude Code hook input; `preserve_order` keeps file order in generated output | maintained (2026-10-04) | hand-written parsing (error-prone) |
 | sha2 | 0.11.0 | MIT OR Apache-2.0 | no (xtask) | Verifying the sha256 of every downloaded tool before it is unpacked | maintained (2026-10-04) | ring (large, C and assembly code); calling `certutil` / `sha256sum` (differs per system) |

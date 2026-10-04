@@ -10,6 +10,7 @@ mod catalog;
 mod checks;
 mod ci;
 mod dev;
+mod docs;
 #[path = "gen/mod.rs"]
 mod generate;
 mod hook;
@@ -58,6 +59,10 @@ enum Command {
         #[command(subcommand)]
         event: HookEvent,
     },
+    /// Build the commentable HTML pages from the Markdown sources.
+    Docs,
+    /// Rewrite the counted list of suppressions (META-SUPPRESS); the change needs approval.
+    Suppressions,
     /// List every check in the catalogue and whether it is implemented.
     List,
     /// Install the pinned external tools into `.tools/` (tools/dev/tools.toml).
@@ -125,6 +130,17 @@ fn run() -> anyhow::Result<ExitCode> {
     let catalog = catalog::Catalog::load(&repo)?;
     let registry = checks::registry();
     match cli.command {
+        Command::Docs => {
+            for path in docs::write(&repo, &catalog)? {
+                output::wrote(&path);
+            }
+            Ok(ExitCode::SUCCESS)
+        }
+        Command::Suppressions => {
+            checks::meta_suppress::write_list(&repo)?;
+            output::wrote(checks::meta_suppress::LIST_PATH);
+            Ok(ExitCode::SUCCESS)
+        }
         Command::List => {
             output::list(&catalog, &registry);
             Ok(ExitCode::SUCCESS)

@@ -65,11 +65,7 @@ impl Step {
 
 /// Builds the browser app (`web/app/dist`).
 pub(crate) fn web_build(root: &Path) -> Step {
-    Step::web(
-        root,
-        "build the browser app",
-        &["run", "build", "-w", WEB_APP],
-    )
+    Step::web(root, "build the browser app", &["run", "build"])
 }
 
 /// Builds the `bugaboo` program. Cargo reports where it put it, so `build.target-dir` in
