@@ -284,14 +284,14 @@
 
 <header class="top"><div class="top-in">
   <div class="brand"><svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="17" r="11" style="fill:var(--accent)"/><path d="M16 6v22" style="stroke:var(--bg-canvas)" stroke-width="2"/><circle cx="11.5" cy="14" r="2.2" style="fill:var(--bg-canvas)"/><circle cx="20.5" cy="14" r="2.2" style="fill:var(--bg-canvas)"/><circle cx="12" cy="21.5" r="1.8" style="fill:var(--bg-canvas)"/><circle cx="20" cy="21.5" r="1.8" style="fill:var(--bg-canvas)"/><path d="M12 6.5 9 3M20 6.5 23 3" style="stroke:var(--accent)" stroke-width="2" stroke-linecap="round" fill="none"/></svg>Bugaboo <small>UX design</small></div>
-  <label class="look-pick" for="look">Theme
+  <label class="look-pick">Theme
     <select id="look"><option value="system">Match my device</option><option value="daylight">Daylight</option><option value="paper">Paper</option><option value="dusk">Dusk</option><option value="midnight">Midnight</option></select></label>
 </div></header>
 
 <div class="layout">
   <nav class="toc" aria-label="Contents"><div class="toc-h">Contents</div><div id="toc"></div></nav>
   <main class="doc">
-    <details class="toc-phone"><summary>Contents</summary><nav id="toc-phone" class="toc" style="display:block;position:static;max-height:none;padding:0"></nav></details>
+    <details class="toc-phone"><summary>Contents</summary><nav id="toc-phone" class="toc" aria-label="Page contents" style="display:block;position:static;max-height:none;padding:0"></nav></details>
 
     <h1>Bugaboo UX design</h1>
     <div class="status-line"><span class="pill st-done">Accepted</span><span>Phase 2 of 5</span><span>·</span><span>2026-10-04</span></div>
@@ -302,7 +302,7 @@
     <div class="target"><b>Design target:</b> people <i>less</i> technical than the average person. If someone who has never used a bug tracker can't figure out a screen without help, the screen is wrong. Experts get speed through shortcuts and Advanced search, but never at the cost of simplicity for everyone else.</div>
 
     <!-- ================= 1 ================= -->
-    <h2 id="s1"><button class="sec" data-sec>§1</button>UX principles</h2>
+    <h2 id="s1"><button type="button" class="sec" data-sec>§1</button>UX principles</h2>
     <p>The numbers matter: other sections refer to them (for example "principle 6").</p>
     <ol class="principles">
       <li><b>Plain words.</b> Every label, button and message uses everyday language from the glossary. No jargon, no abbreviations, and no names copied from other products.</li>
@@ -320,7 +320,7 @@
     </ol>
 
     <!-- ================= 2 ================= -->
-    <h2 id="s2"><button class="sec" data-sec>§2</button>Structure</h2>
+    <h2 id="s2"><button type="button" class="sec" data-sec>§2</button>Structure</h2>
     <ul class="tree">
       <li><span class="lbl">Bugaboo</span>
         <ul>
@@ -343,7 +343,7 @@
         </ul></li>
     </ul>
 
-    <h3 id="s2-1"><button class="sec" data-sec>§2.1</button>Addresses (URLs)</h3>
+    <h3 id="s2-1"><button type="button" class="sec" data-sec>§2.1</button>Addresses (URLs)</h3>
     <p>Readable, stable and shareable.</p>
     <div class="tbl-wrap"><table class="dtable"><thead><tr><th>Address</th><th>Screen</th></tr></thead><tbody>
       <tr><td><code>/</code></td><td>Home</td></tr>
@@ -360,9 +360,9 @@
     <p>Opening an address you have no access to shows the same <i>"Not found"</i> page as an address that doesn't exist. Hidden issues, documents and projects are never revealed.</p>
 
     <!-- ================= 3 ================= -->
-    <h2 id="s3"><button class="sec" data-sec>§3</button>Layout</h2>
+    <h2 id="s3"><button type="button" class="sec" data-sec>§3</button>Layout</h2>
 
-    <h3 id="s3-1"><button class="sec" data-sec>§3.1</button>Computer (1280 px and wider)</h3>
+    <h3 id="s3-1"><button type="button" class="sec" data-sec>§3.1</button>Computer (1280 px and wider)</h3>
     <div class="demo"><div class="frame"><div class="frame-cap">Computer</div><div class="frame-body"><div class="scr app3">
       <div class="sb">
         <div class="ttl">Bugaboo</div>
@@ -380,8 +380,8 @@
       </div>
       <div class="mainc">
         <div class="tb"><span class="crumb">ACME › <b>Website issues</b></span>
-          <div class="seg" style="margin-left:auto"><button aria-pressed="true">List</button><button>Board</button><button>Timeline</button><button>Calendar</button><button>Map</button></div></div>
-        <div class="sbar"><span class="chip"><button><b>Project:</b> Website</button></span><span class="chip"><button><b>Status:</b> not Done</button><span class="x"><svg class="ico"><use href="#i-x"/></svg></span></span><span class="chip add">+ Add filter</span></div>
+          <div class="seg" style="margin-left:auto"><button type="button" aria-pressed="true">List</button><button type="button">Board</button><button type="button">Timeline</button><button type="button">Calendar</button><button type="button">Map</button></div></div>
+        <div class="sbar"><span class="chip"><button type="button"><b>Project:</b> Website</button></span><span class="chip"><button type="button"><b>Status:</b> not Done</button><span class="x"><svg class="ico"><use href="#i-x"/></svg></span></span><span class="chip add">+ Add filter</span></div>
         <div class="r"><span class="type bug"><svg class="ico"><use href="#i-bug"/></svg></span><span class="key">WEB-139</span><span class="t">App crashes when saving a long comment</span><span class="pill st-ns">Open</span></div>
         <div class="r sel"><span class="type bug"><svg class="ico"><use href="#i-bug"/></svg></span><span class="key">WEB-142</span><span class="t">Login fails after password reset</span><span class="pill st-ip">In progress</span></div>
         <div class="r"><span class="type feature"><svg class="ico"><use href="#i-feature"/></svg></span><span class="key">WEB-141</span><span class="t">Sign in with a passkey</span><span class="pill st-ip">In progress</span></div>
@@ -399,16 +399,16 @@
       <li><b>Assistant:</b> an <i>Assistant</i> button in the top bar opens a panel on the right. If the side panel is also open, the two share the space as tabs.</li>
     </ul>
 
-    <h3 id="s3-2"><button class="sec" data-sec>§3.2</button>Tablet (768–1279 px)</h3>
+    <h3 id="s3-2"><button type="button" class="sec" data-sec>§3.2</button>Tablet (768–1279 px)</h3>
     <ul>
       <li>The sidebar slides in from a <i>Menu</i> button.</li>
       <li>Turned sideways, list and side panel sit next to each other. Upright, the issue opens over the list as a full-height sheet with a clear <i>Back</i> button.</li>
     </ul>
 
-    <h3 id="s3-3"><button class="sec" data-sec>§3.3</button>Phone (narrower than 768 px)</h3>
+    <h3 id="s3-3"><button type="button" class="sec" data-sec>§3.3</button>Phone (narrower than 768 px)</h3>
     <div class="demo"><div class="frame phone"><div class="frame-cap">Phone</div><div class="frame-body"><div class="scr">
       <div class="ph-top"><svg class="ico"><use href="#i-back"/></svg>Back<span style="flex:1;text-align:center">Website issues</span><svg class="ico"><use href="#i-more"/></svg></div>
-      <div class="sbar" style="flex-wrap:nowrap;overflow:hidden"><span class="chip" style="flex:none"><button>Not done</button><span class="x"><svg class="ico"><use href="#i-x"/></svg></span></span><span class="chip" style="flex:none"><button>Mine</button><span class="x"><svg class="ico"><use href="#i-x"/></svg></span></span><span class="chip add" style="flex:none">+ Filter</span></div>
+      <div class="sbar" style="flex-wrap:nowrap;overflow:hidden"><span class="chip" style="flex:none"><button type="button">Not done</button><span class="x"><svg class="ico"><use href="#i-x"/></svg></span></span><span class="chip" style="flex:none"><button type="button">Mine</button><span class="x"><svg class="ico"><use href="#i-x"/></svg></span></span><span class="chip add" style="flex:none">+ Filter</span></div>
       <div class="ph-body">
         <div class="lrow"><span class="key">WEB-142</span><div class="t">Login fails after password reset</div><div class="m"><span class="pill st-ip">In progress</span><span class="prio High"><svg class="ico"><use href="#i-up"/></svg>High</span><span>Ana · 2 days ago</span></div></div>
         <div class="lrow"><span class="key">WEB-139</span><div class="t">App crashes when saving a long comment</div><div class="m"><span class="pill st-ns">Open</span><span class="prio Critical"><svg class="ico"><use href="#i-up2"/></svg>Critical</span><span>Ben</span></div></div>
@@ -429,7 +429,7 @@
         <li>Settings work on phones too. The workflow and layout editors switch to their simple list form.</li>
       </ul></div></div>
 
-    <h3 id="s3-4"><button class="sec" data-sec>§3.4</button>Two ways to show an open issue</h3>
+    <h3 id="s3-4"><button type="button" class="sec" data-sec>§3.4</button>Two ways to show an open issue</h3>
     <p>Descriptions and comments need room to read and write. The <b>focus view</b> is the default; the <b>side panel view</b> stays available for people who mostly skim lists.</p>
     <div class="demo"><div class="frame"><div class="frame-cap">Focus view (default) · computer</div><div class="frame-body"><div class="scr fv">
       <div class="fv-icons"><span class="fv-ic on"><svg class="ico"><use href="#i-search"/></svg></span><span class="fv-ic"><svg class="ico"><use href="#i-home"/></svg></span><span class="fv-ic"><svg class="ico"><use href="#i-bell"/></svg></span><span class="fv-ic"><svg class="ico"><use href="#i-clock"/></svg></span><span class="fv-ic"><svg class="ico"><use href="#i-folder"/></svg></span></div>
@@ -457,9 +457,9 @@
     </ul>
 
     <!-- ================= 4 ================= -->
-    <h2 id="s4"><button class="sec" data-sec>§4</button>Key screens</h2>
+    <h2 id="s4"><button type="button" class="sec" data-sec>§4</button>Key screens</h2>
 
-    <h3 id="s4-1"><button class="sec" data-sec>§4.1</button>Home</h3>
+    <h3 id="s4-1"><button type="button" class="sec" data-sec>§4.1</button>Home</h3>
     <div class="demo"><div class="frame"><div class="frame-cap">Computer · first weeks</div><div class="frame-body"><div class="scr">
       <div class="tb"><b style="font-size:16px">Good morning, Ana</b><span class="muted">Sunday, October 4</span></div>
       <div class="checklist"><b style="flex-basis:100%">Getting started</b><span><span class="okmark">✓</span> Create your first issue</span><span><span class="okmark">✓</span> Invite people</span><span class="btn sm">Pick your theme</span><span class="btn sm ghost">Hide this</span></div>
@@ -485,7 +485,7 @@
     </ul>
     <p>Each block is a saved search underneath. <i>Customize</i> lets people reorder, remove or add blocks. On the <b>first visit</b>, a short checklist with big buttons (<i>Create your first issue</i>, <i>Invite people</i>, <i>Pick your theme</i>) helps people start. It disappears once done or hidden.</p>
 
-    <h3 id="s4-2"><button class="sec" data-sec>§4.2</button>Issue list</h3>
+    <h3 id="s4-2"><button type="button" class="sec" data-sec>§4.2</button>Issue list</h3>
     <div class="demo"><div class="frame"><div class="frame-cap">Computer · two issues ticked</div><div class="frame-body"><div class="scr">
       <div class="r hd"><span style="width:18px"></span><span style="width:80px">Issue</span><span class="t">Title</span><span style="width:90px">Status</span><span style="width:80px">Priority</span><span style="width:90px">Assigned to</span></div>
       <div class="r sel"><input type="checkbox" class="cb" checked aria-label="Select WEB-139"><span class="key" style="width:80px">WEB-139</span><span class="t">App crashes when saving a long comment</span><span style="width:90px"><span class="pill st-ns">Open</span></span><span class="prio Critical" style="width:80px"><svg class="ico"><use href="#i-up2"/></svg>Critical</span><span style="width:90px" class="who"><span class="av c2">B</span>Ben</span></div>
@@ -503,10 +503,10 @@
       <li><b>Spacing:</b> <i>Comfortable</i> (default, two lines per issue) or <i>Compact</i> (one line).</li>
     </ul>
 
-    <h3 id="s4-3"><button class="sec" data-sec>§4.3</button>Search bar: Simple and Advanced <span class="ids">QRY</span></h3>
+    <h3 id="s4-3"><button type="button" class="sec" data-sec>§4.3</button>Search bar: Simple and Advanced <span class="ids">QRY</span></h3>
     <p>One search bar sits above every list, board, timeline, calendar and map.</p>
     <div class="demo"><div class="frame"><div class="frame-cap">Simple search (default)</div><div class="frame-body"><div class="scr">
-      <div class="sbar"><span class="chip"><button><b>Project:</b> Website</button></span><span class="chip"><button><b>Status:</b> not Done</button><span class="x"><svg class="ico"><use href="#i-x"/></svg></span></span><span class="chip"><button><b>Assigned to:</b> me</button><span class="x"><svg class="ico"><use href="#i-x"/></svg></span></span><span class="chip"><button><b>Any of:</b> Bug, label crash</button><span class="x"><svg class="ico"><use href="#i-x"/></svg></span></span><span class="chip raw"><button>changed in last 7 days</button><span class="x"><svg class="ico"><use href="#i-x"/></svg></span></span><span class="chip add">+ Add filter</span>
+      <div class="sbar"><span class="chip"><button type="button"><b>Project:</b> Website</button></span><span class="chip"><button type="button"><b>Status:</b> not Done</button><span class="x"><svg class="ico"><use href="#i-x"/></svg></span></span><span class="chip"><button type="button"><b>Assigned to:</b> me</button><span class="x"><svg class="ico"><use href="#i-x"/></svg></span></span><span class="chip"><button type="button"><b>Any of:</b> Bug, label crash</button><span class="x"><svg class="ico"><use href="#i-x"/></svg></span></span><span class="chip raw"><button type="button">changed in last 7 days</button><span class="x"><svg class="ico"><use href="#i-x"/></svg></span></span><span class="chip add">+ Add filter</span>
         <span style="margin-left:auto;display:flex;gap:6px"><span class="btn ghost sm"><svg class="ico"><use href="#i-spark"/></svg>Ask</span><span class="btn ghost sm">Advanced</span><span class="btn sm"><svg class="ico"><use href="#i-bookmark"/></svg>Save search</span></span></div>
     </div></div></div></div>
     <ul>
@@ -521,7 +521,7 @@ sort by priority, highest first</div>
       <div class="errline"><svg class="ico"><use href="#i-x"/></svg>There is no field called "prio". Did you mean "priority"?</div>
     </div></div></div>
     <div class="frame narrow"><div class="frame-cap">Ask in your own words (assistant)</div><div class="frame-body"><div class="scr" style="padding:12px;display:flex;flex-direction:column;gap:8px">
-      <div class="field"><input value="bugs Ana fixed last week" aria-label="Ask in your own words" readonly></div>
+      <div class="field"><input type="text" value="bugs Ana fixed last week" aria-label="Ask in your own words" readonly></div>
       <div class="ask-res"><span class="ai-l"><svg class="ico"><use href="#i-spark"/></svg>Suggested by the assistant</span><code>type is Bug and status is Done and assignedTo is Ana and changed in last 7 days</code><span class="btn sm primary">Use this search</span><span class="btn sm">Edit first</span></div>
     </div></div></div></div>
     <ul>
@@ -532,7 +532,7 @@ sort by priority, highest first</div>
       <li><b>Saving:</b> <i>Save search</i> stores the filters together with how results are shown (columns, grouping, board, timeline, calendar or map). <i>Share</i> lists only the groups and projects you are allowed to share with.</li>
     </ul>
 
-    <h3 id="s4-4"><button class="sec" data-sec>§4.4</button>Issue page <span class="ids">ISS-04</span></h3>
+    <h3 id="s4-4"><button type="button" class="sec" data-sec>§4.4</button>Issue page <span class="ids">ISS-04</span></h3>
     <div class="demo"><div class="frame"><div class="frame-cap">Computer · full page</div><div class="frame-body"><div class="scr" style="display:grid;grid-template-columns:minmax(0,1fr) 220px">
       <div style="padding:14px;display:flex;flex-direction:column;gap:12px;min-width:0">
         <div style="display:flex;gap:6px;align-items:center"><span class="type bug"><svg class="ico"><use href="#i-bug"/></svg>Bug</span><span class="key">WEB-142</span><span style="margin-left:auto" class="btn ghost sm"><svg class="ico"><use href="#i-spark"/></svg>Ask</span><span class="btn ghost sm"><svg class="ico"><use href="#i-more"/></svg></span></div>
@@ -550,7 +550,7 @@ sort by priority, highest first</div>
           </div>
           <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap"><span class="btn sm"><svg class="ico"><use href="#i-plus"/></svg>Add relation</span><span class="btn sm"><svg class="ico"><use href="#i-map"/></svg>Show relation map</span></div></div>
         <div><div class="sh">Activity</div>
-          <div class="tabs" role="tablist"><button aria-selected="true">Everything</button><button>Comments</button><button>Changes</button><button>Time</button></div>
+          <div class="tabs" role="tablist"><button type="button" aria-selected="true">Everything</button><button type="button">Comments</button><button type="button">Changes</button><button type="button">Time</button></div>
           <div style="display:flex;gap:8px"><span class="av c2">B</span><div class="bubble"><b>Ben</b> · 10 min ago<br>@Ana can you check the reset e-mail link? 14 customers have reported this since Friday.</div></div></div>
       </div>
       <div style="border-left:1px solid var(--border);padding:14px 12px;display:flex;flex-direction:column;gap:10px">
@@ -627,15 +627,15 @@ sort by priority, highest first</div>
     </ul>
     <div class="demo"><div class="frame"><div class="frame-cap">Add relation · three small steps</div><div class="frame-body"><div class="scr" style="padding:12px"><div class="flow">
       <div class="step"><span>1 · Pick the kind</span><div class="pop-demo"><div class="h">WEB-142 …</div><div class="it on">blocks …</div><div class="it">is blocked by …</div><div class="it">is a duplicate of …</div><div class="it">causes …</div><div class="it">is caused by …</div><div class="it">is related to …</div></div></div>
-      <div class="step"><span>2 · Find the issue</span><div class="pop-demo"><div class="h">WEB-142 blocks …</div><input value="release notes" aria-label="Find an issue by number or title" readonly><div class="it on"><span class="key">WEB-147</span>Write the release notes for 2.4</div><div class="it"><span class="key">WEB-133</span>Release notes template</div></div></div>
+      <div class="step"><span>2 · Find the issue</span><div class="pop-demo"><div class="h">WEB-142 blocks …</div><input type="text" value="release notes" aria-label="Find an issue by number or title" readonly><div class="it on"><span class="key">WEB-147</span>Write the release notes for 2.4</div><div class="it"><span class="key">WEB-133</span>Release notes template</div></div></div>
       <div class="step"><span>3 · Done, with Undo</span><div class="toast-demo">WEB-142 now blocks WEB-147. <u>Undo</u></div><div class="muted" style="font-size:12px">The relation also shows on WEB-147 as "is blocked by WEB-142", and both histories record it.</div></div>
     </div></div></div></div></div>
 
-    <h3 id="s4-5"><button class="sec" data-sec>§4.5</button>New issue</h3>
+    <h3 id="s4-5"><button type="button" class="sec" data-sec>§4.5</button>New issue</h3>
     <div class="demo"><div class="frame narrow"><div class="frame-cap">Dialog (full screen on phones)</div><div class="frame-body"><div class="scr" style="padding:6px 10px">
       <div class="dialog-demo" style="margin:8px auto"><div class="dh">New issue</div><div class="db">
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div class="field"><label>Project</label><select><option>Website</option></select></div><div class="field"><label>Type</label><select><option>Bug</option></select></div></div>
-        <div class="field"><label>Title <span class="req">(required)</span></label><input placeholder="Short summary, e.g. “Save button does nothing”"></div>
+        <div class="field"><label>Title <span class="req">(required)</span></label><input type="text" placeholder="Short summary, e.g. “Save button does nothing”"></div>
         <div class="field"><label>Description</label><textarea placeholder="What happened? What did you expect?"></textarea></div>
         <span><span class="btn sm"><svg class="ico"><use href="#i-spark"/></svg>Write it up for me</span></span>
         <span class="subtle" style="font-size:11px">Your draft is kept if you close this window.</span></div>
@@ -650,7 +650,7 @@ sort by priority, highest first</div>
       <li>Buttons: <i>Create</i> and <i>Create and start another</i>.</li>
     </ul>
 
-    <h3 id="s4-6"><button class="sec" data-sec>§4.6</button>Board <span class="ids">PLAN-06</span></h3>
+    <h3 id="s4-6"><button type="button" class="sec" data-sec>§4.6</button>Board <span class="ids">PLAN-06</span></h3>
     <div class="demo"><div class="frame"><div class="frame-cap">Computer · dragging WEB-139</div><div class="frame-body"><div class="scr"><div class="board">
       <div class="col"><div class="col-h"><span class="pill st-ns">Open</span><span class="lim">2</span></div>
         <div class="card drag"><div class="m"><span class="key">WEB-139</span><span class="btn sm ghost" style="margin-left:auto">Move to …</span></div><div class="t">App crashes when saving a long comment</div><div class="m"><span class="prio Critical"><svg class="ico"><use href="#i-up2"/></svg>Critical</span><span class="av c2">B</span></div></div>
@@ -670,7 +670,7 @@ sort by priority, highest first</div>
       <li>Cards show the issue ID, title and up to 4 fields (<i>Customize → Card</i>).</li>
     </ul>
 
-    <h3 id="s4-7"><button class="sec" data-sec>§4.7</button>Timeline (Gantt chart) <span class="ids">PLAN-01…05, PLAN-08</span></h3>
+    <h3 id="s4-7"><button type="button" class="sec" data-sec>§4.7</button>Timeline (Gantt chart) <span class="ids">PLAN-01…05, PLAN-08</span></h3>
     <div class="demo"><div class="frame"><div class="frame-cap">Computer · weeks</div><div class="frame-body"><div class="scr"><div class="tl">
       <div class="hdr">Issue</div><div class="hdr wk"><span>Sep 28</span><span>Oct 5</span><span>Oct 12</span><span>Oct 19</span><span>Oct 26</span></div>
       <div class="nm" style="font-weight:700;background:var(--bg-surface)"><svg class="ico"><use href="#i-goal"/></svg>Goal: New login experience</div><div class="ln"><div class="today" style="left:17%"></div><div class="bar goal" style="left:3%;width:91%"></div></div>
@@ -691,7 +691,7 @@ sort by priority, highest first</div>
       <li>Restricted issues are left out completely: no empty bars and no arrows to something you can't see (PLAN-08).</li>
     </ul>
 
-    <h3 id="s4-8"><button class="sec" data-sec>§4.8</button>Documents <span class="ids">DOC</span></h3>
+    <h3 id="s4-8"><button type="button" class="sec" data-sec>§4.8</button>Documents <span class="ids">DOC</span></h3>
     <div class="demo"><div class="frame"><div class="frame-cap">Computer</div><div class="frame-body"><div class="scr docs3">
       <div class="sb"><div class="ni"><svg class="ico"><use href="#i-search"/></svg>Find</div><div class="ni"><svg class="ico"><use href="#i-folder"/></svg><b>Specs</b></div><div class="ni on" style="padding-left:20px">Login flow</div><div class="ni" style="padding-left:20px">Search</div><div class="ni"><svg class="ico"><use href="#i-folder"/></svg><b>How-tos</b></div><div class="ni"><svg class="ico"><use href="#i-folder"/></svg><b>Files</b></div><div class="ni" style="padding-left:20px;font-size:11.5px">wireframes.pdf<span class="lockb"><svg class="ico" style="width:12px;height:12px"><use href="#i-lock"/></svg>Ben</span></div><div class="ni" style="color:var(--accent-fg)">+ New</div></div>
       <div class="doc-page"><div class="muted" style="font-size:11px">Specs › Login flow · Version 7 · changed by Ana 2 days ago</div><h5>Login flow</h5>
@@ -708,7 +708,7 @@ sort by priority, highest first</div>
       <li><b>Phone:</b> the folder list is the first screen; a page opens full screen, and contents, related issues and versions sit behind an info button.</li>
     </ul>
 
-    <h3 id="s4-9"><button class="sec" data-sec>§4.9</button>Time and working hours <span class="ids">TIME, PRIV-09</span></h3>
+    <h3 id="s4-9"><button type="button" class="sec" data-sec>§4.9</button>Time and working hours <span class="ids">TIME, PRIV-09</span></h3>
     <p>Bugaboo records two different things, and keeps them apart on purpose:</p>
     <ul>
       <li><b>Working hours:</b> when your work day started and ended, and your breaks. German law requires employers to record this for every working day.</li>
@@ -722,7 +722,7 @@ sort by priority, highest first</div>
     <div class="frame narrow" style="flex-basis:360px"><div class="frame-cap">Stopping the timer</div><div class="frame-body"><div class="scr"><div class="dialog-demo" style="margin:10px auto"><div class="dh">Stop timer on WEB-142</div><div class="db">
       <div style="font-size:12.5px">You worked <b>42 min</b> on "Login fails after password reset".</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div class="field"><label>Activity</label><select><option>Development</option></select></div><div class="field"><label>Cost center</label><select><option>4100 Product development</option></select></div></div>
-      <div class="field"><label>What did you do? <span class="req">(optional)</span></label><input value="Found the token check" readonly></div>
+      <div class="field"><label>What did you do? <span class="req">(optional)</span></label><input type="text" value="Found the token check" readonly></div>
       <div class="muted" style="font-size:11px">Activity and cost center come from the issue. Change them here if this time was different.</div></div>
       <div class="df"><span class="btn sm danger">Throw away</span><span class="btn sm primary">Save time</span></div></div></div></div></div></div>
 
@@ -763,7 +763,7 @@ sort by priority, highest first</div>
       <li><b>Closed months</b> (1.0): once a month is closed, changes need a reason.</li>
     </ul>
 
-    <h3 id="s4-10"><button class="sec" data-sec>§4.10</button>Dashboards <span class="ids">CFG-03</span></h3>
+    <h3 id="s4-10"><button type="button" class="sec" data-sec>§4.10</button>Dashboards <span class="ids">CFG-03</span></h3>
     <div class="demo"><div class="frame narrow"><div class="frame-cap">One box: "Open bugs by priority"</div><div class="frame-body"><div class="scr">
       <div class="box-h">Open bugs by priority<span class="muted">Website</span></div>
       <div class="bars">
@@ -778,14 +778,14 @@ sort by priority, highest first</div>
       <li>Phones show the boxes stacked in one column.</li>
     </ul>
 
-    <h3 id="s4-11"><button class="sec" data-sec>§4.11</button>Notifications <span class="ids">NTF-01</span></h3>
+    <h3 id="s4-11"><button type="button" class="sec" data-sec>§4.11</button>Notifications <span class="ids">NTF-01</span></h3>
     <ul>
       <li>Grouped by issue or document, newest first: <i>"WEB-142 · Ana mentioned you · Ben changed the status"</i>.</li>
       <li>Each one has <i>Open</i> (jumps to the exact comment or change) and <i>Mark as read</i>.</li>
       <li><i>Customize</i> (top right) opens the notification settings directly.</li>
     </ul>
 
-    <h3 id="s4-12"><button class="sec" data-sec>§4.12</button>Assistant <span class="ids">AI</span></h3>
+    <h3 id="s4-12"><button type="button" class="sec" data-sec>§4.12</button>Assistant <span class="ids">AI</span></h3>
     <div class="demo"><div class="frame narrow" style="flex-basis:360px"><div class="frame-cap">Assistant panel</div><div class="frame-body"><div class="scr" style="padding:12px;display:flex;flex-direction:column;gap:9px">
       <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;font-size:12px"><span class="muted">Looking at:</span><span class="chip">WEB-142<span class="x"><svg class="ico"><use href="#i-x"/></svg></span></span><span class="chip">This list<span class="x"><svg class="ico"><use href="#i-x"/></svg></span></span></div>
       <div class="src">Answers come from <b>Claude (Anthropic)</b>. Your organization chose this.<br><span class="muted">Never sent to AI: Cost center</span></div>
@@ -803,7 +803,7 @@ sort by priority, highest first</div>
       <li>When AI is switched off, all assistant buttons and the panel are gone. Administrators see one <i>Set up the assistant</i> item in Organization settings.</li>
     </ul></div></div>
 
-    <h3 id="s4-13"><button class="sec" data-sec>§4.13</button>My settings</h3>
+    <h3 id="s4-13"><button type="button" class="sec" data-sec>§4.13</button>My settings</h3>
     <ul>
       <li><b>Appearance:</b> <i>Match my device</i> (default), <i>Always light</i>, <i>Always dark</i>; pick a light theme and a dark theme from previews (see §7.2); spacing; <i>Less motion</i>; <i>Larger text</i>.</li>
       <li><b>Region:</b> time zone, date and number format, first day of the week.</li>
@@ -813,7 +813,7 @@ sort by priority, highest first</div>
       <li><b>My data:</b> <i>Download my data</i> (everything Bugaboo stores about you, as readable pages and as a file other programs can read), what is kept and for how long, and who can see your working hours.</li>
     </ul>
 
-    <h3 id="s4-14"><button class="sec" data-sec>§4.14</button>First start and signing in</h3>
+    <h3 id="s4-14"><button type="button" class="sec" data-sec>§4.14</button>First start and signing in</h3>
     <div class="demo"><div style="flex:1 1 320px;min-width:0">
       <h4 style="margin-top:0">Setup in the browser (after installing)</h4>
       <ol class="stepper">
@@ -829,26 +829,26 @@ sort by priority, highest first</div>
         <b style="text-align:center;font-size:16px">Sign in to Bugaboo</b>
         <span class="btn primary" style="justify-content:center">Sign in with a passkey</span>
         <div class="or">or</div>
-        <div class="field"><label>E-mail</label><input value="ana@acme.example" readonly></div>
-        <div class="field"><label>Password</label><input type="password" value="xxxxxxxxxx" readonly></div>
+        <div class="field"><label>E-mail</label><input type="text" value="ana@acme.example" readonly></div>
+        <div class="field"><label>Password</label><input type="password" value="xxxxxxxxxx" readonly autocomplete="current-password"></div>
         <span class="btn" style="justify-content:center">Sign in</span>
         <div class="errline" style="justify-content:center">E-mail or password is wrong.</div>
         <span class="btn ghost sm" style="justify-content:center">Sign in with your company account</span>
       </div></div></div></div></div>
     <p>A wrong password and an unknown e-mail get the same message, so nobody can find out who has an account.</p>
 
-    <h3 id="s4-15"><button class="sec" data-sec>§4.15</button>Relation map <span class="ids">ISS-16</span></h3>
+    <h3 id="s4-15"><button type="button" class="sec" data-sec>§4.15</button>Relation map <span class="ids">ISS-16</span></h3>
     <p>A picture of everything connected to an issue: in any direction, through any number of steps. It answers questions like <i>"what is all this waiting on?"</i> and <i>"what else breaks if this slips?"</i>.</p>
     <div class="demo"><div class="frame" style="flex-basis:640px"><div class="frame-cap">Relation map of WEB-142 · point at an issue</div><div class="frame-body"><div class="scr" style="min-width:600px">
       <div class="map-ctl">
-        <span class="muted" style="font-size:12px">Steps away</span><div class="seg" role="group" aria-label="Steps away"><button aria-pressed="false">1</button><button aria-pressed="true">2</button><button aria-pressed="false">3</button><button aria-pressed="false">Everything</button></div>
+        <span class="muted" style="font-size:12px">Steps away</span><div class="seg" role="group" aria-label="Steps away"><button type="button" aria-pressed="false">1</button><button type="button" aria-pressed="true">2</button><button type="button" aria-pressed="false">3</button><button type="button" aria-pressed="false">Everything</button></div>
         <span class="muted" style="font-size:12px;margin-left:6px">Follow</span>
-        <button class="kchip" aria-pressed="true" data-kind="blocks"><span class="kline" style="border-color:var(--warning)"></span>blocks</button>
-        <button class="kchip" aria-pressed="true" data-kind="causes"><span class="kline" style="border-color:var(--danger)"></span>causes</button>
-        <button class="kchip" aria-pressed="true" data-kind="dup"><span class="kline" style="border-top-style:dashed;border-color:var(--fg-subtle)"></span>duplicate</button>
-        <button class="kchip" aria-pressed="true" data-kind="rel"><span class="kline"></span>related</button>
-        <button class="kchip" aria-pressed="true" data-kind="part"><span class="kline" style="border-color:var(--accent)"></span>part of</button>
-        <button class="btn sm" id="map-list-btn" style="margin-left:auto">Show as list</button>
+        <button type="button" class="kchip" aria-pressed="true" data-kind="blocks"><span class="kline" style="border-color:var(--warning)"></span>blocks</button>
+        <button type="button" class="kchip" aria-pressed="true" data-kind="causes"><span class="kline" style="border-color:var(--danger)"></span>causes</button>
+        <button type="button" class="kchip" aria-pressed="true" data-kind="dup"><span class="kline" style="border-top-style:dashed;border-color:var(--fg-subtle)"></span>duplicate</button>
+        <button type="button" class="kchip" aria-pressed="true" data-kind="rel"><span class="kline"></span>related</button>
+        <button type="button" class="kchip" aria-pressed="true" data-kind="part"><span class="kline" style="border-color:var(--accent)"></span>part of</button>
+        <button type="button" class="btn sm" id="map-list-btn" style="margin-left:auto">Show as list</button>
       </div>
       <div id="map-pic">
       <svg class="map-svg" id="map-svg" viewBox="0 0 740 400" role="img" aria-label="Relation map of WEB-142">
@@ -910,9 +910,9 @@ sort by priority, highest first</div>
       <li><b>Speed and size:</b> the server walks the relations, with a step limit and at most 200 issues per map. It sends only number, title, status and the relations. If there are more, the map says so and suggests fewer steps or fewer kinds.</li>
     </ul>
 
-    <h3 id="s4-16"><button class="sec" data-sec>§4.16</button>Calendar <span class="ids">PLAN-09</span></h3>
+    <h3 id="s4-16"><button type="button" class="sec" data-sec>§4.16</button>Calendar <span class="ids">PLAN-09</span></h3>
     <div class="demo"><div class="frame"><div class="frame-cap">Computer · October 2026 · moving WEB-139</div><div class="frame-body"><div class="scr">
-      <div class="tb"><span class="btn sm">‹</span><b>October 2026</b><span class="btn sm">›</span><span class="btn sm">Today</span><div class="seg" style="margin-left:auto"><button aria-pressed="true">Month</button><button aria-pressed="false">Week</button></div></div>
+      <div class="tb"><span class="btn sm">‹</span><b>October 2026</b><span class="btn sm">›</span><span class="btn sm">Today</span><div class="seg" style="margin-left:auto"><button type="button" aria-pressed="true">Month</button><button type="button" aria-pressed="false">Week</button></div></div>
       <div class="cal" id="cal"></div>
     </div></div></div>
     <div class="frame phone"><div class="frame-cap">Phone · day by day</div><div class="frame-body"><div class="scr">
@@ -928,9 +928,9 @@ sort by priority, highest first</div>
     </ul>
 
     <!-- ================= 5 ================= -->
-    <h2 id="s5"><button class="sec" data-sec>§5</button>Settings screens</h2>
+    <h2 id="s5"><button type="button" class="sec" data-sec>§5</button>Settings screens</h2>
 
-    <h3 id="s5-1"><button class="sec" data-sec>§5.1</button>Organization settings</h3>
+    <h3 id="s5-1"><button type="button" class="sec" data-sec>§5.1</button>Organization settings</h3>
     <ul>
       <li>Left menu by topic, in plain words:
         <ul>
@@ -948,7 +948,7 @@ sort by priority, highest first</div>
       <li>Each setting has a one-line explanation under its name.</li>
     </ul>
 
-    <h3 id="s5-2"><button class="sec" data-sec>§5.2</button>Roles and permissions <span class="ids">SEC-03, SEC-04, SEC-07</span></h3>
+    <h3 id="s5-2"><button type="button" class="sec" data-sec>§5.2</button>Roles and permissions <span class="ids">SEC-03, SEC-04, SEC-07</span></h3>
     <div class="demo"><div class="frame"><div class="frame-cap">Field permissions · try the dropdowns</div><div class="frame-body"><div class="scr">
       <table class="perm"><thead><tr><th>Field</th><th>Administrator</th><th>Team member</th><th>Contributor</th><th>Guest</th></tr></thead><tbody id="perm"></tbody></table>
       <div class="explain"><b>Check access: can Ana change Priority in Website?</b><br>Yes. Ana is in the group <b>Backend</b>, which has the role <b>Team member</b> in <b>ACME</b>. Website is inside ACME, so the role applies here too.</div>
@@ -980,7 +980,7 @@ sort by priority, highest first</div>
       <li><i>See as …</i> shows exactly what a role sees, so admins can check their settings.</li>
     </ul>
 
-    <h3 id="s5-3"><button class="sec" data-sec>§5.3</button>Fields <span class="ids">CF</span></h3>
+    <h3 id="s5-3"><button type="button" class="sec" data-sec>§5.3</button>Fields <span class="ids">CF</span></h3>
     <div class="demo"><div class="frame"><div class="frame-cap">New field · "What kind of information?"</div><div class="frame-body"><div class="scr"><div class="cards-pick">
       <div><b>Text</b>"Customer name"</div><div><b>Long text</b>"Notes"</div><div><b>Number</b>"Affected users"</div><div><b>Yes / No</b>"Needs a refund"</div>
       <div><b>Date</b>"Promised by"</div><div><b>Duration</b>"Time to fix"</div><div class="on"><b>Pick one</b>"Severity"</div><div><b>Pick several</b>"Platforms"</div>
@@ -994,7 +994,7 @@ sort by priority, highest first</div>
       <li><b>Look rules</b> (CF-05): <i>"When Severity is Critical and status is not Done, show as Danger."</i> Rules use the same filter buttons as Simple search. The first matching rule wins.</li>
     </ul>
 
-    <h3 id="s5-4"><button class="sec" data-sec>§5.4</button>Workflow editor <span class="ids">WF</span></h3>
+    <h3 id="s5-4"><button type="button" class="sec" data-sec>§5.4</button>Workflow editor <span class="ids">WF</span></h3>
     <div class="demo"><div class="frame"><div class="frame-cap">Workflow for Bugs · plain list (default)</div><div class="frame-body"><div class="scr">
       <div class="wfrow"><span class="muted">From</span><span class="pill st-ns">Open</span><span class="muted">you can go to:</span><span class="btn sm">In progress · "Start working"</span><span class="btn sm">Done · "Won't fix"</span></div>
       <div class="wfrow"><span class="muted">From</span><span class="pill st-ip">In progress</span><span class="muted">you can go to:</span><span class="btn sm">Testing · "Send to testing"</span><span class="btn sm">Open · "Stop working on it"</span></div>
@@ -1009,7 +1009,7 @@ sort by priority, highest first</div>
       <li><b>Try it:</b> pick an issue and a person to see which status changes they would get, and why.</li>
     </ul>
 
-    <h3 id="s5-5"><button class="sec" data-sec>§5.5</button>Layouts <span class="ids">CFG-01</span></h3>
+    <h3 id="s5-5"><button type="button" class="sec" data-sec>§5.5</button>Layouts <span class="ids">CFG-01</span></h3>
     <ul>
       <li>Drag fields from a list onto the issue page, the new-issue form or the board card.</li>
       <li><b>Per role:</b> each field in a layout has a role checklist (for example Team member ✓, Contributor ✓, Guest ✗). Field permissions always win: a layout can never show a field to a role that may not see it.</li>
@@ -1017,7 +1017,7 @@ sort by priority, highest first</div>
       <li><i>See as</i> a role, to check what people with that role will see.</li>
     </ul>
 
-    <h3 id="s5-6"><button class="sec" data-sec>§5.6</button>Theme editor <span class="ids">THM-03</span></h3>
+    <h3 id="s5-6"><button type="button" class="sec" data-sec>§5.6</button>Theme editor <span class="ids">THM-03</span></h3>
     <div class="demo"><div class="frame"><div class="frame-cap">Theme: Dusk (my copy)</div><div class="frame-body"><div class="scr te">
       <div class="te-l">
         <div class="g">Backgrounds</div>
@@ -1039,7 +1039,7 @@ sort by priority, highest first</div>
       <li><i>Make a copy</i>, <i>Download</i>, <i>Upload</i>. The four built-in themes are copied before editing.</li>
     </ul>
 
-    <h3 id="s5-7"><button class="sec" data-sec>§5.7</button>Privacy and GDPR <span class="ids">PRIV</span></h3>
+    <h3 id="s5-7"><button type="button" class="sec" data-sec>§5.7</button>Privacy and GDPR <span class="ids">PRIV</span></h3>
     <p>Bugaboo is built so an organization can run it in line with the GDPR. The organization running Bugaboo stays responsible; Bugaboo makes the right thing the easy thing.</p>
     <div class="demo"><div class="frame"><div class="frame-cap">Organization settings › Privacy › Keep and delete rules</div><div class="frame-body"><div class="scr">
       <table class="perm"><thead><tr><th>Kind of data</th><th>Kept for</th><th>Then</th><th>Why</th></tr></thead><tbody>
@@ -1064,7 +1064,7 @@ sort by priority, highest first</div>
     </ul>
 
     <!-- ================= 6 ================= -->
-    <h2 id="s6"><button class="sec" data-sec>§6</button>Interaction rules</h2>
+    <h2 id="s6"><button type="button" class="sec" data-sec>§6</button>Interaction rules</h2>
     <div class="tbl-wrap"><table class="dtable"><thead><tr><th>Situation</th><th>What the screen does</th></tr></thead><tbody>
       <tr><td>Change one value</td><td>Change it in place. It saves when you press Enter or click elsewhere; Esc cancels.</td></tr>
       <tr><td>Short task (under a minute)</td><td>Dialog (full screen on phones)</td></tr>
@@ -1077,7 +1077,7 @@ sort by priority, highest first</div>
       <tr><td>Long text someone else is editing</td><td>Read-only with <i>"Ana is editing …"</i>; <i>Ask to finish</i> or, if allowed, <i>Edit anyway</i></td></tr>
     </tbody></table></div>
 
-    <h3 id="s6-1"><button class="sec" data-sec>§6.1</button>States</h3>
+    <h3 id="s6-1"><button type="button" class="sec" data-sec>§6.1</button>States</h3>
     <div class="demo">
       <div class="state"><b>Empty</b><p style="margin:6px auto 10px">No issues match these filters.</p><span class="btn sm">Clear filters</span> <span class="btn sm primary">Create an issue</span></div>
       <div class="state"><b>Error</b><p style="margin:6px auto 10px">Couldn't save. Ben changed Priority a moment ago.</p><span class="btn sm">Show me</span><div class="subtle" style="font-size:11px;margin-top:8px">Code BUG-409</div></div>
@@ -1090,7 +1090,7 @@ sort by priority, highest first</div>
       <li><b>Offline:</b> a slim bar; recently opened issues stay readable.</li>
     </ul>
 
-    <h3 id="s6-2"><button class="sec" data-sec>§6.2</button>Quick search and shortcuts <span class="ids">CFG-08, UX-05</span></h3>
+    <h3 id="s6-2"><button type="button" class="sec" data-sec>§6.2</button>Quick search and shortcuts <span class="ids">CFG-08, UX-05</span></h3>
     <p><kbd>Ctrl K</kbd> (or the search box) finds issues by number or title, documents, saved searches, projects, settings and actions (<i>"create issue"</i>, <i>"start timer"</i>). All shortcuts are optional (principle 9) and listed under <kbd>?</kbd> and in My settings.</p>
     <div class="tbl-wrap"><table class="dtable"><thead><tr><th>Keys</th><th>Action</th><th>Keys</th><th>Action</th></tr></thead><tbody>
       <tr><td><kbd>Ctrl K</kbd></td><td>Quick search</td><td><kbd>j</kbd> / <kbd>k</kbd></td><td>Next / previous issue</td></tr>
@@ -1104,9 +1104,9 @@ sort by priority, highest first</div>
     </tbody></table></div>
 
     <!-- ================= 7 ================= -->
-    <h2 id="s7"><button class="sec" data-sec>§7</button>Visual design</h2>
+    <h2 id="s7"><button type="button" class="sec" data-sec>§7</button>Visual design</h2>
 
-    <h3 id="s7-1"><button class="sec" data-sec>§7.1</button>Design tokens <span class="ids">THM, SSOT</span></h3>
+    <h3 id="s7-1"><button type="button" class="sec" data-sec>§7.1</button>Design tokens <span class="ids">THM, SSOT</span></h3>
     <p>Code uses only named tokens, never raw colors or sizes; the hooks enforce this. The tokens live in one file (<code>docs/design/tokens.css</code> today, generated from the token source later), and this page reads its colors from that same file. Tokens have three levels:</p>
     <ol>
       <li><b>Base palettes:</b> grey 0–1000, highlight color, red, orange, yellow, green, teal, blue, violet, pink; fonts, sizes, corner radii, shadows.</li>
@@ -1125,7 +1125,7 @@ sort by priority, highest first</div>
     </ol>
     <p>Each tag color is checked for readability in every built-in theme. A color picked once reads well in all four themes, which is why choices store a token (<code>cat.4</code>), not a color value.</p>
 
-    <h3 id="s7-2"><button class="sec" data-sec>§7.2</button>The four built-in themes <span class="ids">THM-01</span></h3>
+    <h3 id="s7-2"><button type="button" class="sec" data-sec>§7.2</button>The four built-in themes <span class="ids">THM-01</span></h3>
     <div class="theme-strip" id="theme-strip">
       <div class="tcard" data-force-look="daylight"><div class="tc-h">Daylight<span class="muted" style="font-weight:400;font-size:11px">light · default light</span></div><div class="tc-b"><div class="row"><span class="key">WEB-142</span><b>Login fails after reset</b></div><div class="row"><span class="pill st-ns">Open</span><span class="pill st-ip">In progress</span><span class="pill st-done">Done</span></div><div class="row"><span class="tag c1">crash</span><span class="tag c2">search</span><span class="tag c3">time</span><span class="tag c4">themes</span><span class="tag c5">login</span><span class="tag c6">design</span></div><div class="row"><span class="btn sm primary">Create</span><span class="btn sm">Cancel</span><span class="prio Critical"><svg class="ico"><use href="#i-up2"/></svg>Critical</span></div></div></div>
       <div class="tcard" data-force-look="paper"><div class="tc-h">Paper<span class="muted" style="font-weight:400;font-size:11px">light · warm, softer</span></div><div class="tc-b"><div class="row"><span class="key">WEB-142</span><b>Login fails after reset</b></div><div class="row"><span class="pill st-ns">Open</span><span class="pill st-ip">In progress</span><span class="pill st-done">Done</span></div><div class="row"><span class="tag c1">crash</span><span class="tag c2">search</span><span class="tag c3">time</span><span class="tag c4">themes</span><span class="tag c5">login</span><span class="tag c6">design</span></div><div class="row"><span class="btn sm primary">Create</span><span class="btn sm">Cancel</span><span class="prio Critical"><svg class="ico"><use href="#i-up2"/></svg>Critical</span></div></div></div>
@@ -1142,7 +1142,7 @@ sort by priority, highest first</div>
     </ul>
     <p>Final values are tuned and contrast-checked during implementation; the samples fix the character of each theme.</p>
 
-    <h3 id="s7-3"><button class="sec" data-sec>§7.3</button>Text</h3>
+    <h3 id="s7-3"><button type="button" class="sec" data-sec>§7.3</button>Text</h3>
     <div class="specimen">
       <span class="big">Login fails after reset</span>
       <span>Atkinson Hyperlegible Next: designed by the Braille Institute so that similar letters are easy to tell apart. <b>Il1 O0 rn m</b></span>
@@ -1155,8 +1155,8 @@ sort by priority, highest first</div>
       <li>Numbers line up in tables, time values and the timeline.</li>
     </ul>
 
-    <h3 id="s7-4"><button class="sec" data-sec>§7.4</button>Shape, spacing, motion</h3>
-    <div class="scale" aria-label="Spacing steps">
+    <h3 id="s7-4"><button type="button" class="sec" data-sec>§7.4</button>Shape, spacing, motion</h3>
+    <div class="scale" role="group" aria-label="Spacing steps">
       <span><i style="width:4px;height:4px"></i>4</span><span><i style="width:8px;height:8px"></i>8</span><span><i style="width:12px;height:12px"></i>12</span><span><i style="width:16px;height:16px"></i>16</span><span><i style="width:24px;height:24px"></i>24</span><span><i style="width:32px;height:32px"></i>32</span><span><i style="width:48px;height:48px"></i>48</span>
     </div>
     <ul>
@@ -1166,7 +1166,7 @@ sort by priority, highest first</div>
       <li><b>Motion:</b> short (0.12–0.2 s), only to show what changed (a panel sliding in, an item moving). Off with <i>Less motion</i> or the device setting.</li>
     </ul>
 
-    <h3 id="s7-5"><button class="sec" data-sec>§7.5</button>Icons</h3>
+    <h3 id="s7-5"><button type="button" class="sec" data-sec>§7.5</button>Icons</h3>
     <p style="display:flex;gap:14px;flex-wrap:wrap;align-items:center">
       <span class="who"><svg class="ico lg"><use href="#i-home"/></svg>Home</span><span class="who"><svg class="ico lg"><use href="#i-bell"/></svg>Notifications</span><span class="who"><svg class="ico lg"><use href="#i-clock"/></svg>Time</span><span class="who type bug"><svg class="ico lg"><use href="#i-bug"/></svg>Bug</span><span class="who type task"><svg class="ico lg"><use href="#i-task"/></svg>Task</span><span class="who type feature"><svg class="ico lg"><use href="#i-feature"/></svg>Feature</span><span class="who type goal"><svg class="ico lg"><use href="#i-goal"/></svg>Goal</span></p>
     <ul>
@@ -1175,7 +1175,7 @@ sort by priority, highest first</div>
     </ul>
 
     <!-- ================= 8 ================= -->
-    <h2 id="s8"><button class="sec" data-sec>§8</button>Accessibility <span class="ids">UX-04</span></h2>
+    <h2 id="s8"><button type="button" class="sec" data-sec>§8</button>Accessibility <span class="ids">UX-04</span></h2>
     <ul>
       <li><b>WCAG 2.2 AA</b> in every built-in theme, checked automatically on every build (axe) and by hand with screen readers (NVDA, VoiceOver) at each milestone.</li>
       <li>Everything works with the keyboard. The focus outline is always visible.</li>
@@ -1187,7 +1187,7 @@ sort by priority, highest first</div>
     </ul>
 
     <!-- ================= 9 ================= -->
-    <h2 id="s9"><button class="sec" data-sec>§9</button>Writing the words</h2>
+    <h2 id="s9"><button type="button" class="sec" data-sec>§9</button>Writing the words</h2>
     <p>All text lives in the message catalog (UX-07) and uses the glossary.</p>
     <div class="dodont">
       <div class="y"><b>Say</b>Issue moved to Done.</div><div class="n"><b>Not</b>The operation completed successfully.</div>
@@ -1205,7 +1205,7 @@ sort by priority, highest first</div>
     </ul>
 
     <!-- ================= 10 ================= -->
-    <h2 id="s10"><button class="sec" data-sec>§10</button>Decisions and open questions</h2>
+    <h2 id="s10"><button type="button" class="sec" data-sec>§10</button>Decisions and open questions</h2>
     <div class="decision"><span class="okmark">✓</span><div><b>Calendar</b> is in 1.0 (PLAN-09, §4.16).</div></div>
     <div class="decision"><span class="okmark">✓</span><div><b>Relation map</b> is in 1.0 (ISS-16, §4.15). Relations can be added on every issue (ISS-04, §4.4).</div></div>
     <div class="decision"><span class="okmark">✓</span><div><b>Highlight color:</b> violet.</div></div>
@@ -1218,7 +1218,7 @@ sort by priority, highest first</div>
     <div class="decision"><span class="okmark">✓</span><div><b>Focus view</b> is the default way to open an issue; the side panel view stays as an option (§3.4).</div></div>
     <div class="decision"><span class="okmark">✓</span><div><b>Who sees people</b> is set per role: names, role only or hidden (§5.2, PRIV-12).</div></div>
     <div class="decision"><span class="okmark">✓</span><div><b>Issue IDs</b> can be random or counting per project; random by default (§5.1, ADR-0021).</div></div>
-    <h3 id="s10-1"><button class="sec" data-sec>§10.1</button>Open questions</h3>
+    <h3 id="s10-1"><button type="button" class="sec" data-sec>§10.1</button>Open questions</h3>
     <p>None yet. Comment on this page.</p>
   </main>
 </div>

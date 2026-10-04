@@ -24,8 +24,12 @@ const marked = new Marked({
   },
 });
 
-const chapters = readdirSync(join(docs, "architecture")).filter((f) => /^\d\d-.*\.md$/.test(f)).sort();
-const adrs = readdirSync(join(docs, "adr")).filter((f) => /^\d{4}-.*\.md$/.test(f)).sort();
+const chapters = readdirSync(join(docs, "architecture"))
+  .filter((f) => /^\d\d-.*\.md$/.test(f))
+  .sort();
+const adrs = readdirSync(join(docs, "adr"))
+  .filter((f) => /^\d{4}-.*\.md$/.test(f))
+  .sort();
 
 // Map links between the Markdown files to anchors inside the one HTML page.
 function fixLinks(html) {
@@ -34,7 +38,8 @@ function fixLinks(html) {
     if (ch && !href.includes("adr/")) return `<a href="#s${+ch[1]}">${text}</a>`;
     const adr = href.match(/adr\/(\d{4})-[\w-]+\.md$/) || href.match(/^(\d{4})-[\w-]+\.md$/);
     if (adr) return `<a href="#adr-${adr[1]}">${text}</a>`;
-    if (/^https?:/.test(href)) return `<a href="${href}" target="_blank" rel="noopener">${text}</a>`;
+    if (/^https?:/.test(href))
+      return `<a href="${href}" target="_blank" rel="noopener">${text}</a>`;
     return `<span title="${esc(href)} in the repository">${text}</span>`;
   });
 }
@@ -46,13 +51,19 @@ function catalogTable() {
   const toml = readFileSync(join(root, "tools", "checks", "catalog.toml"), "utf8");
   const checks = [];
   for (const line of toml.split(/\r?\n/)) {
-    if (line.startsWith("[[check]]")) { checks.push({}); continue; }
+    if (line.startsWith("[[check]]")) {
+      checks.push({});
+      continue;
+    }
     const m = line.match(/^(\w+)\s*=\s*(.+)$/);
     if (!m || !checks.length) continue;
     checks[checks.length - 1][m[1]] = JSON.parse(m[2].trim()); // strings and string arrays are valid JSON
   }
   const rows = checks
-    .map((c) => `<tr><td><code>${esc(c.id)}</code></td><td>${esc(c.title)}</td><td>${esc(c.rule)}</td><td>${esc(c.tool)}</td><td>${esc(c.when.join(" · "))}</td></tr>`)
+    .map(
+      (c) =>
+        `<tr><td><code>${esc(c.id)}</code></td><td>${esc(c.title)}</td><td>${esc(c.rule)}</td><td>${esc(c.tool)}</td><td>${esc(c.when.join(" · "))}</td></tr>`,
+    )
     .join("\n");
   return `<div class="tbl-wrap"><table class="dtable"><thead><tr><th>ID</th><th>Catches</th><th>Rule</th><th>How</th><th>When</th></tr></thead><tbody>\n${rows}\n</tbody></table></div>\n<p>${checks.length} checks, generated from <code>tools/checks/catalog.toml</code>.</p>\n`;
 }
@@ -63,9 +74,14 @@ chapters.forEach((file, i) => {
   let sub = 0;
   let html = marked.parse(readFileSync(join(docs, "architecture", file), "utf8"));
   html = html
-    .replace(/<h4>/g, "<h5>").replace(/<\/h4>/g, "</h5>")
-    .replace(/<h3>/g, "<h4>").replace(/<\/h3>/g, "</h4>")
-    .replace(/<h2>(.*?)<\/h2>/g, (m, t) => { sub++; return `<h3 id="s${n}-${sub}">${badge(`${n}.${sub}`)}${t}</h3>`; })
+    .replace(/<h4>/g, "<h5>")
+    .replace(/<\/h4>/g, "</h5>")
+    .replace(/<h3>/g, "<h4>")
+    .replace(/<\/h3>/g, "</h4>")
+    .replace(/<h2>(.*?)<\/h2>/g, (m, t) => {
+      sub++;
+      return `<h3 id="s${n}-${sub}">${badge(`${n}.${sub}`)}${t}</h3>`;
+    })
     .replace(/<h1>(.*?)<\/h1>/, (m, t) => `<h2 id="s${n}">${badge(n)}${t}</h2>`);
   if (file.startsWith("10-")) {
     sub++;
@@ -80,8 +96,12 @@ adrs.forEach((file, k) => {
   const num = file.slice(0, 4);
   let html = marked.parse(readFileSync(join(docs, "adr", file), "utf8"));
   html = html
-    .replace(/<h2>/g, "<h4>").replace(/<\/h2>/g, "</h4>")
-    .replace(/<h1>(.*?)<\/h1>/, (m, t) => `<h3 id="adr-${num}">${badge(`${adrNo}.${k + 1}`)}${t}</h3>`);
+    .replace(/<h2>/g, "<h4>")
+    .replace(/<\/h2>/g, "</h4>")
+    .replace(
+      /<h1>(.*?)<\/h1>/,
+      (m, t) => `<h3 id="adr-${num}">${badge(`${adrNo}.${k + 1}`)}${t}</h3>`,
+    );
   body += `<!-- ${file} -->\n${fixLinks(html)}\n`;
 });
 
@@ -116,30 +136,55 @@ ${body}
 `;
 }
 
-writeFileSync(join(docs, "03-architecture.html"), page({
-  title: "Bugaboo architecture", small: "Architecture", phase: "Phase 3 of 5", example: "§7.2",
-  status: '<span class="pill st-done">Accepted</span>',
-  lede: "How Bugaboo is built: the big decisions, the parts and how they work together, how it runs when sold or served, the technology underneath, and the checks that keep the code true to this design. Feature IDs (like SEC-04) refer to the feature list.",
-  body,
-}));
-console.log(`Wrote docs/03-architecture.html (${chapters.length} chapters, ${adrs.length} decision records)`);
+writeFileSync(
+  join(docs, "03-architecture.html"),
+  page({
+    title: "Bugaboo architecture",
+    small: "Architecture",
+    phase: "Phase 3 of 5",
+    example: "§7.2",
+    status: '<span class="pill st-done">Accepted</span>',
+    lede: "How Bugaboo is built: the big decisions, the parts and how they work together, how it runs when sold or served, the technology underneath, and the checks that keep the code true to this design. Feature IDs (like SEC-04) refer to the feature list.",
+    body,
+  }),
+);
+console.log(
+  `Wrote docs/03-architecture.html (${chapters.length} chapters, ${adrs.length} decision records)`,
+);
 
 // Milestones: one Markdown file; its first heading and status line become the page header.
 {
-  const md = readFileSync(join(docs, "04-milestones.md"), "utf8").replace(/^# .*\n+Status: .*\n+/, "");
+  const md = readFileSync(join(docs, "04-milestones.md"), "utf8").replace(
+    /^# .*\n+Status: .*\n+/,
+    "",
+  );
   // Number each h2 section and its h3 subsections in order.
-  let n = 0, sub = 0;
-  const html = marked.parse(md)
-    .replace(/<h4>/g, "<h5>").replace(/<\/h4>/g, "</h5>")
+  let n = 0,
+    sub = 0;
+  const html = marked
+    .parse(md)
+    .replace(/<h4>/g, "<h5>")
+    .replace(/<\/h4>/g, "</h5>")
     .replace(/<h([23])>(.*?)<\/h\1>/g, (m, level, t) => {
-      if (level === "2") { n++; sub = 0; return `<h2 id="s${n}">${badge(n)}${t}</h2>`; }
-      sub++; return `<h3 id="s${n}-${sub}">${badge(`${n}.${sub}`)}${t}</h3>`;
+      if (level === "2") {
+        n++;
+        sub = 0;
+        return `<h2 id="s${n}">${badge(n)}${t}</h2>`;
+      }
+      sub++;
+      return `<h3 id="s${n}-${sub}">${badge(`${n}.${sub}`)}${t}</h3>`;
     });
-  writeFileSync(join(docs, "04-milestones.html"), page({
-    title: "Bugaboo milestones", small: "Milestones", phase: "Phase 4 of 5", example: "§5",
-    status: '<span class="pill st-ip">Draft for review</span>',
-    lede: "The plan to build Bugaboo: 16 milestones, how each is built, tested and reviewed, and how you check and approve it.",
-    body: fixLinks(html),
-  }));
+  writeFileSync(
+    join(docs, "04-milestones.html"),
+    page({
+      title: "Bugaboo milestones",
+      small: "Milestones",
+      phase: "Phase 4 of 5",
+      example: "§5",
+      status: '<span class="pill st-ip">Draft for review</span>',
+      lede: "The plan to build Bugaboo: 16 milestones, how each is built, tested and reviewed, and how you check and approve it.",
+      body: fixLinks(html),
+    }),
+  );
   console.log("Wrote docs/04-milestones.html");
 }
