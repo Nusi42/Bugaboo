@@ -16,6 +16,7 @@ pulldown-cmark = { version = "0.13.4", default-features = false, features = ["ht
 serde = { workspace = true }
 serde_json = { workspace = true, features = ["preserve_order"] }
 sha2 = "0.11.0"
+syn = { workspace = true, features = ["full", "parsing", "derive"] }
 tar = "0.4.46"
 toml = { workspace = true }
 zip = { version = "8.6.0", default-features = false, features = ["deflate"] }

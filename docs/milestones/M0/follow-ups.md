@@ -4,7 +4,7 @@ Points found in the M0 reviews that were accepted for later. Each names where it
 
 | ID | What | Why later | Planned in |
 |----|------|-----------|------------|
-| M0-F01 | Server and xtask user-facing strings are constants in code, not in `messages/en.json` | The server's message lookup comes with the API error codes | M1 |
+| M0-F01 | Server and xtask user-facing strings are constants in code, not in `messages/en.json` | The server's message lookup comes with the API error codes | M1. WP-02 delivers the Rust message API (`bb_core::message`); the lead switches the server over when WP-04 is merged. xtask keeps its terminal texts in code on purpose: it is a developer tool, English only, and does not depend on product crates. API error texts: WP-06 |
 | M0-F02 | No Linux machine has run the code yet (Clippy checks the Linux code on Windows; tests haven't run on Linux) | Decision: not to install a Linux distribution in WSL | When the repository moves to GitHub (Linux CI runner) |
 | M0-F03 | Faint and muted text are very close in Paper and Daylight (about 1.1:1 apart) | Contrast rules are met; the themes are accepted for now | M7 (theme editor) |
 | M0-F04 | `web/app/index.html` `<title>` repeats the app name from the message catalog | Static HTML can't read the catalog yet | M2 (app shell) |

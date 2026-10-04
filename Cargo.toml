@@ -47,12 +47,18 @@ axum = { version = "0.8.9", default-features = false }
 clap = { version = "4.6.7", features = ["derive"] }
 ctrlc = { version = "3.5.2", features = ["termination"] }
 globset = "0.4.20"
+jiff = { version = "0.2.37", default-features = false, features = ["serde", "std"] }
 mime_guess = "2.0.5"
+proc-macro2 = "1.0.107"
+quote = "1.0.47"
 rust-embed = "8.12.0"
 serde = { version = "1.0.229", features = ["derive"] }
 serde_json = "1.0.151"
+syn = { version = "3.0.6", default-features = false }
 tempfile = "3.27.0"
 tokio = "1.53.2"
 toml = "1.1.6"
 tower = "0.5.3"
 tower-http = "0.7.1"
+trybuild = "1.0.121"
+uuid = { version = "1.27.0", default-features = false }

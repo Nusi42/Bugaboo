@@ -5,9 +5,12 @@
 //! or `tools/checks/fixtures/<ID>/`).
 
 mod arch_deps;
+mod arch_errors;
 mod arch_map_sync;
 mod arch_no_unsafe;
+mod arch_settings;
 mod build_location;
+mod data_marks;
 mod dep_licenses;
 mod dep_register;
 mod dev_ports;
@@ -110,6 +113,9 @@ pub(crate) fn registry() -> Vec<Box<dyn Check>> {
         Box::new(lint_ci::LintCi),
         Box::new(arch_deps::ArchDeps),
         Box::new(arch_no_unsafe::ArchNoUnsafe),
+        Box::new(arch_errors::ArchErrors),
+        Box::new(arch_settings::ArchSettings),
+        Box::new(data_marks::DataMarks),
         Box::new(sec_secrets::SecSecrets),
         Box::new(dep_register::DepRegister),
         Box::new(dep_licenses::DepLicenses),

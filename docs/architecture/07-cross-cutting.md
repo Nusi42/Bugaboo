@@ -141,12 +141,14 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit
 
 - **Start-up settings** (address, port, data folder, database URL, certificates): `bugaboo.toml` or environment variables, written by the setup wizard.
 - **Everything else** comes from one **settings registry**: each setting is defined once (key, type, default, levels — organization / project / person — who may change it, help text key). The registry drives storage, the API and the settings dialogs, so a new setting appears in the UI without hand-written forms.
+- **In code:** settings are declared in `crates/bb-core/src/settings/catalog.rs` and nowhere else, and are read through their typed handle (`settings::APPEARANCE_THEME`). A setting key written as text elsewhere is a way around the registry and is found. Enforced by: ARCH-SETTINGS.
 
 ## User interface
 
 - **Server data:** only in the TanStack Query cache. **URL:** the search, the presentation and the open issue live in typed URL parameters, so every screen is shareable.
 - **Lean requests:** each screen asks for the fields its layout shows (`?fields=`); lists use cursor pagination and are virtualized.
 - **Text:** every user-facing string is a key in `messages/en.json` (ICU message format), typed via generated keys. The hooks reject literal text in components.
+- **Text in Rust:** the server uses the constants and functions generated into `bb_core::message` (`SERVER_NOT_FOUND`, `server_port_busy(port)`), whose placeholders are typed arguments; a key that does not exist does not compile. Keys that nothing uses are found. Enforced by: TXT-CATALOG.
 - **Styles:** CSS Modules using token variables only; generated token CSS per theme; no inline styles (CSP).
 - **Accessibility:** React Aria Components for focus, keyboard and screen-reader behavior; axe checks in CI.
 
@@ -155,6 +157,7 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit
 - One `ErrorCode` enum in `bb-core` (for example `issue.not_found`, `issue.version_conflict`, `search.unknown_field`).
 - The API answers with `application/problem+json`: code, plain-language message key and parameters, request ID.
 - The TypeScript client gets the codes as a union type; the UI shows the message from the catalog.
+- An error message in the catalog has no placeholder, so an error cannot carry a name or number the person may not see; anything hidden answers with `resource.not_found`, exactly as if it did not exist. Enforced by: ARCH-ERRORS.
 
 ## Observability
 

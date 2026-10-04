@@ -201,8 +201,8 @@
   jobs["bb-jobs"]
   wasm["bb-wasm"]
 
-  server --&gt; api &amp; jobs &amp; store &amp; files &amp; ai &amp; notify &amp; auth
-  api --&gt; app &amp; auth &amp; mcp
+  server --&gt; api &amp; jobs &amp; store &amp; files &amp; ai &amp; notify &amp; auth &amp; core
+  api --&gt; app &amp; auth &amp; mcp &amp; core
   mcp --&gt; app &amp; ai
   jobs --&gt; app
   app --&gt; policy &amp; core &amp; search &amp; md
@@ -224,7 +224,7 @@
 </ol>
 <h3 id="s4-3"><button class="sec" data-sec>§4.3</button>The core modules</h3>
 <h4>bb-core</h4>
-<p>Newtype IDs (<code>IssueId</code>, <code>ProjectId</code>, …, all UUIDv7 inside, readable keys like <code>WEB-142</code> outside), field types and values, domain entities, <strong>domain events</strong>, and the <strong>error code catalogue</strong> (one Rust enum; becomes OpenAPI, the TypeScript union and message keys). Entities carry personal-data marks (ADR-0015).</p>
+<p>Newtype IDs (<code>IssueId</code>, <code>ProjectId</code>, …, all UUIDv7 inside, readable keys like <code>WEB-142</code> outside), field types and values, domain entities, <strong>domain events</strong>, and the <strong>error code catalogue</strong> (one Rust enum; becomes OpenAPI, the TypeScript union and message keys). Entities carry personal-data marks (ADR-0015). It also holds the <strong>settings registry</strong> (ADR-0018: every setting is declared once, in <code>settings/</code>), the <strong>message keys</strong> generated from <code>messages/en.json</code> as Rust constants and functions (UX-07), and the entity list behind the generated personal-data page <code>docs/privacy/personal-data.md</code>. The HTTP layer (<code>bb-api</code>) and the binary (<code>bb-server</code>) use <code>bb-core</code> directly for error codes and message text.</p>
 <h4>bb-policy</h4>
 <ul>
 <li><strong>Permission catalogue</strong> (one Rust enum with plain-language descriptions as message keys).</li>
@@ -578,12 +578,14 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 <ul>
 <li><strong>Start-up settings</strong> (address, port, data folder, database URL, certificates): <code>bugaboo.toml</code> or environment variables, written by the setup wizard.</li>
 <li><strong>Everything else</strong> comes from one <strong>settings registry</strong>: each setting is defined once (key, type, default, levels — organization / project / person — who may change it, help text key). The registry drives storage, the API and the settings dialogs, so a new setting appears in the UI without hand-written forms.</li>
+<li><strong>In code:</strong> settings are declared in <code>crates/bb-core/src/settings/catalog.rs</code> and nowhere else, and are read through their typed handle (<code>settings::APPEARANCE_THEME</code>). A setting key written as text elsewhere is a way around the registry and is found. Enforced by: ARCH-SETTINGS.</li>
 </ul>
 <h3 id="s7-8"><button class="sec" data-sec>§7.8</button>User interface</h3>
 <ul>
 <li><strong>Server data:</strong> only in the TanStack Query cache. <strong>URL:</strong> the search, the presentation and the open issue live in typed URL parameters, so every screen is shareable.</li>
 <li><strong>Lean requests:</strong> each screen asks for the fields its layout shows (<code>?fields=</code>); lists use cursor pagination and are virtualized.</li>
 <li><strong>Text:</strong> every user-facing string is a key in <code>messages/en.json</code> (ICU message format), typed via generated keys. The hooks reject literal text in components.</li>
+<li><strong>Text in Rust:</strong> the server uses the constants and functions generated into <code>bb_core::message</code> (<code>SERVER_NOT_FOUND</code>, <code>server_port_busy(port)</code>), whose placeholders are typed arguments; a key that does not exist does not compile. Keys that nothing uses are found. Enforced by: TXT-CATALOG.</li>
 <li><strong>Styles:</strong> CSS Modules using token variables only; generated token CSS per theme; no inline styles (CSP).</li>
 <li><strong>Accessibility:</strong> React Aria Components for focus, keyboard and screen-reader behavior; axe checks in CI.</li>
 </ul>
@@ -592,6 +594,7 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 <li>One <code>ErrorCode</code> enum in <code>bb-core</code> (for example <code>issue.not_found</code>, <code>issue.version_conflict</code>, <code>search.unknown_field</code>).</li>
 <li>The API answers with <code>application/problem+json</code>: code, plain-language message key and parameters, request ID.</li>
 <li>The TypeScript client gets the codes as a union type; the UI shows the message from the catalog.</li>
+<li>An error message in the catalog has no placeholder, so an error cannot carry a name or number the person may not see; anything hidden answers with <code>resource.not_found</code>, exactly as if it did not exist. Enforced by: ARCH-ERRORS.</li>
 </ul>
 <h3 id="s7-10"><button class="sec" data-sec>§7.10</button>Observability</h3>
 <ul>
@@ -860,7 +863,7 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 <tr><td><code>ARCH-LEAN</code></td><td>Every list endpoint supports fields=, cursor paging and a page-size cap</td><td>PERF-02</td><td>xtask (reads generated OpenAPI)</td><td>push · ci</td></tr>
 <tr><td><code>ARCH-PERMS</code></td><td>Every endpoint and MCP tool declares its permission; every permission is used and explained</td><td>SEC-01, ADR-0004</td><td>xtask (OpenAPI x-permission + permission catalogue)</td><td>push · ci</td></tr>
 <tr><td><code>ARCH-ERRORS</code></td><td>Every error code has a message key; API errors are problem+json with a code</td><td>architecture §7 (Errors)</td><td>xtask</td><td>push · ci</td></tr>
-<tr><td><code>ARCH-SETTINGS</code></td><td>Settings are only read and written through the settings registry</td><td>ADR-0018</td><td>ast-grep</td><td>edit · commit · ci</td></tr>
+<tr><td><code>ARCH-SETTINGS</code></td><td>Settings are only read and written through the settings registry</td><td>ADR-0018</td><td>xtask (declarations and key literals; the storage part comes with the store)</td><td>edit · commit · ci</td></tr>
 <tr><td><code>ARCH-AI-TOOLS</code></td><td>AI tools exist only in the tool registry and never reach people-ranking, assignment or working-hours use cases</td><td>ADR-0013, COMP-10</td><td>xtask (registry allow list) + ast-grep</td><td>edit · commit · ci</td></tr>
 <tr><td><code>ARCH-WEB-API</code></td><td>The browser app calls the server only through @bugaboo/api-client (no raw fetch)</td><td>ADR-0008</td><td>oxlint no-restricted-globals/imports + ast-grep</td><td>edit · commit · ci</td></tr>
 <tr><td><code>ARCH-WEB-FEATURES</code></td><td>Browser feature folders import each other only through their public index</td><td>architecture §4 (browser app)</td><td>oxlint import rules</td><td>edit · commit · ci</td></tr>

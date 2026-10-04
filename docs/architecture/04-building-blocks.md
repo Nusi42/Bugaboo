@@ -58,8 +58,8 @@ flowchart TB
   jobs["bb-jobs"]
   wasm["bb-wasm"]
 
-  server --> api & jobs & store & files & ai & notify & auth
-  api --> app & auth & mcp
+  server --> api & jobs & store & files & ai & notify & auth & core
+  api --> app & auth & mcp & core
   mcp --> app & ai
   jobs --> app
   app --> policy & core & search & md
@@ -85,7 +85,7 @@ flowchart TB
 
 ### bb-core
 
-Newtype IDs (`IssueId`, `ProjectId`, …, all UUIDv7 inside, readable keys like `WEB-142` outside), field types and values, domain entities, **domain events**, and the **error code catalogue** (one Rust enum; becomes OpenAPI, the TypeScript union and message keys). Entities carry personal-data marks (ADR-0015).
+Newtype IDs (`IssueId`, `ProjectId`, …, all UUIDv7 inside, readable keys like `WEB-142` outside), field types and values, domain entities, **domain events**, and the **error code catalogue** (one Rust enum; becomes OpenAPI, the TypeScript union and message keys). Entities carry personal-data marks (ADR-0015). It also holds the **settings registry** (ADR-0018: every setting is declared once, in `settings/`), the **message keys** generated from `messages/en.json` as Rust constants and functions (UX-07), and the entity list behind the generated personal-data page `docs/privacy/personal-data.md`. The HTTP layer (`bb-api`) and the binary (`bb-server`) use `bb-core` directly for error codes and message text.
 
 ### bb-policy
 

@@ -45,3 +45,7 @@ reason = "Checked by META-WIRING, which allows only the exact hook command and m
 [[exempt]]
 path = "tools/checks/fixtures/**"
 reason = "Deliberately bad and good examples of checks; only those checks look at them."
+
+[[exempt]]
+path = "crates/*/tests/ui/*.stderr"
+reason = "The compiler messages that the compile-fail tests expect (DATA-MARKS); written by trybuild and compared with the real output on every test run."

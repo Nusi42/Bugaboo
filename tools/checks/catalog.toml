@@ -319,17 +319,17 @@ title = "Every error code has a message key; API errors are problem+json with a 
 rule = "architecture §7 (Errors)"
 tool = "xtask"
 when = ["push", "ci"]
-files = ["crates/bb-core/**", "messages/**"]
-status = "planned"
+files = ["crates/bb-core/**", "messages/**", "crates/bb-api/**"]
+status = "active"
 
 [[check]]
 id = "ARCH-SETTINGS"
 title = "Settings are only read and written through the settings registry"
 rule = "ADR-0018"
-tool = "ast-grep"
+tool = "xtask (declarations and key literals; the storage part comes with the store)"
 when = ["edit", "commit", "ci"]
 files = ["crates/**/*.rs"]
-status = "planned"
+status = "active"
 
 [[check]]
 id = "ARCH-AI-TOOLS"
@@ -474,8 +474,8 @@ title = "Every stored field is marked as personal data or not"
 rule = "ADR-0015, PRIV-02"
 tool = "derive macro (compile error) + xtask report"
 when = ["edit", "ci"]
-files = ["crates/bb-core/**", "crates/bb-store/**"]
-status = "planned"
+files = ["crates/**/*.rs", "docs/privacy/**"]
+status = "active"
 
 [[check]]
 id = "DATA-LOGS"

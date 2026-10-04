@@ -24,8 +24,8 @@ Columns:
 | flate2 | 1.1.10 | MIT OR Apache-2.0 | no (xtask) | Unpacking the `.tar.gz` archives of downloaded tools in `cargo xtask setup` | maintained (2026-10-04) | system `tar` (differs between Windows and Linux) |
 | globset | 0.4.20 | Unlicense OR MIT | no (xtask) | Matching changed files against the catalogue's `files` patterns | maintained (2026-10-04) | glob (no sets, no `{a,b}`), wildmatch |
 | pulldown-cmark | 0.13.4 | MIT | no (xtask) | Turns the Markdown docs into the commentable HTML pages (`cargo xtask docs`); built without its command-line feature | maintained (2026-10-04) | comrak (heavier, many extensions we don't need); markdown-rs (less used); bb-markdown (the product renderer; xtask must not depend on product crates) |
-| serde | 1.0.229 | MIT OR Apache-2.0 | no (xtask) | Reading the check catalogue and tool list | maintained (2026-10-04) | hand-written parsing (error-prone) |
-| serde_json | 1.0.151 | MIT OR Apache-2.0 | no (xtask) | Reading `cargo metadata`, `package.json` / `package-lock.json`, design/tokens.json, tools/dev/ports.json, the message catalog and the Claude Code hook input; `preserve_order` keeps file order in generated output | maintained (2026-10-04) | hand-written parsing (error-prone) |
+| serde | 1.0.229 | MIT OR Apache-2.0 | yes (bb-core), no (xtask) | Reading the check catalogue and tool list; saving and sending IDs, events, settings and error bodies | maintained (2026-10-04) | hand-written parsing (error-prone) |
+| serde_json | 1.0.151 | MIT OR Apache-2.0 | yes (bb-core), no (xtask) | Field values in domain events and the JSON form of settings; reading `cargo metadata`, `package.json` / `package-lock.json`, design/tokens.json, tools/dev/ports.json, the message catalog and the Claude Code hook input; `preserve_order` keeps file order in generated output | maintained (2026-10-04) | hand-written parsing (error-prone) |
 | sha2 | 0.11.0 | MIT OR Apache-2.0 | no (xtask) | Verifying the sha256 of every downloaded tool before it is unpacked | maintained (2026-10-04) | ring (large, C and assembly code); calling `certutil` / `sha256sum` (differs per system) |
 | tar | 0.4.46 | MIT OR Apache-2.0 | no (xtask) | Reading the `.tar.gz` archives of downloaded tools | maintained (2026-10-04) | system `tar` (differs between Windows and Linux) |
 | toml | 1.1.6 | MIT OR Apache-2.0 | no (xtask) | TOML parser for the catalogue and tool list | maintained (2026-10-04) | toml_edit (only needed for writing) |
@@ -38,6 +38,12 @@ Columns:
 | tokio | 1.53.2 | MIT | yes | Async runtime of the server (ADR-0002) | maintained (2026-10-04) | async-std (discontinued) |
 | tower | 0.5.3 | MIT | no (tests) | `oneshot` to call the router in tests without a socket | maintained (2026-10-04) | starting a real server per test (slower, needs ports) |
 | tower-http | 0.7.1 | MIT | yes | Sets the security headers on every response (SEC-11) | maintained (2026-10-04) | own middleware (more code, same result) |
+| jiff | 0.2.37 | Unlicense OR MIT | yes | Moments in time (`Timestamp`) in domain events and the person record, with serde support | maintained (2026-10-04) | chrono (older design, more footguns with time zones); time (smaller date range, less friendly API) |
+| proc-macro2 | 1.0.107 | MIT OR Apache-2.0 | yes (bb-macros, build time) | Token types for the `Entity` derive macro | maintained (2026-10-04) | the compiler's own `proc_macro` (cannot be used in unit tests) |
+| quote | 1.0.47 | MIT OR Apache-2.0 | yes (bb-macros, build time) | Writes the code of the `Entity` derive macro | maintained (2026-10-04) | building token strings by hand (error-prone) |
+| syn | 3.0.6 | MIT OR Apache-2.0 | yes (bb-macros, build time), no (xtask) | Reads the struct and its marks in the `Entity` derive macro; in xtask it reads the same marks from the source for DATA-MARKS and the personal-data page | maintained (2026-10-04) | hand-written parsing of Rust (breaks on attributes, comments and nesting) |
+| trybuild | 1.0.121 | MIT OR Apache-2.0 | no (tests) | Compile-fail tests: an unmarked field must not compile (DATA-MARKS) | maintained (2026-10-04) | ui_test (larger, built for the compiler itself); doc tests with `compile_fail` (no check of the error text) |
+| uuid | 1.27.0 | Apache-2.0 OR MIT | yes | UUIDv7 inside every ID type (ADR-0021) | maintained (2026-10-04) | own UUID code (easy to get the version and variant bits wrong) |
 
 Server crates are added with the milestones that use them; planned ones are listed in [architecture/09-tech-stack.md](../architecture/09-tech-stack.md).
 

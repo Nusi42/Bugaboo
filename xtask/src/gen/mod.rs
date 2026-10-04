@@ -6,6 +6,8 @@
 pub(crate) mod contrast_spec;
 pub(crate) mod icu;
 pub(crate) mod messages;
+pub(crate) mod messages_rust;
+pub(crate) mod privacy;
 pub(crate) mod token_file;
 pub(crate) mod tokens;
 
@@ -35,7 +37,8 @@ pub(crate) fn all(repo: &Repo, catalog: &Catalog) -> anyhow::Result<Vec<Generate
     files.extend(tokens::generate(&token_file::TokenFile::load(repo)?));
     let catalog_text = std::fs::read_to_string(repo.path(messages::SOURCE_LOCALE_PATH))
         .with_context(|| format!("could not read {}", messages::SOURCE_LOCALE_PATH))?;
-    files.push(messages::generate(&catalog_text)?);
+    files.extend(messages::generate(repo, &catalog_text)?);
+    files.extend(privacy::generate(repo)?);
     Ok(files)
 }
 
@@ -44,7 +47,8 @@ pub(crate) fn all(repo: &Repo, catalog: &Catalog) -> anyhow::Result<Vec<Generate
 pub(crate) fn all_paths() -> Vec<&'static str> {
     let mut paths = docs::generated_paths();
     paths.extend(tokens::output_paths());
-    paths.push(messages::OUTPUT);
+    paths.extend(messages::output_paths());
+    paths.push(privacy::OUTPUT);
     paths
 }
 

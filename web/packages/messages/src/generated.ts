@@ -12,6 +12,24 @@ export const messages = {
   "theme.paper": "Paper",
   "theme.dusk": "Dusk",
   "theme.midnight": "Midnight",
+  "error.auth.wrong-credentials": "The e-mail address or the password is not right.",
+  "error.auth.not-signed-in": "Please sign in to continue.",
+  "error.access.forbidden": "You are not allowed to do that.",
+  "error.resource.not-found": "We could not find that.",
+  "error.request.invalid":
+    "Something in your request is not valid. Check what you typed and try again.",
+  "error.request.too-large": "That is too big to send.",
+  "error.edit.version-changed":
+    "Someone changed this while you were working. Use Compare and save to keep your changes.",
+  "error.rate-limit.exceeded": "Too many tries. Please wait a little and try again.",
+  "error.server.unavailable": "Bugaboo is not available right now. Please try again in a moment.",
+  "error.server.internal": "Something went wrong on our side. Nothing you did caused this.",
+  "setting.appearance.theme.help":
+    "The colors Bugaboo uses on your screen. Match my device follows the light or dark setting of your device.",
+  "setting.security.session-idle-minutes.help":
+    "How many minutes without activity pass before people are signed out automatically.",
+  "setting.security.two-step-required.help":
+    "Ask everyone to use two-step sign-in. People who have not set it up are asked to do so the next time they sign in.",
 } as const;
 
 export type MessageKey = keyof typeof messages;
