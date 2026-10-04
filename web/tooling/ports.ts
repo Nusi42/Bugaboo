@@ -1,22 +1,26 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
+import defaults from "../../tools/dev/ports.json" with { type: "json" };
+
 /** The work folder: the one place that holds `tools/dev/ports.json`, `messages/` and `design/`. */
 export const repoRoot = resolve(import.meta.dirname, "../..");
 
-export interface Ports {
-  readonly server: number;
-  readonly web: number;
-  readonly webPreview: number;
-  readonly e2eServer: number;
-  readonly vitestUi: number;
-  readonly e2eWorkersFrom: number;
-  readonly e2eWorkersTo: number;
-  readonly loadTestServer: number;
-}
+/** The port names are the keys of `tools/dev/ports.json`; nothing here repeats them. */
+export type Ports = { readonly [Name in Exclude<keyof typeof defaults, `$${string}`>]: number };
+
+const portNames = Object.keys(defaults).filter((name) => !name.startsWith("$"));
 
 function isPort(value: unknown): value is number {
   return typeof value === "number" && Number.isInteger(value) && value > 0 && value < 65536;
+}
+
+function hasEveryPort(value: unknown): value is Ports {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    portNames.every((name) => isPort(Reflect.get(value, name)))
+  );
 }
 
 /**
@@ -26,24 +30,8 @@ function isPort(value: unknown): value is number {
 export function readPorts(): Ports {
   const file = process.env["BB_PORTS_FILE"] ?? resolve(repoRoot, "tools/dev/ports.json");
   const parsed: unknown = JSON.parse(readFileSync(file, "utf8"));
-  if (typeof parsed !== "object" || parsed === null) {
-    throw new Error(`${file} must contain a JSON object of ports.`);
+  if (!hasEveryPort(parsed)) {
+    throw new Error(`${file} must give a port number for each of: ${portNames.join(", ")}.`);
   }
-  const port = (name: keyof Ports): number => {
-    const value: unknown = Reflect.get(parsed, name);
-    if (!isPort(value)) {
-      throw new Error(`${file} must give a port number for "${name}".`);
-    }
-    return value;
-  };
-  return {
-    server: port("server"),
-    web: port("web"),
-    webPreview: port("webPreview"),
-    e2eServer: port("e2eServer"),
-    vitestUi: port("vitestUi"),
-    e2eWorkersFrom: port("e2eWorkersFrom"),
-    e2eWorkersTo: port("e2eWorkersTo"),
-    loadTestServer: port("loadTestServer"),
-  };
+  return parsed;
 }
