@@ -21,7 +21,14 @@ impl Check for LintSpell {
 }
 
 fn check_files(root: &Path, files: Option<&[String]>) -> anyhow::Result<Vec<Finding>> {
-    let mut args = vec!["--config", "typos.toml", "--format", "brief"];
+    // --force-exclude: the excludes in typos.toml also apply to files named explicitly.
+    let mut args = vec![
+        "--force-exclude",
+        "--config",
+        "typos.toml",
+        "--format",
+        "brief",
+    ];
     match files {
         Some([]) => return Ok(Vec::new()),
         Some(files) => args.extend(files.iter().map(String::as_str)),

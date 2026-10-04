@@ -54,16 +54,41 @@ mod tests {
     use super::*;
     use crate::testutil::TempDir;
 
-    #[test]
-    fn bad_example() {
-        let temp = TempDir::new("lint-links-bad");
-        temp.write("lychee.toml", "include_fragments = \"anchor-only\"\n");
+    fn bad(name: &str, text: &str) {
+        let temp = TempDir::new(name);
         temp.write(
-            "a.md",
-            "# A\n\nSee [missing](missing.md) and [part](b.md#nowhere).\n",
+            "lychee.toml",
+            "include_fragments = \"anchor-only\"
+",
         );
-        temp.write("b.md", "# B\n");
+        temp.write("a.md", text);
+        temp.write(
+            "b.md", "# B
+",
+        );
         crate::testutil::assert_real_findings(&check_files(temp.path(), &["a.md".into()]).unwrap());
+    }
+
+    #[test]
+    fn bad_example_missing_file() {
+        bad(
+            "lint-links-bad-file",
+            "# A
+
+See [missing](missing.md).
+",
+        );
+    }
+
+    #[test]
+    fn bad_example_missing_anchor() {
+        bad(
+            "lint-links-bad-anchor",
+            "# A
+
+See [part](b.md#nowhere).
+",
+        );
     }
 
     #[test]

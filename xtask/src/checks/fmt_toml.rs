@@ -41,10 +41,7 @@ fn check_files(root: &Path, files: Option<&[String]>) -> anyhow::Result<Vec<Find
             .lines()
             .filter(|line| !line.trim_start().starts_with("INFO "))
             .collect::<Vec<_>>()
-            .join(
-                "
-",
-            );
+            .join("\n");
         output
     });
     Ok(tools::findings_from(

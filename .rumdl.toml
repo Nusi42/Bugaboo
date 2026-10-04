@@ -2,7 +2,8 @@
 
 [MD013]
 # The docs are written one paragraph per line (diff-friendly, no re-wrapping on edits), so prose is
-# not wrapped. Headings still have to fit the line length; tables are exempt (default).
+# not wrapped (this also exempts list items and blockquotes, which rumdl treats as paragraphs).
+# Headings still have to fit the line length; tables are exempt (default).
 paragraphs = false
 line-length = 100
 # Diagrams (Mermaid) and directory trees cannot be wrapped.

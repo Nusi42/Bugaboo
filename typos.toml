@@ -6,10 +6,16 @@ extend-exclude = ["docs/03-architecture.html", "docs/04-milestones.html"]
 [default.extend-words]
 # Feature-ID group prefix THM (themes), e.g. THM-03: an ID, not a misspelling of "them".
 THM = "THM"
-# Short CSS class names in the hand-written design pages (docs/02-ux-design.html, docs/mockups).
-nd = "nd"
-pn = "pn"
 
 [default.extend-identifiers]
 # The crate name flate2 (docs/third-party/README.md), not a misspelling of "flat".
 flate2 = "flate2"
+
+# Short CSS class names in the hand-written design pages (docs/02-ux-design.html, docs/mockups);
+# only HTML files get these two words.
+[type.html]
+extend-glob = ["*.html"]
+
+[type.html.extend-words]
+nd = "nd"
+pn = "pn"
