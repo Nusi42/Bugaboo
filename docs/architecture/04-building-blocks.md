@@ -46,6 +46,7 @@ flowchart TB
   app["bb-app<br/>use cases + ports"]
   policy["bb-policy"]
   core["bb-core"]
+  macros["bb-macros"]
   search["bb-searchlang"]
   md["bb-markdown"]
   store["bb-store"]
@@ -62,6 +63,7 @@ flowchart TB
   jobs --> app
   app --> policy & core & search & md
   policy --> core
+  core -.-> macros
   store -. implements ports .-> app
   files -. implements ports .-> app
   ai -. implements ports .-> app
@@ -70,7 +72,7 @@ flowchart TB
   wasm --> search & md
 ```
 
-### Dependency rules (checked by `cargo xtask check deps`)
+### Dependency rules (checked by `cargo xtask check only ARCH-DEPS`)
 
 1. `bb-core`, `bb-searchlang` and `bb-markdown` do no I/O and depend on no other Bugaboo crate except `bb-core` (searchlang and markdown not even that), so they compile to WebAssembly.
 2. `bb-app` knows **ports** (traits) only. It never imports `bb-store`, `bb-files`, `bb-ai` or `bb-notify`. Tests run use cases against in-memory fakes.

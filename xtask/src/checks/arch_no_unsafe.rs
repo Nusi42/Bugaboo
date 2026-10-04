@@ -28,16 +28,20 @@ impl Check for ArchNoUnsafe {
 fn evaluate(root: &Path, packages: &[Package]) -> anyhow::Result<Vec<Finding>> {
     let mut findings = Vec::new();
     let workspace = read_toml(&root.join("Cargo.toml"))?;
-    let workspace_level = workspace
+    let level = workspace
         .get("workspace")
         .and_then(|w| w.get("lints"))
         .and_then(|l| l.get("rust"))
         .and_then(|r| r.get("unsafe_code"))
-        .and_then(toml::Value::as_str);
-    if workspace_level.is_some_and(|level| level != "forbid") {
+        .and_then(|value| match value {
+            toml::Value::String(level) => Some(level.as_str()),
+            toml::Value::Table(table) => table.get("level").and_then(toml::Value::as_str),
+            _ => None,
+        });
+    if level != Some("forbid") {
         findings.push(Finding::at(
             "Cargo.toml",
-            "[workspace.lints.rust] sets `unsafe_code` to something other than \"forbid\".",
+            "[workspace.lints.rust] must set `unsafe_code = \"forbid\"` (string or table form).",
         ));
     }
     for package in packages {
@@ -118,6 +122,61 @@ mod tests {
             "//! Docs.\n\n#![forbid(unsafe_code)]\n",
         );
         assert!(evaluate(temp.path(), &packages).unwrap().is_empty());
+    }
+
+    #[test]
+    fn good_example_table_form_of_the_workspace_lint() {
+        let temp = TempDir::new("no-unsafe-table");
+        let packages = workspace(
+            &temp,
+            "
+[lints]
+workspace = true
+",
+            "#![forbid(unsafe_code)]
+",
+        );
+        temp.write(
+            "Cargo.toml",
+            "[workspace.lints.rust]
+unsafe_code = { level = \"forbid\", priority = 1 }
+",
+        );
+        assert!(evaluate(temp.path(), &packages).unwrap().is_empty());
+    }
+
+    #[test]
+    fn bad_example_workspace_lint_missing_or_weaker() {
+        for lints in [
+            "",
+            "[workspace.lints.rust]
+unsafe_code = \"deny\"
+",
+        ] {
+            let temp = TempDir::new("no-unsafe-weak");
+            let packages = workspace(
+                &temp,
+                "
+[lints]
+workspace = true
+",
+                "#![forbid(unsafe_code)]
+",
+            );
+            temp.write(
+                "Cargo.toml",
+                format!(
+                    "[workspace]
+members = []
+{lints}"
+                ),
+            );
+            assert_eq!(
+                evaluate(temp.path(), &packages).unwrap().len(),
+                1,
+                "{lints}"
+            );
+        }
     }
 
     #[test]
