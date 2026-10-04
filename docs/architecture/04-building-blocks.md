@@ -23,6 +23,7 @@ bugaboo/
 │   ├── bb-wasm/            WebAssembly bindings for searchlang, markdown, validation
 │   └── bb-server/          the `bugaboo` binary: CLI, setup wizard, service install, wiring
 ├── xtask/                  the single check/build runner (cargo xtask …)
+├── tools/                  check catalogue, pinned tool versions, dev ports
 ├── design/tokens.json      design tokens — source of all colors, fonts, sizes
 ├── messages/en.json        message catalog — source of all user-facing text
 ├── web/                    browser app (TypeScript)
@@ -74,7 +75,7 @@ flowchart TB
 
 ### Dependency rules (checked by `cargo xtask check only ARCH-DEPS`)
 
-1. `bb-core`, `bb-searchlang` and `bb-markdown` do no I/O and depend on no other Bugaboo crate except `bb-core` (searchlang and markdown not even that), so they compile to WebAssembly.
+1. `bb-core`, `bb-searchlang` and `bb-markdown` do no I/O and depend on no other Bugaboo crate except `bb-core` (searchlang and markdown not even that; `bb-core` uses `bb-macros` for derives at compile time only), so they compile to WebAssembly.
 2. `bb-app` knows **ports** (traits) only. It never imports `bb-store`, `bb-files`, `bb-ai` or `bb-notify`. Tests run use cases against in-memory fakes.
 3. Only `bb-policy` can create `Authorized<T>`. Its constructor is private to the crate.
 4. Only `bb-api` and `bb-mcp` speak HTTP. Only `bb-server` wires adapters to ports.

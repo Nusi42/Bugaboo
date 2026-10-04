@@ -22,7 +22,7 @@ sequenceDiagram
   A-->>B: 200 JSON + ETag (hidden fields never serialized)
 ```
 
-If the actor may not see the issue, the answer is the same "not found" as for an issue that doesn't exist.
+If the actor may not see the issue, the answer is the same "not found" as for an issue that doesn't exist (SEC-MATRIX).
 
 ## Searching
 
@@ -125,7 +125,7 @@ sequenceDiagram
 
 ## Removing a person (GDPR)
 
-1. An admin chooses *Remove a person*. `bb-app::privacy` builds a **plan** from the personal-data marks: what will be deleted now, what will be anonymized, what must be kept by law and until when.
+1. An admin chooses *Remove a person*. `bb-app::privacy` builds a **plan** from the personal-data marks: what will be deleted now, what will be anonymized, what must be kept by law and until when (DATA-MARKS; legal keep periods: review (compliance.md lists them)).
 2. The admin confirms. A background job runs the plan in steps; each step is idempotent and logged.
 3. The person's name becomes *Former user K7Q2* everywhere (a tombstone record replaces the user). Records under a legal hold are deleted by the normal deletion schedule.
 

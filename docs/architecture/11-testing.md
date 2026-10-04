@@ -61,6 +61,8 @@ Concurrency is tested with **10 simulated people** from the sample organization,
 | Timers and working hours start and stop at the same time | No double entries; working-time rules evaluated once per change |
 | Searches while others change data | Results respect permissions at every moment; no errors; latency within budget |
 
+Enforced by: TEST-CONCURRENT, TEST-EDIT-LOCKS.
+
 Each scenario runs against **both SQLite and PostgreSQL**. The short version (2 minutes) runs in CI; the long version (30 minutes, mixed workload) runs nightly and checks invariants afterwards: every change has an event, no lock outlives its lease, no text is lost.
 
 ## Local ports (ADR-0023)

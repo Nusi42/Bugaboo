@@ -18,4 +18,4 @@ The structure follows the arc42 template (shortened) with C4-style diagrams as M
 | 10 | [Architecture checks](10-checks.md) |
 | 11 | [Testing, sample data and local ports](11-testing.md) |
 
-The commentable HTML version (`../03-architecture.html`) is **generated** from these files and the ADRs by `tools/docs-html/` — edit the Markdown, never the HTML.
+The commentable HTML version (`../03-architecture.html`) is **generated** from these files and the ADRs by `cargo xtask docs` — edit the Markdown, never the HTML.

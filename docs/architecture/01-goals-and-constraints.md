@@ -36,12 +36,12 @@ Across all of them: **privacy by design** (GDPR) and **EU product law** (CRA, AI
 
 ### Distribution
 
-- Bugaboo may be **sold** (the customer runs it) or **served** (we run it). Both must work from the same code (DIST-01).
+- Bugaboo may be **sold** (the customer runs it) or **served** (we run it). Both must work from the same code (DIST-01; review: checked at every milestone review).
 - **No telemetry** and no outside requests unless an administrator configures them (mail, AI provider, single sign-on, update check).
 
 ### Licenses of third-party parts
 
-The license of Bugaboo itself is not decided. Every part we ship must therefore allow both proprietary and open-source distribution:
+The license of Bugaboo itself is not decided. Every part we ship must therefore allow both proprietary and open-source distribution (DEP-LICENSES):
 
 | Allowed in the shipped binary | Not allowed |
 |-------------------------------|-------------|
@@ -51,4 +51,4 @@ The exact allow list lives in `deny.toml` (the single source) and is enforced by
 
 ### People and process
 
-- Implementation is done by AI agents in milestones, guided by these documents. Everything an agent needs must be written down, and every rule that can be checked by a machine is checked by a hook.
+- Implementation is done by AI agents in milestones, guided by these documents. Everything an agent needs must be written down (review: checked at every milestone review), and every rule that can be checked by a machine is checked by a hook.
