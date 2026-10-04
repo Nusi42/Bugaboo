@@ -78,5 +78,6 @@ Your machine runs other Vite projects, so Bugaboo never uses default ports. All 
 | 47204 | Vitest UI |
 | 47210–47229 | Parallel Playwright workers, one server and database each |
 | 47230 | Load-test server |
+| 47240 | Throwaway PostgreSQL for tests (`cargo xtask db start`) |
 
 The installed product asks for its port in the setup wizard (suggesting 8443 and checking that it's free); these development ports never appear in a customer installation.

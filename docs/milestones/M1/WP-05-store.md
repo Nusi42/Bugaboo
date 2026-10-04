@@ -1,0 +1,27 @@
+# WP-05 — Store: schema once for both databases, event log, jobs, security log, secrets
+
+**Wave 2 · Folder / branch:** `bugaboo.win2` / `WIN2`
+**Features:** OPS-02, SEC-15, SEC-16, PRIV-02 (storage side); ADR-0003, ADR-0007, ADR-0017, ADR-0018.
+
+## Goal
+
+`bb-store` is the only crate that talks to a database. Schema and queries are written once (sea-query) and run on SQLite and PostgreSQL.
+
+## Owns
+
+`crates/bb-store/**`, its use of the WP-03 test harness, checks `arch_sql.rs` (no raw SQL outside `bb-store`), the storage part of ARCH-SETTINGS, DATA-MIGRATIONS (migration test part).
+
+## Tasks
+
+1. **Pools and migrations:** sqlx pools for both databases (SQLite in WAL mode, foreign keys on, busy timeout); migrations as Rust code with sea-query, numbered, forward-only, recorded in a migrations table; refuse to start on a newer schema than the binary knows.
+2. **Event log and outbox (ADR-0007):** append-only `events` table storing the WP-02 envelope; the outbox is written in the same transaction as the change. One function for "change + event + outbox" — no other way to write domain data.
+3. **Job queue (ADR-0017):** jobs table with lease, retries with back-off, dead-letter; workers poll; `SKIP LOCKED` on PostgreSQL, single-writer on SQLite.
+4. **Security log (SEC-15):** append-only, hash-chained (each row stores the hash of the previous one), verify function and `bugaboo security-log verify` hook for WP-08; IP addresses truncated as in WP-04.
+5. **Secrets (SEC-16):** master key in `keys/` (created on first start, owner-only), envelope encryption (XChaCha20-Poly1305 or AES-256-GCM via a pure-Rust crate), key ID stored with each value, `zeroize` for keys in memory; rotation function.
+6. **Settings storage:** values per level from the WP-02 registry; unknown keys rejected.
+7. **Tests:** every repository test runs on both databases through the WP-03 harness; property test for the hash chain (any changed row breaks verification).
+
+## Acceptance
+
+- `cargo xtask ci` green with both databases recorded; ARCH-DB-PARITY and DATA-MIGRATIONS green.
+- No SQL strings outside `bb-store` (check).

@@ -7,5 +7,6 @@
   "vitestUi": 47204,
   "e2eWorkersFrom": 47210,
   "e2eWorkersTo": 47229,
-  "loadTestServer": 47230
+  "loadTestServer": 47230,
+  "postgres": 47240
 }
