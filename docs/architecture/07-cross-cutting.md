@@ -16,6 +16,7 @@
 
 - **Content Security Policy:** `default-src 'self'`; scripts and styles only from our own origin, no inline code, no `eval`; `frame-ancestors 'none'`; `require-trusted-types-for 'script'`; images from our origin and `data:` only (outside images only if an admin allows the host).
 - **Other headers:** HSTS, `X-Content-Type-Options: nosniff`, COOP/CORP, a tight Permissions-Policy, `Referrer-Policy: same-origin`.
+- **One header layer** wraps the whole router, so pages, files, API answers, errors and 404s carry the same set; HSTS (`max-age` two years, `includeSubDomains`) is added when browsers reach us over HTTPS, here or at a trusted proxy. Text answers are compressed with Brotli or gzip. Enforced by: SEC-HEADERS (the integration tests assert the full set on a page, an asset, an API error and a 404).
 - **User content** is rendered by one Markdown renderer with an allow list (ADR-0011). Attachments are downloaded, never rendered inline unless they are images or PDFs converted to safe previews.
 
 ### Secrets and keys
@@ -158,8 +159,8 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit
 
 ## Observability
 
-- Structured JSON logs (`tracing`) with request IDs; no personal data in logs.
-- Health endpoints (`/health/live`, `/health/ready`); optional Prometheus metrics, off by default and protected.
+- Structured JSON logs (`tracing`, one object per line on standard error) with request IDs. One line per request holds the request ID, method, route pattern, status, duration and the client address cut short (IPv4 `/24`, IPv6 `/48`); never the path as typed, the query, headers, bodies, names, e-mail addresses or free text. Enforced by: DATA-LOGS.
+- Health endpoints: `/health/live` answers while the process runs; `/health/ready` also checks the data folder (and the database once the store exists) and answers 503 when something is missing; optional Prometheus metrics, off by default and protected.
 - The admin *Status* page shows version, database, disk, jobs, backups and certificate expiry.
 
 ## Performance
