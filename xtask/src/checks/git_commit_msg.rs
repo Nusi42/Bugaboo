@@ -16,6 +16,9 @@ const TYPES: [&str; 10] = [
     "feat", "fix", "docs", "refactor", "test", "build", "ci", "chore", "perf", "style",
 ];
 
+/// Subjects Git itself writes (merges, reverts, autosquash markers) are accepted as they are.
+const GIT_OWN: [&str; 5] = ["Merge ", "Revert \"", "fixup! ", "squash! ", "amend! "];
+
 /// The longest allowed subject line.
 const MAX_SUBJECT: usize = 72;
 
@@ -86,6 +89,9 @@ fn subject_of(message: &str) -> &str {
 
 /// What is wrong with a subject line, in plain words. Empty means it is fine.
 pub(crate) fn problems(subject: &str) -> Vec<String> {
+    if GIT_OWN.iter().any(|prefix| subject.starts_with(prefix)) {
+        return Vec::new();
+    }
     let form =
         "Write the first line as `type(scope): subject`, for example `feat(xtask): add setup`.";
     let Some((head, text)) = subject.split_once(": ") else {
@@ -156,6 +162,22 @@ mod tests {
         ] {
             assert!(!problems(subject).is_empty(), "should fail: {subject:?}");
         }
+    }
+
+    #[test]
+    fn git_own_messages_are_accepted() {
+        for subject in [
+            "Merge branch 'WIN3' into main",
+            "Merge pull request #4 from x/y",
+            "Revert \"feat(web): add board\"",
+            "fixup! feat(xtask): add setup",
+            "squash! fix(web): x",
+            "amend! docs: y",
+        ] {
+            assert!(problems(subject).is_empty(), "{subject}");
+        }
+        assert!(!problems("Merged stuff").is_empty());
+        assert!(!problems("Reverting things").is_empty());
     }
 
     #[test]

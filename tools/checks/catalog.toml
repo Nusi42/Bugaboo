@@ -364,7 +364,7 @@ title = "Every crate forbids unsafe code unless an ADR allows it"
 rule = "coding-standards §3"
 tool = "xtask (checks #![forbid(unsafe_code)] in crate roots)"
 when = ["commit", "ci"]
-files = ["crates/*/src/lib.rs", "crates/*/src/main.rs"]
+files = ["**/Cargo.toml", "crates/*/src/lib.rs", "crates/*/src/main.rs", "xtask/src/main.rs"]
 status = "active"
 
 [[check]]
@@ -641,8 +641,8 @@ status = "active"
 id = "GIT-COMMIT-MSG"
 title = "Commit messages follow Conventional Commits"
 rule = "coding-standards §2"
-tool = "xtask (commit-msg hook)"
-when = ["commit"]
+tool = "xtask (commit-msg hook: `check commit-msg <file>`; push and CI: commits not on main)"
+when = ["push", "ci"]
 files = ["*"]
 status = "active"
 
