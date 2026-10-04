@@ -101,7 +101,15 @@ fn npm_licenses(root: &Path, lockfiles: &[String]) -> anyhow::Result<Vec<Finding
             .unwrap_or_else(|| Path::new(""));
         let packages = lock.get("packages").and_then(Value::as_object);
         for (key, entry) in packages.into_iter().flatten() {
-            if key.is_empty() || entry.get("link").and_then(Value::as_bool) == Some(true) {
+            // Only installed packages count: keys outside node_modules/ are our own workspace
+            // packages, links are the same. Dev-only packages never ship (DECISION: exempt from the
+            // allow list; they still need register rows).
+            let is_dependency = key.starts_with("node_modules/") || key.contains("/node_modules/");
+            let dev_only = entry.get("dev").and_then(Value::as_bool) == Some(true);
+            if !is_dependency
+                || dev_only
+                || entry.get("link").and_then(Value::as_bool) == Some(true)
+            {
                 continue;
             }
             let name = key.rsplit("node_modules/").next().unwrap_or(key);
@@ -112,9 +120,8 @@ fn npm_licenses(root: &Path, lockfiles: &[String]) -> anyhow::Result<Vec<Finding
                 .and_then(|text| serde_json::from_str::<Value>(&text).ok());
             let license = installed
                 .as_ref()
-                .and_then(|json| json.get("license"))
-                .or_else(|| entry.get("license"))
-                .and_then(license_text);
+                .and_then(declared_license)
+                .or_else(|| declared_license(entry));
             match license {
                 None => findings.push(Finding::at(
                     format!("{lockfile}: {name}"),
@@ -131,6 +138,13 @@ fn npm_licenses(root: &Path, lockfiles: &[String]) -> anyhow::Result<Vec<Finding
         }
     }
     Ok(findings)
+}
+
+/// The `license` field of a `package.json`, or its legacy `licenses` list, as text.
+fn declared_license(json: &Value) -> Option<String> {
+    json.get("license")
+        .or_else(|| json.get("licenses"))
+        .and_then(license_text)
 }
 
 /// The license of a `package.json` as an SPDX expression (old object and list forms included).
@@ -259,6 +273,33 @@ mod tests {
         let findings = npm_licenses(temp.path(), &["package-lock.json".into()]).unwrap();
         assert_eq!(findings.len(), 1);
         assert!(findings[0].message.contains("GPL-3.0-only"));
+    }
+
+    #[test]
+    fn workspace_packages_and_dev_only_packages_are_exempt() {
+        let temp = TempDir::new("licenses-npm-exempt");
+        temp.write(DENY_CONFIG, "[licenses]\nallow = [\"MIT\"]\n");
+        temp.write(
+            "package-lock.json",
+            r#"{"packages":{"":{},
+              "web/ui":{"license":"UNLICENSED"},
+              "node_modules/tool":{"license":"GPL-3.0-only","dev":true},
+              "node_modules/legacy":{"licenses":[{"type":"MIT"}]}}}"#,
+        );
+        let findings = npm_licenses(temp.path(), &["package-lock.json".into()]).unwrap();
+        assert!(findings.is_empty());
+    }
+
+    #[test]
+    fn bad_example_legacy_licenses_field() {
+        let temp = TempDir::new("licenses-npm-legacy");
+        temp.write(DENY_CONFIG, "[licenses]\nallow = [\"MIT\"]\n");
+        temp.write(
+            "package-lock.json",
+            r#"{"packages":{"node_modules/legacy":{"licenses":[{"type":"GPL-3.0-only"}]}}}"#,
+        );
+        let findings = npm_licenses(temp.path(), &["package-lock.json".into()]).unwrap();
+        assert_eq!(findings.len(), 1);
     }
 
     #[test]

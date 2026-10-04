@@ -1,6 +1,6 @@
 # Third-party register
 
-Every **direct** dependency of Bugaboo — shipped or used only for building, testing or docs — has one row here, added in the same change that adds the dependency (coding-standards §5). The register check (`cargo xtask check register`, coding-standards §7) compares these tables with `Cargo.lock` and the npm lockfiles and fails on any difference.
+Every **direct** dependency of Bugaboo — shipped or used only for building, testing or docs — has one row here, added in the same change that adds the dependency (coding-standards §5). The register check (`cargo xtask check only DEP-REGISTER`, coding-standards §7) compares these tables with `Cargo.lock` and the npm lockfiles and fails on any difference.
 
 Together with the lockfiles, this register is the source for the SBOM, the third-party notices and *About › Licenses* (COMP-01, COMP-02).
 
