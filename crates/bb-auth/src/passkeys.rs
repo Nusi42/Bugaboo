@@ -33,6 +33,22 @@ pub const CHALLENGE_LIFETIME: Duration = Duration::from_mins(5);
 /// How many challenges wait at the same time.
 const MAX_PENDING: usize = 1000;
 
+/// The address people reach the server at (`public_url`), cut down to its origin
+/// (`scheme://host[:port]`). Only `http` and `https` addresses with a host, and without a path
+/// beyond `/`, a query, a fragment or a user name, are accepted.
+#[must_use]
+pub fn public_origin(text: &str) -> Option<String> {
+    let url = Url::parse(text.trim()).ok()?;
+    let plain = matches!(url.scheme(), "http" | "https")
+        && url.host_str().is_some()
+        && matches!(url.path(), "" | "/")
+        && url.query().is_none()
+        && url.fragment().is_none()
+        && url.username().is_empty()
+        && url.password().is_none();
+    plain.then(|| url.origin().ascii_serialization())
+}
+
 /// The server as passkeys know it: the host name they are tied to and the address pages are
 /// served from.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -409,6 +425,35 @@ impl Passkeys {
             credential_id: result.cred_id().clone(),
             updated,
         })
+    }
+}
+
+#[cfg(test)]
+mod origin_tests {
+    use super::public_origin;
+
+    #[test]
+    fn auth_02_the_public_address_is_cut_down_to_its_origin() {
+        assert_eq!(
+            public_origin(" https://Bugaboo.Example.com:47200/ ").as_deref(),
+            Some("https://bugaboo.example.com:47200")
+        );
+        assert_eq!(
+            public_origin("http://localhost").as_deref(),
+            Some("http://localhost")
+        );
+        for bad in [
+            "",
+            "bugaboo.example.com",
+            "ftp://example.com",
+            "https://example.com/app",
+            "https://example.com/?x=1",
+            "https://example.com/#top",
+            "https://user:pass@example.com",
+            "https://",
+        ] {
+            assert_eq!(public_origin(bad), None, "{bad}");
+        }
     }
 }
 

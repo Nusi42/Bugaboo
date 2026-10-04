@@ -433,9 +433,13 @@ dependencies = [
 name = "bb-app"
 version = "0.0.0"
 dependencies = [
+ "bb-auth",
  "bb-core",
  "getrandom 0.4.3",
  "jiff",
+ "serde_json",
+ "tracing",
+ "zeroize",
 ]
 
 [[package]]

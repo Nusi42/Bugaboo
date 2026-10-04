@@ -26,7 +26,7 @@ pub use email::{EmailAddress, domain_is_listed};
 pub use error::AuthError;
 pub use passkeys::{
     CHALLENGE_LIFETIME, ChallengeId, DiscoverableMatch, PasskeyCheck, Passkeys, RelyingParty,
-    StoredCredential,
+    StoredCredential, public_origin,
 };
 pub use password::{
     ARGON2_ITERATIONS, ARGON2_LANES, ARGON2_MEMORY_KIB, MAX_LENGTH, MIN_LENGTH, PasswordHasher,
