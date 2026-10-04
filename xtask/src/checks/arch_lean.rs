@@ -2,7 +2,8 @@
 //!
 //! Read from the generated OpenAPI document, so a new list route is found without anyone
 //! registering it. A list is **any array property** of the object a `GET` answers with, not only
-//! one called `items`, so a list cannot dodge the rule by its name. A list called `items` must
+//! one called `items`, so a list cannot dodge the rule by its name. An answer that is itself a
+//! bare array is refused: it has no room for `next_cursor`. A list called `items` must
 //! take the query parameters `fields` and `cursor` and a `limit` with a `maximum`, and its answer
 //! must hold `next_cursor`. A list with another name is only allowed when it is named in
 //! `tools/checks/lean-exemptions.toml` with a reason that names the follow-up (`M1-F44`): the
@@ -166,6 +167,15 @@ fn evaluate(spec: &Value, exemptions: &[Exemption]) -> Vec<Finding> {
             continue;
         };
         let place = format!("GET {path}");
+        // An answer that is a bare array has no room for `next_cursor` or `truncated`, so it is
+        // never allowed: wrap it in an object with a list called `items`.
+        if is_array(spec, schema) {
+            findings.push(Finding::at(
+                &place,
+                format!("The answer is a bare array. Answer with an object that holds the list as `{PAGED_LIST}`, so there is room for `next_cursor`."),
+            ));
+            continue;
+        }
         for property in array_properties(spec, schema) {
             let exemption = exemptions
                 .iter()
@@ -320,6 +330,28 @@ mod tests {
         let bad = spec_with(&parameters(&[], false), &page("issues", false));
         let found = messages(&bad, &[]).join("\n");
         assert!(found.contains("the list `issues`"), "{found}");
+    }
+
+    #[test]
+    fn bad_example_a_get_that_answers_with_a_bare_array() {
+        let bare = spec_with(
+            &parameters(&["fields", "cursor", "limit"], true),
+            &json!({"type": "array", "items": {"type": "string"}}),
+        );
+        let found = messages(&bare, &[]).join(
+            "
+",
+        );
+        assert!(found.contains("bare array"), "{found}");
+    }
+
+    #[test]
+    fn good_example_a_get_that_answers_with_an_object_around_its_list() {
+        let wrapped = spec_with(
+            &parameters(&["fields", "cursor", "limit"], true),
+            &page("items", true),
+        );
+        assert!(messages(&wrapped, &[]).is_empty());
     }
 
     #[test]
