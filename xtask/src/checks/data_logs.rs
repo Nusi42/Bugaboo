@@ -4,15 +4,15 @@
 //! Every `tracing` macro in the product code is read. It fails when a field or a value in it
 //! carries a name that stands for personal data or free text (see [`PERSONAL`]), either as a
 //! field (`email = %x`), as a value (`user.name`) or as a captured name in the message
-//! (`"{email}"`). IDs, counts, codes and shortened addresses are what logs may hold. Test code
-//! is not checked.
+//! (`"{email}"`). IDs, counts, codes and shortened networks are what logs may hold. Test-only
+//! items (`#[cfg(test)]` and the item after it) and files in `tests/` are not checked.
 
 use std::path::Path;
 
 use super::{Check, Context, Finding};
 
 /// Names (lower case) that must not appear in a log statement.
-const PERSONAL: [&str; 29] = [
+const PERSONAL: [&str; 35] = [
     "name",
     "names",
     "username",
@@ -42,6 +42,12 @@ const PERSONAL: [&str; 29] = [
     "uri",
     "url",
     "ip",
+    "addr",
+    "address",
+    "peer",
+    "remote",
+    "client",
+    "host",
 ];
 /// Macros that write log events or spans.
 const MACROS: [&str; 10] = [
@@ -56,7 +62,7 @@ const MACROS: [&str; 10] = [
     "debug_span",
     "warn_span",
 ];
-/// Code after this line is test code.
+/// The attribute of test-only items; the item that follows it is not scanned.
 const TEST_MARKER: &str = "#[cfg(test)]";
 
 pub(crate) struct DataLogs;
@@ -82,43 +88,181 @@ impl Check for DataLogs {
     }
 }
 
-/// The text with comments blanked out and everything after the first test marker removed.
-/// String contents stay (captured names are checked); char literals are skipped.
+/// The text as the scan reads it: comments, char literals and test-only items (`#[cfg(test)]`
+/// and the one item that follows) are blanked out, line breaks stay so line numbers are right.
+/// Strings stay (captured names are checked); raw strings become ordinary strings.
 fn code_of(text: &str) -> String {
-    let end = text.find(TEST_MARKER).unwrap_or(text.len());
-    let chars: Vec<char> = text[..end].chars().collect();
-    let mut out = String::with_capacity(end);
+    let chars: Vec<char> = text.chars().collect();
+    let mut out = String::with_capacity(text.len());
     let mut index = 0;
-    let mut in_string = false;
-    while let Some(&c) = chars.get(index) {
+    let blank = |out: &mut String, from: usize, to: usize| {
+        for &c in &chars[from..to] {
+            out.push(if c == '\n' { '\n' } else { ' ' });
+        }
+    };
+    while index < chars.len() {
+        let c = chars[index];
         let next = chars.get(index + 1).copied();
-        if in_string {
-            out.push(c);
-            if c == '\\' {
-                if let Some(escaped) = next {
-                    out.push(escaped);
-                }
-                index += 2;
-                continue;
-            }
-            in_string = c != '"';
-        } else if c == '/' && next == Some('/') {
-            while chars.get(index).is_some_and(|c| *c != '\n') {
-                out.push(' ');
-                index += 1;
-            }
-            continue;
-        } else if c == '\'' && chars.get(index + 2) == Some(&'\'') {
-            out.push_str("   ");
-            index += 3;
-            continue;
+        if c == '/' && next == Some('/') {
+            let end = chars[index..]
+                .iter()
+                .position(|c| *c == '\n')
+                .map_or(chars.len(), |at| index + at);
+            blank(&mut out, index, end);
+            index = end;
+        } else if c == '/' && next == Some('*') {
+            let end = block_comment_end(&chars, index);
+            blank(&mut out, index, end);
+            index = end;
+        } else if starts_with(&chars, index, TEST_MARKER) {
+            let end = item_end(&chars, index + TEST_MARKER.chars().count());
+            blank(&mut out, index, end);
+            index = end;
+        } else if let Some((end, content)) = raw_string(&chars, index) {
+            out.push('"');
+            out.extend(
+                content
+                    .iter()
+                    .map(|c| if matches!(c, '"' | '\\') { ' ' } else { *c }),
+            );
+            out.push('"');
+            index = end;
+        } else if c == '"' {
+            let end = string_end(&chars, index);
+            out.extend(&chars[index..end]);
+            index = end;
+        } else if let Some(end) = char_literal_end(&chars, index) {
+            blank(&mut out, index, end);
+            index = end;
         } else {
             out.push(c);
-            in_string = c == '"';
+            index += 1;
+        }
+    }
+    out
+}
+
+fn starts_with(chars: &[char], at: usize, pattern: &str) -> bool {
+    pattern
+        .chars()
+        .enumerate()
+        .all(|(offset, c)| chars.get(at + offset) == Some(&c))
+}
+
+/// The position after `/* … */` (comments nest in Rust).
+fn block_comment_end(chars: &[char], start: usize) -> usize {
+    let mut depth = 0_usize;
+    let mut index = start;
+    while index < chars.len() {
+        if starts_with(chars, index, "/*") {
+            depth += 1;
+            index += 2;
+        } else if starts_with(chars, index, "*/") {
+            depth -= 1;
+            index += 2;
+            if depth == 0 {
+                return index;
+            }
+        } else {
+            index += 1;
+        }
+    }
+    chars.len()
+}
+
+/// The position after the string that starts at `start` (a `"`).
+fn string_end(chars: &[char], start: usize) -> usize {
+    let mut index = start + 1;
+    while let Some(&c) = chars.get(index) {
+        index += if c == '\\' { 2 } else { 1 };
+        if c == '"' {
+            return index;
+        }
+    }
+    chars.len()
+}
+
+/// `r"…"`, `r#"…"#`, `br"…"`: the position after it and its content.
+fn raw_string(chars: &[char], start: usize) -> Option<(usize, &[char])> {
+    if start > 0 && is_ident_char(chars[start - 1]) {
+        return None;
+    }
+    let mut index = start;
+    if chars.get(index) == Some(&'b') {
+        index += 1;
+    }
+    if chars.get(index) != Some(&'r') {
+        return None;
+    }
+    index += 1;
+    let hashes = chars[index..].iter().take_while(|c| **c == '#').count();
+    index += hashes;
+    if chars.get(index) != Some(&'"') {
+        return None;
+    }
+    let content_start = index + 1;
+    let closing: Vec<char> = std::iter::once('"')
+        .chain(std::iter::repeat_n('#', hashes))
+        .collect();
+    let end = (content_start..chars.len()).find(|at| chars[*at..].starts_with(&closing))?;
+    Some((end + closing.len(), &chars[content_start..end]))
+}
+
+/// The position after a char literal (`'x'`, `'\n'`, `'"'`); `None` for a lifetime (`'a`).
+fn char_literal_end(chars: &[char], start: usize) -> Option<usize> {
+    if chars[start] != '\'' || (start > 0 && is_ident_char(chars[start - 1])) {
+        return None;
+    }
+    if chars.get(start + 1) == Some(&'\\') {
+        let close = chars[start + 2..].iter().position(|c| *c == '\'')?;
+        return Some(start + 2 + close + 1);
+    }
+    (chars.get(start + 2) == Some(&'\'')).then_some(start + 3)
+}
+
+/// The end of the item that starts at `start`: after its `;` or its closing `}`.
+fn item_end(chars: &[char], start: usize) -> usize {
+    let mut index = start;
+    let mut round = 0_usize;
+    while let Some(&c) = chars.get(index) {
+        match c {
+            '"' => {
+                index = string_end(chars, index);
+                continue;
+            }
+            '(' | '[' => round += 1,
+            ')' | ']' => round = round.saturating_sub(1),
+            ';' if round == 0 => return index + 1,
+            '{' if round == 0 => return brace_end(chars, index),
+            _ => {}
         }
         index += 1;
     }
-    out
+    chars.len()
+}
+
+/// The position after the `}` that closes the `{` at `start`.
+fn brace_end(chars: &[char], start: usize) -> usize {
+    let mut depth = 0_usize;
+    let mut index = start;
+    while let Some(&c) = chars.get(index) {
+        match c {
+            '"' => {
+                index = string_end(chars, index);
+                continue;
+            }
+            '{' => depth += 1,
+            '}' => {
+                depth -= 1;
+                if depth == 0 {
+                    return index + 1;
+                }
+            }
+            _ => {}
+        }
+        index += 1;
+    }
+    chars.len()
 }
 
 fn is_ident_char(c: char) -> bool {
@@ -264,7 +408,7 @@ mod tests {
         let code = r#"
 fn run() {
     // info!(email = %x) in a comment is ignored
-    tracing::info!(request_id = %id, status = 200, client = %shown, "request {id}");
+    tracing::info!(request_id = %id, status = 200, net = %shown, "request {id}");
     tracing::warn!(error = %error, "accepting a connection failed");
 }
 #[cfg(test)]
@@ -290,6 +434,38 @@ mod tests {
             findings[0].location.as_deref(),
             Some("crates/x/src/lib.rs:2")
         );
+    }
+
+    #[test]
+    fn code_after_a_test_module_is_still_scanned() {
+        let code =
+            "#[cfg(test)]\nmod tests { fn t() { info!(email); } }\nfn run() { info!(email); }\n";
+        let findings = scan("crates/x/src/lib.rs", code);
+        assert_eq!(findings.len(), 1);
+        assert_eq!(
+            findings[0].location.as_deref(),
+            Some("crates/x/src/lib.rs:3")
+        );
+        let one_item = "#[cfg(test)]\nuse std::io;\nfn run() { warn!(peer = 1); }";
+        assert_eq!(scan("crates/x/src/lib.rs", one_item).len(), 1);
+    }
+
+    #[test]
+    fn raw_strings_and_char_literals_do_not_hide_or_confuse() {
+        let raw = r##"fn run() { info!(r#"signed in {email}"#); }"##;
+        assert_eq!(scan("crates/x/src/lib.rs", raw).len(), 1);
+        let quote = "fn run() { let q = '\"'; info!(host = 1); }";
+        assert_eq!(scan("crates/x/src/lib.rs", quote).len(), 1);
+        let clean = "fn run<'a>(x: &'a str) { info!(request_id = 1); let c = '{'; }";
+        assert!(scan("crates/x/src/lib.rs", clean).is_empty());
+    }
+
+    #[test]
+    fn network_names_are_personal() {
+        for name in ["addr", "address", "peer", "remote", "client", "host"] {
+            let code = format!("fn run() {{ info!({name} = 1); }}");
+            assert_eq!(scan("crates/x/src/lib.rs", &code).len(), 1, "{name}");
+        }
     }
 
     #[test]
