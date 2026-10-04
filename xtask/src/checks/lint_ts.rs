@@ -59,18 +59,18 @@ mod tests {
     use super::*;
     use crate::repo::Repo;
 
-    fn findings(file: &str) -> Vec<Finding> {
+    fn findings(files: &[&str]) -> Vec<Finding> {
         let repo = Repo::discover().unwrap();
-        lint(
-            repo.root(),
-            &[format!("tools/checks/fixtures/LINT-TS/{file}")],
-        )
-        .unwrap()
+        let files: Vec<String> = files
+            .iter()
+            .map(|file| format!("tools/checks/fixtures/LINT-TS/{file}"))
+            .collect();
+        lint(repo.root(), &files).unwrap()
     }
 
     #[test]
     fn bad_example() {
-        let messages: String = findings("bad/bad.ts")
+        let messages: String = findings(&["bad/bad.ts", "bad/bad.tsx"])
             .iter()
             .map(|finding| finding.message.clone())
             .collect();
@@ -79,6 +79,9 @@ mod tests {
             "no-explicit-any",
             "no-non-null-assertion",
             "no-eval",
+            "no-floating-promises",
+            "jsx-no-literals",
+            "forbid-dom-props",
         ] {
             assert!(
                 messages.contains(rule),
@@ -89,6 +92,6 @@ mod tests {
 
     #[test]
     fn good_example() {
-        assert!(findings("good/good.ts").is_empty());
+        assert!(findings(&["good/good.ts", "good/good.tsx"]).is_empty());
     }
 }
