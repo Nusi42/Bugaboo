@@ -58,6 +58,8 @@ pub(crate) struct TokenFile {
     pub(crate) themes: Vec<Theme>,
     pub(crate) default_light: String,
     pub(crate) default_dark: String,
+    /// Lines of explanation for the top of the generated CSS.
+    pub(crate) css_header: Vec<String>,
     pub(crate) contrast: ContrastSpec,
 }
 
@@ -94,6 +96,7 @@ impl TokenFile {
             themes,
             default_light: string(field(defaults, "light")?, "defaultThemes.light")?,
             default_dark: string(field(defaults, "dark")?, "defaultThemes.dark")?,
+            css_header: string_list(field(extension, "cssHeader")?, "cssHeader")?,
             contrast,
         };
         file.validate()?;
@@ -223,4 +226,11 @@ fn string(value: &Value, what: &str) -> anyhow::Result<String> {
         .as_str()
         .map(str::to_owned)
         .with_context(|| format!("`{what}` must be text"))
+}
+
+fn string_list(value: &Value, what: &str) -> anyhow::Result<Vec<String>> {
+    array(value, what)?
+        .iter()
+        .map(|item| string(item, what))
+        .collect()
 }
