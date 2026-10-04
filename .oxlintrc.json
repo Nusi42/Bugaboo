@@ -18,9 +18,27 @@
   "rules": {
     // Named exports only (coding-standards section 4); the config override above is the exception.
     "import/no-default-export": "error",
-    // Types inferred from a library callback (Playwright test fixtures) cannot be made readonly;
-    // parameters we declare ourselves are still checked.
-    "typescript/prefer-readonly-parameter-types": ["error", { "ignoreInferredTypes": true }],
+    // Playwright's own fixture types (page, context ...) cannot be made readonly; every other
+    // parameter type is still checked.
+    "typescript/prefer-readonly-parameter-types": [
+      "error",
+      {
+        "allow": [
+          {
+            "from": "package",
+            "package": "playwright",
+            "name": [
+              "Page",
+              "BrowserContext",
+              "PlaywrightTestArgs",
+              "PlaywrightTestOptions",
+              "PlaywrightWorkerArgs",
+              "PlaywrightWorkerOptions"
+            ]
+          }
+        ]
+      }
+    ],
     "no-console": "error",
     "no-eval": "error",
     "no-new-func": "error",
