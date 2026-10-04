@@ -520,14 +520,28 @@ name = "bb-server"
 version = "0.0.0"
 dependencies = [
  "anyhow",
+ "argon2 0.6.0",
+ "axum",
+ "base64ct",
  "bb-api",
+ "bb-app",
+ "bb-auth",
  "bb-core",
+ "bb-store",
+ "bb-testing",
  "clap",
+ "h2",
+ "jiff",
+ "rustls",
+ "serde_json",
  "tempfile",
  "tokio",
+ "tokio-rustls",
  "toml",
+ "tower",
  "tracing",
  "tracing-subscriber",
+ "webauthn-authenticator-rs",
 ]
 
 [[package]]

@@ -122,6 +122,9 @@ pub const SERVER_KEYS_MISSING: MessageKey = MessageKey::new("server.keys-missing
 /// The message `server.not-found`.
 pub const SERVER_NOT_FOUND: MessageKey = MessageKey::new("server.not-found");
 
+/// The message `server.setup-code-hint`.
+pub const SERVER_SETUP_CODE_HINT: MessageKey = MessageKey::new("server.setup-code-hint");
+
 /// The message `server.signal-failed`.
 pub const SERVER_SIGNAL_FAILED: MessageKey = MessageKey::new("server.signal-failed");
 
@@ -287,6 +290,24 @@ pub fn config_proxy_invalid(value: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `config.public-url-invalid`.
+#[must_use]
+pub fn config_public_url_invalid(value: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("config.public-url-invalid"),
+        vec![("value", Value::Text(value.to_string()))],
+    )
+}
+
+/// The message `config.public-url-needed`.
+#[must_use]
+pub fn config_public_url_needed(address: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("config.public-url-needed"),
+        vec![("address", Value::Text(address.to_string()))],
+    )
+}
+
 /// The message `config.tls-mode-invalid`.
 #[must_use]
 pub fn config_tls_mode_invalid(value: impl std::fmt::Display) -> Message {
@@ -344,6 +365,15 @@ pub fn hello_current(theme: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `server.database-failed`.
+#[must_use]
+pub fn server_database_failed(reason: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("server.database-failed"),
+        vec![("reason", Value::Text(reason.to_string()))],
+    )
+}
+
 /// The message `server.error`.
 #[must_use]
 pub fn server_error(message: impl std::fmt::Display) -> Message {
@@ -377,6 +407,15 @@ pub fn server_self_signed(path: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("server.self-signed"),
         vec![("path", Value::Text(path.to_string()))],
+    )
+}
+
+/// The message `server.setup-code`.
+#[must_use]
+pub fn server_setup_code(code: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("server.setup-code"),
+        vec![("code", Value::Text(code.to_string()))],
     )
 }
 
@@ -525,6 +564,14 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "The trusted proxy {value} is not an IP address.",
     ),
     (
+        "config.public-url-invalid",
+        "The public address {value} is not a web address like https://bugaboo.example.com.",
+    ),
+    (
+        "config.public-url-needed",
+        "Bugaboo listens on {address}, so it cannot know the address people type in the browser. Set public_url, for example https://bugaboo.example.com.",
+    ),
+    (
         "config.tls-files-missing",
         "HTTPS mode files needs both tls_cert and tls_key.",
     ),
@@ -643,6 +690,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "server.database-built-in",
         "Database: built-in SQLite in the data folder.",
     ),
+    (
+        "server.database-failed",
+        "Bugaboo could not open its database: {reason}",
+    ),
     ("server.database-postgres", "Database: PostgreSQL."),
     ("server.database-sqlite", "Database: SQLite."),
     ("server.error", "Error: {message}"),
@@ -662,6 +713,14 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "server.self-signed",
         "HTTPS uses a certificate made by Bugaboo, so browsers warn until you trust it. The certificate is in {path}.",
+    ),
+    (
+        "server.setup-code",
+        "Setup is open. Open Bugaboo in your browser and enter this setup code to make the first administrator: {code}",
+    ),
+    (
+        "server.setup-code-hint",
+        "The code works once and changes every time Bugaboo starts.",
     ),
     (
         "server.signal-failed",

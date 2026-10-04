@@ -20,11 +20,13 @@ use std::path::{Path, PathBuf};
 
 use bb_core::message;
 
+const DATABASE_FILE: &str = "bugaboo.db";
 const FILES: &str = "files";
 const KEYS: &str = "keys";
 const BACKUPS: &str = "backups";
 const TLS: &str = "tls";
 const LOGS: &str = "logs";
+const ANCHOR_FILE: &str = "security-head.log";
 
 /// The prepared data folder.
 #[derive(Debug)]
@@ -83,6 +85,20 @@ impl DataFolder {
 
     pub(crate) fn tls(&self) -> PathBuf {
         self.root.join(TLS)
+    }
+
+    pub(crate) fn keys(&self) -> PathBuf {
+        self.root.join(KEYS)
+    }
+
+    /// Where the security log writes down its end (SEC-15).
+    pub(crate) fn security_log_anchor(&self) -> PathBuf {
+        self.root.join(LOGS).join(ANCHOR_FILE)
+    }
+
+    /// The built-in database.
+    pub(crate) fn database_file(&self) -> PathBuf {
+        self.root.join(DATABASE_FILE)
     }
 }
 

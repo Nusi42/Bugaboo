@@ -63,6 +63,10 @@ export const messages = {
   "server.database-built-in": "Database: built-in SQLite in the data folder.",
   "server.database-sqlite": "Database: SQLite.",
   "server.database-postgres": "Database: PostgreSQL.",
+  "server.database-failed": "Bugaboo could not open its database: {reason}",
+  "server.setup-code":
+    "Setup is open. Open Bugaboo in your browser and enter this setup code to make the first administrator: {code}",
+  "server.setup-code-hint": "The code works once and changes every time Bugaboo starts.",
   "server.self-signed":
     "HTTPS uses a certificate made by Bugaboo, so browsers warn until you trust it. The certificate is in {path}.",
   "server.signal-failed":
@@ -89,6 +93,10 @@ export const messages = {
     "tls_cert and tls_key are only used with HTTPS mode files. Remove them or change the mode.",
   "config.tls-off-public":
     "HTTPS cannot be switched off on {address}, because anyone on the network could read what is sent. Use 127.0.0.1 or ::1, or list the proxy that adds HTTPS in trusted_proxies.",
+  "config.public-url-invalid":
+    "The public address {value} is not a web address like https://bugaboo.example.com.",
+  "config.public-url-needed":
+    "Bugaboo listens on {address}, so it cannot know the address people type in the browser. Set public_url, for example https://bugaboo.example.com.",
   "config.proxy-invalid": "The trusted proxy {value} is not an IP address.",
   "config.log-level-invalid": "The log level {value} is not known. Use error, warn, info or debug.",
   "data-folder.create-failed": "The data folder {path} could not be prepared: {reason}",
@@ -128,15 +136,19 @@ export interface MessageArguments {
   "config.number-invalid": { name: string | number; value: string | number };
   "config.port-invalid": { value: string | number };
   "config.proxy-invalid": { value: string | number };
+  "config.public-url-invalid": { value: string | number };
+  "config.public-url-needed": { address: string | number };
   "config.tls-mode-invalid": { value: string | number };
   "config.tls-off-public": { address: string | number };
   "data-folder.create-failed": { path: string | number; reason: string | number };
   "data-folder.protect-failed": { path: string | number; reason: string | number };
   "hello.current": { theme: string | number };
+  "server.database-failed": { reason: string | number };
   "server.error": { message: string | number };
   "server.listening": { address: string | number };
   "server.port-busy": { port: string | number };
   "server.self-signed": { path: string | number };
+  "server.setup-code": { code: string | number };
   "server.warning": { message: string | number };
   "theme.device-resolved": { device: string | number; theme: string | number };
   "tls.generate-failed": { reason: string | number };
