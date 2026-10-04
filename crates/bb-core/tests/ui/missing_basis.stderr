@@ -1,0 +1,5 @@
+error: `#[personal(...)]` needs both `category = "..."` and `basis = "..."`
+ --> tests/ui/missing_basis.rs:5:5
+  |
+5 |     #[personal(category = "identity")]
+  |     ^

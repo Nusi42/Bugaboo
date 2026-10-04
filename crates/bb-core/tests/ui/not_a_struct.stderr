@@ -1,0 +1,5 @@
+error: `Entity` describes a stored record, so it can only be derived for a struct (ADR-0015)
+ --> tests/ui/not_a_struct.rs:4:10
+  |
+4 | pub enum Person {
+  |          ^^^^^^

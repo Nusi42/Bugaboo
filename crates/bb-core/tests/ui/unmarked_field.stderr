@@ -1,0 +1,5 @@
+error: field `email` of `Person` has no personal-data mark; add `#[personal(category = "...", basis = "...")]` or `#[not_personal]` (ADR-0015)
+ --> tests/ui/unmarked_field.rs:7:9
+  |
+7 |     pub email: String,
+  |         ^^^^^

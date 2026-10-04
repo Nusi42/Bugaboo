@@ -1,0 +1,5 @@
+error[E0599]: no variant, associated function, or constant named `Secrets` found for enum `Category` in the current scope
+ --> tests/ui/unknown_category.rs:5:27
+  |
+5 |     #[personal(category = "secrets", basis = "contract")]
+  |                           ^^^^^^^^^ variant, associated function, or constant not found in `Category`
