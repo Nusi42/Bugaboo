@@ -52,6 +52,19 @@ impl Entry {
         Ok(paths.iter().any(|path| set.is_match(path)))
     }
 
+    /// The paths among `paths` that trigger this check.
+    pub(crate) fn matching(&self, paths: &[String]) -> anyhow::Result<Vec<String>> {
+        if self.files.iter().any(|glob| glob == "*") {
+            return Ok(paths.to_vec());
+        }
+        let set = self.glob_set()?;
+        Ok(paths
+            .iter()
+            .filter(|path| set.is_match(path))
+            .cloned()
+            .collect())
+    }
+
     fn glob_set(&self) -> anyhow::Result<GlobSet> {
         let mut builder = GlobSetBuilder::new();
         for pattern in &self.files {
