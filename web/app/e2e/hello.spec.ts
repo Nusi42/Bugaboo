@@ -14,7 +14,7 @@ test.describe("thm_01 hello screen", () => {
     test(`has no accessibility violations in ${theme.id}`, async ({ page }) => {
       await page.goto("/");
       await expect(page.getByRole("heading", { name: t("hello.title") })).toBeVisible();
-      await page.getByRole("radio", { name: theme.label }).check();
+      await page.getByRole("radio", { name: theme.label, exact: true }).check();
       await expect(page.locator("html")).toHaveAttribute("data-look", theme.id);
       const results = await new AxeBuilder({ page }).analyze();
       expect(results.violations).toEqual([]);
@@ -33,10 +33,26 @@ test.describe("thm_01 hello screen", () => {
     await page.emulateMedia({ colorScheme: "dark" });
     await page.goto("/");
     await expect(page.locator("html")).toHaveAttribute("data-look", "dusk");
-    await page.getByRole("radio", { name: t("theme.paper") }).check();
+    await page.getByRole("radio", { name: t("theme.paper"), exact: true }).check();
     await page.reload();
     await expect(page.locator("html")).toHaveAttribute("data-look", "paper");
     await page.getByRole("radio", { name: t("theme.device") }).check();
     await expect(page.locator("html")).toHaveAttribute("data-look", "dusk");
+  });
+
+  test("Match my device shows the resolved theme and follows the device live", async ({ page }) => {
+    await page.emulateMedia({ colorScheme: "light" });
+    await page.goto("/");
+    const device = page.getByRole("radio", { name: t("theme.device") });
+    await expect(device).toBeChecked();
+    await expect(page.locator("html")).toHaveAttribute("data-look", "daylight");
+    await expect(device).toHaveAccessibleName(
+      t("theme.device-resolved", { device: t("theme.device"), theme: t("theme.daylight") }),
+    );
+    await page.emulateMedia({ colorScheme: "dark" });
+    await expect(page.locator("html")).toHaveAttribute("data-look", "dusk");
+    await expect(device).toHaveAccessibleName(
+      t("theme.device-resolved", { device: t("theme.device"), theme: t("theme.dusk") }),
+    );
   });
 });

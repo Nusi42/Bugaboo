@@ -3,22 +3,28 @@ import { ThemePicker, useTheme, type ThemeChoice } from "@bugaboo/ui";
 
 import styles from "./App.module.css";
 
-const labels: Readonly<Record<ThemeChoice, string>> = {
-  device: t("theme.device"),
+const themeLabels = {
   daylight: t("theme.daylight"),
   paper: t("theme.paper"),
   dusk: t("theme.dusk"),
   midnight: t("theme.midnight"),
-};
+} as const;
 
 export function App() {
-  const [choice, choose] = useTheme();
+  const { choice, resolved, choose } = useTheme();
+  const labels: Readonly<Record<ThemeChoice, string>> = {
+    ...themeLabels,
+    device: t("theme.device-resolved", {
+      device: t("theme.device"),
+      theme: themeLabels[resolved],
+    }),
+  };
   return (
     <main className={styles.page}>
       <h1 className={styles.brand}>{t("hello.title")}</h1>
       <p className={styles.intro}>{t("hello.intro")}</p>
       <ThemePicker legend={t("theme.legend")} labels={labels} value={choice} onChange={choose} />
-      <p className={styles.current}>{t("hello.current", { theme: labels[choice] })}</p>
+      <p className={styles.current}>{t("hello.current", { theme: themeLabels[resolved] })}</p>
     </main>
   );
 }

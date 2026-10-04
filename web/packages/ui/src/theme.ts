@@ -8,6 +8,9 @@ export const defaultThemeChoice: ThemeChoice = "device";
 
 const storageKey = "bugaboo.theme";
 
+/** The media query that says the device prefers a dark look. */
+export const deviceDarkQuery = "(prefers-color-scheme: dark)";
+
 export function isThemeChoice(value: unknown): value is ThemeChoice {
   return themeChoices.some((choice) => choice === value);
 }
@@ -53,4 +56,13 @@ export function storeChoice(getStorage: () => ChoiceWriter, choice: ThemeChoice)
 /** Puts the theme on the page; the generated token CSS reacts to `data-look`. */
 export function applyTheme(theme: ThemeId): void {
   document.documentElement.dataset["look"] = theme;
+}
+
+/**
+ * Applies the saved choice right away. Call it before the first render, so the page never shows
+ * the wrong theme for a moment.
+ */
+export function applyInitialTheme(): void {
+  const choice = readStoredChoice(() => localStorage);
+  applyTheme(resolveTheme(choice, matchMedia(deviceDarkQuery).matches));
 }

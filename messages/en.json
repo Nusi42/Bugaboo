@@ -5,6 +5,7 @@
   "hello.current": "Your theme: {theme}.",
   "theme.legend": "Theme",
   "theme.device": "Match my device",
+  "theme.device-resolved": "{device} ({theme})",
   "theme.daylight": "Daylight",
   "theme.paper": "Paper",
   "theme.dusk": "Dusk",

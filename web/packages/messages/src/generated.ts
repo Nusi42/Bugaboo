@@ -7,6 +7,7 @@ export const messages = {
   "hello.current": "Your theme: {theme}.",
   "theme.legend": "Theme",
   "theme.device": "Match my device",
+  "theme.device-resolved": "{device} ({theme})",
   "theme.daylight": "Daylight",
   "theme.paper": "Paper",
   "theme.dusk": "Dusk",
@@ -17,4 +18,5 @@ export type MessageKey = keyof typeof messages;
 
 export interface MessageArguments {
   "hello.current": { theme: string | number };
+  "theme.device-resolved": { device: string | number; theme: string | number };
 }

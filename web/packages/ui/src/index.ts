@@ -1,5 +1,6 @@
 export { ThemePicker, type ThemePickerProps } from "./ThemePicker.tsx";
 export {
+  applyInitialTheme,
   applyTheme,
   defaultThemeChoice,
   isThemeChoice,
@@ -10,4 +11,4 @@ export {
   type ThemeChoice,
 } from "./theme.ts";
 export { themeIds, type ColorToken, type ThemeId } from "./tokens.ts";
-export { useTheme } from "./useTheme.ts";
+export { useTheme, type ThemeState } from "./useTheme.ts";
