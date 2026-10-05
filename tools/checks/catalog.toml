@@ -274,7 +274,7 @@ status = "planned"
 
 [[check]]
 id = "ARCH-HTTP-EDGE"
-title = "Only bb-api and bb-mcp use HTTP crates; only bb-server wires adapters"
+title = "Only bb-api and bb-mcp use HTTP crates; only bb-server and bb-sample wire adapters"
 rule = "architecture §4"
 tool = "xtask (cargo metadata: normal and build dependencies on HTTP crates and on the adapter crates)"
 when = ["push", "ci"]
@@ -660,8 +660,8 @@ title = "The sample organization builds from its seed, is identical on both data
 rule = "architecture §11, ADR-0023"
 tool = "xtask dataset sample --check"
 when = ["ci"]
-files = ["xtask/**", "crates/bb-store/**"]
-status = "planned"
+files = ["xtask/**", "crates/bb-store/**", "crates/bb-sample/**"]
+status = "active"
 
 [[check]]
 id = "TEST-CONCURRENT"

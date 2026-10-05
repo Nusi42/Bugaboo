@@ -1,0 +1,12 @@
+{
+  "$comment": "Single source for where the sample organization is made and what its files are called (architecture §11, 'Sample organization'). xtask (xtask/src/dataset.rs), the program bb-sample (crates/bb-sample/src/layout.rs) and the end-to-end tests (web/app/e2e/support/sample.ts) read it; nothing else names a folder, a file or the variable. The folders are relative to the work folder and use / as separator.",
+  "out": "target/sample",
+  "outPostgres": "target/sample-postgres",
+  "devOut": "target/dev-sample",
+  "checkOut": "target/sample-check",
+  "dataFolder": "data",
+  "signInFile": "sign-in.txt",
+  "dumpFile": "dump.json",
+  "markerFile": "sample.json",
+  "databaseUrlVariable": "BB_SAMPLE_DATABASE_URL"
+}

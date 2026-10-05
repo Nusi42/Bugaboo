@@ -1,0 +1,31 @@
+[package]
+name = "bb-sample"
+description = "Developer tool: makes the fictional sample organization through the real use cases, the same every time from a seed (architecture §11)."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[[bin]]
+name = "bb-sample"
+path = "src/main.rs"
+
+[dependencies]
+bb-app = { path = "../bb-app" }
+bb-auth = { path = "../bb-auth" }
+bb-core = { path = "../bb-core" }
+bb-store = { path = "../bb-store" }
+clap = { workspace = true }
+getrandom = { workspace = true }
+jiff = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
+toml = { workspace = true }
+
+[dev-dependencies]
+bb-testing = { path = "../bb-testing" }
+tempfile = { workspace = true }
+
+[lints]
+workspace = true

@@ -1,0 +1,3 @@
+# Fixture: how to sign in.
+ada.brandt@bugaboo.example	FIXTURE-PASSWORD-ONE	administrator	Ada Brandt
+ana.moreno@bugaboo.example	FIXTURE-PASSWORD-TWO	contributor	Ana Moreno	FIXTURE-APP-SECRET

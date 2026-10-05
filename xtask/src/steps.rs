@@ -15,6 +15,8 @@ use crate::output;
 pub(crate) const WEB_APP: &str = "web/app";
 /// The name of the server program that `cargo build` makes (`[[bin]]` of bb-server).
 const SERVER_BINARY: &str = "bugaboo";
+/// The name of the sample program that `cargo build` makes (`[[bin]]` of bb-sample).
+const SAMPLE_BINARY: &str = "bb-sample";
 
 /// Which cargo profile to build.
 #[derive(Clone, Copy)]
@@ -71,17 +73,41 @@ pub(crate) fn web_build(root: &Path) -> Step {
 /// Builds the `bugaboo` program. Cargo reports where it put it, so `build.target-dir` in
 /// `.cargo/config.local.toml` or `CARGO_TARGET_DIR` (even relative) need no guessing.
 pub(crate) fn server_build(profile: Profile) -> Step {
+    program_build(
+        profile,
+        "build the bugaboo program",
+        "bb-server",
+        SERVER_BINARY,
+    )
+}
+
+/// Builds the `bb-sample` program, which makes the sample organization (`cargo xtask dataset`).
+pub(crate) fn sample_build(profile: Profile) -> Step {
+    program_build(
+        profile,
+        "build the sample program",
+        "bb-sample",
+        SAMPLE_BINARY,
+    )
+}
+
+fn program_build(
+    profile: Profile,
+    name: &'static str,
+    package: &str,
+    binary: &'static str,
+) -> Step {
     let mut args = vec![
         "build",
         "--message-format=json-render-diagnostics",
         "--package",
-        "bb-server",
+        package,
     ];
     if matches!(profile, Profile::Release) {
         args.push("--release");
     }
-    let mut step = Step::new("build the bugaboo program", "cargo", &args);
-    step.executable = Some(SERVER_BINARY);
+    let mut step = Step::new(name, "cargo", &args);
+    step.executable = Some(binary);
     step
 }
 
@@ -184,6 +210,18 @@ mod tests {
         assert_eq!(debug.executable, Some("bugaboo"));
         assert!(
             server_build(Profile::Release)
+                .args
+                .contains(&"--release".to_owned())
+        );
+    }
+
+    #[test]
+    fn the_sample_program_is_built_the_same_way() {
+        let step = sample_build(Profile::Debug);
+        assert!(step.args.contains(&"bb-sample".to_owned()));
+        assert_eq!(step.executable, Some("bb-sample"));
+        assert!(
+            sample_build(Profile::Release)
                 .args
                 .contains(&"--release".to_owned())
         );

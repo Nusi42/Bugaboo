@@ -41,9 +41,21 @@ pub(crate) fn plan(root: &Path) -> anyhow::Result<Vec<Step>> {
             xtask.to_string_lossy(),
             &["db", "run", "--", "cargo", "test", "--workspace"],
         ),
+        // The sample organization is made twice on each database and compared (TEST-SAMPLE-DATA).
+        Step::new(
+            "sample organization",
+            xtask.to_string_lossy(),
+            &["dataset", "sample", "--check"],
+        ),
         Step::web(root, "browser unit tests", &["test"]),
-        // The end-to-end tests start the program themselves (ADR-0023).
+        // The end-to-end tests start the program themselves (ADR-0023), some of them on a copy of
+        // a fresh sample organization.
         steps::server_build(Profile::Debug),
+        Step::new(
+            "make the sample organization",
+            xtask.to_string_lossy(),
+            &["dataset", "sample"],
+        ),
         Step::web(root, "browser end-to-end tests", &["run", "test:e2e"]),
         linux_only(Step::new(
             "add the static Linux target",
@@ -76,8 +88,10 @@ mod tests {
                 "build the browser app",
                 "all checks",
                 "Rust tests",
+                "sample organization",
                 "browser unit tests",
                 "build the bugaboo program",
+                "make the sample organization",
                 "browser end-to-end tests",
                 "add the static Linux target",
                 "build the static Linux program"
@@ -96,7 +110,9 @@ mod tests {
         let on_linux = !cfg!(target_os = "linux");
         assert_eq!(
             skipped,
-            [true, false, false, true, false, true, on_linux, on_linux]
+            [
+                true, false, false, false, true, false, false, true, on_linux, on_linux
+            ]
         );
     }
 }

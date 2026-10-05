@@ -22,6 +22,7 @@ bugaboo/
 │   ├── bb-api/             HTTP: routes, OpenAPI, security headers, rate limits, static app
 │   ├── bb-wasm/            WebAssembly bindings for searchlang, markdown, validation
 │   ├── bb-testing/         test harness: runs one test body on SQLite and PostgreSQL (dev dependency only)
+│   ├── bb-sample/          sample-organization generator, developer tool (not shipped before OPS-12)
 │   └── bb-server/          the `bugaboo` binary: CLI, setup wizard, service install, wiring
 ├── xtask/                  the single check/build runner (cargo xtask …)
 ├── tools/                  check catalogue, pinned tool versions, dev ports
@@ -59,6 +60,7 @@ flowchart TB
   jobs["bb-jobs"]
   wasm["bb-wasm"]
   testing["bb-testing<br/>database test harness"]
+  sample["bb-sample<br/>sample organization"]
 
   server --> api & jobs & store & files & ai & notify & auth & app & core
   api --> app & auth & mcp & core
@@ -75,6 +77,7 @@ flowchart TB
   store --> search & policy & core
   wasm --> search & md
   store -. tests only .-> testing
+  sample --> app & store & core & policy & auth
 ```
 
 ### Dependency rules (checked by `cargo xtask check only ARCH-DEPS`)
@@ -140,18 +143,13 @@ axum router; extractors that turn a session cookie, access key or OAuth token in
 
 One **tool registry** (search issues, get issue, create, change status, comment, log time, …). Each tool maps to a `bb-app` use case, so permissions and validation are identical. `bb-mcp` exposes the registry to outside AI apps; the assistant uses the same registry but returns **proposals** for writes instead of running them.
 
-### bb-sample (planned, M2 WP-06)
+### bb-sample
 
 The sample-organization generator (architecture §11): a library and a small program that `cargo xtask dataset sample` runs as a process, so `xtask` keeps depending on no product crate. It makes the organization through the same use cases the API calls, deterministic from a seed, on SQLite and PostgreSQL. It is a developer tool: not linked into `bugaboo` until *Try it out* (OPS-12), and never shipped before then.
 
 - **May depend on:** `bb-app`, `bb-store`, `bb-core`, `bb-policy`, `bb-auth` (and `bb-testing` as a dev dependency only). Nothing depends on it except, from OPS-12 on, `bb-server`.
-- **It wires an adapter:** like `bb-server`, it builds the store and hands it to the use cases, so dependency rule 4 names it as the second crate that may wire adapters to ports, and ARCH-HTTP-EDGE's list of wiring crates gets `bb-sample` in the same change (with its failing and passing example).
-- **Not in the layout or the diagram yet:** ARCH-MAP-SYNC and ARCH-DEPS fail on a crate that the docs list but the workspace does not have. WP-06 adds `crates/bb-sample/` to the repository layout (one line: "sample-organization generator, developer tool") and this box with its edges to the module map in the commit that creates the crate:
-
-  ```text
-  sample["bb-sample<br/>sample organization"]
-  sample --> app & store & core & policy & auth
-  ```
+- **It wires an adapter:** like `bb-server`, it builds the store and hands it to the use cases, so dependency rule 4 names it as the second crate that may wire adapters to ports; ARCH-HTTP-EDGE's list of wiring crates (`bb-server`, `bb-sample`) is in `xtask/src/checks/arch_http_edge.rs`.
+- **In the layout and the diagram:** ARCH-MAP-SYNC and ARCH-DEPS read the repository layout and the module map above, which list the crate and its edges.
 
 ## Browser app (web/app)
 

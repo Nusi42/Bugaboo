@@ -169,6 +169,7 @@
 │   ├── bb-api/             HTTP: routes, OpenAPI, security headers, rate limits, static app
 │   ├── bb-wasm/            WebAssembly bindings for searchlang, markdown, validation
 │   ├── bb-testing/         test harness: runs one test body on SQLite and PostgreSQL (dev dependency only)
+│   ├── bb-sample/          sample-organization generator, developer tool (not shipped before OPS-12)
 │   └── bb-server/          the `bugaboo` binary: CLI, setup wizard, service install, wiring
 ├── xtask/                  the single check/build runner (cargo xtask …)
 ├── tools/                  check catalogue, pinned tool versions, dev ports
@@ -202,6 +203,7 @@
   jobs["bb-jobs"]
   wasm["bb-wasm"]
   testing["bb-testing&lt;br/&gt;database test harness"]
+  sample["bb-sample&lt;br/&gt;sample organization"]
 
   server --&gt; api &amp; jobs &amp; store &amp; files &amp; ai &amp; notify &amp; auth &amp; app &amp; core
   api --&gt; app &amp; auth &amp; mcp &amp; core
@@ -217,7 +219,8 @@
   notify -. implements ports .-&gt; app
   store --&gt; search &amp; policy &amp; core
   wasm --&gt; search &amp; md
-  store -. tests only .-&gt; testing</pre>
+  store -. tests only .-&gt; testing
+  sample --&gt; app &amp; store &amp; core &amp; policy &amp; auth</pre>
 <h4>Dependency rules (checked by <code>cargo xtask check only ARCH-DEPS</code>)</h4>
 <ol>
 <li><code>bb-core</code>, <code>bb-searchlang</code> and <code>bb-markdown</code> do no I/O and depend on no other Bugaboo crate except <code>bb-core</code> (searchlang and markdown not even that; <code>bb-core</code> uses <code>bb-macros</code> for derives at compile time only), so they compile to WebAssembly.</li>
@@ -262,20 +265,12 @@
 <p>axum router; extractors that turn a session cookie, access key or OAuth token into an <strong>actor</strong>; CSRF and origin checks; security headers and CSP; rate limits (<code>limits</code>); the one cookie module (<code>cookies</code>); <code>?fields=</code> projections; cursor pagination; ETags; problem+json errors (<code>errors</code>: <code>ApiError</code>, <code>ApiJson</code>); OpenAPI generation from the handlers' <code>#[utoipa::path]</code> descriptions (<code>openapi</code>, served at <code>/api/v1/openapi.json</code>, printed by <code>bugaboo openapi</code>, written to <code>web/packages/api-client/openapi.json</code> by <code>cargo xtask gen api</code>); the embedded static app.</p>
 <h4>bb-ai and bb-mcp</h4>
 <p>One <strong>tool registry</strong> (search issues, get issue, create, change status, comment, log time, …). Each tool maps to a <code>bb-app</code> use case, so permissions and validation are identical. <code>bb-mcp</code> exposes the registry to outside AI apps; the assistant uses the same registry but returns <strong>proposals</strong> for writes instead of running them.</p>
-<h4>bb-sample (planned, M2 WP-06)</h4>
+<h4>bb-sample</h4>
 <p>The sample-organization generator (architecture §11): a library and a small program that <code>cargo xtask dataset sample</code> runs as a process, so <code>xtask</code> keeps depending on no product crate. It makes the organization through the same use cases the API calls, deterministic from a seed, on SQLite and PostgreSQL. It is a developer tool: not linked into <code>bugaboo</code> until <em>Try it out</em> (OPS-12), and never shipped before then.</p>
 <ul>
-<li>
-<p><strong>May depend on:</strong> <code>bb-app</code>, <code>bb-store</code>, <code>bb-core</code>, <code>bb-policy</code>, <code>bb-auth</code> (and <code>bb-testing</code> as a dev dependency only). Nothing depends on it except, from OPS-12 on, <code>bb-server</code>.</p>
-</li>
-<li>
-<p><strong>It wires an adapter:</strong> like <code>bb-server</code>, it builds the store and hands it to the use cases, so dependency rule 4 names it as the second crate that may wire adapters to ports, and ARCH-HTTP-EDGE's list of wiring crates gets <code>bb-sample</code> in the same change (with its failing and passing example).</p>
-</li>
-<li>
-<p><strong>Not in the layout or the diagram yet:</strong> ARCH-MAP-SYNC and ARCH-DEPS fail on a crate that the docs list but the workspace does not have. WP-06 adds <code>crates/bb-sample/</code> to the repository layout (one line: "sample-organization generator, developer tool") and this box with its edges to the module map in the commit that creates the crate:</p>
-<pre><code>sample["bb-sample&lt;br/&gt;sample organization"]
-sample --&gt; app &amp; store &amp; core &amp; policy &amp; auth</code></pre>
-</li>
+<li><strong>May depend on:</strong> <code>bb-app</code>, <code>bb-store</code>, <code>bb-core</code>, <code>bb-policy</code>, <code>bb-auth</code> (and <code>bb-testing</code> as a dev dependency only). Nothing depends on it except, from OPS-12 on, <code>bb-server</code>.</li>
+<li><strong>It wires an adapter:</strong> like <code>bb-server</code>, it builds the store and hands it to the use cases, so dependency rule 4 names it as the second crate that may wire adapters to ports; ARCH-HTTP-EDGE's list of wiring crates (<code>bb-server</code>, <code>bb-sample</code>) is in <code>xtask/src/checks/arch_http_edge.rs</code>.</li>
+<li><strong>In the layout and the diagram:</strong> ARCH-MAP-SYNC and ARCH-DEPS read the repository layout and the module map above, which list the crate and its edges.</li>
 </ul>
 <h3 id="s4-4"><button class="sec" data-sec>§4.4</button>Browser app (web/app)</h3>
 <pre><code>web/app/src/
@@ -1119,7 +1114,7 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 <tr><td><code>ARCH-WASM</code></td><td>The crates shared with the browser (bb-core, bb-searchlang, bb-markdown) still build for WebAssembly</td><td>ADR-0001, ADR-0005, ADR-0011</td><td>cargo check --target wasm32-unknown-unknown (minimal form: the size budget with wasm-opt, PERF-04, comes with bb-wasm)</td><td>push · ci</td></tr>
 <tr><td><code>ARCH-AUTHZ-ONLY</code></td><td>Authorized&lt;T&gt; is only created inside bb-policy</td><td>ADR-0004</td><td>ast-grep + private constructor (compile error)</td><td>edit · commit · ci</td></tr>
 <tr><td><code>ARCH-API-OUT</code></td><td>API and MCP handlers return only Authorized views, never domain or database types</td><td>ADR-0004</td><td>trait bound on responses + ast-grep</td><td>edit · commit · ci</td></tr>
-<tr><td><code>ARCH-HTTP-EDGE</code></td><td>Only bb-api and bb-mcp use HTTP crates; only bb-server wires adapters</td><td>architecture §4</td><td>xtask (cargo metadata: normal and build dependencies on HTTP crates and on the adapter crates)</td><td>push · ci</td></tr>
+<tr><td><code>ARCH-HTTP-EDGE</code></td><td>Only bb-api and bb-mcp use HTTP crates; only bb-server and bb-sample wire adapters</td><td>architecture §4</td><td>xtask (cargo metadata: normal and build dependencies on HTTP crates and on the adapter crates)</td><td>push · ci</td></tr>
 <tr><td><code>ARCH-SQL-EDGE</code></td><td>Only bb-store touches the database; no SQL text built with format! anywhere</td><td>ADR-0003, SEC-17</td><td>xtask (cargo metadata for dependencies; source scan for sqlx calls and SQL built as text)</td><td>edit · commit · ci</td></tr>
 <tr><td><code>ARCH-EVENTS</code></td><td>Every command use case appends a domain event</td><td>ADR-0007</td><td>xtask (every command use case in bb-app calls record_change of the ChangeStore port; comments and strings do not count); the generated test that runs each command against the fakes follows with the first use cases (M1-F18)</td><td>edit · commit · ci</td></tr>
 <tr><td><code>ARCH-VERSIONED</code></td><td>Every change endpoint requires a version (If-Match) and long-text endpoints an edit-lock token</td><td>ADR-0019</td><td>xtask (reads generated OpenAPI)</td><td>push · ci</td></tr>
@@ -1202,6 +1197,17 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 <p>Enforced by: ARCH-DB-PARITY, DATA-MIGRATIONS.</p>
 <h3 id="s11-3"><button class="sec" data-sec>§11.3</button>Sample organization</h3>
 <p>A realistic, <strong>fully fictional</strong> organization used for development, end-to-end tests, demos and the optional "try it out" mode (OPS-12). Generated by <code>cargo xtask dataset sample</code>, deterministic from a seed (default 42), in under a minute, into SQLite or PostgreSQL.</p>
+<h4>Making it and using it</h4>
+<p><code>cargo xtask dataset sample [--seed N] [--database sqlite|postgres] [--out &lt;folder&gt;] [--check]</code> runs the <code>bb-sample</code> program (crate <code>bb-sample</code>, <span title="04-building-blocks.md#bb-sample in the repository">architecture §4</span>) as a process, so <code>xtask</code> depends on no product crate. The program makes the organization through the same use cases the API calls: the first administrator with the setup code, everybody else as that administrator by invitation, so every change has its event and its security log entry and nothing is written to the database by hand. It is deterministic from the seed (default 42) with its own random source; it never reads the clock, because every date comes from one start moment that <code>xtask</code> passes in (now; a fixed moment for <code>--check</code>). On SQLite it takes a few seconds.</p>
+<ul>
+<li><strong>Names:</strong> the folders the sample is made in, the names of its files and the environment variable of the PostgreSQL address are written once, in <code>tools/dev/sample.json</code>; <code>xtask</code>, the <code>bb-sample</code> program and the end-to-end tests all read that file.</li>
+<li><strong>What it makes in <code>&lt;out&gt;</code></strong> (default <code>target/sample</code>, <code>target/sample-postgres</code> on PostgreSQL): <code>data/</code> is a data folder that <code>bugaboo serve --data-dir</code> can start on (copy it first); <code>sign-in.txt</code> has one line per person (e-mail address, random password, role, name, and the secret of the code app for the few people who have one); <code>dump.json</code> is the canonical dump; <code>sample.json</code> marks the folder as made by the tool, so the next run may empty it and a folder with anything else in it is left alone. The passwords are random for every run and come from the operating system, never from the seed: no password is in the repository, and <code>sign-in.txt</code> is the only file that holds one (in <code>target/</code>, which Git ignores).</li>
+<li><strong>On PostgreSQL</strong> the program uses an empty database in the throwaway cluster of <code>cargo xtask db</code> (started and stopped by the command when needed). The address goes to the program in the environment variable <code>BB_SAMPLE_DATABASE_URL</code>, never on its command line.</li>
+<li><strong>People today:</strong> 50 fictional people with the mix of roles below, recorded in the plan (<code>roster</code>) and in the dump. M2 has no use case that gives a person a role, so every person except the first administrator is an ordinary account for now; WP-13 gives them their roles, and makes the groups, projects and assignments, through <code>bb_sample::Later</code>, the one extension point for what follows the people. Names come from <code>crates/bb-sample/data/names.toml</code>, written for Bugaboo (no third-party name data); every address is under <code>bugaboo.example</code>. The people the demos name are the same whatever the seed: Ada Brandt (the administrator who runs the demo), Ana Moreno (a Contributor) and Ben Hale (a Team member).</li>
+<li><strong>Using it in browser tests:</strong> <code>cargo xtask dev --sample</code> makes a fresh sample and starts the server on it (it prints where <code>sign-in.txt</code> is). A file of end-to-end tests that says <code>test.use({ sample: true })</code> gets a server on a fresh copy of <code>target/sample/data</code> (one server per Playwright worker, ADR-0023 ports) and reads the people from <code>samplePeople()</code> (<code>web/app/e2e/support/sample.ts</code>). <code>cargo xtask ci</code> makes the sample before the browser tests; by hand, run <code>cargo xtask dataset sample</code> first. The M1 tests of setup and signing in still start from an empty data folder.</li>
+<li><strong>The check:</strong> <code>cargo xtask dataset sample --check</code> makes the organization twice on SQLite and twice on PostgreSQL from one seed into <code>target/sample-check/</code> and compares the canonical dumps. The dump leaves out what is random by design (IDs, password hashes, secrets and the hashes of the security log) and replaces each ID by a label that counts the records of a kind in the order they appear (<code>person#3</code>), so it still says which events and entries are about the same record. The run fails when two dumps differ, when an address is not under <code>bugaboo.example</code>, when a name is not a given name and a family name of the list, or when a password or secret of <code>sign-in.txt</code> is found in any other file of a run (the database, the keys, the log files, the dump, what the program said). The rules and their failing and passing examples are in <code>xtask/src/checks/test_sample_data.rs</code> and <code>tools/checks/fixtures/TEST-SAMPLE-DATA/</code>; WP-13 adds projects, groups and roles to the dump and the rules.</li>
+</ul>
+<p>Enforced by: TEST-SAMPLE-DATA (<code>cargo xtask ci</code> runs it), ARCH-HTTP-EDGE (<code>bb-sample</code> is the second crate that may wire an adapter), SEC-SECRETS (no password in the repository).</p>
 <h4>People (50) and groups</h4>
 <ul>
 <li>2 Administrators, 4 Project leads, 30 Team members, 8 Contributors, 4 Viewers, 2 Guests, plus 1 bot account.</li>

@@ -13,6 +13,7 @@ use std::time::{Duration, Instant};
 use anyhow::{Context as _, bail};
 use serde::Deserialize;
 
+use crate::dataset;
 use crate::output;
 use crate::steps::{self, Profile};
 
@@ -167,11 +168,23 @@ fn stop(child: &mut Child) {
     let _ = child.wait();
 }
 
-pub(crate) fn run(root: &Path) -> anyhow::Result<bool> {
+/// The data folder of the server in development (inside the work folder's build folder).
+const DEV_DATA: &str = "target/dev-data";
+
+pub(crate) fn run(root: &Path, sample: bool) -> anyhow::Result<bool> {
     let ports = Ports::load(root)?;
     let built = steps::run(root, &[steps::server_build(Profile::Debug)])?;
     let Some(server) = built.executable.filter(|_| built.passed) else {
         return Ok(false);
+    };
+    // A fresh sample organization every time; its program says where the passwords are.
+    let data_dir = if sample {
+        let Some(folder) = dataset::make_for_dev(root)? else {
+            return Ok(false);
+        };
+        folder
+    } else {
+        root.join(DEV_DATA)
     };
 
     let interrupted = Arc::new(AtomicBool::new(false));
@@ -187,7 +200,8 @@ pub(crate) fn run(root: &Path) -> anyhow::Result<bool> {
                 .args(["serve", "--port", &ports.server.to_string()])
                 // Development runs on this computer only, so plain HTTP is allowed (SEC-10); its
                 // data stays inside the work folder's build folder.
-                .args(["--tls", "off", "--data-dir", "target/dev-data"])
+                .args(["--tls", "off", "--data-dir"])
+                .arg(&data_dir)
                 .current_dir(root),
             "bugaboo server",
         )?,

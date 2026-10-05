@@ -360,35 +360,118 @@ impl Cluster {
         Ok(problems.is_empty())
     }
 
+    /// Runs one SQL statement as the owner of the cluster, in the maintenance database, and
+    /// returns what it printed (one value per line, no headers).
+    fn psql(&self, sql: &str) -> anyhow::Result<String> {
+        let out = Command::new(self.program("psql")?)
+            .args(["-h", HOST, "-p", &self.port.to_string(), "-U", USER])
+            .args(["-d", "postgres", "-X", "-A", "-t", "-c", sql])
+            .env("PGPASSWORD", self.password()?)
+            .stdin(Stdio::null())
+            .output()
+            .context("could not run psql")?;
+        if !out.status.success() {
+            bail!(
+                "psql failed: {}",
+                String::from_utf8_lossy(&out.stderr).trim()
+            );
+        }
+        Ok(String::from_utf8_lossy(&out.stdout).into_owned())
+    }
+
     /// Drops test databases that earlier runs left behind (`bbtest_*`, for example after a
     /// killed test program).
     fn sweep_leftovers(&self) -> anyhow::Result<()> {
-        let password = self.password()?;
-        let psql = self.program("psql")?;
-        let run = |sql: &str| -> anyhow::Result<String> {
-            let out = Command::new(&psql)
-                .args(["-h", HOST, "-p", &self.port.to_string(), "-U", USER])
-                .args(["-d", "postgres", "-X", "-A", "-t", "-c", sql])
-                .env("PGPASSWORD", &password)
-                .stdin(Stdio::null())
-                .output()
-                .context("could not run psql")?;
-            if !out.status.success() {
-                bail!(
-                    "psql failed: {}",
-                    String::from_utf8_lossy(&out.stderr).trim()
-                );
-            }
-            Ok(String::from_utf8_lossy(&out.stdout).into_owned())
-        };
-        let names = run("SELECT datname FROM pg_database WHERE datname LIKE 'bbtest\\_%'")?;
+        let names = self.psql("SELECT datname FROM pg_database WHERE datname LIKE 'bbtest\\_%'")?;
         for name in names.lines().map(str::trim).filter(|name| !name.is_empty()) {
             // Only names the harness makes: letters, digits and underscores.
             if name.chars().all(|c| c.is_ascii_alphanumeric() || c == '_') {
-                run(&format!("DROP DATABASE IF EXISTS \"{name}\" WITH (FORCE)"))?;
+                self.psql(&format!("DROP DATABASE IF EXISTS \"{name}\" WITH (FORCE)"))?;
             }
         }
         Ok(())
+    }
+}
+
+/// A running throwaway PostgreSQL, for a command of xtask that needs databases of its own (the
+/// sample organization). Made by [`with_postgres`].
+pub(crate) struct Postgres<'a> {
+    cluster: &'a Cluster,
+}
+
+impl Postgres<'_> {
+    /// An empty database called `name` (letters, digits and underscores; an old one of the same
+    /// name is thrown away) and the address that opens it.
+    pub(crate) fn empty_database(&self, name: &str) -> anyhow::Result<String> {
+        if name.is_empty() || !name.chars().all(|c| c.is_ascii_alphanumeric() || c == '_') {
+            bail!("`{name}` is no name for a database: use letters, digits and underscores.");
+        }
+        self.cluster
+            .psql(&format!("DROP DATABASE IF EXISTS \"{name}\" WITH (FORCE)"))?;
+        self.cluster.psql(&format!("CREATE DATABASE \"{name}\""))?;
+        Ok(database_url(
+            &self.cluster.password()?,
+            self.cluster.port,
+            name,
+        ))
+    }
+}
+
+impl Postgres<'_> {
+    /// Writes what the tables of the database `name` hold into `file`, as SQL (`pg_dump` of the
+    /// pinned PostgreSQL, data only), so it can be read like any other file.
+    pub(crate) fn dump_data(&self, name: &str, file: &Path) -> anyhow::Result<()> {
+        let out = Command::new(self.cluster.program("pg_dump")?)
+            .args(["-h", HOST, "-p", &self.cluster.port.to_string(), "-U", USER])
+            .args(["-d", name, "--data-only", "--no-owner", "-f"])
+            .arg(file)
+            .env("PGPASSWORD", self.cluster.password()?)
+            .stdin(Stdio::null())
+            .output()
+            .context("could not run pg_dump")?;
+        if !out.status.success() {
+            bail!(
+                "pg_dump failed: {}",
+                String::from_utf8_lossy(&out.stderr).trim()
+            );
+        }
+        Ok(())
+    }
+
+    /// Throws the database `name` away, when there is one.
+    pub(crate) fn drop_database(&self, name: &str) -> anyhow::Result<()> {
+        if name.is_empty() || !name.chars().all(|c| c.is_ascii_alphanumeric() || c == '_') {
+            bail!("`{name}` is no name for a database: use letters, digits and underscores.");
+        }
+        self.cluster
+            .psql(&format!("DROP DATABASE IF EXISTS \"{name}\" WITH (FORCE)"))
+            .map(|_| ())
+    }
+}
+
+/// Runs `work` with the throwaway PostgreSQL running: it is started when it is not running, and
+/// stopped again afterwards (also after an error) only when it was started here.
+pub(crate) fn with_postgres<T>(
+    repo: &Repo,
+    work: impl FnOnce(&Postgres<'_>) -> anyhow::Result<T>,
+) -> anyhow::Result<T> {
+    let cluster = Cluster::locate(repo)?;
+    let was_running = cluster.is_running()?;
+    let guard = (!was_running).then(|| StopGuard {
+        cluster: &cluster,
+        armed: true,
+    });
+    cluster.start()?;
+    let result = work(&Postgres { cluster: &cluster });
+    // A failure to stop must not hide how the work went.
+    let stopped = guard.map_or(Ok(()), StopGuard::stop_now);
+    match (result, stopped) {
+        (Ok(value), Ok(())) => Ok(value),
+        (Ok(_), Err(error)) | (Err(error), Ok(())) => Err(error),
+        (Err(error), Err(stop_error)) => {
+            output::info(&format!("Also, PostgreSQL did not stop: {stop_error:#}"));
+            Err(error)
+        }
     }
 }
 
@@ -443,9 +526,14 @@ fn remove_record(path: &Path) -> anyhow::Result<()> {
     }
 }
 
-/// `postgres://bugaboo:<password>@127.0.0.1:<port>/postgres`
+/// `postgres://bugaboo:<password>@127.0.0.1:<port>/<database>`
+fn database_url(password: &str, port: u16, database: &str) -> String {
+    format!("postgres://{USER}:{password}@{HOST}:{port}/{database}")
+}
+
+/// The address of the maintenance database `postgres`.
 fn connection_url(password: &str, port: u16) -> String {
-    format!("postgres://{USER}:{password}@{HOST}:{port}/postgres")
+    database_url(password, port, "postgres")
 }
 
 /// The server settings: loopback only, this port, no Unix socket, and no waiting for the disk
