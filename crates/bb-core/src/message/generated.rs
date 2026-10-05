@@ -501,6 +501,9 @@ pub const SECOND_STEP_TITLE: MessageKey = MessageKey::new("second-step.title");
 /// The message `security-log.reason.anchor`.
 pub const SECURITY_LOG_REASON_ANCHOR: MessageKey = MessageKey::new("security-log.reason.anchor");
 
+/// The message `security-log.reason.behind`.
+pub const SECURITY_LOG_REASON_BEHIND: MessageKey = MessageKey::new("security-log.reason.behind");
+
 /// The message `security-log.reason.broken-link`.
 pub const SECURITY_LOG_REASON_BROKEN_LINK: MessageKey =
     MessageKey::new("security-log.reason.broken-link");
@@ -1635,6 +1638,15 @@ pub fn status_certificate_valid(date: impl std::fmt::Display, days: i64) -> Mess
     )
 }
 
+/// The message `status.log-failures`.
+#[must_use]
+pub fn status_log_failures(count: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("status.log-failures"),
+        vec![("count", Value::Number(count))],
+    )
+}
+
 /// The message `status.started`.
 #[must_use]
 pub fn status_started(when: impl std::fmt::Display) -> Message {
@@ -2271,6 +2283,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "the anchor file that vouches for the end of the log was changed.",
     ),
     (
+        "security-log.reason.behind",
+        "the database lacks the newest entries that the anchor file knows of. Check whether the database was restored from an older backup or lost its last writes. If neither happened, somebody removed entries.",
+    ),
+    (
         "security-log.reason.broken-link",
         "an entry does not match the entry before it.",
     ),
@@ -2599,6 +2615,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("status.database.sqlite", "A SQLite file"),
     ("status.intro", "How this Bugaboo server is doing."),
     ("status.log", "Security log"),
+    (
+        "status.log-failures",
+        "{count, plural, one {# entry} other {# entries}} of the security log could not be written since the server started. Check that the disk is not full and that the account that runs Bugaboo can write in the data folder, then look at the server log.",
+    ),
     ("status.refresh", "Check again"),
     ("status.running", "Running for"),
     ("status.started", "Started {when}"),

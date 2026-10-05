@@ -186,6 +186,8 @@ export const messages = {
     "entries were deleted without a signed checkpoint, or the checkpoint is wrong.",
   "security-log.reason.truncated": "entries at the end of the log were cut off or rewritten.",
   "security-log.reason.anchor": "the anchor file that vouches for the end of the log was changed.",
+  "security-log.reason.behind":
+    "the database lacks the newest entries that the anchor file knows of. Check whether the database was restored from an older backup or lost its last writes. If neither happened, somebody removed entries.",
   "keys.rotated":
     "Made a new master key and used it for {secrets, plural, one {# stored secret} other {# stored secrets}}. Back up the key files again.",
   "keys.exported":
@@ -456,6 +458,8 @@ export const messages = {
   "service.data-folder-real":
     "The data folder {path} is a link. The service uses the folder it leads to: {real}.",
   "keys.database-placeholder": "--database-url <the address of your database>",
+  "status.log-failures":
+    "{count, plural, one {# entry} other {# entries}} of the security log could not be written since the server started. Check that the disk is not full and that the account that runs Bugaboo can write in the data folder, then look at the server log.",
 } as const;
 
 export type MessageKey = keyof typeof messages;
@@ -543,6 +547,7 @@ export interface MessageArguments {
   "status.certificate.expired": { date: string | number };
   "status.certificate.soon": { date: string | number; days: number };
   "status.certificate.valid": { date: string | number; days: number };
+  "status.log-failures": { count: number };
   "status.started": { when: string | number };
   "status.uptime": { days: number; hours: number; minutes: number };
   "theme.device-resolved": { device: string | number; theme: string | number };

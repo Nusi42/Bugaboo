@@ -7,7 +7,8 @@ use axum::body::Body;
 use axum::http::{Request, StatusCode};
 use bb_api::tls::ServedCertificate;
 use bb_api::{LimitsConfig, ProbeHandle, router};
-use bb_app::status::{DatabaseKind, LogState, ServerProbe as _};
+use bb_app::status::{DatabaseKind, LogBreak, LogState, ServerProbe as _};
+use bb_store::Database;
 use bb_testing::each_database;
 use serde_json::json;
 use tower::ServiceExt as _;
@@ -271,6 +272,93 @@ async fn ops_08_the_status_page_follows_the_log_and_reuses_its_answer_until_some
         assert_eq!(third, second + 1);
         rig.sign_in("ada@example.test", PASSWORD).await?;
         assert!(log_of(&kept.snapshot().await.security_log)?.0 > third);
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn sec_15_the_status_page_warns_when_a_log_entry_could_not_be_written() -> Outcome {
+    each_database("sec_15_status_failed_write", async |db| {
+        let rig = Rig::start(db, 10).await?;
+        let app = app_with_probe(&rig, None);
+        let mut ada = Browser::new(&app, &called());
+        ada.send("POST", "/api/v1/auth/setup", Some(setup_body(&rig)))
+            .await?;
+        let reply = ada.send("GET", STATUS, None).await?;
+        assert_eq!(reply.body["security_log"]["write_failures"], 0);
+
+        // The anchor file cannot be written any more: a folder has taken its place.
+        let anchor = rig.folder.path().join("logs").join("security-head.log");
+        std::fs::remove_file(&anchor)?;
+        std::fs::create_dir(&anchor)?;
+
+        // Signing in goes on (the decision of M1: a log that cannot be written does not lock
+        // everybody out) ...
+        let mut again = Browser::new(&app, &called());
+        let signed = again
+            .send(
+                "POST",
+                "/api/v1/auth/sign-in",
+                Some(json!({"email": "ada@example.test", "password": PASSWORD})),
+            )
+            .await?;
+        assert_eq!(signed.status, StatusCode::OK);
+
+        // ... and the status page counts what could not be written.
+        let reply = ada.send("GET", STATUS, None).await?;
+        let failures = reply.body["security_log"]["write_failures"].as_u64();
+        assert!(failures.is_some_and(|count| count >= 1), "{failures:?}");
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn sec_15_the_status_page_warns_when_the_anchor_is_ahead() -> Outcome {
+    each_database("sec_15_status_anchor_ahead", async |db| {
+        let rig = Rig::start(db, 10).await?;
+        rig.admin("ada@example.test").await?;
+        rig.sign_in("ada@example.test", PASSWORD).await?;
+
+        // A database that was restored from an older state: it has fewer entries than the anchor
+        // file (a new one with none, here), and the same keys and anchor file.
+        let older = tempfile::tempdir()?;
+        let restored = Database::connect_file(&older.path().join("older.db")).await?;
+        restored.migrate(jiff::Timestamp::now()).await?;
+        let probe = Probe::new(
+            restored,
+            rig.seal.clone(),
+            DatabaseKind::BuiltIn,
+            None,
+            rig.services.log_writes(),
+        );
+        let state = probe.snapshot().await.security_log;
+        assert!(
+            matches!(
+                state,
+                LogState::Broken {
+                    reason: LogBreak::Behind,
+                    ..
+                }
+            ),
+            "{state:?}"
+        );
+
+        // The page says so, with the reason the person can act on.
+        let mut options = options(&rig, LimitsConfig::default(), true);
+        options.probe = ProbeHandle::new(Arc::new(probe));
+        let app = router(options);
+        let mut ada = Browser::new(&app, &called());
+        ada.send(
+            "POST",
+            "/api/v1/auth/sign-in",
+            Some(json!({"email": "ada@example.test", "password": PASSWORD})),
+        )
+        .await?;
+        let reply = ada.send("GET", STATUS, None).await?;
+        assert_eq!(reply.body["security_log"]["result"], "broken");
+        assert_eq!(reply.body["security_log"]["reason"], "behind");
         Ok(())
     })
     .await

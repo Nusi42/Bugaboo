@@ -18,6 +18,11 @@ export function isUnanchored(log: SecurityLog): boolean {
   return log.result === "valid" && (log.entries ?? 0) > 0 && log.anchored === false;
 }
 
+/** Whether entries of the log could not be written since the server started: a warning (M1-F40). */
+export function hasWriteFailures(log: SecurityLog): boolean {
+  return log.write_failures > 0;
+}
+
 /**
  * What time it is for the server: when it started plus how long it has run. The status page
  * judges the certificate by this and not by the clock of the browser, which may be wrong, and
@@ -42,7 +47,11 @@ export function levelOf(state: State, nowMs: number): Level {
   if (!database.ok || log.result !== "valid" || (days !== null && days < 0)) {
     return "problem";
   }
-  if (isUnanchored(log) || (days !== null && days < CERTIFICATE_WARNING_DAYS)) {
+  if (
+    isUnanchored(log) ||
+    hasWriteFailures(log) ||
+    (days !== null && days < CERTIFICATE_WARNING_DAYS)
+  ) {
     return "warning";
   }
   return "ok";

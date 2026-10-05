@@ -185,6 +185,7 @@ pub(crate) fn log_state(result: &Result<Verification, bb_store::StoreError>) -> 
                 BreakReason::Checkpoint => LogBreak::Checkpoint,
                 BreakReason::Truncated => LogBreak::Truncated,
                 BreakReason::Anchor => LogBreak::Anchor,
+                BreakReason::Behind => LogBreak::Behind,
             },
         },
         Err(_) => LogState::Unreadable,
@@ -214,6 +215,7 @@ impl ServerProbe for Probe {
                 database_ok,
                 certificate,
                 security_log,
+                log_write_failures: self.log_writes.failed(),
             }
         })
     }

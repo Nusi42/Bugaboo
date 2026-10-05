@@ -37,6 +37,9 @@ pub enum LogBreak {
     Truncated,
     /// The file that vouches for the end of the log was changed.
     Anchor,
+    /// The anchor file knows of newer entries than the database has: the database was restored
+    /// from an older backup, lost its last writes, or the end of the log was cut off.
+    Behind,
 }
 
 /// How many security-log entries the server has written, and how many it could not write, since
@@ -116,6 +119,9 @@ pub struct Snapshot {
     pub certificate: Option<CertificateState>,
     /// The result of checking the security log.
     pub security_log: LogState,
+    /// How many entries of the security log could not be written since the server started.
+    /// Signing in goes on when a write fails (the decision of M1), so this is the only sign.
+    pub log_write_failures: u64,
 }
 
 /// Measures the server for the status page and for `/health/ready`.

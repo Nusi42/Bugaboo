@@ -101,6 +101,8 @@ enum LogBreakBody {
     Truncated,
     /// The file that vouches for the end of the log was changed.
     Anchor,
+    /// The anchor file knows of newer entries than the database has.
+    Behind,
 }
 
 impl From<LogBreak> for LogBreakBody {
@@ -112,6 +114,7 @@ impl From<LogBreak> for LogBreakBody {
             LogBreak::Checkpoint => Self::Checkpoint,
             LogBreak::Truncated => Self::Truncated,
             LogBreak::Anchor => Self::Anchor,
+            LogBreak::Behind => Self::Behind,
         }
     }
 }
@@ -146,6 +149,10 @@ struct SecurityLogBody {
     broken_at: Option<i64>,
     /// What is wrong with it (when it breaks).
     reason: Option<LogBreakBody>,
+    /// How many entries could not be written since the server started. A failed write does not
+    /// stop a sign-in, so a number above zero means the log lags: check the disk and the rights
+    /// on the data folder.
+    write_failures: u64,
 }
 
 impl From<LogState> for SecurityLogBody {
@@ -158,6 +165,7 @@ impl From<LogState> for SecurityLogBody {
             anchored: None,
             broken_at: None,
             reason: None,
+            write_failures: 0,
         };
         match state {
             LogState::Valid {
@@ -214,7 +222,10 @@ impl From<Snapshot> for ServerStatusBody {
             certificate: snapshot.certificate.map(|certificate| CertificateBody {
                 expires_at: certificate.expires_at.to_string(),
             }),
-            security_log: snapshot.security_log.into(),
+            security_log: SecurityLogBody {
+                write_failures: snapshot.log_write_failures,
+                ..snapshot.security_log.into()
+            },
         }
     }
 }

@@ -476,7 +476,13 @@ fn judge_anchor(anchor: Anchored, found: &Found<'_>) -> Verification {
         (_, Some((seq, _))) if anchor_seq < seq => Some(anchor_hash),
         _ => hash_at_anchor,
     };
-    if reached < anchor_seq || same != Some(anchor_hash) {
+    if reached < anchor_seq {
+        return Verification::Broken {
+            seq: anchor_seq,
+            reason: BreakReason::Behind,
+        };
+    }
+    if same != Some(anchor_hash) {
         return Verification::Broken {
             seq: anchor_seq,
             reason: BreakReason::Truncated,
@@ -858,7 +864,7 @@ mod tests {
             database.execute(&delete).await?;
             assert_eq!(
                 database.verify_security_log(&seal).await?,
-                broken(5, BreakReason::Truncated)
+                broken(5, BreakReason::Behind)
             );
 
             // The whole log replaced by another one that is right under the same key (somebody
@@ -1240,6 +1246,36 @@ mod tests {
                     head: Some(head),
                     anchored: true
                 }
+            );
+            Ok(())
+        })
+        .await
+    }
+    #[tokio::test]
+    async fn sec_15_an_anchor_that_is_ahead_of_the_database_has_a_reason_of_its_own() -> TestResult
+    {
+        each_database("sec_15_anchor_ahead", async |db| {
+            let database = open(db).await?;
+            let (_folder, seal) = new_seal();
+            append_many(&database, &seal, 5).await?;
+            // The database goes back to an earlier state (a restore from an older backup): the
+            // anchor file knows of entries that it does not have.
+            let mut delete = Query::delete();
+            delete
+                .from_table(Columns::Table)
+                .and_where(Expr::col(Columns::Seq).gt(3_i64));
+            database.execute(&delete).await?;
+            assert_eq!(
+                database.verify_security_log(&seal).await?,
+                broken(5, BreakReason::Behind)
+            );
+            // A check from the head that is left finds the same.
+            let known = head_of(&database).await?;
+            assert_eq!(
+                database
+                    .verify_security_log_since(&seal, Some(known))
+                    .await?,
+                broken(5, BreakReason::Behind)
             );
             Ok(())
         })

@@ -1,7 +1,7 @@
 import type { Schema } from "@bugaboo/api-client";
 import { describe, expect, it } from "vitest";
 
-import { certificateDays, isUnanchored, levelOf, serverNow } from "./status.ts";
+import { certificateDays, hasWriteFailures, isUnanchored, levelOf, serverNow } from "./status.ts";
 
 type State = Schema<"ServerStatusBody">;
 
@@ -21,6 +21,7 @@ function healthy(): State {
       head_seq: 12,
       head_hash: "abababababababab",
       anchored: true,
+      write_failures: 0,
     },
   };
 }
@@ -46,13 +47,30 @@ describe("ops_08 how serious the state of the server is", () => {
     );
     const broken: State = {
       ...healthy(),
-      security_log: { result: "broken", broken_at: 7, reason: "gap" },
+      security_log: { result: "broken", broken_at: 7, reason: "gap", write_failures: 0 },
     };
     expect(levelOf(broken, NOW)).toBe("problem");
-    const unreadable: State = { ...healthy(), security_log: { result: "unreadable" } };
+    const unreadable: State = {
+      ...healthy(),
+      security_log: { result: "unreadable", write_failures: 0 },
+    };
+    const behind: State = {
+      ...healthy(),
+      security_log: { result: "broken", broken_at: 9, reason: "behind", write_failures: 0 },
+    };
+    expect(levelOf(behind, NOW)).toBe("problem");
     expect(levelOf(unreadable, NOW)).toBe("problem");
     const expired: State = { ...healthy(), certificate: { expires_at: "2026-10-01T12:00:00Z" } };
     expect(levelOf(expired, NOW)).toBe("problem");
+  });
+});
+
+describe("sec_15 and ops_08 what the page makes of the server", () => {
+  it("asks for a look when a security log entry could not be written", () => {
+    const log = { ...healthy().security_log, write_failures: 2 };
+    expect(hasWriteFailures(log)).toBe(true);
+    expect(hasWriteFailures(healthy().security_log)).toBe(false);
+    expect(levelOf({ ...healthy(), security_log: log }, NOW)).toBe("warning");
   });
 
   it("takes the time of the server from when it started and how long it has run", () => {

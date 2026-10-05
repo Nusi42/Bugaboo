@@ -137,6 +137,7 @@
   "security-log.reason.checkpoint": "entries were deleted without a signed checkpoint, or the checkpoint is wrong.",
   "security-log.reason.truncated": "entries at the end of the log were cut off or rewritten.",
   "security-log.reason.anchor": "the anchor file that vouches for the end of the log was changed.",
+  "security-log.reason.behind": "the database lacks the newest entries that the anchor file knows of. Check whether the database was restored from an older backup or lost its last writes. If neither happened, somebody removed entries.",
   "keys.rotated": "Made a new master key and used it for {secrets, plural, one {# stored secret} other {# stored secrets}}. Back up the key files again.",
   "keys.exported": "Copied the key files into {path}. They can read everything Bugaboo stores in secret: keep them in a safe place, away from the database backup.",
   "keys.export-exists": "The folder {path} already holds a copy of a key file. Choose another folder, so no copy is overwritten.",
@@ -357,5 +358,6 @@
   "keys.settings-placeholder": "--config <the settings file of the service>",
   "service.settings-folder-owner": "The folder {path} that holds the settings file does not belong to the administrator account (root). Keep the settings file in a folder that root owns, for example /etc/bugaboo.",
   "service.data-folder-real": "The data folder {path} is a link. The service uses the folder it leads to: {real}.",
-  "keys.database-placeholder": "--database-url <the address of your database>"
+  "keys.database-placeholder": "--database-url <the address of your database>",
+  "status.log-failures": "{count, plural, one {# entry} other {# entries}} of the security log could not be written since the server started. Check that the disk is not full and that the account that runs Bugaboo can write in the data folder, then look at the server log."
 }

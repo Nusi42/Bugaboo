@@ -3013,7 +3013,15 @@
       "LogBreakBody": {
         "type": "string",
         "description": "Why the chain of the security log does not verify.",
-        "enum": ["gap", "broken_link", "changed_content", "checkpoint", "truncated", "anchor"]
+        "enum": [
+          "gap",
+          "broken_link",
+          "changed_content",
+          "checkpoint",
+          "truncated",
+          "anchor",
+          "behind"
+        ]
       },
       "LogResult": {
         "type": "string",
@@ -3181,7 +3189,7 @@
       "SecurityLogBody": {
         "type": "object",
         "description": "What checking the security log found.",
-        "required": ["result"],
+        "required": ["result", "write_failures"],
         "properties": {
           "anchored": {
             "type": ["boolean", "null"],
@@ -3221,6 +3229,12 @@
           "result": {
             "$ref": "#/components/schemas/LogResult",
             "description": "The outcome."
+          },
+          "write_failures": {
+            "type": "integer",
+            "format": "int64",
+            "description": "How many entries could not be written since the server started. A failed write does not\nstop a sign-in, so a number above zero means the log lags: check the disk and the rights\non the data folder.",
+            "minimum": 0
           }
         }
       },

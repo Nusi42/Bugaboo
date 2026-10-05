@@ -694,7 +694,14 @@ export interface components {
      * @description Why the chain of the security log does not verify.
      * @enum {string}
      */
-    LogBreakBody: "gap" | "broken_link" | "changed_content" | "checkpoint" | "truncated" | "anchor";
+    LogBreakBody:
+      | "gap"
+      | "broken_link"
+      | "changed_content"
+      | "checkpoint"
+      | "truncated"
+      | "anchor"
+      | "behind";
     /**
      * @description The result of checking the security log.
      * @enum {string}
@@ -811,6 +818,13 @@ export interface components {
       reason?: components["schemas"]["LogBreakBody"] | null;
       /** @description The outcome. */
       result: components["schemas"]["LogResult"];
+      /**
+       * Format: int64
+       * @description How many entries could not be written since the server started. A failed write does not
+       *     stop a sign-in, so a number above zero means the log lags: check the disk and the rights
+       *     on the data folder.
+       */
+      write_failures: number;
     };
     /** @description What `GET /api/v1/status` answers: the server is up. */
     ServerStatus: {
