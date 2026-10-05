@@ -2,7 +2,7 @@
 
 use std::path::Path;
 
-use super::node_tool::{Selection, run, unix_findings};
+use super::node_tool::{Selection, in_batches, run, unix_findings};
 use super::{Check, Context, Finding};
 
 const SELECTION: Selection = Selection {
@@ -24,9 +24,14 @@ impl Check for LintCss {
 }
 
 fn lint(root: &Path, files: &[String]) -> anyhow::Result<Vec<Finding>> {
-    if files.is_empty() {
-        return Ok(Vec::new());
+    let mut findings = Vec::new();
+    for batch in in_batches(files) {
+        findings.extend(lint_batch(root, batch)?);
     }
+    Ok(findings)
+}
+
+fn lint_batch(root: &Path, files: &[String]) -> anyhow::Result<Vec<Finding>> {
     let mut args = vec![
         "--config",
         "stylelint.config.mjs",

@@ -2,7 +2,7 @@
 
 use std::path::Path;
 
-use super::node_tool::{Selection, run, unix_findings};
+use super::node_tool::{Selection, in_batches, run, unix_findings};
 use super::{Check, Context, Finding};
 
 const SELECTION: Selection = Selection {
@@ -39,6 +39,15 @@ fn lint(root: &Path, files: &[String]) -> anyhow::Result<Vec<Finding>> {
 }
 
 fn lint_group(root: &Path, files: &[&String], type_aware: bool) -> anyhow::Result<Vec<Finding>> {
+    let names: Vec<String> = files.iter().map(|file| (*file).clone()).collect();
+    let mut findings = Vec::new();
+    for batch in in_batches(&names) {
+        findings.extend(lint_batch(root, batch, type_aware)?);
+    }
+    Ok(findings)
+}
+
+fn lint_batch(root: &Path, files: &[String], type_aware: bool) -> anyhow::Result<Vec<Finding>> {
     if files.is_empty() {
         return Ok(Vec::new());
     }
@@ -52,7 +61,7 @@ fn lint_group(root: &Path, files: &[&String], type_aware: bool) -> anyhow::Resul
     if type_aware {
         args.push("--type-aware");
     }
-    args.extend(files.iter().map(|file| file.as_str()));
+    args.extend(files.iter().map(String::as_str));
     Ok(unix_findings(&run(root, "oxlint", &args)?))
 }
 
