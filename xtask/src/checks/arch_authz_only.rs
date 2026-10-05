@@ -15,6 +15,9 @@
 //!   the word `Inputs` outside those and `bb-store` (which reads the rows): whoever can build the
 //!   input can make an evaluation for anybody and so an `Authorized<T>`. A method of a value
 //!   (`ctx.evaluate(…)`) and a definition of another function of that name are not the engine;
+//! - a glob import of the policy crate (`use bb_policy::*`, `use bb_policy::{self, *}`, also across
+//!   lines) outside the same places: it would bring `evaluate` and `Inputs` in without naming them
+//!   (M2-F24);
 //! - inside `bb-policy`: a `pub` field in the definition of `Authorized`, a `pub` constructor
 //!   (`new`, `from`), or a derive that would make one out of nothing (`Default`, `Deserialize`).
 //!
@@ -31,6 +34,8 @@ const ENGINE_CALLER_FOLDER: &str = "crates/bb-app/src/access/";
 /// The one place outside `bb-policy` and the access module that builds the input of the engine,
 /// from the stored rows.
 const INPUT_BUILDER_FOLDER: &str = "crates/bb-store/src/";
+/// The crate whose names a glob import must not pull in.
+const POLICY_CRATE: &str = "bb_policy";
 /// The type.
 const TYPE: &str = "Authorized";
 /// The method that opens an `Authorized<T>` for tests, and the feature that switches it on.
@@ -161,9 +166,56 @@ fn evaluate(sources: &[Source]) -> Vec<Finding> {
                 ));
             }
         }
+        let may_name_engine = path.starts_with(POLICY_FOLDER)
+            || path.starts_with(ENGINE_CALLER_FOLDER)
+            || path.starts_with(INPUT_BUILDER_FOLDER);
+        if !may_name_engine {
+            findings.extend(glob_import_findings(path, &code));
+        }
         if path.starts_with(POLICY_FOLDER) {
             findings.extend(definition_findings(path, &code));
         }
+    }
+    findings
+}
+
+/// Every `use` of the policy crate with a `*` in it, read as a whole statement so a list over
+/// several lines is found too. `code` has its comments and texts blanked already.
+fn glob_import_findings(path: &str, code: &str) -> Vec<Finding> {
+    let mut findings = Vec::new();
+    let lines: Vec<&str> = code.lines().collect();
+    let mut at = 0;
+    while at < lines.len() {
+        let trimmed = lines[at].trim_start();
+        let rest = ["pub(crate) ", "pub(super) ", "pub "]
+            .iter()
+            .find_map(|visibility| trimmed.strip_prefix(visibility))
+            .unwrap_or(trimmed);
+        if !rest.starts_with("use ") {
+            at += 1;
+            continue;
+        }
+        // The statement runs to its `;`.
+        let mut statement = String::new();
+        let mut end = at;
+        while end < lines.len() {
+            statement.push_str(lines[end]);
+            statement.push(' ');
+            if lines[end].contains(';') {
+                break;
+            }
+            end += 1;
+        }
+        let names_policy = statement
+            .split(|c: char| !(c.is_alphanumeric() || c == '_'))
+            .any(|word| word == POLICY_CRATE);
+        if names_policy && statement.contains('*') {
+            findings.push(Finding::at(
+                format!("{path}:{}", at + 1),
+                "A glob import of `bb_policy` would bring the engine (`evaluate`, `Inputs`) in                  without naming it. Import the names you use; only `bb-app/src/access` asks the                  engine and only `bb-store` builds its input.",
+            ));
+        }
+        at = end + 1;
     }
     findings
 }
@@ -419,6 +471,72 @@ const CHAR: char = '\"';
             "crates/bb-app/src/roles/x.rs",
             "async fn f(ctx: &Ctx) { ctx.evaluate(person, place).await; }\nfn g(x: &MyInputs) {}\n",
         ));
+    }
+
+    #[test]
+    fn bad_example_a_glob_import_of_the_policy_crate_brings_the_engine_in_unnamed() {
+        for text in [
+            "use bb_policy::*;
+fn f(i: &Inputs) { let e = evaluate(i); }
+",
+            "pub use bb_policy::*;
+",
+            "use bb_policy::{self, *};
+",
+            "use ::bb_policy::*;
+",
+            "use bb_policy::{
+    Permission,
+    *,
+};
+",
+            "pub(crate) use bb_policy::evaluate::*;
+",
+        ] {
+            let all = evaluate(&source("crates/bb-api/src/api/x.rs", text));
+            assert!(
+                all.iter()
+                    .any(|finding| finding.message.contains("glob import")),
+                "{text}"
+            );
+        }
+    }
+
+    #[test]
+    fn good_example_named_imports_other_globs_and_the_places_that_ask_the_engine() {
+        for text in [
+            "use bb_policy::{Authorized, Permission};
+",
+            "use super::*;
+use std::collections::*;
+",
+            "use bb_policy_extra::*;
+",
+            "// use bb_policy::*;
+const T: &str = \"use bb_policy::*;\";
+",
+            "fn f() { let a = 2 * 3; use_it(bb_policy::Place::Organization); }
+",
+        ] {
+            let found = evaluate(&source("crates/bb-api/src/api/x.rs", text));
+            assert!(found.is_empty(), "{text}");
+        }
+        // The places that may name the engine may also import everything of it.
+        for path in [
+            "crates/bb-app/src/access/mod.rs",
+            "crates/bb-store/src/policy.rs",
+            "crates/bb-policy/src/lib.rs",
+        ] {
+            assert!(
+                evaluate(&source(
+                    path,
+                    "use bb_policy::*;
+"
+                ))
+                .is_empty(),
+                "{path}"
+            );
+        }
     }
 
     #[test]
