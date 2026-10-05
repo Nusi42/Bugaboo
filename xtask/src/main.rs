@@ -10,6 +10,7 @@ mod bundle;
 mod catalog;
 mod checks;
 mod ci;
+mod dataset;
 mod db;
 mod dev;
 mod docs;
@@ -53,7 +54,12 @@ enum Command {
         scope: CheckScope,
     },
     /// Start the Vite dev server and the Bugaboo server on the ports from tools/dev/ports.json.
-    Dev,
+    Dev {
+        /// Start on a fresh sample organization (50 fictional people; the passwords are in
+        /// target/dev-sample/sign-in.txt).
+        #[arg(long)]
+        sample: bool,
+    },
     /// Build the browser app, then the release binary (one file, browser app inside).
     Build {
         /// Build for another system, such as x86_64-unknown-linux-musl (DIST-01).
@@ -66,6 +72,11 @@ enum Command {
     Db {
         #[command(subcommand)]
         action: DbAction,
+    },
+    /// Make or check the sample organization (architecture §11, "Sample organization").
+    Dataset {
+        #[command(subcommand)]
+        kind: DatasetKind,
     },
     /// Entry points for Claude Code hooks.
     Hook {
@@ -98,6 +109,34 @@ enum GenTarget {
     /// The API description, the browser client's types and the cookie list, from bb-api.
     Api,
 }
+#[derive(Subcommand)]
+enum DatasetKind {
+    /// 50 fictional people, made through the real use cases, the same every time from a seed.
+    Sample {
+        /// The number the sample is made from (default 42).
+        #[arg(long)]
+        seed: Option<u64>,
+        /// Which database to make it on.
+        #[arg(long, value_enum, default_value = "sqlite")]
+        database: DatabaseChoice,
+        /// The folder for the data folder and the sign-in details (default target/sample, or
+        /// target/sample-postgres on PostgreSQL).
+        #[arg(long)]
+        out: Option<PathBuf>,
+        /// Instead: make it twice on each database and check that the dumps are the same and
+        /// fictional (TEST-SAMPLE-DATA).
+        #[arg(long)]
+        check: bool,
+    },
+}
+
+/// The databases the sample can be made on.
+#[derive(Clone, Copy, clap::ValueEnum)]
+enum DatabaseChoice {
+    Sqlite,
+    Postgres,
+}
+
 #[derive(Subcommand)]
 enum DbAction {
     /// Start the test PostgreSQL (creates it on first use).
@@ -198,7 +237,27 @@ fn run() -> anyhow::Result<ExitCode> {
             output::generated(&written);
             Ok(ExitCode::SUCCESS)
         }
-        Command::Dev => Ok(steps::exit_code(dev::run(repo.root())?)),
+        Command::Dev { sample } => Ok(steps::exit_code(dev::run(repo.root(), sample)?)),
+        Command::Dataset {
+            kind:
+                DatasetKind::Sample {
+                    seed,
+                    database,
+                    out,
+                    check,
+                },
+        } => {
+            let request = dataset::Request {
+                seed,
+                database: match database {
+                    DatabaseChoice::Sqlite => dataset::DatabaseKind::Sqlite,
+                    DatabaseChoice::Postgres => dataset::DatabaseKind::Postgres,
+                },
+                out,
+                check,
+            };
+            Ok(steps::exit_code(dataset::run(&repo, &request)?))
+        }
         Command::Build { target } => Ok(steps::exit_code(build::run(
             repo.root(),
             target.as_deref(),

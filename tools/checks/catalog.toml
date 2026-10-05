@@ -660,8 +660,8 @@ title = "The sample organization builds from its seed, is identical on both data
 rule = "architecture §11, ADR-0023"
 tool = "xtask dataset sample --check"
 when = ["ci"]
-files = ["xtask/**", "crates/bb-store/**"]
-status = "planned"
+files = ["xtask/**", "crates/bb-store/**", "crates/bb-sample/**"]
+status = "active"
 
 [[check]]
 id = "TEST-CONCURRENT"

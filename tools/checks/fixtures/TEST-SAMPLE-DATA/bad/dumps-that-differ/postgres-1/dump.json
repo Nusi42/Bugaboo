@@ -1,0 +1,31 @@
+{
+  "seed": 42,
+  "start": "2027-01-15T08:00:00Z",
+  "people": [
+    {
+      "name": "Ada Brandt",
+      "email": "ada.brandt@bugaboo.example"
+    },
+    {
+      "name": "Ana Moreno",
+      "email": "ana.more@bugaboo.example"
+    }
+  ],
+  "events": [
+    {
+      "time": "2027-01-15T07:43:40Z",
+      "actor": "person#1",
+      "channel": "ui",
+      "entity": "invitation#1",
+      "changes": [
+        {
+          "field": "email",
+          "before": null,
+          "after": "ana.moreno@bugaboo.example"
+        }
+      ],
+      "reason": null
+    }
+  ],
+  "security_log": []
+}
