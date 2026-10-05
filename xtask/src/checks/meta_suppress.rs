@@ -41,13 +41,14 @@ const RUST_MARKERS: [&str; 4] = ["#[allow(", "#![allow(", "#[expect(", "#![expec
 const RUST_CONDITIONAL: &str = "cfg_attr(";
 
 /// Comment markers of the other tools.
-const COMMENT_MARKERS: [&str; 6] = [
+const COMMENT_MARKERS: [&str; 7] = [
     "eslint-disable",
     "oxlint-disable",
     "stylelint-disable",
     "ast-grep-ignore",
     "@ts-ignore",
     "@ts-expect-error",
+    "gitleaks:allow",
 ];
 
 /// Markers in Markdown files, only counted inside an HTML comment.
@@ -312,6 +313,11 @@ mod tests {
             COMMENT_MARKERS[1]
         );
         assert_eq!(counted("a.ts", &ts), (1, 0));
+        let secret = format!(
+            "const password = \"x\"; // {} -- fake test credential, SEC-16\n",
+            COMMENT_MARKERS[6]
+        );
+        assert_eq!(counted("a.ts", &secret), (1, 0));
         let md = format!("<!-- {} MD013 -- ADR-0014 -->\n", MARKDOWN_MARKERS[0]);
         assert_eq!(counted("a.md", &md), (1, 0));
         let prose = format!("Prose about {} stays free.\n", MARKDOWN_MARKERS[0]);
@@ -335,6 +341,8 @@ mod tests {
         assert_eq!(counted("a.ts", &ts), (1, 1));
         let tsx = format!("// {}\n", COMMENT_MARKERS[5]);
         assert_eq!(counted("a.tsx", &tsx), (1, 1));
+        let secret = format!("const password = \"x\"; // {}\n", COMMENT_MARKERS[6]);
+        assert_eq!(counted("a.ts", &secret), (1, 1));
         let yml = format!("# {}-line\n", COMMENT_MARKERS[0]);
         assert_eq!(counted("a.yml", &yml), (1, 1));
         let md = format!("<!-- {} MD013 -->\n", MARKDOWN_MARKERS[1]);

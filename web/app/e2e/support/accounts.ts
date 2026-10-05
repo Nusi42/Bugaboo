@@ -10,30 +10,22 @@ export interface Person {
   readonly password: string;
 }
 
-/**
- * A password made of words. It is joined here, so that no whole password stands in the code as
- * one text that the secret scan (SEC-16) would take for a real key.
- */
-function passphrase(...words: readonly string[]): string {
-  return words.join("-");
-}
-
 export const ada: Person = {
   name: "Ada Admin",
   email: "ada@example.test",
-  password: passphrase("Tr4mpoline", "Quiet", "Harbor", "81"),
+  password: "Tr4mpoline-Quiet-Harbor-81",
 };
 
 export const bob: Person = {
   name: "Bob Builder",
   email: "bob@example.test",
-  password: passphrase("Violet", "Lantern", "Marsh", "5520"),
+  password: "Violet-Lantern-Marsh-5520", // gitleaks:allow -- fake test credential, SEC-16
 };
 
 export const cleo: Person = {
   name: "Cleo Coder",
   email: "cleo@example.test",
-  password: passphrase("Granite", "Orbit", "Meadow", "3047"),
+  password: "Granite-Orbit-Meadow-3047",
 };
 
 /** Makes the first administrator through the API, with the setup code the server saved. */

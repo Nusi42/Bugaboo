@@ -758,7 +758,7 @@ status = "active"
 
 [[check]]
 id = "META-SUPPRESS"
-title = "Every suppression (allow, expect, eslint/oxlint/stylelint-disable, @ts-ignore, ast-grep ignore, accepted advisories) has a reason that names an issue or a doc section; the total is compared with tools/checks/suppressions.txt and may only change together with that file"
+title = "Every suppression (allow, expect, eslint/oxlint/stylelint-disable, @ts-ignore, ast-grep ignore, gitleaks:allow, accepted advisories) has a reason that names an issue or a doc section; the total is compared with tools/checks/suppressions.txt and may only change together with that file"
 rule = "architecture §10"
 tool = "xtask (counts and compares with tools/checks/suppressions.txt)"
 when = ["commit", "ci"]
