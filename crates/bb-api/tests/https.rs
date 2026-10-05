@@ -285,20 +285,40 @@ mod https {
         assert!(head_of(&response).contains(&format!("{HSTS_NAME}: {HSTS_TRUSTED}")));
     }
 
+    /// The answers that hand out a secret (a big one included) are tested where there is a
+    /// database to answer them: `perf_03_answers_with_a_secret_are_not_stored_or_compressed`
+    /// (bb-server) and `perf_03_no_route_that_hands_out_a_secret_is_compressed` (bb-api).
     #[tokio::test(flavor = "multi_thread")]
-    async fn sec_11_json_answers_are_not_compressed() {
+    async fn sec_11_json_answers_are_compressed_above_1_kib_only() {
         let server = start(true, None).await;
-        let response = fetch(
+        // The API description: a big answer that holds no secret.
+        let big = "/api/v1/openapi.json";
+        let plain = fetch(&server, true, &get(big, "")).await;
+        assert!(!head_of(&plain).contains("content-encoding"));
+        for (accepts, encoding) in [("gzip", "gzip"), ("br", "br"), ("br, gzip", "br")] {
+            let zipped = fetch(
+                &server,
+                true,
+                &get(big, &format!("Accept-Encoding: {accepts}\r\n")),
+            )
+            .await;
+            let head = head_of(&zipped);
+            assert!(head.contains("200 ok"), "{head}");
+            assert!(
+                head.contains(&format!("content-encoding: {encoding}")),
+                "{accepts}: {head}"
+            );
+            assert!(head.contains("application/json"));
+            assert!(zipped.len() < plain.len());
+        }
+        // A small one stays as it is.
+        let small = fetch(
             &server,
             true,
-            &get(
-                "/health/ready",
-                "Accept-Encoding: gzip, br
-",
-            ),
+            &get("/health/ready", "Accept-Encoding: gzip, br\r\n"),
         )
         .await;
-        assert!(!head_of(&response).contains("content-encoding"));
+        assert!(!head_of(&small).contains("content-encoding"));
     }
 
     #[tokio::test(flavor = "multi_thread")]

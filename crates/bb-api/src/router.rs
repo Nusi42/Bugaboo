@@ -14,10 +14,12 @@ use axum::response::{IntoResponse, Response};
 use axum::routing::get;
 use axum::{Extension, Router};
 use bb_core::message::{self, Message};
-use tower_http::compression::predicate::{Predicate as _, SizeAbove};
+use tower_http::compression::predicate::{Predicate, SizeAbove};
 use tower_http::compression::{CompressionLayer, CompressionLevel, DefaultPredicate};
 
 use crate::api::{AuthHandle, ProbeHandle};
+use crate::cookies::sets_a_cookie;
+use crate::etag::SecretAnswer;
 use crate::limits::{Limits, LimitsConfig};
 use crate::{api, headers};
 use hyper_util::rt::{TokioExecutor, TokioIo, TokioTimer};
@@ -37,8 +39,14 @@ const CACHE_IMMUTABLE: &str = "public, max-age=31536000, immutable";
 const CACHE_REVALIDATE: &str = "no-cache";
 /// Addresses below these are never browser pages: when missing they are plain 404s.
 const NO_PAGE_FALLBACK: [&str; 3] = ["assets", "health", "api"];
-/// Smaller answers are not worth compressing.
+/// Smaller files are not worth compressing.
 const COMPRESS_FROM_BYTES: u64 = 256;
+/// A JSON answer is compressed only when it is bigger than this (1 KiB, M2-Q2): below it the
+/// saving is small. The one definition of the threshold.
+const JSON_COMPRESS_ABOVE_BYTES: u64 = 1024;
+/// The kinds of JSON answer that may be compressed. Another kind with `json` in its name is not
+/// an API answer and stays as it is.
+const JSON_TYPES: [&str; 2] = ["application/json", "application/problem+json"];
 /// The compression quality, written once in a file that the budget check of the first page
 /// (PERF-BUNDLE) reads too, so the size it measures is the size this server sends.
 const COMPRESSION_SETTINGS: &str = include_str!("../../../tools/dev/compression.json");
@@ -100,9 +108,6 @@ pub fn router(options: Options) -> Router {
         probe: options.probe,
     };
     let auth = state.auth.clone();
-    let compress = DefaultPredicate::new()
-        .and(SizeAbove::new(COMPRESS_FROM_BYTES))
-        .and(is_text);
     let app = Router::new()
         .route("/health/live", get(health_live))
         .route("/health/ready", get(health_ready))
@@ -111,11 +116,7 @@ pub fn router(options: Options) -> Router {
         .method_not_allowed_fallback(api::method_not_allowed)
         .with_state(state);
     let app = api::rules(app, limits, auth)
-        .layer(
-            CompressionLayer::new()
-                .quality(compression_level())
-                .compress_when(compress),
-        )
+        .layer(compression_layer())
         .layer(from_fn_with_state(
             LogContext::new(&options.trusted_proxies),
             log_request,
@@ -199,24 +200,88 @@ fn compression_quality() -> Option<i32> {
         .and_then(|quality| i32::try_from(quality).ok())
 }
 
-/// Text compresses well; images, fonts and archives are already compressed.
-fn is_text(
+/// The compression of answers, outside the rules that mark an answer a secret (`crate::etag`).
+pub(crate) fn compression_layer() -> CompressionLayer<impl Predicate> {
+    CompressionLayer::new()
+        .quality(compression_level())
+        .compress_when(
+            DefaultPredicate::new()
+                .and(is_compressible)
+                .and(WorthTheTrouble),
+        )
+}
+
+/// What a response is, for compression.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Content {
+    /// An API answer: compressed above [`JSON_COMPRESS_ABOVE_BYTES`], never when it holds a
+    /// secret.
+    Json,
+    /// Text of the browser app, compressed from [`COMPRESS_FROM_BYTES`].
+    Text,
+    /// Images, fonts, archives (already compressed) and everything else.
+    Other,
+}
+
+fn content_of(headers: &HeaderMap) -> Content {
+    let Some(kind) = headers
+        .get(header::CONTENT_TYPE)
+        .and_then(|value| value.to_str().ok())
+    else {
+        return Content::Other;
+    };
+    let essence = kind
+        .split(';')
+        .next()
+        .unwrap_or_default()
+        .trim()
+        .to_ascii_lowercase();
+    if JSON_TYPES.contains(&essence.as_str()) {
+        Content::Json
+    } else if essence.contains("json") {
+        Content::Other
+    } else if ["text/", "javascript", "xml", "wasm"]
+        .iter()
+        .any(|part| essence.contains(part))
+    {
+        Content::Text
+    } else {
+        Content::Other
+    }
+}
+
+/// Which answers may be compressed at all. A compressed answer that mixes a secret with text the
+/// attacker chooses can leak the secret (BREACH), so an answer that hands out a secret (marked
+/// [`SecretAnswer`]) or sets a cookie is never compressed, whatever its type and size.
+fn is_compressible(
     _status: StatusCode,
     _version: axum::http::Version,
     headers: &HeaderMap,
-    _extensions: &axum::http::Extensions,
+    extensions: &axum::http::Extensions,
 ) -> bool {
-    headers
-        .get(header::CONTENT_TYPE)
-        .and_then(|value| value.to_str().ok())
-        .is_some_and(|kind| {
-            // JSON (API answers, problem+json) is never compressed: a compressed answer that
-            // mixes a secret with text the attacker chooses can leak the secret (BREACH).
-            !kind.contains("json")
-                && ["text/", "javascript", "xml", "wasm"]
-                    .iter()
-                    .any(|part| kind.contains(part))
-        })
+    extensions.get::<SecretAnswer>().is_none()
+        && !sets_a_cookie(headers)
+        && content_of(headers) != Content::Other
+}
+
+/// Answers below their size are not compressed: JSON from [`JSON_COMPRESS_ABOVE_BYTES`], files
+/// from [`COMPRESS_FROM_BYTES`].
+#[derive(Clone, Copy)]
+struct WorthTheTrouble;
+
+impl Predicate for WorthTheTrouble {
+    fn should_compress<B>(&self, response: &Response<B>) -> bool
+    where
+        B: axum::body::HttpBody,
+    {
+        let from = if content_of(response.headers()) == Content::Json {
+            // `SizeAbove` compresses from its number on; "above" is one more.
+            JSON_COMPRESS_ABOVE_BYTES + 1
+        } else {
+            COMPRESS_FROM_BYTES
+        };
+        SizeAbove::new(from).should_compress(response)
+    }
 }
 
 async fn health_live() -> Response {
@@ -530,6 +595,122 @@ mod tests {
         assert_eq!(sent.len(), size_at(quality));
         // The qualities differ here, so the test would notice a change of either side.
         assert_ne!(size_at(quality), size_at(11));
+    }
+
+    /// An answer of `size` bytes with this content type and extras, through the compression of
+    /// the server, asked for with every kind of compression the server knows.
+    async fn compressed_as(
+        kind: &'static str,
+        size: u64,
+        secret: bool,
+        cookie: bool,
+    ) -> Option<String> {
+        let size = usize::try_from(size).unwrap();
+        let app = Router::new()
+            .route(
+                "/answer",
+                get(move || async move {
+                    let mut response = Response::new(Body::from("a".repeat(size)));
+                    let headers = response.headers_mut();
+                    headers.insert(header::CONTENT_TYPE, HeaderValue::from_static(kind));
+                    if cookie {
+                        headers.insert(header::SET_COOKIE, HeaderValue::from_static("a=b"));
+                    }
+                    if secret {
+                        response.extensions_mut().insert(SecretAnswer);
+                    }
+                    response
+                }),
+            )
+            .layer(compression_layer());
+        let request = Request::get("/answer")
+            .header("accept-encoding", "br, gzip")
+            .body(Body::empty())
+            .unwrap();
+        let response = app.oneshot(request).await.unwrap();
+        response
+            .headers()
+            .get(header::CONTENT_ENCODING)
+            .map(|value| value.to_str().unwrap().to_owned())
+    }
+
+    #[tokio::test]
+    async fn sec_11_json_answers_above_1_kib_are_compressed_and_smaller_ones_are_not() {
+        for kind in ["application/json", "application/problem+json"] {
+            assert_eq!(
+                compressed_as(kind, JSON_COMPRESS_ABOVE_BYTES + 1, false, false)
+                    .await
+                    .as_deref(),
+                Some("br"),
+                "{kind}"
+            );
+            // Exactly 1 KiB is not above it.
+            for size in [0, 100, JSON_COMPRESS_ABOVE_BYTES] {
+                assert_eq!(
+                    compressed_as(kind, size, false, false).await,
+                    None,
+                    "{kind} {size}"
+                );
+            }
+        }
+        // The charset does not change the kind.
+        assert!(
+            compressed_as("application/json; charset=utf-8", 5000, false, false)
+                .await
+                .is_some()
+        );
+    }
+
+    #[tokio::test]
+    async fn sec_11_an_answer_that_hands_out_a_secret_is_never_compressed_however_big() {
+        for kind in ["application/json", "application/problem+json", "text/html"] {
+            assert_eq!(
+                compressed_as(kind, 100_000, true, false).await,
+                None,
+                "{kind}"
+            );
+            assert_eq!(
+                compressed_as(kind, 100_000, false, true).await,
+                None,
+                "{kind}"
+            );
+            assert_eq!(
+                compressed_as(kind, 100_000, true, true).await,
+                None,
+                "{kind}"
+            );
+        }
+    }
+
+    #[tokio::test]
+    async fn sec_11_files_keep_their_rules() {
+        // Text from 256 bytes on, other JSON and files that are compressed already never.
+        assert!(
+            compressed_as(
+                "text/html; charset=utf-8",
+                COMPRESS_FROM_BYTES,
+                false,
+                false
+            )
+            .await
+            .is_some()
+        );
+        assert_eq!(
+            compressed_as("text/html", COMPRESS_FROM_BYTES - 1, false, false).await,
+            None
+        );
+        assert!(
+            compressed_as("text/javascript", 5000, false, false)
+                .await
+                .is_some()
+        );
+        for kind in ["application/manifest+json", "image/png", "font/woff2"] {
+            assert_eq!(
+                compressed_as(kind, 100_000, false, false).await,
+                None,
+                "{kind}"
+            );
+        }
     }
 
     #[tokio::test]

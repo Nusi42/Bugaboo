@@ -8,9 +8,8 @@
 //!
 //! - **A secret** (an answer with a field marked `x-secret`, or any answer that sets a cookie: a
 //!   new session, an invitation link, the code app, backup codes) is `no-store`, has no `ETag`,
-//!   and is marked [`SecretAnswer`], for the compression rule that comes with the decision on
-//!   compressing JSON (M2-Q2, architecture §7 "Browser protections"): until then JSON is not
-//!   compressed at all.
+//!   and is marked [`SecretAnswer`]. The compression of `crate::router` never compresses a marked
+//!   answer, nor one that sets a cookie (BREACH, M2-Q2, architecture §7 "Browser protections").
 //! - **Personal data** (a `GET` route marked `x-never-stored`: who is signed in, the sessions,
 //!   the invitations, the second step, the state of the server) is `no-store` and has no `ETag`:
 //!   a shared computer keeps nothing of it after the person has left.
@@ -53,7 +52,8 @@ const ETAG_BODY_LIMIT: usize = 16 * 1024 * 1024;
 /// What the tag of an answer is bound to in the seal.
 const ETAG_PURPOSE: &str = "etag";
 
-/// Put on the response of an answer that holds a secret, for the layers outside.
+/// Put on the response of an answer that holds a secret, for the layers outside (compression
+/// skips it).
 #[derive(Clone, Copy, Debug)]
 pub(crate) struct SecretAnswer;
 
@@ -298,7 +298,7 @@ mod tests {
     use axum::Router;
     use axum::http::Request;
     use axum::middleware::from_fn;
-    use axum::routing::{get, post};
+    use axum::routing::{MethodFilter, get, on, post};
     use serde_json::json;
     use tower::ServiceExt as _;
 
@@ -491,7 +491,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn perf_03_an_answer_with_a_secret_field_is_never_stored_and_marked_for_compression() {
+    async fn perf_03_an_answer_with_a_secret_field_is_never_stored_and_marked_as_a_secret() {
         // The invitation link: a route of the real API description whose answer holds a secret.
         let response = call("POST", "/api/v1/auth/invitations", None).await;
         assert_eq!(
@@ -592,6 +592,106 @@ mod tests {
         }
         // The invitation link, the code app, its confirmation and the backup codes.
         assert_eq!(marked, 4);
+    }
+
+    /// Asks `app` for `method` and `path` with every kind of compression the server knows, and says
+    /// how the answer was compressed.
+    async fn encoding_of(app: &Router, method: &Method, path: &str) -> Option<String> {
+        let request = Request::builder()
+            .method(method)
+            .uri(path)
+            .header(header::ACCEPT_ENCODING, "br, gzip")
+            .body(Body::empty())
+            .unwrap();
+        let response = app.clone().oneshot(request).await.unwrap();
+        assert_eq!(response.status(), StatusCode::OK, "{method} {path}");
+        header_of(&response, header::CONTENT_ENCODING).map(str::to_owned)
+    }
+
+    /// A big JSON answer from every route of the API description, through the rules and the
+    /// compression of the server: the answers of the routes that hand out a secret are never
+    /// compressed and the answers of every other route are, so the mark in the description is
+    /// what decides.
+    #[tokio::test]
+    async fn perf_03_no_route_that_hands_out_a_secret_is_compressed() {
+        let document = real_document();
+        let classes = classes_of(&document);
+        let mut app = Router::new();
+        let mut routes = Vec::new();
+        for (route, item) in document["paths"].as_object().unwrap() {
+            for method in item.as_object().unwrap().keys() {
+                let method: Method = method.to_uppercase().parse().unwrap();
+                let filter = MethodFilter::try_from(method.clone()).unwrap();
+                app = app.route(
+                    route,
+                    on(filter, || async {
+                        (
+                            [(header::CONTENT_TYPE, "application/json")],
+                            "x".repeat(4096),
+                        )
+                    }),
+                );
+                let path = route
+                    .split('/')
+                    .map(|part| if part.starts_with('{') { "1" } else { part })
+                    .collect::<Vec<_>>()
+                    .join("/");
+                routes.push((method, route.clone(), path));
+            }
+        }
+        let app = app
+            .layer(from_fn(cache_rules))
+            .layer(crate::router::compression_layer());
+        let (mut secret, mut other) = (0, 0);
+        for (method, route, path) in &routes {
+            let encoding = encoding_of(&app, method, path).await;
+            if classes.kind_of(method, route) == Kind::Secret {
+                secret += 1;
+                assert_eq!(encoding, None, "{method} {route} hands out a secret");
+            } else {
+                other += 1;
+                assert_eq!(encoding.as_deref(), Some("br"), "{method} {route}");
+            }
+        }
+        assert_eq!(secret, 4);
+        assert!(other > 10, "{other}");
+    }
+
+    #[tokio::test]
+    async fn perf_03_a_big_answer_that_sets_a_cookie_is_never_compressed_whatever_the_route() {
+        let app = Router::new()
+            .route(
+                "/api/v1/cookie",
+                get(|| async {
+                    (
+                        [
+                            (header::CONTENT_TYPE, "application/json"),
+                            (header::SET_COOKIE, "a=b"),
+                        ],
+                        "x".repeat(4096),
+                    )
+                }),
+            )
+            .route(
+                "/api/v1/plain",
+                get(|| async {
+                    (
+                        [(header::CONTENT_TYPE, "application/json")],
+                        "x".repeat(4096),
+                    )
+                }),
+            )
+            .layer(from_fn(cache_rules))
+            .layer(crate::router::compression_layer());
+        assert_eq!(
+            encoding_of(&app, &Method::GET, "/api/v1/cookie").await,
+            None
+        );
+        assert!(
+            encoding_of(&app, &Method::GET, "/api/v1/plain")
+                .await
+                .is_some()
+        );
     }
 
     #[test]
