@@ -1,0 +1,27 @@
+.link {
+  color: var(--accent-fg);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: var(--space-1);
+  cursor: pointer;
+}
+
+.link[data-hovered] {
+  text-decoration-thickness: var(--ring-width);
+}
+
+.link[data-focus-visible] {
+  outline: var(--ring-width) solid var(--accent);
+  outline-offset: var(--ring-offset);
+}
+
+.link[data-current] {
+  color: var(--fg);
+  text-decoration: none;
+}
+
+@media (forced-colors: active) {
+  .link {
+    color: LinkText;
+  }
+}

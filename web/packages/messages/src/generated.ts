@@ -2,9 +2,6 @@
 
 export const messages = {
   "app.name": "Bugaboo",
-  "hello.title": "Hello Bugaboo",
-  "hello.intro": "Track your work in one calm place. Pick the theme that is easiest on your eyes.",
-  "hello.current": "Your theme: {theme}.",
   "theme.legend": "Theme",
   "theme.device": "Match my device",
   "theme.device-resolved": "{device} ({theme})",
@@ -121,11 +118,351 @@ export const messages = {
   "server.keys-missing":
     "The data folder has stored secrets or a security log, but its key files in the keys folder are missing. Restore them from your backup. Bugaboo does not make new keys, because the stored secrets could never be read again.",
   "server.about": "Bugaboo: the issue tracker in one file",
+  "cli.about.serve": "Start the server",
+  "cli.about.openapi": "Print the description of the API (OpenAPI) and stop",
+  "cli.about.setup": "Answer a few questions and save the answers in the settings file",
+  "cli.about.service": "Run Bugaboo as a service that starts with the computer",
+  "cli.about.service-install": "Install the service and start it",
+  "cli.about.service-uninstall": "Stop the service and remove it. Your data stays where it is",
+  "cli.about.security-log": "Look at the security log",
+  "cli.about.security-log-verify": "Check that nobody changed the security log",
+  "cli.about.rotate-key": "Make a new master key and use it for every stored secret",
+  "cli.about.keys": "Look after the key files",
+  "cli.about.keys-export": "Copy the key files into a folder, for your backup",
+  "cli.help.config": "The settings file (default: bugaboo.toml next to the program, if it exists)",
+  "cli.help.port": "The port to listen on",
+  "cli.help.address": "The address to listen on (default 127.0.0.1, this computer only)",
+  "cli.help.data-dir": "The folder that holds all data",
+  "cli.help.database-url":
+    "The database: sqlite:<file> or postgres://<address> (default: the one inside the data folder)",
+  "cli.help.tls": "HTTPS mode: self-signed, files or off",
+  "cli.help.tls-cert": "The certificate file, for HTTPS mode files",
+  "cli.help.tls-key": "The private key file, for HTTPS mode files",
+  "cli.help.public-url":
+    "The web address people type to reach Bugaboo, like https://bugaboo.example.com",
+  "cli.help.web":
+    "Serve the browser app from this folder instead of the one built into the program",
+  "cli.help.non-interactive": "Ask nothing: use the options given here and the defaults",
+  "cli.help.overwrite": "Replace the settings file if it already exists",
+  "cli.help.keys-folder": "The folder to copy the key files into. It is made if it does not exist",
+  "cli.no-data": "There is no Bugaboo data in {path}. Check the data folder in your settings.",
+  "setup.welcome":
+    "Welcome to Bugaboo. A few questions, then your answers are saved in a settings file. Press Enter to accept the answer in brackets.",
+  "setup.ask.data-dir": "Where should Bugaboo keep its data? Give the path of a folder.",
+  "setup.ask.address":
+    "Who should be able to open Bugaboo? Type 127.0.0.1 for this computer only, or 0.0.0.0 for everyone who can reach this computer.",
+  "setup.ask.port": "Which port should Bugaboo listen on?",
+  "setup.ask.tls":
+    "How should the connection be secured (HTTPS)? Type self-signed to let Bugaboo make its own certificate, files to use a certificate you already have, or off for plain HTTP (only on this computer or behind a proxy).",
+  "setup.ask.tls-cert": "Where is the certificate file?",
+  "setup.ask.tls-key": "Where is the private key file?",
+  "setup.ask.public-url":
+    "Which web address will people type to reach Bugaboo? For example https://bugaboo.example.com",
+  "setup.ask.database":
+    "Which database? Type built-in for the database inside the data folder, or a sqlite: or postgres:// address.",
+  "setup.ask.replace": "The settings file {path} already exists. Replace it? Type yes or no.",
+  "setup.answer-yes": "yes",
+  "setup.database-built-in": "built-in",
+  "setup.not-usable": "That does not work: {reason}",
+  "setup.replace-refused": "Nothing was changed.",
+  "setup.exists": "The settings file {path} already exists. Add --overwrite to replace it.",
+  "setup.input-ended": "The questions were not all answered, so nothing was saved.",
+  "setup.saved": "Saved your answers in {path}.",
+  "setup.next":
+    "Start Bugaboo with: bugaboo serve. The first start shows a setup code in that window. You need it to make the first administrator in your browser.",
+  "setup.service-hint": "To have Bugaboo start with the computer, run: bugaboo service install",
+  "security-log.valid":
+    "The security log is intact: {entries, plural, one {# entry} other {# entries}} checked.",
+  "security-log.head":
+    "The last entry is number {seq}. Its hash starts with {hash}. Keep a copy of this to compare later.",
+  "security-log.unanchored":
+    "Nothing vouches for the end of the log, because its anchor file is missing or empty. Someone could cut entries off the end without anybody noticing.",
+  "security-log.broken": "The security log is broken at entry {seq}: {reason}",
+  "security-log.unreadable": "The security log could not be read.",
+  "security-log.reason.gap": "an entry is missing, appears twice or is out of order.",
+  "security-log.reason.broken-link": "an entry does not match the entry before it.",
+  "security-log.reason.changed-content": "an entry was changed after it was written.",
+  "security-log.reason.checkpoint":
+    "entries were deleted without a signed checkpoint, or the checkpoint is wrong.",
+  "security-log.reason.truncated": "entries at the end of the log were cut off or rewritten.",
+  "security-log.reason.anchor": "the anchor file that vouches for the end of the log was changed.",
+  "keys.rotated":
+    "Made a new master key and used it for {secrets, plural, one {# stored secret} other {# stored secrets}}. Back up the key files again.",
+  "keys.exported":
+    "Copied the key files into {path}. They can read everything Bugaboo stores in secret: keep them in a safe place, away from the database backup.",
+  "keys.export-exists":
+    "The folder {path} already holds a copy of a key file. Choose another folder, so no copy is overwritten.",
+  "keys.export-failed": "The key files could not be copied: {reason}",
+  "service.needs-admin":
+    "Installing or removing a service needs administrator rights. On Windows, open the terminal as an administrator. On Linux, run the command with sudo.",
+  "service.unsupported":
+    "Bugaboo can run as a service on Windows and on Linux with systemd. This computer has neither.",
+  "service.no-settings":
+    "There is no settings file at {path}. Run bugaboo setup first, or name the file with --config.",
+  "service.installed":
+    "The service {name} is installed and started. It runs as the account {account} and starts with the computer.",
+  "service.setup-code":
+    "Nobody has made an administrator yet. The setup code for the first administrator is saved in {path}. Read it there, and enter it in your browser.",
+  "service.exists":
+    "The service {name} is installed already. Remove it first with: bugaboo service uninstall",
+  "service.removed": "The service {name} is removed. Your data stays where it is.",
+  "service.not-installed": "The service {name} is not installed.",
+  "service.failed": "The system refused: {reason}",
+  "service.not-a-service":
+    "This command is for the service manager. To start Bugaboo yourself, use: bugaboo serve",
+  "server.setup-code-file":
+    "Setup is open. The setup code is saved in {path}. Read it there and enter it in your browser to make the first administrator.",
+  "service.stop-timeout":
+    "The service {name} did not stop in time. Stop it in the Services window and try again.",
+  "common.cancel": "Cancel",
+  "common.loading": "Loading…",
+  "common.try-again": "Try again",
+  "common.continue": "Continue",
+  "common.save": "Save",
+  "validation.required": "Please fill this in.",
+  "validation.email": "Type an e-mail address like name@example.com.",
+  "field.email": "E-mail address",
+  "field.password": "Password",
+  "field.password-help": "At least 12 characters. A few words in a row make a good password.",
+  "field.name": "Your name",
+  "field.name-help": "The name other people see.",
+  "field.confirm-password": "Your password",
+  "field.confirm-password-help": "Type your password again to make sure it is you.",
+  "shell.skip": "Skip to the content",
+  "shell.menu": "Main menu",
+  "shell.signed-in-as": "Signed in as {name}",
+  "nav.home": "Home",
+  "nav.security": "Sign-in & security",
+  "nav.sessions": "Where you're signed in",
+  "nav.invitations": "Invitations",
+  "nav.status": "Server status",
+  "nav.sign-out": "Sign out",
+  "home.title": "Welcome, {name}",
+  "home.intro":
+    "You are signed in. Projects and issues come with the next versions of Bugaboo. For now you can look after your account.",
+  "home.admin": "You are an administrator: you can invite people and see how the server is doing.",
+  "page.not-found.title": "This page does not exist",
+  "page.not-found.text": "The address may be mistyped, or the page may have moved.",
+  "page.not-found.home": "Go to the start page",
+  "sign-in.title": "Sign in to Bugaboo",
+  "sign-in.submit": "Sign in",
+  "sign-in.passkey": "Sign in with a passkey",
+  "sign-in.or": "or",
+  "sign-in.make-account": "Make an account",
+  "sign-in.signed-out": "You are signed out.",
+  "second-step.title": "One more step",
+  "second-step.intro":
+    "Your password is right. Your account asks for a second check before it opens.",
+  "second-step.code": "Code",
+  "second-step.code-help":
+    "Type the six-digit code from your code app. If you cannot use the app, type one of your backup codes.",
+  "second-step.submit": "Continue",
+  "second-step.passkey": "Use a passkey",
+  "second-step.passkey-help": "Use the fingerprint, face or screen lock of this device.",
+  "second-step.back": "Back to sign in",
+  "sign-up.title": "Make an account",
+  "sign-up.submit": "Make my account",
+  "sign-up.closed":
+    "Making your own account is switched off here. Ask an administrator to invite you.",
+  "sign-up.have-account": "I already have an account",
+  "invitation.title": "Join Bugaboo",
+  "invitation.intro": "You are invited. Your account will use the e-mail address {email}.",
+  "invitation.submit": "Make my account",
+  "invitation.invalid-title": "This invitation does not work",
+  "invitation.incomplete": "This link is not complete. Open the whole link that you were sent.",
+  "invitation.sign-in": "Go to sign in",
+  "first-run.title": "Welcome to Bugaboo",
+  "first-run.step-of": "Step {step} of {total}: {name}",
+  "first-run.step.code": "Setup code",
+  "first-run.step.account": "Your account",
+  "first-run.step.safer": "Keep it safe",
+  "first-run.step.done": "Done",
+  "first-run.code.intro":
+    "Bugaboo was just installed, so nobody has an account yet. To make sure that only you can make the first one, Bugaboo shows a setup code where it is running.",
+  "first-run.code.where":
+    "Look in the window where Bugaboo is running for the line that starts with Setup is open. If Bugaboo runs as a service, the code is in the file setup-code.txt inside its data folder.",
+  "first-run.code.label": "Setup code",
+  "first-run.code.help":
+    "It looks like k7q2-x9mf-3hd8-vt4w. Capital letters and hyphens do not matter.",
+  "first-run.account.title": "Make the first administrator",
+  "first-run.account.intro":
+    "An administrator can invite people and look after the server. This account is the first one.",
+  "first-run.account.submit": "Make my account",
+  "first-run.safer.title": "Keep your account safe",
+  "first-run.safer.intro":
+    "A password alone can be guessed or stolen. You can add a second check now, or later in Sign-in & security.",
+  "first-run.safer.finish": "Finish",
+  "first-run.done.title": "You are all set",
+  "first-run.done.text": "Your account is ready and you are signed in.",
+  "first-run.done.go": "Open Bugaboo",
+  "security.title": "Sign-in & security",
+  "security.intro": "How you prove that it is you, and how to keep your account safe.",
+  "security.password.title": "Password",
+  "security.password.current": "Your password now",
+  "security.password.new": "New password",
+  "security.password.submit": "Change password",
+  "security.password.changed": "Your password is changed. You are signed out everywhere else.",
+  "passkeys.title": "Passkeys",
+  "passkeys.intro":
+    "A passkey lets you sign in with the fingerprint, face or screen lock of your device instead of typing a password. It can also be your second step.",
+  "passkeys.unavailable":
+    "Passkeys need Bugaboo to be opened with a web address that has a name, not a number. Ask the person who runs Bugaboo to set the public address.",
+  "passkeys.not-supported": "This browser cannot use passkeys.",
+  "passkeys.none": "You have no passkeys yet.",
+  "passkeys.list": "Your passkeys",
+  "passkeys.add": "Add a passkey",
+  "passkeys.name": "Name for this passkey",
+  "passkeys.name-help": "For example: Work laptop",
+  "passkeys.added": "The passkey {name} is added.",
+  "passkeys.added-on": "Added {when}",
+  "passkeys.last-used": "Last used {when}",
+  "passkeys.never-used": "Not used yet",
+  "passkeys.remove": "Remove",
+  "passkeys.remove-name": "Remove the passkey {name}",
+  "passkeys.remove-title": "Remove {name}?",
+  "passkeys.remove-text":
+    "You can no longer sign in with this passkey. Type your password to confirm.",
+  "passkeys.removed": "The passkey is removed.",
+  "passkeys.cancelled": "The passkey was not used. You can try again.",
+  "code-app.title": "Code app",
+  "code-app.intro":
+    "A code app on your phone shows a new six-digit code every 30 seconds. You type it after your password.",
+  "code-app.on": "The code app is set up.",
+  "code-app.off": "The code app is not set up.",
+  "code-app.setup": "Set up the code app",
+  "code-app.scan": "Scan this picture with your code app.",
+  "code-app.qr-alt": "QR picture for your code app",
+  "code-app.key-label": "Cannot scan? Type this key into your app",
+  "code-app.confirm-code": "Code from the app",
+  "code-app.confirm-help": "Type the six-digit code that the app shows now.",
+  "code-app.confirm": "Switch on",
+  "code-app.switched-on": "The code app is switched on. Save your backup codes now.",
+  "code-app.turn-off": "Switch off",
+  "code-app.turn-off-title": "Switch off the code app?",
+  "code-app.turn-off-text": "Your account will be less safe. Type your password to confirm.",
+  "code-app.turned-off": "The code app is switched off.",
+  "backup.title": "Backup codes",
+  "backup.intro":
+    "Each backup code works once. They are for when you cannot use your code app. Keep them somewhere safe.",
+  "backup.left": "{count, plural, one {# backup code is left} other {# backup codes are left}}.",
+  "backup.renew": "Make new backup codes",
+  "backup.renew-help": "The old codes stop working.",
+  "backup.shown-once": "These codes are shown only now. Save them before you leave this page.",
+  "backup.list": "Your backup codes",
+  "backup.copy": "Copy the codes",
+  "backup.copied": "Copied",
+  "backup.saved": "I have saved them",
+  "sessions.title": "Where you're signed in",
+  "sessions.intro":
+    "Each line is a place where you are signed in, like a browser. Sign out of the ones you do not know.",
+  "sessions.list": "Places where you are signed in",
+  "sessions.this": "This browser",
+  "sessions.device": "{browser} on {system}",
+  "sessions.unknown-device": "A browser we do not know",
+  "sessions.started": "Signed in {when}",
+  "sessions.last-seen": "Last used {when}",
+  "sessions.network": "Network {network}",
+  "sessions.end": "Sign out",
+  "sessions.end-name": "Sign out of {device}",
+  "sessions.ended": "That place is signed out.",
+  "sessions.everywhere": "Sign out everywhere",
+  "sessions.everywhere-title": "Sign out everywhere?",
+  "sessions.everywhere-text":
+    "You will be signed out of every browser, this one included, and have to sign in again.",
+  "sessions.cut-off": "Only the newest places are shown.",
+  "invitations.title": "Invitations",
+  "invitations.intro":
+    "An invitation is a link that lets one person make their account. It works once and runs out after 7 days.",
+  "invitations.create": "Make an invitation",
+  "invitations.created": "Invitation for {email}",
+  "invitations.link": "Link to send",
+  "invitations.link-help":
+    "Bugaboo cannot send e-mail yet. Copy this link and send it to the person. It is shown only now.",
+  "invitations.copy": "Copy the link",
+  "invitations.copied": "Link copied",
+  "invitations.open": "Open invitations",
+  "invitations.none": "There are no open invitations.",
+  "invitations.made": "Made {when}",
+  "invitations.expires": "Runs out {when}",
+  "invitations.take-back": "Take back",
+  "invitations.take-back-name": "Take back the invitation for {email}",
+  "invitations.take-back-title": "Take back the invitation for {email}?",
+  "invitations.take-back-text": "The link stops working.",
+  "invitations.taken-back": "The invitation is taken back.",
+  "invitations.more": "Show more",
+  "sign-up-policy.title": "Signing up without an invitation",
+  "sign-up-policy.intro":
+    "When this is on, anyone who can open Bugaboo can make an account without being invited.",
+  "sign-up-policy.switch": "Let people make their own account",
+  "sign-up-policy.domains": "E-mail domains that may sign up",
+  "sign-up-policy.domains-help":
+    "One domain per line, like example.com. Only addresses of these domains can sign up.",
+  "sign-up-policy.warning":
+    "No domain is listed, so everyone who can reach Bugaboo can make an account. Bugaboo cannot check that an address belongs to the person until it can send e-mail.",
+  "sign-up-policy.saved": "Saved.",
+  "sign-up-policy.confirm-title": "Let everybody sign up?",
+  "sign-up-policy.confirm-text":
+    "No domain is listed. Everybody who can reach Bugaboo will be able to make an account.",
+  "sign-up-policy.confirm-yes": "Let everybody sign up",
+  "sign-up-policy.confirm-no": "Keep it off",
+  "status.title": "Server status",
+  "status.intro": "How this Bugaboo server is doing.",
+  "status.refresh": "Check again",
+  "status.state.ok": "All good",
+  "status.state.warning": "Needs attention",
+  "status.state.problem": "Problem",
+  "status.version": "Version",
+  "status.running": "Running for",
+  "status.uptime":
+    "{days, plural, one {# day} other {# days}}, {hours, plural, one {# hour} other {# hours}}, {minutes, plural, one {# minute} other {# minutes}}",
+  "status.started": "Started {when}",
+  "status.database": "Database",
+  "status.database.built-in": "The built-in database in the data folder",
+  "status.database.sqlite": "A SQLite file",
+  "status.database.postgres": "A PostgreSQL server",
+  "status.database.ok": "Working.",
+  "status.database.failed": "Not answering.",
+  "status.certificate": "HTTPS certificate",
+  "status.certificate.valid":
+    "Valid until {date}, which is {days, plural, one {# day} other {# days}} from now.",
+  "status.certificate.soon":
+    "Valid until {date}, which is only {days, plural, one {# day} other {# days}} from now. Renew it soon.",
+  "status.certificate.expired": "This certificate ran out on {date}. Browsers refuse it.",
+  "status.certificate.none":
+    "Not shown. Either another program in front of Bugaboo handles HTTPS, or the certificate file cannot be read.",
+  "status.log": "Security log",
+  "server.setup-code-file-failed":
+    "Setup is open, but the setup code could not be saved in {path}: {reason}. Stop Bugaboo and start it in a terminal with: bugaboo serve. The terminal shows the code.",
+  "keys.not-owner":
+    "The data folder {path} belongs to the account {owner}, and you are using another one. A command run from here could leave files that the Bugaboo service cannot read. Run it as {owner}: {how}",
+  "keys.no-access":
+    "This account cannot read and change the key files in {path}. If Bugaboo runs as a service, run the command as the account that runs it: {how}",
+  "keys.how-linux": "sudo -u {owner} {command}",
+  "keys.how-windows":
+    "On Windows that account is {owner}. It has no password, so you cannot sign in as it: stop the service, start a terminal as that account with a tool that can do this, and run: {command}",
+  "keys.export-not-private":
+    "The folder {path} can be opened by other accounts on this computer. Choose a folder that only you can open, or a new one, so the key files are not left where others can copy them.",
+  "data-folder.not-a-data-folder":
+    "The folder {path} has other files in it and does not look like a Bugaboo data folder. Installing the service would change who owns them. Choose an empty folder or a Bugaboo data folder as the data folder in your settings.",
+  "service.settings-is-link":
+    "The settings file {path} is a link. Installing would change the rights of the file it points to. Name the real file with --config.",
+  "service.settings-in-data":
+    "The settings file {path} is inside the data folder, which the service account can write to. Move the file out of the data folder, so that the service cannot change its own settings.",
+  "service.settings-folder-open":
+    "The folder {path} that holds the settings file can be changed by other accounts. Keep the settings file in a folder that only administrators can change, for example /etc/bugaboo.",
+  "keys.settings-placeholder": "--config <the settings file of the service>",
+  "service.settings-folder-owner":
+    "The folder {path} that holds the settings file does not belong to the administrator account (root). Keep the settings file in a folder that root owns, for example /etc/bugaboo.",
+  "service.data-folder-real":
+    "The data folder {path} is a link. The service uses the folder it leads to: {real}.",
+  "keys.database-placeholder": "--database-url <the address of your database>",
 } as const;
 
 export type MessageKey = keyof typeof messages;
 
 export interface MessageArguments {
+  "backup.left": { count: number };
+  "cli.no-data": { path: string | number };
   "config.address-invalid": { value: string | number };
   "config.file-invalid": { path: string | number; reason: string | number };
   "config.file-unknown-key": {
@@ -144,15 +481,70 @@ export interface MessageArguments {
   "config.tls-mode-invalid": { value: string | number };
   "config.tls-off-public": { address: string | number };
   "data-folder.create-failed": { path: string | number; reason: string | number };
+  "data-folder.not-a-data-folder": { path: string | number };
   "data-folder.protect-failed": { path: string | number; reason: string | number };
-  "hello.current": { theme: string | number };
+  "first-run.step-of": { name: string | number; step: string | number; total: string | number };
+  "home.title": { name: string | number };
+  "invitation.intro": { email: string | number };
+  "invitations.created": { email: string | number };
+  "invitations.expires": { when: string | number };
+  "invitations.made": { when: string | number };
+  "invitations.take-back-name": { email: string | number };
+  "invitations.take-back-title": { email: string | number };
+  "keys.export-exists": { path: string | number };
+  "keys.export-failed": { reason: string | number };
+  "keys.export-not-private": { path: string | number };
+  "keys.exported": { path: string | number };
+  "keys.how-linux": { command: string | number; owner: string | number };
+  "keys.how-windows": { command: string | number; owner: string | number };
+  "keys.no-access": { how: string | number; path: string | number };
+  "keys.not-owner": { how: string | number; owner: string | number; path: string | number };
+  "keys.rotated": { secrets: number };
+  "passkeys.added": { name: string | number };
+  "passkeys.added-on": { when: string | number };
+  "passkeys.last-used": { when: string | number };
+  "passkeys.remove-name": { name: string | number };
+  "passkeys.remove-title": { name: string | number };
+  "security-log.broken": { reason: string | number; seq: string | number };
+  "security-log.head": { hash: string | number; seq: string | number };
+  "security-log.valid": { entries: number };
   "server.database-failed": { reason: string | number };
   "server.error": { message: string | number };
   "server.listening": { address: string | number };
   "server.port-busy": { port: string | number };
   "server.self-signed": { path: string | number };
   "server.setup-code": { code: string | number };
+  "server.setup-code-file": { path: string | number };
+  "server.setup-code-file-failed": { path: string | number; reason: string | number };
   "server.warning": { message: string | number };
+  "service.data-folder-real": { path: string | number; real: string | number };
+  "service.exists": { name: string | number };
+  "service.failed": { reason: string | number };
+  "service.installed": { account: string | number; name: string | number };
+  "service.no-settings": { path: string | number };
+  "service.not-installed": { name: string | number };
+  "service.removed": { name: string | number };
+  "service.settings-folder-open": { path: string | number };
+  "service.settings-folder-owner": { path: string | number };
+  "service.settings-in-data": { path: string | number };
+  "service.settings-is-link": { path: string | number };
+  "service.setup-code": { path: string | number };
+  "service.stop-timeout": { name: string | number };
+  "sessions.device": { browser: string | number; system: string | number };
+  "sessions.end-name": { device: string | number };
+  "sessions.last-seen": { when: string | number };
+  "sessions.network": { network: string | number };
+  "sessions.started": { when: string | number };
+  "setup.ask.replace": { path: string | number };
+  "setup.exists": { path: string | number };
+  "setup.not-usable": { reason: string | number };
+  "setup.saved": { path: string | number };
+  "shell.signed-in-as": { name: string | number };
+  "status.certificate.expired": { date: string | number };
+  "status.certificate.soon": { date: string | number; days: number };
+  "status.certificate.valid": { date: string | number; days: number };
+  "status.started": { when: string | number };
+  "status.uptime": { days: number; hours: number; minutes: number };
   "theme.device-resolved": { device: string | number; theme: string | number };
   "tls.generate-failed": { reason: string | number };
   "tls.key-readable": { path: string | number };

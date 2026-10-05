@@ -38,6 +38,13 @@
       "rules": { "max-lines": "off" }
     },
     {
+      // `cargo xtask gen messages` writes one line per message of the catalog into this file,
+      // longer with every screen. Nobody edits it, and a file over about 400 lines needs a reason
+      // (coding-standards section 2): this is it.
+      "files": ["web/packages/messages/src/generated.ts"],
+      "rules": { "max-lines": "off" }
+    },
+    {
       // The app, the shared components and the messages never talk to the server themselves:
       // only @bugaboo/api-client does (ADR-0008). ARCH-WEB-API checks the same in xtask.
       "files": ["web/app/src/**", "web/packages/ui/**", "web/packages/messages/**"],
@@ -60,26 +67,53 @@
   "rules": {
     // Named exports only (coding-standards section 4); the config override above is the exception.
     "import/no-default-export": "error",
+    // A comment next to code is not allowed, except the marker that the secret scan reads on the
+    // line of a fake test credential (coding-standards section 3: it needs a reason, and
+    // META-SUPPRESS counts it).
+    "no-inline-comments": ["error", { "ignorePattern": "gitleaks:allow" }], // lets the marker stand next to a fake credential, SEC-16
     // Playwright's own fixture types (page, context ...) cannot be made readonly; every other
     // parameter type is still checked. The API client has its own, narrower list (overrides).
     "typescript/prefer-readonly-parameter-types": [
       "error",
       {
         "allow": [
+          // React's own types cannot be made readonly: what a component shows between its tags is
+          // any React content (a mutable union), and the event of a form is React's event object.
+          { "from": "package", "package": "react", "name": ["ReactNode", "FormEvent"] },
           {
             "from": "package",
             "package": "playwright",
             "name": [
-              "Page",
               "BrowserContext",
+              "Page",
               "PlaywrightTestArgs",
               "PlaywrightTestOptions",
               "PlaywrightWorkerArgs",
-              "PlaywrightWorkerOptions"
+              "PlaywrightWorkerOptions",
+              "TestInfo",
+              "WorkerInfo"
+            ]
+          },
+          {
+            "from": "package",
+            "package": "playwright-core",
+            "name": [
+              "APIRequestContext",
+              "APIResponse",
+              "Browser",
+              "BrowserContext",
+              "Locator",
+              "Page"
             ]
           }
         ]
       }
+    ],
+    // The way to send somebody to another page from a route is to throw a `redirect` of TanStack
+    // Router. It is no error, and the router catches it.
+    "typescript/only-throw-error": [
+      "error",
+      { "allow": [{ "from": "package", "package": "@tanstack/router-core", "name": ["Redirect"] }] }
     ],
     "no-console": "error",
     "no-eval": "error",

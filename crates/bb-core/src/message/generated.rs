@@ -5,6 +5,169 @@ use super::{Message, MessageKey, Value};
 /// The message `app.name`.
 pub const APP_NAME: MessageKey = MessageKey::new("app.name");
 
+/// The message `backup.copied`.
+pub const BACKUP_COPIED: MessageKey = MessageKey::new("backup.copied");
+
+/// The message `backup.copy`.
+pub const BACKUP_COPY: MessageKey = MessageKey::new("backup.copy");
+
+/// The message `backup.intro`.
+pub const BACKUP_INTRO: MessageKey = MessageKey::new("backup.intro");
+
+/// The message `backup.list`.
+pub const BACKUP_LIST: MessageKey = MessageKey::new("backup.list");
+
+/// The message `backup.renew`.
+pub const BACKUP_RENEW: MessageKey = MessageKey::new("backup.renew");
+
+/// The message `backup.renew-help`.
+pub const BACKUP_RENEW_HELP: MessageKey = MessageKey::new("backup.renew-help");
+
+/// The message `backup.saved`.
+pub const BACKUP_SAVED: MessageKey = MessageKey::new("backup.saved");
+
+/// The message `backup.shown-once`.
+pub const BACKUP_SHOWN_ONCE: MessageKey = MessageKey::new("backup.shown-once");
+
+/// The message `backup.title`.
+pub const BACKUP_TITLE: MessageKey = MessageKey::new("backup.title");
+
+/// The message `cli.about.keys`.
+pub const CLI_ABOUT_KEYS: MessageKey = MessageKey::new("cli.about.keys");
+
+/// The message `cli.about.keys-export`.
+pub const CLI_ABOUT_KEYS_EXPORT: MessageKey = MessageKey::new("cli.about.keys-export");
+
+/// The message `cli.about.openapi`.
+pub const CLI_ABOUT_OPENAPI: MessageKey = MessageKey::new("cli.about.openapi");
+
+/// The message `cli.about.rotate-key`.
+pub const CLI_ABOUT_ROTATE_KEY: MessageKey = MessageKey::new("cli.about.rotate-key");
+
+/// The message `cli.about.security-log`.
+pub const CLI_ABOUT_SECURITY_LOG: MessageKey = MessageKey::new("cli.about.security-log");
+
+/// The message `cli.about.security-log-verify`.
+pub const CLI_ABOUT_SECURITY_LOG_VERIFY: MessageKey =
+    MessageKey::new("cli.about.security-log-verify");
+
+/// The message `cli.about.serve`.
+pub const CLI_ABOUT_SERVE: MessageKey = MessageKey::new("cli.about.serve");
+
+/// The message `cli.about.service`.
+pub const CLI_ABOUT_SERVICE: MessageKey = MessageKey::new("cli.about.service");
+
+/// The message `cli.about.service-install`.
+pub const CLI_ABOUT_SERVICE_INSTALL: MessageKey = MessageKey::new("cli.about.service-install");
+
+/// The message `cli.about.service-uninstall`.
+pub const CLI_ABOUT_SERVICE_UNINSTALL: MessageKey = MessageKey::new("cli.about.service-uninstall");
+
+/// The message `cli.about.setup`.
+pub const CLI_ABOUT_SETUP: MessageKey = MessageKey::new("cli.about.setup");
+
+/// The message `cli.help.address`.
+pub const CLI_HELP_ADDRESS: MessageKey = MessageKey::new("cli.help.address");
+
+/// The message `cli.help.config`.
+pub const CLI_HELP_CONFIG: MessageKey = MessageKey::new("cli.help.config");
+
+/// The message `cli.help.data-dir`.
+pub const CLI_HELP_DATA_DIR: MessageKey = MessageKey::new("cli.help.data-dir");
+
+/// The message `cli.help.database-url`.
+pub const CLI_HELP_DATABASE_URL: MessageKey = MessageKey::new("cli.help.database-url");
+
+/// The message `cli.help.keys-folder`.
+pub const CLI_HELP_KEYS_FOLDER: MessageKey = MessageKey::new("cli.help.keys-folder");
+
+/// The message `cli.help.non-interactive`.
+pub const CLI_HELP_NON_INTERACTIVE: MessageKey = MessageKey::new("cli.help.non-interactive");
+
+/// The message `cli.help.overwrite`.
+pub const CLI_HELP_OVERWRITE: MessageKey = MessageKey::new("cli.help.overwrite");
+
+/// The message `cli.help.port`.
+pub const CLI_HELP_PORT: MessageKey = MessageKey::new("cli.help.port");
+
+/// The message `cli.help.public-url`.
+pub const CLI_HELP_PUBLIC_URL: MessageKey = MessageKey::new("cli.help.public-url");
+
+/// The message `cli.help.tls`.
+pub const CLI_HELP_TLS: MessageKey = MessageKey::new("cli.help.tls");
+
+/// The message `cli.help.tls-cert`.
+pub const CLI_HELP_TLS_CERT: MessageKey = MessageKey::new("cli.help.tls-cert");
+
+/// The message `cli.help.tls-key`.
+pub const CLI_HELP_TLS_KEY: MessageKey = MessageKey::new("cli.help.tls-key");
+
+/// The message `cli.help.web`.
+pub const CLI_HELP_WEB: MessageKey = MessageKey::new("cli.help.web");
+
+/// The message `code-app.confirm`.
+pub const CODE_APP_CONFIRM: MessageKey = MessageKey::new("code-app.confirm");
+
+/// The message `code-app.confirm-code`.
+pub const CODE_APP_CONFIRM_CODE: MessageKey = MessageKey::new("code-app.confirm-code");
+
+/// The message `code-app.confirm-help`.
+pub const CODE_APP_CONFIRM_HELP: MessageKey = MessageKey::new("code-app.confirm-help");
+
+/// The message `code-app.intro`.
+pub const CODE_APP_INTRO: MessageKey = MessageKey::new("code-app.intro");
+
+/// The message `code-app.key-label`.
+pub const CODE_APP_KEY_LABEL: MessageKey = MessageKey::new("code-app.key-label");
+
+/// The message `code-app.off`.
+pub const CODE_APP_OFF: MessageKey = MessageKey::new("code-app.off");
+
+/// The message `code-app.on`.
+pub const CODE_APP_ON: MessageKey = MessageKey::new("code-app.on");
+
+/// The message `code-app.qr-alt`.
+pub const CODE_APP_QR_ALT: MessageKey = MessageKey::new("code-app.qr-alt");
+
+/// The message `code-app.scan`.
+pub const CODE_APP_SCAN: MessageKey = MessageKey::new("code-app.scan");
+
+/// The message `code-app.setup`.
+pub const CODE_APP_SETUP: MessageKey = MessageKey::new("code-app.setup");
+
+/// The message `code-app.switched-on`.
+pub const CODE_APP_SWITCHED_ON: MessageKey = MessageKey::new("code-app.switched-on");
+
+/// The message `code-app.title`.
+pub const CODE_APP_TITLE: MessageKey = MessageKey::new("code-app.title");
+
+/// The message `code-app.turn-off`.
+pub const CODE_APP_TURN_OFF: MessageKey = MessageKey::new("code-app.turn-off");
+
+/// The message `code-app.turn-off-text`.
+pub const CODE_APP_TURN_OFF_TEXT: MessageKey = MessageKey::new("code-app.turn-off-text");
+
+/// The message `code-app.turn-off-title`.
+pub const CODE_APP_TURN_OFF_TITLE: MessageKey = MessageKey::new("code-app.turn-off-title");
+
+/// The message `code-app.turned-off`.
+pub const CODE_APP_TURNED_OFF: MessageKey = MessageKey::new("code-app.turned-off");
+
+/// The message `common.cancel`.
+pub const COMMON_CANCEL: MessageKey = MessageKey::new("common.cancel");
+
+/// The message `common.continue`.
+pub const COMMON_CONTINUE: MessageKey = MessageKey::new("common.continue");
+
+/// The message `common.loading`.
+pub const COMMON_LOADING: MessageKey = MessageKey::new("common.loading");
+
+/// The message `common.save`.
+pub const COMMON_SAVE: MessageKey = MessageKey::new("common.save");
+
+/// The message `common.try-again`.
+pub const COMMON_TRY_AGAIN: MessageKey = MessageKey::new("common.try-again");
+
 /// The message `config.data-dir-empty`.
 pub const CONFIG_DATA_DIR_EMPTY: MessageKey = MessageKey::new("config.data-dir-empty");
 
@@ -101,11 +264,288 @@ pub const ERROR_SERVER_INTERNAL: MessageKey = MessageKey::new("error.server.inte
 /// The message `error.server.unavailable`.
 pub const ERROR_SERVER_UNAVAILABLE: MessageKey = MessageKey::new("error.server.unavailable");
 
-/// The message `hello.intro`.
-pub const HELLO_INTRO: MessageKey = MessageKey::new("hello.intro");
+/// The message `field.confirm-password`.
+pub const FIELD_CONFIRM_PASSWORD: MessageKey = MessageKey::new("field.confirm-password");
 
-/// The message `hello.title`.
-pub const HELLO_TITLE: MessageKey = MessageKey::new("hello.title");
+/// The message `field.confirm-password-help`.
+pub const FIELD_CONFIRM_PASSWORD_HELP: MessageKey = MessageKey::new("field.confirm-password-help");
+
+/// The message `field.email`.
+pub const FIELD_EMAIL: MessageKey = MessageKey::new("field.email");
+
+/// The message `field.name`.
+pub const FIELD_NAME: MessageKey = MessageKey::new("field.name");
+
+/// The message `field.name-help`.
+pub const FIELD_NAME_HELP: MessageKey = MessageKey::new("field.name-help");
+
+/// The message `field.password`.
+pub const FIELD_PASSWORD: MessageKey = MessageKey::new("field.password");
+
+/// The message `field.password-help`.
+pub const FIELD_PASSWORD_HELP: MessageKey = MessageKey::new("field.password-help");
+
+/// The message `first-run.account.intro`.
+pub const FIRST_RUN_ACCOUNT_INTRO: MessageKey = MessageKey::new("first-run.account.intro");
+
+/// The message `first-run.account.submit`.
+pub const FIRST_RUN_ACCOUNT_SUBMIT: MessageKey = MessageKey::new("first-run.account.submit");
+
+/// The message `first-run.account.title`.
+pub const FIRST_RUN_ACCOUNT_TITLE: MessageKey = MessageKey::new("first-run.account.title");
+
+/// The message `first-run.code.help`.
+pub const FIRST_RUN_CODE_HELP: MessageKey = MessageKey::new("first-run.code.help");
+
+/// The message `first-run.code.intro`.
+pub const FIRST_RUN_CODE_INTRO: MessageKey = MessageKey::new("first-run.code.intro");
+
+/// The message `first-run.code.label`.
+pub const FIRST_RUN_CODE_LABEL: MessageKey = MessageKey::new("first-run.code.label");
+
+/// The message `first-run.code.where`.
+pub const FIRST_RUN_CODE_WHERE: MessageKey = MessageKey::new("first-run.code.where");
+
+/// The message `first-run.done.go`.
+pub const FIRST_RUN_DONE_GO: MessageKey = MessageKey::new("first-run.done.go");
+
+/// The message `first-run.done.text`.
+pub const FIRST_RUN_DONE_TEXT: MessageKey = MessageKey::new("first-run.done.text");
+
+/// The message `first-run.done.title`.
+pub const FIRST_RUN_DONE_TITLE: MessageKey = MessageKey::new("first-run.done.title");
+
+/// The message `first-run.safer.finish`.
+pub const FIRST_RUN_SAFER_FINISH: MessageKey = MessageKey::new("first-run.safer.finish");
+
+/// The message `first-run.safer.intro`.
+pub const FIRST_RUN_SAFER_INTRO: MessageKey = MessageKey::new("first-run.safer.intro");
+
+/// The message `first-run.safer.title`.
+pub const FIRST_RUN_SAFER_TITLE: MessageKey = MessageKey::new("first-run.safer.title");
+
+/// The message `first-run.step.account`.
+pub const FIRST_RUN_STEP_ACCOUNT: MessageKey = MessageKey::new("first-run.step.account");
+
+/// The message `first-run.step.code`.
+pub const FIRST_RUN_STEP_CODE: MessageKey = MessageKey::new("first-run.step.code");
+
+/// The message `first-run.step.done`.
+pub const FIRST_RUN_STEP_DONE: MessageKey = MessageKey::new("first-run.step.done");
+
+/// The message `first-run.step.safer`.
+pub const FIRST_RUN_STEP_SAFER: MessageKey = MessageKey::new("first-run.step.safer");
+
+/// The message `first-run.title`.
+pub const FIRST_RUN_TITLE: MessageKey = MessageKey::new("first-run.title");
+
+/// The message `home.admin`.
+pub const HOME_ADMIN: MessageKey = MessageKey::new("home.admin");
+
+/// The message `home.intro`.
+pub const HOME_INTRO: MessageKey = MessageKey::new("home.intro");
+
+/// The message `invitation.incomplete`.
+pub const INVITATION_INCOMPLETE: MessageKey = MessageKey::new("invitation.incomplete");
+
+/// The message `invitation.invalid-title`.
+pub const INVITATION_INVALID_TITLE: MessageKey = MessageKey::new("invitation.invalid-title");
+
+/// The message `invitation.sign-in`.
+pub const INVITATION_SIGN_IN: MessageKey = MessageKey::new("invitation.sign-in");
+
+/// The message `invitation.submit`.
+pub const INVITATION_SUBMIT: MessageKey = MessageKey::new("invitation.submit");
+
+/// The message `invitation.title`.
+pub const INVITATION_TITLE: MessageKey = MessageKey::new("invitation.title");
+
+/// The message `invitations.copied`.
+pub const INVITATIONS_COPIED: MessageKey = MessageKey::new("invitations.copied");
+
+/// The message `invitations.copy`.
+pub const INVITATIONS_COPY: MessageKey = MessageKey::new("invitations.copy");
+
+/// The message `invitations.create`.
+pub const INVITATIONS_CREATE: MessageKey = MessageKey::new("invitations.create");
+
+/// The message `invitations.intro`.
+pub const INVITATIONS_INTRO: MessageKey = MessageKey::new("invitations.intro");
+
+/// The message `invitations.link`.
+pub const INVITATIONS_LINK: MessageKey = MessageKey::new("invitations.link");
+
+/// The message `invitations.link-help`.
+pub const INVITATIONS_LINK_HELP: MessageKey = MessageKey::new("invitations.link-help");
+
+/// The message `invitations.more`.
+pub const INVITATIONS_MORE: MessageKey = MessageKey::new("invitations.more");
+
+/// The message `invitations.none`.
+pub const INVITATIONS_NONE: MessageKey = MessageKey::new("invitations.none");
+
+/// The message `invitations.open`.
+pub const INVITATIONS_OPEN: MessageKey = MessageKey::new("invitations.open");
+
+/// The message `invitations.take-back`.
+pub const INVITATIONS_TAKE_BACK: MessageKey = MessageKey::new("invitations.take-back");
+
+/// The message `invitations.take-back-text`.
+pub const INVITATIONS_TAKE_BACK_TEXT: MessageKey = MessageKey::new("invitations.take-back-text");
+
+/// The message `invitations.taken-back`.
+pub const INVITATIONS_TAKEN_BACK: MessageKey = MessageKey::new("invitations.taken-back");
+
+/// The message `invitations.title`.
+pub const INVITATIONS_TITLE: MessageKey = MessageKey::new("invitations.title");
+
+/// The message `keys.database-placeholder`.
+pub const KEYS_DATABASE_PLACEHOLDER: MessageKey = MessageKey::new("keys.database-placeholder");
+
+/// The message `keys.settings-placeholder`.
+pub const KEYS_SETTINGS_PLACEHOLDER: MessageKey = MessageKey::new("keys.settings-placeholder");
+
+/// The message `nav.home`.
+pub const NAV_HOME: MessageKey = MessageKey::new("nav.home");
+
+/// The message `nav.invitations`.
+pub const NAV_INVITATIONS: MessageKey = MessageKey::new("nav.invitations");
+
+/// The message `nav.security`.
+pub const NAV_SECURITY: MessageKey = MessageKey::new("nav.security");
+
+/// The message `nav.sessions`.
+pub const NAV_SESSIONS: MessageKey = MessageKey::new("nav.sessions");
+
+/// The message `nav.sign-out`.
+pub const NAV_SIGN_OUT: MessageKey = MessageKey::new("nav.sign-out");
+
+/// The message `nav.status`.
+pub const NAV_STATUS: MessageKey = MessageKey::new("nav.status");
+
+/// The message `page.not-found.home`.
+pub const PAGE_NOT_FOUND_HOME: MessageKey = MessageKey::new("page.not-found.home");
+
+/// The message `page.not-found.text`.
+pub const PAGE_NOT_FOUND_TEXT: MessageKey = MessageKey::new("page.not-found.text");
+
+/// The message `page.not-found.title`.
+pub const PAGE_NOT_FOUND_TITLE: MessageKey = MessageKey::new("page.not-found.title");
+
+/// The message `passkeys.add`.
+pub const PASSKEYS_ADD: MessageKey = MessageKey::new("passkeys.add");
+
+/// The message `passkeys.cancelled`.
+pub const PASSKEYS_CANCELLED: MessageKey = MessageKey::new("passkeys.cancelled");
+
+/// The message `passkeys.intro`.
+pub const PASSKEYS_INTRO: MessageKey = MessageKey::new("passkeys.intro");
+
+/// The message `passkeys.list`.
+pub const PASSKEYS_LIST: MessageKey = MessageKey::new("passkeys.list");
+
+/// The message `passkeys.name`.
+pub const PASSKEYS_NAME: MessageKey = MessageKey::new("passkeys.name");
+
+/// The message `passkeys.name-help`.
+pub const PASSKEYS_NAME_HELP: MessageKey = MessageKey::new("passkeys.name-help");
+
+/// The message `passkeys.never-used`.
+pub const PASSKEYS_NEVER_USED: MessageKey = MessageKey::new("passkeys.never-used");
+
+/// The message `passkeys.none`.
+pub const PASSKEYS_NONE: MessageKey = MessageKey::new("passkeys.none");
+
+/// The message `passkeys.not-supported`.
+pub const PASSKEYS_NOT_SUPPORTED: MessageKey = MessageKey::new("passkeys.not-supported");
+
+/// The message `passkeys.remove`.
+pub const PASSKEYS_REMOVE: MessageKey = MessageKey::new("passkeys.remove");
+
+/// The message `passkeys.remove-text`.
+pub const PASSKEYS_REMOVE_TEXT: MessageKey = MessageKey::new("passkeys.remove-text");
+
+/// The message `passkeys.removed`.
+pub const PASSKEYS_REMOVED: MessageKey = MessageKey::new("passkeys.removed");
+
+/// The message `passkeys.title`.
+pub const PASSKEYS_TITLE: MessageKey = MessageKey::new("passkeys.title");
+
+/// The message `passkeys.unavailable`.
+pub const PASSKEYS_UNAVAILABLE: MessageKey = MessageKey::new("passkeys.unavailable");
+
+/// The message `second-step.back`.
+pub const SECOND_STEP_BACK: MessageKey = MessageKey::new("second-step.back");
+
+/// The message `second-step.code`.
+pub const SECOND_STEP_CODE: MessageKey = MessageKey::new("second-step.code");
+
+/// The message `second-step.code-help`.
+pub const SECOND_STEP_CODE_HELP: MessageKey = MessageKey::new("second-step.code-help");
+
+/// The message `second-step.intro`.
+pub const SECOND_STEP_INTRO: MessageKey = MessageKey::new("second-step.intro");
+
+/// The message `second-step.passkey`.
+pub const SECOND_STEP_PASSKEY: MessageKey = MessageKey::new("second-step.passkey");
+
+/// The message `second-step.passkey-help`.
+pub const SECOND_STEP_PASSKEY_HELP: MessageKey = MessageKey::new("second-step.passkey-help");
+
+/// The message `second-step.submit`.
+pub const SECOND_STEP_SUBMIT: MessageKey = MessageKey::new("second-step.submit");
+
+/// The message `second-step.title`.
+pub const SECOND_STEP_TITLE: MessageKey = MessageKey::new("second-step.title");
+
+/// The message `security-log.reason.anchor`.
+pub const SECURITY_LOG_REASON_ANCHOR: MessageKey = MessageKey::new("security-log.reason.anchor");
+
+/// The message `security-log.reason.broken-link`.
+pub const SECURITY_LOG_REASON_BROKEN_LINK: MessageKey =
+    MessageKey::new("security-log.reason.broken-link");
+
+/// The message `security-log.reason.changed-content`.
+pub const SECURITY_LOG_REASON_CHANGED_CONTENT: MessageKey =
+    MessageKey::new("security-log.reason.changed-content");
+
+/// The message `security-log.reason.checkpoint`.
+pub const SECURITY_LOG_REASON_CHECKPOINT: MessageKey =
+    MessageKey::new("security-log.reason.checkpoint");
+
+/// The message `security-log.reason.gap`.
+pub const SECURITY_LOG_REASON_GAP: MessageKey = MessageKey::new("security-log.reason.gap");
+
+/// The message `security-log.reason.truncated`.
+pub const SECURITY_LOG_REASON_TRUNCATED: MessageKey =
+    MessageKey::new("security-log.reason.truncated");
+
+/// The message `security-log.unanchored`.
+pub const SECURITY_LOG_UNANCHORED: MessageKey = MessageKey::new("security-log.unanchored");
+
+/// The message `security-log.unreadable`.
+pub const SECURITY_LOG_UNREADABLE: MessageKey = MessageKey::new("security-log.unreadable");
+
+/// The message `security.intro`.
+pub const SECURITY_INTRO: MessageKey = MessageKey::new("security.intro");
+
+/// The message `security.password.changed`.
+pub const SECURITY_PASSWORD_CHANGED: MessageKey = MessageKey::new("security.password.changed");
+
+/// The message `security.password.current`.
+pub const SECURITY_PASSWORD_CURRENT: MessageKey = MessageKey::new("security.password.current");
+
+/// The message `security.password.new`.
+pub const SECURITY_PASSWORD_NEW: MessageKey = MessageKey::new("security.password.new");
+
+/// The message `security.password.submit`.
+pub const SECURITY_PASSWORD_SUBMIT: MessageKey = MessageKey::new("security.password.submit");
+
+/// The message `security.password.title`.
+pub const SECURITY_PASSWORD_TITLE: MessageKey = MessageKey::new("security.password.title");
+
+/// The message `security.title`.
+pub const SECURITY_TITLE: MessageKey = MessageKey::new("security.title");
 
 /// The message `server.about`.
 pub const SERVER_ABOUT: MessageKey = MessageKey::new("server.about");
@@ -133,6 +573,48 @@ pub const SERVER_SIGNAL_FAILED: MessageKey = MessageKey::new("server.signal-fail
 
 /// The message `server.web-app-missing`.
 pub const SERVER_WEB_APP_MISSING: MessageKey = MessageKey::new("server.web-app-missing");
+
+/// The message `service.needs-admin`.
+pub const SERVICE_NEEDS_ADMIN: MessageKey = MessageKey::new("service.needs-admin");
+
+/// The message `service.not-a-service`.
+pub const SERVICE_NOT_A_SERVICE: MessageKey = MessageKey::new("service.not-a-service");
+
+/// The message `service.unsupported`.
+pub const SERVICE_UNSUPPORTED: MessageKey = MessageKey::new("service.unsupported");
+
+/// The message `sessions.cut-off`.
+pub const SESSIONS_CUT_OFF: MessageKey = MessageKey::new("sessions.cut-off");
+
+/// The message `sessions.end`.
+pub const SESSIONS_END: MessageKey = MessageKey::new("sessions.end");
+
+/// The message `sessions.ended`.
+pub const SESSIONS_ENDED: MessageKey = MessageKey::new("sessions.ended");
+
+/// The message `sessions.everywhere`.
+pub const SESSIONS_EVERYWHERE: MessageKey = MessageKey::new("sessions.everywhere");
+
+/// The message `sessions.everywhere-text`.
+pub const SESSIONS_EVERYWHERE_TEXT: MessageKey = MessageKey::new("sessions.everywhere-text");
+
+/// The message `sessions.everywhere-title`.
+pub const SESSIONS_EVERYWHERE_TITLE: MessageKey = MessageKey::new("sessions.everywhere-title");
+
+/// The message `sessions.intro`.
+pub const SESSIONS_INTRO: MessageKey = MessageKey::new("sessions.intro");
+
+/// The message `sessions.list`.
+pub const SESSIONS_LIST: MessageKey = MessageKey::new("sessions.list");
+
+/// The message `sessions.this`.
+pub const SESSIONS_THIS: MessageKey = MessageKey::new("sessions.this");
+
+/// The message `sessions.title`.
+pub const SESSIONS_TITLE: MessageKey = MessageKey::new("sessions.title");
+
+/// The message `sessions.unknown-device`.
+pub const SESSIONS_UNKNOWN_DEVICE: MessageKey = MessageKey::new("sessions.unknown-device");
 
 /// The message `setting.appearance.theme.help`.
 pub const SETTING_APPEARANCE_THEME_HELP: MessageKey =
@@ -162,6 +644,172 @@ pub const SETTING_SECURITY_TWO_STEP_REQUIRED_ROLES_HELP: MessageKey =
 pub const SETTING_SECURITY_TWO_STEP_REQUIRED_HELP: MessageKey =
     MessageKey::new("setting.security.two-step-required.help");
 
+/// The message `setup.answer-yes`.
+pub const SETUP_ANSWER_YES: MessageKey = MessageKey::new("setup.answer-yes");
+
+/// The message `setup.ask.address`.
+pub const SETUP_ASK_ADDRESS: MessageKey = MessageKey::new("setup.ask.address");
+
+/// The message `setup.ask.data-dir`.
+pub const SETUP_ASK_DATA_DIR: MessageKey = MessageKey::new("setup.ask.data-dir");
+
+/// The message `setup.ask.database`.
+pub const SETUP_ASK_DATABASE: MessageKey = MessageKey::new("setup.ask.database");
+
+/// The message `setup.ask.port`.
+pub const SETUP_ASK_PORT: MessageKey = MessageKey::new("setup.ask.port");
+
+/// The message `setup.ask.public-url`.
+pub const SETUP_ASK_PUBLIC_URL: MessageKey = MessageKey::new("setup.ask.public-url");
+
+/// The message `setup.ask.tls`.
+pub const SETUP_ASK_TLS: MessageKey = MessageKey::new("setup.ask.tls");
+
+/// The message `setup.ask.tls-cert`.
+pub const SETUP_ASK_TLS_CERT: MessageKey = MessageKey::new("setup.ask.tls-cert");
+
+/// The message `setup.ask.tls-key`.
+pub const SETUP_ASK_TLS_KEY: MessageKey = MessageKey::new("setup.ask.tls-key");
+
+/// The message `setup.database-built-in`.
+pub const SETUP_DATABASE_BUILT_IN: MessageKey = MessageKey::new("setup.database-built-in");
+
+/// The message `setup.input-ended`.
+pub const SETUP_INPUT_ENDED: MessageKey = MessageKey::new("setup.input-ended");
+
+/// The message `setup.next`.
+pub const SETUP_NEXT: MessageKey = MessageKey::new("setup.next");
+
+/// The message `setup.replace-refused`.
+pub const SETUP_REPLACE_REFUSED: MessageKey = MessageKey::new("setup.replace-refused");
+
+/// The message `setup.service-hint`.
+pub const SETUP_SERVICE_HINT: MessageKey = MessageKey::new("setup.service-hint");
+
+/// The message `setup.welcome`.
+pub const SETUP_WELCOME: MessageKey = MessageKey::new("setup.welcome");
+
+/// The message `shell.menu`.
+pub const SHELL_MENU: MessageKey = MessageKey::new("shell.menu");
+
+/// The message `shell.skip`.
+pub const SHELL_SKIP: MessageKey = MessageKey::new("shell.skip");
+
+/// The message `sign-in.make-account`.
+pub const SIGN_IN_MAKE_ACCOUNT: MessageKey = MessageKey::new("sign-in.make-account");
+
+/// The message `sign-in.or`.
+pub const SIGN_IN_OR: MessageKey = MessageKey::new("sign-in.or");
+
+/// The message `sign-in.passkey`.
+pub const SIGN_IN_PASSKEY: MessageKey = MessageKey::new("sign-in.passkey");
+
+/// The message `sign-in.signed-out`.
+pub const SIGN_IN_SIGNED_OUT: MessageKey = MessageKey::new("sign-in.signed-out");
+
+/// The message `sign-in.submit`.
+pub const SIGN_IN_SUBMIT: MessageKey = MessageKey::new("sign-in.submit");
+
+/// The message `sign-in.title`.
+pub const SIGN_IN_TITLE: MessageKey = MessageKey::new("sign-in.title");
+
+/// The message `sign-up-policy.confirm-no`.
+pub const SIGN_UP_POLICY_CONFIRM_NO: MessageKey = MessageKey::new("sign-up-policy.confirm-no");
+
+/// The message `sign-up-policy.confirm-text`.
+pub const SIGN_UP_POLICY_CONFIRM_TEXT: MessageKey = MessageKey::new("sign-up-policy.confirm-text");
+
+/// The message `sign-up-policy.confirm-title`.
+pub const SIGN_UP_POLICY_CONFIRM_TITLE: MessageKey =
+    MessageKey::new("sign-up-policy.confirm-title");
+
+/// The message `sign-up-policy.confirm-yes`.
+pub const SIGN_UP_POLICY_CONFIRM_YES: MessageKey = MessageKey::new("sign-up-policy.confirm-yes");
+
+/// The message `sign-up-policy.domains`.
+pub const SIGN_UP_POLICY_DOMAINS: MessageKey = MessageKey::new("sign-up-policy.domains");
+
+/// The message `sign-up-policy.domains-help`.
+pub const SIGN_UP_POLICY_DOMAINS_HELP: MessageKey = MessageKey::new("sign-up-policy.domains-help");
+
+/// The message `sign-up-policy.intro`.
+pub const SIGN_UP_POLICY_INTRO: MessageKey = MessageKey::new("sign-up-policy.intro");
+
+/// The message `sign-up-policy.saved`.
+pub const SIGN_UP_POLICY_SAVED: MessageKey = MessageKey::new("sign-up-policy.saved");
+
+/// The message `sign-up-policy.switch`.
+pub const SIGN_UP_POLICY_SWITCH: MessageKey = MessageKey::new("sign-up-policy.switch");
+
+/// The message `sign-up-policy.title`.
+pub const SIGN_UP_POLICY_TITLE: MessageKey = MessageKey::new("sign-up-policy.title");
+
+/// The message `sign-up-policy.warning`.
+pub const SIGN_UP_POLICY_WARNING: MessageKey = MessageKey::new("sign-up-policy.warning");
+
+/// The message `sign-up.closed`.
+pub const SIGN_UP_CLOSED: MessageKey = MessageKey::new("sign-up.closed");
+
+/// The message `sign-up.have-account`.
+pub const SIGN_UP_HAVE_ACCOUNT: MessageKey = MessageKey::new("sign-up.have-account");
+
+/// The message `sign-up.submit`.
+pub const SIGN_UP_SUBMIT: MessageKey = MessageKey::new("sign-up.submit");
+
+/// The message `sign-up.title`.
+pub const SIGN_UP_TITLE: MessageKey = MessageKey::new("sign-up.title");
+
+/// The message `status.certificate`.
+pub const STATUS_CERTIFICATE: MessageKey = MessageKey::new("status.certificate");
+
+/// The message `status.certificate.none`.
+pub const STATUS_CERTIFICATE_NONE: MessageKey = MessageKey::new("status.certificate.none");
+
+/// The message `status.database`.
+pub const STATUS_DATABASE: MessageKey = MessageKey::new("status.database");
+
+/// The message `status.database.built-in`.
+pub const STATUS_DATABASE_BUILT_IN: MessageKey = MessageKey::new("status.database.built-in");
+
+/// The message `status.database.failed`.
+pub const STATUS_DATABASE_FAILED: MessageKey = MessageKey::new("status.database.failed");
+
+/// The message `status.database.ok`.
+pub const STATUS_DATABASE_OK: MessageKey = MessageKey::new("status.database.ok");
+
+/// The message `status.database.postgres`.
+pub const STATUS_DATABASE_POSTGRES: MessageKey = MessageKey::new("status.database.postgres");
+
+/// The message `status.database.sqlite`.
+pub const STATUS_DATABASE_SQLITE: MessageKey = MessageKey::new("status.database.sqlite");
+
+/// The message `status.intro`.
+pub const STATUS_INTRO: MessageKey = MessageKey::new("status.intro");
+
+/// The message `status.log`.
+pub const STATUS_LOG: MessageKey = MessageKey::new("status.log");
+
+/// The message `status.refresh`.
+pub const STATUS_REFRESH: MessageKey = MessageKey::new("status.refresh");
+
+/// The message `status.running`.
+pub const STATUS_RUNNING: MessageKey = MessageKey::new("status.running");
+
+/// The message `status.state.ok`.
+pub const STATUS_STATE_OK: MessageKey = MessageKey::new("status.state.ok");
+
+/// The message `status.state.problem`.
+pub const STATUS_STATE_PROBLEM: MessageKey = MessageKey::new("status.state.problem");
+
+/// The message `status.state.warning`.
+pub const STATUS_STATE_WARNING: MessageKey = MessageKey::new("status.state.warning");
+
+/// The message `status.title`.
+pub const STATUS_TITLE: MessageKey = MessageKey::new("status.title");
+
+/// The message `status.version`.
+pub const STATUS_VERSION: MessageKey = MessageKey::new("status.version");
+
 /// The message `theme.daylight`.
 pub const THEME_DAYLIGHT: MessageKey = MessageKey::new("theme.daylight");
 
@@ -179,6 +827,30 @@ pub const THEME_MIDNIGHT: MessageKey = MessageKey::new("theme.midnight");
 
 /// The message `theme.paper`.
 pub const THEME_PAPER: MessageKey = MessageKey::new("theme.paper");
+
+/// The message `validation.email`.
+pub const VALIDATION_EMAIL: MessageKey = MessageKey::new("validation.email");
+
+/// The message `validation.required`.
+pub const VALIDATION_REQUIRED: MessageKey = MessageKey::new("validation.required");
+
+/// The message `backup.left`.
+#[must_use]
+pub fn backup_left(count: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("backup.left"),
+        vec![("count", Value::Number(count))],
+    )
+}
+
+/// The message `cli.no-data`.
+#[must_use]
+pub fn cli_no_data(path: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("cli.no-data"),
+        vec![("path", Value::Text(path.to_string()))],
+    )
+}
 
 /// The message `config.address-invalid`.
 #[must_use]
@@ -344,6 +1016,15 @@ pub fn data_folder_create_failed(
     )
 }
 
+/// The message `data-folder.not-a-data-folder`.
+#[must_use]
+pub fn data_folder_not_a_data_folder(path: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("data-folder.not-a-data-folder"),
+        vec![("path", Value::Text(path.to_string()))],
+    )
+}
+
 /// The message `data-folder.protect-failed`.
 #[must_use]
 pub fn data_folder_protect_failed(
@@ -359,12 +1040,259 @@ pub fn data_folder_protect_failed(
     )
 }
 
-/// The message `hello.current`.
+/// The message `first-run.step-of`.
 #[must_use]
-pub fn hello_current(theme: impl std::fmt::Display) -> Message {
+pub fn first_run_step_of(
+    name: impl std::fmt::Display,
+    step: impl std::fmt::Display,
+    total: impl std::fmt::Display,
+) -> Message {
     Message::with_arguments(
-        MessageKey::new("hello.current"),
-        vec![("theme", Value::Text(theme.to_string()))],
+        MessageKey::new("first-run.step-of"),
+        vec![
+            ("name", Value::Text(name.to_string())),
+            ("step", Value::Text(step.to_string())),
+            ("total", Value::Text(total.to_string())),
+        ],
+    )
+}
+
+/// The message `home.title`.
+#[must_use]
+pub fn home_title(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("home.title"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `invitation.intro`.
+#[must_use]
+pub fn invitation_intro(email: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("invitation.intro"),
+        vec![("email", Value::Text(email.to_string()))],
+    )
+}
+
+/// The message `invitations.created`.
+#[must_use]
+pub fn invitations_created(email: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("invitations.created"),
+        vec![("email", Value::Text(email.to_string()))],
+    )
+}
+
+/// The message `invitations.expires`.
+#[must_use]
+pub fn invitations_expires(when: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("invitations.expires"),
+        vec![("when", Value::Text(when.to_string()))],
+    )
+}
+
+/// The message `invitations.made`.
+#[must_use]
+pub fn invitations_made(when: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("invitations.made"),
+        vec![("when", Value::Text(when.to_string()))],
+    )
+}
+
+/// The message `invitations.take-back-name`.
+#[must_use]
+pub fn invitations_take_back_name(email: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("invitations.take-back-name"),
+        vec![("email", Value::Text(email.to_string()))],
+    )
+}
+
+/// The message `invitations.take-back-title`.
+#[must_use]
+pub fn invitations_take_back_title(email: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("invitations.take-back-title"),
+        vec![("email", Value::Text(email.to_string()))],
+    )
+}
+
+/// The message `keys.export-exists`.
+#[must_use]
+pub fn keys_export_exists(path: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("keys.export-exists"),
+        vec![("path", Value::Text(path.to_string()))],
+    )
+}
+
+/// The message `keys.export-failed`.
+#[must_use]
+pub fn keys_export_failed(reason: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("keys.export-failed"),
+        vec![("reason", Value::Text(reason.to_string()))],
+    )
+}
+
+/// The message `keys.export-not-private`.
+#[must_use]
+pub fn keys_export_not_private(path: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("keys.export-not-private"),
+        vec![("path", Value::Text(path.to_string()))],
+    )
+}
+
+/// The message `keys.exported`.
+#[must_use]
+pub fn keys_exported(path: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("keys.exported"),
+        vec![("path", Value::Text(path.to_string()))],
+    )
+}
+
+/// The message `keys.how-linux`.
+#[must_use]
+pub fn keys_how_linux(command: impl std::fmt::Display, owner: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("keys.how-linux"),
+        vec![
+            ("command", Value::Text(command.to_string())),
+            ("owner", Value::Text(owner.to_string())),
+        ],
+    )
+}
+
+/// The message `keys.how-windows`.
+#[must_use]
+pub fn keys_how_windows(command: impl std::fmt::Display, owner: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("keys.how-windows"),
+        vec![
+            ("command", Value::Text(command.to_string())),
+            ("owner", Value::Text(owner.to_string())),
+        ],
+    )
+}
+
+/// The message `keys.no-access`.
+#[must_use]
+pub fn keys_no_access(how: impl std::fmt::Display, path: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("keys.no-access"),
+        vec![
+            ("how", Value::Text(how.to_string())),
+            ("path", Value::Text(path.to_string())),
+        ],
+    )
+}
+
+/// The message `keys.not-owner`.
+#[must_use]
+pub fn keys_not_owner(
+    how: impl std::fmt::Display,
+    owner: impl std::fmt::Display,
+    path: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("keys.not-owner"),
+        vec![
+            ("how", Value::Text(how.to_string())),
+            ("owner", Value::Text(owner.to_string())),
+            ("path", Value::Text(path.to_string())),
+        ],
+    )
+}
+
+/// The message `keys.rotated`.
+#[must_use]
+pub fn keys_rotated(secrets: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("keys.rotated"),
+        vec![("secrets", Value::Number(secrets))],
+    )
+}
+
+/// The message `passkeys.added`.
+#[must_use]
+pub fn passkeys_added(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("passkeys.added"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `passkeys.added-on`.
+#[must_use]
+pub fn passkeys_added_on(when: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("passkeys.added-on"),
+        vec![("when", Value::Text(when.to_string()))],
+    )
+}
+
+/// The message `passkeys.last-used`.
+#[must_use]
+pub fn passkeys_last_used(when: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("passkeys.last-used"),
+        vec![("when", Value::Text(when.to_string()))],
+    )
+}
+
+/// The message `passkeys.remove-name`.
+#[must_use]
+pub fn passkeys_remove_name(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("passkeys.remove-name"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `passkeys.remove-title`.
+#[must_use]
+pub fn passkeys_remove_title(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("passkeys.remove-title"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `security-log.broken`.
+#[must_use]
+pub fn security_log_broken(reason: impl std::fmt::Display, seq: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("security-log.broken"),
+        vec![
+            ("reason", Value::Text(reason.to_string())),
+            ("seq", Value::Text(seq.to_string())),
+        ],
+    )
+}
+
+/// The message `security-log.head`.
+#[must_use]
+pub fn security_log_head(hash: impl std::fmt::Display, seq: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("security-log.head"),
+        vec![
+            ("hash", Value::Text(hash.to_string())),
+            ("seq", Value::Text(seq.to_string())),
+        ],
+    )
+}
+
+/// The message `security-log.valid`.
+#[must_use]
+pub fn security_log_valid(entries: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("security-log.valid"),
+        vec![("entries", Value::Number(entries))],
     )
 }
 
@@ -422,12 +1350,310 @@ pub fn server_setup_code(code: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `server.setup-code-file`.
+#[must_use]
+pub fn server_setup_code_file(path: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("server.setup-code-file"),
+        vec![("path", Value::Text(path.to_string()))],
+    )
+}
+
+/// The message `server.setup-code-file-failed`.
+#[must_use]
+pub fn server_setup_code_file_failed(
+    path: impl std::fmt::Display,
+    reason: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("server.setup-code-file-failed"),
+        vec![
+            ("path", Value::Text(path.to_string())),
+            ("reason", Value::Text(reason.to_string())),
+        ],
+    )
+}
+
 /// The message `server.warning`.
 #[must_use]
 pub fn server_warning(message: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("server.warning"),
         vec![("message", Value::Text(message.to_string()))],
+    )
+}
+
+/// The message `service.data-folder-real`.
+#[must_use]
+pub fn service_data_folder_real(
+    path: impl std::fmt::Display,
+    real: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("service.data-folder-real"),
+        vec![
+            ("path", Value::Text(path.to_string())),
+            ("real", Value::Text(real.to_string())),
+        ],
+    )
+}
+
+/// The message `service.exists`.
+#[must_use]
+pub fn service_exists(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("service.exists"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `service.failed`.
+#[must_use]
+pub fn service_failed(reason: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("service.failed"),
+        vec![("reason", Value::Text(reason.to_string()))],
+    )
+}
+
+/// The message `service.installed`.
+#[must_use]
+pub fn service_installed(account: impl std::fmt::Display, name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("service.installed"),
+        vec![
+            ("account", Value::Text(account.to_string())),
+            ("name", Value::Text(name.to_string())),
+        ],
+    )
+}
+
+/// The message `service.no-settings`.
+#[must_use]
+pub fn service_no_settings(path: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("service.no-settings"),
+        vec![("path", Value::Text(path.to_string()))],
+    )
+}
+
+/// The message `service.not-installed`.
+#[must_use]
+pub fn service_not_installed(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("service.not-installed"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `service.removed`.
+#[must_use]
+pub fn service_removed(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("service.removed"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `service.settings-folder-open`.
+#[must_use]
+pub fn service_settings_folder_open(path: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("service.settings-folder-open"),
+        vec![("path", Value::Text(path.to_string()))],
+    )
+}
+
+/// The message `service.settings-folder-owner`.
+#[must_use]
+pub fn service_settings_folder_owner(path: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("service.settings-folder-owner"),
+        vec![("path", Value::Text(path.to_string()))],
+    )
+}
+
+/// The message `service.settings-in-data`.
+#[must_use]
+pub fn service_settings_in_data(path: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("service.settings-in-data"),
+        vec![("path", Value::Text(path.to_string()))],
+    )
+}
+
+/// The message `service.settings-is-link`.
+#[must_use]
+pub fn service_settings_is_link(path: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("service.settings-is-link"),
+        vec![("path", Value::Text(path.to_string()))],
+    )
+}
+
+/// The message `service.setup-code`.
+#[must_use]
+pub fn service_setup_code(path: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("service.setup-code"),
+        vec![("path", Value::Text(path.to_string()))],
+    )
+}
+
+/// The message `service.stop-timeout`.
+#[must_use]
+pub fn service_stop_timeout(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("service.stop-timeout"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `sessions.device`.
+#[must_use]
+pub fn sessions_device(browser: impl std::fmt::Display, system: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("sessions.device"),
+        vec![
+            ("browser", Value::Text(browser.to_string())),
+            ("system", Value::Text(system.to_string())),
+        ],
+    )
+}
+
+/// The message `sessions.end-name`.
+#[must_use]
+pub fn sessions_end_name(device: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("sessions.end-name"),
+        vec![("device", Value::Text(device.to_string()))],
+    )
+}
+
+/// The message `sessions.last-seen`.
+#[must_use]
+pub fn sessions_last_seen(when: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("sessions.last-seen"),
+        vec![("when", Value::Text(when.to_string()))],
+    )
+}
+
+/// The message `sessions.network`.
+#[must_use]
+pub fn sessions_network(network: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("sessions.network"),
+        vec![("network", Value::Text(network.to_string()))],
+    )
+}
+
+/// The message `sessions.started`.
+#[must_use]
+pub fn sessions_started(when: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("sessions.started"),
+        vec![("when", Value::Text(when.to_string()))],
+    )
+}
+
+/// The message `setup.ask.replace`.
+#[must_use]
+pub fn setup_ask_replace(path: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("setup.ask.replace"),
+        vec![("path", Value::Text(path.to_string()))],
+    )
+}
+
+/// The message `setup.exists`.
+#[must_use]
+pub fn setup_exists(path: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("setup.exists"),
+        vec![("path", Value::Text(path.to_string()))],
+    )
+}
+
+/// The message `setup.not-usable`.
+#[must_use]
+pub fn setup_not_usable(reason: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("setup.not-usable"),
+        vec![("reason", Value::Text(reason.to_string()))],
+    )
+}
+
+/// The message `setup.saved`.
+#[must_use]
+pub fn setup_saved(path: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("setup.saved"),
+        vec![("path", Value::Text(path.to_string()))],
+    )
+}
+
+/// The message `shell.signed-in-as`.
+#[must_use]
+pub fn shell_signed_in_as(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("shell.signed-in-as"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `status.certificate.expired`.
+#[must_use]
+pub fn status_certificate_expired(date: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("status.certificate.expired"),
+        vec![("date", Value::Text(date.to_string()))],
+    )
+}
+
+/// The message `status.certificate.soon`.
+#[must_use]
+pub fn status_certificate_soon(date: impl std::fmt::Display, days: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("status.certificate.soon"),
+        vec![
+            ("date", Value::Text(date.to_string())),
+            ("days", Value::Number(days)),
+        ],
+    )
+}
+
+/// The message `status.certificate.valid`.
+#[must_use]
+pub fn status_certificate_valid(date: impl std::fmt::Display, days: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("status.certificate.valid"),
+        vec![
+            ("date", Value::Text(date.to_string())),
+            ("days", Value::Number(days)),
+        ],
+    )
+}
+
+/// The message `status.started`.
+#[must_use]
+pub fn status_started(when: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("status.started"),
+        vec![("when", Value::Text(when.to_string()))],
+    )
+}
+
+/// The message `status.uptime`.
+#[must_use]
+pub fn status_uptime(days: i64, hours: i64, minutes: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("status.uptime"),
+        vec![
+            ("days", Value::Number(days)),
+            ("hours", Value::Number(hours)),
+            ("minutes", Value::Number(minutes)),
+        ],
     )
 }
 
@@ -518,6 +1744,143 @@ pub fn tls_write_failed(path: impl std::fmt::Display, reason: impl std::fmt::Dis
 /// Every message, sorted by key.
 pub(super) const CATALOG: &[(&str, &str)] = &[
     ("app.name", "Bugaboo"),
+    ("backup.copied", "Copied"),
+    ("backup.copy", "Copy the codes"),
+    (
+        "backup.intro",
+        "Each backup code works once. They are for when you cannot use your code app. Keep them somewhere safe.",
+    ),
+    (
+        "backup.left",
+        "{count, plural, one {# backup code is left} other {# backup codes are left}}.",
+    ),
+    ("backup.list", "Your backup codes"),
+    ("backup.renew", "Make new backup codes"),
+    ("backup.renew-help", "The old codes stop working."),
+    ("backup.saved", "I have saved them"),
+    (
+        "backup.shown-once",
+        "These codes are shown only now. Save them before you leave this page.",
+    ),
+    ("backup.title", "Backup codes"),
+    ("cli.about.keys", "Look after the key files"),
+    (
+        "cli.about.keys-export",
+        "Copy the key files into a folder, for your backup",
+    ),
+    (
+        "cli.about.openapi",
+        "Print the description of the API (OpenAPI) and stop",
+    ),
+    (
+        "cli.about.rotate-key",
+        "Make a new master key and use it for every stored secret",
+    ),
+    ("cli.about.security-log", "Look at the security log"),
+    (
+        "cli.about.security-log-verify",
+        "Check that nobody changed the security log",
+    ),
+    ("cli.about.serve", "Start the server"),
+    (
+        "cli.about.service",
+        "Run Bugaboo as a service that starts with the computer",
+    ),
+    (
+        "cli.about.service-install",
+        "Install the service and start it",
+    ),
+    (
+        "cli.about.service-uninstall",
+        "Stop the service and remove it. Your data stays where it is",
+    ),
+    (
+        "cli.about.setup",
+        "Answer a few questions and save the answers in the settings file",
+    ),
+    (
+        "cli.help.address",
+        "The address to listen on (default 127.0.0.1, this computer only)",
+    ),
+    (
+        "cli.help.config",
+        "The settings file (default: bugaboo.toml next to the program, if it exists)",
+    ),
+    ("cli.help.data-dir", "The folder that holds all data"),
+    (
+        "cli.help.database-url",
+        "The database: sqlite:<file> or postgres://<address> (default: the one inside the data folder)",
+    ),
+    (
+        "cli.help.keys-folder",
+        "The folder to copy the key files into. It is made if it does not exist",
+    ),
+    (
+        "cli.help.non-interactive",
+        "Ask nothing: use the options given here and the defaults",
+    ),
+    (
+        "cli.help.overwrite",
+        "Replace the settings file if it already exists",
+    ),
+    ("cli.help.port", "The port to listen on"),
+    (
+        "cli.help.public-url",
+        "The web address people type to reach Bugaboo, like https://bugaboo.example.com",
+    ),
+    ("cli.help.tls", "HTTPS mode: self-signed, files or off"),
+    (
+        "cli.help.tls-cert",
+        "The certificate file, for HTTPS mode files",
+    ),
+    (
+        "cli.help.tls-key",
+        "The private key file, for HTTPS mode files",
+    ),
+    (
+        "cli.help.web",
+        "Serve the browser app from this folder instead of the one built into the program",
+    ),
+    (
+        "cli.no-data",
+        "There is no Bugaboo data in {path}. Check the data folder in your settings.",
+    ),
+    ("code-app.confirm", "Switch on"),
+    ("code-app.confirm-code", "Code from the app"),
+    (
+        "code-app.confirm-help",
+        "Type the six-digit code that the app shows now.",
+    ),
+    (
+        "code-app.intro",
+        "A code app on your phone shows a new six-digit code every 30 seconds. You type it after your password.",
+    ),
+    (
+        "code-app.key-label",
+        "Cannot scan? Type this key into your app",
+    ),
+    ("code-app.off", "The code app is not set up."),
+    ("code-app.on", "The code app is set up."),
+    ("code-app.qr-alt", "QR picture for your code app"),
+    ("code-app.scan", "Scan this picture with your code app."),
+    ("code-app.setup", "Set up the code app"),
+    (
+        "code-app.switched-on",
+        "The code app is switched on. Save your backup codes now.",
+    ),
+    ("code-app.title", "Code app"),
+    ("code-app.turn-off", "Switch off"),
+    (
+        "code-app.turn-off-text",
+        "Your account will be less safe. Type your password to confirm.",
+    ),
+    ("code-app.turn-off-title", "Switch off the code app?"),
+    ("code-app.turned-off", "The code app is switched off."),
+    ("common.cancel", "Cancel"),
+    ("common.continue", "Continue"),
+    ("common.loading", "Loading…"),
+    ("common.save", "Save"),
+    ("common.try-again", "Try again"),
     (
         "config.address-invalid",
         "The address {value} is not an IP address such as 127.0.0.1 or ::1.",
@@ -611,6 +1974,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "The data folder {path} could not be prepared: {reason}",
     ),
     (
+        "data-folder.not-a-data-folder",
+        "The folder {path} has other files in it and does not look like a Bugaboo data folder. Installing the service would change who owns them. Choose an empty folder or a Bugaboo data folder as the data folder in your settings.",
+    ),
+    (
         "data-folder.protect-failed",
         "The data folder {path} could not be made private to its owner: {reason}",
     ),
@@ -686,12 +2053,268 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "error.server.unavailable",
         "Bugaboo is not available right now. Please try again in a moment.",
     ),
-    ("hello.current", "Your theme: {theme}."),
+    ("field.confirm-password", "Your password"),
     (
-        "hello.intro",
-        "Track your work in one calm place. Pick the theme that is easiest on your eyes.",
+        "field.confirm-password-help",
+        "Type your password again to make sure it is you.",
     ),
-    ("hello.title", "Hello Bugaboo"),
+    ("field.email", "E-mail address"),
+    ("field.name", "Your name"),
+    ("field.name-help", "The name other people see."),
+    ("field.password", "Password"),
+    (
+        "field.password-help",
+        "At least 12 characters. A few words in a row make a good password.",
+    ),
+    (
+        "first-run.account.intro",
+        "An administrator can invite people and look after the server. This account is the first one.",
+    ),
+    ("first-run.account.submit", "Make my account"),
+    ("first-run.account.title", "Make the first administrator"),
+    (
+        "first-run.code.help",
+        "It looks like k7q2-x9mf-3hd8-vt4w. Capital letters and hyphens do not matter.",
+    ),
+    (
+        "first-run.code.intro",
+        "Bugaboo was just installed, so nobody has an account yet. To make sure that only you can make the first one, Bugaboo shows a setup code where it is running.",
+    ),
+    ("first-run.code.label", "Setup code"),
+    (
+        "first-run.code.where",
+        "Look in the window where Bugaboo is running for the line that starts with Setup is open. If Bugaboo runs as a service, the code is in the file setup-code.txt inside its data folder.",
+    ),
+    ("first-run.done.go", "Open Bugaboo"),
+    (
+        "first-run.done.text",
+        "Your account is ready and you are signed in.",
+    ),
+    ("first-run.done.title", "You are all set"),
+    ("first-run.safer.finish", "Finish"),
+    (
+        "first-run.safer.intro",
+        "A password alone can be guessed or stolen. You can add a second check now, or later in Sign-in & security.",
+    ),
+    ("first-run.safer.title", "Keep your account safe"),
+    ("first-run.step-of", "Step {step} of {total}: {name}"),
+    ("first-run.step.account", "Your account"),
+    ("first-run.step.code", "Setup code"),
+    ("first-run.step.done", "Done"),
+    ("first-run.step.safer", "Keep it safe"),
+    ("first-run.title", "Welcome to Bugaboo"),
+    (
+        "home.admin",
+        "You are an administrator: you can invite people and see how the server is doing.",
+    ),
+    (
+        "home.intro",
+        "You are signed in. Projects and issues come with the next versions of Bugaboo. For now you can look after your account.",
+    ),
+    ("home.title", "Welcome, {name}"),
+    (
+        "invitation.incomplete",
+        "This link is not complete. Open the whole link that you were sent.",
+    ),
+    (
+        "invitation.intro",
+        "You are invited. Your account will use the e-mail address {email}.",
+    ),
+    ("invitation.invalid-title", "This invitation does not work"),
+    ("invitation.sign-in", "Go to sign in"),
+    ("invitation.submit", "Make my account"),
+    ("invitation.title", "Join Bugaboo"),
+    ("invitations.copied", "Link copied"),
+    ("invitations.copy", "Copy the link"),
+    ("invitations.create", "Make an invitation"),
+    ("invitations.created", "Invitation for {email}"),
+    ("invitations.expires", "Runs out {when}"),
+    (
+        "invitations.intro",
+        "An invitation is a link that lets one person make their account. It works once and runs out after 7 days.",
+    ),
+    ("invitations.link", "Link to send"),
+    (
+        "invitations.link-help",
+        "Bugaboo cannot send e-mail yet. Copy this link and send it to the person. It is shown only now.",
+    ),
+    ("invitations.made", "Made {when}"),
+    ("invitations.more", "Show more"),
+    ("invitations.none", "There are no open invitations."),
+    ("invitations.open", "Open invitations"),
+    ("invitations.take-back", "Take back"),
+    (
+        "invitations.take-back-name",
+        "Take back the invitation for {email}",
+    ),
+    ("invitations.take-back-text", "The link stops working."),
+    (
+        "invitations.take-back-title",
+        "Take back the invitation for {email}?",
+    ),
+    ("invitations.taken-back", "The invitation is taken back."),
+    ("invitations.title", "Invitations"),
+    (
+        "keys.database-placeholder",
+        "--database-url <the address of your database>",
+    ),
+    (
+        "keys.export-exists",
+        "The folder {path} already holds a copy of a key file. Choose another folder, so no copy is overwritten.",
+    ),
+    (
+        "keys.export-failed",
+        "The key files could not be copied: {reason}",
+    ),
+    (
+        "keys.export-not-private",
+        "The folder {path} can be opened by other accounts on this computer. Choose a folder that only you can open, or a new one, so the key files are not left where others can copy them.",
+    ),
+    (
+        "keys.exported",
+        "Copied the key files into {path}. They can read everything Bugaboo stores in secret: keep them in a safe place, away from the database backup.",
+    ),
+    ("keys.how-linux", "sudo -u {owner} {command}"),
+    (
+        "keys.how-windows",
+        "On Windows that account is {owner}. It has no password, so you cannot sign in as it: stop the service, start a terminal as that account with a tool that can do this, and run: {command}",
+    ),
+    (
+        "keys.no-access",
+        "This account cannot read and change the key files in {path}. If Bugaboo runs as a service, run the command as the account that runs it: {how}",
+    ),
+    (
+        "keys.not-owner",
+        "The data folder {path} belongs to the account {owner}, and you are using another one. A command run from here could leave files that the Bugaboo service cannot read. Run it as {owner}: {how}",
+    ),
+    (
+        "keys.rotated",
+        "Made a new master key and used it for {secrets, plural, one {# stored secret} other {# stored secrets}}. Back up the key files again.",
+    ),
+    (
+        "keys.settings-placeholder",
+        "--config <the settings file of the service>",
+    ),
+    ("nav.home", "Home"),
+    ("nav.invitations", "Invitations"),
+    ("nav.security", "Sign-in & security"),
+    ("nav.sessions", "Where you're signed in"),
+    ("nav.sign-out", "Sign out"),
+    ("nav.status", "Server status"),
+    ("page.not-found.home", "Go to the start page"),
+    (
+        "page.not-found.text",
+        "The address may be mistyped, or the page may have moved.",
+    ),
+    ("page.not-found.title", "This page does not exist"),
+    ("passkeys.add", "Add a passkey"),
+    ("passkeys.added", "The passkey {name} is added."),
+    ("passkeys.added-on", "Added {when}"),
+    (
+        "passkeys.cancelled",
+        "The passkey was not used. You can try again.",
+    ),
+    (
+        "passkeys.intro",
+        "A passkey lets you sign in with the fingerprint, face or screen lock of your device instead of typing a password. It can also be your second step.",
+    ),
+    ("passkeys.last-used", "Last used {when}"),
+    ("passkeys.list", "Your passkeys"),
+    ("passkeys.name", "Name for this passkey"),
+    ("passkeys.name-help", "For example: Work laptop"),
+    ("passkeys.never-used", "Not used yet"),
+    ("passkeys.none", "You have no passkeys yet."),
+    (
+        "passkeys.not-supported",
+        "This browser cannot use passkeys.",
+    ),
+    ("passkeys.remove", "Remove"),
+    ("passkeys.remove-name", "Remove the passkey {name}"),
+    (
+        "passkeys.remove-text",
+        "You can no longer sign in with this passkey. Type your password to confirm.",
+    ),
+    ("passkeys.remove-title", "Remove {name}?"),
+    ("passkeys.removed", "The passkey is removed."),
+    ("passkeys.title", "Passkeys"),
+    (
+        "passkeys.unavailable",
+        "Passkeys need Bugaboo to be opened with a web address that has a name, not a number. Ask the person who runs Bugaboo to set the public address.",
+    ),
+    ("second-step.back", "Back to sign in"),
+    ("second-step.code", "Code"),
+    (
+        "second-step.code-help",
+        "Type the six-digit code from your code app. If you cannot use the app, type one of your backup codes.",
+    ),
+    (
+        "second-step.intro",
+        "Your password is right. Your account asks for a second check before it opens.",
+    ),
+    ("second-step.passkey", "Use a passkey"),
+    (
+        "second-step.passkey-help",
+        "Use the fingerprint, face or screen lock of this device.",
+    ),
+    ("second-step.submit", "Continue"),
+    ("second-step.title", "One more step"),
+    (
+        "security-log.broken",
+        "The security log is broken at entry {seq}: {reason}",
+    ),
+    (
+        "security-log.head",
+        "The last entry is number {seq}. Its hash starts with {hash}. Keep a copy of this to compare later.",
+    ),
+    (
+        "security-log.reason.anchor",
+        "the anchor file that vouches for the end of the log was changed.",
+    ),
+    (
+        "security-log.reason.broken-link",
+        "an entry does not match the entry before it.",
+    ),
+    (
+        "security-log.reason.changed-content",
+        "an entry was changed after it was written.",
+    ),
+    (
+        "security-log.reason.checkpoint",
+        "entries were deleted without a signed checkpoint, or the checkpoint is wrong.",
+    ),
+    (
+        "security-log.reason.gap",
+        "an entry is missing, appears twice or is out of order.",
+    ),
+    (
+        "security-log.reason.truncated",
+        "entries at the end of the log were cut off or rewritten.",
+    ),
+    (
+        "security-log.unanchored",
+        "Nothing vouches for the end of the log, because its anchor file is missing or empty. Someone could cut entries off the end without anybody noticing.",
+    ),
+    (
+        "security-log.unreadable",
+        "The security log could not be read.",
+    ),
+    (
+        "security-log.valid",
+        "The security log is intact: {entries, plural, one {# entry} other {# entries}} checked.",
+    ),
+    (
+        "security.intro",
+        "How you prove that it is you, and how to keep your account safe.",
+    ),
+    (
+        "security.password.changed",
+        "Your password is changed. You are signed out everywhere else.",
+    ),
+    ("security.password.current", "Your password now"),
+    ("security.password.new", "New password"),
+    ("security.password.submit", "Change password"),
+    ("security.password.title", "Password"),
+    ("security.title", "Sign-in & security"),
     ("server.about", "Bugaboo: the issue tracker in one file"),
     (
         "server.database-built-in",
@@ -726,6 +2349,14 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "Setup is open. Open Bugaboo in your browser and enter this setup code to make the first administrator: {code}",
     ),
     (
+        "server.setup-code-file",
+        "Setup is open. The setup code is saved in {path}. Read it there and enter it in your browser to make the first administrator.",
+    ),
+    (
+        "server.setup-code-file-failed",
+        "Setup is open, but the setup code could not be saved in {path}: {reason}. Stop Bugaboo and start it in a terminal with: bugaboo serve. The terminal shows the code.",
+    ),
+    (
         "server.setup-code-hint",
         "The code works once and changes every time Bugaboo starts.",
     ),
@@ -738,6 +2369,89 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "server.web-app-missing",
         "The browser app is not built yet. Run `cargo xtask build`, or pass --web <folder>.",
     ),
+    (
+        "service.data-folder-real",
+        "The data folder {path} is a link. The service uses the folder it leads to: {real}.",
+    ),
+    (
+        "service.exists",
+        "The service {name} is installed already. Remove it first with: bugaboo service uninstall",
+    ),
+    ("service.failed", "The system refused: {reason}"),
+    (
+        "service.installed",
+        "The service {name} is installed and started. It runs as the account {account} and starts with the computer.",
+    ),
+    (
+        "service.needs-admin",
+        "Installing or removing a service needs administrator rights. On Windows, open the terminal as an administrator. On Linux, run the command with sudo.",
+    ),
+    (
+        "service.no-settings",
+        "There is no settings file at {path}. Run bugaboo setup first, or name the file with --config.",
+    ),
+    (
+        "service.not-a-service",
+        "This command is for the service manager. To start Bugaboo yourself, use: bugaboo serve",
+    ),
+    (
+        "service.not-installed",
+        "The service {name} is not installed.",
+    ),
+    (
+        "service.removed",
+        "The service {name} is removed. Your data stays where it is.",
+    ),
+    (
+        "service.settings-folder-open",
+        "The folder {path} that holds the settings file can be changed by other accounts. Keep the settings file in a folder that only administrators can change, for example /etc/bugaboo.",
+    ),
+    (
+        "service.settings-folder-owner",
+        "The folder {path} that holds the settings file does not belong to the administrator account (root). Keep the settings file in a folder that root owns, for example /etc/bugaboo.",
+    ),
+    (
+        "service.settings-in-data",
+        "The settings file {path} is inside the data folder, which the service account can write to. Move the file out of the data folder, so that the service cannot change its own settings.",
+    ),
+    (
+        "service.settings-is-link",
+        "The settings file {path} is a link. Installing would change the rights of the file it points to. Name the real file with --config.",
+    ),
+    (
+        "service.setup-code",
+        "Nobody has made an administrator yet. The setup code for the first administrator is saved in {path}. Read it there, and enter it in your browser.",
+    ),
+    (
+        "service.stop-timeout",
+        "The service {name} did not stop in time. Stop it in the Services window and try again.",
+    ),
+    (
+        "service.unsupported",
+        "Bugaboo can run as a service on Windows and on Linux with systemd. This computer has neither.",
+    ),
+    ("sessions.cut-off", "Only the newest places are shown."),
+    ("sessions.device", "{browser} on {system}"),
+    ("sessions.end", "Sign out"),
+    ("sessions.end-name", "Sign out of {device}"),
+    ("sessions.ended", "That place is signed out."),
+    ("sessions.everywhere", "Sign out everywhere"),
+    (
+        "sessions.everywhere-text",
+        "You will be signed out of every browser, this one included, and have to sign in again.",
+    ),
+    ("sessions.everywhere-title", "Sign out everywhere?"),
+    (
+        "sessions.intro",
+        "Each line is a place where you are signed in, like a browser. Sign out of the ones you do not know.",
+    ),
+    ("sessions.last-seen", "Last used {when}"),
+    ("sessions.list", "Places where you are signed in"),
+    ("sessions.network", "Network {network}"),
+    ("sessions.started", "Signed in {when}"),
+    ("sessions.this", "This browser"),
+    ("sessions.title", "Where you're signed in"),
+    ("sessions.unknown-device", "A browser we do not know"),
     (
         "setting.appearance.theme.help",
         "The colors Bugaboo uses on your screen. Match my device follows the light or dark setting of your device.",
@@ -766,6 +2480,137 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "setting.security.two-step-required.help",
         "Ask everyone to use two-step sign-in. People who have not set it up are asked to do so the next time they sign in.",
     ),
+    ("setup.answer-yes", "yes"),
+    (
+        "setup.ask.address",
+        "Who should be able to open Bugaboo? Type 127.0.0.1 for this computer only, or 0.0.0.0 for everyone who can reach this computer.",
+    ),
+    (
+        "setup.ask.data-dir",
+        "Where should Bugaboo keep its data? Give the path of a folder.",
+    ),
+    (
+        "setup.ask.database",
+        "Which database? Type built-in for the database inside the data folder, or a sqlite: or postgres:// address.",
+    ),
+    ("setup.ask.port", "Which port should Bugaboo listen on?"),
+    (
+        "setup.ask.public-url",
+        "Which web address will people type to reach Bugaboo? For example https://bugaboo.example.com",
+    ),
+    (
+        "setup.ask.replace",
+        "The settings file {path} already exists. Replace it? Type yes or no.",
+    ),
+    (
+        "setup.ask.tls",
+        "How should the connection be secured (HTTPS)? Type self-signed to let Bugaboo make its own certificate, files to use a certificate you already have, or off for plain HTTP (only on this computer or behind a proxy).",
+    ),
+    ("setup.ask.tls-cert", "Where is the certificate file?"),
+    ("setup.ask.tls-key", "Where is the private key file?"),
+    ("setup.database-built-in", "built-in"),
+    (
+        "setup.exists",
+        "The settings file {path} already exists. Add --overwrite to replace it.",
+    ),
+    (
+        "setup.input-ended",
+        "The questions were not all answered, so nothing was saved.",
+    ),
+    (
+        "setup.next",
+        "Start Bugaboo with: bugaboo serve. The first start shows a setup code in that window. You need it to make the first administrator in your browser.",
+    ),
+    ("setup.not-usable", "That does not work: {reason}"),
+    ("setup.replace-refused", "Nothing was changed."),
+    ("setup.saved", "Saved your answers in {path}."),
+    (
+        "setup.service-hint",
+        "To have Bugaboo start with the computer, run: bugaboo service install",
+    ),
+    (
+        "setup.welcome",
+        "Welcome to Bugaboo. A few questions, then your answers are saved in a settings file. Press Enter to accept the answer in brackets.",
+    ),
+    ("shell.menu", "Main menu"),
+    ("shell.signed-in-as", "Signed in as {name}"),
+    ("shell.skip", "Skip to the content"),
+    ("sign-in.make-account", "Make an account"),
+    ("sign-in.or", "or"),
+    ("sign-in.passkey", "Sign in with a passkey"),
+    ("sign-in.signed-out", "You are signed out."),
+    ("sign-in.submit", "Sign in"),
+    ("sign-in.title", "Sign in to Bugaboo"),
+    ("sign-up-policy.confirm-no", "Keep it off"),
+    (
+        "sign-up-policy.confirm-text",
+        "No domain is listed. Everybody who can reach Bugaboo will be able to make an account.",
+    ),
+    ("sign-up-policy.confirm-title", "Let everybody sign up?"),
+    ("sign-up-policy.confirm-yes", "Let everybody sign up"),
+    ("sign-up-policy.domains", "E-mail domains that may sign up"),
+    (
+        "sign-up-policy.domains-help",
+        "One domain per line, like example.com. Only addresses of these domains can sign up.",
+    ),
+    (
+        "sign-up-policy.intro",
+        "When this is on, anyone who can open Bugaboo can make an account without being invited.",
+    ),
+    ("sign-up-policy.saved", "Saved."),
+    ("sign-up-policy.switch", "Let people make their own account"),
+    ("sign-up-policy.title", "Signing up without an invitation"),
+    (
+        "sign-up-policy.warning",
+        "No domain is listed, so everyone who can reach Bugaboo can make an account. Bugaboo cannot check that an address belongs to the person until it can send e-mail.",
+    ),
+    (
+        "sign-up.closed",
+        "Making your own account is switched off here. Ask an administrator to invite you.",
+    ),
+    ("sign-up.have-account", "I already have an account"),
+    ("sign-up.submit", "Make my account"),
+    ("sign-up.title", "Make an account"),
+    ("status.certificate", "HTTPS certificate"),
+    (
+        "status.certificate.expired",
+        "This certificate ran out on {date}. Browsers refuse it.",
+    ),
+    (
+        "status.certificate.none",
+        "Not shown. Either another program in front of Bugaboo handles HTTPS, or the certificate file cannot be read.",
+    ),
+    (
+        "status.certificate.soon",
+        "Valid until {date}, which is only {days, plural, one {# day} other {# days}} from now. Renew it soon.",
+    ),
+    (
+        "status.certificate.valid",
+        "Valid until {date}, which is {days, plural, one {# day} other {# days}} from now.",
+    ),
+    ("status.database", "Database"),
+    (
+        "status.database.built-in",
+        "The built-in database in the data folder",
+    ),
+    ("status.database.failed", "Not answering."),
+    ("status.database.ok", "Working."),
+    ("status.database.postgres", "A PostgreSQL server"),
+    ("status.database.sqlite", "A SQLite file"),
+    ("status.intro", "How this Bugaboo server is doing."),
+    ("status.log", "Security log"),
+    ("status.refresh", "Check again"),
+    ("status.running", "Running for"),
+    ("status.started", "Started {when}"),
+    ("status.state.ok", "All good"),
+    ("status.state.problem", "Problem"),
+    ("status.state.warning", "Needs attention"),
+    ("status.title", "Server status"),
+    (
+        "status.uptime",
+        "{days, plural, one {# day} other {# days}}, {hours, plural, one {# hour} other {# hours}}, {minutes, plural, one {# minute} other {# minutes}}",
+    ),
+    ("status.version", "Version"),
     ("theme.daylight", "Daylight"),
     ("theme.device", "Match my device"),
     ("theme.device-resolved", "{device} ({theme})"),
@@ -798,4 +2643,9 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "tls.write-failed",
         "The file {path} could not be written: {reason}",
     ),
+    (
+        "validation.email",
+        "Type an e-mail address like name@example.com.",
+    ),
+    ("validation.required", "Please fill this in."),
 ];

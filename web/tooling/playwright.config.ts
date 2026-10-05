@@ -1,19 +1,27 @@
+import { cpus } from "node:os";
 import { resolve } from "node:path";
 
 import { defineConfig } from "@playwright/test";
 
 import { readPorts, repoRoot } from "./ports.ts";
 
+// Every worker starts its own Bugaboo server with its own data on a port of its own (ADR-0023),
+// so there are never more workers than ports.
 const ports = readPorts();
-const baseURL = `http://127.0.0.1:${String(ports.webPreview)}`;
+const portsForWorkers = ports.e2eWorkersTo - ports.e2eWorkersFrom + 1;
 
 export default defineConfig({
   testDir: resolve(import.meta.dirname, "../app/e2e"),
   outputDir: resolve(repoRoot, "test-results"),
-  fullyParallel: true,
+  // The tests of a file go one after the other, on one server; files run side by side.
+  fullyParallel: false,
   forbidOnly: true,
   reporter: "list",
-  use: { baseURL },
+  workers: Math.min(portsForWorkers, Math.max(1, Math.floor(cpus().length / 2))),
+  timeout: 90_000,
+  expect: { timeout: 10_000 },
+  // The servers use the certificate they made themselves.
+  use: { ignoreHTTPSErrors: true, trace: "retain-on-failure" },
   projects: [
     { name: "desktop", use: { browserName: "chromium", viewport: { width: 1280, height: 800 } } },
     {
@@ -21,11 +29,4 @@ export default defineConfig({
       use: { browserName: "chromium", viewport: { width: 360, height: 740 }, hasTouch: true },
     },
   ],
-  webServer: {
-    command: "npm run build && npm run preview",
-    cwd: repoRoot,
-    url: baseURL,
-    reuseExistingServer: false,
-    timeout: 120_000,
-  },
 });

@@ -1,0 +1,18 @@
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.progress {
+  margin: 0;
+  color: var(--fg-muted);
+  font-size: var(--fs-base);
+}
+
+.text {
+  margin: 0;
+  font-size: var(--fs-md);
+  line-height: 1.5;
+}

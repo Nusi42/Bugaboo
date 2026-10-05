@@ -18,11 +18,16 @@ bb-auth = { path = "../bb-auth" }
 bb-core = { path = "../bb-core" }
 bb-store = { path = "../bb-store" }
 clap = { workspace = true }
+getrandom = { workspace = true }
 jiff = { workspace = true }
-tokio = { workspace = true, features = ["macros", "net", "rt-multi-thread", "signal"] }
+tokio = { workspace = true, features = ["macros", "net", "rt-multi-thread", "signal", "sync"] }
 toml = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
+
+# Runs Bugaboo as a Windows service (OPS-04): installing it and answering the service manager.
+[target.'cfg(windows)'.dependencies]
+windows-service = { workspace = true }
 
 [dev-dependencies]
 argon2 = { workspace = true }

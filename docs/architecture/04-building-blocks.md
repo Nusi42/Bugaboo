@@ -143,14 +143,18 @@ One **tool registry** (search issues, get issue, create, change status, comment,
 
 ```text
 web/app/src/
-├── routes/              TanStack Router file routes; URL search params are typed state
-├── features/            issues, search, board, timeline, calendar, relation-map, documents,
-│                        time, dashboards, notifications, assistant, settings, admin, setup
-├── shared/              hooks, formatting (Intl), query keys
+├── routes/              TanStack Router routes in code (guest, signed-in and administrator
+│                        layouts decide who may open what); URL search params are typed state
+├── features/            shell, sign-in, sign-up, invitation, setup, account (sign-in and security,
+│                        where you're signed in), admin (invitations, status), home;
+│                        later: issues, search, board, timeline, calendar, relation-map,
+│                        documents, time, dashboards, notifications, assistant
+├── shared/              api client, session, errors, formatting (Intl), page title
 └── main.tsx
 ```
 
 - **Server data** lives only in the TanStack Query cache, fetched through the generated client, keyed by generated query keys.
 - **Forms** get their validation rules from the server's exported schema; the server still decides.
-- **Components** come from `@bugaboo/ui`, built on React Aria Components; styles use token variables only.
+- **Components** come from `@bugaboo/ui`, built on React Aria Components; styles use token variables only. The content security policy allows no inline styles, so React Aria's one injected style element is replaced by a rule in `global.css` (the element is declared in `index.html`).
+- **Who is signed in** is read once with `GET /api/v1/auth/me`; a `401` anywhere (a session that ended, a wrong CSRF token) takes the person to the sign-in page with the reason in the address, and the guest layout does not send a signed-in person away while a reason is shown.
 - **Heavy features** (timeline, relation map, document editor, workflow editor, theme editor, WebAssembly) are split into separate chunks and loaded when first opened.

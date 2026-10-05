@@ -45,7 +45,7 @@ The license of Bugaboo itself is not decided. Every part we ship must therefore 
 
 | Allowed in the shipped binary | Not allowed |
 |-------------------------------|-------------|
-| MIT, Apache-2.0 (also with LLVM exception), BSD-2/3-Clause, ISC, Zlib, Unicode-3.0, MIT-0, CC0, Unlicense, BSL-1.0, CDLA-Permissive-2.0 (data), OFL-1.1 (fonts), MPL-2.0 (file-level, unmodified) | GPL, AGPL, LGPL (static linking), SSPL, BUSL, "non-commercial" licenses |
+| MIT, Apache-2.0 (also with LLVM exception), BSD-2/3-Clause, ISC, Zlib, Unicode-3.0, MIT-0, 0BSD, CC0, Unlicense, BSL-1.0, CDLA-Permissive-2.0 (data), OFL-1.1 (fonts), MPL-2.0 (file-level, unmodified) | GPL, AGPL, LGPL (static linking), SSPL, BUSL, "non-commercial" licenses |
 
 The exact allow list lives in `deny.toml` (the single source) and is enforced by DEP-LICENSES (coding-standards §5).
 

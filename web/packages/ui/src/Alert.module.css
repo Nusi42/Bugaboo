@@ -1,0 +1,32 @@
+.alert {
+  box-sizing: border-box;
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--border);
+  border-left-width: var(--space-1);
+  border-radius: var(--r-ctl);
+  background: var(--bg-surface);
+  color: var(--fg);
+  font-size: var(--fs-md);
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.danger {
+  border-color: var(--danger);
+  background: var(--danger-soft);
+}
+
+.success {
+  border-color: var(--success);
+  background: var(--success-soft);
+}
+
+.warning {
+  border-color: var(--warning);
+  background: var(--warning-soft);
+}
+
+.info {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}

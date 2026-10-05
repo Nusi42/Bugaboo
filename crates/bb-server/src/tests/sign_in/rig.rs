@@ -51,7 +51,7 @@ pub(super) struct Rig {
     /// The setup code of the first start, as the console would show it.
     pub(super) setup_code: String,
     /// Keeps the key files and the anchor file of the log alive.
-    pub(super) _folder: tempfile::TempDir,
+    pub(super) folder: tempfile::TempDir,
 }
 
 impl Rig {
@@ -103,7 +103,7 @@ impl Rig {
             clock,
             seal,
             setup_code: code.as_str().to_owned(),
-            _folder: folder,
+            folder,
         })
     }
 

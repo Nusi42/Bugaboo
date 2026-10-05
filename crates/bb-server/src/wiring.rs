@@ -10,26 +10,66 @@
 use std::sync::Arc;
 
 use anyhow::anyhow;
-use bb_api::{AuthHandle, FailureLimits};
+use bb_api::tls::certificate_path;
+use bb_api::{AuthHandle, FailureLimits, ProbeHandle};
 use bb_app::auth::{AuthServices, IssueSetupCode, RequestInfo, issue_setup_code};
 use bb_app::context::SystemClock;
 use bb_auth::{CsrfKey, Passkeys, PasswordHasher, RelyingParty};
 use bb_core::message::{self, Message};
 use bb_store::{AuthStorage, Database, LogSeal};
 
-use crate::config::Settings;
+use crate::config::{Settings, TlsMode};
 use crate::data_folder::DataFolder;
+use crate::probe::{Probe, database_kind};
 
 /// What the server needs from the wiring.
 pub(crate) struct Wired {
     /// The sign-in use cases for the API.
     pub(crate) auth: AuthHandle,
+    /// How the status page and `/health/ready` measure the server.
+    pub(crate) probe: ProbeHandle,
     /// The setup code of the first start, to print once. `None` when an administrator exists.
     pub(crate) setup_code: Option<String>,
 }
 
 fn database_failed(error: &impl std::fmt::Display) -> anyhow::Error {
     anyhow!(message::server_database_failed(error).render())
+}
+
+/// The stored data of an installation that exists, opened by the commands that look after it
+/// (`security-log verify`, `rotate-key`, `keys export`) and not by the server.
+pub(crate) struct Store {
+    pub(crate) database: Database,
+    pub(crate) keys: bb_store::KeyRing,
+    pub(crate) seal: LogSeal,
+}
+
+/// Opens the database and the keys of an installation that exists. It changes nothing: no
+/// migration, and no new keys for a database that has data (`Database::open_keys`).
+///
+/// # Errors
+/// Fails with a plain explanation when the database cannot be opened or the key files are
+/// missing.
+pub(crate) async fn open_store(settings: &Settings, data: &DataFolder) -> anyhow::Result<Store> {
+    let database = connect(settings, data).await?;
+    let keys = database
+        .open_keys(&data.keys())
+        .await
+        .map_err(|error| database_failed(&error))?;
+    let seal = LogSeal::new(&keys, data.security_log_anchor());
+    Ok(Store {
+        database,
+        keys,
+        seal,
+    })
+}
+
+async fn connect(settings: &Settings, data: &DataFolder) -> anyhow::Result<Database> {
+    match &settings.database_url {
+        Some(url) => Database::connect(url).await,
+        None => Database::connect_file(&data.database_file()).await,
+    }
+    .map_err(|error| database_failed(&error))
 }
 
 /// Opens everything the sign-in routes need.
@@ -39,11 +79,7 @@ fn database_failed(error: &impl std::fmt::Display) -> anyhow::Error {
 /// files are missing from a database that needs them, or when the system gives no secure
 /// randomness.
 pub(crate) async fn wire(settings: &Settings, data: &DataFolder) -> anyhow::Result<Wired> {
-    let database = match &settings.database_url {
-        Some(url) => Database::connect(url).await,
-        None => Database::connect_file(&data.database_file()).await,
-    }
-    .map_err(|error| database_failed(&error))?;
+    let database = connect(settings, data).await?;
     let applied = database
         .migrate(jiff::Timestamp::now())
         .await
@@ -57,6 +93,17 @@ pub(crate) async fn wire(settings: &Settings, data: &DataFolder) -> anyhow::Resu
     );
     let seal = LogSeal::new(&keys, data.security_log_anchor());
     let csrf = CsrfKey::from_bytes(keys.csrf_key().to_bytes());
+    let certificate = match &settings.tls {
+        TlsMode::SelfSigned => Some(certificate_path(&data.tls())),
+        TlsMode::Files { cert, .. } => Some(cert.clone()),
+        TlsMode::Off => None,
+    };
+    let probe = Probe::new(
+        database.clone(),
+        seal.clone(),
+        database_kind(settings.database_url.as_deref()),
+        certificate,
+    );
     let storage = AuthStorage::new(database, keys, seal);
 
     let name = Message::from(message::APP_NAME).render();
@@ -82,6 +129,7 @@ pub(crate) async fn wire(settings: &Settings, data: &DataFolder) -> anyhow::Resu
         .map(|code| code.as_str().to_owned());
     Ok(Wired {
         auth: AuthHandle::new(Arc::new(services)),
+        probe: ProbeHandle::new(Arc::new(probe)),
         setup_code,
     })
 }

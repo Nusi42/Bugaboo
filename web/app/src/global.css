@@ -1,9 +1,21 @@
+/* The page frame is at least as high as the window, so its footer sits at the bottom. */
+html,
+body,
+#root {
+  height: 100%;
+}
+
 body {
   margin: 0;
   background: var(--bg-canvas);
   color: var(--fg);
   font-family: var(--font);
   font-size: var(--fs-md);
+}
+
+/* The rule React Aria would add itself: pressing a control does not wait for a double tap. */
+[data-react-aria-pressable] {
+  touch-action: pan-x pan-y pinch-zoom;
 }
 
 :focus-visible {

@@ -1,0 +1,258 @@
+//! What only administrators see: the status page of the server (OPS-08).
+
+use std::sync::Arc;
+
+use axum::extract::State;
+use axum::response::Response;
+use bb_app::auth::AuthenticateQuery;
+use bb_app::status::{DatabaseKind, LogBreak, LogState, ServerProbe, Snapshot};
+use bb_core::ErrorCode;
+use serde::Serialize;
+use utoipa::ToSchema;
+use utoipa_axum::router::OpenApiRouter;
+use utoipa_axum::routes;
+
+use super::auth::{AuthHandle, ForbiddenAnswer, Info, NotSignedInAnswer, Session, private};
+use crate::errors::ApiError;
+
+/// How the server measures itself, if it can. Without a probe (tests of other parts of the API)
+/// the status route answers that the server cannot answer right now.
+#[derive(Clone)]
+pub struct ProbeHandle(pub(crate) Option<Arc<dyn ServerProbe>>);
+
+impl std::fmt::Debug for ProbeHandle {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter
+            .debug_struct("ProbeHandle")
+            .field("ready", &self.0.is_some())
+            .finish()
+    }
+}
+
+impl ProbeHandle {
+    /// The probe the status page and `/health/ready` ask.
+    #[must_use]
+    pub fn new(probe: Arc<dyn ServerProbe>) -> Self {
+        Self(Some(probe))
+    }
+
+    /// No probe: the status route answers `server.unavailable`.
+    #[must_use]
+    pub const fn none() -> Self {
+        Self(None)
+    }
+
+    pub(crate) fn probe(&self) -> Option<&dyn ServerProbe> {
+        self.0.as_deref()
+    }
+}
+
+/// Which database the server uses.
+#[derive(Serialize, ToSchema)]
+#[serde(rename_all = "snake_case")]
+enum DatabaseKindBody {
+    /// The database inside the data folder.
+    BuiltIn,
+    /// A SQLite file.
+    Sqlite,
+    /// A PostgreSQL server.
+    Postgres,
+}
+
+impl From<DatabaseKind> for DatabaseKindBody {
+    fn from(kind: DatabaseKind) -> Self {
+        match kind {
+            DatabaseKind::BuiltIn => Self::BuiltIn,
+            DatabaseKind::Sqlite => Self::Sqlite,
+            DatabaseKind::Postgres => Self::Postgres,
+        }
+    }
+}
+
+/// The database.
+#[derive(Serialize, ToSchema)]
+struct DatabaseBody {
+    /// Which one it is. The address is never shown: it can hold a password.
+    kind: DatabaseKindBody,
+    /// Whether it answered.
+    ok: bool,
+}
+
+/// The HTTPS certificate the server uses itself.
+#[derive(Serialize, ToSchema)]
+struct CertificateBody {
+    /// When it stops being valid.
+    expires_at: String,
+}
+
+/// Why the chain of the security log does not verify.
+#[derive(Serialize, ToSchema)]
+#[serde(rename_all = "snake_case")]
+enum LogBreakBody {
+    /// An entry is missing, twice or out of order.
+    Gap,
+    /// An entry does not point to the one before it.
+    BrokenLink,
+    /// An entry was changed after it was written.
+    ChangedContent,
+    /// Entries were deleted without a signed checkpoint, or the checkpoint is wrong.
+    Checkpoint,
+    /// The end of the log was cut off or rewritten.
+    Truncated,
+    /// The file that vouches for the end of the log was changed.
+    Anchor,
+}
+
+impl From<LogBreak> for LogBreakBody {
+    fn from(reason: LogBreak) -> Self {
+        match reason {
+            LogBreak::Gap => Self::Gap,
+            LogBreak::BrokenLink => Self::BrokenLink,
+            LogBreak::ChangedContent => Self::ChangedContent,
+            LogBreak::Checkpoint => Self::Checkpoint,
+            LogBreak::Truncated => Self::Truncated,
+            LogBreak::Anchor => Self::Anchor,
+        }
+    }
+}
+
+/// The result of checking the security log.
+#[derive(Serialize, ToSchema)]
+#[serde(rename_all = "snake_case")]
+enum LogResult {
+    /// Every entry verifies.
+    Valid,
+    /// The chain breaks: see `broken_at` and `reason`.
+    Broken,
+    /// The log could not be read.
+    Unreadable,
+}
+
+/// What checking the security log found.
+#[derive(Serialize, ToSchema)]
+struct SecurityLogBody {
+    /// The outcome.
+    result: LogResult,
+    /// How many entries were checked (when it verifies).
+    entries: Option<u64>,
+    /// The place of the last entry (when it verifies and has entries).
+    head_seq: Option<i64>,
+    /// The start of the hash of the last entry, to compare with a copy kept elsewhere.
+    head_hash: Option<String>,
+    /// Whether the file that vouches for the end of the log exists. A log with entries and no
+    /// anchor is a warning: nothing then shows that the end was not cut off.
+    anchored: Option<bool>,
+    /// The place of the first entry that does not verify (when it breaks).
+    broken_at: Option<i64>,
+    /// What is wrong with it (when it breaks).
+    reason: Option<LogBreakBody>,
+}
+
+impl From<LogState> for SecurityLogBody {
+    fn from(state: LogState) -> Self {
+        let empty = Self {
+            result: LogResult::Unreadable,
+            entries: None,
+            head_seq: None,
+            head_hash: None,
+            anchored: None,
+            broken_at: None,
+            reason: None,
+        };
+        match state {
+            LogState::Valid {
+                entries,
+                head,
+                anchored,
+            } => Self {
+                result: LogResult::Valid,
+                entries: Some(entries),
+                head_seq: head.as_ref().map(|(seq, _)| *seq),
+                head_hash: head.map(|(_, hash)| hash),
+                anchored: Some(anchored),
+                ..empty
+            },
+            LogState::Broken { seq, reason } => Self {
+                result: LogResult::Broken,
+                broken_at: Some(seq),
+                reason: Some(reason.into()),
+                ..empty
+            },
+            LogState::Unreadable => empty,
+        }
+    }
+}
+
+/// The state of the server, as the status page shows it.
+#[derive(Serialize, ToSchema)]
+struct ServerStateBody {
+    /// The version of the program.
+    version: String,
+    /// When the server started.
+    started_at: String,
+    /// How many seconds it has been running.
+    uptime_seconds: u64,
+    /// The database.
+    database: DatabaseBody,
+    /// The HTTPS certificate; missing when the server does not speak HTTPS itself (plain HTTP
+    /// behind a proxy) or the certificate cannot be read.
+    certificate: Option<CertificateBody>,
+    /// The check of the security log.
+    security_log: SecurityLogBody,
+}
+
+impl From<Snapshot> for ServerStateBody {
+    fn from(snapshot: Snapshot) -> Self {
+        Self {
+            version: snapshot.version,
+            started_at: snapshot.started_at.to_string(),
+            uptime_seconds: snapshot.uptime.as_secs(),
+            database: DatabaseBody {
+                kind: snapshot.database.into(),
+                ok: snapshot.database_ok,
+            },
+            certificate: snapshot.certificate.map(|certificate| CertificateBody {
+                expires_at: certificate.expires_at.to_string(),
+            }),
+            security_log: snapshot.security_log.into(),
+        }
+    }
+}
+
+/// How the server is doing: version, uptime, database, certificate and the check of the security
+/// log. Administrators only.
+#[utoipa::path(
+    get,
+    path = "/api/v1/admin/status",
+    operation_id = "getServerState",
+    tag = "admin",
+    responses((status = 200, description = "The state of the server.", body = ServerStateBody), NotSignedInAnswer, ForbiddenAnswer)
+)]
+async fn get_server_state(
+    State(auth): State<AuthHandle>,
+    State(probe): State<ProbeHandle>,
+    Info(info): Info,
+    Session(session_token): Session,
+) -> Result<Response, ApiError> {
+    let who = auth
+        .api()?
+        .authenticate(info, AuthenticateQuery { session_token })
+        .await?;
+    if !who.person.administrator {
+        return Err(ApiError::new(ErrorCode::Forbidden));
+    }
+    let probe = probe
+        .probe()
+        .ok_or_else(|| ApiError::new(ErrorCode::Unavailable))?;
+    Ok(private(ServerStateBody::from(probe.snapshot().await)))
+}
+
+/// The routes only administrators use.
+pub(crate) fn routes<S>() -> OpenApiRouter<S>
+where
+    S: Clone + Send + Sync + 'static,
+    AuthHandle: axum::extract::FromRef<S>,
+    ProbeHandle: axum::extract::FromRef<S>,
+{
+    OpenApiRouter::new().routes(routes!(get_server_state))
+}

@@ -17,7 +17,7 @@ use bb_core::message::{self, Message};
 use tower_http::compression::predicate::{Predicate as _, SizeAbove};
 use tower_http::compression::{CompressionLayer, DefaultPredicate};
 
-use crate::api::AuthHandle;
+use crate::api::{AuthHandle, ProbeHandle};
 use crate::limits::{Limits, LimitsConfig};
 use crate::{api, headers};
 use hyper_util::rt::{TokioExecutor, TokioIo, TokioTimer};
@@ -31,8 +31,6 @@ use crate::logging::{ConnectionTls, LogContext, log_request};
 use crate::web::{INDEX, WebSource, decode_path};
 
 const HEALTH_LIVE_BODY: &str = r#"{"status":"ok"}"#;
-const HEALTH_READY_BODY: &str = r#"{"status":"ok","checks":{"data_folder":"ok"}}"#;
-const HEALTH_NOT_READY_BODY: &str = r#"{"status":"unavailable","checks":{"data_folder":"failed"}}"#;
 /// Files Vite names by their content hash can be cached forever.
 const IMMUTABLE_PREFIX: &str = "assets/";
 const CACHE_IMMUTABLE: &str = "public, max-age=31536000, immutable";
@@ -63,6 +61,9 @@ pub struct Options {
     pub limits: LimitsConfig,
     /// The use cases of signing in; `AuthHandle::none()` when there is no database yet.
     pub auth: AuthHandle,
+    /// How the server measures itself, for the status page and `/health/ready`;
+    /// `ProbeHandle::none()` when there is no database yet.
+    pub probe: ProbeHandle,
 }
 
 #[derive(Clone)]
@@ -70,11 +71,18 @@ struct AppState {
     web: Arc<WebSource>,
     data_folder: Arc<PathBuf>,
     auth: AuthHandle,
+    probe: ProbeHandle,
 }
 
 impl axum::extract::FromRef<AppState> for AuthHandle {
     fn from_ref(state: &AppState) -> Self {
         state.auth.clone()
+    }
+}
+
+impl axum::extract::FromRef<AppState> for ProbeHandle {
+    fn from_ref(state: &AppState) -> Self {
+        state.probe.clone()
     }
 }
 
@@ -86,6 +94,7 @@ pub fn router(options: Options) -> Router {
         web: Arc::new(options.web),
         data_folder: Arc::new(options.data_folder),
         auth: options.auth,
+        probe: options.probe,
     };
     let auth = state.auth.clone();
     let compress = DefaultPredicate::new()
@@ -193,19 +202,38 @@ async fn health_live() -> Response {
     json(StatusCode::OK, HEALTH_LIVE_BODY)
 }
 
-/// Ready when the data folder can be read; the database joins in with the store.
+/// Ready when the data folder can be read and, once the server has a database (M1-F19), the
+/// database answers. The body names each check, never a reason: it is open to everyone.
 async fn health_ready(State(state): State<AppState>) -> Response {
-    let usable = tokio::fs::read_dir(state.data_folder.as_path())
+    let folder = tokio::fs::read_dir(state.data_folder.as_path())
         .await
         .is_ok();
-    if usable {
-        json(StatusCode::OK, HEALTH_READY_BODY)
-    } else {
-        json(StatusCode::SERVICE_UNAVAILABLE, HEALTH_NOT_READY_BODY)
-    }
+    let database = match state.probe.probe() {
+        Some(probe) => Some(probe.database_ok().await),
+        None => None,
+    };
+    let word = |ok: bool| if ok { "ok" } else { "failed" };
+    let ready = folder && database != Some(false);
+    let checks = match database {
+        Some(ok) => format!(
+            r#""data_folder":"{}","database":"{}""#,
+            word(folder),
+            word(ok)
+        ),
+        None => format!(r#""data_folder":"{}""#, word(folder)),
+    };
+    let status = if ready { "ok" } else { "unavailable" };
+    json(
+        if ready {
+            StatusCode::OK
+        } else {
+            StatusCode::SERVICE_UNAVAILABLE
+        },
+        &format!(r#"{{"status":"{status}","checks":{{{checks}}}}}"#),
+    )
 }
 
-fn json(status: StatusCode, body: &'static str) -> Response {
+fn json(status: StatusCode, body: &str) -> Response {
     (
         status,
         [
@@ -213,7 +241,7 @@ fn json(status: StatusCode, body: &'static str) -> Response {
             // A health answer must always be fresh.
             (header::CACHE_CONTROL, "no-store"),
         ],
-        body,
+        body.to_owned(),
     )
         .into_response()
 }
@@ -314,6 +342,7 @@ mod tests {
             trusted_proxies: vec![],
             limits: LimitsConfig::default(),
             auth: AuthHandle::none(),
+            probe: ProbeHandle::none(),
         }
     }
 

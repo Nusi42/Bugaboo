@@ -110,6 +110,15 @@ pub fn certificate_path(folder: &Path) -> PathBuf {
     folder.join(CERT_FILE)
 }
 
+/// When the first certificate in the PEM file `cert` stops being valid, in seconds since 1970 (for
+/// the status page). `None` when the file cannot be read or holds no certificate.
+#[must_use]
+pub fn certificate_end(cert: &Path) -> Option<i64> {
+    let pem = fs::read(cert).ok()?;
+    let der = CertificateDer::from_pem_slice(&pem).ok()?;
+    not_after(&der)
+}
+
 /// The server-side TLS settings for `source`. A self-signed certificate is made (or renewed)
 /// here if needed.
 ///
@@ -402,6 +411,17 @@ mod tests {
             (end - expected).abs() < SECONDS_PER_DAY,
             "{end} vs {expected}"
         );
+    }
+
+    #[test]
+    fn ops_08_the_end_of_a_certificate_file_is_read_for_the_status_page() {
+        let folder = tempfile::tempdir().unwrap();
+        let now = now_seconds();
+        ensure_self_signed(folder.path(), &[], now).unwrap();
+        let end = certificate_end(&folder.path().join(CERT_FILE)).unwrap();
+        assert!((end - (now + VALID_DAYS * SECONDS_PER_DAY)).abs() < 2 * SECONDS_PER_DAY);
+        assert_eq!(certificate_end(&folder.path().join(KEY_FILE)), None);
+        assert_eq!(certificate_end(&folder.path().join("none.pem")), None);
     }
 
     #[test]

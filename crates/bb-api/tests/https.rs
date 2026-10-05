@@ -99,6 +99,7 @@ mod https {
             trusted_proxies: vec![],
             limits: bb_api::LimitsConfig::default(),
             auth: bb_api::AuthHandle::none(),
+            probe: bb_api::ProbeHandle::none(),
         };
         let (stop, stopped) = oneshot::channel::<()>();
         tokio::spawn(serve(incoming, options, async move {

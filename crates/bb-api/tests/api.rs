@@ -42,6 +42,7 @@ mod api {
             trusted_proxies: proxies.iter().map(|p| p.parse().unwrap()).collect(),
             limits,
             auth: bb_api::AuthHandle::none(),
+            probe: bb_api::ProbeHandle::none(),
         }
     }
 

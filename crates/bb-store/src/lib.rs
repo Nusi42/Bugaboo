@@ -27,7 +27,7 @@ pub use chain::{BreakReason, Verification};
 pub use db::{Database, Dialect, Transaction};
 pub use error::{SecretProblem, SettingProblem, StoreError};
 pub use jobs::{FailureOutcome, NewJob, backoff};
-pub use keys::{KeyRing, MasterKey, SigningKey};
+pub use keys::{KeyRing, MASTER_KEY_FILE, MasterKey, SigningKey};
 pub use migrations::latest_version;
 pub use schema::{StoredTable, tables};
 pub use security_log::NewSecurityLogEntry;

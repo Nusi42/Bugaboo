@@ -137,10 +137,10 @@ mod tests {
 
     #[test]
     fn ux_07_a_message_with_placeholders_takes_typed_arguments() {
-        let message = hello_current("Dusk");
-        assert_eq!(message.key().as_str(), "hello.current");
+        let message = shell_signed_in_as("Ana");
+        assert_eq!(message.key().as_str(), "shell.signed-in-as");
         assert_eq!(message.arguments().len(), 1);
-        assert_eq!(message.to_string(), "Your theme: Dusk.");
+        assert_eq!(message.to_string(), "Signed in as Ana");
     }
 
     #[test]

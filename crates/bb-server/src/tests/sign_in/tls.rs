@@ -10,7 +10,7 @@ use axum::http::{HeaderMap, Request, StatusCode};
 use bb_api::tls::{TlsSource, server_config};
 use bb_api::{
     AuthHandle, HSTS_MAX_AGE_SELF_SIGNED, Incoming, LimitsConfig, ListenerOptions, Options,
-    WebSource, serve,
+    ProbeHandle, WebSource, serve,
 };
 use bb_testing::each_database;
 use h2::client::SendRequest;
@@ -178,6 +178,7 @@ async fn start(rig: &Rig) -> Result<Running, Failure> {
         trusted_proxies: vec![],
         limits: LimitsConfig::default(),
         auth: AuthHandle::new(rig.services.clone()),
+        probe: ProbeHandle::none(),
     };
     let (stop, stopped) = oneshot::channel::<()>();
     let server = tokio::spawn(serve(incoming, options, async move {

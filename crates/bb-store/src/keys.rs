@@ -36,7 +36,7 @@ use zeroize::Zeroizing;
 use crate::error::{SecretProblem, StoreError};
 
 /// The master key file's name inside the keys folder.
-const MASTER_FILE: &str = "master.key";
+pub const MASTER_KEY_FILE: &str = "master.key";
 /// The log key file's name.
 const LOG_FILE: &str = "log.key";
 /// The CSRF key file's name.
@@ -190,7 +190,7 @@ impl KeyRing {
     /// file cannot be read or written or is damaged, and (on Unix) when a file can be read by
     /// anybody but its owner.
     pub fn open(folder: &Path, create: bool) -> Result<Self, StoreError> {
-        let master_path = folder.join(MASTER_FILE);
+        let master_path = folder.join(MASTER_KEY_FILE);
         let log_path = folder.join(LOG_FILE);
         if !create && (!master_path.exists() || !log_path.exists()) {
             return Err(StoreError::KeysMissing);
@@ -242,7 +242,15 @@ impl KeyRing {
     }
 
     fn master_path(&self) -> PathBuf {
-        self.folder.join(MASTER_FILE)
+        self.folder.join(MASTER_KEY_FILE)
+    }
+
+    /// The files a backup of the keys must hold: the master keys, which read every stored secret,
+    /// and the log key, which verifies the security log. (The CSRF key is made again when it is
+    /// missing and protects nothing that is stored.)
+    #[must_use]
+    pub fn backup_files(&self) -> [PathBuf; 2] {
+        [self.master_path(), self.folder.join(LOG_FILE)]
     }
 
     /// The master keys as the file has them now.
@@ -483,8 +491,8 @@ fn replace_master(folder: &Path, keys: &[MasterKey]) -> Result<(), StoreError> {
         .map_err(StoreError::KeyFile)?;
     file.sync_all().map_err(StoreError::KeyFile)?;
     drop(file);
-    fs::rename(&temporary, folder.join(MASTER_FILE)).map_err(StoreError::KeyFile)?;
-    sync_folder(&folder.join(MASTER_FILE));
+    fs::rename(&temporary, folder.join(MASTER_KEY_FILE)).map_err(StoreError::KeyFile)?;
+    sync_folder(&folder.join(MASTER_KEY_FILE));
     Ok(())
 }
 
@@ -561,7 +569,7 @@ mod tests {
             again.log_key().sign(&[probe]).unwrap(),
             first.log_key().sign(&[probe]).unwrap()
         );
-        let text = fs::read_to_string(folder.path().join(MASTER_FILE)).unwrap();
+        let text = fs::read_to_string(folder.path().join(MASTER_KEY_FILE)).unwrap();
         assert!(
             text.starts_with("k1 ") && text.len() == 3 + 64 + 1,
             "{} bytes",
@@ -598,7 +606,7 @@ mod tests {
         let first = KeyRing::open_or_create(&path).unwrap();
         let expected = *first.newest().unwrap().bytes();
         // The writer made the file but has not written it yet.
-        let master = path.join(MASTER_FILE);
+        let master = path.join(MASTER_KEY_FILE);
         let content = fs::read(&master).unwrap();
         fs::write(&master, "").unwrap();
         let writer = std::thread::spawn(move || {
@@ -712,7 +720,7 @@ mod tests {
         use std::os::unix::fs::PermissionsExt as _;
         let folder = tempfile::tempdir().unwrap();
         KeyRing::open_or_create(folder.path()).unwrap();
-        for name in [MASTER_FILE, LOG_FILE] {
+        for name in [MASTER_KEY_FILE, LOG_FILE] {
             let path = folder.path().join(name);
             assert_eq!(
                 fs::metadata(&path).unwrap().permissions().mode() & 0o777,

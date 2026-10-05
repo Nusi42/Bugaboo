@@ -310,6 +310,19 @@ impl Passkeys {
                 (!exclude.is_empty()).then_some(exclude),
             )
             .map_err(|_| AuthError::Passkey)?;
+        // A passkey is for signing in without typing anything, which needs a discoverable one: the
+        // device is asked to make one when it can. The library asks for none, which leaves
+        // devices that only make them on request (a security key, the virtual device of the
+        // browser tests) with passkeys that work as a second step but not alone.
+        let mut options = json(&options)?;
+        if let Some(Value::Object(selection)) =
+            options.pointer_mut("/publicKey/authenticatorSelection")
+        {
+            selection.insert(
+                "residentKey".to_owned(),
+                Value::String("preferred".to_owned()),
+            );
+        }
         let id = self.put(
             now,
             Kind::Registration,
@@ -317,7 +330,7 @@ impl Passkeys {
             Some(person),
             Ceremony::Register(state),
         )?;
-        Ok((id, json(&options)?))
+        Ok((id, options))
     }
 
     /// Finishes adding a passkey.
@@ -549,6 +562,16 @@ mod tests {
         passkeys
             .finish_registration(now(), id, person, &serde_json::to_value(answer).unwrap())
             .unwrap()
+    }
+
+    #[test]
+    fn auth_02_a_new_passkey_is_asked_to_be_discoverable_when_the_device_can() {
+        let passkeys = Passkeys::new(&party()).unwrap();
+        let (_, options) = passkeys
+            .start_registration(now(), None, person(), "ada@example.com", "Ada", &[])
+            .unwrap();
+        let selection = &options["publicKey"]["authenticatorSelection"];
+        assert_eq!(selection["residentKey"], "preferred", "{options}");
     }
 
     #[test]
