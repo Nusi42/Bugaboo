@@ -93,8 +93,8 @@ fn hsts_max_age(settings: &Settings) -> Option<u64> {
 /// Tells how to find the setup code of the first start (AUTH-09). On a console it is printed:
 /// only there, never in the log file, because the code is a secret until it is used. Without a
 /// console (a service) it is saved in a file in the data folder, which only the account that runs
-/// Bugaboo and the administrators of the computer can read; the file goes away as soon as the
-/// first administrator exists.
+/// Bugaboo and the administrators of the computer can read. The code is dead once the first
+/// administrator exists; the file goes away at the next start (follow-up M1-F58).
 fn announce_setup_code(data: &DataFolder, code: Option<&str>) {
     let file = data.setup_code_file();
     let Some(code) = code else {
