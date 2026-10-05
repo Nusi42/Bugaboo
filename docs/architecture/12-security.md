@@ -207,6 +207,8 @@ flowchart LR
 | Setting value on the person level (WP-07) | the person it belongs to | yes | `identity` | `contract` |
 | Setting value on the person level (WP-07) | when it was last changed | yes | `activity` | `contract` |
 
+A value set on a project applies to its sub-projects. When the project it comes from is one the person cannot see, the answer says only *From a project you can't see*, and never names it.
+
 The person a setting value belongs to is a column of its own in the table `person_setting` (migration `m0004`), marked as above, so DATA-MARKS sees it; the table of the organization's and the projects' values keeps `scope` for project IDs only, which is marked as not personal.
 
 | Data | Purpose | Legal basis (GDPR Art. 6) | Kept |

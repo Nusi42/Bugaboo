@@ -1452,6 +1452,7 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 <tr><td>Setting value on the person level (WP-07)</td><td>when it was last changed</td><td>yes</td><td><code>activity</code></td><td><code>contract</code></td></tr>
 </tbody></table>
 </div>
+<p>A value set on a project applies to its sub-projects. When the project it comes from is one the person cannot see, the answer says only <em>From a project you can't see</em>, and never names it.</p>
 <p>The person a setting value belongs to is a column of its own in the table <code>person_setting</code> (migration <code>m0004</code>), marked as above, so DATA-MARKS sees it; the table of the organization's and the projects' values keeps <code>scope</code> for project IDs only, which is marked as not personal.</p>
 <div class="tbl-wrap"><table class="dtable"><thead><tr><th>Data</th><th>Purpose</th><th>Legal basis (GDPR Art. 6)</th><th>Kept</th></tr></thead><tbody>
 <tr><td>Group membership and role assignments</td><td>Deciding what a person can do and see; showing who works where to the people allowed to see it</td><td>(b) contract / employment</td><td>While the row exists; gone from the person when they are removed (<em>Remove a person</em>, PRIV-04, M9); the changes stay in the security log for its keep period</td></tr>
