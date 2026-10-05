@@ -367,6 +367,16 @@ mod tests {
     }
 
     #[test]
+    fn bad_example_a_secret_in_the_data_of_the_postgresql_database() {
+        let found = found("secret-in-the-postgres-dump");
+        assert_eq!(found.len(), 1, "{found:?}");
+        assert!(
+            found[0].contains("postgres-1: postgres.sql holds"),
+            "{found:?}"
+        );
+    }
+
+    #[test]
     fn bad_example_no_dump_to_compare_and_no_people() {
         assert!(!problems(&names(), &[]).is_empty());
         let empty = Run {

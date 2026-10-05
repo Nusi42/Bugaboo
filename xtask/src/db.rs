@@ -418,6 +418,26 @@ impl Postgres<'_> {
 }
 
 impl Postgres<'_> {
+    /// Writes what the tables of the database `name` hold into `file`, as SQL (`pg_dump` of the
+    /// pinned PostgreSQL, data only), so it can be read like any other file.
+    pub(crate) fn dump_data(&self, name: &str, file: &Path) -> anyhow::Result<()> {
+        let out = Command::new(self.cluster.program("pg_dump")?)
+            .args(["-h", HOST, "-p", &self.cluster.port.to_string(), "-U", USER])
+            .args(["-d", name, "--data-only", "--no-owner", "-f"])
+            .arg(file)
+            .env("PGPASSWORD", self.cluster.password()?)
+            .stdin(Stdio::null())
+            .output()
+            .context("could not run pg_dump")?;
+        if !out.status.success() {
+            bail!(
+                "pg_dump failed: {}",
+                String::from_utf8_lossy(&out.stderr).trim()
+            );
+        }
+        Ok(())
+    }
+
     /// Throws the database `name` away, when there is one.
     pub(crate) fn drop_database(&self, name: &str) -> anyhow::Result<()> {
         if name.is_empty() || !name.chars().all(|c| c.is_ascii_alphanumeric() || c == '_') {

@@ -34,6 +34,8 @@ const CHECK_START: i64 = 1_800_000_000;
 /// The environment variable of the program that holds the address of its PostgreSQL database
 /// (a test keeps it in step with `bb-sample`).
 const DATABASE_URL_VARIABLE: &str = "BB_SAMPLE_DATABASE_URL";
+/// What `--check` makes of the tables of a PostgreSQL run, so the scan for secrets covers them.
+const POSTGRES_DUMP_FILE: &str = "postgres.sql";
 /// The runs of `--check`: twice on each database.
 const CHECK_RUNS: [(&str, DatabaseKind); 4] = [
     ("sqlite-1", DatabaseKind::Sqlite),
@@ -224,6 +226,11 @@ fn check(repo: &Repo, program: &Path, seed: Option<u64>) -> anyhow::Result<bool>
             }
             fs::write(out.join("output.txt"), said)
                 .with_context(|| format!("could not write the output of {label}"))?;
+            if database == DatabaseKind::Postgres {
+                // The tables are in the cluster, not in the folder: they are read like a file,
+                // so a secret in them is found too.
+                postgres.dump_data(&database_name, &out.join(POSTGRES_DUMP_FILE))?;
+            }
             runs.push(Run::read(label, &out)?);
             if database == DatabaseKind::Postgres {
                 postgres.drop_database(&database_name)?;
