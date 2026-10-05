@@ -24,7 +24,7 @@ On a Linux computer with systemd, run this with administrator rights:
 sudo /opt/bugaboo/bugaboo service install
 ```
 
-This makes the user `bugaboo` (no password, no shell, no home folder), puts the settings file in `/etc/bugaboo/bugaboo.toml`, installs the unit `bugaboo.service` and starts it. Only that user can read the data folder.
+This makes the user `bugaboo` (no password, no shell, no home folder) if it does not exist, gives it the data folder from your settings, installs the unit `bugaboo.service` and starts it. Your settings file stays where it is, the one `bugaboo setup` wrote or the one you name with `--config`. The service reads it, so the program, the settings file and the folders above them must be readable for the user `bugaboo`. Bugaboo makes the file readable for that user and nobody else, because it can hold a database password. The unit lets Bugaboo write only into its data folder.
 
 The service has no window, so the setup code is in the file `setup-code.txt` inside the data folder. Read it with `sudo cat`.
 
