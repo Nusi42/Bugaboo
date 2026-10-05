@@ -10,10 +10,11 @@
 //!   `bb-policy`;
 //! - `into_value(` in code that ships (the feature `peek` makes it for tests), and the feature
 //!   `peek` switched on anywhere but in a `[dev-dependencies]` table, or in a default feature;
-//! - a call of `evaluate(` outside `bb-policy` and `bb-app/src/access/` (the one place that loads
-//!   what a person holds and asks the engine), and a literal of `Inputs { … }` outside `bb-policy`
-//!   and `bb-store` (the one place that reads the rows): whoever can build the input can make an
-//!   evaluation for anybody and so an `Authorized<T>`;
+//! - the word `evaluate` (a call, an import, an alias) outside `bb-policy` and
+//!   `bb-app/src/access/` (the one place that loads what a person holds and asks the engine), and
+//!   the word `Inputs` outside those and `bb-store` (which reads the rows): whoever can build the
+//!   input can make an evaluation for anybody and so an `Authorized<T>`. A method of a value
+//!   (`ctx.evaluate(…)`) and a definition of another function of that name are not the engine;
 //! - inside `bb-policy`: a `pub` field in the definition of `Authorized`, a `pub` constructor
 //!   (`new`, `from`), or a derive that would make one out of nothing (`Default`, `Deserialize`).
 //!
@@ -27,7 +28,8 @@ use crate::rust_source::{Source, read_product_sources, strip, without_tests};
 const POLICY_FOLDER: &str = "crates/bb-policy/";
 /// The one place outside `bb-policy` that asks the engine.
 const ENGINE_CALLER_FOLDER: &str = "crates/bb-app/src/access/";
-/// The one place outside `bb-policy` that builds the input of the engine, from the stored rows.
+/// The one place outside `bb-policy` and the access module that builds the input of the engine,
+/// from the stored rows.
 const INPUT_BUILDER_FOLDER: &str = "crates/bb-store/src/";
 /// The type.
 const TYPE: &str = "Authorized";
@@ -69,25 +71,18 @@ fn names_the_type(line: &str) -> bool {
     })
 }
 
-/// Whether the line calls the function `evaluate` (a path or a bare call, not a method of
-/// another type and not a definition).
-fn calls_evaluate(line: &str) -> bool {
-    line.match_indices("evaluate(").any(|(at, _)| {
+/// Whether `word` stands in the line as a whole identifier, and is not a method of a value (after
+/// a dot) or the name of a function that is defined there (after `fn`).
+fn names_word(line: &str, word: &str) -> bool {
+    line.match_indices(word).any(|(at, _)| {
         let before = &line[..at];
+        let after = line[at + word.len()..].chars().next();
         !before
             .chars()
             .next_back()
             .is_some_and(|c| c.is_alphanumeric() || c == '_' || c == '.')
+            && !after.is_some_and(|c| c.is_alphanumeric() || c == '_')
             && !before.trim_end().ends_with("fn")
-    })
-}
-
-/// Whether the line builds the input of the engine with a struct literal.
-fn builds_inputs(line: &str) -> bool {
-    line.match_indices("Inputs").any(|(at, word)| {
-        let before = line[..at].chars().next_back();
-        let after = line[at + word.len()..].trim_start();
-        !before.is_some_and(|c| c.is_alphanumeric() || c == '_') && after.starts_with('{')
     })
 }
 
@@ -137,16 +132,25 @@ fn evaluate(sources: &[Source]) -> Vec<Finding> {
                 ));
             }
             let in_policy = !outside;
-            if !in_policy && !path.starts_with(ENGINE_CALLER_FOLDER) && calls_evaluate(line) {
+            let in_access = path.starts_with(ENGINE_CALLER_FOLDER);
+            if !in_policy && !in_access && names_word(line, "evaluate") {
                 findings.push(Finding::at(
                     place(),
-                    "Only `bb-app/src/access` asks the policy engine (`evaluate`): it loads what \n                     the person holds from the store. Ask `ctx.evaluate(person, place)` or \n                     `ctx.require(…)` instead.",
+                    "Only `bb-app/src/access` asks the policy engine (`evaluate`): it loads what \
+                     the person holds from the store. Ask `ctx.evaluate(person, place)` or \
+                     `ctx.require(…)` instead.",
                 ));
             }
-            if !in_policy && !path.starts_with(INPUT_BUILDER_FOLDER) && builds_inputs(line) {
+            if !in_policy
+                && !in_access
+                && !path.starts_with(INPUT_BUILDER_FOLDER)
+                && names_word(line, "Inputs")
+            {
                 findings.push(Finding::at(
                     place(),
-                    "Only `bb-store` builds the input of the policy engine (`Inputs`), from the \n                     stored rows. Built anywhere else, it could say that anybody holds anything.",
+                    "Only `bb-store` builds the input of the policy engine (`Inputs`), from the \
+                     stored rows. Built or named anywhere else, it could say that anybody holds \
+                     anything.",
                 ));
             }
             if line.contains(PEEK_METHOD) && line.contains('.') {
@@ -376,7 +380,7 @@ const CHAR: char = '\"';
 ",
             ),
         ] {
-            assert_eq!(evaluate(&source(path, text)).len(), 1, "{text}");
+            assert!(!evaluate(&source(path, text)).is_empty(), "{text}");
         }
     }
 
@@ -402,32 +406,19 @@ const CHAR: char = '\"';
 
     #[test]
     fn good_example_the_places_that_may_ask_and_build_and_the_methods_that_only_share_the_name() {
-        assert!(
-            evaluate(&source(
-                "crates/bb-app/src/access/mod.rs",
-                "fn f() { let e = evaluate(&inputs); }
-pub(crate) async fn evaluate(&self) {}
-"
-            ))
-            .is_empty()
-        );
-        assert!(
-            evaluate(&source(
-                "crates/bb-store/src/policy.rs",
-                "fn f() { let i = Inputs { person, rows }; }
-"
-            ))
-            .is_empty()
-        );
-        assert!(
-            evaluate(&source(
-                "crates/bb-app/src/roles/x.rs",
-                "async fn f(ctx: &Ctx) { ctx.evaluate(person, place).await; }
-fn g(x: &Inputs) {}
-"
-            ))
-            .is_empty()
-        );
+        let ok = |path: &str, text: &str| evaluate(&source(path, text)).is_empty();
+        assert!(ok(
+            "crates/bb-app/src/access/mod.rs",
+            "fn f() { let e = evaluate(&inputs); }\npub(crate) async fn evaluate(&self) {}\nuse bb_policy::Inputs;\n",
+        ));
+        assert!(ok(
+            "crates/bb-store/src/policy.rs",
+            "fn f() { let i = Inputs { person, rows }; }\n",
+        ));
+        assert!(ok(
+            "crates/bb-app/src/roles/x.rs",
+            "async fn f(ctx: &Ctx) { ctx.evaluate(person, place).await; }\nfn g(x: &MyInputs) {}\n",
+        ));
     }
 
     #[test]

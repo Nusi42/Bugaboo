@@ -6,7 +6,8 @@
 //! rule:
 //!
 //! - **The code:** a struct that derives `Serialize` in `bb-api` or `bb-app` and has a field
-//!   called like a person's name or address (`display_name`, `email`, …).
+//!   called like a person's name or address (`display_name`, `email`, …). The name in the code (a raw `r#` identifier included) and the name `serde` gives
+//!   it (`#[serde(rename = …)]`) both count.
 //! - **The API description** (`web/packages/api-client/openapi.json`): a property called like that
 //!   in a schema that an answer holds, however deep (what a person types in a request is theirs).
 //!
@@ -90,7 +91,9 @@ struct Found {
 /// from the code with comments and texts taken out, by its braces, so a struct on one line and
 /// the variants of an enum with named fields are read like any other.
 fn serialized_fields(path: &str, text: &str) -> Vec<Found> {
-    let code: Vec<char> = strip(&without_tests(text)).chars().collect();
+    let without = without_tests(text);
+    let original: Vec<char> = without.chars().collect();
+    let code: Vec<char> = strip(&without).chars().collect();
     let mut found = Vec::new();
     for keyword in ["struct", "enum"] {
         for at in word_positions(&code, keyword) {
@@ -106,7 +109,7 @@ fn serialized_fields(path: &str, text: &str) -> Vec<Found> {
             let body = &code[open + 1..close];
             let mut fields = Vec::new();
             if keyword == "struct" {
-                named_fields(body, open + 1, &mut fields);
+                named_fields(body, &original, open + 1, &mut fields);
             } else {
                 // The variants: `Name`, `Name(..)` or `Name { fields }`.
                 for (start, variant) in split_top_level(body, open + 1) {
@@ -123,6 +126,7 @@ fn serialized_fields(path: &str, text: &str) -> Vec<Found> {
                     if brace < inner_end {
                         named_fields(
                             &variant[brace + 1..inner_end],
+                            &original,
                             start + brace + 1,
                             &mut fields,
                         );
@@ -289,8 +293,16 @@ fn split_top_level(body: &[char], offset: usize) -> Vec<(usize, &[char])> {
     parts
 }
 
-/// The names of the fields in a body of `name: Type` parts, with the place of each name.
-fn named_fields(body: &[char], offset: usize, fields: &mut Vec<(String, usize)>) {
+/// The names of the fields in a body of `name: Type` parts, with the place of each name. A field
+/// is known by its name in the code (without the `r#` of a raw identifier) and by the name `serde`
+/// gives it in the answer (`#[serde(rename = "…")]`, read from the original text, as the stripped
+/// code has no texts): both are listed, and either may be a person's name or address.
+fn named_fields(
+    body: &[char],
+    original: &[char],
+    offset: usize,
+    fields: &mut Vec<(String, usize)>,
+) {
     for (start, part) in split_top_level(body, offset) {
         let text: String = part.iter().collect();
         let Some((before, _)) = text.split_once(':') else {
@@ -301,12 +313,45 @@ fn named_fields(body: &[char], offset: usize, fields: &mut Vec<(String, usize)>)
             .rsplit(|c: char| c.is_whitespace() || c == ']' || c == ')')
             .next()
             .unwrap_or_default();
-        if !name.is_empty() {
-            let name = name.to_owned();
-            let at = text.find(&name).map_or(start, |inside| start + inside);
-            fields.push((name, at));
+        if name.is_empty() {
+            continue;
         }
+        let at = text.find(name).map_or(start, |inside| start + inside);
+        let written: String = original
+            .get(start..start + before.chars().count())
+            .unwrap_or_default()
+            .iter()
+            .collect();
+        if let Some(renamed) = serde_rename(&written) {
+            fields.push((renamed, at));
+        }
+        fields.push((name.strip_prefix("r#").unwrap_or(name).to_owned(), at));
     }
+}
+
+/// The name `serde` gives the field in the answer, from the attributes written above it:
+/// `rename = "x"`, or `rename(serialize = "x", …)`.
+fn serde_rename(attributes: &str) -> Option<String> {
+    let quoted = |text: &str| {
+        let rest = &text[text.find('"')? + 1..];
+        Some(rest[..rest.find('"')?].to_owned())
+    };
+    attributes.match_indices("rename").find_map(|(at, word)| {
+        let rest = &attributes[at + word.len()..];
+        if rest.starts_with(|c: char| c.is_alphanumeric() || c == '_') {
+            // `rename_all` and friends.
+            return None;
+        }
+        let rest = rest.trim_start();
+        if let Some(value) = rest.strip_prefix('=') {
+            quoted(value)
+        } else if let Some(list) = rest.strip_prefix('(') {
+            let list = &list[..list.find(')').unwrap_or(list.len())];
+            quoted(&list[list.find("serialize")? + "serialize".len()..])
+        } else {
+            None
+        }
+    })
 }
 
 /// The line (from 1) of the place in the code.
