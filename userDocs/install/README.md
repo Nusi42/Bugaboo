@@ -44,7 +44,9 @@ bugaboo keys export <folder>
 
 ### When Bugaboo runs as a service
 
-The key files, the database and the security log belong to the account of the service. The commands `bugaboo keys export`, `bugaboo rotate-key` and `bugaboo security-log verify` therefore refuse to run from another account, and say so. A command from another account (root included) could leave files that the service can no longer read. Run them as the account of the service, and name the settings file of the service with `--config`:
+The key files, the database and the security log belong to the account of the service. The commands `bugaboo keys export`, `bugaboo rotate-key` and `bugaboo security-log verify` therefore check which account runs them. On Linux they refuse to run from another account (root included), and say so: a command from another account could leave files that the service can no longer read. Run them as the account of the service, and name the settings file of the service with `--config`:
 
 - On Linux: `sudo -u bugaboo bugaboo keys export <folder> --config <settings file>`
-- On Windows the account is `NT SERVICE\Bugaboo`. It has no password, so you cannot sign in as it. Stop the service, start a terminal as that account with a tool that can do this, and run the command there.
+
+  The folder for `keys export` must be one that the user `bugaboo` can write to, for example a new folder that you made for it with `sudo install -d -o bugaboo -g bugaboo -m 700 <folder>`. The copies belong to `bugaboo` and only `bugaboo` can read them. Move them to your safe place as an administrator.
+- On Windows the commands run when the account you use can open the key files, and refuse when it cannot. Which accounts can depends on how Bugaboo was installed, and has not been tried with a service yet. If a command refuses, it says so. The account of the service is `NT SERVICE\Bugaboo`. It has no password, so you cannot sign in as it.
