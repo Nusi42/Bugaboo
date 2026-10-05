@@ -164,7 +164,7 @@ fn listener_options(settings: &Settings, data: &DataFolder) -> anyhow::Result<Li
 
 /// A private key that other people on this Linux computer can read (group or world bits).
 #[cfg(unix)]
-fn key_readable_warning(key: &std::path::Path) -> Option<String> {
+fn key_readable_warning(key: &Path) -> Option<String> {
     use std::os::unix::fs::PermissionsExt as _;
     let mode = std::fs::metadata(key).ok()?.permissions().mode();
     (mode & 0o077 != 0).then(|| message::tls_key_readable(key.display()).render())
