@@ -7,6 +7,9 @@ import { queryClient } from "../../shared/query-client.ts";
 /** How many open invitations one page holds. */
 const PAGE_SIZE = 20;
 
+/** The fields the list shows: the address, and when the invitation was made and runs out. */
+const SHOWN_FIELDS = "id,email,created_at,expires_at";
+
 /** The key of everything about invitations in the query cache. */
 const invitationsKey = ["invitations"] as const;
 
@@ -18,7 +21,11 @@ export function useOpenInvitations() {
     queryFn: async ({ pageParam }: { readonly pageParam: string | null }) => {
       const { data } = await api.client.GET("/api/v1/auth/invitations", {
         params: {
-          query: { limit: PAGE_SIZE, ...(pageParam === null ? {} : { cursor: pageParam }) },
+          query: {
+            fields: SHOWN_FIELDS,
+            limit: PAGE_SIZE,
+            ...(pageParam === null ? {} : { cursor: pageParam }),
+          },
         },
       });
       if (data === undefined) {
@@ -26,7 +33,7 @@ export function useOpenInvitations() {
       }
       return data;
     },
-    getNextPageParam: (last: Schema<"InvitationsBody">) => last.next_cursor ?? null,
+    getNextPageParam: (last: Schema<"Page_InvitationItem">) => last.next_cursor ?? null,
   });
 }
 

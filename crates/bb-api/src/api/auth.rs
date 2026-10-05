@@ -205,8 +205,9 @@ pub(crate) fn signed_in(started: &Started) -> Result<Response, ApiError> {
             backup_code: methods.backup_code,
         }),
     };
-    // The answer comes with the secret of a session: no cache may keep it.
-    let mut response = private(body);
+    // The answer sets the cookies of a session: `crate::etag` treats every answer that sets a
+    // cookie as a secret, so no cache keeps it.
+    let mut response = answer(body);
     for (cookie, value) in [
         (Cookie::Session, &started.session_token),
         (Cookie::Csrf, &started.csrf_token),
@@ -228,14 +229,10 @@ pub(crate) fn done() -> Response {
     response
 }
 
-/// An answer with a body that holds secrets or personal data: never cached.
-pub(crate) fn private<T: Serialize>(body: T) -> Response {
-    let mut response = axum::Json(body).into_response();
-    response.headers_mut().insert(
-        header::CACHE_CONTROL,
-        header::HeaderValue::from_static("no-store"),
-    );
-    response
+/// A JSON answer. Who may keep it, and for how long, is decided in one place for every answer
+/// (`crate::etag`), from the marks in the API description.
+pub(crate) fn answer<T: Serialize>(body: T) -> Response {
+    axum::Json(body).into_response()
 }
 
 /// Refuses a change that carries a session cookie without the token of that session. A change

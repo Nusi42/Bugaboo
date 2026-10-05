@@ -236,6 +236,9 @@ pub const ERROR_EDIT_VERSION_CHANGED: MessageKey = MessageKey::new("error.edit.v
 /// The message `error.rate-limit.exceeded`.
 pub const ERROR_RATE_LIMIT_EXCEEDED: MessageKey = MessageKey::new("error.rate-limit.exceeded");
 
+/// The message `error.request.bad-cursor`.
+pub const ERROR_REQUEST_BAD_CURSOR: MessageKey = MessageKey::new("error.request.bad-cursor");
+
 /// The message `error.request.invalid`.
 pub const ERROR_REQUEST_INVALID: MessageKey = MessageKey::new("error.request.invalid");
 
@@ -248,6 +251,9 @@ pub const ERROR_REQUEST_TIMED_OUT: MessageKey = MessageKey::new("error.request.t
 
 /// The message `error.request.too-large`.
 pub const ERROR_REQUEST_TOO_LARGE: MessageKey = MessageKey::new("error.request.too-large");
+
+/// The message `error.request.unknown-field`.
+pub const ERROR_REQUEST_UNKNOWN_FIELD: MessageKey = MessageKey::new("error.request.unknown-field");
 
 /// The message `error.request.wrong-origin`.
 pub const ERROR_REQUEST_WRONG_ORIGIN: MessageKey = MessageKey::new("error.request.wrong-origin");
@@ -2024,6 +2030,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "Too many tries. Please wait a little and try again.",
     ),
     (
+        "error.request.bad-cursor",
+        "This list changed. Start again from the top.",
+    ),
+    (
         "error.request.invalid",
         "Something in your request is not valid. Check what you typed and try again.",
     ),
@@ -2036,6 +2046,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "Your request took too long to arrive. Please try again.",
     ),
     ("error.request.too-large", "That is too big to send."),
+    (
+        "error.request.unknown-field",
+        "We could not find one of the fields you asked for. Check the field names and try again.",
+    ),
     (
         "error.request.wrong-origin",
         "That did not come from a Bugaboo page. Reload the page and try again.",

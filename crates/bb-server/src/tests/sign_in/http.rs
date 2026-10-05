@@ -79,6 +79,8 @@ pub(super) struct Browser {
     jar: BTreeMap<String, String>,
     called: Arc<Mutex<BTreeSet<String>>>,
     peer: SocketAddr,
+    /// Headers every request of this browser carries besides the usual ones.
+    headers: Vec<(&'static str, String)>,
 }
 
 pub(super) fn options(rig: &Rig, limits: LimitsConfig, auth: bool) -> Options {
@@ -104,6 +106,7 @@ impl Browser {
             app: app.clone(),
             jar: BTreeMap::new(),
             called: Arc::clone(called),
+            headers: Vec::new(),
             // Every browser is on a network of its own, so the limit per network of one test
             // browser does not use up another's.
             peer: SocketAddr::from((
@@ -111,6 +114,17 @@ impl Browser {
                 50_000,
             )),
         }
+    }
+
+    /// From now on every request carries this header (`If-None-Match`, `Accept-Encoding`).
+    pub(super) fn set_header(&mut self, name: &'static str, value: &str) {
+        self.headers.retain(|(known, _)| *known != name);
+        self.headers.push((name, value.to_owned()));
+    }
+
+    /// From now on no extra headers.
+    pub(super) fn clear_headers(&mut self) {
+        self.headers.clear();
     }
 
     pub(super) async fn send(
@@ -156,6 +170,9 @@ impl Browser {
                 header::USER_AGENT,
                 "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:130.0) Gecko/20100101 Firefox/130.0",
             );
+        for (name, value) in &self.headers {
+            request = request.header(*name, value);
+        }
         if !self.jar.is_empty() {
             let line = self
                 .jar
@@ -197,6 +214,7 @@ impl Browser {
                 serde_json::from_slice(&bytes)?
             },
         };
+        assert_cache_rules(method, path, &reply);
         for cookie in reply.cookies() {
             let pair = cookie.split(';').next().unwrap_or_default();
             if let Some((name, value)) = pair.split_once('=') {
@@ -208,6 +226,41 @@ impl Browser {
             }
         }
         Ok(reply)
+    }
+}
+
+/// The `GET` routes whose answers hold personal data, as the API description marks them.
+pub(super) fn never_stored_reads() -> &'static BTreeSet<String> {
+    static ROUTES: std::sync::OnceLock<BTreeSet<String>> = std::sync::OnceLock::new();
+    ROUTES.get_or_init(|| {
+        let document = serde_json::to_value(openapi::document()).unwrap_or_default();
+        document["paths"]
+            .as_object()
+            .into_iter()
+            .flatten()
+            .filter(|(_, item)| item["get"][openapi::NEVER_STORED_MARK] == true)
+            .map(|(route, _)| route.clone())
+            .collect()
+    })
+}
+
+/// What every answer of the API says about keeping it (PERF-03, `bb-api` `etag`), checked on
+/// every request of every test that goes through a [`Browser`]: a read of something that is not
+/// personal data may be kept and must be asked about again, and has a tag; everything else is
+/// never stored and has no tag.
+fn assert_cache_rules(method: &str, path: &str, reply: &Reply) {
+    let route = path.split('?').next().unwrap_or(path);
+    let kept =
+        method == "GET" && reply.status == StatusCode::OK && !never_stored_reads().contains(route);
+    let rule = reply.header("cache-control");
+    if kept {
+        assert_eq!(rule, "private, no-cache", "{method} {path}");
+        assert!(reply.header("etag").starts_with("W/\""), "{method} {path}");
+    } else if reply.status == StatusCode::NOT_MODIFIED {
+        assert_eq!(rule, "private, no-cache", "{method} {path}");
+    } else {
+        assert_eq!(rule, "no-store", "{method} {path}");
+        assert_eq!(reply.header("etag"), "", "{method} {path}");
     }
 }
 
@@ -616,7 +669,7 @@ fn origin() -> Result<Url, Failure> {
     Ok(Url::parse(PUBLIC_URL)?)
 }
 
-async fn totp(rig: &Rig, email: &str) -> Result<String, Failure> {
+pub(super) async fn totp(rig: &Rig, email: &str) -> Result<String, Failure> {
     let person = rig.person_id(email).await?;
     let secret = rig.storage.totp_secret(person).await?.ok_or("no secret")?;
     Ok(TotpSecret::from_bytes(&secret).code_at(rig.clock.now())?)
@@ -1177,17 +1230,36 @@ async fn perf_02_the_invitation_list_takes_fields_cursor_and_limit_over_http() -
             .await?;
         assert_eq!(last.body["items"].as_array().map(Vec::len), Some(1));
         assert_eq!(last.body["next_cursor"], Value::Null);
+        // The last page has `next_cursor` as `null`, and the default is the small set of the
+        // route: the ID and the address; the dates only when asked for.
         assert!(
-            last.body["items"][0]["expires_at"].is_string(),
-            "all fields by default"
+            last.body
+                .as_object()
+                .is_some_and(|page| page.contains_key("next_cursor"))
         );
-        // A field that does not exist, and a cursor that is not one, are refused.
-        for bad in ["fields=password", "cursor=nonsense", "limit=many"] {
+        let mut default_keys: Vec<&String> = last.body["items"][0]
+            .as_object()
+            .ok_or("no object")?
+            .keys()
+            .collect();
+        default_keys.sort();
+        assert_eq!(default_keys, ["email", "id"]);
+        // A field that does not exist, a cursor that is not one or was changed, and a page size
+        // that is no number are refused, each with its own code.
+        let mut changed = cursor.clone();
+        changed.pop();
+        changed.push(if cursor.ends_with('A') { 'B' } else { 'A' });
+        for (bad, code) in [
+            ("fields=password".to_owned(), "request.unknown_field"),
+            ("cursor=nonsense".to_owned(), "request.bad_cursor"),
+            (format!("cursor={changed}"), "request.bad_cursor"),
+            ("limit=many".to_owned(), "request.invalid"),
+        ] {
             let reply = ada
                 .send("GET", &format!("/api/v1/auth/invitations?{bad}"), None)
                 .await?;
             assert_eq!(reply.status, StatusCode::BAD_REQUEST, "{bad}");
-            assert_eq!(reply.code(), "request.invalid", "{bad}");
+            assert_eq!(reply.code(), code, "{bad}");
         }
         Ok(())
     })

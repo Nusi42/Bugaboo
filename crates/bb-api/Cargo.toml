@@ -8,15 +8,19 @@ publish.workspace = true
 
 [dependencies]
 axum = { workspace = true, features = ["http1", "http2", "json", "matched-path", "query", "tokio"] }
+base64ct = { workspace = true }
 bb-app = { path = "../bb-app" }
 bb-auth = { path = "../bb-auth" }
 bb-core = { path = "../bb-core", features = ["openapi"] }
+getrandom = { workspace = true }
+hmac = { workspace = true }
 hyper-util = { workspace = true, features = ["http1", "http2", "server-auto", "service", "tokio"] }
 mime_guess = { workspace = true }
 rcgen = { workspace = true }
-rust-embed = { workspace = true }
+rust-embed = { workspace = true, features = ["include-exclude"] }
 serde = { workspace = true }
 serde_json = { workspace = true }
+sha2 = { workspace = true }
 rustls = { workspace = true }
 tokio = { workspace = true, features = ["fs", "net", "rt", "sync", "time"] }
 tokio-rustls = { workspace = true }
@@ -27,6 +31,8 @@ utoipa-axum = { workspace = true }
 
 [dev-dependencies]
 h2 = { workspace = true }
+brotli = { workspace = true }
+proptest = { workspace = true }
 tempfile = { workspace = true }
 tokio = { workspace = true, features = ["io-util", "macros", "rt-multi-thread", "test-util"] }
 tower = { workspace = true, features = ["util"] }

@@ -18,7 +18,7 @@ use utoipa_axum::routes;
 
 use super::auth::{
     AuthHandle, ForbiddenAnswer, Info, InvalidAnswer, NotFoundAnswer, NotSignedInAnswer,
-    PersonBody, PreviousSession, Session, SignedInBody, done, private, signed_in,
+    PersonBody, PreviousSession, Session, SignedInBody, answer, done, signed_in,
 };
 use crate::cookies::Cookie;
 use crate::errors::{ApiError, ApiJson, ApiPath};
@@ -130,7 +130,7 @@ async fn get_auth_status(
     Info(info): Info,
 ) -> Result<Response, ApiError> {
     let status = auth.api()?.status(info, StatusQuery).await?;
-    Ok(private(AuthStatusBody {
+    Ok(answer(AuthStatusBody {
         setup_needed: status.setup_needed,
         sign_up_open: status.sign_up_open,
         passkeys_available: status.passkeys_available,
@@ -224,7 +224,7 @@ async fn second_step_passkey_options(
         .api()?
         .passkey_second_step_options(info, PasskeySecondStepQuery { session_token })
         .await?;
-    Ok(private(ChallengeBody::from(challenge)))
+    Ok(answer(ChallengeBody::from(challenge)))
 }
 
 /// Finishes signing in with a passkey after the password.
@@ -277,7 +277,7 @@ async fn passkey_sign_in_options(
         .api()?
         .passkey_sign_in_options(info, PasskeySignInQuery)
         .await?;
-    Ok(private(ChallengeBody::from(challenge)))
+    Ok(answer(ChallengeBody::from(challenge)))
 }
 
 /// Signs in with a passkey alone.
@@ -337,6 +337,7 @@ async fn sign_out(
     path = "/api/v1/auth/me",
     operation_id = "getMe",
     tag = "auth",
+    extensions(("x-never-stored" = json!(true))),
     responses((status = 200, description = "The signed-in person.", body = PersonBody), NotSignedInAnswer)
 )]
 async fn get_me(
@@ -348,7 +349,7 @@ async fn get_me(
         .api()?
         .authenticate(info, AuthenticateQuery { session_token })
         .await?;
-    Ok(private(PersonBody::from(&me.person)))
+    Ok(answer(PersonBody::from(&me.person)))
 }
 
 /// The sessions of the signed-in person.
@@ -357,6 +358,7 @@ async fn get_me(
     path = "/api/v1/auth/sessions",
     operation_id = "listSessions",
     tag = "auth",
+    extensions(("x-never-stored" = json!(true))),
     responses((status = 200, description = "Where the person is signed in.", body = SessionsBody), NotSignedInAnswer)
 )]
 async fn list_sessions(
@@ -368,7 +370,7 @@ async fn list_sessions(
         .api()?
         .sessions(info, SessionsQuery { session_token })
         .await?;
-    Ok(private(SessionsBody {
+    Ok(answer(SessionsBody {
         truncated: sessions.truncated,
         sessions: sessions
             .sessions
@@ -423,7 +425,8 @@ async fn end_session(
     let session_id: SessionId = session_id
         .parse()
         .map_err(|_| ApiError::new(ErrorCode::NotFound))?;
-    auth.api()?
+    let ended = auth
+        .api()?
         .end_session(
             info,
             EndSession {
@@ -432,7 +435,12 @@ async fn end_session(
             },
         )
         .await?;
-    Ok(done())
+    // Ending the session of this very request is signing out: the cookies go too.
+    Ok(if ended.own {
+        forget_cookies(done())
+    } else {
+        done()
+    })
 }
 
 /// Changes the password. Other sessions end and the session of the request gets a new secret.

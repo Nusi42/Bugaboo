@@ -65,7 +65,7 @@ export function OpenInvitations() {
   const invitations = useOpenInvitations();
   const [takenBack, setTakenBack] = useState(false);
   const items =
-    invitations.data?.pages.flatMap((page: Schema<"InvitationsBody">) => page.items) ?? [];
+    invitations.data?.pages.flatMap((page: Schema<"Page_InvitationItem">) => page.items) ?? [];
   if (invitations.isError) {
     return <Alert danger>{messageOf(invitations.error)}</Alert>;
   }

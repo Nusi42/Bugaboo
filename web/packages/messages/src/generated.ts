@@ -29,6 +29,9 @@ export const messages = {
   "error.resource.not-found": "We could not find that.",
   "error.request.invalid":
     "Something in your request is not valid. Check what you typed and try again.",
+  "error.request.unknown-field":
+    "We could not find one of the fields you asked for. Check the field names and try again.",
+  "error.request.bad-cursor": "This list changed. Start again from the top.",
   "error.request.wrong-origin":
     "That did not come from a Bugaboo page. Reload the page and try again.",
   "error.request.method-not-allowed": "Bugaboo does not do that here.",

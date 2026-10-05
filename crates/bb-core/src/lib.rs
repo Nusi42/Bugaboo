@@ -17,6 +17,7 @@ pub mod message;
 pub mod migration;
 pub mod network;
 pub mod outbox;
+pub mod paging;
 pub mod person;
 pub mod personal;
 pub mod secret;

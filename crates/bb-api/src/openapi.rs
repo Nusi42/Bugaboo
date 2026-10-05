@@ -8,16 +8,23 @@
 
 use std::sync::OnceLock;
 
-use axum::http::header::RETRY_AFTER;
+use axum::http::header::{ETAG, RETRY_AFTER};
 use bb_core::{ErrorCode, Problem, error_code::PROBLEM_CONTENT_TYPE};
 use utoipa::openapi::path::{Operation, PathItem};
 use utoipa::openapi::response::{ResponseBuilder, ResponsesBuilder};
 use utoipa::openapi::security::{ApiKey, ApiKeyValue, SecurityScheme};
-use utoipa::openapi::{ContentBuilder, HeaderBuilder, ObjectBuilder, Ref, Type};
+use utoipa::openapi::{ContentBuilder, HeaderBuilder, ObjectBuilder, Ref, RefOr, Type};
 use utoipa::{Modify, OpenApi};
 
 use crate::api::{AuthHandle, ProbeHandle};
 use crate::cookies::{CSRF_HEADER, Cookie};
+
+/// The mark of a field that holds a secret, set with `extensions` on the field of the answer type
+/// (`crate::etag` reads it from the description).
+pub const SECRET_MARK: &str = "x-secret";
+/// The mark of a route whose answer holds personal data and is never stored, set with
+/// `extensions` on the route.
+pub const NEVER_STORED_MARK: &str = "x-never-stored";
 
 /// The name of the security scheme for the session cookie.
 const SESSION_SCHEME: &str = "sessionCookie";
@@ -111,6 +118,9 @@ impl Modify for StandardParts {
             for operation in operations(item) {
                 add_standard_answers(operation);
             }
+            if let Some(read) = item.get.as_mut() {
+                add_read_answers(read);
+            }
         }
     }
 }
@@ -128,6 +138,31 @@ fn operations(item: &mut PathItem) -> impl Iterator<Item = &mut Operation> {
     ]
     .into_iter()
     .filter_map(Option::as_mut)
+}
+
+/// The `ETag` header of an answer and the `304` answer to a read that already has it (PERF-03,
+/// `crate::etag`); ARCH-LEAN requires both on every `GET`.
+fn add_read_answers(operation: &mut Operation) {
+    let etag = || {
+        HeaderBuilder::new()
+            .description(Some(
+                "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed.",
+            ))
+            .schema(Some(ObjectBuilder::new().schema_type(Type::String).build()))
+            .build()
+    };
+    let responses = &mut operation.responses.responses;
+    if let Some(RefOr::T(ok)) = responses.get_mut("200") {
+        ok.headers
+            .insert(ETAG.as_str().to_owned(), RefOr::T(etag()));
+    }
+    let not_modified = ResponseBuilder::new()
+        .description("Nothing changed since the `ETag` that `If-None-Match` named. No body.")
+        .header(ETAG.as_str(), etag())
+        .build();
+    responses
+        .entry("304".to_owned())
+        .or_insert(RefOr::T(not_modified));
 }
 
 /// Any request can be refused for going over a limit, or fail inside the server.

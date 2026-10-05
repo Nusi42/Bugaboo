@@ -4,12 +4,14 @@
 //!
 //! `rig` builds one complete server without a socket; the other files are the flows:
 //! `setup_and_password` (AUTH-09, AUTH-01), `sessions` (SEC-12), `second_step` (AUTH-03),
-//! `passkeys` (AUTH-02), `invitations` (AUTH-06), `secrets` (SEC-15, SEC-16), `status` (the administrators' status page, OPS-08), `http` (CSRF,
+//! `caching` (entity tags, `304` and what is never stored, PERF-03), `passkeys` (AUTH-02), `invitations` (AUTH-06), `secrets` (SEC-15, SEC-16), `status` (the administrators' status page, OPS-08), `http` (CSRF,
 //! cookies, limits), `timing` (equal time for unknown accounts) and `tls` (a real browser-like
 //! client over TLS and HTTP/2).
 
+mod caching;
 mod http;
 mod invitations;
+mod lists;
 mod passkeys;
 mod rig;
 mod second_step;

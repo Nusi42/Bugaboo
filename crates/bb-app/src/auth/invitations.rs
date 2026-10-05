@@ -16,8 +16,8 @@ use super::ctx::{
 use super::store::AuthStore;
 use super::types::{
     ChangeSignUpPolicy, CreateInvitation, CreatedInvitation, Done, InvitationLookup,
-    InvitationLookupQuery, InvitationPage, InvitationView, InvitationsQuery, MAX_PAGE,
-    RevokeInvitation, SignUpPolicy, SignUpPolicyQuery,
+    InvitationLookupQuery, InvitationPage, InvitationView, InvitationsQuery, RevokeInvitation,
+    SignUpPolicy, SignUpPolicyQuery,
 };
 
 fn view(invitation: &Invitation) -> InvitationView {
@@ -145,7 +145,7 @@ pub async fn invitations<S: AuthStore>(
     input: InvitationsQuery,
 ) -> Result<InvitationPage, AppError> {
     ctx.administrator(&input.session_token).await?;
-    let limit = u64::from(input.limit.clamp(1, MAX_PAGE));
+    let limit = u64::from(bb_core::paging::page_size(Some(input.limit)));
     let after = input
         .cursor
         .as_deref()

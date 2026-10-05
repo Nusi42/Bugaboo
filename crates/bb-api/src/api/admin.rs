@@ -12,7 +12,7 @@ use utoipa::ToSchema;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 
-use super::auth::{AuthHandle, ForbiddenAnswer, Info, NotSignedInAnswer, Session, private};
+use super::auth::{AuthHandle, ForbiddenAnswer, Info, NotSignedInAnswer, Session, answer};
 use crate::errors::ApiError;
 
 /// How the server measures itself, if it can. Without a probe (tests of other parts of the API)
@@ -226,6 +226,7 @@ impl From<Snapshot> for ServerStateBody {
     path = "/api/v1/admin/status",
     operation_id = "getServerState",
     tag = "admin",
+    extensions(("x-never-stored" = json!(true))),
     responses((status = 200, description = "The state of the server.", body = ServerStateBody), NotSignedInAnswer, ForbiddenAnswer)
 )]
 async fn get_server_state(
@@ -244,7 +245,7 @@ async fn get_server_state(
     let probe = probe
         .probe()
         .ok_or_else(|| ApiError::new(ErrorCode::Unavailable))?;
-    Ok(private(ServerStateBody::from(probe.snapshot().await)))
+    Ok(answer(ServerStateBody::from(probe.snapshot().await)))
 }
 
 /// The routes only administrators use.

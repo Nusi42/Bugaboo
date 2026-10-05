@@ -17,7 +17,7 @@ use utoipa_axum::routes;
 
 use super::auth::{
     AuthHandle, ForbiddenAnswer, Info, InvalidAnswer, NotFoundAnswer, NotSignedInAnswer, Session,
-    done, private,
+    answer, done,
 };
 use super::auth_sign_in::ChallengeBody;
 use crate::errors::{ApiError, ApiJson, ApiPath};
@@ -71,10 +71,13 @@ pub(crate) struct TwoStepBody {
 #[derive(Serialize, ToSchema)]
 pub(crate) struct CodeAppBody {
     /// The address the code app reads.
+    #[schema(extensions(("x-secret" = json!(true))))]
     otpauth_url: String,
     /// The QR picture of the address (PNG, base64).
+    #[schema(extensions(("x-secret" = json!(true))))]
     qr_png_base64: String,
     /// The secret as text, for typing it into the app.
+    #[schema(extensions(("x-secret" = json!(true))))]
     secret: String,
 }
 
@@ -82,6 +85,7 @@ pub(crate) struct CodeAppBody {
 #[derive(Serialize, ToSchema)]
 pub(crate) struct BackupCodesBody {
     /// The codes. They are not stored in this form and cannot be shown again.
+    #[schema(extensions(("x-secret" = json!(true))))]
     codes: Vec<String>,
 }
 
@@ -114,6 +118,7 @@ pub(crate) struct AddPasskeyBody {
     path = "/api/v1/auth/two-step",
     operation_id = "getTwoStep",
     tag = "auth",
+    extensions(("x-never-stored" = json!(true))),
     responses((status = 200, description = "The second step of the person.", body = TwoStepBody), NotSignedInAnswer)
 )]
 async fn get_two_step(
@@ -125,7 +130,7 @@ async fn get_two_step(
         .api()?
         .two_step(info, TwoStepQuery { session_token })
         .await?;
-    Ok(private(TwoStepBody {
+    Ok(answer(TwoStepBody {
         code_app: status.code_app,
         backup_codes_left: status.backup_codes_left,
         passkeys: status.passkeys.iter().map(PasskeyBody::from).collect(),
@@ -164,7 +169,7 @@ async fn start_code_app(
             },
         )
         .await?;
-    Ok(private(CodeAppBody {
+    Ok(answer(CodeAppBody {
         otpauth_url: setup.otpauth_url,
         qr_png_base64: setup.qr_png_base64,
         secret: setup.secret,
@@ -202,7 +207,7 @@ async fn confirm_code_app(
             },
         )
         .await?;
-    Ok(private(BackupCodesBody { codes: codes.0 }))
+    Ok(answer(BackupCodesBody { codes: codes.0 }))
 }
 
 /// Switches the code app off. The password is typed again.
@@ -266,7 +271,7 @@ async fn renew_backup_codes(
             },
         )
         .await?;
-    Ok(private(BackupCodesBody { codes: codes.0 }))
+    Ok(answer(BackupCodesBody { codes: codes.0 }))
 }
 
 /// Starts adding a passkey. The password is typed again, so a stolen session cannot add a way
@@ -295,7 +300,7 @@ async fn passkey_registration_options(
             },
         )
         .await?;
-    Ok(private(ChallengeBody::from(challenge)))
+    Ok(answer(ChallengeBody::from(challenge)))
 }
 
 /// Adds a passkey.
@@ -331,7 +336,7 @@ async fn add_passkey(
             },
         )
         .await?;
-    Ok(private(PasskeyBody::from(&passkey)))
+    Ok(answer(PasskeyBody::from(&passkey)))
 }
 
 /// Removes a passkey. The password is typed again.
