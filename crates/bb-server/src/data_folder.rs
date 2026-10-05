@@ -343,9 +343,28 @@ pub(crate) fn write_private(
     existing: Existing,
 ) -> std::io::Result<()> {
     use std::io::Write as _;
-    let mut file = open_private(path, existing)?;
-    file.write_all(contents)?;
-    file.flush()
+    match existing {
+        Existing::Refuse => {
+            let mut file = open_private(path, existing)?;
+            file.write_all(contents)?;
+            file.flush()
+        }
+        Existing::Replace => {
+            // Written beside the file and moved into place, so that somebody who reads the file
+            // at that moment (a test, or a person who waits for it) sees the old file or the
+            // whole new one, never an empty file that is still being made private.
+            let mut name = path.as_os_str().to_owned();
+            name.push(".part");
+            let part = PathBuf::from(name);
+            let mut file = open_private(&part, Existing::Replace)?;
+            file.write_all(contents)?;
+            file.flush()?;
+            drop(file);
+            std::fs::rename(&part, path).inspect_err(|_| {
+                let _ = std::fs::remove_file(&part);
+            })
+        }
+    }
 }
 
 fn open_options(existing: Existing) -> std::fs::OpenOptions {
@@ -528,6 +547,10 @@ mod tests {
         std::fs::write(&file, "an older and longer text").unwrap();
         write_private(&file, b"new\n", Existing::Replace).unwrap();
         assert_eq!(std::fs::read_to_string(&file).unwrap(), "new\n");
+        assert!(
+            !temp.path().join("code.txt.part").exists(),
+            "a half-made file stayed"
+        );
     }
 
     #[test]
