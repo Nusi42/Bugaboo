@@ -100,8 +100,8 @@
             }
           }
         },
-        "x-permission": "see-status",
-        "x-never-stored": true
+        "x-never-stored": true,
+        "x-permission": "see-status"
       }
     },
     "/api/v1/auth/invitation/accept": {
@@ -2389,8 +2389,8 @@
             }
           }
         },
-        "x-permission": "own-account",
-        "x-never-stored": true
+        "x-never-stored": true,
+        "x-permission": "own-account"
       }
     },
     "/api/v1/auth/two-step/backup-codes": {

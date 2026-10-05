@@ -92,14 +92,19 @@ pub fn document() -> utoipa::openapi::OpenApi {
 }
 
 /// The document as text, in the form that is written to disk (pretty, stable order, one final
-/// line break).
+/// line break). The extensions of one object are in the order of their names, as utoipa keeps
+/// them in a hash map and would write them in another order every run.
 #[must_use]
 pub fn json() -> &'static str {
     static JSON: OnceLock<String> = OnceLock::new();
     JSON.get_or_init(|| {
         // A document of plain data always serializes; the empty text is what an impossible
         // failure would leave, and the contract test would catch it.
-        let mut text = document().to_pretty_json().unwrap_or_default();
+        let mut text = document()
+            .to_pretty_json()
+            .ok()
+            .and_then(|text| steady_text(&text))
+            .unwrap_or_default();
         text.push('\n');
         text
     })
@@ -226,5 +231,174 @@ fn add_standard_answers(operation: &mut Operation) {
             .responses
             .entry(status.clone())
             .or_insert_with(|| response.clone());
+    }
+}
+
+/// A JSON document that keeps the order of its keys as it was written. The extensions of
+/// utoipa (`x-…`) sit in a hash map, so two runs of the program write them in two orders;
+/// [`Ordered::steady`] puts them in the order of their names and touches nothing else.
+enum Ordered {
+    Object(Vec<(String, Ordered)>),
+    Array(Vec<Ordered>),
+    Leaf(serde_json::Value),
+}
+
+impl Ordered {
+    /// The extensions of every object in the order of their names, in the places where they are.
+    fn steady(&mut self) {
+        match self {
+            Self::Object(entries) => {
+                let places: Vec<usize> = entries
+                    .iter()
+                    .enumerate()
+                    .filter(|(_, (key, _))| key.starts_with("x-"))
+                    .map(|(place, _)| place)
+                    .collect();
+                let mut extensions: Vec<(String, Ordered)> = places
+                    .iter()
+                    .map(|place| {
+                        std::mem::replace(
+                            &mut entries[*place],
+                            (String::new(), Self::Array(Vec::new())),
+                        )
+                    })
+                    .collect();
+                extensions.sort_by(|a, b| a.0.cmp(&b.0));
+                for (place, entry) in places.into_iter().zip(extensions) {
+                    entries[place] = entry;
+                }
+                for (_, value) in entries {
+                    value.steady();
+                }
+            }
+            Self::Array(items) => items.iter_mut().for_each(Self::steady),
+            Self::Leaf(_) => {}
+        }
+    }
+}
+
+impl<'de> serde::Deserialize<'de> for Ordered {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        struct Reader;
+
+        impl<'de> serde::de::Visitor<'de> for Reader {
+            type Value = Ordered;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("a JSON value")
+            }
+
+            fn visit_map<A: serde::de::MapAccess<'de>>(
+                self,
+                mut map: A,
+            ) -> Result<Ordered, A::Error> {
+                let mut entries = Vec::new();
+                while let Some(entry) = map.next_entry::<String, Ordered>()? {
+                    entries.push(entry);
+                }
+                Ok(Ordered::Object(entries))
+            }
+
+            fn visit_seq<A: serde::de::SeqAccess<'de>>(
+                self,
+                mut seq: A,
+            ) -> Result<Ordered, A::Error> {
+                let mut items = Vec::new();
+                while let Some(item) = seq.next_element::<Ordered>()? {
+                    items.push(item);
+                }
+                Ok(Ordered::Array(items))
+            }
+
+            fn visit_bool<E>(self, value: bool) -> Result<Ordered, E> {
+                Ok(Ordered::Leaf(value.into()))
+            }
+
+            fn visit_i64<E>(self, value: i64) -> Result<Ordered, E> {
+                Ok(Ordered::Leaf(value.into()))
+            }
+
+            fn visit_u64<E>(self, value: u64) -> Result<Ordered, E> {
+                Ok(Ordered::Leaf(value.into()))
+            }
+
+            fn visit_f64<E>(self, value: f64) -> Result<Ordered, E> {
+                Ok(Ordered::Leaf(serde_json::Value::from(value)))
+            }
+
+            fn visit_str<E>(self, value: &str) -> Result<Ordered, E> {
+                Ok(Ordered::Leaf(value.into()))
+            }
+
+            fn visit_unit<E>(self) -> Result<Ordered, E> {
+                Ok(Ordered::Leaf(serde_json::Value::Null))
+            }
+        }
+
+        deserializer.deserialize_any(Reader)
+    }
+}
+
+impl serde::Serialize for Ordered {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        use serde::ser::{SerializeMap as _, SerializeSeq as _};
+        match self {
+            Self::Object(entries) => {
+                let mut map = serializer.serialize_map(Some(entries.len()))?;
+                for (key, value) in entries {
+                    map.serialize_entry(key, value)?;
+                }
+                map.end()
+            }
+            Self::Array(items) => {
+                let mut seq = serializer.serialize_seq(Some(items.len()))?;
+                for item in items {
+                    seq.serialize_element(item)?;
+                }
+                seq.end()
+            }
+            Self::Leaf(value) => value.serialize(serializer),
+        }
+    }
+}
+
+/// The text of the document with the order of the extensions fixed.
+fn steady_text(text: &str) -> Option<String> {
+    let mut document: Ordered = serde_json::from_str(text).ok()?;
+    document.steady();
+    serde_json::to_string_pretty(&document).ok()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn the_extensions_come_in_the_order_of_their_names_and_nothing_else_moves() {
+        let text = r#"{"b":1,"x-permission":"a","a":[{"x-never-stored":true,"x-also":null,"z":2}],"x-never-stored":true}"#;
+        let steady = steady_text(text).unwrap();
+        let again = steady_text(
+            r#"{"b":1,"x-never-stored":true,"a":[{"z":2,"x-also":null,"x-never-stored":true}],"x-permission":"a"}"#,
+        )
+        .unwrap();
+        // The slots of the extensions stay where they were; only the names in them are sorted.
+        assert_eq!(
+            steady.split_whitespace().collect::<String>(),
+            r#"{"b":1,"x-never-stored":true,"a":[{"x-also":null,"x-never-stored":true,"z":2}],"x-permission":"a"}"#
+        );
+        assert_eq!(
+            again.split_whitespace().collect::<String>(),
+            r#"{"b":1,"x-never-stored":true,"a":[{"z":2,"x-also":null,"x-never-stored":true}],"x-permission":"a"}"#
+        );
+    }
+
+    #[test]
+    fn the_text_of_the_document_is_the_same_every_time() {
+        // Whatever order the hash map wrote them in, the text says them in one order.
+        let first = steady_text(&document().to_pretty_json().unwrap()).unwrap();
+        for _ in 0..8 {
+            let next = steady_text(&document().to_pretty_json().unwrap()).unwrap();
+            assert_eq!(first, next);
+        }
     }
 }
