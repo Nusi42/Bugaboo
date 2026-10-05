@@ -145,6 +145,8 @@ async function topicsOnLargeScreens(page: Page): Promise<void> {
   await expect(page).toHaveURL(/\/me\/appearance$/u);
   await expect(topics(page, t("nav.my-settings"))).toHaveText([
     t("nav.appearance"),
+    t("nav.region"),
+    t("nav.start-page"),
     t("shortcut.title"),
     t("nav.security"),
     t("nav.sessions"),
@@ -162,6 +164,8 @@ async function topicsOnPhone(page: Page): Promise<void> {
   await expect(page.getByRole("heading", { level: 1, name: t("nav.my-settings") })).toBeVisible();
   await expect(topics(page, t("nav.my-settings"))).toHaveText([
     t("nav.appearance"),
+    t("nav.region"),
+    t("nav.start-page"),
     t("shortcut.title"),
     t("nav.security"),
     t("nav.sessions"),
@@ -197,6 +201,8 @@ test("ux_01 Organization settings lists the topics that exist, by heading", asyn
   });
   await expect(topics(page, t("nav.organization-settings"))).toHaveText([
     t("nav.invitations"),
+    t("nav.sign-in-rules"),
+    t("nav.themes"),
     t("nav.status"),
   ]);
   await topics(page, t("nav.organization-settings")).last().click();
