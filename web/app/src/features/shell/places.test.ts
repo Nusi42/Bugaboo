@@ -81,6 +81,14 @@ describe("ux_01 the screens that exist", () => {
   });
 });
 
+describe("sec_01 who may open organization settings", () => {
+  it("does not open the organization to somebody who holds only a permission of projects", () => {
+    // A Viewer holds a permission, and still has nothing to look after.
+    expect(mayOpen(paths.organizationSettings, ["see-projects"])).toBe(false);
+    expect(mayOpen(paths.organizationSettings, ["see-status"])).toBe(true);
+  });
+});
+
 describe("cfg_08 quick search finds the pages of the app", () => {
   it("matches every word in any order and leaves out what the person may not open", async () => {
     expect(await found("security sign", [])).toEqual([paths.security]);
