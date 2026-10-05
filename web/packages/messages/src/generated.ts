@@ -462,6 +462,18 @@ export const messages = {
     "{count, plural, one {# entry} other {# entries}} of the security log could not be written since the server started. Check that the disk is not full and that the account that runs Bugaboo can write in the data folder, then look at the server log.",
   "cli.database-url-password":
     "The database address on the command line has a password in it, and other people on this computer can read the command line, for example in the list of running programs. Put database_url in your settings file ({file}) or in the environment variable {variable} instead, and leave the option out.",
+  "data-folder.part.folder": "The data folder",
+  "data-folder.part.database": "The database file",
+  "data-folder.part.files": "The folder for attachments",
+  "data-folder.part.backups": "The folder for backups",
+  "data-folder.part.setup-code-file": "The setup code file",
+  "data-folder.open":
+    "{part} {path} can be opened by other accounts on this computer. Bugaboo leaves it as it is, because you made it. If nobody else should read it, remove the rights of the other accounts: on Linux run chmod go-rwx on it, on Windows open the Security tab of its properties.",
+  "status.data-folder": "Data folder rights",
+  "status.data-folder.closed":
+    "Only the account that runs Bugaboo can open the parts of the data folder.",
+  "status.data-folder.open":
+    "Other accounts on this computer can open these. Bugaboo leaves them as they are, because you made them. If nobody else should read them, remove the rights of the other accounts.",
 } as const;
 
 export type MessageKey = keyof typeof messages;
@@ -489,6 +501,7 @@ export interface MessageArguments {
   "config.tls-off-public": { address: string | number };
   "data-folder.create-failed": { path: string | number; reason: string | number };
   "data-folder.not-a-data-folder": { path: string | number };
+  "data-folder.open": { part: string | number; path: string | number };
   "data-folder.protect-failed": { path: string | number; reason: string | number };
   "first-run.step-of": { name: string | number; step: string | number; total: string | number };
   "home.title": { name: string | number };

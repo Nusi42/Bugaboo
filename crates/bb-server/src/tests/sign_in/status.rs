@@ -31,6 +31,7 @@ fn app_with_probe(rig: &Rig, certificate: Option<Arc<ServedCertificate>>) -> axu
             DatabaseKind::BuiltIn,
             certificate,
             rig.services.log_writes(),
+            rig.folder.path().to_path_buf(),
         )
         .with_log_checking(LogChecking {
             keep: std::time::Duration::ZERO,
@@ -202,6 +203,7 @@ fn probe_of(rig: &Rig, checking: LogChecking) -> Probe {
         DatabaseKind::BuiltIn,
         None,
         rig.services.log_writes(),
+        rig.folder.path().to_path_buf(),
     )
     .with_log_checking(checking)
 }
@@ -332,6 +334,7 @@ async fn sec_15_the_status_page_warns_when_the_anchor_is_ahead() -> Outcome {
             DatabaseKind::BuiltIn,
             None,
             rig.services.log_writes(),
+            rig.folder.path().to_path_buf(),
         );
         let state = probe.snapshot().await.security_log;
         assert!(
@@ -359,6 +362,67 @@ async fn sec_15_the_status_page_warns_when_the_anchor_is_ahead() -> Outcome {
         let reply = ada.send("GET", STATUS, None).await?;
         assert_eq!(reply.body["security_log"]["result"], "broken");
         assert_eq!(reply.body["security_log"]["reason"], "behind");
+        Ok(())
+    })
+    .await
+}
+
+/// Gives every account on this computer a right to read `folder`.
+fn open_up(folder: &std::path::Path) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt as _;
+        std::fs::set_permissions(folder, std::fs::Permissions::from_mode(0o755))?;
+    }
+    #[cfg(windows)]
+    {
+        let output = std::process::Command::new("icacls")
+            .arg(folder)
+            .args(["/grant", "*S-1-5-32-545:(OI)(CI)R"])
+            .output()?;
+        assert!(output.status.success());
+    }
+    Ok(())
+}
+
+#[tokio::test]
+async fn sec_16_the_status_page_shows_what_of_the_data_folder_is_too_open() -> Outcome {
+    each_database("sec_16_status_data_folder", async |db| {
+        let rig = Rig::start(db, 10).await?;
+        let data = crate::data_folder::DataFolder::prepare(&rig.folder.path().join("data"))?;
+        let mut options = options(&rig, LimitsConfig::default(), true);
+        options.probe = ProbeHandle::new(Arc::new(Probe::new(
+            rig.database.clone(),
+            rig.seal.clone(),
+            DatabaseKind::BuiltIn,
+            None,
+            rig.services.log_writes(),
+            data.root().to_path_buf(),
+        )));
+        let app = router(options);
+        let mut ada = Browser::new(&app, &called());
+        ada.send("POST", "/api/v1/auth/setup", Some(setup_body(&rig)))
+            .await?;
+
+        // A folder that Bugaboo made: nothing is too open.
+        let reply = ada.send("GET", STATUS, None).await?;
+        let open = &reply.body["data_folder_open"];
+        for part in ["folder", "database", "files", "backups", "setup_code_file"] {
+            assert_eq!(open[part], "private", "{part}");
+        }
+
+        // The person opens the folder for backups to everybody; the page says so and the folder
+        // keeps the rights the person gave it.
+        open_up(&data.root().join("backups"))?;
+        let reply = ada.send("GET", STATUS, None).await?;
+        let open = &reply.body["data_folder_open"];
+        assert_eq!(open["backups"], "open");
+        assert_eq!(open["files"], "private");
+        assert_eq!(open["folder"], "private");
+        assert!(
+            data.rights().backups.is_open(),
+            "the rights were left as they are"
+        );
         Ok(())
     })
     .await

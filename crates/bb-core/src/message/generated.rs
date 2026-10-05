@@ -195,6 +195,22 @@ pub const COOKIE_SESSION_PURPOSE: MessageKey = MessageKey::new("cookie.session.p
 /// The message `data-folder.account-unknown`.
 pub const DATA_FOLDER_ACCOUNT_UNKNOWN: MessageKey = MessageKey::new("data-folder.account-unknown");
 
+/// The message `data-folder.part.backups`.
+pub const DATA_FOLDER_PART_BACKUPS: MessageKey = MessageKey::new("data-folder.part.backups");
+
+/// The message `data-folder.part.database`.
+pub const DATA_FOLDER_PART_DATABASE: MessageKey = MessageKey::new("data-folder.part.database");
+
+/// The message `data-folder.part.files`.
+pub const DATA_FOLDER_PART_FILES: MessageKey = MessageKey::new("data-folder.part.files");
+
+/// The message `data-folder.part.folder`.
+pub const DATA_FOLDER_PART_FOLDER: MessageKey = MessageKey::new("data-folder.part.folder");
+
+/// The message `data-folder.part.setup-code-file`.
+pub const DATA_FOLDER_PART_SETUP_CODE_FILE: MessageKey =
+    MessageKey::new("data-folder.part.setup-code-file");
+
 /// The message `error.access.forbidden`.
 pub const ERROR_ACCESS_FORBIDDEN: MessageKey = MessageKey::new("error.access.forbidden");
 
@@ -768,6 +784,15 @@ pub const STATUS_CERTIFICATE: MessageKey = MessageKey::new("status.certificate")
 /// The message `status.certificate.none`.
 pub const STATUS_CERTIFICATE_NONE: MessageKey = MessageKey::new("status.certificate.none");
 
+/// The message `status.data-folder`.
+pub const STATUS_DATA_FOLDER: MessageKey = MessageKey::new("status.data-folder");
+
+/// The message `status.data-folder.closed`.
+pub const STATUS_DATA_FOLDER_CLOSED: MessageKey = MessageKey::new("status.data-folder.closed");
+
+/// The message `status.data-folder.open`.
+pub const STATUS_DATA_FOLDER_OPEN: MessageKey = MessageKey::new("status.data-folder.open");
+
 /// The message `status.database`.
 pub const STATUS_DATABASE: MessageKey = MessageKey::new("status.database");
 
@@ -1040,6 +1065,18 @@ pub fn data_folder_not_a_data_folder(path: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("data-folder.not-a-data-folder"),
         vec![("path", Value::Text(path.to_string()))],
+    )
+}
+
+/// The message `data-folder.open`.
+#[must_use]
+pub fn data_folder_open(part: impl std::fmt::Display, path: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("data-folder.open"),
+        vec![
+            ("part", Value::Text(part.to_string())),
+            ("path", Value::Text(path.to_string())),
+        ],
     )
 }
 
@@ -2009,6 +2046,15 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "The folder {path} has other files in it and does not look like a Bugaboo data folder. Installing the service would change who owns them. Choose an empty folder or a Bugaboo data folder as the data folder in your settings.",
     ),
     (
+        "data-folder.open",
+        "{part} {path} can be opened by other accounts on this computer. Bugaboo leaves it as it is, because you made it. If nobody else should read it, remove the rights of the other accounts: on Linux run chmod go-rwx on it, on Windows open the Security tab of its properties.",
+    ),
+    ("data-folder.part.backups", "The folder for backups"),
+    ("data-folder.part.database", "The database file"),
+    ("data-folder.part.files", "The folder for attachments"),
+    ("data-folder.part.folder", "The data folder"),
+    ("data-folder.part.setup-code-file", "The setup code file"),
+    (
         "data-folder.protect-failed",
         "The data folder {path} could not be made private to its owner: {reason}",
     ),
@@ -2622,6 +2668,15 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "status.certificate.valid",
         "Valid until {date}, which is {days, plural, one {# day} other {# days}} from now.",
+    ),
+    ("status.data-folder", "Data folder rights"),
+    (
+        "status.data-folder.closed",
+        "Only the account that runs Bugaboo can open the parts of the data folder.",
+    ),
+    (
+        "status.data-folder.open",
+        "Other accounts on this computer can open these. Bugaboo leaves them as they are, because you made them. If nobody else should read them, remove the rights of the other accounts.",
     ),
     ("status.database", "Database"),
     (

@@ -15,10 +15,13 @@
 //! Windows an access list that removes inherited rights and grants only the current account
 //! (found by its SID, which no language or domain setting can change). `keys/`, `tls/` and `logs/`
 //! hold secrets or proof, so on every start they are checked and, if someone loosened them, made private
-//! again.
+//! again. The rest of a folder that exists is only looked at: what other accounts can open is
+//! reported and never changed (`rights.rs`).
 
 use std::fmt;
 use std::path::{Path, PathBuf};
+
+mod rights;
 
 use bb_core::message;
 
@@ -35,7 +38,6 @@ const SETUP_CODE_FILE: &str = "setup-code.txt";
 /// The folders `prepare` makes inside the data folder.
 pub(crate) const SUB_FOLDERS: [&str; 5] = [FILES, KEYS, BACKUPS, TLS, LOGS];
 /// What the built-in database (SQLite) keeps next to its file.
-#[cfg(any(unix, test))]
 const DATABASE_COMPANIONS: [&str; 3] = ["-wal", "-shm", "-journal"];
 
 /// The prepared data folder.

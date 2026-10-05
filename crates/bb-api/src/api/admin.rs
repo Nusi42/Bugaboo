@@ -5,7 +5,9 @@ use std::sync::Arc;
 use axum::extract::State;
 use axum::response::Response;
 use bb_app::auth::AuthenticateQuery;
-use bb_app::status::{DatabaseKind, LogBreak, LogState, ServerProbe, Snapshot};
+use bb_app::status::{
+    Access, DataFolderRights, DatabaseKind, LogBreak, LogState, ServerProbe, Snapshot,
+};
 use bb_core::ErrorCode;
 use serde::Serialize;
 use utoipa::ToSchema;
@@ -191,6 +193,53 @@ impl From<LogState> for SecurityLogBody {
     }
 }
 
+/// Whether other accounts on this computer can open a part of the data folder.
+#[derive(Serialize, ToSchema)]
+#[serde(rename_all = "snake_case")]
+enum AccessBody {
+    /// Only the account that runs Bugaboo can open it.
+    Private,
+    /// Other accounts can open it: too open.
+    Open,
+}
+
+impl From<Access> for AccessBody {
+    fn from(access: Access) -> Self {
+        match access {
+            Access::Private => Self::Private,
+            Access::Open => Self::Open,
+        }
+    }
+}
+
+/// Which parts of the data folder other accounts on this computer can open. Bugaboo only looks;
+/// a folder that somebody made or moved keeps its rights.
+#[derive(Serialize, ToSchema)]
+struct DataFolderOpenBody {
+    /// The data folder itself.
+    folder: AccessBody,
+    /// The built-in database file and the files next to it.
+    database: AccessBody,
+    /// The folder for attachments.
+    files: AccessBody,
+    /// The folder for backups.
+    backups: AccessBody,
+    /// The file with the setup code of a server without a console.
+    setup_code_file: AccessBody,
+}
+
+impl From<DataFolderRights> for DataFolderOpenBody {
+    fn from(rights: DataFolderRights) -> Self {
+        Self {
+            folder: rights.folder.into(),
+            database: rights.database.into(),
+            files: rights.files.into(),
+            backups: rights.backups.into(),
+            setup_code_file: rights.setup_code_file.into(),
+        }
+    }
+}
+
 /// The status of the server, as the status page shows it.
 #[derive(Serialize, ToSchema)]
 struct ServerStatusBody {
@@ -207,6 +256,8 @@ struct ServerStatusBody {
     certificate: Option<CertificateBody>,
     /// The check of the security log.
     security_log: SecurityLogBody,
+    /// What of the data folder other accounts on this computer can open.
+    data_folder_open: DataFolderOpenBody,
 }
 
 impl From<Snapshot> for ServerStatusBody {
@@ -226,6 +277,7 @@ impl From<Snapshot> for ServerStatusBody {
                 write_failures: snapshot.log_write_failures,
                 ..snapshot.security_log.into()
             },
+            data_folder_open: snapshot.data_folder.into(),
         }
     }
 }

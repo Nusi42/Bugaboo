@@ -1,7 +1,14 @@
 import type { Schema } from "@bugaboo/api-client";
 import { describe, expect, it } from "vitest";
 
-import { certificateDays, hasWriteFailures, isUnanchored, levelOf, serverNow } from "./status.ts";
+import {
+  certificateDays,
+  hasWriteFailures,
+  isUnanchored,
+  levelOf,
+  openParts,
+  serverNow,
+} from "./status.ts";
 
 type State = Schema<"ServerStatusBody">;
 
@@ -22,6 +29,13 @@ function healthy(): State {
       head_hash: "abababababababab",
       anchored: true,
       write_failures: 0,
+    },
+    data_folder_open: {
+      folder: "private",
+      database: "private",
+      files: "private",
+      backups: "private",
+      setup_code_file: "private",
     },
   };
 }
@@ -71,6 +85,17 @@ describe("sec_15 and ops_08 what the page makes of the server", () => {
     expect(hasWriteFailures(log)).toBe(true);
     expect(hasWriteFailures(healthy().security_log)).toBe(false);
     expect(levelOf({ ...healthy(), security_log: log }, NOW)).toBe("warning");
+  });
+
+  it("asks for a look when other accounts can open a part of the data folder", () => {
+    const open: State["data_folder_open"] = {
+      ...healthy().data_folder_open,
+      database: "open",
+      backups: "open",
+    };
+    expect(openParts(healthy().data_folder_open)).toEqual([]);
+    expect(openParts(open)).toEqual(["database", "backups"]);
+    expect(levelOf({ ...healthy(), data_folder_open: open }, NOW)).toBe("warning");
   });
 
   it("takes the time of the server from when it started and how long it has run", () => {

@@ -95,6 +95,58 @@ pub enum LogState {
     Unreadable,
 }
 
+/// Whether other accounts on this computer can open a part of the data folder.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum Access {
+    /// Only the account that runs Bugaboo (and the administrators of the computer).
+    #[default]
+    Private,
+    /// Other accounts can open it: too open.
+    Open,
+}
+
+impl Access {
+    /// `Open` when `open` is true.
+    #[must_use]
+    pub const fn of(open: bool) -> Self {
+        if open { Self::Open } else { Self::Private }
+    }
+
+    /// Whether it is too open.
+    #[must_use]
+    pub const fn is_open(self) -> bool {
+        matches!(self, Self::Open)
+    }
+}
+
+/// Which parts of the data folder other accounts on this computer can open. Bugaboo only looks: a
+/// folder that a person made or moved keeps its rights (SEC-16, M1-F65).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct DataFolderRights {
+    /// The data folder itself.
+    pub folder: Access,
+    /// The built-in database file and the files next to it.
+    pub database: Access,
+    /// The folder for attachments.
+    pub files: Access,
+    /// The folder for backups.
+    pub backups: Access,
+    /// The file with the setup code of a server without a console.
+    pub setup_code_file: Access,
+}
+
+impl DataFolderRights {
+    /// Whether anything is too open.
+    #[must_use]
+    pub const fn any(&self) -> bool {
+        self.folder.is_open()
+            || self.database.is_open()
+            || self.files.is_open()
+            || self.backups.is_open()
+            || self.setup_code_file.is_open()
+    }
+}
+
 /// The HTTPS certificate in use.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct CertificateState {
@@ -122,6 +174,8 @@ pub struct Snapshot {
     /// How many entries of the security log could not be written since the server started.
     /// Signing in goes on when a write fails (the decision of M1), so this is the only sign.
     pub log_write_failures: u64,
+    /// Which parts of the data folder other accounts on this computer can open.
+    pub data_folder: DataFolderRights,
 }
 
 /// Measures the server for the status page and for `/health/ready`.

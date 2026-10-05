@@ -545,6 +545,11 @@ export interface components {
       /** @description The secret from the invitation link (the part after the `#`). */
       secret: string;
     };
+    /**
+     * @description Whether other accounts on this computer can open a part of the data folder.
+     * @enum {string}
+     */
+    AccessBody: "private" | "open";
     /** @description A passkey the device made, with the name the person gives it. */
     AddPasskeyBody: {
       /** @description The challenge that was answered. */
@@ -612,6 +617,22 @@ export interface components {
        *     in front. The secret is not stored and cannot be shown again.
        */
       link_path: string;
+    };
+    /**
+     * @description Which parts of the data folder other accounts on this computer can open. Bugaboo only looks;
+     *     a folder that somebody made or moved keeps its rights.
+     */
+    DataFolderOpenBody: {
+      /** @description The folder for backups. */
+      backups: components["schemas"]["AccessBody"];
+      /** @description The built-in database file and the files next to it. */
+      database: components["schemas"]["AccessBody"];
+      /** @description The folder for attachments. */
+      files: components["schemas"]["AccessBody"];
+      /** @description The data folder itself. */
+      folder: components["schemas"]["AccessBody"];
+      /** @description The file with the setup code of a server without a console. */
+      setup_code_file: components["schemas"]["AccessBody"];
     };
     /** @description The database. */
     DatabaseBody: {
@@ -834,6 +855,8 @@ export interface components {
     /** @description The status of the server, as the status page shows it. */
     ServerStatusBody: {
       certificate?: components["schemas"]["CertificateBody"] | null;
+      /** @description What of the data folder other accounts on this computer can open. */
+      data_folder_open: components["schemas"]["DataFolderOpenBody"];
       /** @description The database. */
       database: components["schemas"]["DatabaseBody"];
       /** @description The check of the security log. */

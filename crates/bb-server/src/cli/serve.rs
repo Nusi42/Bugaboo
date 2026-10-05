@@ -41,6 +41,7 @@ pub(super) async fn serve_settings(
     shutdown: impl Future<Output = ()> + Send + 'static,
 ) -> anyhow::Result<()> {
     let data = DataFolder::prepare(&settings.data_dir)?;
+    report_open_parts(&data);
     let (listener_options, certificate) = listener_options(&settings, &data)?;
     let hsts_max_age = hsts_max_age(&settings);
     // The database, the keys and the sign-in services come first: when one of them fails the
@@ -103,6 +104,19 @@ pub(super) async fn serve_settings(
     served?;
     tracing::info!("server stopped");
     Ok(())
+}
+
+/// Says what of an existing data folder other accounts on this computer can open, in the log and on
+/// the console (SEC-16, M1-F65). Nothing is changed: a person may have made or moved the folder on
+/// purpose. The status page shows the same.
+fn report_open_parts(data: &DataFolder) {
+    for (part, sentence) in data.open_parts(data.rights()) {
+        tracing::warn!(
+            part,
+            "a part of the data folder can be opened by other accounts"
+        );
+        output::warning(&sentence);
+    }
 }
 
 /// How long browsers are told to insist on HTTPS: a day with a certificate Bugaboo made (a

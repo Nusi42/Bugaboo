@@ -4,6 +4,7 @@ import { daysUntil } from "../../shared/format.ts";
 
 type State = Schema<"ServerStatusBody">;
 type SecurityLog = Schema<"SecurityLogBody">;
+type DataFolderOpen = Schema<"DataFolderOpenBody">;
 
 const MS_PER_SECOND = 1000;
 
@@ -21,6 +22,18 @@ export function isUnanchored(log: SecurityLog): boolean {
 /** Whether entries of the log could not be written since the server started: a warning (M1-F40). */
 export function hasWriteFailures(log: SecurityLog): boolean {
   return log.write_failures > 0;
+}
+
+/** The parts of the data folder that other accounts on this computer can open (SEC-16, M1-F65). */
+export function openParts(open: DataFolderOpen): readonly (keyof DataFolderOpen)[] {
+  const parts: readonly (keyof DataFolderOpen)[] = [
+    "folder",
+    "database",
+    "files",
+    "backups",
+    "setup_code_file",
+  ];
+  return parts.filter((part) => open[part] === "open");
 }
 
 /**
@@ -50,6 +63,7 @@ export function levelOf(state: State, nowMs: number): Level {
   if (
     isUnanchored(log) ||
     hasWriteFailures(log) ||
+    openParts(state.data_folder_open).length > 0 ||
     (days !== null && days < CERTIFICATE_WARNING_DAYS)
   ) {
     return "warning";

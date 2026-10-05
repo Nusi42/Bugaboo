@@ -2736,6 +2736,11 @@
           }
         }
       },
+      "AccessBody": {
+        "type": "string",
+        "description": "Whether other accounts on this computer can open a part of the data folder.",
+        "enum": ["private", "open"]
+      },
       "AddPasskeyBody": {
         "type": "object",
         "description": "A passkey the device made, with the name the person gives it.",
@@ -2875,6 +2880,33 @@
           "link_path": {
             "type": "string",
             "description": "The page the link opens, with the secret after the `#`. Put the address of this server\nin front. The secret is not stored and cannot be shown again."
+          }
+        }
+      },
+      "DataFolderOpenBody": {
+        "type": "object",
+        "description": "Which parts of the data folder other accounts on this computer can open. Bugaboo only looks;\na folder that somebody made or moved keeps its rights.",
+        "required": ["folder", "database", "files", "backups", "setup_code_file"],
+        "properties": {
+          "backups": {
+            "$ref": "#/components/schemas/AccessBody",
+            "description": "The folder for backups."
+          },
+          "database": {
+            "$ref": "#/components/schemas/AccessBody",
+            "description": "The built-in database file and the files next to it."
+          },
+          "files": {
+            "$ref": "#/components/schemas/AccessBody",
+            "description": "The folder for attachments."
+          },
+          "folder": {
+            "$ref": "#/components/schemas/AccessBody",
+            "description": "The data folder itself."
+          },
+          "setup_code_file": {
+            "$ref": "#/components/schemas/AccessBody",
+            "description": "The file with the setup code of a server without a console."
           }
         }
       },
@@ -3252,7 +3284,14 @@
       "ServerStatusBody": {
         "type": "object",
         "description": "The status of the server, as the status page shows it.",
-        "required": ["version", "started_at", "uptime_seconds", "database", "security_log"],
+        "required": [
+          "version",
+          "started_at",
+          "uptime_seconds",
+          "database",
+          "security_log",
+          "data_folder_open"
+        ],
         "properties": {
           "certificate": {
             "oneOf": [
@@ -3264,6 +3303,10 @@
                 "type": "null"
               }
             ]
+          },
+          "data_folder_open": {
+            "$ref": "#/components/schemas/DataFolderOpenBody",
+            "description": "What of the data folder other accounts on this computer can open."
           },
           "database": {
             "$ref": "#/components/schemas/DatabaseBody",

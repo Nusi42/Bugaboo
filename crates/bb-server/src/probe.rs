@@ -3,6 +3,7 @@
 //! security log together, so this is where they meet.
 
 use std::fmt::Write as _;
+use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
@@ -15,6 +16,8 @@ use bb_core::security_log::Digest;
 use bb_store::{BreakReason, Database, LogSeal, Verification};
 use jiff::Timestamp;
 use tokio::sync::Mutex;
+
+use crate::data_folder::DataFolder;
 
 /// How many bytes of the hash of the last log entry the status page shows: enough to compare it
 /// with a copy kept somewhere else, short enough to read out loud.
@@ -71,6 +74,8 @@ pub(crate) struct Probe {
     /// of the one it serves now, also after a renewal (M1-F03).
     certificate: Option<Arc<ServedCertificate>>,
     log_writes: Arc<LogWrites>,
+    /// The data folder, whose rights the status page looks at every time.
+    data_folder: PathBuf,
     log_checking: LogChecking,
     log_memory: Mutex<LogMemory>,
     started: Instant,
@@ -85,6 +90,7 @@ impl Probe {
         kind: DatabaseKind,
         certificate: Option<Arc<ServedCertificate>>,
         log_writes: Arc<LogWrites>,
+        data_folder: PathBuf,
     ) -> Self {
         Self {
             database,
@@ -92,6 +98,7 @@ impl Probe {
             kind,
             certificate,
             log_writes,
+            data_folder,
             log_checking: LogChecking::default(),
             log_memory: Mutex::new(LogMemory::default()),
             started: Instant::now(),
@@ -216,6 +223,9 @@ impl ServerProbe for Probe {
                 certificate,
                 security_log,
                 log_write_failures: self.log_writes.failed(),
+                data_folder: DataFolder::existing(&self.data_folder)
+                    .map(|folder| folder.rights())
+                    .unwrap_or_default(),
             }
         })
     }

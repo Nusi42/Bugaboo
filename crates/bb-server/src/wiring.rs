@@ -145,6 +145,7 @@ pub(crate) async fn wire(
         database_kind(settings.database_url.as_deref()),
         serving.certificate,
         services.log_writes(),
+        data.root().to_path_buf(),
     );
     let setup_code = issue_setup_code(&services.ctx(RequestInfo::default()), IssueSetupCode)
         .await
