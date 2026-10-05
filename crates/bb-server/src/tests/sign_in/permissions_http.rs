@@ -44,6 +44,7 @@ fn example(method: &str, path: &str, project: &str) -> Result<(String, Option<Va
             "/api/v1/auth/invitations"
             | "/api/v1/admin/status"
             | "/api/v1/auth/sign-up-policy"
+            | "/api/v1/projects"
             | "/api/v1/settings",
         ) => (path.to_owned(), None),
         ("POST", "/api/v1/auth/invitations") => (
@@ -75,8 +76,44 @@ fn example(method: &str, path: &str, project: &str) -> Result<(String, Option<Va
         ("DELETE", "/api/v1/projects/{project}/settings/{key}") => {
             (in_project(path).replace("{key}", "test.project-note"), None)
         }
+        ("GET", "/api/v1/projects/{project}") => (path.replace("{project}", some_id), None),
+        ("POST", "/api/v1/projects") => (path.to_owned(), Some(new_project())),
+        ("POST", "/api/v1/projects/{project}/sub-projects") => {
+            (path.replace("{project}", some_id), Some(new_project()))
+        }
+        ("PATCH", "/api/v1/projects/{project}") => (
+            path.replace("{project}", some_id),
+            Some(json!({"version": 1, "name": "A new name"})),
+        ),
+        ("POST", "/api/v1/projects/{project}/move-preview") => (
+            path.replace("{project}", some_id),
+            Some(json!({"to": null})),
+        ),
+        ("POST", "/api/v1/projects/{project}/move") => (
+            path.replace("{project}", some_id),
+            Some(json!({"to": null, "preview": "made up"})),
+        ),
         _ => return Err(format!("{method} {path} needs an example request in this test").into()),
     })
+}
+
+/// A project to make.
+fn new_project() -> Value {
+    json!({"short_name": "EXAMPLE", "name": "Example"})
+}
+
+/// The routes that answer with what the person may see instead of refusing a person who may see
+/// nothing: the list of projects is empty for them.
+const FILTERS_WHAT_IS_SEEN: [(&str, &str); 1] = [("GET", "/api/v1/projects")];
+
+/// What a person without any role is told: a place that is a project answers like a project that
+/// does not exist, everything else is forbidden.
+fn refusal_without_a_role(path: &str) -> (StatusCode, &'static str) {
+    if path.contains("{project}") {
+        (StatusCode::NOT_FOUND, "resource.not_found")
+    } else {
+        (StatusCode::FORBIDDEN, "access.forbidden")
+    }
 }
 
 #[tokio::test]
@@ -115,13 +152,14 @@ async fn m1_f32_a_route_enforces_the_permission_it_declares() -> Outcome {
             let mut nobody =
                 invited_person(&mut ada, &app, &format!("nobody{number}@example.test")).await?;
             let refused = nobody.send(method, &address, body.clone()).await?;
-            let (status, code) = if path.contains("{project}") {
-                (StatusCode::NOT_FOUND, "resource.not_found")
+            if FILTERS_WHAT_IS_SEEN.contains(&(method.as_str(), path.as_str())) {
+                assert_eq!(refused.status, StatusCode::OK, "{method} {path}: no role");
+                assert_eq!(refused.body["items"], json!([]), "{method} {path}");
             } else {
-                (StatusCode::FORBIDDEN, "access.forbidden")
-            };
-            assert_eq!(refused.status, status, "{method} {path}: no role");
-            assert_eq!(refused.body["code"], code, "{method} {path}");
+                let (status, code) = refusal_without_a_role(path);
+                assert_eq!(refused.status, status, "{method} {path}: no role");
+                assert_eq!(refused.body["code"], code, "{method} {path}");
+            }
             // A person whose role holds exactly this permission is let in (what comes then is the
             // business of the route: not found, a missing probe, success).
             let mut only =

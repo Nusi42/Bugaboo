@@ -556,13 +556,32 @@ impl SettingsStore for AuthStorage {
         let definition = bb_core::settings::find(key)
             .ok_or(StoreError::SettingRejected(SettingProblem::UnknownKey))?;
         let name = known(key).map_err(StoreError::SettingRejected)?;
-        let value = organization_row(transaction, &name)
-            .await?
-            .map_or_else(|| definition.default().to_value(), |row| row.value);
+        let row = organization_row(transaction, &name).await?;
+        let standard = definition.default().to_value();
+        if !locked {
+            // Unlocking leaves a value of the organization alone, but a row that only held the
+            // lock at the standard value has nothing left to hold: it goes away, and a setting
+            // that has no row stays as it is.
+            let Some(row) = row else {
+                return Ok(());
+            };
+            if row.value == standard {
+                delete(transaction, &name, Scope::Organization).await?;
+                return Ok(());
+            }
+            let change = SettingChange {
+                key: key.to_owned(),
+                scope: Scope::Organization,
+                value: row.value,
+                locked: false,
+            };
+            validate(&change).map_err(StoreError::SettingRejected)?;
+            return upsert(transaction, &name, &change, at).await;
+        }
         let change = SettingChange {
             key: key.to_owned(),
             scope: Scope::Organization,
-            value,
+            value: row.map_or(standard, |row| row.value),
             locked,
         };
         validate(&change).map_err(StoreError::SettingRejected)?;

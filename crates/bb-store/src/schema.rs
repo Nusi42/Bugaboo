@@ -220,6 +220,16 @@ pub(crate) enum ProjectRow {
     Version,
 }
 
+/// The old short names of projects: each stays with its project (PRJ-01, M2-Q4).
+#[derive(Clone, Copy, Iden)]
+pub(crate) enum ProjectAliasRow {
+    #[iden = "project_alias"]
+    Table,
+    ShortName,
+    Project,
+    RetiredAt,
+}
+
 /// Groups of people. The table is called `person_group`: `group` is a word of SQL.
 #[derive(Clone, Copy, Iden)]
 pub(crate) enum GroupRow {
@@ -508,6 +518,11 @@ stored_tables! {
         ShortName => short_name,
         Name => name,
         Version => version,
+    },
+    ProjectAliasRow => bb_core::project::ProjectAlias {
+        ShortName => short_name,
+        Project => project,
+        RetiredAt => retired_at,
     },
     GroupRow => bb_core::access::Group {
         Id => id,

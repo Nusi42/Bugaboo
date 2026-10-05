@@ -23,7 +23,11 @@ use crate::people::{
     GroupsQuery, MakeGroup, RemoveGroupMember, RenameGroup, add_group_member, delete_group,
     group_members, groups, make_group, remove_group_member, rename_group,
 };
-use crate::projects::{MakeProject, ProjectView, make_project};
+use crate::projects::{
+    ChangeProject, MakeProject, MovePreview, MovePreviewQuery, MoveProject, ProjectDetail,
+    ProjectPage, ProjectQuery, ProjectView, ProjectsQuery, change_project, make_project,
+    move_project, preview_move, project, projects,
+};
 use crate::roles::{
     AccessAnswer, AssignRole, AssignmentList, AssignmentView, AssignmentsQuery, ChangeRole,
     CheckAccessQuery, DeleteRole, Levels, LevelsQuery, MakeRole, RemoveAssignment, ResetRole,
@@ -198,4 +202,14 @@ use_cases! {
     reset_setting(ResetSetting) -> Authorized<SettingView>;
     /// Locks or unlocks the organization's value of a setting.
     lock_setting(LockSetting) -> Authorized<SettingView>;
+    /// Changes the name or the short name of a project.
+    change_project(ChangeProject) -> Authorized<ProjectView>;
+    /// Moves a project, after the preview.
+    move_project(MoveProject) -> Authorized<ProjectView>;
+    /// Says what moving a project would do.
+    preview_move(MovePreviewQuery) -> Authorized<MovePreview>;
+    /// Shows one project by its address.
+    project(ProjectQuery) -> Authorized<ProjectDetail>;
+    /// Lists the projects a person sees.
+    projects(ProjectsQuery) -> Authorized<ProjectPage>;
 }

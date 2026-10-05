@@ -66,29 +66,22 @@ async fn perf_03_every_get_answers_an_etag_and_304_on_a_match() -> Outcome {
         ada.send("POST", "/api/v1/auth/setup", Some(setup_body(&rig)))
             .await?;
 
+        // A project for the routes that name one.
+        let made = ada
+            .send(
+                "POST",
+                "/api/v1/projects",
+                Some(json!({"short_name": "EXAMPLE", "name": "Example"})),
+            )
+            .await?;
+        assert_eq!(made.status, StatusCode::OK);
         let routes = get_routes()?;
         assert!(routes.len() >= 9, "{routes:?}");
-        let acme = rig
-            .api()
-            .make_project(
-                Rig::info(),
-                bb_app::projects::MakeProject {
-                    session_token: rig
-                        .sign_in("ada@example.test", PASSWORD)
-                        .await?
-                        .session_token,
-                    parent: None,
-                    short_name: "ACME".to_owned(),
-                    name: "Acme".to_owned(),
-                },
-            )
-            .await?
-            .into_value();
         let (mut kept, mut never_stored) = (0, 0);
-        for template in &routes {
+        for route in &routes {
             // A route with a part to fill in needs an example address here; fail loudly so a
             // new route is never left out of this test.
-            let path = &template.replace("{project}", &acme.id.to_string());
+            let path = &route.replace("{project}", "EXAMPLE");
             assert!(
                 !path.contains('{'),
                 "{path} has a part to fill in: add an example address to this test"
@@ -97,7 +90,7 @@ async fn perf_03_every_get_answers_an_etag_and_304_on_a_match() -> Outcome {
             let first = ada.send("GET", path, None).await?;
             assert_eq!(first.status, StatusCode::OK, "{path}");
 
-            if never_stored_reads().contains(template) {
+            if never_stored_reads().contains(route) {
                 // Personal data: no tag to ask with, and a tag or `*` changes nothing.
                 never_stored += 1;
                 assert_eq!(first.header("cache-control"), "no-store", "{path}");

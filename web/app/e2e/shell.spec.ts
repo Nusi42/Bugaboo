@@ -203,6 +203,7 @@ test("ux_01 Organization settings lists the topics that exist, by heading", asyn
     t("nav.invitations"),
     t("nav.sign-in-rules"),
     t("nav.themes"),
+    t("nav.projects"),
     t("nav.status"),
   ]);
   await topics(page, t("nav.organization-settings")).last().click();

@@ -6,6 +6,7 @@ import styles from "./MoreSheet.module.css";
 import { NavButton, NavLink } from "./NavItem.tsx";
 import { closeOverlay, openOverlay, useOverlay } from "./overlay-state.ts";
 import { placeAt } from "./places.ts";
+import { useSidebarSections } from "./sidebar-sections.ts";
 
 export interface MoreSheetProps {
   /** The person may open *Organization settings*. */
@@ -42,6 +43,7 @@ function Places({ organizationSettings }: Pick<MoreSheetProps, "organizationSett
  */
 export function MoreSheet({ organizationSettings, name, onSignOut, signingOut }: MoreSheetProps) {
   const overlay = useOverlay("more");
+  const sections = useSidebarSections();
   return (
     <Overlay {...overlay} label={t("shell.more")} bottom>
       <div className={styles.sheet}>
@@ -52,6 +54,12 @@ export function MoreSheet({ organizationSettings, name, onSignOut, signingOut }:
         {name === undefined ? null : (
           <p className={styles.who}>{t("shell.signed-in-as", { name })}</p>
         )}
+        {sections.map((section) => (
+          <section key={section.heading} className={styles.section} aria-label={t(section.heading)}>
+            <h3 className={styles.sectionHeading}>{t(section.heading)}</h3>
+            {section.render({ narrow: false, onNavigate: closeOverlay })}
+          </section>
+        ))}
         <ul className={styles.list}>
           <Places organizationSettings={organizationSettings} />
           <li>

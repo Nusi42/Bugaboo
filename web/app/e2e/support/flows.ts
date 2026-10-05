@@ -86,6 +86,7 @@ const organizationTopics: ReadonlySet<string> = new Set([
   t("nav.invitations"),
   t("nav.sign-in-rules"),
   t("nav.themes"),
+  t("nav.projects"),
   t("nav.status"),
 ]);
 

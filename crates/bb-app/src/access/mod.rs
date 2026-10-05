@@ -19,9 +19,9 @@ use bb_core::id::{ProjectId, UserId};
 use bb_core::people_kinds::PeopleKind;
 use bb_core::person::Person;
 use bb_policy::guards::{Refusal, ensure_no_escalation};
-use bb_policy::{Evaluation, PeopleContext, Place, Target, evaluate, resolve};
+use bb_policy::{Evaluation, PeopleContext, Target, evaluate, resolve};
 
-pub use bb_policy::{Authorized, Masked, Permission, PersonRef, StartingRole, guards};
+pub use bb_policy::{Authorized, Masked, Permission, PersonRef, Place, StartingRole, Tree, guards};
 pub use starting::{MakeStartingRoles, make_starting_roles};
 pub use store::{PolicyStore, RoleRecord};
 
@@ -96,6 +96,20 @@ impl<S: AuthStore> Ctx<'_, S> {
         Ok(evaluation)
     }
 
+    /// What the actor may do at `place`: the evaluation of the person behind the request. Use
+    /// cases ask through the actor and not by person ID, so the limits of an access key narrow
+    /// what they get (WP-09 puts that into this function).
+    ///
+    /// # Errors
+    /// `resource.not_found` when the place is a project that does not exist.
+    pub(crate) async fn evaluation_of(
+        &self,
+        actor: &Actor,
+        place: Place,
+    ) -> Result<Arc<Evaluation>, AppError> {
+        self.evaluate(actor.person.id, place).await
+    }
+
     fn cached_evaluation(&self, person: UserId, place: Place) -> Option<Arc<Evaluation>> {
         // A lock that a panic poisoned still holds a map that is whole: it only ever gets whole
         // insertions.
@@ -125,7 +139,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         permission: Permission,
         place: Place,
     ) -> Result<Arc<Evaluation>, AppError> {
-        let evaluation = self.evaluate(actor.person.id, place).await?;
+        let evaluation = self.evaluation_of(actor, place).await?;
         if evaluation.allows(permission) {
             return Ok(evaluation);
         }

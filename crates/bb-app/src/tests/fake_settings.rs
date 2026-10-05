@@ -127,13 +127,26 @@ impl SettingsStore for FakeStore {
         let Some(definition) = find(key) else {
             return Err(FakeError::Failed);
         };
+        if !locked {
+            // A row that only held the lock at the standard value goes away on unlocking.
+            let standard = definition.default().to_value();
+            tx.state.settings.retain(|row| {
+                !(row.scope == Scope::Organization && row.key == key && row.value == standard)
+            });
+            for row in &mut tx.state.settings {
+                if row.scope == Scope::Organization && row.key == key {
+                    row.locked = false;
+                }
+            }
+            return Ok(());
+        }
         if let Some(row) = tx
             .state
             .settings
             .iter_mut()
             .find(|row| row.scope == Scope::Organization && row.key == key)
         {
-            row.locked = locked;
+            row.locked = true;
             return Ok(());
         }
         tx.state.settings.push(FakeSetting {

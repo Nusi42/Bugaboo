@@ -71,6 +71,8 @@ table! {
     "change_setting" => s::change_setting_scenario,
     "reset_setting" => s::reset_setting_scenario,
     "lock_setting" => s::lock_setting_scenario,
+    "change_project" => s::change_project_scenario,
+    "move_project" => s::move_project_scenario,
 }
 
 #[test]

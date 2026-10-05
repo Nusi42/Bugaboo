@@ -33,7 +33,8 @@ pub trait SettingsStore: PolicyStore + 'static {
         /// `false` when there was none.
         fn clear_setting_value(scope: Scope, key: &str) -> bool;
         /// Locks or unlocks the organization's value of a setting. Locking a setting that has no
-        /// organization value yet gives it the default as its value first.
+        /// organization value yet gives it the default as its value first; unlocking one that
+        /// holds only that default removes it again, and one without a value stays without.
         fn put_setting_lock(key: &str, locked: bool, at: Timestamp) -> ();
     }
 }

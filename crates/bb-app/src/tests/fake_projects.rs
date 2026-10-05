@@ -1,0 +1,207 @@
+//! The projects part of the in-memory store: the tree, what the engine reads for one person or
+//! for everybody, and the old short names.
+
+use bb_core::id::{ProjectId, UserId};
+use bb_core::project::{Project, ProjectAlias, ShortName};
+use bb_policy::Policy;
+
+use super::fake::{FakeError, FakeStore, State, Tx};
+use super::fake_policy::role_data;
+use crate::projects::{Found, ProjectStore};
+
+/// The projects, in the order of their IDs.
+fn tree_of(state: &State) -> Vec<Project> {
+    let mut projects = state.projects.clone();
+    projects.sort_by_key(|project| project.id);
+    projects
+}
+
+/// Everything the engine reads for `person`, or for everybody when `None`.
+fn policy_of(state: &State, person: Option<UserId>) -> Policy {
+    let groups: Vec<_> = state
+        .members
+        .iter()
+        .filter(|member| person.is_none_or(|person| member.person == person))
+        .cloned()
+        .collect();
+    let assignments: Vec<_> = state
+        .assignments
+        .iter()
+        .filter(|row| {
+            person.is_none_or(|person| {
+                row.person == Some(person)
+                    || row
+                        .group
+                        .is_some_and(|group| groups.iter().any(|member| member.group == group))
+            })
+        })
+        .cloned()
+        .collect();
+    let named: Vec<_> = assignments.iter().filter_map(|row| row.role).collect();
+    let roles: Vec<_> = state
+        .roles
+        .iter()
+        .filter(|record| person.is_none() || named.contains(&record.role.id))
+        .map(role_data)
+        .collect();
+    let with_levels = person.is_none();
+    Policy {
+        assignments,
+        members: groups,
+        roles,
+        field_rules: if with_levels {
+            state
+                .field_levels
+                .iter()
+                .map(|(role, project, field, level)| bb_policy::FieldRule {
+                    project: *project,
+                    role: *role,
+                    field: *field,
+                    level: *level,
+                })
+                .collect()
+        } else {
+            Vec::new()
+        },
+        people_rules: if with_levels {
+            state
+                .people_levels
+                .iter()
+                .map(|(role, project, kind, level)| bb_policy::PeopleRule {
+                    project: *project,
+                    role: *role,
+                    kind: *kind,
+                    level: *level,
+                })
+                .collect()
+        } else {
+            Vec::new()
+        },
+    }
+}
+
+fn owner_of(state: &State, name: &ShortName) -> Option<ProjectId> {
+    state
+        .projects
+        .iter()
+        .find(|project| &project.short_name == name)
+        .map(|project| project.id)
+        .or_else(|| {
+            state
+                .aliases
+                .iter()
+                .find(|alias| &alias.short_name == name)
+                .map(|alias| alias.project)
+        })
+}
+
+impl ProjectStore for FakeStore {
+    async fn project_tree(&self) -> Result<Vec<Project>, FakeError> {
+        Ok(self.read(tree_of))
+    }
+
+    async fn policy_of(&self, person: UserId) -> Result<Policy, FakeError> {
+        Ok(self.read(|state| policy_of(state, Some(person))))
+    }
+
+    async fn policy_all(&self) -> Result<Policy, FakeError> {
+        Ok(self.read(|state| policy_of(state, None)))
+    }
+
+    async fn project_by_address(&self, name: &ShortName) -> Result<Option<Found>, FakeError> {
+        Ok(self.read(|state| {
+            let owner = owner_of(state, name)?;
+            let project = state
+                .projects
+                .iter()
+                .find(|project| project.id == owner)?
+                .clone();
+            Some(Found {
+                old_name: &project.short_name != name,
+                project,
+            })
+        }))
+    }
+
+    async fn project_tree_in(tx: &mut Tx) -> Result<Vec<Project>, FakeError> {
+        Ok(tree_of(&tx.state))
+    }
+
+    async fn policy_in(tx: &mut Tx) -> Result<Policy, FakeError> {
+        Ok(policy_of(&tx.state, None))
+    }
+
+    async fn project_in(tx: &mut Tx, id: ProjectId) -> Result<Option<Project>, FakeError> {
+        Ok(tx
+            .state
+            .projects
+            .iter()
+            .find(|project| project.id == id)
+            .cloned())
+    }
+
+    async fn short_name_owner_in(
+        tx: &mut Tx,
+        name: &ShortName,
+    ) -> Result<Option<ProjectId>, FakeError> {
+        Ok(owner_of(&tx.state, name))
+    }
+
+    async fn update_project(
+        tx: &mut Tx,
+        id: ProjectId,
+        name: &str,
+        short_name: &ShortName,
+        version: i64,
+    ) -> Result<bool, FakeError> {
+        let Some(project) = tx
+            .state
+            .projects
+            .iter_mut()
+            .find(|project| project.id == id && project.version == version)
+        else {
+            return Ok(false);
+        };
+        name.clone_into(&mut project.name);
+        project.short_name = short_name.clone();
+        project.version += 1;
+        Ok(true)
+    }
+
+    async fn move_project(
+        tx: &mut Tx,
+        id: ProjectId,
+        parent: Option<ProjectId>,
+        version: i64,
+    ) -> Result<bool, FakeError> {
+        let Some(project) = tx
+            .state
+            .projects
+            .iter_mut()
+            .find(|project| project.id == id && project.version == version)
+        else {
+            return Ok(false);
+        };
+        project.parent = parent;
+        project.version += 1;
+        Ok(true)
+    }
+
+    async fn insert_project_alias(tx: &mut Tx, alias: &ProjectAlias) -> Result<(), FakeError> {
+        if tx
+            .state
+            .aliases
+            .iter()
+            .any(|known| known.short_name == alias.short_name)
+        {
+            return Err(FakeError::Duplicate);
+        }
+        tx.state.aliases.push(alias.clone());
+        Ok(())
+    }
+
+    async fn delete_project_alias(tx: &mut Tx, name: &ShortName) -> Result<(), FakeError> {
+        tx.state.aliases.retain(|alias| &alias.short_name != name);
+        Ok(())
+    }
+}

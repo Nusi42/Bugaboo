@@ -83,7 +83,7 @@ async fn list(
                 session_token: who.session.clone(),
                 scope,
                 topic: Some(topic.to_owned()),
-                project,
+                project: project.map(|project| project.to_string()),
             },
         )
         .await?

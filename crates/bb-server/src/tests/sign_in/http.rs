@@ -244,18 +244,16 @@ pub(super) fn never_stored_reads() -> &'static BTreeSet<String> {
     })
 }
 
-/// Whether the address is one of the routes in `routes`: an address with an ID in it is the route
-/// whose address has a part in braces in that place.
-pub(super) fn is_route_in(routes: &BTreeSet<String>, address: &str) -> bool {
-    let parts: Vec<&str> = address.split('/').collect();
-    routes.iter().any(|route| {
-        let template: Vec<&str> = route.split('/').collect();
-        template.len() == parts.len()
-            && template
-                .iter()
-                .zip(&parts)
-                .all(|(wanted, found)| wanted == found || wanted.starts_with('{'))
-    })
+/// Whether the address is the route written as `template`, whose `{…}` parts stand for any one
+/// part of an address.
+fn is_route(template: &str, route: &str) -> bool {
+    let (template, route): (Vec<&str>, Vec<&str>) =
+        (template.split('/').collect(), route.split('/').collect());
+    template.len() == route.len()
+        && template
+            .iter()
+            .zip(&route)
+            .all(|(wanted, found)| wanted == found || wanted.starts_with('{'))
 }
 
 /// What every answer of the API says about keeping it (PERF-03, `bb-api` `etag`), checked on
@@ -266,7 +264,9 @@ fn assert_cache_rules(method: &str, path: &str, reply: &Reply) {
     let route = path.split('?').next().unwrap_or(path);
     let kept = method == "GET"
         && reply.status == StatusCode::OK
-        && !is_route_in(never_stored_reads(), route);
+        && !never_stored_reads()
+            .iter()
+            .any(|template| is_route(template, route));
     let rule = reply.header("cache-control");
     if kept {
         assert_eq!(rule, "private, no-cache", "{method} {path}");

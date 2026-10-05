@@ -40,6 +40,8 @@ mod auth;
 mod auth_factors;
 mod auth_people;
 mod auth_sign_in;
+mod projects;
+mod projects_move;
 mod settings;
 
 pub use admin::ProbeHandle;
@@ -121,6 +123,7 @@ where
         .merge(auth::routes(limits))
         .merge(admin::routes())
         .merge(settings::routes())
+        .merge(projects::routes())
 }
 
 /// Whether the address belongs to the API. Escapes are decoded first; an address with a

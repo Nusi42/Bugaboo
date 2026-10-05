@@ -1,6 +1,5 @@
 import { CSRF_COOKIE } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
-import { type Page } from "@playwright/test";
 
 import { ada, makeAdmin } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
@@ -9,12 +8,10 @@ import {
   expectHome,
   fillSignIn,
   openFromMenu,
-  openMenu,
   pressSignOut,
   signIn,
   signOut,
 } from "./support/flows.ts";
-import { onThisLayout } from "./support/layout.ts";
 
 test.use({
   preparation: {
@@ -45,15 +42,6 @@ test("m1_f51 an answer that says the token is wrong takes the person to the sign
   await signOut(page);
 });
 
-/** Presses *My settings* in the menu. */
-async function openMySettings(page: Page): Promise<void> {
-  await openMenu(page);
-  await page
-    .getByRole("link", { name: t("nav.my-settings"), exact: true })
-    .first()
-    .click();
-}
-
 test("m1_f51 an answer that says nobody is signed in takes the person to the sign-in page", async ({
   page,
   browser,
@@ -72,13 +60,12 @@ test("m1_f51 an answer that says nobody is signed in takes the person to the sig
   await expect(other).toHaveURL(/\/sign-in/u);
   await other.context().close();
 
-  // On a computer and a tablet the person's settings are asked for as My settings opens, and that
-  // answer comes before a topic can be pressed; on a phone a topic is the first page to ask.
-  await onThisLayout(page, {
-    computer: openMySettings,
-    tablet: openMySettings,
-    phone: (shown) => openFromMenu(shown, t("nav.sessions")),
-  });
+  // A phone asks for the projects of its menu as soon as the menu opens, a computer when the page
+  // asks for its data: the first answer that says nobody is signed in ends it either way.
+  await Promise.race([
+    openFromMenu(page, t("nav.sessions")).catch(() => false),
+    expect(page).toHaveURL(/\/sign-in\?reason=session-ended$/u),
+  ]);
   await expect(page).toHaveURL(/\/sign-in\?reason=session-ended$/u);
   await expect(page.getByText(t("error.auth.not-signed-in"))).toBeVisible();
 });

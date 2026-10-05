@@ -20,8 +20,6 @@ use bb_app::settings::{
     ChangeSetting, LockSetting, ResetSetting, SettingList, SettingSource, SettingView,
     SettingsQuery, SettingsScope,
 };
-use bb_core::ErrorCode;
-use bb_core::id::ProjectId;
 use bb_core::settings::{DefaultValue, Format, Level, SettingValue};
 use bb_policy::{Authorized, Masked};
 use serde::{Deserialize, Serialize};
@@ -353,7 +351,7 @@ mod query {
         /// Only the settings whose key starts with one of these texts, separated by commas, like
         /// `region.` for a topic.
         pub(super) topic: Option<String>,
-        /// The ID of the project the person works in: the values of the project (and of the
+        /// The ID or the short name of the project the person works in: the values of the project (and of the
         /// projects above it) then count for them.
         pub(super) project: Option<String>,
     }
@@ -378,17 +376,13 @@ pub(crate) struct ProjectPath {
     project: String,
 }
 
-fn project_of(text: &str) -> Result<ProjectId, ApiError> {
-    text.parse().map_err(|_| ApiError::new(ErrorCode::NotFound))
-}
-
 async fn list(
     auth: &AuthHandle,
     info: bb_app::auth::RequestInfo,
     session_token: String,
     scope: SettingsScope,
     topic: Option<String>,
-    project: Option<ProjectId>,
+    project: Option<String>,
 ) -> Result<Response, ApiError> {
     let list = auth
         .api()?
@@ -622,7 +616,7 @@ async fn unlock_organization_setting(
     operation_id = "listProjectSettings",
     tag = "settings",
     extensions(("x-never-stored" = json!(true))),
-    params(("project" = String, Path, description = "The ID of the project."), query::TopicParams),
+    params(("project" = String, Path, description = "The ID or the short name of the project."), query::TopicParams),
     responses((status = 200, description = "The settings that can be set on a project, with the values that count there.", body = SettingsBody), NotSignedInAnswer, ForbiddenAnswer, NotFoundAnswer)
 )]
 async fn list_project_settings(
@@ -632,12 +626,11 @@ async fn list_project_settings(
     ApiPath(path): ApiPath<ProjectPath>,
     ApiQuery(params): ApiQuery<query::TopicParams>,
 ) -> Result<Response, ApiError> {
-    let project = project_of(&path.project)?;
     list(
         &auth,
         info,
         session_token,
-        SettingsScope::Project(project),
+        SettingsScope::ProjectAt(path.project),
         params.topic,
         None,
     )
@@ -652,7 +645,7 @@ async fn list_project_settings(
     operation_id = "changeProjectSetting",
     tag = "settings",
     params(
-        ("project" = String, Path, description = "The ID of the project."),
+        ("project" = String, Path, description = "The ID or the short name of the project."),
         ("key" = String, Path, description = "The key of the setting.")
     ),
     request_body = NewValueBody,
@@ -672,12 +665,11 @@ async fn change_project_setting(
     ApiPath(path): ApiPath<ProjectKeyPath>,
     ApiJson(body): ApiJson<NewValueBody>,
 ) -> Result<Response, ApiError> {
-    let project = project_of(&path.project)?;
     change(
         &auth,
         info,
         session_token,
-        SettingsScope::Project(project),
+        SettingsScope::ProjectAt(path.project),
         path.key,
         body.value,
     )
@@ -692,7 +684,7 @@ async fn change_project_setting(
     operation_id = "resetProjectSetting",
     tag = "settings",
     params(
-        ("project" = String, Path, description = "The ID of the project."),
+        ("project" = String, Path, description = "The ID or the short name of the project."),
         ("key" = String, Path, description = "The key of the setting.")
     ),
     responses(
@@ -709,12 +701,11 @@ async fn reset_project_setting(
     Session(session_token): Session,
     ApiPath(path): ApiPath<ProjectKeyPath>,
 ) -> Result<Response, ApiError> {
-    let project = project_of(&path.project)?;
     reset(
         &auth,
         info,
         session_token,
-        SettingsScope::Project(project),
+        SettingsScope::ProjectAt(path.project),
         path.key,
     )
     .await
@@ -736,14 +727,13 @@ async fn list_my_settings(
     Session(session_token): Session,
     ApiQuery(params): ApiQuery<query::MineParams>,
 ) -> Result<Response, ApiError> {
-    let project = params.project.as_deref().map(project_of).transpose()?;
     list(
         &auth,
         info,
         session_token,
         SettingsScope::Person,
         params.topic,
-        project,
+        params.project,
     )
     .await
 }

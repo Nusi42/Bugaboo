@@ -410,9 +410,12 @@ export const messages = {
   "nav.group.sign-in": "Sign-in",
   "nav.group.people": "People",
   "nav.group.system": "System",
+  "nav.projects": "Projects",
+  "nav.group.work": "Work",
+  "search.projects": "Projects",
   "search.title": "Quick search",
   "search.label": "Search",
-  "search.placeholder": "Search pages and settings",
+  "search.placeholder": "Search pages, settings and projects",
   "search.clear": "Clear the search",
   "search.results": "Results",
   "search.nothing": "Nothing found. Try another word.",
@@ -521,6 +524,141 @@ export const messages = {
   "error.assignment.conflict":
     "This person or group already has a role here, so it cannot also have No access here, and the other way round. Take the other row away first.",
   "error.name.taken": "That name is already used. Choose another one.",
+  "error.project.move-lifts-no-access":
+    "This move would let somebody take away a No access that applies to them. Take that No access away first, or move the project somewhere else.",
+  "error.project.too-deep":
+    "Projects cannot be nested any deeper than this. Make or move it somewhere higher up.",
+  "error.project.move-into-itself":
+    "A project cannot go inside itself or inside one of its own sub-projects.",
+  "error.project.preview-changed":
+    "The projects, or who has which role, changed since you looked at the preview. Look at it again before you move the project.",
+  "permission.see-projects": "See the project and what is in it",
+  "permission.make-projects": "Make projects at the top level",
+  "permission.make-sub-projects": "Make sub-projects inside the project",
+  "permission.move-projects": "Move sub-projects into or out of the project",
+  "permission.change-project-settings": "Change the project's name, short name and settings",
+  "permission.decide-roles": "Decide who has which role, including No access",
+  "permission.decide-what-roles-see":
+    "Decide which fields and which people information each role sees",
+  "permission.check-access": "Check what other people can do, and why",
+  "permission.manage-people": "See everybody's e-mail address and correct their names",
+  "permission.manage-invitations": "Invite people and take invitations back",
+  "permission.manage-groups": "Make, rename and delete groups and change who is in them",
+  "permission.manage-roles": "Make, change and delete roles",
+  "permission.change-organization-settings": "Change organization settings",
+  "permission.see-status": "See how the server is doing",
+  "issue-field.title": "Title",
+  "issue-field.description": "Description",
+  "issue-field.status": "Status",
+  "issue-field.priority": "Priority",
+  "issue-field.assigned-to": "Assigned to",
+  "issue-field.reported-by": "Reported by",
+  "issue-field.due-date": "Due date",
+  "issue-field.labels": "Labels",
+  "issue-field.tags": "Tags",
+  "issue-field.planned-for-release": "Planned for release",
+  "issue-field.found-in-release": "Found in release",
+  "issue-field.estimated-time": "Estimated time",
+  "issue-field.time-left": "Time left",
+  "issue-field.time-spent": "Time spent",
+  "issue-field.activity": "Activity",
+  "issue-field.cost-center": "Cost center",
+  "people-kind.assigned-to": "Assigned to",
+  "people-kind.reported-by": "Reported by",
+  "people-kind.last-changed-by": "Last changed by",
+  "people-kind.authors": "Authors of comments and history",
+  "people-kind.editing": '"… is editing"',
+  "people-kind.followers": "Followers",
+  "people-kind.time-entries": "Time entries",
+  "people-kind.mentions": "Mentions",
+  "people-kind.pictures": "Pictures of people",
+  "people-kind.project-members": "Project members",
+  "field-level.hidden": "Hidden",
+  "field-level.can-see": "Can see",
+  "field-level.can-change": "Can change",
+  "people-level.names": "Names",
+  "people-level.role-only": "Role only",
+  "people-level.hidden": "Hidden",
+  "projects.heading": "Projects",
+  "projects.tree-empty": "You do not see any project yet.",
+  "projects.tree-more": "Show more projects",
+  "projects.toggle-name": "Sub-projects of {name}",
+  "projects.title": "Projects",
+  "projects.intro":
+    "The projects you can see. Open one to change its name or short name. A project is moved on its own settings page.",
+  "projects.search": "Search projects",
+  "projects.nothing": "No project found. Try another word.",
+  "projects.none-yet": "There is no project yet. Make the first one below.",
+  "projects.more": "Show more projects",
+  "projects.inside": "Inside {name}",
+  "projects.at-the-top": "At the top level",
+  "projects.make-title": "Make a project",
+  "projects.make-intro": "A project at the top level. Sub-projects are made inside their project.",
+  "projects.make": "Make the project",
+  "projects.made": "{name} was made.",
+  "projects.field-name": "Name",
+  "projects.field-name-help": "What people call the project.",
+  "projects.field-short-name": "Short name",
+  "projects.field-short-name-help":
+    "2 to 10 letters or digits, starting with a letter. It starts the issue IDs and is the address, like WEB.",
+  "projects.short-name-change-help":
+    "The old short name stays with this project: its old addresses keep working, and nobody else can take it.",
+  "projects.short-name-fixed":
+    "You can change the name here. Changing the short name takes the right to make projects where this project sits.",
+  "projects.edit-title": "Name and short name",
+  "projects.saved": "Saved.",
+  "projects.open": "Open the project",
+  "projects.settings-link": "Project settings",
+  "projects.settings-title": "Settings of {name}",
+  "projects.settings-back": "Back to the project",
+  "projects.overview-short-name": "Short name",
+  "projects.overview-inside": "Inside",
+  "projects.overview-top": "At the top level",
+  "projects.sub-projects": "Sub-projects",
+  "projects.sub-projects-empty": "This project has no sub-projects yet.",
+  "projects.sub-projects-ask": "Ask a project lead if you need one.",
+  "projects.make-sub-project": "Make a sub-project",
+  "projects.sub-projects-more": "Show more sub-projects",
+  "projects.move-title": "Move this project",
+  "projects.move-text":
+    "Put {name}, with everything inside it, into another project, or at the top level. You read what changes before it happens.",
+  "projects.move-button": "Move",
+  "projects.move-dialog-title": "Move {name}",
+  "projects.move-dialog-text":
+    "Pick where it goes, then read what changes for people before you confirm.",
+  "projects.move-confirm": "Move the project",
+  "projects.moved": "{name} was moved.",
+  "projects.picker-legend": "Where should it go?",
+  "projects.picker-search": "Search for a project",
+  "projects.picker-top": "Top level",
+  "projects.picker-nothing": "No project found. Try another word.",
+  "projects.picker-more": "Show more projects",
+  "projects.picker-list": "Projects it can go into",
+  "projects.preview-heading": "What changes",
+  "projects.preview-loading": "Working out what changes…",
+  "projects.preview-nothing": "Nobody gains or loses access, and nobody changes role.",
+  "projects.preview-hidden-note":
+    "This list holds only the projects you can see. People may be affected in projects you cannot see.",
+  "projects.preview-truncated": "There are more changes than this list shows.",
+  "projects.preview-blocked": "This move is not allowed.",
+  "projects.preview-blocked-out-of-sight":
+    "Something in a project you cannot see also stands in the way. Ask somebody who sees more to look at this move.",
+  "projects.preview-list": "Changes for people",
+  "projects.person-role": "A {role}",
+  "projects.person-someone": "Someone",
+  "projects.person-former": "Former user {label}",
+  "projects.no-role": "no role",
+  "projects.line-gains": "{person} gets access to {project}, as {roles}.",
+  "projects.line-loses": "{person} loses access to {project}.",
+  "projects.line-roles": "{person} in {project}: {before} becomes {after}.",
+  "projects.line-held-back-ends": "In {project}, a No access no longer holds {person} back.",
+  "projects.line-held-back-starts": "In {project}, a No access now holds {person} back.",
+  "projects.line-can-now": "In {project}, {person} can now: {things}.",
+  "projects.line-can-no-more": "In {project}, {person} can no longer: {things}.",
+  "projects.line-field": "In {project}, for {person}, {field} goes from {before} to {after}.",
+  "projects.line-people": "In {project}, for {person}, {kind} goes from {before} to {after}.",
+  "projects.line-lift":
+    "{person} could take away the No access that applies to them in {project}. Take that No access away first, or move the project somewhere else.",
 } as const;
 
 export type MessageKey = keyof typeof messages;
@@ -549,6 +687,54 @@ export interface MessageArguments {
   "passkeys.last-used": { when: string | number };
   "passkeys.remove-name": { name: string | number };
   "passkeys.remove-title": { name: string | number };
+  "projects.inside": { name: string | number };
+  "projects.line-can-no-more": {
+    person: string | number;
+    project: string | number;
+    things: string | number;
+  };
+  "projects.line-can-now": {
+    person: string | number;
+    project: string | number;
+    things: string | number;
+  };
+  "projects.line-field": {
+    after: string | number;
+    before: string | number;
+    field: string | number;
+    person: string | number;
+    project: string | number;
+  };
+  "projects.line-gains": {
+    person: string | number;
+    project: string | number;
+    roles: string | number;
+  };
+  "projects.line-held-back-ends": { person: string | number; project: string | number };
+  "projects.line-held-back-starts": { person: string | number; project: string | number };
+  "projects.line-lift": { person: string | number; project: string | number };
+  "projects.line-loses": { person: string | number; project: string | number };
+  "projects.line-people": {
+    after: string | number;
+    before: string | number;
+    kind: string | number;
+    person: string | number;
+    project: string | number;
+  };
+  "projects.line-roles": {
+    after: string | number;
+    before: string | number;
+    person: string | number;
+    project: string | number;
+  };
+  "projects.made": { name: string | number };
+  "projects.move-dialog-title": { name: string | number };
+  "projects.move-text": { name: string | number };
+  "projects.moved": { name: string | number };
+  "projects.person-former": { label: string | number };
+  "projects.person-role": { role: string | number };
+  "projects.settings-title": { name: string | number };
+  "projects.toggle-name": { name: string | number };
   "security-log.broken": { reason: string | number; seq: string | number };
   "security-log.head": { hash: string | number; seq: string | number };
   "security-log.valid": { entries: number };

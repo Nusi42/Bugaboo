@@ -22,5 +22,18 @@ export const paths = {
   signInRules: "/settings/sign-in-rules",
   themes: "/settings/themes",
   status: "/settings/status",
+  projects: "/settings/projects",
+  project: "/p/$project",
+  projectSettings: "/p/$project/settings",
   frames: "/frames",
 } as const;
+
+/** The address of a project: its short name, or an old one, in `/p/WEB`. */
+export function projectAddress(shortName: string): string {
+  return paths.project.replace("$project", encodeURIComponent(shortName));
+}
+
+/** The address of the settings of a project, `/p/WEB/settings`. */
+export function projectSettingsAddress(shortName: string): string {
+  return paths.projectSettings.replace("$project", encodeURIComponent(shortName));
+}
