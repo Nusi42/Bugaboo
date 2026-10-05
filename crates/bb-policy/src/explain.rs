@@ -162,16 +162,11 @@ impl Evaluation {
                         reasons.push(Reason::CountsOnlyForTheOrganization { row, role });
                     }
                 }
-                RowStatus::RemovedBy(decides) => {
+                RowStatus::RemovedBy(decides) | RowStatus::RemovedFromAbove(decides) => {
                     if let Some(no_access) = by_id(decides) {
-                        // Kept only from a row strictly above every *No access* that removes it.
+                        // The engine decided once whether Decide who has which role is kept.
                         let kept = permission == Permission::DecideRoles
-                            && !self.trace.iter().any(|other| {
-                                other.row.role.is_none()
-                                    && other.depth == trace.depth
-                                    && (other.row.who == Who::Person)
-                                        >= (trace.row.who == Who::Person)
-                            });
+                            && matches!(trace.status, RowStatus::RemovedFromAbove(_));
                         reasons.push(if kept {
                             Reason::KeptFromRemovedRow {
                                 row,

@@ -144,8 +144,12 @@ struct Rank {
 pub enum RowStatus {
     /// The role of the row counts.
     Counts,
-    /// A *No access* row of equal or higher rank removed the role.
+    /// A *No access* row of equal or higher rank removed the role, and a *No access* at the depth
+    /// of the row removes it by itself: nothing is kept from it.
     RemovedBy(AssignmentId),
+    /// A *No access* row removed the role, but the row is strictly above every *No access* that
+    /// removes it by itself: *Decide who has which role* is kept from it (ADR-0025, decision 6).
+    RemovedFromAbove(AssignmentId),
     /// The row is *No access* and it is the one that decides.
     NoAccessDecides,
     /// The row is *No access* but a higher-ranked one decides.
@@ -237,6 +241,11 @@ pub fn evaluate(inputs: &Inputs) -> Evaluation {
         .iter()
         .find(|(_, trace)| trace.row.role.is_none())
         .map(|(rank, trace)| (*rank, trace.row.id));
+    let no_access_ranks: Vec<Rank> = traced
+        .iter()
+        .filter(|(_, trace)| trace.row.role.is_none())
+        .map(|(rank, _)| *rank)
+        .collect();
     for (rank, trace) in &mut traced {
         match (trace.row.role, top_no_access) {
             (None, Some((_, decides))) => {
@@ -247,7 +256,18 @@ pub fn evaluate(inputs: &Inputs) -> Evaluation {
                 };
             }
             (Some(_), Some((top, decides))) if *rank <= top => {
-                trace.status = RowStatus::RemovedBy(decides);
+                // A *No access* at the depth of the row that ranks as high removes it by itself,
+                // so nothing is kept from it: a group's role next to the person's own *No
+                // access* would otherwise let them lift it. A *No access* that ranks lower (a
+                // group's, next to the person's own role) does not remove it at all.
+                let removed_at_its_depth = no_access_ranks
+                    .iter()
+                    .any(|other| other.depth == rank.depth && other >= rank);
+                trace.status = if removed_at_its_depth {
+                    RowStatus::RemovedBy(decides)
+                } else {
+                    RowStatus::RemovedFromAbove(decides)
+                };
             }
             _ => {}
         }
@@ -258,7 +278,7 @@ pub fn evaluate(inputs: &Inputs) -> Evaluation {
     let mut held: Vec<&RoleData> = Vec::new();
     let mut permissions = BTreeSet::new();
     let mut kept_decide_roles = false;
-    for (rank, trace) in &traced {
+    for (_, trace) in &traced {
         let Some(role) = trace.row.role.and_then(|id| roles.get(&id).copied()) else {
             continue;
         };
@@ -274,20 +294,15 @@ pub fn evaluate(inputs: &Inputs) -> Evaluation {
                         .filter(|permission| counts_here(*permission, inputs.place)),
                 );
             }
-            RowStatus::RemovedBy(_) => {
-                // Nobody is locked out by a project below them (ADR-0025, decision 6): the right
-                // to decide is kept from a row strictly above the *No access* that removed it,
-                // the whole organization included. A row at the depth of a *No access* that
-                // removes it by itself (a group's role next to the person's own *No access*) is
-                // removed as a whole, or a person could lift their own *No access*.
-                let at_its_own_depth = traced.iter().any(|(other_rank, other)| {
-                    other.row.role.is_none() && other_rank.depth == rank.depth && other_rank >= rank
-                });
-                if role.permissions.contains(&Permission::DecideRoles) && !at_its_own_depth {
+            // Nobody is locked out by a project below them (ADR-0025, decision 6): the right to
+            // decide is kept from a row strictly above the *No access* that removed it, the whole
+            // organization included.
+            RowStatus::RemovedFromAbove(_) => {
+                if role.permissions.contains(&Permission::DecideRoles) {
                     kept_decide_roles = true;
                 }
             }
-            RowStatus::NoAccessDecides | RowStatus::NoAccessCovered => {}
+            RowStatus::RemovedBy(_) | RowStatus::NoAccessDecides | RowStatus::NoAccessCovered => {}
         }
     }
     if kept_decide_roles {
