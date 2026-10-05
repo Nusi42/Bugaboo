@@ -148,6 +148,7 @@ async function topicsOnLargeScreens(page: Page): Promise<void> {
     t("shortcut.title"),
     t("nav.security"),
     t("nav.sessions"),
+    t("nav.access-keys"),
   ]);
 }
 
@@ -165,6 +166,7 @@ async function topicsOnPhone(page: Page): Promise<void> {
     t("shortcut.title"),
     t("nav.security"),
     t("nav.sessions"),
+    t("nav.access-keys"),
   ]);
 }
 
