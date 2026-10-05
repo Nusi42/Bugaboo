@@ -26,14 +26,16 @@ pub(super) async fn serve(args: ServeArgs) -> anyhow::Result<()> {
     let source = args.web.map_or(WebSource::Embedded, WebSource::Folder);
     // Installed before listening, so a failure is reported instead of stopping silently.
     let shutdown = shutdown_signal()?;
-    serve_settings(settings, source, shutdown).await
+    serve_settings(settings, source, std::io::stdout().is_terminal(), shutdown).await
 }
 
 /// Runs the server with these settings until `shutdown` completes. A service passes the stop
-/// request of the service manager; `bugaboo serve` passes the signals of the console.
+/// request of the service manager; `bugaboo serve` passes the signals of the console. `console`
+/// says whether somebody reads the output, which decides how the setup code is shown.
 pub(super) async fn serve_settings(
     settings: Settings,
     source: WebSource,
+    console: bool,
     shutdown: impl Future<Output = ()> + Send + 'static,
 ) -> anyhow::Result<()> {
     let data = DataFolder::prepare(&settings.data_dir)?;
@@ -42,6 +44,8 @@ pub(super) async fn serve_settings(
     // The database, the keys and the sign-in services come first: when one of them fails the
     // server stops here, before it listens (M1-F19, M1-F24).
     let wired = wiring::wire(&settings, &data).await?;
+    // Before the port opens: whoever connects can already find the setup code.
+    let setup_notice = prepare_setup_code(&data, wired.setup_code.as_deref(), console);
     let address = SocketAddr::new(settings.address, settings.port);
     let tcp = TcpListener::bind(address)
         .await
@@ -62,7 +66,7 @@ pub(super) async fn serve_settings(
         "https"
     };
     output::line(&message::server_listening(format!("{scheme}://{address}")).render());
-    announce_setup_code(&data, wired.setup_code.as_deref());
+    announce_setup_code(&setup_notice);
     tracing::info!(https = hsts_max_age.is_some(), "server started");
 
     let options = Options {
@@ -91,27 +95,51 @@ fn hsts_max_age(settings: &Settings) -> Option<u64> {
     }
 }
 
-/// Tells how to find the setup code of the first start (AUTH-09). On a console it is printed:
-/// only there, never in the log file, because the code is a secret until it is used. Without a
-/// console (a service) it is saved in a file in the data folder that only the account that runs
-/// Bugaboo (and, on Windows, the administrators of the computer) can read. The code is dead once
-/// the first administrator exists; the file goes away at the next start (follow-up M1-F58).
-fn announce_setup_code(data: &DataFolder, code: Option<&str>) {
+/// What to tell about the setup code once the server listens.
+enum SetupNotice {
+    /// An administrator exists: there is nothing to tell.
+    Nothing,
+    /// A console is there: the code is printed on it, and only there (never in the log file,
+    /// because the code is a secret until it is used).
+    Console(String),
+    /// Without a console (a service) the code is saved in a file in the data folder.
+    Saved(Message),
+    /// The file could not be written: where to look instead.
+    NotSaved(Message),
+}
+
+/// Makes the setup code of the first start ready to be found (AUTH-09). This happens before the
+/// server listens, so that an open port means a server that can be set up, for people and for
+/// tests: a file with the code (private to the account that runs Bugaboo and, on Windows, the
+/// administrators of the computer) is in place by then. The code is dead once the first
+/// administrator exists; the file goes away at the next start (follow-up M1-F58).
+fn prepare_setup_code(data: &DataFolder, code: Option<&str>, console: bool) -> SetupNotice {
     let file = data.setup_code_file();
     let Some(code) = code else {
         // An administrator exists: a code from an earlier start is dead, and so is its file.
         let _ = std::fs::remove_file(&file);
-        return;
+        return SetupNotice::Nothing;
     };
-    if std::io::stdout().is_terminal() {
-        output::line(&message::server_setup_code(code).render());
-        output::line(&Message::from(message::SERVER_SETUP_CODE_HINT).render());
+    if console {
         let _ = std::fs::remove_file(&file);
-        return;
+        return SetupNotice::Console(code.to_owned());
     }
     match save_setup_code(&file, code) {
-        Ok(saved) => output::line(&saved.render()),
-        Err(failed) => {
+        Ok(saved) => SetupNotice::Saved(saved),
+        Err(failed) => SetupNotice::NotSaved(failed),
+    }
+}
+
+/// Says how to find the setup code, once the server listens.
+fn announce_setup_code(notice: &SetupNotice) {
+    match notice {
+        SetupNotice::Nothing => {}
+        SetupNotice::Console(code) => {
+            output::line(&message::server_setup_code(code).render());
+            output::line(&Message::from(message::SERVER_SETUP_CODE_HINT).render());
+        }
+        SetupNotice::Saved(saved) => output::line(&saved.render()),
+        SetupNotice::NotSaved(failed) => {
             tracing::warn!("the setup code could not be saved in a file");
             output::warning(&failed.render());
         }
@@ -261,6 +289,62 @@ mod tests {
         assert!(text.contains("no-such-folder"), "{text}");
         assert!(text.contains("bugaboo serve"), "{text}");
         assert!(!text.contains("k7q2"), "{text}");
+    }
+
+    /// Starts a server on a new data folder and returns what its setup code file held at the
+    /// moment the first connection was accepted, read from another thread.
+    async fn code_file_at_first_connection(
+        folder: &Path,
+    ) -> Result<String, Box<dyn std::error::Error>> {
+        // A port that is free now: nothing else in these tests binds one.
+        let port = std::net::TcpListener::bind("127.0.0.1:0")?
+            .local_addr()?
+            .port();
+        let data = folder.join("data");
+        let given = [
+            ("port", port.to_string()),
+            ("tls_mode", "off".to_owned()),
+            ("data_dir", data.to_string_lossy().into_owned()),
+        ];
+        let settings = config::resolve(&Sources {
+            file: None,
+            env: &|_| None,
+            cli: &given,
+            base: folder,
+        })?;
+        let (stop, stopped) = tokio::sync::oneshot::channel::<()>();
+        let server = serve_settings(settings, WebSource::Embedded, false, async move {
+            let _ = stopped.await;
+        });
+        // Another thread connects the moment the port opens, without waiting: the file must be
+        // there already.
+        let client = std::thread::spawn(move || {
+            let started = std::time::Instant::now();
+            while std::net::TcpStream::connect(("127.0.0.1", port)).is_err() {
+                assert!(
+                    started.elapsed().as_secs() < 30,
+                    "the server did not listen"
+                );
+            }
+            let code = std::fs::read_to_string(data.join("setup-code.txt"));
+            let _ = stop.send(());
+            code
+        });
+        server.await?;
+        Ok(client.join().map_err(|_| "the client thread panicked")??)
+    }
+
+    #[tokio::test]
+    async fn auth_09_the_setup_code_file_is_there_when_the_port_accepts_connections()
+    -> Result<(), Box<dyn std::error::Error>> {
+        // Several starts, because the moment between opening the port and saving the file, were
+        // it there, is short.
+        for _ in 0..6 {
+            let folder = tempfile::tempdir()?;
+            let code = code_file_at_first_connection(folder.path()).await?;
+            assert!(!code.trim().is_empty(), "the file was empty");
+        }
+        Ok(())
     }
 
     #[test]

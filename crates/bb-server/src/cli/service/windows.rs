@@ -259,6 +259,8 @@ fn serve_until_stopped(args: &ConfigArgs, stopped: oneshot::Receiver<()>) -> any
     runtime.block_on(serve::serve_settings(
         settings,
         WebSource::Embedded,
+        // A service has no console to print on.
+        false,
         async move {
             let _ = stopped.await;
         },
