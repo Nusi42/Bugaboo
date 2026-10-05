@@ -11,3 +11,6 @@ pub mod projects;
 pub mod roles;
 pub mod status;
 mod store_macros;
+
+#[cfg(test)]
+mod tests;

@@ -22,5 +22,13 @@ serde_json = { workspace = true }
 tracing = { workspace = true }
 zeroize = { workspace = true }
 
+[dev-dependencies]
+base64ct = { workspace = true }
+# Makes `Authorized::into_value` for the tests of this crate (ARCH-AUTHZ-ONLY).
+bb-policy = { path = "../bb-policy", features = ["peek"] }
+tokio = { workspace = true, features = ["macros", "rt"] }
+tracing-subscriber = { workspace = true }
+webauthn-authenticator-rs = { workspace = true }
+
 [lints]
 workspace = true

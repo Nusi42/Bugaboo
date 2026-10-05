@@ -442,6 +442,7 @@ dependencies = [
 name = "bb-app"
 version = "0.0.0"
 dependencies = [
+ "base64ct",
  "bb-auth",
  "bb-core",
  "bb-policy",
@@ -449,7 +450,10 @@ dependencies = [
  "jiff",
  "serde",
  "serde_json",
+ "tokio",
  "tracing",
+ "tracing-subscriber",
+ "webauthn-authenticator-rs",
  "zeroize",
 ]
 

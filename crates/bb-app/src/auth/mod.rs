@@ -58,6 +58,10 @@ pub type Answer<'a, T> = Pin<Box<dyn Future<Output = Result<T, AppError>> + Send
 /// name of the function above, its input and its output.
 macro_rules! use_cases {
     ($($(#[$meta:meta])* $name:ident($input:ty) -> $output:ty;)+) => {
+        /// Every use case of [`AuthApi`] by name, with the name of its input type: what tests read to
+        /// make sure none is left out (a use case whose input ends in `Query` only reads).
+        pub const USE_CASES: &[(&str, &str)] = &[$((stringify!($name), stringify!($input))),+];
+
         /// Every use case the HTTP layer calls, with the store behind it erased.
         pub trait AuthApi: Send + Sync {
             /// Whether `presented` (the `x-csrf-token` header) is the token of the session
