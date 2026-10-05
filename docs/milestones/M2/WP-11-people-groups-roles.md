@@ -32,6 +32,12 @@ Administrators manage people, groups and roles in plain words, and project leads
 
 None new; TEST-A11Y covers the new addresses, ARCH-PERSON-REF the people in answers; every route declares its permission (ARCH-PERMS) and adds its SEC-MATRIX example.
 
+## Answers
+
+- ***No access* (M2-Q1):** set per person or group on a project, always for the project and its sub-projects; it wins over roles from above and over a group's role on the same project; a role given lower down still counts. People who decide roles higher up keep seeing the project's name in *Who has which role*, so they can take a *No access* away again ([ADR-0025](../../adr/0025-roles-groups-and-assignments.md), decisions 3 and 6).
+- **Names (M2-Q3):** people with *Manage people*, *Manage groups*, *Manage roles* or *Decide who has which role* at that place see names in these screens; everybody else sees people by the kind *Project members*. E-mail addresses only with *Manage people*.
+- **Starting roles (M2-Q5):** the tables in [architecture §7](../../architecture/07-cross-cutting.md#authorization-model); nobody gives a role, or adds a permission to one, that they do not hold themselves at that place (the refusal says so in a sentence).
+
 ## Depends on
 
 WP-05 (use cases, policy), WP-07 (settings form for the sign-up rule), WP-08 (projects for assignments), WP-10 (matrix examples table, checks).

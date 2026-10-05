@@ -32,6 +32,12 @@ Administrators and project leads set, per role and per project, which fields eac
 
 None new; SEC-MATRIX field and people rows (WP-10) cover the engine; this package adds the examples of its routes. TEST-A11Y covers the new addresses.
 
+## Answers
+
+- **Fields (M2-Q7):** the rows of the matrix are the 16 built-in fields of [architecture §7](../../architecture/07-cross-cutting.md#authorization-model), *The field catalogue*, with the starting levels there (a Contributor starts with *Can see* on *Cost center*, so the exit demo can hide it).
+- **Who sees people (M2-Q3):** the kinds include *Project members* (starting levels in §7); managers see names in *Check access* as WP-11's screens do.
+- ***Check access*:** the answer and its reasons have the shape written in §7; a reason on a project the checker cannot see says *a project you can't see* ([ADR-0025](../../adr/0025-roles-groups-and-assignments.md), decision 12). Add `sec_03_check_access_names_no_project_the_checker_cannot_see`.
+
 ## Depends on
 
 WP-05 (masks, `PersonRef`, explanation), WP-08 (projects), WP-10 (matrix, checks), WP-07 (settings form patterns). Runs beside WP-11 in folders of its own; both add lines to the *Organization settings* and *Project settings* menus.

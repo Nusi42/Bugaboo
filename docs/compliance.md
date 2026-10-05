@@ -194,6 +194,17 @@ personal data: names, e-mail addresses, comments, working hours, sign-in logs.
 download my data, remove a person, keep-and-delete rules, protection of employee data; plus
 DIST-03 (no operator access by default) and DIST-05 (served-model paperwork).
 
+**Where people work (from M2).** Group membership and role assignments say where a person
+works and what they may do, so they are personal data of their own category, `organization`,
+on the basis of the contract (for employees in Germany together with Art. 88 GDPR and § 26
+BDSG). Access keys (owner, name, last use) and each person's own settings (time zone, region,
+appearance) are personal data too; names of groups, roles and projects are free text and are
+treated as personal data. The marks are listed in
+[the threat model](architecture/12-security.md#personal-data-in-m2) until the code carries
+them into the generated [personal-data list](privacy/personal-data.md). *Who sees people*
+(PRIV-12) lets an organization hide names from roles, for example from external guests or as
+a works council agreed.
+
 **Key dates.** Applies since 25 May 2018.
 
 ---

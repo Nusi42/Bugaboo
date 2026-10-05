@@ -28,6 +28,7 @@ Each file records one decision: context, decision, consequences, alternatives. N
 | [0022](0022-who-sees-people.md) | Who sees people is part of the permission model |
 | [0023](0023-dev-ports-and-test-setup.md) | Development ports and test setup |
 | [0024](0024-master-repo-and-work-folders.md) | Master repository in a synced folder, work folders outside it |
+| [0025](0025-roles-groups-and-assignments.md) | Roles, groups and assignments on the project tree |
 
 ## Template
 

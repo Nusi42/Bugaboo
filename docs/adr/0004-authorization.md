@@ -1,6 +1,6 @@
 # ADR-0004: Authorization: one policy engine and Authorized<T>
 
-Status: **Accepted** · 2026-10-04
+Status: **Accepted** · 2026-10-04 · refined by [ADR-0025](0025-roles-groups-and-assignments.md)
 
 ## Context
 

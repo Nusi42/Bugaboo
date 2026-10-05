@@ -4,11 +4,11 @@ Part of the security and data-flow documentation (COMP-07) for the CRA technical
 
 The method is STRIDE per trust boundary (boundaries from [Context](02-context.md)). Every threat names the mitigation and what proves it: a check from the catalogue (`tools/checks/catalog.toml`), a test, or *review* when a person decides.
 
-## Scope (status: M1)
+## Scope (status: M2)
 
 | In scope now | Comes later (own section then) |
 |--------------|-------------------------------|
-| HTTPS and start-up config, security headers, sign-in (password, passkey, two-step codes), sessions, invitations, first-run setup code, rate limits, the security log, stored secrets, logs | Permissions engine (M2), search language (M3), attachments (M5), MCP and the assistant (M9), webhooks and mail (M4), the served model's control plane (M14) |
+| HTTPS and start-up config, security headers, sign-in (password, passkey, two-step codes), sessions, invitations, first-run setup code, rate limits, the security log, stored secrets, logs (M1); the permission engine (roles, groups, assignments, *No access*, field masks, *Who sees people*), projects and short names, access keys, two-step sign-in by role, settings in layers (M2) | Issues (M3), attachments and mail (M4), search language (M5), MCP and the assistant (M8), *Remove a person* and exports (M9), webhooks (M12), the served model's control plane (M14) |
 
 ## Attack surface
 
@@ -36,7 +36,7 @@ flowchart LR
   server --> logs
 ```
 
-Entry points in M1: the HTTPS listener (pages, assets, `/api/v1`, `/health/*`), the console and `bugaboo.toml`, and the data folder on disk.
+Entry points in M1: the HTTPS listener (pages, assets, `/api/v1`, `/health/*`), the console and `bugaboo.toml`, and the data folder on disk. M2 adds no new listener: the new routes are below `/api/v1`, and scripts reach them with an access key (`Authorization: Bearer bb_…`) instead of a cookie. The sample-organization program (`bb-sample`) is a developer tool and is not shipped before OPS-12.
 
 ## Threats and mitigations
 
@@ -46,7 +46,7 @@ Entry points in M1: the HTTPS listener (pages, assets, `/api/v1`, `/health/*`), 
 |--------|--------|-----------|-----------|
 | Spoofing | Password guessing and credential stuffing | Argon2id, breached-password list, slow-down per account, person and network (failed tries only, reserved before they are checked so parallel requests are not parallel guesses, cleared by a success), a window that doubles up to 15 minutes after every window that ended with a failure (pacing does not help), never a permanent lock; the keys of a network keep a window of a minute and do not grow, because many people share a network | `sec_14_only_failed_tries_count_and_a_success_clears_them`, `sec_14_parallel_wrong_tries_at_one_account_get_no_more_than_the_allowance`, `sec_14_pacing_the_tries_just_under_the_allowance_does_not_dodge_the_growing_wait`, `sec_14_the_window_of_a_network_stays_a_minute_however_often_it_fails`, `sec_14_only_a_finished_second_step_clears_the_wrong_codes_of_a_person`, `sec_14_failures_of_one_network_are_limited_whatever_the_account`, `sec_14_failed_sign_ins_are_turned_away_with_a_wait_and_the_answers_look_alike`, `sec_14_one_network_is_limited_in_its_tries_whatever_the_account`; `auth_01_*` (password rules) |
 | Spoofing | Finding out which e-mail addresses have accounts | Same answer and same work for unknown accounts and wrong passwords; no error says which of the two was wrong | `auth_01_an_unknown_address_and_a_wrong_password_get_the_same_answer`, the timing test `auth_01_an_unknown_account_takes_as_long_as_a_wrong_password`; ARCH-ERRORS |
-| Spoofing | Stolen password alone is enough | Two-step codes (TOTP with backup codes) and passkeys; the setting for admins to require them per role is declared and takes effect with roles (M2) | `auth_03_*`, `auth_02_*` (`crates/bb-server/src/tests/sign_in/`) |
+| Spoofing | Stolen password alone is enough | Two-step codes (TOTP with backup codes) and passkeys; administrators ask them of everybody (`security.two-step-required`) or of a role (the switch on the role, ADR-0025; see the M2 rows below) | `auth_03_*`, `auth_02_*` (`crates/bb-server/src/tests/sign_in/`) |
 | Spoofing | Guessing or replaying a code of the second step after a password was stolen | A code works once (its step is written in the same change that opens the session), wrong codes count against the person and, after 10 in one half-finished sign-in, end it, backup codes are 80 bits and stored hashed | `auth_03_signing_in_with_a_code_opens_a_new_session_and_a_code_works_once`, `sec_14_wrong_second_step_codes_are_limited_per_person`, `sec_14_parallel_wrong_codes_at_one_half_finished_sign_in_get_no_more_than_the_allowance`, `sec_14_ten_wrong_codes_end_the_half_finished_sign_in_and_are_written_down`, `auth_03_a_code_step_is_accepted_once_even_when_requests_race` |
 | Elevation of privilege | A thief with a stolen session adds a code app or a passkey of their own and keeps access | Adding a way to sign in asks for the password again (when it starts and when it is finished) | `sec_12_a_stolen_session_cannot_add_a_code_app_without_the_password`, `sec_12_a_stolen_session_cannot_add_a_passkey_without_the_password` |
 | Spoofing | A passkey answer replayed, made by another passkey, or for another person | A challenge works once, for 5 minutes and for one person; the passkey is one the person registered; the answer is checked by `webauthn-rs`. A new passkey is asked to be discoverable (`residentKey: preferred`), so that it can also sign in on its own, without the password; a device that cannot store one still works as a second step | `auth_02_a_passkey_finishes_signing_in_after_the_password`, `auth_02_a_passkey_signs_in_on_its_own` |
@@ -68,6 +68,31 @@ Entry points in M1: the HTTPS listener (pages, assets, `/api/v1`, `/health/*`), 
 | Repudiation | A sign-in, a failed try, a limit or a change of credentials leaves no trace | Every sign-in event is written to the security log, whose chain verifies | `sec_15_the_security_log_of_signing_in_verifies_and_names_what_happened`, `adr_0007_*` (an event for every change) |
 | Elevation of privilege | Stolen session cookie used elsewhere | HttpOnly, Secure, idle and absolute timeouts, *Where you're signed in* to end sessions | `sec_12_a_session_ends_after_it_was_idle_too_long_and_use_keeps_it_alive`, `sec_12_a_session_ends_after_the_absolute_time_however_busy_the_person_is`, `sec_12_people_list_their_sessions_and_end_any_of_them` |
 | Elevation of privilege | A person makes invitations or changes who may sign up | Administrators only | `auth_06_only_administrators_manage_invitations`, `auth_06_signing_up_is_off_by_default_and_only_administrators_change_the_rule` |
+
+### Permissions, projects and access keys (M2)
+
+The model is [ADR-0025](../adr/0025-roles-groups-and-assignments.md) and [§7, *Authorization model*](07-cross-cutting.md#authorization-model). The trust boundary is the same (browser or script ↔ server); what is new is that the server now decides between people who are all signed in. The packages that build a row add its test when they merge; a name in the last column that does not exist yet is the test the package's plan asks for.
+
+| STRIDE | Threat | Mitigation | Proven by |
+|--------|--------|-----------|-----------|
+| Elevation of privilege | A route or use case forgets to ask the policy engine, or answers a plain domain type | Every route declares its permission; only `bb-policy` builds `Authorized<T>`; the answer wrapper takes nothing else; a generated matrix runs every route for every kind of actor | ARCH-PERMS, ARCH-AUTHZ-ONLY, ARCH-API-OUT, SEC-MATRIX (WP-05, WP-10) |
+| Elevation of privilege | A person edits a role they hold (or gives a role) to get more than they have | *Manage roles* counts only for the whole organization; nobody adds a permission to a role, or gives a role, unless they hold every permission of it at that place themselves | `sec_08_nobody_adds_a_permission_they_do_not_hold_to_a_role`, `sec_02_nobody_gives_a_role_with_more_than_they_hold_there` (WP-05), SEC-MATRIX |
+| Denial of service | The last administrator is removed, or a project lead puts *No access* on the administrators, and nobody can manage roles any more | A change that leaves nobody with *Manage roles* and *Decide who has which role* for the whole organization is refused; *No access* never takes *Decide who has which role* from people who hold it from above | `sec_08_nobody_can_remove_the_last_way_to_manage_roles`, `sec_03_no_access_cannot_lock_out_the_people_who_decide_roles_above` (WP-05) |
+| Elevation of privilege | The M1 upgrade turns the wrong people into administrators, or leaves none | The migration keeps the M1 list; the first start gives exactly those people the Administrator role, with events and security-log entries | `sec_08_m1_administrators_become_administrators_and_nobody_else_does` (WP-05, both databases) |
+| Elevation of privilege | A role taken away keeps working because an evaluation was kept | Evaluations live for one request only | `sec_03_a_role_taken_away_counts_from_the_next_request` (WP-05); review (the cache lives in the request context) |
+| Information disclosure | Reaching a hidden project by its address or its short name, old short names included | A hidden project answers `resource.not_found` exactly like a missing one; a visible sub-project of a hidden project is shown at the top and never names its parent; old short names stay with their project | `prj_01_a_hidden_project_answers_not_found_like_a_missing_one`, `prj_01_a_visible_sub_project_of_a_hidden_project_does_not_name_it`, `prj_01_an_old_short_name_redirects` (WP-08), SEC-MATRIX |
+| Information disclosure | Probing short names to learn that a hidden project exists | Only people who can make projects at that place learn that a short name is taken, and the sentence is the same whether the project is hidden or not | `prj_01_a_taken_short_name_is_told_only_to_people_who_may_make_projects` (WP-08) |
+| Information disclosure | Counts that include hidden things (sub-projects, members, *Used by*, people who still need a second step) | No total in any list answer; counts only of what the viewer can see; a hidden member list is left out with its number | ARCH-NO-COUNTERS; `priv_13_no_project_answer_holds_a_count` (WP-08), `priv_13_used_by_counts_only_what_the_viewer_may_see` (WP-11) |
+| Information disclosure | A hidden field read through an answer, `fields=`, the move preview or *Check access* | `Authorized<T>` leaves hidden fields out; asking for one fails like an unknown field; previews and *Check access* use the same mask | `sec_06_a_hidden_field_is_missing_from_every_m2_answer_and_cannot_be_asked_for` (WP-12), SEC-MATRIX (field rows) |
+| Information disclosure | A name or e-mail address reaches a viewer whose *Who sees people* is *Role only* or *Hidden* | Every person is a `PersonRef`, resolved for the viewer; a role label and *Someone* carry no ID; e-mail addresses only for the person and *Manage people* | ARCH-PERSON-REF; `priv_12_a_guest_sees_role_only_or_someone_as_set_and_no_name_reaches_their_browser` (WP-12), SEC-MATRIX (people rows) |
+| Information disclosure | *Check access* or the move preview names a project the person cannot see | Reasons name only projects the checker sees (others are *a project you can't see*); moving takes the right in both parents | `sec_03_check_access_names_no_project_the_checker_cannot_see` (WP-12), `prj_03_the_move_preview_names_who_gains_and_loses_access` (WP-08) |
+| Information disclosure | *Former user* labels count up or can be traced back to the person | Random Crockford Base32 codes from the secure random source, unique, never made from the ID | `priv_13_former_user_labels_are_random_and_unique` (WP-05) |
+| Spoofing | A stolen access key | Shown once, only a hash stored; every key runs out (at most a year); a limit per key; a key never reaches the owner's sign-in data; making, deleting and refusing keys is in the security log; a secret-scan rule finds keys in commits | `auth_07_a_key_is_shown_once_and_only_its_hash_is_stored`, `auth_07_a_key_cannot_change_the_owners_sign_in_data`, `sec_14_a_key_has_its_own_limit`, `sec_15_making_and_deleting_keys_is_in_the_security_log` (WP-09); SEC-SECRETS |
+| Elevation of privilege | A key that outlives its owner's permissions, or that holds more than the owner | A key has no permissions of its own: at every use it is the owner's evaluation narrowed by its choice and projects | `auth_07_a_key_can_do_only_what_its_owner_can_and_its_scopes_allow` (property test), `auth_07_a_key_follows_its_owner_losing_a_role_at_once` (WP-09), SEC-MATRIX (key actors) |
+| Spoofing | Guessing keys, or telling an expired key from a wrong one | 256-bit secrets; an expired, a deleted and an unknown key get the same answer; the network limit and the per-key limit | `auth_07_an_expired_a_deleted_and_an_unknown_key_get_the_same_answer` (WP-09) |
+| Spoofing | A person whose role asks for two-step sign-in keeps working with the password alone | The switch on the role counts from the next request: the session can only set up a second step | `auth_03_a_role_that_requires_two_step_sign_in_makes_its_people_set_it_up_first` (WP-09) |
+| Repudiation | A change of roles, groups, assignments, field levels, *Who sees people*, project moves or access keys leaves no trace | Each writes its event and a security-log entry in the same change | ARCH-EVENTS; `sec_15_every_change_of_permissions_is_in_the_security_log` (WP-05) |
+| Tampering | A changed or old cursor, ETag or cached answer shows another person's view | Cursors hold only a position and every permission comes from the request; ETags are made from the answer after masking | `perf_02_paging_walks_every_item_once_and_refuses_a_changed_cursor`, `perf_03_every_get_answers_an_etag_and_304_on_a_match` |
 
 ### Boundary 4 (operator ↔ data) and the host
 
@@ -93,6 +118,8 @@ Entry points in M1: the HTTPS listener (pages, assets, `/api/v1`, `/health/*`), 
 | Signing up on one's own shows whether an address has an account (the refusal is the same as for a closed door, but it comes only for some addresses) | Nothing can confirm an address before mail exists; signing up is off by default and the setting says so (M1-F38) | M4 (mail) |
 | Somebody who keeps failing at an account can make it wait, up to 15 minutes at a time once the windows have grown (the limit counts failures and a success clears them, so it is never a lock for good) | Any limit that stops guessing can be used to slow the person down; a permanent lock would be worse (SEC-14) | When the settings registry takes the numbers (OPS-10) |
 | A security-log entry that cannot be written (the anchor file or the database fails) is reported in the server log but does not undo or refuse the sign-in. The server counts the entries it could not write since it started, and the status page warns when the count is above zero (`sec_15_the_status_page_warns_when_a_log_entry_could_not_be_written`); the status page and `bugaboo security-log verify` also name a database that lacks the newest entries that the anchor file knows of (a restore from an older backup, lost writes or a cut-off end) and say what to check (`sec_15_the_status_page_warns_when_the_anchor_is_ahead`) | A sign-in that fails because the log is full would let anybody who can fill the disk lock everybody out | The decision stays (M1-F40, done in M2 WP-04) |
+| *Check access* tells a checker that a role comes from *a project you can't see*, so they learn that such a project exists above, never its name or anything in it | A sentence that leaves the row out would explain a decision wrongly; only people who can check access at that place see it (ADR-0025, decision 12) | When restricted projects need more (SEC-05, V1) |
+| People with *Decide who has which role* from above keep it on a project where they have *No access*, and see its name and short name there | Otherwise a project lead could shut the administrators out for good (ADR-0025, decision 6) | — |
 | Self-signed certificates show a browser warning | Safer than plain HTTP; admins can provide a certificate, ACME comes in 1.0 | V1 (ACME) |
 
 ## Personal data in M1
@@ -121,7 +148,7 @@ flowchart LR
 
 | Data | Purpose | Legal basis (GDPR Art. 6) | Kept |
 |------|---------|---------------------------|------|
-| Name, e-mail | Account, sign-in, showing who did what | (b) contract / employment | While the account exists; then *Remove a person* (M2) |
+| Name, e-mail | Account, sign-in, showing who did what | (b) contract / employment | While the account exists; then *Remove a person* (PRIV-04, M9) |
 | Password hash, passkeys, two-step secret, backup codes | Sign-in | (b) contract; (f) security | Until changed or the account is removed |
 | Sessions with shortened IP and device label | Staying signed in, *Where you're signed in* | (b) contract; (f) security | Until signed out or expired |
 | Invitation e-mail | Sending and checking the invitation | (b) contract | Until accepted or 7 days |
@@ -129,3 +156,62 @@ flowchart LR
 | Shortened IP in logs | Abuse defence | (f) security | 7 days by default |
 
 No personal data leaves the server in M1: no mail, no AI, no outside fonts, scripts or analytics (PRIV-01).
+
+## Personal data in M2
+
+M2 adds where people work (groups and roles), projects, access keys and each person's own settings. The marks below are decided here (ADR-0025); each package writes them on its entities, and `cargo xtask gen privacy` then lists them on the generated page `docs/privacy/personal-data.md`. Enforced by: DATA-MARKS.
+
+A new category, **`organization`**: where a person works, meaning their groups and the roles they have, and where. Its legal basis is the contract (Art. 6(1)(b); for employees in Germany together with Art. 88 GDPR and § 26 BDSG): an organization cannot give people work in projects without recording who may do what.
+
+```mermaid
+flowchart LR
+  admin(["Administrator or project lead"])
+  person(["Person"])
+  script(["Script or app<br/>with an access key"])
+  subgraph bb["Bugaboo"]
+    groups["Groups and members"]
+    assign["Who has which role<br/>person or group, role or No access, project"]
+    rules["Field levels and Who sees people<br/>(no personal data)"]
+    keys["Access keys<br/>owner, name, hashed secret,<br/>last use (to the minute)"]
+    mine["My settings<br/>time zone, region, appearance, shortcuts"]
+    policy["bb-policy<br/>evaluation per request"]
+    seclog["Security log"]
+  end
+  admin -- "manages" --> groups & assign & rules
+  person -- "chooses" --> mine
+  person -- "makes" --> keys
+  script -- "Bearer key" --> keys --> policy
+  groups & assign & rules --> policy
+  groups & assign & rules & keys --> seclog
+```
+
+| Entity (package) | Field | Personal data | Category | Legal basis |
+|------------------|-------|---------------|----------|-------------|
+| Group (WP-05) | name | yes (free text) | `content` | `legitimate_interests` |
+| Group member (WP-05) | person | yes | `organization` | `contract` |
+| Group member (WP-05) | added at | yes | `activity` | `contract` |
+| Role (WP-05) | name | yes (free text) | `content` | `legitimate_interests` |
+| Role (WP-05) | permissions, field and people levels, two-step switch, starting mark, place in the order | no | – | – |
+| Assignment (WP-05) | person (when the row is for a person) | yes | `organization` | `contract` |
+| Assignment (WP-05) | given at | yes | `activity` | `contract` |
+| Assignment (WP-05) | group, role or *No access*, project, where it counts | no | – | – |
+| Project (WP-05, WP-08) | name | yes (free text) | `content` | `legitimate_interests` |
+| Project (WP-05, WP-08) | parent, short name, old short names (`ShortName` holds only 2–10 capitals and digits) | no | – | – |
+| Access key (WP-09) | owner | yes | `identity` | `contract` |
+| Access key (WP-09) | name | yes (free text) | `content` | `contract` |
+| Access key (WP-09) | prefix, hash of the secret | yes | `credentials` | `contract` |
+| Access key (WP-09) | made at, last used (to the minute) | yes | `activity` | `contract` |
+| Access key (WP-09) | what it may do, projects, runs out on | no | – | – |
+| Setting value on the person level (WP-07) | the value (time zone, region, appearance, shortcuts) | yes | `content` | `contract` |
+| Setting value on the person level (WP-07) | the person it belongs to | yes | `identity` | `contract` |
+
+The person a setting value belongs to is held today in `scope`, which is marked as not personal because it also holds project IDs; WP-07 gives the person its own field with the mark above, so DATA-MARKS sees it.
+
+| Data | Purpose | Legal basis (GDPR Art. 6) | Kept |
+|------|---------|---------------------------|------|
+| Group membership and role assignments | Deciding what a person can do and see; showing who works where to the people allowed to see it | (b) contract / employment | While the row exists; gone from the person when they are removed (*Remove a person*, PRIV-04, M9); the changes stay in the security log for its keep period |
+| Names of groups, roles and projects | Naming them on screens | (f) legitimate interests (free text that could name a person) | While the group, role or project exists |
+| Access keys | Letting the person's scripts and apps act for them, never with more rights | (b) contract; (f) security for the last use | Until the person deletes the key; keys that ran out go by the keep-and-delete rules (PRIV-05, M9) |
+| My settings (time zone, region, appearance, shortcuts) | Showing Bugaboo the way the person chose | (b) contract | While the account exists |
+
+Still nothing leaves the server in M2 (PRIV-01). The sample organization (`bb-sample`) is fictional: names from a list written for Bugaboo, addresses only under `bugaboo.example` (TEST-SAMPLE-DATA).

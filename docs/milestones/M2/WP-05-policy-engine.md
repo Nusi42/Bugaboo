@@ -13,8 +13,8 @@
 
 ## Tasks
 
-1. **Catalogue and starting roles (SEC-01, SEC-08):** the permission enum with its message keys (WP-01's list); the starting roles from one definition, made once as editable copies by a system use case at the first start (with events, never by the migration); *Reset to the starting permissions*.
-2. **Storage (`m0003`, both databases):** `project` (ID, parent, short name, name, version), groups and members, roles and their permissions, assignments (person or group; role or *No access*; whole organization, project only, or project and sub-projects), field permissions (project, role, field, level), *Who sees people* rules (project, role, kind, level), the two-step switch of a role (M1-F45). Personal-data marks as WP-01 decided. The M1 `administrator` column becomes an Administrator assignment on the whole organization and is dropped.
+1. **Catalogue and starting roles (SEC-01, SEC-08):** the permission enum with its message keys, topics, *where it counts* and kinds (the 14 permissions of architecture §7); the starting roles from one definition, made once as editable copies by a system use case at the first start (with events, never by the migration); *Reset to the starting permissions*.
+2. **Storage (`m0003`, both databases):** `project` (ID, parent, short name, name, version), groups and members, roles and their permissions, assignments (person or group; role or *No access*; whole organization, project only, or project and sub-projects), field permissions (project, role, field, level), *Who sees people* rules (project, role, kind, level), the two-step switch of a role (M1-F45), which replaces the text setting `security.two-step-required-roles` (removed from the registry with its stored values). Personal-data marks as in 12-security.md, *Personal data in M2*. The M1 `administrator` column becomes an Administrator assignment on the whole organization and is dropped: the migration keeps the list, and the system use case that makes the starting roles gives those people the role in the same change (ADR-0025, decision 5).
 3. **Evaluation (SEC-03):** load the actor's assignments for a project and its parents through one port call, evaluate in `bb-policy` without I/O (architecture §7, steps 1–4 as ADR-0025 makes them exact), cache per request. Access keys (WP-09) and AI-app tokens later pass their scopes in; the engine already intersects.
 4. **Field masks (SEC-04, SEC-06):** for each field of the catalogue the highest level of the actor's roles (*Hidden < Can see < Can change*); `Authorized<T>` carries the mask, drops hidden fields when serialized and gives WP-02's `fields` helper the readable names, so a hidden field and an unknown one fail alike. Its constructor is private to `bb-policy`.
 5. **People (PRIV-12, PRIV-13):** `PersonRef` resolved for the viewer, the kind and the project into a name, a role label (*a Team member*), *Someone*, or a random *Former user* label for a removed person (Crockford Base32, never counting, unique); the viewer always sees their own name.
@@ -39,6 +39,17 @@
 - **ARCH-AUTHZ-ONLY** switched on: a compile-fail test builds `Authorized<T>` outside `bb-policy`, and an ast-grep rule finds other ways to construct it; bad and good fixtures.
 - **ARCH-PERSON-REF** switched on: an ast-grep rule finds names and e-mail addresses in API views outside `PersonRef` (the person's own account is listed with a reason), and a serialization test reads the API description; bad and good fixtures.
 - ARCH-EVENTS gains its generated test (M1-F18).
+
+## Answers
+
+The maintainer accepted M2-Q1, M2-Q3, M2-Q5 and M2-Q7 as proposed. Build from [ADR-0025](../../adr/0025-roles-groups-and-assignments.md) and [architecture §7](../../architecture/07-cross-cutting.md#authorization-model):
+
+- **Evaluation (M2-Q1):** rank by depth, then person before group; the highest *No access* removes every role row of equal or lower rank; *Decide who has which role* from a removed row is kept (no lock-out). Add `sec_03_no_access_cannot_lock_out_the_people_who_decide_roles_above` and `sec_03_a_role_taken_away_counts_from_the_next_request`.
+- **No escalation:** nobody adds a permission to a role, or gives a role, unless they hold all of it at that place: `sec_08_nobody_adds_a_permission_they_do_not_hold_to_a_role`, `sec_02_nobody_gives_a_role_with_more_than_they_hold_there`.
+- **Starting roles (M2-Q5):** the permissions, field levels, *Who sees people* levels and order of the tables in §7. The upgrade test is `sec_08_m1_administrators_become_administrators_and_nobody_else_does`. Setup stays open while nobody can manage roles for the whole organization.
+- **People (M2-Q3):** the kinds of people information including *Project members*, and the rule that people who manage people or roles see names in the management screens; `PersonRef` as the tagged union in §7 (a role label and *Someone* carry no ID).
+- **Fields (M2-Q7):** the 16 built-in fields of §7, with their keys and message keys `issue-field.<key>`.
+- **Security log:** `sec_15_every_change_of_permissions_is_in_the_security_log` runs every management use case.
 
 ## Depends on
 

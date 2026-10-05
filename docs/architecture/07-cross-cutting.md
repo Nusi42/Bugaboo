@@ -13,7 +13,7 @@
 - **The public address:** the start-up setting `public_url` is the origin people type in the browser. Passkeys are tied to its host name; a server that listens on this computer only uses `localhost` and its port when the setting is missing, any other address needs the setting, a server behind trusted proxies needs it too (people reach it through the address of the proxy), and an address without a host name (an IP address) turns passkeys off. Enforced by: the tests `auth_02_*` in `crates/bb-server/src/config.rs` and `auth_02_without_a_host_name_in_the_public_address_passkeys_are_off`.
 - **CSRF:** three layers. (1) SameSite cookies. (2) An **origin check**, already in the API: every request below `/api` that is not GET, HEAD or OPTIONS must carry an `Origin` equal to the server's own origin or, when the browser sent no `Origin`, `Sec-Fetch-Site: same-origin`. The own origin is the scheme plus the authority the browser asked for: the authority of the request address when there is one (HTTP/2 has no `Host` header), else `Host`; the scheme is `https` when the connection is TLS or when a trusted proxy says so (`X-Forwarded-Proto`, same trust rule as the client address: only from a listed proxy, only the last entry), else `http`; with neither the request is refused (fail closed) with the error `request.wrong_origin` (403, problem+json). Enforced by: the tests `sec_06_*` in `crates/bb-api` (cross-site, `null`, missing headers, same-origin, scheme, authority without `Host`) and the TLS + HTTP/2 test `sec_06_over_tls_and_http2_the_origin_check_uses_the_authority_and_the_scheme`. (3) A **session-bound token**: the value is derived on the server from the session (an HMAC of the session ID with a CSRF key), delivered in the page-readable cookie `__Host-bb_csrf` at sign-in and renewed with every new session ID; the server compares the `x-csrf-token` header with the value derived for the request's session in constant time, and refuses unsafe methods without a valid token with problem+json. The generated client reads the cookie and sends the header on every change. Layer 3 is the middleware `csrf_check` in `crates/bb-api/src/api/auth.rs` and covers every change below `/api` (a route added later is protected without anyone remembering): a change without a session cookie is answered with `auth.not_signed_in` (401), one with a session cookie and without the right token with `request.wrong_token` (403). Only the seven routes of people who have no session yet (`CSRF_EXEMPT`: setup, sign-in, sign-up, passkey sign-in, the invitation link) are left out; they carry no secret a forged request could use and the origin check protects them. Enforced by: SEC-COOKIES (the cookie table) and the tests `sec_12_a_change_needs_the_token_of_its_own_session`, `sec_12_every_route_that_changes_something_checks_the_token_except_signing_in_and_up` (goes through every route of the API description) and `sec_12_every_session_has_its_own_secret_and_its_own_csrf_token`, and the TLS + HTTP/2 test `sec_12_over_tls_and_http2_a_person_sets_up_signs_out_and_signs_in_again`.
 - **Cookies:** only strictly necessary ones (the session and the CSRF token), so no consent banner is needed (COMP-13, PRIV-01). One module, `crates/bb-api/src/cookies.rs`, holds the table and is the only code that sets a cookie. Every name starts with `__Host-`, so browsers insist on `Secure`, `Path=/` and no `Domain`; the module adds `HttpOnly` where script has no business reading the cookie. `cargo xtask gen api` writes the list "Cookies we use" to `userDocs/cookies.md` from the same table. Enforced by: SEC-COOKIES (reads the table; finds `Set-Cookie`, cookie libraries and `document.cookie` writes anywhere else).
-- **Access keys** (scripts, apps): `bb_` + prefix + secret; only a hash is stored; shown once; scoped, can expire, can only narrow the owner's permissions.
+- **Access keys** (scripts, apps): `bb_` + prefix + secret; only a hash is stored; shown once; every key runs out; *What it may do* and its projects only narrow the owner's permissions, at every use (ADR-0025, decision 8).
 - **MCP:** OAuth 2.1 authorization server inside Bugaboo (authorization code + PKCE, dynamic client registration with an admin allow list), short-lived access tokens, refresh token rotation, consent screen per app.
 
 ### Browser protections
@@ -44,37 +44,222 @@
 
 ## Authorization model
 
+The decisions are [ADR-0004](../adr/0004-authorization.md) (one policy engine, `Authorized<T>`), [ADR-0022](../adr/0022-who-sees-people.md) (*Who sees people*) and [ADR-0025](../adr/0025-roles-groups-and-assignments.md) (roles, groups and assignments on the project tree). This section is what `bb-policy` builds.
+
 ```mermaid
 flowchart LR
-  actor["Actor<br/>person · bot · access key · AI app token"]
+  actor["Actor<br/>person · access key · later bot and AI app token"]
   groups["Groups"]
-  roles["Roles<br/>(sets of permissions)"]
-  assign["Role assignments<br/>on a project and everything below it"]
-  fieldp["Field permissions<br/>hidden · can see · can change<br/>per role (per issue type)"]
-  vis["Visibility groups<br/>restricted issues and documents"]
-  scopes["Scopes<br/>(keys and AI apps only narrow)"]
+  assign["Who has which role<br/>person or group · role or No access ·<br/>whole organization, only this project,<br/>or this project and its sub-projects"]
+  roles["Roles<br/>(permissions, field levels,<br/>Who sees people, two-step switch)"]
+  fieldp["Field mask<br/>Hidden · Can see · Can change"]
+  people["PersonRef<br/>name · role · Someone · Former user"]
+  vis["Visibility groups<br/>restricted issues and documents (V1)"]
+  scopes["Access key choice and projects<br/>(only narrow)"]
   actor --> groups --> assign
   actor --> assign
   assign --> roles --> fieldp
+  roles --> people
   actor --> vis
   actor --> scopes
 ```
 
-**Evaluation**, for an actor and a project:
+### The permission catalogue
 
-1. Collect role assignments on the project and all its parents; an explicit *deny* on a lower project wins over a grant from above.
-2. Union the permissions of those roles; intersect with the scopes of the access key or AI-app token, if any.
-3. Build the **field mask**: for each field, the highest level any role gives (hidden < can see < can change), per issue type.
-4. **Visibility:** an issue is visible if the actor may view issues in its project *and* (it isn't restricted *or* the actor is in one of its visibility groups).
+One enum, `Permission` in `bb-policy`. The key is also the value of `x-permission` in the API description; the sentence is the message `permission.<key>`; the topic is the message `permission-topic.<topic>`. *Counts* says where a permission counts (ADR-0025, decision 1); *Kind* is what an access key's choice keeps (decision 8). Routes that need no catalogue permission declare `public`, `signed-in` or `own-account`. Enforced by: ARCH-PERMS.
 
-**People:** every person shown anywhere is a `PersonRef`, resolved for the viewer into a name, a role label (*"a Team member"*) or *Someone*, according to *Who sees people* (ADR-0022). Hidden people information can't be searched or filtered either.
+| Key | Topic | Counts | Kind | Sentence on the role page |
+|-----|-------|--------|------|---------------------------|
+| `see-projects` | Projects | project | See | See the project and what is in it |
+| `make-projects` | Projects | organization | Change | Make projects at the top level |
+| `make-sub-projects` | Projects | project | Change | Make sub-projects inside the project |
+| `move-projects` | Projects | project | Change | Move sub-projects into or out of the project |
+| `change-project-settings` | Projects | project | Manage | Change the project's name, short name and settings |
+| `decide-roles` | People | project | Manage | Decide who has which role, including *No access* |
+| `decide-what-roles-see` | People | project | Manage | Decide which fields and which people information each role sees |
+| `check-access` | People | project | See | Check what other people can do, and why |
+| `manage-people` | People | organization | Manage | See everybody's e-mail address and correct their names |
+| `manage-invitations` | People | organization | Manage | Invite people and take invitations back |
+| `manage-groups` | People | organization | Manage | Make, rename and delete groups and change who is in them |
+| `manage-roles` | People | organization | Manage | Make, change and delete roles |
+| `change-organization-settings` | Settings | organization | Manage | Change organization settings |
+| `see-status` | Settings | organization | See | See how the server is doing |
 
-**Enforcement points:**
+- A *project* permission given for the whole organization counts in every project; given on a project, in the project (and its sub-projects when the row says so).
+- The rows for the whole organization, and a role's own field and people levels, are changed only with *Decide who has which role* or *Decide what roles see* from a row for the whole organization.
+- Moving a project takes *Move projects* at the old and at the new parent; a project at the top level counts as inside the organization, so moving to or from the top takes the permission for the whole organization. Making a top-level project takes *Make projects*; a sub-project takes *Make sub-projects* at its parent.
+- Later milestones add their permissions to the enum (issues M3, time M6, documents M11), each with its topic, sentence, kind and starting values. Enforced by: ARCH-PERMS (a permission without a route or a message fails).
 
-- Every use case asks `bb-policy` first. Every result passes through `Authorized<T>`, which applies the field mask during serialization.
-- Every search gets the visibility predicate compiled into its SQL; the field catalogue given to the parser contains only readable fields.
-- History, notifications, webhooks, exports, assistant context and live updates apply the **receiver's** mask.
-- **Tests:** a generated matrix (roles × permissions × fields × entry points) runs on every build.
+### Assignments
+
+An assignment is one row of *Who has which role*:
+
+| Part | Values |
+|------|--------|
+| Who | a person, or a group |
+| What | a role, or *No access* |
+| Where it counts | *Whole organization* (rows in *Organization settings*), *Only this project*, *This project and its sub-projects* (rows on a project); *No access* always covers *This project and its sub-projects* |
+
+A person or group can have several roles on one project, never a role and *No access* there. In the API the place is named `applies_to` with the values `organization`, `project` and `project-and-sub-projects` (glossary: *Where it counts*).
+
+### Evaluation
+
+For an actor and a place (the organization, or a project and its parents), from one port call that loads the actor's groups and the rows of the place and its parents:
+
+1. **Default deny:** nobody signed in reaches only `public` routes; a signed-in person without an applicable row can do nothing and sees no project (SEC-01).
+2. **Applicable rows:** the actor's own rows and their groups' rows for the whole organization; rows on a parent project with *This project and its sub-projects*; rows on the project itself.
+3. **Rank:** the depth of the row's project (the whole organization lowest, a top-level project 1, its sub-projects 2, …), and at equal depth the person's own row above a group's row.
+4. ***No access*:** the highest-ranked *No access* row removes every role row of equal or lower rank. Roles from higher up, roles of the person's groups on the same project and other groups' roles on the same project are removed; a role given lower down, or to the person directly where a group has *No access*, stays. *Decide who has which role* from a removed row is kept, so nobody is locked out by a project below them (ADR-0025, decision 6).
+5. **Permissions:** the union of the remaining roles' permissions that count at this place (organization permissions only at the organization and only from rows for the whole organization).
+6. **Narrowing:** for an access key, keep only the permissions of the key's kinds (or the picked permissions), and nothing outside the key's projects and their sub-projects; a key with projects gets nothing for the whole organization.
+7. **Field mask:** for each field of the catalogue and each remaining role, the level set for that role on the nearest of the project and its parents, else the role's own level; the mask is the highest of these (*Hidden < Can see < Can change*), at most *Can see* for a *See only* key.
+8. ***Who sees people*:** for each kind, the level set for each remaining role the same way; the viewer's level is the most open (*Names > Role only > Hidden*).
+9. **Visibility** (restricted issues SEC-05, V1): an issue is visible if the actor sees its project *and* (it isn't restricted *or* the actor is in one of its visibility groups).
+
+The evaluation is cached for the request and never longer (review: the cache lives in the request context; tests `sec_03_a_role_taken_away_counts_from_the_next_request`, `auth_07_a_key_follows_its_owner_losing_a_role_at_once`).
+
+### Starting roles
+
+Made once at the first start from one Rust definition in `bb-policy` (ADR-0025, decision 4) and then changed like any role. In the order below, which is also the order for role labels. These are M2's permissions; issue, document and time permissions join with their milestones.
+
+| Permission | Administrator | Project lead | Team member | Contributor | Viewer | Guest |
+|------------|:-------------:|:------------:|:-----------:|:-----------:|:------:|:-----:|
+| See the project and what is in it | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Make projects at the top level | ✓ | – | – | – | – | – |
+| Make sub-projects inside the project | ✓ | ✓ | – | – | – | – |
+| Move sub-projects into or out of the project | ✓ | ✓ | – | – | – | – |
+| Change the project's name, short name and settings | ✓ | ✓ | – | – | – | – |
+| Decide who has which role | ✓ | ✓ | – | – | – | – |
+| Decide what roles see | ✓ | ✓ | – | – | – | – |
+| Check access | ✓ | ✓ | – | – | – | – |
+| Manage people | ✓ | – | – | – | – | – |
+| Invite people | ✓ | – | – | – | – | – |
+| Manage groups | ✓ | – | – | – | – | – |
+| Manage roles | ✓ | – | – | – | – | – |
+| Change organization settings | ✓ | – | – | – | – | – |
+| See how the server is doing | ✓ | – | – | – | – | – |
+| Two-step sign-in for everyone with this role | off | off | off | off | off | off |
+
+A Project lead holds these where the role is given, normally on their projects and sub-projects. The intent for later permissions, as accepted in M2-Q5: Team members change issues; Contributors make issues and change their own; Viewers only look; Guests see only what they reported.
+
+**Starting field levels** (C = *Can change*, S = *Can see*, H = *Hidden*):
+
+| Field | Administrator | Project lead | Team member | Contributor | Viewer | Guest |
+|-------|:-:|:-:|:-:|:-:|:-:|:-:|
+| Title | C | C | C | C | S | C |
+| Description | C | C | C | C | S | C |
+| Status | C | C | C | S | S | S |
+| Priority | C | C | C | S | S | S |
+| Assigned to | C | C | C | S | S | S |
+| Reported by | C | C | S | S | S | S |
+| Due date | C | C | C | S | S | H |
+| Labels | C | C | C | S | S | S |
+| Tags | C | C | C | C | S | S |
+| Planned for release | C | C | C | S | S | S |
+| Found in release | C | C | C | C | S | C |
+| Estimated time | C | C | C | S | S | H |
+| Time left | C | C | C | S | S | H |
+| Time spent | C | C | C | S | S | H |
+| Activity | C | C | C | S | S | H |
+| Cost center | C | C | S | S | S | H |
+
+A Contributor sees *Cost center* at the start, so the M2 exit demo can hide it. *Can change* on a field means "where the person can change the item at all"; the permissions to change issues come in M3.
+
+**Starting *Who sees people*** (N = *Names*, R = *Role only*, H = *Hidden*):
+
+| Kind of people information | Administrator | Project lead | Team member | Contributor | Viewer | Guest |
+|----------------------------|:-:|:-:|:-:|:-:|:-:|:-:|
+| Assigned to | N | N | N | N | N | R |
+| Reported by | N | N | N | N | N | H |
+| Last changed by | N | N | N | N | N | R |
+| Comment and history authors | N | N | N | N | N | R |
+| "… is editing" | N | N | N | N | N | H |
+| Followers | N | N | N | R | R | H |
+| Time entries | N | N | N | H | H | H |
+| Mentions | N | N | N | N | N | R |
+| Pictures of people | N | N | N | N | N | H |
+| Project members | N | N | N | R | R | H |
+
+### The field catalogue
+
+Declared once in `bb-core` (`fields`): key, name (message `issue-field.<key>`), the thing it belongs to, and the kind of people information when it holds a person. Own fields join in M3 (CF-06); rules per issue type come with issue types (M3).
+
+| Key | Name | Belongs to | Holds a person |
+|-----|------|-----------|----------------|
+| `title` | Title | issue | – |
+| `description` | Description | issue | – |
+| `status` | Status | issue | – |
+| `priority` | Priority | issue | – |
+| `assigned-to` | Assigned to | issue | yes, kind *Assigned to* |
+| `reported-by` | Reported by | issue | yes, kind *Reported by* |
+| `due-date` | Due date | issue | – |
+| `labels` | Labels | issue | – |
+| `tags` | Tags | issue | – |
+| `planned-for-release` | Planned for release | issue | – |
+| `found-in-release` | Found in release | issue | – |
+| `estimated-time` | Estimated time | issue | – |
+| `time-left` | Time left | issue | – |
+| `time-spent` | Time spent | issue (total of its time entries) | – |
+| `activity` | Activity | time entry (default on the issue) | – |
+| `cost-center` | Cost center | time entry (default on the issue and project) | – |
+
+A person in a field is shown only when the field is visible (mask) and then as its kind says (`PersonRef`).
+
+### Kinds of people information
+
+Declared once in `bb-core` (`people_kinds`), each with its name (message `people-kind.<key>`): `assigned-to`, `reported-by`, `last-changed-by`, `authors` (comment and history authors), `editing` ("… is editing"), `followers`, `time-entries`, `mentions`, `pictures` (pictures of people: shown only where the kind of the place also gives *Names*), and `project-members` (member lists of a project, M2-Q3). The starting levels are in the table above; a new role starts with *Hidden* everywhere (default deny).
+
+**People who manage see names (M2-Q3):** in *Organization settings*, *Who has which role* and *Check access*, a viewer who holds *Manage people*, *Manage groups*, *Manage roles* or *Decide who has which role* at that place sees names; anybody else sees the people in these screens by the kind *Project members*. E-mail addresses are never part of a `PersonRef`: only the person and holders of *Manage people* see them (ARCH-PERSON-REF finds others).
+
+### How `PersonRef` resolves
+
+Every person in an answer is a `PersonRef`, resolved by `bb-policy` for the viewer, the kind and the place (ADR-0022). Enforced by: ARCH-PERSON-REF.
+
+1. The viewer themselves: their name.
+2. A removed person (PRIV-04, M9): with *Names*, the label *Former user* plus a random code (`Former user K7Q2`): four characters of Crockford Base32 from the secure random source, drawn again on a clash and longer when four run short, unique among removed people, made when the person is removed and stored with the tombstone, never made from the person's ID or a counter (PRIV-13); with *Role only* or *Hidden*, *Someone*.
+3. Anybody else by the viewer's level: *Names* → the name (and the ID, for links); *Role only* → the label of their first role at that place in the order of roles (*"a Team member"*), or *Someone* when they have none there; *Hidden* → *Someone*.
+
+```text
+PersonRef = { shown: "name",    id: UserId, name: String }
+          | { shown: "role",    role: String }          // the screen says "a {role}"
+          | { shown: "someone" }
+          | { shown: "former",  label: String }         // "K7Q2"; the screen says "Former user {label}"
+```
+
+A role label and *Someone* carry no ID, so a browser cannot tell two hidden people apart or follow one through the answers. A viewer who cannot see names for a kind cannot search, sort, group or filter by it (SEC-06, from M5 on).
+
+### The answer of *Check access*
+
+A query use case (`bb-app`, WP-05) answers for a person and a place; the screen (WP-12) turns each reason into a sentence with message keys `check-access.reason.<kind>`. The checker holds *Check access* at that place; names follow the rule above.
+
+```text
+CheckAccess = { person: PersonRef, place: Organization | ProjectRef,
+                permissions: [{ permission, allowed: bool, reasons: [Reason] }],  // every permission that counts there
+                fields:      [{ field, level, reasons: [Reason] }],
+                people:      [{ kind, level, reasons: [Reason] }] }
+
+Reason = { kind: "role",          role: RoleRef, through: Person | GroupRef, on: Place, applies_to, inherited: bool }
+       | { kind: "no-access",     through: Person | GroupRef, on: Place }        // the row that removed the roles
+       | { kind: "kept-above",    role: RoleRef, through: Person | GroupRef, on: Place }  // decide-roles kept over No access
+       | { kind: "not-given",     roles: [RoleRef] }                              // the roles they have here; empty: none
+       | { kind: "organization-only", role: RoleRef, on: Place }                  // counts only for the whole organization
+       | { kind: "level",         role: RoleRef, level, set_on: Place | "role" }  // a field or people level and where it was set
+Place  = "organization" | ProjectRef | "hidden"                                    // "hidden": a project the checker cannot see
+```
+
+Example: *"Yes. Ana is in the group Backend, which has the role Team member in ACME. Website is inside ACME, so the role applies here too."* comes from `role` with `through: Backend`, `on: ACME`, `inherited: true`. The decision always equals the engine's, and the reasons are enough to reach it (property test `sec_03_check_access_explains_every_result_with_the_chain_of_reasons`).
+
+### No counts that leak (PRIV-13)
+
+- No answer holds a number that counts things which include something the viewer cannot see: lists page with `next_cursor` and never answer a total; *Used by* counts only what the viewer can see; the project tree shows no counts of sub-projects or members; a member list that is *Hidden* for the viewer is left out with its number. Enforced by: ARCH-NO-COUNTERS (a `total`, `count` or similar property needs an entry in `tools/checks/counter-exemptions.toml` that says why the number holds only what the viewer can see), and the tests `priv_13_no_project_answer_holds_a_count` and `priv_13_used_by_counts_only_what_the_viewer_may_see`.
+- No identifier counts up: people, groups, roles, projects, assignments and access keys have random IDs; *Former user* labels and access-key prefixes are random. Enforced by: ARCH-NO-COUNTERS.
+
+### Enforcement points
+
+- Every use case asks `bb-policy` first. Every result passes through `Authorized<T>`, which applies the field mask during serialization. Enforced by: ARCH-AUTHZ-ONLY, ARCH-API-OUT.
+- Every search gets the visibility predicate compiled into its SQL; the field catalogue given to the parser contains only readable fields (M5).
+- History, notifications, webhooks, exports, assistant context and live updates apply the **receiver's** mask and `PersonRef` (each in its milestone, with its SEC-MATRIX column).
+- **Tests:** a generated matrix (actors × routes, roles × fields × levels, roles × kinds × levels; the entry points of M2 are the API answers) runs on every build. Enforced by: SEC-MATRIX.
 
 ## Data model
 

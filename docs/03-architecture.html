@@ -223,7 +223,7 @@
 <li><code>bb-core</code>, <code>bb-searchlang</code> and <code>bb-markdown</code> do no I/O and depend on no other Bugaboo crate except <code>bb-core</code> (searchlang and markdown not even that; <code>bb-core</code> uses <code>bb-macros</code> for derives at compile time only), so they compile to WebAssembly.</li>
 <li><code>bb-app</code> knows <strong>ports</strong> (traits) only. It never imports <code>bb-store</code>, <code>bb-files</code>, <code>bb-ai</code> or <code>bb-notify</code>. Tests run use cases against in-memory fakes.</li>
 <li>Only <code>bb-policy</code> can create <code>Authorized&lt;T&gt;</code>. Its constructor is private to the crate.</li>
-<li>Only <code>bb-api</code> and <code>bb-mcp</code> speak HTTP. Only <code>bb-server</code> wires adapters to ports (<code>cargo xtask check only ARCH-HTTP-EDGE</code>).</li>
+<li>Only <code>bb-api</code> and <code>bb-mcp</code> speak HTTP. Only <code>bb-server</code> wires adapters to ports, and from M2 WP-06 on also the developer program <code>bb-sample</code> (<code>cargo xtask check only ARCH-HTTP-EDGE</code>).</li>
 <li>The browser app talks to the server only through <code>@bugaboo/api-client</code> (<code>cargo xtask check only ARCH-WEB-API</code>), and has no hand-written types for what the server sends (<code>LINT-API-TYPES</code>).</li>
 </ol>
 <h3 id="s4-3"><button class="sec" data-sec>§4.3</button>The core modules</h3>
@@ -231,8 +231,9 @@
 <p>Newtype IDs (<code>IssueId</code>, <code>ProjectId</code>, …, all UUIDv7 inside, readable keys like <code>WEB-142</code> outside), field types and values, domain entities, <strong>domain events</strong>, and the <strong>error code catalogue</strong> (one Rust enum; becomes OpenAPI, the TypeScript union and message keys). Entities carry personal-data marks (ADR-0015). It also holds the <strong>settings registry</strong> (ADR-0018: every setting is declared once, in <code>settings/</code>), the <strong>message keys</strong> generated from <code>messages/en.json</code> as Rust constants and functions (UX-07), and the entity list behind the generated personal-data page <code>docs/privacy/personal-data.md</code>. The HTTP layer (<code>bb-api</code>) and the binary (<code>bb-server</code>) use <code>bb-core</code> directly for error codes and message text.</p>
 <h4>bb-policy</h4>
 <ul>
-<li><strong>Permission catalogue</strong> (one Rust enum with plain-language descriptions as message keys).</li>
-<li><strong>Evaluation:</strong> given an actor and a project, computes the effective permission set and the <strong>field mask</strong> (hidden / can see / can change per field, per issue type). Cached per request.</li>
+<li><strong>Permission catalogue</strong> (one Rust enum with plain-language descriptions as message keys) and the <strong>starting roles</strong> (one definition, used once to make editable copies and for <em>Reset to the starting permissions</em>), as <a href="#adr-0025">ADR-0025</a> decides.</li>
+<li><strong>Evaluation:</strong> given an actor (and an access key's choice) and a place, computes the effective permission set, the <strong>field mask</strong> (hidden / can see / can change per field, per issue type later) and the <em>Who sees people</em> levels, from roles, groups and assignments on the project tree with <em>No access</em> (<span title="07-cross-cutting.md#authorization-model in the repository">§7, Authorization model</span>). No I/O: the assignments come in through a port of <code>bb-app</code>. Cached per request.</li>
+<li><strong><code>PersonRef</code>:</strong> resolves every person shown for the viewer, the kind of people information and the place (ADR-0022). <strong>Check access:</strong> the decision with its reasons as data.</li>
 <li><strong>Visibility:</strong> project tree, restricted issues, documents.</li>
 <li><strong>Search predicates:</strong> turns the actor's visibility into query-builder expressions that <code>bb-store</code> adds to every query.</li>
 <li><strong><code>Authorized&lt;T&gt;</code>:</strong> the only way data leaves the domain. It carries the field mask, so projections drop hidden fields automatically.</li>
@@ -240,7 +241,7 @@
 <h4>bb-searchlang</h4>
 <p>Lexer, parser, syntax tree, canonical printer, checker and suggestions. Knows nothing about databases or permissions: the caller passes a <strong>field catalogue</strong> (the fields this person may read), so a hidden field fails exactly like an unknown one. Simple search (filter buttons) edits the same syntax tree.</p>
 <h4>bb-app — use cases by feature</h4>
-<p><code>projects</code>, <code>issues</code>, <code>relations</code>, <code>fields</code>, <code>workflows</code>, <code>tags</code>, <code>releases</code>, <code>search</code>, <code>boards</code>, <code>timeline</code>, <code>calendar</code>, <code>relation_map</code>, <code>time</code> (timers, time entries, working hours, rules), <code>documents</code>, <code>attachments</code>, <code>notifications</code>, <code>assistant</code>, <code>privacy</code>, <code>settings</code>, <code>themes</code>, <code>people</code> (users, groups, roles), <code>admin</code>.</p>
+<p><code>projects</code>, <code>issues</code>, <code>relations</code>, <code>fields</code>, <code>workflows</code>, <code>tags</code>, <code>releases</code>, <code>search</code>, <code>boards</code>, <code>timeline</code>, <code>calendar</code>, <code>relation_map</code>, <code>time</code> (timers, time entries, working hours, rules), <code>documents</code>, <code>attachments</code>, <code>notifications</code>, <code>assistant</code>, <code>privacy</code>, <code>settings</code>, <code>themes</code>, <code>people</code> (people and groups), <code>roles</code> (roles and who has which role), <code>access</code> (field permissions, <em>Who sees people</em>, <em>Check access</em>), <code>admin</code>.</p>
 <p>Every use case has the same shape:</p>
 <pre><code>pub async fn change_status(
     ctx: &amp;Ctx,               // actor, request id, clock, ports
@@ -261,6 +262,21 @@
 <p>axum router; extractors that turn a session cookie, access key or OAuth token into an <strong>actor</strong>; CSRF and origin checks; security headers and CSP; rate limits (<code>limits</code>); the one cookie module (<code>cookies</code>); <code>?fields=</code> projections; cursor pagination; ETags; problem+json errors (<code>errors</code>: <code>ApiError</code>, <code>ApiJson</code>); OpenAPI generation from the handlers' <code>#[utoipa::path]</code> descriptions (<code>openapi</code>, served at <code>/api/v1/openapi.json</code>, printed by <code>bugaboo openapi</code>, written to <code>web/packages/api-client/openapi.json</code> by <code>cargo xtask gen api</code>); the embedded static app.</p>
 <h4>bb-ai and bb-mcp</h4>
 <p>One <strong>tool registry</strong> (search issues, get issue, create, change status, comment, log time, …). Each tool maps to a <code>bb-app</code> use case, so permissions and validation are identical. <code>bb-mcp</code> exposes the registry to outside AI apps; the assistant uses the same registry but returns <strong>proposals</strong> for writes instead of running them.</p>
+<h4>bb-sample (planned, M2 WP-06)</h4>
+<p>The sample-organization generator (architecture §11): a library and a small program that <code>cargo xtask dataset sample</code> runs as a process, so <code>xtask</code> keeps depending on no product crate. It makes the organization through the same use cases the API calls, deterministic from a seed, on SQLite and PostgreSQL. It is a developer tool: not linked into <code>bugaboo</code> until <em>Try it out</em> (OPS-12), and never shipped before then.</p>
+<ul>
+<li>
+<p><strong>May depend on:</strong> <code>bb-app</code>, <code>bb-store</code>, <code>bb-core</code>, <code>bb-policy</code>, <code>bb-auth</code> (and <code>bb-testing</code> as a dev dependency only). Nothing depends on it except, from OPS-12 on, <code>bb-server</code>.</p>
+</li>
+<li>
+<p><strong>It wires an adapter:</strong> like <code>bb-server</code>, it builds the store and hands it to the use cases, so dependency rule 4 names it as the second crate that may wire adapters to ports, and ARCH-HTTP-EDGE's list of wiring crates gets <code>bb-sample</code> in the same change (with its failing and passing example).</p>
+</li>
+<li>
+<p><strong>Not in the layout or the diagram yet:</strong> ARCH-MAP-SYNC and ARCH-DEPS fail on a crate that the docs list but the workspace does not have. WP-06 adds <code>crates/bb-sample/</code> to the repository layout (one line: "sample-organization generator, developer tool") and this box with its edges to the module map in the commit that creates the crate:</p>
+<pre><code>sample["bb-sample&lt;br/&gt;sample organization"]
+sample --&gt; app &amp; store &amp; core &amp; policy &amp; auth</code></pre>
+</li>
+</ul>
 <h3 id="s4-4"><button class="sec" data-sec>§4.4</button>Browser app (web/app)</h3>
 <pre><code>web/app/src/
 ├── routes/              TanStack Router routes in code (guest, signed-in and administrator
@@ -268,6 +284,10 @@
 ├── features/            shell (sidebar, top bar, phone bar, quick search, frames), sign-in, sign-up,
 │                        invitation, setup, account (sign-in and security, where you're signed in),
 │                        admin (invitations, status), home;
+│                        M2: settings (the generic settings form), my-settings (appearance, region,
+│                        start page, shortcuts, access keys), projects, people (people, groups),
+│                        roles (roles and who has which role), access (field permissions,
+│                        who sees people, check access);
 │                        later: issues, search, board, timeline, calendar, relation-map,
 │                        documents, time, dashboards, notifications, assistant
 ├── shared/              api client, session, errors, formatting (Intl), page title and focus,
@@ -524,7 +544,7 @@ setup-code.txt   the setup code of a server without a console (dead once an acco
 <li><strong>The public address:</strong> the start-up setting <code>public_url</code> is the origin people type in the browser. Passkeys are tied to its host name; a server that listens on this computer only uses <code>localhost</code> and its port when the setting is missing, any other address needs the setting, a server behind trusted proxies needs it too (people reach it through the address of the proxy), and an address without a host name (an IP address) turns passkeys off. Enforced by: the tests <code>auth_02_*</code> in <code>crates/bb-server/src/config.rs</code> and <code>auth_02_without_a_host_name_in_the_public_address_passkeys_are_off</code>.</li>
 <li><strong>CSRF:</strong> three layers. (1) SameSite cookies. (2) An <strong>origin check</strong>, already in the API: every request below <code>/api</code> that is not GET, HEAD or OPTIONS must carry an <code>Origin</code> equal to the server's own origin or, when the browser sent no <code>Origin</code>, <code>Sec-Fetch-Site: same-origin</code>. The own origin is the scheme plus the authority the browser asked for: the authority of the request address when there is one (HTTP/2 has no <code>Host</code> header), else <code>Host</code>; the scheme is <code>https</code> when the connection is TLS or when a trusted proxy says so (<code>X-Forwarded-Proto</code>, same trust rule as the client address: only from a listed proxy, only the last entry), else <code>http</code>; with neither the request is refused (fail closed) with the error <code>request.wrong_origin</code> (403, problem+json). Enforced by: the tests <code>sec_06_*</code> in <code>crates/bb-api</code> (cross-site, <code>null</code>, missing headers, same-origin, scheme, authority without <code>Host</code>) and the TLS + HTTP/2 test <code>sec_06_over_tls_and_http2_the_origin_check_uses_the_authority_and_the_scheme</code>. (3) A <strong>session-bound token</strong>: the value is derived on the server from the session (an HMAC of the session ID with a CSRF key), delivered in the page-readable cookie <code>__Host-bb_csrf</code> at sign-in and renewed with every new session ID; the server compares the <code>x-csrf-token</code> header with the value derived for the request's session in constant time, and refuses unsafe methods without a valid token with problem+json. The generated client reads the cookie and sends the header on every change. Layer 3 is the middleware <code>csrf_check</code> in <code>crates/bb-api/src/api/auth.rs</code> and covers every change below <code>/api</code> (a route added later is protected without anyone remembering): a change without a session cookie is answered with <code>auth.not_signed_in</code> (401), one with a session cookie and without the right token with <code>request.wrong_token</code> (403). Only the seven routes of people who have no session yet (<code>CSRF_EXEMPT</code>: setup, sign-in, sign-up, passkey sign-in, the invitation link) are left out; they carry no secret a forged request could use and the origin check protects them. Enforced by: SEC-COOKIES (the cookie table) and the tests <code>sec_12_a_change_needs_the_token_of_its_own_session</code>, <code>sec_12_every_route_that_changes_something_checks_the_token_except_signing_in_and_up</code> (goes through every route of the API description) and <code>sec_12_every_session_has_its_own_secret_and_its_own_csrf_token</code>, and the TLS + HTTP/2 test <code>sec_12_over_tls_and_http2_a_person_sets_up_signs_out_and_signs_in_again</code>.</li>
 <li><strong>Cookies:</strong> only strictly necessary ones (the session and the CSRF token), so no consent banner is needed (COMP-13, PRIV-01). One module, <code>crates/bb-api/src/cookies.rs</code>, holds the table and is the only code that sets a cookie. Every name starts with <code>__Host-</code>, so browsers insist on <code>Secure</code>, <code>Path=/</code> and no <code>Domain</code>; the module adds <code>HttpOnly</code> where script has no business reading the cookie. <code>cargo xtask gen api</code> writes the list "Cookies we use" to <code>userDocs/cookies.md</code> from the same table. Enforced by: SEC-COOKIES (reads the table; finds <code>Set-Cookie</code>, cookie libraries and <code>document.cookie</code> writes anywhere else).</li>
-<li><strong>Access keys</strong> (scripts, apps): <code>bb_</code> + prefix + secret; only a hash is stored; shown once; scoped, can expire, can only narrow the owner's permissions.</li>
+<li><strong>Access keys</strong> (scripts, apps): <code>bb_</code> + prefix + secret; only a hash is stored; shown once; every key runs out; <em>What it may do</em> and its projects only narrow the owner's permissions, at every use (ADR-0025, decision 8).</li>
 <li><strong>MCP:</strong> OAuth 2.1 authorization server inside Bugaboo (authorization code + PKCE, dynamic client registration with an admin allow list), short-lived access tokens, refresh token rotation, consent screen per app.</li>
 </ul>
 <h4>Browser protections</h4>
@@ -554,33 +574,189 @@ setup-code.txt   the setup code of a server without a console (dead once an acco
 <li>Request size limits; upload limits per project; search complexity limits. API request bodies are limited to 1 MiB unless a route sets its own limit; a bigger body answers <code>request.too_large</code>. Enforced by: review, backed by the test <code>sec_14_a_body_up_to_the_limit_is_read_and_a_bigger_one_is_refused_as_problem_json</code>.</li>
 </ul>
 <h3 id="s7-2"><button class="sec" data-sec>§7.2</button>Authorization model</h3>
+<p>The decisions are <a href="#adr-0004">ADR-0004</a> (one policy engine, <code>Authorized&lt;T&gt;</code>), <a href="#adr-0022">ADR-0022</a> (<em>Who sees people</em>) and <a href="#adr-0025">ADR-0025</a> (roles, groups and assignments on the project tree). This section is what <code>bb-policy</code> builds.</p>
 <pre class="mermaid">flowchart LR
-  actor["Actor&lt;br/&gt;person · bot · access key · AI app token"]
+  actor["Actor&lt;br/&gt;person · access key · later bot and AI app token"]
   groups["Groups"]
-  roles["Roles&lt;br/&gt;(sets of permissions)"]
-  assign["Role assignments&lt;br/&gt;on a project and everything below it"]
-  fieldp["Field permissions&lt;br/&gt;hidden · can see · can change&lt;br/&gt;per role (per issue type)"]
-  vis["Visibility groups&lt;br/&gt;restricted issues and documents"]
-  scopes["Scopes&lt;br/&gt;(keys and AI apps only narrow)"]
+  assign["Who has which role&lt;br/&gt;person or group · role or No access ·&lt;br/&gt;whole organization, only this project,&lt;br/&gt;or this project and its sub-projects"]
+  roles["Roles&lt;br/&gt;(permissions, field levels,&lt;br/&gt;Who sees people, two-step switch)"]
+  fieldp["Field mask&lt;br/&gt;Hidden · Can see · Can change"]
+  people["PersonRef&lt;br/&gt;name · role · Someone · Former user"]
+  vis["Visibility groups&lt;br/&gt;restricted issues and documents (V1)"]
+  scopes["Access key choice and projects&lt;br/&gt;(only narrow)"]
   actor --&gt; groups --&gt; assign
   actor --&gt; assign
   assign --&gt; roles --&gt; fieldp
+  roles --&gt; people
   actor --&gt; vis
   actor --&gt; scopes</pre>
-<p><strong>Evaluation</strong>, for an actor and a project:</p>
-<ol>
-<li>Collect role assignments on the project and all its parents; an explicit <em>deny</em> on a lower project wins over a grant from above.</li>
-<li>Union the permissions of those roles; intersect with the scopes of the access key or AI-app token, if any.</li>
-<li>Build the <strong>field mask</strong>: for each field, the highest level any role gives (hidden &lt; can see &lt; can change), per issue type.</li>
-<li><strong>Visibility:</strong> an issue is visible if the actor may view issues in its project <em>and</em> (it isn't restricted <em>or</em> the actor is in one of its visibility groups).</li>
-</ol>
-<p><strong>People:</strong> every person shown anywhere is a <code>PersonRef</code>, resolved for the viewer into a name, a role label (<em>"a Team member"</em>) or <em>Someone</em>, according to <em>Who sees people</em> (ADR-0022). Hidden people information can't be searched or filtered either.</p>
-<p><strong>Enforcement points:</strong></p>
+<h4>The permission catalogue</h4>
+<p>One enum, <code>Permission</code> in <code>bb-policy</code>. The key is also the value of <code>x-permission</code> in the API description; the sentence is the message <code>permission.&lt;key&gt;</code>; the topic is the message <code>permission-topic.&lt;topic&gt;</code>. <em>Counts</em> says where a permission counts (ADR-0025, decision 1); <em>Kind</em> is what an access key's choice keeps (decision 8). Routes that need no catalogue permission declare <code>public</code>, <code>signed-in</code> or <code>own-account</code>. Enforced by: ARCH-PERMS.</p>
+<div class="tbl-wrap"><table class="dtable"><thead><tr><th>Key</th><th>Topic</th><th>Counts</th><th>Kind</th><th>Sentence on the role page</th></tr></thead><tbody>
+<tr><td><code>see-projects</code></td><td>Projects</td><td>project</td><td>See</td><td>See the project and what is in it</td></tr>
+<tr><td><code>make-projects</code></td><td>Projects</td><td>organization</td><td>Change</td><td>Make projects at the top level</td></tr>
+<tr><td><code>make-sub-projects</code></td><td>Projects</td><td>project</td><td>Change</td><td>Make sub-projects inside the project</td></tr>
+<tr><td><code>move-projects</code></td><td>Projects</td><td>project</td><td>Change</td><td>Move sub-projects into or out of the project</td></tr>
+<tr><td><code>change-project-settings</code></td><td>Projects</td><td>project</td><td>Manage</td><td>Change the project's name, short name and settings</td></tr>
+<tr><td><code>decide-roles</code></td><td>People</td><td>project</td><td>Manage</td><td>Decide who has which role, including <em>No access</em></td></tr>
+<tr><td><code>decide-what-roles-see</code></td><td>People</td><td>project</td><td>Manage</td><td>Decide which fields and which people information each role sees</td></tr>
+<tr><td><code>check-access</code></td><td>People</td><td>project</td><td>See</td><td>Check what other people can do, and why</td></tr>
+<tr><td><code>manage-people</code></td><td>People</td><td>organization</td><td>Manage</td><td>See everybody's e-mail address and correct their names</td></tr>
+<tr><td><code>manage-invitations</code></td><td>People</td><td>organization</td><td>Manage</td><td>Invite people and take invitations back</td></tr>
+<tr><td><code>manage-groups</code></td><td>People</td><td>organization</td><td>Manage</td><td>Make, rename and delete groups and change who is in them</td></tr>
+<tr><td><code>manage-roles</code></td><td>People</td><td>organization</td><td>Manage</td><td>Make, change and delete roles</td></tr>
+<tr><td><code>change-organization-settings</code></td><td>Settings</td><td>organization</td><td>Manage</td><td>Change organization settings</td></tr>
+<tr><td><code>see-status</code></td><td>Settings</td><td>organization</td><td>See</td><td>See how the server is doing</td></tr>
+</tbody></table>
+</div>
 <ul>
-<li>Every use case asks <code>bb-policy</code> first. Every result passes through <code>Authorized&lt;T&gt;</code>, which applies the field mask during serialization.</li>
-<li>Every search gets the visibility predicate compiled into its SQL; the field catalogue given to the parser contains only readable fields.</li>
-<li>History, notifications, webhooks, exports, assistant context and live updates apply the <strong>receiver's</strong> mask.</li>
-<li><strong>Tests:</strong> a generated matrix (roles × permissions × fields × entry points) runs on every build.</li>
+<li>A <em>project</em> permission given for the whole organization counts in every project; given on a project, in the project (and its sub-projects when the row says so).</li>
+<li>The rows for the whole organization, and a role's own field and people levels, are changed only with <em>Decide who has which role</em> or <em>Decide what roles see</em> from a row for the whole organization.</li>
+<li>Moving a project takes <em>Move projects</em> at the old and at the new parent; a project at the top level counts as inside the organization, so moving to or from the top takes the permission for the whole organization. Making a top-level project takes <em>Make projects</em>; a sub-project takes <em>Make sub-projects</em> at its parent.</li>
+<li>Later milestones add their permissions to the enum (issues M3, time M6, documents M11), each with its topic, sentence, kind and starting values. Enforced by: ARCH-PERMS (a permission without a route or a message fails).</li>
+</ul>
+<h4>Assignments</h4>
+<p>An assignment is one row of <em>Who has which role</em>:</p>
+<div class="tbl-wrap"><table class="dtable"><thead><tr><th>Part</th><th>Values</th></tr></thead><tbody>
+<tr><td>Who</td><td>a person, or a group</td></tr>
+<tr><td>What</td><td>a role, or <em>No access</em></td></tr>
+<tr><td>Where it counts</td><td><em>Whole organization</em> (rows in <em>Organization settings</em>), <em>Only this project</em>, <em>This project and its sub-projects</em> (rows on a project); <em>No access</em> always covers <em>This project and its sub-projects</em></td></tr>
+</tbody></table>
+</div>
+<p>A person or group can have several roles on one project, never a role and <em>No access</em> there. In the API the place is named <code>applies_to</code> with the values <code>organization</code>, <code>project</code> and <code>project-and-sub-projects</code> (glossary: <em>Where it counts</em>).</p>
+<h4>Evaluation</h4>
+<p>For an actor and a place (the organization, or a project and its parents), from one port call that loads the actor's groups and the rows of the place and its parents:</p>
+<ol>
+<li><strong>Default deny:</strong> nobody signed in reaches only <code>public</code> routes; a signed-in person without an applicable row can do nothing and sees no project (SEC-01).</li>
+<li><strong>Applicable rows:</strong> the actor's own rows and their groups' rows for the whole organization; rows on a parent project with <em>This project and its sub-projects</em>; rows on the project itself.</li>
+<li><strong>Rank:</strong> the depth of the row's project (the whole organization lowest, a top-level project 1, its sub-projects 2, …), and at equal depth the person's own row above a group's row.</li>
+<li><strong><em>No access</em>:</strong> the highest-ranked <em>No access</em> row removes every role row of equal or lower rank. Roles from higher up, roles of the person's groups on the same project and other groups' roles on the same project are removed; a role given lower down, or to the person directly where a group has <em>No access</em>, stays. <em>Decide who has which role</em> from a removed row is kept, so nobody is locked out by a project below them (ADR-0025, decision 6).</li>
+<li><strong>Permissions:</strong> the union of the remaining roles' permissions that count at this place (organization permissions only at the organization and only from rows for the whole organization).</li>
+<li><strong>Narrowing:</strong> for an access key, keep only the permissions of the key's kinds (or the picked permissions), and nothing outside the key's projects and their sub-projects; a key with projects gets nothing for the whole organization.</li>
+<li><strong>Field mask:</strong> for each field of the catalogue and each remaining role, the level set for that role on the nearest of the project and its parents, else the role's own level; the mask is the highest of these (<em>Hidden &lt; Can see &lt; Can change</em>), at most <em>Can see</em> for a <em>See only</em> key.</li>
+<li><strong><em>Who sees people</em>:</strong> for each kind, the level set for each remaining role the same way; the viewer's level is the most open (<em>Names &gt; Role only &gt; Hidden</em>).</li>
+<li><strong>Visibility</strong> (restricted issues SEC-05, V1): an issue is visible if the actor sees its project <em>and</em> (it isn't restricted <em>or</em> the actor is in one of its visibility groups).</li>
+</ol>
+<p>The evaluation is cached for the request and never longer (review: the cache lives in the request context; tests <code>sec_03_a_role_taken_away_counts_from_the_next_request</code>, <code>auth_07_a_key_follows_its_owner_losing_a_role_at_once</code>).</p>
+<h4>Starting roles</h4>
+<p>Made once at the first start from one Rust definition in <code>bb-policy</code> (ADR-0025, decision 4) and then changed like any role. In the order below, which is also the order for role labels. These are M2's permissions; issue, document and time permissions join with their milestones.</p>
+<div class="tbl-wrap"><table class="dtable"><thead><tr><th>Permission</th><th style="text-align: center">Administrator</th><th style="text-align: center">Project lead</th><th style="text-align: center">Team member</th><th style="text-align: center">Contributor</th><th style="text-align: center">Viewer</th><th style="text-align: center">Guest</th></tr></thead><tbody>
+<tr><td>See the project and what is in it</td><td style="text-align: center">✓</td><td style="text-align: center">✓</td><td style="text-align: center">✓</td><td style="text-align: center">✓</td><td style="text-align: center">✓</td><td style="text-align: center">✓</td></tr>
+<tr><td>Make projects at the top level</td><td style="text-align: center">✓</td><td style="text-align: center">–</td><td style="text-align: center">–</td><td style="text-align: center">–</td><td style="text-align: center">–</td><td style="text-align: center">–</td></tr>
+<tr><td>Make sub-projects inside the project</td><td style="text-align: center">✓</td><td style="text-align: center">✓</td><td style="text-align: center">–</td><td style="text-align: center">–</td><td style="text-align: center">–</td><td style="text-align: center">–</td></tr>
+<tr><td>Move sub-projects into or out of the project</td><td style="text-align: center">✓</td><td style="text-align: center">✓</td><td style="text-align: center">–</td><td style="text-align: center">–</td><td style="text-align: center">–</td><td style="text-align: center">–</td></tr>
+<tr><td>Change the project's name, short name and settings</td><td style="text-align: center">✓</td><td style="text-align: center">✓</td><td style="text-align: center">–</td><td style="text-align: center">–</td><td style="text-align: center">–</td><td style="text-align: center">–</td></tr>
+<tr><td>Decide who has which role</td><td style="text-align: center">✓</td><td style="text-align: center">✓</td><td style="text-align: center">–</td><td style="text-align: center">–</td><td style="text-align: center">–</td><td style="text-align: center">–</td></tr>
+<tr><td>Decide what roles see</td><td style="text-align: center">✓</td><td style="text-align: center">✓</td><td style="text-align: center">–</td><td style="text-align: center">–</td><td style="text-align: center">–</td><td style="text-align: center">–</td></tr>
+<tr><td>Check access</td><td style="text-align: center">✓</td><td style="text-align: center">✓</td><td style="text-align: center">–</td><td style="text-align: center">–</td><td style="text-align: center">–</td><td style="text-align: center">–</td></tr>
+<tr><td>Manage people</td><td style="text-align: center">✓</td><td style="text-align: center">–</td><td style="text-align: center">–</td><td style="text-align: center">–</td><td style="text-align: center">–</td><td style="text-align: center">–</td></tr>
+<tr><td>Invite people</td><td style="text-align: center">✓</td><td style="text-align: center">–</td><td style="text-align: center">–</td><td style="text-align: center">–</td><td style="text-align: center">–</td><td style="text-align: center">–</td></tr>
+<tr><td>Manage groups</td><td style="text-align: center">✓</td><td style="text-align: center">–</td><td style="text-align: center">–</td><td style="text-align: center">–</td><td style="text-align: center">–</td><td style="text-align: center">–</td></tr>
+<tr><td>Manage roles</td><td style="text-align: center">✓</td><td style="text-align: center">–</td><td style="text-align: center">–</td><td style="text-align: center">–</td><td style="text-align: center">–</td><td style="text-align: center">–</td></tr>
+<tr><td>Change organization settings</td><td style="text-align: center">✓</td><td style="text-align: center">–</td><td style="text-align: center">–</td><td style="text-align: center">–</td><td style="text-align: center">–</td><td style="text-align: center">–</td></tr>
+<tr><td>See how the server is doing</td><td style="text-align: center">✓</td><td style="text-align: center">–</td><td style="text-align: center">–</td><td style="text-align: center">–</td><td style="text-align: center">–</td><td style="text-align: center">–</td></tr>
+<tr><td>Two-step sign-in for everyone with this role</td><td style="text-align: center">off</td><td style="text-align: center">off</td><td style="text-align: center">off</td><td style="text-align: center">off</td><td style="text-align: center">off</td><td style="text-align: center">off</td></tr>
+</tbody></table>
+</div>
+<p>A Project lead holds these where the role is given, normally on their projects and sub-projects. The intent for later permissions, as the maintainer accepted it (M2-Q5): Team members change issues; Contributors make issues and change their own; Viewers only look; Guests see only what they reported.</p>
+<p><strong>Starting field levels</strong> (C = <em>Can change</em>, S = <em>Can see</em>, H = <em>Hidden</em>):</p>
+<div class="tbl-wrap"><table class="dtable"><thead><tr><th>Field</th><th style="text-align: center">Administrator</th><th style="text-align: center">Project lead</th><th style="text-align: center">Team member</th><th style="text-align: center">Contributor</th><th style="text-align: center">Viewer</th><th style="text-align: center">Guest</th></tr></thead><tbody>
+<tr><td>Title</td><td style="text-align: center">C</td><td style="text-align: center">C</td><td style="text-align: center">C</td><td style="text-align: center">C</td><td style="text-align: center">S</td><td style="text-align: center">C</td></tr>
+<tr><td>Description</td><td style="text-align: center">C</td><td style="text-align: center">C</td><td style="text-align: center">C</td><td style="text-align: center">C</td><td style="text-align: center">S</td><td style="text-align: center">C</td></tr>
+<tr><td>Status</td><td style="text-align: center">C</td><td style="text-align: center">C</td><td style="text-align: center">C</td><td style="text-align: center">S</td><td style="text-align: center">S</td><td style="text-align: center">S</td></tr>
+<tr><td>Priority</td><td style="text-align: center">C</td><td style="text-align: center">C</td><td style="text-align: center">C</td><td style="text-align: center">S</td><td style="text-align: center">S</td><td style="text-align: center">S</td></tr>
+<tr><td>Assigned to</td><td style="text-align: center">C</td><td style="text-align: center">C</td><td style="text-align: center">C</td><td style="text-align: center">S</td><td style="text-align: center">S</td><td style="text-align: center">S</td></tr>
+<tr><td>Reported by</td><td style="text-align: center">C</td><td style="text-align: center">C</td><td style="text-align: center">S</td><td style="text-align: center">S</td><td style="text-align: center">S</td><td style="text-align: center">S</td></tr>
+<tr><td>Due date</td><td style="text-align: center">C</td><td style="text-align: center">C</td><td style="text-align: center">C</td><td style="text-align: center">S</td><td style="text-align: center">S</td><td style="text-align: center">H</td></tr>
+<tr><td>Labels</td><td style="text-align: center">C</td><td style="text-align: center">C</td><td style="text-align: center">C</td><td style="text-align: center">S</td><td style="text-align: center">S</td><td style="text-align: center">S</td></tr>
+<tr><td>Tags</td><td style="text-align: center">C</td><td style="text-align: center">C</td><td style="text-align: center">C</td><td style="text-align: center">C</td><td style="text-align: center">S</td><td style="text-align: center">S</td></tr>
+<tr><td>Planned for release</td><td style="text-align: center">C</td><td style="text-align: center">C</td><td style="text-align: center">C</td><td style="text-align: center">S</td><td style="text-align: center">S</td><td style="text-align: center">S</td></tr>
+<tr><td>Found in release</td><td style="text-align: center">C</td><td style="text-align: center">C</td><td style="text-align: center">C</td><td style="text-align: center">C</td><td style="text-align: center">S</td><td style="text-align: center">C</td></tr>
+<tr><td>Estimated time</td><td style="text-align: center">C</td><td style="text-align: center">C</td><td style="text-align: center">C</td><td style="text-align: center">S</td><td style="text-align: center">S</td><td style="text-align: center">H</td></tr>
+<tr><td>Time left</td><td style="text-align: center">C</td><td style="text-align: center">C</td><td style="text-align: center">C</td><td style="text-align: center">S</td><td style="text-align: center">S</td><td style="text-align: center">H</td></tr>
+<tr><td>Time spent</td><td style="text-align: center">C</td><td style="text-align: center">C</td><td style="text-align: center">C</td><td style="text-align: center">S</td><td style="text-align: center">S</td><td style="text-align: center">H</td></tr>
+<tr><td>Activity</td><td style="text-align: center">C</td><td style="text-align: center">C</td><td style="text-align: center">C</td><td style="text-align: center">S</td><td style="text-align: center">S</td><td style="text-align: center">H</td></tr>
+<tr><td>Cost center</td><td style="text-align: center">C</td><td style="text-align: center">C</td><td style="text-align: center">S</td><td style="text-align: center">S</td><td style="text-align: center">S</td><td style="text-align: center">H</td></tr>
+</tbody></table>
+</div>
+<p>A Contributor sees <em>Cost center</em> at the start, so the M2 exit demo can hide it. <em>Can change</em> on a field means "where the person can change the item at all"; the permissions to change issues come in M3.</p>
+<p><strong>Starting <em>Who sees people</em></strong> (N = <em>Names</em>, R = <em>Role only</em>, H = <em>Hidden</em>):</p>
+<div class="tbl-wrap"><table class="dtable"><thead><tr><th>Kind of people information</th><th style="text-align: center">Administrator</th><th style="text-align: center">Project lead</th><th style="text-align: center">Team member</th><th style="text-align: center">Contributor</th><th style="text-align: center">Viewer</th><th style="text-align: center">Guest</th></tr></thead><tbody>
+<tr><td>Assigned to</td><td style="text-align: center">N</td><td style="text-align: center">N</td><td style="text-align: center">N</td><td style="text-align: center">N</td><td style="text-align: center">N</td><td style="text-align: center">R</td></tr>
+<tr><td>Reported by</td><td style="text-align: center">N</td><td style="text-align: center">N</td><td style="text-align: center">N</td><td style="text-align: center">N</td><td style="text-align: center">N</td><td style="text-align: center">H</td></tr>
+<tr><td>Last changed by</td><td style="text-align: center">N</td><td style="text-align: center">N</td><td style="text-align: center">N</td><td style="text-align: center">N</td><td style="text-align: center">N</td><td style="text-align: center">R</td></tr>
+<tr><td>Comment and history authors</td><td style="text-align: center">N</td><td style="text-align: center">N</td><td style="text-align: center">N</td><td style="text-align: center">N</td><td style="text-align: center">N</td><td style="text-align: center">R</td></tr>
+<tr><td>"… is editing"</td><td style="text-align: center">N</td><td style="text-align: center">N</td><td style="text-align: center">N</td><td style="text-align: center">N</td><td style="text-align: center">N</td><td style="text-align: center">H</td></tr>
+<tr><td>Followers</td><td style="text-align: center">N</td><td style="text-align: center">N</td><td style="text-align: center">N</td><td style="text-align: center">R</td><td style="text-align: center">R</td><td style="text-align: center">H</td></tr>
+<tr><td>Time entries</td><td style="text-align: center">N</td><td style="text-align: center">N</td><td style="text-align: center">N</td><td style="text-align: center">H</td><td style="text-align: center">H</td><td style="text-align: center">H</td></tr>
+<tr><td>Mentions</td><td style="text-align: center">N</td><td style="text-align: center">N</td><td style="text-align: center">N</td><td style="text-align: center">N</td><td style="text-align: center">N</td><td style="text-align: center">R</td></tr>
+<tr><td>Pictures of people</td><td style="text-align: center">N</td><td style="text-align: center">N</td><td style="text-align: center">N</td><td style="text-align: center">N</td><td style="text-align: center">N</td><td style="text-align: center">H</td></tr>
+<tr><td>Project members</td><td style="text-align: center">N</td><td style="text-align: center">N</td><td style="text-align: center">N</td><td style="text-align: center">R</td><td style="text-align: center">R</td><td style="text-align: center">H</td></tr>
+</tbody></table>
+</div>
+<h4>The field catalogue</h4>
+<p>Declared once in <code>bb-core</code> (<code>fields</code>): key, name (message <code>issue-field.&lt;key&gt;</code>), the thing it belongs to, and the kind of people information when it holds a person. Own fields join in M3 (CF-06); rules per issue type come with issue types (M3).</p>
+<div class="tbl-wrap"><table class="dtable"><thead><tr><th>Key</th><th>Name</th><th>Belongs to</th><th>Holds a person</th></tr></thead><tbody>
+<tr><td><code>title</code></td><td>Title</td><td>issue</td><td>–</td></tr>
+<tr><td><code>description</code></td><td>Description</td><td>issue</td><td>–</td></tr>
+<tr><td><code>status</code></td><td>Status</td><td>issue</td><td>–</td></tr>
+<tr><td><code>priority</code></td><td>Priority</td><td>issue</td><td>–</td></tr>
+<tr><td><code>assigned-to</code></td><td>Assigned to</td><td>issue</td><td>yes, kind <em>Assigned to</em></td></tr>
+<tr><td><code>reported-by</code></td><td>Reported by</td><td>issue</td><td>yes, kind <em>Reported by</em></td></tr>
+<tr><td><code>due-date</code></td><td>Due date</td><td>issue</td><td>–</td></tr>
+<tr><td><code>labels</code></td><td>Labels</td><td>issue</td><td>–</td></tr>
+<tr><td><code>tags</code></td><td>Tags</td><td>issue</td><td>–</td></tr>
+<tr><td><code>planned-for-release</code></td><td>Planned for release</td><td>issue</td><td>–</td></tr>
+<tr><td><code>found-in-release</code></td><td>Found in release</td><td>issue</td><td>–</td></tr>
+<tr><td><code>estimated-time</code></td><td>Estimated time</td><td>issue</td><td>–</td></tr>
+<tr><td><code>time-left</code></td><td>Time left</td><td>issue</td><td>–</td></tr>
+<tr><td><code>time-spent</code></td><td>Time spent</td><td>issue (total of its time entries)</td><td>–</td></tr>
+<tr><td><code>activity</code></td><td>Activity</td><td>time entry (default on the issue)</td><td>–</td></tr>
+<tr><td><code>cost-center</code></td><td>Cost center</td><td>time entry (default on the issue and project)</td><td>–</td></tr>
+</tbody></table>
+</div>
+<p>A person in a field is shown only when the field is visible (mask) and then as its kind says (<code>PersonRef</code>).</p>
+<h4>Kinds of people information</h4>
+<p>Declared once in <code>bb-core</code> (<code>people_kinds</code>), each with its name (message <code>people-kind.&lt;key&gt;</code>): <code>assigned-to</code>, <code>reported-by</code>, <code>last-changed-by</code>, <code>authors</code> (comment and history authors), <code>editing</code> ("… is editing"), <code>followers</code>, <code>time-entries</code>, <code>mentions</code>, <code>pictures</code> (pictures of people: shown only where the kind of the place also gives <em>Names</em>), and <code>project-members</code> (member lists of a project, M2-Q3). The starting levels are in the table above; a new role starts with <em>Hidden</em> everywhere (default deny).</p>
+<p><strong>People who manage see names (M2-Q3):</strong> in <em>Organization settings</em>, <em>Who has which role</em> and <em>Check access</em>, a viewer who holds <em>Manage people</em>, <em>Manage groups</em>, <em>Manage roles</em> or <em>Decide who has which role</em> at that place sees names; anybody else sees the people in these screens by the kind <em>Project members</em>. E-mail addresses are never part of a <code>PersonRef</code>: only the person and holders of <em>Manage people</em> see them (ARCH-PERSON-REF finds others).</p>
+<h4>How <code>PersonRef</code> resolves</h4>
+<p>Every person in an answer is a <code>PersonRef</code>, resolved by <code>bb-policy</code> for the viewer, the kind and the place (ADR-0022). Enforced by: ARCH-PERSON-REF.</p>
+<ol>
+<li>The viewer themselves: their name.</li>
+<li>A removed person (PRIV-04, M9): with <em>Names</em>, the label <em>Former user</em> plus a random code (<code>Former user K7Q2</code>): four characters of Crockford Base32 from the secure random source, drawn again on a clash and longer when four run short, unique among removed people, made when the person is removed and stored with the tombstone, never made from the person's ID or a counter (PRIV-13); with <em>Role only</em> or <em>Hidden</em>, <em>Someone</em>.</li>
+<li>Anybody else by the viewer's level: <em>Names</em> → the name (and the ID, for links); <em>Role only</em> → the label of their first role at that place in the order of roles (<em>"a Team member"</em>), or <em>Someone</em> when they have none there; <em>Hidden</em> → <em>Someone</em>.</li>
+</ol>
+<pre><code>PersonRef = { shown: "name",    id: UserId, name: String }
+          | { shown: "role",    role: String }          // the screen says "a {role}"
+          | { shown: "someone" }
+          | { shown: "former",  label: String }         // "K7Q2"; the screen says "Former user {label}"</code></pre>
+<p>A role label and <em>Someone</em> carry no ID, so a browser cannot tell two hidden people apart or follow one through the answers. A viewer who cannot see names for a kind cannot search, sort, group or filter by it (SEC-06, from M5 on).</p>
+<h4>The answer of <em>Check access</em></h4>
+<p>A query use case (<code>bb-app</code>, WP-05) answers for a person and a place; the screen (WP-12) turns each reason into a sentence with message keys <code>check-access.reason.&lt;kind&gt;</code>. The checker holds <em>Check access</em> at that place; names follow the rule above.</p>
+<pre><code>CheckAccess = { person: PersonRef, place: Organization | ProjectRef,
+                permissions: [{ permission, allowed: bool, reasons: [Reason] }],  // every permission that counts there
+                fields:      [{ field, level, reasons: [Reason] }],
+                people:      [{ kind, level, reasons: [Reason] }] }
+
+Reason = { kind: "role",          role: RoleRef, through: Person | GroupRef, on: Place, applies_to, inherited: bool }
+       | { kind: "no-access",     through: Person | GroupRef, on: Place }        // the row that removed the roles
+       | { kind: "kept-above",    role: RoleRef, through: Person | GroupRef, on: Place }  // decide-roles kept over No access
+       | { kind: "not-given",     roles: [RoleRef] }                              // the roles they have here; empty: none
+       | { kind: "organization-only", role: RoleRef, on: Place }                  // counts only for the whole organization
+       | { kind: "level",         role: RoleRef, level, set_on: Place | "role" }  // a field or people level and where it was set
+Place  = "organization" | ProjectRef | "hidden"                                    // "hidden": a project the checker cannot see</code></pre>
+<p>Example: <em>"Yes. Ana is in the group Backend, which has the role Team member in ACME. Website is inside ACME, so the role applies here too."</em> comes from <code>role</code> with <code>through: Backend</code>, <code>on: ACME</code>, <code>inherited: true</code>. The decision always equals the engine's, and the reasons are enough to reach it (property test <code>sec_03_check_access_explains_every_result_with_the_chain_of_reasons</code>).</p>
+<h4>No counts that leak (PRIV-13)</h4>
+<ul>
+<li>No answer holds a number that counts things which include something the viewer cannot see: lists page with <code>next_cursor</code> and never answer a total; <em>Used by</em> counts only what the viewer can see; the project tree shows no counts of sub-projects or members; a member list that is <em>Hidden</em> for the viewer is left out with its number. Enforced by: ARCH-NO-COUNTERS (a <code>total</code>, <code>count</code> or similar property needs an entry in <code>tools/checks/counter-exemptions.toml</code> that says why the number holds only what the viewer can see), and the tests <code>priv_13_no_project_answer_holds_a_count</code> and <code>priv_13_used_by_counts_only_what_the_viewer_may_see</code>.</li>
+<li>No identifier counts up: people, groups, roles, projects, assignments and access keys have random IDs; <em>Former user</em> labels and access-key prefixes are random. Enforced by: ARCH-NO-COUNTERS.</li>
+</ul>
+<h4>Enforcement points</h4>
+<ul>
+<li>Every use case asks <code>bb-policy</code> first. Every result passes through <code>Authorized&lt;T&gt;</code>, which applies the field mask during serialization. Enforced by: ARCH-AUTHZ-ONLY, ARCH-API-OUT.</li>
+<li>Every search gets the visibility predicate compiled into its SQL; the field catalogue given to the parser contains only readable fields (M5).</li>
+<li>History, notifications, webhooks, exports, assistant context and live updates apply the <strong>receiver's</strong> mask and <code>PersonRef</code> (each in its milestone, with its SEC-MATRIX column).</li>
+<li><strong>Tests:</strong> a generated matrix (actors × routes, roles × fields × levels, roles × kinds × levels; the entry points of M2 are the API answers) runs on every build. Enforced by: SEC-MATRIX.</li>
 </ul>
 <h3 id="s7-3"><button class="sec" data-sec>§7.3</button>Data model</h3>
 <pre class="mermaid">erDiagram
@@ -1087,9 +1263,9 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 <h2 id="s12"><button class="sec" data-sec>§12</button>Security: threat model and personal-data flows</h2>
 <p>Part of the security and data-flow documentation (COMP-07) for the CRA technical file and for customers' own risk assessments. It covers what is built so far and grows with every milestone: each milestone review checks that new entry points appear here.</p>
 <p>The method is STRIDE per trust boundary (boundaries from <a href="#s2">Context</a>). Every threat names the mitigation and what proves it: a check from the catalogue (<code>tools/checks/catalog.toml</code>), a test, or <em>review</em> when a person decides.</p>
-<h3 id="s12-1"><button class="sec" data-sec>§12.1</button>Scope (status: M1)</h3>
+<h3 id="s12-1"><button class="sec" data-sec>§12.1</button>Scope (status: M2)</h3>
 <div class="tbl-wrap"><table class="dtable"><thead><tr><th>In scope now</th><th>Comes later (own section then)</th></tr></thead><tbody>
-<tr><td>HTTPS and start-up config, security headers, sign-in (password, passkey, two-step codes), sessions, invitations, first-run setup code, rate limits, the security log, stored secrets, logs</td><td>Permissions engine (M2), search language (M3), attachments (M5), MCP and the assistant (M9), webhooks and mail (M4), the served model's control plane (M14)</td></tr>
+<tr><td>HTTPS and start-up config, security headers, sign-in (password, passkey, two-step codes), sessions, invitations, first-run setup code, rate limits, the security log, stored secrets, logs (M1); the permission engine (roles, groups, assignments, <em>No access</em>, field masks, <em>Who sees people</em>), projects and short names, access keys, two-step sign-in by role, settings in layers (M2)</td><td>Issues (M3), attachments and mail (M4), search language (M5), MCP and the assistant (M8), <em>Remove a person</em> and exports (M9), webhooks (M12), the served model's control plane (M14)</td></tr>
 </tbody></table>
 </div>
 <h3 id="s12-2"><button class="sec" data-sec>§12.2</button>Attack surface</h3>
@@ -1114,13 +1290,13 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
   store --&gt; keys
   tls --&gt; cert
   server --&gt; logs</pre>
-<p>Entry points in M1: the HTTPS listener (pages, assets, <code>/api/v1</code>, <code>/health/*</code>), the console and <code>bugaboo.toml</code>, and the data folder on disk.</p>
+<p>Entry points in M1: the HTTPS listener (pages, assets, <code>/api/v1</code>, <code>/health/*</code>), the console and <code>bugaboo.toml</code>, and the data folder on disk. M2 adds no new listener: the new routes are below <code>/api/v1</code>, and scripts reach them with an access key (<code>Authorization: Bearer bb_…</code>) instead of a cookie. The sample-organization program (<code>bb-sample</code>) is a developer tool and is not shipped before OPS-12.</p>
 <h3 id="s12-3"><button class="sec" data-sec>§12.3</button>Threats and mitigations</h3>
 <h4>Boundary 1: browser ↔ server</h4>
 <div class="tbl-wrap"><table class="dtable"><thead><tr><th>STRIDE</th><th>Threat</th><th>Mitigation</th><th>Proven by</th></tr></thead><tbody>
 <tr><td>Spoofing</td><td>Password guessing and credential stuffing</td><td>Argon2id, breached-password list, slow-down per account, person and network (failed tries only, reserved before they are checked so parallel requests are not parallel guesses, cleared by a success), a window that doubles up to 15 minutes after every window that ended with a failure (pacing does not help), never a permanent lock; the keys of a network keep a window of a minute and do not grow, because many people share a network</td><td><code>sec_14_only_failed_tries_count_and_a_success_clears_them</code>, <code>sec_14_parallel_wrong_tries_at_one_account_get_no_more_than_the_allowance</code>, <code>sec_14_pacing_the_tries_just_under_the_allowance_does_not_dodge_the_growing_wait</code>, <code>sec_14_the_window_of_a_network_stays_a_minute_however_often_it_fails</code>, <code>sec_14_only_a_finished_second_step_clears_the_wrong_codes_of_a_person</code>, <code>sec_14_failures_of_one_network_are_limited_whatever_the_account</code>, <code>sec_14_failed_sign_ins_are_turned_away_with_a_wait_and_the_answers_look_alike</code>, <code>sec_14_one_network_is_limited_in_its_tries_whatever_the_account</code>; <code>auth_01_*</code> (password rules)</td></tr>
 <tr><td>Spoofing</td><td>Finding out which e-mail addresses have accounts</td><td>Same answer and same work for unknown accounts and wrong passwords; no error says which of the two was wrong</td><td><code>auth_01_an_unknown_address_and_a_wrong_password_get_the_same_answer</code>, the timing test <code>auth_01_an_unknown_account_takes_as_long_as_a_wrong_password</code>; ARCH-ERRORS</td></tr>
-<tr><td>Spoofing</td><td>Stolen password alone is enough</td><td>Two-step codes (TOTP with backup codes) and passkeys; the setting for admins to require them per role is declared and takes effect with roles (M2)</td><td><code>auth_03_*</code>, <code>auth_02_*</code> (<code>crates/bb-server/src/tests/sign_in/</code>)</td></tr>
+<tr><td>Spoofing</td><td>Stolen password alone is enough</td><td>Two-step codes (TOTP with backup codes) and passkeys; administrators ask them of everybody (<code>security.two-step-required</code>) or of a role (the switch on the role, ADR-0025; see the M2 rows below)</td><td><code>auth_03_*</code>, <code>auth_02_*</code> (<code>crates/bb-server/src/tests/sign_in/</code>)</td></tr>
 <tr><td>Spoofing</td><td>Guessing or replaying a code of the second step after a password was stolen</td><td>A code works once (its step is written in the same change that opens the session), wrong codes count against the person and, after 10 in one half-finished sign-in, end it, backup codes are 80 bits and stored hashed</td><td><code>auth_03_signing_in_with_a_code_opens_a_new_session_and_a_code_works_once</code>, <code>sec_14_wrong_second_step_codes_are_limited_per_person</code>, <code>sec_14_parallel_wrong_codes_at_one_half_finished_sign_in_get_no_more_than_the_allowance</code>, <code>sec_14_ten_wrong_codes_end_the_half_finished_sign_in_and_are_written_down</code>, <code>auth_03_a_code_step_is_accepted_once_even_when_requests_race</code></td></tr>
 <tr><td>Elevation of privilege</td><td>A thief with a stolen session adds a code app or a passkey of their own and keeps access</td><td>Adding a way to sign in asks for the password again (when it starts and when it is finished)</td><td><code>sec_12_a_stolen_session_cannot_add_a_code_app_without_the_password</code>, <code>sec_12_a_stolen_session_cannot_add_a_passkey_without_the_password</code></td></tr>
 <tr><td>Spoofing</td><td>A passkey answer replayed, made by another passkey, or for another person</td><td>A challenge works once, for 5 minutes and for one person; the passkey is one the person registered; the answer is checked by <code>webauthn-rs</code>. A new passkey is asked to be discoverable (<code>residentKey: preferred</code>), so that it can also sign in on its own, without the password; a device that cannot store one still works as a second step</td><td><code>auth_02_a_passkey_finishes_signing_in_after_the_password</code>, <code>auth_02_a_passkey_signs_in_on_its_own</code></td></tr>
@@ -1144,6 +1320,29 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 <tr><td>Elevation of privilege</td><td>A person makes invitations or changes who may sign up</td><td>Administrators only</td><td><code>auth_06_only_administrators_manage_invitations</code>, <code>auth_06_signing_up_is_off_by_default_and_only_administrators_change_the_rule</code></td></tr>
 </tbody></table>
 </div>
+<h4>Permissions, projects and access keys (M2)</h4>
+<p>The model is <a href="#adr-0025">ADR-0025</a> and <span title="07-cross-cutting.md#authorization-model in the repository">§7, <em>Authorization model</em></span>. The trust boundary is the same (browser or script ↔ server); what is new is that the server now decides between people who are all signed in. The packages that build a row add its test when they merge; a name in the last column that does not exist yet is the test the package's plan asks for.</p>
+<div class="tbl-wrap"><table class="dtable"><thead><tr><th>STRIDE</th><th>Threat</th><th>Mitigation</th><th>Proven by</th></tr></thead><tbody>
+<tr><td>Elevation of privilege</td><td>A route or use case forgets to ask the policy engine, or answers a plain domain type</td><td>Every route declares its permission; only <code>bb-policy</code> builds <code>Authorized&lt;T&gt;</code>; the answer wrapper takes nothing else; a generated matrix runs every route for every kind of actor</td><td>ARCH-PERMS, ARCH-AUTHZ-ONLY, ARCH-API-OUT, SEC-MATRIX (WP-05, WP-10)</td></tr>
+<tr><td>Elevation of privilege</td><td>A person edits a role they hold (or gives a role) to get more than they have</td><td><em>Manage roles</em> counts only for the whole organization; nobody adds a permission to a role, or gives a role, unless they hold every permission of it at that place themselves</td><td><code>sec_08_nobody_adds_a_permission_they_do_not_hold_to_a_role</code>, <code>sec_02_nobody_gives_a_role_with_more_than_they_hold_there</code> (WP-05), SEC-MATRIX</td></tr>
+<tr><td>Denial of service</td><td>The last administrator is removed, or a project lead puts <em>No access</em> on the administrators, and nobody can manage roles any more</td><td>A change that leaves nobody with <em>Manage roles</em> and <em>Decide who has which role</em> for the whole organization is refused; <em>No access</em> never takes <em>Decide who has which role</em> from people who hold it from above</td><td><code>sec_08_nobody_can_remove_the_last_way_to_manage_roles</code>, <code>sec_03_no_access_cannot_lock_out_the_people_who_decide_roles_above</code> (WP-05)</td></tr>
+<tr><td>Elevation of privilege</td><td>The M1 upgrade turns the wrong people into administrators, or leaves none</td><td>The migration keeps the M1 list; the first start gives exactly those people the Administrator role, with events and security-log entries</td><td><code>sec_08_m1_administrators_become_administrators_and_nobody_else_does</code> (WP-05, both databases)</td></tr>
+<tr><td>Elevation of privilege</td><td>A role taken away keeps working because an evaluation was kept</td><td>Evaluations live for one request only</td><td><code>sec_03_a_role_taken_away_counts_from_the_next_request</code> (WP-05); review (the cache lives in the request context)</td></tr>
+<tr><td>Information disclosure</td><td>Reaching a hidden project by its address or its short name, old short names included</td><td>A hidden project answers <code>resource.not_found</code> exactly like a missing one; a visible sub-project of a hidden project is shown at the top and never names its parent; old short names stay with their project</td><td><code>prj_01_a_hidden_project_answers_not_found_like_a_missing_one</code>, <code>prj_01_a_visible_sub_project_of_a_hidden_project_does_not_name_it</code>, <code>prj_01_an_old_short_name_redirects</code> (WP-08), SEC-MATRIX</td></tr>
+<tr><td>Information disclosure</td><td>Probing short names to learn that a hidden project exists</td><td>Only people who can make projects at that place learn that a short name is taken, and the sentence is the same whether the project is hidden or not</td><td><code>prj_01_a_taken_short_name_is_told_only_to_people_who_may_make_projects</code> (WP-08)</td></tr>
+<tr><td>Information disclosure</td><td>Counts that include hidden things (sub-projects, members, <em>Used by</em>, people who still need a second step)</td><td>No total in any list answer; counts only of what the viewer can see; a hidden member list is left out with its number</td><td>ARCH-NO-COUNTERS; <code>priv_13_no_project_answer_holds_a_count</code> (WP-08), <code>priv_13_used_by_counts_only_what_the_viewer_may_see</code> (WP-11)</td></tr>
+<tr><td>Information disclosure</td><td>A hidden field read through an answer, <code>fields=</code>, the move preview or <em>Check access</em></td><td><code>Authorized&lt;T&gt;</code> leaves hidden fields out; asking for one fails like an unknown field; previews and <em>Check access</em> use the same mask</td><td><code>sec_06_a_hidden_field_is_missing_from_every_m2_answer_and_cannot_be_asked_for</code> (WP-12), SEC-MATRIX (field rows)</td></tr>
+<tr><td>Information disclosure</td><td>A name or e-mail address reaches a viewer whose <em>Who sees people</em> is <em>Role only</em> or <em>Hidden</em></td><td>Every person is a <code>PersonRef</code>, resolved for the viewer; a role label and <em>Someone</em> carry no ID; e-mail addresses only for the person and <em>Manage people</em></td><td>ARCH-PERSON-REF; <code>priv_12_a_guest_sees_role_only_or_someone_as_set_and_no_name_reaches_their_browser</code> (WP-12), SEC-MATRIX (people rows)</td></tr>
+<tr><td>Information disclosure</td><td><em>Check access</em> or the move preview names a project the person cannot see</td><td>Reasons name only projects the checker sees (others are <em>a project you can't see</em>); moving takes the right in both parents</td><td><code>sec_03_check_access_names_no_project_the_checker_cannot_see</code> (WP-12), <code>prj_03_the_move_preview_names_who_gains_and_loses_access</code> (WP-08)</td></tr>
+<tr><td>Information disclosure</td><td><em>Former user</em> labels count up or can be traced back to the person</td><td>Random Crockford Base32 codes from the secure random source, unique, never made from the ID</td><td><code>priv_13_former_user_labels_are_random_and_unique</code> (WP-05)</td></tr>
+<tr><td>Spoofing</td><td>A stolen access key</td><td>Shown once, only a hash stored; every key runs out (at most a year); a limit per key; a key never reaches the owner's sign-in data; making, deleting and refusing keys is in the security log; a secret-scan rule finds keys in commits</td><td><code>auth_07_a_key_is_shown_once_and_only_its_hash_is_stored</code>, <code>auth_07_a_key_cannot_change_the_owners_sign_in_data</code>, <code>sec_14_a_key_has_its_own_limit</code>, <code>sec_15_making_and_deleting_keys_is_in_the_security_log</code> (WP-09); SEC-SECRETS</td></tr>
+<tr><td>Elevation of privilege</td><td>A key that outlives its owner's permissions, or that holds more than the owner</td><td>A key has no permissions of its own: at every use it is the owner's evaluation narrowed by its choice and projects</td><td><code>auth_07_a_key_can_do_only_what_its_owner_can_and_its_scopes_allow</code> (property test), <code>auth_07_a_key_follows_its_owner_losing_a_role_at_once</code> (WP-09), SEC-MATRIX (key actors)</td></tr>
+<tr><td>Spoofing</td><td>Guessing keys, or telling an expired key from a wrong one</td><td>256-bit secrets; an expired, a deleted and an unknown key get the same answer; the network limit and the per-key limit</td><td><code>auth_07_an_expired_a_deleted_and_an_unknown_key_get_the_same_answer</code> (WP-09)</td></tr>
+<tr><td>Spoofing</td><td>A person whose role asks for two-step sign-in keeps working with the password alone</td><td>The switch on the role counts from the next request: the session can only set up a second step</td><td><code>auth_03_a_role_that_requires_two_step_sign_in_makes_its_people_set_it_up_first</code> (WP-09)</td></tr>
+<tr><td>Repudiation</td><td>A change of roles, groups, assignments, field levels, <em>Who sees people</em>, project moves or access keys leaves no trace</td><td>Each writes its event and a security-log entry in the same change</td><td>ARCH-EVENTS; <code>sec_15_every_change_of_permissions_is_in_the_security_log</code> (WP-05)</td></tr>
+<tr><td>Tampering</td><td>A changed or old cursor, ETag or cached answer shows another person's view</td><td>Cursors hold only a position and every permission comes from the request; ETags are made from the answer after masking</td><td><code>perf_02_paging_walks_every_item_once_and_refuses_a_changed_cursor</code>, <code>perf_03_every_get_answers_an_etag_and_304_on_a_match</code></td></tr>
+</tbody></table>
+</div>
 <h4>Boundary 4 (operator ↔ data) and the host</h4>
 <div class="tbl-wrap"><table class="dtable"><thead><tr><th>STRIDE</th><th>Threat</th><th>Mitigation</th><th>Proven by</th></tr></thead><tbody>
 <tr><td>Information disclosure</td><td>Stored secrets read from a database copy or backup</td><td>Envelope encryption with XChaCha20-Poly1305; the master key lives outside the database</td><td>secrets tests (WP-05)</td></tr>
@@ -1165,6 +1364,8 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 <tr><td>Signing up on one's own shows whether an address has an account (the refusal is the same as for a closed door, but it comes only for some addresses)</td><td>Nothing can confirm an address before mail exists; signing up is off by default and the setting says so (M1-F38)</td><td>M4 (mail)</td></tr>
 <tr><td>Somebody who keeps failing at an account can make it wait, up to 15 minutes at a time once the windows have grown (the limit counts failures and a success clears them, so it is never a lock for good)</td><td>Any limit that stops guessing can be used to slow the person down; a permanent lock would be worse (SEC-14)</td><td>When the settings registry takes the numbers (OPS-10)</td></tr>
 <tr><td>A security-log entry that cannot be written (the anchor file or the database fails) is reported in the server log but does not undo or refuse the sign-in. The server counts the entries it could not write since it started, and the status page warns when the count is above zero (<code>sec_15_the_status_page_warns_when_a_log_entry_could_not_be_written</code>); the status page and <code>bugaboo security-log verify</code> also name a database that lacks the newest entries that the anchor file knows of (a restore from an older backup, lost writes or a cut-off end) and say what to check (<code>sec_15_the_status_page_warns_when_the_anchor_is_ahead</code>)</td><td>A sign-in that fails because the log is full would let anybody who can fill the disk lock everybody out</td><td>The decision stays (M1-F40, done in M2 WP-04)</td></tr>
+<tr><td><em>Check access</em> tells a checker that a role comes from <em>a project you can't see</em>, so they learn that such a project exists above, never its name or anything in it</td><td>A sentence that leaves the row out would explain a decision wrongly; only people who can check access at that place see it (ADR-0025, decision 12)</td><td>When restricted projects need more (SEC-05, V1)</td></tr>
+<tr><td>People with <em>Decide who has which role</em> from above keep it on a project where they have <em>No access</em>, and see its name and short name there</td><td>Otherwise a project lead could shut the administrators out for good (ADR-0025, decision 6)</td><td>—</td></tr>
 <tr><td>Self-signed certificates show a browser warning</td><td>Safer than plain HTTP; admins can provide a certificate, ACME comes in 1.0</td><td>V1 (ACME)</td></tr>
 </tbody></table>
 </div>
@@ -1188,7 +1389,7 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
   acc &amp; cred &amp; sess --&gt; seclog
   bb --&gt; logs</pre>
 <div class="tbl-wrap"><table class="dtable"><thead><tr><th>Data</th><th>Purpose</th><th>Legal basis (GDPR Art. 6)</th><th>Kept</th></tr></thead><tbody>
-<tr><td>Name, e-mail</td><td>Account, sign-in, showing who did what</td><td>(b) contract / employment</td><td>While the account exists; then <em>Remove a person</em> (M2)</td></tr>
+<tr><td>Name, e-mail</td><td>Account, sign-in, showing who did what</td><td>(b) contract / employment</td><td>While the account exists; then <em>Remove a person</em> (PRIV-04, M9)</td></tr>
 <tr><td>Password hash, passkeys, two-step secret, backup codes</td><td>Sign-in</td><td>(b) contract; (f) security</td><td>Until changed or the account is removed</td></tr>
 <tr><td>Sessions with shortened IP and device label</td><td>Staying signed in, <em>Where you're signed in</em></td><td>(b) contract; (f) security</td><td>Until signed out or expired</td></tr>
 <tr><td>Invitation e-mail</td><td>Sending and checking the invitation</td><td>(b) contract</td><td>Until accepted or 7 days</td></tr>
@@ -1197,6 +1398,57 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 </tbody></table>
 </div>
 <p>No personal data leaves the server in M1: no mail, no AI, no outside fonts, scripts or analytics (PRIV-01).</p>
+<h3 id="s12-5"><button class="sec" data-sec>§12.5</button>Personal data in M2</h3>
+<p>M2 adds where people work (groups and roles), projects, access keys and each person's own settings. The marks below are decided here (ADR-0025); each package writes them on its entities, and <code>cargo xtask gen privacy</code> then lists them on the generated page <code>docs/privacy/personal-data.md</code>. Enforced by: DATA-MARKS.</p>
+<p>A new category, <strong><code>organization</code></strong>: where a person works, meaning their groups and the roles they have, and where. Its legal basis is the contract (Art. 6(1)(b); for employees in Germany together with Art. 88 GDPR and § 26 BDSG): an organization cannot give people work in projects without recording who may do what.</p>
+<pre class="mermaid">flowchart LR
+  admin(["Administrator or project lead"])
+  person(["Person"])
+  script(["Script or app&lt;br/&gt;with an access key"])
+  subgraph bb["Bugaboo"]
+    groups["Groups and members"]
+    assign["Who has which role&lt;br/&gt;person or group, role or No access, project"]
+    rules["Field levels and Who sees people&lt;br/&gt;(no personal data)"]
+    keys["Access keys&lt;br/&gt;owner, name, hashed secret,&lt;br/&gt;last use (to the minute)"]
+    mine["My settings&lt;br/&gt;time zone, region, appearance, shortcuts"]
+    policy["bb-policy&lt;br/&gt;evaluation per request"]
+    seclog["Security log"]
+  end
+  admin -- "manages" --&gt; groups &amp; assign &amp; rules
+  person -- "chooses" --&gt; mine
+  person -- "makes" --&gt; keys
+  script -- "Bearer key" --&gt; keys --&gt; policy
+  groups &amp; assign &amp; rules --&gt; policy
+  groups &amp; assign &amp; rules &amp; keys --&gt; seclog</pre>
+<div class="tbl-wrap"><table class="dtable"><thead><tr><th>Entity (package)</th><th>Field</th><th>Personal data</th><th>Category</th><th>Legal basis</th></tr></thead><tbody>
+<tr><td>Group (WP-05)</td><td>name</td><td>yes (free text)</td><td><code>content</code></td><td><code>legitimate_interests</code></td></tr>
+<tr><td>Group member (WP-05)</td><td>person</td><td>yes</td><td><code>organization</code></td><td><code>contract</code></td></tr>
+<tr><td>Group member (WP-05)</td><td>added at</td><td>yes</td><td><code>activity</code></td><td><code>contract</code></td></tr>
+<tr><td>Role (WP-05)</td><td>name</td><td>yes (free text)</td><td><code>content</code></td><td><code>legitimate_interests</code></td></tr>
+<tr><td>Role (WP-05)</td><td>permissions, field and people levels, two-step switch, starting mark, place in the order</td><td>no</td><td>–</td><td>–</td></tr>
+<tr><td>Assignment (WP-05)</td><td>person (when the row is for a person)</td><td>yes</td><td><code>organization</code></td><td><code>contract</code></td></tr>
+<tr><td>Assignment (WP-05)</td><td>given at</td><td>yes</td><td><code>activity</code></td><td><code>contract</code></td></tr>
+<tr><td>Assignment (WP-05)</td><td>group, role or <em>No access</em>, project, where it counts</td><td>no</td><td>–</td><td>–</td></tr>
+<tr><td>Project (WP-05, WP-08)</td><td>name</td><td>yes (free text)</td><td><code>content</code></td><td><code>legitimate_interests</code></td></tr>
+<tr><td>Project (WP-05, WP-08)</td><td>parent, short name, old short names (<code>ShortName</code> holds only 2–10 capitals and digits)</td><td>no</td><td>–</td><td>–</td></tr>
+<tr><td>Access key (WP-09)</td><td>owner</td><td>yes</td><td><code>identity</code></td><td><code>contract</code></td></tr>
+<tr><td>Access key (WP-09)</td><td>name</td><td>yes (free text)</td><td><code>content</code></td><td><code>contract</code></td></tr>
+<tr><td>Access key (WP-09)</td><td>prefix, hash of the secret</td><td>yes</td><td><code>credentials</code></td><td><code>contract</code></td></tr>
+<tr><td>Access key (WP-09)</td><td>made at, last used (to the minute)</td><td>yes</td><td><code>activity</code></td><td><code>contract</code></td></tr>
+<tr><td>Access key (WP-09)</td><td>what it may do, projects, runs out on</td><td>no</td><td>–</td><td>–</td></tr>
+<tr><td>Setting value on the person level (WP-07)</td><td>the value (time zone, region, appearance, shortcuts)</td><td>yes</td><td><code>content</code></td><td><code>contract</code></td></tr>
+<tr><td>Setting value on the person level (WP-07)</td><td>the person it belongs to</td><td>yes</td><td><code>identity</code></td><td><code>contract</code></td></tr>
+</tbody></table>
+</div>
+<p>The person a setting value belongs to is held today in <code>scope</code>, which is marked as not personal because it also holds project IDs; WP-07 gives the person its own field with the mark above, so DATA-MARKS sees it.</p>
+<div class="tbl-wrap"><table class="dtable"><thead><tr><th>Data</th><th>Purpose</th><th>Legal basis (GDPR Art. 6)</th><th>Kept</th></tr></thead><tbody>
+<tr><td>Group membership and role assignments</td><td>Deciding what a person can do and see; showing who works where to the people allowed to see it</td><td>(b) contract / employment</td><td>While the row exists; gone from the person when they are removed (<em>Remove a person</em>, PRIV-04, M9); the changes stay in the security log for its keep period</td></tr>
+<tr><td>Names of groups, roles and projects</td><td>Naming them on screens</td><td>(f) legitimate interests (free text that could name a person)</td><td>While the group, role or project exists</td></tr>
+<tr><td>Access keys</td><td>Letting the person's scripts and apps act for them, never with more rights</td><td>(b) contract; (f) security for the last use</td><td>Until the person deletes the key; keys that ran out go by the keep-and-delete rules (PRIV-05, M9)</td></tr>
+<tr><td>My settings (time zone, region, appearance, shortcuts)</td><td>Showing Bugaboo the way the person chose</td><td>(b) contract</td><td>While the account exists</td></tr>
+</tbody></table>
+</div>
+<p>Still nothing leaves the server in M2 (PRIV-01). The sample organization (<code>bb-sample</code>) is fictional: names from a list written for Bugaboo, addresses only under <code>bugaboo.example</code> (TEST-SAMPLE-DATA).</p>
 
 <h2 id="s13"><button class="sec" data-sec>§13</button>Decision records</h2>
 <p>Each record explains one decision: the situation, what we decided, what follows from it, what else we considered, and which checks enforce it.</p>
@@ -1265,7 +1517,7 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 
 <!-- 0004-authorization.md -->
 <h3 id="adr-0004"><button class="sec" data-sec>§13.4</button>ADR-0004: Authorization: one policy engine and Authorized<T></h3>
-<p>Status: <strong>Accepted</strong> · 2026-10-04</p>
+<p>Status: <strong>Accepted</strong> · 2026-10-04 · refined by <a href="#adr-0025">ADR-0025</a></p>
 <h4>Context</h4>
 <p>Security is priority one. Permissions go down to single fields and single issues, and many entry points (UI, API, search, MCP, assistant, e-mail, webhooks, exports, live updates) must all obey them.</p>
 <h4>Decision</h4>
@@ -1728,7 +1980,7 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 
 <!-- 0022-who-sees-people.md -->
 <h3 id="adr-0022"><button class="sec" data-sec>§13.22</button>ADR-0022: Who sees people is part of the permission model</h3>
-<p>Status: <strong>Accepted</strong> · 2026-10-04</p>
+<p>Status: <strong>Accepted</strong> · 2026-10-04 · refined by <a href="#adr-0025">ADR-0025</a></p>
 <h4>Context</h4>
 <p>Names of people appear in many places: reported by, assigned to, last changed by, comment and history authors, followers, "… is editing", time entries, mentions, avatars, e-mails, exports, the assistant. Under GDPR, organizations may need to hide who did what from some roles (for example external guests, or works-council agreements).</p>
 <h4>Decision</h4>
@@ -1825,6 +2077,107 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 </ul>
 <h4>Enforced by</h4>
 <p>BUILD-LOCATION and META-WIRING (see <code>tools/checks/catalog.toml</code>); the recovery steps by review.</p>
+
+<!-- 0025-roles-groups-and-assignments.md -->
+<h3 id="adr-0025"><button class="sec" data-sec>§13.25</button>ADR-0025: Roles, groups and assignments on the project tree</h3>
+<p>Status: <strong>Accepted</strong> · 2026-10-05 · refines <a href="#adr-0004">ADR-0004</a> and <a href="#adr-0022">ADR-0022</a></p>
+<h4>Context</h4>
+<p>ADR-0004 says that one policy engine (<code>bb-policy</code>) makes every decision and that data leaves the domain only as <code>Authorized&lt;T&gt;</code>. ADR-0022 says that people are shown through <code>PersonRef</code> by the rules of <em>Who sees people</em>. Neither says what exactly a role holds, where a role counts, what wins when two rules disagree, or how the M1 administrator flag turns into roles. M2 builds all of it (SEC-01, SEC-02, SEC-03, SEC-04, SEC-06, SEC-08, AUTH-07, PRIV-12, PRIV-13), and the open questions M2-Q1 … M2-Q7 were answered by accepting every proposal. This record writes the model down so that WP-05 can build it without asking; the details a builder needs (the tables, the shapes of answers) are in <span title="../architecture/07-cross-cutting.md#authorization-model in the repository">architecture §7, <em>Authorization model</em></span>.</p>
+<h4>Decision</h4>
+<h5>1. One permission catalogue</h5>
+<ul>
+<li><strong>One Rust enum, <code>Permission</code>, in <code>bb-policy</code></strong>, is the only list of permissions (coding standards §1). Every permission has a key (<code>see-projects</code>), a <strong>topic</strong> (<em>Projects, People, Settings</em>; later milestones add <em>Issues, Documents, Time</em>), a plain sentence as a message key (<code>permission.see-projects</code>: "See the project and what is in it"), <strong>where it counts</strong> and a <strong>kind</strong> for access keys. The API description, the role page, SEC-MATRIX and the docs are made from the enum. Enforced by: ARCH-PERMS (every route declares one catalogue key or <code>public</code>, <code>signed-in</code>, <code>own-account</code>; every permission is used and has its message), SEC-MATRIX.</li>
+<li><strong>Where it counts:</strong> an <em>organization</em> permission (make top-level projects, people, invitations, groups, roles, organization settings, the status page) counts only from a role given for the whole organization; a <em>project</em> permission counts in projects. A role given on a project that holds an organization permission gives nothing for it, and the role page says so.</li>
+<li><strong>Kinds</strong> (for access keys, decision 8): <em>See</em> (changes nothing), <em>Change</em> (work in projects), <em>Manage</em> (people, roles, settings).</li>
+<li>The M2 catalogue has 14 permissions (the table is in architecture §7). A later milestone adds its permissions to the enum with their sentences, kinds and starting values in the same change (issues M3, documents M11, time M6); a permission no route uses fails ARCH-PERMS.</li>
+</ul>
+<h5>2. Assignments: who has which role, and where it counts</h5>
+<ul>
+<li>An <strong>assignment</strong> is one row of <em>Who has which role</em>: a <strong>person or a group</strong>, a <strong>role or <em>No access</em></strong>, and <strong>where it counts</strong>: <em>Whole organization</em>, <em>Only this project</em>, or <em>This project and its sub-projects</em> (SEC-02).</li>
+<li><em>Whole organization</em> rows exist only in <em>Organization settings</em>; project rows only on a project. <em>No access</em> is set only on a project and always covers <em>This project and its sub-projects</em> (M2-Q1).</li>
+<li>A person or group may hold several roles on one project, but never a role and <em>No access</em> on the same project: such a change is refused with a sentence that says which row is in the way.</li>
+<li>Groups are flat in M2 (nested groups are L). A person's groups are read once per request with their assignments.</li>
+</ul>
+<h5>3. Evaluation order and <em>No access</em></h5>
+<p>For an actor and a place (the organization, or a project with its parents), <code>bb-policy</code> decides without I/O, from one port call that loads the actor's assignments for the place and its parents:</p>
+<ol>
+<li>Nobody signed in: only <code>public</code> routes. Signed in without an applicable assignment: nothing (default deny, SEC-01).</li>
+<li><strong>Applicable</strong> are the actor's own and their groups' assignments for the whole organization, those on a parent of the project with <em>This project and its sub-projects</em>, and those on the project itself.</li>
+<li>Each applicable row has a <strong>rank</strong>: first the depth of its project (whole organization lowest), then the person's own row above a row of one of their groups.</li>
+<li><strong><em>No access</em> (M2-Q1):</strong> the highest-ranked <em>No access</em> row removes every role row of equal or lower rank. So it wins over roles given higher up, over a role of one of the person's groups on the same project, and over another group's role on the same project. A role given lower down (on a sub-project below the <em>No access</em>), or given to the person directly on the same project where a group has <em>No access</em>, still counts: the nearer, more personal row decides.</li>
+<li>The permissions are the union of the remaining roles, filtered by <em>where it counts</em>; then an access key narrows them (decision 8).</li>
+<li>The field mask and the <em>Who sees people</em> levels are worked out from the same remaining roles (decisions 10 and 11).</li>
+</ol>
+<p>Evaluations are cached for one request and never across requests, so a role taken away counts from the next request. Enforced by: review (the cache is a field of the request context, which a reviewer sees in the diff), backed by the tests <code>sec_03_no_access_on_a_sub_project_wins_over_a_role_from_above</code>, <code>sec_03_a_role_taken_away_counts_from_the_next_request</code> and the property tests of WP-05 (a new role never takes a permission away; <em>No access</em> never adds one), and SEC-MATRIX.</p>
+<h5>4. Starting roles are editable copies</h5>
+<ul>
+<li><strong>One Rust definition</strong> in <code>bb-policy</code> holds the six starting roles of SEC-08 and M2-Q5 (<em>Administrator, Project lead, Team member, Contributor, Viewer, Guest</em>): their permissions, field levels, <em>Who sees people</em> levels and order (architecture §7). A system use case makes editable copies from it once, at the first start, with events and security-log entries (never in a migration). After that the definition is read only by <strong>Reset to the starting permissions</strong>, which a copy keeps through a <code>starting</code> mark that renaming does not remove.</li>
+<li>A starting role can be renamed, changed and deleted like any other role; the last-administrator rule (decision 6) still holds. Enforced by: the tests <code>sec_08_starting_roles_are_made_once_and_can_be_changed_and_reset</code> and <code>sec_08_a_changed_starting_role_can_be_reset</code>.</li>
+<li>The <strong>order of roles</strong> (the starting order, then new roles where an administrator puts them) decides the label of a person shown as <em>Role only</em> when they hold several roles: the first in the order.</li>
+</ul>
+<h5>5. The administrator flag becomes the Administrator role</h5>
+<ul>
+<li>Migration <code>m0003</code> keeps the list of M1 administrators. In the same change that makes the starting roles at the first start, each of them gets the <strong>Administrator role for the whole organization</strong>, with its event and security-log entry; afterwards the flag no longer exists in the database, the API (<code>/auth/me</code> answers the person's organization permissions instead) or the browser app. Enforced by: the test <code>sec_08_m1_administrators_become_administrators_and_nobody_else_does</code> (both databases).</li>
+<li><strong>Setup (AUTH-09) stays open while nobody can manage roles for the whole organization</strong> (decision 6 makes that the state of a fresh installation only). Making the first administrator makes the starting roles if they do not exist yet and gives the person the Administrator role for the whole organization, in one change.</li>
+</ul>
+<h5>6. Nobody locks the organization out, and nobody gives what they do not have</h5>
+<ul>
+<li><strong>The last administrator:</strong> a change that would leave no person who holds both <em>Manage roles</em> and <em>Decide who has which role</em> for the whole organization (through their own row or a group) is refused, with a sentence that says why. This covers removing a row, taking a person out of a group, deleting a group or role, and taking a permission out of a role. Enforced by: the test <code>sec_08_nobody_can_remove_the_last_way_to_manage_roles</code>.</li>
+<li><strong><em>No access</em> never locks out the people above:</strong> <em>Decide who has which role</em> on a project is kept for a person who holds it through a row that the project's <em>No access</em> removed. They see the project's name and short name in <em>Who has which role</em> and can take the <em>No access</em> away again; they see nothing in the project. Enforced by: the test <code>sec_03_no_access_cannot_lock_out_the_people_who_decide_roles_above</code>.</li>
+<li><strong>No escalation:</strong> a person can add a permission to a role, or give a role, only when they hold every permission of it at that place themselves (organization permissions are left out of this comparison for a role given on a project, because they count nowhere there). Enforced by: the tests <code>sec_08_nobody_adds_a_permission_they_do_not_hold_to_a_role</code> and <code>sec_02_nobody_gives_a_role_with_more_than_they_hold_there</code>.</li>
+</ul>
+<h5>7. Two-step sign-in is a switch on the role</h5>
+<ul>
+<li>A role has a switch <strong>Two-step sign-in for everyone with this role</strong> (AUTH-03, M1-F45), stored with the role; the text setting <code>security.two-step-required-roles</code> is removed with its stored values (WP-05). <code>security.two-step-required</code> stays: it asks it of everybody.</li>
+<li>A person needs a second step when the organization switch is on or any role they hold anywhere (own row or group, any place) has the switch on. It takes effect at the next request: until the person has a code app or a passkey, their session can only set one up. Enforced by: the test <code>auth_03_a_role_that_requires_two_step_sign_in_makes_its_people_set_it_up_first</code> (WP-09).</li>
+</ul>
+<h5>8. Access keys can only narrow</h5>
+<ul>
+<li><em>What it may do</em> (M2-Q6) is one of three choices: <strong>See only</strong> (permissions of kind <em>See</em>, every field at most <em>Can see</em>), <strong>See and change</strong> (<em>See</em> and <em>Change</em>), <strong>Everything I can do</strong> (all kinds); under <em>More options</em>, single permissions instead. Optionally a list of <strong>projects</strong>: the key then counts only in them and their sub-projects (by project ID, so a move does not change it) and gives nothing for the whole organization.</li>
+<li>At <strong>every use</strong> the key's permissions are the owner's evaluation at that place intersected with the key's choice and projects; a key never widens anything, and follows its owner's roles at once (AUTH-07). No key reaches the owner's own sign-in data (password, passkeys, two-step, sessions, access keys).</li>
+<li><strong>Every key runs out</strong>: 90 days unless the person picks another date, never later than the organization's longest time (an organization setting, default and most 365 days). The settings are declared in the registry by WP-09. Enforced by: the tests <code>auth_07_a_key_can_do_only_what_its_owner_can_and_its_scopes_allow</code> (property test), <code>auth_07_a_key_follows_its_owner_losing_a_role_at_once</code> and <code>auth_07_a_key_cannot_change_the_owners_sign_in_data</code>, and SEC-MATRIX (an access key with <em>See only</em>, and one for another project).</li>
+</ul>
+<h5>9. Every permission change is in the security log</h5>
+<p>Every change of roles (permissions, two-step switch, name, reset), groups (made, renamed, deleted, members), assignments (including <em>No access</em>), field levels, <em>Who sees people</em> levels, project moves and short names, and access keys (made, deleted, refused) writes its domain event <strong>and</strong> a security-log entry in the same change (SEC-15). Enforced by: ARCH-EVENTS, and the generated test <code>sec_15_every_change_of_permissions_is_in_the_security_log</code> that runs every management use case (WP-05).</p>
+<h5>10. Field masks</h5>
+<ul>
+<li>The <strong>field catalogue</strong> (built-in fields of M2-Q7) is declared once in <code>bb-core</code>; own fields join in M3 (CF-06). Each field has a level per role: <em>Hidden &lt; Can see &lt; Can change</em>. The organization level is the role's own level; a project can set another level for a role, which its sub-projects inherit until one of them sets its own.</li>
+<li>The mask is the <strong>highest level of the remaining roles</strong> (decision 3), capped at <em>Can see</em> for a <em>See only</em> key. <code>Authorized&lt;T&gt;</code> carries it and leaves hidden fields out when it is serialized; a hidden field and an unknown one are refused alike. Enforced by: ARCH-AUTHZ-ONLY, ARCH-API-OUT, SEC-MATRIX, and the test <code>sec_06_a_hidden_field_is_not_in_the_answer_and_asking_for_it_fails_like_an_unknown_field</code>.</li>
+</ul>
+<h5>11. People: <code>PersonRef</code> and the kinds of people information</h5>
+<ul>
+<li><em>Who sees people</em> (ADR-0022) is set per role and per <strong>kind of people information</strong>; M2 adds the kind <strong>Project members</strong> (M2-Q3): member lists of a project. Levels are inherited like field levels; the viewer's level is the most open of their remaining roles (<em>Names &gt; Role only &gt; Hidden</em>).</li>
+<li><strong>People who manage see names (M2-Q3):</strong> in <em>Organization settings</em>, <em>Who has which role</em> and <em>Check access</em>, a viewer who holds <em>Manage people</em>, <em>Manage groups</em>, <em>Manage roles</em> or <em>Decide who has which role</em> at that place always sees names; everybody else sees the people there by the kind <em>Project members</em>. E-mail addresses are part of no <code>PersonRef</code>: only <em>Manage people</em> and the person themselves see them.</li>
+<li><code>PersonRef</code> resolves for the viewer, the kind and the place into a name, a role label, <em>Someone</em>, or a random <em>Former user</em> label (PRIV-13); the viewer always sees their own name. A role label and <em>Someone</em> carry no ID of the person. Enforced by: ARCH-PERSON-REF, SEC-MATRIX (people rows), and the tests <code>priv_12_people_are_shown_by_name_role_or_someone_as_the_rules_say</code> and <code>priv_13_former_user_labels_are_random_and_unique</code>.</li>
+</ul>
+<h5>12. Check access answers with reasons</h5>
+<p><em>Check access</em> is a query use case: for a person and a place it lists every permission that counts there with <em>yes</em> or <em>no</em>, every field with its level and every kind of people information with its level, each with its <strong>reasons</strong> as data (the row, the person or group, the role, the project it is on, whether it is inherited, a <em>No access</em> that decided, or that no role gives it). The browser turns the reasons into sentences from message keys. A reason never names a project the checker cannot see: it says the row is on <em>a project you can't see</em>. Enforced by: the property test <code>sec_03_check_access_explains_every_result_with_the_chain_of_reasons</code> (the decision equals the engine's and the reasons lead to it) and <code>sec_03_check_access_names_no_project_the_checker_cannot_see</code>.</p>
+<h5>13. Projects and short names</h5>
+<ul>
+<li>A <strong>short name</strong> (M2-Q4) is 2 to 10 capital letters or digits and starts with a letter (<code>WEB</code>, <code>APP2</code>); it is unique in the organization, old short names included, and can be changed. An old short name stays with its project, so its addresses keep working (<code>project_alias</code>, like <code>issue_alias</code> in ADR-0021); only that project can take it back. One definition, <code>ShortName</code> in <code>bb-core</code>. Enforced by: the tests <code>prj_01_a_short_name_breaks_no_rule_of_m2_q4</code> and <code>prj_01_an_old_short_name_redirects</code>.</li>
+<li><strong>Hidden projects stay hidden:</strong> a project the person cannot see answers <code>resource.not_found</code> like a missing one, by address and by short name; a visible sub-project of a hidden project is shown at the top and never names its parent. A short name that is taken is told only to people who may make projects at that place, with the same sentence whether the project is hidden or not. Enforced by: SEC-MATRIX, the tests <code>prj_01_a_hidden_project_answers_not_found_like_a_missing_one</code>, <code>prj_01_a_visible_sub_project_of_a_hidden_project_does_not_name_it</code> and <code>prj_01_a_taken_short_name_is_told_only_to_people_who_may_make_projects</code>.</li>
+</ul>
+<h5>14. Who may change a setting</h5>
+<p>The registry's <code>changed_by</code> (ADR-0018) maps to the catalogue: <em>Administrators</em> → <em>Change organization settings</em>; <em>Project leads</em> → <em>Change project settings</em> on that project; <em>Each person</em> → only their own value. Enforced by: ARCH-SETTINGS, and the test <code>cfg_06_only_administrators_change_organization_values_and_each_person_only_their_own</code> (WP-07).</p>
+<h4>Consequences</h4>
+<ul>
+<li>WP-05 builds the engine from this record and architecture §7; WP-08, WP-09, WP-11 and WP-12 put screens and routes on it; SEC-MATRIX (WP-10) runs every route for every starting role, a role on a parent and on a sibling project, <em>No access</em> and two access keys.</li>
+<li>The deny rule has one exception (decision 6), so administrators cannot be shut out of a sub-project for good; the people above see that the project exists, but not what is in it.</li>
+<li>Group membership and role assignments are personal data of a new category, <em>organization</em> (where a person works); access keys and the person's own settings are personal data too. The marks are listed in <span title="../architecture/12-security.md#personal-data-in-m2 in the repository">12-security.md</span> and come from the code into the generated personal-data page when WP-05, WP-07, WP-08 and WP-09 add the entities. Enforced by: DATA-MARKS.</li>
+<li><em>Check access</em> tells a checker that a role comes from <em>a project you can't see</em>, so a hidden parent's existence (never its name) shows there.</li>
+<li>Removing the M1 flag touches every place that read <code>administrator</code>, in Rust and in the browser app (WP-05).</li>
+</ul>
+<h4>Alternatives considered</h4>
+<ul>
+<li><strong><em>No access</em> that wins in its whole subtree, even over roles given lower down:</strong> simpler, but an organization could then not hide a big project from a group except for one sub-project. Rejected; the nearer row decides, as for field levels.</li>
+<li><strong><em>No access</em> only for the people it names, never over a group's role at the same project:</strong> a person could not be taken out of one project without leaving their group. Rejected (M2-Q1).</li>
+<li><strong>Hard-coded roles:</strong> SEC-08 asks for editable copies. Rejected.</li>
+<li><strong>Reading the starting definition at every evaluation (roles as overrides of the definition):</strong> a change of the definition in an update would silently change every organization's roles. Rejected; copies are made once.</li>
+<li><strong>Access keys with their own role:</strong> keys could then hold more than their owner. Rejected (AUTH-07: keys only narrow).</li>
+<li><strong>The deny as a role (<em>No access</em> is a role with no permissions):</strong> a role adds, it cannot take away. Rejected.</li>
+</ul>
+<h4>Enforced by</h4>
+<p>ARCH-PERMS, ARCH-AUTHZ-ONLY, ARCH-API-OUT, ARCH-PERSON-REF, ARCH-NO-COUNTERS, ARCH-EVENTS, ARCH-SETTINGS, DATA-MARKS and SEC-MATRIX (see <code>tools/checks/catalog.toml</code>), backed by the named tests of WP-05, WP-08, WP-09, WP-11 and WP-12; the per-request cache by review.</p>
 
 
   </main>

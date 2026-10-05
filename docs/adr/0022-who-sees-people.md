@@ -1,6 +1,6 @@
 # ADR-0022: Who sees people is part of the permission model
 
-Status: **Accepted** · 2026-10-04
+Status: **Accepted** · 2026-10-04 · refined by [ADR-0025](0025-roles-groups-and-assignments.md)
 
 ## Context
 

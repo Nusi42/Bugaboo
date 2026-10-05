@@ -28,7 +28,9 @@ Rules:
 | **Issue ID**             | The readable ID of an issue: the project's short name plus a counting number (`WEB-142`) or a random code (`WEB-K7Q2X`), chosen per project | issue key, ticket number |
 | **Counting / Random IDs**| The two ways a project gives out issue IDs. Random IDs don't reveal how many issues exist | sequence, auto-increment (in UI) |
 | **Sub-project**          | A project inside another project; it inherits settings and permissions unless changed | child project, component, space |
-| **Short name**           | The letters that start a project's issue IDs (`WEB`)               | project key                        |
+| **Short name**           | The letters that start a project's issue IDs and its address (`WEB`, `/p/WEB`): 2 to 10 capital letters or digits, starting with a letter, unique in the organization. It can be changed; the old one keeps working and stays with the project | project key |
+| **Top level**            | Where a project that is inside no other project sits               | root project (in UI)               |
+| **Move** (a project)     | Put a project inside another one, or at the top level. Before it happens, Bugaboo says who gains or loses access | re-parent, reparent (in UI) |
 | **Issue type**           | What kind of issue it is. Defaults: *Bug, Task, Feature, Goal*     | —                                  |
 | **Goal**                 | A big piece of work that groups other issues under it              | epic, initiative, story            |
 | **Sub-issue / parent**   | An issue that belongs under another one                            | sub-task, child story              |
@@ -125,13 +127,19 @@ Rules:
 | Say                      | Meaning                                                            | Don't say                          |
 |--------------------------|--------------------------------------------------------------------|------------------------------------|
 | **Group**                | A set of people                                                    | team (as object)                   |
-| **Role**                 | A named set of permissions. Defaults: *Administrator, Project lead, Team member, Contributor, Viewer, Guest* | — |
+| **Role**                 | A named set of permissions, given to people or groups for the whole organization or on a project. Every organization starts with *Administrator, Project lead, Team member, Contributor, Viewer, Guest* | — |
+| **Starting role**        | One of the six roles every organization starts with. It is a copy that can be renamed, changed or deleted | built-in role, default role, system role, predefined role (in UI) |
+| **Reset to the starting permissions** | Give a starting role back the permissions it had at the start | factory reset, restore defaults (in UI) |
+| **Who has which role**   | The list, for the whole organization or one project, of the people and groups and their role there. Rows from a parent project say so (*from ACME*) | role assignments, access control list, ACL (in UI) |
+| **Where it counts**      | Where a role given to someone applies: *Whole organization*, *Only this project*, or *This project and its sub-projects* | global, subtree, recursive (in UI) |
+| **No access**            | Set on a project for a person or group: they see and can do nothing in this project and its sub-projects, whatever role they have from higher up or through a group there. A role given on a sub-project lower down still counts there | deny, denied (in UI) |
 | **Permission**           | One thing a role allows                                            | grant, capability (in UI)          |
 | **Hidden / Can see / Can change** | The three levels of field permissions                     | none / read / write (in UI)        |
-| **Check access**         | See what someone can do, and why                                   | effective permissions              |
+| **Check access**         | See what someone can do in a project, and why, in sentences (*"Ana is in the group Backend, which has the role Team member in ACME"*) | effective permissions |
 | **See as …**             | Look at Bugaboo as another person or role sees it                  | impersonate, preview as            |
 | **Bot account**          | An account for automation, not a person                            | service account                    |
-| **Access key**           | A secret for scripts and apps to sign in as you                    | personal access token, PAT         |
+| **Access key**           | A secret for scripts and apps to sign in as you. It can do at most what you can, and it always runs out | personal access token, PAT |
+| **See only / See and change / Everything I can do** | The three choices of what an access key may do; single permissions sit under *More options* | read-only, read-write, full access (in UI) |
 | **Connected apps**       | Apps you allowed to use your account, including AI apps            | OAuth clients                      |
 | **Sign in / Sign out**   | Open or end your use of Bugaboo with your password or a passkey    | log in, log out, login, logout     |
 | **Sign out everywhere**  | End all your sessions at once, this one included                   | revoke all tokens, global logout   |
@@ -149,7 +157,9 @@ Rules:
 | **Security log**         | The record of who changed what, which cannot be altered            | audit trail                        |
 | **Download my data**     | Get a copy of everything Bugaboo stores about you                  | data subject access request, DSAR  |
 | **Remove a person**      | Delete someone's account and replace their name with *Former user* plus a random code (*Former user K7Q2*) | anonymize, pseudonymize (in UI) |
-| **Who sees people**      | Per role: show people's *Names*, only their *Role* ("a Team member"), or nothing (*Hidden*: "Someone") | identity masking, pseudonymization (in UI) |
+| **Who sees people**      | Per role and per kind of people information: show people's *Names*, only their *Role* ("a Team member"), or nothing (*Hidden*: "Someone") | identity masking, pseudonymization (in UI) |
+| **Kind of people information** | One of the places a person can be shown: *Assigned to, Reported by, Last changed by*, comment and history authors, *"… is editing"*, followers, time entries, mentions, pictures of people, *Project members* | identity field, people field (in UI) |
+| **Project members**      | The kind of people information for lists of who works in a project. People who manage people or roles always see the names there | roster, participants (in UI) |
 | **Someone**              | Shown instead of a name when the viewer may not see who it was    | anonymous, redacted                |
 | **Keep and delete rules**| How long each kind of data is kept before it is deleted automatically | retention policy                |
 
@@ -160,7 +170,12 @@ Rules:
 | **My settings**          | Personal preferences                                               | profile settings, preferences      |
 | **Project settings**     | Settings of one project                                            | project admin                      |
 | **Organization settings**| Settings for the whole Bugaboo server                              | admin console, instance settings   |
+| **Reset to default**     | Take away the value set at this level, so the value from above counts again | clear override (in UI) |
+| **Set by your organization** | Shown on a setting an administrator locked: it can't be changed here, and the line says why | enforced (in UI) |
 | **Layout**               | Which fields appear where: *issue layout*, *new-issue form*, *card layout* | screen, screen scheme      |
+| **Spacing**              | How close together things are on screen: *Comfortable* or *Compact* | density (in UI) |
+| **Less motion**          | Fewer moving effects on screen                                     | reduced motion (in UI)             |
+| **Larger text**          | All text a step bigger                                             | zoom, font scale (in UI)           |
 | **Appearance**           | The choices about how Bugaboo looks: theme, *Spacing* (*Comfortable* or *Compact*), *Larger text* and *Less motion* | display settings |
 | **Keyboard shortcuts**   | Keys that do something faster; every shortcut also has a button, and a person can choose their own keys | hotkeys, keybindings |
 | **Undo**                 | Taking back what was just done; offered for 10 seconds after an action that can be reversed | revert, rollback (in UI) |
@@ -178,6 +193,10 @@ Rules:
 | Term                | Meaning                                                               |
 |---------------------|-----------------------------------------------------------------------|
 | Policy engine       | The server component that makes every permission decision             |
+| Assignment          | One row of *Who has which role*: a person or group, a role or *No access*, and where it counts. Screens say "Ana has the role Team member in Website" |
+| Permission catalogue | The one list of permissions in `bb-policy`, each with its sentence, topic, where it counts and kind |
+| Field catalogue     | The one list of built-in fields in `bb-core` that field permissions apply to |
+| `PersonRef`         | How every person in an answer is shown, worked out for the viewer: name, role label, *Someone* or *Former user* |
 | Instance            | One installed Bugaboo server                                          |
 | AST                 | The parsed form of a search, shared by Simple and Advanced search     |
 | Design tokens       | Named theme values (`bg.surface`), the only way code uses colors and sizes |

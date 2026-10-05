@@ -13,7 +13,7 @@ People see the projects they may see, as a tree in the sidebar and in *Organizat
 
 ## Tasks
 
-1. **Projects (PRJ-01):** make a project at the top level (permission *make projects* on the whole organization) or a sub-project (*make sub-projects* in the parent), nested to any depth; name and short name (rules of M2-Q4, one definition in `bb-core`'s `ShortName`); rename; change the short name if M2-Q4 allows it, with old addresses redirecting (`project_alias`). Version checks on every change; events and security-log entries for moves and short-name changes.
+1. **Projects (PRJ-01):** make a project at the top level (permission *make projects* on the whole organization) or a sub-project (*make sub-projects* in the parent), nested to any depth; name and short name (rules of M2-Q4, one definition in `bb-core`'s `ShortName`); rename; change the short name (M2-Q4: allowed), with old addresses redirecting (`project_alias`); an old short name stays with its project and only that project can take it back. Version checks on every change; events and security-log entries for moves and short-name changes.
 2. **Seeing projects:** a list and a tree of exactly the projects the person may see, lean and paged; a project you may not see answers `resource.not_found`, exactly like one that does not exist (UX §2.1); a visible project under a hidden parent appears at the top of the tree, and neither its address nor its *where you are* line names the hidden parent. No counts of sub-projects or of anything else that could include hidden things (PRIV-13).
 3. **Moving (PRJ-03):** a preview that evaluates the policy for the tree as it would be after the move and lists, in plain sentences, which people and groups gain or lose access or change role (*Show, then do*, principle 6), and fields or people information whose visibility changes; confirming with the preview's version applies it, and a tree that changed in between asks to look again. A project cannot move below itself. Moving needs the right in the old and the new parent.
 4. **Screens:** the project tree in the sidebar (expand and collapse, keyboard, remembered per browser); *Organization settings › Projects* as a list → editor; the project overview `/p/WEB` (name, short name, sub-projects, *where you are*; an empty state with one next step); *Project settings* `/p/WEB/settings` for project leads with name, short name and *Move*; the move dialog with the preview. *Who has which role*, field permissions and *Who sees people* on the project come in WP-11 and WP-12.
@@ -21,7 +21,7 @@ People see the projects they may see, as a tree in the sidebar and in *Organizat
 
 ## Acceptance tests (write first)
 
-- `prj_01_projects_nest_to_any_depth_and_short_names_are_unique` (both databases), `prj_01_a_short_name_breaks_no_rule_of_m2_q4`, `prj_01_an_old_short_name_redirects` (if M2-Q4 allows changes).
+- `prj_01_projects_nest_to_any_depth_and_short_names_are_unique` (both databases), `prj_01_a_short_name_breaks_no_rule_of_m2_q4`, `prj_01_an_old_short_name_redirects`, `prj_01_a_taken_short_name_is_told_only_to_people_who_may_make_projects`.
 - `prj_01_a_hidden_project_answers_not_found_like_a_missing_one` and `prj_01_a_visible_sub_project_of_a_hidden_project_does_not_name_it`.
 - `prj_03_the_move_preview_names_who_gains_and_loses_access` (property test: the preview equals the difference of evaluations before and after), `prj_03_a_project_cannot_move_below_itself`, `prj_03_a_move_after_the_tree_changed_asks_again`.
 - `priv_13_no_project_answer_holds_a_count`.
@@ -30,6 +30,11 @@ People see the projects they may see, as a tree in the sidebar and in *Organizat
 ## Checks
 
 None new. ARCH-LEAN and ARCH-EVENTS cover the new routes; each route declares its permission (WP-05's mechanism), and WP-10, which merges last in this wave, adds their SEC-MATRIX examples.
+
+## Answers
+
+- **Short names (M2-Q4):** 2 to 10 capital letters or digits, starting with a letter, unique in the organization (old short names included), changeable; the form turns typed letters into capitals, the server accepts only capitals. A taken short name is told only to people who can make projects at that place, with the same sentence whether the project is hidden or not ([ADR-0025](../../adr/0025-roles-groups-and-assignments.md), decision 13).
+- **Permissions:** *Make projects* (top level, whole organization), *Make sub-projects* (at the parent), *Move projects* (at the old and the new parent; the top level counts as the organization), *Change project settings* ([architecture §7](../../architecture/07-cross-cutting.md#authorization-model)).
 
 ## Depends on
 

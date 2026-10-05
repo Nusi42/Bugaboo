@@ -13,7 +13,7 @@ People make access keys for scripts and apps that can only do less than they can
 
 ## Tasks
 
-1. **Keys (AUTH-07):** `bb_` + a public prefix + a 256-bit secret; only a hash is stored (its own domain, like sessions); shown once; a name, *What it may do* and optional projects as M2-Q6 decided; an expiry that is required, with the default and the most from an organization setting (registry); last use kept to the minute. Owner's list in *My settings › Access keys* (lean); delete at once (a deleted key cannot come back, so the dialog says so).
+1. **Keys (AUTH-07):** `bb_` + a public prefix + a 256-bit secret; only a hash is stored (its own domain, like sessions); shown once; a name, *What it may do* (*See only*, *See and change*, *Everything I can do*, or single permissions under *More options*) and optional projects (M2-Q6); an expiry that is required: 90 days by default, at most the organization's longest time, both organization settings in the registry (`auth.access-key-*`, default 90 and 365 days, the longest never above 365); last use kept to the minute. Owner's list in *My settings › Access keys* (lean); delete at once (a deleted key cannot come back, so the dialog says so).
 2. **Using a key:** `Authorization: Bearer bb_…`; the actor is the owner with the key's scopes passed to `bb-policy`, intersected with the owner's permissions at every request (a key never widens, AUTH-07); an expired, deleted or unknown key gets the same answer; keys need no CSRF token (no cookie) and are refused on the routes of the owner's own sign-in data (password, passkeys, two-step, sessions, access keys), so a stolen key cannot take over the account; a limit per key besides the network limit (SEC-14).
 3. **Security log (SEC-15):** making and deleting keys, and refused keys (shortened network only, never the secret or the prefix of an unknown key).
 4. **Two-step required by role (M1-F45):** when the person's roles have the switch (WP-05) or `security.two-step-required` is on and the person has no second step, the session after the password stays *pending* and can only set up a code app or a passkey; then it becomes active. A screen in plain words explains why and how; an administrator who switches it on for a role sees how many of its members still need to set one up — only people the administrator may see.
@@ -31,6 +31,12 @@ People make access keys for scripts and apps that can only do less than they can
 ## Checks
 
 SEC-SECRETS gets the access-key rule and its fixture (no new check). The routes declare their permissions (`own-account`) for ARCH-PERMS; WP-10, which merges last in this wave, adds their SEC-MATRIX examples.
+
+## Answers
+
+- **What a key may do (M2-Q6):** the choices keep the permissions of their kinds (*See*; *See* and *Change*; all), and *See only* caps every field at *Can see*; projects limit the key to them and their sub-projects (by ID) and take away everything for the whole organization ([ADR-0025](../../adr/0025-roles-groups-and-assignments.md), decision 8; [architecture §7](../../architecture/07-cross-cutting.md#authorization-model), *Evaluation*, step 6).
+- **Two-step sign-in by role (M1-F45):** a person needs a second step when `security.two-step-required` is on or any role they hold anywhere has the switch; it counts from the next request, also for sessions that are already open (decision 7).
+- The personal-data marks of keys are in [12-security.md](../../architecture/12-security.md#personal-data-in-m2).
 
 ## Depends on
 

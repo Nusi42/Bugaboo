@@ -82,7 +82,7 @@ flowchart TB
 1. `bb-core`, `bb-searchlang` and `bb-markdown` do no I/O and depend on no other Bugaboo crate except `bb-core` (searchlang and markdown not even that; `bb-core` uses `bb-macros` for derives at compile time only), so they compile to WebAssembly.
 2. `bb-app` knows **ports** (traits) only. It never imports `bb-store`, `bb-files`, `bb-ai` or `bb-notify`. Tests run use cases against in-memory fakes.
 3. Only `bb-policy` can create `Authorized<T>`. Its constructor is private to the crate.
-4. Only `bb-api` and `bb-mcp` speak HTTP. Only `bb-server` wires adapters to ports (`cargo xtask check only ARCH-HTTP-EDGE`).
+4. Only `bb-api` and `bb-mcp` speak HTTP. Only `bb-server` wires adapters to ports, and from M2 WP-06 on also the developer program `bb-sample` (`cargo xtask check only ARCH-HTTP-EDGE`).
 5. The browser app talks to the server only through `@bugaboo/api-client` (`cargo xtask check only ARCH-WEB-API`), and has no hand-written types for what the server sends (`LINT-API-TYPES`).
 
 ## The core modules
@@ -93,8 +93,9 @@ Newtype IDs (`IssueId`, `ProjectId`, …, all UUIDv7 inside, readable keys like 
 
 ### bb-policy
 
-- **Permission catalogue** (one Rust enum with plain-language descriptions as message keys).
-- **Evaluation:** given an actor and a project, computes the effective permission set and the **field mask** (hidden / can see / can change per field, per issue type). Cached per request.
+- **Permission catalogue** (one Rust enum with plain-language descriptions as message keys) and the **starting roles** (one definition, used once to make editable copies and for *Reset to the starting permissions*), as [ADR-0025](../adr/0025-roles-groups-and-assignments.md) decides.
+- **Evaluation:** given an actor (and an access key's choice) and a place, computes the effective permission set, the **field mask** (hidden / can see / can change per field, per issue type later) and the *Who sees people* levels, from roles, groups and assignments on the project tree with *No access* ([§7, Authorization model](07-cross-cutting.md#authorization-model)). No I/O: the assignments come in through a port of `bb-app`. Cached per request.
+- **`PersonRef`:** resolves every person shown for the viewer, the kind of people information and the place (ADR-0022). **Check access:** the decision with its reasons as data.
 - **Visibility:** project tree, restricted issues, documents.
 - **Search predicates:** turns the actor's visibility into query-builder expressions that `bb-store` adds to every query.
 - **`Authorized<T>`:** the only way data leaves the domain. It carries the field mask, so projections drop hidden fields automatically.
@@ -105,7 +106,7 @@ Lexer, parser, syntax tree, canonical printer, checker and suggestions. Knows no
 
 ### bb-app — use cases by feature
 
-`projects`, `issues`, `relations`, `fields`, `workflows`, `tags`, `releases`, `search`, `boards`, `timeline`, `calendar`, `relation_map`, `time` (timers, time entries, working hours, rules), `documents`, `attachments`, `notifications`, `assistant`, `privacy`, `settings`, `themes`, `people` (users, groups, roles), `admin`.
+`projects`, `issues`, `relations`, `fields`, `workflows`, `tags`, `releases`, `search`, `boards`, `timeline`, `calendar`, `relation_map`, `time` (timers, time entries, working hours, rules), `documents`, `attachments`, `notifications`, `assistant`, `privacy`, `settings`, `themes`, `people` (people and groups), `roles` (roles and who has which role), `access` (field permissions, *Who sees people*, *Check access*), `admin`.
 
 Every use case has the same shape:
 
@@ -139,6 +140,19 @@ axum router; extractors that turn a session cookie, access key or OAuth token in
 
 One **tool registry** (search issues, get issue, create, change status, comment, log time, …). Each tool maps to a `bb-app` use case, so permissions and validation are identical. `bb-mcp` exposes the registry to outside AI apps; the assistant uses the same registry but returns **proposals** for writes instead of running them.
 
+### bb-sample (planned, M2 WP-06)
+
+The sample-organization generator (architecture §11): a library and a small program that `cargo xtask dataset sample` runs as a process, so `xtask` keeps depending on no product crate. It makes the organization through the same use cases the API calls, deterministic from a seed, on SQLite and PostgreSQL. It is a developer tool: not linked into `bugaboo` until *Try it out* (OPS-12), and never shipped before then.
+
+- **May depend on:** `bb-app`, `bb-store`, `bb-core`, `bb-policy`, `bb-auth` (and `bb-testing` as a dev dependency only). Nothing depends on it except, from OPS-12 on, `bb-server`.
+- **It wires an adapter:** like `bb-server`, it builds the store and hands it to the use cases, so dependency rule 4 names it as the second crate that may wire adapters to ports, and ARCH-HTTP-EDGE's list of wiring crates gets `bb-sample` in the same change (with its failing and passing example).
+- **Not in the layout or the diagram yet:** ARCH-MAP-SYNC and ARCH-DEPS fail on a crate that the docs list but the workspace does not have. WP-06 adds `crates/bb-sample/` to the repository layout (one line: "sample-organization generator, developer tool") and this box with its edges to the module map in the commit that creates the crate:
+
+  ```text
+  sample["bb-sample<br/>sample organization"]
+  sample --> app & store & core & policy & auth
+  ```
+
 ## Browser app (web/app)
 
 ```text
@@ -148,6 +162,10 @@ web/app/src/
 ├── features/            shell (sidebar, top bar, phone bar, quick search, frames), sign-in, sign-up,
 │                        invitation, setup, account (sign-in and security, where you're signed in),
 │                        admin (invitations, status), home;
+│                        M2: settings (the generic settings form), my-settings (appearance, region,
+│                        start page, shortcuts, access keys), projects, people (people, groups),
+│                        roles (roles and who has which role), access (field permissions,
+│                        who sees people, check access);
 │                        later: issues, search, board, timeline, calendar, relation-map,
 │                        documents, time, dashboards, notifications, assistant
 ├── shared/              api client, session, errors, formatting (Intl), page title and focus,

@@ -32,6 +32,12 @@ Every setting of the registry can be read and changed at its levels — organiza
 
 ARCH-SETTINGS stays green with the new kinds; no new check. TEST-A11Y covers the new pages through `paths.ts`.
 
+## Notes from WP-01
+
+- **Personal data:** a person-level value is that person's data (`content`, `contract`, as today), and the person it belongs to gets its own field marked `identity`, `contract`: today it sits in `scope`, which is marked as not personal because it also holds project IDs ([12-security.md](../../architecture/12-security.md#personal-data-in-m2)).
+- **Where the settings appear:** the topics of the registry map to the *Organization settings* menu as UX §5.1 lists them (`auth.sign-up-*` under People › People, `security.session-*`, `security.two-step-required` and `auth.access-key-*` under People › Sign-in rules, `appearance.*` under Look › Themes).
+- The words *Reset to default* and *Set by your organization* are in the glossary.
+
 ## Depends on
 
 WP-03 (shell, appearance source, page sources), WP-05 (policy, project table), WP-02 (lean answers).

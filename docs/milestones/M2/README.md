@@ -28,6 +28,8 @@ Progress (which package is building, merged, reviewed) is kept only in [`docs/ST
 
 The maintainer answers the questions at the end of this page (M2-Q1 … M2-Q7). WP-01 writes the answers into the docs. Wave 1 builders do not need the answers, except WP-02 for compression (M2-Q2): it builds everything else first.
 
+**Answered:** every proposal was accepted. Where each answer is written down is listed under each question below.
+
 ## Why the waves are in this order
 
 | Wave | Needs merged | Because |
@@ -105,10 +107,19 @@ Some M2 features are about things that come later (issues in M3, search in M5). 
 
 ## Questions for the maintainer
 
+All seven were answered: every proposal was accepted as written. Each question says where its answer now lives.
+
 - **M2-Q1 — Taking a role away on a sub-project.** SEC-03 asks for an explicit *deny*. Proposal: on a project's *Who has which role*, a person or group can be set to **No access** for that project and its sub-projects; it wins over any role given higher up, and at the same project it wins over a role given to one of their groups. Is *No access* the right word (it becomes a glossary entry), and should it win over a group's role at the same project?
+  **Answered: yes, as proposed.** Written in [ADR-0025](../../adr/0025-roles-groups-and-assignments.md) (decisions 3 and 6), [architecture §7, *Evaluation*](../../architecture/07-cross-cutting.md#evaluation), the glossary (*No access*) and UX §5.2; built by WP-05, shown by WP-11.
 - **M2-Q2 — Compressing API answers.** PERF-03 asks for Brotli or zstd on API answers, but the security design says JSON is never compressed, because a compressed answer that holds a secret next to text an attacker chooses can give the secret away (BREACH). Proposal: compress JSON answers above 1 KiB, except the routes that hand out a secret (a new access key, backup codes, setting up a code app, an invitation link); a list in the code names those routes and a test keeps it complete. The other choice is to keep JSON uncompressed and change PERF-03.
+  **Answered: compress JSON above 1 KiB, except answers that hand out a secret.** WP-02 builds it (the `x-secret` mark and the list of secret answers) and writes it into architecture §7 (*Browser protections*, *Performance*).
 - **M2-Q3 — Names in settings screens.** *Who sees people* hides names from some roles. Proposal: the people who may manage people or roles (Administrators, and Project leads for their projects) always see names in *Organization settings*, *Who has which role* and *Check access*, because they cannot do the job without them; everybody else sees member lists by a new kind of people information, *Project members* (default: Names for Team members and up, Role only for Contributors and Viewers, Hidden for Guests).
+  **Answered: yes, as proposed.** Written in ADR-0025 (decision 11), [architecture §7, *Kinds of people information*](../../architecture/07-cross-cutting.md#kinds-of-people-information), the glossary (*Project members*) and UX §5.2; built by WP-05, shown by WP-11 and WP-12.
 - **M2-Q4 — Short names.** Proposal: 2 to 10 capital letters or digits, starting with a letter (`WEB`, `APP2`), unique in the whole organization, and changeable later; old addresses (`/p/WEB`) keep working, as old issue IDs will (ADR-0021). Can short names change after the project was made?
+  **Answered: yes; short names can change and old addresses keep working.** Written in ADR-0025 (decision 13), the glossary (*Short name*) and UX §2.1; built by WP-05 (`ShortName`) and WP-08.
 - **M2-Q5 — What the starting roles may do.** WP-01 writes a table of the permissions of the six starting roles (Administrator, Project lead, Team member, Contributor, Viewer, Guest) and their default *Who sees people* (the table in the UX design §5.2 as the starting point). Please confirm or change it before wave 2. In short: Administrators everything; Project leads manage their projects, sub-projects and who has which role there; Team members change issues; Contributors create issues and change their own; Viewers only look; Guests see only what they reported and see people by role only.
+  **Answered: yes, as proposed.** The permission table, the starting field levels and the starting *Who sees people* are in [architecture §7, *Starting roles*](../../architecture/07-cross-cutting.md#starting-roles); the rules in ADR-0025 (decision 4); built by WP-05.
 - **M2-Q6 — Access keys.** Proposal: *What it may do* has three plain choices — **See only**, **See and change**, **Everything I can do** — with single permissions under *More options*, and optionally a list of projects; every key runs out, after 90 days unless the person picks another date, at most after one year (an organization setting).
+  **Answered: yes, as proposed.** Written in ADR-0025 (decision 8), architecture §7 (*Evaluation*, step 6), the glossary (*See only / See and change / Everything I can do*) and UX §4.13; built by WP-09.
 - **M2-Q7 — The fields in the field-permission matrix.** Issues come in M3, but the matrix and the exit demo (hiding *Cost center*) need the built-in fields now. Proposal: Title, Description, Status, Priority, Assigned to, Reported by, Due date, Labels, Tags, Planned for release, Found in release, Estimated time, Time left, Time spent, Activity, Cost center. Own fields join the matrix in M3 (CF-06).
+  **Answered: yes, these 16 fields.** Written in [architecture §7, *The field catalogue*](../../architecture/07-cross-cutting.md#the-field-catalogue) with their starting levels; built by WP-05, shown by WP-12.

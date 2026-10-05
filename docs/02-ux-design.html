@@ -294,7 +294,7 @@
     <details class="toc-phone"><summary>Contents</summary><nav id="toc-phone" class="toc" aria-label="Page contents" style="display:block;position:static;max-height:none;padding:0"></nav></details>
 
     <h1>Bugaboo UX design</h1>
-    <div class="status-line"><span class="pill st-done">Accepted</span><span>Phase 2 of 5</span><span>·</span><span>2026-10-04</span></div>
+    <div class="status-line"><span class="pill st-done">Accepted</span><span>Phase 2 of 5</span><span>·</span><span>2026-10-05</span></div>
     <p class="lede">How Bugaboo looks, feels and behaves. Feature IDs (like ISS-04) refer to the feature list. All names follow the glossary. The <a href="a published page, not linked here" target="_blank" rel="noopener">clickable mockup</a> shows the same design in action; this page is the source of truth.</p>
 
     <div class="note feedback"><b>How to give feedback</b>Use this page's comment button. Mention the section number shown next to each heading (for example <span class="sec" style="vertical-align:0">§4.4</span>), or select text and comment on it. Tapping a section number copies it, ready to paste into your comment.</div>
@@ -336,9 +336,9 @@
               <li><span class="lbl">Documents</span> <span class="d">folders, pages, files</span></li>
               <li><span class="lbl">Releases</span></li>
               <li><span class="lbl">Time</span></li>
-              <li><span class="lbl">Project settings</span> <span class="d">only for project leads</span></li>
+              <li><span class="lbl">Project settings</span> <span class="d">for people allowed to change the project, normally its project leads</span></li>
             </ul></li>
-          <li><span class="lbl"><svg class="ico"><use href="#i-settings"/></svg>Organization settings</span> <span class="d">only for administrators</span></li>
+          <li><span class="lbl"><svg class="ico"><use href="#i-settings"/></svg>Organization settings</span> <span class="d">only for people whose role lets them manage something there; each sees only the topics they can change</span></li>
           <li><span class="lbl">My settings</span> <span class="d">appearance, sign-in &amp; security, connected apps, access keys</span></li>
         </ul></li>
     </ul>
@@ -358,6 +358,7 @@
       <tr><td><code>/settings/…</code> · <code>/p/WEB/settings/…</code> · <code>/me/…</code></td><td>Organization, project and my settings</td></tr>
     </tbody></table></div>
     <p>Opening an address you have no access to shows the same <i>"Not found"</i> page as an address that doesn't exist. Hidden issues, documents and projects are never revealed.</p>
+    <p><b>Short names</b> (M2-Q4): 2 to 10 capital letters or digits, starting with a letter (<code>WEB</code>, <code>APP2</code>), unique in the organization. A project lead can change it later; the old address (<code>/p/OLD</code>) keeps working and the old short name stays with the project. A visible sub-project of a project you can't see appears at the top of your tree, and its address never names the hidden parent.</p>
 
     <!-- ================= 3 ================= -->
     <h2 id="s3"><button type="button" class="sec" data-sec>§3</button>Layout</h2>
@@ -808,7 +809,7 @@ sort by priority, highest first</div>
       <li><b>Appearance:</b> <i>Match my device</i> (default), <i>Always light</i>, <i>Always dark</i>; pick a light theme and a dark theme from previews (see §7.2); spacing; <i>Less motion</i>; <i>Larger text</i>.</li>
       <li><b>Region:</b> time zone, date and number format, first day of the week.</li>
       <li><b>Sign-in &amp; security:</b> password, passkeys, two-step sign-in, backup codes, and <i>Where you're signed in</i> with <i>Sign out</i> per device.</li>
-      <li><b>Connected apps:</b> apps and AI apps (MCP) you allowed, what they may do, when last used, and <i>Remove</i>. <b>Access keys:</b> create one (name, what it may do, expiry), copy it once, and delete it.</li>
+      <li><b>Connected apps:</b> apps and AI apps (MCP) you allowed, what they may do, when last used, and <i>Remove</i>. <b>Access keys:</b> create one (name; what it may do: <i>See only</i>, <i>See and change</i> or <i>Everything I can do</i>, single permissions under <i>More options</i>; optionally only some projects; when it runs out, 90 days unless you pick another date, at most a year), copy it once, and delete it.</li>
       <li><b>Keyboard shortcuts:</b> see and change them.</li>
       <li><b>My data:</b> <i>Download my data</i> (everything Bugaboo stores about you, as readable pages and as a file other programs can read), what is kept and for how long, and who can see your working hours.</li>
     </ul>
@@ -934,7 +935,7 @@ sort by priority, highest first</div>
     <ul>
       <li>Left menu by topic, in plain words:
         <ul>
-          <li><b>People:</b> People, Groups, Roles &amp; permissions</li>
+          <li><b>People:</b> People (with <i>Invite</i> and the sign-up rule), Groups, Roles &amp; permissions (roles, <i>Who has which role</i> for the whole organization, field permissions, <i>Who sees people</i>, <i>Check access</i>), Sign-in rules</li>
           <li><b>Work:</b> Projects, Issue types, Fields, Workflows, Kinds of relation, Layouts, Labels &amp; tags, Releases, Templates</li>
           <li><b>Look:</b> Themes, Logo &amp; name</li>
           <li><b>Connections:</b> Assistant &amp; AI apps, E-mail &amp; notifications, Webhooks, Company sign-in (SSO)</li>
@@ -946,6 +947,14 @@ sort by priority, highest first</div>
       <li><b>"Used by"</b> is shown before changing or deleting anything shared: <i>"Used in 4 projects and 2 saved searches."</i></li>
       <li><b>Search finds settings too:</b> typing <i>"e-mail"</i> in search lists the e-mail settings.</li>
       <li>Each setting has a one-line explanation under its name.</li>
+      <li><b>Where each setting appears</b> (the first part of its key decides; every setting has exactly one place):
+        <div class="tbl-wrap"><table class="dtable"><thead><tr><th>Settings</th><th>Menu item</th></tr></thead><tbody>
+          <tr><td><code>auth.sign-up-*</code></td><td>People › People, next to <i>Invite</i> (who can make their own account)</td></tr>
+          <tr><td><code>security.session-*</code>, <code>security.two-step-required</code>, <code>auth.access-key-*</code></td><td>People › Sign-in rules (how long people stay signed in, two-step sign-in for everybody, how long access keys live)</td></tr>
+          <tr><td><code>appearance.*</code> (the organization's defaults)</td><td>Look › Themes</td></tr>
+        </tbody></table></div>
+        Two-step sign-in for one role is not a setting: it is the switch on the role page. A later topic (<code>mail.*</code>, <code>ai.*</code>, …) names its menu item here when it comes.</li>
+      <li>A setting an administrator locked shows <i>Set by your organization</i> on lower levels, read-only, with the reason; <i>Reset to default</i> takes away the value set on this level.</li>
     </ul>
 
     <h3 id="s5-2"><button type="button" class="sec" data-sec>§5.2</button>Roles and permissions <span class="ids">SEC-03, SEC-04, SEC-07</span></h3>
@@ -954,10 +963,13 @@ sort by priority, highest first</div>
       <div class="explain"><b>Check access: can Ana change Priority in Website?</b><br>Yes. Ana is in the group <b>Backend</b>, which has the role <b>Team member</b> in <b>ACME</b>. Website is inside ACME, so the role applies here too.</div>
     </div></div></div></div>
     <ul>
-      <li><b>Role page:</b> permissions grouped by topic (<i>Issues, Documents, Time, Projects, Settings</i>), each a checkbox with a plain sentence: <i>"Change issues other people created"</i>.</li>
-      <li><b>Who has which role:</b> per project, people or groups and their role. Rows that come from a parent project say so (<i>"from ACME"</i>) and can be changed for this project.</li>
+      <li><b>Role page:</b> permissions grouped by topic (<i>Projects, People, Settings</i> in M2; <i>Issues, Documents, Time</i> join later), each a checkbox with a plain sentence: <i>"Change issues other people created"</i>. A permission that counts only for the whole organization says so. The switch <i>Two-step sign-in for everyone with this role</i> sits here too. Starting roles have <i>Reset to the starting permissions</i>.</li>
+      <li><b>Starting roles</b> (M2-Q5): <i>Administrator</i> (everything), <i>Project lead</i> (in their projects and sub-projects: settings, moving, who has which role, what roles see, check access), <i>Team member</i>, <i>Contributor</i>, <i>Viewer</i> and <i>Guest</i>. The full table is in the architecture (§7, <i>Authorization model</i>). Nobody can give a role, or add a permission to one, that they don't have themselves.</li>
+      <li><b>Who has which role:</b> per project, people or groups and their role, with <i>Where it counts</i>: <i>Only this project</i> or <i>This project and its sub-projects</i> (rows in Organization settings count for the <i>Whole organization</i>). Rows that come from a parent project say so (<i>"from ACME"</i>) and can be changed for this project.</li>
+      <li><b>No access</b> (M2-Q1): a person or group can be set to <i>No access</i> on a project. It covers the project and its sub-projects and wins over any role given higher up, and over a role they have through a group on the same project. A role given on a sub-project lower down still counts there. People who decide roles higher up keep seeing the project's name here, so they can always take a <i>No access</i> away again. The change that would leave nobody able to manage roles is refused, with a sentence that says why.</li>
+      <li><b>Names in these screens</b> (M2-Q3): people who manage people or roles (Administrators, and Project leads in their projects) always see names in Organization settings, <i>Who has which role</i> and <i>Check access</i>. Everybody else sees member lists as the kind <i>Project members</i> of <i>Who sees people</i> says. E-mail addresses only appear for people who manage people.</li>
       <li><b>Field permissions:</b> each cell is a three-choice dropdown with the words <i>Hidden / Can see / Can change</i>. <i>Hidden</i> means the field doesn't exist for that role: not in issues, searches, e-mails, maps or the assistant. Different rules per issue type sit under <i>More options</i>.</li>
-      <li><b>Check access:</b> choose a person and a project to see what they can do, with the reason in a sentence.</li>
+      <li><b>Check access:</b> choose a person and a project to see what they can do, every field and how they see people, each with the reason in a sentence. A reason never names a project you can't see (<i>"from a project you can't see"</i>).</li>
       <li><b>See as …:</b> shows any screen as a chosen person or role sees it, inside a clearly marked frame where nothing can be changed. Each use is recorded in the security log.</li>
     </ul>
 
@@ -970,6 +982,7 @@ sort by priority, highest first</div>
         <tr><td><b>"… is editing"</b></td><td>Names</td><td>Names</td><td>Hidden</td></tr>
         <tr><td><b>Followers</b></td><td>Names</td><td>Role only</td><td>Hidden</td></tr>
         <tr><td><b>Time entries</b></td><td>Names</td><td>Hidden</td><td>Hidden</td></tr>
+        <tr><td><b>Project members</b></td><td>Names</td><td>Role only</td><td>Hidden</td></tr>
       </tbody></table>
       <div class="explain"><b>A Guest sees:</b> "Assigned to <i>a Team member</i>", "<i>Someone</i> is editing the description", comments by "<i>a Team member</i>". Names, avatars and e-mail addresses never reach their browser.</div>
     </div></div></div></div>
@@ -1218,6 +1231,10 @@ sort by priority, highest first</div>
     <div class="decision"><span class="okmark">✓</span><div><b>Focus view</b> is the default way to open an issue; the side panel view stays as an option (§3.4).</div></div>
     <div class="decision"><span class="okmark">✓</span><div><b>Who sees people</b> is set per role: names, role only or hidden (§5.2, PRIV-12).</div></div>
     <div class="decision"><span class="okmark">✓</span><div><b>Issue IDs</b> can be random or counting per project; random by default (§5.1, ADR-0021).</div></div>
+    <div class="decision"><span class="okmark">✓</span><div><b>No access</b> on a project wins over roles from higher up and over a group's role on the same project (§5.2, M2-Q1, ADR-0025).</div></div>
+    <div class="decision"><span class="okmark">✓</span><div><b>Names in settings screens</b> for people who manage people or roles; member lists for everybody else by <i>Project members</i> (§5.2, M2-Q3).</div></div>
+    <div class="decision"><span class="okmark">✓</span><div><b>Short names</b> can change; old addresses keep working (§2.1, M2-Q4).</div></div>
+    <div class="decision"><span class="okmark">✓</span><div><b>Access keys</b>: <i>See only</i>, <i>See and change</i> or <i>Everything I can do</i>, optionally for some projects; every key runs out, after 90 days unless chosen otherwise, at most after a year (§4.13, M2-Q6).</div></div>
     <h3 id="s10-1"><button type="button" class="sec" data-sec>§10.1</button>Open questions</h3>
     <p>None yet. Comment on this page.</p>
   </main>
@@ -1363,7 +1380,7 @@ listBtn.addEventListener("click", () => {
 /* ---------- field permissions demo ---------- */
 (function () {
   const roles = ["Administrator", "Team member", "Contributor", "Guest"];
-  const rows = [["Priority", ["chg", "chg", "see", "see"]], ["Severity", ["chg", "chg", "chg", "hid"]], ["Cost center", ["chg", "see", "hid", "hid"]], ["Time spent", ["chg", "chg", "see", "hid"]]];
+  const rows = [["Priority", ["chg", "chg", "see", "see"]], ["Severity", ["chg", "chg", "chg", "hid"]], ["Cost center", ["chg", "see", "see", "hid"]], ["Time spent", ["chg", "chg", "see", "hid"]]];
   const opt = v => [["hid", "Hidden"], ["see", "Can see"], ["chg", "Can change"]].map(([k, l]) => '<option value="' + k + '"' + (k === v ? " selected" : "") + ">" + l + "</option>").join("");
   const tb = document.getElementById("perm");
   tb.innerHTML = rows.map(([f, vals]) => "<tr><td><b>" + f + "</b></td>" + vals.map((v, i) => '<td><select class="' + v + '" aria-label="' + f + " for " + roles[i] + '">' + opt(v) + "</select></td>").join("") + "</tr>").join("");
