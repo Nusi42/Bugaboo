@@ -29,13 +29,13 @@ use bb_core::message;
 /// certificate in `tls/`; the messages name it.
 pub(crate) const TAKE_OVER_FLAG: &str = "--take-over-data-folder";
 
-const DATABASE_FILE: &str = "bugaboo.db";
+const DATABASE_FILE: &str = bb_store::DATABASE_FILE;
 const FILES: &str = "files";
-const KEYS: &str = "keys";
+const KEYS: &str = bb_store::KEYS_FOLDER;
 const BACKUPS: &str = "backups";
 const TLS: &str = "tls";
-const LOGS: &str = "logs";
-const ANCHOR_FILE: &str = "security-head.log";
+const LOGS: &str = bb_store::LOGS_FOLDER;
+const ANCHOR_FILE: &str = bb_store::SECURITY_LOG_ANCHOR_FILE;
 #[cfg(windows)]
 const SERVER_LOG_FILE: &str = "server.log";
 const SETUP_CODE_FILE: &str = "setup-code.txt";

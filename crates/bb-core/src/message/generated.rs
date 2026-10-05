@@ -75,6 +75,9 @@ pub const CLI_ABOUT_OPENAPI: MessageKey = MessageKey::new("cli.about.openapi");
 /// The message `cli.about.rotate-key`.
 pub const CLI_ABOUT_ROTATE_KEY: MessageKey = MessageKey::new("cli.about.rotate-key");
 
+/// The message `cli.about.sample`.
+pub const CLI_ABOUT_SAMPLE: MessageKey = MessageKey::new("cli.about.sample");
+
 /// The message `cli.about.security-log`.
 pub const CLI_ABOUT_SECURITY_LOG: MessageKey = MessageKey::new("cli.about.security-log");
 
@@ -123,6 +126,15 @@ pub const CLI_HELP_PORT: MessageKey = MessageKey::new("cli.help.port");
 
 /// The message `cli.help.public-url`.
 pub const CLI_HELP_PUBLIC_URL: MessageKey = MessageKey::new("cli.help.public-url");
+
+/// The message `cli.help.sample-out`.
+pub const CLI_HELP_SAMPLE_OUT: MessageKey = MessageKey::new("cli.help.sample-out");
+
+/// The message `cli.help.sample-seed`.
+pub const CLI_HELP_SAMPLE_SEED: MessageKey = MessageKey::new("cli.help.sample-seed");
+
+/// The message `cli.help.sample-start`.
+pub const CLI_HELP_SAMPLE_START: MessageKey = MessageKey::new("cli.help.sample-start");
 
 /// The message `cli.help.take-over-data-folder`.
 pub const CLI_HELP_TAKE_OVER_DATA_FOLDER: MessageKey =
@@ -760,6 +772,61 @@ pub const PERMISSION_SEE_PROJECTS: MessageKey = MessageKey::new("permission.see-
 /// The message `permission.see-status`.
 pub const PERMISSION_SEE_STATUS: MessageKey = MessageKey::new("permission.see-status");
 
+/// The message `sample.error.link-missing`.
+pub const SAMPLE_ERROR_LINK_MISSING: MessageKey = MessageKey::new("sample.error.link-missing");
+
+/// The message `sample.error.log-not-anchored`.
+pub const SAMPLE_ERROR_LOG_NOT_ANCHORED: MessageKey =
+    MessageKey::new("sample.error.log-not-anchored");
+
+/// The message `sample.error.names-repeated`.
+pub const SAMPLE_ERROR_NAMES_REPEATED: MessageKey = MessageKey::new("sample.error.names-repeated");
+
+/// The message `sample.error.person-missing`.
+pub const SAMPLE_ERROR_PERSON_MISSING: MessageKey = MessageKey::new("sample.error.person-missing");
+
+/// The message `sample.error.random`.
+pub const SAMPLE_ERROR_RANDOM: MessageKey = MessageKey::new("sample.error.random");
+
+/// The message `sample.error.secret-not-stored`.
+pub const SAMPLE_ERROR_SECRET_NOT_STORED: MessageKey =
+    MessageKey::new("sample.error.secret-not-stored");
+
+/// The message `sample.error.setup-closed`.
+pub const SAMPLE_ERROR_SETUP_CLOSED: MessageKey = MessageKey::new("sample.error.setup-closed");
+
+/// The message `sample.sign-in-header`.
+pub const SAMPLE_SIGN_IN_HEADER: MessageKey = MessageKey::new("sample.sign-in-header");
+
+/// The message `sample.step.accepting-invitation`.
+pub const SAMPLE_STEP_ACCEPTING_INVITATION: MessageKey =
+    MessageKey::new("sample.step.accepting-invitation");
+
+/// The message `sample.step.code-app`.
+pub const SAMPLE_STEP_CODE_APP: MessageKey = MessageKey::new("sample.step.code-app");
+
+/// The message `sample.step.dates`.
+pub const SAMPLE_STEP_DATES: MessageKey = MessageKey::new("sample.step.dates");
+
+/// The message `sample.step.first-administrator`.
+pub const SAMPLE_STEP_FIRST_ADMINISTRATOR: MessageKey =
+    MessageKey::new("sample.step.first-administrator");
+
+/// The message `sample.step.invitation`.
+pub const SAMPLE_STEP_INVITATION: MessageKey = MessageKey::new("sample.step.invitation");
+
+/// The message `sample.step.password-hasher`.
+pub const SAMPLE_STEP_PASSWORD_HASHER: MessageKey = MessageKey::new("sample.step.password-hasher");
+
+/// The message `sample.step.setup-code`.
+pub const SAMPLE_STEP_SETUP_CODE: MessageKey = MessageKey::new("sample.step.setup-code");
+
+/// The message `sample.step.signing-out`.
+pub const SAMPLE_STEP_SIGNING_OUT: MessageKey = MessageKey::new("sample.step.signing-out");
+
+/// The message `sample.step.starting-roles`.
+pub const SAMPLE_STEP_STARTING_ROLES: MessageKey = MessageKey::new("sample.step.starting-roles");
+
 /// The message `save.not-saved`.
 pub const SAVE_NOT_SAVED: MessageKey = MessageKey::new("save.not-saved");
 
@@ -1323,6 +1390,15 @@ pub fn cli_database_url_password(
     )
 }
 
+/// The message `cli.help.sample-database`.
+#[must_use]
+pub fn cli_help_sample_database(variable: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("cli.help.sample-database"),
+        vec![("variable", Value::Text(variable.to_string()))],
+    )
+}
+
 /// The message `cli.no-data`.
 #[must_use]
 pub fn cli_no_data(path: impl std::fmt::Display) -> Message {
@@ -1806,6 +1882,139 @@ pub fn passkeys_remove_title(name: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("passkeys.remove-title"),
         vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `sample.done`.
+#[must_use]
+pub fn sample_done(
+    file: impl std::fmt::Display,
+    folder: impl std::fmt::Display,
+    people: impl std::fmt::Display,
+    seed: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("sample.done"),
+        vec![
+            ("file", Value::Text(file.to_string())),
+            ("folder", Value::Text(folder.to_string())),
+            ("people", Value::Text(people.to_string())),
+            ("seed", Value::Text(seed.to_string())),
+        ],
+    )
+}
+
+/// The message `sample.error.database-url`.
+#[must_use]
+pub fn sample_error_database_url(variable: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("sample.error.database-url"),
+        vec![("variable", Value::Text(variable.to_string()))],
+    )
+}
+
+/// The message `sample.error.folder`.
+#[must_use]
+pub fn sample_error_folder(
+    path: impl std::fmt::Display,
+    reason: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("sample.error.folder"),
+        vec![
+            ("path", Value::Text(path.to_string())),
+            ("reason", Value::Text(reason.to_string())),
+        ],
+    )
+}
+
+/// The message `sample.error.layout`.
+#[must_use]
+pub fn sample_error_layout(reason: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("sample.error.layout"),
+        vec![("reason", Value::Text(reason.to_string()))],
+    )
+}
+
+/// The message `sample.error.log-broken`.
+#[must_use]
+pub fn sample_error_log_broken(
+    reason: impl std::fmt::Display,
+    seq: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("sample.error.log-broken"),
+        vec![
+            ("reason", Value::Text(reason.to_string())),
+            ("seq", Value::Text(seq.to_string())),
+        ],
+    )
+}
+
+/// The message `sample.error.name-not-letters`.
+#[must_use]
+pub fn sample_error_name_not_letters(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("sample.error.name-not-letters"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `sample.error.names`.
+#[must_use]
+pub fn sample_error_names(reason: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("sample.error.names"),
+        vec![("reason", Value::Text(reason.to_string()))],
+    )
+}
+
+/// The message `sample.error.not-a-sample-folder`.
+#[must_use]
+pub fn sample_error_not_a_sample_folder(path: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("sample.error.not-a-sample-folder"),
+        vec![("path", Value::Text(path.to_string()))],
+    )
+}
+
+/// The message `sample.error.start`.
+#[must_use]
+pub fn sample_error_start(start: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("sample.error.start"),
+        vec![("start", Value::Text(start.to_string()))],
+    )
+}
+
+/// The message `sample.error.step`.
+#[must_use]
+pub fn sample_error_step(reason: impl std::fmt::Display, step: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("sample.error.step"),
+        vec![
+            ("reason", Value::Text(reason.to_string())),
+            ("step", Value::Text(step.to_string())),
+        ],
+    )
+}
+
+/// The message `sample.error.store`.
+#[must_use]
+pub fn sample_error_store(reason: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("sample.error.store"),
+        vec![("reason", Value::Text(reason.to_string()))],
+    )
+}
+
+/// The message `sample.error.too-few-names`.
+#[must_use]
+pub fn sample_error_too_few_names(people: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("sample.error.too-few-names"),
+        vec![("people", Value::Text(people.to_string()))],
     )
 }
 
@@ -2374,6 +2583,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "cli.about.rotate-key",
         "Make a new master key and use it for every stored secret",
     ),
+    (
+        "cli.about.sample",
+        "Make the sample organization: fictional people, the same every time from a seed",
+    ),
     ("cli.about.security-log", "Look at the security log"),
     (
         "cli.about.security-log-verify",
@@ -2429,6 +2642,22 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "cli.help.public-url",
         "The web address people type to reach Bugaboo, like https://bugaboo.example.com",
+    ),
+    (
+        "cli.help.sample-database",
+        "Where the sample is kept: sqlite (a file in the data folder) or postgres (the address of an empty database is in the environment variable {variable})",
+    ),
+    (
+        "cli.help.sample-out",
+        "The folder for the data folder, the sign-in details and the dump of the sample",
+    ),
+    (
+        "cli.help.sample-seed",
+        "The number the sample is made from. The same number makes the same organization",
+    ),
+    (
+        "cli.help.sample-start",
+        "The moment the sample ends, in seconds since 1 January 1970. The program never reads the clock, so the same moment makes the same dates",
     ),
     (
         "cli.help.take-over-data-folder",
@@ -3003,6 +3232,98 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "See the project and what is in it",
     ),
     ("permission.see-status", "See how the server is doing"),
+    (
+        "sample.done",
+        "Made the sample organization with {people} people from seed {seed}. Data folder: {folder}. How to sign in as them: {file}",
+    ),
+    (
+        "sample.error.database-url",
+        "The environment variable {variable} must hold the address of an empty PostgreSQL database.",
+    ),
+    (
+        "sample.error.folder",
+        "The sample cannot use {path}: {reason}",
+    ),
+    (
+        "sample.error.layout",
+        "The file tools/dev/sample.json is not usable: {reason}",
+    ),
+    (
+        "sample.error.link-missing",
+        "The answer to an invitation does not say where to open it.",
+    ),
+    (
+        "sample.error.log-broken",
+        "The security log of the sample does not verify: entry {seq}, {reason}",
+    ),
+    (
+        "sample.error.log-not-anchored",
+        "Nothing vouches for the end of the security log: its anchor file is missing.",
+    ),
+    (
+        "sample.error.name-not-letters",
+        "The name {name} has other characters than the letters a to z, so it cannot be part of an e-mail address.",
+    ),
+    (
+        "sample.error.names",
+        "The list of names cannot be used: {reason}",
+    ),
+    (
+        "sample.error.names-repeated",
+        "The list of names is empty, or names a first name or a family name twice.",
+    ),
+    (
+        "sample.error.not-a-sample-folder",
+        "The folder {path} has other things in it and was not made by this tool, so it is left alone. Choose another folder or empty this one.",
+    ),
+    (
+        "sample.error.person-missing",
+        "A person of the plan has no account in the database.",
+    ),
+    (
+        "sample.error.random",
+        "The system gave no secure random numbers for the passwords.",
+    ),
+    (
+        "sample.error.secret-not-stored",
+        "The secret of the code app was not stored.",
+    ),
+    (
+        "sample.error.setup-closed",
+        "Setup was closed already, so the setup code does not work.",
+    ),
+    (
+        "sample.error.start",
+        "The start moment {start} is not a moment in time.",
+    ),
+    (
+        "sample.error.step",
+        "A step of the sample was refused ({step}): {reason}",
+    ),
+    ("sample.error.store", "The database failed: {reason}"),
+    (
+        "sample.error.too-few-names",
+        "The list of names is too short for {people} different people.",
+    ),
+    (
+        "sample.sign-in-header",
+        "Sample organization: how to sign in.\nThe passwords are random and belong to this run only. Never copy this file anywhere.\nOne line per person, separated by tabs: e-mail address, password, role, name, and the secret of the code app for the people who have one.",
+    ),
+    (
+        "sample.step.accepting-invitation",
+        "accepting an invitation",
+    ),
+    ("sample.step.code-app", "setting up a code app"),
+    ("sample.step.dates", "working out the dates"),
+    (
+        "sample.step.first-administrator",
+        "making the first administrator",
+    ),
+    ("sample.step.invitation", "inviting a person"),
+    ("sample.step.password-hasher", "making the password hasher"),
+    ("sample.step.setup-code", "using the setup code"),
+    ("sample.step.signing-out", "signing out"),
+    ("sample.step.starting-roles", "making the starting roles"),
     ("save.not-saved", "Not saved yet"),
     ("save.saved", "Saved"),
     ("save.saving", "Saving…"),

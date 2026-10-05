@@ -34,7 +34,7 @@ TEST-SAMPLE-DATA switched on for people (catalogue entry exists; implementation,
 
 ## Notes from WP-01
 
-- The module map entry for `bb-sample` is written in [architecture §4](../../architecture/04-building-blocks.md#bb-sample-planned-m2-wp-06) as prose: the repository layout and the module-map diagram cannot list a crate that does not exist (ARCH-MAP-SYNC and ARCH-DEPS fail), so this package adds the layout line and the diagram box with its edges in the commit that creates the crate.
+- The module map entry for `bb-sample` is written in [architecture §4](../../architecture/04-building-blocks.md#bb-sample) as prose: the repository layout and the module-map diagram cannot list a crate that does not exist (ARCH-MAP-SYNC and ARCH-DEPS fail), so this package adds the layout line and the diagram box with its edges in the commit that creates the crate.
 - `bb-sample` depends on `bb-store` and wires it to the use cases, which ARCH-HTTP-EDGE allows only for `bb-server` today: add `bb-sample` to the check's list of wiring crates, with a failing and a passing example, in the same change (dependency rule 4 already names it).
 
 ## Depends on

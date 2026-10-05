@@ -661,8 +661,8 @@
             }
           }
         },
-        "x-permission": "signed-in",
-        "x-never-stored": true
+        "x-never-stored": true,
+        "x-permission": "signed-in"
       }
     },
     "/api/v1/auth/passkey/sign-in": {
@@ -2389,8 +2389,8 @@
             }
           }
         },
-        "x-never-stored": true,
-        "x-permission": "own-account"
+        "x-permission": "own-account",
+        "x-never-stored": true
       }
     },
     "/api/v1/auth/two-step/backup-codes": {

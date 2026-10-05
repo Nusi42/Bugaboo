@@ -21,7 +21,7 @@ use bb_core::person::Person;
 use bb_policy::guards::{Refusal, ensure_no_escalation};
 use bb_policy::{Evaluation, PeopleContext, Place, Target, evaluate, resolve};
 
-pub use bb_policy::{Authorized, Permission, PersonRef, StartingRole, guards};
+pub use bb_policy::{Authorized, Masked, Permission, PersonRef, StartingRole, guards};
 pub use starting::{MakeStartingRoles, make_starting_roles};
 pub use store::{PolicyStore, RoleRecord};
 
