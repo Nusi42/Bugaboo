@@ -104,13 +104,7 @@ pub(crate) async fn wire(
     );
     let seal = LogSeal::new(&keys, data.security_log_anchor());
     let csrf = CsrfKey::from_bytes(keys.csrf_key().to_bytes());
-    let probe = Probe::new(
-        database.clone(),
-        seal.clone(),
-        database_kind(settings.database_url.as_deref()),
-        serving.certificate,
-    );
-    let storage = AuthStorage::new(database, keys, seal);
+    let storage = AuthStorage::new(database.clone(), keys, seal.clone());
 
     let name = Message::from(message::APP_NAME).render();
     // Passkeys are tied to a host name; a server reached by an IP address cannot offer them.
@@ -128,6 +122,13 @@ pub(crate) async fn wire(
         csrf,
         FailureLimits::new(settings.limits.sign_in_failures_per_minute),
         name,
+    );
+    let probe = Probe::new(
+        database,
+        seal,
+        database_kind(settings.database_url.as_deref()),
+        serving.certificate,
+        services.log_writes(),
     );
     let setup_code = issue_setup_code(&services.ctx(RequestInfo::default()), IssueSetupCode)
         .await

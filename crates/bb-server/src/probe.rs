@@ -4,17 +4,63 @@
 
 use std::fmt::Write as _;
 use std::sync::Arc;
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
 use bb_api::tls::ServedCertificate;
 use bb_app::ports::BoxFuture;
-use bb_app::status::{CertificateState, DatabaseKind, LogBreak, LogState, ServerProbe, Snapshot};
+use bb_app::status::{
+    CertificateState, DatabaseKind, LogBreak, LogState, LogWrites, ServerProbe, Snapshot,
+};
+use bb_core::security_log::Digest;
 use bb_store::{BreakReason, Database, LogSeal, Verification};
 use jiff::Timestamp;
+use tokio::sync::Mutex;
 
 /// How many bytes of the hash of the last log entry the status page shows: enough to compare it
 /// with a copy kept somewhere else, short enough to read out loud.
 const HEAD_HASH_BYTES: usize = 8;
+
+/// How the status page checks the security log (M1-F60). The command checks the whole log every
+/// time; a page that people open often reads only what is new since its last good check.
+#[derive(Clone, Copy, Debug)]
+pub(crate) struct LogChecking {
+    /// How long an answer is reused when the server has written nothing to the log since.
+    pub(crate) keep: Duration,
+    /// How often the whole log is read again, so that an old entry that was changed is found
+    /// within a day also by the page, not only by the command.
+    pub(crate) full_every: Duration,
+}
+
+impl Default for LogChecking {
+    fn default() -> Self {
+        Self {
+            keep: Duration::from_secs(5),
+            full_every: Duration::from_hours(24),
+        }
+    }
+}
+
+/// The end of the log as the last good check left it.
+struct Good {
+    head: (i64, Digest),
+    /// When the whole log was last read (not only the new entries).
+    full_at: Instant,
+}
+
+/// The last answer, and what it was made under.
+struct Last {
+    state: LogState,
+    at: Instant,
+    /// How many entries the server had written when it was made: a write makes it old.
+    written: u64,
+}
+
+/// What the status page remembers between its visits.
+#[derive(Default)]
+struct LogMemory {
+    good: Option<Good>,
+    last: Option<Last>,
+}
 
 /// Measures the server.
 pub(crate) struct Probe {
@@ -24,6 +70,9 @@ pub(crate) struct Probe {
     /// The certificate in use when the server speaks HTTPS itself: the status page shows the end
     /// of the one it serves now, also after a renewal (M1-F03).
     certificate: Option<Arc<ServedCertificate>>,
+    log_writes: Arc<LogWrites>,
+    log_checking: LogChecking,
+    log_memory: Mutex<LogMemory>,
     started: Instant,
     started_at: Timestamp,
 }
@@ -35,15 +84,67 @@ impl Probe {
         seal: LogSeal,
         kind: DatabaseKind,
         certificate: Option<Arc<ServedCertificate>>,
+        log_writes: Arc<LogWrites>,
     ) -> Self {
         Self {
             database,
             seal,
             kind,
             certificate,
+            log_writes,
+            log_checking: LogChecking::default(),
+            log_memory: Mutex::new(LogMemory::default()),
             started: Instant::now(),
             started_at: Timestamp::now(),
         }
+    }
+
+    /// The same probe with other times for reusing and for re-reading the log (the tests).
+    #[cfg(test)]
+    pub(crate) fn with_log_checking(mut self, checking: LogChecking) -> Self {
+        self.log_checking = checking;
+        self
+    }
+
+    /// Checks the security log as the status page does: from the end of the last good check, and
+    /// only when the last answer is old or the server has written to the log since. A check that
+    /// finds anything wrong is forgotten, so the next one reads everything again.
+    async fn check_log(&self) -> LogState {
+        let mut memory = self.log_memory.lock().await;
+        let written = self.log_writes.written();
+        let now = Instant::now();
+        if let Some(last) = &memory.last
+            && last.written == written
+            && now.duration_since(last.at) < self.log_checking.keep
+        {
+            return last.state.clone();
+        }
+        let known = memory
+            .good
+            .as_ref()
+            .filter(|good| now.duration_since(good.full_at) < self.log_checking.full_every);
+        let continued = known.is_some();
+        let full_at = known.map_or(now, |good| good.full_at);
+        let result = self
+            .database
+            .verify_security_log_since(&self.seal, known.map(|good| good.head))
+            .await;
+        memory.good = match &result {
+            Ok(Verification::Valid {
+                head: Some(head), ..
+            }) => Some(Good {
+                head: *head,
+                full_at: if continued { full_at } else { now },
+            }),
+            _ => None,
+        };
+        let state = log_state(&result);
+        memory.last = Some(Last {
+            state: state.clone(),
+            at: now,
+            written,
+        });
+        state
     }
 }
 
@@ -98,7 +199,7 @@ impl ServerProbe for Probe {
     fn snapshot(&self) -> BoxFuture<'_, Snapshot> {
         Box::pin(async move {
             let database_ok = self.database.ping().await.is_ok();
-            let security_log = log_state(&self.database.verify_security_log(&self.seal).await);
+            let security_log = self.check_log().await;
             let certificate = self
                 .certificate
                 .as_deref()
@@ -153,7 +254,7 @@ mod tests {
 
     #[test]
     fn ops_08_a_valid_log_shows_the_start_of_its_last_hash() {
-        let hash = bb_core::security_log::Digest::new([0xAB; 32]);
+        let hash = Digest::new([0xAB; 32]);
         let valid = Ok(Verification::Valid {
             entries: 3,
             head: Some((3, hash)),

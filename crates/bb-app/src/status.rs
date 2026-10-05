@@ -4,6 +4,7 @@
 //! an adapter in `bb-server`, because only the server knows its database, its certificate and the
 //! security log together.
 
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::Duration;
 
 use jiff::Timestamp;
@@ -36,6 +37,36 @@ pub enum LogBreak {
     Truncated,
     /// The file that vouches for the end of the log was changed.
     Anchor,
+}
+
+/// How many security-log entries the server has written, and how many it could not write, since
+/// it started (SEC-15, M1-F40). A failed write does not refuse the request (the decision of M1),
+/// so this count is how the status page can tell that the log lags. The number of entries
+/// written also tells the status page that the log has changed since it last looked.
+#[derive(Debug, Default)]
+pub struct LogWrites {
+    written: AtomicU64,
+    failed: AtomicU64,
+}
+
+impl LogWrites {
+    /// Notes the result of one write.
+    pub(crate) fn record(&self, written: bool) {
+        let count = if written { &self.written } else { &self.failed };
+        count.fetch_add(1, Ordering::Relaxed);
+    }
+
+    /// How many entries were written since the server started.
+    #[must_use]
+    pub fn written(&self) -> u64 {
+        self.written.load(Ordering::Relaxed)
+    }
+
+    /// How many entries could not be written since the server started.
+    #[must_use]
+    pub fn failed(&self) -> u64 {
+        self.failed.load(Ordering::Relaxed)
+    }
 }
 
 /// What checking the security log found.
@@ -92,7 +123,7 @@ pub trait ServerProbe: Send + Sync {
     /// Whether the database answers. Cheap: `/health/ready` calls it often.
     fn database_ok(&self) -> BoxFuture<'_, bool>;
 
-    /// Everything the status page shows. This checks the whole security log, so it is not for
-    /// frequent calls.
+    /// Everything the status page shows. The security log is checked from the end of the last
+    /// good check, not from the start.
     fn snapshot(&self) -> BoxFuture<'_, Snapshot>;
 }

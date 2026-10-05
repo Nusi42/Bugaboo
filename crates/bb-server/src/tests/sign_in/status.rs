@@ -7,26 +7,35 @@ use axum::body::Body;
 use axum::http::{Request, StatusCode};
 use bb_api::tls::ServedCertificate;
 use bb_api::{LimitsConfig, ProbeHandle, router};
-use bb_app::status::DatabaseKind;
+use bb_app::status::{DatabaseKind, LogState, ServerProbe as _};
 use bb_testing::each_database;
 use serde_json::json;
 use tower::ServiceExt as _;
 
 use super::http::{Browser, called, options, setup_body};
 use super::rig::{Outcome, PASSWORD, Rig};
-use crate::probe::Probe;
+use crate::probe::{LogChecking, Probe};
 
 const STATUS: &str = "/api/v1/admin/status";
 
 /// The router of the rig with a real probe.
 fn app_with_probe(rig: &Rig, certificate: Option<Arc<ServedCertificate>>) -> axum::Router {
     let mut options = options(rig, LimitsConfig::default(), true);
-    options.probe = ProbeHandle::new(Arc::new(Probe::new(
-        rig.database.clone(),
-        rig.seal.clone(),
-        DatabaseKind::BuiltIn,
-        certificate,
-    )));
+    // These tests change the log or its anchor file from outside and look again at once, so the
+    // page keeps no answer.
+    options.probe = ProbeHandle::new(Arc::new(
+        Probe::new(
+            rig.database.clone(),
+            rig.seal.clone(),
+            DatabaseKind::BuiltIn,
+            certificate,
+            rig.services.log_writes(),
+        )
+        .with_log_checking(LogChecking {
+            keep: std::time::Duration::ZERO,
+            ..LogChecking::default()
+        }),
+    ));
     router(options)
 }
 
@@ -179,6 +188,89 @@ async fn ops_08_ready_means_the_database_answers() -> Outcome {
             body,
             r#"{"status":"unavailable","checks":{"data_folder":"ok","database":"failed"}}"#
         );
+        Ok(())
+    })
+    .await
+}
+
+/// The probe of the rig, with the times of reusing and re-reading set by the test.
+fn probe_of(rig: &Rig, checking: LogChecking) -> Probe {
+    Probe::new(
+        rig.database.clone(),
+        rig.seal.clone(),
+        DatabaseKind::BuiltIn,
+        None,
+        rig.services.log_writes(),
+    )
+    .with_log_checking(checking)
+}
+
+/// How many entries the status shows, and the place of the last one.
+fn log_of(state: &LogState) -> Result<(u64, i64), Box<dyn std::error::Error + Send + Sync>> {
+    match state {
+        LogState::Valid {
+            entries,
+            head: Some((seq, _)),
+            ..
+        } => Ok((*entries, *seq)),
+        other => Err(format!("the log should be intact: {other:?}").into()),
+    }
+}
+
+#[tokio::test]
+async fn ops_08_the_status_page_follows_the_log_and_reuses_its_answer_until_something_is_written()
+-> Outcome {
+    each_database("ops_08_status_incremental", async |db| {
+        let rig = Rig::start(db, 10).await?;
+        let kept = probe_of(
+            &rig,
+            LogChecking {
+                keep: std::time::Duration::from_hours(1),
+                full_every: std::time::Duration::from_hours(24),
+            },
+        );
+        let always = probe_of(
+            &rig,
+            LogChecking {
+                keep: std::time::Duration::ZERO,
+                full_every: std::time::Duration::from_hours(24),
+            },
+        );
+        rig.admin("ada@example.test").await?;
+
+        // The first visit reads the whole log; entries and place agree.
+        let (first, head) = log_of(&kept.snapshot().await.security_log)?;
+        assert!(first >= 1);
+        assert_eq!(i64::try_from(first)?, head);
+
+        // Every write by the server makes the answer old, and the next visit shows the new
+        // entries: the count and the place of the last entry follow the log.
+        rig.sign_in("ada@example.test", PASSWORD).await?;
+        let (second, head) = log_of(&kept.snapshot().await.security_log)?;
+        assert!(second > first);
+        assert_eq!(i64::try_from(second)?, head);
+
+        // An entry that was added behind the back of the server (here straight into the store)
+        // is not seen while the answer is kept: nothing told the page that the log changed.
+        rig.database
+            .append_security_log(
+                &rig.seal,
+                &bb_store::NewSecurityLogEntry {
+                    time: jiff::Timestamp::now(),
+                    person: None,
+                    action: bb_core::technical::TechnicalName::new("sign_in.failed")?,
+                    subject: None,
+                    network: None,
+                },
+            )
+            .await?;
+        assert_eq!(log_of(&kept.snapshot().await.security_log)?.0, second);
+        // A page that keeps nothing sees it at once, and the page that kept the answer sees it
+        // with the next write of the server.
+        let (third, _) = log_of(&always.snapshot().await.security_log)?;
+        assert_eq!(third, second + 1);
+        rig.sign_in("ada@example.test", PASSWORD).await?;
+        assert!(log_of(&kept.snapshot().await.security_log)?.0 > third);
         Ok(())
     })
     .await

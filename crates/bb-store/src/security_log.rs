@@ -151,14 +151,41 @@ impl Database {
     /// Checks the whole chain with the log key, the checkpoint and the anchor file. Read
     /// `Valid { anchored: false }` together with `entries` and `head`: on a log that has entries
     /// it means nothing vouches for the end (the anchor file is missing or empty), which is a
-    /// warning; on an empty log it is normal. This is what
-    /// `bugaboo security-log verify` and the status page run. It reads one consistent snapshot of
-    /// the database and takes no write lock, so appends go on while it runs.
+    /// warning; on an empty log it is normal. This is what `bugaboo security-log verify` runs. It
+    /// reads one consistent snapshot of the database and takes no write lock, so appends go on
+    /// while it runs.
     ///
     /// # Errors
     /// Fails when the database or the anchor file cannot be read, or an entry is unreadable. A
     /// broken chain is not an error; it is the answer ([`Verification::Broken`]).
     pub async fn verify_security_log(&self, seal: &LogSeal) -> Result<Verification, StoreError> {
+        self.verify_from(seal, None).await
+    }
+
+    /// The same check, but starting after `known`: the place and hash of an entry that an
+    /// earlier check found right. Only the entries after it are read, so a long log costs little
+    /// on every visit of the status page; `entries` of the answer is still the number of entries
+    /// the log has. Entries before `known` are not read again: an old entry that was changed
+    /// since is found by
+    /// [`verify_security_log`](Self::verify_security_log), which the command runs, and not by
+    /// this. When the log no longer has the entry `known` names (it was changed, or deleted with
+    /// the blocks before a checkpoint), everything is checked.
+    ///
+    /// # Errors
+    /// The same as [`verify_security_log`](Self::verify_security_log).
+    pub async fn verify_security_log_since(
+        &self,
+        seal: &LogSeal,
+        known: Option<(i64, Digest)>,
+    ) -> Result<Verification, StoreError> {
+        self.verify_from(seal, known).await
+    }
+
+    async fn verify_from(
+        &self,
+        seal: &LogSeal,
+        known: Option<(i64, Digest)>,
+    ) -> Result<Verification, StoreError> {
         // The anchor is read first: it is never ahead of the database, so whatever it says
         // is in the snapshot taken afterwards.
         let anchor = seal.latest()?;
@@ -170,33 +197,46 @@ impl Database {
         }
         let mut transaction = self.begin_read().await?;
         let checkpoint = read_checkpoint(&mut transaction).await?;
-        let mut verifier = if let Some(checkpoint) = &checkpoint {
-            if !checkpoint_is_signed(seal.key(), checkpoint) {
-                return Ok(Verification::Broken {
-                    seq: checkpoint.seq,
-                    reason: BreakReason::Checkpoint,
-                });
-            }
-            Verifier::new(seal.key(), checkpoint.seq + 1, checkpoint.hash)
-        } else {
-            // Without a checkpoint the log must start at 1; a later start means entries were
-            // deleted without leaving one.
-            if let Some(first) = read_page(&mut transaction, 0, 1).await?.first()
-                && first.seq != 1
+        if let Some(checkpoint) = &checkpoint
+            && !checkpoint_is_signed(seal.key(), checkpoint)
+        {
+            return Ok(Verification::Broken {
+                seq: checkpoint.seq,
+                reason: BreakReason::Checkpoint,
+            });
+        }
+        // Start after the entry an earlier check found right, if the log still has it.
+        let start = match known {
+            Some((seq, hash))
+                if still_there(
+                    &mut transaction,
+                    seal.key(),
+                    checkpoint.as_ref(),
+                    seq,
+                    &hash,
+                )
+                .await? =>
             {
-                return Ok(Verification::Broken {
-                    seq: first.seq,
-                    reason: BreakReason::Checkpoint,
-                });
+                Some((seq, hash))
             }
-            Verifier::new(seal.key(), 1, START)
+            _ => None,
         };
+        let mut verifier =
+            match starting_verifier(&mut transaction, seal.key(), checkpoint.as_ref(), start)
+                .await?
+            {
+                Ok(verifier) => verifier,
+                Err(broken) => return Ok(broken),
+            };
         let anchored_seq = match anchor {
             Anchored::At(seq, _) => Some(seq),
             _ => None,
         };
         let mut hash_at_anchor = None;
-        let mut after = checkpoint.as_ref().map_or(0, |checkpoint| checkpoint.seq);
+        let mut after = start
+            .map(|(seq, _)| seq)
+            .or(checkpoint.as_ref().map(|checkpoint| checkpoint.seq))
+            .unwrap_or(0);
         loop {
             let page = read_page(&mut transaction, after, PAGE).await?;
             let Some(last) = page.last() else {
@@ -215,41 +255,38 @@ impl Database {
                 }
             }
         }
-        let Verification::Valid { entries, head, .. } = verifier.finish() else {
+        let Verification::Valid {
+            entries, mut head, ..
+        } = verifier.finish()
+        else {
             return Ok(Verification::Broken {
                 seq: 0,
                 reason: BreakReason::Gap,
             });
         };
-        let Anchored::At(anchor_seq, anchor_hash) = anchor else {
-            return Ok(Verification::Valid {
-                entries,
-                head,
-                anchored: false,
-            });
-        };
-        // The database must reach the anchor and have the same entry there. An anchor older than
-        // the checkpoint cannot be compared any more (its entry was deleted on purpose).
-        let reached = head
-            .map(|(seq, _)| seq)
-            .or(checkpoint.as_ref().map(|checkpoint| checkpoint.seq))
-            .unwrap_or(0);
-        let found = match &checkpoint {
-            Some(checkpoint) if anchor_seq == checkpoint.seq => Some(checkpoint.hash),
-            Some(checkpoint) if anchor_seq < checkpoint.seq => Some(anchor_hash),
-            _ => hash_at_anchor,
-        };
-        if reached < anchor_seq || found != Some(anchor_hash) {
-            return Ok(Verification::Broken {
-                seq: anchor_seq,
-                reason: BreakReason::Truncated,
-            });
+        // Nothing new after the entry an earlier check vouched for: that entry is still the end.
+        if head.is_none() {
+            head = start;
         }
-        Ok(Verification::Valid {
-            entries,
-            head,
-            anchored: true,
-        })
+        // The entries are one run from the checkpoint (or the start) to the head, so the head's
+        // place says how many there are, also when only the newest were read.
+        let entries = match (start, head) {
+            (Some(_), Some((seq, _))) => {
+                let base = checkpoint.as_ref().map_or(0, |checkpoint| checkpoint.seq);
+                u64::try_from(seq - base).unwrap_or(entries)
+            }
+            _ => entries,
+        };
+        Ok(judge_anchor(
+            anchor,
+            &Found {
+                checkpoint: checkpoint.as_ref(),
+                start,
+                hash_at_anchor,
+                head,
+                entries,
+            },
+        ))
     }
 
     /// Deletes the oldest whole blocks whose entries are all older than `before`, and signs a
@@ -370,6 +407,111 @@ impl Database {
         transaction.commit().await?;
         Ok(deleted)
     }
+}
+
+/// Where checking starts: after the entry an earlier check found right, else after the
+/// checkpoint, else at the beginning. A log that has no checkpoint must start at 1; a later start
+/// means entries were deleted without leaving one (the answer is then the break).
+async fn starting_verifier<'k>(
+    transaction: &mut Transaction,
+    key: &'k SigningKey,
+    checkpoint: Option<&SecurityLogCheckpoint>,
+    start: Option<(i64, Digest)>,
+) -> Result<Result<Verifier<'k>, Verification>, StoreError> {
+    if let Some((seq, hash)) = start {
+        return Ok(Ok(Verifier::new(key, seq + 1, hash)));
+    }
+    if let Some(checkpoint) = checkpoint {
+        return Ok(Ok(Verifier::new(key, checkpoint.seq + 1, checkpoint.hash)));
+    }
+    if let Some(first) = read_page(transaction, 0, 1).await?.first()
+        && first.seq != 1
+    {
+        return Ok(Err(Verification::Broken {
+            seq: first.seq,
+            reason: BreakReason::Checkpoint,
+        }));
+    }
+    Ok(Ok(Verifier::new(key, 1, START)))
+}
+
+/// What a verification found, for comparing it with the anchor file.
+struct Found<'a> {
+    checkpoint: Option<&'a SecurityLogCheckpoint>,
+    /// The entry an earlier check started from, when this check continued from one.
+    start: Option<(i64, Digest)>,
+    /// The hash of the entry at the place the anchor file names, when it was read.
+    hash_at_anchor: Option<Digest>,
+    head: Option<(i64, Digest)>,
+    entries: u64,
+}
+
+/// Compares the end of the log with the anchor file: the database must reach the anchor and have
+/// the same entry there. An anchor older than the checkpoint cannot be compared any more (its
+/// entry was deleted on purpose), and one older than the entry an earlier check started from was
+/// compared by that check.
+fn judge_anchor(anchor: Anchored, found: &Found<'_>) -> Verification {
+    let Found {
+        checkpoint,
+        start,
+        hash_at_anchor,
+        head,
+        entries,
+    } = *found;
+    let Anchored::At(anchor_seq, anchor_hash) = anchor else {
+        return Verification::Valid {
+            entries,
+            head,
+            anchored: false,
+        };
+    };
+    let reached = head
+        .map(|(seq, _)| seq)
+        .or(checkpoint.map(|checkpoint| checkpoint.seq))
+        .unwrap_or(0);
+    let same = match (checkpoint, start) {
+        (Some(checkpoint), _) if anchor_seq == checkpoint.seq => Some(checkpoint.hash),
+        (Some(checkpoint), _) if anchor_seq < checkpoint.seq => Some(anchor_hash),
+        (_, Some((seq, hash))) if anchor_seq == seq => Some(hash),
+        (_, Some((seq, _))) if anchor_seq < seq => Some(anchor_hash),
+        _ => hash_at_anchor,
+    };
+    if reached < anchor_seq || same != Some(anchor_hash) {
+        return Verification::Broken {
+            seq: anchor_seq,
+            reason: BreakReason::Truncated,
+        };
+    }
+    Verification::Valid {
+        entries,
+        head,
+        anchored: true,
+    }
+}
+
+/// Whether the log still holds the entry at `seq` with `hash`, unchanged: as an entry, or as the
+/// end of the part that a checkpoint stands for.
+async fn still_there(
+    transaction: &mut Transaction,
+    key: &SigningKey,
+    checkpoint: Option<&SecurityLogCheckpoint>,
+    seq: i64,
+    hash: &Digest,
+) -> Result<bool, StoreError> {
+    if let Some(checkpoint) = checkpoint {
+        if seq < checkpoint.seq {
+            return Ok(false);
+        }
+        if seq == checkpoint.seq {
+            return Ok(checkpoint.hash == *hash);
+        }
+    }
+    let entry = read_page(transaction, seq - 1, 1).await?.into_iter().next();
+    Ok(entry.is_some_and(|entry| {
+        entry.seq == seq
+            && entry.hash == *hash
+            && hash_of(key, &entry.previous_hash, &entry).is_ok_and(|made| made == entry.hash)
+    }))
 }
 
 fn sign_checkpoint(
@@ -970,6 +1112,135 @@ mod tests {
                 Verification::Valid { entries: 8, .. }
             ));
             drop(writer);
+            Ok(())
+        })
+        .await
+    }
+    /// The place and hash of the newest entry, as a check would keep them.
+    async fn head_of(database: &Database) -> Result<(i64, Digest), StoreError> {
+        let entries = database.security_log_entries(0, 100).await?;
+        let last = entries.last().ok_or(StoreError::Corrupt("no entry"))?;
+        Ok((last.seq, last.hash))
+    }
+
+    #[tokio::test]
+    async fn ops_08_the_status_page_checks_only_new_entries_and_the_command_checks_all()
+    -> TestResult {
+        each_database("ops_08_incremental_check", async |db| {
+            let database = open(db).await?;
+            let (_folder, seal) = new_seal();
+            append_many(&database, &seal, 4).await?;
+
+            // A check from a head that an earlier check found right reads what came after it.
+            let known = head_of(&database).await?;
+            assert_eq!(
+                database
+                    .verify_security_log_since(&seal, Some(known))
+                    .await?,
+                Verification::Valid {
+                    entries: 4,
+                    head: Some(known),
+                    anchored: true
+                }
+            );
+            append_many(&database, &seal, 2).await?;
+            let newest = head_of(&database).await?;
+            assert_eq!(
+                database
+                    .verify_security_log_since(&seal, Some(known))
+                    .await?,
+                Verification::Valid {
+                    entries: 6,
+                    head: Some(newest),
+                    anchored: true
+                }
+            );
+            // Without a known head, everything is read.
+            assert!(matches!(
+                database.verify_security_log_since(&seal, None).await?,
+                Verification::Valid { entries: 6, .. }
+            ));
+
+            // An old entry is changed. The check from the known head does not read it, so the
+            // status page does not see it; the full check, which the command runs, does.
+            update_entry(&database, 2, Columns::Action, "sign_in.failed".into()).await;
+            assert!(matches!(
+                database
+                    .verify_security_log_since(&seal, Some(known))
+                    .await?,
+                Verification::Valid { entries: 6, .. }
+            ));
+            assert_eq!(
+                database.verify_security_log(&seal).await?,
+                broken(2, BreakReason::ChangedContent)
+            );
+            assert_eq!(
+                database.verify_security_log_since(&seal, None).await?,
+                broken(2, BreakReason::ChangedContent)
+            );
+
+            // A change in the entries after the known head is found by both.
+            update_entry(&database, 5, Columns::Action, "sign_in.failed".into()).await;
+            assert_eq!(
+                database
+                    .verify_security_log_since(&seal, Some(known))
+                    .await?,
+                broken(5, BreakReason::ChangedContent)
+            );
+            Ok(())
+        })
+        .await
+    }
+
+    #[tokio::test]
+    async fn ops_08_a_known_head_that_the_log_no_longer_has_makes_a_full_check() -> TestResult {
+        each_database("ops_08_incremental_check_lost_head", async |db| {
+            let database = open(db).await?;
+            let (_folder, seal) = new_seal();
+            append_many(&database, &seal, 5).await?;
+            let known = head_of(&database).await?;
+
+            // The head was changed: the old head is not trusted, and the whole log is checked.
+            update_entry(&database, 5, Columns::Action, "sign_in.failed".into()).await;
+            assert_eq!(
+                database
+                    .verify_security_log_since(&seal, Some(known))
+                    .await?,
+                broken(5, BreakReason::ChangedContent)
+            );
+            Ok(())
+        })
+        .await
+    }
+
+    #[tokio::test]
+    async fn ops_08_a_known_head_before_the_checkpoint_makes_a_full_check() -> TestResult {
+        each_database("ops_08_incremental_check_pruned", async |db| {
+            let database = open(db).await?;
+            let (_folder, seal) = new_seal();
+            append_many(&database, &seal, 8).await?;
+            let head = head_of(&database).await?;
+            database.prune_in_blocks(&seal, at(8), at(100), 3).await?;
+            // A head from before the deleted entries cannot be followed: the answer is the one
+            // of the full check.
+            let early = (2, Digest::new([7; 32]));
+            assert_eq!(
+                database
+                    .verify_security_log_since(&seal, Some(early))
+                    .await?,
+                database.verify_security_log(&seal).await?
+            );
+            // A head after the checkpoint still is.
+            assert_eq!(
+                database
+                    .verify_security_log_since(&seal, Some(head))
+                    .await?,
+                Verification::Valid {
+                    entries: 2,
+                    head: Some(head),
+                    anchored: true
+                }
+            );
             Ok(())
         })
         .await
