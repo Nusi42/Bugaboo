@@ -1,7 +1,6 @@
 import { t } from "@bugaboo/messages";
-import { Alert, Card } from "@bugaboo/ui";
+import { Alert, Card, SaveStatus } from "@bugaboo/ui";
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
 
 import { messageOf } from "../../shared/errors.ts";
 import { usePageTitle } from "../../shared/use-page.ts";
@@ -9,12 +8,13 @@ import styles from "./Account.module.css";
 import { SessionRow } from "./SessionRow.tsx";
 import { sessionsOptions } from "./sessions.ts";
 import { SignOutEverywhere } from "./SignOutEverywhere.tsx";
+import { useEndSession } from "./use-end-session.ts";
 
 /** The sessions page: every place with its browser and system, and the way to sign out everywhere. */
 export function SessionsPage() {
   usePageTitle(t("sessions.title"));
   const sessions = useQuery(sessionsOptions());
-  const [ended, setEnded] = useState(false);
+  const end = useEndSession();
   return (
     <Card heading={t("sessions.title")} level={1}>
       <p className={styles.text}>{t("sessions.intro")}</p>
@@ -24,13 +24,22 @@ export function SessionsPage() {
           <SessionRow
             key={session.id}
             session={session}
-            onEnded={() => {
-              setEnded(true);
+            onEnd={() => {
+              end.change({ id: session.id });
             }}
           />
         ))}
       </ul>
-      {ended ? <Alert success>{t("sessions.ended")}</Alert> : null}
+      <SaveStatus
+        state={end.saveState}
+        labels={{
+          saving: t("save.saving"),
+          saved: t("save.saved"),
+          "not-saved": t("save.not-saved"),
+        }}
+      />
+      {end.problem === null ? null : <Alert danger>{end.problem}</Alert>}
+      {end.saveState === "saved" ? <Alert success>{t("sessions.ended")}</Alert> : null}
       {sessions.data?.truncated === true ? <Alert>{t("sessions.cut-off")}</Alert> : null}
       <SignOutEverywhere />
     </Card>

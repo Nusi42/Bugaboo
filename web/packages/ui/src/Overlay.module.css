@@ -1,0 +1,140 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  overflow: hidden;
+}
+
+/* The page behind stays in sight but dimmed, so a sheet is clearly a layer above it. */
+.overlay::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--bg-sunken);
+  opacity: 0.8;
+}
+
+.center {
+  align-items: flex-start;
+  justify-content: center;
+  padding: var(--space-6) var(--space-4);
+}
+
+.bottom {
+  align-items: flex-end;
+}
+
+.start {
+  justify-content: flex-start;
+}
+
+.top {
+  align-items: flex-start;
+}
+
+.modal {
+  position: relative;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  border: 1px solid var(--border);
+  background: var(--bg-raised);
+  color: var(--fg);
+  box-shadow: var(--shadow);
+}
+
+.modal.center {
+  width: 100%;
+  max-width: var(--size-dialog);
+  max-height: 100%;
+  border-radius: var(--r-card);
+}
+
+.modal.bottom {
+  width: 100%;
+  max-height: 85%;
+  border-radius: var(--r-card) var(--r-card) 0 0;
+}
+
+.modal.start {
+  width: var(--size-sidebar);
+  max-width: 85%;
+  height: 100%;
+  border-radius: 0 var(--r-card) var(--r-card) 0;
+}
+
+.modal.top {
+  width: 100%;
+  max-height: 100%;
+  border-radius: 0 0 var(--r-card) var(--r-card);
+}
+
+.dialog {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  overflow-y: auto;
+  outline: none;
+}
+
+.overlay[data-entering]::before {
+  animation: fade var(--motion-base) ease-out;
+}
+
+.overlay[data-exiting]::before {
+  animation: fade var(--motion-base) ease-in reverse;
+}
+
+.modal.bottom[data-entering] {
+  animation: from-bottom var(--motion-base) ease-out;
+}
+
+.modal.bottom[data-exiting] {
+  animation: from-bottom var(--motion-base) ease-in reverse;
+}
+
+.modal.start[data-entering] {
+  animation: from-start var(--motion-base) ease-out;
+}
+
+.modal.start[data-exiting] {
+  animation: from-start var(--motion-base) ease-in reverse;
+}
+
+.modal.center[data-entering],
+.modal.top[data-entering] {
+  animation: fade var(--motion-fast) ease-out;
+}
+
+.modal.center[data-exiting],
+.modal.top[data-exiting] {
+  animation: fade var(--motion-fast) ease-in reverse;
+}
+
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes from-bottom {
+  from {
+    transform: translateY(100%);
+  }
+}
+
+@keyframes from-start {
+  from {
+    transform: translateX(-100%);
+  }
+}
+
+@media (forced-colors: active) {
+  .overlay::before {
+    background: Canvas;
+    opacity: 0.6;
+  }
+}

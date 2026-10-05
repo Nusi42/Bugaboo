@@ -6,6 +6,7 @@ import {
   GuestLayout,
   NotFoundPage,
   PendingPage,
+  SettingsFrame,
 } from "../features/shell/index.ts";
 import { paths } from "../shared/paths.ts";
 import { currentPerson, type Person } from "../shared/session.ts";
@@ -65,5 +66,23 @@ export const adminRoute = createRoute({
     if (!context.person.administrator) {
       throw redirect({ to: paths.home });
     }
+  },
+});
+
+/** The frame of *My settings*: the menu of its topics next to the topic that is open. */
+export const mySettingsRoute = createRoute({
+  getParentRoute: () => appRoute,
+  id: "my-settings",
+  component: function MySettings() {
+    return <SettingsFrame parent={paths.mySettings} />;
+  },
+});
+
+/** The frame of *Organization settings*: the same, for the topics only administrators see. */
+export const organizationSettingsRoute = createRoute({
+  getParentRoute: () => adminRoute,
+  id: "organization-settings",
+  component: function OrganizationSettings() {
+    return <SettingsFrame parent={paths.organizationSettings} />;
   },
 });

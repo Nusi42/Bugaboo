@@ -1,0 +1,46 @@
+.keys {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.spoken {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.drawn {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.chord {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.then {
+  color: var(--fg-muted);
+  font-size: var(--fs-sm);
+}
+
+.key {
+  display: inline-block;
+  min-width: var(--space-5);
+  padding: 0 var(--space-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-ctl);
+  background: var(--bg-surface);
+  color: var(--fg);
+  font-family: var(--font);
+  font-size: var(--fs-base);
+  line-height: 1.6;
+  text-align: center;
+}

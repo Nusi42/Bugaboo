@@ -1,14 +1,26 @@
 import { createRouter } from "@tanstack/react-router";
 
 import {
+  appearanceRoute,
+  framesRoute,
   homeRoute,
   invitationsRoute,
+  mySettingsIndexRoute,
+  organizationSettingsIndexRoute,
   securityRoute,
   sessionsRoute,
+  shortcutsRoute,
   statusRoute,
 } from "./app-pages.tsx";
 import { invitationRoute, signUpRoute } from "./guest-pages.tsx";
-import { adminRoute, appRoute, guestRoute, rootRoute } from "./layouts.tsx";
+import {
+  adminRoute,
+  appRoute,
+  guestRoute,
+  mySettingsRoute,
+  organizationSettingsRoute,
+  rootRoute,
+} from "./layouts.tsx";
 import { setupRoute } from "./setup.tsx";
 import { secondStepRoute, signInRoute } from "./sign-in.tsx";
 
@@ -16,9 +28,21 @@ const routeTree = rootRoute.addChildren([
   guestRoute.addChildren([setupRoute, signInRoute, secondStepRoute, signUpRoute, invitationRoute]),
   appRoute.addChildren([
     homeRoute,
-    securityRoute,
-    sessionsRoute,
-    adminRoute.addChildren([invitationsRoute, statusRoute]),
+    framesRoute,
+    mySettingsRoute.addChildren([
+      mySettingsIndexRoute,
+      appearanceRoute,
+      shortcutsRoute,
+      securityRoute,
+      sessionsRoute,
+    ]),
+    adminRoute.addChildren([
+      organizationSettingsRoute.addChildren([
+        organizationSettingsIndexRoute,
+        invitationsRoute,
+        statusRoute,
+      ]),
+    ]),
   ]),
 ]);
 

@@ -1,35 +1,26 @@
 import { t } from "@bugaboo/messages";
-import { useLocation } from "@tanstack/react-router";
-import { useEffect, useRef, type ReactNode } from "react";
+import type { ReactNode } from "react";
 
+import { usePageFocus } from "../../shared/focus.ts";
+import { CONTENT_HREF, CONTENT_ID } from "./content-id.ts";
 import styles from "./Shell.module.css";
 import { ThemeBar } from "./ThemeBar.tsx";
-
-/** The id the "skip to the content" link jumps to. */
-const CONTENT_ID = "content";
-const CONTENT_HREF = `#${CONTENT_ID}`;
+import { useAppearance } from "@bugaboo/ui";
 
 export interface FrameProps {
-  /** The top of the page: the name of the product, and a menu when somebody is signed in. */
+  /** The top of the page: the name of the product. */
   readonly header: ReactNode;
   readonly children: ReactNode;
 }
 
 /**
- * The frame of every page: skip link, header, the content, and the choice of theme. When the
- * person goes to another page, the focus moves to its heading, so a screen reader reads the new
- * page instead of staying on the link that was pressed.
+ * The frame of the pages before sign-in: skip link, header, the content, and the choice of theme.
+ * (The signed-in app has its own frame, `AppLayout`.) When the person goes to another page, the
+ * focus moves to its heading.
  */
 export function Frame({ header, children }: FrameProps) {
-  const { pathname } = useLocation();
-  const shownPage = useRef(pathname);
-  useEffect(() => {
-    if (shownPage.current !== pathname) {
-      shownPage.current = pathname;
-      const content = document.querySelector<HTMLElement>(`#${CONTENT_ID}`);
-      (content?.querySelector<HTMLElement>("h1") ?? content)?.focus();
-    }
-  }, [pathname]);
+  usePageFocus(CONTENT_ID);
+  useAppearance();
   return (
     <div className={styles.page}>
       <a className={styles.skip} href={CONTENT_HREF}>

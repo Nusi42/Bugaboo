@@ -1,0 +1,39 @@
+import { t } from "@bugaboo/messages";
+import { useState } from "react";
+
+import { undoStore } from "../../shared/optimistic-undo.ts";
+
+/** One of the example items of the frames page. */
+export interface Example {
+  readonly id: string;
+  readonly name: string;
+}
+
+const examples: readonly Example[] = [
+  { id: "1", name: t("frames.item-1") },
+  { id: "2", name: t("frames.item-2") },
+  { id: "3", name: t("frames.item-3") },
+];
+
+/**
+ * The example items that are still there. Removing one is the example of a reversible action
+ * (UX §6): it goes at once and *Undo* is on offer for 10 seconds.
+ */
+export function useExamples(): {
+  readonly items: readonly Example[];
+  readonly remove: (example: Example) => void;
+} {
+  const [removed, setRemoved] = useState<readonly string[]>([]);
+  return {
+    items: examples.filter((example) => !removed.includes(example.id)),
+    remove: (example) => {
+      setRemoved((now) => [...now, example.id]);
+      undoStore.offer({
+        message: t("frames.removed", { name: example.name }),
+        undo: () => {
+          setRemoved((now) => now.filter((id) => id !== example.id));
+        },
+      });
+    },
+  };
+}

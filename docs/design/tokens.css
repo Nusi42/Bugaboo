@@ -20,6 +20,8 @@
   --space-5: calc(24px * var(--density));
   --space-6: calc(32px * var(--density));
   --size-content: 640px;
+  --size-page: 960px;
+  --size-menu: 240px;
   --size-form: 440px;
   --size-qr: 200px;
   --size-code: 220px;

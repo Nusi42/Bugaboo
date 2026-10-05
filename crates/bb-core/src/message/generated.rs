@@ -5,6 +5,37 @@ use super::{Message, MessageKey, Value};
 /// The message `app.name`.
 pub const APP_NAME: MessageKey = MessageKey::new("app.name");
 
+/// The message `appearance.dark`.
+pub const APPEARANCE_DARK: MessageKey = MessageKey::new("appearance.dark");
+
+/// The message `appearance.device-help`.
+pub const APPEARANCE_DEVICE_HELP: MessageKey = MessageKey::new("appearance.device-help");
+
+/// The message `appearance.device-settings`.
+pub const APPEARANCE_DEVICE_SETTINGS: MessageKey = MessageKey::new("appearance.device-settings");
+
+/// The message `appearance.larger-text`.
+pub const APPEARANCE_LARGER_TEXT: MessageKey = MessageKey::new("appearance.larger-text");
+
+/// The message `appearance.less-motion`.
+pub const APPEARANCE_LESS_MOTION: MessageKey = MessageKey::new("appearance.less-motion");
+
+/// The message `appearance.light`.
+pub const APPEARANCE_LIGHT: MessageKey = MessageKey::new("appearance.light");
+
+/// The message `appearance.spacing.comfortable`.
+pub const APPEARANCE_SPACING_COMFORTABLE: MessageKey =
+    MessageKey::new("appearance.spacing.comfortable");
+
+/// The message `appearance.spacing.compact`.
+pub const APPEARANCE_SPACING_COMPACT: MessageKey = MessageKey::new("appearance.spacing.compact");
+
+/// The message `appearance.spacing.legend`.
+pub const APPEARANCE_SPACING_LEGEND: MessageKey = MessageKey::new("appearance.spacing.legend");
+
+/// The message `appearance.title`.
+pub const APPEARANCE_TITLE: MessageKey = MessageKey::new("appearance.title");
+
 /// The message `backup.copied`.
 pub const BACKUP_COPIED: MessageKey = MessageKey::new("backup.copied");
 
@@ -156,6 +187,9 @@ pub const CODE_APP_TURNED_OFF: MessageKey = MessageKey::new("code-app.turned-off
 /// The message `common.cancel`.
 pub const COMMON_CANCEL: MessageKey = MessageKey::new("common.cancel");
 
+/// The message `common.close`.
+pub const COMMON_CLOSE: MessageKey = MessageKey::new("common.close");
+
 /// The message `common.continue`.
 pub const COMMON_CONTINUE: MessageKey = MessageKey::new("common.continue");
 
@@ -167,6 +201,9 @@ pub const COMMON_SAVE: MessageKey = MessageKey::new("common.save");
 
 /// The message `common.try-again`.
 pub const COMMON_TRY_AGAIN: MessageKey = MessageKey::new("common.try-again");
+
+/// The message `common.undo`.
+pub const COMMON_UNDO: MessageKey = MessageKey::new("common.undo");
 
 /// The message `config.data-dir-empty`.
 pub const CONFIG_DATA_DIR_EMPTY: MessageKey = MessageKey::new("config.data-dir-empty");
@@ -339,6 +376,48 @@ pub const FIRST_RUN_STEP_SAFER: MessageKey = MessageKey::new("first-run.step.saf
 /// The message `first-run.title`.
 pub const FIRST_RUN_TITLE: MessageKey = MessageKey::new("first-run.title");
 
+/// The message `focus.back`.
+pub const FOCUS_BACK: MessageKey = MessageKey::new("focus.back");
+
+/// The message `focus.hide-list`.
+pub const FOCUS_HIDE_LIST: MessageKey = MessageKey::new("focus.hide-list");
+
+/// The message `focus.show-list`.
+pub const FOCUS_SHOW_LIST: MessageKey = MessageKey::new("focus.show-list");
+
+/// The message `frames.focus-text`.
+pub const FRAMES_FOCUS_TEXT: MessageKey = MessageKey::new("frames.focus-text");
+
+/// The message `frames.focus-view`.
+pub const FRAMES_FOCUS_VIEW: MessageKey = MessageKey::new("frames.focus-view");
+
+/// The message `frames.intro`.
+pub const FRAMES_INTRO: MessageKey = MessageKey::new("frames.intro");
+
+/// The message `frames.item-1`.
+pub const FRAMES_ITEM_1: MessageKey = MessageKey::new("frames.item-1");
+
+/// The message `frames.item-2`.
+pub const FRAMES_ITEM_2: MessageKey = MessageKey::new("frames.item-2");
+
+/// The message `frames.item-3`.
+pub const FRAMES_ITEM_3: MessageKey = MessageKey::new("frames.item-3");
+
+/// The message `frames.list`.
+pub const FRAMES_LIST: MessageKey = MessageKey::new("frames.list");
+
+/// The message `frames.nothing`.
+pub const FRAMES_NOTHING: MessageKey = MessageKey::new("frames.nothing");
+
+/// The message `frames.panel-text`.
+pub const FRAMES_PANEL_TEXT: MessageKey = MessageKey::new("frames.panel-text");
+
+/// The message `frames.remove`.
+pub const FRAMES_REMOVE: MessageKey = MessageKey::new("frames.remove");
+
+/// The message `frames.title`.
+pub const FRAMES_TITLE: MessageKey = MessageKey::new("frames.title");
+
 /// The message `home.admin`.
 pub const HOME_ADMIN: MessageKey = MessageKey::new("home.admin");
 
@@ -405,17 +484,50 @@ pub const KEYS_DATABASE_PLACEHOLDER: MessageKey = MessageKey::new("keys.database
 /// The message `keys.settings-placeholder`.
 pub const KEYS_SETTINGS_PLACEHOLDER: MessageKey = MessageKey::new("keys.settings-placeholder");
 
+/// The message `list.next`.
+pub const LIST_NEXT: MessageKey = MessageKey::new("list.next");
+
+/// The message `list.previous`.
+pub const LIST_PREVIOUS: MessageKey = MessageKey::new("list.previous");
+
+/// The message `nav.appearance`.
+pub const NAV_APPEARANCE: MessageKey = MessageKey::new("nav.appearance");
+
+/// The message `nav.frames`.
+pub const NAV_FRAMES: MessageKey = MessageKey::new("nav.frames");
+
+/// The message `nav.group.look`.
+pub const NAV_GROUP_LOOK: MessageKey = MessageKey::new("nav.group.look");
+
+/// The message `nav.group.people`.
+pub const NAV_GROUP_PEOPLE: MessageKey = MessageKey::new("nav.group.people");
+
+/// The message `nav.group.sign-in`.
+pub const NAV_GROUP_SIGN_IN: MessageKey = MessageKey::new("nav.group.sign-in");
+
+/// The message `nav.group.system`.
+pub const NAV_GROUP_SYSTEM: MessageKey = MessageKey::new("nav.group.system");
+
 /// The message `nav.home`.
 pub const NAV_HOME: MessageKey = MessageKey::new("nav.home");
 
 /// The message `nav.invitations`.
 pub const NAV_INVITATIONS: MessageKey = MessageKey::new("nav.invitations");
 
+/// The message `nav.my-settings`.
+pub const NAV_MY_SETTINGS: MessageKey = MessageKey::new("nav.my-settings");
+
+/// The message `nav.organization-settings`.
+pub const NAV_ORGANIZATION_SETTINGS: MessageKey = MessageKey::new("nav.organization-settings");
+
 /// The message `nav.security`.
 pub const NAV_SECURITY: MessageKey = MessageKey::new("nav.security");
 
 /// The message `nav.sessions`.
 pub const NAV_SESSIONS: MessageKey = MessageKey::new("nav.sessions");
+
+/// The message `nav.shortcuts`.
+pub const NAV_SHORTCUTS: MessageKey = MessageKey::new("nav.shortcuts");
 
 /// The message `nav.sign-out`.
 pub const NAV_SIGN_OUT: MessageKey = MessageKey::new("nav.sign-out");
@@ -431,6 +543,9 @@ pub const PAGE_NOT_FOUND_TEXT: MessageKey = MessageKey::new("page.not-found.text
 
 /// The message `page.not-found.title`.
 pub const PAGE_NOT_FOUND_TITLE: MessageKey = MessageKey::new("page.not-found.title");
+
+/// The message `panel.close`.
+pub const PANEL_CLOSE: MessageKey = MessageKey::new("panel.close");
 
 /// The message `passkeys.add`.
 pub const PASSKEYS_ADD: MessageKey = MessageKey::new("passkeys.add");
@@ -473,6 +588,36 @@ pub const PASSKEYS_TITLE: MessageKey = MessageKey::new("passkeys.title");
 
 /// The message `passkeys.unavailable`.
 pub const PASSKEYS_UNAVAILABLE: MessageKey = MessageKey::new("passkeys.unavailable");
+
+/// The message `save.not-saved`.
+pub const SAVE_NOT_SAVED: MessageKey = MessageKey::new("save.not-saved");
+
+/// The message `save.saved`.
+pub const SAVE_SAVED: MessageKey = MessageKey::new("save.saved");
+
+/// The message `save.saving`.
+pub const SAVE_SAVING: MessageKey = MessageKey::new("save.saving");
+
+/// The message `search.clear`.
+pub const SEARCH_CLEAR: MessageKey = MessageKey::new("search.clear");
+
+/// The message `search.label`.
+pub const SEARCH_LABEL: MessageKey = MessageKey::new("search.label");
+
+/// The message `search.nothing`.
+pub const SEARCH_NOTHING: MessageKey = MessageKey::new("search.nothing");
+
+/// The message `search.pages`.
+pub const SEARCH_PAGES: MessageKey = MessageKey::new("search.pages");
+
+/// The message `search.placeholder`.
+pub const SEARCH_PLACEHOLDER: MessageKey = MessageKey::new("search.placeholder");
+
+/// The message `search.results`.
+pub const SEARCH_RESULTS: MessageKey = MessageKey::new("search.results");
+
+/// The message `search.title`.
+pub const SEARCH_TITLE: MessageKey = MessageKey::new("search.title");
 
 /// The message `second-step.back`.
 pub const SECOND_STEP_BACK: MessageKey = MessageKey::new("second-step.back");
@@ -689,11 +834,128 @@ pub const SETUP_SERVICE_HINT: MessageKey = MessageKey::new("setup.service-hint")
 /// The message `setup.welcome`.
 pub const SETUP_WELCOME: MessageKey = MessageKey::new("setup.welcome");
 
+/// The message `shell.back`.
+pub const SHELL_BACK: MessageKey = MessageKey::new("shell.back");
+
 /// The message `shell.menu`.
 pub const SHELL_MENU: MessageKey = MessageKey::new("shell.menu");
 
+/// The message `shell.menu-button`.
+pub const SHELL_MENU_BUTTON: MessageKey = MessageKey::new("shell.menu-button");
+
+/// The message `shell.more`.
+pub const SHELL_MORE: MessageKey = MessageKey::new("shell.more");
+
+/// The message `shell.narrow`.
+pub const SHELL_NARROW: MessageKey = MessageKey::new("shell.narrow");
+
+/// The message `shell.search`.
+pub const SHELL_SEARCH: MessageKey = MessageKey::new("shell.search");
+
+/// The message `shell.shortcuts`.
+pub const SHELL_SHORTCUTS: MessageKey = MessageKey::new("shell.shortcuts");
+
 /// The message `shell.skip`.
 pub const SHELL_SKIP: MessageKey = MessageKey::new("shell.skip");
+
+/// The message `shell.trail`.
+pub const SHELL_TRAIL: MessageKey = MessageKey::new("shell.trail");
+
+/// The message `shell.widen`.
+pub const SHELL_WIDEN: MessageKey = MessageKey::new("shell.widen");
+
+/// The message `shortcut.change-link`.
+pub const SHORTCUT_CHANGE_LINK: MessageKey = MessageKey::new("shortcut.change-link");
+
+/// The message `shortcut.everywhere`.
+pub const SHORTCUT_EVERYWHERE: MessageKey = MessageKey::new("shortcut.everywhere");
+
+/// The message `shortcut.go-home`.
+pub const SHORTCUT_GO_HOME: MessageKey = MessageKey::new("shortcut.go-home");
+
+/// The message `shortcut.in-lists`.
+pub const SHORTCUT_IN_LISTS: MessageKey = MessageKey::new("shortcut.in-lists");
+
+/// The message `shortcut.intro`.
+pub const SHORTCUT_INTRO: MessageKey = MessageKey::new("shortcut.intro");
+
+/// The message `shortcut.key.alt`.
+pub const SHORTCUT_KEY_ALT: MessageKey = MessageKey::new("shortcut.key.alt");
+
+/// The message `shortcut.key.enter`.
+pub const SHORTCUT_KEY_ENTER: MessageKey = MessageKey::new("shortcut.key.enter");
+
+/// The message `shortcut.key.escape`.
+pub const SHORTCUT_KEY_ESCAPE: MessageKey = MessageKey::new("shortcut.key.escape");
+
+/// The message `shortcut.key.mod`.
+pub const SHORTCUT_KEY_MOD: MessageKey = MessageKey::new("shortcut.key.mod");
+
+/// The message `shortcut.key.shift`.
+pub const SHORTCUT_KEY_SHIFT: MessageKey = MessageKey::new("shortcut.key.shift");
+
+/// The message `shortcut.list`.
+pub const SHORTCUT_LIST: MessageKey = MessageKey::new("shortcut.list");
+
+/// The message `shortcut.list-next`.
+pub const SHORTCUT_LIST_NEXT: MessageKey = MessageKey::new("shortcut.list-next");
+
+/// The message `shortcut.list-previous`.
+pub const SHORTCUT_LIST_PREVIOUS: MessageKey = MessageKey::new("shortcut.list-previous");
+
+/// The message `shortcut.or`.
+pub const SHORTCUT_OR: MessageKey = MessageKey::new("shortcut.or");
+
+/// The message `shortcut.quick-search`.
+pub const SHORTCUT_QUICK_SEARCH: MessageKey = MessageKey::new("shortcut.quick-search");
+
+/// The message `shortcut.show-shortcuts`.
+pub const SHORTCUT_SHOW_SHORTCUTS: MessageKey = MessageKey::new("shortcut.show-shortcuts");
+
+/// The message `shortcut.then`.
+pub const SHORTCUT_THEN: MessageKey = MessageKey::new("shortcut.then");
+
+/// The message `shortcut.title`.
+pub const SHORTCUT_TITLE: MessageKey = MessageKey::new("shortcut.title");
+
+/// The message `shortcuts.intro`.
+pub const SHORTCUTS_INTRO: MessageKey = MessageKey::new("shortcuts.intro");
+
+/// The message `shortcuts.invalid`.
+pub const SHORTCUTS_INVALID: MessageKey = MessageKey::new("shortcuts.invalid");
+
+/// The message `shortcuts.new-keys`.
+pub const SHORTCUTS_NEW_KEYS: MessageKey = MessageKey::new("shortcuts.new-keys");
+
+/// The message `shortcuts.new-keys-help`.
+pub const SHORTCUTS_NEW_KEYS_HELP: MessageKey = MessageKey::new("shortcuts.new-keys-help");
+
+/// The message `shortcuts.nothing`.
+pub const SHORTCUTS_NOTHING: MessageKey = MessageKey::new("shortcuts.nothing");
+
+/// The message `shortcuts.now`.
+pub const SHORTCUTS_NOW: MessageKey = MessageKey::new("shortcuts.now");
+
+/// The message `shortcuts.reset`.
+pub const SHORTCUTS_RESET: MessageKey = MessageKey::new("shortcuts.reset");
+
+/// The message `shortcuts.reset-done`.
+pub const SHORTCUTS_RESET_DONE: MessageKey = MessageKey::new("shortcuts.reset-done");
+
+/// The message `shortcuts.saved`.
+pub const SHORTCUTS_SAVED: MessageKey = MessageKey::new("shortcuts.saved");
+
+/// The message `shortcuts.search`.
+pub const SHORTCUTS_SEARCH: MessageKey = MessageKey::new("shortcuts.search");
+
+/// The message `shortcuts.title`.
+pub const SHORTCUTS_TITLE: MessageKey = MessageKey::new("shortcuts.title");
+
+/// The message `shortcuts.use`.
+pub const SHORTCUTS_USE: MessageKey = MessageKey::new("shortcuts.use");
+
+/// The message `shortcuts.usual`.
+pub const SHORTCUTS_USUAL: MessageKey = MessageKey::new("shortcuts.usual");
 
 /// The message `sign-in.make-account`.
 pub const SIGN_IN_MAKE_ACCOUNT: MessageKey = MessageKey::new("sign-in.make-account");
@@ -1054,6 +1316,33 @@ pub fn first_run_step_of(
             ("step", Value::Text(step.to_string())),
             ("total", Value::Text(total.to_string())),
         ],
+    )
+}
+
+/// The message `frames.open-focus`.
+#[must_use]
+pub fn frames_open_focus(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("frames.open-focus"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `frames.remove-name`.
+#[must_use]
+pub fn frames_remove_name(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("frames.remove-name"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `frames.removed`.
+#[must_use]
+pub fn frames_removed(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("frames.removed"),
+        vec![("name", Value::Text(name.to_string()))],
     )
 }
 
@@ -1602,6 +1891,18 @@ pub fn shell_signed_in_as(name: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `shortcuts.conflict`.
+#[must_use]
+pub fn shortcuts_conflict(action: impl std::fmt::Display, keys: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("shortcuts.conflict"),
+        vec![
+            ("action", Value::Text(action.to_string())),
+            ("keys", Value::Text(keys.to_string())),
+        ],
+    )
+}
+
 /// The message `status.certificate.expired`.
 #[must_use]
 pub fn status_certificate_expired(date: impl std::fmt::Display) -> Message {
@@ -1744,6 +2045,22 @@ pub fn tls_write_failed(path: impl std::fmt::Display, reason: impl std::fmt::Dis
 /// Every message, sorted by key.
 pub(super) const CATALOG: &[(&str, &str)] = &[
     ("app.name", "Bugaboo"),
+    ("appearance.dark", "Theme when my device is dark"),
+    (
+        "appearance.device-help",
+        "Match my device uses one theme when your device is light and one when it is dark. Choose both here.",
+    ),
+    (
+        "appearance.device-settings",
+        "Your device may already ask for less motion or more contrast. Bugaboo follows both. These choices stay on this device.",
+    ),
+    ("appearance.larger-text", "Larger text"),
+    ("appearance.less-motion", "Less motion"),
+    ("appearance.light", "Theme when my device is light"),
+    ("appearance.spacing.comfortable", "Comfortable"),
+    ("appearance.spacing.compact", "Compact"),
+    ("appearance.spacing.legend", "Spacing"),
+    ("appearance.title", "Appearance"),
     ("backup.copied", "Copied"),
     ("backup.copy", "Copy the codes"),
     (
@@ -1877,10 +2194,12 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("code-app.turn-off-title", "Switch off the code app?"),
     ("code-app.turned-off", "The code app is switched off."),
     ("common.cancel", "Cancel"),
+    ("common.close", "Close"),
     ("common.continue", "Continue"),
     ("common.loading", "Loading…"),
     ("common.save", "Save"),
     ("common.try-again", "Try again"),
+    ("common.undo", "Undo"),
     (
         "config.address-invalid",
         "The address {value} is not an IP address such as 127.0.0.1 or ::1.",
@@ -2103,6 +2422,32 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("first-run.step.done", "Done"),
     ("first-run.step.safer", "Keep it safe"),
     ("first-run.title", "Welcome to Bugaboo"),
+    ("focus.back", "Back to list"),
+    ("focus.hide-list", "Hide list"),
+    ("focus.show-list", "Show list"),
+    (
+        "frames.focus-text",
+        "This is the focus view. The open item takes the main area and the list stays slim on the left.",
+    ),
+    ("frames.focus-view", "Focus view"),
+    (
+        "frames.intro",
+        "Issues, documents and settings open in these frames. They are empty for now, so this page shows how they work.",
+    ),
+    ("frames.item-1", "First example"),
+    ("frames.item-2", "Second example"),
+    ("frames.item-3", "Third example"),
+    ("frames.list", "Example items"),
+    ("frames.nothing", "No example items are left."),
+    ("frames.open-focus", "Open {name} in the focus view"),
+    (
+        "frames.panel-text",
+        "This is the side panel. A simple item opens here and the list stays in view.",
+    ),
+    ("frames.remove", "Remove"),
+    ("frames.remove-name", "Remove {name}"),
+    ("frames.removed", "{name} was removed."),
+    ("frames.title", "Screen frames"),
     (
         "home.admin",
         "You are an administrator: you can invite people and see how the server is doing.",
@@ -2195,10 +2540,21 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "keys.settings-placeholder",
         "--config <the settings file of the service>",
     ),
+    ("list.next", "Next"),
+    ("list.previous", "Previous"),
+    ("nav.appearance", "Appearance"),
+    ("nav.frames", "Screen frames"),
+    ("nav.group.look", "Look and feel"),
+    ("nav.group.people", "People"),
+    ("nav.group.sign-in", "Sign-in"),
+    ("nav.group.system", "System"),
     ("nav.home", "Home"),
     ("nav.invitations", "Invitations"),
+    ("nav.my-settings", "My settings"),
+    ("nav.organization-settings", "Organization settings"),
     ("nav.security", "Sign-in & security"),
     ("nav.sessions", "Where you're signed in"),
+    ("nav.shortcuts", "Keyboard shortcuts"),
     ("nav.sign-out", "Sign out"),
     ("nav.status", "Server status"),
     ("page.not-found.home", "Go to the start page"),
@@ -2207,6 +2563,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "The address may be mistyped, or the page may have moved.",
     ),
     ("page.not-found.title", "This page does not exist"),
+    ("panel.close", "Close the panel"),
     ("passkeys.add", "Add a passkey"),
     ("passkeys.added", "The passkey {name} is added."),
     ("passkeys.added-on", "Added {when}"),
@@ -2241,6 +2598,16 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "passkeys.unavailable",
         "Passkeys need Bugaboo to be opened with a web address that has a name, not a number. Ask the person who runs Bugaboo to set the public address.",
     ),
+    ("save.not-saved", "Not saved yet"),
+    ("save.saved", "Saved"),
+    ("save.saving", "Saving…"),
+    ("search.clear", "Clear the search"),
+    ("search.label", "Search"),
+    ("search.nothing", "Nothing found. Try another word."),
+    ("search.pages", "Pages"),
+    ("search.placeholder", "Search pages and settings"),
+    ("search.results", "Results"),
+    ("search.title", "Quick search"),
     ("second-step.back", "Back to sign in"),
     ("second-step.code", "Code"),
     (
@@ -2532,9 +2899,67 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "setup.welcome",
         "Welcome to Bugaboo. A few questions, then your answers are saved in a settings file. Press Enter to accept the answer in brackets.",
     ),
+    ("shell.back", "Back"),
     ("shell.menu", "Main menu"),
+    ("shell.menu-button", "Menu"),
+    ("shell.more", "More"),
+    ("shell.narrow", "Narrow the menu"),
+    ("shell.search", "Search"),
+    ("shell.shortcuts", "Keyboard shortcuts"),
     ("shell.signed-in-as", "Signed in as {name}"),
     ("shell.skip", "Skip to the content"),
+    ("shell.trail", "You are here"),
+    ("shell.widen", "Widen the menu"),
+    ("shortcut.change-link", "Change the keys"),
+    ("shortcut.everywhere", "Everywhere"),
+    ("shortcut.go-home", "Go to the start page"),
+    ("shortcut.in-lists", "Where a list is shown"),
+    (
+        "shortcut.intro",
+        "Press these keys instead of clicking. Every shortcut also has a button on the screen.",
+    ),
+    ("shortcut.key.alt", "Alt"),
+    ("shortcut.key.enter", "Enter"),
+    ("shortcut.key.escape", "Esc"),
+    ("shortcut.key.mod", "Ctrl"),
+    ("shortcut.key.shift", "Shift"),
+    ("shortcut.list", "Keyboard shortcuts"),
+    ("shortcut.list-next", "Open the next item in the list"),
+    (
+        "shortcut.list-previous",
+        "Open the previous item in the list",
+    ),
+    ("shortcut.or", "or"),
+    ("shortcut.quick-search", "Open quick search"),
+    ("shortcut.show-shortcuts", "Show all keyboard shortcuts"),
+    ("shortcut.then", "then"),
+    ("shortcut.title", "Keyboard shortcuts"),
+    (
+        "shortcuts.conflict",
+        "{keys} is already used for: {action}. Choose other keys.",
+    ),
+    (
+        "shortcuts.intro",
+        "Choose the keys you like. Open a shortcut to change its keys.",
+    ),
+    (
+        "shortcuts.invalid",
+        "These keys cannot be used. Press one key, or two in a row.",
+    ),
+    ("shortcuts.new-keys", "New keys"),
+    (
+        "shortcuts.new-keys-help",
+        "Click the box and press the keys you want. For two keys in a row, press one and then the other.",
+    ),
+    ("shortcuts.nothing", "No shortcut matches your search."),
+    ("shortcuts.now", "Keys now"),
+    ("shortcuts.reset", "Use the usual keys"),
+    ("shortcuts.reset-done", "The usual keys are back."),
+    ("shortcuts.saved", "The keys are saved."),
+    ("shortcuts.search", "Search the shortcuts"),
+    ("shortcuts.title", "Keyboard shortcuts"),
+    ("shortcuts.use", "Use these keys"),
+    ("shortcuts.usual", "Usual keys"),
     ("sign-in.make-account", "Make an account"),
     ("sign-in.or", "or"),
     ("sign-in.passkey", "Sign in with a passkey"),

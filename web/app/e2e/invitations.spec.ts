@@ -9,6 +9,7 @@ import {
   expectHome,
   historyAddresses,
   openFromMenu,
+  openMenu,
   signIn,
 } from "./support/flows.ts";
 import { inOrder } from "./support/sequence.ts";
@@ -152,8 +153,8 @@ test("perf_02 a long list is shown a page at a time", async ({ page }) => {
 
 test("auth_06 people who are not administrators do not see invitations", async ({ page }) => {
   await signIn(page, cleo);
-  const menu = page.getByRole("navigation", { name: t("shell.menu") });
-  await expect(menu.getByRole("link", { name: t("nav.invitations") })).toHaveCount(0);
-  await page.goto("/admin/invitations");
+  await openMenu(page);
+  await expect(page.getByRole("link", { name: t("nav.organization-settings") })).toHaveCount(0);
+  await page.goto("/settings/invitations");
   await expect(page).toHaveURL(/\/$/u);
 });

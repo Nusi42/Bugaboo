@@ -310,6 +310,104 @@ export const messages = {
   "status.certificate.none":
     "Not shown. Either another program in front of Bugaboo handles HTTPS, or the certificate file cannot be read.",
   "status.log": "Security log",
+  "common.close": "Close",
+  "common.undo": "Undo",
+  "shell.search": "Search",
+  "shell.shortcuts": "Keyboard shortcuts",
+  "shell.more": "More",
+  "shell.narrow": "Narrow the menu",
+  "shell.widen": "Widen the menu",
+  "shell.menu-button": "Menu",
+  "shell.back": "Back",
+  "shell.trail": "You are here",
+  "nav.my-settings": "My settings",
+  "nav.organization-settings": "Organization settings",
+  "nav.appearance": "Appearance",
+  "nav.shortcuts": "Keyboard shortcuts",
+  "nav.frames": "Screen frames",
+  "nav.group.look": "Look and feel",
+  "nav.group.sign-in": "Sign-in",
+  "nav.group.people": "People",
+  "nav.group.system": "System",
+  "search.title": "Quick search",
+  "search.label": "Search",
+  "search.placeholder": "Search pages and settings",
+  "search.clear": "Clear the search",
+  "search.results": "Results",
+  "search.nothing": "Nothing found. Try another word.",
+  "search.pages": "Pages",
+  "shortcut.quick-search": "Open quick search",
+  "shortcut.show-shortcuts": "Show all keyboard shortcuts",
+  "shortcut.go-home": "Go to the start page",
+  "shortcut.list-next": "Open the next item in the list",
+  "shortcut.list-previous": "Open the previous item in the list",
+  "shortcut.key.mod": "Ctrl",
+  "shortcut.key.alt": "Alt",
+  "shortcut.key.shift": "Shift",
+  "shortcut.key.escape": "Esc",
+  "shortcut.key.enter": "Enter",
+  "shortcut.then": "then",
+  "shortcut.or": "or",
+  "shortcut.list": "Keyboard shortcuts",
+  "shortcut.in-lists": "Where a list is shown",
+  "shortcut.everywhere": "Everywhere",
+  "shortcut.title": "Keyboard shortcuts",
+  "shortcut.intro":
+    "Press these keys instead of clicking. Every shortcut also has a button on the screen.",
+  "shortcut.change-link": "Change the keys",
+  "list.next": "Next",
+  "list.previous": "Previous",
+  "focus.back": "Back to list",
+  "focus.hide-list": "Hide list",
+  "focus.show-list": "Show list",
+  "panel.close": "Close the panel",
+  "appearance.title": "Appearance",
+  "appearance.device-help":
+    "Match my device uses one theme when your device is light and one when it is dark. Choose both here.",
+  "appearance.light": "Theme when my device is light",
+  "appearance.dark": "Theme when my device is dark",
+  "appearance.spacing.legend": "Spacing",
+  "appearance.spacing.comfortable": "Comfortable",
+  "appearance.spacing.compact": "Compact",
+  "appearance.larger-text": "Larger text",
+  "appearance.less-motion": "Less motion",
+  "appearance.device-settings":
+    "Your device may already ask for less motion or more contrast. Bugaboo follows both. These choices stay on this device.",
+  "shortcuts.title": "Keyboard shortcuts",
+  "shortcuts.intro": "Choose the keys you like. Open a shortcut to change its keys.",
+  "shortcuts.search": "Search the shortcuts",
+  "shortcuts.nothing": "No shortcut matches your search.",
+  "shortcuts.now": "Keys now",
+  "shortcuts.usual": "Usual keys",
+  "shortcuts.new-keys": "New keys",
+  "shortcuts.new-keys-help":
+    "Click the box and press the keys you want. For two keys in a row, press one and then the other.",
+  "shortcuts.use": "Use these keys",
+  "shortcuts.reset": "Use the usual keys",
+  "shortcuts.saved": "The keys are saved.",
+  "shortcuts.reset-done": "The usual keys are back.",
+  "shortcuts.conflict": "{keys} is already used for: {action}. Choose other keys.",
+  "shortcuts.invalid": "These keys cannot be used. Press one key, or two in a row.",
+  "frames.title": "Screen frames",
+  "frames.intro":
+    "Issues, documents and settings open in these frames. They are empty for now, so this page shows how they work.",
+  "frames.list": "Example items",
+  "frames.item-1": "First example",
+  "frames.item-2": "Second example",
+  "frames.item-3": "Third example",
+  "frames.focus-view": "Focus view",
+  "frames.open-focus": "Open {name} in the focus view",
+  "frames.remove": "Remove",
+  "frames.remove-name": "Remove {name}",
+  "frames.removed": "{name} was removed.",
+  "frames.panel-text":
+    "This is the side panel. A simple item opens here and the list stays in view.",
+  "frames.focus-text":
+    "This is the focus view. The open item takes the main area and the list stays slim on the left.",
+  "frames.nothing": "No example items are left.",
+  "save.saving": "Saving…",
+  "save.saved": "Saved",
+  "save.not-saved": "Not saved yet",
 } as const;
 
 export type MessageKey = keyof typeof messages;
@@ -317,6 +415,9 @@ export type MessageKey = keyof typeof messages;
 export interface MessageArguments {
   "backup.left": { count: number };
   "first-run.step-of": { name: string | number; step: string | number; total: string | number };
+  "frames.open-focus": { name: string | number };
+  "frames.remove-name": { name: string | number };
+  "frames.removed": { name: string | number };
   "home.title": { name: string | number };
   "invitation.intro": { email: string | number };
   "invitations.created": { email: string | number };
@@ -342,6 +443,7 @@ export interface MessageArguments {
   "setup.not-usable": { reason: string | number };
   "setup.saved": { path: string | number };
   "shell.signed-in-as": { name: string | number };
+  "shortcuts.conflict": { action: string | number; keys: string | number };
   "status.certificate.expired": { date: string | number };
   "status.certificate.soon": { date: string | number; days: number };
   "status.certificate.valid": { date: string | number; days: number };

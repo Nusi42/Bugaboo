@@ -1,16 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  defaultThemeChoice,
-  isThemeChoice,
-  readStoredChoice,
-  resolveTheme,
-  storeChoice,
-} from "./theme.ts";
-
-const blocked = (): never => {
-  throw new Error("blocked");
-};
+import { isThemeChoice, resolveTheme } from "./theme.ts";
 
 describe("thm_01 theme choice", () => {
   it("matches the device: Daylight on light, Dusk on dark", () => {
@@ -30,39 +20,10 @@ describe("thm_01 theme choice", () => {
   });
 });
 
-describe("thm_01 theme storage", () => {
-  it("falls back to the default when storage is empty, invalid or blocked", () => {
-    expect(readStoredChoice(() => ({ getItem: () => null }))).toBe(defaultThemeChoice);
-    expect(readStoredChoice(() => ({ getItem: () => "neon" }))).toBe(defaultThemeChoice);
-    expect(
-      readStoredChoice(() => ({
-        getItem: () => {
-          throw new Error("blocked");
-        },
-      })),
-    ).toBe(defaultThemeChoice);
-  });
-
-  it("survives storage whose getter itself throws (blocked site data)", () => {
-    expect(readStoredChoice(blocked)).toBe(defaultThemeChoice);
-    expect(() => {
-      storeChoice(blocked, "paper");
-    }).not.toThrow();
-  });
-
-  it("remembers a choice and survives blocked storage", () => {
-    const saved = new Map<string, string>();
-    storeChoice(() => ({ setItem: (key, value) => void saved.set(key, value) }), "paper");
-    expect([...saved.values()]).toEqual(["paper"]);
-    expect(() => {
-      storeChoice(
-        () => ({
-          setItem: () => {
-            throw new Error("blocked");
-          },
-        }),
-        "paper",
-      );
-    }).not.toThrow();
+describe("thm_02 one light and one dark choice", () => {
+  it("uses the light choice on a light device and the dark choice on a dark device", () => {
+    const choices = { light: "paper", dark: "midnight" } as const;
+    expect(resolveTheme("device", false, choices)).toBe("paper");
+    expect(resolveTheme("device", true, choices)).toBe("midnight");
   });
 });

@@ -14,9 +14,17 @@ export const themes = [
 
 export type Theme = (typeof themes)[number];
 
-/** Picks a theme with the choice at the bottom of the page, as a person would. */
+/**
+ * Picks a theme with the choice at the bottom of the pages before sign-in, as a person would. The
+ * signed-in app keeps the choice in *My settings*, so there the theme is put on the page directly.
+ */
 export async function chooseTheme(page: Page, theme: Theme): Promise<void> {
-  await page.getByRole("radio", { name: theme.label, exact: true }).check();
+  const choice = page.getByRole("radio", { name: theme.label, exact: true });
+  if ((await choice.count()) > 0) {
+    await choice.check();
+  } else {
+    await putOnTheme(page, theme);
+  }
   await expect(page.locator("html")).toHaveAttribute("data-look", theme.id);
 }
 

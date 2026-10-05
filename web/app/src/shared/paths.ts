@@ -1,6 +1,7 @@
 /**
  * The addresses of the pages of the app, written once. Routes, links and redirects all use these,
- * so an address cannot differ between the page and the link to it (ODR).
+ * so an address cannot differ between the page and the link to it (ODR). They are the addresses of
+ * the UX design (§2.1): `/me/…` for *My settings*, `/settings/…` for *Organization settings*.
  */
 export const paths = {
   home: "/",
@@ -9,8 +10,13 @@ export const paths = {
   secondStep: "/sign-in/second-step",
   signUp: "/sign-up",
   invitation: "/invitation",
-  security: "/account/security",
-  sessions: "/account/sessions",
-  invitations: "/admin/invitations",
-  status: "/admin/status",
+  mySettings: "/me",
+  appearance: "/me/appearance",
+  shortcuts: "/me/shortcuts",
+  security: "/me/security",
+  sessions: "/me/sessions",
+  organizationSettings: "/settings",
+  invitations: "/settings/invitations",
+  status: "/settings/status",
+  frames: "/frames",
 } as const;

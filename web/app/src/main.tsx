@@ -1,4 +1,4 @@
-import { applyInitialTheme } from "@bugaboo/ui";
+import { applyInitialAppearance } from "@bugaboo/ui";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { RouterProvider } from "@tanstack/react-router";
 import { StrictMode } from "react";
@@ -12,7 +12,7 @@ import { leaveSession } from "./shared/session.ts";
 import { router } from "./routes/router.tsx";
 import "./global.css";
 
-applyInitialTheme();
+applyInitialAppearance();
 
 // An answer that says the sign-in is gone, or does not fit this page, takes the person to the
 // sign-in page, and the cache forgets what the last person was allowed to see (M1-F51).

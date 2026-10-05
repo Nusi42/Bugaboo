@@ -8,6 +8,7 @@ import {
   expectHome,
   fillSignIn,
   openFromMenu,
+  pressSignOut,
   signIn,
   signOut,
 } from "./support/flows.ts";
@@ -31,7 +32,7 @@ test("m1_f51 an answer that says the token is wrong takes the person to the sign
   await context.addCookies([
     { name: CSRF_COOKIE, value: "not-the-token", url: server.url, secure: true },
   ]);
-  await page.getByRole("button", { name: t("nav.sign-out"), exact: true }).click();
+  await pressSignOut(page);
   await expect(page).toHaveURL(/\/sign-in\?reason=wrong-token$/u);
   await expect(page.getByRole("heading", { level: 1, name: t("sign-in.title") })).toBeVisible();
   await expect(page.getByText(t("error.request.wrong-token"))).toBeVisible();
