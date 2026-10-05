@@ -442,6 +442,8 @@ export const messages = {
     "On Windows that account is {owner}. It has no password, so you cannot sign in as it: stop the service, start a terminal as that account with a tool that can do this, and run: {command}",
   "keys.export-not-private":
     "The folder {path} can be opened by other accounts on this computer. Choose a folder that only you can open, or a new one, so the key files are not left where others can copy them.",
+  "data-folder.not-a-data-folder":
+    "The folder {path} has other files in it and does not look like a Bugaboo data folder. Installing the service would change who owns them. Choose an empty folder or a Bugaboo data folder as the data folder in your settings.",
 } as const;
 
 export type MessageKey = keyof typeof messages;
@@ -467,6 +469,7 @@ export interface MessageArguments {
   "config.tls-mode-invalid": { value: string | number };
   "config.tls-off-public": { address: string | number };
   "data-folder.create-failed": { path: string | number; reason: string | number };
+  "data-folder.not-a-data-folder": { path: string | number };
   "data-folder.protect-failed": { path: string | number; reason: string | number };
   "first-run.step-of": { name: string | number; step: string | number; total: string | number };
   "home.title": { name: string | number };

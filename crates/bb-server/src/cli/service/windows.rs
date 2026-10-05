@@ -27,7 +27,7 @@ use windows_service::service_manager::{ServiceManager, ServiceManagerAccess};
 
 use super::{Found, NAME, refused, tell_about_setup_code};
 use crate::cli::{ConfigArgs, load_settings, serve};
-use crate::data_folder::DataFolder;
+use crate::data_folder::{DataFolder, check_for_service};
 use crate::{log, output};
 
 /// The Windows error numbers that are answered with a plain sentence.
@@ -113,6 +113,7 @@ pub(super) fn install(found: &Found) -> anyhow::Result<()> {
     let manager =
         ServiceManager::local_computer(None::<&str>, ServiceManagerAccess::CREATE_SERVICE)
             .map_err(|error| explain(&error))?;
+    check_for_service(&found.settings.data_dir)?;
     DataFolder::prepare(&found.settings.data_dir)?;
     let service = manager
         .create_service(

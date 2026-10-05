@@ -349,5 +349,6 @@
   "keys.no-access": "This account cannot read and change the key files in {path}. If Bugaboo runs as a service, run the command as the account that runs it: {how}",
   "keys.how-linux": "sudo -u {owner} {command}",
   "keys.how-windows": "On Windows that account is {owner}. It has no password, so you cannot sign in as it: stop the service, start a terminal as that account with a tool that can do this, and run: {command}",
-  "keys.export-not-private": "The folder {path} can be opened by other accounts on this computer. Choose a folder that only you can open, or a new one, so the key files are not left where others can copy them."
+  "keys.export-not-private": "The folder {path} can be opened by other accounts on this computer. Choose a folder that only you can open, or a new one, so the key files are not left where others can copy them.",
+  "data-folder.not-a-data-folder": "The folder {path} has other files in it and does not look like a Bugaboo data folder. Installing the service would change who owns them. Choose an empty folder or a Bugaboo data folder as the data folder in your settings."
 }

@@ -8,6 +8,8 @@ use std::path::{Path, PathBuf};
 
 use bb_core::message::{self, Message};
 
+use crate::data_folder::SUB_FOLDERS;
+
 /// The name of the unit, and so the name of the service for `systemctl`.
 pub(super) const UNIT: &str = "bugaboo.service";
 /// The account that runs Bugaboo: no password, no shell, no home folder.
@@ -39,6 +41,8 @@ pub(super) struct Installation<'a> {
     pub(super) config: &'a Path,
     /// The data folder, in full.
     pub(super) data_dir: &'a Path,
+    /// The files directly in the data folder that Bugaboo made, which the account takes over.
+    pub(super) known_files: &'a [PathBuf],
 }
 
 fn run(program: &'static str, arguments: &[&str]) -> Step {
@@ -111,7 +115,17 @@ pub(super) fn plan(installation: &Installation<'_>, user_exists: bool) -> Vec<St
     let data = path_argument(installation.data_dir);
     let config = path_argument(installation.config);
     steps.push(Step::PrepareDataFolder(installation.data_dir.to_path_buf()));
-    steps.push(run("chown", &["-R", &owner, &data]));
+    // Only what Bugaboo made changes owner: the folder itself, its known files and its own
+    // sub-folders. Never the whole folder with whatever else lies in it.
+    steps.push(run("chown", &[&owner, &data]));
+    for file in installation.known_files {
+        steps.push(run("chown", &[&owner, &path_argument(file)]));
+    }
+    for name in SUB_FOLDERS {
+        // Plain text, because this plan is for Linux whichever system the test runs on.
+        let folder = format!("{}/{name}", data.trim_end_matches('/'));
+        steps.push(run("chown", &["-R", &owner, &folder]));
+    }
     // The settings file may hold a database password: the account that runs Bugaboo reads it,
     // nobody else does.
     steps.push(run("chown", &["root:bugaboo", &config]));
@@ -146,6 +160,7 @@ mod tests {
             program: Path::new("/opt/bugaboo/bugaboo"),
             config: Path::new("/etc/bugaboo/bugaboo.toml"),
             data_dir: Path::new("/var/lib/bugaboo"),
+            known_files: &[],
         }
     }
 
@@ -196,13 +211,56 @@ mod tests {
             [
                 "useradd --system --no-create-home --shell /usr/sbin/nologin bugaboo",
                 "prepare /var/lib/bugaboo",
-                "chown -R bugaboo:bugaboo /var/lib/bugaboo",
+                "chown bugaboo:bugaboo /var/lib/bugaboo",
+                "chown -R bugaboo:bugaboo /var/lib/bugaboo/files",
+                "chown -R bugaboo:bugaboo /var/lib/bugaboo/keys",
+                "chown -R bugaboo:bugaboo /var/lib/bugaboo/backups",
+                "chown -R bugaboo:bugaboo /var/lib/bugaboo/tls",
+                "chown -R bugaboo:bugaboo /var/lib/bugaboo/logs",
                 "chown root:bugaboo /etc/bugaboo/bugaboo.toml",
                 "chmod 640 /etc/bugaboo/bugaboo.toml",
                 &format!("write {}", Path::new(UNIT_FOLDER).join(UNIT).display()),
                 "systemctl daemon-reload",
                 "systemctl enable --now bugaboo.service",
             ]
+        );
+    }
+
+    #[test]
+    fn sec_16_only_what_bugaboo_made_changes_owner_and_never_the_whole_folder() {
+        let files = [PathBuf::from("/var/lib/bugaboo/bugaboo.db")];
+        let installation = Installation {
+            known_files: &files,
+            ..installation()
+        };
+        let chowns: Vec<String> = plan(&installation, true)
+            .iter()
+            .filter_map(|step| match step {
+                Step::Run {
+                    program: "chown",
+                    arguments,
+                } => Some(arguments.join(" ")),
+                _ => None,
+            })
+            .collect();
+        // The folder itself, without its content, and a known file without anything below it.
+        assert!(chowns.contains(&"bugaboo:bugaboo /var/lib/bugaboo".to_owned()));
+        assert!(chowns.contains(&"bugaboo:bugaboo /var/lib/bugaboo/bugaboo.db".to_owned()));
+        // Nothing recurses over the folder as a whole, where somebody's own files may lie.
+        assert!(
+            !chowns
+                .iter()
+                .any(|line| line == "-R bugaboo:bugaboo /var/lib/bugaboo")
+        );
+        assert!(
+            chowns
+                .iter()
+                .filter(|line| line.starts_with("-R "))
+                .all(|line| {
+                    ["files", "keys", "backups", "tls", "logs"]
+                        .iter()
+                        .any(|name| line.ends_with(&format!("/var/lib/bugaboo/{name}")))
+                })
         );
     }
 

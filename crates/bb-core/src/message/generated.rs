@@ -1010,6 +1010,15 @@ pub fn data_folder_create_failed(
     )
 }
 
+/// The message `data-folder.not-a-data-folder`.
+#[must_use]
+pub fn data_folder_not_a_data_folder(path: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("data-folder.not-a-data-folder"),
+        vec![("path", Value::Text(path.to_string()))],
+    )
+}
+
 /// The message `data-folder.protect-failed`.
 #[must_use]
 pub fn data_folder_protect_failed(
@@ -1906,6 +1915,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "data-folder.create-failed",
         "The data folder {path} could not be prepared: {reason}",
+    ),
+    (
+        "data-folder.not-a-data-folder",
+        "The folder {path} has other files in it and does not look like a Bugaboo data folder. Installing the service would change who owns them. Choose an empty folder or a Bugaboo data folder as the data folder in your settings.",
     ),
     (
         "data-folder.protect-failed",

@@ -32,6 +32,11 @@ const ANCHOR_FILE: &str = "security-head.log";
 #[cfg(windows)]
 const SERVER_LOG_FILE: &str = "server.log";
 const SETUP_CODE_FILE: &str = "setup-code.txt";
+/// The folders `prepare` makes inside the data folder.
+pub(crate) const SUB_FOLDERS: [&str; 5] = [FILES, KEYS, BACKUPS, TLS, LOGS];
+/// What the built-in database (SQLite) keeps next to its file.
+#[cfg(any(unix, test))]
+const DATABASE_COMPANIONS: [&str; 3] = ["-wal", "-shm", "-journal"];
 
 /// The prepared data folder.
 #[derive(Debug)]
@@ -42,8 +47,18 @@ pub(crate) struct DataFolder {
 /// Why the data folder could not be prepared.
 #[derive(Debug)]
 pub(crate) enum DataFolderError {
-    Create { path: PathBuf, reason: String },
-    Protect { path: PathBuf, reason: String },
+    Create {
+        path: PathBuf,
+        reason: String,
+    },
+    Protect {
+        path: PathBuf,
+        reason: String,
+    },
+    /// A folder that has other things in it and does not look like a Bugaboo data folder.
+    NotADataFolder {
+        path: PathBuf,
+    },
 }
 
 impl DataFolderError {
@@ -54,6 +69,9 @@ impl DataFolderError {
             }
             Self::Protect { path, reason } => {
                 message::data_folder_protect_failed(path.display(), reason).render()
+            }
+            Self::NotADataFolder { path } => {
+                message::data_folder_not_a_data_folder(path.display()).render()
             }
         }
     }
@@ -72,7 +90,7 @@ impl DataFolder {
     /// folders with secrets are private to their owner.
     pub(crate) fn prepare(root: &Path) -> Result<Self, DataFolderError> {
         create_private(root)?;
-        for name in [FILES, KEYS, BACKUPS, TLS, LOGS] {
+        for name in SUB_FOLDERS {
             create_private(&root.join(name))?;
         }
         for name in [KEYS, TLS, LOGS] {
@@ -124,6 +142,37 @@ impl DataFolder {
     /// The built-in database.
     pub(crate) fn database_file(&self) -> PathBuf {
         self.root.join(DATABASE_FILE)
+    }
+
+    /// The files directly in the folder that Bugaboo itself makes and that exist now: the
+    /// built-in database with its companions, and the setup code. A service takes over these and
+    /// the sub-folders, and nothing else that happens to lie in the folder.
+    #[cfg(any(unix, test))]
+    pub(crate) fn known_files(&self) -> Vec<PathBuf> {
+        let database = self.database_file();
+        let mut files = vec![database.clone()];
+        for suffix in DATABASE_COMPANIONS {
+            let mut name = database.clone().into_os_string();
+            name.push(suffix);
+            files.push(PathBuf::from(name));
+        }
+        files.push(self.setup_code_file());
+        files.retain(|file| file.is_file());
+        files
+    }
+}
+
+/// Whether a service may take over `root`: a folder that is not there yet or is empty, or one
+/// that Bugaboo made (it has the folder `keys`). A folder with other things in it, such as
+/// documents, is refused, so that installing never changes the owner of somebody's files.
+pub(crate) fn check_for_service(root: &Path) -> Result<(), DataFolderError> {
+    let empty = std::fs::read_dir(root).is_ok_and(|mut entries| entries.next().is_none());
+    if !root.is_dir() || empty || root.join(KEYS).is_dir() {
+        Ok(())
+    } else {
+        Err(DataFolderError::NotADataFolder {
+            path: root.to_path_buf(),
+        })
     }
 }
 
@@ -539,6 +588,36 @@ mod tests {
         // A folder this test made belongs to the account that runs the test.
         let temp = tempfile::tempdir().unwrap();
         assert_eq!(other_owner(temp.path()), None);
+    }
+
+    #[test]
+    fn sec_16_a_service_may_take_over_only_a_new_or_a_bugaboo_folder() {
+        let temp = tempfile::tempdir().unwrap();
+        // Not there yet, and empty: fine.
+        check_for_service(&temp.path().join("new")).unwrap();
+        let empty = temp.path().join("empty");
+        std::fs::create_dir(&empty).unwrap();
+        check_for_service(&empty).unwrap();
+        // A folder with somebody's own files is refused, and nothing in it changes.
+        let mine = temp.path().join("documents");
+        std::fs::create_dir(&mine).unwrap();
+        std::fs::write(mine.join("tax.pdf"), "x").unwrap();
+        let error = check_for_service(&mine).unwrap_err();
+        assert!(error.message().contains("does not look like"), "{error}");
+        // A data folder that Bugaboo made is fine, also with files of its own that were added.
+        let data = temp.path().join("data");
+        DataFolder::prepare(&data).unwrap();
+        std::fs::write(data.join("notes.txt"), "x").unwrap();
+        check_for_service(&data).unwrap();
+        // The known files are the database and its companions and the setup code.
+        std::fs::write(data.join(DATABASE_FILE), "x").unwrap();
+        std::fs::write(data.join(format!("{DATABASE_FILE}-wal")), "x").unwrap();
+        let known = DataFolder::existing(&data).unwrap().known_files();
+        let names: Vec<_> = known
+            .iter()
+            .filter_map(|file| file.file_name()?.to_str())
+            .collect();
+        assert_eq!(names, ["bugaboo.db", "bugaboo.db-wal"]);
     }
 
     #[test]

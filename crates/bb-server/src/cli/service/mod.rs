@@ -23,6 +23,8 @@ use bb_core::message::Message;
 use super::{ConfigArgs, load_settings, program_folder};
 use crate::config::{DEFAULT_FILE, Settings};
 use crate::data_folder::DataFolder;
+#[cfg(unix)]
+use crate::data_folder::check_for_service;
 use crate::output;
 
 /// The name of the service, as the system lists it.
@@ -137,10 +139,15 @@ fn systemd_install(found: &Found) -> anyhow::Result<()> {
     use systemd::{Installation, Step, USER, plan};
 
     require_systemd()?;
+    check_for_service(&found.settings.data_dir)?;
+    let known_files = DataFolder::existing(&found.settings.data_dir)
+        .map(|data| data.known_files())
+        .unwrap_or_default();
     let installation = Installation {
         program: &found.program,
         config: &found.config,
         data_dir: &found.settings.data_dir,
+        known_files: &known_files,
     };
     let user_exists = succeeds("id", &["-u", USER]);
     for step in plan(&installation, user_exists) {
