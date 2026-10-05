@@ -241,6 +241,135 @@
         "x-permission": "own-account"
       }
     },
+    "/api/v1/access-keys/projects": {
+      "get": {
+        "tags": ["access-keys"],
+        "summary": "The projects the person may limit a key to: those they know about, by short name, a page at a\ntime.",
+        "operationId": "listProjectChoices",
+        "parameters": [
+          {
+            "name": "fields",
+            "in": "query",
+            "description": "The fields each item holds, separated by commas. The answer schema names every field that can be asked for; when this is left out the route's own small default is used.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "description": "Where the page starts: the `next_cursor` of the page before.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "How many items a page holds at most (default 50, at most 100).",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The projects the person may know about, by short name.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_ProjectChoiceItem"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Nothing changed since the `ETag` that `If-None-Match` named. No body.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-never-stored": true,
+        "x-permission": "own-account"
+      }
+    },
     "/api/v1/access-keys/rules": {
       "get": {
         "tags": ["access-keys"],
@@ -3608,8 +3737,8 @@
       },
       "AccessKeyRulesBody": {
         "type": "object",
-        "description": "How long a new access key lives in this organization.",
-        "required": ["default_days", "longest_days"],
+        "description": "How long a new access key lives in this organization, and what a key can be limited to.",
+        "required": ["default_days", "longest_days", "permissions"],
         "properties": {
           "default_days": {
             "type": "integer",
@@ -3620,6 +3749,13 @@
             "type": "integer",
             "format": "int64",
             "description": "The most days a key can live."
+          },
+          "permissions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PermissionChoiceBody"
+            },
+            "description": "The single permissions a key can be limited to under *More options*, in the order of the\ncatalogue."
           }
         }
       },
@@ -4021,7 +4157,7 @@
       "MeBody": {
         "type": "object",
         "description": "Who is signed in, and what they may do for the whole organization (the menus of the browser app\nfollow it; the server decides again at every request).",
-        "required": ["id", "display_name", "email", "permissions"],
+        "required": ["id", "display_name", "email", "permissions", "second_step_setup_required"],
         "properties": {
           "display_name": {
             "type": "string",
@@ -4040,7 +4176,11 @@
             "items": {
               "$ref": "#/components/schemas/Permission"
             },
-            "description": "What the person may do for the whole organization."
+            "description": "What the person may do for the whole organization. Nothing while the person still has to\nset up a second step."
+          },
+          "second_step_setup_required": {
+            "type": "boolean",
+            "description": "The person has to set up a second step before they can do anything else (their role or\nthe organization asks for two-step sign-in and they have none)."
           }
         }
       },
@@ -4155,6 +4295,39 @@
           }
         }
       },
+      "Page_ProjectChoiceItem": {
+        "type": "object",
+        "description": "One page of a list. `T` is the view of an item for the API description; an answer holds the\nitems cut to the chosen fields ([`Page::of_authorized`]).",
+        "required": ["items", "next_cursor"],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "A project a person may limit a key to.",
+              "properties": {
+                "id": {
+                  "type": ["string", "null"],
+                  "description": "The ID of the project."
+                },
+                "name": {
+                  "type": ["string", "null"],
+                  "description": "Its name."
+                },
+                "short_name": {
+                  "type": ["string", "null"],
+                  "description": "Its short name."
+                }
+              }
+            },
+            "description": "The items of this page."
+          },
+          "next_cursor": {
+            "type": ["string", "null"],
+            "description": "The cursor of the next page; `null` on the last page."
+          }
+        }
+      },
       "PasskeyAnswerBody": {
         "type": "object",
         "description": "What the device answered to a passkey challenge.",
@@ -4239,6 +4412,21 @@
           "see-status"
         ]
       },
+      "PermissionChoiceBody": {
+        "type": "object",
+        "description": "One permission a key can be limited to, with the topic it is listed under. The sentence is the\nmessage `permission.<key>` and the name of the topic `permission-topic.<topic>`.",
+        "required": ["key", "topic"],
+        "properties": {
+          "key": {
+            "$ref": "#/components/schemas/Permission",
+            "description": "The key of the permission."
+          },
+          "topic": {
+            "$ref": "#/components/schemas/Topic",
+            "description": "What it is about."
+          }
+        }
+      },
       "PersonBody": {
         "type": "object",
         "description": "Who a person is, as the browser app shows them.",
@@ -4296,6 +4484,24 @@
           "type": {
             "type": "string",
             "description": "A stable address of the kind of error, `urn:bugaboo:error:<code>`."
+          }
+        }
+      },
+      "ProjectChoiceItem": {
+        "type": "object",
+        "description": "A project a person may limit a key to.",
+        "properties": {
+          "id": {
+            "type": ["string", "null"],
+            "description": "The ID of the project."
+          },
+          "name": {
+            "type": ["string", "null"],
+            "description": "Its name."
+          },
+          "short_name": {
+            "type": ["string", "null"],
+            "description": "Its short name."
           }
         }
       },
@@ -4621,6 +4827,11 @@
         "type": "string",
         "description": "The only value a status can have today.",
         "enum": ["ok"]
+      },
+      "Topic": {
+        "type": "string",
+        "description": "What a group of permissions is about.",
+        "enum": ["projects", "people", "settings"]
       },
       "TwoStepBody": {
         "type": "object",

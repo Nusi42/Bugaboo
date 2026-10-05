@@ -31,7 +31,7 @@ use super::ctx::{AppError, Ctx, by, change_failed, entity, internal, set_to};
 use super::store::{AccessKeyRecord, AuthStore};
 use super::types::{
     AccessKeyPage, AccessKeyRules, AccessKeyRulesQuery, AccessKeyView, AccessKeysQuery,
-    CreatedAccessKey, DeleteAccessKey, Done, MakeAccessKey,
+    CreatedAccessKey, DeleteAccessKey, Done, MakeAccessKey, ProjectChoicePage, ProjectChoicesQuery,
 };
 use crate::access::{Actor, KeyInUse};
 
@@ -435,5 +435,77 @@ pub async fn access_key_rules<S: AuthStore>(
             .access_key_default_days
             .min(settings.access_key_longest_days),
         longest_days: settings.access_key_longest_days,
+        permissions: Permission::ALL
+            .iter()
+            .map(|permission| (*permission, permission.topic()))
+            .collect(),
     }))
+}
+
+/// How many projects are looked at to fill one page of the projects to choose from: a person who
+/// sees few of many projects gets a short page and a cursor, not a slow answer.
+const SCANNED_AT_MOST: u64 = 500;
+
+/// The projects the person may choose for an access key: those they know about, by short name, a
+/// page at a time (the cursor is the short name of the last project of the page before).
+///
+/// # Errors
+/// `request.invalid` for a cursor that is not a short name.
+pub async fn project_choices<S: AuthStore>(
+    ctx: &Ctx<'_, S>,
+    input: ProjectChoicesQuery,
+) -> Result<Authorized<ProjectChoicePage>, AppError> {
+    let record = ctx.active(&input.session_token).await?;
+    let owner = record.person.id;
+    let limit = usize::try_from(bb_core::paging::page_size(Some(input.limit))).unwrap_or(1);
+    let mut after = match input.cursor {
+        Some(name) => Some(
+            bb_core::project::ShortName::new(&name)
+                .map_err(|_| AppError::Refused(ErrorCode::InvalidRequest))?
+                .to_string(),
+        ),
+        None => None,
+    };
+    let actor = Actor {
+        person: record.person,
+        key: None,
+    };
+    let (mut items, mut scanned, mut more) = (Vec::new(), 0_u64, false);
+    // One more than the page, to know whether there is a next one.
+    'scan: while scanned < SCANNED_AT_MOST {
+        let batch = ctx
+            .store()
+            .projects_after(after.as_deref(), 100)
+            .await
+            .map_err(|error| internal::<S>(&error))?;
+        let full = batch.len() == 100;
+        for project in batch {
+            scanned += 1;
+            after = Some(project.short_name.clone());
+            let access = ctx
+                .evaluation_of(&actor, Place::Project(project.id))
+                .await?;
+            if access.knows_project() {
+                if items.len() == limit {
+                    more = true;
+                    break 'scan;
+                }
+                items.push(project);
+            }
+        }
+        if !full {
+            break;
+        }
+    }
+    // A page that stopped because it looked at enough projects continues after the last it saw;
+    // a page that stopped for being full continues after its last project.
+    let next_cursor = if more {
+        items.last().map(|project| project.short_name.clone())
+    } else if scanned >= SCANNED_AT_MOST {
+        after
+    } else {
+        None
+    };
+    let access = ctx.evaluate(owner, Place::Organization).await?;
+    Ok(access.authorize(ProjectChoicePage { items, next_cursor }))
 }

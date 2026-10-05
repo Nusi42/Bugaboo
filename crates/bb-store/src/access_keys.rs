@@ -8,7 +8,7 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
-use bb_app::auth::AccessKeyRecord;
+use bb_app::auth::{AccessKeyRecord, ProjectChoice};
 use bb_core::access_key::{AccessKey, KeyChoice};
 use bb_core::id::{AccessKeyId, IdError, ProjectId, RoleId, UserId};
 use bb_core::security_log::Digest;
@@ -21,7 +21,7 @@ use crate::db::{Database, Row, Transaction, to_micros};
 use crate::error::StoreError;
 use crate::schema::{
     AccessKeyPermissionRow, AccessKeyProjectRow, AccessKeyRow, AssignmentRow, GroupMemberRow,
-    PasskeyRow, RoleRow, TwoStep,
+    PasskeyRow, ProjectRow, RoleRow, TwoStep,
 };
 use crate::settings::Scopes;
 
@@ -191,6 +191,35 @@ impl Database {
             Some(row) => row.get(crate::schema::Computed::Total),
             None => Ok(0),
         }
+    }
+
+    /// The projects by short name, after `after`, at most `limit`: id, short name and name only.
+    pub(crate) async fn projects_after(
+        &self,
+        after: Option<&str>,
+        limit: u64,
+    ) -> Result<Vec<ProjectChoice>, StoreError> {
+        let mut select = Query::select();
+        select
+            .columns([ProjectRow::Id, ProjectRow::ShortName, ProjectRow::Name])
+            .from(ProjectRow::Table)
+            .order_by(ProjectRow::ShortName, Order::Asc)
+            .limit(limit);
+        if let Some(after) = after {
+            select.and_where(Expr::col(ProjectRow::ShortName).gt(after));
+        }
+        self.fetch_all(&select)
+            .await?
+            .iter()
+            .map(|row| {
+                Ok(ProjectChoice {
+                    id: ProjectId::from_bytes(row.id_bytes(ProjectRow::Id)?)
+                        .map_err(corrupt("a project ID"))?,
+                    short_name: row.get(ProjectRow::ShortName)?,
+                    name: row.get(ProjectRow::Name)?,
+                })
+            })
+            .collect()
     }
 
     /// Records the last use of a key, to the minute `at`: only when that is later than what is

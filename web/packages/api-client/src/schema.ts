@@ -19,6 +19,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/access-keys/projects": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * The projects the person may limit a key to: those they know about, by short name, a page at a
+     *     time.
+     */
+    get: operations["listProjectChoices"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/access-keys/rules": {
     parameters: {
       query?: never;
@@ -666,7 +686,7 @@ export interface components {
       /** @description The projects the key is limited to; empty for every project. */
       projects?: components["schemas"]["KeyProjectRef"][] | null;
     };
-    /** @description How long a new access key lives in this organization. */
+    /** @description How long a new access key lives in this organization, and what a key can be limited to. */
     AccessKeyRulesBody: {
       /**
        * Format: int64
@@ -678,6 +698,11 @@ export interface components {
        * @description The most days a key can live.
        */
       longest_days: number;
+      /**
+       * @description The single permissions a key can be limited to under *More options*, in the order of the
+       *     catalogue.
+       */
+      permissions: components["schemas"]["PermissionChoiceBody"][];
     };
     /** @description A passkey the device made, with the name the person gives it. */
     AddPasskeyBody: {
@@ -922,8 +947,16 @@ export interface components {
       email: string;
       /** @description The ID of the person. */
       id: string;
-      /** @description What the person may do for the whole organization. */
+      /**
+       * @description What the person may do for the whole organization. Nothing while the person still has to
+       *     set up a second step.
+       */
       permissions: components["schemas"]["Permission"][];
+      /**
+       * @description The person has to set up a second step before they can do anything else (their role or
+       *     the organization asks for two-step sign-in and they have none).
+       */
+      second_step_setup_required: boolean;
     };
     /**
      * @description One page of a list. `T` is the view of an item for the API description; an answer holds the
@@ -970,6 +1003,23 @@ export interface components {
         expires_at?: string | null;
         /** @description The ID of the invitation. */
         id?: string | null;
+      }[];
+      /** @description The cursor of the next page; `null` on the last page. */
+      next_cursor: string | null;
+    };
+    /**
+     * @description One page of a list. `T` is the view of an item for the API description; an answer holds the
+     *     items cut to the chosen fields ([`Page::of_authorized`]).
+     */
+    Page_ProjectChoiceItem: {
+      /** @description The items of this page. */
+      items: {
+        /** @description The ID of the project. */
+        id?: string | null;
+        /** @description Its name. */
+        name?: string | null;
+        /** @description Its short name. */
+        short_name?: string | null;
       }[];
       /** @description The cursor of the next page; `null` on the last page. */
       next_cursor: string | null;
@@ -1023,6 +1073,16 @@ export interface components {
       | "manage-roles"
       | "change-organization-settings"
       | "see-status";
+    /**
+     * @description One permission a key can be limited to, with the topic it is listed under. The sentence is the
+     *     message `permission.<key>` and the name of the topic `permission-topic.<topic>`.
+     */
+    PermissionChoiceBody: {
+      /** @description The key of the permission. */
+      key: components["schemas"]["Permission"];
+      /** @description What it is about. */
+      topic: components["schemas"]["Topic"];
+    };
     /** @description Who a person is, as the browser app shows them. */
     PersonBody: {
       /** @description The name others see. */
@@ -1060,6 +1120,15 @@ export interface components {
       title: string;
       /** @description A stable address of the kind of error, `urn:bugaboo:error:<code>`. */
       type: string;
+    };
+    /** @description A project a person may limit a key to. */
+    ProjectChoiceItem: {
+      /** @description The ID of the project. */
+      id?: string | null;
+      /** @description Its name. */
+      name?: string | null;
+      /** @description Its short name. */
+      short_name?: string | null;
     };
     /**
      * @description Whether the owner may know the project.
@@ -1221,6 +1290,11 @@ export interface components {
      * @enum {string}
      */
     StatusValue: "ok";
+    /**
+     * @description What a group of permissions is about.
+     * @enum {string}
+     */
+    Topic: "projects" | "people" | "settings";
     /** @description How the second step of a person is set up. */
     TwoStepBody: {
       /**
@@ -1383,6 +1457,91 @@ export interface operations {
       };
       /** @description There is no such thing (resource.not_found). */
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  listProjectChoices: {
+    parameters: {
+      query?: {
+        /** @description The fields each item holds, separated by commas. The answer schema names every field that can be asked for; when this is left out the route's own small default is used. */
+        fields?: string;
+        /** @description Where the page starts: the `next_cursor` of the page before. */
+        cursor?: string;
+        /** @description How many items a page holds at most (default 50, at most 100). */
+        limit?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The projects the person may know about, by short name. */
+      200: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Page_ProjectChoiceItem"];
+        };
+      };
+      /** @description Nothing changed since the `ETag` that `If-None-Match` named. No body. */
+      304: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      403: {
         headers: {
           [name: string]: unknown;
         };

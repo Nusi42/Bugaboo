@@ -9,7 +9,7 @@
 use std::sync::Arc;
 
 use bb_app::auth::{
-    AccessKeyRecord, Account, AuthSettings, AuthStore, SecurityEvent, SessionRecord,
+    AccessKeyRecord, Account, AuthSettings, AuthStore, ProjectChoice, SecurityEvent, SessionRecord,
 };
 use bb_app::ports::{BoxFuture, ChangeStore};
 use bb_core::event::DomainEvent;
@@ -493,6 +493,14 @@ impl AuthStore for AuthStorage {
 
     async fn access_key_count(&self, owner: UserId) -> Result<i64, StoreError> {
         self.database.access_key_count(owner).await
+    }
+
+    async fn projects_after(
+        &self,
+        after: Option<&str>,
+        limit: u64,
+    ) -> Result<Vec<ProjectChoice>, StoreError> {
+        self.database.projects_after(after, limit).await
     }
 
     async fn second_step_required(&self, person: UserId) -> Result<bool, StoreError> {

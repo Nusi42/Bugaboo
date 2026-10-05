@@ -31,7 +31,7 @@ use zeroize::Zeroizing;
 
 use crate::access::RoleRecord;
 use crate::auth::{
-    AccessKeyRecord, Account, AuthSettings, AuthStore, SecurityEvent, SessionRecord,
+    AccessKeyRecord, Account, AuthSettings, AuthStore, ProjectChoice, SecurityEvent, SessionRecord,
 };
 use crate::ports::{BoxFuture, ChangeStore};
 
@@ -436,6 +436,30 @@ impl AuthStore for FakeStore {
                 .filter(|record| record.key.owner == owner)
                 .count();
             i64::try_from(held).unwrap_or(i64::MAX)
+        }))
+    }
+
+    async fn projects_after(
+        &self,
+        after: Option<&str>,
+        limit: u64,
+    ) -> Result<Vec<ProjectChoice>, FakeError> {
+        Ok(self.read(|state| {
+            let mut found: Vec<ProjectChoice> = state
+                .projects
+                .iter()
+                .map(|project| ProjectChoice {
+                    id: project.id,
+                    short_name: project.short_name.to_string(),
+                    name: project.name.clone(),
+                })
+                .filter(|project| after.is_none_or(|after| project.short_name.as_str() > after))
+                .collect();
+            found.sort_by(|a, b| a.short_name.cmp(&b.short_name));
+            found
+                .into_iter()
+                .take(usize::try_from(limit).unwrap_or(usize::MAX))
+                .collect()
         }))
     }
 

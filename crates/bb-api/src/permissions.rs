@@ -73,6 +73,7 @@ pub(crate) const ROUTES: &[(&str, Declared)] = &[
     ("makeAccessKey", Declared::OwnAccount),
     ("deleteAccessKey", Declared::OwnAccount),
     ("getAccessKeyRules", Declared::OwnAccount),
+    ("listProjectChoices", Declared::OwnAccount),
     (
         "getSecondStepGap",
         Declared::Permission(Permission::ManageRoles),

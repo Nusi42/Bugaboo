@@ -323,3 +323,133 @@ async fn auth_07_no_route_of_the_owners_sign_in_data_opens_for_a_key() -> Outcom
     })
     .await
 }
+
+/// Ada, signed in in a browser of her own.
+async fn ada_in_a_browser(app: &axum::Router) -> Result<Browser, super::http::Failure> {
+    let mut ada = Browser::new(app, &called());
+    ada.send(
+        "POST",
+        "/api/v1/auth/sign-in",
+        Some(super::http::sign_in_body("ada@example.test", PASSWORD)),
+    )
+    .await?;
+    Ok(ada)
+}
+
+/// The rules of this organization for a key and the projects to choose from, as the page asks.
+async fn rules_and_projects(ada: &mut Browser) -> Result<(), super::http::Failure> {
+    let rules = ada.send("GET", "/api/v1/access-keys/rules", None).await?;
+    assert_eq!(rules.body["default_days"], 90);
+    assert_eq!(rules.body["longest_days"], 365);
+    assert_eq!(rules.body["permissions"][0]["key"], "see-projects");
+    assert_eq!(rules.body["permissions"][0]["topic"], "projects");
+    let projects = ada
+        .send("GET", "/api/v1/access-keys/projects", None)
+        .await?;
+    assert_eq!(projects.body["items"], json!([]));
+    assert_eq!(projects.body["next_cursor"], Value::Null);
+    Ok(())
+}
+
+#[tokio::test]
+async fn auth_07_a_person_makes_lists_and_deletes_keys_over_http() -> Outcome {
+    each_database("auth_07_keys_over_http", async |db| {
+        let rig = Rig::start(db, 50).await?;
+        Org::start(&rig).await?;
+        let app = router(options(&rig, LimitsConfig::default(), true));
+        let mut ada = ada_in_a_browser(&app).await?;
+        let make = |name: &str| json!({"password": PASSWORD, "name": name, "choice": "see-only"});
+        // The answer that makes a key holds its secret once, and it is never stored.
+        let first = ada
+            .send("POST", "/api/v1/access-keys", Some(make("First")))
+            .await?;
+        assert_eq!(first.status, StatusCode::OK, "{:?}", first.body);
+        let secret = first.body["secret"].as_str().ok_or("no secret")?.to_owned();
+        assert!(secret.starts_with("bb_") && secret.len() == 64);
+        assert_eq!(first.header("cache-control"), "no-store");
+        assert_eq!(first.body["key"]["prefix"], secret[3..11]);
+        assert_eq!(first.body["key"]["choice"], "see-only");
+        for name in ["Second", "Third"] {
+            // Each key is made a moment after the one before, so "newest first" has an answer.
+            rig.clock.advance(1);
+            let reply = ada
+                .send("POST", "/api/v1/access-keys", Some(make(name)))
+                .await?;
+            assert_eq!(reply.status, StatusCode::OK);
+        }
+        // A bad body is refused before anything is made; so is a wrong password.
+        let bad = ada
+            .send("POST", "/api/v1/access-keys", Some(json!({"name": "x"})))
+            .await?;
+        assert_eq!(bad.code(), "request.invalid");
+        let wrong = ada
+            .send(
+                "POST",
+                "/api/v1/access-keys",
+                Some(json!({"password": "Wrong-Password-1", "name": "x", "choice": "see-only"})),
+            )
+            .await?;
+        assert_eq!(wrong.code(), "auth.wrong_credentials");
+        // The list pages newest first, takes the fields asked for and never holds the secret.
+        let page = ada
+            .send(
+                "GET",
+                "/api/v1/access-keys?limit=2&fields=id,name,last_used_at",
+                None,
+            )
+            .await?;
+        assert_eq!(page.body["items"].as_array().map(Vec::len), Some(2));
+        assert_eq!(page.body["items"][0]["name"], "Third");
+        assert!(page.body["items"][0].get("prefix").is_none());
+        let cursor = page.body["next_cursor"]
+            .as_str()
+            .ok_or("no cursor")?
+            .to_owned();
+        let rest = ada
+            .send(
+                "GET",
+                &format!("/api/v1/access-keys?limit=2&cursor={cursor}"),
+                None,
+            )
+            .await?;
+        assert_eq!(rest.body["items"].as_array().map(Vec::len), Some(1));
+        assert_eq!(rest.body["items"][0]["name"], "First");
+        assert_eq!(rest.body["next_cursor"], Value::Null);
+        assert!(!rest.body.to_string().contains(&secret[12..]));
+        let unknown = ada
+            .send("GET", "/api/v1/access-keys?fields=secret", None)
+            .await?;
+        assert_eq!(unknown.code(), "request.unknown_field");
+        let bad_cursor = ada
+            .send("GET", "/api/v1/access-keys?cursor=nonsense", None)
+            .await?;
+        assert_eq!(bad_cursor.code(), "request.bad_cursor");
+        // Deleting a key: it stops working at once, and a second delete finds nothing.
+        rules_and_projects(&mut ada).await?;
+        let id = first.body["key"]["id"].as_str().ok_or("no id")?.to_owned();
+        let mut script = Browser::new(&app, &called());
+        assert_eq!(
+            script.script("GET", KEY_ROUTE, None, &secret).await?.status,
+            StatusCode::FORBIDDEN,
+            "a key that may only see is not let into a route that needs more"
+        );
+        let deleted = ada
+            .send("DELETE", &format!("/api/v1/access-keys/{id}"), None)
+            .await?;
+        assert_eq!(deleted.status, StatusCode::NO_CONTENT);
+        assert_eq!(
+            script.script("GET", KEY_ROUTE, None, &secret).await?.code(),
+            "auth.not_signed_in"
+        );
+        let again = ada
+            .send("DELETE", &format!("/api/v1/access-keys/{id}"), None)
+            .await?;
+        assert_eq!(again.code(), "resource.not_found");
+        let nonsense = ada
+            .send("DELETE", "/api/v1/access-keys/not-an-id", None)
+            .await?;
+        assert_eq!(nonsense.code(), "resource.not_found");
+        Ok(())
+    })
+    .await
+}

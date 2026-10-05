@@ -7,7 +7,7 @@ use std::time::Duration;
 use bb_core::access_key::KeyChoice;
 use bb_core::id::{AccessKeyId, InvitationId, PasskeyId, ProjectId, RoleId, SessionId, UserId};
 use bb_core::person::Person;
-use bb_policy::{Evaluation, Permission};
+use bb_policy::{Evaluation, Permission, Topic};
 use jiff::Timestamp;
 use serde_json::Value;
 
@@ -225,13 +225,36 @@ pub struct AccessKeyPage {
 
 /// How long a new access key lives in this organization: what the form of *Make an access key*
 /// offers (the two organization settings for the default and the longest time of a key).
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct AccessKeyRules {
     /// How many days a new key lives when the person picks no other date (never more than the
     /// longest time).
     pub default_days: i64,
     /// The most days a key can live.
     pub longest_days: i64,
+    /// The single permissions a key can be limited to, under *More options*, in the order of the
+    /// catalogue, each with its topic (the sentences are the messages of the catalogue).
+    pub permissions: Vec<(Permission, Topic)>,
+}
+
+/// A project a person may choose for an access key.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct ProjectChoice {
+    /// The ID of the project.
+    pub id: ProjectId,
+    /// Its short name.
+    pub short_name: String,
+    /// Its name.
+    pub name: String,
+}
+
+/// A page of the projects a person may choose for an access key.
+#[derive(Clone, Debug)]
+pub struct ProjectChoicePage {
+    /// The projects, by short name.
+    pub items: Vec<ProjectChoice>,
+    /// The cursor of the next page, if there is one.
+    pub next_cursor: Option<String>,
 }
 
 /// How many people with a role still have to set up a second step.
@@ -526,6 +549,16 @@ pub struct AccessKeysQuery {
     pub cursor: Option<String>,
     /// How many keys a page holds at most; more than `bb_core::paging::PAGE_SIZE_MAX` is cut to
     /// it.
+    pub limit: u32,
+}
+
+/// The projects a person may choose for an access key, one page at a time.
+pub struct ProjectChoicesQuery {
+    /// The secret of the session of the request.
+    pub session_token: String,
+    /// Where the page after the last one starts (`next_cursor` of the page before), if any.
+    pub cursor: Option<String>,
+    /// How many projects a page holds at most.
     pub limit: u32,
 }
 

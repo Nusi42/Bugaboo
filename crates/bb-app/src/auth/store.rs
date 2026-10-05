@@ -22,6 +22,7 @@ use bb_policy::Permission;
 use jiff::Timestamp;
 use zeroize::Zeroizing;
 
+use super::types::ProjectChoice;
 use crate::access::PolicyStore;
 use crate::store_macros::{reads, writes};
 
@@ -173,6 +174,9 @@ pub trait AuthStore: PolicyStore + 'static {
         ) -> Vec<AccessKeyRecord>;
         /// How many access keys a person has.
         fn access_key_count(owner: UserId) -> i64;
+        /// The projects by short name, after `after` (the short name of the last one of the page
+        /// before), at most `limit`: what a person chooses from for an access key.
+        fn projects_after(after: Option<&str>, limit: u64) -> Vec<ProjectChoice>;
         /// Whether the person needs a second step: the organization asks it of everybody, or any
         /// role they hold anywhere (their own rows and their groups', at any place) has the
         /// switch for two-step sign-in (ADR-0025, decision 7).

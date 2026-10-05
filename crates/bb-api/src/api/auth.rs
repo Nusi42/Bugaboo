@@ -184,8 +184,12 @@ pub(crate) struct MeBody {
     pub(crate) display_name: String,
     /// The e-mail address used to sign in.
     pub(crate) email: String,
-    /// What the person may do for the whole organization.
+    /// What the person may do for the whole organization. Nothing while the person still has to
+    /// set up a second step.
     pub(crate) permissions: Vec<Permission>,
+    /// The person has to set up a second step before they can do anything else (their role or
+    /// the organization asks for two-step sign-in and they have none).
+    pub(crate) second_step_setup_required: bool,
 }
 
 impl Masked for MeBody {}

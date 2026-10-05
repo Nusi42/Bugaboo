@@ -11,11 +11,12 @@ use axum::response::Response;
 use bb_app::access::ProjectLabel;
 use bb_app::auth::{
     AccessKeyRulesQuery, AccessKeyView, AccessKeysQuery, AppError, DeleteAccessKey, MakeAccessKey,
+    ProjectChoice, ProjectChoicesQuery,
 };
 use bb_core::ErrorCode;
 use bb_core::access_key::KeyChoice;
 use bb_core::id::{AccessKeyId, ProjectId};
-use bb_policy::{Masked, Permission};
+use bb_policy::{Masked, Permission, Topic};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 use utoipa_axum::router::OpenApiRouter;
@@ -197,13 +198,26 @@ pub(crate) struct CreatedAccessKeyBody {
 
 impl Masked for CreatedAccessKeyBody {}
 
-/// How long a new access key lives in this organization.
+/// One permission a key can be limited to, with the topic it is listed under. The sentence is the
+/// message `permission.<key>` and the name of the topic `permission-topic.<topic>`.
+#[derive(Serialize, ToSchema)]
+pub(crate) struct PermissionChoiceBody {
+    /// The key of the permission.
+    key: Permission,
+    /// What it is about.
+    topic: Topic,
+}
+
+/// How long a new access key lives in this organization, and what a key can be limited to.
 #[derive(Serialize, ToSchema)]
 pub(crate) struct AccessKeyRulesBody {
     /// How many days a new key lives when the person picks no other date.
     default_days: i64,
     /// The most days a key can live.
     longest_days: i64,
+    /// The single permissions a key can be limited to under *More options*, in the order of the
+    /// catalogue.
+    permissions: Vec<PermissionChoiceBody>,
 }
 
 impl Masked for AccessKeyRulesBody {}
@@ -369,10 +383,103 @@ async fn get_access_key_rules(
         .api()?
         .access_key_rules(info, AccessKeyRulesQuery { session_token })
         .await?;
-    answer_authorized(&rules.map(|rules| AccessKeyRulesBody {
-        default_days: rules.default_days,
-        longest_days: rules.longest_days,
+    answer_authorized(&rules.map(|rules| {
+        AccessKeyRulesBody {
+            default_days: rules.default_days,
+            longest_days: rules.longest_days,
+            permissions: rules
+                .permissions
+                .into_iter()
+                .map(|(key, topic)| PermissionChoiceBody { key, topic })
+                .collect(),
+        }
     }))
+}
+
+/// The fields of a project that can be asked for when choosing projects for a key.
+const PROJECT_FIELDS: [FieldSpec; 3] = [
+    FieldSpec::by_default("id"),
+    FieldSpec::by_default("short_name"),
+    FieldSpec::by_default("name"),
+];
+/// The name of the list, so its cursors are its own.
+const PROJECTS_LIST: &str = "access-key-projects";
+
+/// A project a person may limit a key to.
+#[derive(Serialize, ToSchema)]
+pub(crate) struct ProjectChoiceItem {
+    /// The ID of the project.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    id: Option<String>,
+    /// Its short name.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    short_name: Option<String>,
+    /// Its name.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    name: Option<String>,
+}
+
+impl Masked for ProjectChoiceItem {}
+
+impl From<&ProjectChoice> for ProjectChoiceItem {
+    fn from(project: &ProjectChoice) -> Self {
+        Self {
+            id: Some(project.id.to_string()),
+            short_name: Some(project.short_name.clone()),
+            name: Some(project.name.clone()),
+        }
+    }
+}
+
+/// The projects the person may limit a key to: those they know about, by short name, a page at a
+/// time.
+#[utoipa::path(
+    get,
+    path = "/api/v1/access-keys/projects",
+    operation_id = "listProjectChoices",
+    tag = "access-keys",
+    extensions(("x-never-stored" = json!(true))),
+    params(ListParams),
+    responses((status = 200, description = "The projects the person may know about, by short name.", body = Page<ProjectChoiceItem>), NotSignedInAnswer, ForbiddenAnswer)
+)]
+async fn list_project_choices(
+    State(auth): State<AuthHandle>,
+    Info(info): Info,
+    Session(session_token): Session,
+    ApiQuery(params): ApiQuery<ListParams>,
+) -> Result<Response, ApiError> {
+    let position = params.position(PROJECTS_LIST);
+    let cursor = match &position {
+        Ok(position) => position.clone(),
+        Err(_) => Some(String::new()),
+    };
+    let page = auth
+        .api()?
+        .project_choices(
+            info,
+            ProjectChoicesQuery {
+                session_token,
+                cursor,
+                limit: params.limit(),
+            },
+        )
+        .await
+        .map_err(|error| match error {
+            // The only thing the use case can find invalid is the cursor.
+            AppError::Refused(ErrorCode::InvalidRequest) => ApiError::new(ErrorCode::BadCursor),
+            other => ApiError::from(other),
+        })?;
+    position?;
+    let list = page.map(|page| Listed {
+        items: page.items.iter().map(ProjectChoiceItem::from).collect(),
+        next: page.next_cursor,
+    });
+    let fields = params.fields_readable(&PROJECT_FIELDS, &list.hidden_properties())?;
+    Ok(super::auth::answer(Page::of_authorized(
+        PROJECTS_LIST,
+        &list,
+        &fields,
+    )?))
 }
 
 /// The routes of a person's own access keys.
@@ -384,6 +491,7 @@ where
     OpenApiRouter::new()
         .routes(routes!(list_access_keys, make_access_key))
         .routes(routes!(get_access_key_rules))
+        .routes(routes!(list_project_choices))
         .routes(routes!(delete_access_key))
 }
 
@@ -414,5 +522,15 @@ mod tests {
             expired: true,
         });
         assert_fields_are_the_keys_of(&KEY_FIELDS, &item);
+    }
+
+    #[test]
+    fn perf_02_the_field_table_names_exactly_the_fields_of_a_project_to_choose() {
+        let item = ProjectChoiceItem::from(&ProjectChoice {
+            id: "0190f4c2-7a3e-7c1d-9b52-3d6e8f1a2b4c".parse().unwrap(),
+            short_name: "WEB".to_owned(),
+            name: "Web".to_owned(),
+        });
+        assert_fields_are_the_keys_of(&PROJECT_FIELDS, &item);
     }
 }

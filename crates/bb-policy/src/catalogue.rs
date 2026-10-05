@@ -29,6 +29,16 @@ impl Topic {
     /// Every topic, in the order of the role page.
     pub const ALL: &'static [Self] = &[Self::Projects, Self::People, Self::Settings];
 
+    /// The word of the topic in the API (`projects`).
+    #[must_use]
+    pub const fn code(self) -> &'static str {
+        match self {
+            Self::Projects => "projects",
+            Self::People => "people",
+            Self::Settings => "settings",
+        }
+    }
+
     /// The message that names the topic (`permission-topic.<topic>`).
     #[must_use]
     pub const fn name(self) -> MessageKey {
@@ -39,6 +49,28 @@ impl Topic {
         }
     }
 }
+
+impl Serialize for Topic {
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        serializer.serialize_str(self.code())
+    }
+}
+
+/// In the API description a topic is one of its words, so clients get a union type.
+#[cfg(feature = "openapi")]
+impl utoipa::PartialSchema for Topic {
+    fn schema() -> utoipa::openapi::RefOr<utoipa::openapi::schema::Schema> {
+        use utoipa::openapi::schema::{ObjectBuilder, Type};
+        ObjectBuilder::new()
+            .schema_type(Type::String)
+            .description(Some("What a group of permissions is about."))
+            .enum_values(Some(Self::ALL.iter().map(|topic| topic.code())))
+            .into()
+    }
+}
+
+#[cfg(feature = "openapi")]
+impl utoipa::ToSchema for Topic {}
 
 /// Where a permission counts (ADR-0025, decision 1).
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]

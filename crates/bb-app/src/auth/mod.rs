@@ -35,7 +35,9 @@ use crate::roles::{
 
 #[cfg(test)]
 pub(crate) use access_keys::narrowing_of;
-pub use access_keys::{access_key_rules, access_keys, delete_access_key, make_access_key};
+pub use access_keys::{
+    access_key_rules, access_keys, delete_access_key, make_access_key, project_choices,
+};
 pub use account::{accept_invitation, change_password, complete_setup, issue_setup_code, sign_up};
 pub use ctx::{AppError, AuthServices, Ctx, FailureLimit, NETWORK_KEY_PREFIX, RequestInfo};
 pub(crate) use ctx::{by, change_failed, changed, entity, fixed_entity, internal, set_to};
@@ -140,6 +142,8 @@ use_cases! {
     access_keys(AccessKeysQuery) -> Authorized<AccessKeyPage>;
     /// How long a new access key lives in this organization.
     access_key_rules(AccessKeyRulesQuery) -> Authorized<AccessKeyRules>;
+    /// Lists the projects a person may choose for an access key.
+    project_choices(ProjectChoicesQuery) -> Authorized<ProjectChoicePage>;
     /// How many people with a role have no second step yet.
     second_step_gap(SecondStepGapQuery) -> Authorized<SecondStepGap>;
     /// Makes an invitation.
