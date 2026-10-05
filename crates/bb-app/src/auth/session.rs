@@ -493,7 +493,10 @@ pub async fn sign_out<S: AuthStore>(ctx: &Ctx<'_, S>, input: SignOut) -> Result<
     Ok(Done)
 }
 
-/// Ends every session of the person, the one of the request included.
+/// Ends every session of the person, the one of the request included, and deletes all their
+/// access keys: a person who signs out everywhere (a lost device, a stolen key) does not want a
+/// script to go on. Each key that goes is written into the security log. A password change ends
+/// the other sessions and leaves the keys.
 ///
 /// # Errors
 /// `auth.not_signed_in` without a session.
@@ -509,18 +512,25 @@ pub async fn sign_out_everywhere<S: AuthStore>(
         vec![changed("sessions")],
     )?;
     let store = ctx.store();
-    store
+    let keys = store
         .record_change(&event, move |transaction| {
             Box::pin(async move {
-                S::delete_sessions_of(transaction, person, None)
-                    .await
-                    .map(|_| ())
+                S::delete_sessions_of(transaction, person, None).await?;
+                S::delete_access_keys_of(transaction, person).await
             })
         })
         .await
         .map_err(|error| change_failed::<S>(&error, None))?;
     ctx.note(SecurityAction::SessionsEndedAll, Some(person), None)
         .await;
+    for key in keys {
+        ctx.note(
+            SecurityAction::AccessKeyDeleted,
+            Some(person),
+            Some(entity("access_key", key)?),
+        )
+        .await;
+    }
     Ok(Done)
 }
 

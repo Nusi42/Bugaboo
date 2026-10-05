@@ -17,6 +17,7 @@ Write the key in a file that only you can read, or in a setting of the program t
 ## What to expect
 
 - A script needs no cookie, and no second header to protect against forged requests. The key is all it needs.
+- A key can never invite people, change roles or decide who has which role, even if you picked "Everything I can do". Asked for that, Bugaboo answers "You are not allowed to do that" (403).
 - Asked for something the key may not do, Bugaboo answers "You are not allowed to do that" (403). Asked with a key that does not work, it answers "Please sign in to continue" (401), the same for a key that ran out, one that was deleted and one that never existed.
 - Asked for the places of your own sign-in (your password, your second step, your passkeys, the places where you are signed in, your keys), a key is turned away (403).
 - A key can send 300 requests a minute. Over that, Bugaboo answers 429 and says in `Retry-After` how many seconds to wait. Ask for fewer, bigger answers with `limit` and `fields` instead of many small ones. An administrator can raise the number in the settings file (`access_key_requests_per_minute`).

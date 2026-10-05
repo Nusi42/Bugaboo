@@ -793,6 +793,23 @@ impl AuthStore for FakeStore {
         Ok(tx.state.access_keys.len() < before)
     }
 
+    async fn delete_access_keys_of(
+        tx: &mut Tx,
+        owner: UserId,
+    ) -> Result<Vec<AccessKeyId>, FakeError> {
+        let gone: Vec<AccessKeyId> = tx
+            .state
+            .access_keys
+            .iter()
+            .filter(|record| record.key.owner == owner)
+            .map(|record| record.key.id)
+            .collect();
+        tx.state
+            .access_keys
+            .retain(|record| record.key.owner != owner);
+        Ok(gone)
+    }
+
     async fn insert_invitation(tx: &mut Tx, invitation: &Invitation) -> Result<(), FakeError> {
         tx.state.invitations.push(invitation.clone());
         Ok(())

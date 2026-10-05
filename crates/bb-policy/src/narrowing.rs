@@ -77,11 +77,14 @@ impl Narrowing {
         self
     }
 
+    /// Whether the key keeps the permission: never one that keys do not hold (`NOT_FOR_KEYS`),
+    /// whatever the choice, and otherwise what the choice says.
     fn keeps(&self, permission: Permission) -> bool {
-        match &self.choice {
-            Choice::Kinds(kinds) => kinds.contains(&permission.kind()),
-            Choice::Permissions(permissions) => permissions.contains(&permission),
-        }
+        permission.keys_may_hold()
+            && match &self.choice {
+                Choice::Kinds(kinds) => kinds.contains(&permission.kind()),
+                Choice::Permissions(permissions) => permissions.contains(&permission),
+            }
     }
 
     /// Whether the key can change anything: if not, every field is at most *Can see*.
@@ -90,7 +93,7 @@ impl Narrowing {
             Choice::Kinds(kinds) => kinds.contains(&Kind::Change) || kinds.contains(&Kind::Manage),
             Choice::Permissions(permissions) => permissions
                 .iter()
-                .any(|permission| permission.kind() != Kind::See),
+                .any(|permission| permission.keys_may_hold() && permission.kind() != Kind::See),
         }
     }
 

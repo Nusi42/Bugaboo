@@ -881,6 +881,13 @@ impl AuthStore for AuthStorage {
         crate::access_keys::delete_access_key(transaction, owner, id).await
     }
 
+    async fn delete_access_keys_of(
+        transaction: &mut Transaction,
+        owner: UserId,
+    ) -> Result<Vec<AccessKeyId>, StoreError> {
+        crate::access_keys::delete_access_keys_of(transaction, owner).await
+    }
+
     async fn insert_invitation(
         transaction: &mut Transaction,
         invitation: &Invitation,

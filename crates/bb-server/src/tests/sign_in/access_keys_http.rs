@@ -15,7 +15,8 @@ use super::policy_rig::Org;
 use super::rig::{Outcome, PASSWORD, Rig};
 
 /// What the keys of these tests may do: invite people (a change) and see who is invited.
-const KEY_ROUTE: &str = "/api/v1/auth/invitations";
+/// A route that lets people in who may change organization settings (a permission keys may hold).
+const KEY_ROUTE: &str = "/api/v1/auth/sign-up-policy";
 
 /// The same answer, whatever made it: the status, the code and the message, not the request ID.
 fn alike(reply: &super::http::Reply) -> (u16, String, String) {
@@ -40,9 +41,9 @@ async fn auth_07_a_script_with_a_key_needs_no_origin_no_token_and_no_cookie() ->
         // A change from a program: only the header. A page needs an origin and a token.
         let made = script
             .script(
-                "POST",
+                "PUT",
                 KEY_ROUTE,
-                Some(json!({"email": "somebody@example.test"})),
+                Some(json!({"enabled": false, "domains": []})),
                 &key,
             )
             .await?;
@@ -50,18 +51,18 @@ async fn auth_07_a_script_with_a_key_needs_no_origin_no_token_and_no_cookie() ->
         assert!(made.cookies().is_empty(), "a key never sets a cookie");
         let listed = script.script("GET", KEY_ROUTE, None, &key).await?;
         assert_eq!(listed.status, StatusCode::OK);
-        assert_eq!(listed.body["items"].as_array().map(Vec::len), Some(1));
+        assert_eq!(listed.body["enabled"], false);
         // Without a key the same request from a program is a change that comes from nowhere
         // (no key, so no way around the origin check).
         let nothing = script
             .finish(
                 axum::http::Request::builder()
-                    .method("POST")
+                    .method("PUT")
                     .uri(KEY_ROUTE)
                     .header(header::HOST, "bugaboo.test"),
-                "POST",
+                "PUT",
                 KEY_ROUTE,
-                Some(json!({"email": "other@example.test"})),
+                Some(json!({"enabled": false, "domains": []})),
             )
             .await?;
         assert_eq!(nothing.code(), "request.wrong_origin");
@@ -76,7 +77,7 @@ async fn auth_07_a_script_with_a_key_needs_no_origin_no_token_and_no_cookie() ->
         .await?;
         page.set_header("authorization", &format!("Bearer {key}"));
         let no_token = page
-            .send_without_token("POST", KEY_ROUTE, json!({"email": "third@example.test"}))
+            .send_without_token("PUT", KEY_ROUTE, json!({"enabled": false, "domains": []}))
             .await?;
         assert_eq!(no_token.code(), "request.wrong_token");
         Ok(())
@@ -116,14 +117,14 @@ async fn sec_06_a_page_of_another_website_cannot_send_a_key() -> Outcome {
         let not_a_key = page
             .finish(
                 axum::http::Request::builder()
-                    .method("POST")
+                    .method("PUT")
                     .uri(KEY_ROUTE)
                     .header(header::HOST, "bugaboo.test")
                     .header(header::AUTHORIZATION, "Bearer not-a-key")
                     .header(header::ORIGIN, "https://evil.test"),
-                "POST",
+                "PUT",
                 KEY_ROUTE,
-                Some(json!({"email": "somebody@example.test"})),
+                Some(json!({"enabled": false, "domains": []})),
             )
             .await?;
         assert_eq!(not_a_key.code(), "request.wrong_origin");
@@ -131,13 +132,13 @@ async fn sec_06_a_page_of_another_website_cannot_send_a_key() -> Outcome {
         let basic = page
             .finish(
                 axum::http::Request::builder()
-                    .method("POST")
+                    .method("PUT")
                     .uri(KEY_ROUTE)
                     .header(header::HOST, "bugaboo.test")
                     .header(header::AUTHORIZATION, format!("Basic {key}")),
-                "POST",
+                "PUT",
                 KEY_ROUTE,
-                Some(json!({"email": "somebody@example.test"})),
+                Some(json!({"enabled": false, "domains": []})),
             )
             .await?;
         assert_eq!(basic.code(), "request.wrong_origin");

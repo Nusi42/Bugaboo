@@ -240,6 +240,8 @@ pub trait AuthStore: PolicyStore + 'static {
         fn insert_access_key(record: &AccessKeyRecord) -> ();
         /// Removes an access key of its owner; `false` if the owner has no such key.
         fn delete_access_key(owner: UserId, id: AccessKeyId) -> bool;
+        /// Removes every access key of a person and returns their IDs.
+        fn delete_access_keys_of(owner: UserId) -> Vec<AccessKeyId>;
         /// Adds an invitation.
         fn insert_invitation(invitation: &Invitation) -> ();
         /// Removes an invitation; `false` if there was none.

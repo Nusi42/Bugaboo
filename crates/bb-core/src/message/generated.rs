@@ -84,6 +84,9 @@ pub const ACCESS_KEYS_NAME: MessageKey = MessageKey::new("access-keys.name");
 /// The message `access-keys.name-help`.
 pub const ACCESS_KEYS_NAME_HELP: MessageKey = MessageKey::new("access-keys.name-help");
 
+/// The message `access-keys.never`.
+pub const ACCESS_KEYS_NEVER: MessageKey = MessageKey::new("access-keys.never");
+
 /// The message `access-keys.pick-one`.
 pub const ACCESS_KEYS_PICK_ONE: MessageKey = MessageKey::new("access-keys.pick-one");
 
@@ -2805,7 +2808,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "access-keys.help.everything",
-        "The key can do all that you can do, except changing how you sign in.",
+        "The key can do all that you can do, except what no key can do.",
     ),
     (
         "access-keys.help.permissions",
@@ -2832,6 +2835,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "access-keys.name-help",
         "What the key is for, like “Nightly report”.",
+    ),
+    (
+        "access-keys.never",
+        "No key can invite people, change who has which role, or change how you sign in. You do that here, where you are signed in.",
     ),
     (
         "access-keys.pick-one",
@@ -3878,7 +3885,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("sessions.everywhere", "Sign out everywhere"),
     (
         "sessions.everywhere-text",
-        "You will be signed out of every browser, this one included, and have to sign in again.",
+        "You will be signed out of every browser, this one included, and have to sign in again. Your access keys are deleted and stop working too.",
     ),
     ("sessions.everywhere-title", "Sign out everywhere?"),
     (

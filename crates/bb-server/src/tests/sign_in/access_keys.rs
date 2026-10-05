@@ -98,7 +98,7 @@ async fn make_with(
 }
 
 /// *Check access* for Bob at a project, asked with `credential` (a key or a session).
-async fn check(
+pub(super) async fn check(
     rig: &Rig,
     credential: &str,
     person: bb_core::id::UserId,
@@ -115,6 +115,16 @@ async fn check(
         )
         .await
         .map(|_| ())
+}
+
+/// A request that every key of a person with the role *Checker* may make, the one the tests of
+/// keys use to see whether a key works: *Check access* for the administrator.
+pub(super) async fn probe(rig: &Rig, credential: &str) -> Result<(), AppError> {
+    let ada = rig
+        .person_id("ada@example.test")
+        .await
+        .map_err(|error| AppError::Internal(error.to_string()))?;
+    check(rig, credential, ada, None).await
 }
 
 /// *Make projects* at the top level, asked with `credential`.
@@ -149,7 +159,7 @@ async fn invitations(rig: &Rig, credential: &str) -> Result<(), AppError> {
 }
 
 /// Bob, with the role *Checker* for the whole organization.
-async fn bob(org: &Org<'_>) -> Run<Member> {
+pub(super) async fn bob(org: &Org<'_>) -> Run<Member> {
     let bob = org.person().await?;
     let role = org.role("Checker", &CHECKER).await?;
     org.give_everywhere(&bob, role.id).await?;
@@ -256,13 +266,18 @@ async fn auth_07_a_key_does_what_its_choice_allows_and_never_more_than_its_owner
             judge(invitations(&rig, &change).await),
             Some(ErrorCode::Forbidden)
         );
-        // *Everything I can do*: all of Bob's permissions, and no more.
+        // *Everything I can do*: all of Bob's permissions, and no more (and never inviting people
+        // or changing roles, whatever the owner holds).
         let all = make(&rig, &bob, KeyChoice::Everything, &[], &[])
             .await?
             .secret;
         assert_eq!(judge(check(&rig, &all, bob.id, None).await), None);
         assert_eq!(judge(make_project(&rig, &all, "ALLOFIT").await), None);
-        assert_eq!(judge(invitations(&rig, &all).await), None);
+        // Not even the one that says everything invites people: that stays in the app.
+        assert_eq!(
+            judge(invitations(&rig, &all).await),
+            Some(ErrorCode::Forbidden)
+        );
         // Single permissions: only those.
         let single = make(
             &rig,
@@ -278,54 +293,44 @@ async fn auth_07_a_key_does_what_its_choice_allows_and_never_more_than_its_owner
             judge(check(&rig, &single, bob.id, None).await),
             Some(ErrorCode::Forbidden)
         );
-        // A key never holds more than its owner: Ada may manage roles, Bob may not, and a key
-        // of Bob with that permission (a single permission, or everything) cannot either.
+        // A key never holds more than its owner: Ada may change organization settings, Bob may
+        // not, and a key of Bob with that permission (a single permission, or everything) cannot
+        // either.
         let greedy = make(
             &rig,
             &bob,
             KeyChoice::Permissions,
-            &[Permission::ManageRoles, Permission::ManageGroups],
+            &[Permission::ChangeOrganizationSettings],
             &[],
         )
         .await?
         .secret;
-        let roles = rig
-            .api()
-            .roles(
-                Rig::info(),
-                bb_app::roles::RolesQuery {
-                    session_token: greedy.clone(),
-                    place: None,
-                },
-            )
-            .await;
-        assert_eq!(refused(roles), Some(ErrorCode::Forbidden));
-        let roles = rig
-            .api()
-            .roles(
-                Rig::info(),
-                bb_app::roles::RolesQuery {
-                    session_token: all.clone(),
-                    place: None,
-                },
-            )
-            .await;
-        assert_eq!(refused(roles), Some(ErrorCode::Forbidden));
-        // The keys of the administrator hold what she holds.
+        let policy = |credential: String| {
+            let rig = &rig;
+            async move {
+                rig.api()
+                    .sign_up_policy(
+                        Rig::info(),
+                        bb_app::auth::SignUpPolicyQuery {
+                            session_token: credential,
+                        },
+                    )
+                    .await
+            }
+        };
+        assert_eq!(
+            refused(policy(greedy.clone()).await),
+            Some(ErrorCode::Forbidden)
+        );
+        assert_eq!(
+            refused(policy(all.clone()).await),
+            Some(ErrorCode::Forbidden)
+        );
+        // The keys of the administrator hold what she holds (and no more than keys may).
         let ada = make(&rig, &org.admin, KeyChoice::Everything, &[], &[])
             .await?
             .secret;
-        let roles = rig
-            .api()
-            .roles(
-                Rig::info(),
-                bb_app::roles::RolesQuery {
-                    session_token: ada,
-                    place: None,
-                },
-            )
-            .await;
-        assert!(roles.is_ok());
+        assert!(policy(ada).await.is_ok());
         Ok(())
     })
     .await
@@ -380,7 +385,7 @@ async fn auth_07_a_key_follows_its_owner_losing_a_role_at_once() -> Outcome {
         let key = make(&rig, &bob, KeyChoice::Everything, &[], &[])
             .await?
             .secret;
-        assert_eq!(refused(invitations(&rig, &key).await), None);
+        assert_eq!(refused(probe(&rig, &key).await), None);
         // The administrator takes the role away: the very next request of the key is refused,
         // and the key itself is still there.
         rig.api()
@@ -392,14 +397,11 @@ async fn auth_07_a_key_follows_its_owner_losing_a_role_at_once() -> Outcome {
                 },
             )
             .await?;
-        assert_eq!(
-            refused(invitations(&rig, &key).await),
-            Some(ErrorCode::Forbidden)
-        );
+        assert_eq!(refused(probe(&rig, &key).await), Some(ErrorCode::Forbidden));
         assert_eq!(keys_of(&rig, &bob).await?.len(), 1);
         // Given back, the key works again: it never held anything of its own.
         org.give_everywhere(&bob, role.id).await?;
-        assert_eq!(refused(invitations(&rig, &key).await), None);
+        assert_eq!(refused(probe(&rig, &key).await), None);
         Ok(())
     })
     .await
@@ -428,15 +430,15 @@ async fn auth_07_an_expired_a_deleted_and_an_unknown_key_get_the_same_answer() -
             .await?;
         // A key that was never made, in the right form; and things that are not keys at all.
         let unknown = AccessKeySecret::generate()?.encode().as_str().to_owned();
-        assert_eq!(refused(invitations(&rig, &runs_out).await), None);
+        assert_eq!(refused(probe(&rig, &runs_out).await), None);
         // Three days on, the key has run out.
         rig.clock.advance(3 * DAY);
         let answers = [
-            invitations(&rig, &runs_out).await,
-            invitations(&rig, &deleted.secret).await,
-            invitations(&rig, &unknown).await,
-            invitations(&rig, "bb_nonsense").await,
-            invitations(&rig, "bb_").await,
+            probe(&rig, &runs_out).await,
+            probe(&rig, &deleted.secret).await,
+            probe(&rig, &unknown).await,
+            probe(&rig, "bb_nonsense").await,
+            probe(&rig, "bb_").await,
         ];
         for answer in &answers {
             assert_eq!(answer, &answers[0], "the answers differ");
@@ -444,7 +446,7 @@ async fn auth_07_an_expired_a_deleted_and_an_unknown_key_get_the_same_answer() -
         assert_eq!(answers[0], Err(AppError::Refused(ErrorCode::NotSignedIn)));
         // The key that did not run out keeps working (the session of the owner ran out meanwhile,
         // a key does not need it).
-        assert_eq!(refused(invitations(&rig, &works.secret).await), None);
+        assert_eq!(refused(probe(&rig, &works.secret).await), None);
         Ok(())
     })
     .await
@@ -755,7 +757,7 @@ async fn auth_07_only_the_owner_lists_and_deletes_a_key_and_a_deleted_key_is_gon
             .await;
         assert_eq!(refused(result), Some(ErrorCode::NotFound));
         assert_eq!(keys_of(&rig, &bob).await?.len(), 1);
-        assert_eq!(refused(invitations(&rig, &key.secret).await), None);
+        assert_eq!(refused(probe(&rig, &key.secret).await), None);
         // Bob deletes it: at once, and for good; deleting it again finds nothing.
         let delete = || DeleteAccessKey {
             session_token: bob.session.clone(),
@@ -763,7 +765,7 @@ async fn auth_07_only_the_owner_lists_and_deletes_a_key_and_a_deleted_key_is_gon
         };
         rig.api().delete_access_key(Rig::info(), delete()).await?;
         assert_eq!(
-            refused(invitations(&rig, &key.secret).await),
+            refused(probe(&rig, &key.secret).await),
             Some(ErrorCode::NotSignedIn)
         );
         assert!(keys_of(&rig, &bob).await?.is_empty());
@@ -878,22 +880,22 @@ async fn sec_14_guessing_keys_is_limited_per_network_and_a_working_key_costs_not
             .secret;
         // A working key does not use anything up, however often it is used.
         for _ in 0..30 {
-            assert!(invitations(&rig, &key).await.is_ok());
+            assert!(probe(&rig, &key).await.is_ok());
         }
         // Wrong keys do: after three, a guess from the network waits; a key that works does not.
         for _ in 0..3 {
             let guess = AccessKeySecret::generate()?.encode().as_str().to_owned();
             assert_eq!(
-                refused(invitations(&rig, &guess).await),
+                refused(probe(&rig, &guess).await),
                 Some(ErrorCode::NotSignedIn)
             );
         }
         let guess = AccessKeySecret::generate()?.encode().as_str().to_owned();
         assert!(matches!(
-            invitations(&rig, &guess).await,
+            probe(&rig, &guess).await,
             Err(AppError::Limited { .. })
         ));
-        assert!(invitations(&rig, &key).await.is_ok());
+        assert!(probe(&rig, &key).await.is_ok());
         // The sessions of the people on that network are not affected.
         assert!(rig.permissions(&bob.session).await.is_ok());
         Ok(())
@@ -914,14 +916,14 @@ async fn auth_07_the_last_use_of_a_key_is_kept_to_the_minute() -> Outcome {
         // The clock of the tests starts on a full minute: 37 seconds in, the minute it is.
         let start = rig.clock_now();
         rig.clock.advance(37);
-        assert_eq!(refused(invitations(&rig, &key).await), None);
+        assert_eq!(refused(probe(&rig, &key).await), None);
         assert_eq!(keys_of(&rig, &bob).await?[0].last_used_at, Some(start));
         // Within the same minute nothing changes; in the next one the minute moves on.
         rig.clock.advance(10);
-        assert_eq!(refused(invitations(&rig, &key).await), None);
+        assert_eq!(refused(probe(&rig, &key).await), None);
         assert_eq!(keys_of(&rig, &bob).await?[0].last_used_at, Some(start));
         rig.clock.advance(30);
-        assert_eq!(refused(invitations(&rig, &key).await), None);
+        assert_eq!(refused(probe(&rig, &key).await), None);
         assert_eq!(
             keys_of(&rig, &bob).await?[0].last_used_at,
             Some(later(start, 60))
@@ -1040,13 +1042,20 @@ async fn auth_07_the_rules_of_a_key_name_its_days_and_the_permissions_to_choose_
         };
         let rules = ask().await?;
         assert_eq!((rules.default_days, rules.longest_days), (90, 365));
-        // Every permission of the catalogue, once, in its order, with its topic.
+        // Every permission of the catalogue that a key may hold, once, in its order, with its
+        // topic: not inviting people or changing roles (`NOT_FOR_KEYS`).
         let keys: Vec<Permission> = rules
             .permissions
             .iter()
             .map(|(permission, _)| *permission)
             .collect();
-        assert_eq!(keys, Permission::ALL);
+        let may_be_held: Vec<Permission> = Permission::ALL
+            .iter()
+            .copied()
+            .filter(|permission| permission.keys_may_hold())
+            .collect();
+        assert_eq!(keys, may_be_held);
+        assert!(keys.len() < Permission::ALL.len());
         assert!(
             rules
                 .permissions

@@ -19,7 +19,7 @@ mod narrowing;
 mod people;
 mod starting;
 
-pub use catalogue::{Counts, Kind, Permission, Topic, UnknownPermission};
+pub use catalogue::{Counts, Kind, NOT_FOR_KEYS, Permission, Topic, UnknownPermission};
 pub use evaluate::{
     Evaluation, FieldRule, HeldRole, Inputs, LevelSource, PeopleRule, Place, RoleData, RoleLevel,
     Row, RowStatus, RowTrace, Who, evaluate,

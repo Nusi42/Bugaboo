@@ -468,6 +468,28 @@ pub(crate) async fn delete_access_key(
     Ok(transaction.execute(&delete).await? > 0)
 }
 
+/// Removes every key of its owner with their permissions and projects, and returns their IDs.
+pub(crate) async fn delete_access_keys_of(
+    transaction: &mut Transaction,
+    owner: UserId,
+) -> Result<Vec<AccessKeyId>, StoreError> {
+    let mut held = Query::select();
+    held.column(AccessKeyRow::Id)
+        .from(AccessKeyRow::Table)
+        .and_where(Expr::col(AccessKeyRow::Owner).eq(bytes(owner.to_bytes())));
+    let mut ids = Vec::new();
+    for row in transaction.fetch_all(&held).await? {
+        ids.push(
+            AccessKeyId::from_bytes(row.id_bytes(AccessKeyRow::Id)?)
+                .map_err(corrupt("a key ID"))?,
+        );
+    }
+    for id in &ids {
+        delete_access_key(transaction, owner, *id).await?;
+    }
+    Ok(ids)
+}
+
 #[cfg(test)]
 #[path = "tests/access_keys.rs"]
 mod tests;

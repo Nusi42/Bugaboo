@@ -229,8 +229,11 @@ fn clean_choice(
     permissions: &[Permission],
 ) -> Result<Vec<Permission>, AppError> {
     let wanted: BTreeSet<Permission> = permissions.iter().copied().collect();
-    // Single permissions come with the choice *More options* and only with it.
-    if (choice == KeyChoice::Permissions) == wanted.is_empty() {
+    // Single permissions come with the choice *More options* and only with it, and never one a
+    // key does not hold (inviting people, changing roles: `NOT_FOR_KEYS`).
+    if (choice == KeyChoice::Permissions) == wanted.is_empty()
+        || !wanted.iter().all(|permission| permission.keys_may_hold())
+    {
         return Err(ErrorCode::InvalidRequest.into());
     }
     Ok(wanted.into_iter().collect())
@@ -444,8 +447,10 @@ pub async fn access_key_rules<S: AuthStore>(
             .access_key_default_days
             .min(settings.access_key_longest_days),
         longest_days: settings.access_key_longest_days,
+        // What a key never holds is not offered.
         permissions: Permission::ALL
             .iter()
+            .filter(|permission| permission.keys_may_hold())
             .map(|permission| (*permission, permission.topic()))
             .collect(),
     }))

@@ -23,6 +23,16 @@ const REQUIRED: Option<ErrorCode> = Some(ErrorCode::SecondStepRequired);
 
 /// The role *Inviter* (it lets people invite), with the switch as given.
 pub(super) async fn inviter(org: &Org<'_>, two_step: bool) -> Run<RoleId> {
+    role_with(org, Permission::ManageInvitations, "Inviter", two_step).await
+}
+
+/// A role with one permission and the switch as given.
+pub(super) async fn role_with(
+    org: &Org<'_>,
+    permission: Permission,
+    name: &str,
+    two_step: bool,
+) -> Run<RoleId> {
     Ok(org
         .rig
         .api()
@@ -30,8 +40,8 @@ pub(super) async fn inviter(org: &Org<'_>, two_step: bool) -> Run<RoleId> {
             Rig::info(),
             MakeRole {
                 session_token: org.admin.session.clone(),
-                name: "Inviter".to_owned(),
-                permissions: vec![Permission::ManageInvitations],
+                name: name.to_owned(),
+                permissions: vec![permission],
                 two_step,
             },
         )

@@ -14,7 +14,8 @@ use bb_core::id::{AccessKeyId, AssignmentId, ProjectId, RoleId, SequentialIds, U
 use bb_core::people_kinds::PeopleKind;
 use bb_core::security_log::Digest;
 use bb_policy::{
-    FieldRule, Inputs, Kind, PeopleRule, Permission, Place, RoleData, Row, Who, evaluate,
+    FieldRule, Inputs, Kind, NOT_FOR_KEYS, PeopleRule, Permission, Place, RoleData, Row, Who,
+    evaluate,
 };
 use jiff::Timestamp;
 use proptest::prelude::*;
@@ -235,11 +236,16 @@ proptest! {
 
         // Only what the choice keeps.
         let kinds = kinds_of(choice);
-        let keeps = |permission: &Permission| match &kinds {
-            Some(kinds) => kinds.contains(&permission.kind()),
-            None => picked.contains(permission),
+        let keeps = |permission: &Permission| {
+            permission.keys_may_hold()
+                && match &kinds {
+                    Some(kinds) => kinds.contains(&permission.kind()),
+                    None => picked.contains(permission),
+                }
         };
         prop_assert!(key.permissions().iter().all(keeps));
+        // Never what keys do not hold (inviting people, changing roles), whatever the choice.
+        prop_assert!(key.permissions().iter().all(|permission| !NOT_FOR_KEYS.contains(permission)));
 
         // Only inside its projects (and their sub-projects), and nothing for the whole
         // organization when it has projects.
@@ -269,7 +275,9 @@ proptest! {
             .any(|permission| permission.kind() != Kind::See);
         let can_change = match &kinds {
             Some(kinds) => kinds.contains(&Kind::Change) || kinds.contains(&Kind::Manage),
-            None => picked.iter().any(|permission| permission.kind() != Kind::See),
+            None => picked
+                .iter()
+                .any(|permission| permission.keys_may_hold() && permission.kind() != Kind::See),
         };
         if !can_change {
             prop_assert!(!may_change);

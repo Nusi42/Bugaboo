@@ -30,7 +30,7 @@ Your administrator can ask everybody, or everybody with a certain role, to use a
 
 "Where you're signed in" lists every place where you are signed in, for example each browser, with the browser, the system and when it was last used. The place you are in now is marked "This browser". If you see a place you do not know, press the button next to it to sign out of it.
 
-"Sign out everywhere" ends all your places at once, this one included. Use it when you lost a device. Afterwards, change your password.
+"Sign out everywhere" ends all your places at once, this one included, and deletes your access keys too. Use it when you lost a device. Afterwards, change your password.
 
 ## Invitations and making your own account
 

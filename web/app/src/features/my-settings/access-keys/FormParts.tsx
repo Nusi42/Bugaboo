@@ -38,6 +38,7 @@ export function Basics({ draft }: PartProps) {
         />
       )}
       <p className={styles.muted}>{t(choiceHelp(draft.single ? "permissions" : draft.choice))}</p>
+      <p className={styles.muted}>{t("access-keys.never")}</p>
     </>
   );
 }
