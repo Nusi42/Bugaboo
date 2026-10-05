@@ -1,0 +1,216 @@
+//! `bugaboo service install` and `uninstall` (OPS-03, OPS-04): Bugaboo as a service that starts
+//! with the computer and runs as an account of its own.
+//!
+//! - Linux: a systemd unit and the user `bugaboo` (`systemd.rs`).
+//! - Windows: a Windows service that runs as its own virtual account `NT SERVICE\Bugaboo`, which
+//!   needs no password (`windows.rs`).
+//!
+//! The first start of a service has no console, so the setup code of the first administrator is
+//! saved in a file in the data folder instead (`serve.rs`); installing says where.
+
+#[cfg(any(unix, test))]
+mod systemd;
+#[cfg(windows)]
+mod windows;
+
+use std::path::{Path, PathBuf};
+
+use anyhow::anyhow;
+use bb_core::message;
+#[cfg(not(windows))]
+use bb_core::message::Message;
+
+use super::{ConfigArgs, load_settings, program_folder};
+use crate::config::{DEFAULT_FILE, Settings};
+use crate::data_folder::DataFolder;
+use crate::output;
+
+/// The name of the service, as the system lists it.
+#[cfg(windows)]
+pub(super) const NAME: &str = "Bugaboo";
+
+/// What the installer found out: which program, which settings file, which data folder.
+struct Found {
+    program: PathBuf,
+    config: PathBuf,
+    settings: Settings,
+}
+
+/// Finds the program and the settings file the service will use. The service reads the same
+/// settings file as `bugaboo serve`, so it must exist and be complete.
+fn find(args: &ConfigArgs) -> anyhow::Result<Found> {
+    let config = args
+        .config
+        .clone()
+        .unwrap_or_else(|| program_folder().join(DEFAULT_FILE));
+    let config = std::path::absolute(&config).unwrap_or(config);
+    if !config.is_file() {
+        return Err(anyhow!(
+            message::service_no_settings(config.display()).render()
+        ));
+    }
+    let settings = load_settings(Some(&config), &[], true)?;
+    let program = std::env::current_exe()?;
+    Ok(Found {
+        program,
+        config,
+        settings,
+    })
+}
+
+/// Tells where the setup code of the first start is, when nobody has made an administrator yet.
+fn tell_about_setup_code(data_dir: &Path) {
+    if let Some(data) = DataFolder::existing(data_dir) {
+        output::line(&message::service_setup_code(data.setup_code_file().display()).render());
+    }
+}
+
+/// `bugaboo service install`.
+pub(super) fn install(args: &ConfigArgs) -> anyhow::Result<()> {
+    #[cfg(windows)]
+    {
+        windows::install(&find(args)?)
+    }
+    #[cfg(unix)]
+    {
+        systemd_install(&find(args)?)
+    }
+    #[cfg(not(any(windows, unix)))]
+    {
+        let _ = args;
+        unsupported()
+    }
+}
+
+/// `bugaboo service uninstall`.
+pub(super) fn uninstall() -> anyhow::Result<()> {
+    #[cfg(windows)]
+    {
+        windows::uninstall()
+    }
+    #[cfg(unix)]
+    {
+        systemd_uninstall()
+    }
+    #[cfg(not(any(windows, unix)))]
+    {
+        unsupported()
+    }
+}
+
+/// `bugaboo service run`: started by the Windows service manager and never by a person.
+pub(super) fn run(args: &ConfigArgs) -> anyhow::Result<()> {
+    #[cfg(windows)]
+    {
+        windows::run(args)
+    }
+    #[cfg(not(windows))]
+    {
+        let _ = args;
+        Err(anyhow!(
+            Message::from(message::SERVICE_NOT_A_SERVICE).render()
+        ))
+    }
+}
+
+#[cfg(not(any(windows, unix)))]
+fn unsupported() -> anyhow::Result<()> {
+    Err(anyhow!(
+        Message::from(message::SERVICE_UNSUPPORTED).render()
+    ))
+}
+
+#[cfg(unix)]
+fn systemd_install(found: &Found) -> anyhow::Result<()> {
+    use systemd::{Installation, Step, USER, plan};
+
+    require_systemd()?;
+    let installation = Installation {
+        program: &found.program,
+        config: &found.config,
+        data_dir: &found.settings.data_dir,
+    };
+    let user_exists = succeeds("id", &["-u", USER]);
+    for step in plan(&installation, user_exists) {
+        match step {
+            Step::Run { program, arguments } => run_command(program, &arguments)?,
+            Step::PrepareDataFolder(path) => {
+                DataFolder::prepare(&path)?;
+            }
+            Step::Write { path, contents } => std::fs::write(&path, contents)
+                .map_err(|error| refused(&format!("{}: {error}", path.display())))?,
+        }
+    }
+    output_installed(found);
+    Ok(())
+}
+
+#[cfg(unix)]
+fn output_installed(found: &Found) {
+    output::line(&message::service_installed(systemd::USER, systemd::UNIT).render());
+    tell_about_setup_code(&found.settings.data_dir);
+}
+
+#[cfg(unix)]
+fn systemd_uninstall() -> anyhow::Result<()> {
+    use systemd::{Step, UNIT, UNIT_FOLDER, removal};
+
+    require_systemd()?;
+    if !Path::new(UNIT_FOLDER).join(UNIT).is_file() {
+        return Err(anyhow!(message::service_not_installed(UNIT).render()));
+    }
+    for step in removal() {
+        if let Step::Run { program, arguments } = step {
+            run_command(program, &arguments)?;
+        }
+    }
+    output::line(&message::service_removed(UNIT).render());
+    Ok(())
+}
+
+/// Whether the machine runs systemd (the standard test), and whether the person has the rights.
+#[cfg(unix)]
+fn require_systemd() -> anyhow::Result<()> {
+    if !Path::new("/run/systemd/system").is_dir() {
+        return Err(anyhow!(
+            Message::from(message::SERVICE_UNSUPPORTED).render()
+        ));
+    }
+    let is_root = std::process::Command::new("id")
+        .arg("-u")
+        .output()
+        .is_ok_and(|output| String::from_utf8_lossy(&output.stdout).trim() == "0");
+    if is_root {
+        Ok(())
+    } else {
+        Err(anyhow!(
+            Message::from(message::SERVICE_NEEDS_ADMIN).render()
+        ))
+    }
+}
+
+#[cfg(unix)]
+fn succeeds(program: &str, arguments: &[&str]) -> bool {
+    std::process::Command::new(program)
+        .args(arguments)
+        .output()
+        .is_ok_and(|output| output.status.success())
+}
+
+#[cfg(unix)]
+fn run_command(program: &str, arguments: &[String]) -> anyhow::Result<()> {
+    let output = std::process::Command::new(program)
+        .args(arguments)
+        .output()
+        .map_err(|error| refused(&format!("{program}: {error}")))?;
+    if output.status.success() {
+        Ok(())
+    } else {
+        Err(refused(String::from_utf8_lossy(&output.stderr).trim()))
+    }
+}
+
+/// "The system refused", with what the system said.
+fn refused(reason: &str) -> anyhow::Error {
+    anyhow!(message::service_failed(reason).render())
+}

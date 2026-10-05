@@ -12,6 +12,15 @@ pub(crate) fn line(message: &str) {
     println!("{message}");
 }
 
+/// A question that waits for an answer on the same line: no line break, shown at once.
+pub(crate) fn prompt(text: &str) {
+    use std::io::Write as _;
+    print!("{text}");
+    // A prompt that stays in the buffer would not be seen before the answer is typed. If the
+    // console is gone there is nobody to ask.
+    let _ = std::io::stdout().flush();
+}
+
 /// Exactly this text, without a line break added (machine-readable output).
 pub(crate) fn raw(text: &str) {
     print!("{text}");

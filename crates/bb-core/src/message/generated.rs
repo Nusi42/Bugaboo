@@ -5,6 +5,79 @@ use super::{Message, MessageKey, Value};
 /// The message `app.name`.
 pub const APP_NAME: MessageKey = MessageKey::new("app.name");
 
+/// The message `cli.about.keys`.
+pub const CLI_ABOUT_KEYS: MessageKey = MessageKey::new("cli.about.keys");
+
+/// The message `cli.about.keys-export`.
+pub const CLI_ABOUT_KEYS_EXPORT: MessageKey = MessageKey::new("cli.about.keys-export");
+
+/// The message `cli.about.openapi`.
+pub const CLI_ABOUT_OPENAPI: MessageKey = MessageKey::new("cli.about.openapi");
+
+/// The message `cli.about.rotate-key`.
+pub const CLI_ABOUT_ROTATE_KEY: MessageKey = MessageKey::new("cli.about.rotate-key");
+
+/// The message `cli.about.security-log`.
+pub const CLI_ABOUT_SECURITY_LOG: MessageKey = MessageKey::new("cli.about.security-log");
+
+/// The message `cli.about.security-log-verify`.
+pub const CLI_ABOUT_SECURITY_LOG_VERIFY: MessageKey =
+    MessageKey::new("cli.about.security-log-verify");
+
+/// The message `cli.about.serve`.
+pub const CLI_ABOUT_SERVE: MessageKey = MessageKey::new("cli.about.serve");
+
+/// The message `cli.about.service`.
+pub const CLI_ABOUT_SERVICE: MessageKey = MessageKey::new("cli.about.service");
+
+/// The message `cli.about.service-install`.
+pub const CLI_ABOUT_SERVICE_INSTALL: MessageKey = MessageKey::new("cli.about.service-install");
+
+/// The message `cli.about.service-uninstall`.
+pub const CLI_ABOUT_SERVICE_UNINSTALL: MessageKey = MessageKey::new("cli.about.service-uninstall");
+
+/// The message `cli.about.setup`.
+pub const CLI_ABOUT_SETUP: MessageKey = MessageKey::new("cli.about.setup");
+
+/// The message `cli.help.address`.
+pub const CLI_HELP_ADDRESS: MessageKey = MessageKey::new("cli.help.address");
+
+/// The message `cli.help.config`.
+pub const CLI_HELP_CONFIG: MessageKey = MessageKey::new("cli.help.config");
+
+/// The message `cli.help.data-dir`.
+pub const CLI_HELP_DATA_DIR: MessageKey = MessageKey::new("cli.help.data-dir");
+
+/// The message `cli.help.database-url`.
+pub const CLI_HELP_DATABASE_URL: MessageKey = MessageKey::new("cli.help.database-url");
+
+/// The message `cli.help.keys-folder`.
+pub const CLI_HELP_KEYS_FOLDER: MessageKey = MessageKey::new("cli.help.keys-folder");
+
+/// The message `cli.help.non-interactive`.
+pub const CLI_HELP_NON_INTERACTIVE: MessageKey = MessageKey::new("cli.help.non-interactive");
+
+/// The message `cli.help.overwrite`.
+pub const CLI_HELP_OVERWRITE: MessageKey = MessageKey::new("cli.help.overwrite");
+
+/// The message `cli.help.port`.
+pub const CLI_HELP_PORT: MessageKey = MessageKey::new("cli.help.port");
+
+/// The message `cli.help.public-url`.
+pub const CLI_HELP_PUBLIC_URL: MessageKey = MessageKey::new("cli.help.public-url");
+
+/// The message `cli.help.tls`.
+pub const CLI_HELP_TLS: MessageKey = MessageKey::new("cli.help.tls");
+
+/// The message `cli.help.tls-cert`.
+pub const CLI_HELP_TLS_CERT: MessageKey = MessageKey::new("cli.help.tls-cert");
+
+/// The message `cli.help.tls-key`.
+pub const CLI_HELP_TLS_KEY: MessageKey = MessageKey::new("cli.help.tls-key");
+
+/// The message `cli.help.web`.
+pub const CLI_HELP_WEB: MessageKey = MessageKey::new("cli.help.web");
+
 /// The message `config.data-dir-empty`.
 pub const CONFIG_DATA_DIR_EMPTY: MessageKey = MessageKey::new("config.data-dir-empty");
 
@@ -107,6 +180,34 @@ pub const HELLO_INTRO: MessageKey = MessageKey::new("hello.intro");
 /// The message `hello.title`.
 pub const HELLO_TITLE: MessageKey = MessageKey::new("hello.title");
 
+/// The message `security-log.reason.anchor`.
+pub const SECURITY_LOG_REASON_ANCHOR: MessageKey = MessageKey::new("security-log.reason.anchor");
+
+/// The message `security-log.reason.broken-link`.
+pub const SECURITY_LOG_REASON_BROKEN_LINK: MessageKey =
+    MessageKey::new("security-log.reason.broken-link");
+
+/// The message `security-log.reason.changed-content`.
+pub const SECURITY_LOG_REASON_CHANGED_CONTENT: MessageKey =
+    MessageKey::new("security-log.reason.changed-content");
+
+/// The message `security-log.reason.checkpoint`.
+pub const SECURITY_LOG_REASON_CHECKPOINT: MessageKey =
+    MessageKey::new("security-log.reason.checkpoint");
+
+/// The message `security-log.reason.gap`.
+pub const SECURITY_LOG_REASON_GAP: MessageKey = MessageKey::new("security-log.reason.gap");
+
+/// The message `security-log.reason.truncated`.
+pub const SECURITY_LOG_REASON_TRUNCATED: MessageKey =
+    MessageKey::new("security-log.reason.truncated");
+
+/// The message `security-log.unanchored`.
+pub const SECURITY_LOG_UNANCHORED: MessageKey = MessageKey::new("security-log.unanchored");
+
+/// The message `security-log.unreadable`.
+pub const SECURITY_LOG_UNREADABLE: MessageKey = MessageKey::new("security-log.unreadable");
+
 /// The message `server.about`.
 pub const SERVER_ABOUT: MessageKey = MessageKey::new("server.about");
 
@@ -133,6 +234,15 @@ pub const SERVER_SIGNAL_FAILED: MessageKey = MessageKey::new("server.signal-fail
 
 /// The message `server.web-app-missing`.
 pub const SERVER_WEB_APP_MISSING: MessageKey = MessageKey::new("server.web-app-missing");
+
+/// The message `service.needs-admin`.
+pub const SERVICE_NEEDS_ADMIN: MessageKey = MessageKey::new("service.needs-admin");
+
+/// The message `service.not-a-service`.
+pub const SERVICE_NOT_A_SERVICE: MessageKey = MessageKey::new("service.not-a-service");
+
+/// The message `service.unsupported`.
+pub const SERVICE_UNSUPPORTED: MessageKey = MessageKey::new("service.unsupported");
 
 /// The message `setting.appearance.theme.help`.
 pub const SETTING_APPEARANCE_THEME_HELP: MessageKey =
@@ -162,6 +272,51 @@ pub const SETTING_SECURITY_TWO_STEP_REQUIRED_ROLES_HELP: MessageKey =
 pub const SETTING_SECURITY_TWO_STEP_REQUIRED_HELP: MessageKey =
     MessageKey::new("setting.security.two-step-required.help");
 
+/// The message `setup.answer-yes`.
+pub const SETUP_ANSWER_YES: MessageKey = MessageKey::new("setup.answer-yes");
+
+/// The message `setup.ask.address`.
+pub const SETUP_ASK_ADDRESS: MessageKey = MessageKey::new("setup.ask.address");
+
+/// The message `setup.ask.data-dir`.
+pub const SETUP_ASK_DATA_DIR: MessageKey = MessageKey::new("setup.ask.data-dir");
+
+/// The message `setup.ask.database`.
+pub const SETUP_ASK_DATABASE: MessageKey = MessageKey::new("setup.ask.database");
+
+/// The message `setup.ask.port`.
+pub const SETUP_ASK_PORT: MessageKey = MessageKey::new("setup.ask.port");
+
+/// The message `setup.ask.public-url`.
+pub const SETUP_ASK_PUBLIC_URL: MessageKey = MessageKey::new("setup.ask.public-url");
+
+/// The message `setup.ask.tls`.
+pub const SETUP_ASK_TLS: MessageKey = MessageKey::new("setup.ask.tls");
+
+/// The message `setup.ask.tls-cert`.
+pub const SETUP_ASK_TLS_CERT: MessageKey = MessageKey::new("setup.ask.tls-cert");
+
+/// The message `setup.ask.tls-key`.
+pub const SETUP_ASK_TLS_KEY: MessageKey = MessageKey::new("setup.ask.tls-key");
+
+/// The message `setup.database-built-in`.
+pub const SETUP_DATABASE_BUILT_IN: MessageKey = MessageKey::new("setup.database-built-in");
+
+/// The message `setup.input-ended`.
+pub const SETUP_INPUT_ENDED: MessageKey = MessageKey::new("setup.input-ended");
+
+/// The message `setup.next`.
+pub const SETUP_NEXT: MessageKey = MessageKey::new("setup.next");
+
+/// The message `setup.replace-refused`.
+pub const SETUP_REPLACE_REFUSED: MessageKey = MessageKey::new("setup.replace-refused");
+
+/// The message `setup.service-hint`.
+pub const SETUP_SERVICE_HINT: MessageKey = MessageKey::new("setup.service-hint");
+
+/// The message `setup.welcome`.
+pub const SETUP_WELCOME: MessageKey = MessageKey::new("setup.welcome");
+
 /// The message `theme.daylight`.
 pub const THEME_DAYLIGHT: MessageKey = MessageKey::new("theme.daylight");
 
@@ -179,6 +334,15 @@ pub const THEME_MIDNIGHT: MessageKey = MessageKey::new("theme.midnight");
 
 /// The message `theme.paper`.
 pub const THEME_PAPER: MessageKey = MessageKey::new("theme.paper");
+
+/// The message `cli.no-data`.
+#[must_use]
+pub fn cli_no_data(path: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("cli.no-data"),
+        vec![("path", Value::Text(path.to_string()))],
+    )
+}
 
 /// The message `config.address-invalid`.
 #[must_use]
@@ -368,6 +532,75 @@ pub fn hello_current(theme: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `keys.export-exists`.
+#[must_use]
+pub fn keys_export_exists(path: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("keys.export-exists"),
+        vec![("path", Value::Text(path.to_string()))],
+    )
+}
+
+/// The message `keys.export-failed`.
+#[must_use]
+pub fn keys_export_failed(reason: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("keys.export-failed"),
+        vec![("reason", Value::Text(reason.to_string()))],
+    )
+}
+
+/// The message `keys.exported`.
+#[must_use]
+pub fn keys_exported(path: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("keys.exported"),
+        vec![("path", Value::Text(path.to_string()))],
+    )
+}
+
+/// The message `keys.rotated`.
+#[must_use]
+pub fn keys_rotated(secrets: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("keys.rotated"),
+        vec![("secrets", Value::Number(secrets))],
+    )
+}
+
+/// The message `security-log.broken`.
+#[must_use]
+pub fn security_log_broken(reason: impl std::fmt::Display, seq: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("security-log.broken"),
+        vec![
+            ("reason", Value::Text(reason.to_string())),
+            ("seq", Value::Text(seq.to_string())),
+        ],
+    )
+}
+
+/// The message `security-log.head`.
+#[must_use]
+pub fn security_log_head(hash: impl std::fmt::Display, seq: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("security-log.head"),
+        vec![
+            ("hash", Value::Text(hash.to_string())),
+            ("seq", Value::Text(seq.to_string())),
+        ],
+    )
+}
+
+/// The message `security-log.valid`.
+#[must_use]
+pub fn security_log_valid(entries: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("security-log.valid"),
+        vec![("entries", Value::Number(entries))],
+    )
+}
+
 /// The message `server.database-failed`.
 #[must_use]
 pub fn server_database_failed(reason: impl std::fmt::Display) -> Message {
@@ -422,12 +655,132 @@ pub fn server_setup_code(code: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `server.setup-code-file`.
+#[must_use]
+pub fn server_setup_code_file(path: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("server.setup-code-file"),
+        vec![("path", Value::Text(path.to_string()))],
+    )
+}
+
 /// The message `server.warning`.
 #[must_use]
 pub fn server_warning(message: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("server.warning"),
         vec![("message", Value::Text(message.to_string()))],
+    )
+}
+
+/// The message `service.exists`.
+#[must_use]
+pub fn service_exists(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("service.exists"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `service.failed`.
+#[must_use]
+pub fn service_failed(reason: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("service.failed"),
+        vec![("reason", Value::Text(reason.to_string()))],
+    )
+}
+
+/// The message `service.installed`.
+#[must_use]
+pub fn service_installed(account: impl std::fmt::Display, name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("service.installed"),
+        vec![
+            ("account", Value::Text(account.to_string())),
+            ("name", Value::Text(name.to_string())),
+        ],
+    )
+}
+
+/// The message `service.no-settings`.
+#[must_use]
+pub fn service_no_settings(path: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("service.no-settings"),
+        vec![("path", Value::Text(path.to_string()))],
+    )
+}
+
+/// The message `service.not-installed`.
+#[must_use]
+pub fn service_not_installed(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("service.not-installed"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `service.removed`.
+#[must_use]
+pub fn service_removed(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("service.removed"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `service.setup-code`.
+#[must_use]
+pub fn service_setup_code(path: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("service.setup-code"),
+        vec![("path", Value::Text(path.to_string()))],
+    )
+}
+
+/// The message `service.stop-timeout`.
+#[must_use]
+pub fn service_stop_timeout(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("service.stop-timeout"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `setup.ask.replace`.
+#[must_use]
+pub fn setup_ask_replace(path: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("setup.ask.replace"),
+        vec![("path", Value::Text(path.to_string()))],
+    )
+}
+
+/// The message `setup.exists`.
+#[must_use]
+pub fn setup_exists(path: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("setup.exists"),
+        vec![("path", Value::Text(path.to_string()))],
+    )
+}
+
+/// The message `setup.not-usable`.
+#[must_use]
+pub fn setup_not_usable(reason: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("setup.not-usable"),
+        vec![("reason", Value::Text(reason.to_string()))],
+    )
+}
+
+/// The message `setup.saved`.
+#[must_use]
+pub fn setup_saved(path: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("setup.saved"),
+        vec![("path", Value::Text(path.to_string()))],
     )
 }
 
@@ -518,6 +871,88 @@ pub fn tls_write_failed(path: impl std::fmt::Display, reason: impl std::fmt::Dis
 /// Every message, sorted by key.
 pub(super) const CATALOG: &[(&str, &str)] = &[
     ("app.name", "Bugaboo"),
+    ("cli.about.keys", "Look after the key files"),
+    (
+        "cli.about.keys-export",
+        "Copy the key files into a folder, for your backup",
+    ),
+    (
+        "cli.about.openapi",
+        "Print the description of the API (OpenAPI) and stop",
+    ),
+    (
+        "cli.about.rotate-key",
+        "Make a new master key and use it for every stored secret",
+    ),
+    ("cli.about.security-log", "Look at the security log"),
+    (
+        "cli.about.security-log-verify",
+        "Check that nobody changed the security log",
+    ),
+    ("cli.about.serve", "Start the server"),
+    (
+        "cli.about.service",
+        "Run Bugaboo as a service that starts with the computer",
+    ),
+    (
+        "cli.about.service-install",
+        "Install the service and start it",
+    ),
+    (
+        "cli.about.service-uninstall",
+        "Stop the service and remove it. Your data stays where it is",
+    ),
+    (
+        "cli.about.setup",
+        "Answer a few questions and save the answers in the settings file",
+    ),
+    (
+        "cli.help.address",
+        "The address to listen on (default 127.0.0.1, this computer only)",
+    ),
+    (
+        "cli.help.config",
+        "The settings file (default: bugaboo.toml next to the program, if it exists)",
+    ),
+    ("cli.help.data-dir", "The folder that holds all data"),
+    (
+        "cli.help.database-url",
+        "The database: sqlite:<file> or postgres://<address> (default: the one inside the data folder)",
+    ),
+    (
+        "cli.help.keys-folder",
+        "The folder to copy the key files into. It is made if it does not exist",
+    ),
+    (
+        "cli.help.non-interactive",
+        "Ask nothing: use the options given here and the defaults",
+    ),
+    (
+        "cli.help.overwrite",
+        "Replace the settings file if it already exists",
+    ),
+    ("cli.help.port", "The port to listen on"),
+    (
+        "cli.help.public-url",
+        "The web address people type to reach Bugaboo, like https://bugaboo.example.com",
+    ),
+    ("cli.help.tls", "HTTPS mode: self-signed, files or off"),
+    (
+        "cli.help.tls-cert",
+        "The certificate file, for HTTPS mode files",
+    ),
+    (
+        "cli.help.tls-key",
+        "The private key file, for HTTPS mode files",
+    ),
+    (
+        "cli.help.web",
+        "Serve the browser app from this folder instead of the one built into the program",
+    ),
+    (
+        "cli.no-data",
+        "There is no Bugaboo data in {path}. Check the data folder in your settings.",
+    ),
     (
         "config.address-invalid",
         "The address {value} is not an IP address such as 127.0.0.1 or ::1.",
@@ -692,6 +1127,66 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "Track your work in one calm place. Pick the theme that is easiest on your eyes.",
     ),
     ("hello.title", "Hello Bugaboo"),
+    (
+        "keys.export-exists",
+        "The folder {path} already holds a copy of a key file. Choose another folder, so no copy is overwritten.",
+    ),
+    (
+        "keys.export-failed",
+        "The key files could not be copied: {reason}",
+    ),
+    (
+        "keys.exported",
+        "Copied the key files into {path}. They can read everything Bugaboo stores in secret: keep them in a safe place, away from the database backup.",
+    ),
+    (
+        "keys.rotated",
+        "Made a new master key and used it for {secrets, plural, one {# stored secret} other {# stored secrets}}. Back up the key files again.",
+    ),
+    (
+        "security-log.broken",
+        "The security log is broken at entry {seq}: {reason}",
+    ),
+    (
+        "security-log.head",
+        "The last entry is number {seq}. Its hash starts with {hash}. Keep a copy of this to compare later.",
+    ),
+    (
+        "security-log.reason.anchor",
+        "the anchor file that vouches for the end of the log was changed.",
+    ),
+    (
+        "security-log.reason.broken-link",
+        "an entry does not match the entry before it.",
+    ),
+    (
+        "security-log.reason.changed-content",
+        "an entry was changed after it was written.",
+    ),
+    (
+        "security-log.reason.checkpoint",
+        "entries were deleted without a signed checkpoint, or the checkpoint is wrong.",
+    ),
+    (
+        "security-log.reason.gap",
+        "an entry is missing, appears twice or is out of order.",
+    ),
+    (
+        "security-log.reason.truncated",
+        "entries at the end of the log were cut off or rewritten.",
+    ),
+    (
+        "security-log.unanchored",
+        "Nothing vouches for the end of the log, because its anchor file is missing or empty. Someone could cut entries off the end without anybody noticing.",
+    ),
+    (
+        "security-log.unreadable",
+        "The security log could not be read.",
+    ),
+    (
+        "security-log.valid",
+        "The security log is intact: {entries, plural, one {# entry} other {# entries}} checked.",
+    ),
     ("server.about", "Bugaboo: the issue tracker in one file"),
     (
         "server.database-built-in",
@@ -726,6 +1221,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "Setup is open. Open Bugaboo in your browser and enter this setup code to make the first administrator: {code}",
     ),
     (
+        "server.setup-code-file",
+        "Setup is open. The setup code is saved in {path}. Read it there and enter it in your browser to make the first administrator.",
+    ),
+    (
         "server.setup-code-hint",
         "The code works once and changes every time Bugaboo starts.",
     ),
@@ -737,6 +1236,47 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "server.web-app-missing",
         "The browser app is not built yet. Run `cargo xtask build`, or pass --web <folder>.",
+    ),
+    (
+        "service.exists",
+        "The service {name} is installed already. Remove it first with: bugaboo service uninstall",
+    ),
+    ("service.failed", "The system refused: {reason}"),
+    (
+        "service.installed",
+        "The service {name} is installed and started. It runs as the account {account} and starts with the computer.",
+    ),
+    (
+        "service.needs-admin",
+        "Installing or removing a service needs administrator rights. On Windows, open the terminal as an administrator. On Linux, run the command with sudo.",
+    ),
+    (
+        "service.no-settings",
+        "There is no settings file at {path}. Run bugaboo setup first, or name the file with --config.",
+    ),
+    (
+        "service.not-a-service",
+        "This command is for the service manager. To start Bugaboo yourself, use: bugaboo serve",
+    ),
+    (
+        "service.not-installed",
+        "The service {name} is not installed.",
+    ),
+    (
+        "service.removed",
+        "The service {name} is removed. Your data stays where it is.",
+    ),
+    (
+        "service.setup-code",
+        "Nobody has made an administrator yet. The setup code for the first administrator is saved in {path}. Read it there, and enter it in your browser.",
+    ),
+    (
+        "service.stop-timeout",
+        "The service {name} did not stop in time. Stop it in the Services window and try again.",
+    ),
+    (
+        "service.unsupported",
+        "Bugaboo can run as a service on Windows and on Linux with systemd. This computer has neither.",
     ),
     (
         "setting.appearance.theme.help",
@@ -765,6 +1305,58 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "setting.security.two-step-required.help",
         "Ask everyone to use two-step sign-in. People who have not set it up are asked to do so the next time they sign in.",
+    ),
+    ("setup.answer-yes", "yes"),
+    (
+        "setup.ask.address",
+        "Who should be able to open Bugaboo? Type 127.0.0.1 for this computer only, or 0.0.0.0 for everyone who can reach this computer.",
+    ),
+    (
+        "setup.ask.data-dir",
+        "Where should Bugaboo keep its data? Give the path of a folder.",
+    ),
+    (
+        "setup.ask.database",
+        "Which database? Type built-in for the database inside the data folder, or a sqlite: or postgres:// address.",
+    ),
+    ("setup.ask.port", "Which port should Bugaboo listen on?"),
+    (
+        "setup.ask.public-url",
+        "Which web address will people type to reach Bugaboo? For example https://bugaboo.example.com",
+    ),
+    (
+        "setup.ask.replace",
+        "The settings file {path} already exists. Replace it? Type yes or no.",
+    ),
+    (
+        "setup.ask.tls",
+        "How should the connection be secured (HTTPS)? Type self-signed to let Bugaboo make its own certificate, files to use a certificate you already have, or off for plain HTTP (only on this computer or behind a proxy).",
+    ),
+    ("setup.ask.tls-cert", "Where is the certificate file?"),
+    ("setup.ask.tls-key", "Where is the private key file?"),
+    ("setup.database-built-in", "built-in"),
+    (
+        "setup.exists",
+        "The settings file {path} already exists. Add --overwrite to replace it.",
+    ),
+    (
+        "setup.input-ended",
+        "The questions were not all answered, so nothing was saved.",
+    ),
+    (
+        "setup.next",
+        "Start Bugaboo with: bugaboo serve. The first start shows a setup code in that window. You need it to make the first administrator in your browser.",
+    ),
+    ("setup.not-usable", "That does not work: {reason}"),
+    ("setup.replace-refused", "Nothing was changed."),
+    ("setup.saved", "Saved your answers in {path}."),
+    (
+        "setup.service-hint",
+        "To have Bugaboo start with the computer, run: bugaboo service install",
+    ),
+    (
+        "setup.welcome",
+        "Welcome to Bugaboo. A few questions, then your answers are saved in a settings file. Press Enter to accept the answer in brackets.",
     ),
     ("theme.daylight", "Daylight"),
     ("theme.device", "Match my device"),

@@ -45,9 +45,9 @@ pub(crate) const FILE_ENV: &str = "BUGABOO_CONFIG";
 /// Read from the current folder when it exists and no other file is named.
 pub(crate) const DEFAULT_FILE: &str = "bugaboo.toml";
 
-const DEFAULT_ADDRESS: &str = "127.0.0.1";
-const DEFAULT_DATA_DIR: &str = "bugaboo-data";
-const DEFAULT_TLS_MODE: &str = "self-signed";
+pub(crate) const DEFAULT_ADDRESS: &str = "127.0.0.1";
+pub(crate) const DEFAULT_DATA_DIR: &str = "bugaboo-data";
+pub(crate) const DEFAULT_TLS_MODE: &str = "self-signed";
 const DEFAULT_LOG_LEVEL: &str = "info";
 const DEFAULT_HEADER_TIMEOUT_SECONDS: u64 = 30;
 
@@ -215,6 +215,27 @@ pub(crate) fn resolve(sources: &Sources<'_>) -> Result<Settings, ConfigError> {
         values.insert(key, value.clone());
     }
     settings_from(&values, sources.base)
+}
+
+/// The port that [`resolve_without_port`] uses when no source names one. Nothing listens on it.
+const UNUSED_PORT: &str = "1";
+
+/// Like [`resolve`], for commands that do not listen (`security-log verify`, `rotate-key`): they
+/// need no port, so a missing one is not an error.
+pub(crate) fn resolve_without_port(sources: &Sources<'_>) -> Result<Settings, ConfigError> {
+    match resolve(sources) {
+        Err(ConfigError::PortMissing) => {
+            let mut cli = sources.cli.to_vec();
+            cli.push(("port", UNUSED_PORT.to_owned()));
+            resolve(&Sources {
+                file: sources.file,
+                env: sources.env,
+                cli: &cli,
+                base: sources.base,
+            })
+        }
+        other => other,
+    }
 }
 
 fn from_file(path: &Path, text: &str) -> Result<BTreeMap<&'static str, String>, ConfigError> {
@@ -518,6 +539,40 @@ mod tests {
             })
             .unwrap_err(),
             ConfigError::PortMissing
+        );
+    }
+
+    #[test]
+    fn ops_10_commands_that_do_not_listen_need_no_port_but_still_check_the_rest() {
+        let sources = |cli: &'static [(&'static str, String)]| Sources {
+            file: None,
+            env: &no_env,
+            cli,
+            base: Path::new("exe"),
+        };
+        assert!(resolve_without_port(&sources(&[])).is_ok());
+        // A port that is given is still checked.
+        let wrong = [("port", "http".to_owned())];
+        assert!(matches!(
+            resolve_without_port(&Sources {
+                file: None,
+                env: &no_env,
+                cli: &wrong,
+                base: Path::new("exe"),
+            }),
+            Err(ConfigError::PortInvalid(_))
+        ));
+        // Other mistakes are still reported.
+        let bad = [("database_url", "mysql://x".to_owned())];
+        assert_eq!(
+            resolve_without_port(&Sources {
+                file: None,
+                env: &no_env,
+                cli: &bad,
+                base: Path::new("exe"),
+            })
+            .unwrap_err(),
+            ConfigError::DatabaseInvalid
         );
     }
 

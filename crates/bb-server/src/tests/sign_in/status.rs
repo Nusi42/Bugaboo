@@ -103,7 +103,7 @@ async fn ops_08_the_status_shows_the_result_of_checking_the_security_log() -> Ou
         assert_eq!(log["head_hash"].as_str().map(str::len), Some(16));
 
         // Without the anchor file nothing vouches for the end of the log: a warning (M1-F20).
-        std::fs::remove_file(rig._folder.path().join("logs").join("security-head.log"))?;
+        std::fs::remove_file(rig.folder.path().join("logs").join("security-head.log"))?;
         let reply = ada.send("GET", STATUS, None).await?;
         assert_eq!(reply.body["security_log"]["result"], "valid");
         assert_eq!(reply.body["security_log"]["anchored"], false);

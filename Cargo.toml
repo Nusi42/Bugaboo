@@ -87,6 +87,7 @@ tower-http = "0.7.1"
 trybuild = "1.0.121"
 zeroize = "1.9.0"
 uuid = { version = "1.27.0", default-features = false }
+windows-service = "0.8.1"
 tracing = "0.1.44"
 webauthn-authenticator-rs = { version = "=0.6.1-dev", default-features = false, features = [
   "softpasskey",

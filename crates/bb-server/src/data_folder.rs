@@ -6,7 +6,9 @@
 //! keys/        the master key and other secrets
 //! backups/     backups
 //! tls/         the certificate and key made by Bugaboo
-//! logs/        files the security log keeps outside the database (its anchor file)
+//! logs/        files the security log keeps outside the database (its anchor file), and the
+//!              log of a server that runs as a service
+//! setup-code.txt  the setup code of the first start, for a server without a console
 //! ```
 //!
 //! Folders this program creates are readable by their owner only: on Linux mode `0700`, on
@@ -27,6 +29,9 @@ const BACKUPS: &str = "backups";
 const TLS: &str = "tls";
 const LOGS: &str = "logs";
 const ANCHOR_FILE: &str = "security-head.log";
+#[cfg(windows)]
+const SERVER_LOG_FILE: &str = "server.log";
+const SETUP_CODE_FILE: &str = "setup-code.txt";
 
 /// The prepared data folder.
 #[derive(Debug)]
@@ -79,6 +84,15 @@ impl DataFolder {
         })
     }
 
+    /// The folder of an installation that exists, or `None` when `root` is no folder. Commands
+    /// that only look at stored data use this, so a mistyped path does not make an empty data
+    /// folder.
+    pub(crate) fn existing(root: &Path) -> Option<Self> {
+        root.is_dir().then(|| Self {
+            root: root.to_path_buf(),
+        })
+    }
+
     pub(crate) fn root(&self) -> &Path {
         &self.root
     }
@@ -96,6 +110,17 @@ impl DataFolder {
         self.root.join(LOGS).join(ANCHOR_FILE)
     }
 
+    /// The log of a server that has no console to write to (a service).
+    #[cfg(windows)]
+    pub(crate) fn server_log(&self) -> PathBuf {
+        self.root.join(LOGS).join(SERVER_LOG_FILE)
+    }
+
+    /// Where the setup code of the first start is saved when nobody can read the console.
+    pub(crate) fn setup_code_file(&self) -> PathBuf {
+        self.root.join(SETUP_CODE_FILE)
+    }
+
     /// The built-in database.
     pub(crate) fn database_file(&self) -> PathBuf {
         self.root.join(DATABASE_FILE)
@@ -104,7 +129,7 @@ impl DataFolder {
 
 /// Creates `path` (and missing parents) for its owner only. A folder that already exists is
 /// left as its owner set it up.
-fn create_private(path: &Path) -> Result<(), DataFolderError> {
+pub(crate) fn create_private(path: &Path) -> Result<(), DataFolderError> {
     if path.is_dir() {
         return Ok(());
     }
