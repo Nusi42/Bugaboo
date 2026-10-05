@@ -54,9 +54,15 @@ let projectsJoined = false;
  * show the next page a moment later, and the focus would have moved to the old one by then.
  */
 async function joinProjects(): Promise<void> {
+  if (projectsJoined) {
+    return;
+  }
+  const projects = await import("../features/projects/index.ts");
+  // Marked only now: when the import fails, the next page tries again. Two pages that waited
+  // together join once.
   if (!projectsJoined) {
     projectsJoined = true;
-    (await import("../features/projects/index.ts")).registerProjects();
+    projects.registerProjects();
   }
 }
 
