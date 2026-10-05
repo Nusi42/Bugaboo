@@ -92,7 +92,12 @@ pub async fn make_project<S: AuthStore>(
     let stored = project.clone();
     ctx.store()
         .record_change(&event, move |transaction| {
-            Box::pin(async move { S::insert_project(transaction, &stored).await })
+            Box::pin(async move {
+                // A project made while somebody gives a role for sub-projects is seen by them or
+                // reached by it: the two wait for each other.
+                S::lock_policy(transaction).await?;
+                S::insert_project(transaction, &stored).await
+            })
         })
         .await
         .map_err(|error| change_failed::<S>(&error, Some(ErrorCode::NameTaken)))?;

@@ -211,16 +211,18 @@ impl<S: AuthStore> Ctx<'_, S> {
 
 /// Whether `giver` may give this row: they hold every permission of its role at the place it is
 /// given (ADR-0025, decision 6; organization permissions count nowhere in a project and are left
-/// out there). A row for a project *and its sub-projects* is given in each of them, so they must
-/// hold the role there too: a lead for one project cannot make themselves lead of everything
-/// below it. A row of *No access* gives nothing.
+/// out there). A row for a project *and its sub-projects* reaches the sub-projects that are made
+/// later as well as those that exist, so the giver must hold the role through rows that reach
+/// sub-projects themselves (a row for the project alone does not count), and in each existing
+/// sub-project too (a *No access* there counts). A lead for one project cannot make themselves
+/// lead of everything below it. A row of *No access* gives nothing.
 ///
 /// It runs inside the change, after the policy lock, so it judges what is stored now and not
 /// what was stored when the request began.
 ///
 /// # Errors
 /// [`Refusal::TooMuch`] (as the error of the store) when they hold less than the role somewhere
-/// the row reaches, or the error of the store.
+/// the row reaches or the place does not exist, or the error of the store.
 pub(crate) async fn ensure_may_give_in<S: AuthStore>(
     transaction: &mut S::Transaction,
     giver: UserId,
@@ -233,7 +235,8 @@ pub(crate) async fn ensure_may_give_in<S: AuthStore>(
         return Ok(());
     };
     let mut places = vec![row.project.map_or(Place::Organization, Place::Project)];
-    if let (Some(project), AppliesTo::ProjectAndSubProjects) = (row.project, row.applies_to) {
+    let reaches_below = row.applies_to == AppliesTo::ProjectAndSubProjects;
+    if let (Some(project), true) = (row.project, reaches_below) {
         places.extend(
             S::sub_projects_in(transaction, project)
                 .await?
@@ -241,10 +244,17 @@ pub(crate) async fn ensure_may_give_in<S: AuthStore>(
                 .map(Place::Project),
         );
     }
-    for place in places {
-        let Some(inputs) = S::policy_inputs_in(transaction, giver, place).await? else {
-            continue;
+    for (at, place) in places.into_iter().enumerate() {
+        // A place that is gone is not one the giver holds anything in.
+        let Some(mut inputs) = S::policy_inputs_in(transaction, giver, place).await? else {
+            return Err(S::refused(Refusal::TooMuch));
         };
+        if at == 0 && reaches_below {
+            // Their rows for this project alone do not reach what will be made below it.
+            inputs.rows.retain(|held| {
+                !(held.project == row.project && held.applies_to == AppliesTo::Project)
+            });
+        }
         ensure_no_escalation(&evaluate(&inputs), &record.permissions).map_err(S::refused)?;
     }
     Ok(())
