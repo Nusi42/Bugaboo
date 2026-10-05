@@ -352,61 +352,85 @@ pub(crate) enum Existing {
 
 /// Saves `contents` in a file that only the account that runs Bugaboo can read (and, on Windows,
 /// the administrators of the computer): a secret that has to be readable by a person, such as the
-/// setup code of a server without a console, or a copy of the key files. The file is made
-/// private before the secret is written into it.
+/// setup code of a server without a console, or a copy of the key files. The folder of the file
+/// must be there already.
+///
+/// The file is never visible half-made and never visible to others: it is made in a folder of its
+/// own that only the owner can enter (made private before anything goes into it), made private
+/// itself, filled, and only then moved into place. A write that fails leaves nothing behind.
 pub(crate) fn write_private(
     path: &Path,
     contents: &[u8],
     existing: Existing,
 ) -> std::io::Result<()> {
     use std::io::Write as _;
-    match existing {
-        Existing::Refuse => {
-            let mut file = open_private(path, existing)?;
-            file.write_all(contents)?;
-            file.flush()
-        }
-        Existing::Replace => {
-            // Written beside the file and moved into place, so that somebody who reads the file
-            // at that moment (a test, or a person who waits for it) sees the old file or the
-            // whole new one, never an empty file that is still being made private.
-            let mut name = path.as_os_str().to_owned();
-            name.push(".part");
-            let part = PathBuf::from(name);
-            let mut file = open_private(&part, Existing::Replace)?;
-            file.write_all(contents)?;
-            file.flush()?;
-            drop(file);
-            std::fs::rename(&part, path).inspect_err(|_| {
-                let _ = std::fs::remove_file(&part);
-            })
-        }
+    write_private_with(path, existing, |file| file.write_all(contents))
+}
+
+/// `write_private` with the writing left to `write`, so a failure can be tried.
+fn write_private_with(
+    path: &Path,
+    existing: Existing,
+    write: impl FnOnce(&mut std::fs::File) -> std::io::Result<()>,
+) -> std::io::Result<()> {
+    let not_there = || std::io::Error::from(std::io::ErrorKind::NotFound);
+    if !path.parent().is_some_and(Path::is_dir) {
+        return Err(not_there());
     }
+    let name = path.file_name().ok_or_else(not_there)?;
+    let staging = staging_folder(path);
+    create_private(&staging).map_err(std::io::Error::other)?;
+    let staged = staging.join(name);
+    let placed = open_private(&staged)
+        .and_then(|mut file| {
+            write(&mut file)?;
+            std::io::Write::flush(&mut file)
+        })
+        .and_then(|()| match existing {
+            Existing::Replace => std::fs::rename(&staged, path),
+            // A hard link fails when the target is there, and never replaces it.
+            Existing::Refuse => std::fs::hard_link(&staged, path),
+        });
+    // Whatever happened, nothing stays in the folder of the file but the file itself.
+    let _ = std::fs::remove_file(&staged);
+    let _ = std::fs::remove_dir(&staging);
+    placed
 }
 
-fn open_options(existing: Existing) -> std::fs::OpenOptions {
-    let mut options = std::fs::OpenOptions::new();
-    options.write(true);
-    match existing {
-        Existing::Replace => options.create(true).truncate(true),
-        Existing::Refuse => options.create_new(true),
-    };
-    options
+/// The folder in which a secret file is made before it is moved to `path`: beside it, with a name
+/// that no other call uses at the same time.
+fn staging_folder(path: &Path) -> PathBuf {
+    use std::sync::atomic::{AtomicU32, Ordering};
+    static COUNT: AtomicU32 = AtomicU32::new(0);
+    let name = path
+        .file_name()
+        .map_or_else(String::new, |name| name.to_string_lossy().into_owned());
+    path.with_file_name(format!(
+        ".{name}.staging-{}-{}",
+        std::process::id(),
+        COUNT.fetch_add(1, Ordering::Relaxed)
+    ))
 }
 
+/// A new file for the owner only, in a folder that is for the owner only.
 #[cfg(unix)]
-fn open_private(path: &Path, existing: Existing) -> std::io::Result<std::fs::File> {
-    use std::os::unix::fs::{OpenOptionsExt as _, PermissionsExt as _};
-    let file = open_options(existing).mode(0o600).open(path)?;
-    // `mode` counts only for a new file: a file that was there before may have had more.
-    file.set_permissions(std::fs::Permissions::from_mode(0o600))?;
-    Ok(file)
+fn open_private(path: &Path) -> std::io::Result<std::fs::File> {
+    use std::os::unix::fs::OpenOptionsExt as _;
+    std::fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .mode(0o600)
+        .open(path)
 }
 
 #[cfg(windows)]
-fn open_private(path: &Path, existing: Existing) -> std::io::Result<std::fs::File> {
-    // The file exists, empty, before its access list changes and before the secret goes in.
-    let file = open_options(existing).open(path)?;
+fn open_private(path: &Path) -> std::io::Result<std::fs::File> {
+    let file = std::fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(path)?;
+    // The folder it is in grants the owner only. The access list that stays with the file when it
+    // is moved is the one set here: the owner, and the administrators for reading.
     restrict_file(path).map_err(std::io::Error::other)?;
     Ok(file)
 }
@@ -564,10 +588,69 @@ mod tests {
         std::fs::write(&file, "an older and longer text").unwrap();
         write_private(&file, b"new\n", Existing::Replace).unwrap();
         assert_eq!(std::fs::read_to_string(&file).unwrap(), "new\n");
+        assert_eq!(names(temp.path()), ["code.txt"], "a half-made file stayed");
+    }
+
+    /// What is in a folder, by name.
+    fn names(folder: &Path) -> Vec<String> {
+        let mut names: Vec<String> = std::fs::read_dir(folder)
+            .unwrap()
+            .map(|entry| entry.unwrap().file_name().to_string_lossy().into_owned())
+            .collect();
+        names.sort();
+        names
+    }
+
+    #[test]
+    fn sec_16_a_failed_write_leaves_no_file_and_no_leftover() {
+        use std::io::Write as _;
+        let temp = tempfile::tempdir().unwrap();
+        let target = temp.path().join("code.txt");
+        let failing = |file: &mut std::fs::File| -> std::io::Result<()> {
+            file.write_all(b"half of a secret")?;
+            Err(std::io::Error::other("the disk is full"))
+        };
+        // New file: nothing is left of the half-written secret, in the folder or beside it.
+        let error = write_private_with(&target, Existing::Refuse, failing).unwrap_err();
+        assert_eq!(error.to_string(), "the disk is full");
+        assert!(names(temp.path()).is_empty(), "{:?}", names(temp.path()));
+        // Replacing: the old file stays as it was.
+        std::fs::write(&target, "the old file").unwrap();
+        write_private_with(&target, Existing::Replace, failing).unwrap_err();
+        assert_eq!(std::fs::read_to_string(&target).unwrap(), "the old file");
+        assert_eq!(names(temp.path()), ["code.txt"]);
+        // A file that is there is not the failed write's to remove.
+        write_private_with(&target, Existing::Refuse, failing).unwrap_err();
+        assert_eq!(std::fs::read_to_string(&target).unwrap(), "the old file");
+    }
+
+    #[test]
+    fn sec_16_a_secret_is_not_written_into_a_folder_that_is_not_there() {
+        let temp = tempfile::tempdir().unwrap();
+        let target = temp.path().join("not-there").join("code.txt");
+        let error = write_private(&target, b"secret", Existing::Replace).unwrap_err();
+        assert_eq!(error.kind(), std::io::ErrorKind::NotFound);
         assert!(
-            !temp.path().join("code.txt.part").exists(),
-            "a half-made file stayed"
+            !temp.path().join("not-there").exists(),
+            "the folder was made"
         );
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn sec_16_a_secret_is_made_in_a_folder_only_its_owner_can_enter() {
+        // The file is first written in a folder of its own that is for the owner only, and moved
+        // into place after: nobody who can read the target folder can catch it half-made.
+        let temp = tempfile::tempdir().unwrap();
+        let staging = staging_folder(&temp.path().join("code.txt"));
+        create_private(&staging).unwrap();
+        let output = std::process::Command::new("icacls")
+            .arg(&staging)
+            .output()
+            .unwrap();
+        let listing = String::from_utf8_lossy(&output.stdout).into_owned();
+        assert_eq!(listing.matches(":(").count(), 1, "{listing}");
+        assert!(!listing.contains("(I)"), "{listing}");
     }
 
     #[test]

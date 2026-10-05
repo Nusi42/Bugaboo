@@ -282,3 +282,27 @@ fn sec_16_the_hint_repeats_the_arguments_that_were_given() {
         "bugaboo keys export \"/srv/key backup\" --config /etc/bugaboo/bugaboo.toml"
     );
 }
+
+#[test]
+fn sec_16_an_export_that_fails_on_a_file_leaves_no_copy_behind() -> TestResult {
+    let folder = tempfile::tempdir()?;
+    let first = folder.path().join("master.key");
+    std::fs::write(&first, "0 aa")?;
+    // The second key file cannot be read: the copy of the first is taken back, and nothing that
+    // was being written stays either.
+    let missing = folder.path().join("log.key");
+    let target = folder.path().join("backup");
+    let error = copy_keys(&[first, missing], &target)
+        .err()
+        .ok_or("the export went on")?;
+    assert!(
+        format!("{error:#}").contains("could not be copied"),
+        "{error:#}"
+    );
+    assert_eq!(
+        std::fs::read_dir(&target)?.count(),
+        0,
+        "a copy stayed behind"
+    );
+    Ok(())
+}
