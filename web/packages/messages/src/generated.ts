@@ -474,6 +474,10 @@ export const messages = {
     "Only the account that runs Bugaboo can open the parts of the data folder.",
   "status.data-folder.open":
     "Other accounts on this computer can open these. Bugaboo leaves them as they are, because you made them. If nobody else should read them, remove the rights of the other accounts.",
+  "data-folder.own-certificate":
+    "The folder {path} holds only files of your own in its tls folder, such as a certificate. Installing the service would change who owns them. If this folder is meant to become the data folder of Bugaboo, run the command again with {flag}.",
+  "cli.help.take-over-data-folder":
+    "Take over a data folder that holds only your own files in its tls folder, such as a certificate you put there before the first start",
 } as const;
 
 export type MessageKey = keyof typeof messages;
@@ -502,6 +506,7 @@ export interface MessageArguments {
   "data-folder.create-failed": { path: string | number; reason: string | number };
   "data-folder.not-a-data-folder": { path: string | number };
   "data-folder.open": { part: string | number; path: string | number };
+  "data-folder.own-certificate": { flag: string | number; path: string | number };
   "data-folder.protect-failed": { path: string | number; reason: string | number };
   "first-run.step-of": { name: string | number; step: string | number; total: string | number };
   "home.title": { name: string | number };

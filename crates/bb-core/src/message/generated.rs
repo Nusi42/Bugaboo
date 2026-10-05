@@ -93,6 +93,10 @@ pub const CLI_HELP_PORT: MessageKey = MessageKey::new("cli.help.port");
 /// The message `cli.help.public-url`.
 pub const CLI_HELP_PUBLIC_URL: MessageKey = MessageKey::new("cli.help.public-url");
 
+/// The message `cli.help.take-over-data-folder`.
+pub const CLI_HELP_TAKE_OVER_DATA_FOLDER: MessageKey =
+    MessageKey::new("cli.help.take-over-data-folder");
+
 /// The message `cli.help.tls`.
 pub const CLI_HELP_TLS: MessageKey = MessageKey::new("cli.help.tls");
 
@@ -1080,6 +1084,21 @@ pub fn data_folder_open(part: impl std::fmt::Display, path: impl std::fmt::Displ
     )
 }
 
+/// The message `data-folder.own-certificate`.
+#[must_use]
+pub fn data_folder_own_certificate(
+    flag: impl std::fmt::Display,
+    path: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("data-folder.own-certificate"),
+        vec![
+            ("flag", Value::Text(flag.to_string())),
+            ("path", Value::Text(path.to_string())),
+        ],
+    )
+}
+
 /// The message `data-folder.protect-failed`.
 #[must_use]
 pub fn data_folder_protect_failed(
@@ -1896,6 +1915,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "cli.help.public-url",
         "The web address people type to reach Bugaboo, like https://bugaboo.example.com",
     ),
+    (
+        "cli.help.take-over-data-folder",
+        "Take over a data folder that holds only your own files in its tls folder, such as a certificate you put there before the first start",
+    ),
     ("cli.help.tls", "HTTPS mode: self-signed, files or off"),
     (
         "cli.help.tls-cert",
@@ -2048,6 +2071,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "data-folder.open",
         "{part} {path} can be opened by other accounts on this computer. Bugaboo leaves it as it is, because you made it. If nobody else should read it, remove the rights of the other accounts: on Linux run chmod go-rwx on it, on Windows open the Security tab of its properties.",
+    ),
+    (
+        "data-folder.own-certificate",
+        "The folder {path} holds only files of your own in its tls folder, such as a certificate. Installing the service would change who owns them. If this folder is meant to become the data folder of Bugaboo, run the command again with {flag}.",
     ),
     ("data-folder.part.backups", "The folder for backups"),
     ("data-folder.part.database", "The database file"),

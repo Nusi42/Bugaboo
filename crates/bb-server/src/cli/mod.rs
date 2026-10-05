@@ -66,7 +66,7 @@ enum Command {
 #[derive(Subcommand)]
 enum ServiceCommand {
     #[command(about = text(message::CLI_ABOUT_SERVICE_INSTALL))]
-    Install(ConfigArgs),
+    Install(InstallArgs),
     #[command(about = text(message::CLI_ABOUT_SERVICE_UNINSTALL))]
     Uninstall,
     /// Started by the Windows service manager, never by a person.
@@ -127,6 +127,16 @@ impl ServeArgs {
 pub(crate) struct ConfigArgs {
     #[arg(long, help = text(message::CLI_HELP_CONFIG))]
     config: Option<PathBuf>,
+}
+
+/// What `bugaboo service install` needs: the settings file and whether a data folder with only
+/// the person's own certificate may be taken over (M1-F66).
+#[derive(Args, Clone, Default)]
+pub(crate) struct InstallArgs {
+    #[command(flatten)]
+    config: ConfigArgs,
+    #[arg(long, help = text(message::CLI_HELP_TAKE_OVER_DATA_FOLDER))]
+    take_over_data_folder: bool,
 }
 
 /// What a command that works on the stored data (and does not listen) needs to find it.
@@ -285,6 +295,8 @@ mod tests {
             "bugaboo setup --non-interactive --port 8443 --tls off --overwrite",
             "bugaboo service install",
             "bugaboo service install --config bugaboo.toml",
+            "bugaboo service install --take-over-data-folder",
+            "bugaboo service install --config bugaboo.toml --take-over-data-folder",
             "bugaboo service uninstall",
             "bugaboo security-log verify",
             "bugaboo security-log verify --data-dir data",

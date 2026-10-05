@@ -27,6 +27,10 @@ Your answers are saved in the settings file `bugaboo.toml`. You can run `bugaboo
 
 To skip the questions, for example in a script, run `bugaboo setup --non-interactive` with the options you want. Run `bugaboo setup --help` to see them.
 
+## Your own certificate before the first start
+
+If you already have a certificate, put the files into a folder named `tls` inside the data folder before Bugaboo has ever started, and choose `files` in the questions above. When you then run `bugaboo service install`, Bugaboo refuses the folder, because it holds files that Bugaboo did not make, and the message names the flag `--take-over-data-folder`. Run the command again with that flag to let the service take the folder over. The flag takes over nothing else: a folder with any other files in it is still refused.
+
 ## The setup code
 
 The first time Bugaboo starts, nobody has an account. So that only you can make the first one, Bugaboo makes a setup code. It works once and changes every time Bugaboo starts.
