@@ -175,6 +175,26 @@ impl fmt::Display for ConfigError {
 
 impl std::error::Error for ConfigError {}
 
+/// Whether a database address holds a password: `postgres://user:password@host/db`, or a
+/// `password=` in its query (`?password=…`). Only the form is looked at; the password itself is
+/// never copied anywhere.
+pub(crate) fn has_password(url: &str) -> bool {
+    let Some((_, rest)) = url.split_once("://") else {
+        return false;
+    };
+    let (before_query, query) = rest.split_once('?').unwrap_or((rest, ""));
+    let authority = before_query.split('/').next().unwrap_or_default();
+    let in_authority = authority
+        .rsplit_once('@')
+        .and_then(|(user_info, _)| user_info.split_once(':'))
+        .is_some_and(|(_, password)| !password.is_empty());
+    let in_query = query
+        .split('&')
+        .filter_map(|pair| pair.split_once('='))
+        .any(|(name, value)| name.eq_ignore_ascii_case("password") && !value.is_empty());
+    in_authority || in_query
+}
+
 /// The name of the environment variable for a setting.
 pub(crate) fn env_name(key: &str) -> String {
     format!("{ENV_PREFIX}{}", key.to_ascii_uppercase())

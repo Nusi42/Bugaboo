@@ -359,5 +359,6 @@
   "service.settings-folder-owner": "The folder {path} that holds the settings file does not belong to the administrator account (root). Keep the settings file in a folder that root owns, for example /etc/bugaboo.",
   "service.data-folder-real": "The data folder {path} is a link. The service uses the folder it leads to: {real}.",
   "keys.database-placeholder": "--database-url <the address of your database>",
-  "status.log-failures": "{count, plural, one {# entry} other {# entries}} of the security log could not be written since the server started. Check that the disk is not full and that the account that runs Bugaboo can write in the data folder, then look at the server log."
+  "status.log-failures": "{count, plural, one {# entry} other {# entries}} of the security log could not be written since the server started. Check that the disk is not full and that the account that runs Bugaboo can write in the data folder, then look at the server log.",
+  "cli.database-url-password": "The database address on the command line has a password in it, and other people on this computer can read the command line, for example in the list of running programs. Put database_url in your settings file ({file}) or in the environment variable {variable} instead, and leave the option out."
 }

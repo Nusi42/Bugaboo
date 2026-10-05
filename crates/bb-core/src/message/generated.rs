@@ -846,6 +846,21 @@ pub fn backup_left(count: i64) -> Message {
     )
 }
 
+/// The message `cli.database-url-password`.
+#[must_use]
+pub fn cli_database_url_password(
+    file: impl std::fmt::Display,
+    variable: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("cli.database-url-password"),
+        vec![
+            ("file", Value::Text(file.to_string())),
+            ("variable", Value::Text(variable.to_string())),
+        ],
+    )
+}
+
 /// The message `cli.no-data`.
 #[must_use]
 pub fn cli_no_data(path: impl std::fmt::Display) -> Message {
@@ -1809,6 +1824,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "cli.about.setup",
         "Answer a few questions and save the answers in the settings file",
+    ),
+    (
+        "cli.database-url-password",
+        "The database address on the command line has a password in it, and other people on this computer can read the command line, for example in the list of running programs. Put database_url in your settings file ({file}) or in the environment variable {variable} instead, and leave the option out.",
     ),
     (
         "cli.help.address",

@@ -460,12 +460,15 @@ export const messages = {
   "keys.database-placeholder": "--database-url <the address of your database>",
   "status.log-failures":
     "{count, plural, one {# entry} other {# entries}} of the security log could not be written since the server started. Check that the disk is not full and that the account that runs Bugaboo can write in the data folder, then look at the server log.",
+  "cli.database-url-password":
+    "The database address on the command line has a password in it, and other people on this computer can read the command line, for example in the list of running programs. Put database_url in your settings file ({file}) or in the environment variable {variable} instead, and leave the option out.",
 } as const;
 
 export type MessageKey = keyof typeof messages;
 
 export interface MessageArguments {
   "backup.left": { count: number };
+  "cli.database-url-password": { file: string | number; variable: string | number };
   "cli.no-data": { path: string | number };
   "config.address-invalid": { value: string | number };
   "config.file-invalid": { path: string | number; reason: string | number };
