@@ -276,6 +276,10 @@ pub const ERROR_ACCESS_WOULD_LOCK_OUT: MessageKey = MessageKey::new("error.acces
 /// The message `error.assignment.conflict`.
 pub const ERROR_ASSIGNMENT_CONFLICT: MessageKey = MessageKey::new("error.assignment.conflict");
 
+/// The message `error.auth.access-key-not-allowed`.
+pub const ERROR_AUTH_ACCESS_KEY_NOT_ALLOWED: MessageKey =
+    MessageKey::new("error.auth.access-key-not-allowed");
+
 /// The message `error.auth.invitation-invalid`.
 pub const ERROR_AUTH_INVITATION_INVALID: MessageKey =
     MessageKey::new("error.auth.invitation-invalid");
@@ -293,6 +297,10 @@ pub const ERROR_AUTH_PASSWORD_BREACHED: MessageKey =
 /// The message `error.auth.password-too-short`.
 pub const ERROR_AUTH_PASSWORD_TOO_SHORT: MessageKey =
     MessageKey::new("error.auth.password-too-short");
+
+/// The message `error.auth.second-step-required`.
+pub const ERROR_AUTH_SECOND_STEP_REQUIRED: MessageKey =
+    MessageKey::new("error.auth.second-step-required");
 
 /// The message `error.auth.sign-up-refused`.
 pub const ERROR_AUTH_SIGN_UP_REFUSED: MessageKey = MessageKey::new("error.auth.sign-up-refused");
@@ -1008,6 +1016,14 @@ pub const SESSIONS_UNKNOWN_DEVICE: MessageKey = MessageKey::new("sessions.unknow
 /// The message `setting.appearance.theme.help`.
 pub const SETTING_APPEARANCE_THEME_HELP: MessageKey =
     MessageKey::new("setting.appearance.theme.help");
+
+/// The message `setting.auth.access-key-default-days.help`.
+pub const SETTING_AUTH_ACCESS_KEY_DEFAULT_DAYS_HELP: MessageKey =
+    MessageKey::new("setting.auth.access-key-default-days.help");
+
+/// The message `setting.auth.access-key-longest-days.help`.
+pub const SETTING_AUTH_ACCESS_KEY_LONGEST_DAYS_HELP: MessageKey =
+    MessageKey::new("setting.auth.access-key-longest-days.help");
 
 /// The message `setting.auth.sign-up-domains.help`.
 pub const SETTING_AUTH_SIGN_UP_DOMAINS_HELP: MessageKey =
@@ -2849,6 +2865,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "This person or group already has a role here, so it cannot also have No access here, and the other way round. Take the other row away first.",
     ),
     (
+        "error.auth.access-key-not-allowed",
+        "An access key cannot do that. Sign in with your password to change your own sign-in details.",
+    ),
+    (
         "error.auth.invitation-invalid",
         "This invitation does not work. It may have run out or been used already. Ask for a new one.",
     ),
@@ -2864,6 +2884,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "error.auth.password-too-short",
         "Choose a password with at least 12 characters. Length matters more than special characters.",
+    ),
+    (
+        "error.auth.second-step-required",
+        "Before you go on, set up your second step. Your administrator asks for it, and it keeps your account safe even if your password leaks.",
     ),
     (
         "error.auth.sign-up-refused",
@@ -3553,6 +3577,14 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "setting.appearance.theme.help",
         "The colors Bugaboo uses on your screen. Match my device follows the light or dark setting of your device.",
+    ),
+    (
+        "setting.auth.access-key-default-days.help",
+        "How many days a new access key lives when the person picks no other date. Between 1 and 365 days.",
+    ),
+    (
+        "setting.auth.access-key-longest-days.help",
+        "The most days an access key can live, whatever date the person picks. Between 1 and 365 days.",
     ),
     (
         "setting.auth.sign-up-domains.help",

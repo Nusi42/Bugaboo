@@ -24,6 +24,10 @@ export const messages = {
   "error.auth.passkey-rejected": "The passkey could not be checked. Please try again.",
   "error.request.wrong-token":
     "Your sign-in does not fit this page any more. Sign in again and then try again.",
+  "error.auth.second-step-required":
+    "Before you go on, set up your second step. Your administrator asks for it, and it keeps your account safe even if your password leaks.",
+  "error.auth.access-key-not-allowed":
+    "An access key cannot do that. Sign in with your password to change your own sign-in details.",
   "error.auth.not-signed-in": "Please sign in to continue.",
   "error.access.forbidden": "You are not allowed to do that.",
   "error.resource.not-found": "We could not find that.",
@@ -50,6 +54,10 @@ export const messages = {
     "Ask everyone to use two-step sign-in. People who have not set it up are asked to do so the next time they sign in.",
   "setting.security.session-absolute-hours.help":
     "How many hours a sign-in can last at most, even when somebody keeps working. After that, people sign in again. Between 1 hour and 30 days (720 hours).",
+  "setting.auth.access-key-default-days.help":
+    "How many days a new access key lives when the person picks no other date. Between 1 and 365 days.",
+  "setting.auth.access-key-longest-days.help":
+    "The most days an access key can live, whatever date the person picks. Between 1 and 365 days.",
   "setting.auth.sign-up-enabled.help":
     "Let people make an account on their own, without an invitation. Bugaboo cannot check that an address belongs to the person until e-mail is available, so use this only on a network you trust.",
   "setting.auth.sign-up-domains.help":
