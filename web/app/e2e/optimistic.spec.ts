@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { type Browser, type Locator, type Page } from "@playwright/test";
+import { type Browser, type Locator, type Page, type Route } from "@playwright/test";
 
 import { ada, endEverySession, makeAdmin } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
@@ -130,4 +130,56 @@ test("ux_06 grey shapes stand in for a slow list, and the list says it is busy",
   await expect(region).toHaveAttribute("aria-busy", "false");
   await expect(region.locator("[class*='_skeleton_']")).toHaveCount(0);
   await other.context().close();
+});
+
+/** Answers the first request after a moment with a refusal and lets every other one through. */
+function refuseTheFirst(): (route: Route) => Promise<void> {
+  let sent = 0;
+  return async (route) => {
+    sent += 1;
+    if (sent > 1) {
+      await route.continue();
+      return;
+    }
+    await new Promise((resolve) => {
+      setTimeout(resolve, 600);
+    });
+    await route.fulfill({
+      status: 403,
+      contentType: "application/problem+json",
+      body: JSON.stringify({
+        type: "about:blank",
+        title: "Forbidden",
+        status: 403,
+        code: "access.forbidden",
+        message_key: "error.access.forbidden",
+      }),
+    });
+  };
+}
+
+test("ux_06 a refusal stays on screen when a later change is accepted", async ({
+  page,
+  browser,
+  server,
+}) => {
+  const other = await twoPlaces(page, browser, server);
+  const third = await anotherBrowser(browser, server);
+  await signIn(third, ada);
+  await page.reload();
+  await expect(places(page)).toHaveCount(3);
+  // The first change is refused (after a moment), the second is accepted.
+  await page.route("**/api/v1/auth/sessions/*", refuseTheFirst());
+  await signOutOfOther(page).first().click();
+  await signOutOfOther(page).first().click();
+  // The accepted one is gone, the refused one is back, and its message is shown.
+  await expect(places(page)).toHaveCount(2);
+  await expect(
+    page.getByRole("alert").filter({ hasText: t("error.access.forbidden") }),
+  ).toBeVisible();
+  const status = page.getByRole("status").filter({ hasText: t("save.not-saved") });
+  await expect(status).toBeVisible();
+  await expect(page.getByText(t("save.saved"), { exact: true })).toHaveCount(0);
+  await other.context().close();
+  await third.context().close();
 });

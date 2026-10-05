@@ -1,7 +1,13 @@
 import { QueryClient } from "@tanstack/react-query";
 import { describe, expect, it } from "vitest";
 
-import { optimisticSend, saveStateOf, skeletonDelayMs, startDelay } from "./optimistic.ts";
+import {
+  optimisticSend,
+  saveStateOf,
+  skeletonDelayMs,
+  startDelay,
+  summarizeCalls,
+} from "./optimistic.ts";
 import {
   addName,
   key,
@@ -88,5 +94,50 @@ describe("ux_06 skeleton shapes wait for 0.3 seconds", () => {
     );
     clock.advance(skeletonDelayMs);
     expect(shown).toBe(true);
+  });
+});
+
+describe("ux_06 what is said when changes overlap", () => {
+  const refused = new Error("refused");
+
+  it("keeps an earlier refusal when a later change is accepted: Saved never stands alone", () => {
+    const summary = summarizeCalls([
+      { status: "error", error: refused },
+      { status: "success", error: null },
+    ]);
+    expect(summary.saveState).toBe("not-saved");
+    expect(summary.error).toBe(refused);
+  });
+
+  it("says saving while one is still on its way, and shows the refusal once all are done", () => {
+    expect(
+      summarizeCalls([
+        { status: "error", error: refused },
+        { status: "pending", error: null },
+      ]),
+    ).toEqual({ saveState: "saving", error: null });
+    expect(
+      summarizeCalls([
+        { status: "pending", error: null },
+        { status: "error", error: refused },
+      ]),
+    ).toEqual({ saveState: "saving", error: null });
+  });
+
+  it("shows the latest refusal, and says saved only when nothing was refused", () => {
+    const later = new Error("later");
+    expect(
+      summarizeCalls([
+        { status: "error", error: refused },
+        { status: "error", error: later },
+      ]).error,
+    ).toBe(later);
+    expect(
+      summarizeCalls([
+        { status: "success", error: null },
+        { status: "success", error: null },
+      ]),
+    ).toEqual({ saveState: "saved", error: null });
+    expect(summarizeCalls([])).toEqual({ saveState: "idle", error: null });
   });
 });

@@ -117,6 +117,40 @@ export function saveStateOf(status: keyof typeof saveStates): SaveState {
   return saveStates[status];
 }
 
+/** What the hook knows of one call of a change. */
+export interface Call {
+  readonly status: keyof typeof saveStates;
+  readonly error: unknown;
+}
+
+/** Where a run of overlapping changes stands: what to say, and the error to show, if any. */
+export interface Summary {
+  readonly saveState: SaveState;
+  /** The error of the latest change that was refused, or `null`. */
+  readonly error: unknown;
+}
+
+/**
+ * The state of the changes since everything was last idle (the calls of one burst). While one is
+ * on its way: saving. When all are done: not saved yet if any was refused, whatever the later ones
+ * did, and the error of the latest refusal is shown; saved only when none was refused.
+ */
+export function summarizeCalls(calls: readonly Call[]): Summary {
+  let refused: Call | undefined;
+  let waiting = false;
+  for (const call of calls) {
+    waiting = waiting || call.status === "pending";
+    refused = call.status === "error" ? call : refused;
+  }
+  if (waiting) {
+    return { saveState: saveStateOf("pending"), error: null };
+  }
+  if (refused !== undefined) {
+    return { saveState: saveStateOf("error"), error: refused.error };
+  }
+  return { saveState: saveStateOf(calls.at(-1)?.status ?? "idle"), error: null };
+}
+
 /** How long nothing shows while content is on its way, so quick answers cause no flicker (§6.1). */
 export const skeletonDelayMs = 300;
 

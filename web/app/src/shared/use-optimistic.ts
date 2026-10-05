@@ -5,7 +5,7 @@ import { messageOf } from "./errors.ts";
 import { removeKeepingFocus } from "./focus.ts";
 import {
   optimisticSend,
-  saveStateOf,
+  summarizeCalls,
   skeletonDelayMs,
   startDelay,
   type Cacheable,
@@ -47,12 +47,14 @@ export function useOptimisticMutation<
     mutationFn: optimisticSend(() => client, change),
   });
   const calls = useMutationState({ filters: { mutationKey } });
-  const last = calls.at(-1);
-  let waiting = false;
-  for (const call of calls) {
-    waiting = waiting || call.status === "pending";
-  }
+  // A burst is the run of changes since everything was last idle: an earlier refusal is not
+  // forgotten because a later change was accepted, but a new burst starts clean.
+  const [burstStart, setBurstStart] = useState(0);
+  const { saveState, error } = summarizeCalls(calls.slice(burstStart));
   const run = (variables: Variables): void => {
+    if (saveState !== "saving") {
+      setBurstStart(calls.length);
+    }
     mutation.mutate(variables);
   };
   return {
@@ -62,8 +64,8 @@ export function useOptimisticMutation<
         run(variables);
       });
     },
-    saveState: waiting ? saveStateOf("pending") : saveStateOf(last?.status ?? "idle"),
-    problem: !waiting && last?.status === "error" ? messageOf(last.error) : null,
+    saveState,
+    problem: error === null ? null : messageOf(error),
   };
 }
 
