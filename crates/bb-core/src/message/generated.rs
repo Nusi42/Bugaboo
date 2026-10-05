@@ -363,6 +363,15 @@ pub const ERROR_SERVER_INTERNAL: MessageKey = MessageKey::new("error.server.inte
 /// The message `error.server.unavailable`.
 pub const ERROR_SERVER_UNAVAILABLE: MessageKey = MessageKey::new("error.server.unavailable");
 
+/// The message `field-level.can-change`.
+pub const FIELD_LEVEL_CAN_CHANGE: MessageKey = MessageKey::new("field-level.can-change");
+
+/// The message `field-level.can-see`.
+pub const FIELD_LEVEL_CAN_SEE: MessageKey = MessageKey::new("field-level.can-see");
+
+/// The message `field-level.hidden`.
+pub const FIELD_LEVEL_HIDDEN: MessageKey = MessageKey::new("field-level.hidden");
+
 /// The message `field.confirm-password`.
 pub const FIELD_CONFIRM_PASSWORD: MessageKey = MessageKey::new("field.confirm-password");
 
@@ -727,6 +736,15 @@ pub const PEOPLE_KIND_REPORTED_BY: MessageKey = MessageKey::new("people-kind.rep
 
 /// The message `people-kind.time-entries`.
 pub const PEOPLE_KIND_TIME_ENTRIES: MessageKey = MessageKey::new("people-kind.time-entries");
+
+/// The message `people-level.hidden`.
+pub const PEOPLE_LEVEL_HIDDEN: MessageKey = MessageKey::new("people-level.hidden");
+
+/// The message `people-level.names`.
+pub const PEOPLE_LEVEL_NAMES: MessageKey = MessageKey::new("people-level.names");
+
+/// The message `people-level.role-only`.
+pub const PEOPLE_LEVEL_ROLE_ONLY: MessageKey = MessageKey::new("people-level.role-only");
 
 /// The message `permission-topic.people`.
 pub const PERMISSION_TOPIC_PEOPLE: MessageKey = MessageKey::new("permission-topic.people");
@@ -2955,6 +2973,9 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "error.server.unavailable",
         "Bugaboo is not available right now. Please try again in a moment.",
     ),
+    ("field-level.can-change", "Can change"),
+    ("field-level.can-see", "Can see"),
+    ("field-level.hidden", "Hidden"),
     ("field.confirm-password", "Your password"),
     (
         "field.confirm-password-help",
@@ -3206,6 +3227,9 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("people-kind.project-members", "Project members"),
     ("people-kind.reported-by", "Reported by"),
     ("people-kind.time-entries", "Time entries"),
+    ("people-level.hidden", "Hidden"),
+    ("people-level.names", "Names"),
+    ("people-level.role-only", "Role only"),
     ("permission-topic.people", "People"),
     ("permission-topic.projects", "Projects"),
     ("permission-topic.settings", "Settings"),

@@ -10,6 +10,7 @@ use jiff::Timestamp;
 
 use crate::fields::Field;
 use crate::id::{AssignmentId, GroupId, ProjectId, RoleId, UserId};
+use crate::message::{self, MessageKey};
 use crate::people_kinds::PeopleKind;
 use crate::personal::Entity;
 use crate::technical::TechnicalName;
@@ -39,6 +40,30 @@ words! {
         RoleOnly => "role-only",
         /// Shown by name.
         Names => "names",
+    }
+}
+
+impl FieldLevel {
+    /// The message that names the level (`field-level.<word>`).
+    #[must_use]
+    pub const fn name(self) -> MessageKey {
+        match self {
+            Self::Hidden => message::FIELD_LEVEL_HIDDEN,
+            Self::CanSee => message::FIELD_LEVEL_CAN_SEE,
+            Self::CanChange => message::FIELD_LEVEL_CAN_CHANGE,
+        }
+    }
+}
+
+impl PeopleLevel {
+    /// The message that names the level (`people-level.<word>`).
+    #[must_use]
+    pub const fn name(self) -> MessageKey {
+        match self {
+            Self::Hidden => message::PEOPLE_LEVEL_HIDDEN,
+            Self::RoleOnly => message::PEOPLE_LEVEL_ROLE_ONLY,
+            Self::Names => message::PEOPLE_LEVEL_NAMES,
+        }
     }
 }
 

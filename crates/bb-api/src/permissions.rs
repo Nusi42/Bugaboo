@@ -93,6 +93,31 @@ pub(crate) const ROUTES: &[(&str, Declared)] = &[
         "getServerStatus",
         Declared::Permission(Permission::SeeStatus),
     ),
+    (
+        "listProjects",
+        Declared::Permission(Permission::SeeProjects),
+    ),
+    ("getProject", Declared::Permission(Permission::SeeProjects)),
+    (
+        "makeProject",
+        Declared::Permission(Permission::MakeProjects),
+    ),
+    (
+        "makeSubProject",
+        Declared::Permission(Permission::MakeSubProjects),
+    ),
+    (
+        "changeProject",
+        Declared::Permission(Permission::ChangeProjectSettings),
+    ),
+    (
+        "previewProjectMove",
+        Declared::Permission(Permission::MoveProjects),
+    ),
+    (
+        "moveProject",
+        Declared::Permission(Permission::MoveProjects),
+    ),
 ];
 
 /// What the route with this operation ID needs, if it is declared.
