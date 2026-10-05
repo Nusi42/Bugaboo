@@ -33,7 +33,9 @@ fn text(key: MessageKey) -> String {
 /// Where the sample is kept.
 #[derive(Clone, Copy, Debug, ValueEnum)]
 enum DatabaseChoice {
+    #[value(name = "sqlite")]
     Sqlite,
+    #[value(name = "postgres")]
     Postgres,
 }
 

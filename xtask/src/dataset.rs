@@ -257,11 +257,12 @@ mod tests {
             )),
             "the variable has another name in bb-sample"
         );
+        // The program pins the names of its databases; these are the words xtask passes.
         let program = include_str!("../../crates/bb-sample/src/main.rs");
         for kind in [DatabaseKind::Sqlite, DatabaseKind::Postgres] {
             assert!(
-                program.to_lowercase().contains(kind.name()),
-                "bb-sample does not know {}",
+                program.contains(&format!("#[value(name = \"{}\")]", kind.name())),
+                "bb-sample does not pin the database name {}",
                 kind.name()
             );
         }
