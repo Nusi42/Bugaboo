@@ -22,6 +22,10 @@ If your account asks for a second check, Bugaboo shows "One more step" after you
 
 To switch the code app on or off, open *My settings* and then "Sign-in & security". Bugaboo asks for your password again before it changes anything.
 
+## When your administrator asks for a second step
+
+Your administrator can ask everybody, or everybody with a certain role, to use a second step. If that applies to you and you have not set one up, Bugaboo shows "Set up your second step" and nothing else until you have. Choose a code app or a passkey, type your password again, and follow the steps. It counts from the very next page you open, also if you were already signed in. When it is done, you go on where you were.
+
 ## Where you're signed in
 
 "Where you're signed in" lists every place where you are signed in, for example each browser, with the browser, the system and when it was last used. The place you are in now is marked "This browser". If you see a place you do not know, press the button next to it to sign out of it.

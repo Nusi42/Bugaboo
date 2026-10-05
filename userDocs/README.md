@@ -6,6 +6,7 @@ End-user and administrator documentation. It is written alongside the work on Bu
 - [The basics](basics/README.md): finding your way around, keyboard shortcuts, appearance
 - [Your first sign-in](sign-in/first-sign-in.md)
 - [Signing in](sign-in/sign-in.md): password, passkey, second step, where you're signed in, invitations
+- [Access keys](access-keys/README.md): keys for your scripts and apps, and [using a key in a script](access-keys/use-a-key.md)
 - [Cookies we use](cookies.md)
 
 Planned sections:
