@@ -60,7 +60,12 @@ test("m1_f51 an answer that says nobody is signed in takes the person to the sig
   await expect(other).toHaveURL(/\/sign-in/u);
   await other.context().close();
 
-  await openFromMenu(page, t("nav.sessions"));
+  // A phone asks for the projects of its menu as soon as the menu opens, a computer when the page
+  // asks for its data: the first answer that says nobody is signed in ends it either way.
+  await Promise.race([
+    openFromMenu(page, t("nav.sessions")).catch(() => false),
+    expect(page).toHaveURL(/\/sign-in\?reason=session-ended$/u),
+  ]);
   await expect(page).toHaveURL(/\/sign-in\?reason=session-ended$/u);
   await expect(page.getByText(t("error.auth.not-signed-in"))).toBeVisible();
 });

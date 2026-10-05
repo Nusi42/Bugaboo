@@ -197,6 +197,7 @@ test("ux_01 Organization settings lists the topics that exist, by heading", asyn
   });
   await expect(topics(page, t("nav.organization-settings"))).toHaveText([
     t("nav.invitations"),
+    t("nav.projects"),
     t("nav.status"),
   ]);
   await topics(page, t("nav.organization-settings")).last().click();

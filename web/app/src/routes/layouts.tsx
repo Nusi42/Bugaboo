@@ -45,6 +45,21 @@ export const guestRoute = createRoute({
   component: GuestLayout,
 });
 
+/** Whether the projects have joined the sidebar and quick search. */
+let projectsJoined = false;
+
+/**
+ * The projects join the sidebar and quick search once somebody is signed in, so the pages before
+ * sign-in do not carry them. Only the first time waits: a page that waited on every step would
+ * show the next page a moment later, and the focus would have moved to the old one by then.
+ */
+async function joinProjects(): Promise<void> {
+  if (!projectsJoined) {
+    projectsJoined = true;
+    (await import("../features/projects/index.ts")).registerProjects();
+  }
+}
+
 /** Pages of somebody who is signed in. Everybody else goes to sign in, or to the setup. */
 export const appRoute = createRoute({
   getParentRoute: () => rootRoute,
@@ -54,9 +69,7 @@ export const appRoute = createRoute({
     if (person === null) {
       throw redirect({ to: await startPath() });
     }
-    // The projects join the sidebar and quick search once somebody is signed in, so the pages
-    // before sign-in do not carry them.
-    (await import("../features/projects/index.ts")).registerProjects();
+    await joinProjects();
     return { person };
   },
   component: AppLayout,
