@@ -1,6 +1,6 @@
 import { MutationCache, QueryCache, QueryClient } from "@tanstack/react-query";
 
-import { sessionLostReason, type SessionLostReason } from "./errors.ts";
+import { isSecondStepRequired, sessionLostReason, type SessionLostReason } from "./errors.ts";
 
 let sessionLostHandler: (reason: SessionLostReason) => void = () => {
   // Until the router is there, nobody can be taken anywhere.
@@ -16,10 +16,25 @@ export function onSessionLost(handler: (reason: SessionLostReason) => void): voi
   sessionLostHandler = handler;
 }
 
+let secondStepHandler: () => void = () => {
+  // Until the router is there, nobody can be taken anywhere.
+};
+
+/**
+ * Says what happens when any answer shows that the person has to set up a second step before
+ * anything else (a role of theirs, or the organization, asks for one from now on): the person is
+ * taken to that screen, also from a page that was open before.
+ */
+export function onSecondStepRequired(handler: () => void): void {
+  secondStepHandler = handler;
+}
+
 function lost(error: unknown): void {
   const reason = sessionLostReason(error);
   if (reason !== undefined) {
     sessionLostHandler(reason);
+  } else if (isSecondStepRequired(error)) {
+    secondStepHandler();
   }
 }
 

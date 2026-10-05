@@ -45,7 +45,10 @@ export const guestRoute = createRoute({
   component: GuestLayout,
 });
 
-/** Pages of somebody who is signed in. Everybody else goes to sign in, or to the setup. */
+/**
+ * Pages of somebody who is signed in. Everybody else goes to sign in, or to the setup; somebody
+ * who has to set up a second step first goes to that screen and can open nothing else.
+ */
 export const appRoute = createRoute({
   getParentRoute: () => rootRoute,
   id: "app",
@@ -54,9 +57,31 @@ export const appRoute = createRoute({
     if (person === null) {
       throw redirect({ to: await startPath() });
     }
+    if (person.second_step_setup_required) {
+      throw redirect({ to: paths.setUpSecondStep });
+    }
     return { person };
   },
   component: AppLayout,
+});
+
+/**
+ * The page of somebody who is signed in and has to set up a second step: the same frame as the
+ * pages before sign-in, with nothing of the app around it. Anybody else is taken where they belong.
+ */
+export const setUpRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  id: "set-up",
+  beforeLoad: async (): Promise<void> => {
+    const person = await currentPerson();
+    if (person === null) {
+      throw redirect({ to: await startPath() });
+    }
+    if (!person.second_step_setup_required) {
+      throw redirect({ to: paths.home });
+    }
+  },
+  component: GuestLayout,
 });
 
 /** The frame of *My settings*: the menu of its topics next to the topic that is open. */

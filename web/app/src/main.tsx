@@ -7,8 +7,8 @@ import { createRoot } from "react-dom/client";
 import "@bugaboo/ui/tokens.css";
 
 import { paths } from "./shared/paths.ts";
-import { onSessionLost, queryClient } from "./shared/query-client.ts";
-import { leaveSession } from "./shared/session.ts";
+import { onSecondStepRequired, onSessionLost, queryClient } from "./shared/query-client.ts";
+import { forgetPerson, leaveSession } from "./shared/session.ts";
 import { router } from "./routes/router.tsx";
 import "./global.css";
 
@@ -23,6 +23,15 @@ onSessionLost((reason) => {
       await router.navigate({ to: paths.signIn, search: { reason } });
     }
   });
+});
+
+// An answer that says the person has to set up a second step takes them to that screen, whatever
+// page they were on (ADR-0025, decision 7).
+onSecondStepRequired(() => {
+  forgetPerson();
+  if (router.state.location.pathname !== paths.setUpSecondStep) {
+    void router.navigate({ to: paths.setUpSecondStep });
+  }
 });
 
 const container = document.querySelector("#root");

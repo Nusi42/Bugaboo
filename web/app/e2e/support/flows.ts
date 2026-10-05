@@ -126,8 +126,16 @@ export interface CodeAppSetUp {
   readonly backupCodes: readonly string[];
 }
 
-/** Sets up the code app on the security page, as a person does, and keeps the backup codes. */
-export async function setUpCodeApp(page: Page, password: string): Promise<CodeAppSetUp> {
+/**
+ * Sets up the code app, as a person does, and keeps the backup codes. On the security page the
+ * backup codes are listed once the person has saved them; on the screen that asks for a second
+ * step there is no such list (`listed: false`).
+ */
+export async function setUpCodeApp(
+  page: Page,
+  password: string,
+  listed = true,
+): Promise<CodeAppSetUp> {
   const section = page.getByRole("region", { name: t("code-app.title") });
   await section.getByLabel(t("field.confirm-password"), { exact: true }).fill(password);
   await section.getByRole("button", { name: t("code-app.setup") }).click();
@@ -139,7 +147,9 @@ export async function setUpCodeApp(page: Page, password: string): Promise<CodeAp
   const codes = page.getByRole("list", { name: t("backup.list") }).getByRole("listitem");
   const backupCodes = await codes.allTextContents();
   await page.getByRole("button", { name: t("backup.saved") }).click();
-  await expect(page.getByRole("region", { name: t("backup.title") })).toBeVisible();
+  if (listed) {
+    await expect(page.getByRole("region", { name: t("backup.title") })).toBeVisible();
+  }
   return { app, backupCodes };
 }
 
