@@ -10,8 +10,8 @@ use axum::extract::State;
 use axum::response::Response;
 use bb_app::auth::AppError;
 use bb_app::projects::{
-    ChangeProject, MakeProject, ProjectDetail, ProjectItem as AppProjectItem, ProjectQuery,
-    ProjectRef as AppProjectRef, ProjectView, ProjectsQuery,
+    ChangeProject, MakeProject, MoveRight, ProjectDetail, ProjectItem as AppProjectItem,
+    ProjectQuery, ProjectRef as AppProjectRef, ProjectView, ProjectsQuery,
 };
 use bb_core::ErrorCode;
 use bb_core::id::ProjectId;
@@ -145,6 +145,28 @@ pub(crate) struct ProjectFilter {
     movable: Option<String>,
 }
 
+/// Where a person may move a project to.
+#[derive(Serialize, ToSchema)]
+#[serde(rename_all = "kebab-case")]
+pub(crate) enum MoveRightBody {
+    /// Not anywhere.
+    Nowhere,
+    /// Into other projects, not to the top level.
+    IntoProjects,
+    /// Into other projects, and to the top level.
+    IntoProjectsOrTop,
+}
+
+impl From<MoveRight> for MoveRightBody {
+    fn from(right: MoveRight) -> Self {
+        match right {
+            MoveRight::Nowhere => Self::Nowhere,
+            MoveRight::IntoProjects => Self::IntoProjects,
+            MoveRight::IntoProjectsOrTop => Self::IntoProjectsOrTop,
+        }
+    }
+}
+
 /// One project, with where it is and what the person may do there.
 #[derive(Serialize, ToSchema)]
 pub(crate) struct ProjectDetailBody {
@@ -159,11 +181,8 @@ pub(crate) struct ProjectDetailBody {
     permissions: Vec<Permission>,
     /// Whether the person may change the short name.
     may_change_short_name: bool,
-    /// Whether the person may move the project.
-    may_move: bool,
-    /// Whether the person may move this project to the top level: it is not there yet, and they may
-    /// move projects and make top-level projects.
-    may_move_to_top: bool,
+    /// Where the person may move the project to.
+    may_move: MoveRightBody,
 }
 
 impl Masked for ProjectDetailBody {}
@@ -176,8 +195,7 @@ impl From<ProjectDetail> for ProjectDetailBody {
             truncated: detail.truncated,
             permissions: detail.permissions,
             may_change_short_name: detail.may_change_short_name,
-            may_move: detail.may_move,
-            may_move_to_top: detail.may_move_to_top,
+            may_move: detail.may_move.into(),
         }
     }
 }

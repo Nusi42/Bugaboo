@@ -19,9 +19,9 @@ use bb_core::id::{ProjectId, UserId};
 use bb_core::people_kinds::PeopleKind;
 use bb_core::person::Person;
 use bb_policy::guards::{Refusal, ensure_no_escalation};
-use bb_policy::{Evaluation, PeopleContext, Place, Target, evaluate, resolve};
+use bb_policy::{Evaluation, PeopleContext, Target, evaluate, resolve};
 
-pub use bb_policy::{Authorized, Masked, Permission, PersonRef, StartingRole, guards};
+pub use bb_policy::{Authorized, Masked, Permission, PersonRef, Place, StartingRole, Tree, guards};
 pub use starting::{MakeStartingRoles, make_starting_roles};
 pub use store::{PolicyStore, RoleRecord};
 

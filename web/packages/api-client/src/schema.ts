@@ -916,6 +916,11 @@ export interface components {
       /** @description The list was cut: it names the first people it found. */
       truncated: boolean;
     };
+    /**
+     * @description Where a person may move a project to.
+     * @enum {string}
+     */
+    MoveRightBody: "nowhere" | "into-projects" | "into-projects-or-top";
     /** @description A project to make. */
     NewProjectBody: {
       /** @description What it is called. */
@@ -1131,10 +1136,8 @@ export interface components {
     ProjectDetailBody: {
       /** @description Whether the person may change the short name. */
       may_change_short_name: boolean;
-      /** @description Whether the person may move the project. */
-      may_move: boolean;
-      /** @description Whether the person may move projects to the top level. */
-      may_move_to_top: boolean;
+      /** @description Where the person may move the project to. */
+      may_move: components["schemas"]["MoveRightBody"];
       /** @description What the person may do here. */
       permissions: components["schemas"]["Permission"][];
       /** @description The project. Its `short_name` is the one it has now, also when the address named an old one. */

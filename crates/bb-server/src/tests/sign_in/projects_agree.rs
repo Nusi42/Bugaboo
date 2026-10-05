@@ -4,14 +4,13 @@
 //! and every project of an organization with a deep tree, groups, *No access* and levels.
 //! Both databases (ARCH-DB-PARITY).
 
-use bb_app::access::{Permission, PolicyStore as _};
+use bb_app::access::{Permission, Place, Tree};
 use bb_app::projects::ProjectStore as _;
 use bb_app::roles::{Given, SetFieldLevel, SetPeopleLevel, Subject};
 use bb_core::access::{AppliesTo, FieldLevel, PeopleLevel};
 use bb_core::fields::Field;
 use bb_core::id::ProjectId;
 use bb_core::people_kinds::PeopleKind;
-use bb_policy::{Place, Tree};
 use bb_testing::each_database;
 
 use super::policy_rig::{Member, Org};
@@ -51,111 +50,113 @@ async fn decided(org: &Org<'_>, person: &Member, project: ProjectId) -> Result<D
     ))
 }
 
+/// An organization with a tree eleven deep, with groups, *No access* and levels, and the people
+/// who hold them (the administrator first).
+async fn scenario(org: &Org<'_>) -> Result<Vec<Member>, Box<dyn std::error::Error + Send + Sync>> {
+    let admin = org.admin.clone();
+    // A tree ten deep, with a branch inside its third project.
+    let mut chain: Vec<ProjectId> = Vec::new();
+    for level in 0..10 {
+        let parent = chain.last().copied();
+        chain.push(make(org, &admin, parent, &format!("DEEP{level}")).await?.id);
+    }
+    let branch = make(org, &admin, Some(chain[2]), "BRANCH").await?.id;
+    let twig = make(org, &admin, Some(branch), "TWIG").await?.id;
+    let lead = org.role("Section lead", &LEAD).await?;
+    let looker = org.role("Looker", &VIEW).await?;
+    let (p1, p2, p3, p4) = (
+        org.person().await?,
+        org.person().await?,
+        org.person().await?,
+        org.person().await?,
+    );
+    let crew = org.group("Crew").await?;
+    org.add_to_group(crew, p3.id).await?;
+    let sub = AppliesTo::ProjectAndSubProjects;
+    let only = AppliesTo::Project;
+    let who = |person: &Member| Subject::Person(person.id);
+    // A lead low down, a looker everywhere with a No access in the middle, a group lead
+    // with a No access of their own below, and a mix of both kinds of reach.
+    org.assign(&admin, who(&p1), Given::Role(lead.id), Some(chain[3]), sub)
+        .await?;
+    org.assign(&admin, who(&p1), Given::NoAccess, Some(branch), sub)
+        .await?;
+    org.give_everywhere(&p2, looker.id).await?;
+    org.forbid(&p2, chain[6]).await?;
+    org.assign(
+        &admin,
+        Subject::Group(crew),
+        Given::Role(lead.id),
+        Some(chain[1]),
+        sub,
+    )
+    .await?;
+    org.forbid(&p3, chain[4]).await?;
+    org.assign(&admin, who(&p3), Given::Role(lead.id), Some(chain[8]), only)
+        .await?;
+    org.assign(
+        &admin,
+        who(&p4),
+        Given::Role(looker.id),
+        Some(chain[0]),
+        sub,
+    )
+    .await?;
+    org.assign(&admin, who(&p4), Given::Role(lead.id), Some(chain[8]), only)
+        .await?;
+    org.assign(
+        &admin,
+        Subject::Group(crew),
+        Given::NoAccess,
+        Some(twig),
+        sub,
+    )
+    .await?;
+    // Levels set for a project, which the projects below inherit.
+    for (project, field, kind) in [
+        (chain[5], Field::Title, PeopleKind::ProjectMembers),
+        (branch, Field::CostCenter, PeopleKind::AssignedTo),
+    ] {
+        api(org)
+            .set_field_level(
+                Rig::info(),
+                SetFieldLevel {
+                    session_token: admin.session.clone(),
+                    role: looker.id,
+                    project: Some(project),
+                    field,
+                    level: Some(FieldLevel::CanChange),
+                },
+            )
+            .await?;
+        api(org)
+            .set_people_level(
+                Rig::info(),
+                SetPeopleLevel {
+                    session_token: admin.session.clone(),
+                    role: lead.id,
+                    project: Some(project),
+                    kind,
+                    level: Some(PeopleLevel::RoleOnly),
+                },
+            )
+            .await?;
+    }
+    Ok(vec![admin, p1, p2, p3, p4])
+}
+
 #[tokio::test]
 async fn prj_02_the_list_the_preview_and_a_request_decide_alike_for_every_person_and_project()
 -> Outcome {
     each_database("prj_02_engines_agree", async |db| {
         let rig = Rig::start(db, 10).await?;
         let org = Org::start(&rig).await?;
-        let admin = org.admin.clone();
-        // A tree ten deep, with a branch inside its third project.
-        let mut chain: Vec<ProjectId> = Vec::new();
-        for level in 0..10 {
-            let parent = chain.last().copied();
-            chain.push(
-                make(&org, &admin, parent, &format!("DEEP{level}"))
-                    .await?
-                    .id,
-            );
-        }
-        let branch = make(&org, &admin, Some(chain[2]), "BRANCH").await?.id;
-        let twig = make(&org, &admin, Some(branch), "TWIG").await?.id;
-        let lead = org.role("Section lead", &LEAD).await?;
-        let looker = org.role("Looker", &VIEW).await?;
-        let (p1, p2, p3, p4) = (
-            org.person().await?,
-            org.person().await?,
-            org.person().await?,
-            org.person().await?,
-        );
-        let crew = org.group("Crew").await?;
-        org.add_to_group(crew, p3.id).await?;
-        let sub = AppliesTo::ProjectAndSubProjects;
-        let only = AppliesTo::Project;
-        let who = |person: &Member| Subject::Person(person.id);
-        // A lead low down, a looker everywhere with a No access in the middle, a group lead
-        // with a No access of their own below, and a mix of both kinds of reach.
-        org.assign(&admin, who(&p1), Given::Role(lead.id), Some(chain[3]), sub)
-            .await?;
-        org.assign(&admin, who(&p1), Given::NoAccess, Some(branch), sub)
-            .await?;
-        org.give_everywhere(&p2, looker.id).await?;
-        org.forbid(&p2, chain[6]).await?;
-        org.assign(
-            &admin,
-            Subject::Group(crew),
-            Given::Role(lead.id),
-            Some(chain[1]),
-            sub,
-        )
-        .await?;
-        org.forbid(&p3, chain[4]).await?;
-        org.assign(&admin, who(&p3), Given::Role(lead.id), Some(chain[8]), only)
-            .await?;
-        org.assign(
-            &admin,
-            who(&p4),
-            Given::Role(looker.id),
-            Some(chain[0]),
-            sub,
-        )
-        .await?;
-        org.assign(&admin, who(&p4), Given::Role(lead.id), Some(chain[8]), only)
-            .await?;
-        org.assign(
-            &admin,
-            Subject::Group(crew),
-            Given::NoAccess,
-            Some(twig),
-            sub,
-        )
-        .await?;
-        // Levels set for a project, which the projects below inherit.
-        for (project, field, kind) in [
-            (chain[5], Field::Title, PeopleKind::ProjectMembers),
-            (branch, Field::CostCenter, PeopleKind::AssignedTo),
-        ] {
-            api(&org)
-                .set_field_level(
-                    Rig::info(),
-                    SetFieldLevel {
-                        session_token: admin.session.clone(),
-                        role: looker.id,
-                        project: Some(project),
-                        field,
-                        level: Some(FieldLevel::CanChange),
-                    },
-                )
-                .await?;
-            api(&org)
-                .set_people_level(
-                    Rig::info(),
-                    SetPeopleLevel {
-                        session_token: admin.session.clone(),
-                        role: lead.id,
-                        project: Some(project),
-                        kind,
-                        level: Some(PeopleLevel::RoleOnly),
-                    },
-                )
-                .await?;
-        }
-
+        let people = scenario(&org).await?;
         let projects = rig.storage.project_tree().await?;
         let tree = Tree::new(projects.iter().map(|project| (project.id, project.parent)));
         let policy = rig.storage.policy_all().await?;
         let mut compared = 0;
-        for person in [&admin, &p1, &p2, &p3, &p4] {
+        for person in &people {
             let own = rig.storage.policy_of(person.id).await?;
             let sees = own.visible(person.id, &tree);
             for project in &projects {
@@ -196,7 +197,7 @@ async fn prj_02_the_list_the_preview_and_a_request_decide_alike_for_every_person
                 compared += 1;
             }
         }
-        assert_eq!(compared, 5 * projects.len());
+        assert_eq!(compared, people.len() * projects.len());
         Ok(())
     })
     .await

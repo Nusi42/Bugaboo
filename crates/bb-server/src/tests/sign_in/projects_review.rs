@@ -2,7 +2,7 @@
 //! must stay shut. Every one runs on both databases (ARCH-DB-PARITY).
 
 use bb_app::access::Permission;
-use bb_app::projects::{ProjectPage, ProjectsQuery};
+use bb_app::projects::{MoveRight, ProjectPage, ProjectsQuery};
 use bb_core::ErrorCode;
 use bb_core::id::ProjectId;
 use bb_testing::each_database;
@@ -96,7 +96,7 @@ async fn prj_01_projects_are_nested_to_the_limit_and_no_further() -> Outcome {
         let address = format!("LVL{}", LEVELS - 1);
         assert_eq!(
             names(&list(&org, &bea, None, None).await?),
-            [address.clone()]
+            std::slice::from_ref(&address)
         );
         assert_eq!(detail(&org, &bea, &address).await?.project.id, deepest);
         let bob = org.person().await?;
@@ -200,18 +200,23 @@ async fn prj_03_a_project_says_whether_the_person_may_move_it() -> Outcome {
         org.give(&cleo, looker.id, acme.id).await?;
         let mut flags = Vec::new();
         for who in [&admin, &ana, &bea, &cleo] {
-            let found = detail(&org, who, "WEB").await?;
-            flags.push(serde_json::to_value(&found)?["may_move"].clone());
+            flags.push(detail(&org, who, "WEB").await?.may_move);
         }
-        assert_eq!(flags, [true, true, false, false]);
         // The top level is offered where the project is not yet, and only to those who may make
         // projects there as well as move them.
-        let top = |found: &bb_app::projects::ProjectDetail| {
-            serde_json::to_value(found).map(|value| value["may_move_to_top"].clone())
-        };
-        assert_eq!(top(&detail(&org, &admin, "WEB").await?)?, true);
-        assert_eq!(top(&detail(&org, &admin, "ACME").await?)?, false);
-        assert_eq!(top(&detail(&org, &ana, "WEB").await?)?, false);
+        assert_eq!(
+            flags,
+            [
+                MoveRight::IntoProjectsOrTop,
+                MoveRight::IntoProjects,
+                MoveRight::Nowhere,
+                MoveRight::Nowhere
+            ]
+        );
+        assert_eq!(
+            detail(&org, &admin, "ACME").await?.may_move,
+            MoveRight::IntoProjects
+        );
         Ok(())
     })
     .await

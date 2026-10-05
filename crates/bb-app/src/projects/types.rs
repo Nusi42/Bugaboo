@@ -159,6 +159,18 @@ impl Masked for ProjectPage {}
 /// How many projects of the way down to a project are named at most.
 pub const TRAIL_MAX: usize = 16;
 
+/// Where a person may move a project to: they need *Move projects* in the place it sits in, and
+/// for the top level *Make top-level projects* for the whole organization as well.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
+pub enum MoveRight {
+    /// Not anywhere.
+    Nowhere,
+    /// Into other projects, not to the top level.
+    IntoProjects,
+    /// Into other projects, and to the top level (the project is not there yet).
+    IntoProjectsOrTop,
+}
+
 /// One project, with where it is and what the person may do there.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct ProjectDetail {
@@ -175,12 +187,8 @@ pub struct ProjectDetail {
     /// may make projects where it sits, so a short name that is taken can be told to them
     /// (ADR-0025, decision 13).
     pub may_change_short_name: bool,
-    /// Whether the person may move the project: they may move projects in the place it sits in
-    /// (its parent, or the organization at the top level).
-    pub may_move: bool,
-    /// Whether the person may move this project to the top level: it is not there yet, and they
-    /// may move projects and make them for the whole organization.
-    pub may_move_to_top: bool,
+    /// Where the person may move the project to.
+    pub may_move: MoveRight,
 }
 
 impl Masked for ProjectDetail {}

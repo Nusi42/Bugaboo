@@ -4314,6 +4314,11 @@
           }
         }
       },
+      "MoveRightBody": {
+        "type": "string",
+        "description": "Where a person may move a project to.",
+        "enum": ["nowhere", "into-projects", "into-projects-or-top"]
+      },
       "NewProjectBody": {
         "type": "object",
         "description": "A project to make.",
@@ -4744,8 +4749,7 @@
           "truncated",
           "permissions",
           "may_change_short_name",
-          "may_move",
-          "may_move_to_top"
+          "may_move"
         ],
         "properties": {
           "may_change_short_name": {
@@ -4753,12 +4757,8 @@
             "description": "Whether the person may change the short name."
           },
           "may_move": {
-            "type": "boolean",
-            "description": "Whether the person may move the project."
-          },
-          "may_move_to_top": {
-            "type": "boolean",
-            "description": "Whether the person may move projects to the top level."
+            "$ref": "#/components/schemas/MoveRightBody",
+            "description": "Where the person may move the project to."
           },
           "permissions": {
             "type": "array",

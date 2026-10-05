@@ -8,6 +8,9 @@ import { ProjectPicker } from "./ProjectPicker.tsx";
 import styles from "./Projects.module.css";
 import { useMovePreview, useMoveProject, type OneProject } from "./use-projects.ts";
 
+/** The word of the API for a person who may also move a project to the top level. */
+const topToo = "into-projects-or-top";
+
 /** What the preview of the picked place is: being worked out, refused, or what would change. */
 function PreviewOf({ project, to }: { readonly project: string; readonly to: string | null }) {
   const preview = useMovePreview(project, to, true);
@@ -76,7 +79,7 @@ export function MoveProject({ project }: { readonly project: OneProject }) {
         >
           <ProjectPicker
             moving={id}
-            top={project.may_move_to_top}
+            top={project.may_move === topToo}
             value={picked?.to}
             onChange={(place) => {
               setPicked({ to: place });

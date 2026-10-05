@@ -10,7 +10,7 @@ use jiff::Timestamp;
 use super::shown::Shown;
 use super::store::Found;
 use super::types::{
-    ProjectDetail, ProjectItem, ProjectPage, ProjectQuery, ProjectView, ProjectsQuery,
+    MoveRight, ProjectDetail, ProjectItem, ProjectPage, ProjectQuery, ProjectView, ProjectsQuery,
 };
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, internal};
@@ -94,16 +94,23 @@ pub async fn project<S: AuthStore>(
         .evaluate(actor.person.id, place_of(project.parent))
         .await?;
     let organization = ctx.evaluate(actor.person.id, Place::Organization).await?;
+    let may_move = if !old_parent.allows(Permission::MoveProjects) {
+        MoveRight::Nowhere
+    } else if project.parent.is_some()
+        && organization.allows(Permission::MoveProjects)
+        && organization.allows(Permission::MakeProjects)
+    {
+        MoveRight::IntoProjectsOrTop
+    } else {
+        MoveRight::IntoProjects
+    };
     Ok(held.authorize(ProjectDetail {
         trail,
         truncated,
         permissions: held.permissions().iter().copied().collect(),
         may_change_short_name: held.allows(Permission::ChangeProjectSettings)
             && ctx.may_make_projects_beside(&actor, project.parent).await?,
-        may_move: old_parent.allows(Permission::MoveProjects),
-        may_move_to_top: project.parent.is_some()
-            && organization.allows(Permission::MoveProjects)
-            && organization.allows(Permission::MakeProjects),
+        may_move,
         project: ProjectView {
             id: project.id,
             parent: shown.shown_parent(&project),
