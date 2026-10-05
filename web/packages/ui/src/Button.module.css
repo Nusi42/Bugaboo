@@ -1,0 +1,85 @@
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  box-sizing: border-box;
+  min-height: var(--size-target);
+  padding: 0 var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--r-ctl);
+  background: var(--bg-raised);
+  color: var(--fg);
+  font-family: var(--font);
+  font-size: var(--fs-md);
+  font-weight: 700;
+  line-height: 1.2;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.button[data-hovered] {
+  background: var(--bg-hover);
+}
+
+.button[data-pressed] {
+  background: var(--bg-selected);
+}
+
+.button[data-disabled] {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.button[aria-busy="true"] {
+  cursor: progress;
+  opacity: 0.7;
+}
+
+.button[data-focus-visible] {
+  outline: var(--ring-width) solid var(--accent);
+  outline-offset: var(--ring-offset);
+}
+
+.wide {
+  width: 100%;
+}
+
+.primary {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+.primary[data-hovered],
+.primary[data-pressed] {
+  background: var(--accent);
+  filter: brightness(1.12);
+}
+
+.quiet {
+  border-color: transparent;
+  background: transparent;
+  color: var(--accent-fg);
+}
+
+.danger {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.danger[data-hovered],
+.danger[data-pressed] {
+  background: var(--danger-soft);
+}
+
+@media (forced-colors: active) {
+  .button {
+    border-color: ButtonText;
+  }
+
+  .button[data-disabled] {
+    border-color: GrayText;
+  }
+}
