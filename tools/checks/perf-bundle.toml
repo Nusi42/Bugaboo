@@ -1,0 +1,9 @@
+# Settings of PERF-BUNDLE (PERF-04, ADR-0009): the budget lives here and nowhere else.
+
+# The folder the browser build writes, and the manifest inside it (Vite `build.manifest`).
+dist = "web/app/dist"
+manifest = ".vite/manifest.json"
+
+# The most JavaScript the first page may load, after Brotli: 250 KB (1 KB is 1000 bytes).
+# WebAssembly joins the budget when `bb-wasm` exists (M1-F10).
+budget_bytes = 250000

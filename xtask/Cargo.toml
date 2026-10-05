@@ -8,6 +8,7 @@ publish.workspace = true
 
 [dependencies]
 anyhow = { workspace = true }
+brotli = { version = "9.0.0", default-features = false, features = ["std"] }
 clap = { workspace = true }
 ctrlc = { workspace = true }
 flate2 = "1.1.10"

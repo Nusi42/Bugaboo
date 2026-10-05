@@ -50,6 +50,7 @@ mod meta_speed;
 pub(crate) mod meta_suppress;
 mod meta_wiring;
 mod node_tool;
+mod perf_bundle;
 mod plan_trace;
 mod sec_cookies;
 mod sec_headers;
@@ -159,6 +160,7 @@ pub(crate) fn registry() -> Vec<Box<dyn Check>> {
         Box::new(doc_adr_enforced::DocAdrEnforced),
         Box::new(plan_trace::PlanTrace),
         Box::new(arch_map_sync::ArchMapSync),
+        Box::new(perf_bundle::PerfBundle),
         Box::new(meta_fixtures::MetaFixtures),
         Box::new(meta_coverage::MetaCoverage),
         Box::new(meta_new_module::MetaNewModule),

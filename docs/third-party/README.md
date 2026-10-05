@@ -20,6 +20,7 @@ Columns:
 | Crate | Version | License | Ships? | Purpose | Health | Alternatives |
 |-------|---------|---------|--------|---------|--------|--------------|
 | anyhow | 1.0.104 | MIT OR Apache-2.0 | yes (bb-server), no (xtask) | Error handling with context in the check runner | maintained (2026-10-04) | thiserror (better for libraries; the runner only reports errors) |
+| brotli | 9.0.0 | BSD-3-Clause AND MIT | no (xtask) | Compresses the JavaScript of the first page the way a browser receives it, to measure it against the budget (PERF-BUNDLE, PERF-04) | maintained (2026-10-05) | flate2 (gzip, not what browsers get with Brotli); the `brotli` command line tool (not on every machine) |
 | clap | 4.6.7 | MIT OR Apache-2.0 | yes (bb-server), no (xtask) | Command line of `cargo xtask` | maintained (2026-10-04) | argh, pico-args (less help text, fewer checks) |
 | flate2 | 1.1.10 | MIT OR Apache-2.0 | no (xtask) | Unpacking the `.tar.gz` archives of downloaded tools in `cargo xtask setup` | maintained (2026-10-04) | system `tar` (differs between Windows and Linux) |
 | getrandom | 0.4.3 | MIT OR Apache-2.0 | yes (bb-app, bb-store, bb-server), no (xtask) | Secure random bytes from the operating system: IDs (`SystemIds`), master keys, per-secret keys and nonces, names of the folders in which secret files are made; the random password of the throwaway test PostgreSQL (`cargo xtask db`) | maintained (2026-10-04) | rand (a whole generator framework for 24 bytes); reading /dev/urandom (not on Windows) |

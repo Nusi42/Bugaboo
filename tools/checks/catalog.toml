@@ -580,10 +580,10 @@ status = "active"
 id = "PERF-BUNDLE"
 title = "Initial JavaScript ≤ 250 KB (Brotli); WebAssembly ≤ 150 KB"
 rule = "PERF-04"
-tool = "xtask (reads Vite build stats)"
+tool = "xtask (reads the Vite manifest of the built app, adds up the JavaScript of the entry and what it imports at once, compresses each file with Brotli and fails above the budget in tools/checks/perf-bundle.toml; the WebAssembly part joins with bb-wasm, M1-F10)"
 when = ["ci"]
-files = ["web/**"]
-status = "planned"
+files = ["web/**", "tools/checks/perf-bundle.toml"]
+status = "active"
 
 [[check]]
 id = "PERF-N1"

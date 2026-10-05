@@ -32,6 +32,8 @@ pub(crate) fn plan(root: &Path) -> anyhow::Result<Vec<Step>> {
     let xtask = std::env::current_exe().context("could not find the running xtask program")?;
     let target = static_linux_target();
     Ok(vec![
+        // First: PERF-BUNDLE measures the build, so the checks need it.
+        steps::web_build(root),
         Step::new("all checks", xtask.to_string_lossy(), &["check", "all"]),
         // SQLite and PostgreSQL: the cluster is started, used and stopped around the tests.
         Step::new(
@@ -39,7 +41,6 @@ pub(crate) fn plan(root: &Path) -> anyhow::Result<Vec<Step>> {
             xtask.to_string_lossy(),
             &["db", "run", "--", "cargo", "test", "--workspace"],
         ),
-        steps::web_build(root),
         Step::web(root, "browser unit tests", &["test"]),
         // The end-to-end tests start the program themselves (ADR-0023).
         steps::server_build(Profile::Debug),
@@ -72,9 +73,9 @@ mod tests {
         assert_eq!(
             names,
             [
+                "build the browser app",
                 "all checks",
                 "Rust tests",
-                "build the browser app",
                 "browser unit tests",
                 "build the bugaboo program",
                 "browser end-to-end tests",
@@ -95,7 +96,7 @@ mod tests {
         let on_linux = !cfg!(target_os = "linux");
         assert_eq!(
             skipped,
-            [false, false, true, true, false, true, on_linux, on_linux]
+            [true, false, false, true, false, true, on_linux, on_linux]
         );
     }
 }

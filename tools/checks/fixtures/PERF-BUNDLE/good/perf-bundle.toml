@@ -1,0 +1,5 @@
+# Settings of this fixture: the same file format as tools/checks/perf-bundle.toml, with a small
+# budget so the example stays small.
+dist = "."
+manifest = "manifest.json"
+budget_bytes = 2000
