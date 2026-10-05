@@ -264,3 +264,56 @@ async fn sec_12_signing_out_clears_what_the_browser_cached() -> Outcome {
     })
     .await
 }
+
+#[tokio::test]
+async fn sec_12_ending_the_own_session_is_signing_out_but_ending_another_is_not() -> Outcome {
+    each_database("sec_12_http_end_own_session", async |db| {
+        let rig = Rig::start(db, 10).await?;
+        let app = app_with_probe(&rig, None);
+        let mut laptop = Browser::new(&app, &called());
+        laptop
+            .send("POST", "/api/v1/auth/setup", Some(setup_body(&rig)))
+            .await?;
+        let mut phone = Browser::new(&app, &called());
+        phone
+            .send(
+                "POST",
+                "/api/v1/auth/sign-in",
+                Some(json!({"email": "ada@example.test", "password": PASSWORD})),
+            )
+            .await?;
+        let listed = laptop.send("GET", "/api/v1/auth/sessions", None).await?;
+        let sessions = listed.body["sessions"].as_array().ok_or("no sessions")?;
+        let id_of = |current: bool| {
+            sessions
+                .iter()
+                .find(|session| session["current"] == current)
+                .and_then(|session| session["id"].as_str())
+                .map(str::to_owned)
+        };
+        let own = id_of(true).ok_or("no current session")?;
+        let other = id_of(false).ok_or("no other session")?;
+
+        // Another session: ended, and this browser keeps its cookies and its cache.
+        let ended = laptop
+            .send("DELETE", &format!("/api/v1/auth/sessions/{other}"), None)
+            .await?;
+        assert_eq!(ended.status, StatusCode::NO_CONTENT);
+        assert_eq!(ended.header("clear-site-data"), "");
+        assert_eq!(
+            laptop.send("GET", "/api/v1/auth/me", None).await?.status,
+            StatusCode::OK
+        );
+
+        // The own session: the same as signing out, cookies and cache.
+        let own_end = laptop
+            .send("DELETE", &format!("/api/v1/auth/sessions/{own}"), None)
+            .await?;
+        assert_eq!(own_end.status, StatusCode::NO_CONTENT);
+        assert_eq!(own_end.header("clear-site-data"), "\"cache\"");
+        let after = laptop.send("GET", "/api/v1/auth/me", None).await?;
+        assert_eq!(after.status, StatusCode::UNAUTHORIZED);
+        Ok(())
+    })
+    .await
+}

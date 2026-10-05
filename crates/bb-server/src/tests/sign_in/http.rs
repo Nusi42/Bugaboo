@@ -238,7 +238,7 @@ pub(super) fn never_stored_reads() -> &'static BTreeSet<String> {
             .as_object()
             .into_iter()
             .flatten()
-            .filter(|(_, item)| item["get"]["x-never-stored"] == true)
+            .filter(|(_, item)| item["get"][openapi::NEVER_STORED_MARK] == true)
             .map(|(route, _)| route.clone())
             .collect()
     })

@@ -425,7 +425,8 @@ async fn end_session(
     let session_id: SessionId = session_id
         .parse()
         .map_err(|_| ApiError::new(ErrorCode::NotFound))?;
-    auth.api()?
+    let ended = auth
+        .api()?
         .end_session(
             info,
             EndSession {
@@ -434,7 +435,12 @@ async fn end_session(
             },
         )
         .await?;
-    Ok(done())
+    // Ending the session of this very request is signing out: the cookies go too.
+    Ok(if ended.own {
+        forget_cookies(done())
+    } else {
+        done()
+    })
 }
 
 /// Changes the password. Other sessions end and the session of the request gets a new secret.

@@ -205,8 +205,8 @@ pub(crate) fn signed_in(started: &Started) -> Result<Response, ApiError> {
             backup_code: methods.backup_code,
         }),
     };
-    // The answer comes with the secret of a session; `crate::etag::SECRET_ANSWERS` names the
-    // routes, and no cache keeps them.
+    // The answer sets the cookies of a session: `crate::etag` treats every answer that sets a
+    // cookie as a secret, so no cache keeps it.
     let mut response = answer(body);
     for (cookie, value) in [
         (Cookie::Session, &started.session_token),

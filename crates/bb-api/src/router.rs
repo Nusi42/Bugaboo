@@ -484,7 +484,8 @@ mod tests {
 
     #[test]
     fn perf_04_the_compression_settings_are_readable() {
-        assert_eq!(compression_quality(), Some(4));
+        // Brotli takes 0 to 11; the number itself is the settings file's to decide.
+        assert!(compression_quality().is_some_and(|quality| (0..=11).contains(&quality)));
     }
 
     /// What the budget check counts is what a browser gets: the script, asked for with Brotli,

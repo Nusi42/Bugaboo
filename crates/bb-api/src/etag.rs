@@ -8,8 +8,9 @@
 //!
 //! - **A secret** (an answer with a field marked `x-secret`, or any answer that sets a cookie: a
 //!   new session, an invitation link, the code app, backup codes) is `no-store`, has no `ETag`,
-//!   and is marked [`SecretAnswer`] so compression leaves it alone (architecture §7 "Browser
-//!   protections").
+//!   and is marked [`SecretAnswer`], for the compression rule that comes with the decision on
+//!   compressing JSON (M2-Q2, architecture §7 "Browser protections"): until then JSON is not
+//!   compressed at all.
 //! - **Personal data** (a `GET` route marked `x-never-stored`: who is signed in, the sessions,
 //!   the invitations, the second step, the state of the server) is `no-store` and has no `ETag`:
 //!   a shared computer keeps nothing of it after the person has left.
@@ -37,13 +38,8 @@ use serde_json::Value;
 
 use crate::api::is_api;
 use crate::cookies::{Cookie, sets_a_cookie};
+use crate::openapi::{NEVER_STORED_MARK, SECRET_MARK};
 use crate::seal;
-
-/// The mark of a field that holds a secret, set with `extensions` on the field of the answer type.
-const SECRET_MARK: &str = "x-secret";
-/// The mark of a route whose answer holds personal data and is never stored, set with
-/// `extensions` on the route.
-const NEVER_STORED_MARK: &str = "x-never-stored";
 
 /// The cache rule of an answer a browser may keep and ask about again.
 const REVALIDATE: &str = "private, no-cache";
@@ -78,6 +74,12 @@ struct Classes {
 
 impl Classes {
     fn kind_of(&self, method: &Method, route: &str) -> Kind {
+        // A `HEAD` is answered by the route of the `GET`, so it is the same kind.
+        let method = if *method == Method::HEAD {
+            Method::GET
+        } else {
+            method.clone()
+        };
         let key = (method.as_str().to_owned(), route.to_owned());
         if self.secret.contains(&key) {
             Kind::Secret
@@ -511,6 +513,10 @@ mod tests {
         assert!(header_of(&response, header::ETAG).is_none());
         // Not a secret: compression may treat it like any other answer.
         assert!(response.extensions().get::<SecretAnswer>().is_none());
+        // `HEAD` is the same route as `GET`: the same rule, no tag.
+        let head = call("HEAD", "/api/v1/auth/me", None).await;
+        assert_eq!(header_of(&head, header::CACHE_CONTROL), Some("no-store"));
+        assert!(header_of(&head, header::ETAG).is_none());
     }
 
     #[tokio::test]

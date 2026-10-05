@@ -19,6 +19,13 @@ use utoipa::{Modify, OpenApi};
 use crate::api::{AuthHandle, ProbeHandle};
 use crate::cookies::{CSRF_HEADER, Cookie};
 
+/// The mark of a field that holds a secret, set with `extensions` on the field of the answer type
+/// (`crate::etag` reads it from the description).
+pub const SECRET_MARK: &str = "x-secret";
+/// The mark of a route whose answer holds personal data and is never stored, set with
+/// `extensions` on the route.
+pub const NEVER_STORED_MARK: &str = "x-never-stored";
+
 /// The name of the security scheme for the session cookie.
 const SESSION_SCHEME: &str = "sessionCookie";
 /// The name of the security scheme for the CSRF header.

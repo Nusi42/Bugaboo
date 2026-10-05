@@ -476,6 +476,13 @@ pub struct SignUpPolicyQuery {
 #[derive(Clone)]
 pub struct BackupCodes(pub Vec<String>);
 
+/// One session of the person was ended.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct SessionEnded {
+    /// Whether it was the session of the request itself, so the person is signed out here.
+    pub own: bool,
+}
+
 /// Nothing to report; the request worked.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Done;

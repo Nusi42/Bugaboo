@@ -43,7 +43,12 @@ impl WebSource {
     /// Looks up a file by its path inside the app, such as `assets/app-1a2b.js`.
     /// Paths that could leave the app folder are never found.
     pub(crate) async fn load(&self, path: &str) -> Option<Asset> {
-        if !is_safe(path) || path.split('/').next() == Some(BUILD_ONLY) {
+        if !is_safe(path)
+            || path
+                .split('/')
+                .next()
+                .is_some_and(|first| first.eq_ignore_ascii_case(BUILD_ONLY))
+        {
             return None;
         }
         let bytes = match self {
@@ -199,6 +204,9 @@ mod tests {
         std::fs::write(dir.path().join("index.html"), "x").unwrap();
         let web = WebSource::Folder(dir.path().into());
         assert!(web.load(".vite/manifest.json").await.is_none());
+        // Windows does not tell `.VITE` from `.vite`.
+        assert!(web.load(".VITE/manifest.json").await.is_none());
+        assert!(web.load(".Vite/manifest.json").await.is_none());
         assert!(web.load("index.html").await.is_some());
         // Nor is it in the binary: the embedded folder leaves it out.
         assert!(
