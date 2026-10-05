@@ -23,7 +23,7 @@ use serde_json::Value;
 
 use super::{Check, Context, Finding};
 use crate::generate::api::SPEC_PATH;
-use crate::rust_source::{Source, before_tests, read_product_sources};
+use crate::rust_source::{Source, read_product_sources, strip, without_tests};
 
 /// Where the exemptions are written down, each with its reason.
 const EXEMPTIONS_PATH: &str = "tools/checks/person-ref-exemptions.toml";
@@ -86,67 +86,236 @@ struct Found {
     field: String,
 }
 
-/// The structs of a file that derive `Serialize`, with their person-like fields.
+/// The structs and enums of a file that derive `Serialize`, with their person-like fields. Read
+/// from the code with comments and texts taken out, by its braces, so a struct on one line and
+/// the variants of an enum with named fields are read like any other.
 fn serialized_fields(path: &str, text: &str) -> Vec<Found> {
+    let code: Vec<char> = strip(&without_tests(text)).chars().collect();
     let mut found = Vec::new();
-    let lines: Vec<&str> = before_tests(text).lines().collect();
-    let mut at = 0;
-    while at < lines.len() {
-        let trimmed = lines[at].trim_start();
-        let is_struct = trimmed.starts_with("pub struct ")
-            || trimmed.starts_with("pub(crate) struct ")
-            || trimmed.starts_with("struct ");
-        if is_struct && trimmed.ends_with('{') {
-            let derives_serialize = (0..at)
-                .rev()
-                .take_while(|above| {
-                    let line = lines[*above].trim_start();
-                    line.starts_with("#[") || line.starts_with("///") || line.starts_with("//")
-                })
-                .any(|above| {
-                    let line = lines[above];
-                    line.contains("derive(") && line.contains("Serialize")
-                });
-            let name = trimmed
-                .split_whitespace()
-                .skip_while(|word| *word != "struct")
-                .nth(1)
-                .unwrap_or_default()
-                .trim_end_matches('{')
-                .split('<')
-                .next()
-                .unwrap_or_default()
-                .to_owned();
-            let mut end = at + 1;
-            while end < lines.len()
-                && !lines[end].starts_with('}')
-                && !lines[end].starts_with("    }")
-            {
-                end += 1;
+    for keyword in ["struct", "enum"] {
+        for at in word_positions(&code, keyword) {
+            let Some((name, open)) = item_head(&code, at + keyword.len()) else {
+                continue;
+            };
+            if !derives_serialize(&code, at) {
+                continue;
             }
-            if derives_serialize {
-                for (offset, field) in lines[at + 1..end.min(lines.len())].iter().enumerate() {
-                    let field = field.trim_start();
-                    let field = field
-                        .strip_prefix("pub(crate) ")
-                        .or_else(|| field.strip_prefix("pub "))
-                        .unwrap_or(field);
-                    if let Some((field_name, _)) = field.split_once(':')
-                        && PERSON_FIELDS.contains(&field_name.trim())
-                    {
-                        found.push(Found {
-                            place: format!("{path}:{}", at + offset + 2),
-                            r#type: name.clone(),
-                            field: field_name.trim().to_owned(),
-                        });
+            let Some(close) = matching(&code, open) else {
+                continue;
+            };
+            let body = &code[open + 1..close];
+            let mut fields = Vec::new();
+            if keyword == "struct" {
+                named_fields(body, open + 1, &mut fields);
+            } else {
+                // The variants: `Name`, `Name(..)` or `Name { fields }`.
+                for (start, variant) in split_top_level(body, open + 1) {
+                    let Some(brace) = variant.iter().position(|c| *c == '{') else {
+                        continue;
+                    };
+                    if variant[..brace].contains(&'(') {
+                        continue;
+                    }
+                    let inner_end = variant
+                        .iter()
+                        .rposition(|c| *c == '}')
+                        .unwrap_or(variant.len());
+                    if brace < inner_end {
+                        named_fields(
+                            &variant[brace + 1..inner_end],
+                            start + brace + 1,
+                            &mut fields,
+                        );
                     }
                 }
             }
-            at = end;
+            for (field, position) in fields {
+                if PERSON_FIELDS.contains(&field.as_str()) {
+                    found.push(Found {
+                        place: format!("{path}:{}", line_of(&code, position)),
+                        r#type: name.clone(),
+                        field,
+                    });
+                }
+            }
         }
-        at += 1;
     }
     found
+}
+
+/// The places where `word` stands as a whole word.
+fn word_positions(code: &[char], word: &str) -> Vec<usize> {
+    let word: Vec<char> = word.chars().collect();
+    let is_word = |c: char| c.is_alphanumeric() || c == '_';
+    (0..(code.len() + 1).saturating_sub(word.len()))
+        .filter(|at| {
+            code[*at..*at + word.len()] == word[..]
+                && !at
+                    .checked_sub(1)
+                    .is_some_and(|before| is_word(code[before]))
+                && !code
+                    .get(*at + word.len())
+                    .is_some_and(|after| is_word(*after))
+        })
+        .collect()
+}
+
+/// The name of the item after its keyword, and the place of the brace that opens its body; `None`
+/// for a tuple struct, a unit struct or something that is not an item.
+fn item_head(code: &[char], from: usize) -> Option<(String, usize)> {
+    let mut at = from;
+    while code.get(at).is_some_and(|c| c.is_whitespace()) {
+        at += 1;
+    }
+    let name: String = code[at..]
+        .iter()
+        .take_while(|c| c.is_alphanumeric() || **c == '_')
+        .collect();
+    if name.is_empty() {
+        return None;
+    }
+    // Generics and a where clause come before the brace; a `(` or `;` first is another kind.
+    let mut depth = 0_i32;
+    for (offset, c) in code[at + name.len()..].iter().enumerate() {
+        match c {
+            '<' => depth += 1,
+            '>' => depth -= 1,
+            '{' if depth <= 0 => {
+                let open = at + name.len() + offset;
+                return Some((name, open));
+            }
+            '(' | ';' if depth <= 0 => return None,
+            _ => {}
+        }
+    }
+    None
+}
+
+/// Whether the attributes above the item that starts at `keyword_at` derive `Serialize`.
+fn derives_serialize(code: &[char], keyword_at: usize) -> bool {
+    let mut end = keyword_at;
+    loop {
+        // Back over white space and a visibility (`pub`, `pub(crate)`).
+        while end > 0 && code[end - 1].is_whitespace() {
+            end -= 1;
+        }
+        if end > 0
+            && code[end - 1] == ')'
+            && let Some(open) = code[..end].iter().rposition(|c| *c == '(')
+        {
+            let head: String = code[..open].iter().collect();
+            if head.trim_end().ends_with("pub") {
+                end = head.trim_end().chars().count() - 3;
+                continue;
+            }
+        }
+        if end >= 3 && code[end - 3..end] == ['p', 'u', 'b'] {
+            end -= 3;
+            continue;
+        }
+        if end > 0 && code[end - 1] == ']' {
+            // An attribute: `#[...]`, possibly with brackets inside.
+            let mut depth = 0_i32;
+            let mut start = None;
+            for index in (0..end).rev() {
+                match code[index] {
+                    ']' => depth += 1,
+                    '[' => {
+                        depth -= 1;
+                        if depth == 0 {
+                            start = Some(index);
+                            break;
+                        }
+                    }
+                    _ => {}
+                }
+            }
+            let Some(start) = start else {
+                return false;
+            };
+            let attribute: String = code[start..end].iter().collect();
+            if attribute.contains("derive(") && word_in(&attribute, "Serialize") {
+                return true;
+            }
+            // Over the `#` before the bracket.
+            end = start.saturating_sub(1);
+            continue;
+        }
+        return false;
+    }
+}
+
+/// Whether `word` is in the text as a whole word.
+fn word_in(text: &str, word: &str) -> bool {
+    let chars: Vec<char> = text.chars().collect();
+    !word_positions(&chars, word).is_empty()
+}
+
+/// The place of the bracket that closes the one at `open`.
+fn matching(code: &[char], open: usize) -> Option<usize> {
+    let mut depth = 0_i32;
+    for (offset, c) in code[open..].iter().enumerate() {
+        match c {
+            '{' | '(' | '[' => depth += 1,
+            '}' | ')' | ']' => {
+                depth -= 1;
+                if depth == 0 {
+                    return Some(open + offset);
+                }
+            }
+            _ => {}
+        }
+    }
+    None
+}
+
+/// The parts of a body between the commas of its top level, each with the place it starts at.
+fn split_top_level(body: &[char], offset: usize) -> Vec<(usize, &[char])> {
+    let mut parts = Vec::new();
+    let mut depth = 0_i32;
+    let mut start = 0;
+    for (index, c) in body.iter().enumerate() {
+        match c {
+            '(' | '[' | '{' | '<' => depth += 1,
+            ')' | ']' | '}' | '>' => depth -= 1,
+            ',' if depth == 0 => {
+                parts.push((offset + start, &body[start..index]));
+                start = index + 1;
+            }
+            _ => {}
+        }
+    }
+    parts.push((offset + start, &body[start..]));
+    parts
+}
+
+/// The names of the fields in a body of `name: Type` parts, with the place of each name.
+fn named_fields(body: &[char], offset: usize, fields: &mut Vec<(String, usize)>) {
+    for (start, part) in split_top_level(body, offset) {
+        let text: String = part.iter().collect();
+        let Some((before, _)) = text.split_once(':') else {
+            continue;
+        };
+        // Attributes (`#[serde(...)]`) and the visibility come before the name.
+        let name = before
+            .rsplit(|c: char| c.is_whitespace() || c == ']' || c == ')')
+            .next()
+            .unwrap_or_default();
+        if !name.is_empty() {
+            let name = name.to_owned();
+            let at = text.find(&name).map_or(start, |inside| start + inside);
+            fields.push((name, at));
+        }
+    }
+}
+
+/// The line (from 1) of the place in the code.
+fn line_of(code: &[char], position: usize) -> usize {
+    code[..position.min(code.len())]
+        .iter()
+        .filter(|c| **c == '\n')
+        .count()
+        + 1
 }
 
 /// The names of the schemas that an answer holds: those that the responses of the routes name, and
@@ -342,6 +511,30 @@ mod tests {
         let findings = evaluate(&sources, &spec, &[]);
         // Two fields in the code, two properties in the description.
         assert_eq!(findings.len(), 4);
+    }
+
+    #[test]
+    fn bad_example_a_struct_on_one_line_and_the_variants_of_an_enum() {
+        let sources = api_source(
+            "#[derive(Serialize)] pub struct Short { pub display_name: String }\n\n#[derive(Serialize, ToSchema)]\n#[serde(tag = \"kind\")]\npub enum Who {\n    Named { id: String, email: String },\n    Other(String),\n    Nobody,\n}\n\n#[derive(Clone, serde::Serialize)]\npub(crate) struct Multi<'a> {\n    #[serde(skip)]\n    note: &'a str,\n    #[schema(example = \"x\")]\n    pub(crate) username: String,\n}\n",
+        );
+        let findings = evaluate(&sources, &json!({}), &[]);
+        let messages: Vec<String> = findings.iter().map(|f| f.message.clone()).collect();
+        assert_eq!(findings.len(), 3, "{messages:?}");
+        assert!(messages.iter().any(|m| m.contains("`Short.display_name`")));
+        assert!(messages.iter().any(|m| m.contains("`Who.email`")));
+        assert!(messages.iter().any(|m| m.contains("`Multi.username`")));
+        let places: Vec<Option<&str>> = findings.iter().map(|f| f.location.as_deref()).collect();
+        assert!(places.contains(&Some("crates/bb-api/src/api/x.rs:1")));
+        assert!(places.contains(&Some("crates/bb-api/src/api/x.rs:6")));
+    }
+
+    #[test]
+    fn good_example_types_that_are_not_serialized_or_have_no_named_person_field() {
+        let sources = api_source(
+            "#[derive(Deserialize)] pub struct In { email: String }\n#[derive(Serialize)] pub struct Own(pub String);\n#[derive(Serialize)] pub enum Who { Name(String), Person { person: PersonRef } }\n// #[derive(Serialize)] struct Comment { email: String }\nconst TEXT: &str = \"#[derive(Serialize)] struct T { email: String }\";\n#[derive(Serialize)] pub struct Calm { note: String }\n#[cfg(test)]\nmod tests {\n    #[derive(Serialize)] struct T { email: String }\n}\n",
+        );
+        assert!(evaluate(&sources, &json!({}), &[]).is_empty());
     }
 
     #[test]

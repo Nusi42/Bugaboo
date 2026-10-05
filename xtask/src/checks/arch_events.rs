@@ -15,7 +15,7 @@
 //! change is a part of one), so a new command cannot be left untested.
 
 use super::{Check, Context, Finding};
-use crate::rust_source::{Source, before_tests, read_product_sources};
+use crate::rust_source::{Source, read_product_sources, strip, without_tests};
 
 /// Where the use cases and the port live.
 const USE_CASES_FOLDER: &str = "crates/bb-app/src/";
@@ -44,111 +44,6 @@ impl Check for ArchEvents {
             table.as_deref(),
         ))
     }
-}
-
-/// The code with comments and the insides of strings and character literals replaced by spaces
-/// (new lines stay, so line numbers still fit).
-fn strip(text: &str) -> String {
-    let chars: Vec<char> = text.chars().collect();
-    let mut out = String::with_capacity(text.len());
-    let blank = |c: char| if c == '\n' { '\n' } else { ' ' };
-    let mut at = 0;
-    while at < chars.len() {
-        let c = chars[at];
-        let next = chars.get(at + 1).copied();
-        if c == '/' && next == Some('/') {
-            while at < chars.len() && chars[at] != '\n' {
-                out.push(' ');
-                at += 1;
-            }
-        } else if c == '/' && next == Some('*') {
-            let mut depth = 0;
-            while at < chars.len() {
-                if chars[at] == '/' && chars.get(at + 1) == Some(&'*') {
-                    depth += 1;
-                    out.push_str("  ");
-                    at += 2;
-                } else if chars[at] == '*' && chars.get(at + 1) == Some(&'/') {
-                    depth -= 1;
-                    out.push_str("  ");
-                    at += 2;
-                    if depth == 0 {
-                        break;
-                    }
-                } else {
-                    out.push(blank(chars[at]));
-                    at += 1;
-                }
-            }
-        } else if c == 'r'
-            && matches!(next, Some('"' | '#'))
-            && raw_string_hashes(&chars, at).is_some()
-        {
-            let hashes = raw_string_hashes(&chars, at).unwrap_or(0);
-            let end_marker: Vec<char> = std::iter::once('"')
-                .chain(std::iter::repeat_n('#', hashes))
-                .collect();
-            out.push(' ');
-            at += 1 + hashes + 1;
-            out.push_str(&" ".repeat(hashes + 1));
-            while at < chars.len()
-                && chars[at..]
-                    .iter()
-                    .take(end_marker.len())
-                    .ne(end_marker.iter())
-            {
-                out.push(blank(chars[at]));
-                at += 1;
-            }
-            let rest = end_marker.len().min(chars.len() - at);
-            out.push_str(&" ".repeat(rest));
-            at += rest;
-        } else if c == '"' {
-            out.push(' ');
-            at += 1;
-            while at < chars.len() && chars[at] != '"' {
-                if chars[at] == '\\' && at + 1 < chars.len() {
-                    out.push(' ');
-                    at += 1;
-                }
-                out.push(blank(chars[at]));
-                at += 1;
-            }
-            out.push(' ');
-            at += 1;
-        } else if c == '\'' && is_char_literal(&chars, at) {
-            out.push(' ');
-            at += 1;
-            while at < chars.len() && chars[at] != '\'' {
-                if chars[at] == '\\' {
-                    out.push(' ');
-                    at += 1;
-                }
-                out.push(' ');
-                at += 1;
-            }
-            out.push(' ');
-            at += 1;
-        } else {
-            out.push(c);
-            at += 1;
-        }
-    }
-    out
-}
-
-/// How many `#` follow the `r` of a raw string that starts at `at`, if it is one.
-fn raw_string_hashes(chars: &[char], at: usize) -> Option<usize> {
-    let hashes = chars[at + 1..].iter().take_while(|c| **c == '#').count();
-    (chars.get(at + 1 + hashes) == Some(&'"')).then_some(hashes)
-}
-
-/// Whether the `'` at `at` starts a character literal (and not a lifetime).
-fn is_char_literal(chars: &[char], at: usize) -> bool {
-    matches!(
-        (chars.get(at + 1), chars.get(at + 2)),
-        (Some('\\'), _) | (Some(_), Some('\''))
-    )
 }
 
 /// The text between the bracket at the start of `text` and its partner, brackets included.
@@ -221,7 +116,7 @@ fn evaluate(sources: &[Source], table: Option<&str>) -> Vec<Finding> {
         return findings;
     }
     let defines_port = in_app.iter().any(|(_, text)| {
-        let code = strip(before_tests(text));
+        let code = strip(&without_tests(text));
         code.contains(PORT) && code.contains(&format!("fn {RECORD}"))
     });
     if !defines_port {
@@ -240,7 +135,7 @@ fn evaluate(sources: &[Source], table: Option<&str>) -> Vec<Finding> {
         ));
     }
     for (path, text) in in_app {
-        let code = strip(before_tests(text));
+        let code = strip(&without_tests(text));
         for (at, _) in code.match_indices("async fn ") {
             let rest = &code[at + "async fn ".len()..];
             let name: String = rest
@@ -384,21 +279,6 @@ mod tests {
             messages[0].contains("does not define the port"),
             "{messages:?}"
         );
-    }
-
-    #[test]
-    fn strings_comments_and_lifetimes_are_told_apart() {
-        let code = strip(
-            "let a = 'x'; let b: &'a str = \"WWW // d\"; // QQQ
-/* ZZZ */ keep",
-        );
-        assert!(code.contains("let a"));
-        assert!(code.contains("&'a str"));
-        for gone in ["WWW", "QQQ", "ZZZ", "'x'"] {
-            assert!(!code.contains(gone), "{gone} in {code:?}");
-        }
-        assert!(code.contains("keep"));
-        assert_eq!(code.lines().count(), 2, "new lines stay");
     }
 
     #[test]

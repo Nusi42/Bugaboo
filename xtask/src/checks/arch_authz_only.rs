@@ -10,16 +10,25 @@
 //!   `bb-policy`;
 //! - `into_value(` in code that ships (the feature `peek` makes it for tests), and the feature
 //!   `peek` switched on anywhere but in a `[dev-dependencies]` table, or in a default feature;
+//! - a call of `evaluate(` outside `bb-policy` and `bb-app/src/access/` (the one place that loads
+//!   what a person holds and asks the engine), and a literal of `Inputs { … }` outside `bb-policy`
+//!   and `bb-store` (the one place that reads the rows): whoever can build the input can make an
+//!   evaluation for anybody and so an `Authorized<T>`;
 //! - inside `bb-policy`: a `pub` field in the definition of `Authorized`, a `pub` constructor
 //!   (`new`, `from`), or a derive that would make one out of nothing (`Default`, `Deserialize`).
 //!
-//! Comments and string literals do not count, and neither does code behind `#[cfg(test)]`.
+//! Comments, string and character literals do not count, and neither does code behind
+//! `#[cfg(test)]` (but code after a test module does).
 
 use super::{Check, Context, Finding};
-use crate::rust_source::{Source, before_tests, read_product_sources};
+use crate::rust_source::{Source, read_product_sources, strip, without_tests};
 
 /// The only crate that makes `Authorized<T>`.
 const POLICY_FOLDER: &str = "crates/bb-policy/";
+/// The one place outside `bb-policy` that asks the engine.
+const ENGINE_CALLER_FOLDER: &str = "crates/bb-app/src/access/";
+/// The one place outside `bb-policy` that builds the input of the engine, from the stored rows.
+const INPUT_BUILDER_FOLDER: &str = "crates/bb-store/src/";
 /// The type.
 const TYPE: &str = "Authorized";
 /// The method that opens an `Authorized<T>` for tests, and the feature that switches it on.
@@ -50,40 +59,6 @@ impl Check for ArchAuthzOnly {
     }
 }
 
-/// The code with comments and the insides of string literals replaced by spaces.
-fn code_of(text: &str) -> String {
-    let mut out = String::with_capacity(text.len());
-    let mut in_string = false;
-    let mut chars = text.chars().peekable();
-    while let Some(c) = chars.next() {
-        if in_string {
-            if c == '\\' {
-                chars.next();
-                out.push_str("  ");
-            } else if c == '"' {
-                in_string = false;
-                out.push(' ');
-            } else {
-                out.push(if c == '\n' { '\n' } else { ' ' });
-            }
-        } else if c == '"' {
-            in_string = true;
-            out.push(' ');
-        } else if c == '/' && chars.peek() == Some(&'/') {
-            for rest in chars.by_ref() {
-                if rest == '\n' {
-                    out.push('\n');
-                    break;
-                }
-                out.push(' ');
-            }
-        } else {
-            out.push(c);
-        }
-    }
-    out
-}
-
 /// Whether `line` names the type as a whole word.
 fn names_the_type(line: &str) -> bool {
     line.match_indices(TYPE).any(|(at, _)| {
@@ -91,6 +66,28 @@ fn names_the_type(line: &str) -> bool {
         let after = line[at + TYPE.len()..].chars().next();
         !before.is_some_and(|c| c.is_alphanumeric() || c == '_')
             && !after.is_some_and(|c| c.is_alphanumeric() || c == '_')
+    })
+}
+
+/// Whether the line calls the function `evaluate` (a path or a bare call, not a method of
+/// another type and not a definition).
+fn calls_evaluate(line: &str) -> bool {
+    line.match_indices("evaluate(").any(|(at, _)| {
+        let before = &line[..at];
+        !before
+            .chars()
+            .next_back()
+            .is_some_and(|c| c.is_alphanumeric() || c == '_' || c == '.')
+            && !before.trim_end().ends_with("fn")
+    })
+}
+
+/// Whether the line builds the input of the engine with a struct literal.
+fn builds_inputs(line: &str) -> bool {
+    line.match_indices("Inputs").any(|(at, word)| {
+        let before = line[..at].chars().next_back();
+        let after = line[at + word.len()..].trim_start();
+        !before.is_some_and(|c| c.is_alphanumeric() || c == '_') && after.starts_with('{')
     })
 }
 
@@ -128,7 +125,7 @@ fn builds_the_type(line: &str) -> bool {
 fn evaluate(sources: &[Source]) -> Vec<Finding> {
     let mut findings = Vec::new();
     for (path, text) in sources {
-        let code = code_of(before_tests(text));
+        let code = strip(&without_tests(text));
         let outside = !path.starts_with(POLICY_FOLDER);
         for (index, line) in code.lines().enumerate() {
             let place = || format!("{path}:{}", index + 1);
@@ -137,6 +134,19 @@ fn evaluate(sources: &[Source]) -> Vec<Finding> {
                     place(),
                     "`Authorized<T>` is made only inside `bb-policy`, from an evaluation \
                      (`evaluation.authorize(value)`). Do not define it again or build it here.",
+                ));
+            }
+            let in_policy = !outside;
+            if !in_policy && !path.starts_with(ENGINE_CALLER_FOLDER) && calls_evaluate(line) {
+                findings.push(Finding::at(
+                    place(),
+                    "Only `bb-app/src/access` asks the policy engine (`evaluate`): it loads what \n                     the person holds from the store. Ask `ctx.evaluate(person, place)` or \n                     `ctx.require(…)` instead.",
+                ));
+            }
+            if !in_policy && !path.starts_with(INPUT_BUILDER_FOLDER) && builds_inputs(line) {
+                findings.push(Finding::at(
+                    place(),
+                    "Only `bb-store` builds the input of the policy engine (`Inputs`), from the \n                     stored rows. Built anywhere else, it could say that anybody holds anything.",
                 ));
             }
             if line.contains(PEEK_METHOD) && line.contains('.') {
@@ -296,6 +306,108 @@ mod tests {
             let findings = evaluate(&source("crates/bb-api/src/api/x.rs", text));
             assert_eq!(findings.len(), 1, "{text}");
         }
+    }
+
+    #[test]
+    fn bad_example_code_after_a_test_module_is_still_read() {
+        let findings = evaluate(&source(
+            "crates/bb-api/src/api/x.rs",
+            "#[cfg(test)]
+mod tests {
+    fn t() { let a = Authorized::new(1); }
+}
+fn ships() { let b = Authorized::new(2); }
+",
+        ));
+        assert_eq!(findings.len(), 1);
+        assert!(
+            findings[0]
+                .location
+                .as_deref()
+                .is_some_and(|place| place.ends_with(":5")),
+            "{}",
+            findings[0].message
+        );
+    }
+
+    #[test]
+    fn bad_example_a_character_literal_a_raw_string_or_a_block_comment_hides_nothing() {
+        // A quote in a character literal does not start a string: the construction after it
+        // is still read. The same text in a raw string or a block comment is not code.
+        let findings = evaluate(&source(
+            "crates/bb-api/src/api/x.rs",
+            "fn f() { let quote = '\"'; let a = Authorized::new(1); }
+",
+        ));
+        assert_eq!(findings.len(), 1);
+        let hidden = evaluate(&source(
+            "crates/bb-api/src/api/x.rs",
+            "/* Authorized::new(1) */
+const RAW: &str = r#\"Authorized::new(\"#;
+const CHAR: char = '\"';
+",
+        ));
+        assert!(hidden.is_empty());
+    }
+
+    #[test]
+    fn bad_example_the_engine_is_asked_or_its_input_built_outside_its_places() {
+        for (path, text) in [
+            (
+                "crates/bb-api/src/api/x.rs",
+                "fn f(i: &Inputs) { let e = evaluate(i); }
+",
+            ),
+            (
+                "crates/bb-api/src/api/x.rs",
+                "fn f() { let e = bb_policy::evaluate(&input); }
+",
+            ),
+            (
+                "crates/bb-app/src/roles/x.rs",
+                "fn f() { let i = Inputs { person, rows }; }
+",
+            ),
+            (
+                "crates/bb-server/src/x.rs",
+                "fn f() { let i = Inputs {
+    person,
+}; }
+",
+            ),
+        ] {
+            assert_eq!(evaluate(&source(path, text)).len(), 1, "{text}");
+        }
+    }
+
+    #[test]
+    fn good_example_the_places_that_may_ask_and_build_and_the_methods_that_only_share_the_name() {
+        assert!(
+            evaluate(&source(
+                "crates/bb-app/src/access/mod.rs",
+                "fn f() { let e = evaluate(&inputs); }
+pub(crate) async fn evaluate(&self) {}
+"
+            ))
+            .is_empty()
+        );
+        assert!(
+            evaluate(&source(
+                "crates/bb-store/src/policy.rs",
+                "fn f() { let i = Inputs { person, rows }; }
+"
+            ))
+            .is_empty()
+        );
+        assert!(
+            evaluate(&source(
+                "crates/bb-app/src/roles/x.rs",
+                "async fn f(ctx: &Ctx) { ctx.evaluate(person, place).await; }
+fn g(x: &Inputs) {}
+"
+            ))
+            .is_empty()
+        );
     }
 
     #[test]

@@ -22,7 +22,7 @@ use crate::generate::api::SPEC_PATH;
 use crate::generate::icu::placeholders;
 use crate::generate::messages::{SOURCE_LOCALE_PATH, parse_pairs};
 use crate::generate::messages_rust::constant_name;
-use crate::rust_source::{Source, before_tests, read_product_sources};
+use crate::rust_source::{Source, read_product_sources, without_tests};
 
 /// The table of codes.
 const TABLE_PATH: &str = "crates/bb-core/src/error_code.rs";
@@ -93,10 +93,10 @@ fn evaluate(sources: &[Source], messages: &[(String, String)], spec: Option<&str
     }
     for (path, text) in sources {
         if HTTP_CODE.iter().any(|folder| path.starts_with(folder)) {
-            findings.extend(check_answers(path, before_tests(text)));
+            findings.extend(check_answers(path, &without_tests(text)));
         }
         if path.starts_with(EXTRACTOR_CODE) && path != WRAPPERS_PATH {
-            findings.extend(check_extractors(path, before_tests(text)));
+            findings.extend(check_extractors(path, &without_tests(text)));
         }
     }
     findings
