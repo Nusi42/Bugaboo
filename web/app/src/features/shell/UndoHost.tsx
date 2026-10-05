@@ -1,14 +1,23 @@
 import { t } from "@bugaboo/messages";
 import { Button, cx, Icon, iconName } from "@bugaboo/ui";
 
+import { focusRestored } from "../../shared/focus.ts";
 import { undoStore, type UndoOffer } from "../../shared/optimistic-undo.ts";
 import { useUndoOffers } from "../../shared/use-optimistic.ts";
 import { useShortcuts } from "../../shared/use-shortcuts.ts";
+import { CONTENT_ID } from "./content-id.ts";
 import styles from "./UndoHost.module.css";
 import { useHold } from "./use-hold.ts";
 
 /** Words of the ARIA standard, not text for people. */
 const politeStatus = "status";
+
+/** Takes an action back and moves the focus to what is back, as the button that was pressed is gone. */
+function takeBack(offer: UndoOffer): void {
+  if (undoStore.take(offer.id)) {
+    focusRestored(offer.restoredFocus, CONTENT_ID);
+  }
+}
 
 /** One offer. It waits while it is pointed at or has the focus, so there is time to reach it. */
 function Offer({ offer }: { readonly offer: UndoOffer }) {
@@ -25,7 +34,7 @@ function Offer({ offer }: { readonly offer: UndoOffer }) {
       <span className={styles.message}>{offer.message}</span>
       <Button
         onPress={() => {
-          undoStore.take(offer.id);
+          takeBack(offer);
         }}
       >
         <Icon name={iconName.undo} small />
@@ -49,7 +58,7 @@ export function UndoHost({ aboveBar = false }: { readonly aboveBar?: boolean }) 
           undo: () => {
             const latest = undoStore.latest();
             if (latest !== undefined) {
-              undoStore.take(latest.id);
+              takeBack(latest);
             }
           },
         },

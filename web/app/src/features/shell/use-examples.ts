@@ -36,6 +36,10 @@ export function useExamples(): {
         undo: () => {
           setRemoved((now) => now.filter((id) => id !== example.id));
         },
+        restoredFocus: () =>
+          document.querySelector<HTMLElement>(
+            `[aria-label="${CSS.escape(t("frames.remove-name", { name: example.name }))}"]`,
+          ),
       });
     },
   };

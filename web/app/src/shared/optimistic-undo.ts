@@ -7,12 +7,15 @@ export interface UndoOffer {
   readonly message: string;
   /** Puts things back as they were. */
   readonly undo: () => void;
+  /** Where the focus goes after `undo`: the thing that is back. Without it, the content heading. */
+  readonly restoredFocus?: () => HTMLElement | null;
 }
 
 /** What a caller gives: the sentence and the way back. */
 export interface UndoRequest {
   readonly message: string;
   readonly undo: () => void;
+  readonly restoredFocus?: () => HTMLElement | null;
 }
 
 /**

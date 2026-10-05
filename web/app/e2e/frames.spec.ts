@@ -234,6 +234,20 @@ test("ux_06 the Undo shortcut takes back the latest action, and the offer is ann
   await expect(page.getByRole("status").filter({ hasText: message })).toHaveCount(0);
 });
 
+test("ux_06 after Undo the focus is on the row that is back", async ({ page }) => {
+  await openFrames(page);
+  await removeButton(page, t("frames.item-2")).click();
+  await page.getByRole("button", { name: t("common.undo") }).click();
+  await expect(removeButton(page, t("frames.item-2"))).toBeFocused();
+});
+
+test("ux_06 after the Undo shortcut the focus is on the row that is back", async ({ page }) => {
+  await openFrames(page);
+  await removeButton(page, t("frames.item-3")).click();
+  await page.keyboard.press("Control+z");
+  await expect(removeButton(page, t("frames.item-3"))).toBeFocused();
+});
+
 async function markedItem(page: Page): Promise<void> {
   const list = page.getByRole("list", { name: t("frames.list") });
   const open = list.getByRole("button", { name: t("frames.item-2"), exact: true });

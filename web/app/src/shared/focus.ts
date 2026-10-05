@@ -97,3 +97,30 @@ export function removeKeepingFocus(run: () => void): void {
     wait(FRAMES_TO_WAIT);
   });
 }
+
+/**
+ * Where the focus goes after *Undo* brought something back: the thing that was restored (`find`
+ * gives it once it is on the page again), else the heading of the content. The button that was
+ * pressed is gone by then, and a screen reader would start again from the top.
+ */
+export function focusRestored(
+  find: (() => HTMLElement | null) | undefined,
+  contentId: string,
+): void {
+  const wait = (framesLeft: number): void => {
+    const restored = find?.() ?? null;
+    if (restored !== null) {
+      restored.focus();
+    } else if (find !== undefined && framesLeft > 0) {
+      requestAnimationFrame(() => {
+        wait(framesLeft - 1);
+      });
+    } else {
+      const content = document.querySelector<HTMLElement>(`#${contentId}`);
+      (content?.querySelector<HTMLElement>("h1") ?? content)?.focus();
+    }
+  };
+  requestAnimationFrame(() => {
+    wait(FRAMES_TO_WAIT);
+  });
+}
