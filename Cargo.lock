@@ -520,6 +520,21 @@ version = "0.0.0"
 [[package]]
 name = "bb-sample"
 version = "0.0.0"
+dependencies = [
+ "bb-app",
+ "bb-auth",
+ "bb-core",
+ "bb-store",
+ "bb-testing",
+ "clap",
+ "getrandom 0.4.3",
+ "jiff",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "tokio",
+ "toml",
+]
 
 [[package]]
 name = "bb-searchlang"

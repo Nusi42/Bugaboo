@@ -467,5 +467,21 @@
   "cli.help.take-over-data-folder": "Take over a data folder that holds only your own files in its tls folder, such as a certificate you put there before the first start",
   "setup.database-url-password": "The database address on the command line has a password in it, and other people on this computer can read the command line, for example in the list of running programs. This time the address is saved in {file}. Next time answer the database question of setup instead of using the option, or set the environment variable {variable}.",
   "data-folder.unknown": "{part} {path} could not be checked, because Bugaboo could not read its access rights. Check them yourself: other accounts on this computer should not be able to open it, unless you want that.",
-  "status.data-folder.unknown": "Bugaboo could not read the rights of these, so it cannot say whether other accounts can open them. Check them yourself:"
+  "status.data-folder.unknown": "Bugaboo could not read the rights of these, so it cannot say whether other accounts can open them. Check them yourself:",
+  "cli.about.sample": "Make the sample organization: fictional people, the same every time from a seed",
+  "cli.help.sample-seed": "The number the sample is made from. The same number makes the same organization",
+  "cli.help.sample-start": "The moment the sample ends, in seconds since 1 January 1970. The program never reads the clock, so the same moment makes the same dates",
+  "cli.help.sample-database": "Where the sample is kept: sqlite (a file in the data folder) or postgres (the address of an empty database is in the environment variable {variable})",
+  "cli.help.sample-out": "The folder for the data folder, the sign-in details and the dump of the sample",
+  "sample.done": "Made the sample organization with {people} people from seed {seed}. Data folder: {folder}. How to sign in as them: {file}",
+  "sample.sign-in-header": "Sample organization: how to sign in.\nThe passwords are random and belong to this run only. Never copy this file anywhere.\nOne line per person, separated by tabs: e-mail address, password, role, and the secret of the code app for the people who have one.",
+  "sample.error.names": "The list of names cannot be used: {reason}",
+  "sample.error.random": "The system gave no secure random numbers for the passwords.",
+  "sample.error.folder": "The sample cannot use {path}: {reason}",
+  "sample.error.not-a-sample-folder": "The folder {path} has other things in it and was not made by this tool, so it is left alone. Choose another folder or empty this one.",
+  "sample.error.store": "The database failed: {reason}",
+  "sample.error.step": "A step of the sample was refused ({step}): {reason}",
+  "sample.error.log-broken": "The security log of the sample does not verify: {reason}",
+  "sample.error.start": "The start moment {start} is not a moment in time.",
+  "sample.error.database-url": "The environment variable {variable} must hold the address of an empty PostgreSQL database."
 }
