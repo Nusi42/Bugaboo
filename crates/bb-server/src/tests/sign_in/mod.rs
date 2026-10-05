@@ -9,6 +9,7 @@
 //! client over TLS and HTTP/2).
 
 mod access_keys;
+mod access_keys_gate;
 mod access_keys_http;
 mod caching;
 mod http;

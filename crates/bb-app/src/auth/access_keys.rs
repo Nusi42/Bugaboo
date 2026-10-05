@@ -116,6 +116,14 @@ impl<S: AuthStore> Ctx<'_, S> {
             return Err(AppError::Refused(ErrorCode::NotSignedIn));
         };
         self.network_slot_done(&slot);
+        // A key follows its owner's two-step requirement: a person who has to set up a second
+        // step cannot get around it with a key (ADR-0025, decision 8; M2-F46).
+        if self.must_set_up_second_step(owner.id).await? {
+            let subject = entity("access_key", record.key.id).ok();
+            self.note(SecurityAction::AccessKeyRefused, Some(owner.id), subject)
+                .await;
+            return Err(AppError::Refused(ErrorCode::SecondStepRequired));
+        }
         self.via_key
             .store(true, std::sync::atomic::Ordering::Relaxed);
         self.store()

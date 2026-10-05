@@ -22,7 +22,7 @@ use super::rig::{Outcome, PASSWORD, Rig, refused};
 const REQUIRED: Option<ErrorCode> = Some(ErrorCode::SecondStepRequired);
 
 /// The role *Inviter* (it lets people invite), with the switch as given.
-async fn inviter(org: &Org<'_>, two_step: bool) -> Run<RoleId> {
+pub(super) async fn inviter(org: &Org<'_>, two_step: bool) -> Run<RoleId> {
     Ok(org
         .rig
         .api()
@@ -41,7 +41,7 @@ async fn inviter(org: &Org<'_>, two_step: bool) -> Run<RoleId> {
 }
 
 /// The switch of a role, set by the administrator.
-async fn switch(org: &Org<'_>, role: RoleId, two_step: bool) -> Run<()> {
+pub(super) async fn switch(org: &Org<'_>, role: RoleId, two_step: bool) -> Run<()> {
     org.rig
         .api()
         .change_role(
@@ -58,7 +58,7 @@ async fn switch(org: &Org<'_>, role: RoleId, two_step: bool) -> Run<()> {
     Ok(())
 }
 
-async fn invitations(rig: &Rig, session: &str) -> Result<(), AppError> {
+pub(super) async fn invitations(rig: &Rig, session: &str) -> Result<(), AppError> {
     rig.api()
         .invitations(
             Rig::info(),
@@ -73,7 +73,7 @@ async fn invitations(rig: &Rig, session: &str) -> Result<(), AppError> {
 }
 
 /// Sets up the code app for the person behind `session`.
-async fn set_up_a_code_app(rig: &Rig, person: UserId, session: &str) -> Run<()> {
+pub(super) async fn set_up_a_code_app(rig: &Rig, person: UserId, session: &str) -> Run<()> {
     rig.api()
         .start_code_app(
             Rig::info(),

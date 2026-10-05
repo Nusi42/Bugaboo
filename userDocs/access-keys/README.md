@@ -22,6 +22,7 @@ Bugaboo shows the key **once**. Copy it now and keep it somewhere safe, like a p
 ## What a key can and cannot do
 
 - A key follows you. When an administrator takes a role away from you, the keys you made lose it as well, at once. A key never has more than you have.
+- A key waits for your second step. When your organization starts to ask for two-step sign-in and you have not set it up yet, your keys do not work until you have; then they work again, nothing is lost.
 - A key cannot change how you sign in: not your password, not your second step, not your passkeys, not the places where you are signed in, and not your keys. For that you sign in with your password.
 - A key that has run out, or that you deleted, does not work, and Bugaboo does not say which of the two it is.
 - Every use of a key is counted. A key that sends too many requests in a minute has to wait a little. Other keys, and you, are not held up by it.
