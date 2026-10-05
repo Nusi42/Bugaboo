@@ -31,6 +31,9 @@ Rules:
 | **Short name**           | The letters that start a project's issue IDs and its address (`WEB`, `/p/WEB`): 2 to 10 capital letters or digits, starting with a letter, unique in the organization. It can be changed; the old one keeps working and stays with the project | project key |
 | **Top level**            | Where a project that is inside no other project sits               | root project (in UI)               |
 | **Move** (a project)     | Put a project inside another one, or at the top level. Before it happens, Bugaboo says who gains or loses access | re-parent, reparent (in UI) |
+| **Overview** (of a project) | The page of a project at `/p/WEB`: its name, short name, where it sits and its sub-projects | dashboard (for this page), home of a project |
+| **Preview** (of a move)  | What Bugaboo shows before a move happens: in plain sentences, who gains or loses access or changes role, and which fields and people information change for whom. The move asks for the version of the preview that was read | dry run, simulation, impact analysis |
+| **Where you are**        | The line at the top that names the page you are on and the pages above it (*ACME › Website › Project settings*). It names only what you may see | breadcrumb (in UI) |
 | **Issue type**           | What kind of issue it is. Defaults: *Bug, Task, Feature, Goal*     | —                                  |
 | **Goal**                 | A big piece of work that groups other issues under it              | epic, initiative, story            |
 | **Sub-issue / parent**   | An issue that belongs under another one                            | sub-task, child story              |

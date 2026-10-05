@@ -30,70 +30,77 @@ fn short_names(list: &Value) -> Vec<&str> {
         .unwrap_or_default()
 }
 
-#[tokio::test]
-async fn prj_01_projects_are_made_listed_and_changed_over_http() -> Outcome {
-    each_database("prj_01_http", async |db| {
-        let (rig, app) = rig_and_app(db, 10).await?;
-        let mut ada = Browser::new(&app, &called());
-        ada.send("POST", "/api/v1/auth/setup", Some(setup_body(&rig)))
-            .await?;
-        let mut bob = invited_person(&mut ada, &app, "bob@example.test").await?;
+/// An organization with its administrator signed in, and the router that serves it.
+async fn administrator(
+    db: &bb_testing::TestDatabase,
+) -> Result<(Browser, axum::Router), Box<dyn std::error::Error + Send + Sync>> {
+    let (rig, app) = rig_and_app(db, 10).await?;
+    let mut ada = Browser::new(&app, &called());
+    ada.send("POST", "/api/v1/auth/setup", Some(setup_body(&rig)))
+        .await?;
+    Ok((ada, app))
+}
 
-        // Making: the top level, then a sub-project; the form's rules are the server's.
-        let acme = ada
-            .send(
-                "POST",
-                PROJECTS,
-                Some(json!({"short_name": "ACME", "name": "Acme"})),
-            )
-            .await?;
+/// Makes a project at the top level, or inside `parent`, and says what the server answered.
+async fn make(
+    browser: &mut Browser,
+    parent: Option<&str>,
+    short_name: &str,
+    name: &str,
+) -> Result<super::http::Reply, Box<dyn std::error::Error + Send + Sync>> {
+    let path = parent.map_or_else(
+        || PROJECTS.to_owned(),
+        |parent| format!("{PROJECTS}/{parent}/sub-projects"),
+    );
+    browser
+        .send(
+            "POST",
+            &path,
+            Some(json!({"short_name": short_name, "name": name})),
+        )
+        .await
+}
+
+#[tokio::test]
+async fn prj_01_projects_are_made_over_http_by_the_rules_of_the_form() -> Outcome {
+    each_database("prj_01_http_make", async |db| {
+        let (mut ada, _app) = administrator(db).await?;
+        let acme = make(&mut ada, None, "ACME", "Acme").await?;
         assert_eq!(acme.status, StatusCode::OK, "{}", acme.body);
-        let acme_id = id_of(&acme.body)?;
         assert_eq!(acme.body["version"], 1);
-        let bad = ada
-            .send(
-                "POST",
-                PROJECTS,
-                Some(json!({"short_name": "acme", "name": "Acme"})),
-            )
-            .await?;
-        assert_eq!(bad.status, StatusCode::BAD_REQUEST);
-        assert_eq!(bad.code(), "request.invalid");
-        let taken = ada
-            .send(
-                "POST",
-                &format!("{PROJECTS}/{acme_id}/sub-projects"),
-                Some(json!({"short_name": "ACME", "name": "Again"})),
-            )
-            .await?;
+        let acme_id = id_of(&acme.body)?;
+        let bad = make(&mut ada, None, "acme", "Acme").await?;
+        assert_eq!(
+            (bad.status, bad.code()),
+            (StatusCode::BAD_REQUEST, "request.invalid")
+        );
+        let taken = make(&mut ada, Some(&acme_id), "ACME", "Again").await?;
         assert_eq!(
             (taken.status, taken.code()),
             (StatusCode::CONFLICT, "name.taken")
         );
-        let web = ada
-            .send(
-                "POST",
-                &format!("{PROJECTS}/{acme_id}/sub-projects"),
-                Some(json!({"short_name": "WEB", "name": "Website"})),
-            )
-            .await?;
+        let web = make(&mut ada, Some(&acme_id), "WEB", "Website").await?;
         assert_eq!(web.status, StatusCode::OK, "{}", web.body);
         assert_eq!(web.body["parent"], acme_id);
+        Ok(())
+    })
+    .await
+}
 
-        // Listing: the top of the tree, what is inside, a search, fields, and pages.
+#[tokio::test]
+async fn prj_02_projects_are_listed_as_a_tree_a_search_and_pages_over_http() -> Outcome {
+    each_database("prj_02_http_list", async |db| {
+        let (mut ada, _app) = administrator(db).await?;
+        let acme_id = id_of(&make(&mut ada, None, "ACME", "Acme").await?.body)?;
+        make(&mut ada, Some(&acme_id), "WEB", "Website").await?;
         let top = ada.send("GET", PROJECTS, None).await?;
         assert_eq!(top.status, StatusCode::OK);
         assert_eq!(short_names(&top.body), ["ACME"]);
         assert_eq!(top.body["items"][0]["has_sub_projects"], true);
         assert!(top.body["next_cursor"].is_null());
         assert_eq!(top.header("cache-control"), "no-store");
-        let inside = ada
-            .send(
-                "GET",
-                &format!("{PROJECTS}?inside={acme_id}&fields=short_name,parent"),
-                None,
-            )
-            .await?;
+        let path = format!("{PROJECTS}?inside={acme_id}&fields=short_name,parent");
+        let inside = ada.send("GET", &path, None).await?;
         assert_eq!(short_names(&inside.body), ["WEB"]);
         assert_eq!(inside.body["items"][0]["parent"]["short_name"], "ACME");
         assert!(inside.body["items"][0].get("name").is_none());
@@ -102,12 +109,7 @@ async fn prj_01_projects_are_made_listed_and_changed_over_http() -> Outcome {
             .await?;
         assert_eq!(short_names(&found.body), ["WEB"]);
         for short_name in ["CCC", "BBB"] {
-            ada.send(
-                "POST",
-                PROJECTS,
-                Some(json!({"short_name": short_name, "name": short_name})),
-            )
-            .await?;
+            make(&mut ada, None, short_name, short_name).await?;
         }
         let first = ada
             .send("GET", &format!("{PROJECTS}?limit=2"), None)
@@ -122,8 +124,18 @@ async fn prj_01_projects_are_made_listed_and_changed_over_http() -> Outcome {
             .send("GET", &format!("{PROJECTS}?cursor=nonsense"), None)
             .await?;
         assert_eq!(bad_cursor.code(), "request.bad_cursor");
+        Ok(())
+    })
+    .await
+}
 
-        // One project, by short name and by ID; the trail and what may be done here.
+#[tokio::test]
+async fn prj_01_a_project_is_shown_by_its_address_and_changed_over_http() -> Outcome {
+    each_database("prj_01_http_change", async |db| {
+        let (mut ada, _app) = administrator(db).await?;
+        let acme_id = id_of(&make(&mut ada, None, "ACME", "Acme").await?.body)?;
+        let web = make(&mut ada, Some(&acme_id), "WEB", "Website").await?;
+        let web_id = id_of(&web.body)?;
         let one = ada.send("GET", &format!("{PROJECTS}/WEB"), None).await?;
         assert_eq!(one.status, StatusCode::OK, "{}", one.body);
         assert_eq!(one.body["trail"][0]["short_name"], "ACME");
@@ -133,12 +145,12 @@ async fn prj_01_projects_are_made_listed_and_changed_over_http() -> Outcome {
                 .as_array()
                 .is_some_and(|all| all.contains(&json!("move-projects")))
         );
-        // Changing: renaming, a short name (the old address keeps working), a stale version.
-        let web_id = id_of(&web.body)?;
+        // A short name changes and the old address keeps working; a stale version is stopped.
+        let patch = format!("{PROJECTS}/{web_id}");
         let renamed = ada
             .send(
                 "PATCH",
-                &format!("{PROJECTS}/{web_id}"),
+                &patch,
                 Some(json!({"version": 1, "short_name": "SITE", "name": "The site"})),
             )
             .await?;
@@ -149,7 +161,7 @@ async fn prj_01_projects_are_made_listed_and_changed_over_http() -> Outcome {
         let stale = ada
             .send(
                 "PATCH",
-                &format!("{PROJECTS}/{web_id}"),
+                &patch,
                 Some(json!({"version": 1, "name": "Stale"})),
             )
             .await?;
@@ -157,9 +169,19 @@ async fn prj_01_projects_are_made_listed_and_changed_over_http() -> Outcome {
             (stale.status, stale.code()),
             (StatusCode::CONFLICT, "edit.version_changed")
         );
+        Ok(())
+    })
+    .await
+}
 
-        // Bob has no role: the list is empty and says nothing more; a project is not found, and
-        // exactly like one that does not exist; he may make nothing.
+#[tokio::test]
+async fn prj_01_a_person_without_a_role_sees_no_project_and_is_told_nothing() -> Outcome {
+    each_database("prj_01_http_hidden", async |db| {
+        let (mut ada, app) = administrator(db).await?;
+        let mut bob = invited_person(&mut ada, &app, "bob@example.test").await?;
+        make(&mut ada, None, "ACME", "Acme").await?;
+        // The list is empty and says nothing more; a project is not found, exactly like one that
+        // does not exist; he may make nothing.
         let empty = bob.send("GET", PROJECTS, None).await?;
         assert_eq!(empty.status, StatusCode::OK);
         assert!(short_names(&empty.body).is_empty());
@@ -169,13 +191,7 @@ async fn prj_01_projects_are_made_listed_and_changed_over_http() -> Outcome {
         assert_eq!(hidden.body["code"], "resource.not_found");
         assert_eq!(hidden.body["message_key"], missing.body["message_key"]);
         assert_eq!(hidden.body["title"], missing.body["title"]);
-        let denied = bob
-            .send(
-                "POST",
-                PROJECTS,
-                Some(json!({"short_name": "MINE", "name": "Mine"})),
-            )
-            .await?;
+        let denied = make(&mut bob, None, "MINE", "Mine").await?;
         assert_eq!(
             (denied.status, denied.code()),
             (StatusCode::FORBIDDEN, "access.forbidden")

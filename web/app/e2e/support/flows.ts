@@ -82,7 +82,11 @@ export async function signOut(page: Page): Promise<void> {
 }
 
 /** The topics of *Organization settings*; every other topic is in *My settings*. */
-const organizationTopics: ReadonlySet<string> = new Set([t("nav.invitations"), t("nav.status")]);
+const organizationTopics: ReadonlySet<string> = new Set([
+  t("nav.invitations"),
+  t("nav.projects"),
+  t("nav.status"),
+]);
 
 /**
  * Opens a topic of *My settings* or *Organization settings* the way a person does: the menu (a

@@ -80,8 +80,8 @@ pub struct ProjectsQuery {
     /// The projects directly inside this one; the top of the tree when `None`. Ignored when
     /// `search` is set.
     pub inside: Option<ProjectId>,
-    /// Words that name or start the name or the short name of the projects to find, anywhere in
-    /// the tree.
+    /// Words that every found project holds in its name or short name, anywhere in the tree;
+    /// the text may be empty, which finds every project the person sees.
     pub search: Option<String>,
     /// Leave out this project and everything inside it (where it cannot be moved to).
     pub outside: Option<ProjectId>,

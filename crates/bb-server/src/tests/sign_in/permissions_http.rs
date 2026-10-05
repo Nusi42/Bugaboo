@@ -40,7 +40,10 @@ fn example(method: &str, path: &str) -> Result<(String, Option<Value>), Failure>
     Ok(match (method, path) {
         (
             "GET",
-            "/api/v1/auth/invitations" | "/api/v1/admin/status" | "/api/v1/auth/sign-up-policy",
+            "/api/v1/auth/invitations"
+            | "/api/v1/admin/status"
+            | "/api/v1/auth/sign-up-policy"
+            | "/api/v1/projects",
         ) => (path.to_owned(), None),
         ("POST", "/api/v1/auth/invitations") => (
             path.to_owned(),
@@ -53,7 +56,6 @@ fn example(method: &str, path: &str) -> Result<(String, Option<Value>), Failure>
             path.to_owned(),
             Some(json!({"enabled": false, "domains": []})),
         ),
-        ("GET", "/api/v1/projects") => (path.to_owned(), None),
         ("GET", "/api/v1/projects/{project}") => (path.replace("{project}", some_id), None),
         ("POST", "/api/v1/projects") => (path.to_owned(), Some(new_project())),
         ("POST", "/api/v1/projects/{project}/sub-projects") => {

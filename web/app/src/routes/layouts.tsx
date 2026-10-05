@@ -54,6 +54,9 @@ export const appRoute = createRoute({
     if (person === null) {
       throw redirect({ to: await startPath() });
     }
+    // The projects join the sidebar and quick search once somebody is signed in, so the pages
+    // before sign-in do not carry them.
+    (await import("../features/projects/index.ts")).registerProjects();
     return { person };
   },
   component: AppLayout,

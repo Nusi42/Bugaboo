@@ -205,6 +205,8 @@ async fn prj_01_projects_nest_to_any_depth_and_short_names_are_unique() -> Outco
                 .iter()
                 .any(|_| true)
         );
+        // A search for nothing lists every project the person sees, wherever it sits.
+        assert_eq!(list(&org, &admin, None, Some("")).await?.items.len(), 12);
         assert_eq!(
             names(&list(&org, &admin, None, Some("deep1")).await?),
             ["DEEP1", "DEEP10", "DEEP11"]

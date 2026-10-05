@@ -629,6 +629,9 @@ pub const NAV_GROUP_SIGN_IN: MessageKey = MessageKey::new("nav.group.sign-in");
 /// The message `nav.group.system`.
 pub const NAV_GROUP_SYSTEM: MessageKey = MessageKey::new("nav.group.system");
 
+/// The message `nav.group.work`.
+pub const NAV_GROUP_WORK: MessageKey = MessageKey::new("nav.group.work");
+
 /// The message `nav.home`.
 pub const NAV_HOME: MessageKey = MessageKey::new("nav.home");
 
@@ -640,6 +643,9 @@ pub const NAV_MY_SETTINGS: MessageKey = MessageKey::new("nav.my-settings");
 
 /// The message `nav.organization-settings`.
 pub const NAV_ORGANIZATION_SETTINGS: MessageKey = MessageKey::new("nav.organization-settings");
+
+/// The message `nav.projects`.
+pub const NAV_PROJECTS: MessageKey = MessageKey::new("nav.projects");
 
 /// The message `nav.security`.
 pub const NAV_SECURITY: MessageKey = MessageKey::new("nav.security");
@@ -802,6 +808,163 @@ pub const PERMISSION_SEE_PROJECTS: MessageKey = MessageKey::new("permission.see-
 /// The message `permission.see-status`.
 pub const PERMISSION_SEE_STATUS: MessageKey = MessageKey::new("permission.see-status");
 
+/// The message `projects.at-the-top`.
+pub const PROJECTS_AT_THE_TOP: MessageKey = MessageKey::new("projects.at-the-top");
+
+/// The message `projects.edit-title`.
+pub const PROJECTS_EDIT_TITLE: MessageKey = MessageKey::new("projects.edit-title");
+
+/// The message `projects.field-name`.
+pub const PROJECTS_FIELD_NAME: MessageKey = MessageKey::new("projects.field-name");
+
+/// The message `projects.field-name-help`.
+pub const PROJECTS_FIELD_NAME_HELP: MessageKey = MessageKey::new("projects.field-name-help");
+
+/// The message `projects.field-short-name`.
+pub const PROJECTS_FIELD_SHORT_NAME: MessageKey = MessageKey::new("projects.field-short-name");
+
+/// The message `projects.field-short-name-help`.
+pub const PROJECTS_FIELD_SHORT_NAME_HELP: MessageKey =
+    MessageKey::new("projects.field-short-name-help");
+
+/// The message `projects.heading`.
+pub const PROJECTS_HEADING: MessageKey = MessageKey::new("projects.heading");
+
+/// The message `projects.intro`.
+pub const PROJECTS_INTRO: MessageKey = MessageKey::new("projects.intro");
+
+/// The message `projects.make`.
+pub const PROJECTS_MAKE: MessageKey = MessageKey::new("projects.make");
+
+/// The message `projects.make-intro`.
+pub const PROJECTS_MAKE_INTRO: MessageKey = MessageKey::new("projects.make-intro");
+
+/// The message `projects.make-sub-project`.
+pub const PROJECTS_MAKE_SUB_PROJECT: MessageKey = MessageKey::new("projects.make-sub-project");
+
+/// The message `projects.make-title`.
+pub const PROJECTS_MAKE_TITLE: MessageKey = MessageKey::new("projects.make-title");
+
+/// The message `projects.more`.
+pub const PROJECTS_MORE: MessageKey = MessageKey::new("projects.more");
+
+/// The message `projects.move-button`.
+pub const PROJECTS_MOVE_BUTTON: MessageKey = MessageKey::new("projects.move-button");
+
+/// The message `projects.move-confirm`.
+pub const PROJECTS_MOVE_CONFIRM: MessageKey = MessageKey::new("projects.move-confirm");
+
+/// The message `projects.move-dialog-text`.
+pub const PROJECTS_MOVE_DIALOG_TEXT: MessageKey = MessageKey::new("projects.move-dialog-text");
+
+/// The message `projects.move-title`.
+pub const PROJECTS_MOVE_TITLE: MessageKey = MessageKey::new("projects.move-title");
+
+/// The message `projects.no-role`.
+pub const PROJECTS_NO_ROLE: MessageKey = MessageKey::new("projects.no-role");
+
+/// The message `projects.none-yet`.
+pub const PROJECTS_NONE_YET: MessageKey = MessageKey::new("projects.none-yet");
+
+/// The message `projects.nothing`.
+pub const PROJECTS_NOTHING: MessageKey = MessageKey::new("projects.nothing");
+
+/// The message `projects.open`.
+pub const PROJECTS_OPEN: MessageKey = MessageKey::new("projects.open");
+
+/// The message `projects.overview-inside`.
+pub const PROJECTS_OVERVIEW_INSIDE: MessageKey = MessageKey::new("projects.overview-inside");
+
+/// The message `projects.overview-short-name`.
+pub const PROJECTS_OVERVIEW_SHORT_NAME: MessageKey =
+    MessageKey::new("projects.overview-short-name");
+
+/// The message `projects.overview-top`.
+pub const PROJECTS_OVERVIEW_TOP: MessageKey = MessageKey::new("projects.overview-top");
+
+/// The message `projects.person-someone`.
+pub const PROJECTS_PERSON_SOMEONE: MessageKey = MessageKey::new("projects.person-someone");
+
+/// The message `projects.picker-legend`.
+pub const PROJECTS_PICKER_LEGEND: MessageKey = MessageKey::new("projects.picker-legend");
+
+/// The message `projects.picker-list`.
+pub const PROJECTS_PICKER_LIST: MessageKey = MessageKey::new("projects.picker-list");
+
+/// The message `projects.picker-more`.
+pub const PROJECTS_PICKER_MORE: MessageKey = MessageKey::new("projects.picker-more");
+
+/// The message `projects.picker-nothing`.
+pub const PROJECTS_PICKER_NOTHING: MessageKey = MessageKey::new("projects.picker-nothing");
+
+/// The message `projects.picker-search`.
+pub const PROJECTS_PICKER_SEARCH: MessageKey = MessageKey::new("projects.picker-search");
+
+/// The message `projects.picker-top`.
+pub const PROJECTS_PICKER_TOP: MessageKey = MessageKey::new("projects.picker-top");
+
+/// The message `projects.preview-blocked`.
+pub const PROJECTS_PREVIEW_BLOCKED: MessageKey = MessageKey::new("projects.preview-blocked");
+
+/// The message `projects.preview-heading`.
+pub const PROJECTS_PREVIEW_HEADING: MessageKey = MessageKey::new("projects.preview-heading");
+
+/// The message `projects.preview-hidden-note`.
+pub const PROJECTS_PREVIEW_HIDDEN_NOTE: MessageKey =
+    MessageKey::new("projects.preview-hidden-note");
+
+/// The message `projects.preview-list`.
+pub const PROJECTS_PREVIEW_LIST: MessageKey = MessageKey::new("projects.preview-list");
+
+/// The message `projects.preview-loading`.
+pub const PROJECTS_PREVIEW_LOADING: MessageKey = MessageKey::new("projects.preview-loading");
+
+/// The message `projects.preview-nothing`.
+pub const PROJECTS_PREVIEW_NOTHING: MessageKey = MessageKey::new("projects.preview-nothing");
+
+/// The message `projects.preview-truncated`.
+pub const PROJECTS_PREVIEW_TRUNCATED: MessageKey = MessageKey::new("projects.preview-truncated");
+
+/// The message `projects.saved`.
+pub const PROJECTS_SAVED: MessageKey = MessageKey::new("projects.saved");
+
+/// The message `projects.search`.
+pub const PROJECTS_SEARCH: MessageKey = MessageKey::new("projects.search");
+
+/// The message `projects.settings-back`.
+pub const PROJECTS_SETTINGS_BACK: MessageKey = MessageKey::new("projects.settings-back");
+
+/// The message `projects.settings-link`.
+pub const PROJECTS_SETTINGS_LINK: MessageKey = MessageKey::new("projects.settings-link");
+
+/// The message `projects.short-name-change-help`.
+pub const PROJECTS_SHORT_NAME_CHANGE_HELP: MessageKey =
+    MessageKey::new("projects.short-name-change-help");
+
+/// The message `projects.short-name-fixed`.
+pub const PROJECTS_SHORT_NAME_FIXED: MessageKey = MessageKey::new("projects.short-name-fixed");
+
+/// The message `projects.sub-projects`.
+pub const PROJECTS_SUB_PROJECTS: MessageKey = MessageKey::new("projects.sub-projects");
+
+/// The message `projects.sub-projects-ask`.
+pub const PROJECTS_SUB_PROJECTS_ASK: MessageKey = MessageKey::new("projects.sub-projects-ask");
+
+/// The message `projects.sub-projects-empty`.
+pub const PROJECTS_SUB_PROJECTS_EMPTY: MessageKey = MessageKey::new("projects.sub-projects-empty");
+
+/// The message `projects.sub-projects-more`.
+pub const PROJECTS_SUB_PROJECTS_MORE: MessageKey = MessageKey::new("projects.sub-projects-more");
+
+/// The message `projects.title`.
+pub const PROJECTS_TITLE: MessageKey = MessageKey::new("projects.title");
+
+/// The message `projects.tree-empty`.
+pub const PROJECTS_TREE_EMPTY: MessageKey = MessageKey::new("projects.tree-empty");
+
+/// The message `projects.tree-more`.
+pub const PROJECTS_TREE_MORE: MessageKey = MessageKey::new("projects.tree-more");
+
 /// The message `sample.error.link-missing`.
 pub const SAMPLE_ERROR_LINK_MISSING: MessageKey = MessageKey::new("sample.error.link-missing");
 
@@ -883,6 +1046,9 @@ pub const SEARCH_PARTIAL: MessageKey = MessageKey::new("search.partial");
 
 /// The message `search.placeholder`.
 pub const SEARCH_PLACEHOLDER: MessageKey = MessageKey::new("search.placeholder");
+
+/// The message `search.projects`.
+pub const SEARCH_PROJECTS: MessageKey = MessageKey::new("search.projects");
 
 /// The message `search.results`.
 pub const SEARCH_RESULTS: MessageKey = MessageKey::new("search.results");
@@ -1911,6 +2077,268 @@ pub fn passkeys_remove_name(name: impl std::fmt::Display) -> Message {
 pub fn passkeys_remove_title(name: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("passkeys.remove-title"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `projects.collapse-name`.
+#[must_use]
+pub fn projects_collapse_name(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("projects.collapse-name"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `projects.expand-name`.
+#[must_use]
+pub fn projects_expand_name(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("projects.expand-name"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `projects.inside`.
+#[must_use]
+pub fn projects_inside(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("projects.inside"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `projects.line-can-no-more`.
+#[must_use]
+pub fn projects_line_can_no_more(
+    person: impl std::fmt::Display,
+    project: impl std::fmt::Display,
+    things: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("projects.line-can-no-more"),
+        vec![
+            ("person", Value::Text(person.to_string())),
+            ("project", Value::Text(project.to_string())),
+            ("things", Value::Text(things.to_string())),
+        ],
+    )
+}
+
+/// The message `projects.line-can-now`.
+#[must_use]
+pub fn projects_line_can_now(
+    person: impl std::fmt::Display,
+    project: impl std::fmt::Display,
+    things: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("projects.line-can-now"),
+        vec![
+            ("person", Value::Text(person.to_string())),
+            ("project", Value::Text(project.to_string())),
+            ("things", Value::Text(things.to_string())),
+        ],
+    )
+}
+
+/// The message `projects.line-field`.
+#[must_use]
+pub fn projects_line_field(
+    after: impl std::fmt::Display,
+    before: impl std::fmt::Display,
+    field: impl std::fmt::Display,
+    person: impl std::fmt::Display,
+    project: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("projects.line-field"),
+        vec![
+            ("after", Value::Text(after.to_string())),
+            ("before", Value::Text(before.to_string())),
+            ("field", Value::Text(field.to_string())),
+            ("person", Value::Text(person.to_string())),
+            ("project", Value::Text(project.to_string())),
+        ],
+    )
+}
+
+/// The message `projects.line-gains`.
+#[must_use]
+pub fn projects_line_gains(
+    person: impl std::fmt::Display,
+    project: impl std::fmt::Display,
+    roles: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("projects.line-gains"),
+        vec![
+            ("person", Value::Text(person.to_string())),
+            ("project", Value::Text(project.to_string())),
+            ("roles", Value::Text(roles.to_string())),
+        ],
+    )
+}
+
+/// The message `projects.line-held-back-ends`.
+#[must_use]
+pub fn projects_line_held_back_ends(
+    person: impl std::fmt::Display,
+    project: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("projects.line-held-back-ends"),
+        vec![
+            ("person", Value::Text(person.to_string())),
+            ("project", Value::Text(project.to_string())),
+        ],
+    )
+}
+
+/// The message `projects.line-held-back-starts`.
+#[must_use]
+pub fn projects_line_held_back_starts(
+    person: impl std::fmt::Display,
+    project: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("projects.line-held-back-starts"),
+        vec![
+            ("person", Value::Text(person.to_string())),
+            ("project", Value::Text(project.to_string())),
+        ],
+    )
+}
+
+/// The message `projects.line-lift`.
+#[must_use]
+pub fn projects_line_lift(
+    person: impl std::fmt::Display,
+    project: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("projects.line-lift"),
+        vec![
+            ("person", Value::Text(person.to_string())),
+            ("project", Value::Text(project.to_string())),
+        ],
+    )
+}
+
+/// The message `projects.line-loses`.
+#[must_use]
+pub fn projects_line_loses(
+    person: impl std::fmt::Display,
+    project: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("projects.line-loses"),
+        vec![
+            ("person", Value::Text(person.to_string())),
+            ("project", Value::Text(project.to_string())),
+        ],
+    )
+}
+
+/// The message `projects.line-people`.
+#[must_use]
+pub fn projects_line_people(
+    after: impl std::fmt::Display,
+    before: impl std::fmt::Display,
+    kind: impl std::fmt::Display,
+    person: impl std::fmt::Display,
+    project: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("projects.line-people"),
+        vec![
+            ("after", Value::Text(after.to_string())),
+            ("before", Value::Text(before.to_string())),
+            ("kind", Value::Text(kind.to_string())),
+            ("person", Value::Text(person.to_string())),
+            ("project", Value::Text(project.to_string())),
+        ],
+    )
+}
+
+/// The message `projects.line-roles`.
+#[must_use]
+pub fn projects_line_roles(
+    after: impl std::fmt::Display,
+    before: impl std::fmt::Display,
+    person: impl std::fmt::Display,
+    project: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("projects.line-roles"),
+        vec![
+            ("after", Value::Text(after.to_string())),
+            ("before", Value::Text(before.to_string())),
+            ("person", Value::Text(person.to_string())),
+            ("project", Value::Text(project.to_string())),
+        ],
+    )
+}
+
+/// The message `projects.made`.
+#[must_use]
+pub fn projects_made(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("projects.made"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `projects.move-dialog-title`.
+#[must_use]
+pub fn projects_move_dialog_title(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("projects.move-dialog-title"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `projects.move-text`.
+#[must_use]
+pub fn projects_move_text(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("projects.move-text"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `projects.moved`.
+#[must_use]
+pub fn projects_moved(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("projects.moved"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `projects.person-former`.
+#[must_use]
+pub fn projects_person_former(label: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("projects.person-former"),
+        vec![("label", Value::Text(label.to_string()))],
+    )
+}
+
+/// The message `projects.person-role`.
+#[must_use]
+pub fn projects_person_role(role: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("projects.person-role"),
+        vec![("role", Value::Text(role.to_string()))],
+    )
+}
+
+/// The message `projects.settings-title`.
+#[must_use]
+pub fn projects_settings_title(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("projects.settings-title"),
         vec![("name", Value::Text(name.to_string()))],
     )
 }
@@ -3168,10 +3596,12 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("nav.group.people", "People"),
     ("nav.group.sign-in", "Sign-in"),
     ("nav.group.system", "System"),
+    ("nav.group.work", "Work"),
     ("nav.home", "Home"),
     ("nav.invitations", "Invitations"),
     ("nav.my-settings", "My settings"),
     ("nav.organization-settings", "Organization settings"),
+    ("nav.projects", "Projects"),
     ("nav.security", "Sign-in & security"),
     ("nav.sessions", "Where you're signed in"),
     ("nav.sign-out", "Sign out"),
@@ -3280,6 +3710,146 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "See the project and what is in it",
     ),
     ("permission.see-status", "See how the server is doing"),
+    ("projects.at-the-top", "At the top level"),
+    ("projects.collapse-name", "Hide the sub-projects of {name}"),
+    ("projects.edit-title", "Name and short name"),
+    ("projects.expand-name", "Show the sub-projects of {name}"),
+    ("projects.field-name", "Name"),
+    ("projects.field-name-help", "What people call the project."),
+    ("projects.field-short-name", "Short name"),
+    (
+        "projects.field-short-name-help",
+        "2 to 10 letters or digits, starting with a letter. It starts the issue IDs and is the address, like WEB.",
+    ),
+    ("projects.heading", "Projects"),
+    ("projects.inside", "Inside {name}"),
+    (
+        "projects.intro",
+        "The projects you can see. Open one to change its name or short name. A project is moved on its own settings page.",
+    ),
+    (
+        "projects.line-can-no-more",
+        "In {project}, {person} can no longer: {things}.",
+    ),
+    (
+        "projects.line-can-now",
+        "In {project}, {person} can now: {things}.",
+    ),
+    (
+        "projects.line-field",
+        "In {project}, for {person}, {field} goes from {before} to {after}.",
+    ),
+    (
+        "projects.line-gains",
+        "{person} gets access to {project}, as {roles}.",
+    ),
+    (
+        "projects.line-held-back-ends",
+        "In {project}, a No access no longer holds {person} back.",
+    ),
+    (
+        "projects.line-held-back-starts",
+        "In {project}, a No access now holds {person} back.",
+    ),
+    (
+        "projects.line-lift",
+        "{person} could take away the No access that applies to them in {project}. Take that No access away first, or move the project somewhere else.",
+    ),
+    ("projects.line-loses", "{person} loses access to {project}."),
+    (
+        "projects.line-people",
+        "In {project}, for {person}, {kind} goes from {before} to {after}.",
+    ),
+    (
+        "projects.line-roles",
+        "{person} in {project}: {before} becomes {after}.",
+    ),
+    ("projects.made", "{name} was made."),
+    ("projects.make", "Make the project"),
+    (
+        "projects.make-intro",
+        "A project at the top level. Sub-projects are made inside their project.",
+    ),
+    ("projects.make-sub-project", "Make a sub-project"),
+    ("projects.make-title", "Make a project"),
+    ("projects.more", "Show more projects"),
+    ("projects.move-button", "Move"),
+    ("projects.move-confirm", "Move the project"),
+    (
+        "projects.move-dialog-text",
+        "Pick where it goes, then read what changes for people before you confirm.",
+    ),
+    ("projects.move-dialog-title", "Move {name}"),
+    (
+        "projects.move-text",
+        "Put {name}, with everything inside it, into another project, or at the top level. You read what changes before it happens.",
+    ),
+    ("projects.move-title", "Move this project"),
+    ("projects.moved", "{name} was moved."),
+    ("projects.no-role", "no role"),
+    (
+        "projects.none-yet",
+        "There is no project yet. Make the first one below.",
+    ),
+    ("projects.nothing", "No project found. Try another word."),
+    ("projects.open", "Open the project"),
+    ("projects.overview-inside", "Inside"),
+    ("projects.overview-short-name", "Short name"),
+    ("projects.overview-top", "At the top level"),
+    ("projects.person-former", "Former user {label}"),
+    ("projects.person-role", "A {role}"),
+    ("projects.person-someone", "Someone"),
+    ("projects.picker-legend", "Where should it go?"),
+    ("projects.picker-list", "Projects it can go into"),
+    ("projects.picker-more", "Show more projects"),
+    (
+        "projects.picker-nothing",
+        "No project found. Try another word.",
+    ),
+    ("projects.picker-search", "Search for a project"),
+    ("projects.picker-top", "Top level"),
+    ("projects.preview-blocked", "This move is not allowed."),
+    ("projects.preview-heading", "What changes"),
+    (
+        "projects.preview-hidden-note",
+        "This list holds only the projects you can see. People may be affected in projects you cannot see.",
+    ),
+    ("projects.preview-list", "Changes for people"),
+    ("projects.preview-loading", "Working out what changes…"),
+    (
+        "projects.preview-nothing",
+        "Nobody gains or loses access, and nobody changes role.",
+    ),
+    (
+        "projects.preview-truncated",
+        "There are more changes than this list shows.",
+    ),
+    ("projects.saved", "Saved."),
+    ("projects.search", "Search projects"),
+    ("projects.settings-back", "Back to the project"),
+    ("projects.settings-link", "Project settings"),
+    ("projects.settings-title", "Settings of {name}"),
+    (
+        "projects.short-name-change-help",
+        "The old short name stays with this project: its old addresses keep working, and nobody else can take it.",
+    ),
+    (
+        "projects.short-name-fixed",
+        "You can change the name here. Changing the short name takes the right to make projects where this project sits.",
+    ),
+    ("projects.sub-projects", "Sub-projects"),
+    (
+        "projects.sub-projects-ask",
+        "Ask a project lead if you need one.",
+    ),
+    (
+        "projects.sub-projects-empty",
+        "This project has no sub-projects yet.",
+    ),
+    ("projects.sub-projects-more", "Show more sub-projects"),
+    ("projects.title", "Projects"),
+    ("projects.tree-empty", "You do not see any project yet."),
+    ("projects.tree-more", "Show more projects"),
     (
         "sample.done",
         "Made the sample organization with {people} people from seed {seed}. Data folder: {folder}. How to sign in as them: {file}",
@@ -3380,7 +3950,8 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("search.nothing", "Nothing found. Try another word."),
     ("search.pages", "Pages"),
     ("search.partial", "Some results could not be loaded."),
-    ("search.placeholder", "Search pages and settings"),
+    ("search.placeholder", "Search pages, settings and projects"),
+    ("search.projects", "Projects"),
     ("search.results", "Results"),
     ("search.title", "Quick search"),
     ("second-step.back", "Back to sign in"),

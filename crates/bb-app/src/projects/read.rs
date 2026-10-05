@@ -118,7 +118,8 @@ fn matches(search: &[String], name: &str, short_name: &str) -> bool {
 }
 
 /// The projects the person sees, a page at a time, by name: the projects directly inside one
-/// (the top of the tree when none is named), or those anywhere that a search finds. A visible
+/// (the top of the tree when none is named), or those anywhere that a search finds (a search for
+/// nothing finds them all). A visible
 /// project whose parent is hidden is at the top of the tree.
 ///
 /// # Errors
@@ -143,7 +144,7 @@ pub async fn projects<S: AuthStore>(
                 .collect()
         })
         .unwrap_or_default();
-    let mut candidates: Vec<&bb_core::project::Project> = if words.is_empty() {
+    let mut candidates: Vec<&bb_core::project::Project> = if input.search.is_none() {
         if let Some(inside) = input.inside
             && !shown.sees(inside)
         {

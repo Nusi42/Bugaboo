@@ -11,8 +11,19 @@ import { createRegistry, useRegistry } from "./registry.ts";
 export interface SidebarSection {
   /** The heading above the section. */
   readonly heading: MessageKey;
-  /** What the section shows; links inside it are links of the app. */
-  readonly render: () => ReactNode;
+  /**
+   * What the section shows; links inside it are links of the app. `narrow`: the sidebar shows
+   * icons only, so the section should show only what fits.
+   */
+  readonly render: (view: SidebarSectionView) => ReactNode;
+}
+
+/** How the sidebar shows a section. */
+export interface SidebarSectionView {
+  /** The sidebar is narrowed to icons. */
+  readonly narrow: boolean;
+  /** Called after a link of the section was used, for a menu or a sheet that closes. */
+  readonly onNavigate?: () => void;
 }
 
 const sections = createRegistry<SidebarSection>();

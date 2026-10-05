@@ -7,6 +7,9 @@ import {
   invitationsRoute,
   mySettingsIndexRoute,
   organizationSettingsIndexRoute,
+  projectRoute,
+  projectSettingsRoute,
+  projectsRoute,
   securityRoute,
   sessionsRoute,
   shortcutsRoute,
@@ -28,6 +31,8 @@ const routeTree = rootRoute.addChildren([
   appRoute.addChildren([
     homeRoute,
     framesRoute,
+    projectRoute,
+    projectSettingsRoute,
     mySettingsRoute.addChildren([
       mySettingsIndexRoute,
       appearanceRoute,
@@ -38,6 +43,7 @@ const routeTree = rootRoute.addChildren([
     organizationSettingsRoute.addChildren([
       organizationSettingsIndexRoute,
       invitationsRoute,
+      projectsRoute,
       statusRoute,
     ]),
   ]),
