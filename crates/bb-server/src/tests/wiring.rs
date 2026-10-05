@@ -202,6 +202,27 @@ async fn m1_f24_the_built_in_database_is_a_file_in_the_data_folder() -> TestResu
 }
 
 #[tokio::test]
+async fn sec_16_a_new_installation_has_nothing_that_is_too_open() -> TestResult {
+    // The default install: Bugaboo makes the folder, the database and its companion files. None of
+    // it may be reported as too open (M1-F65).
+    let folder = tempfile::tempdir()?;
+    let data = DataFolder::prepare(&folder.path().join("data"))?;
+    let wired = wire(&settings(data.root(), None)?, &data, Serving::default()).await?;
+    let code = wired.setup_code.clone().ok_or("no setup code")?;
+    let (status, _) = call(
+        &app(wired, data.root()),
+        "POST",
+        "/api/v1/auth/setup",
+        Some(setup_body(&code)),
+    )
+    .await?;
+    assert_eq!(status, StatusCode::OK);
+    assert!(data.database_file().is_file());
+    assert_eq!(data.rights(), bb_app::status::DataFolderRights::default());
+    Ok(())
+}
+
+#[tokio::test]
 async fn sec_16_missing_keys_stop_the_start_instead_of_making_new_ones() -> TestResult {
     let folder = tempfile::tempdir()?;
     let data = DataFolder::prepare(&folder.path().join("data"))?;

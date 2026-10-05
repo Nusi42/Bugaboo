@@ -1640,6 +1640,21 @@ pub fn setup_ask_replace(path: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `setup.database-url-password`.
+#[must_use]
+pub fn setup_database_url_password(
+    file: impl std::fmt::Display,
+    variable: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("setup.database-url-password"),
+        vec![
+            ("file", Value::Text(file.to_string())),
+            ("variable", Value::Text(variable.to_string())),
+        ],
+    )
+}
+
 /// The message `setup.exists`.
 #[must_use]
 pub fn setup_exists(path: impl std::fmt::Display) -> Message {
@@ -2070,7 +2085,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "data-folder.open",
-        "{part} {path} can be opened by other accounts on this computer. Bugaboo leaves it as it is, because you made it. If nobody else should read it, remove the rights of the other accounts: on Linux run chmod go-rwx on it, on Windows open the Security tab of its properties.",
+        "{part} {path} can be opened by other accounts on this computer. Bugaboo leaves it as it is, in case you set these rights on purpose. If nobody else should read it, remove the rights of the other accounts: on Linux run chmod go-rwx on it, on Windows open the Security tab of its properties.",
     ),
     (
         "data-folder.own-certificate",
@@ -2618,6 +2633,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("setup.ask.tls-key", "Where is the private key file?"),
     ("setup.database-built-in", "built-in"),
     (
+        "setup.database-url-password",
+        "The database address on the command line has a password in it, and other people on this computer can read the command line, for example in the list of running programs. This time the address is saved in {file}. Next time answer the database question of setup instead of using the option, or set the environment variable {variable}.",
+    ),
+    (
         "setup.exists",
         "The settings file {path} already exists. Add --overwrite to replace it.",
     ),
@@ -2703,7 +2722,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "status.data-folder.open",
-        "Other accounts on this computer can open these. Bugaboo leaves them as they are, because you made them. If nobody else should read them, remove the rights of the other accounts.",
+        "Other accounts on this computer can open these. Bugaboo leaves them as they are, in case you set these rights on purpose. If nobody else should read them, remove the rights of the other accounts.",
     ),
     ("status.database", "Database"),
     (

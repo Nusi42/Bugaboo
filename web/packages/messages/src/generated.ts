@@ -468,16 +468,18 @@ export const messages = {
   "data-folder.part.backups": "The folder for backups",
   "data-folder.part.setup-code-file": "The setup code file",
   "data-folder.open":
-    "{part} {path} can be opened by other accounts on this computer. Bugaboo leaves it as it is, because you made it. If nobody else should read it, remove the rights of the other accounts: on Linux run chmod go-rwx on it, on Windows open the Security tab of its properties.",
+    "{part} {path} can be opened by other accounts on this computer. Bugaboo leaves it as it is, in case you set these rights on purpose. If nobody else should read it, remove the rights of the other accounts: on Linux run chmod go-rwx on it, on Windows open the Security tab of its properties.",
   "status.data-folder": "Data folder rights",
   "status.data-folder.closed":
     "Only the account that runs Bugaboo can open the parts of the data folder.",
   "status.data-folder.open":
-    "Other accounts on this computer can open these. Bugaboo leaves them as they are, because you made them. If nobody else should read them, remove the rights of the other accounts.",
+    "Other accounts on this computer can open these. Bugaboo leaves them as they are, in case you set these rights on purpose. If nobody else should read them, remove the rights of the other accounts.",
   "data-folder.own-certificate":
     "The folder {path} holds only files of your own in its tls folder, such as a certificate. Installing the service would change who owns them. If this folder is meant to become the data folder of Bugaboo, run the command again with {flag}.",
   "cli.help.take-over-data-folder":
     "Take over a data folder that holds only your own files in its tls folder, such as a certificate you put there before the first start",
+  "setup.database-url-password":
+    "The database address on the command line has a password in it, and other people on this computer can read the command line, for example in the list of running programs. This time the address is saved in {file}. Next time answer the database question of setup instead of using the option, or set the environment variable {variable}.",
 } as const;
 
 export type MessageKey = keyof typeof messages;
@@ -561,6 +563,7 @@ export interface MessageArguments {
   "sessions.network": { network: string | number };
   "sessions.started": { when: string | number };
   "setup.ask.replace": { path: string | number };
+  "setup.database-url-password": { file: string | number; variable: string | number };
   "setup.exists": { path: string | number };
   "setup.not-usable": { reason: string | number };
   "setup.saved": { path: string | number };
