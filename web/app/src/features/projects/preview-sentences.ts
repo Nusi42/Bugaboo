@@ -134,16 +134,38 @@ function sentencesOf(who: string, change: Change): string[] {
   ].filter((line): line is string => line !== undefined);
 }
 
+/** A sentence of the preview, with a key that names whose change in which project it is. */
+export interface Sentence {
+  readonly key: string;
+  readonly text: string;
+}
+
+/** Every sentence of the preview with its key: who gains or loses access or changes role, and what else changes. */
+export function keyedSentencesOfPreview(preview: Preview): readonly Sentence[] {
+  return preview.people.flatMap((entry, person) =>
+    entry.projects.flatMap((change) =>
+      sentencesOf(personName(entry.person), change).map((text, line) => ({
+        key: `${String(person)}:${change.project.id}:${String(line)}`,
+        text,
+      })),
+    ),
+  );
+}
+
 /** Every sentence of the preview: who gains or loses access or changes role, and what else changes. */
 export function sentencesOfPreview(preview: Preview): readonly string[] {
-  return preview.people.flatMap((entry) =>
-    entry.projects.flatMap((change) => sentencesOf(personName(entry.person), change)),
-  );
+  return keyedSentencesOfPreview(preview).map((sentence) => sentence.text);
+}
+
+/** The sentences about people who could take away a No access that applies to them, with keys. */
+export function keyedLiftSentencesOfPreview(preview: Preview): readonly Sentence[] {
+  return preview.lifts.map((lift, person) => ({
+    key: `${String(person)}:${lift.project.id}`,
+    text: t("projects.line-lift", { person: personName(lift.person), project: lift.project.name }),
+  }));
 }
 
 /** The sentences about people who could take away a No access that applies to them. */
 export function liftSentencesOfPreview(preview: Preview): readonly string[] {
-  return preview.lifts.map((lift) =>
-    t("projects.line-lift", { person: personName(lift.person), project: lift.project.name }),
-  );
+  return keyedLiftSentencesOfPreview(preview).map((sentence) => sentence.text);
 }

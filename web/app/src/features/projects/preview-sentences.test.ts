@@ -1,7 +1,12 @@
 import { t } from "@bugaboo/messages";
 import { describe, expect, it } from "vitest";
 
-import { liftSentencesOfPreview, sentencesOfPreview } from "./preview-sentences.ts";
+import {
+  keyedLiftSentencesOfPreview,
+  keyedSentencesOfPreview,
+  liftSentencesOfPreview,
+  sentencesOfPreview,
+} from "./preview-sentences.ts";
 import { asShortName } from "./short-name.ts";
 import type { Preview } from "./use-projects.ts";
 
@@ -23,6 +28,7 @@ function preview(people: Preview["people"], lifts: Preview["lifts"] = []): Previ
     to: null,
     preview: "v1",
     blocked: lifts.length > 0,
+    blocked_out_of_sight: false,
     truncated: false,
     people,
     lifts,
@@ -125,6 +131,29 @@ describe("prj_03 the preview of a refused move and of what this version cannot s
         after: "can-see",
       }),
     ]);
+  });
+});
+
+describe("prj_03 the keys of the sentences", () => {
+  it("name whose change in which project a sentence is, not the words of the sentence", () => {
+    const same = [
+      { person: cleo, projects: [{ project: web, now: nobody, after: viewer, ...none }] },
+      { person: cleo, projects: [{ project: web, now: nobody, after: viewer, ...none }] },
+    ];
+    const keys = keyedSentencesOfPreview(preview(same)).map((line) => line.key);
+    // Two people with the same sentence are two lines, each with a key of its own.
+    expect(keys).toEqual(["0:w:0", "1:w:0"]);
+    expect(new Set(keys).size).toBe(keys.length);
+    const lifts = keyedLiftSentencesOfPreview(
+      preview(
+        [],
+        [
+          { person: cleo, project: web },
+          { person: cleo, project: { ...web, id: "x" } },
+        ],
+      ),
+    ).map((line) => line.key);
+    expect(lifts).toEqual(["0:w", "1:x"]);
   });
 });
 

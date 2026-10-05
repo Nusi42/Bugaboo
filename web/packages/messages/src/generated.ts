@@ -567,6 +567,8 @@ export const messages = {
     "This list holds only the projects you can see. People may be affected in projects you cannot see.",
   "projects.preview-truncated": "There are more changes than this list shows.",
   "projects.preview-blocked": "This move is not allowed.",
+  "projects.preview-blocked-out-of-sight":
+    "Something in a project you cannot see also stands in the way. Ask somebody who sees more to look at this move.",
   "projects.preview-list": "Changes for people",
   "projects.person-role": "A {role}",
   "projects.person-someone": "Someone",

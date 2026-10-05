@@ -909,6 +909,10 @@ pub const PROJECTS_PICKER_TOP: MessageKey = MessageKey::new("projects.picker-top
 /// The message `projects.preview-blocked`.
 pub const PROJECTS_PREVIEW_BLOCKED: MessageKey = MessageKey::new("projects.preview-blocked");
 
+/// The message `projects.preview-blocked-out-of-sight`.
+pub const PROJECTS_PREVIEW_BLOCKED_OUT_OF_SIGHT: MessageKey =
+    MessageKey::new("projects.preview-blocked-out-of-sight");
+
 /// The message `projects.preview-heading`.
 pub const PROJECTS_PREVIEW_HEADING: MessageKey = MessageKey::new("projects.preview-heading");
 
@@ -2084,24 +2088,6 @@ pub fn passkeys_remove_title(name: impl std::fmt::Display) -> Message {
     )
 }
 
-/// The message `projects.collapse-name`.
-#[must_use]
-pub fn projects_collapse_name(name: impl std::fmt::Display) -> Message {
-    Message::with_arguments(
-        MessageKey::new("projects.collapse-name"),
-        vec![("name", Value::Text(name.to_string()))],
-    )
-}
-
-/// The message `projects.expand-name`.
-#[must_use]
-pub fn projects_expand_name(name: impl std::fmt::Display) -> Message {
-    Message::with_arguments(
-        MessageKey::new("projects.expand-name"),
-        vec![("name", Value::Text(name.to_string()))],
-    )
-}
-
 /// The message `projects.inside`.
 #[must_use]
 pub fn projects_inside(name: impl std::fmt::Display) -> Message {
@@ -2342,6 +2328,15 @@ pub fn projects_person_role(role: impl std::fmt::Display) -> Message {
 pub fn projects_settings_title(name: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("projects.settings-title"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `projects.toggle-name`.
+#[must_use]
+pub fn projects_toggle_name(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("projects.toggle-name"),
         vec![("name", Value::Text(name.to_string()))],
     )
 }
@@ -3718,9 +3713,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("permission.see-status", "See how the server is doing"),
     ("projects.at-the-top", "At the top level"),
-    ("projects.collapse-name", "Hide the sub-projects of {name}"),
     ("projects.edit-title", "Name and short name"),
-    ("projects.expand-name", "Show the sub-projects of {name}"),
     ("projects.field-name", "Name"),
     ("projects.field-name-help", "What people call the project."),
     ("projects.field-short-name", "Short name"),
@@ -3816,6 +3809,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("projects.picker-search", "Search for a project"),
     ("projects.picker-top", "Top level"),
     ("projects.preview-blocked", "This move is not allowed."),
+    (
+        "projects.preview-blocked-out-of-sight",
+        "Something in a project you cannot see also stands in the way. Ask somebody who sees more to look at this move.",
+    ),
     ("projects.preview-heading", "What changes"),
     (
         "projects.preview-hidden-note",
@@ -3855,6 +3852,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("projects.sub-projects-more", "Show more sub-projects"),
     ("projects.title", "Projects"),
+    ("projects.toggle-name", "Sub-projects of {name}"),
     ("projects.tree-empty", "You do not see any project yet."),
     ("projects.tree-more", "Show more projects"),
     (
