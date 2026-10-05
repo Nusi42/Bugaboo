@@ -358,7 +358,7 @@
       <tr><td><code>/settings/…</code> · <code>/p/WEB/settings/…</code> · <code>/me/…</code></td><td>Organization, project and my settings</td></tr>
     </tbody></table></div>
     <p>Opening an address you have no access to shows the same <i>"Not found"</i> page as an address that doesn't exist. Hidden issues, documents and projects are never revealed.</p>
-    <p><b>Short names</b> (M2-Q4): 2 to 10 capital letters or digits, starting with a letter (<code>WEB</code>, <code>APP2</code>), unique in the organization. A project lead can change it later; the old address (<code>/p/OLD</code>) keeps working and the old short name stays with the project. A visible sub-project of a project you can't see appears at the top of your tree, and its address never names the hidden parent.</p>
+    <p><b>Short names</b> (M2-Q4): 2 to 10 capital letters or digits, starting with a letter (<code>WEB</code>, <code>APP2</code>), unique in the organization. A project lead can rename a project at any time. Changing its short name also needs the right to make projects where the project sits (<i>Make projects</i> for a top-level project, <i>Make sub-projects</i> in the parent for a sub-project), so that a short name that is taken can be told to them; the old address (<code>/p/OLD</code>) keeps working and the old short name stays with the project. A visible sub-project of a project you can't see appears at the top of your tree, and its address never names the hidden parent.</p>
 
     <!-- ================= 3 ================= -->
     <h2 id="s3"><button type="button" class="sec" data-sec>§3</button>Layout</h2>
@@ -1233,7 +1233,7 @@ sort by priority, highest first</div>
     <div class="decision"><span class="okmark">✓</span><div><b>Issue IDs</b> can be random or counting per project; random by default (§5.1, ADR-0021).</div></div>
     <div class="decision"><span class="okmark">✓</span><div><b>No access</b> on a project wins over roles from higher up and over a group's role on the same project (§5.2, M2-Q1, ADR-0025).</div></div>
     <div class="decision"><span class="okmark">✓</span><div><b>Names in settings screens</b> for people who manage people or roles; member lists for everybody else by <i>Project members</i> (§5.2, M2-Q3).</div></div>
-    <div class="decision"><span class="okmark">✓</span><div><b>Short names</b> can change; old addresses keep working (§2.1, M2-Q4).</div></div>
+    <div class="decision"><span class="okmark">✓</span><div><b>Short names</b> can change, by those who may also make projects where the project sits; old addresses keep working (§2.1, M2-Q4).</div></div>
     <div class="decision"><span class="okmark">✓</span><div><b>Access keys</b>: <i>See only</i>, <i>See and change</i> or <i>Everything I can do</i>, optionally for some projects; every key runs out, after 90 days unless chosen otherwise, at most after a year (§4.13, M2-Q6).</div></div>
     <h3 id="s10-1"><button type="button" class="sec" data-sec>§10.1</button>Open questions</h3>
     <p>None yet. Comment on this page.</p>

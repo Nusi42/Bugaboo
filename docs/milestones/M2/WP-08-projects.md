@@ -35,7 +35,7 @@ None new. ARCH-LEAN and ARCH-EVENTS cover the new routes; each route declares it
 
 ## Answers
 
-- **Short names (M2-Q4):** 2 to 10 capital letters or digits, starting with a letter, unique in the organization (old short names included), changeable; the form turns typed letters into capitals, the server accepts only capitals. A taken short name is told only to people who can make projects at that place, with the same sentence whether the project is hidden or not ([ADR-0025](../../adr/0025-roles-groups-and-assignments.md), decision 13).
+- **Short names (M2-Q4):** 2 to 10 capital letters or digits, starting with a letter, unique in the organization (old short names included), changeable; the form turns typed letters into capitals, the server accepts only capitals. A taken short name is told only to people who can make projects at that place, with the same sentence whether the project is hidden or not ([ADR-0025](../../adr/0025-roles-groups-and-assignments.md), decision 13). **Maintainer decision (kept):** a project lead may rename a project with *Change project settings*; changing the short name also takes the right to make projects where the project sits (*Make projects* at the top level, *Make sub-projects* at the parent). The settings page says so in the hint under the short name (`projects.short-name-fixed`), which stays; a person who lacks the second right sees the name field only.
 - **Permissions:** *Make projects* (top level, whole organization), *Make sub-projects* (at the parent), *Move projects* (at the old and the new parent; the top level counts as the organization), *Change project settings* ([architecture §7](../../architecture/07-cross-cutting.md#authorization-model)).
 
 ## Depends on
