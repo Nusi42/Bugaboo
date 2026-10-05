@@ -164,21 +164,33 @@ impl DataFolder {
 }
 
 /// Whether a service may take over `root`: a folder that is not there yet or is empty, or one
-/// that Bugaboo made (it has the folder `keys`). A folder with other things in it, such as
-/// documents, is refused, so that installing never changes the owner of somebody's files.
+/// that only Bugaboo makes: it holds the master key or the built-in database, or it is a data
+/// folder that has not run yet (all of its sub-folders, all empty). A folder with other things
+/// in it, such as documents or a `keys` folder of something else, is refused, so that installing
+/// never changes the owner of somebody's files.
 pub(crate) fn check_for_service(root: &Path) -> Result<(), DataFolderError> {
     let empty = std::fs::read_dir(root).is_ok_and(|mut entries| entries.next().is_none());
     // A link where a sub-folder belongs would send the changes of rights somewhere else.
     let linked = SUB_FOLDERS.iter().any(|name| {
         std::fs::symlink_metadata(root.join(name)).is_ok_and(|data| data.file_type().is_symlink())
     });
-    if !linked && (!root.is_dir() || empty || root.join(KEYS).is_dir()) {
+    if !linked && (!root.is_dir() || empty || made_by_bugaboo(root)) {
         Ok(())
     } else {
         Err(DataFolderError::NotADataFolder {
             path: root.to_path_buf(),
         })
     }
+}
+
+/// Whether `root` holds something that only Bugaboo makes (see `check_for_service`).
+fn made_by_bugaboo(root: &Path) -> bool {
+    let empty_folder = |name: &str| {
+        std::fs::read_dir(root.join(name)).is_ok_and(|mut entries| entries.next().is_none())
+    };
+    root.join(KEYS).join(bb_store::MASTER_KEY_FILE).is_file()
+        || root.join(DATABASE_FILE).is_file()
+        || SUB_FOLDERS.iter().all(|name| empty_folder(name))
 }
 
 /// Creates `path` (and missing parents) for its owner only. A folder that already exists is
@@ -632,15 +644,42 @@ mod tests {
         std::fs::write(mine.join("tax.pdf"), "x").unwrap();
         let error = check_for_service(&mine).unwrap_err();
         assert!(error.message().contains("does not look like"), "{error}");
-        // A data folder that Bugaboo made is fine, also with files of its own that were added.
-        let data = temp.path().join("data");
-        DataFolder::prepare(&data).unwrap();
-        std::fs::write(data.join("notes.txt"), "x").unwrap();
-        check_for_service(&data).unwrap();
+        // An unrelated folder named `keys` (or with all the names of a data folder but a file
+        // in one of them) is no Bugaboo folder either.
+        let other = temp.path().join("other");
+        std::fs::create_dir_all(other.join(KEYS)).unwrap();
+        std::fs::write(other.join(KEYS).join("id_ed25519"), "x").unwrap();
+        std::fs::write(other.join("notes.txt"), "x").unwrap();
+        assert!(
+            check_for_service(&other).is_err(),
+            "a folder with a `keys` folder"
+        );
+        let layout = temp.path().join("layout");
+        DataFolder::prepare(&layout).unwrap();
+        std::fs::write(layout.join(FILES).join("photo.jpg"), "x").unwrap();
+        std::fs::write(layout.join("notes.txt"), "x").unwrap();
+        assert!(
+            check_for_service(&layout).is_err(),
+            "a layout with somebody's file in it"
+        );
+        // A data folder that Bugaboo made and has not filled yet: all of its folders, all empty.
+        let fresh = temp.path().join("fresh");
+        DataFolder::prepare(&fresh).unwrap();
+        check_for_service(&fresh).unwrap();
+        // One that has run holds the master key or the database, also with files added later.
+        let used = temp.path().join("used");
+        DataFolder::prepare(&used).unwrap();
+        std::fs::write(used.join(KEYS).join(bb_store::MASTER_KEY_FILE), "x").unwrap();
+        std::fs::write(used.join("notes.txt"), "x").unwrap();
+        check_for_service(&used).unwrap();
+        let with_database = temp.path().join("with-database");
+        DataFolder::prepare(&with_database).unwrap();
+        std::fs::write(with_database.join(DATABASE_FILE), "x").unwrap();
+        std::fs::write(with_database.join("notes.txt"), "x").unwrap();
+        check_for_service(&with_database).unwrap();
         // The known files are the database and its companions and the setup code.
-        std::fs::write(data.join(DATABASE_FILE), "x").unwrap();
-        std::fs::write(data.join(format!("{DATABASE_FILE}-wal")), "x").unwrap();
-        let known = DataFolder::existing(&data).unwrap().known_files();
+        std::fs::write(with_database.join(format!("{DATABASE_FILE}-wal")), "x").unwrap();
+        let known = DataFolder::existing(&with_database).unwrap().known_files();
         let names: Vec<_> = known
             .iter()
             .filter_map(|file| file.file_name()?.to_str())
