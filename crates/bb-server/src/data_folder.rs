@@ -197,11 +197,33 @@ fn ensure_private(path: &Path) -> Result<(), String> {
 #[cfg(windows)]
 fn restrict(path: &Path) -> Result<(), String> {
     let sid = current_sid()?;
-    let grant = format!("*{sid}:(OI)(CI)F");
-    for arguments in [
-        vec!["/reset".to_owned()],
-        vec!["/inheritance:r".to_owned(), "/grant:r".to_owned(), grant],
-    ] {
+    restrict_to(path, &[format!("*{sid}:(OI)(CI)F")])
+}
+
+/// The well-known SID of the group of administrators of the computer.
+#[cfg(windows)]
+const ADMINISTRATORS_SID: &str = "S-1-5-32-544";
+
+/// Windows: the same for one file, which the account that runs Bugaboo may change and the
+/// administrators of the computer may read (they can take over the file anyway).
+#[cfg(windows)]
+fn restrict_file(path: &Path) -> Result<(), String> {
+    let sid = current_sid()?;
+    restrict_to(
+        path,
+        &[format!("*{sid}:F"), format!("*{ADMINISTRATORS_SID}:R")],
+    )
+}
+
+/// Windows: removes every entry of the access list and inherited rights, then grants `grants`.
+#[cfg(windows)]
+fn restrict_to(path: &Path, grants: &[String]) -> Result<(), String> {
+    let mut grant = vec!["/inheritance:r".to_owned()];
+    for entry in grants {
+        grant.push("/grant:r".to_owned());
+        grant.push(entry.clone());
+    }
+    for arguments in [vec!["/reset".to_owned()], grant] {
         let output = std::process::Command::new(system_tool("icacls.exe"))
             .arg(path)
             .args(arguments)
@@ -218,6 +240,43 @@ fn restrict(path: &Path) -> Result<(), String> {
 fn system_tool(name: &str) -> PathBuf {
     let system = std::env::var("SystemRoot").unwrap_or_else(|_| "C:\\Windows".to_owned());
     Path::new(&system).join("System32").join(name)
+}
+
+/// Saves `contents` in a file that only the account that runs Bugaboo can read (and, on Windows,
+/// the administrators of the computer): a secret that has to be readable by a person, such as the
+/// setup code of a server without a console. A file that exists is replaced, whatever its rights
+/// were. The file is made private before the secret is written into it.
+pub(crate) fn write_private(path: &Path, contents: &str) -> std::io::Result<()> {
+    use std::io::Write as _;
+    let mut file = open_private(path)?;
+    file.write_all(contents.as_bytes())?;
+    file.flush()
+}
+
+#[cfg(unix)]
+fn open_private(path: &Path) -> std::io::Result<std::fs::File> {
+    use std::os::unix::fs::{OpenOptionsExt as _, PermissionsExt as _};
+    let file = std::fs::OpenOptions::new()
+        .write(true)
+        .create(true)
+        .truncate(true)
+        .mode(0o600)
+        .open(path)?;
+    // `mode` counts only for a new file: a file that was there before may have had more.
+    file.set_permissions(std::fs::Permissions::from_mode(0o600))?;
+    Ok(file)
+}
+
+#[cfg(windows)]
+fn open_private(path: &Path) -> std::io::Result<std::fs::File> {
+    // The file exists, empty, before its access list changes and before the secret goes in.
+    let file = std::fs::OpenOptions::new()
+        .write(true)
+        .create(true)
+        .truncate(true)
+        .open(path)?;
+    restrict_file(path).map_err(std::io::Error::other)?;
+    Ok(file)
 }
 
 /// The SID of the account that runs Bugaboo. Names can be translated, renamed or ambiguous;
@@ -350,6 +409,60 @@ mod tests {
         assert_eq!(parse_sid("nonsense"), None);
         assert_eq!(parse_sid("\"a\",\"S-1-5-21; calc\""), None);
         assert!(current_sid().unwrap().starts_with("S-1-"));
+    }
+
+    #[test]
+    fn sec_16_a_secret_file_holds_its_text_and_replaces_an_older_file() {
+        let temp = tempfile::tempdir().unwrap();
+        let file = temp.path().join("code.txt");
+        std::fs::write(&file, "an older and longer text").unwrap();
+        write_private(
+            &file, "new
+",
+        )
+        .unwrap();
+        assert_eq!(
+            std::fs::read_to_string(&file).unwrap(),
+            "new
+"
+        );
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn sec_16_a_secret_file_is_for_its_owner_only_on_linux() {
+        use std::os::unix::fs::PermissionsExt as _;
+        let temp = tempfile::tempdir().unwrap();
+        let mode = |file: &Path| std::fs::metadata(file).unwrap().permissions().mode() & 0o777;
+        let fresh = temp.path().join("fresh.txt");
+        write_private(&fresh, "secret").unwrap();
+        assert_eq!(mode(&fresh), 0o600);
+        // A file that was readable by everybody is closed before the secret goes in.
+        let open = temp.path().join("open.txt");
+        std::fs::write(&open, "old").unwrap();
+        std::fs::set_permissions(&open, std::fs::Permissions::from_mode(0o644)).unwrap();
+        write_private(&open, "secret").unwrap();
+        assert_eq!(mode(&open), 0o600);
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn sec_16_a_secret_file_is_for_its_owner_and_the_administrators_on_windows() {
+        let temp = tempfile::tempdir().unwrap();
+        let file = temp.path().join("code.txt");
+        std::fs::write(&file, "old").unwrap();
+        // The file starts with the rights of its folder, which the test folder gives to more.
+        write_private(&file, "secret").unwrap();
+        let output = std::process::Command::new("icacls")
+            .arg(&file)
+            .output()
+            .unwrap();
+        let listing = String::from_utf8_lossy(&output.stdout).into_owned();
+        // The owner with full control and the administrators with read rights: two entries,
+        // none of them inherited.
+        assert_eq!(listing.matches(":(").count(), 2, "{listing}");
+        assert!(!listing.contains("(I)"), "{listing}");
+        assert!(listing.contains("(R)"), "{listing}");
     }
 
     #[test]

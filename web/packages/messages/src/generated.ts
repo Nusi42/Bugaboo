@@ -431,6 +431,8 @@ export const messages = {
   "status.certificate.none":
     "Not shown. Either another program in front of Bugaboo handles HTTPS, or the certificate file cannot be read.",
   "status.log": "Security log",
+  "server.setup-code-file-failed":
+    "Setup is open, but the setup code could not be saved in {path}: {reason}. Stop Bugaboo and start it in a terminal with: bugaboo serve. The terminal shows the code.",
 } as const;
 
 export type MessageKey = keyof typeof messages;
@@ -484,6 +486,7 @@ export interface MessageArguments {
   "server.self-signed": { path: string | number };
   "server.setup-code": { code: string | number };
   "server.setup-code-file": { path: string | number };
+  "server.setup-code-file-failed": { path: string | number; reason: string | number };
   "server.warning": { message: string | number };
   "service.exists": { name: string | number };
   "service.failed": { reason: string | number };

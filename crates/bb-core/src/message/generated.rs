@@ -1282,6 +1282,21 @@ pub fn server_setup_code_file(path: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `server.setup-code-file-failed`.
+#[must_use]
+pub fn server_setup_code_file_failed(
+    path: impl std::fmt::Display,
+    reason: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("server.setup-code-file-failed"),
+        vec![
+            ("path", Value::Text(path.to_string())),
+            ("reason", Value::Text(reason.to_string())),
+        ],
+    )
+}
+
 /// The message `server.warning`.
 #[must_use]
 pub fn server_warning(message: impl std::fmt::Display) -> Message {
@@ -2179,6 +2194,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "server.setup-code-file",
         "Setup is open. The setup code is saved in {path}. Read it there and enter it in your browser to make the first administrator.",
+    ),
+    (
+        "server.setup-code-file-failed",
+        "Setup is open, but the setup code could not be saved in {path}: {reason}. Stop Bugaboo and start it in a terminal with: bugaboo serve. The terminal shows the code.",
     ),
     (
         "server.setup-code-hint",

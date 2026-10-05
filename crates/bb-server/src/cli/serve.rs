@@ -4,6 +4,7 @@
 use std::future::Future;
 use std::io::IsTerminal as _;
 use std::net::SocketAddr;
+use std::path::Path;
 
 use anyhow::Context as _;
 use bb_api::tls::{TlsError, TlsSource, certificate_path, server_config};
@@ -15,7 +16,7 @@ use tokio::net::TcpListener;
 
 use super::{ServeArgs, load_settings};
 use crate::config::{Settings, TlsMode};
-use crate::data_folder::DataFolder;
+use crate::data_folder::{DataFolder, write_private};
 use crate::{log, output, wiring};
 
 /// `bugaboo serve`: runs until Ctrl+C or the stop signal of the system.
@@ -92,9 +93,9 @@ fn hsts_max_age(settings: &Settings) -> Option<u64> {
 
 /// Tells how to find the setup code of the first start (AUTH-09). On a console it is printed:
 /// only there, never in the log file, because the code is a secret until it is used. Without a
-/// console (a service) it is saved in a file in the data folder, which only the account that runs
-/// Bugaboo and the administrators of the computer can read. The code is dead once the first
-/// administrator exists; the file goes away at the next start (follow-up M1-F58).
+/// console (a service) it is saved in a file in the data folder that only the account that runs
+/// Bugaboo (and, on Windows, the administrators of the computer) can read. The code is dead once
+/// the first administrator exists; the file goes away at the next start (follow-up M1-F58).
 fn announce_setup_code(data: &DataFolder, code: Option<&str>) {
     let file = data.setup_code_file();
     let Some(code) = code else {
@@ -106,17 +107,29 @@ fn announce_setup_code(data: &DataFolder, code: Option<&str>) {
         output::line(&message::server_setup_code(code).render());
         output::line(&Message::from(message::SERVER_SETUP_CODE_HINT).render());
         let _ = std::fs::remove_file(&file);
-    } else if std::fs::write(
-        &file,
-        format!(
+        return;
+    }
+    match save_setup_code(&file, code) {
+        Ok(saved) => output::line(&saved.render()),
+        Err(failed) => {
+            tracing::warn!("the setup code could not be saved in a file");
+            output::warning(&failed.render());
+        }
+    }
+}
+
+/// Saves the setup code in `file` for its owner only, and says where it is. The message of a
+/// failure says where to look instead; it never contains the code.
+fn save_setup_code(file: &Path, code: &str) -> Result<Message, Message> {
+    write_private(
+        file,
+        &format!(
             "{code}
 "
         ),
     )
-    .is_ok()
-    {
-        output::line(&message::server_setup_code_file(file.display()).render());
-    }
+    .map(|()| message::server_setup_code_file(file.display()))
+    .map_err(|error| message::server_setup_code_file_failed(file.display(), error))
 }
 
 /// What the listener does with connections: HTTPS with the configured certificate, or plain
@@ -164,7 +177,7 @@ fn key_readable_warning(key: &std::path::Path) -> Option<String> {
 }
 
 fn tls_message(error: &TlsError) -> String {
-    let shown = |path: &std::path::Path| path.display().to_string();
+    let shown = |path: &Path| path.display().to_string();
     match error {
         TlsError::Read { path, source } => message::tls_read_failed(shown(path), source).render(),
         TlsError::Write { path, source } => message::tls_write_failed(shown(path), source).render(),
@@ -239,6 +252,25 @@ mod tests {
     }
 
     #[test]
+    fn auth_09_a_setup_code_that_cannot_be_saved_is_reported_without_the_code() {
+        let folder = tempfile::tempdir().unwrap();
+        let file = folder.path().join("setup-code.txt");
+        let saved = save_setup_code(&file, "k7q2-x9mf-3hd8-vt4w").unwrap();
+        assert!(saved.render().contains("setup-code.txt"));
+        assert_eq!(
+            std::fs::read_to_string(&file).unwrap(),
+            "k7q2-x9mf-3hd8-vt4w
+"
+        );
+        let missing = folder.path().join("no-such-folder").join("setup-code.txt");
+        let failed = save_setup_code(&missing, "k7q2-x9mf-3hd8-vt4w").unwrap_err();
+        let text = failed.render();
+        assert!(text.contains("no-such-folder"), "{text}");
+        assert!(text.contains("bugaboo serve"), "{text}");
+        assert!(!text.contains("k7q2"), "{text}");
+    }
+
+    #[test]
     fn sec_11_hsts_lifetime_follows_who_made_the_certificate() {
         let settings = |args: &[&'static str]| {
             let sources = args
@@ -250,7 +282,7 @@ mod tests {
                 file: None,
                 env: &|_| None,
                 cli: &sources,
-                base: std::path::Path::new("exe"),
+                base: Path::new("exe"),
             })
             .unwrap()
         };
