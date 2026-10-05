@@ -6,8 +6,6 @@ import { ada, addCodeApp, bob, invite, makeAdmin, makePerson } from "./support/a
 import {
   expectGoodInEveryLook,
   expectGoodInEveryTheme as expectGoodInEveryThemeOnPage,
-  expectNoSidewaysScroll,
-  expectNoViolations,
 } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { sendPassword, signIn } from "./support/flows.ts";
@@ -115,9 +113,8 @@ for (const visit of visits) {
   }) => {
     await visit.open(page);
     await expectGoodInEveryTheme(page, visit.guest);
-    // With the device asking for more contrast, text and lines are stronger and nothing breaks.
+    // With the device asking for more contrast, text and lines are stronger and every theme is good.
     await page.emulateMedia({ contrast: "more" });
-    await expectNoViolations(page);
-    await expectNoSidewaysScroll(page);
+    await expectGoodInEveryTheme(page, visit.guest);
   });
 }

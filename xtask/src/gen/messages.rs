@@ -14,16 +14,52 @@ use crate::repo::Repo;
 pub(crate) const SOURCE_LOCALE_PATH: &str = "messages/en.json";
 pub(crate) const OUTPUT: &str = "web/packages/messages/src/generated.ts";
 
-/// The areas (first part of a key) that only the server and its command line show. Everything else
-/// is shown in the browser too: errors, help for settings and every screen.
-const SERVER_ONLY_AREAS: [&str; 7] = [
-    "cli", "config", "cookie", "keys", "server", "service", "tls",
+/// The areas (first part of a key) that the browser shows: an allow-list, so a new area ships to the
+/// browser only when it is added here (M1-F12). A key outside these areas is for the server and its
+/// command line. A `t("…")` of the app with a key from another area is a type error.
+const BROWSER_AREAS: [&str; 36] = [
+    "app",
+    "appearance",
+    "backup",
+    "code-app",
+    "common",
+    "data-folder",
+    "error",
+    "field",
+    "first-run",
+    "focus",
+    "frames",
+    "home",
+    "invitation",
+    "invitations",
+    "list",
+    "nav",
+    "page",
+    "panel",
+    "passkeys",
+    "save",
+    "search",
+    "second-step",
+    "security",
+    "security-log",
+    "sessions",
+    "setting",
+    "setup",
+    "shell",
+    "shortcut",
+    "shortcuts",
+    "sign-in",
+    "sign-up",
+    "sign-up-policy",
+    "status",
+    "theme",
+    "validation",
 ];
 
 /// Whether a message is shown by the server only, and so is left out of the browser's catalog.
 fn is_server_only(key: &str) -> bool {
     key.split_once('.')
-        .is_some_and(|(area, _)| SERVER_ONLY_AREAS.contains(&area))
+        .is_none_or(|(area, _)| !BROWSER_AREAS.contains(&area))
 }
 
 /// The line width of oxfmt (its default).
@@ -210,6 +246,16 @@ mod tests {
         assert!(!output[0].content.contains("server.listening"));
         assert!(output[1].content.contains("CONFIG_X_Y"));
         assert!(output[1].content.contains("server_listening"));
+    }
+
+    #[test]
+    fn a_new_area_stays_out_of_the_browser_until_it_is_listed() {
+        let repo = Repo::discover().unwrap();
+        let text = r#"{"brand-new.title": "New", "home.title": "Hi"}"#;
+        let output = generate(&repo, text).unwrap();
+        assert!(!output[0].content.contains("brand-new.title"));
+        assert!(output[0].content.contains("home.title"));
+        assert!(output[1].content.contains("BRAND_NEW_TITLE"));
     }
 
     #[test]

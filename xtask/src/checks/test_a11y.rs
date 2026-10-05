@@ -10,6 +10,7 @@ use std::fs;
 
 use anyhow::Context as _;
 
+use super::web_source::code_of;
 use super::{Check, Context, Finding};
 use crate::docs::source::sorted_files;
 use crate::docs::text::has_extension;
@@ -64,6 +65,14 @@ fn entries(paths_text: &str) -> Vec<(String, String)> {
     found
 }
 
+/// The code of the suite: a comment that names an address does not visit it.
+fn code(suite: &str) -> String {
+    suite.lines().map(code_of).collect::<Vec<_>>().join(
+        "
+",
+    )
+}
+
 /// Whether the suite mentions `paths.<name>` as a whole word.
 fn mentions(suite: &str, name: &str) -> bool {
     let needle = format!("paths.{name}");
@@ -76,6 +85,8 @@ fn mentions(suite: &str, name: &str) -> bool {
 }
 
 fn evaluate(paths_text: &str, suite: &str) -> Vec<Finding> {
+    let suite = code(suite);
+    let suite = suite.as_str();
     let all = entries(paths_text);
     if all.is_empty() {
         return vec![Finding::at(
@@ -114,6 +125,20 @@ mod tests {
             findings.iter().map(|f| &f.message).collect::<Vec<_>>()
         );
         assert!(findings[0].message.contains("paths.longer"));
+    }
+
+    #[test]
+    fn a_mention_in_a_comment_is_no_entry() {
+        // The names are only in comments, one of them behind code on the same line.
+        let suite = "// visit(paths.home);
+/* paths.signIn */
+visit(paths.longer); // paths.home and paths.signIn
+ * paths.home
+";
+        let findings = evaluate(PATHS, suite);
+        let missing: Vec<&str> = findings.iter().map(|f| f.message.as_str()).collect();
+        assert_eq!(missing.len(), 2, "{missing:?}");
+        assert!(missing[0].contains("paths.home") && missing[1].contains("paths.signIn"));
     }
 
     #[test]

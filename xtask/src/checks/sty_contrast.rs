@@ -235,6 +235,26 @@ mod tests {
     }
 
     #[test]
+    fn a_weak_accent_fill_with_more_contrast_is_rejected() {
+        let repo = Repo::discover().unwrap();
+        let text = std::fs::read_to_string(repo.path(TOKENS_PATH)).unwrap();
+        let mut value: serde_json::Value = serde_json::from_str(&text).unwrap();
+        // The accent fill of Daylight put back to the usual one: white text on it reaches only AA.
+        value["themes"]["daylight"]["contrastMore"]["color"]["accent"]["$value"] = "#5B3FD9".into();
+        let findings = evaluate(&TokenFile::parse(&value.to_string()).unwrap());
+        assert!(
+            findings
+                .iter()
+                .any(|f| f.message.contains("`on-accent`") && f.message.contains("`accent`")),
+            "{:?}",
+            findings
+                .iter()
+                .map(|f| f.message.clone())
+                .collect::<Vec<_>>()
+        );
+    }
+
+    #[test]
     fn faint_lines_with_more_contrast_are_rejected() {
         let repo = Repo::discover().unwrap();
         let text = std::fs::read_to_string(repo.path(TOKENS_PATH)).unwrap();
