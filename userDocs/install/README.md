@@ -41,3 +41,10 @@ Bugaboo keeps secrets in its database, such as the keys of code apps. The key fi
 ```text
 bugaboo keys export <folder>
 ```
+
+### When Bugaboo runs as a service
+
+The key files, the database and the security log belong to the account of the service. The commands `bugaboo keys export`, `bugaboo rotate-key` and `bugaboo security-log verify` therefore refuse to run from another account, and say so. A command from another account (root included) could leave files that the service can no longer read. Run them as the account of the service, and name the settings file of the service with `--config`:
+
+- On Linux: `sudo -u bugaboo bugaboo keys export <folder> --config <settings file>`
+- On Windows the account is `NT SERVICE\Bugaboo`. It has no password, so you cannot sign in as it. Stop the service, start a terminal as that account with a tool that can do this, and run the command there.

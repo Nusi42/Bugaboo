@@ -166,3 +166,23 @@ async fn m1_f19_a_new_master_key_still_reads_everything() -> TestResult {
     verify_security_log(&args).await?;
     Ok(())
 }
+
+#[tokio::test]
+async fn sec_16_the_commands_refuse_key_files_that_this_account_cannot_change() -> TestResult {
+    let folder = tempfile::tempdir()?;
+    let (args, data) = installation(folder.path()).await?;
+    assert_eq!(unusable_key(&data.keys()), None);
+    let key = data.keys().join("master.key");
+    let original = std::fs::metadata(&key)?.permissions();
+    let mut read_only = original.clone();
+    read_only.set_readonly(true);
+    std::fs::set_permissions(&key, read_only)?;
+    let found = unusable_key(&data.keys());
+    let refused = rotate_key(&args).await.err().ok_or("rotate-key went on")?;
+    std::fs::set_permissions(&key, original)?;
+    assert_eq!(found, Some(key));
+    let text = format!("{refused:#}");
+    assert!(text.contains("cannot read and change"), "{text}");
+    assert!(text.contains("rotate-key"), "{text}");
+    Ok(())
+}

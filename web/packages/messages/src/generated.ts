@@ -433,6 +433,13 @@ export const messages = {
   "status.log": "Security log",
   "server.setup-code-file-failed":
     "Setup is open, but the setup code could not be saved in {path}: {reason}. Stop Bugaboo and start it in a terminal with: bugaboo serve. The terminal shows the code.",
+  "keys.not-owner":
+    "The data folder {path} belongs to the account {owner}, and you are using another one. A command run from here could leave files that the Bugaboo service cannot read. Run it as {owner}: {how}",
+  "keys.no-access":
+    "This account cannot read and change the key files in {path}. If Bugaboo runs as a service, run the command as the account that runs it: {how}",
+  "keys.how-linux": "sudo -u {owner} {command}",
+  "keys.how-windows":
+    "On Windows that account is {owner}. It has no password, so you cannot sign in as it: stop the service, start a terminal as that account with a tool that can do this, and run: {command}",
 } as const;
 
 export type MessageKey = keyof typeof messages;
@@ -470,6 +477,10 @@ export interface MessageArguments {
   "keys.export-exists": { path: string | number };
   "keys.export-failed": { reason: string | number };
   "keys.exported": { path: string | number };
+  "keys.how-linux": { command: string | number; owner: string | number };
+  "keys.how-windows": { command: string | number; owner: string | number };
+  "keys.no-access": { how: string | number; path: string | number };
+  "keys.not-owner": { how: string | number; owner: string | number; path: string | number };
   "keys.rotated": { secrets: number };
   "passkeys.added": { name: string | number };
   "passkeys.added-on": { when: string | number };

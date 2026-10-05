@@ -45,7 +45,7 @@ const STOP_POLL: Duration = Duration::from_millis(250);
 const WAIT_HINT: Duration = Duration::from_secs(30);
 
 /// The account the service runs as: a virtual account named after the service.
-fn account() -> String {
+pub(super) fn account() -> String {
     format!("NT SERVICE\\{NAME}")
 }
 

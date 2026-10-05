@@ -242,6 +242,39 @@ fn system_tool(name: &str) -> PathBuf {
     Path::new(&system).join("System32").join(name)
 }
 
+/// On Linux: the name of the account that owns `path`, when it is not the account that runs this
+/// program. A command that changes a data folder from another account would leave files that the
+/// account of the service cannot read, so the commands refuse (root included). `None` when the
+/// owner is the current account, and on systems where this cannot be found out.
+#[cfg(target_os = "linux")]
+pub(crate) fn other_owner(path: &Path) -> Option<String> {
+    use std::os::unix::fs::MetadataExt as _;
+    let owner = std::fs::metadata(path).ok()?.uid();
+    // The owner of /proc/self is the account the program runs as.
+    let current = std::fs::metadata("/proc/self").ok()?.uid();
+    (owner != current).then(|| {
+        std::fs::read_to_string("/etc/passwd")
+            .ok()
+            .and_then(|passwd| name_in_passwd(&passwd, owner))
+            .unwrap_or_else(|| owner.to_string())
+    })
+}
+
+#[cfg(not(target_os = "linux"))]
+pub(crate) fn other_owner(_path: &Path) -> Option<String> {
+    None
+}
+
+/// The account name for a user number, from the text of `/etc/passwd` (`name:x:uid:...`).
+#[cfg(target_os = "linux")]
+fn name_in_passwd(passwd: &str, uid: u32) -> Option<String> {
+    passwd.lines().find_map(|line| {
+        let mut fields = line.split(':');
+        let name = fields.next()?;
+        (fields.nth(1)?.parse::<u32>().ok()? == uid).then(|| name.to_owned())
+    })
+}
+
 /// Saves `contents` in a file that only the account that runs Bugaboo can read (and, on Windows,
 /// the administrators of the computer): a secret that has to be readable by a person, such as the
 /// setup code of a server without a console. A file that exists is replaced, whatever its rights
@@ -463,6 +496,20 @@ mod tests {
         assert_eq!(listing.matches(":(").count(), 2, "{listing}");
         assert!(!listing.contains("(I)"), "{listing}");
         assert!(listing.contains("(R)"), "{listing}");
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn sec_16_the_owner_of_a_folder_is_found_by_user_number() {
+        let passwd = "root:x:0:0:root:/root:/bin/bash
+bugaboo:x:998:998::/nonexistent:/usr/sbin/nologin
+";
+        assert_eq!(name_in_passwd(passwd, 998).as_deref(), Some("bugaboo"));
+        assert_eq!(name_in_passwd(passwd, 0).as_deref(), Some("root"));
+        assert_eq!(name_in_passwd(passwd, 5), None);
+        // A folder this test made belongs to the account that runs the test.
+        let temp = tempfile::tempdir().unwrap();
+        assert_eq!(other_owner(temp.path()), None);
     }
 
     #[test]

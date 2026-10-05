@@ -344,5 +344,9 @@
   "status.certificate.expired": "This certificate ran out on {date}. Browsers refuse it.",
   "status.certificate.none": "Not shown. Either another program in front of Bugaboo handles HTTPS, or the certificate file cannot be read.",
   "status.log": "Security log",
-  "server.setup-code-file-failed": "Setup is open, but the setup code could not be saved in {path}: {reason}. Stop Bugaboo and start it in a terminal with: bugaboo serve. The terminal shows the code."
+  "server.setup-code-file-failed": "Setup is open, but the setup code could not be saved in {path}: {reason}. Stop Bugaboo and start it in a terminal with: bugaboo serve. The terminal shows the code.",
+  "keys.not-owner": "The data folder {path} belongs to the account {owner}, and you are using another one. A command run from here could leave files that the Bugaboo service cannot read. Run it as {owner}: {how}",
+  "keys.no-access": "This account cannot read and change the key files in {path}. If Bugaboo runs as a service, run the command as the account that runs it: {how}",
+  "keys.how-linux": "sudo -u {owner} {command}",
+  "keys.how-windows": "On Windows that account is {owner}. It has no password, so you cannot sign in as it: stop the service, start a terminal as that account with a tool that can do this, and run: {command}"
 }

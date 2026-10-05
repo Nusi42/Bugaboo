@@ -29,6 +29,18 @@ use crate::output;
 #[cfg(windows)]
 pub(super) const NAME: &str = "Bugaboo";
 
+/// The account that runs the service: the one that owns the data folder of a service install.
+pub(super) fn account_name() -> String {
+    #[cfg(windows)]
+    {
+        windows::account()
+    }
+    #[cfg(not(windows))]
+    {
+        systemd::USER.to_owned()
+    }
+}
+
 /// What the installer found out: which program, which settings file, which data folder.
 struct Found {
     program: PathBuf,

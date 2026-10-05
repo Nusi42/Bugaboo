@@ -64,6 +64,8 @@ Read when the server starts, strongest first: command line, environment variable
 | `bugaboo rotate-key` | Makes a new master key and re-encrypts the stored secrets with it. |
 | `bugaboo keys export <folder>` | Copies the key files to a folder, never over an existing copy. |
 
+`security-log verify`, `rotate-key` and `keys export` refuse to run, with the command to use instead, when the account that runs them is not the owner of the data folder (Linux, found from the owner of `/proc/self`) or cannot read and change the files in `keys/`: a run from the wrong account would leave files that the service cannot read. On Windows the account of a service has no password, so there is no tested way yet to start the command as it (follow-up M1-F57).
+
 The service installers are covered by tests of the plan and the texts only: starting a real service needs administrator rights and a service manager that the test machines do not give (follow-up M1-F57).
 
 ### Data folder

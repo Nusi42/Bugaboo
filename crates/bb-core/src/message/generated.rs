@@ -1132,6 +1132,59 @@ pub fn keys_exported(path: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `keys.how-linux`.
+#[must_use]
+pub fn keys_how_linux(command: impl std::fmt::Display, owner: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("keys.how-linux"),
+        vec![
+            ("command", Value::Text(command.to_string())),
+            ("owner", Value::Text(owner.to_string())),
+        ],
+    )
+}
+
+/// The message `keys.how-windows`.
+#[must_use]
+pub fn keys_how_windows(command: impl std::fmt::Display, owner: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("keys.how-windows"),
+        vec![
+            ("command", Value::Text(command.to_string())),
+            ("owner", Value::Text(owner.to_string())),
+        ],
+    )
+}
+
+/// The message `keys.no-access`.
+#[must_use]
+pub fn keys_no_access(how: impl std::fmt::Display, path: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("keys.no-access"),
+        vec![
+            ("how", Value::Text(how.to_string())),
+            ("path", Value::Text(path.to_string())),
+        ],
+    )
+}
+
+/// The message `keys.not-owner`.
+#[must_use]
+pub fn keys_not_owner(
+    how: impl std::fmt::Display,
+    owner: impl std::fmt::Display,
+    path: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("keys.not-owner"),
+        vec![
+            ("how", Value::Text(how.to_string())),
+            ("owner", Value::Text(owner.to_string())),
+            ("path", Value::Text(path.to_string())),
+        ],
+    )
+}
+
 /// The message `keys.rotated`.
 #[must_use]
 pub fn keys_rotated(secrets: i64) -> Message {
@@ -2033,6 +2086,19 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "keys.exported",
         "Copied the key files into {path}. They can read everything Bugaboo stores in secret: keep them in a safe place, away from the database backup.",
+    ),
+    ("keys.how-linux", "sudo -u {owner} {command}"),
+    (
+        "keys.how-windows",
+        "On Windows that account is {owner}. It has no password, so you cannot sign in as it: stop the service, start a terminal as that account with a tool that can do this, and run: {command}",
+    ),
+    (
+        "keys.no-access",
+        "This account cannot read and change the key files in {path}. If Bugaboo runs as a service, run the command as the account that runs it: {how}",
+    ),
+    (
+        "keys.not-owner",
+        "The data folder {path} belongs to the account {owner}, and you are using another one. A command run from here could leave files that the Bugaboo service cannot read. Run it as {owner}: {how}",
     ),
     (
         "keys.rotated",
