@@ -378,8 +378,7 @@ fn write_private_with(
         return Err(not_there());
     }
     let name = path.file_name().ok_or_else(not_there)?;
-    let staging = staging_folder(path);
-    create_private(&staging).map_err(std::io::Error::other)?;
+    let staging = make_staging_folder(path)?;
     let staged = staging.join(name);
     let placed = open_private(&staged)
         .and_then(|mut file| {
@@ -397,19 +396,74 @@ fn write_private_with(
     placed
 }
 
-/// The folder in which a secret file is made before it is moved to `path`: beside it, with a name
-/// that no other call uses at the same time.
-fn staging_folder(path: &Path) -> PathBuf {
-    use std::sync::atomic::{AtomicU32, Ordering};
-    static COUNT: AtomicU32 = AtomicU32::new(0);
+/// How many names are tried for the staging folder before giving up.
+const STAGING_TRIES: usize = 5;
+
+/// Makes the folder in which a secret file is made before it is moved to `path`.
+fn make_staging_folder(path: &Path) -> std::io::Result<PathBuf> {
+    make_staging_folder_with(|| staging_name(path))
+}
+
+/// Makes a new folder under the first name that is free. A name that is taken (by somebody who
+/// guessed it, or by a call that is running) is never used: the folder is made with a plain
+/// `create_dir`, which fails when the name exists, whoever made it and whatever it is (a link
+/// included), and the next name is tried. The new folder is for its owner only from the moment it
+/// exists (Linux), or at once after (Windows, where nothing can be in it yet).
+fn make_staging_folder_with(
+    mut name: impl FnMut() -> std::io::Result<PathBuf>,
+) -> std::io::Result<PathBuf> {
+    for _ in 0..STAGING_TRIES {
+        let folder = name()?;
+        match create_owner_only_folder(&folder) {
+            Ok(()) => return Ok(folder),
+            Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => {}
+            Err(error) => return Err(error),
+        }
+    }
+    Err(std::io::Error::from(std::io::ErrorKind::AlreadyExists))
+}
+
+/// A name for the staging folder beside `path` that cannot be guessed: it ends in random bytes.
+fn staging_name(path: &Path) -> std::io::Result<PathBuf> {
+    use std::fmt::Write as _;
+    let mut random = [0_u8; 8];
+    getrandom::fill(&mut random).map_err(std::io::Error::other)?;
+    let tail = random.iter().fold(String::new(), |mut hex, byte| {
+        let _ = write!(hex, "{byte:02x}");
+        hex
+    });
     let name = path
         .file_name()
         .map_or_else(String::new, |name| name.to_string_lossy().into_owned());
-    path.with_file_name(format!(
-        ".{name}.staging-{}-{}",
-        std::process::id(),
-        COUNT.fetch_add(1, Ordering::Relaxed)
-    ))
+    Ok(path.with_file_name(format!(".{name}.staging-{tail}")))
+}
+
+/// Makes one new folder, not its parents, that only its owner can enter. Fails with
+/// `AlreadyExists` when the name is taken.
+#[cfg(unix)]
+fn create_owner_only_folder(folder: &Path) -> std::io::Result<()> {
+    use std::os::unix::fs::DirBuilderExt as _;
+    std::fs::DirBuilder::new().mode(0o700).create(folder)
+}
+
+#[cfg(windows)]
+fn create_owner_only_folder(folder: &Path) -> std::io::Result<()> {
+    std::fs::create_dir(folder)?;
+    // Nothing is in it yet. Its access list is set before anything goes in, and what is in it
+    // after that was put there by somebody who could enter before: such a folder is not used.
+    let made = restrict(folder)
+        .map_err(std::io::Error::other)
+        .and_then(|()| {
+            if std::fs::read_dir(folder)?.next().is_some() {
+                Err(std::io::Error::other("the new folder was entered at once"))
+            } else {
+                Ok(())
+            }
+        });
+    if made.is_err() {
+        let _ = std::fs::remove_dir(folder);
+    }
+    made
 }
 
 /// A new file for the owner only, in a folder that is for the owner only.
@@ -636,14 +690,54 @@ mod tests {
         );
     }
 
+    #[test]
+    fn sec_16_a_staging_folder_that_somebody_made_first_is_never_used() {
+        let temp = tempfile::tempdir().unwrap();
+        let planted = temp.path().join("planted");
+        let fresh = temp.path().join("fresh");
+        std::fs::create_dir(&planted).unwrap();
+        std::fs::write(planted.join("theirs.txt"), "x").unwrap();
+        // The first name is taken by somebody else: the next one is used, and nothing is ever
+        // written into the folder that was there.
+        let mut offered = vec![planted.clone(), fresh.clone()].into_iter();
+        let made = make_staging_folder_with(|| Ok(offered.next().unwrap())).unwrap();
+        assert_eq!(made, fresh);
+        assert_eq!(names(&planted), ["theirs.txt"]);
+        // Names that are all taken give up after a few tries, with an error.
+        let taken = temp.path().join("taken");
+        std::fs::create_dir(&taken).unwrap();
+        let mut tries = 0;
+        let error = make_staging_folder_with(|| {
+            tries += 1;
+            Ok(taken.clone())
+        })
+        .unwrap_err();
+        assert_eq!(error.kind(), std::io::ErrorKind::AlreadyExists);
+        assert_eq!(tries, STAGING_TRIES);
+        assert!(names(&taken).is_empty(), "something was written into it");
+    }
+
+    #[test]
+    fn sec_16_a_secret_goes_to_the_new_folder_and_not_to_a_planted_one() {
+        // The names are random: a planted folder with a name that was guessed does not exist,
+        // and two calls never agree on a name.
+        let path = Path::new("a/code.txt");
+        let first = staging_name(path).unwrap();
+        let second = staging_name(path).unwrap();
+        assert_ne!(first, second);
+        assert!(
+            first.to_string_lossy().contains(".code.txt.staging-"),
+            "{first:?}"
+        );
+    }
+
     #[cfg(windows)]
     #[test]
     fn sec_16_a_secret_is_made_in_a_folder_only_its_owner_can_enter() {
         // The file is first written in a folder of its own that is for the owner only, and moved
         // into place after: nobody who can read the target folder can catch it half-made.
         let temp = tempfile::tempdir().unwrap();
-        let staging = staging_folder(&temp.path().join("code.txt"));
-        create_private(&staging).unwrap();
+        let staging = make_staging_folder(&temp.path().join("code.txt")).unwrap();
         let output = std::process::Command::new("icacls")
             .arg(&staging)
             .output()

@@ -530,6 +530,7 @@ dependencies = [
  "bb-store",
  "bb-testing",
  "clap",
+ "getrandom 0.4.3",
  "h2",
  "jiff",
  "rustls",

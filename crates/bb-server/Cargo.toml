@@ -18,6 +18,7 @@ bb-auth = { path = "../bb-auth" }
 bb-core = { path = "../bb-core" }
 bb-store = { path = "../bb-store" }
 clap = { workspace = true }
+getrandom = { workspace = true }
 jiff = { workspace = true }
 tokio = { workspace = true, features = ["macros", "net", "rt-multi-thread", "signal", "sync"] }
 toml = { workspace = true }
