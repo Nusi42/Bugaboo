@@ -5,6 +5,7 @@ use std::sync::Arc;
 
 use axum::body::Body;
 use axum::http::{Request, StatusCode};
+use bb_api::tls::ServedCertificate;
 use bb_api::{LimitsConfig, ProbeHandle, router};
 use bb_app::status::DatabaseKind;
 use bb_testing::each_database;
@@ -18,7 +19,7 @@ use crate::probe::Probe;
 const STATUS: &str = "/api/v1/admin/status";
 
 /// The router of the rig with a real probe.
-fn app_with_probe(rig: &Rig, certificate: Option<std::path::PathBuf>) -> axum::Router {
+fn app_with_probe(rig: &Rig, certificate: Option<Arc<ServedCertificate>>) -> axum::Router {
     let mut options = options(rig, LimitsConfig::default(), true);
     options.probe = ProbeHandle::new(Arc::new(Probe::new(
         rig.database.clone(),
@@ -113,27 +114,37 @@ async fn ops_08_the_status_shows_the_result_of_checking_the_security_log() -> Ou
 }
 
 #[tokio::test]
-async fn ops_08_the_status_shows_when_the_certificate_ends() -> Outcome {
+async fn ops_08_the_status_shows_the_end_of_the_certificate_it_serves_now() -> Outcome {
     each_database("ops_08_status_certificate", async |db| {
         let rig = Rig::start(db, 10).await?;
         let folder = tempfile::tempdir()?;
-        let source = bb_api::tls::TlsSource::SelfSigned {
-            folder: folder.path().to_path_buf(),
-            names: vec![],
-        };
-        bb_api::tls::server_config(&source)?;
-        let app = app_with_probe(&rig, Some(bb_api::tls::certificate_path(folder.path())));
+        let served = Arc::new(bb_api::tls::serve_certificate(
+            &bb_api::tls::TlsSource::SelfSigned {
+                folder: folder.path().to_path_buf(),
+                names: vec![],
+            },
+        )?);
+        let app = app_with_probe(&rig, Some(Arc::clone(&served)));
         let mut ada = Browser::new(&app, &called());
         ada.send("POST", "/api/v1/auth/setup", Some(setup_body(&rig)))
             .await?;
-        let reply = ada.send("GET", STATUS, None).await?;
-        let ends = reply.body["certificate"]["expires_at"]
-            .as_str()
-            .ok_or("no end")?
-            .parse::<jiff::Timestamp>()?;
+        let ends = async |ada: &mut Browser| -> Result<jiff::Timestamp, Box<dyn std::error::Error + Send + Sync>> {
+            let reply = ada.send("GET", STATUS, None).await?;
+            Ok(reply.body["certificate"]["expires_at"]
+                .as_str()
+                .ok_or("no end")?
+                .parse::<jiff::Timestamp>()?)
+        };
+        let first = ends(&mut ada).await?;
         // Certificates made by Bugaboo are valid for a year.
-        let days = (ends.as_second() - jiff::Timestamp::now().as_second()) / 86_400;
+        let days = (first.as_second() - jiff::Timestamp::now().as_second()) / 86_400;
         assert!((360..=366).contains(&days), "{days}");
+
+        // After a renewal the page shows the end of the new certificate, not of the old one.
+        let late = jiff::Timestamp::now().as_second() + 340 * 86_400;
+        served.renew(late)?;
+        let second = ends(&mut ada).await?;
+        assert!(second.as_second() > first.as_second() + 300 * 86_400);
         Ok(())
     })
     .await

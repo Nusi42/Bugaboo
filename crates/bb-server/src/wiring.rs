@@ -10,7 +10,7 @@
 use std::sync::Arc;
 
 use anyhow::anyhow;
-use bb_api::tls::certificate_path;
+use bb_api::tls::ServedCertificate;
 use bb_api::{AuthHandle, FailureLimits, ProbeHandle};
 use bb_app::auth::{AuthServices, IssueSetupCode, RequestInfo, issue_setup_code};
 use bb_app::context::SystemClock;
@@ -18,9 +18,16 @@ use bb_auth::{CsrfKey, Passkeys, PasswordHasher, RelyingParty};
 use bb_core::message::{self, Message};
 use bb_store::{AuthStorage, Database, LogSeal};
 
-use crate::config::{Settings, TlsMode};
+use crate::config::Settings;
 use crate::data_folder::DataFolder;
 use crate::probe::{Probe, database_kind};
+
+/// What the caller of `wire` knows and the status page shows.
+#[derive(Default)]
+pub(crate) struct Serving {
+    /// The certificate the server serves (and keeps current), when it speaks HTTPS itself.
+    pub(crate) certificate: Option<Arc<ServedCertificate>>,
+}
 
 /// What the server needs from the wiring.
 pub(crate) struct Wired {
@@ -78,7 +85,11 @@ async fn connect(settings: &Settings, data: &DataFolder) -> anyhow::Result<Datab
 /// Fails with a plain explanation when the database cannot be opened or migrated, when the key
 /// files are missing from a database that needs them, or when the system gives no secure
 /// randomness.
-pub(crate) async fn wire(settings: &Settings, data: &DataFolder) -> anyhow::Result<Wired> {
+pub(crate) async fn wire(
+    settings: &Settings,
+    data: &DataFolder,
+    serving: Serving,
+) -> anyhow::Result<Wired> {
     let database = connect(settings, data).await?;
     let applied = database
         .migrate(jiff::Timestamp::now())
@@ -93,16 +104,11 @@ pub(crate) async fn wire(settings: &Settings, data: &DataFolder) -> anyhow::Resu
     );
     let seal = LogSeal::new(&keys, data.security_log_anchor());
     let csrf = CsrfKey::from_bytes(keys.csrf_key().to_bytes());
-    let certificate = match &settings.tls {
-        TlsMode::SelfSigned => Some(certificate_path(&data.tls())),
-        TlsMode::Files { cert, .. } => Some(cert.clone()),
-        TlsMode::Off => None,
-    };
     let probe = Probe::new(
         database.clone(),
         seal.clone(),
         database_kind(settings.database_url.as_deref()),
-        certificate,
+        serving.certificate,
     );
     let storage = AuthStorage::new(database, keys, seal);
 

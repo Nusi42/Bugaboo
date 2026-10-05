@@ -5,18 +5,20 @@ use std::future::Future;
 use std::io::IsTerminal as _;
 use std::net::SocketAddr;
 use std::path::Path;
+use std::sync::Arc;
 
 use anyhow::Context as _;
-use bb_api::tls::{TlsError, TlsSource, certificate_path, server_config};
+use bb_api::tls::{ServedCertificate, TlsError, TlsSource, certificate_path, serve_certificate};
 use bb_api::{
     HSTS_MAX_AGE_SELF_SIGNED, HSTS_MAX_AGE_TRUSTED, Incoming, ListenerOptions, Options, WebSource,
 };
 use bb_core::message::{self, Message};
 use tokio::net::TcpListener;
 
-use super::{ServeArgs, load_settings};
+use super::{ServeArgs, load_settings, renewal};
 use crate::config::{Settings, TlsMode};
 use crate::data_folder::{DataFolder, Existing, write_private};
+use crate::wiring::Serving;
 use crate::{log, output, wiring};
 
 /// `bugaboo serve`: runs until Ctrl+C or the stop signal of the system.
@@ -39,11 +41,18 @@ pub(super) async fn serve_settings(
     shutdown: impl Future<Output = ()> + Send + 'static,
 ) -> anyhow::Result<()> {
     let data = DataFolder::prepare(&settings.data_dir)?;
-    let listener_options = listener_options(&settings, &data)?;
+    let (listener_options, certificate) = listener_options(&settings, &data)?;
     let hsts_max_age = hsts_max_age(&settings);
     // The database, the keys and the sign-in services come first: when one of them fails the
     // server stops here, before it listens (M1-F19, M1-F24).
-    let wired = wiring::wire(&settings, &data).await?;
+    let wired = wiring::wire(
+        &settings,
+        &data,
+        Serving {
+            certificate: certificate.clone(),
+        },
+    )
+    .await?;
     // Before the port opens: whoever connects can already find the setup code.
     let setup_notice = prepare_setup_code(&data, wired.setup_code.as_deref(), console);
     let address = SocketAddr::new(settings.address, settings.port);
@@ -79,7 +88,19 @@ pub(super) async fn serve_settings(
         auth: wired.auth,
         probe: wired.probe,
     };
-    bb_api::serve(incoming, options, shutdown).await?;
+    // A certificate that runs out while the server runs is renewed without a restart (M1-F03).
+    let renewal = certificate.map(|served| {
+        renewal::spawn(
+            served,
+            || jiff::Timestamp::now().as_second(),
+            renewal::CHECK_EVERY,
+        )
+    });
+    let served = bb_api::serve(incoming, options, shutdown).await;
+    if let Some(timer) = renewal {
+        timer.abort();
+    }
+    served?;
     tracing::info!("server stopped");
     Ok(())
 }
@@ -155,16 +176,21 @@ fn save_setup_code(file: &Path, code: &str) -> Result<Message, Message> {
 }
 
 /// What the listener does with connections: HTTPS with the configured certificate, or plain
-/// HTTP that only trusted proxies may use.
-fn listener_options(settings: &Settings, data: &DataFolder) -> anyhow::Result<ListenerOptions> {
+/// HTTP that only trusted proxies may use. With HTTPS also the certificate in use, which the
+/// server keeps current while it runs.
+fn listener_options(
+    settings: &Settings,
+    data: &DataFolder,
+) -> anyhow::Result<(ListenerOptions, Option<Arc<ServedCertificate>>)> {
     let source = match &settings.tls {
         TlsMode::Off => {
-            return Ok(ListenerOptions {
+            let options = ListenerOptions {
                 tls: None,
                 only_from: (!settings.trusted_proxies.is_empty())
                     .then(|| settings.trusted_proxies.clone()),
                 max_connections: settings.max_connections,
-            });
+            };
+            return Ok((options, None));
         }
         TlsMode::SelfSigned => TlsSource::SelfSigned {
             folder: data.tls(),
@@ -182,12 +208,14 @@ fn listener_options(settings: &Settings, data: &DataFolder) -> anyhow::Result<Li
             }
         }
     };
-    let config = server_config(&source).map_err(|error| anyhow::anyhow!(tls_message(&error)))?;
-    Ok(ListenerOptions {
-        tls: Some(config),
+    let served =
+        serve_certificate(&source).map_err(|error| anyhow::anyhow!(tls_message(&error)))?;
+    let options = ListenerOptions {
+        tls: Some(served.config()),
         only_from: None,
         max_connections: settings.max_connections,
-    })
+    };
+    Ok((options, Some(Arc::new(served))))
 }
 
 /// A private key that other people on this Linux computer can read (group or world bits).

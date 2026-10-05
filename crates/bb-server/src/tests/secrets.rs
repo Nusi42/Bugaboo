@@ -11,7 +11,7 @@ use jiff::Timestamp;
 
 use super::*;
 use crate::config::{Sources, resolve};
-use crate::wiring::wire;
+use crate::wiring::{Serving, wire};
 
 type Failure = Box<dyn std::error::Error + Send + Sync>;
 
@@ -28,7 +28,7 @@ async fn installation(root: &Path) -> Result<(StoreArgs, DataFolder), Failure> {
         cli: &given,
         base: root,
     })?;
-    wire(&settings, &data).await?;
+    wire(&settings, &data, Serving::default()).await?;
     let store = wiring::open_store(&settings, &data).await?;
     for _ in 0..2 {
         store

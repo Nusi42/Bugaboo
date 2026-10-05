@@ -3,10 +3,10 @@
 //! security log together, so this is where they meet.
 
 use std::fmt::Write as _;
-use std::path::PathBuf;
+use std::sync::Arc;
 use std::time::Instant;
 
-use bb_api::tls::certificate_end;
+use bb_api::tls::ServedCertificate;
 use bb_app::ports::BoxFuture;
 use bb_app::status::{CertificateState, DatabaseKind, LogBreak, LogState, ServerProbe, Snapshot};
 use bb_store::{BreakReason, Database, LogSeal, Verification};
@@ -21,8 +21,9 @@ pub(crate) struct Probe {
     database: Database,
     seal: LogSeal,
     kind: DatabaseKind,
-    /// The certificate file when the server speaks HTTPS itself.
-    certificate: Option<PathBuf>,
+    /// The certificate in use when the server speaks HTTPS itself: the status page shows the end
+    /// of the one it serves now, also after a renewal (M1-F03).
+    certificate: Option<Arc<ServedCertificate>>,
     started: Instant,
     started_at: Timestamp,
 }
@@ -33,7 +34,7 @@ impl Probe {
         database: Database,
         seal: LogSeal,
         kind: DatabaseKind,
-        certificate: Option<PathBuf>,
+        certificate: Option<Arc<ServedCertificate>>,
     ) -> Self {
         Self {
             database,
@@ -101,7 +102,7 @@ impl ServerProbe for Probe {
             let certificate = self
                 .certificate
                 .as_deref()
-                .and_then(certificate_end)
+                .and_then(ServedCertificate::expires_at)
                 .and_then(|seconds| Timestamp::from_second(seconds).ok())
                 .map(|expires_at| CertificateState { expires_at });
             Snapshot {
