@@ -1,5 +1,5 @@
-//! ARCH-HTTP-EDGE: only `bb-api` and `bb-mcp` use HTTP crates, and only `bb-server` wires the
-//! adapters (architecture §4, dependency rule 4).
+//! ARCH-HTTP-EDGE: only `bb-api` and `bb-mcp` use HTTP crates, and only `bb-server` and
+//! `bb-sample` wire the adapters (architecture §4, dependency rule 4).
 //!
 //! ARCH-DEPS keeps crates to the edges of the module map. This check adds the two rules about the
 //! edge of the system by crate names, so they hold even if the map is edited:
@@ -7,8 +7,9 @@
 //! - an HTTP crate (a server, a client, a WebSocket or an OpenAPI helper) is a normal or build
 //!   dependency of `bb-api` and `bb-mcp` only. Tests may use them anywhere, and `xtask` is the
 //!   developer's tool, not part of the product;
-//! - the adapter crates (they implement the ports of `bb-app`) are normal dependencies of
-//!   `bb-server` only; every other crate knows only the ports.
+//! - the adapter crates (they implement the ports of `bb-app`) are normal dependencies of the
+//!   wiring crates only: `bb-server`, and the developer program `bb-sample` that makes the sample
+//!   organization through the same use cases (M2 WP-06). Every other crate knows only the ports.
 
 use super::{Check, Context, Finding};
 use crate::metadata::{self, Package};
@@ -48,8 +49,9 @@ const HTTP_CRATES_ALLOWED_IN: [&str; 3] = ["bb-api", "bb-mcp", "xtask"];
 /// Crates that implement the ports of `bb-app`.
 const ADAPTERS: [&str; 4] = ["bb-store", "bb-files", "bb-ai", "bb-notify"];
 
-/// The only crate that may depend on the adapters.
-const WIRING_CRATE: &str = "bb-server";
+/// The only crates that may depend on the adapters: the program, and the developer tool that
+/// makes the sample organization (not shipped before OPS-12).
+const WIRING_CRATES: [&str; 2] = ["bb-server", "bb-sample"];
 
 pub(crate) struct ArchHttpEdge;
 
@@ -81,12 +83,16 @@ fn evaluate(packages: &[Package]) -> Vec<Finding> {
                     ),
                 ));
             }
-            if shipped && ADAPTERS.contains(&dependency.name.as_str()) && name != WIRING_CRATE {
+            if shipped
+                && ADAPTERS.contains(&dependency.name.as_str())
+                && !WIRING_CRATES.contains(&name)
+            {
                 findings.push(Finding::at(
                     name,
                     format!(
-                        "depends on the adapter `{}`. Only {WIRING_CRATE} wires adapters to ports; depend on the port in bb-app instead.",
-                        dependency.name
+                        "depends on the adapter `{}`. Only {} wire adapters to ports; depend on the port in bb-app instead.",
+                        dependency.name,
+                        WIRING_CRATES.join(" and ")
                     ),
                 ));
             }
@@ -125,6 +131,21 @@ mod tests {
         assert!(found[0].contains("HTTP crate `axum`"));
         assert!(found[1].contains("`reqwest`"));
         assert!(found[2].contains("adapter `bb-store`"));
+        assert!(found[2].contains("bb-server and bb-sample"), "{}", found[2]);
+    }
+
+    #[test]
+    fn bad_example_the_sample_tool_does_not_get_to_speak_http() {
+        let packages = [with("bb-sample", &[("axum", None), ("bb-store", None)])];
+        let found = evaluate(&packages);
+        assert_eq!(found.len(), 1, "only the HTTP crate is refused");
+        assert!(found[0].message.contains("HTTP crate `axum`"));
+    }
+
+    #[test]
+    fn bad_example_a_crate_that_only_looks_like_the_sample_tool_wires_nothing() {
+        let packages = [with("bb-sample-extras", &[("bb-store", None)])];
+        assert_eq!(evaluate(&packages).len(), 1);
     }
 
     #[test]
@@ -134,6 +155,7 @@ mod tests {
             with("bb-mcp", &[("axum", None)]),
             with("bb-app", &[("tower", Some("dev"))]),
             with("bb-server", &[("bb-store", None), ("bb-api", None)]),
+            with("bb-sample", &[("bb-store", None), ("bb-app", None)]),
             with("bb-store", &[("bb-testing", Some("dev"))]),
         ];
         assert!(evaluate(&packages).is_empty());

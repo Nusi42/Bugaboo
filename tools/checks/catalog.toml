@@ -274,7 +274,7 @@ status = "planned"
 
 [[check]]
 id = "ARCH-HTTP-EDGE"
-title = "Only bb-api and bb-mcp use HTTP crates; only bb-server wires adapters"
+title = "Only bb-api and bb-mcp use HTTP crates; only bb-server and bb-sample wire adapters"
 rule = "architecture §4"
 tool = "xtask (cargo metadata: normal and build dependencies on HTTP crates and on the adapter crates)"
 when = ["push", "ci"]
