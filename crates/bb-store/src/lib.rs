@@ -17,10 +17,13 @@ mod jobs;
 mod keys;
 mod layout;
 mod migrations;
+mod policy;
 mod schema;
 mod secrets;
 mod security_log;
 mod settings;
+#[cfg(feature = "testing")]
+mod testing;
 
 pub use anchor::LogSeal;
 pub use auth::AuthStorage;
@@ -34,6 +37,8 @@ pub use migrations::latest_version;
 pub use schema::{StoredTable, tables};
 pub use security_log::NewSecurityLogEntry;
 pub use settings::{Scopes, SettingChange};
+#[cfg(feature = "testing")]
+pub use testing::M1Person;
 
 /// Helpers for the tests of this crate: they run on both databases through the harness.
 #[cfg(test)]

@@ -1,0 +1,5 @@
+error[E0599]: no associated function or constant named `new` found for struct `Authorized<T>` in the current scope
+ --> tests/ui/authorized_by_constructor.rs:5:31
+  |
+5 |     let _forged = Authorized::new(1_u32);
+  |                               ^^^ associated function or constant not found in `Authorized<_>`

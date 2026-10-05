@@ -17,8 +17,8 @@ use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 
 use super::auth::{
-    AuthHandle, ForbiddenAnswer, Info, InvalidAnswer, NotFoundAnswer, NotSignedInAnswer,
-    PersonBody, PreviousSession, Session, SignedInBody, answer, done, signed_in,
+    AuthHandle, ForbiddenAnswer, Info, InvalidAnswer, MeBody, NotFoundAnswer, NotSignedInAnswer,
+    PreviousSession, Session, SignedInBody, answer, answer_authorized, done, signed_in,
 };
 use crate::cookies::Cookie;
 use crate::errors::{ApiError, ApiJson, ApiPath};
@@ -338,7 +338,7 @@ async fn sign_out(
     operation_id = "getMe",
     tag = "auth",
     extensions(("x-never-stored" = json!(true))),
-    responses((status = 200, description = "The signed-in person.", body = PersonBody), NotSignedInAnswer)
+    responses((status = 200, description = "The signed-in person and what they may do for the whole organization.", body = MeBody), NotSignedInAnswer)
 )]
 async fn get_me(
     State(auth): State<AuthHandle>,
@@ -349,7 +349,13 @@ async fn get_me(
         .api()?
         .authenticate(info, AuthenticateQuery { session_token })
         .await?;
-    Ok(answer(PersonBody::from(&me.person)))
+    let permissions = me.access.permissions().iter().copied().collect();
+    answer_authorized(&me.access.authorize(MeBody {
+        id: me.person.id.to_string(),
+        display_name: me.person.display_name.clone(),
+        email: me.person.email.clone(),
+        permissions,
+    }))
 }
 
 /// The sessions of the signed-in person.

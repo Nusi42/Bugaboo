@@ -267,6 +267,15 @@ pub const DATA_FOLDER_PART_SETUP_CODE_FILE: MessageKey =
 /// The message `error.access.forbidden`.
 pub const ERROR_ACCESS_FORBIDDEN: MessageKey = MessageKey::new("error.access.forbidden");
 
+/// The message `error.access.too-much`.
+pub const ERROR_ACCESS_TOO_MUCH: MessageKey = MessageKey::new("error.access.too-much");
+
+/// The message `error.access.would-lock-out`.
+pub const ERROR_ACCESS_WOULD_LOCK_OUT: MessageKey = MessageKey::new("error.access.would-lock-out");
+
+/// The message `error.assignment.conflict`.
+pub const ERROR_ASSIGNMENT_CONFLICT: MessageKey = MessageKey::new("error.assignment.conflict");
+
 /// The message `error.auth.invitation-invalid`.
 pub const ERROR_AUTH_INVITATION_INVALID: MessageKey =
     MessageKey::new("error.auth.invitation-invalid");
@@ -301,6 +310,9 @@ pub const ERROR_AUTH_WRONG_SETUP_CODE: MessageKey = MessageKey::new("error.auth.
 
 /// The message `error.edit.version-changed`.
 pub const ERROR_EDIT_VERSION_CHANGED: MessageKey = MessageKey::new("error.edit.version-changed");
+
+/// The message `error.name.taken`.
+pub const ERROR_NAME_TAKEN: MessageKey = MessageKey::new("error.name.taken");
 
 /// The message `error.rate-limit.exceeded`.
 pub const ERROR_RATE_LIMIT_EXCEEDED: MessageKey = MessageKey::new("error.rate-limit.exceeded");
@@ -516,6 +528,56 @@ pub const INVITATIONS_TAKEN_BACK: MessageKey = MessageKey::new("invitations.take
 /// The message `invitations.title`.
 pub const INVITATIONS_TITLE: MessageKey = MessageKey::new("invitations.title");
 
+/// The message `issue-field.activity`.
+pub const ISSUE_FIELD_ACTIVITY: MessageKey = MessageKey::new("issue-field.activity");
+
+/// The message `issue-field.assigned-to`.
+pub const ISSUE_FIELD_ASSIGNED_TO: MessageKey = MessageKey::new("issue-field.assigned-to");
+
+/// The message `issue-field.cost-center`.
+pub const ISSUE_FIELD_COST_CENTER: MessageKey = MessageKey::new("issue-field.cost-center");
+
+/// The message `issue-field.description`.
+pub const ISSUE_FIELD_DESCRIPTION: MessageKey = MessageKey::new("issue-field.description");
+
+/// The message `issue-field.due-date`.
+pub const ISSUE_FIELD_DUE_DATE: MessageKey = MessageKey::new("issue-field.due-date");
+
+/// The message `issue-field.estimated-time`.
+pub const ISSUE_FIELD_ESTIMATED_TIME: MessageKey = MessageKey::new("issue-field.estimated-time");
+
+/// The message `issue-field.found-in-release`.
+pub const ISSUE_FIELD_FOUND_IN_RELEASE: MessageKey =
+    MessageKey::new("issue-field.found-in-release");
+
+/// The message `issue-field.labels`.
+pub const ISSUE_FIELD_LABELS: MessageKey = MessageKey::new("issue-field.labels");
+
+/// The message `issue-field.planned-for-release`.
+pub const ISSUE_FIELD_PLANNED_FOR_RELEASE: MessageKey =
+    MessageKey::new("issue-field.planned-for-release");
+
+/// The message `issue-field.priority`.
+pub const ISSUE_FIELD_PRIORITY: MessageKey = MessageKey::new("issue-field.priority");
+
+/// The message `issue-field.reported-by`.
+pub const ISSUE_FIELD_REPORTED_BY: MessageKey = MessageKey::new("issue-field.reported-by");
+
+/// The message `issue-field.status`.
+pub const ISSUE_FIELD_STATUS: MessageKey = MessageKey::new("issue-field.status");
+
+/// The message `issue-field.tags`.
+pub const ISSUE_FIELD_TAGS: MessageKey = MessageKey::new("issue-field.tags");
+
+/// The message `issue-field.time-left`.
+pub const ISSUE_FIELD_TIME_LEFT: MessageKey = MessageKey::new("issue-field.time-left");
+
+/// The message `issue-field.time-spent`.
+pub const ISSUE_FIELD_TIME_SPENT: MessageKey = MessageKey::new("issue-field.time-spent");
+
+/// The message `issue-field.title`.
+pub const ISSUE_FIELD_TITLE: MessageKey = MessageKey::new("issue-field.title");
+
 /// The message `keys.database-placeholder`.
 pub const KEYS_DATABASE_PLACEHOLDER: MessageKey = MessageKey::new("keys.database-placeholder");
 
@@ -624,6 +686,95 @@ pub const PASSKEYS_TITLE: MessageKey = MessageKey::new("passkeys.title");
 /// The message `passkeys.unavailable`.
 pub const PASSKEYS_UNAVAILABLE: MessageKey = MessageKey::new("passkeys.unavailable");
 
+/// The message `people-kind.assigned-to`.
+pub const PEOPLE_KIND_ASSIGNED_TO: MessageKey = MessageKey::new("people-kind.assigned-to");
+
+/// The message `people-kind.authors`.
+pub const PEOPLE_KIND_AUTHORS: MessageKey = MessageKey::new("people-kind.authors");
+
+/// The message `people-kind.editing`.
+pub const PEOPLE_KIND_EDITING: MessageKey = MessageKey::new("people-kind.editing");
+
+/// The message `people-kind.followers`.
+pub const PEOPLE_KIND_FOLLOWERS: MessageKey = MessageKey::new("people-kind.followers");
+
+/// The message `people-kind.last-changed-by`.
+pub const PEOPLE_KIND_LAST_CHANGED_BY: MessageKey = MessageKey::new("people-kind.last-changed-by");
+
+/// The message `people-kind.mentions`.
+pub const PEOPLE_KIND_MENTIONS: MessageKey = MessageKey::new("people-kind.mentions");
+
+/// The message `people-kind.pictures`.
+pub const PEOPLE_KIND_PICTURES: MessageKey = MessageKey::new("people-kind.pictures");
+
+/// The message `people-kind.project-members`.
+pub const PEOPLE_KIND_PROJECT_MEMBERS: MessageKey = MessageKey::new("people-kind.project-members");
+
+/// The message `people-kind.reported-by`.
+pub const PEOPLE_KIND_REPORTED_BY: MessageKey = MessageKey::new("people-kind.reported-by");
+
+/// The message `people-kind.time-entries`.
+pub const PEOPLE_KIND_TIME_ENTRIES: MessageKey = MessageKey::new("people-kind.time-entries");
+
+/// The message `permission-topic.people`.
+pub const PERMISSION_TOPIC_PEOPLE: MessageKey = MessageKey::new("permission-topic.people");
+
+/// The message `permission-topic.projects`.
+pub const PERMISSION_TOPIC_PROJECTS: MessageKey = MessageKey::new("permission-topic.projects");
+
+/// The message `permission-topic.settings`.
+pub const PERMISSION_TOPIC_SETTINGS: MessageKey = MessageKey::new("permission-topic.settings");
+
+/// The message `permission.change-organization-settings`.
+pub const PERMISSION_CHANGE_ORGANIZATION_SETTINGS: MessageKey =
+    MessageKey::new("permission.change-organization-settings");
+
+/// The message `permission.change-project-settings`.
+pub const PERMISSION_CHANGE_PROJECT_SETTINGS: MessageKey =
+    MessageKey::new("permission.change-project-settings");
+
+/// The message `permission.check-access`.
+pub const PERMISSION_CHECK_ACCESS: MessageKey = MessageKey::new("permission.check-access");
+
+/// The message `permission.decide-roles`.
+pub const PERMISSION_DECIDE_ROLES: MessageKey = MessageKey::new("permission.decide-roles");
+
+/// The message `permission.decide-what-roles-see`.
+pub const PERMISSION_DECIDE_WHAT_ROLES_SEE: MessageKey =
+    MessageKey::new("permission.decide-what-roles-see");
+
+/// The message `permission.make-projects`.
+pub const PERMISSION_MAKE_PROJECTS: MessageKey = MessageKey::new("permission.make-projects");
+
+/// The message `permission.make-sub-projects`.
+pub const PERMISSION_MAKE_SUB_PROJECTS: MessageKey =
+    MessageKey::new("permission.make-sub-projects");
+
+/// The message `permission.manage-groups`.
+pub const PERMISSION_MANAGE_GROUPS: MessageKey = MessageKey::new("permission.manage-groups");
+
+/// The message `permission.manage-invitations`.
+pub const PERMISSION_MANAGE_INVITATIONS: MessageKey =
+    MessageKey::new("permission.manage-invitations");
+
+/// The message `permission.manage-people`.
+pub const PERMISSION_MANAGE_PEOPLE: MessageKey = MessageKey::new("permission.manage-people");
+
+/// The message `permission.manage-roles`.
+pub const PERMISSION_MANAGE_ROLES: MessageKey = MessageKey::new("permission.manage-roles");
+
+/// The message `permission.move-projects`.
+pub const PERMISSION_MOVE_PROJECTS: MessageKey = MessageKey::new("permission.move-projects");
+
+/// The message `permission.see-projects`.
+pub const PERMISSION_SEE_PROJECTS: MessageKey = MessageKey::new("permission.see-projects");
+
+/// The message `permission.see-status`.
+pub const PERMISSION_SEE_STATUS: MessageKey = MessageKey::new("permission.see-status");
+
+/// The message `sample.error.link-missing`.
+pub const SAMPLE_ERROR_LINK_MISSING: MessageKey = MessageKey::new("sample.error.link-missing");
+
 /// The message `sample.error.log-not-anchored`.
 pub const SAMPLE_ERROR_LOG_NOT_ANCHORED: MessageKey =
     MessageKey::new("sample.error.log-not-anchored");
@@ -672,6 +823,9 @@ pub const SAMPLE_STEP_SETUP_CODE: MessageKey = MessageKey::new("sample.step.setu
 
 /// The message `sample.step.signing-out`.
 pub const SAMPLE_STEP_SIGNING_OUT: MessageKey = MessageKey::new("sample.step.signing-out");
+
+/// The message `sample.step.starting-roles`.
+pub const SAMPLE_STEP_STARTING_ROLES: MessageKey = MessageKey::new("sample.step.starting-roles");
 
 /// The message `save.not-saved`.
 pub const SAVE_NOT_SAVED: MessageKey = MessageKey::new("save.not-saved");
@@ -870,10 +1024,6 @@ pub const SETTING_SECURITY_SESSION_ABSOLUTE_HOURS_HELP: MessageKey =
 /// The message `setting.security.session-idle-minutes.help`.
 pub const SETTING_SECURITY_SESSION_IDLE_MINUTES_HELP: MessageKey =
     MessageKey::new("setting.security.session-idle-minutes.help");
-
-/// The message `setting.security.two-step-required-roles.help`.
-pub const SETTING_SECURITY_TWO_STEP_REQUIRED_ROLES_HELP: MessageKey =
-    MessageKey::new("setting.security.two-step-required-roles.help");
 
 /// The message `setting.security.two-step-required.help`.
 pub const SETTING_SECURITY_TWO_STEP_REQUIRED_HELP: MessageKey =
@@ -1110,6 +1260,24 @@ pub const SIGN_UP_SUBMIT: MessageKey = MessageKey::new("sign-up.submit");
 
 /// The message `sign-up.title`.
 pub const SIGN_UP_TITLE: MessageKey = MessageKey::new("sign-up.title");
+
+/// The message `starting-role.administrator`.
+pub const STARTING_ROLE_ADMINISTRATOR: MessageKey = MessageKey::new("starting-role.administrator");
+
+/// The message `starting-role.contributor`.
+pub const STARTING_ROLE_CONTRIBUTOR: MessageKey = MessageKey::new("starting-role.contributor");
+
+/// The message `starting-role.guest`.
+pub const STARTING_ROLE_GUEST: MessageKey = MessageKey::new("starting-role.guest");
+
+/// The message `starting-role.project-lead`.
+pub const STARTING_ROLE_PROJECT_LEAD: MessageKey = MessageKey::new("starting-role.project-lead");
+
+/// The message `starting-role.team-member`.
+pub const STARTING_ROLE_TEAM_MEMBER: MessageKey = MessageKey::new("starting-role.team-member");
+
+/// The message `starting-role.viewer`.
+pub const STARTING_ROLE_VIEWER: MessageKey = MessageKey::new("starting-role.viewer");
 
 /// The message `status.certificate`.
 pub const STATUS_CERTIFICATE: MessageKey = MessageKey::new("status.certificate");
@@ -2669,6 +2837,18 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("error.access.forbidden", "You are not allowed to do that."),
     (
+        "error.access.too-much",
+        "You can only add or give what you can do yourself in this place.",
+    ),
+    (
+        "error.access.would-lock-out",
+        "That would leave nobody who can manage roles and decide who has which role for the whole organization. Keep at least one person who can do both.",
+    ),
+    (
+        "error.assignment.conflict",
+        "This person or group already has a role here, so it cannot also have No access here, and the other way round. Take the other row away first.",
+    ),
+    (
         "error.auth.invitation-invalid",
         "This invitation does not work. It may have run out or been used already. Ask for a new one.",
     ),
@@ -2704,6 +2884,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "error.edit.version-changed",
         "Someone changed this while you were working. Use Compare and save to keep your changes.",
+    ),
+    (
+        "error.name.taken",
+        "That name is already used. Choose another one.",
     ),
     (
         "error.rate-limit.exceeded",
@@ -2825,7 +3009,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("frames.title", "Page frames"),
     (
         "home.admin",
-        "You are an administrator: you can invite people and see how the server is doing.",
+        "You can look after this server. Organization settings shows what you may do there.",
     ),
     (
         "home.intro",
@@ -2874,6 +3058,22 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("invitations.taken-back", "The invitation is taken back."),
     ("invitations.title", "Invitations"),
+    ("issue-field.activity", "Activity"),
+    ("issue-field.assigned-to", "Assigned to"),
+    ("issue-field.cost-center", "Cost center"),
+    ("issue-field.description", "Description"),
+    ("issue-field.due-date", "Due date"),
+    ("issue-field.estimated-time", "Estimated time"),
+    ("issue-field.found-in-release", "Found in release"),
+    ("issue-field.labels", "Labels"),
+    ("issue-field.planned-for-release", "Planned for release"),
+    ("issue-field.priority", "Priority"),
+    ("issue-field.reported-by", "Reported by"),
+    ("issue-field.status", "Status"),
+    ("issue-field.tags", "Tags"),
+    ("issue-field.time-left", "Time left"),
+    ("issue-field.time-spent", "Time spent"),
+    ("issue-field.title", "Title"),
     (
         "keys.database-placeholder",
         "--database-url <the address of your database>",
@@ -2972,6 +3172,66 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "passkeys.unavailable",
         "Passkeys need Bugaboo to be opened with a web address that has a name, not a number. Ask the person who runs Bugaboo to set the public address.",
     ),
+    ("people-kind.assigned-to", "Assigned to"),
+    ("people-kind.authors", "Authors of comments and history"),
+    ("people-kind.editing", "\"… is editing\""),
+    ("people-kind.followers", "Followers"),
+    ("people-kind.last-changed-by", "Last changed by"),
+    ("people-kind.mentions", "Mentions"),
+    ("people-kind.pictures", "Pictures of people"),
+    ("people-kind.project-members", "Project members"),
+    ("people-kind.reported-by", "Reported by"),
+    ("people-kind.time-entries", "Time entries"),
+    ("permission-topic.people", "People"),
+    ("permission-topic.projects", "Projects"),
+    ("permission-topic.settings", "Settings"),
+    (
+        "permission.change-organization-settings",
+        "Change organization settings",
+    ),
+    (
+        "permission.change-project-settings",
+        "Change the project's name, short name and settings",
+    ),
+    (
+        "permission.check-access",
+        "Check what other people can do, and why",
+    ),
+    (
+        "permission.decide-roles",
+        "Decide who has which role, including No access",
+    ),
+    (
+        "permission.decide-what-roles-see",
+        "Decide which fields and which people information each role sees",
+    ),
+    ("permission.make-projects", "Make projects at the top level"),
+    (
+        "permission.make-sub-projects",
+        "Make sub-projects inside the project",
+    ),
+    (
+        "permission.manage-groups",
+        "Make, rename and delete groups and change who is in them",
+    ),
+    (
+        "permission.manage-invitations",
+        "Invite people and take invitations back",
+    ),
+    (
+        "permission.manage-people",
+        "See everybody's e-mail address and correct their names",
+    ),
+    ("permission.manage-roles", "Make, change and delete roles"),
+    (
+        "permission.move-projects",
+        "Move sub-projects into or out of the project",
+    ),
+    (
+        "permission.see-projects",
+        "See the project and what is in it",
+    ),
+    ("permission.see-status", "See how the server is doing"),
     (
         "sample.done",
         "Made the sample organization with {people} people from seed {seed}. Data folder: {folder}. How to sign in as them: {file}",
@@ -2987,6 +3247,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "sample.error.layout",
         "The file tools/dev/sample.json is not usable: {reason}",
+    ),
+    (
+        "sample.error.link-missing",
+        "The answer to an invitation does not say where to open it.",
     ),
     (
         "sample.error.log-broken",
@@ -3059,6 +3323,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("sample.step.password-hasher", "making the password hasher"),
     ("sample.step.setup-code", "using the setup code"),
     ("sample.step.signing-out", "signing out"),
+    ("sample.step.starting-roles", "making the starting roles"),
     ("save.not-saved", "Not saved yet"),
     ("save.saved", "Saved"),
     ("save.saving", "Saving…"),
@@ -3306,10 +3571,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "How many minutes without activity pass before people are signed out automatically. Between 5 minutes and 24 hours.",
     ),
     (
-        "setting.security.two-step-required-roles.help",
-        "The roles whose members must use two-step sign-in, as a list separated by commas. Roles arrive in a later version; until then this has no effect.",
-    ),
-    (
         "setting.security.two-step-required.help",
         "Ask everyone to use two-step sign-in. People who have not set it up are asked to do so the next time they sign in.",
     ),
@@ -3469,6 +3730,12 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("sign-up.have-account", "I already have an account"),
     ("sign-up.submit", "Make my account"),
     ("sign-up.title", "Make an account"),
+    ("starting-role.administrator", "Administrator"),
+    ("starting-role.contributor", "Contributor"),
+    ("starting-role.guest", "Guest"),
+    ("starting-role.project-lead", "Project lead"),
+    ("starting-role.team-member", "Team member"),
+    ("starting-role.viewer", "Viewer"),
     ("status.certificate", "HTTPS certificate"),
     (
         "status.certificate.expired",

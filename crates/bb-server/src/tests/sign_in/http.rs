@@ -300,7 +300,10 @@ async fn sec_12_signing_in_sets_the_session_cookie_and_the_csrf_cookie() -> Outc
             .await?;
         assert_eq!(reply.status, StatusCode::OK);
         assert_eq!(reply.body["person"]["email"], "ada@example.test");
-        assert_eq!(reply.body["person"]["administrator"], true);
+        assert!(
+            reply.body["person"].get("administrator").is_none(),
+            "the flag is gone"
+        );
         assert_eq!(reply.body["second_step"], Value::Null);
         assert_eq!(reply.header("cache-control"), "no-store");
         let cookies = reply.cookies();

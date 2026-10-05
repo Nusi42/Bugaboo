@@ -2,7 +2,15 @@
 
 #![forbid(unsafe_code)]
 
+pub mod access;
 pub mod auth;
 pub mod context;
+pub mod people;
 pub mod ports;
+pub mod projects;
+pub mod roles;
 pub mod status;
+mod store_macros;
+
+#[cfg(test)]
+mod tests;

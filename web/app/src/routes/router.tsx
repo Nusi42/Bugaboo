@@ -14,7 +14,6 @@ import {
 } from "./app-pages.tsx";
 import { invitationRoute, signUpRoute } from "./guest-pages.tsx";
 import {
-  adminRoute,
   appRoute,
   guestRoute,
   mySettingsRoute,
@@ -36,12 +35,10 @@ const routeTree = rootRoute.addChildren([
       securityRoute,
       sessionsRoute,
     ]),
-    adminRoute.addChildren([
-      organizationSettingsRoute.addChildren([
-        organizationSettingsIndexRoute,
-        invitationsRoute,
-        statusRoute,
-      ]),
+    organizationSettingsRoute.addChildren([
+      organizationSettingsIndexRoute,
+      invitationsRoute,
+      statusRoute,
     ]),
   ]),
 ]);

@@ -161,10 +161,14 @@ async fn every_sample_change_has_its_event_and_the_security_log_verifies() -> Te
         assert_eq!(count(SecurityAction::InvitationCreated), PEOPLE - 1);
         assert_eq!(count(SecurityAction::InvitationAccepted), PEOPLE - 1);
         assert_eq!(count(SecurityAction::TwoStepEnabled), 5);
+        assert_eq!(count(SecurityAction::StartingRolesMade), 1);
         assert_eq!(
-            dump.security_log_actions().next(),
-            Some(SecurityAction::SetupCompleted.code()),
-            "the first administrator comes first"
+            dump.security_log_actions().take(2).collect::<Vec<_>>(),
+            [
+                SecurityAction::StartingRolesMade.code(),
+                SecurityAction::SetupCompleted.code(),
+            ],
+            "the starting roles, then the first administrator, come first"
         );
         Ok(())
     })

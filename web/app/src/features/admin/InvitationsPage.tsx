@@ -1,6 +1,7 @@
 import { t } from "@bugaboo/messages";
 import { Card } from "@bugaboo/ui";
 
+import { usePermissions } from "../../shared/use-me.ts";
 import { usePageTitle } from "../../shared/use-page.ts";
 import styles from "./Admin.module.css";
 import { CreateInvitation } from "./CreateInvitation.tsx";
@@ -10,6 +11,7 @@ import { SignUpPolicySection } from "./SignUpPolicySection.tsx";
 /** The invitations page: make an invitation, see the open ones, and decide who may sign up alone. */
 export function InvitationsPage() {
   usePageTitle(t("invitations.title"));
+  const permissions = usePermissions();
   return (
     <div className={styles.stack}>
       <Card heading={t("invitations.title")} level={1}>
@@ -19,7 +21,7 @@ export function InvitationsPage() {
       <Card heading={t("invitations.open")}>
         <OpenInvitations />
       </Card>
-      <SignUpPolicySection />
+      {permissions.includes("change-organization-settings") ? <SignUpPolicySection /> : null}
     </div>
   );
 }

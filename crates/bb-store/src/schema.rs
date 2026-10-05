@@ -115,6 +115,12 @@ pub(crate) enum PersonRow {
     DisplayName,
     Email,
     CreatedAt,
+}
+
+/// Columns that an earlier migration made and a later one took away. Old migrations keep their
+/// text (a changed migration is refused), so the name stays here; no entity stands behind it.
+#[derive(Clone, Copy, Iden)]
+pub(crate) enum Retired {
     Administrator,
 }
 
@@ -187,6 +193,123 @@ pub(crate) enum SetupCodeRow {
     Table,
     CodeHash,
     CreatedAt,
+}
+
+/// Projects (PRJ-01): the tree that roles are given on.
+#[derive(Clone, Copy, Iden)]
+pub(crate) enum ProjectRow {
+    #[iden = "project"]
+    Table,
+    Id,
+    Parent,
+    ShortName,
+    Name,
+    Version,
+}
+
+/// Groups of people. The table is called `person_group`: `group` is a word of SQL.
+#[derive(Clone, Copy, Iden)]
+pub(crate) enum GroupRow {
+    #[iden = "person_group"]
+    Table,
+    Id,
+    Name,
+}
+
+#[derive(Clone, Copy, Iden)]
+pub(crate) enum GroupMemberRow {
+    #[iden = "group_member"]
+    Table,
+    Group,
+    Person,
+    AddedAt,
+}
+
+#[derive(Clone, Copy, Iden)]
+pub(crate) enum RoleRow {
+    #[iden = "role"]
+    Table,
+    Id,
+    Name,
+    Starting,
+    Position,
+    TwoStep,
+}
+
+#[derive(Clone, Copy, Iden)]
+pub(crate) enum RolePermissionRow {
+    #[iden = "role_permission"]
+    Table,
+    Role,
+    Permission,
+}
+
+/// *Who has which role*: a person or a group, a role or *No access* (no role), and where it counts.
+#[derive(Clone, Copy, Iden)]
+pub(crate) enum AssignmentRow {
+    #[iden = "assignment"]
+    Table,
+    Id,
+    Person,
+    Group,
+    Role,
+    Project,
+    AppliesTo,
+    GivenAt,
+}
+
+#[derive(Clone, Copy, Iden)]
+pub(crate) enum RoleFieldLevelRow {
+    #[iden = "role_field_level"]
+    Table,
+    Role,
+    Field,
+    Level,
+}
+
+#[derive(Clone, Copy, Iden)]
+pub(crate) enum ProjectFieldLevelRow {
+    #[iden = "project_field_level"]
+    Table,
+    Project,
+    Role,
+    Field,
+    Level,
+}
+
+#[derive(Clone, Copy, Iden)]
+pub(crate) enum RolePeopleLevelRow {
+    #[iden = "role_people_level"]
+    Table,
+    Role,
+    Kind,
+    Level,
+}
+
+#[derive(Clone, Copy, Iden)]
+pub(crate) enum ProjectPeopleLevelRow {
+    #[iden = "project_people_level"]
+    Table,
+    Project,
+    Role,
+    Kind,
+    Level,
+}
+
+/// The people who were administrators in M1, until the first start gives them the role.
+#[derive(Clone, Copy, Iden)]
+pub(crate) enum LegacyAdministratorRow {
+    #[iden = "legacy_administrator"]
+    Table,
+    Person,
+}
+
+/// One row, once the starting roles were made.
+#[derive(Clone, Copy, Iden)]
+pub(crate) enum StartingRolesMadeRow {
+    #[iden = "starting_roles_made"]
+    Table,
+    MadeAt,
 }
 
 #[derive(Clone, Copy, Iden)]
@@ -317,7 +440,6 @@ stored_tables! {
         DisplayName => display_name,
         Email => email,
         CreatedAt => created_at,
-        Administrator => administrator,
     },
     PasswordLogin => bb_core::sign_in::PasswordLogin {
         Person => person,
@@ -366,6 +488,70 @@ stored_tables! {
     SetupCodeRow => bb_core::sign_in::SetupCode {
         CodeHash => code_hash,
         CreatedAt => created_at,
+    },
+    ProjectRow => bb_core::project::Project {
+        Id => id,
+        Parent => parent,
+        ShortName => short_name,
+        Name => name,
+        Version => version,
+    },
+    GroupRow => bb_core::access::Group {
+        Id => id,
+        Name => name,
+    },
+    GroupMemberRow => bb_core::access::GroupMember {
+        Group => group,
+        Person => person,
+        AddedAt => added_at,
+    },
+    RoleRow => bb_core::access::Role {
+        Id => id,
+        Name => name,
+        Starting => starting,
+        Position => position,
+        TwoStep => two_step,
+    },
+    RolePermissionRow => bb_core::access::RolePermission {
+        Role => role,
+        Permission => permission,
+    },
+    AssignmentRow => bb_core::access::Assignment {
+        Id => id,
+        Person => person,
+        Group => group,
+        Role => role,
+        Project => project,
+        AppliesTo => applies_to,
+        GivenAt => given_at,
+    },
+    RoleFieldLevelRow => bb_core::access::RoleFieldLevel {
+        Role => role,
+        Field => field,
+        Level => level,
+    },
+    ProjectFieldLevelRow => bb_core::access::ProjectFieldLevel {
+        Project => project,
+        Role => role,
+        Field => field,
+        Level => level,
+    },
+    RolePeopleLevelRow => bb_core::access::RolePeopleLevel {
+        Role => role,
+        Kind => kind,
+        Level => level,
+    },
+    ProjectPeopleLevelRow => bb_core::access::ProjectPeopleLevel {
+        Project => project,
+        Role => role,
+        Kind => kind,
+        Level => level,
+    },
+    LegacyAdministratorRow => bb_core::access::LegacyAdministrator {
+        Person => person,
+    },
+    StartingRolesMadeRow => bb_core::access::StartingRolesMade {
+        MadeAt => made_at,
     },
     SettingRow => bb_core::settings::StoredSetting {
         Key => key,

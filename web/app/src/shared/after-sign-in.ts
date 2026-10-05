@@ -2,7 +2,7 @@ import type { Schema } from "@bugaboo/api-client";
 import { useNavigate } from "@tanstack/react-router";
 
 import { paths } from "./paths.ts";
-import { rememberPerson } from "./session.ts";
+import { forgetPerson } from "./session.ts";
 
 /** What the server answers when somebody signed in or made an account. */
 export type SignedIn = Schema<"SignedInBody">;
@@ -24,7 +24,7 @@ export function useAfterSignIn(): (answer: SignedIn) => void {
       return;
     }
     if (answer.person !== null && answer.person !== undefined) {
-      rememberPerson(answer.person);
+      forgetPerson();
       void navigate({ to: paths.home });
     }
   };

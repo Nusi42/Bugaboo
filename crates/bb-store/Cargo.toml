@@ -6,9 +6,16 @@ edition.workspace = true
 rust-version.workspace = true
 publish.workspace = true
 
+[features]
+# Test hooks that must not be in the program: `Database::migrate_up_to` (an older database) and
+# `Database::rename_table_for_tests` (a store that fails half way). Only `[dev-dependencies]` switch
+# it on, as for `fake-ids` of `bb-core` (M1-F56).
+testing = []
+
 [dependencies]
 bb-app = { path = "../bb-app" }
 bb-core = { path = "../bb-core" }
+bb-policy = { path = "../bb-policy" }
 chacha20poly1305 = { workspace = true }
 getrandom = { workspace = true }
 hmac = { workspace = true }

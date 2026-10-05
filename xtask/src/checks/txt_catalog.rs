@@ -14,7 +14,7 @@ use super::{Check, Context, Finding};
 use crate::generate::icu::{Placeholders, placeholders};
 use crate::generate::messages::{SOURCE_LOCALE_PATH, parse_pairs};
 use crate::generate::messages_rust::{constant_name, function_name};
-use crate::rust_source::before_tests;
+use crate::rust_source::without_tests;
 
 const MESSAGES_FOLDER: &str = "messages";
 
@@ -271,7 +271,7 @@ fn called_keys(code: &str) -> Vec<String> {
 /// The Rust code that ships: without the unit tests at the end of the file and without comment
 /// lines, so a key that only a test or a comment mentions still counts as unused.
 fn product_code(text: &str) -> String {
-    before_tests(text)
+    without_tests(text)
         .lines()
         .filter(|line| !line.trim_start().starts_with("//"))
         .collect::<Vec<_>>()

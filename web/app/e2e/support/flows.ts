@@ -40,6 +40,26 @@ export async function signIn(page: Page, person: Person): Promise<void> {
   await expectHome(page, person);
 }
 
+/**
+ * Makes the app see the person with only these permissions for the whole organization, whatever
+ * they hold (there are no screens yet to give a person a role). The server is not changed.
+ */
+export async function holdOnly(page: Page, permissions: readonly string[]): Promise<void> {
+  await page.route("**/api/v1/auth/me", async (route) => {
+    const answer = await route.fetch();
+    // Nobody is signed in yet: the answer is the server's own.
+    if (!answer.ok()) {
+      await route.fulfill({ response: answer });
+      return;
+    }
+    const body: unknown = await answer.json();
+    if (typeof body !== "object" || body === null) {
+      throw new Error("the answer about the person is not an object");
+    }
+    await route.fulfill({ response: answer, json: { ...body, permissions } });
+  });
+}
+
 /** Opens what holds the menu when the screen has no sidebar: *Menu* on a tablet, *More* on a phone. */
 export async function openMenu(page: Page): Promise<void> {
   const layout = layoutOf(page);

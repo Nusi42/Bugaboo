@@ -9,7 +9,7 @@
     "/api/v1/admin/status": {
       "get": {
         "tags": ["admin"],
-        "summary": "How the server is doing: version, uptime, database, certificate and the check of the security\nlog. Administrators only.",
+        "summary": "How the server is doing: version, uptime, database, certificate and the check of the security\nlog. Needs the permission *See how the server is doing*.",
         "operationId": "getServerStatus",
         "responses": {
           "200": {
@@ -100,7 +100,8 @@
             }
           }
         },
-        "x-never-stored": true
+        "x-never-stored": true,
+        "x-permission": "see-status"
       }
     },
     "/api/v1/auth/invitation/accept": {
@@ -177,7 +178,8 @@
               }
             }
           }
-        }
+        },
+        "x-permission": "public"
       }
     },
     "/api/v1/auth/invitation/lookup": {
@@ -254,13 +256,14 @@
               }
             }
           }
-        }
+        },
+        "x-permission": "public"
       }
     },
     "/api/v1/auth/invitations": {
       "get": {
         "tags": ["auth"],
-        "summary": "The open invitations, a page at a time. Administrators only.",
+        "summary": "The open invitations, a page at a time. Needs the permission *Invite people*.",
         "operationId": "listInvitations",
         "parameters": [
           {
@@ -382,11 +385,12 @@
             }
           }
         },
-        "x-never-stored": true
+        "x-never-stored": true,
+        "x-permission": "manage-invitations"
       },
       "post": {
         "tags": ["auth"],
-        "summary": "Makes an invitation. The link is shown once. Administrators only.",
+        "summary": "Makes an invitation. The link is shown once. Needs the permission *Invite people*.",
         "operationId": "createInvitation",
         "requestBody": {
           "content": {
@@ -477,13 +481,14 @@
               }
             }
           }
-        }
+        },
+        "x-permission": "manage-invitations"
       }
     },
     "/api/v1/auth/invitations/{invitation_id}": {
       "delete": {
         "tags": ["auth"],
-        "summary": "Takes an invitation back. Administrators only.",
+        "summary": "Takes an invitation back. Needs the permission *Invite people*.",
         "operationId": "revokeInvitation",
         "parameters": [
           {
@@ -568,7 +573,8 @@
               }
             }
           }
-        }
+        },
+        "x-permission": "manage-invitations"
       }
     },
     "/api/v1/auth/me": {
@@ -578,7 +584,7 @@
         "operationId": "getMe",
         "responses": {
           "200": {
-            "description": "The signed-in person.",
+            "description": "The signed-in person and what they may do for the whole organization.",
             "headers": {
               "etag": {
                 "schema": {
@@ -590,7 +596,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PersonBody"
+                  "$ref": "#/components/schemas/MeBody"
                 }
               }
             }
@@ -655,7 +661,8 @@
             }
           }
         },
-        "x-never-stored": true
+        "x-never-stored": true,
+        "x-permission": "signed-in"
       }
     },
     "/api/v1/auth/passkey/sign-in": {
@@ -732,7 +739,8 @@
               }
             }
           }
-        }
+        },
+        "x-permission": "public"
       }
     },
     "/api/v1/auth/passkey/sign-in/options": {
@@ -789,7 +797,8 @@
               }
             }
           }
-        }
+        },
+        "x-permission": "public"
       }
     },
     "/api/v1/auth/passkeys": {
@@ -886,7 +895,8 @@
               }
             }
           }
-        }
+        },
+        "x-permission": "own-account"
       }
     },
     "/api/v1/auth/passkeys/options": {
@@ -973,7 +983,8 @@
               }
             }
           }
-        }
+        },
+        "x-permission": "own-account"
       }
     },
     "/api/v1/auth/passkeys/{passkey_id}/remove": {
@@ -1074,7 +1085,8 @@
               }
             }
           }
-        }
+        },
+        "x-permission": "own-account"
       }
     },
     "/api/v1/auth/password": {
@@ -1171,7 +1183,8 @@
               }
             }
           }
-        }
+        },
+        "x-permission": "own-account"
       }
     },
     "/api/v1/auth/second-step": {
@@ -1258,7 +1271,8 @@
               }
             }
           }
-        }
+        },
+        "x-permission": "own-account"
       }
     },
     "/api/v1/auth/second-step/passkey": {
@@ -1355,7 +1369,8 @@
               }
             }
           }
-        }
+        },
+        "x-permission": "own-account"
       }
     },
     "/api/v1/auth/second-step/passkey/options": {
@@ -1432,7 +1447,8 @@
               }
             }
           }
-        }
+        },
+        "x-permission": "own-account"
       }
     },
     "/api/v1/auth/sessions": {
@@ -1519,7 +1535,8 @@
             }
           }
         },
-        "x-never-stored": true
+        "x-never-stored": true,
+        "x-permission": "own-account"
       },
       "delete": {
         "tags": ["auth"],
@@ -1587,7 +1604,8 @@
               }
             }
           }
-        }
+        },
+        "x-permission": "own-account"
       }
     },
     "/api/v1/auth/sessions/{session_id}": {
@@ -1678,7 +1696,8 @@
               }
             }
           }
-        }
+        },
+        "x-permission": "own-account"
       }
     },
     "/api/v1/auth/setup": {
@@ -1765,7 +1784,8 @@
               }
             }
           }
-        }
+        },
+        "x-permission": "public"
       }
     },
     "/api/v1/auth/sign-in": {
@@ -1852,7 +1872,8 @@
               }
             }
           }
-        }
+        },
+        "x-permission": "public"
       }
     },
     "/api/v1/auth/sign-out": {
@@ -1922,7 +1943,8 @@
               }
             }
           }
-        }
+        },
+        "x-permission": "signed-in"
       }
     },
     "/api/v1/auth/sign-up": {
@@ -2009,13 +2031,14 @@
               }
             }
           }
-        }
+        },
+        "x-permission": "public"
       }
     },
     "/api/v1/auth/sign-up-policy": {
       "get": {
         "tags": ["auth"],
-        "summary": "Who may sign up on their own. Administrators only.",
+        "summary": "Who may sign up on their own. Needs the permission *Change organization settings*.",
         "operationId": "getSignUpPolicy",
         "responses": {
           "200": {
@@ -2105,11 +2128,12 @@
               }
             }
           }
-        }
+        },
+        "x-permission": "change-organization-settings"
       },
       "put": {
         "tags": ["auth"],
-        "summary": "Changes who may sign up on their own. Administrators only.",
+        "summary": "Changes who may sign up on their own. Needs the permission *Change organization settings*.",
         "operationId": "changeSignUpPolicy",
         "requestBody": {
           "content": {
@@ -2200,7 +2224,8 @@
               }
             }
           }
-        }
+        },
+        "x-permission": "change-organization-settings"
       }
     },
     "/api/v1/auth/status": {
@@ -2276,7 +2301,8 @@
               }
             }
           }
-        }
+        },
+        "x-permission": "public"
       }
     },
     "/api/v1/auth/two-step": {
@@ -2363,7 +2389,8 @@
             }
           }
         },
-        "x-never-stored": true
+        "x-never-stored": true,
+        "x-permission": "own-account"
       }
     },
     "/api/v1/auth/two-step/backup-codes": {
@@ -2460,7 +2487,8 @@
               }
             }
           }
-        }
+        },
+        "x-permission": "own-account"
       }
     },
     "/api/v1/auth/two-step/code-app": {
@@ -2557,7 +2585,8 @@
               }
             }
           }
-        }
+        },
+        "x-permission": "own-account"
       }
     },
     "/api/v1/auth/two-step/code-app/confirm": {
@@ -2654,7 +2683,8 @@
               }
             }
           }
-        }
+        },
+        "x-permission": "own-account"
       }
     },
     "/api/v1/auth/two-step/code-app/remove": {
@@ -2734,7 +2764,8 @@
               }
             }
           }
-        }
+        },
+        "x-permission": "own-account"
       }
     },
     "/api/v1/openapi.json": {
@@ -2810,7 +2841,8 @@
               }
             }
           }
-        }
+        },
+        "x-permission": "public"
       }
     },
     "/api/v1/status": {
@@ -2886,7 +2918,8 @@
               }
             }
           }
-        }
+        },
+        "x-permission": "public"
       }
     }
   },
@@ -3124,6 +3157,10 @@
           "auth.passkey_rejected",
           "auth.not_signed_in",
           "access.forbidden",
+          "access.would_lock_out",
+          "access.too_much",
+          "assignment.conflict",
+          "name.taken",
           "resource.not_found",
           "request.invalid",
           "request.unknown_field",
@@ -3224,9 +3261,35 @@
         "description": "The result of checking the security log.",
         "enum": ["valid", "broken", "unreadable"]
       },
+      "MeBody": {
+        "type": "object",
+        "description": "Who is signed in, and what they may do for the whole organization (the menus of the browser app\nfollow it; the server decides again at every request).",
+        "required": ["id", "display_name", "email", "permissions"],
+        "properties": {
+          "display_name": {
+            "type": "string",
+            "description": "The name others see."
+          },
+          "email": {
+            "type": "string",
+            "description": "The e-mail address used to sign in."
+          },
+          "id": {
+            "type": "string",
+            "description": "The ID of the person."
+          },
+          "permissions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Permission"
+            },
+            "description": "What the person may do for the whole organization."
+          }
+        }
+      },
       "Page_InvitationItem": {
         "type": "object",
-        "description": "One page of a list. `T` is the view of an item for the API description; an answer holds the\nitems cut to the chosen fields ([`Page::of`]).",
+        "description": "One page of a list. `T` is the view of an item for the API description; an answer holds the\nitems cut to the chosen fields ([`Page::of_authorized`]).",
         "required": ["items", "next_cursor"],
         "properties": {
           "items": {
@@ -3325,15 +3388,31 @@
           }
         }
       },
+      "Permission": {
+        "type": "string",
+        "description": "One permission of the catalogue.",
+        "enum": [
+          "see-projects",
+          "make-projects",
+          "make-sub-projects",
+          "move-projects",
+          "change-project-settings",
+          "decide-roles",
+          "decide-what-roles-see",
+          "check-access",
+          "manage-people",
+          "manage-invitations",
+          "manage-groups",
+          "manage-roles",
+          "change-organization-settings",
+          "see-status"
+        ]
+      },
       "PersonBody": {
         "type": "object",
         "description": "Who a person is, as the browser app shows them.",
-        "required": ["id", "display_name", "email", "administrator"],
+        "required": ["id", "display_name", "email"],
         "properties": {
-          "administrator": {
-            "type": "boolean",
-            "description": "Whether the person is an administrator."
-          },
           "display_name": {
             "type": "string",
             "description": "The name others see."

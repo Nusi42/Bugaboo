@@ -63,7 +63,7 @@ flowchart TB
   sample["bb-sample<br/>sample organization"]
 
   server --> api & jobs & store & files & ai & notify & auth & app & core
-  api --> app & auth & mcp & core
+  api --> app & auth & mcp & core & policy
   mcp --> app & ai
   jobs --> app
   app --> policy & core & search & md & auth

@@ -13,6 +13,8 @@ use crate::roster::PEOPLE;
 pub enum Step {
     /// Making the password hasher.
     PasswordHasher,
+    /// Making the starting roles.
+    StartingRoles,
     /// Using the setup code.
     SetupCode,
     /// Making the first administrator.
@@ -33,6 +35,7 @@ impl Step {
     fn message(self) -> Message {
         Message::from(match self {
             Self::PasswordHasher => message::SAMPLE_STEP_PASSWORD_HASHER,
+            Self::StartingRoles => message::SAMPLE_STEP_STARTING_ROLES,
             Self::SetupCode => message::SAMPLE_STEP_SETUP_CODE,
             Self::FirstAdministrator => message::SAMPLE_STEP_FIRST_ADMINISTRATOR,
             Self::Invitation => message::SAMPLE_STEP_INVITATION,
@@ -81,6 +84,8 @@ pub enum SampleError {
     SecretNotStored,
     /// A person of the plan has no account after the plan was carried out.
     PersonMissing,
+    /// The answer to an invitation has no link in it.
+    LinkMissing,
     /// Nothing vouches for the end of the security log.
     LogNotAnchored,
     /// The security log of the finished sample does not verify.
@@ -121,6 +126,7 @@ impl SampleError {
             Self::SetupClosed => plain(message::SAMPLE_ERROR_SETUP_CLOSED),
             Self::SecretNotStored => plain(message::SAMPLE_ERROR_SECRET_NOT_STORED),
             Self::PersonMissing => plain(message::SAMPLE_ERROR_PERSON_MISSING),
+            Self::LinkMissing => plain(message::SAMPLE_ERROR_LINK_MISSING),
             Self::LogNotAnchored => plain(message::SAMPLE_ERROR_LOG_NOT_ANCHORED),
             Self::LogBroken { seq, reason } => message::sample_error_log_broken(reason, seq),
             Self::Start(start) => message::sample_error_start(start),

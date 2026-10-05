@@ -2,7 +2,7 @@
 //! "Performance").
 //!
 //! A list route takes [`ListParams`], chooses its fields with [`ListParams::fields`], answers
-//! one [`Page`] made by [`Page::of`], and names itself (the *list*) so its cursors are its own.
+//! one [`Page`] made by [`Page::of_authorized`], and names itself (the *list*) so its cursors are its own.
 //! The route only says which fields exist, which are the default and where a page ends; this file,
 //! `paging.rs` and `seal.rs` do the rest. ARCH-LEAN checks the API description of every list.
 //!
@@ -13,6 +13,7 @@
 
 use bb_core::ErrorCode;
 use bb_core::paging::{PAGE_SIZE_DEFAULT, PAGE_SIZE_MAX};
+use bb_policy::{Authorized, Masked, mask_member};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use utoipa::openapi::path::{Parameter, ParameterBuilder, ParameterIn};
@@ -99,12 +100,23 @@ impl IntoParams for ListParams {
 }
 
 impl ListParams {
-    /// The fields to answer with, out of the fields the person may ask for.
+    /// The fields to answer with, out of the fields the person may ask for: the names in `hidden`
+    /// (fields the mask of the person hides) are left out of the table first, so asking for one
+    /// fails exactly like asking for a field that does not exist (SEC-06).
     ///
     /// # Errors
-    /// `request.unknown_field` for a name that is not in `fields`.
-    pub(crate) fn fields(&self, fields: &[FieldSpec]) -> Result<Fields, ApiError> {
-        Fields::choose(self.fields.as_deref(), fields)
+    /// `request.unknown_field` for a name that is not in `fields`, or is hidden.
+    pub(crate) fn fields_readable(
+        &self,
+        fields: &[FieldSpec],
+        hidden: &[&str],
+    ) -> Result<Fields, ApiError> {
+        let readable: Vec<FieldSpec> = fields
+            .iter()
+            .filter(|field| !hidden.contains(&field.name))
+            .copied()
+            .collect();
+        Fields::choose(self.fields.as_deref(), &readable)
     }
 
     /// Where the page starts, if the request named a cursor. `list` names the list, so a cursor
@@ -179,7 +191,7 @@ impl Fields {
 }
 
 /// One page of a list. `T` is the view of an item for the API description; an answer holds the
-/// items cut to the chosen fields ([`Page::of`]).
+/// items cut to the chosen fields ([`Page::of_authorized`]).
 #[derive(Serialize, ToSchema)]
 pub(crate) struct Page<T> {
     /// The items of this page.
@@ -190,26 +202,51 @@ pub(crate) struct Page<T> {
 }
 
 impl Page<Value> {
-    /// The answer for `views`, cut to `fields`. `next` is where the page ends, as the use case
-    /// says it (`None` on the last page); it is sealed for `list`.
+    /// The answer for views that came out of a use case as `Authorized`: the hidden fields are left
+    /// out first, then the items are cut to the chosen fields.
     ///
     /// # Errors
-    /// An internal error when a view is not an object or the cursor cannot be sealed.
-    pub(crate) fn of<V: Serialize>(
+    /// An internal error when the views do not serialize to a list of objects or the cursor cannot
+    /// be sealed.
+    pub(crate) fn of_authorized<V: Masked + Serialize>(
         list: &str,
-        views: &[V],
+        views: &Authorized<Listed<V>>,
         fields: &Fields,
-        next: Option<&str>,
     ) -> Result<Self, ApiError> {
+        let masked = views
+            .masked_value()
+            .map_err(|error| ApiError::internal(&error))?;
+        let Some(Value::Array(items)) = masked.get("items") else {
+            return Err(ApiError::internal(&"the views are not a list"));
+        };
+        let next = masked.get("next").and_then(Value::as_str);
         Ok(Self {
-            items: views
+            items: items
                 .iter()
-                .map(|view| fields.project(view))
+                .map(|item| fields.project(item))
                 .collect::<Result<_, _>>()?,
             next_cursor: next
                 .map(|position| paging::seal(list, position))
                 .transpose()?,
         })
+    }
+}
+
+/// The items of a page as a use case gave them, before they are cut to the fields asked for and the
+/// position is sealed: what `Authorized` wraps, so the mask reaches the items.
+#[derive(Serialize)]
+pub(crate) struct Listed<V> {
+    pub(crate) items: Vec<V>,
+    pub(crate) next: Option<String>,
+}
+
+impl<V: Masked> Masked for Listed<V> {
+    fn mask(value: &mut Value, mask: &bb_policy::FieldMask) {
+        mask_member::<Vec<V>>(value, "items", mask);
+    }
+
+    fn hidden_properties(mask: &bb_policy::FieldMask) -> Vec<&'static str> {
+        V::hidden_properties(mask)
     }
 }
 
@@ -246,6 +283,13 @@ mod tests {
     use serde_json::json;
     use tower::ServiceExt as _;
 
+    use bb_core::access::{AppliesTo, FieldLevel};
+    use bb_core::fields::Field;
+    use bb_core::id::{AssignmentId, ProjectId, RoleId, SequentialIds, UserId};
+    use bb_policy::{
+        Evaluation, FieldRule, Inputs, Place, RoleData, Row as PolicyRow, Who, evaluate,
+    };
+
     use super::*;
     use crate::errors::ApiQuery;
 
@@ -277,26 +321,75 @@ mod tests {
             .collect()
     }
 
-    /// A list route made of the helpers only. `hidden` plays a field the person may not read.
-    fn list(hidden: Option<&'static str>, params: &ListParams) -> Result<Response, ApiError> {
-        let allowed: Vec<FieldSpec> = FIELDS
-            .iter()
-            .copied()
-            .filter(|field| Some(field.name) != hidden)
-            .collect();
-        let fields = params.fields(&allowed)?;
+    impl Masked for Row {
+        const FIELDS: &'static [(&'static str, Field)] = &[
+            ("title", Field::Title),
+            ("status", Field::Status),
+            ("cost_center", Field::CostCenter),
+        ];
+    }
+
+    /// What the person who asks may do: a role that changes every field of the catalogue except
+    /// the one that is hidden from them. The mask is the engine's, not a list made up here.
+    fn viewer(hidden: Option<Field>) -> Evaluation {
+        let mut ids = SequentialIds::default();
+        let person = UserId::generate(&mut ids);
+        let role = RoleId::generate(&mut ids).unwrap();
+        let project = ProjectId::generate(&mut ids).unwrap();
+        evaluate(&Inputs {
+            person,
+            place: Place::Project(project),
+            chain: vec![project],
+            rows: vec![PolicyRow {
+                id: AssignmentId::generate(&mut ids).unwrap(),
+                who: Who::Person,
+                role: Some(role),
+                project: Some(project),
+                applies_to: AppliesTo::ProjectAndSubProjects,
+            }],
+            roles: vec![RoleData {
+                id: role,
+                name: "Role".to_owned(),
+                position: 0,
+                permissions: std::collections::BTreeSet::new(),
+                two_step: false,
+            }],
+            field_rules: Field::ALL
+                .iter()
+                .map(|field| FieldRule {
+                    project: None,
+                    role,
+                    field: *field,
+                    level: if Some(*field) == hidden {
+                        FieldLevel::Hidden
+                    } else {
+                        FieldLevel::CanChange
+                    },
+                })
+                .collect(),
+            people_rules: Vec::new(),
+        })
+    }
+
+    /// A list route made of the helpers only. `hidden` is a field the mask of the person hides.
+    fn list(hidden: Option<Field>, params: &ListParams) -> Result<Response, ApiError> {
         let after = params.position(LIST)?;
         let limit = params.limit() as usize;
         let start = after.map_or(0, |position| position.parse::<usize>().unwrap_or(0) + 1);
-        let page: Vec<Row> = rows().into_iter().skip(start).take(limit + 1).collect();
+        let mut page: Vec<Row> = rows().into_iter().skip(start).take(limit + 1).collect();
         let more = page.len() > limit;
         let end = (start + limit - 1).to_string();
-        let shown = &page[..page.len().min(limit)];
-        let page = Page::of(LIST, shown, &fields, more.then_some(end.as_str()))?;
+        page.truncate(limit);
+        let list = viewer(hidden).authorize(Listed {
+            items: page,
+            next: more.then_some(end),
+        });
+        let fields = params.fields_readable(&FIELDS, &list.hidden_properties())?;
+        let page = Page::of_authorized(LIST, &list, &fields)?;
         Ok(axum::Json(page).into_response())
     }
 
-    fn app(hidden: Option<&'static str>) -> Router {
+    fn app(hidden: Option<Field>) -> Router {
         Router::new().route(
             "/list",
             get(move |ApiQuery(params): ApiQuery<ListParams>| async move { list(hidden, &params) }),
@@ -332,15 +425,16 @@ mod tests {
     #[tokio::test]
     async fn perf_02_a_list_refuses_an_unknown_field_like_a_hidden_one() {
         // `salary` does not exist; `cost_center` exists but is hidden from this person.
-        let (unknown_status, unknown) = ask(app(Some("cost_center")), "fields=id,salary").await;
-        let (hidden_status, hidden) = ask(app(Some("cost_center")), "fields=id,cost_center").await;
+        let (unknown_status, unknown) = ask(app(Some(Field::CostCenter)), "fields=id,salary").await;
+        let (hidden_status, hidden) =
+            ask(app(Some(Field::CostCenter)), "fields=id,cost_center").await;
         assert_eq!(unknown_status, StatusCode::BAD_REQUEST);
         assert_eq!(hidden_status, unknown_status);
         assert_eq!(unknown["code"], "request.unknown_field");
         // Same code, same message, same everything: nothing tells the two apart.
         assert_eq!(hidden, unknown);
         // Left out, a hidden default is simply not there.
-        let (_, body) = ask(app(Some("title")), "limit=1").await;
+        let (_, body) = ask(app(Some(Field::Title)), "limit=1").await;
         assert_eq!(body["items"][0], json!({"id": "r0"}));
     }
 

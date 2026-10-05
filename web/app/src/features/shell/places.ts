@@ -2,6 +2,7 @@ import type { MessageKey } from "@bugaboo/messages";
 import { iconName, type IconName } from "@bugaboo/ui";
 
 import { paths } from "../../shared/paths.ts";
+import type { PermissionKey, Permissions } from "../../shared/permissions.ts";
 
 type Path = (typeof paths)[keyof typeof paths];
 
@@ -16,8 +17,8 @@ export interface Place {
   readonly icon: IconName;
   /** The screen this one belongs under: *Back* on a phone goes there. `null` for the start page. */
   readonly parent: Path | null;
-  /** Only administrators see it. */
-  readonly administrator?: boolean;
+  /** Only people who hold one of these permissions for the whole organization see it. */
+  readonly anyOf?: readonly PermissionKey[];
   /** For a topic of a settings frame: the heading it is listed under in the left menu. */
   readonly group?: MessageKey;
   /** Whether menus and quick search list it. A screen reached only from another one is not. */
@@ -70,7 +71,7 @@ export const places: readonly Place[] = [
     name: "nav.organization-settings",
     icon: iconName.organization,
     parent: paths.home,
-    administrator: true,
+    anyOf: ["manage-invitations", "see-status", "change-organization-settings"],
     listed: true,
   },
   {
@@ -78,7 +79,7 @@ export const places: readonly Place[] = [
     name: "nav.invitations",
     icon: iconName.invitations,
     parent: paths.organizationSettings,
-    administrator: true,
+    anyOf: ["manage-invitations", "change-organization-settings"],
     group: "nav.group.people",
     listed: true,
   },
@@ -87,7 +88,7 @@ export const places: readonly Place[] = [
     name: "nav.status",
     icon: iconName.status,
     parent: paths.organizationSettings,
-    administrator: true,
+    anyOf: ["see-status"],
     group: "nav.group.system",
     listed: true,
   },
@@ -105,9 +106,16 @@ export function placeAt(path: string): Place | undefined {
   return places.find((place) => place.path === path);
 }
 
-/** The screens a person may open: administrators' screens only for administrators. */
-export function placesFor(administrator: boolean): readonly Place[] {
-  return places.filter((place) => administrator || place.administrator !== true);
+/** The screens a person may open: those that ask for a permission only for people who hold one. */
+export function placesFor(held: Permissions): readonly Place[] {
+  return places.filter(
+    (place) => place.anyOf === undefined || place.anyOf.some((wanted) => held.includes(wanted)),
+  );
+}
+
+/** Whether a person may open the screen at an address. */
+export function mayOpen(path: string, held: Permissions): boolean {
+  return placesFor(held).some((place) => place.path === path);
 }
 
 /** Where a person is, from the start page down to this screen: `My settings › Appearance`. */
@@ -130,8 +138,8 @@ export interface TopicGroup {
 }
 
 /** The topics under a settings screen, grouped by heading in the order they are listed. */
-export function topicGroups(parent: Path, administrator: boolean): readonly TopicGroup[] {
-  const topics = placesFor(administrator).filter(
+export function topicGroups(parent: Path, held: Permissions): readonly TopicGroup[] {
+  const topics = placesFor(held).filter(
     (place) => place.parent === parent && place.group !== undefined,
   );
   const groups: TopicGroup[] = [];

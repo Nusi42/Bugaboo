@@ -10,10 +10,11 @@ use std::future::Future;
 use std::path::Path;
 use std::sync::Arc;
 
+use bb_app::access::{Authorized, MakeStartingRoles, Masked, make_starting_roles};
 use bb_app::auth::{
     AcceptInvitation, AuthApi, AuthServices, AuthStore as _, CompleteSetup, ConfirmCodeApp,
-    CreateInvitation, IssueSetupCode, RequestInfo, SignOut, StartCodeApp, Started,
-    issue_setup_code,
+    CreateInvitation, CreatedInvitation, IssueSetupCode, RequestInfo, SignOut, StartCodeApp,
+    Started, issue_setup_code,
 };
 use bb_app::context::Clock as _;
 use bb_auth::{CsrfKey, PasswordHasher, TotpSecret};
@@ -292,6 +293,10 @@ async fn first_administrator(
     person: &SamplePerson,
     password: &str,
 ) -> Result<Started, SampleError> {
+    // The roles come first: whoever sets the organization up gets the Administrator role.
+    make_starting_roles(&services.ctx(request()), MakeStartingRoles)
+        .await
+        .map_err(|error| SampleError::step(Step::StartingRoles, &error))?;
     let code = issue_setup_code(&services.ctx(request()), IssueSetupCode)
         .await
         .map_err(|error| SampleError::step(Step::SetupCode, &error))?
@@ -331,7 +336,7 @@ async fn invited(
     api.accept_invitation(
         request(),
         AcceptInvitation {
-            secret: secret_of(&created.link_path).to_owned(),
+            secret: secret_of(&link_path(created)?).to_owned(),
             display_name: person.name.clone(),
             password: password.to_owned(),
             previous_session: None,
@@ -339,6 +344,29 @@ async fn invited(
     )
     .await
     .map_err(|error| SampleError::step(Step::AcceptingInvitation, &error))
+}
+
+/// The path of the invitation link, read from the answer the way the browser gets it.
+fn link_path(created: Authorized<CreatedInvitation>) -> Result<String, SampleError> {
+    /// The one field of the answer the sample needs.
+    #[derive(serde::Serialize)]
+    struct Link {
+        link_path: String,
+    }
+    impl Masked for Link {}
+    created
+        .map(|created| Link {
+            link_path: created.link_path,
+        })
+        .masked_value()
+        .ok()
+        .and_then(|value| {
+            value
+                .get("link_path")
+                .and_then(serde_json::Value::as_str)
+                .map(str::to_owned)
+        })
+        .ok_or(SampleError::LinkMissing)
 }
 
 /// Ends the session, so nobody of the sample is signed in when it is done.

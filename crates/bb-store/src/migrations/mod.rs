@@ -14,8 +14,9 @@ use bb_core::security_log::Digest;
 use bb_core::technical::TechnicalName;
 use jiff::Timestamp;
 use sea_query::{
-    ColumnDef, Expr, IndexCreateStatement, InsertStatement, Order, PostgresQueryBuilder, Query,
-    SqliteQueryBuilder, Table, TableCreateStatement,
+    ColumnDef, DeleteStatement, Expr, IndexCreateStatement, InsertStatement, Order,
+    PostgresQueryBuilder, Query, SqliteQueryBuilder, Table, TableAlterStatement,
+    TableCreateStatement,
 };
 use sha2::{Digest as _, Sha256};
 
@@ -25,6 +26,7 @@ use crate::schema::Migration;
 
 mod m0001_initial;
 mod m0002_sign_in;
+mod m0003_policy;
 
 /// The advisory lock PostgreSQL processes take while they migrate.
 const MIGRATION_LOCK: i64 = 0x4242_4D49_4752_0001;
@@ -35,8 +37,12 @@ pub(crate) enum Step {
     Table(TableCreateStatement),
     /// Create an index.
     Index(IndexCreateStatement),
-    /// Insert a fixed row the program relies on.
+    /// Insert rows the program relies on, or rows copied from another table.
     Seed(InsertStatement),
+    /// Change a table (take a column away).
+    Alter(TableAlterStatement),
+    /// Delete rows that no longer have a meaning.
+    Delete(DeleteStatement),
 }
 
 /// One migration.
@@ -71,6 +77,14 @@ impl Definition {
                     statement.to_string(SqliteQueryBuilder),
                     statement.to_string(PostgresQueryBuilder),
                 ],
+                Step::Alter(statement) => [
+                    statement.build(SqliteQueryBuilder),
+                    statement.build(PostgresQueryBuilder),
+                ],
+                Step::Delete(statement) => [
+                    statement.to_string(SqliteQueryBuilder),
+                    statement.to_string(PostgresQueryBuilder),
+                ],
             };
             for text in texts {
                 hasher.update(u64::try_from(text.len()).unwrap_or(u64::MAX).to_be_bytes());
@@ -92,6 +106,11 @@ const ALL: &[Definition] = &[
         version: 2,
         name: "sign_in",
         steps: || Ok(m0002_sign_in::steps()),
+    },
+    Definition {
+        version: 3,
+        name: "policy",
+        steps: m0003_policy::steps,
     },
 ];
 
@@ -160,6 +179,20 @@ impl Database {
     /// with [`StoreError::MigrationMismatch`] when a recorded migration is not the one this
     /// program has, and when the database fails.
     pub async fn migrate(&self, now: Timestamp) -> Result<Vec<i64>, StoreError> {
+        self.migrate_until(i64::MAX, now).await
+    }
+
+    /// Brings the schema up to migration `last` and no further: the database of an older
+    /// version, for the tests of an upgrade.
+    ///
+    /// # Errors
+    /// The same as [`Database::migrate`].
+    #[cfg(feature = "testing")]
+    pub async fn migrate_up_to(&self, last: i64, now: Timestamp) -> Result<Vec<i64>, StoreError> {
+        self.migrate_until(last, now).await
+    }
+
+    async fn migrate_until(&self, last: i64, now: Timestamp) -> Result<Vec<i64>, StoreError> {
         let mut done = Vec::new();
         loop {
             let mut transaction = self.begin().await?;
@@ -170,9 +203,10 @@ impl Database {
             let Some(next) = ALL
                 .iter()
                 .filter(|definition| {
-                    !applied
-                        .iter()
-                        .any(|record| record.version == definition.version)
+                    definition.version <= last
+                        && !applied
+                            .iter()
+                            .any(|record| record.version == definition.version)
                 })
                 .min_by_key(|definition| definition.version)
             else {
@@ -183,7 +217,11 @@ impl Database {
                 match step {
                     Step::Table(statement) => transaction.execute_schema(&statement).await?,
                     Step::Index(statement) => transaction.execute_schema(&statement).await?,
+                    Step::Alter(statement) => transaction.execute_schema(&statement).await?,
                     Step::Seed(statement) => {
+                        transaction.execute(&statement).await?;
+                    }
+                    Step::Delete(statement) => {
                         transaction.execute(&statement).await?;
                     }
                 }
@@ -290,16 +328,33 @@ mod tests {
         );
     }
 
+    #[test]
+    fn the_checksum_of_migration_2_never_changes() {
+        // Migration 2 names the column that migration 3 takes away through `Retired`; its text
+        // is the one databases applied before.
+        let checksum = ALL[1].checksum().unwrap();
+        let mut hex = String::new();
+        for byte in checksum.as_bytes() {
+            use std::fmt::Write as _;
+            write!(hex, "{byte:02x}").unwrap();
+        }
+        assert_eq!(
+            hex, "2f79f1fcf6ccadf282c92d37e1803b440c1759d098887112f96b5cbc24d2f30e",
+            "the checksum of migration 2 changed"
+        );
+    }
+
     #[tokio::test]
     async fn migrations() -> TestResult {
         each_database("migrations", async |db| {
             let database = Database::connect(db.url()).await?;
-            assert_eq!(database.migrate(at(0)).await?, [1, 2]);
+            assert_eq!(database.migrate(at(0)).await?, [1, 2, 3]);
             assert_eq!(database.migrate(at(1)).await?, Vec::<i64>::new());
             let applied = database.applied_migrations().await?;
-            assert_eq!(applied.len(), 2);
+            assert_eq!(applied.len(), 3);
             assert_eq!(applied[0].name.as_str(), "initial");
             assert_eq!(applied[1].name.as_str(), "sign_in");
+            assert_eq!(applied[2].name.as_str(), "policy");
             for (record, definition) in applied.iter().zip(ALL) {
                 assert_eq!(record.applied_at, at(0));
                 assert_eq!(record.checksum, definition.checksum()?);
@@ -380,7 +435,7 @@ mod tests {
                     error,
                     StoreError::SchemaTooNew {
                         found: 99,
-                        known: 2
+                        known: 3
                     }
                 ),
                 "{error}"
@@ -434,7 +489,7 @@ mod tests {
             update
                 .table(Migration::Table)
                 .value(Migration::Version, 0_i64)
-                .and_where(Expr::col(Migration::Version).eq(2_i64));
+                .and_where(Expr::col(Migration::Version).eq(3_i64));
             database.execute(&update).await?;
             let error = database.migrate(at(1)).await.unwrap_err();
             assert!(

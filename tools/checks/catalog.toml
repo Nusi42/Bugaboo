@@ -258,10 +258,10 @@ status = "active"
 id = "ARCH-AUTHZ-ONLY"
 title = "Authorized<T> is only created inside bb-policy"
 rule = "ADR-0004"
-tool = "ast-grep + private constructor (compile error)"
+tool = "xtask (reads the code: no copy, literal or constructor of Authorized outside bb-policy, no call of evaluate outside bb-app/src/access and no literal of Inputs outside bb-store, no private field made public, the test feature only for dev-dependencies) + private constructor (a compile-fail test in bb-policy builds it from outside and must fail)"
 when = ["edit", "commit", "ci"]
-files = ["crates/**/*.rs"]
-status = "planned"
+files = ["crates/**/*.rs", "crates/**/Cargo.toml"]
+status = "active"
 
 [[check]]
 id = "ARCH-API-OUT"
@@ -294,7 +294,7 @@ status = "active"
 id = "ARCH-EVENTS"
 title = "Every command use case appends a domain event"
 rule = "ADR-0007"
-tool = "xtask (every command use case in bb-app calls record_change of the ChangeStore port; comments and strings do not count); the generated test that runs each command against the fakes follows with the first use cases (M1-F18)"
+tool = "xtask (every command use case in bb-app calls record_change of the ChangeStore port; comments and strings do not count); every public command must be named in the table of crates/bb-app/src/tests/events.rs, whose test runs each command against the in-memory store and asserts exactly one event (M1-F18)"
 when = ["edit", "commit", "ci"]
 files = ["crates/bb-app/**"]
 status = "active"
@@ -421,10 +421,15 @@ status = "active"
 id = "ARCH-PERSON-REF"
 title = "People are only shown through PersonRef, resolved for the viewer (names, role only or Someone)"
 rule = "ADR-0022, PRIV-12"
-tool = "ast-grep + serialization test"
+tool = "xtask (reads the code of bb-api and bb-app, and the generated API description: no name or address outside PersonRef; exemptions with a reason in person-ref-exemptions.toml)"
 when = ["edit", "commit", "ci"]
-files = ["crates/**/*.rs"]
-status = "planned"
+files = [
+  "crates/bb-api/**/*.rs",
+  "crates/bb-app/**/*.rs",
+  "tools/checks/person-ref-exemptions.toml",
+  "web/packages/api-client/openapi.json",
+]
+status = "active"
 
 [[check]]
 id = "ARCH-NO-COUNTERS"

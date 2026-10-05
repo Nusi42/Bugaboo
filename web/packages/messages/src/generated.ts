@@ -50,8 +50,6 @@ export const messages = {
     "Ask everyone to use two-step sign-in. People who have not set it up are asked to do so the next time they sign in.",
   "setting.security.session-absolute-hours.help":
     "How many hours a sign-in can last at most, even when somebody keeps working. After that, people sign in again. Between 1 hour and 30 days (720 hours).",
-  "setting.security.two-step-required-roles.help":
-    "The roles whose members must use two-step sign-in, as a list separated by commas. Roles arrive in a later version; until then this has no effect.",
   "setting.auth.sign-up-enabled.help":
     "Let people make an account on their own, without an invitation. Bugaboo cannot check that an address belongs to the person until e-mail is available, so use this only on a network you trust.",
   "setting.auth.sign-up-domains.help":
@@ -128,7 +126,8 @@ export const messages = {
   "home.title": "Welcome, {name}",
   "home.intro":
     "You are signed in. Projects and issues come with the next versions of Bugaboo. For now you can look after your account.",
-  "home.admin": "You are an administrator: you can invite people and see how the server is doing.",
+  "home.admin":
+    "You can look after this server. Organization settings shows what you may do there.",
   "page.not-found.title": "This page does not exist",
   "page.not-found.text": "The address may be mistyped, or the page may have moved.",
   "page.not-found.home": "Go to the start page",
@@ -442,6 +441,12 @@ export const messages = {
     "{part} {path} could not be checked, because Bugaboo could not read its access rights. Check them yourself: other accounts on this computer should not be able to open it, unless you want that.",
   "status.data-folder.unknown":
     "Bugaboo could not read the rights of these, so it cannot say whether other accounts can open them. Check them yourself:",
+  "error.access.would-lock-out":
+    "That would leave nobody who can manage roles and decide who has which role for the whole organization. Keep at least one person who can do both.",
+  "error.access.too-much": "You can only add or give what you can do yourself in this place.",
+  "error.assignment.conflict":
+    "This person or group already has a role here, so it cannot also have No access here, and the other way round. Take the other row away first.",
+  "error.name.taken": "That name is already used. Choose another one.",
 } as const;
 
 export type MessageKey = keyof typeof messages;

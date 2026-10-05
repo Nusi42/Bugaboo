@@ -13,7 +13,7 @@ use super::{Check, Context, Finding};
 use crate::generate::api::{CookieTable, parse_cookies};
 use crate::generate::messages::{SOURCE_LOCALE_PATH, parse_pairs};
 use crate::generate::messages_rust::constant_name;
-use crate::rust_source::{Source, before_tests, read_product_sources};
+use crate::rust_source::{Source, read_product_sources, without_tests};
 
 /// The one file that may set cookies.
 const COOKIE_MODULE: &str = "crates/bb-api/src/cookies.rs";
@@ -60,7 +60,7 @@ fn evaluate(rust: &[Source], web: &[WebSource], message_constants: &[String]) ->
         },
     }
     for (path, text) in rust.iter().filter(|(path, _)| path != COOKIE_MODULE) {
-        findings.extend(rust_writes(path, before_tests(text)));
+        findings.extend(rust_writes(path, &without_tests(text)));
     }
     for (path, text) in web {
         findings.extend(browser_writes(path, text));

@@ -8,21 +8,40 @@ import { closeOverlay, openOverlay, useOverlay } from "./overlay-state.ts";
 import { placeAt } from "./places.ts";
 
 export interface MoreSheetProps {
-  readonly administrator: boolean;
+  /** The person may open *Organization settings*. */
+  readonly organizationSettings: boolean;
   /** The name of the person who is signed in. */
   readonly name: string | undefined;
   readonly onSignOut: () => void;
   readonly signingOut: boolean;
 }
 
+/** *My settings*, and *Organization settings* for a person who may open it. */
+function Places({ organizationSettings }: Pick<MoreSheetProps, "organizationSettings">) {
+  const places = [
+    placeAt(paths.mySettings),
+    organizationSettings ? placeAt(paths.organizationSettings) : undefined,
+  ];
+  return places.map((place) =>
+    place === undefined ? null : (
+      <li key={place.path}>
+        <NavLink
+          href={place.path}
+          icon={place.icon}
+          label={t(place.name)}
+          onNavigate={closeOverlay}
+        />
+      </li>
+    ),
+  );
+}
+
 /**
  * What the bar of a phone has no room for, as a sheet from the bottom (UX §3.3): *My settings*,
  * *Organization settings*, the list of shortcuts and *Sign out*.
  */
-export function MoreSheet({ administrator, name, onSignOut, signingOut }: MoreSheetProps) {
+export function MoreSheet({ organizationSettings, name, onSignOut, signingOut }: MoreSheetProps) {
   const overlay = useOverlay("more");
-  const mine = placeAt(paths.mySettings);
-  const organization = placeAt(paths.organizationSettings);
   return (
     <Overlay {...overlay} label={t("shell.more")} bottom>
       <div className={styles.sheet}>
@@ -34,18 +53,7 @@ export function MoreSheet({ administrator, name, onSignOut, signingOut }: MoreSh
           <p className={styles.who}>{t("shell.signed-in-as", { name })}</p>
         )}
         <ul className={styles.list}>
-          {[mine, administrator ? organization : undefined].map((place) =>
-            place === undefined ? null : (
-              <li key={place.path}>
-                <NavLink
-                  href={place.path}
-                  icon={place.icon}
-                  label={t(place.name)}
-                  onNavigate={closeOverlay}
-                />
-              </li>
-            ),
-          )}
+          <Places organizationSettings={organizationSettings} />
           <li>
             <NavButton
               icon={iconName.keyboard}

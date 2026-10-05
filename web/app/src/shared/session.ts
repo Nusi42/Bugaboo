@@ -4,11 +4,11 @@ import { api } from "./api.ts";
 import { codeOf } from "./errors.ts";
 import { queryClient } from "./query-client.ts";
 
-/** The person who is signed in, as the API describes them. */
-export type Person = Schema<"PersonBody">;
+/** The person who is signed in, with what they may do for the whole organization. */
+export type Person = Schema<"MeBody">;
 
 /**
- * Who is signed in. The cache only holds what the app was told (`rememberPerson`, `currentPerson`):
+ * Who is signed in. The cache only holds what the app was told (`forgetPerson`, `currentPerson`):
  * the query never asks the server by itself, so a page that shows the name cannot start a request
  * after the sign-in is gone.
  */
@@ -49,9 +49,13 @@ export async function currentPerson(): Promise<Person | null> {
   }
 }
 
-/** Remembers who signed in, so the next page knows without asking again. */
-export function rememberPerson(person: Person): void {
-  queryClient.setQueryData(meOptions().queryKey, person);
+/**
+ * Forgets who was known, after somebody signed in: the next page asks the server who it is and
+ * what that person may do (the answer of signing in holds neither the permissions nor anything the
+ * menus need).
+ */
+export function forgetPerson(): void {
+  queryClient.removeQueries({ queryKey: meOptions().queryKey });
 }
 
 /**

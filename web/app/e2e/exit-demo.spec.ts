@@ -21,12 +21,12 @@ test.describe.configure({ mode: "serial" });
 
 /** What every step wrote into the security log, in the order of the steps (`security-log.*`). */
 const entriesAfter = {
-  /** `setup_completed`, then `passkey_added`. */
-  setupWithPasskey: 2,
+  /** `starting_roles.made`, `setup.completed`, `assignment.made` (the Administrator role), then `passkey_added`. */
+  setupWithPasskey: 4,
   /** `two_step_enabled`. */
-  codeApp: 3,
+  codeApp: 5,
   /** `session_ended` (sign out), `sign_in_second_step_needed`, `second_step_succeeded`. */
-  signedInAgain: 6,
+  signedInAgain: 8,
 } as const;
 
 /** Opens the status page and expects the security log to be intact with exactly `entries` entries. */

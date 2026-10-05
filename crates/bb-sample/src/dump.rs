@@ -6,8 +6,12 @@
 //! label that counts the records of a kind in the order they first show up (`person#3`), so the
 //! dump still says which events and log entries are about the same record. No secret is in it.
 
+use std::collections::BTreeSet;
+
+use bb_app::access::{PolicyStore as _, StartingRole};
 use bb_app::auth::AuthStore as _;
 use bb_core::event::{Actor, DomainEvent, EntityRef};
+use bb_core::id::UserId;
 use bb_core::technical::TechnicalName;
 use serde::Serialize;
 
@@ -103,12 +107,36 @@ impl Labels {
 }
 
 impl Sample {
+    /// The people who have the starting role *Administrator* for the whole organization.
+    async fn administrators(&self) -> Result<BTreeSet<UserId>, SampleError> {
+        let roles: BTreeSet<_> = self
+            .storage
+            .roles()
+            .await?
+            .into_iter()
+            .filter(|record| {
+                record.role.starting.as_ref().map(TechnicalName::as_str)
+                    == Some(StartingRole::Administrator.key())
+            })
+            .map(|record| record.role.id)
+            .collect();
+        Ok(self
+            .storage
+            .assignments_on(None)
+            .await?
+            .into_iter()
+            .filter(|row| row.role.is_some_and(|role| roles.contains(&role)))
+            .filter_map(|row| row.person)
+            .collect())
+    }
+
     /// The canonical dump of this sample.
     ///
     /// # Errors
     /// The errors of the database.
     pub async fn dump(&self) -> Result<Dump, SampleError> {
         let mut labels = Labels::default();
+        let administrators = self.administrators().await?;
         let mut people = Vec::with_capacity(self.people.len());
         for made in &self.people {
             let account = self
@@ -127,7 +155,7 @@ impl Sample {
                 name: account.person.display_name,
                 email: account.person.email,
                 role: made.person.role.code(),
-                administrator: account.person.administrator,
+                administrator: administrators.contains(&account.person.id),
                 code_app,
                 created_at: account.person.created_at.to_string(),
             });
@@ -168,6 +196,42 @@ impl Sample {
     }
 }
 
+/// The bytes of an ID written the way IDs are written (8-4-4-4-12 hexadecimal digits).
+fn id_bytes(text: &str) -> Option<[u8; 16]> {
+    let digits: String = text.chars().filter(|c| *c != '-').collect();
+    let well_formed = text.len() == 36
+        && text
+            .char_indices()
+            .all(|(at, c)| matches!(at, 8 | 13 | 18 | 23) == (c == '-'))
+        && digits.chars().all(|c| c.is_ascii_hexdigit());
+    if !well_formed {
+        return None;
+    }
+    let mut bytes = [0_u8; 16];
+    for (byte, pair) in bytes.iter_mut().zip(digits.as_bytes().chunks(2)) {
+        *byte = u8::from_str_radix(std::str::from_utf8(pair).ok()?, 16).ok()?;
+    }
+    Some(bytes)
+}
+
+/// A value of a change, with an ID in it (the role of a person, say) replaced by its label, as
+/// the IDs are random by design.
+fn labelled(labels: &mut Labels, field: &str, value: serde_json::Value) -> serde_json::Value {
+    match value {
+        serde_json::Value::String(text) => match id_bytes(&text) {
+            Some(id) => serde_json::Value::String(labels.label(field, id)),
+            None => serde_json::Value::String(text),
+        },
+        serde_json::Value::Array(items) => serde_json::Value::Array(
+            items
+                .into_iter()
+                .map(|item| labelled(labels, field, item))
+                .collect(),
+        ),
+        other => other,
+    }
+}
+
 fn dump_event(labels: &mut Labels, event: &DomainEvent) -> DumpEvent {
     DumpEvent {
         time: event.time.to_string(),
@@ -179,8 +243,14 @@ fn dump_event(labels: &mut Labels, event: &DomainEvent) -> DumpEvent {
             .iter()
             .map(|change| DumpChange {
                 field: change.field.clone(),
-                before: change.before.clone(),
-                after: change.after.clone(),
+                before: change
+                    .before
+                    .clone()
+                    .map(|value| labelled(labels, &change.field, value)),
+                after: change
+                    .after
+                    .clone()
+                    .map(|value| labelled(labels, &change.field, value)),
             })
             .collect(),
         reason: event.reason.clone(),

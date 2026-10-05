@@ -5,6 +5,7 @@ import { AppearancePage, type FramesShow } from "../features/shell/index.ts";
 import { paths } from "../shared/paths.ts";
 import { shortcutIdOf, type ShortcutId } from "../shared/shortcuts.ts";
 import { appRoute, mySettingsRoute, organizationSettingsRoute } from "./layouts.tsx";
+import { OnlyWith } from "./OnlyWith.tsx";
 import { FramesRoute, ShortcutsRoute } from "./settings-routes.tsx";
 
 // The pages that are not the first one are loaded when they are first opened, so the first page
@@ -73,14 +74,32 @@ export const organizationSettingsIndexRoute = createRoute({
   path: paths.organizationSettings,
 });
 
+const InvitationsScreen = lazyRouteComponent(
+  () => import("../features/admin/index.ts"),
+  "InvitationsPage",
+);
+const StatusScreen = lazyRouteComponent(() => import("../features/admin/index.ts"), "StatusPage");
+
 export const invitationsRoute = createRoute({
   getParentRoute: () => organizationSettingsRoute,
   path: paths.invitations,
-  component: lazyRouteComponent(() => import("../features/admin/index.ts"), "InvitationsPage"),
+  component: function Invitations() {
+    return (
+      <OnlyWith path={paths.invitations}>
+        <InvitationsScreen />
+      </OnlyWith>
+    );
+  },
 });
 
 export const statusRoute = createRoute({
   getParentRoute: () => organizationSettingsRoute,
   path: paths.status,
-  component: lazyRouteComponent(() => import("../features/admin/index.ts"), "StatusPage"),
+  component: function Status() {
+    return (
+      <OnlyWith path={paths.status}>
+        <StatusScreen />
+      </OnlyWith>
+    );
+  },
 });

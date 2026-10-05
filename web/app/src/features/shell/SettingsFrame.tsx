@@ -1,10 +1,9 @@
 import { t } from "@bugaboo/messages";
 import { Card, useLayout } from "@bugaboo/ui";
-import { useQuery } from "@tanstack/react-query";
 import { Navigate, Outlet, useLocation } from "@tanstack/react-router";
 import { useId } from "react";
 
-import { meOptions } from "../../shared/session.ts";
+import { usePermissions } from "../../shared/use-me.ts";
 import { usePageTitle } from "../../shared/use-page.ts";
 import { NavLink } from "./NavItem.tsx";
 import { placeAt, topicGroups, type Place, type TopicGroup } from "./places.ts";
@@ -80,8 +79,8 @@ function TopicPage({
 export function SettingsFrame({ parent }: SettingsFrameProps) {
   const { pathname } = useLocation();
   const phone = useLayout() === "phone";
-  const administrator = useQuery(meOptions()).data?.administrator === true;
-  const groups = topicGroups(parent, administrator);
+  const permissions = usePermissions();
+  const groups = topicGroups(parent, permissions);
   const here = placeAt(parent);
   const heading = here === undefined ? t("app.name") : t(here.name);
   const first = groups[0]?.topics[0];

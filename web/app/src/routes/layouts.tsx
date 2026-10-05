@@ -10,6 +10,7 @@ import {
 } from "../features/shell/index.ts";
 import { paths } from "../shared/paths.ts";
 import { currentPerson, type Person } from "../shared/session.ts";
+import { OnlyWith } from "./OnlyWith.tsx";
 import { Root } from "./Root.tsx";
 import { loadStatus, startPath } from "./start.ts";
 
@@ -58,17 +59,6 @@ export const appRoute = createRoute({
   component: AppLayout,
 });
 
-/** Pages for administrators. Everybody else goes to the start page. */
-export const adminRoute = createRoute({
-  getParentRoute: () => appRoute,
-  id: "admin",
-  beforeLoad: ({ context }: { readonly context: { readonly person: Person } }): void => {
-    if (!context.person.administrator) {
-      throw redirect({ to: paths.home });
-    }
-  },
-});
-
 /** The frame of *My settings*: the menu of its topics next to the topic that is open. */
 export const mySettingsRoute = createRoute({
   getParentRoute: () => appRoute,
@@ -78,11 +68,15 @@ export const mySettingsRoute = createRoute({
   },
 });
 
-/** The frame of *Organization settings*: the same, for the topics only administrators see. */
+/** The frame of *Organization settings*: the same, for the topics people hold a permission for. */
 export const organizationSettingsRoute = createRoute({
-  getParentRoute: () => adminRoute,
+  getParentRoute: () => appRoute,
   id: "organization-settings",
   component: function OrganizationSettings() {
-    return <SettingsFrame parent={paths.organizationSettings} />;
+    return (
+      <OnlyWith path={paths.organizationSettings}>
+        <SettingsFrame parent={paths.organizationSettings} />
+      </OnlyWith>
+    );
   },
 });

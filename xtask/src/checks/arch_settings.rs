@@ -14,7 +14,7 @@ use std::collections::BTreeSet;
 
 use super::{Check, Context, Finding};
 use crate::repo::Repo;
-use crate::rust_source::{Source, before_tests, read_product_sources};
+use crate::rust_source::{Source, read_product_sources, without_tests};
 
 /// The only place settings are declared.
 const REGISTRY_FOLDER: &str = "crates/bb-core/src/settings/";
@@ -127,7 +127,7 @@ fn evaluate(sources: &[Source]) -> Vec<Finding> {
         .iter()
         .filter(|(path, _)| !path.starts_with(REGISTRY_FOLDER))
     {
-        let code = before_tests(text);
+        let code = without_tests(text);
         for (index, line) in code.lines().enumerate() {
             let place = format!("{path}:{}", index + 1);
             if declares(line) {

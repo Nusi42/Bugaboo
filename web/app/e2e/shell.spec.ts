@@ -4,7 +4,7 @@ import { type Locator, type Page } from "@playwright/test";
 import { ada, cleo, makeAdmin, makePerson } from "./support/accounts.ts";
 import { expectGoodInEveryLook } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
-import { openFromMenu, openMenu, signIn } from "./support/flows.ts";
+import { holdOnly, openFromMenu, openMenu, signIn } from "./support/flows.ts";
 import { onThisLayout } from "./support/layout.ts";
 
 test.use({
@@ -208,12 +208,28 @@ test("ux_01 an address of the settings that does not exist shows the page that i
   page,
 }) => {
   await signIn(page, cleo);
+  // A person who may not invite people finds nothing at the address, like at one that is not there.
   await page.goto("/settings/invitations");
-  await expect(page).toHaveURL(/\/$/u);
+  await expect(
+    page.getByRole("heading", { level: 1, name: t("page.not-found.title") }),
+  ).toBeVisible();
   await page.goto("/me/nothing-here");
   await expect(
     page.getByRole("heading", { level: 1, name: t("page.not-found.title") }),
   ).toBeVisible();
+});
+
+test("sec_01 the start page offers looking after the server only to people who may open organization settings", async ({
+  page,
+}) => {
+  // A Viewer holds a permission (see projects), but none that opens organization settings.
+  await holdOnly(page, ["see-projects"]);
+  await signIn(page, cleo);
+  await expect(
+    page.getByRole("heading", { level: 1, name: t("home.title", { name: cleo.name }) }),
+  ).toBeVisible();
+  await expect(page.getByText(t("home.intro"))).toBeVisible();
+  await expect(page.getByText(t("home.admin"))).toHaveCount(0);
 });
 
 test("ux_01 the tab says the name of the topic once, also when a topic is opened by its address", async ({

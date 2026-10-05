@@ -238,6 +238,21 @@ define_ordered_id! {
 }
 
 define_ordered_id! {
+    /// The ID of a group of people.
+    GroupId
+}
+
+define_ordered_id! {
+    /// The ID of a role.
+    RoleId
+}
+
+define_ordered_id! {
+    /// The ID of one row of *Who has which role*.
+    AssignmentId
+}
+
+define_ordered_id! {
     /// The ID of an issue (the internal one; the readable issue ID comes in M3, ADR-0021).
     IssueId
 }
@@ -300,6 +315,9 @@ macro_rules! into_entity_id {
 into_entity_id!(
     UserId,
     ProjectId,
+    GroupId,
+    RoleId,
+    AssignmentId,
     IssueId,
     EventId,
     JobId,

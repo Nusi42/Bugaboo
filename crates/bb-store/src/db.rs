@@ -12,7 +12,7 @@ use std::time::Duration;
 use jiff::Timestamp;
 use sea_query::{
     DeleteStatement, Iden, InsertStatement, PostgresQueryBuilder, SchemaStatementBuilder,
-    SelectStatement, SqliteQueryBuilder, Table, UpdateStatement,
+    SelectStatement, SqliteQueryBuilder, UpdateStatement,
 };
 use sea_query_sqlx::{SqlxBinder as _, SqlxValues};
 use sqlx::postgres::{PgConnectOptions, PgPoolOptions, PgRow};
@@ -181,9 +181,9 @@ impl Database {
     ///
     /// # Errors
     /// Fails when the table does not exist or the name is taken.
-    #[doc(hidden)]
+    #[cfg(feature = "testing")]
     pub async fn rename_table_for_tests(&self, from: &str, to: &str) -> Result<(), StoreError> {
-        let rename = Table::rename()
+        let rename = sea_query::Table::rename()
             .table(sea_query::Alias::new(from), sea_query::Alias::new(to))
             .to_owned();
         let mut transaction = self.begin().await?;

@@ -7,7 +7,7 @@ import { api } from "../../shared/api.ts";
 import { codeOf, isPasswordProblem, messageOf } from "../../shared/errors.ts";
 import { EmailField, NameField, NewPasswordField } from "../../shared/fields.tsx";
 import { queryClient } from "../../shared/query-client.ts";
-import { rememberPerson, statusOptions } from "../../shared/session.ts";
+import { forgetPerson, statusOptions } from "../../shared/session.ts";
 import styles from "./Setup.module.css";
 
 export interface AccountStepProps {
@@ -27,7 +27,7 @@ export function AccountStep({ code, onCreated, onWrongCode }: AccountStepProps) 
   const setup = api.query.useMutation("post", "/api/v1/auth/setup", {
     onSuccess: (answer: SignedIn) => {
       if (answer.person !== null && answer.person !== undefined) {
-        rememberPerson(answer.person);
+        forgetPerson();
       }
       void queryClient.invalidateQueries({ queryKey: statusOptions().queryKey });
       onCreated();
