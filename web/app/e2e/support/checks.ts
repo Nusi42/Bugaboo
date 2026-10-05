@@ -46,6 +46,58 @@ export async function expectNoSidewaysScroll(page: Page): Promise<void> {
   expect(overflow).toBeLessThanOrEqual(0);
 }
 
+/** Places where the items of a list, a group of buttons or a group of choices stand side by side. */
+const ROWS_OF_ITEMS = "ul, ol, [role='radiogroup'], [role='group'], [role='tablist']";
+
+/** Where an item draws: its own box, and its text, which can reach out of a box that is too narrow. */
+interface Drawn {
+  readonly text: string;
+  readonly left: number;
+  readonly right: number;
+  readonly top: number;
+  readonly bottom: number;
+}
+
+/**
+ * Nothing on the screen is drawn over its neighbour: what the items of every list and group draw
+ * (box and text) is apart. A grid whose columns are too narrow draws codes on top of each other
+ * while their boxes stay side by side, so the text counts too.
+ */
+export async function expectNoOverlap(page: Page): Promise<void> {
+  const overlaps = await page.evaluate((selector) => {
+    const found: string[] = [];
+    for (const row of document.querySelectorAll(selector)) {
+      const drawn: Drawn[] = [];
+      for (const item of row.children) {
+        const box = item.getBoundingClientRect();
+        const range = document.createRange();
+        range.selectNodeContents(item);
+        const text = range.getBoundingClientRect();
+        if (box.width > 0 && box.height > 0) {
+          drawn.push({
+            text: (item.textContent ?? "").trim(),
+            left: Math.min(box.left, text.width > 0 ? text.left : box.left),
+            right: Math.max(box.right, text.width > 0 ? text.right : box.right),
+            top: Math.min(box.top, text.height > 0 ? text.top : box.top),
+            bottom: Math.max(box.bottom, text.height > 0 ? text.bottom : box.bottom),
+          });
+        }
+      }
+      for (const [index, first] of drawn.entries()) {
+        for (const second of drawn.slice(index + 1)) {
+          const across = Math.min(first.right, second.right) - Math.max(first.left, second.left);
+          const down = Math.min(first.bottom, second.bottom) - Math.max(first.top, second.top);
+          if (across > 1 && down > 1) {
+            found.push(`"${first.text}" and "${second.text}"`);
+          }
+        }
+      }
+    }
+    return found;
+  }, ROWS_OF_ITEMS);
+  expect(overlaps).toEqual([]);
+}
+
 /** The open screen is accessible and does not scroll sideways, in every theme, picked as a person does. */
 export function expectGoodInEveryTheme(page: Page): Promise<void> {
   return inOrder(
@@ -53,6 +105,7 @@ export function expectGoodInEveryTheme(page: Page): Promise<void> {
       await chooseTheme(page, theme);
       await expectNoViolations(page);
       await expectNoSidewaysScroll(page);
+      await expectNoOverlap(page);
     }),
   );
 }
@@ -64,6 +117,7 @@ export function expectGoodInEveryLook(page: Page): Promise<void> {
       await putOnTheme(page, theme);
       await expectNoViolations(page);
       await expectNoSidewaysScroll(page);
+      await expectNoOverlap(page);
     }),
   );
 }
