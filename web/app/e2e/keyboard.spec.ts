@@ -122,11 +122,15 @@ test("ux_05 keys that another shortcut uses are refused with a sentence that nam
 
 test("ux_05 the shortcuts are searchable, and the open one is in the address", async ({ page }) => {
   await signIn(page, ada);
-  await page.goto("/me/shortcuts?edit=go-home");
-  await expect(page.getByRole("complementary", { name: t("shortcut.go-home") })).toBeVisible();
+  await page.goto("/me/shortcuts");
   const search = page.getByRole("searchbox", { name: t("shortcuts.search"), exact: true });
   await search.fill("zzz");
   await expect(page.getByText(t("shortcuts.nothing"))).toBeVisible();
   await search.fill(t("shortcut.list-next"));
-  await expect(page.getByRole("button", { name: t("shortcut.list-next") })).toBeVisible();
+  await page.getByRole("button", { name: t("shortcut.list-next"), exact: true }).click();
+  await expect(page).toHaveURL(/[?]edit=list-next$/u);
+  await expect(page.getByRole("complementary", { name: t("shortcut.list-next") })).toBeVisible();
+  // An address with the shortcut in it opens the panel straight away.
+  await page.goto("/me/shortcuts?edit=go-home");
+  await expect(page.getByRole("complementary", { name: t("shortcut.go-home") })).toBeVisible();
 });
