@@ -7,6 +7,7 @@
 //! a security log), then the services are built, and last the setup code of the first start is
 //! made, so a failure of any step stops the server before it listens.
 
+use std::path::PathBuf;
 use std::sync::Arc;
 
 use anyhow::anyhow;
@@ -14,6 +15,7 @@ use bb_api::tls::ServedCertificate;
 use bb_api::{AuthHandle, FailureLimits, ProbeHandle};
 use bb_app::auth::{AuthServices, IssueSetupCode, RequestInfo, issue_setup_code};
 use bb_app::context::SystemClock;
+use bb_app::ports::SetupCodeFile;
 use bb_auth::{CsrfKey, Passkeys, PasswordHasher, RelyingParty};
 use bb_core::message::{self, Message};
 use bb_store::{AuthStorage, Database, LogSeal};
@@ -37,6 +39,19 @@ pub(crate) struct Wired {
     pub(crate) probe: ProbeHandle,
     /// The setup code of the first start, to print once. `None` when an administrator exists.
     pub(crate) setup_code: Option<String>,
+}
+
+/// The setup code file of a server without a console, as the use case that makes the first
+/// administrator sees it: something it can remove.
+struct SetupCodeOnDisk(PathBuf);
+
+impl SetupCodeFile for SetupCodeOnDisk {
+    fn remove(&self) -> std::io::Result<()> {
+        match std::fs::remove_file(&self.0) {
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(()),
+            other => other,
+        }
+    }
 }
 
 fn database_failed(error: &impl std::fmt::Display) -> anyhow::Error {
@@ -122,7 +137,8 @@ pub(crate) async fn wire(
         csrf,
         FailureLimits::new(settings.limits.sign_in_failures_per_minute),
         name,
-    );
+    )
+    .with_setup_code_file(Arc::new(SetupCodeOnDisk(data.setup_code_file())));
     let probe = Probe::new(
         database,
         seal,

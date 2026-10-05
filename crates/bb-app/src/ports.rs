@@ -38,3 +38,15 @@ pub trait ChangeStore: Send + Sync {
         + 'a,
     ) -> impl Future<Output = Result<T, Self::Error>> + Send + 'a;
 }
+
+/// The file in which a server without a console saves the setup code of the first start
+/// (`setup-code.txt` in the data folder). The use case that makes the first administrator removes
+/// it in the same run, because the code in it is dead from then on (AUTH-09, M1-F58); the program
+/// that wires the server implements it, because only it knows the data folder.
+pub trait SetupCodeFile: Send + Sync {
+    /// Removes the file. A file that is not there is no error.
+    ///
+    /// # Errors
+    /// The error of the file system when the file is there and cannot be removed.
+    fn remove(&self) -> std::io::Result<()>;
+}

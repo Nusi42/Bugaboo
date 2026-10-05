@@ -133,7 +133,8 @@ enum SetupNotice {
 /// server listens, so that an open port means a server that can be set up, for people and for
 /// tests: a file with the code (private to the account that runs Bugaboo and, on Windows, the
 /// administrators of the computer) is in place by then. The code is dead once the first
-/// administrator exists; the file goes away at the next start (follow-up M1-F58).
+/// administrator exists; the file goes away with the change that makes the first administrator
+/// (a port of `bb-app`, follow-up M1-F58), and here at the next start as a safety net.
 fn prepare_setup_code(data: &DataFolder, code: Option<&str>, console: bool) -> SetupNotice {
     let file = data.setup_code_file();
     let Some(code) = code else {

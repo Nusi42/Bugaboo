@@ -22,6 +22,7 @@ use zeroize::Zeroizing;
 use super::store::{AuthSettings, AuthStore, SecurityEvent, SessionRecord};
 use super::types::{PersonView, Started};
 use crate::context::{Clock, SystemIds};
+use crate::ports::SetupCodeFile;
 use crate::status::LogWrites;
 
 /// A session that only had its password checked lives this long, in seconds.
@@ -118,6 +119,7 @@ pub struct AuthServices<S> {
     pub(crate) limiter: Arc<dyn FailureLimit>,
     pub(crate) product_name: String,
     pub(crate) log_writes: Arc<LogWrites>,
+    pub(crate) setup_code_file: Option<Arc<dyn SetupCodeFile>>,
 }
 
 impl<S> AuthServices<S> {
@@ -142,7 +144,16 @@ impl<S> AuthServices<S> {
             limiter,
             product_name,
             log_writes: Arc::new(LogWrites::default()),
+            setup_code_file: None,
         }
+    }
+
+    /// The file that holds the setup code of a server without a console, which the use case that
+    /// makes the first administrator removes (AUTH-09, M1-F58).
+    #[must_use]
+    pub fn with_setup_code_file(mut self, file: Arc<dyn SetupCodeFile>) -> Self {
+        self.setup_code_file = Some(file);
+        self
     }
 
     /// How many entries of the security log were written, and how many could not be, since the
