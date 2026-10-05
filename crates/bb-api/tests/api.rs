@@ -2,16 +2,19 @@
 //! and the rules every API answer follows.
 
 // Dependencies of the library that this test does not use itself (`unused_crate_dependencies`).
+use base64ct as _;
 use bb_app as _;
 use bb_auth as _;
 use bb_core as _;
 use h2 as _;
 use hyper_util as _;
 use mime_guess as _;
+use proptest as _;
 use rcgen as _;
 use rust_embed as _;
 use rustls as _;
 use serde as _;
+use sha2 as _;
 use tempfile as _;
 use tokio_rustls as _;
 use tower_http as _;

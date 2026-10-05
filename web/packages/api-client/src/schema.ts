@@ -642,6 +642,8 @@ export interface components {
       | "access.forbidden"
       | "resource.not_found"
       | "request.invalid"
+      | "request.unknown_field"
+      | "request.bad_cursor"
       | "request.wrong_origin"
       | "request.wrong_token"
       | "request.method_not_allowed"
@@ -662,7 +664,10 @@ export interface components {
       /** @description The ID of the invitation. */
       id: string;
     };
-    /** @description An invitation in a list: only the fields that were asked for. */
+    /**
+     * @description An invitation in a list: the fields that can be asked for. An answer holds only those that
+     *     were asked for.
+     */
     InvitationItem: {
       /** @description When it was made. */
       created_at?: string | null;
@@ -1125,11 +1130,14 @@ export interface operations {
   listInvitations: {
     parameters: {
       query?: {
-        /** @description The fields each invitation holds, separated by commas: `id`, `email`, `created_at`, `expires_at`. Everything when left out. */
+        /**
+         * @description The fields each item holds, separated by commas. The answer schema names every field
+         *     that can be asked for; when this is left out the route's own small default is used.
+         */
         fields?: string;
         /** @description Where the page starts: the `next_cursor` of the page before. */
         cursor?: string;
-        /** @description How many invitations a page holds at most (default 50). */
+        /** @description How many items a page holds at most (default 50, at most 100). */
         limit?: number;
       };
       header?: never;

@@ -19,6 +19,8 @@ use super::auth::{
     PreviousSession, Session, SignedInBody, done, private, signed_in,
 };
 use crate::errors::{ApiError, ApiJson, ApiPath, ApiQuery};
+use crate::lean::ListParams;
+use crate::paging;
 
 /// The first administrator, with the setup code.
 #[derive(Deserialize, ToSchema)]
@@ -76,24 +78,13 @@ pub(crate) struct InviteBody {
     email: String,
 }
 
-/// What a list of invitations may be asked for.
-#[derive(Deserialize)]
-pub(crate) struct InvitationsParams {
-    /// The fields each invitation holds, separated by commas: `id`, `email`, `created_at`,
-    /// `expires_at`. Everything when left out.
-    fields: Option<String>,
-    /// Where the page starts: the `next_cursor` of the page before.
-    cursor: Option<String>,
-    /// How many invitations a page holds at most (default 50).
-    limit: Option<u32>,
-}
-
 /// The fields of an invitation that can be asked for, once.
 const INVITATION_FIELDS: [&str; 4] = ["id", "email", "created_at", "expires_at"];
-/// How many invitations a page holds when the request does not say.
-const DEFAULT_PAGE: u32 = 50;
+/// What the list holds when the request names no fields: what *Open invitations* shows.
+const INVITATION_DEFAULT_FIELDS: [&str; 4] = ["id", "email", "created_at", "expires_at"];
 
-/// An invitation in a list: only the fields that were asked for.
+/// An invitation in a list: the fields that can be asked for. An answer holds only those that
+/// were asked for.
 #[derive(Serialize, ToSchema)]
 pub(crate) struct InvitationItem {
     /// The ID of the invitation.
@@ -110,14 +101,13 @@ pub(crate) struct InvitationItem {
     expires_at: Option<String>,
 }
 
-impl InvitationItem {
-    fn of(invitation: &bb_app::auth::InvitationView, fields: &[&str]) -> Self {
-        let asked = |name: &str| fields.contains(&name);
+impl From<&bb_app::auth::InvitationView> for InvitationItem {
+    fn from(invitation: &bb_app::auth::InvitationView) -> Self {
         Self {
-            id: asked("id").then(|| invitation.id.to_string()),
-            email: asked("email").then(|| invitation.email.clone()),
-            created_at: asked("created_at").then(|| invitation.created_at.to_string()),
-            expires_at: asked("expires_at").then(|| invitation.expires_at.to_string()),
+            id: Some(invitation.id.to_string()),
+            email: Some(invitation.email.clone()),
+            created_at: Some(invitation.created_at.to_string()),
+            expires_at: Some(invitation.expires_at.to_string()),
         }
     }
 }
@@ -150,7 +140,8 @@ impl From<&bb_app::auth::InvitationView> for InvitationBody {
 #[derive(Serialize, ToSchema)]
 pub(crate) struct InvitationsBody {
     /// The invitations of this page. Only invitations that are still open are listed.
-    items: Vec<InvitationItem>,
+    #[schema(value_type = Vec<InvitationItem>)]
+    items: Vec<serde_json::Value>,
     /// The cursor of the next page; missing on the last page.
     #[serde(skip_serializing_if = "Option::is_none")]
     next_cursor: Option<String>,
@@ -311,37 +302,24 @@ async fn accept_invitation(
     path = "/api/v1/auth/invitations",
     operation_id = "listInvitations",
     tag = "auth",
-    params(
-        ("fields" = Option<String>, Query, description = "The fields each invitation holds, separated by commas: `id`, `email`, `created_at`, `expires_at`. Everything when left out."),
-        ("cursor" = Option<String>, Query, description = "Where the page starts: the `next_cursor` of the page before."),
-        ("limit" = Option<u32>, Query, minimum = 1, maximum = 100, description = "How many invitations a page holds at most (default 50).")
-    ),
+    params(ListParams),
     responses((status = 200, description = "The open invitations.", body = InvitationsBody), NotSignedInAnswer, ForbiddenAnswer)
 )]
 async fn list_invitations(
     State(auth): State<AuthHandle>,
     Info(info): Info,
     Session(session_token): Session,
-    ApiQuery(params): ApiQuery<InvitationsParams>,
+    ApiQuery(params): ApiQuery<ListParams>,
 ) -> Result<Response, ApiError> {
-    let fields: Vec<&str> = match params.fields.as_deref() {
-        None => INVITATION_FIELDS.to_vec(),
-        Some(text) => text.split(',').map(str::trim).collect(),
-    };
-    if fields
-        .iter()
-        .any(|field| !INVITATION_FIELDS.contains(field))
-    {
-        return Err(ApiError::new(ErrorCode::InvalidRequest));
-    }
+    let fields = params.fields(&INVITATION_FIELDS, &INVITATION_DEFAULT_FIELDS)?;
     let page = auth
         .api()?
         .invitations(
             info,
             InvitationsQuery {
                 session_token,
-                cursor: params.cursor,
-                limit: params.limit.unwrap_or(DEFAULT_PAGE),
+                cursor: params.position()?,
+                limit: params.limit(),
             },
         )
         .await?;
@@ -349,9 +327,9 @@ async fn list_invitations(
         items: page
             .items
             .iter()
-            .map(|invitation| InvitationItem::of(invitation, &fields))
-            .collect(),
-        next_cursor: page.next_cursor,
+            .map(|invitation| fields.project(&InvitationItem::from(invitation)))
+            .collect::<Result<_, _>>()?,
+        next_cursor: page.next_cursor.map(|position| paging::seal(&position)),
     }))
 }
 

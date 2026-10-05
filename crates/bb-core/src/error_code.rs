@@ -76,6 +76,11 @@ error_codes! {
     NotFound => ("resource.not_found", 404, message::ERROR_RESOURCE_NOT_FOUND),
     /// The request is not valid.
     InvalidRequest => ("request.invalid", 400, message::ERROR_REQUEST_INVALID),
+    /// A list was asked for a field that does not exist, or that the person may not read. Both
+    /// look the same, so the answer never tells which fields are hidden (SEC-06, PERF-02).
+    UnknownField => ("request.unknown_field", 400, message::ERROR_REQUEST_UNKNOWN_FIELD),
+    /// The cursor of a list page was changed or is not one of ours (PERF-02).
+    BadCursor => ("request.bad_cursor", 400, message::ERROR_REQUEST_BAD_CURSOR),
     /// A change request that does not come from one of Bugaboo's own pages.
     WrongOrigin => ("request.wrong_origin", 403, message::ERROR_REQUEST_WRONG_ORIGIN),
     /// A change request without the right token of the session (CSRF).

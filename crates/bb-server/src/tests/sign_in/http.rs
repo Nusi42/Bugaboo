@@ -1179,15 +1179,24 @@ async fn perf_02_the_invitation_list_takes_fields_cursor_and_limit_over_http() -
         assert_eq!(last.body["next_cursor"], Value::Null);
         assert!(
             last.body["items"][0]["expires_at"].is_string(),
-            "all fields by default"
+            "the route's default holds every field"
         );
-        // A field that does not exist, and a cursor that is not one, are refused.
-        for bad in ["fields=password", "cursor=nonsense", "limit=many"] {
+        // A field that does not exist, a cursor that is not one or was changed, and a page size
+        // that is no number are refused, each with its own code.
+        let mut changed = cursor.clone();
+        changed.pop();
+        changed.push(if cursor.ends_with('A') { 'B' } else { 'A' });
+        for (bad, code) in [
+            ("fields=password".to_owned(), "request.unknown_field"),
+            ("cursor=nonsense".to_owned(), "request.bad_cursor"),
+            (format!("cursor={changed}"), "request.bad_cursor"),
+            ("limit=many".to_owned(), "request.invalid"),
+        ] {
             let reply = ada
                 .send("GET", &format!("/api/v1/auth/invitations?{bad}"), None)
                 .await?;
             assert_eq!(reply.status, StatusCode::BAD_REQUEST, "{bad}");
-            assert_eq!(reply.code(), "request.invalid", "{bad}");
+            assert_eq!(reply.code(), code, "{bad}");
         }
         Ok(())
     })
