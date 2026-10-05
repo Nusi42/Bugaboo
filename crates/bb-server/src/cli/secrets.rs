@@ -12,7 +12,9 @@ use jiff::Timestamp;
 
 use super::service::account_name;
 use super::{StoreArgs, load_settings};
-use crate::data_folder::{DataFolder, create_private, other_owner};
+use crate::data_folder::{
+    DataFolder, Existing, create_private, open_to_others, other_owner, write_private,
+};
 use crate::probe::log_state;
 use crate::wiring::{self, Store};
 use crate::{config::Settings, output};
@@ -153,7 +155,9 @@ pub(super) async fn rotate_key(args: &StoreArgs) -> anyhow::Result<()> {
 }
 
 /// `bugaboo keys export <folder>`: copies the key files into a folder that only its owner can
-/// open, and never over a copy that is already there.
+/// open (a folder that others can open is refused). Every copy is a new file that is made
+/// private before the key goes in; a copy that is already there is never replaced, and a run that
+/// meets one takes back what it made.
 pub(super) async fn export_keys(args: &StoreArgs, folder: &Path) -> anyhow::Result<()> {
     let (_, store) = open(args, "keys export").await?;
     copy_keys(&store.keys.backup_files(), folder)?;
@@ -165,18 +169,33 @@ fn copy_keys(files: &[PathBuf], folder: &Path) -> anyhow::Result<()> {
     let failed =
         |reason: &dyn std::fmt::Display| anyhow!(message::keys_export_failed(reason).render());
     create_private(folder).map_err(|error| failed(&error))?;
-    let targets: Vec<_> = files
-        .iter()
-        .filter_map(|file| file.file_name().map(|name| folder.join(name)))
-        .collect();
-    // Refused before anything is copied, so a half copy never replaces a good one.
-    if targets.iter().any(|target| target.exists()) {
+    if open_to_others(folder) {
         return Err(anyhow!(
-            message::keys_export_exists(folder.display()).render()
+            message::keys_export_not_private(folder.display()).render()
         ));
     }
-    for (file, target) in files.iter().zip(&targets) {
-        std::fs::copy(file, target).map_err(|error| failed(&error))?;
+    let mut written: Vec<PathBuf> = Vec::new();
+    for file in files {
+        let Some(name) = file.file_name() else {
+            continue;
+        };
+        let target = folder.join(name);
+        let copied =
+            std::fs::read(file).and_then(|bytes| write_private(&target, &bytes, Existing::Refuse));
+        match copied {
+            Ok(()) => written.push(target),
+            Err(error) => {
+                // A half copy never stays: what this run made is taken away again.
+                for done in &written {
+                    let _ = std::fs::remove_file(done);
+                }
+                return Err(if error.kind() == std::io::ErrorKind::AlreadyExists {
+                    anyhow!(message::keys_export_exists(folder.display()).render())
+                } else {
+                    failed(&error)
+                });
+            }
+        }
     }
     Ok(())
 }

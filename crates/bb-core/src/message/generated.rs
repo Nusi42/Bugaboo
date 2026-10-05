@@ -1123,6 +1123,15 @@ pub fn keys_export_failed(reason: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `keys.export-not-private`.
+#[must_use]
+pub fn keys_export_not_private(path: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("keys.export-not-private"),
+        vec![("path", Value::Text(path.to_string()))],
+    )
+}
+
 /// The message `keys.exported`.
 #[must_use]
 pub fn keys_exported(path: impl std::fmt::Display) -> Message {
@@ -2082,6 +2091,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "keys.export-failed",
         "The key files could not be copied: {reason}",
+    ),
+    (
+        "keys.export-not-private",
+        "The folder {path} can be opened by other accounts on this computer. Choose a folder that only you can open, or a new one, so the key files are not left where others can copy them.",
     ),
     (
         "keys.exported",

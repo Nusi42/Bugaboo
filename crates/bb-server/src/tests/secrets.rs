@@ -186,3 +186,66 @@ async fn sec_16_the_commands_refuse_key_files_that_this_account_cannot_change() 
     assert!(text.contains("rotate-key"), "{text}");
     Ok(())
 }
+
+#[tokio::test]
+async fn sec_16_an_export_that_meets_an_old_copy_leaves_no_half_copy() -> TestResult {
+    let folder = tempfile::tempdir()?;
+    let (args, _) = installation(folder.path()).await?;
+    let target = folder.path().join("backup");
+    std::fs::create_dir(&target)?;
+    // The second file of the export is there already: the first must not stay behind.
+    std::fs::write(target.join("log.key"), "an older copy")?;
+    let error = export_keys(&args, &target)
+        .await
+        .err()
+        .ok_or("a copy was overwritten")?;
+    assert!(format!("{error:#}").contains("already holds"), "{error:#}");
+    assert!(!target.join("master.key").exists(), "a half copy stayed");
+    assert_eq!(
+        std::fs::read_to_string(target.join("log.key"))?,
+        "an older copy"
+    );
+    Ok(())
+}
+
+#[cfg(unix)]
+#[tokio::test]
+async fn sec_16_exported_keys_are_private_and_a_folder_others_can_open_is_refused() -> TestResult {
+    use std::os::unix::fs::PermissionsExt as _;
+    let folder = tempfile::tempdir()?;
+    let (args, _) = installation(folder.path()).await?;
+    let mode = |path: &Path| std::fs::metadata(path).map(|data| data.permissions().mode() & 0o777);
+    let target = folder.path().join("backup");
+    export_keys(&args, &target).await?;
+    assert_eq!(mode(&target)?, 0o700);
+    assert_eq!(mode(&target.join("master.key"))?, 0o600);
+    let open = folder.path().join("open");
+    std::fs::create_dir(&open)?;
+    std::fs::set_permissions(&open, std::fs::Permissions::from_mode(0o755))?;
+    let error = export_keys(&args, &open)
+        .await
+        .err()
+        .ok_or("an open folder was used")?;
+    assert!(
+        format!("{error:#}").contains("can be opened by other accounts"),
+        "{error:#}"
+    );
+    assert_eq!(std::fs::read_dir(&open)?.count(), 0);
+    Ok(())
+}
+
+#[cfg(windows)]
+#[tokio::test]
+async fn sec_16_exported_keys_are_for_the_owner_and_the_administrators_on_windows() -> TestResult {
+    let folder = tempfile::tempdir()?;
+    let (args, _) = installation(folder.path()).await?;
+    let target = folder.path().join("backup");
+    export_keys(&args, &target).await?;
+    let output = std::process::Command::new("icacls")
+        .arg(target.join("master.key"))
+        .output()?;
+    let listing = String::from_utf8_lossy(&output.stdout).into_owned();
+    assert_eq!(listing.matches(":(").count(), 2, "{listing}");
+    assert!(!listing.contains("(I)"), "{listing}");
+    Ok(())
+}

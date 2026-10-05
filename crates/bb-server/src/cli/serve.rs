@@ -16,7 +16,7 @@ use tokio::net::TcpListener;
 
 use super::{ServeArgs, load_settings};
 use crate::config::{Settings, TlsMode};
-use crate::data_folder::{DataFolder, write_private};
+use crate::data_folder::{DataFolder, Existing, write_private};
 use crate::{log, output, wiring};
 
 /// `bugaboo serve`: runs until Ctrl+C or the stop signal of the system.
@@ -121,15 +121,9 @@ fn announce_setup_code(data: &DataFolder, code: Option<&str>) {
 /// Saves the setup code in `file` for its owner only, and says where it is. The message of a
 /// failure says where to look instead; it never contains the code.
 fn save_setup_code(file: &Path, code: &str) -> Result<Message, Message> {
-    write_private(
-        file,
-        &format!(
-            "{code}
-"
-        ),
-    )
-    .map(|()| message::server_setup_code_file(file.display()))
-    .map_err(|error| message::server_setup_code_file_failed(file.display(), error))
+    write_private(file, format!("{code}\n").as_bytes(), Existing::Replace)
+        .map(|()| message::server_setup_code_file(file.display()))
+        .map_err(|error| message::server_setup_code_file_failed(file.display(), error))
 }
 
 /// What the listener does with connections: HTTPS with the configured certificate, or plain
@@ -259,8 +253,7 @@ mod tests {
         assert!(saved.render().contains("setup-code.txt"));
         assert_eq!(
             std::fs::read_to_string(&file).unwrap(),
-            "k7q2-x9mf-3hd8-vt4w
-"
+            "k7q2-x9mf-3hd8-vt4w\n"
         );
         let missing = folder.path().join("no-such-folder").join("setup-code.txt");
         let failed = save_setup_code(&missing, "k7q2-x9mf-3hd8-vt4w").unwrap_err();

@@ -440,6 +440,8 @@ export const messages = {
   "keys.how-linux": "sudo -u {owner} {command}",
   "keys.how-windows":
     "On Windows that account is {owner}. It has no password, so you cannot sign in as it: stop the service, start a terminal as that account with a tool that can do this, and run: {command}",
+  "keys.export-not-private":
+    "The folder {path} can be opened by other accounts on this computer. Choose a folder that only you can open, or a new one, so the key files are not left where others can copy them.",
 } as const;
 
 export type MessageKey = keyof typeof messages;
@@ -476,6 +478,7 @@ export interface MessageArguments {
   "invitations.take-back-title": { email: string | number };
   "keys.export-exists": { path: string | number };
   "keys.export-failed": { reason: string | number };
+  "keys.export-not-private": { path: string | number };
   "keys.exported": { path: string | number };
   "keys.how-linux": { command: string | number; owner: string | number };
   "keys.how-windows": { command: string | number; owner: string | number };
