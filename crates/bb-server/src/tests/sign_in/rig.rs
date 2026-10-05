@@ -72,7 +72,7 @@ impl Rig {
         failures: u32,
         passkeys: bool,
     ) -> Result<Self, Box<dyn std::error::Error + Send + Sync>> {
-        let rig = Self::build(db, failures, passkeys).await?;
+        let rig = Self::build(db, failures, passkeys, true).await?;
         if rig.setup_code.is_empty() {
             return Err("no setup code on a new database".into());
         }
@@ -83,13 +83,22 @@ impl Rig {
     pub(super) async fn start_upgraded(
         db: &TestDatabase,
     ) -> Result<Self, Box<dyn std::error::Error + Send + Sync>> {
-        Self::build(db, 10, true).await
+        Self::build(db, 10, true, true).await
+    }
+
+    /// A server on a new database that has not had its first start: no starting roles, no setup
+    /// code. The test makes the first start itself (two servers starting together).
+    pub(super) async fn start_unstarted(
+        db: &TestDatabase,
+    ) -> Result<Self, Box<dyn std::error::Error + Send + Sync>> {
+        Self::build(db, 10, true, false).await
     }
 
     async fn build(
         db: &TestDatabase,
         failures: u32,
         passkeys: bool,
+        first_start: bool,
     ) -> Result<Self, Box<dyn std::error::Error + Send + Sync>> {
         let database = Database::connect(db.url()).await?;
         database.migrate(Timestamp::from_second(START)?).await?;
@@ -115,12 +124,16 @@ impl Rig {
             "Bugaboo".to_owned(),
         ));
         // The first start, as the wiring does it: the starting roles first, then the setup code.
-        make_starting_roles(&services.ctx(RequestInfo::default()), MakeStartingRoles)
-            .await
-            .map_err(|error| error.to_string())?;
-        let code = issue_setup_code(&services.ctx(RequestInfo::default()), IssueSetupCode)
-            .await
-            .map_err(|error| error.to_string())?;
+        let code = if first_start {
+            make_starting_roles(&services.ctx(RequestInfo::default()), MakeStartingRoles)
+                .await
+                .map_err(|error| error.to_string())?;
+            issue_setup_code(&services.ctx(RequestInfo::default()), IssueSetupCode)
+                .await
+                .map_err(|error| error.to_string())?
+        } else {
+            None
+        };
         Ok(Self {
             database,
             storage,

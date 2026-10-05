@@ -233,6 +233,27 @@ fn assignment_select() -> SelectStatement {
     select
 }
 
+/// The rows on a project (`Some`) or for the whole organization (`None`).
+fn assignments_on_select(project: Option<ProjectId>) -> SelectStatement {
+    let mut select = assignment_select();
+    match project {
+        Some(project) => {
+            select.and_where(Expr::col(AssignmentRow::Project).eq(id_bytes(project.to_bytes())));
+        }
+        None => {
+            select.and_where(Expr::col(AssignmentRow::Project).is_null());
+        }
+    }
+    select
+}
+
+/// The rows of a group, wherever they are.
+fn assignments_of_group_select(group: GroupId) -> SelectStatement {
+    let mut select = assignment_select();
+    select.and_where(Expr::col(AssignmentRow::Group).eq(id_bytes(group.to_bytes())));
+    select
+}
+
 /// Everything the engine needs for `person` at `place`, in one snapshot.
 async fn inputs_in(
     transaction: &mut Transaction,
@@ -641,18 +662,8 @@ impl PolicyStore for AuthStorage {
         &self,
         project: Option<ProjectId>,
     ) -> Result<Vec<Assignment>, StoreError> {
-        let mut select = assignment_select();
-        match project {
-            Some(project) => {
-                select
-                    .and_where(Expr::col(AssignmentRow::Project).eq(id_bytes(project.to_bytes())));
-            }
-            None => {
-                select.and_where(Expr::col(AssignmentRow::Project).is_null());
-            }
-        }
         self.database()
-            .fetch_all(&select)
+            .fetch_all(&assignments_on_select(project))
             .await?
             .iter()
             .map(read_assignment)
@@ -660,8 +671,7 @@ impl PolicyStore for AuthStorage {
     }
 
     async fn assignments_of_group(&self, group: GroupId) -> Result<Vec<Assignment>, StoreError> {
-        let mut select = assignment_select();
-        select.and_where(Expr::col(AssignmentRow::Group).eq(id_bytes(group.to_bytes())));
+        let select = assignments_of_group_select(group);
         self.database()
             .fetch_all(&select)
             .await?
@@ -810,6 +820,87 @@ impl PolicyStore for AuthStorage {
         transaction: &mut Transaction,
     ) -> Result<OrganizationState, StoreError> {
         organization_state_of(transaction).await
+    }
+
+    async fn policy_inputs_in(
+        transaction: &mut Transaction,
+        person: UserId,
+        place: Place,
+    ) -> Result<Option<Inputs>, StoreError> {
+        inputs_in(transaction, person, place).await
+    }
+
+    async fn assignments_on_in(
+        transaction: &mut Transaction,
+        project: Option<ProjectId>,
+    ) -> Result<Vec<Assignment>, StoreError> {
+        transaction
+            .fetch_all(&assignments_on_select(project))
+            .await?
+            .iter()
+            .map(read_assignment)
+            .collect()
+    }
+
+    async fn assignments_of_group_in(
+        transaction: &mut Transaction,
+        group: GroupId,
+    ) -> Result<Vec<Assignment>, StoreError> {
+        transaction
+            .fetch_all(&assignments_of_group_select(group))
+            .await?
+            .iter()
+            .map(read_assignment)
+            .collect()
+    }
+
+    async fn role_in(
+        transaction: &mut Transaction,
+        id: RoleId,
+    ) -> Result<Option<RoleRecord>, StoreError> {
+        Ok(roles_in(transaction, Some(&[id])).await?.pop())
+    }
+
+    async fn sub_projects_in(
+        transaction: &mut Transaction,
+        project: ProjectId,
+    ) -> Result<Vec<ProjectId>, StoreError> {
+        let mut select = Query::select();
+        select
+            .columns([ProjectRow::Id, ProjectRow::Parent])
+            .from(ProjectRow::Table);
+        let mut children: BTreeMap<ProjectId, Vec<ProjectId>> = BTreeMap::new();
+        for row in transaction.fetch_all(&select).await? {
+            let id = read_project_id(&row, ProjectRow::Id)?;
+            if let Some(parent) = optional(
+                row.optional_id_bytes(ProjectRow::Parent)?,
+                ProjectId::from_bytes,
+                "a project ID",
+            )? {
+                children.entry(parent).or_default().push(id);
+            }
+        }
+        // Breadth first; a stored loop is cut short, not followed.
+        let mut found: Vec<ProjectId> = Vec::new();
+        let mut next = vec![project];
+        while let Some(current) = next.pop() {
+            for child in children.get(&current).into_iter().flatten() {
+                if *child != project && !found.contains(child) {
+                    found.push(*child);
+                    next.push(*child);
+                }
+            }
+        }
+        Ok(found)
+    }
+
+    async fn starting_roles_made_in(transaction: &mut Transaction) -> Result<bool, StoreError> {
+        let mut select = Query::select();
+        select
+            .column(StartingRolesMadeRow::MadeAt)
+            .from(StartingRolesMadeRow::Table)
+            .limit(1);
+        Ok(transaction.fetch_optional(&select).await?.is_some())
     }
 
     async fn mark_starting_roles_made(

@@ -82,6 +82,20 @@ pub trait PolicyStore: ChangeStore + 'static {
         /// The same as [`PolicyStore::organization_state`], inside the change, so it sees what
         /// the change wrote.
         fn organization_state_in() -> OrganizationState;
+        /// The same as [`PolicyStore::policy_inputs`], inside the change: a rule that depends on
+        /// what a person may do (no escalation) is judged on what is stored now, after the lock.
+        fn policy_inputs_in(person: UserId, place: Place) -> Option<Inputs>;
+        /// The same as [`PolicyStore::assignments_on`], inside the change.
+        fn assignments_on_in(project: Option<ProjectId>) -> Vec<Assignment>;
+        /// The same as [`PolicyStore::assignments_of_group`], inside the change.
+        fn assignments_of_group_in(group: GroupId) -> Vec<Assignment>;
+        /// The same as [`PolicyStore::role`], inside the change.
+        fn role_in(id: RoleId) -> Option<RoleRecord>;
+        /// Every project below this one, at any depth, in no particular order.
+        fn sub_projects_in(project: ProjectId) -> Vec<ProjectId>;
+        /// The same as [`PolicyStore::starting_roles_made`], inside the change, so two servers
+        /// that start together do not both make the starting roles.
+        fn starting_roles_made_in() -> bool;
         /// Marks the starting roles as made.
         fn mark_starting_roles_made(at: Timestamp) -> ();
         /// Forgets a person of the list of M1 administrators.

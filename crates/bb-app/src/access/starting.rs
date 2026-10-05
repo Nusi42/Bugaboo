@@ -111,10 +111,15 @@ pub async fn make_starting_roles<S: AuthStore>(
             vec![set_to("roles", serde_json::Value::Array(names))],
         )?;
         let now = ctx.now();
-        store
+        let made_now = store
             .record_change(&event, move |transaction| {
                 Box::pin(async move {
                     S::lock_policy(transaction).await?;
+                    // Two servers that start together both saw "not made" above; the one that
+                    // gets the lock second finds them made and stops, which is not a failure.
+                    if S::starting_roles_made_in(transaction).await? {
+                        return Err(S::aborted());
+                    }
                     for new in &roles {
                         S::insert_role(
                             transaction,
@@ -125,17 +130,23 @@ pub async fn make_starting_roles<S: AuthStore>(
                         )
                         .await?;
                     }
-                    S::mark_starting_roles_made(transaction, now).await
+                    S::mark_starting_roles_made(transaction, now).await?;
+                    Ok(true)
                 })
             })
-            .await
-            .map_err(|error| change_failed::<S>(&error, None))?;
-        ctx.note(
-            SecurityAction::StartingRolesMade,
-            None,
-            Some(fixed_entity("starting_roles", "made")?),
-        )
-        .await;
+            .await;
+        match made_now {
+            Ok(_) => {
+                ctx.note(
+                    SecurityAction::StartingRolesMade,
+                    None,
+                    Some(fixed_entity("starting_roles", "made")?),
+                )
+                .await;
+            }
+            Err(error) if S::is_aborted(&error) => {}
+            Err(error) => return Err(change_failed::<S>(&error, None)),
+        }
     }
     give_the_old_administrators_their_role(ctx).await
 }
@@ -218,7 +229,14 @@ async fn give_the_old_administrators_their_role<S: AuthStore>(
             .record_change(&event, move |transaction| {
                 Box::pin(async move {
                     S::lock_policy(transaction).await?;
-                    S::insert_assignment(transaction, &assignment).await?;
+                    // Another server that started at the same time may have given it already.
+                    let has_it = S::assignments_on_in(transaction, None)
+                        .await?
+                        .iter()
+                        .any(|row| row.person == Some(person) && row.role == Some(administrator));
+                    if !has_it {
+                        S::insert_assignment(transaction, &assignment).await?;
+                    }
                     S::delete_legacy_administrator(transaction, person).await
                 })
             })

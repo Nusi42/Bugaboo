@@ -14,7 +14,7 @@ mod store;
 use std::sync::Arc;
 
 use bb_core::ErrorCode;
-use bb_core::access::Assignment;
+use bb_core::access::{AppliesTo, Assignment};
 use bb_core::id::{ProjectId, UserId};
 use bb_core::people_kinds::PeopleKind;
 use bb_core::person::Person;
@@ -207,32 +207,45 @@ impl<S: AuthStore> Ctx<'_, S> {
                 name: found.name,
             }))
     }
+}
 
-    /// Whether the actor may give this row: they hold every permission of its role at the place
-    /// it is given (ADR-0025, decision 6; organization permissions count nowhere in a project and
-    /// are left out there). A row of *No access* gives nothing.
-    ///
-    /// # Errors
-    /// `access.too_much` when they hold less than the role.
-    pub(crate) async fn ensure_may_give(
-        &self,
-        actor: &Actor,
-        row: &Assignment,
-    ) -> Result<(), AppError> {
-        let Some(role) = row.role else {
-            return Ok(());
-        };
-        let Some(record) = self
-            .store()
-            .role(role)
-            .await
-            .map_err(|error| internal::<S>(&error))?
-        else {
-            return Ok(());
-        };
-        let place = row.project.map_or(Place::Organization, Place::Project);
-        let held = self.evaluate(actor.person.id, place).await?;
-        ensure_no_escalation(&held, &record.permissions)?;
-        Ok(())
+/// Whether `giver` may give this row: they hold every permission of its role at the place it is
+/// given (ADR-0025, decision 6; organization permissions count nowhere in a project and are left
+/// out there). A row for a project *and its sub-projects* is given in each of them, so they must
+/// hold the role there too: a lead for one project cannot make themselves lead of everything
+/// below it. A row of *No access* gives nothing.
+///
+/// It runs inside the change, after the policy lock, so it judges what is stored now and not
+/// what was stored when the request began.
+///
+/// # Errors
+/// [`Refusal::TooMuch`] (as the error of the store) when they hold less than the role somewhere
+/// the row reaches, or the error of the store.
+pub(crate) async fn ensure_may_give_in<S: AuthStore>(
+    transaction: &mut S::Transaction,
+    giver: UserId,
+    row: &Assignment,
+) -> Result<(), S::Error> {
+    let Some(role) = row.role else {
+        return Ok(());
+    };
+    let Some(record) = S::role_in(transaction, role).await? else {
+        return Ok(());
+    };
+    let mut places = vec![row.project.map_or(Place::Organization, Place::Project)];
+    if let (Some(project), AppliesTo::ProjectAndSubProjects) = (row.project, row.applies_to) {
+        places.extend(
+            S::sub_projects_in(transaction, project)
+                .await?
+                .into_iter()
+                .map(Place::Project),
+        );
     }
+    for place in places {
+        let Some(inputs) = S::policy_inputs_in(transaction, giver, place).await? else {
+            continue;
+        };
+        ensure_no_escalation(&evaluate(&inputs), &record.permissions).map_err(S::refused)?;
+    }
+    Ok(())
 }

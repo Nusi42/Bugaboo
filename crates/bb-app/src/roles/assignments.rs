@@ -3,6 +3,7 @@
 
 use bb_core::ErrorCode;
 use bb_core::access::{AppliesTo, Assignment};
+use bb_core::event::FieldChange;
 use bb_core::id::{AssignmentId, ProjectId};
 use bb_core::people_kinds::PeopleKind;
 use bb_core::sign_in::SecurityAction;
@@ -14,8 +15,8 @@ use super::types::{
     AssignRole, AssignmentList, AssignmentView, AssignmentsQuery, Given, RemoveAssignment, RoleRef,
     Subject, WhoView,
 };
-use crate::access::Actor;
-use crate::auth::{AppError, AuthStore, Ctx, Done, by, changed, entity, internal, set_to};
+use crate::access::{Actor, ensure_may_give_in};
+use crate::auth::{AppError, AuthStore, Ctx, Done, by, entity, internal, set_to};
 use crate::people::{GroupView, stopped};
 
 /// The place a row is given at.
@@ -162,22 +163,6 @@ pub async fn assign_role<S: AuthStore>(
         applies_to: input.applies_to,
         given_at: ctx.now(),
     };
-    ctx.ensure_may_give(&actor, &row).await?;
-    for old in ctx
-        .store()
-        .assignments_on(input.project)
-        .await
-        .map_err(|error| internal::<S>(&error))?
-    {
-        // A role and *No access* on one project for the same person or group, or the same row
-        // twice: the row in the way is the one to take away first.
-        if same_subject(&row, &old)
-            && (old.role.is_none() != row.role.is_none()
-                || (old.role == row.role && old.applies_to == row.applies_to))
-        {
-            return Err(ErrorCode::AssignmentConflict.into());
-        }
-    }
     let event = ctx.event(
         by(actor.person.id),
         entity("assignment", row.id)?,
@@ -187,16 +172,34 @@ pub async fn assign_role<S: AuthStore>(
         ],
     )?;
     let stored = row.clone();
+    let giver = actor.person.id;
     ctx.store()
         .record_change(&event, move |transaction| {
             Box::pin(async move {
                 S::lock_policy(transaction).await?;
+                // Both checks look at what is stored now, after the lock: two people who each
+                // give a row at the same moment cannot both pass on what was there before.
+                ensure_may_give_in::<S>(transaction, giver, &stored).await?;
+                for old in S::assignments_on_in(transaction, stored.project).await? {
+                    // A role and *No access* on one project for the same person or group, or the
+                    // same row twice: the row in the way is the one to take away first.
+                    if same_subject(&stored, &old)
+                        && (old.role.is_none() != stored.role.is_none()
+                            || (old.role == stored.role && old.applies_to == stored.applies_to))
+                    {
+                        return Err(S::aborted());
+                    }
+                }
                 S::insert_assignment(transaction, &stored).await
             })
         })
         .await
         .map_err(|error| {
-            stopped::<S>(&error, ErrorCode::NotFound, ErrorCode::AssignmentConflict)
+            stopped::<S>(
+                &error,
+                ErrorCode::AssignmentConflict,
+                ErrorCode::AssignmentConflict,
+            )
         })?;
     ctx.note(
         SecurityAction::AssignmentMade,
@@ -232,10 +235,21 @@ pub async fn remove_assignment<S: AuthStore>(
     ctx.require(&actor, Permission::DecideRoles, place_of(row.project))
         .await?;
     let id = row.id;
+    // The row that is taken away, so the history can say whom it was for and what it gave.
     let event = ctx.event(
         by(actor.person.id),
         entity("assignment", id)?,
-        vec![changed("assignment")],
+        vec![FieldChange {
+            field: "assignment".to_owned(),
+            before: Some(json!({
+                "person": row.person.map(|person| person.to_string()),
+                "group": row.group.map(|group| group.to_string()),
+                "role": row.role.map(|role| role.to_string()),
+                "project": row.project.map(|project| project.to_string()),
+                "applies_to": row.applies_to.code(),
+            })),
+            after: None,
+        }],
     )?;
     ctx.store()
         .record_change(&event, move |transaction| {

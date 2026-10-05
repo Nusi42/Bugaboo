@@ -294,6 +294,72 @@ impl PolicyStore for FakeStore {
         Ok(organization_state_of(&tx.state))
     }
 
+    async fn policy_inputs_in(
+        tx: &mut Tx,
+        person: UserId,
+        place: Place,
+    ) -> Result<Option<Inputs>, FakeError> {
+        Ok(inputs_of(&tx.state, person, place))
+    }
+
+    async fn assignments_on_in(
+        tx: &mut Tx,
+        project: Option<ProjectId>,
+    ) -> Result<Vec<Assignment>, FakeError> {
+        Ok(tx
+            .state
+            .assignments
+            .iter()
+            .filter(|row| row.project == project)
+            .cloned()
+            .collect())
+    }
+
+    async fn assignments_of_group_in(
+        tx: &mut Tx,
+        group: GroupId,
+    ) -> Result<Vec<Assignment>, FakeError> {
+        Ok(tx
+            .state
+            .assignments
+            .iter()
+            .filter(|row| row.group == Some(group))
+            .cloned()
+            .collect())
+    }
+
+    async fn role_in(tx: &mut Tx, id: RoleId) -> Result<Option<RoleRecord>, FakeError> {
+        Ok(tx
+            .state
+            .roles
+            .iter()
+            .find(|record| record.role.id == id)
+            .cloned())
+    }
+
+    async fn sub_projects_in(tx: &mut Tx, project: ProjectId) -> Result<Vec<ProjectId>, FakeError> {
+        let mut found: Vec<ProjectId> = Vec::new();
+        let mut next = vec![project];
+        while let Some(current) = next.pop() {
+            for child in tx
+                .state
+                .projects
+                .iter()
+                .filter(|known| known.parent == Some(current))
+            {
+                if child.id != project && !found.contains(&child.id) {
+                    found.push(child.id);
+                    next.push(child.id);
+                }
+            }
+        }
+        Ok(found)
+    }
+
+    async fn starting_roles_made_in(tx: &mut Tx) -> Result<bool, FakeError> {
+        Ok(tx.state.starting_roles_made)
+    }
+
     async fn mark_starting_roles_made(tx: &mut Tx, _at: Timestamp) -> Result<(), FakeError> {
         tx.state.starting_roles_made = true;
         Ok(())
