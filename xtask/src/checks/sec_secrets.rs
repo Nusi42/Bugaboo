@@ -65,6 +65,49 @@ mod tests {
         crate::testutil::assert_real_findings(&scan(temp.path(), false).unwrap());
     }
 
+    /// A repository that holds the file of the fixture and the rules of Bugaboo's own
+    /// `.gitleaks.toml` only: the default rules of gitleaks are switched off here, so a finding is
+    /// the rule for access keys and nothing else. The marker that lets the fixture stand in this
+    /// repository is cut off, or the scan would skip the line it is about.
+    fn repo_with_the_rule_of_bugaboo(temp: &TempDir, fixture: &str) {
+        let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("..");
+        let config = std::fs::read_to_string(root.join(".gitleaks.toml")).unwrap();
+        assert!(config.contains("useDefault = true"));
+        temp.write(
+            ".gitleaks.toml",
+            config.replace("useDefault = true", "useDefault = false"),
+        );
+        let text =
+            std::fs::read_to_string(root.join("tools/checks/fixtures/SEC-SECRETS").join(fixture))
+                .unwrap();
+        let without_marker: String = text
+            .lines()
+            .map(|line| line.split("  # ").next().unwrap_or(line))
+            .collect::<Vec<_>>()
+            .join(
+                "
+",
+            );
+        temp.write("notes.txt", without_marker);
+        assert!(temp.git(&["init", "--quiet"]));
+        assert!(temp.git(&["add", "."]));
+        assert!(temp.git(&["commit", "--quiet", "-m", "chore: test"]));
+    }
+
+    #[test]
+    fn bad_example_an_access_key_is_found_by_the_rule_of_bugaboo() {
+        let temp = TempDir::new("secrets-key-bad");
+        repo_with_the_rule_of_bugaboo(&temp, "bad/access-key.txt");
+        crate::testutil::assert_real_findings(&scan(temp.path(), false).unwrap());
+    }
+
+    #[test]
+    fn good_example_things_that_only_look_like_access_keys_are_not_found() {
+        let temp = TempDir::new("secrets-key-good");
+        repo_with_the_rule_of_bugaboo(&temp, "good/not-a-key.txt");
+        assert!(scan(temp.path(), false).unwrap().is_empty());
+    }
+
     #[test]
     fn good_example() {
         let temp = TempDir::new("secrets-good");
