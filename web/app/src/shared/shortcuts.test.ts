@@ -101,6 +101,12 @@ describe("ux_05 pressing a shortcut", () => {
     expect(log).toEqual(["go-home"]);
   });
 
+  it("leaves the slash for the search bar of a later version (UX 6.2)", () => {
+    const { log, handle } = engineWith();
+    expect(handle(press("/"))).toBe(false);
+    expect(log).toEqual([]);
+  });
+
   it("does nothing for a key that is not a shortcut, and for a modifier alone", () => {
     const { log, handle } = engineWith();
     expect(handle(press("x"))).toBe(false);
@@ -127,8 +133,24 @@ describe("ux_05 a shortcut never fires while somebody types", () => {
 
   it.each(fields)("is silent in %o", (target) => {
     const { log, handle } = engineWith();
-    expect(handle(press("k", { ctrlKey: true, target }))).toBe(false);
+    expect(handle(press("z", { ctrlKey: true, target }))).toBe(false);
     expect(handle(press("?", { target, shiftKey: true }))).toBe(false);
+    expect(handle(press("j", { target }))).toBe(false);
+    expect(log).toEqual([]);
+  });
+
+  it.each(fields)("except quick search, which is wanted from anywhere: in %o", (target) => {
+    const { log, handle } = engineWith();
+    expect(handle(press("k", { ctrlKey: true, target }))).toBe(true);
+    expect(handle(press("k", { metaKey: true, target }))).toBe(true);
+    expect(log).toEqual(["quick-search", "quick-search"]);
+  });
+
+  it("never lets a key with no Ctrl or Cmd through, whatever the shortcut says", () => {
+    const { log, handle } = engineWith({ "quick-search": ["Alt+s"] });
+    expect(handle(press("s", { altKey: true, target: { tagName: "INPUT", type: "text" } }))).toBe(
+      false,
+    );
     expect(log).toEqual([]);
   });
 
@@ -155,7 +177,6 @@ describe("ux_05 a person's own keys", () => {
     const { log, handle } = engineWith(own);
     expect(handle(press("s", { altKey: true }))).toBe(true);
     expect(handle(press("k", { ctrlKey: true }))).toBe(false);
-    expect(handle(press("/"))).toBe(false);
     expect(log).toEqual(["quick-search"]);
     expect(keysOf("quick-search", own)).toEqual(["Alt+s"]);
     expect(keysOf("go-home", own)).toEqual(["g h"]);

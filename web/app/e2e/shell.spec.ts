@@ -39,7 +39,7 @@ async function computerFrame(page: Page): Promise<void> {
   await expect(menu.getByRole("link", { name: t("nav.home"), exact: true })).toBeVisible();
   await expect(menu.getByRole("link", { name: t("nav.my-settings"), exact: true })).toBeVisible();
   await expect(menu.getByRole("link", { name: t("nav.organization-settings") })).toBeVisible();
-  await expect(menu.getByRole("button", { name: t("shell.shortcuts") })).toBeVisible();
+  await expect(menu.getByRole("button", { name: t("shortcut.title") })).toBeVisible();
   await expectNoLaterScreens(menu);
   // The sidebar narrows to icons and the words stay for screen readers.
   await menu.getByRole("button", { name: t("shell.narrow") }).click();
@@ -145,7 +145,7 @@ async function topicsOnLargeScreens(page: Page): Promise<void> {
   await expect(page).toHaveURL(/\/me\/appearance$/u);
   await expect(topics(page, t("nav.my-settings"))).toHaveText([
     t("nav.appearance"),
-    t("nav.shortcuts"),
+    t("shortcut.title"),
     t("nav.security"),
     t("nav.sessions"),
   ]);
@@ -162,7 +162,7 @@ async function topicsOnPhone(page: Page): Promise<void> {
   await expect(page.getByRole("heading", { level: 1, name: t("nav.my-settings") })).toBeVisible();
   await expect(topics(page, t("nav.my-settings"))).toHaveText([
     t("nav.appearance"),
-    t("nav.shortcuts"),
+    t("shortcut.title"),
     t("nav.security"),
     t("nav.sessions"),
   ]);
@@ -214,4 +214,16 @@ test("ux_01 an address of the settings that does not exist shows the page that i
   await expect(
     page.getByRole("heading", { level: 1, name: t("page.not-found.title") }),
   ).toBeVisible();
+});
+
+test("ux_01 the tab says the name of the topic once, also when a topic is opened by its address", async ({
+  page,
+}) => {
+  await signIn(page, ada);
+  await page.goto("/me/appearance");
+  await expect(page).toHaveTitle(`${t("appearance.title")} · ${t("app.name")}`);
+  await page.goto("/me/shortcuts");
+  await expect(page).toHaveTitle(`${t("shortcut.title")} · ${t("app.name")}`);
+  await page.goto("/me/security");
+  await expect(page).toHaveTitle(`${t("security.title")} · ${t("app.name")}`);
 });

@@ -23,7 +23,7 @@ export interface ShortcutListProps {
 /** Every shortcut of the registry with its keys and where it works (UX §6.2). */
 export function ShortcutList({ overrides, action, show }: ShortcutListProps) {
   return (
-    <ul className={styles.list} aria-label={t("shortcut.list")}>
+    <ul className={styles.list} aria-label={t("shortcut.title")}>
       {shortcutDefinitions
         .filter((definition) => show?.(definition.id) ?? true)
         .map((definition) => (

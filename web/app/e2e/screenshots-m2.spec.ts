@@ -55,7 +55,7 @@ async function phoneScreens(page: Page): Promise<void> {
   await expect(page.getByRole("heading", { level: 1, name: t("appearance.title") })).toBeVisible();
   await shot(page, "04-appearance-phone");
   await page.goto("/me/shortcuts");
-  await expect(page.getByRole("heading", { level: 1, name: t("shortcuts.title") })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: t("shortcut.title") })).toBeVisible();
   await shot(page, "05-keyboard-shortcuts-phone");
   await page.goto("/me/shortcuts?edit=go-home");
   await expect(page.getByRole("complementary", { name: t("shortcut.go-home") })).toBeVisible();

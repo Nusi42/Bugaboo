@@ -104,15 +104,22 @@ interface Candidate {
 function candidatesFor(
   overrides: ShortcutOverrides,
   handlers: ShortcutHandlers,
+  typing: boolean,
 ): readonly Candidate[] {
-  return shortcutDefinitions
-    .filter((definition) => handlers[definition.id] !== undefined)
-    .flatMap((definition) =>
-      keysOf(definition.id, overrides).map((keys) => ({
-        id: definition.id,
-        chords: chordsOfSequence(keys),
-      })),
-    );
+  const found: Candidate[] = [];
+  for (const definition of shortcutDefinitions) {
+    // While somebody types only the shortcuts made for it work, and only with Ctrl or Cmd.
+    const allowed = !typing || ("inFields" in definition && definition.inFields);
+    if (handlers[definition.id] !== undefined && allowed) {
+      for (const keys of keysOf(definition.id, overrides)) {
+        const chords = chordsOfSequence(keys);
+        if (!typing || chords.every((chord) => chord.startsWith("Mod+"))) {
+          found.push({ id: definition.id, chords });
+        }
+      }
+    }
+  }
+  return found;
 }
 
 /**
@@ -128,14 +135,18 @@ export function createEngine(options: EngineOptions): (press: PressLike) => bool
     if (chord === null) {
       return false;
     }
-    if (isTyping(press.target) || press.isComposing === true) {
+    if (press.isComposing === true) {
       pending = [];
       return false;
+    }
+    const typing = isTyping(press.target);
+    if (typing) {
+      pending = [];
     }
     const now = options.now();
     const before = now - pendingSince > sequenceMs ? [] : pending;
     const handlers = options.handlers();
-    const candidates = candidatesFor(options.overrides(), handlers);
+    const candidates = candidatesFor(options.overrides(), handlers, typing);
     // The keys so far, and then the press alone: a wrong second key may start a new sequence.
     for (const typed of [[...before, chord], [chord]]) {
       const done = candidates.find((candidate) => candidate.chords.join(" ") === typed.join(" "));

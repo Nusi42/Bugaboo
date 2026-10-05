@@ -25,7 +25,7 @@ export function Bottom({ narrow, inDrawer, administrator, onNavigate }: BottomPr
       <li>
         <NavButton
           icon={iconName.keyboard}
-          label={t("shell.shortcuts")}
+          label={t("shortcut.title")}
           narrow={narrow}
           onPress={() => {
             openOverlay("shortcuts");

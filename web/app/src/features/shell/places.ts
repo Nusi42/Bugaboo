@@ -43,7 +43,7 @@ export const places: readonly Place[] = [
   },
   {
     path: paths.shortcuts,
-    name: "nav.shortcuts",
+    name: "shortcut.title",
     icon: iconName.keyboard,
     parent: paths.mySettings,
     group: "nav.group.look",

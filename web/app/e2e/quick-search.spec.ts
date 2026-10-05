@@ -53,9 +53,10 @@ test("cfg_08 Esc closes quick search and the focus goes back where it was", asyn
   await page.keyboard.press("Escape");
   await expect(dialog(page)).toHaveCount(0);
   await expect(home).toBeFocused();
-  // The slash opens it as well, and the box starts empty every time.
+  // The box starts empty every time, and the slash is kept for the search bar of a later version.
   await page.keyboard.press("/");
-  await expect(dialog(page)).toBeVisible();
+  await expect(dialog(page)).toHaveCount(0);
+  await page.keyboard.press("Control+k");
   await expect(box(page)).toHaveValue("");
   await page.keyboard.press("Escape");
 });
@@ -89,4 +90,15 @@ test("cfg_08 quick search lists only the pages the person may open", async ({ pa
   await expect(
     dialog(page).getByRole("option", { name: new RegExp(t("nav.appearance"), "u") }),
   ).toBeVisible();
+});
+
+test("cfg_08 Ctrl+K opens quick search also while a text field has the focus", async ({ page }) => {
+  await signIn(page, ada);
+  await page.goto("/me/shortcuts");
+  const search = page.getByRole("searchbox", { name: t("shortcuts.search"), exact: true });
+  await search.focus();
+  await page.keyboard.press("Control+k");
+  await expect(dialog(page)).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(search).toBeFocused();
 });

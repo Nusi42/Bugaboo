@@ -2,6 +2,7 @@ import { t } from "@bugaboo/messages";
 import { Card, useLayout } from "@bugaboo/ui";
 import { useQuery } from "@tanstack/react-query";
 import { Navigate, Outlet, useLocation } from "@tanstack/react-router";
+import { useId } from "react";
 
 import { meOptions } from "../../shared/session.ts";
 import { usePageTitle } from "../../shared/use-page.ts";
@@ -16,17 +17,26 @@ export interface SettingsFrameProps {
 
 interface TopicsProps {
   readonly groups: readonly TopicGroup[];
-  readonly pathname: string;
+  /** The page that is open, whose topic is marked; none on the page that lists them. */
+  readonly pathname?: string;
+}
+
+/** The id of the heading of a group, which labels the list of its topics. */
+function headingId(prefix: string, group: TopicGroup): string {
+  return `${prefix}-${group.heading}`;
 }
 
 /** The topics grouped under their headings, as links. */
 function Topics({ groups, pathname }: TopicsProps) {
+  const names = useId();
   return (
     <ul className={styles.groups}>
       {groups.map((group) => (
         <li key={group.heading} className={styles.group}>
-          <span className={styles.heading}>{t(group.heading)}</span>
-          <ul className={styles.topics}>
+          <span id={headingId(names, group)} className={styles.heading}>
+            {t(group.heading)}
+          </span>
+          <ul className={styles.topics} aria-labelledby={headingId(names, group)}>
             {group.topics.map((topic) => (
               <li key={topic.path}>
                 <NavLink
@@ -44,6 +54,24 @@ function Topics({ groups, pathname }: TopicsProps) {
   );
 }
 
+/** The page of the settings on a phone: the topics. Only this page names the tab; a topic names its own. */
+function TopicPage({
+  heading,
+  groups,
+}: {
+  readonly heading: string;
+  readonly groups: readonly TopicGroup[];
+}) {
+  usePageTitle(heading);
+  return (
+    <Card heading={heading} level={1}>
+      <nav aria-label={heading}>
+        <Topics groups={groups} />
+      </nav>
+    </Card>
+  );
+}
+
 /**
  * The frame of *My settings* and *Organization settings* (UX §5.1): a menu on the left, by topic
  * and in plain words, and the topic on the right. Only topics that exist are listed. On a phone
@@ -56,19 +84,12 @@ export function SettingsFrame({ parent }: SettingsFrameProps) {
   const groups = topicGroups(parent, administrator);
   const here = placeAt(parent);
   const heading = here === undefined ? t("app.name") : t(here.name);
-  usePageTitle(pathname === parent ? heading : t("app.name"));
   const first = groups[0]?.topics[0];
   if (pathname === parent) {
     if (!phone && first !== undefined) {
       return <Navigate to={first.path} replace />;
     }
-    return (
-      <Card heading={heading} level={1}>
-        <nav aria-label={heading}>
-          <Topics groups={groups} pathname={pathname} />
-        </nav>
-      </Card>
-    );
+    return <TopicPage heading={heading} groups={groups} />;
   }
   return phone ? (
     <Outlet />

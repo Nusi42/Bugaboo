@@ -22,7 +22,7 @@ export interface ShortcutsPageProps {
  * of UX §5.1 on the simplest items there are.
  */
 export function ShortcutsPage({ edit, onEdit, onClose }: ShortcutsPageProps) {
-  usePageTitle(t("shortcuts.title"));
+  usePageTitle(t("shortcut.title"));
   const overrides = useShortcutOverrides();
   const rows: readonly ListRow[] = shortcutDefinitions.map((definition) => ({
     key: definition.id,
@@ -37,7 +37,7 @@ export function ShortcutsPage({ edit, onEdit, onClose }: ShortcutsPageProps) {
     editor: <ShortcutEditor id={definition.id} overrides={overrides} />,
   }));
   return (
-    <Card heading={t("shortcuts.title")} level={1}>
+    <Card heading={t("shortcut.title")} level={1}>
       <p className={styles.intro}>{t("shortcuts.intro")}</p>
       <ListEditor
         rows={rows}

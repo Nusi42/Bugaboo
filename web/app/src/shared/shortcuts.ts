@@ -12,17 +12,25 @@ import type { MessageKey } from "@bugaboo/messages";
 export const shortcutDefinitions = [
   {
     id: "quick-search",
-    keys: ["Mod+k", "/"],
+    keys: ["Mod+k"],
     message: "shortcut.quick-search",
     where: "everywhere",
     button: "shell.search",
+    inFields: true,
+  },
+  {
+    id: "undo",
+    keys: ["Mod+z"],
+    message: "shortcut.undo",
+    where: "everywhere",
+    button: "common.undo",
   },
   {
     id: "show-shortcuts",
     keys: ["?"],
     message: "shortcut.show-shortcuts",
     where: "everywhere",
-    button: "shell.shortcuts",
+    button: "shortcut.title",
   },
   {
     id: "go-home",
@@ -57,6 +65,11 @@ export interface ShortcutDefinition {
   readonly where: "everywhere" | "lists";
   /** The name of the visible button or link that does the same. */
   readonly button: MessageKey;
+  /**
+   * Works while a text field has the focus too (a key with Ctrl or Cmd cannot be typed text):
+   * quick search is wanted from anywhere. Without it the shortcut stays silent in fields.
+   */
+  readonly inFields?: boolean;
 }
 
 export type ShortcutId = (typeof shortcutDefinitions)[number]["id"];

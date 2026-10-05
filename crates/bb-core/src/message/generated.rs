@@ -552,9 +552,6 @@ pub const NAV_SECURITY: MessageKey = MessageKey::new("nav.security");
 /// The message `nav.sessions`.
 pub const NAV_SESSIONS: MessageKey = MessageKey::new("nav.sessions");
 
-/// The message `nav.shortcuts`.
-pub const NAV_SHORTCUTS: MessageKey = MessageKey::new("nav.shortcuts");
-
 /// The message `nav.sign-out`.
 pub const NAV_SIGN_OUT: MessageKey = MessageKey::new("nav.sign-out");
 
@@ -881,9 +878,6 @@ pub const SHELL_NARROW: MessageKey = MessageKey::new("shell.narrow");
 /// The message `shell.search`.
 pub const SHELL_SEARCH: MessageKey = MessageKey::new("shell.search");
 
-/// The message `shell.shortcuts`.
-pub const SHELL_SHORTCUTS: MessageKey = MessageKey::new("shell.shortcuts");
-
 /// The message `shell.skip`.
 pub const SHELL_SKIP: MessageKey = MessageKey::new("shell.skip");
 
@@ -920,11 +914,11 @@ pub const SHORTCUT_KEY_ESCAPE: MessageKey = MessageKey::new("shortcut.key.escape
 /// The message `shortcut.key.mod`.
 pub const SHORTCUT_KEY_MOD: MessageKey = MessageKey::new("shortcut.key.mod");
 
+/// The message `shortcut.key.mod-mac`.
+pub const SHORTCUT_KEY_MOD_MAC: MessageKey = MessageKey::new("shortcut.key.mod-mac");
+
 /// The message `shortcut.key.shift`.
 pub const SHORTCUT_KEY_SHIFT: MessageKey = MessageKey::new("shortcut.key.shift");
-
-/// The message `shortcut.list`.
-pub const SHORTCUT_LIST: MessageKey = MessageKey::new("shortcut.list");
 
 /// The message `shortcut.list-next`.
 pub const SHORTCUT_LIST_NEXT: MessageKey = MessageKey::new("shortcut.list-next");
@@ -946,6 +940,9 @@ pub const SHORTCUT_THEN: MessageKey = MessageKey::new("shortcut.then");
 
 /// The message `shortcut.title`.
 pub const SHORTCUT_TITLE: MessageKey = MessageKey::new("shortcut.title");
+
+/// The message `shortcut.undo`.
+pub const SHORTCUT_UNDO: MessageKey = MessageKey::new("shortcut.undo");
 
 /// The message `shortcuts.intro`.
 pub const SHORTCUTS_INTRO: MessageKey = MessageKey::new("shortcuts.intro");
@@ -976,9 +973,6 @@ pub const SHORTCUTS_SAVED: MessageKey = MessageKey::new("shortcuts.saved");
 
 /// The message `shortcuts.search`.
 pub const SHORTCUTS_SEARCH: MessageKey = MessageKey::new("shortcuts.search");
-
-/// The message `shortcuts.title`.
-pub const SHORTCUTS_TITLE: MessageKey = MessageKey::new("shortcuts.title");
 
 /// The message `shortcuts.use`.
 pub const SHORTCUTS_USE: MessageKey = MessageKey::new("shortcuts.use");
@@ -2706,7 +2700,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("nav.organization-settings", "Organization settings"),
     ("nav.security", "Sign-in & security"),
     ("nav.sessions", "Where you're signed in"),
-    ("nav.shortcuts", "Keyboard shortcuts"),
     ("nav.sign-out", "Sign out"),
     ("nav.status", "Server status"),
     ("page.not-found.home", "Go to the start page"),
@@ -3065,7 +3058,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("shell.more", "More"),
     ("shell.narrow", "Narrow the menu"),
     ("shell.search", "Search"),
-    ("shell.shortcuts", "Keyboard shortcuts"),
     ("shell.signed-in-as", "Signed in as {name}"),
     ("shell.skip", "Skip to the content"),
     ("shell.trail", "You are here"),
@@ -3082,8 +3074,8 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("shortcut.key.enter", "Enter"),
     ("shortcut.key.escape", "Esc"),
     ("shortcut.key.mod", "Ctrl"),
+    ("shortcut.key.mod-mac", "⌘"),
     ("shortcut.key.shift", "Shift"),
-    ("shortcut.list", "Keyboard shortcuts"),
     ("shortcut.list-next", "Open the next item in the list"),
     (
         "shortcut.list-previous",
@@ -3094,6 +3086,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("shortcut.show-shortcuts", "Show all keyboard shortcuts"),
     ("shortcut.then", "then"),
     ("shortcut.title", "Keyboard shortcuts"),
+    ("shortcut.undo", "Undo the last action"),
     (
         "shortcuts.conflict",
         "{keys} is already used for: {action}. Choose other keys.",
@@ -3117,7 +3110,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("shortcuts.reset-done", "The usual keys are back."),
     ("shortcuts.saved", "The keys are saved."),
     ("shortcuts.search", "Search the shortcuts"),
-    ("shortcuts.title", "Keyboard shortcuts"),
     ("shortcuts.use", "Use these keys"),
     ("shortcuts.usual", "Usual keys"),
     ("sign-in.make-account", "Make an account"),

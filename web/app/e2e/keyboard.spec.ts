@@ -19,7 +19,7 @@ test.use({
 function list(page: Page) {
   return page
     .getByRole("dialog", { name: t("shortcut.title"), exact: true })
-    .getByRole("list", { name: t("shortcut.list") });
+    .getByRole("list", { name: t("shortcut.title") });
 }
 
 test("ux_05 ? lists every shortcut of the registry", async ({ page }) => {
@@ -39,7 +39,7 @@ test("ux_05 ? lists every shortcut of the registry", async ({ page }) => {
 
 test("ux_05 the button for the list does the same as the ? key", async ({ page }) => {
   await signIn(page, ada);
-  const button = page.getByRole("button", { name: t("shell.shortcuts"), exact: true });
+  const button = page.getByRole("button", { name: t("shortcut.title"), exact: true });
   await expect(
     button.or(page.getByRole("button", { name: t("shell.more"), exact: true })),
   ).toBeVisible();

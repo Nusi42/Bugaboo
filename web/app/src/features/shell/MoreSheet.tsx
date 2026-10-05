@@ -49,7 +49,7 @@ export function MoreSheet({ administrator, name, onSignOut, signingOut }: MoreSh
           <li>
             <NavButton
               icon={iconName.keyboard}
-              label={t("shell.shortcuts")}
+              label={t("shortcut.title")}
               onPress={() => {
                 openOverlay("shortcuts");
               }}
