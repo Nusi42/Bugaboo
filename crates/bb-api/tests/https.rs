@@ -6,6 +6,8 @@ use base64ct as _;
 use bb_app as _;
 use bb_auth as _;
 use bb_core as _;
+use getrandom as _;
+use hmac as _;
 use hyper_util as _;
 use mime_guess as _;
 use proptest as _;

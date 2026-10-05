@@ -2031,7 +2031,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "error.request.bad-cursor",
-        "That page of the list is not valid any more. Go back to the first page and try again.",
+        "This list changed. Start again from the top.",
     ),
     (
         "error.request.invalid",

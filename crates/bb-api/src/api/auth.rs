@@ -207,7 +207,7 @@ pub(crate) fn signed_in(started: &Started) -> Result<Response, ApiError> {
     };
     // The answer comes with the secret of a session; `crate::etag::SECRET_ANSWERS` names the
     // routes, and no cache keeps them.
-    let mut response = private(body);
+    let mut response = answer(body);
     for (cookie, value) in [
         (Cookie::Session, &started.session_token),
         (Cookie::Csrf, &started.csrf_token),
@@ -229,9 +229,9 @@ pub(crate) fn done() -> Response {
     response
 }
 
-/// An answer with a body that holds secrets or personal data. Who may keep it, and for how long,
-/// is decided in one place for every answer (`crate::etag`).
-pub(crate) fn private<T: Serialize>(body: T) -> Response {
+/// A JSON answer. Who may keep it, and for how long, is decided in one place for every answer
+/// (`crate::etag`), from the marks in the API description.
+pub(crate) fn answer<T: Serialize>(body: T) -> Response {
     axum::Json(body).into_response()
 }
 

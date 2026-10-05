@@ -69,11 +69,10 @@ async fn ops_08_only_administrators_see_the_status_of_the_server() -> Outcome {
         assert_eq!(reply.status, StatusCode::FORBIDDEN);
         assert_eq!(reply.code(), "access.forbidden");
 
-        // An administrator sees the state; the answer may be kept only privately and is asked
-        // about again every time.
+        // An administrator sees the state; no cache keeps the answer.
         let reply = ada.send("GET", STATUS, None).await?;
         assert_eq!(reply.status, StatusCode::OK);
-        assert_eq!(reply.header("cache-control"), "private, no-cache");
+        assert_eq!(reply.header("cache-control"), "no-store");
         assert_eq!(reply.body["version"], env!("CARGO_PKG_VERSION"));
         assert_eq!(reply.body["database"]["kind"], "built_in");
         assert_eq!(reply.body["database"]["ok"], true);

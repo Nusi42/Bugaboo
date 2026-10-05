@@ -11,6 +11,7 @@
 mod caching;
 mod http;
 mod invitations;
+mod lists;
 mod passkeys;
 mod rig;
 mod second_step;

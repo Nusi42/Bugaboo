@@ -12,6 +12,8 @@ base64ct = { workspace = true }
 bb-app = { path = "../bb-app" }
 bb-auth = { path = "../bb-auth" }
 bb-core = { path = "../bb-core", features = ["openapi"] }
+getrandom = { workspace = true }
+hmac = { workspace = true }
 hyper-util = { workspace = true, features = ["http1", "http2", "server-auto", "service", "tokio"] }
 mime_guess = { workspace = true }
 rcgen = { workspace = true }

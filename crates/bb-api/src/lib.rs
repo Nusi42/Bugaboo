@@ -21,6 +21,7 @@ mod logging;
 pub mod openapi;
 mod paging;
 mod router;
+mod seal;
 pub mod tls;
 mod web;
 

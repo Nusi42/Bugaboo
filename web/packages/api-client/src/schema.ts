@@ -683,13 +683,6 @@ export interface components {
       /** @description The address the account will get. */
       email: string;
     };
-    /** @description One page of the open invitations, newest first. */
-    InvitationsBody: {
-      /** @description The invitations of this page. Only invitations that are still open are listed. */
-      items: components["schemas"]["InvitationItem"][];
-      /** @description The cursor of the next page; missing on the last page. */
-      next_cursor?: string | null;
-    };
     /** @description Somebody to invite. */
     InviteBody: {
       /** @description The e-mail address to invite. */
@@ -705,6 +698,25 @@ export interface components {
      * @enum {string}
      */
     LogResult: "valid" | "broken" | "unreadable";
+    /**
+     * @description One page of a list. `T` is the view of an item for the API description; an answer holds the
+     *     items cut to the chosen fields ([`Page::of`]).
+     */
+    Page_InvitationItem: {
+      /** @description The items of this page. */
+      items: {
+        /** @description When it was made. */
+        created_at?: string | null;
+        /** @description The address it is for. */
+        email?: string | null;
+        /** @description When it stops working. */
+        expires_at?: string | null;
+        /** @description The ID of the invitation. */
+        id?: string | null;
+      }[];
+      /** @description The cursor of the next page; `null` on the last page. */
+      next_cursor: string | null;
+    };
     /** @description What the device answered to a passkey challenge. */
     PasskeyAnswerBody: {
       /** @description The challenge that was answered. */
@@ -1141,10 +1153,7 @@ export interface operations {
   listInvitations: {
     parameters: {
       query?: {
-        /**
-         * @description The fields each item holds, separated by commas. The answer schema names every field
-         *     that can be asked for; when this is left out the route's own small default is used.
-         */
+        /** @description The fields each item holds, separated by commas. The answer schema names every field that can be asked for; when this is left out the route's own small default is used. */
         fields?: string;
         /** @description Where the page starts: the `next_cursor` of the page before. */
         cursor?: string;
@@ -1157,7 +1166,7 @@ export interface operations {
     };
     requestBody?: never;
     responses: {
-      /** @description The open invitations. */
+      /** @description The open invitations, newest first. Only invitations that are still open are listed. */
       200: {
         headers: {
           /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
@@ -1165,7 +1174,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["InvitationsBody"];
+          "application/json": components["schemas"]["Page_InvitationItem"];
         };
       };
       /** @description Nothing changed since the `ETag` that `If-None-Match` named. No body. */

@@ -3,17 +3,18 @@
 //! The rules for every single request (what may be kept, what never is) are also checked on all
 //! requests of all tests that use a `Browser` (`http::assert_cache_rules`).
 
+use axum::Router;
 use axum::http::StatusCode;
 use bb_api::openapi;
 use bb_testing::each_database;
 use serde_json::json;
 
-use super::http::{Browser, called, setup_body, totp};
+use super::http::{Browser, Failure, called, never_stored_reads, setup_body, totp};
 use super::rig::{Outcome, PASSWORD, Rig};
 use super::status::app_with_probe;
 
 /// The addresses of every `GET` route in the API description.
-fn get_routes() -> Result<Vec<String>, Box<dyn std::error::Error + Send + Sync>> {
+fn get_routes() -> Result<Vec<String>, Failure> {
     let document = serde_json::to_value(openapi::document())?;
     let mut routes = Vec::new();
     for (path, item) in document["paths"].as_object().ok_or("no paths")? {
@@ -22,6 +23,36 @@ fn get_routes() -> Result<Vec<String>, Box<dyn std::error::Error + Send + Sync>>
         }
     }
     Ok(routes)
+}
+
+/// A second person (not an administrator): invited by `ada`, signed in.
+pub(super) async fn invited_person(
+    ada: &mut Browser,
+    app: &Router,
+    email: &str,
+) -> Result<Browser, Failure> {
+    let invitation = ada
+        .send(
+            "POST",
+            "/api/v1/auth/invitations",
+            Some(json!({ "email": email })),
+        )
+        .await?;
+    let secret = invitation.body["link_path"]
+        .as_str()
+        .and_then(|path| path.split_once('#'))
+        .map(|(_, secret)| secret.to_owned())
+        .ok_or("no link")?;
+    let mut person = Browser::new(app, &called());
+    let accepted = person
+        .send(
+            "POST",
+            "/api/v1/auth/invitation/accept",
+            Some(json!({"secret": secret, "display_name": "Bob", "password": PASSWORD})),
+        )
+        .await?;
+    assert_eq!(accepted.status, StatusCode::OK);
+    Ok(person)
 }
 
 #[tokio::test]
@@ -34,7 +65,8 @@ async fn perf_03_every_get_answers_an_etag_and_304_on_a_match() -> Outcome {
             .await?;
 
         let routes = get_routes()?;
-        assert!(routes.len() >= 8, "{routes:?}");
+        assert!(routes.len() >= 9, "{routes:?}");
+        let (mut kept, mut never_stored) = (0, 0);
         for path in &routes {
             // A route with a part to fill in needs an example address here; fail loudly so a
             // new route is never left out of this test.
@@ -45,6 +77,19 @@ async fn perf_03_every_get_answers_an_etag_and_304_on_a_match() -> Outcome {
             ada.clear_headers();
             let first = ada.send("GET", path, None).await?;
             assert_eq!(first.status, StatusCode::OK, "{path}");
+
+            if never_stored_reads().contains(path) {
+                // Personal data: no tag to ask with, and a tag or `*` changes nothing.
+                never_stored += 1;
+                assert_eq!(first.header("cache-control"), "no-store", "{path}");
+                assert_eq!(first.header("etag"), "", "{path}");
+                ada.set_header("if-none-match", "*");
+                let asked = ada.send("GET", path, None).await?;
+                assert_eq!(asked.status, StatusCode::OK, "{path}");
+                continue;
+            }
+
+            kept += 1;
             let tag = first.header("etag").to_owned();
             assert!(tag.starts_with("W/\""), "{path}: {tag}");
             assert_eq!(first.header("cache-control"), "private, no-cache", "{path}");
@@ -52,21 +97,19 @@ async fn perf_03_every_get_answers_an_etag_and_304_on_a_match() -> Outcome {
             // The tag it gave: no body, the same tag.
             ada.set_header("if-none-match", &tag);
             let again = ada.send("GET", path, None).await?;
-            if again.status == StatusCode::NOT_MODIFIED {
-                assert_eq!(again.header("etag"), tag, "{path}");
-                assert!(again.body.is_null(), "{path}");
-            } else {
-                // Only an answer that holds a moving number (the uptime on the status page) may
-                // have changed between the two requests; then it must have a new tag.
-                assert_eq!(again.status, StatusCode::OK, "{path}");
-                assert_ne!(again.header("etag"), tag, "{path}");
-            }
+            assert_eq!(again.status, StatusCode::NOT_MODIFIED, "{path}");
+            assert_eq!(again.header("etag"), tag, "{path}");
+            assert!(again.body.is_null(), "{path}");
 
             // Some other tag: the answer in full.
             ada.set_header("if-none-match", "W/\"another\"");
             let other = ada.send("GET", path, None).await?;
             assert_eq!(other.status, StatusCode::OK, "{path}");
         }
+        assert!(
+            kept >= 4 && never_stored >= 5,
+            "{kept} kept, {never_stored} never stored"
+        );
         Ok(())
     })
     .await
@@ -106,41 +149,31 @@ async fn perf_03_a_read_asked_about_again_is_not_modified_when_nothing_changed()
 }
 
 #[tokio::test]
-async fn perf_03_two_people_never_share_a_tag_for_different_answers() -> Outcome {
-    each_database("perf_03_http_tags_per_person", async |db| {
+async fn perf_03_answers_with_personal_data_are_never_stored_for_anybody() -> Outcome {
+    each_database("perf_03_http_personal_data", async |db| {
         let rig = Rig::start(db, 10).await?;
         let app = app_with_probe(&rig, None);
         let mut ada = Browser::new(&app, &called());
         ada.send("POST", "/api/v1/auth/setup", Some(setup_body(&rig)))
             .await?;
-        let invitation = ada
-            .send(
-                "POST",
-                "/api/v1/auth/invitations",
-                Some(json!({"email": "bob@example.test"})),
-            )
-            .await?;
-        let secret = invitation.body["link_path"]
-            .as_str()
-            .and_then(|path| path.split_once('#'))
-            .map(|(_, secret)| secret.to_owned())
-            .ok_or("no link")?;
-        let mut bob = Browser::new(&app, &called());
-        bob.send(
-            "POST",
-            "/api/v1/auth/invitation/accept",
-            Some(json!({"secret": secret, "display_name": "Bob", "password": PASSWORD})),
-        )
-        .await?;
-        // The same address, two people, two answers: two tags. Bob's tag does not make Ada's
-        // answer come back as "not modified".
+        let mut bob = invited_person(&mut ada, &app, "bob@example.test").await?;
+        for person in [&mut ada, &mut bob] {
+            for path in [
+                "/api/v1/auth/me",
+                "/api/v1/auth/sessions",
+                "/api/v1/auth/two-step",
+            ] {
+                let reply = person.send("GET", path, None).await?;
+                assert_eq!(reply.status, StatusCode::OK, "{path}");
+                assert_eq!(reply.header("cache-control"), "no-store", "{path}");
+                assert_eq!(reply.header("etag"), "", "{path}");
+            }
+        }
+        // Different people, different answers, and neither is kept for the next person at the
+        // same computer.
         let ada_me = ada.send("GET", "/api/v1/auth/me", None).await?;
         let bob_me = bob.send("GET", "/api/v1/auth/me", None).await?;
-        assert_ne!(ada_me.header("etag"), bob_me.header("etag"));
-        ada.set_header("if-none-match", bob_me.header("etag"));
-        let reply = ada.send("GET", "/api/v1/auth/me", None).await?;
-        assert_eq!(reply.status, StatusCode::OK);
-        assert_eq!(reply.body["email"], "ada@example.test");
+        assert_ne!(ada_me.body["email"], bob_me.body["email"]);
         Ok(())
     })
     .await
@@ -192,6 +225,41 @@ async fn perf_03_answers_with_a_secret_are_not_stored_or_compressed() -> Outcome
             assert_eq!(reply.header("etag"), "");
             assert_eq!(reply.header("content-encoding"), "");
         }
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn sec_12_signing_out_clears_what_the_browser_cached() -> Outcome {
+    each_database("sec_12_http_clear_cache", async |db| {
+        let rig = Rig::start(db, 10).await?;
+        let app = app_with_probe(&rig, None);
+        let mut ada = Browser::new(&app, &called());
+        let signed_in = ada
+            .send("POST", "/api/v1/auth/setup", Some(setup_body(&rig)))
+            .await?;
+        // Signing in does not clear anything.
+        assert_eq!(signed_in.header("clear-site-data"), "");
+
+        // Signing out ends the session, forgets the cookies and clears the cache.
+        let out = ada.send("POST", "/api/v1/auth/sign-out", None).await?;
+        assert_eq!(out.status, StatusCode::NO_CONTENT);
+        assert_eq!(out.header("clear-site-data"), "\"cache\"");
+        assert_eq!(out.header("cache-control"), "no-store");
+
+        // The same for signing out everywhere.
+        let mut again = Browser::new(&app, &called());
+        again
+            .send(
+                "POST",
+                "/api/v1/auth/sign-in",
+                Some(json!({"email": "ada@example.test", "password": PASSWORD})),
+            )
+            .await?;
+        let everywhere = again.send("DELETE", "/api/v1/auth/sessions", None).await?;
+        assert_eq!(everywhere.status, StatusCode::NO_CONTENT);
+        assert_eq!(everywhere.header("clear-site-data"), "\"cache\"");
         Ok(())
     })
     .await

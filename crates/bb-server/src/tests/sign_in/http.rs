@@ -229,11 +229,29 @@ impl Browser {
     }
 }
 
+/// The `GET` routes whose answers hold personal data, as the API description marks them.
+pub(super) fn never_stored_reads() -> &'static BTreeSet<String> {
+    static ROUTES: std::sync::OnceLock<BTreeSet<String>> = std::sync::OnceLock::new();
+    ROUTES.get_or_init(|| {
+        let document = serde_json::to_value(openapi::document()).unwrap_or_default();
+        document["paths"]
+            .as_object()
+            .into_iter()
+            .flatten()
+            .filter(|(_, item)| item["get"]["x-never-stored"] == true)
+            .map(|(route, _)| route.clone())
+            .collect()
+    })
+}
+
 /// What every answer of the API says about keeping it (PERF-03, `bb-api` `etag`), checked on
-/// every request of every test that goes through a [`Browser`]: a read that worked may be kept
-/// and must be asked about again, and has a tag; everything else is never stored.
+/// every request of every test that goes through a [`Browser`]: a read of something that is not
+/// personal data may be kept and must be asked about again, and has a tag; everything else is
+/// never stored and has no tag.
 fn assert_cache_rules(method: &str, path: &str, reply: &Reply) {
-    let kept = method == "GET" && reply.status == StatusCode::OK;
+    let route = path.split('?').next().unwrap_or(path);
+    let kept =
+        method == "GET" && reply.status == StatusCode::OK && !never_stored_reads().contains(route);
     let rule = reply.header("cache-control");
     if kept {
         assert_eq!(rule, "private, no-cache", "{method} {path}");
@@ -321,7 +339,7 @@ async fn sec_12_signing_in_sets_the_session_cookie_and_the_csrf_cookie() -> Outc
         let me = browser.send("GET", "/api/v1/auth/me", None).await?;
         assert_eq!(me.status, StatusCode::OK);
         assert_eq!(me.body["email"], "ada@example.test");
-        assert_eq!(me.header("cache-control"), "private, no-cache");
+        assert_eq!(me.header("cache-control"), "no-store");
         Ok(())
     })
     .await
@@ -1212,10 +1230,20 @@ async fn perf_02_the_invitation_list_takes_fields_cursor_and_limit_over_http() -
             .await?;
         assert_eq!(last.body["items"].as_array().map(Vec::len), Some(1));
         assert_eq!(last.body["next_cursor"], Value::Null);
+        // The last page has `next_cursor` as `null`, and the default is the small set of the
+        // route: the ID and the address; the dates only when asked for.
         assert!(
-            last.body["items"][0]["expires_at"].is_string(),
-            "the route's default holds every field"
+            last.body
+                .as_object()
+                .is_some_and(|page| page.contains_key("next_cursor"))
         );
+        let mut default_keys: Vec<&String> = last.body["items"][0]
+            .as_object()
+            .ok_or("no object")?
+            .keys()
+            .collect();
+        default_keys.sort();
+        assert_eq!(default_keys, ["email", "id"]);
         // A field that does not exist, a cursor that is not one or was changed, and a page size
         // that is no number are refused, each with its own code.
         let mut changed = cursor.clone();

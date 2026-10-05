@@ -105,6 +105,12 @@ const fn is_cookie_byte(byte: u8) -> bool {
     matches!(byte, 0x21 | 0x23..=0x2B | 0x2D..=0x3A | 0x3C..=0x5B | 0x5D..=0x7E)
 }
 
+/// Whether an answer sets or clears any cookie.
+#[must_use]
+pub fn sets_a_cookie(headers: &axum::http::HeaderMap) -> bool {
+    headers.contains_key(axum::http::header::SET_COOKIE)
+}
+
 impl Cookie {
     /// The `Set-Cookie` header that gives the cookie `value`. With `max_age` the browser keeps
     /// the cookie that long; without, until the browser closes.
@@ -172,6 +178,16 @@ impl Cookie {
             .unwrap_or_else(|_| HeaderValue::from_static(""))
     }
 
+    /// Whether `headers` (of an answer) make the browser forget this cookie.
+    #[must_use]
+    pub fn is_cleared_in(self, headers: &axum::http::HeaderMap) -> bool {
+        let cleared = self.clear();
+        headers
+            .get_all(axum::http::header::SET_COOKIE)
+            .iter()
+            .any(|header| *header == cleared)
+    }
+
     fn attributes(self, value: &str) -> String {
         let http_only = if self.http_only() { "; HttpOnly" } else { "" };
         format!(
@@ -188,6 +204,24 @@ mod tests {
 
     fn text(value: &HeaderValue) -> &str {
         value.to_str().unwrap()
+    }
+
+    #[test]
+    fn sec_12_an_answer_that_forgets_the_cookie_is_recognised() {
+        let mut headers = axum::http::HeaderMap::new();
+        assert!(!sets_a_cookie(&headers));
+        assert!(!Cookie::Session.is_cleared_in(&headers));
+        headers.append(
+            axum::http::header::SET_COOKIE,
+            Cookie::Session.set("abc", None).unwrap(),
+        );
+        assert!(sets_a_cookie(&headers));
+        assert!(!Cookie::Session.is_cleared_in(&headers));
+        headers.append(axum::http::header::SET_COOKIE, Cookie::Csrf.clear());
+        assert!(!Cookie::Session.is_cleared_in(&headers));
+        assert!(Cookie::Csrf.is_cleared_in(&headers));
+        headers.append(axum::http::header::SET_COOKIE, Cookie::Session.clear());
+        assert!(Cookie::Session.is_cleared_in(&headers));
     }
 
     #[test]

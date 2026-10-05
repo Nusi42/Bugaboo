@@ -99,7 +99,8 @@
               }
             }
           }
-        }
+        },
+        "x-never-stored": true
       }
     },
     "/api/v1/auth/invitation/accept": {
@@ -265,7 +266,7 @@
           {
             "name": "fields",
             "in": "query",
-            "description": "The fields each item holds, separated by commas. The answer schema names every field\nthat can be asked for; when this is left out the route's own small default is used.",
+            "description": "The fields each item holds, separated by commas. The answer schema names every field that can be asked for; when this is left out the route's own small default is used.",
             "required": false,
             "schema": {
               "type": "string"
@@ -287,7 +288,6 @@
             "required": false,
             "schema": {
               "type": "integer",
-              "format": "int32",
               "maximum": 100,
               "minimum": 1
             }
@@ -295,7 +295,7 @@
         ],
         "responses": {
           "200": {
-            "description": "The open invitations.",
+            "description": "The open invitations, newest first. Only invitations that are still open are listed.",
             "headers": {
               "etag": {
                 "schema": {
@@ -307,7 +307,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/InvitationsBody"
+                  "$ref": "#/components/schemas/Page_InvitationItem"
                 }
               }
             }
@@ -381,7 +381,8 @@
               }
             }
           }
-        }
+        },
+        "x-never-stored": true
       },
       "post": {
         "tags": ["auth"],
@@ -653,7 +654,8 @@
               }
             }
           }
-        }
+        },
+        "x-never-stored": true
       }
     },
     "/api/v1/auth/passkey/sign-in": {
@@ -1516,7 +1518,8 @@
               }
             }
           }
-        }
+        },
+        "x-never-stored": true
       },
       "delete": {
         "tags": ["auth"],
@@ -2359,7 +2362,8 @@
               }
             }
           }
-        }
+        },
+        "x-never-stored": true
       }
     },
     "/api/v1/auth/two-step/backup-codes": {
@@ -3159,24 +3163,6 @@
           }
         }
       },
-      "InvitationsBody": {
-        "type": "object",
-        "description": "One page of the open invitations, newest first.",
-        "required": ["items"],
-        "properties": {
-          "items": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/InvitationItem"
-            },
-            "description": "The invitations of this page. Only invitations that are still open are listed."
-          },
-          "next_cursor": {
-            "type": ["string", "null"],
-            "description": "The cursor of the next page; missing on the last page."
-          }
-        }
-      },
       "InviteBody": {
         "type": "object",
         "description": "Somebody to invite.",
@@ -3197,6 +3183,43 @@
         "type": "string",
         "description": "The result of checking the security log.",
         "enum": ["valid", "broken", "unreadable"]
+      },
+      "Page_InvitationItem": {
+        "type": "object",
+        "description": "One page of a list. `T` is the view of an item for the API description; an answer holds the\nitems cut to the chosen fields ([`Page::of`]).",
+        "required": ["items", "next_cursor"],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "An invitation in a list: the fields that can be asked for. An answer holds only those that\nwere asked for.",
+              "properties": {
+                "created_at": {
+                  "type": ["string", "null"],
+                  "description": "When it was made."
+                },
+                "email": {
+                  "type": ["string", "null"],
+                  "description": "The address it is for."
+                },
+                "expires_at": {
+                  "type": ["string", "null"],
+                  "description": "When it stops working."
+                },
+                "id": {
+                  "type": ["string", "null"],
+                  "description": "The ID of the invitation."
+                }
+              }
+            },
+            "description": "The items of this page."
+          },
+          "next_cursor": {
+            "type": ["string", "null"],
+            "description": "The cursor of the next page; `null` on the last page."
+          }
+        }
       },
       "PasskeyAnswerBody": {
         "type": "object",

@@ -13,7 +13,8 @@
 //! cannot go stale.
 //!
 //! Two more rules (PERF-03, PERF-02). Every `GET` documents the `ETag` header of its `200` answer
-//! and the `304` answer, so a client can ask again cheaply. A list names related things by ID
+//! and the `304` answer, so a client can ask again cheaply. A `GET` marked `x-never-stored` (its
+//! answer holds personal data and no cache keeps it) has no tag to ask with and is left out. A list names related things by ID
 //! (or by a reference schema whose name ends in `Ref`, like `PersonRef`); an item that embeds
 //! another object is only allowed when the route declares the query parameter `include` with the
 //! closed set of names it may embed, and `include` is only allowed on a route that embeds.
@@ -40,6 +41,8 @@ const ETAG_HEADER: &str = "etag";
 const NOT_MODIFIED: &str = "304";
 /// The query parameter that asks for related objects inside the items.
 const INCLUDE_PARAMETER: &str = "include";
+/// The mark of a route whose answer is never stored (the server sets `no-store`, no `ETag`).
+const NEVER_STORED_MARK: &str = "x-never-stored";
 /// A schema whose name ends like this is a reference to a thing, not the thing itself.
 const REFERENCE_SUFFIX: &str = "Ref";
 
@@ -315,7 +318,9 @@ fn evaluate(spec: &Value, exemptions: &[Exemption]) -> Vec<Finding> {
             continue;
         };
         let place = format!("GET {path}");
-        findings.extend(etag_findings(spec, operation, &place));
+        if operation.get(NEVER_STORED_MARK) != Some(&Value::Bool(true)) {
+            findings.extend(etag_findings(spec, operation, &place));
+        }
         let Some(schema) = answer_schema(spec, operation) else {
             continue;
         };
@@ -612,6 +617,12 @@ mod tests {
             assert_eq!(found.len(), 1, "{name}: {found:?}");
             assert!(found[0].contains(expected), "{name}: {found:?}");
         }
+    }
+
+    #[test]
+    fn good_example_a_read_that_is_never_stored_has_no_tag_to_document() {
+        let found = messages(&fixture("good", "never-stored.json"), &[]);
+        assert!(found.is_empty(), "{found:?}");
     }
 
     #[test]
