@@ -8,7 +8,7 @@ import styles from "./Admin.module.css";
 import { LogStatus } from "./LogStatus.tsx";
 import { CERTIFICATE_WARNING_DAYS, serverNow } from "./status.ts";
 
-type State = Schema<"ServerStateBody">;
+type State = Schema<"ServerStatusBody">;
 
 const databaseKinds: Readonly<Record<State["database"]["kind"], MessageKey>> = {
   built_in: "status.database.built-in",

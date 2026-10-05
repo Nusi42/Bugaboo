@@ -2412,7 +2412,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "service.settings-in-data",
-        "The settings file {path} is inside the data folder, which the service account can write to. Move the file out of the data folder, so that the service cannot change its own settings.",
+        "The settings file {path} is inside the data folder, which the account that runs the service can write to. Move the file out of the data folder, so that the service cannot change its own settings.",
     ),
     (
         "service.settings-is-link",

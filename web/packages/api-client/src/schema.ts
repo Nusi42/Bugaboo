@@ -12,7 +12,7 @@ export interface paths {
      * How the server is doing: version, uptime, database, certificate and the check of the security
      *     log. Administrators only.
      */
-    get: operations["getServerState"];
+    get: operations["getServerStatus"];
     put?: never;
     post?: never;
     delete?: never;
@@ -812,8 +812,13 @@ export interface components {
       /** @description The outcome. */
       result: components["schemas"]["LogResult"];
     };
-    /** @description The state of the server, as the status page shows it. */
-    ServerStateBody: {
+    /** @description What `GET /api/v1/status` answers: the server is up. */
+    ServerStatus: {
+      /** @description Always `ok`; an answer at all means the server is running. */
+      status: components["schemas"]["StatusValue"];
+    };
+    /** @description The status of the server, as the status page shows it. */
+    ServerStatusBody: {
       certificate?: components["schemas"]["CertificateBody"] | null;
       /** @description The database. */
       database: components["schemas"]["DatabaseBody"];
@@ -828,11 +833,6 @@ export interface components {
       uptime_seconds: number;
       /** @description The version of the program. */
       version: string;
-    };
-    /** @description What `GET /api/v1/status` answers: the server is up. */
-    ServerStatus: {
-      /** @description Always `ok`; an answer at all means the server is running. */
-      status: components["schemas"]["StatusValue"];
     };
     /** @description One session in *Where you're signed in*. */
     SessionBody: {
@@ -931,7 +931,7 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
-  getServerState: {
+  getServerStatus: {
     parameters: {
       query?: never;
       header?: never;
@@ -940,13 +940,13 @@ export interface operations {
     };
     requestBody?: never;
     responses: {
-      /** @description The state of the server. */
+      /** @description The status of the server. */
       200: {
         headers: {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["ServerStateBody"];
+          "application/json": components["schemas"]["ServerStatusBody"];
         };
       };
       /** @description Not signed in (auth.not_signed_in). */

@@ -10,7 +10,7 @@ import styles from "./Admin.module.css";
 import { type Level, levelOf, serverNow } from "./status.ts";
 import { StatusRows } from "./StatusRows.tsx";
 
-type State = Schema<"ServerStateBody">;
+type State = Schema<"ServerStatusBody">;
 
 const levelMessages: Readonly<Record<Level, MessageKey>> = {
   ok: "status.state.ok",

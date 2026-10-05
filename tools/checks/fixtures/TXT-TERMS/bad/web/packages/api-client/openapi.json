@@ -1,0 +1,14 @@
+{
+  "paths": {
+    "/api/v1/ticket/{id}": {}
+  },
+  "components": {
+    "schemas": {
+      "LogoutBody": {
+        "properties": {
+          "login_name": {}
+        }
+      }
+    }
+  }
+}

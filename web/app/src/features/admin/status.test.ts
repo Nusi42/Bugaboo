@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 
 import { certificateDays, isUnanchored, levelOf, serverNow } from "./status.ts";
 
-type State = Schema<"ServerStateBody">;
+type State = Schema<"ServerStatusBody">;
 
 const NOW = Date.parse("2026-10-05T12:00:00Z");
 

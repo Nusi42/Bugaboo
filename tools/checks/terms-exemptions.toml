@@ -1,0 +1,50 @@
+# Places where a word of the glossary's "Don't say" column is right, because it is used in its
+# ordinary sense and not in the sense the glossary forbids (TXT-TERMS, glossary rule 4). The term
+# is written as in the glossary; `at` names the places (`messages/en.json#key`,
+# `userDocs/file.md`, `api:property Schema.name`; `*` matches anything); the reason says which
+# sense is meant. An entry that matches nothing fails, so the file cannot go stale.
+
+[[allow]]
+term = "link"
+at = [
+  "messages/en.json#invitation.incomplete",
+  "messages/en.json#invitations.*",
+  "messages/en.json#service.settings-is-link",
+  "messages/en.json#service.data-folder-real",
+  "userDocs/sign-in/sign-in.md",
+  "userDocs/install/linux.md",
+  "userDocs/cookies.md",
+  "api:property CreatedInvitationBody.link_path",
+]
+reason = "A web link that a person sends or opens (the glossary entry Invitation calls it a link), or a link in the file system. Not the connection between two issues, which is a Relation."
+
+[[allow]]
+term = "network"
+at = [
+  "messages/en.json#sessions.network",
+  "messages/en.json#config.tls-off-public",
+  "messages/en.json#setting.auth.sign-up-enabled.help",
+  "api:property SessionBody.network",
+]
+reason = "The computer network a request came from or travels over. Not a Relation map."
+
+[[allow]]
+term = "screen"
+at = [
+  "messages/en.json#setting.appearance.theme.help",
+  "messages/en.json#second-step.passkey-help",
+  "messages/en.json#passkeys.intro",
+  "userDocs/sign-in/first-sign-in.md",
+  "userDocs/sign-in/sign-in.md",
+]
+reason = "The display of the device and the screen lock of the device. Not a Layout."
+
+[[allow]]
+term = "challenge"
+at = [
+  "api:schema ChallengeBody",
+  "api:property ChallengeBody.challenge_id",
+  "api:property AddPasskeyBody.challenge_id",
+  "api:property PasskeyAnswerBody.challenge_id",
+]
+reason = "The name WebAuthn gives to the one-time question a device answers when it makes or uses a passkey; only scripts and the app see it, never a person (M2 WP-04: renaming it touches the generated client and the app)."

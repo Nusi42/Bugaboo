@@ -2,7 +2,7 @@ import type { Schema } from "@bugaboo/api-client";
 
 import { daysUntil } from "../../shared/format.ts";
 
-type State = Schema<"ServerStateBody">;
+type State = Schema<"ServerStatusBody">;
 type SecurityLog = Schema<"SecurityLogBody">;
 
 const MS_PER_SECOND = 1000;

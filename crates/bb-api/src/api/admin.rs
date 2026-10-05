@@ -183,9 +183,9 @@ impl From<LogState> for SecurityLogBody {
     }
 }
 
-/// The state of the server, as the status page shows it.
+/// The status of the server, as the status page shows it.
 #[derive(Serialize, ToSchema)]
-struct ServerStateBody {
+struct ServerStatusBody {
     /// The version of the program.
     version: String,
     /// When the server started.
@@ -201,7 +201,7 @@ struct ServerStateBody {
     security_log: SecurityLogBody,
 }
 
-impl From<Snapshot> for ServerStateBody {
+impl From<Snapshot> for ServerStatusBody {
     fn from(snapshot: Snapshot) -> Self {
         Self {
             version: snapshot.version,
@@ -224,9 +224,9 @@ impl From<Snapshot> for ServerStateBody {
 #[utoipa::path(
     get,
     path = "/api/v1/admin/status",
-    operation_id = "getServerState",
+    operation_id = "getServerStatus",
     tag = "admin",
-    responses((status = 200, description = "The state of the server.", body = ServerStateBody), NotSignedInAnswer, ForbiddenAnswer)
+    responses((status = 200, description = "The status of the server.", body = ServerStatusBody), NotSignedInAnswer, ForbiddenAnswer)
 )]
 async fn get_server_state(
     State(auth): State<AuthHandle>,
@@ -244,7 +244,7 @@ async fn get_server_state(
     let probe = probe
         .probe()
         .ok_or_else(|| ApiError::new(ErrorCode::Unavailable))?;
-    Ok(private(ServerStateBody::from(probe.snapshot().await)))
+    Ok(private(ServerStatusBody::from(probe.snapshot().await)))
 }
 
 /// The routes only administrators use.

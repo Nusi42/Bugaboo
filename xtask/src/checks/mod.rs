@@ -56,6 +56,7 @@ mod sec_headers;
 mod sec_secrets;
 mod sty_contrast;
 mod txt_catalog;
+mod txt_terms;
 mod web_source;
 
 use crate::catalog::Catalog;
@@ -155,6 +156,7 @@ pub(crate) fn registry() -> Vec<Box<dyn Check>> {
         Box::new(dev_ports::DevPorts),
         Box::new(sty_contrast::StyContrast),
         Box::new(txt_catalog::TxtCatalog),
+        Box::new(txt_terms::TxtTerms),
         Box::new(doc_generated::DocGenerated),
         Box::new(doc_adr_enforced::DocAdrEnforced),
         Box::new(plan_trace::PlanTrace),

@@ -447,7 +447,7 @@ export const messages = {
   "service.settings-is-link":
     "The settings file {path} is a link. Installing would change the rights of the file it points to. Name the real file with --config.",
   "service.settings-in-data":
-    "The settings file {path} is inside the data folder, which the service account can write to. Move the file out of the data folder, so that the service cannot change its own settings.",
+    "The settings file {path} is inside the data folder, which the account that runs the service can write to. Move the file out of the data folder, so that the service cannot change its own settings.",
   "service.settings-folder-open":
     "The folder {path} that holds the settings file can be changed by other accounts. Keep the settings file in a folder that only administrators can change, for example /etc/bugaboo.",
   "keys.settings-placeholder": "--config <the settings file of the service>",

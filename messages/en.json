@@ -352,7 +352,7 @@
   "keys.export-not-private": "The folder {path} can be opened by other accounts on this computer. Choose a folder that only you can open, or a new one, so the key files are not left where others can copy them.",
   "data-folder.not-a-data-folder": "The folder {path} has other files in it and does not look like a Bugaboo data folder. Installing the service would change who owns them. Choose an empty folder or a Bugaboo data folder as the data folder in your settings.",
   "service.settings-is-link": "The settings file {path} is a link. Installing would change the rights of the file it points to. Name the real file with --config.",
-  "service.settings-in-data": "The settings file {path} is inside the data folder, which the service account can write to. Move the file out of the data folder, so that the service cannot change its own settings.",
+  "service.settings-in-data": "The settings file {path} is inside the data folder, which the account that runs the service can write to. Move the file out of the data folder, so that the service cannot change its own settings.",
   "service.settings-folder-open": "The folder {path} that holds the settings file can be changed by other accounts. Keep the settings file in a folder that only administrators can change, for example /etc/bugaboo.",
   "keys.settings-placeholder": "--config <the settings file of the service>",
   "service.settings-folder-owner": "The folder {path} that holds the settings file does not belong to the administrator account (root). Keep the settings file in a folder that root owns, for example /etc/bugaboo.",
