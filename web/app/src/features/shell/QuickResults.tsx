@@ -1,5 +1,6 @@
 import { t } from "@bugaboo/messages";
 import { cx } from "@bugaboo/ui";
+import { useRouter } from "@tanstack/react-router";
 import { Header, ListBox, ListBoxItem, ListBoxSection, Text } from "react-aria-components";
 
 import { closeOverlay } from "./overlay-state.ts";
@@ -15,12 +16,21 @@ export interface QuickResultsProps {
 
 /** What quick search found, grouped by where it was found. */
 export function QuickResults({ groups }: QuickResultsProps) {
+  const router = useRouter();
+  // Going to a result closes the dialog, also when the result is the page that is open already.
+  const open = (id: string | number): void => {
+    const found = groups.flatMap((group) => group.results).find((result) => result.id === id);
+    if (found !== undefined) {
+      router.history.push(found.path);
+    }
+    closeOverlay();
+  };
   return (
     <ListBox
       aria-label={t("search.results")}
       className={cx(styles.results)}
       renderEmptyState={() => <p className={styles.empty}>{t("search.nothing")}</p>}
-      onAction={closeOverlay}
+      onAction={open}
     >
       {groups.map((group) => (
         <ListBoxSection key={group.heading} className={cx(styles.group)}>
@@ -30,7 +40,6 @@ export function QuickResults({ groups }: QuickResultsProps) {
               key={result.id}
               id={result.id}
               textValue={result.title}
-              href={result.path}
               className={cx(styles.item)}
             >
               <span className={styles.title}>{result.title}</span>

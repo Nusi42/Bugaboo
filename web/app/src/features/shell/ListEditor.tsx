@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { cx, SearchField } from "@bugaboo/ui";
+import { cx, SearchField, useLayout } from "@bugaboo/ui";
 import { useState, type ReactNode } from "react";
 import { Button } from "react-aria-components";
 
@@ -30,6 +30,33 @@ export interface ListEditorProps {
   readonly onClose: () => void;
 }
 
+interface RowsProps extends Pick<ListEditorProps, "rows" | "openKey" | "onOpen"> {
+  /** The name of the list. */
+  readonly label: string;
+}
+
+/** The rows: the name of an item opens it, and the rest of the row follows. */
+function Rows({ rows, label, openKey, onOpen }: RowsProps) {
+  return (
+    <ul className={styles.rows} aria-label={label}>
+      {rows.map((row) => (
+        <li key={row.key} className={styles.row}>
+          <Button
+            className={cx(styles.open)}
+            aria-expanded={row.key === openKey}
+            onPress={() => {
+              onOpen(row.key);
+            }}
+          >
+            {row.name}
+          </Button>
+          {row.details}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 /**
  * The list → editor pattern of every settings screen (UX §5.1): a searchable list, where a simple
  * item opens in a side panel next to it. (A big item gets a page of its own: its row is a link.)
@@ -46,9 +73,12 @@ export function ListEditor({
   const [query, setQuery] = useState("");
   const shown = rows.filter((row) => row.name.toLowerCase().includes(query.trim().toLowerCase()));
   const open = rows.find((row) => row.key === openKey);
+  // A phone shows one thing at a time: the open item takes the screen, and Back closes it. The
+  // list stays in the page, hidden, so the focus can go back to the row that was opened.
+  const alone = useLayout() === "phone" && open !== undefined;
   return (
     <div className={styles.frame}>
-      <div className={styles.list}>
+      <div className={styles.list} hidden={alone}>
         <SearchField
           label={searchLabel}
           clearLabel={t("search.clear")}
@@ -56,22 +86,7 @@ export function ListEditor({
           onChange={setQuery}
         />
         {shown.length === 0 ? <p className={styles.nothing}>{nothing}</p> : null}
-        <ul className={styles.rows} aria-label={searchLabel}>
-          {shown.map((row) => (
-            <li key={row.key} className={styles.row}>
-              <Button
-                className={cx(styles.open)}
-                aria-expanded={row.key === openKey}
-                onPress={() => {
-                  onOpen(row.key);
-                }}
-              >
-                {row.name}
-              </Button>
-              {row.details}
-            </li>
-          ))}
-        </ul>
+        <Rows rows={shown} label={searchLabel} openKey={openKey} onOpen={onOpen} />
       </div>
       {open === undefined ? null : (
         <SidePanel title={open.name} onClose={onClose}>

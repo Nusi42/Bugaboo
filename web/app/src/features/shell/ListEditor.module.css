@@ -63,3 +63,8 @@
   margin: 0;
   color: var(--fg-muted);
 }
+
+/* The browser hides an element with the attribute, but the class here would show it again. */
+.list[hidden] {
+  display: none;
+}

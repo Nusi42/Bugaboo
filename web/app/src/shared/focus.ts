@@ -27,10 +27,18 @@ export function usePageFocus(contentId: string): void {
   const { pathname } = useLocation();
   const shownPage = useRef(pathname);
   useEffect(() => {
-    if (shownPage.current !== pathname) {
-      shownPage.current = pathname;
-      const content = document.querySelector<HTMLElement>(`#${contentId}`);
-      (content?.querySelector<HTMLElement>("h1") ?? content)?.focus();
-    }
+    const changed = shownPage.current !== pathname;
+    shownPage.current = pathname;
+    // After the next paint: a layer that closes (quick search) gives the focus back to where it
+    // was while it closes, and the heading must not lose it to that.
+    const frame = changed
+      ? requestAnimationFrame(() => {
+          const content = document.querySelector<HTMLElement>(`#${contentId}`);
+          (content?.querySelector<HTMLElement>("h1") ?? content)?.focus();
+        })
+      : 0;
+    return () => {
+      cancelAnimationFrame(frame);
+    };
   }, [pathname, contentId]);
 }

@@ -45,7 +45,6 @@ export function ShortcutEditor({ id, overrides }: ShortcutEditorProps) {
   const invalid = recorded !== "" && !isValidSequence(recorded);
   const use = (): void => {
     setShortcutKeys(id, [recorded]);
-    setRecorded("");
     setSaved("keys");
   };
   const reset = (): void => {

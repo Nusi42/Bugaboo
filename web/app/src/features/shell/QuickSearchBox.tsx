@@ -1,6 +1,6 @@
 import { t } from "@bugaboo/messages";
 import { IconButton, iconName, SearchField } from "@bugaboo/ui";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Autocomplete } from "react-aria-components";
 
 import { closeOverlay } from "./overlay-state.ts";
@@ -12,23 +12,28 @@ import { useQuickResults } from "./use-quick-results.ts";
 export function QuickSearchBox() {
   const [query, setQuery] = useState("");
   const groups = useQuickResults(query);
+  const field = useRef<HTMLDivElement>(null);
+  // The dialog is made for typing: the box has the focus as soon as it appears.
+  useEffect(() => {
+    field.current?.querySelector("input")?.focus();
+  }, []);
   return (
-    <div className={styles.search}>
-      <div className={styles.head}>
-        <div className={styles.field}>
-          <SearchField
-            label={t("search.label")}
-            placeholder={t("search.placeholder")}
-            clearLabel={t("search.clear")}
-            value={query}
-            onChange={setQuery}
-          />
+    <Autocomplete inputValue={query} onInputChange={setQuery}>
+      <div className={styles.search}>
+        <div className={styles.head}>
+          <div ref={field} className={styles.field}>
+            <SearchField
+              label={t("search.label")}
+              placeholder={t("search.placeholder")}
+              clearLabel={t("search.clear")}
+              value={query}
+              onChange={setQuery}
+            />
+          </div>
+          <IconButton icon={iconName.close} label={t("common.close")} onPress={closeOverlay} />
         </div>
-        <IconButton icon={iconName.close} label={t("common.close")} onPress={closeOverlay} />
-      </div>
-      <Autocomplete inputValue={query} onInputChange={setQuery}>
         <QuickResults groups={groups} />
-      </Autocomplete>
-    </div>
+      </div>
+    </Autocomplete>
   );
 }

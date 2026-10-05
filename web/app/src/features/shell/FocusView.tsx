@@ -6,6 +6,7 @@ import { FocusBar } from "./FocusBar.tsx";
 import styles from "./FocusView.module.css";
 import { useNarrowSidebarWhile } from "./sidebar-state.ts";
 import { useEscape } from "./use-escape.ts";
+import { useTakeFocus } from "./use-take-focus.ts";
 
 export interface FocusViewProps {
   /** A slim list of the items around the open one; `j` and `k` move through it. */
@@ -37,12 +38,13 @@ export function FocusView({ list, onBack, onStep, children }: FocusViewProps) {
     },
   });
   const view = useEscape<HTMLDivElement>(onBack, true);
+  const main = useTakeFocus<HTMLDivElement>();
   const phone = layout === "phone";
   const listState = phone ? "none" : listHidden ? "hidden" : "shown";
   return (
     <div ref={view} className={styles.view}>
       {listState === "shown" ? <div className={styles.list}>{list}</div> : null}
-      <div className={styles.main}>
+      <div ref={main} tabIndex={-1} className={styles.main}>
         <div className={styles.bar}>
           <FocusBar
             onBack={onBack}

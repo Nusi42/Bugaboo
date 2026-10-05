@@ -10,9 +10,9 @@ export interface Example {
 }
 
 const examples: readonly Example[] = [
-  { id: "1", name: t("frames.item-1") },
-  { id: "2", name: t("frames.item-2") },
-  { id: "3", name: t("frames.item-3") },
+  { id: "first", name: t("frames.item-1") },
+  { id: "second", name: t("frames.item-2") },
+  { id: "third", name: t("frames.item-3") },
 ];
 
 /**
