@@ -2,6 +2,7 @@ import { t } from "@bugaboo/messages";
 import { type Locator, type Page } from "@playwright/test";
 
 import { ada, endEverySession, makeAdmin } from "./support/accounts.ts";
+import { expectGoodInEveryTheme } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { anotherBrowser, openFromMenu, signIn } from "./support/flows.ts";
 
@@ -42,6 +43,9 @@ test("sec_12 every browser is listed and this one is marked", async ({ page, bro
   await expect(page.getByText(t("sessions.this"))).toHaveCount(1);
   // The other place has a button to sign out of it; this one has its own in the menu.
   await expect(signOutOfOther(page)).toHaveCount(1);
+  // The button shows "Sign out" and its name says which place (label in name, WCAG 2.5.3).
+  await expect(signOutOfOther(page)).toHaveText(t("sessions.end"));
+  await expectGoodInEveryTheme(page);
   await other.context().close();
 });
 

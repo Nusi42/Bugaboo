@@ -362,7 +362,7 @@ export const messages = {
   "sessions.started": "Signed in {when}",
   "sessions.last-seen": "Last used {when}",
   "sessions.network": "Network {network}",
-  "sessions.end": "Sign out here",
+  "sessions.end": "Sign out",
   "sessions.end-name": "Sign out of {device}",
   "sessions.ended": "That place is signed out.",
   "sessions.everywhere": "Sign out everywhere",

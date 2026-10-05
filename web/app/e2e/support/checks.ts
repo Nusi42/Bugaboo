@@ -98,6 +98,29 @@ export async function expectNoOverlap(page: Page): Promise<void> {
   expect(overlaps).toEqual([]);
 }
 
+/** Things a person presses, which have their own name besides the text they show. */
+const NAMED_CONTROLS = "button[aria-label], a[aria-label], [role='button'][aria-label]";
+
+/**
+ * What a button or link says in words is part of the name it has for a screen reader (WCAG 2.5.3,
+ * label in name): a person who says "Sign out" to voice control must hit the button that shows
+ * "Sign out". Every button or link with its own `aria-label` has its visible text in that label.
+ */
+export async function expectVisibleTextInName(page: Page): Promise<void> {
+  const mismatches = await page.evaluate((selector) => {
+    const found: string[] = [];
+    for (const element of document.querySelectorAll(selector)) {
+      const visible = (element.textContent ?? "").trim().toLowerCase();
+      const name = (element.getAttribute("aria-label") ?? "").toLowerCase();
+      if (visible !== "" && !name.includes(visible)) {
+        found.push(`"${visible}" is not in "${name}"`);
+      }
+    }
+    return found;
+  }, NAMED_CONTROLS);
+  expect(mismatches).toEqual([]);
+}
+
 /** The open screen is accessible and does not scroll sideways, in every theme, picked as a person does. */
 export function expectGoodInEveryTheme(page: Page): Promise<void> {
   return inOrder(
@@ -106,6 +129,7 @@ export function expectGoodInEveryTheme(page: Page): Promise<void> {
       await expectNoViolations(page);
       await expectNoSidewaysScroll(page);
       await expectNoOverlap(page);
+      await expectVisibleTextInName(page);
     }),
   );
 }
@@ -118,6 +142,7 @@ export function expectGoodInEveryLook(page: Page): Promise<void> {
       await expectNoViolations(page);
       await expectNoSidewaysScroll(page);
       await expectNoOverlap(page);
+      await expectVisibleTextInName(page);
     }),
   );
 }

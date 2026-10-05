@@ -2347,7 +2347,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("sessions.cut-off", "Only the newest places are shown."),
     ("sessions.device", "{browser} on {system}"),
-    ("sessions.end", "Sign out here"),
+    ("sessions.end", "Sign out"),
     ("sessions.end-name", "Sign out of {device}"),
     ("sessions.ended", "That place is signed out."),
     ("sessions.everywhere", "Sign out everywhere"),
