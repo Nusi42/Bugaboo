@@ -87,3 +87,47 @@ test("ux_06 a change the server refuses goes back with a plain message", async (
   await expect(places(page)).toHaveCount(2);
   await other.context().close();
 });
+
+test("ux_06 after ending a place the focus goes to the next button, else the heading", async ({
+  page,
+  browser,
+  server,
+}) => {
+  const other = await twoPlaces(page, browser, server);
+  const third = await anotherBrowser(browser, server);
+  await signIn(third, ada);
+  await page.reload();
+  await expect(places(page)).toHaveCount(3);
+  await signOutOfOther(page).first().click();
+  await expect(places(page)).toHaveCount(2);
+  await expect(signOutOfOther(page)).toBeFocused();
+  await signOutOfOther(page).click();
+  await expect(places(page)).toHaveCount(1);
+  await expect(page.getByRole("heading", { level: 1, name: t("sessions.title") })).toBeFocused();
+  await other.context().close();
+  await third.context().close();
+});
+
+test("ux_06 grey shapes stand in for a slow list, and the list says it is busy", async ({
+  page,
+  browser,
+  server,
+}) => {
+  const other = await twoPlaces(page, browser, server);
+  const slow = Promise.withResolvers<void>();
+  await page.route("**/api/v1/auth/sessions", async (route) => {
+    await slow.promise;
+    await route.continue();
+  });
+  await page.goto("/me/sessions");
+  const region = page.getByRole("list", { name: t("sessions.list") }).locator("..");
+  await expect(region).toHaveAttribute("aria-busy", "true");
+  // Nothing grey in the first 0.3 s, so a quick answer never flashes.
+  await expect(region.locator("[class*='_skeleton_']")).toHaveCount(0);
+  await expect(region.locator("[class*='_skeleton_']")).toHaveCount(1, { timeout: 3000 });
+  slow.resolve();
+  await expect(places(page)).toHaveCount(2);
+  await expect(region).toHaveAttribute("aria-busy", "false");
+  await expect(region.locator("[class*='_skeleton_']")).toHaveCount(0);
+  await other.context().close();
+});

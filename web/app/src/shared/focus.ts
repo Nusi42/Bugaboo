@@ -42,3 +42,58 @@ export function usePageFocus(contentId: string): void {
     };
   }, [pathname, contentId]);
 }
+
+/** What can be pressed in a row. */
+const PRESSABLE = "button, a[href]";
+
+/**
+ * Where the focus goes when the row that has it goes away: the next row's button or link, else the
+ * one before it, else the heading of the list. Without it the focus falls to the page and a
+ * screen reader starts again from the top.
+ */
+export function focusTargetAfterRemoval(): HTMLElement | null {
+  const row = document.activeElement?.closest("li") ?? null;
+  const list = row?.parentElement ?? null;
+  if (row === null || list === null) {
+    return null;
+  }
+  const rows = [...list.children];
+  const at = rows.indexOf(row);
+  const around = [...rows.slice(at + 1), ...rows.slice(0, at).toReversed()];
+  for (const other of around) {
+    const pressable = other.querySelector<HTMLElement>(PRESSABLE);
+    if (pressable !== null) {
+      return pressable;
+    }
+  }
+  return list.closest("section, main")?.querySelector<HTMLElement>("h1, h2") ?? null;
+}
+
+/** How many frames to wait for the row to go away before giving up. */
+const FRAMES_TO_WAIT = 60;
+
+/**
+ * Runs a change that removes the row that has the focus (a press on its button) and moves the focus
+ * as `focusTargetAfterRemoval` says, as soon as the row is gone. If the row never goes (the change
+ * was refused), the focus stays where it is.
+ */
+export function removeKeepingFocus(run: () => void): void {
+  const from = document.activeElement;
+  const target = focusTargetAfterRemoval();
+  run();
+  if (target === null || from === null) {
+    return;
+  }
+  const wait = (framesLeft: number): void => {
+    if (!from.isConnected) {
+      target.focus();
+    } else if (framesLeft > 0) {
+      requestAnimationFrame(() => {
+        wait(framesLeft - 1);
+      });
+    }
+  };
+  requestAnimationFrame(() => {
+    wait(FRAMES_TO_WAIT);
+  });
+}

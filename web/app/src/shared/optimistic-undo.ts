@@ -21,6 +21,12 @@ export interface UndoRequest {
  * taken back offers itself through `offer`.
  */
 export interface UndoStore {
+  /** Stops counting down while the offer is pointed at or has the focus. */
+  readonly pause: (id: number) => void;
+  /** Goes on counting down with the time that was left. */
+  readonly resume: (id: number) => void;
+  /** The latest offer, for the shortcut. */
+  readonly latest: () => UndoOffer | undefined;
   readonly offer: (request: UndoRequest) => number;
   /** Takes the action back, if it is still on offer; returns whether it was. */
   readonly take: (id: number) => boolean;
@@ -28,12 +34,67 @@ export interface UndoStore {
   readonly subscribe: (listener: () => void) => () => void;
 }
 
+/** The time each offer has left, which stops counting while the offer is held. */
+interface Countdowns {
+  /** Starts counting the whole window for an offer. */
+  readonly start: (id: number, onElapsed: () => void) => void;
+  readonly pause: (id: number) => void;
+  readonly resume: (id: number) => void;
+  /** Forgets an offer. */
+  readonly stop: (id: number) => void;
+}
+
+function createCountdowns(schedule: Schedule, now: () => number): Countdowns {
+  const stops = new Map<number, () => void>();
+  const left = new Map<number, { remaining: number; since: number | null }>();
+  const callbacks = new Map<number, () => void>();
+  const count = (id: number, remaining: number): void => {
+    left.set(id, { remaining, since: now() });
+    stops.set(
+      id,
+      schedule(() => {
+        callbacks.get(id)?.();
+      }, remaining),
+    );
+  };
+  return {
+    start: (id, onElapsed) => {
+      callbacks.set(id, onElapsed);
+      count(id, undoWindowMs);
+    },
+    pause: (id) => {
+      const state = left.get(id);
+      if (state?.since !== null && state !== undefined) {
+        stops.get(id)?.();
+        stops.delete(id);
+        const spent = now() - (state.since ?? 0);
+        left.set(id, { remaining: Math.max(0, state.remaining - spent), since: null });
+      }
+    },
+    resume: (id) => {
+      const state = left.get(id);
+      if (state !== undefined && state.since === null) {
+        count(id, state.remaining);
+      }
+    },
+    stop: (id) => {
+      stops.get(id)?.();
+      stops.delete(id);
+      left.delete(id);
+      callbacks.delete(id);
+    },
+  };
+}
+
 /** Makes a store. The clock is a parameter so tests do not have to wait 10 seconds. */
-export function createUndoStore(schedule: Schedule = browserSchedule): UndoStore {
+export function createUndoStore(
+  schedule: Schedule = browserSchedule,
+  now: () => number = Date.now,
+): UndoStore {
   const listeners = new Set<() => void>();
+  const countdowns = createCountdowns(schedule, now);
   let offers: readonly UndoOffer[] = [];
   let nextId = 1;
-  const stops = new Map<number, () => void>();
   const changed = (next: readonly UndoOffer[]): void => {
     offers = next;
     for (const listener of listeners) {
@@ -41,23 +102,22 @@ export function createUndoStore(schedule: Schedule = browserSchedule): UndoStore
     }
   };
   const drop = (id: number): void => {
-    stops.get(id)?.();
-    stops.delete(id);
+    countdowns.stop(id);
     changed(offers.filter((offer) => offer.id !== id));
   };
   return {
     offer: (request) => {
       const id = nextId;
       nextId += 1;
-      stops.set(
-        id,
-        schedule(() => {
-          drop(id);
-        }, undoWindowMs),
-      );
+      countdowns.start(id, () => {
+        drop(id);
+      });
       changed([...offers, { id, ...request }]);
       return id;
     },
+    pause: countdowns.pause,
+    resume: countdowns.resume,
+    latest: () => offers.at(-1),
     take: (id) => {
       const found = offers.find((offer) => offer.id === id);
       if (found === undefined) {

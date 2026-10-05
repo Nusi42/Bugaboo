@@ -1,4 +1,4 @@
-import type { QueryClient, QueryKey } from "@tanstack/react-query";
+import { hashKey, type QueryClient, type QueryKey } from "@tanstack/react-query";
 
 import type { SaveState } from "@bugaboo/ui";
 
@@ -16,16 +16,48 @@ export type Described = object;
 export interface OptimisticChange<Variables extends Described, Cached extends Cacheable, Answer> {
   /** The data on screen that the change touches. */
   readonly queryKey: QueryKey;
+  /** Whether what the cache holds under the key is data of this kind (a guard, never a guess). */
+  readonly isCached: (value: unknown) => value is Cached;
   /** The data after the change, worked out from the data before it. */
   readonly apply: (before: Cached | undefined, variables: Variables) => Cached | undefined;
   readonly send: (variables: Variables) => Promise<Answer>;
 }
 
+/** One change that is on its way: what it does to the data. */
+interface Pending {
+  readonly apply: (before: unknown) => unknown;
+}
+
+/**
+ * The changes of one query that are on their way, and the data from before the first of them.
+ * (A class: it has state, and its methods take no parameters the lint rules cannot make read-only.)
+ */
+class Flight {
+  base: unknown = undefined;
+  readonly changes = new Map<number, Pending>();
+
+  /** The data from before the first change with every change that is still on its way put on it. */
+  replay(): unknown {
+    let data = this.base;
+    for (const change of this.changes.values()) {
+      data = change.apply(data);
+    }
+    return data;
+  }
+}
+
+/** The changes on their way, by cache and query. A cache is the one object that is not a value. */
+const flights = new WeakMap<QueryClient, Map<string, Flight>>();
+
+let nextChange = 0;
+
 /**
  * The function a TanStack Query mutation runs: it does the change in the cache first, asks the
- * server, puts the data back when the server refuses (and passes the error on, so the caller can
- * show its plain message), and reads the data again when it is done, so the screen ends up
- * showing what the server says either way.
+ * server, and passes an error on so the caller can show its plain message. Changes may overlap: when
+ * the server refuses one, the data is made again from the data before them with the changes that
+ * are still on their way put back on it, so a refusal never takes another change with it. The
+ * data is read from the server again once, after the last change on its way, and nobody waits for
+ * that: *Saved* comes as soon as the server has answered.
  *
  * The client comes as a function because the cache is the one object that is not a value.
  */
@@ -35,21 +67,44 @@ export function optimisticSend<Variables extends Described, Cached extends Cache
 ): (variables: Variables) => Promise<Answer> {
   return async (variables) => {
     const client = getClient();
+    const hash = hashKey(change.queryKey);
     // An answer that is still on its way would put the old data back over the change.
     await client.cancelQueries({ queryKey: change.queryKey });
-    const before = client.getQueryData<Cached>(change.queryKey);
-    client.setQueryData<Cached | undefined>(change.queryKey, change.apply(before, variables));
+    const all = flights.get(client) ?? new Map<string, Flight>();
+    flights.set(client, all);
+    const flight = all.get(hash) ?? new Flight();
+    all.set(hash, flight);
+    if (flight.changes.size === 0) {
+      flight.base = client.getQueryData(change.queryKey);
+    }
+    const id = nextChange;
+    nextChange += 1;
+    // What this change does to whatever data it is put on.
+    const pending: Pending = {
+      apply: (before) => change.apply(change.isCached(before) ? before : undefined, variables),
+    };
+    flight.changes.set(id, pending);
+    client.setQueryData(change.queryKey, pending.apply(client.getQueryData(change.queryKey)));
     try {
-      return await change.send(variables);
+      const answer = await change.send(variables);
+      // The server has it now: from here on it is part of the data before the others.
+      flight.base = pending.apply(flight.base);
+      return answer;
     } catch (error) {
-      client.setQueryData<Cached | undefined>(change.queryKey, before);
+      flight.changes.delete(id);
+      client.setQueryData(change.queryKey, flight.replay());
       throw error;
     } finally {
-      await client.invalidateQueries({ queryKey: change.queryKey });
+      flight.changes.delete(id);
+      if (flight.changes.size === 0) {
+        all.delete(hash);
+        void client.invalidateQueries({ queryKey: change.queryKey });
+      }
     }
   };
 }
 
+/** What a mutation has gone through, as the words *Saving…*, *Saved* and *Not saved yet* say it. */
 const saveStates = {
   idle: "idle",
   pending: "saving",

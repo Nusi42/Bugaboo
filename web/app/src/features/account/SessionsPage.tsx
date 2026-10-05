@@ -1,35 +1,37 @@
 import { t } from "@bugaboo/messages";
-import { Alert, Card, SaveStatus } from "@bugaboo/ui";
-import { useQuery } from "@tanstack/react-query";
+import { Alert, Card, SaveStatus, Skeleton } from "@bugaboo/ui";
 
 import { messageOf } from "../../shared/errors.ts";
 import { usePageTitle } from "../../shared/use-page.ts";
 import styles from "./Account.module.css";
 import { SessionRow } from "./SessionRow.tsx";
-import { sessionsOptions } from "./sessions.ts";
 import { SignOutEverywhere } from "./SignOutEverywhere.tsx";
 import { useEndSession } from "./use-end-session.ts";
+import { useSessionsView } from "./use-sessions-view.ts";
 
 /** The sessions page: every place with its browser and system, and the way to sign out everywhere. */
 export function SessionsPage() {
   usePageTitle(t("sessions.title"));
-  const sessions = useQuery(sessionsOptions());
+  const { sessions, shapes } = useSessionsView();
   const end = useEndSession();
   return (
     <Card heading={t("sessions.title")} level={1}>
       <p className={styles.text}>{t("sessions.intro")}</p>
       {sessions.isError ? <Alert danger>{messageOf(sessions.error)}</Alert> : null}
-      <ul className={styles.list} aria-label={t("sessions.list")}>
-        {sessions.data?.sessions.map((session) => (
-          <SessionRow
-            key={session.id}
-            session={session}
-            onEnd={() => {
-              end.change({ id: session.id });
-            }}
-          />
-        ))}
-      </ul>
+      <div aria-busy={sessions.isPending}>
+        <ul className={styles.list} aria-label={t("sessions.list")}>
+          {sessions.data?.sessions.map((session) => (
+            <SessionRow
+              key={session.id}
+              session={session}
+              onEnd={() => {
+                end.remove({ id: session.id });
+              }}
+            />
+          ))}
+        </ul>
+        {shapes ? <Skeleton /> : null}
+      </div>
       <SaveStatus
         state={end.saveState}
         labels={{

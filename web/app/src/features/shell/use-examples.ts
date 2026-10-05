@@ -1,6 +1,7 @@
 import { t } from "@bugaboo/messages";
 import { useState } from "react";
 
+import { removeKeepingFocus } from "../../shared/focus.ts";
 import { undoStore } from "../../shared/optimistic-undo.ts";
 
 /** One of the example items of the frames page. */
@@ -27,7 +28,9 @@ export function useExamples(): {
   return {
     items: examples.filter((example) => !removed.includes(example.id)),
     remove: (example) => {
-      setRemoved((now) => [...now, example.id]);
+      removeKeepingFocus(() => {
+        setRemoved((now) => [...now, example.id]);
+      });
       undoStore.offer({
         message: t("frames.removed", { name: example.name }),
         undo: () => {

@@ -1,75 +1,15 @@
 import { QueryClient } from "@tanstack/react-query";
 import { describe, expect, it } from "vitest";
 
+import { optimisticSend, saveStateOf, skeletonDelayMs, startDelay } from "./optimistic.ts";
 import {
-  optimisticSend,
-  saveStateOf,
-  skeletonDelayMs,
-  startDelay,
-  undoWindowMs,
-  type OptimisticChange,
-  type Schedule,
-} from "./optimistic.ts";
-import { createUndoStore } from "./optimistic-undo.ts";
-
-interface Names {
-  readonly names: readonly string[];
-}
-
-const key = ["names"] as const;
-
-/** A change that adds a name to the list in the cache; `send` is whatever the test needs. */
-function addName(send: (variables: { readonly name: string }) => Promise<string>) {
-  const change: OptimisticChange<{ readonly name: string }, Names, string> = {
-    queryKey: key,
-    apply: (before, { name }) => ({ names: [...(before?.names ?? []), name] }),
-    send,
-  };
-  return change;
-}
-
-/** A promise that the test settles when it chooses: a slow server. */
-function slowServer() {
-  const { promise, resolve, reject } = Promise.withResolvers<string>();
-  return { promise, answer: resolve, refuse: reject };
-}
-
-/** Lets what was started run as far as it can without an answer from the server. */
-function nextTick(): Promise<void> {
-  return new Promise((resolve) => {
-    setTimeout(resolve, 0);
-  });
-}
-
-/** What an undo does when the test does not look at it. */
-const doNothing = (): void => {
-  // Nothing to take back in this test.
-};
-
-/** Timers that only move when the test says so. */
-function manualClock() {
-  let now = 0;
-  const waiting: { at: number; run: () => void; stopped: boolean }[] = [];
-  const schedule: Schedule = (run, ms) => {
-    const entry = { at: now + ms, run, stopped: false };
-    waiting.push(entry);
-    return () => {
-      entry.stopped = true;
-    };
-  };
-  return {
-    schedule,
-    advance: (ms: number) => {
-      now += ms;
-      for (const entry of waiting) {
-        if (!entry.stopped && entry.at <= now) {
-          entry.stopped = true;
-          entry.run();
-        }
-      }
-    },
-  };
-}
+  addName,
+  key,
+  manualClock,
+  nextTick,
+  slowServer,
+  type Names,
+} from "./optimistic-testing.ts";
 
 describe("ux_06 a change shows at once", () => {
   it("is in the cache within 100 ms, while the slow server has not answered", async () => {
@@ -148,56 +88,5 @@ describe("ux_06 skeleton shapes wait for 0.3 seconds", () => {
     );
     clock.advance(skeletonDelayMs);
     expect(shown).toBe(true);
-  });
-});
-
-describe("ux_06 undo for 10 seconds", () => {
-  it("takes an action back while it is on offer, once", () => {
-    const clock = manualClock();
-    const store = createUndoStore(clock.schedule);
-    let undone = 0;
-    const id = store.offer({
-      message: "Done",
-      undo: () => {
-        undone += 1;
-      },
-    });
-    expect(store.list().map((offer) => offer.message)).toEqual(["Done"]);
-    clock.advance(undoWindowMs - 1);
-    expect(store.take(id)).toBe(true);
-    expect(undone).toBe(1);
-    expect(store.list()).toEqual([]);
-    expect(store.take(id)).toBe(false);
-    expect(undone).toBe(1);
-  });
-
-  it("stops offering after the 10 seconds", () => {
-    const clock = manualClock();
-    const store = createUndoStore(clock.schedule);
-    let undone = 0;
-    const id = store.offer({
-      message: "Done",
-      undo: () => {
-        undone += 1;
-      },
-    });
-    clock.advance(undoWindowMs);
-    expect(store.list()).toEqual([]);
-    expect(store.take(id)).toBe(false);
-    expect(undone).toBe(0);
-  });
-
-  it("tells those who show the offers about every change", () => {
-    const store = createUndoStore(manualClock().schedule);
-    let heard = 0;
-    const stop = store.subscribe(() => {
-      heard += 1;
-    });
-    const id = store.offer({ message: "Done", undo: doNothing });
-    store.take(id);
-    expect(heard).toBe(2);
-    stop();
-    store.offer({ message: "Again", undo: doNothing });
-    expect(heard).toBe(2);
   });
 });
