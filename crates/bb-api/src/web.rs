@@ -7,11 +7,16 @@ use rust_embed::RustEmbed;
 /// The file every page address falls back to (single-page app).
 pub(crate) const INDEX: &str = "index.html";
 
+/// What the build leaves in its folder for the checks (the Vite manifest): never part of the
+/// binary and never served.
+const BUILD_ONLY: &str = ".vite";
+
 /// Release builds hold `web/app/dist` inside the binary. Debug builds read the same folder from
 /// disk, so `cargo build` works before the web build exists (`allow_missing`).
 #[derive(RustEmbed)]
 #[folder = "../../web/app/dist"]
 #[allow_missing = true]
+#[exclude = ".vite/*"]
 struct Embedded;
 
 /// Where the files of the browser app come from.
@@ -38,7 +43,7 @@ impl WebSource {
     /// Looks up a file by its path inside the app, such as `assets/app-1a2b.js`.
     /// Paths that could leave the app folder are never found.
     pub(crate) async fn load(&self, path: &str) -> Option<Asset> {
-        if !is_safe(path) {
+        if !is_safe(path) || path.split('/').next() == Some(BUILD_ONLY) {
             return None;
         }
         let bytes = match self {
@@ -184,6 +189,24 @@ mod tests {
         ] {
             assert!(!is_safe(bad), "{bad}");
         }
+    }
+
+    #[tokio::test]
+    async fn perf_04_what_the_build_leaves_for_the_checks_is_not_served() {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::create_dir(dir.path().join(".vite")).unwrap();
+        std::fs::write(dir.path().join(".vite/manifest.json"), "{}").unwrap();
+        std::fs::write(dir.path().join("index.html"), "x").unwrap();
+        let web = WebSource::Folder(dir.path().into());
+        assert!(web.load(".vite/manifest.json").await.is_none());
+        assert!(web.load("index.html").await.is_some());
+        // Nor is it in the binary: the embedded folder leaves it out.
+        assert!(
+            WebSource::Embedded
+                .load(".vite/manifest.json")
+                .await
+                .is_none()
+        );
     }
 
     #[test]
