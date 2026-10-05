@@ -15,21 +15,21 @@
   opacity: 0.8;
 }
 
-.center {
+.overlay.center {
   align-items: flex-start;
   justify-content: center;
   padding: var(--space-6) var(--space-4);
 }
 
-.bottom {
+.overlay.bottom {
   align-items: flex-end;
 }
 
-.start {
+.overlay.start {
   justify-content: flex-start;
 }
 
-.top {
+.overlay.top {
   align-items: flex-start;
 }
 
