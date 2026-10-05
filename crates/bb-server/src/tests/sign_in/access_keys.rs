@@ -878,9 +878,9 @@ async fn sec_14_guessing_keys_is_limited_per_network_and_a_working_key_costs_not
             .secret;
         // A working key does not use anything up, however often it is used.
         for _ in 0..30 {
-            assert_eq!(refused(invitations(&rig, &key).await), None);
+            assert!(invitations(&rig, &key).await.is_ok());
         }
-        // Wrong keys do: after three, the network waits, and a key that works waits with it.
+        // Wrong keys do: after three, a guess from the network waits; a key that works does not.
         for _ in 0..3 {
             let guess = AccessKeySecret::generate()?.encode().as_str().to_owned();
             assert_eq!(
@@ -893,10 +893,7 @@ async fn sec_14_guessing_keys_is_limited_per_network_and_a_working_key_costs_not
             invitations(&rig, &guess).await,
             Err(AppError::Limited { .. })
         ));
-        assert!(matches!(
-            invitations(&rig, &key).await,
-            Err(AppError::Limited { .. })
-        ));
+        assert!(invitations(&rig, &key).await.is_ok());
         // The sessions of the people on that network are not affected.
         assert!(rig.permissions(&bob.session).await.is_ok());
         Ok(())

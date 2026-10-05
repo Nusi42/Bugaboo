@@ -20,6 +20,6 @@ Write the key in a file that only you can read, or in a setting of the program t
 - Asked for something the key may not do, Bugaboo answers "You are not allowed to do that" (403). Asked with a key that does not work, it answers "Please sign in to continue" (401), the same for a key that ran out, one that was deleted and one that never existed.
 - Asked for the places of your own sign-in (your password, your second step, your passkeys, the places where you are signed in, your keys), a key is turned away (403).
 - A key can send 300 requests a minute. Over that, Bugaboo answers 429 and says in `Retry-After` how many seconds to wait. Ask for fewer, bigger answers with `limit` and `fields` instead of many small ones. An administrator can raise the number in the settings file (`access_key_requests_per_minute`).
-- Many wrong keys in a short time from one place make that place wait, even with a right key, so check what your script sends.
+- Many wrong keys in a short time from one place make that place wait before it may try another wrong key (429). A key that works is never held up by that, however many wrong keys others send from the same place. Still, check what your script sends: a wrong key is a failed try.
 
 The description of all routes, with what each one needs, is on the page `/api/v1/openapi.json` of your Bugaboo.

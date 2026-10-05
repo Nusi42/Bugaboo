@@ -324,9 +324,16 @@ pub(super) fn secret_of(link_path: &str) -> String {
         .unwrap_or_default()
 }
 
-/// The error code of a refused request.
+/// The error code of a refused request, or `None` when it was not refused. A wait (429) or a
+/// failure of the server is no refusal with a code and no success either: it fails the test, so
+/// that `None` always means that the request went through.
 pub(super) fn refused<T>(result: Result<T, AppError>) -> Option<ErrorCode> {
-    result.err().as_ref().and_then(AppError::code)
+    let error = result.err()?;
+    assert!(
+        error.code().is_some(),
+        "{error:?} is neither a success nor a refusal with a code"
+    );
+    error.code()
 }
 
 /// Runs a test body that returns a plain error.

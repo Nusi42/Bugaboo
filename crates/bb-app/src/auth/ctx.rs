@@ -380,8 +380,9 @@ impl<S: AuthStore> Ctx<'_, S> {
     }
 
     /// Reserves a try of the client network alone, for a purpose that has no account to count
-    /// against (guessing access keys). It counts as a failure until [`Self::network_slot_done`]
-    /// says otherwise; the keys of a network keep a window of a minute and never grow.
+    /// against (guessing access keys). It is asked for after a failure, not before the check, so
+    /// it counts as one and is never given back; the keys of a network keep a window of a minute
+    /// and never grow.
     pub(crate) fn reserve_network(&self, purpose: &str) -> Result<Slot, AppError> {
         let network = self
             .request
@@ -399,13 +400,6 @@ impl<S: AuthStore> Ctx<'_, S> {
             network: None,
             tipped,
         })
-    }
-
-    /// The try of the network was no failure: it gets its try back. Only the try is given back:
-    /// the failures of the network are never cleared by a success, or one key that works would
-    /// pay for any number of guesses.
-    pub(crate) fn network_slot_done(&self, slot: &Slot) {
-        self.services.limiter.release(&slot.key);
     }
 
     /// The reserved try gets its slot back: the server failed before the try could be checked, so

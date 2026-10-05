@@ -99,23 +99,24 @@ impl<S: AuthStore> Ctx<'_, S> {
 
     /// The owner of the access key a script came with, narrowed by the key at every use.
     ///
+    /// The key is looked at first, and a key that works never touches the limit on guessing: only
+    /// a lookup that fails is a try of the network (SEC-14). So keys used at the same time, or by
+    /// somebody on a network where others have been guessing, are never made to wait; a guess is
+    /// the only thing a network over its limit is answered with a wait.
+    ///
     /// # Errors
     /// `auth.not_signed_in` for a key that does not work, whatever the reason (expired,
-    /// deleted, unknown, malformed); 429 when the network has used up its failed tries.
+    /// deleted, unknown, malformed); 429 when that is a guess of a network over its limit;
+    /// `auth.second_step_required` while the owner has to set up a second step.
     pub(crate) async fn key_actor(&self, key_text: &str) -> Result<Actor, AppError> {
-        // A try is counted before it is looked at, and a key that works gives it back, so only
-        // failures use up the allowance of the network (SEC-14).
-        let slot = self.reserve_network(GUESSING)?;
-        let found = self.working_key(key_text).await;
-        let found = self.unless_internal(&slot, found)?;
-        let Some((record, owner)) = found else {
+        let Some((record, owner)) = self.working_key(key_text).await? else {
+            let slot = self.reserve_network(GUESSING)?;
             self.slot_failed(slot, None).await;
             // Who sent it is not known: the entry holds the shortened network only.
             self.note(SecurityAction::AccessKeyRefused, None, None)
                 .await;
             return Err(AppError::Refused(ErrorCode::NotSignedIn));
         };
-        self.network_slot_done(&slot);
         // A key follows its owner's two-step requirement: a person who has to set up a second
         // step cannot get around it with a key (ADR-0025, decision 8; M2-F46).
         if self.must_set_up_second_step(owner.id).await? {
