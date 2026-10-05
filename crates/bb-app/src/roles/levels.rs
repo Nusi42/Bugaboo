@@ -144,9 +144,12 @@ pub async fn set_field_level<S: AuthStore>(
     )?;
     ctx.store()
         .record_change(&event, move |transaction| {
-            Box::pin(
-                async move { S::put_field_level(transaction, role, project, field, level).await },
-            )
+            Box::pin(async move {
+                // The version of a move preview is made from these levels: a move waits for a
+                // change of them, or the change for the move.
+                S::lock_policy(transaction).await?;
+                S::put_field_level(transaction, role, project, field, level).await
+            })
         })
         .await
         .map_err(|error| change_failed::<S>(&error, Some(ErrorCode::NotFound)))?;
@@ -210,9 +213,12 @@ pub async fn set_people_level<S: AuthStore>(
     )?;
     ctx.store()
         .record_change(&event, move |transaction| {
-            Box::pin(
-                async move { S::put_people_level(transaction, role, project, kind, level).await },
-            )
+            Box::pin(async move {
+                // The version of a move preview is made from these levels: a move waits for a
+                // change of them, or the change for the move.
+                S::lock_policy(transaction).await?;
+                S::put_people_level(transaction, role, project, kind, level).await
+            })
         })
         .await
         .map_err(|error| change_failed::<S>(&error, Some(ErrorCode::NotFound)))?;

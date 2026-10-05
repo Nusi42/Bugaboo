@@ -68,6 +68,8 @@ table! {
     "set_field_level" => s::set_field_level_scenario,
     "set_people_level" => s::set_people_level_scenario,
     "make_project" => s::make_project_scenario,
+    "change_project" => s::change_project_scenario,
+    "move_project" => s::move_project_scenario,
 }
 
 #[test]

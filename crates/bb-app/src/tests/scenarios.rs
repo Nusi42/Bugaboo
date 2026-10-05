@@ -32,7 +32,10 @@ use crate::people::{
     AddGroupMember, DeleteGroup, MakeGroup, RemoveGroupMember, RenameGroup, add_group_member,
     delete_group, make_group, remove_group_member, rename_group,
 };
-use crate::projects::{MakeProject, make_project};
+use crate::projects::{
+    ChangeProject, MakeProject, MovePreviewQuery, MoveProject, change_project, make_project,
+    move_project, preview_move,
+};
 use crate::roles::{
     AssignRole, ChangeRole, DeleteRole, Given, MakeRole, RemoveAssignment, ResetRole,
     SetFieldLevel, SetPeopleLevel, Subject, assign_role, change_role, delete_role, make_role,
@@ -940,6 +943,54 @@ pub(crate) async fn make_project_scenario(world: &World) -> Added {
                 parent: None,
                 short_name: "ACME".to_owned(),
                 name: "Acme".to_owned(),
+            },
+        ),
+    )
+    .await
+}
+
+pub(crate) async fn change_project_scenario(world: &World) -> Added {
+    let project = a_project(world, "ACME").await?;
+    measured(
+        &world.store,
+        change_project(
+            &world.ctx(),
+            ChangeProject {
+                session_token: token(world),
+                project,
+                version: 1,
+                name: Some("Acme Corporation".to_owned()),
+                short_name: Some("ACMECORP".to_owned()),
+            },
+        ),
+    )
+    .await
+}
+
+pub(crate) async fn move_project_scenario(world: &World) -> Added {
+    let acme = a_project(world, "ACME").await?;
+    let web = a_project(world, "WEB").await?;
+    let preview = preview_move(
+        &world.ctx(),
+        MovePreviewQuery {
+            session_token: token(world),
+            project: web,
+            to: Some(acme),
+        },
+    )
+    .await
+    .map_err(text)?
+    .into_value()
+    .preview;
+    measured(
+        &world.store,
+        move_project(
+            &world.ctx(),
+            MoveProject {
+                session_token: token(world),
+                project: web,
+                to: Some(acme),
+                preview,
             },
         ),
     )

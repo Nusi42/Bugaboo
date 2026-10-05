@@ -25,3 +25,14 @@ route = "GET /api/v1/auth/me"
 property = "permissions"
 whole_value = true
 reason = "The permissions of one person are at most as many as the catalogue has (14 in M2): a list bounded by the code, not one that grows with data, and the browser needs all of them at once (M2-F20)."
+
+[[exempt]]
+route = "GET /api/v1/projects/{project}"
+property = "trail"
+reason = "The way down to one project is as long as the tree is deep and at most 16 steps; the list has a hard cap and says when it was cut (M2-F25)."
+
+[[exempt]]
+route = "GET /api/v1/projects/{project}"
+property = "permissions"
+whole_value = true
+reason = "The permissions of one person at one project are at most as many as the catalogue has (14 in M2): a list bounded by the code, not one that grows with data (M2-F20)."

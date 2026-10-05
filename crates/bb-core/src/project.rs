@@ -2,6 +2,7 @@
 
 use std::fmt;
 
+use jiff::Timestamp;
 use serde::{Deserialize, Serialize};
 
 use crate::id::ProjectId;
@@ -11,6 +12,9 @@ use crate::personal::Entity;
 pub const SHORT_NAME_MIN: usize = 2;
 /// The most characters of a short name.
 pub const SHORT_NAME_MAX: usize = 10;
+/// The most levels a tree of projects has: a top-level project is level 1. A project below this is
+/// refused when it is made or moved, so no stored tree is deeper than the code follows.
+pub const DEPTH_MAX: usize = 64;
 
 /// The text is not a short name.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -84,8 +88,8 @@ impl fmt::Display for ShortName {
 impl crate::personal::NotPersonal for ShortName {}
 
 /// A project (PRJ-01): a place in the tree where roles are given and work happens. Projects hold
-/// sub-projects; a project at the top has no parent. The names, moves and short names of
-/// projects are finished by WP-08; WP-05 makes the table and the minimal *make a project*.
+/// sub-projects; a project at the top has no parent. Its name and short name can change and it
+/// can move (WP-08); every change counts `version` up.
 #[derive(Clone, Debug, PartialEq, Eq, Entity)]
 pub struct Project {
     /// The ID of the project.
@@ -103,6 +107,22 @@ pub struct Project {
     /// Counts up with every change, for the check that nobody changed it meanwhile (ADR-0019).
     #[not_personal]
     pub version: i64,
+}
+
+/// An old short name of a project (M2-Q4): it stays with the project, so addresses that used it
+/// keep working (`/p/OLD` opens the project), and nobody else can take it. Only that project can
+/// take it back.
+#[derive(Clone, Debug, PartialEq, Eq, Entity)]
+pub struct ProjectAlias {
+    /// The old short name.
+    #[not_personal]
+    pub short_name: ShortName,
+    /// The project it stays with.
+    #[not_personal]
+    pub project: ProjectId,
+    /// When the project stopped using it.
+    #[not_personal]
+    pub retired_at: Timestamp,
 }
 
 #[cfg(test)]

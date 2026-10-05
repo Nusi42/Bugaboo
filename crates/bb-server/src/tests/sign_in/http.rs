@@ -244,14 +244,29 @@ pub(super) fn never_stored_reads() -> &'static BTreeSet<String> {
     })
 }
 
+/// Whether the address is the route written as `template`, whose `{…}` parts stand for any one
+/// part of an address.
+fn is_route(template: &str, route: &str) -> bool {
+    let (template, route): (Vec<&str>, Vec<&str>) =
+        (template.split('/').collect(), route.split('/').collect());
+    template.len() == route.len()
+        && template
+            .iter()
+            .zip(&route)
+            .all(|(wanted, found)| wanted == found || wanted.starts_with('{'))
+}
+
 /// What every answer of the API says about keeping it (PERF-03, `bb-api` `etag`), checked on
 /// every request of every test that goes through a [`Browser`]: a read of something that is not
 /// personal data may be kept and must be asked about again, and has a tag; everything else is
 /// never stored and has no tag.
 fn assert_cache_rules(method: &str, path: &str, reply: &Reply) {
     let route = path.split('?').next().unwrap_or(path);
-    let kept =
-        method == "GET" && reply.status == StatusCode::OK && !never_stored_reads().contains(route);
+    let kept = method == "GET"
+        && reply.status == StatusCode::OK
+        && !never_stored_reads()
+            .iter()
+            .any(|template| is_route(template, route));
     let rule = reply.header("cache-control");
     if kept {
         assert_eq!(rule, "private, no-cache", "{method} {path}");
