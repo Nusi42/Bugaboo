@@ -85,6 +85,36 @@ describe("adr_0008 the generated client", () => {
   });
 });
 
+describe("m1_f29 answers with lists and open objects", () => {
+  it("keeps a list a list, so a screen can map over it", async () => {
+    const sessions = [
+      { id: "s1", started_at: "t", last_seen_at: "t", current: true },
+      { id: "s2", started_at: "t", last_seen_at: "t", current: false },
+    ];
+    const api = answering(() => Promise.resolve(ok({ sessions, truncated: false })));
+    const { data } = await api.client.GET("/api/v1/auth/sessions");
+    // `map` only compiles when the generated type of the answer is a real list.
+    expect(data?.sessions.map((session) => session.id)).toEqual(["s1", "s2"]);
+  });
+
+  it("takes a passkey answer of any shape, as the standard writes it", async () => {
+    const sent: unknown[] = [];
+    const api = createApi({
+      baseUrl: BASE,
+      csrfToken: () => readCookie("none", ""),
+      fetch: async (request) => {
+        sent.push(await request.json());
+        return ok({ person: null, second_step: null });
+      },
+    });
+    const credential = { id: "abc", response: { clientDataJSON: "x" }, type: "public-key" };
+    await api.client.POST("/api/v1/auth/passkey/sign-in", {
+      body: { challenge_id: "c", credential },
+    });
+    expect(sent).toEqual([{ challenge_id: "c", credential }]);
+  });
+});
+
 describe("ux_07 errors from the server", () => {
   it("turn problem+json into an error with the message key to show", async () => {
     const failure = await failureOf(() =>

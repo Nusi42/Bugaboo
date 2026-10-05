@@ -1,12 +1,12 @@
 import { isMessageKey, type MessageKey } from "@bugaboo/messages";
 
-import type { components } from "./schema.ts";
+import type { Schema } from "./readonly.ts";
 
 /** The body of every error answer (`application/problem+json`), as the API describes it. */
-export type Problem = components["schemas"]["Problem"];
+export type Problem = Schema<"Problem">;
 
 /** What can go wrong, as the API names it. */
-export type ErrorCode = components["schemas"]["ErrorCode"];
+export type ErrorCode = Schema<"ErrorCode">;
 
 /** The content type of an error answer. */
 export const PROBLEM_CONTENT_TYPE = "application/problem+json";
