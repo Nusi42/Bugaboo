@@ -27,7 +27,7 @@ Read this before every task. The docs in `docs/` are the source of truth; this f
 - **Single source of truth, DRY, one definition** (coding-standards §1): generate, don't copy. Every constant, type, port, path, message and setting is defined once.
 - **No hard-coded user-facing text**: all text goes into `messages/en.json`. Plain words from the glossary only.
 - **No hard-coded colors or sizes**: design tokens only (`design/tokens.json`).
-- **Ports** come only from `tools/dev/ports.json` (47200–47299), always with `strictPort`. Never default ports (5173, 4173, 3000, 8080, 51204).
+- **Ports** come only from `tools/dev/ports.json`, always with `strictPort`; your work folder `bugaboo.winN` has its own block of 100 ports (47200–48099 in all; block N starts at 47200 + (N−1)·100; any other folder uses block 1). Never default ports (5173, 4173, 3000, 8080, 51204).
 - **External tools** come only from `tools/dev/tools.toml` (pinned versions), installed by `cargo xtask setup` into `.tools/`. **New dependencies** need an entry in `docs/third-party/README.md` in the same change.
 - **Rust:** no `unsafe`, no `unwrap`/`expect`/`panic!`/`dbg!`/`println!` outside tests and CLI output; errors are typed.
 - **Commits:** Conventional Commits (`feat(xtask): …`, `fix(web): …`), one logical change each, ending with the attribution lines the session gives you.

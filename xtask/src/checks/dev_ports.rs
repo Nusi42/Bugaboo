@@ -11,8 +11,9 @@ const PORTS_FILE: &str = "tools/dev/ports.json";
 /// Ports that other projects on the development PC already use (ADR-0023).
 const DEFAULT_PORTS: [u32; 5] = [5173, 4173, 3000, 8080, 51204];
 
-/// Our block of ports.
-const ALLOWED: std::ops::RangeInclusive<u32> = 47200..=47299;
+/// All our ports: the blocks of every work folder (ADR-0023). Free on the development PC and
+/// below the dynamic range of Windows (49152 and up).
+const ALLOWED: std::ops::RangeInclusive<u32> = 47200..=48099;
 
 /// The tool configs and package files that could name a port.
 const CONFIGS: Selection = Selection {
@@ -79,6 +80,9 @@ impl Check for DevPorts {
     }
 }
 
+/// The ports file: blocks of `stride` ports from `first`, one block for each work folder, and the
+/// offset of every port inside a block. Every port of every block must be in [`ALLOWED`], and no
+/// two ports of a block may be the same.
 fn check_ports_file(text: &str) -> Vec<Finding> {
     let Ok(serde_json::Value::Object(map)) = serde_json::from_str::<serde_json::Value>(text) else {
         return vec![Finding::at(
@@ -86,32 +90,56 @@ fn check_ports_file(text: &str) -> Vec<Finding> {
             "The ports file must be a JSON object.",
         )];
     };
+    let number = |key: &str| map.get(key).and_then(serde_json::Value::as_u64);
+    let (Some(first), Some(stride), Some(blocks)) =
+        (number("first"), number("stride"), number("blocks"))
+    else {
+        return vec![Finding::at(
+            PORTS_FILE,
+            "The ports file needs the numbers `first`, `stride` and `blocks`.",
+        )];
+    };
+    let Some(serde_json::Value::Object(offsets)) = map.get("offsets") else {
+        return vec![Finding::at(
+            PORTS_FILE,
+            "The ports file needs `offsets`: the offset of every port inside a block.",
+        )];
+    };
     let mut findings = Vec::new();
+    let last = first + stride.saturating_mul(blocks).saturating_sub(1);
+    let in_range = |port: u64| u32::try_from(port).is_ok_and(|port| ALLOWED.contains(&port));
+    if stride == 0 || blocks == 0 || !in_range(first) || !in_range(last) {
+        findings.push(Finding::at(
+            PORTS_FILE,
+            format!(
+                "The blocks run from {first} to {last}; they must lie inside {}-{} (ADR-0023).",
+                ALLOWED.start(),
+                ALLOWED.end()
+            ),
+        ));
+    }
     let mut seen: Vec<(&str, u64)> = Vec::new();
-    for (name, value) in &map {
-        if name.starts_with('$') {
-            continue;
-        }
-        let Some(port) = value.as_u64() else {
+    for (name, value) in offsets {
+        let Some(offset) = value.as_u64() else {
             findings.push(Finding::at(
                 PORTS_FILE,
-                format!("`{name}` must be a port number."),
+                format!("`{name}` must be an offset (a number)."),
             ));
             continue;
         };
-        if !u32::try_from(port).is_ok_and(|port| ALLOWED.contains(&port)) {
+        if offset >= stride {
             findings.push(Finding::at(
                 PORTS_FILE,
-                format!("`{name}` is {port}; use the block 47200-47299 (ADR-0023)."),
+                format!("`{name}` is {offset}; an offset must be below the stride {stride}."),
             ));
         }
-        if let Some((other, _)) = seen.iter().find(|(_, used)| *used == port) {
+        if let Some((other, _)) = seen.iter().find(|(_, used)| *used == offset) {
             findings.push(Finding::at(
                 PORTS_FILE,
-                format!("`{name}` and `{other}` both use {port}."),
+                format!("`{name}` and `{other}` both use the offset {offset}."),
             ));
         }
-        seen.push((name, port));
+        seen.push((name, offset));
     }
     findings
 }
@@ -401,9 +429,24 @@ export default { server: { port: ports.web, strictPort: true } };
     }
 
     #[test]
-    fn ports_outside_our_block_fail() {
-        let bad = r#"{ "web": 5173, "server": 47200 }"#;
-        assert!(!check_ports_file(bad).is_empty());
-        assert!(!check_ports_file(r#"{ "web": 47201, "server": 47201 }"#).is_empty());
+    fn ports_outside_our_range_or_inside_each_other_fail() {
+        let file = |first: u64, stride: u64, blocks: u64, offsets: &str| {
+            format!(
+                r#"{{"first":{first},"stride":{stride},"blocks":{blocks},"offsets":{offsets}}}"#
+            )
+        };
+        let good = file(47200, 100, 9, r#"{"web":1,"server":0}"#);
+        assert!(check_ports_file(&good).is_empty());
+        // Blocks that start in front of the range, or run past it into the dynamic ports.
+        assert!(!check_ports_file(&file(5000, 100, 9, r#"{"web":1}"#)).is_empty());
+        assert!(!check_ports_file(&file(47200, 100, 10, r#"{"web":1}"#)).is_empty());
+        assert!(!check_ports_file(&file(47200, 10000, 9, r#"{"web":1}"#)).is_empty());
+        // An offset outside its block, two ports on one offset, a port that is no number.
+        assert!(!check_ports_file(&file(47200, 100, 9, r#"{"web":100}"#)).is_empty());
+        assert!(!check_ports_file(&file(47200, 100, 9, r#"{"web":1,"server":1}"#)).is_empty());
+        assert!(!check_ports_file(&file(47200, 100, 9, r#"{"web":"x"}"#)).is_empty());
+        // The old flat form is refused with a pointer to the new one.
+        assert!(!check_ports_file(r#"{ "web": 47201, "server": 47200 }"#).is_empty());
+        assert!(!check_ports_file("[]").is_empty());
     }
 }

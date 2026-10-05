@@ -816,7 +816,7 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 <tr><td>Fallback formatter</td><td>@biomejs/biome</td><td>2.5.15</td><td>MIT/Apache-2.0</td></tr>
 <tr><td>Pattern rules (Rust + TS)</td><td>@ast-grep/cli</td><td>0.45.3</td><td>MIT</td></tr>
 <tr><td>Unit tests (browser code)</td><td>vitest</td><td>5.0.3</td><td>MIT</td></tr>
-<tr><td>Local ports</td><td><code>tools/dev/ports.json</code></td><td>—</td><td>— (47200–47299, strict; ADR-0023)</td></tr>
+<tr><td>Local ports</td><td><code>tools/dev/ports.json</code></td><td>—</td><td>— (47200–48099, a block of 100 for each work folder, strict; ADR-0023)</td></tr>
 <tr><td>End-to-end tests</td><td>@playwright/test</td><td>1.63.0</td><td>Apache-2.0</td></tr>
 <tr><td>Accessibility checks</td><td>@axe-core/playwright</td><td>4.13.0</td><td>MPL-2.0 (test only, not shipped)</td></tr>
 <tr><td>Git hooks</td><td>lefthook</td><td>2.1.16</td><td>MIT</td></tr>
@@ -1053,17 +1053,18 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 <p>Each scenario runs against <strong>both SQLite and PostgreSQL</strong>. The short version (2 minutes) runs in CI; the long version (30 minutes, mixed workload) runs nightly and checks invariants afterwards: every change has an event, no lock outlives its lease, no text is lost.</p>
 <h3 id="s11-5"><button class="sec" data-sec>§11.5</button>Local ports (ADR-0023)</h3>
 <p>Your machine runs other Vite projects, so Bugaboo never uses default ports. All ports live in <strong><code>tools/dev/ports.json</code></strong> (single source); Vite, Playwright, the server and xtask read them from there, and every tool uses <code>strictPort</code>, so a busy port fails with a clear message instead of silently moving.</p>
-<div class="tbl-wrap"><table class="dtable"><thead><tr><th>Port</th><th>Used by</th></tr></thead><tbody>
-<tr><td>47200</td><td>Bugaboo server in development (API + embedded app)</td></tr>
-<tr><td>47201</td><td>Vite dev server (hot reload)</td></tr>
-<tr><td>47202</td><td>Vite preview of a production build</td></tr>
-<tr><td>47203</td><td>Server instance for end-to-end tests (fresh sample database)</td></tr>
-<tr><td>47204</td><td>Vitest UI</td></tr>
-<tr><td>47210–47229</td><td>Parallel Playwright workers, one server and database each</td></tr>
-<tr><td>47230</td><td>Load-test server</td></tr>
-<tr><td>47240</td><td>Throwaway PostgreSQL for tests (<code>cargo xtask db start</code>)</td></tr>
+<div class="tbl-wrap"><table class="dtable"><thead><tr><th>Offset</th><th>Used by</th></tr></thead><tbody>
+<tr><td>0</td><td>Bugaboo server in development (API + embedded app)</td></tr>
+<tr><td>1</td><td>Vite dev server (hot reload)</td></tr>
+<tr><td>2</td><td>Vite preview of a production build</td></tr>
+<tr><td>3</td><td>Server instance for end-to-end tests (fresh sample database)</td></tr>
+<tr><td>4</td><td>Vitest UI</td></tr>
+<tr><td>10–29</td><td>Parallel Playwright workers, one server and database each</td></tr>
+<tr><td>30</td><td>Load-test server</td></tr>
+<tr><td>40</td><td>Throwaway PostgreSQL for tests (<code>cargo xtask db start</code>)</td></tr>
 </tbody></table>
 </div>
+<p>The offsets are inside a block of 100 ports. Each work folder <code>bugaboo.winN</code> has its own block, starting at 47200 + (N − 1) · 100 (<code>win1</code> 47200–47299, <code>win3</code> 47400–47499, up to <code>win9</code> 48000–48099), so folders that build and test at the same time never share a port; any other folder uses block 1 and <code>BUGABOO_PORT_BLOCK</code> names another one. The table above shows block 1: the server of the first folder is on 47200, of the third on 47400.</p>
 <p>The installed product asks for its port in the setup wizard (suggesting 8443 and checking that it's free); these development ports never appear in a customer installation.</p>
 
 <!-- 12-security.md -->
@@ -1737,15 +1738,25 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 <h4>Decision</h4>
 <ul>
 <li><strong>Vite</strong> builds the browser app and runs the dev server; <strong>Vitest</strong> runs unit tests for browser code; <strong>Playwright</strong> runs end-to-end and concurrency tests.</li>
-<li>All local ports come from <strong><code>tools/dev/ports.json</code></strong> (single source), in the block <strong>47200–47299</strong>, which is free on the main PC and outside Windows' reserved and dynamic port ranges.</li>
+<li>All local ports come from <strong><code>tools/dev/ports.json</code></strong> (single source), in the range <strong>47200–48099</strong> (see the amendment below), which is free on the main PC and outside Windows' dynamic port range.</li>
 <li>Every tool uses <strong><code>strictPort: true</code></strong> (or the equivalent) and fails with a clear message naming <code>tools/dev/ports.json</code> if a port is busy.</li>
 <li>Playwright starts its own server instance (<code>e2eServer</code>, and one per worker from <code>e2eWorkersFrom</code>) with a fresh copy of the <strong>sample organization</strong> (architecture §11), so tests never touch a developer's data.</li>
 <li>No tool may use a framework's default port (5173, 4173, 3000, 8080, 51204).</li>
 </ul>
 <h4>Consequences</h4>
 <ul>
-<li>Several Bugaboo checkouts on one machine need different <code>ports.json</code> values; the file can be overridden by <code>BB_PORTS_FILE</code>.</li>
+<li>Several Bugaboo checkouts on one machine use different blocks of the range (amendment below), so they can build and test at the same time.</li>
 </ul>
+<h4>Amendment (M2 WP-04): a block of ports for each work folder</h4>
+<p>Builders in different work folders (ADR-0024) ran their end-to-end tests and their throwaway PostgreSQL at the same time on the same ports, and one run answered for another. Each work folder now has its own block:</p>
+<ul>
+<li><strong>A block is 100 ports.</strong> <code>bugaboo.winN</code> uses block N, which starts at <code>first + (N − 1) · stride</code> = 47200 + (N − 1) · 100: <code>win1</code> 47200–47299, <code>win2</code> 47300–47399, … <code>win9</code> 48000–48099. Nothing in 47200–48099 is reserved on the main PC, and the dynamic range starts at 49152.</li>
+<li><strong>Any other folder</strong> (CI, a fresh clone, the master) uses block 1. The variable <code>BUGABOO_PORT_BLOCK</code> names another block (1 to 9) and wins over the name of the folder. A work folder with a number outside 1 to 9, or a variable outside it, is an error that names the variable.</li>
+<li><strong><code>tools/dev/ports.json</code> stays the single source:</strong> it holds <code>first</code>, <code>stride</code>, <code>blocks</code> and the <em>offset</em> of each port inside a block (<code>server</code> 0, <code>web</code> 1, … <code>postgres</code> 40). <code>BB_PORTS_FILE</code> is gone.</li>
+<li><strong>One reader per language:</strong> <code>web/tooling/ports.ts</code> (Vite, Vitest, Playwright, the end-to-end workers) and <code>xtask/src/dev.rs</code> (<code>cargo xtask dev</code>, <code>db</code>, <code>ci</code>). Both derive the block from the name of the repository folder. Nothing else names a port; the tests that write a port as a text in a fake address never listen on it.</li>
+<li>Every tool still uses <code>strictPort</code>: a busy port fails and names <code>tools/dev/ports.json</code>.</li>
+</ul>
+<p>Enforced by: DEV-PORTS (the layout of the file: the range, the offsets, no duplicates), the tests <code>dev_ports_*</code> in <code>xtask/src/dev.rs</code> and <code>dist_01_every_work_folder_has_a_block_of_its_own</code> in <code>web/tooling/ports.test.ts</code>.</p>
 <h4>Alternatives considered</h4>
 <ul>
 <li><strong>Random free ports:</strong> avoids clashes but makes URLs unpredictable for people and documentation. Rejected.</li>

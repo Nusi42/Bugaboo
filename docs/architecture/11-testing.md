@@ -81,15 +81,17 @@ Each scenario runs against **both SQLite and PostgreSQL**. The short version (2 
 
 Your machine runs other Vite projects, so Bugaboo never uses default ports. All ports live in **`tools/dev/ports.json`** (single source); Vite, Playwright, the server and xtask read them from there, and every tool uses `strictPort`, so a busy port fails with a clear message instead of silently moving.
 
-| Port | Used by |
-|------|---------|
-| 47200 | Bugaboo server in development (API + embedded app) |
-| 47201 | Vite dev server (hot reload) |
-| 47202 | Vite preview of a production build |
-| 47203 | Server instance for end-to-end tests (fresh sample database) |
-| 47204 | Vitest UI |
-| 47210–47229 | Parallel Playwright workers, one server and database each |
-| 47230 | Load-test server |
-| 47240 | Throwaway PostgreSQL for tests (`cargo xtask db start`) |
+| Offset | Used by |
+|--------|---------|
+| 0 | Bugaboo server in development (API + embedded app) |
+| 1 | Vite dev server (hot reload) |
+| 2 | Vite preview of a production build |
+| 3 | Server instance for end-to-end tests (fresh sample database) |
+| 4 | Vitest UI |
+| 10–29 | Parallel Playwright workers, one server and database each |
+| 30 | Load-test server |
+| 40 | Throwaway PostgreSQL for tests (`cargo xtask db start`) |
+
+The offsets are inside a block of 100 ports. Each work folder `bugaboo.winN` has its own block, starting at 47200 + (N − 1) · 100 (`win1` 47200–47299, `win3` 47400–47499, up to `win9` 48000–48099), so folders that build and test at the same time never share a port; any other folder uses block 1 and `BUGABOO_PORT_BLOCK` names another one. The table above shows block 1: the server of the first folder is on 47200, of the third on 47400.
 
 The installed product asks for its port in the setup wizard (suggesting 8443 and checking that it's free); these development ports never appear in a customer installation.
