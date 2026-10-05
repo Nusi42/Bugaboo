@@ -43,6 +43,8 @@ argon2 = { workspace = true }
 axum = { workspace = true, features = ["http1", "http2", "tokio"] }
 base64ct = { workspace = true }
 bb-app = { path = "../bb-app", features = ["peek"] }
+# The settings that only exist for tests, so the project level can be tested (CFG-06).
+bb-core = { path = "../bb-core", features = ["test-settings"] }
 bb-store = { path = "../bb-store", features = ["testing"] }
 bb-testing = { path = "../bb-testing" }
 h2 = { workspace = true }

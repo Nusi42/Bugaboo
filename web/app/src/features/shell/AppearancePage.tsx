@@ -34,7 +34,7 @@ function Themes() {
   const { appearance, deviceTheme, change } = useAppearance();
   return (
     <>
-      <p className={styles.help}>{t("setting.appearance.theme.help")}</p>
+      <p className={styles.help}>{t("setting.appearance.mode.help")}</p>
       <ChoiceGroup
         legend={t("theme.legend")}
         choices={themeChoiceLabels(deviceTheme)}

@@ -36,7 +36,7 @@ use crate::schema::{
     SetupCodeRow, SignInSession as SessionColumns, TwoStep as TwoStepColumns,
 };
 use crate::security_log::NewSecurityLogEntry;
-use crate::settings::{Scopes, put_organization_setting};
+use crate::settings::{Scopes, put_organization_setting, resolved};
 
 /// The prefix of the name of a code app secret in the secrets table.
 const TOTP_SECRET_PREFIX: &str = "totp.";
@@ -436,29 +436,20 @@ impl AuthStore for AuthStorage {
     }
 
     async fn auth_settings(&self) -> Result<AuthSettings, StoreError> {
-        let scopes = Scopes::default();
+        // One snapshot of the organization's values: every request that needs a session asks.
+        let layers = self.database.setting_layers(&Scopes::default()).await?;
         Ok(AuthSettings {
             // A value that was stored before the bounds, or by hand, is cut to them.
-            session_idle_minutes: SECURITY_SESSION_IDLE_MINUTES.definition().clamp(
-                self.database
-                    .resolve_setting(&SECURITY_SESSION_IDLE_MINUTES, &scopes)
-                    .await?,
-            ),
-            session_absolute_hours: SECURITY_SESSION_ABSOLUTE_HOURS.definition().clamp(
-                self.database
-                    .resolve_setting(&SECURITY_SESSION_ABSOLUTE_HOURS, &scopes)
-                    .await?,
-            ),
-            sign_up_enabled: self
-                .database
-                .resolve_setting(&AUTH_SIGN_UP_ENABLED, &scopes)
-                .await?,
-            sign_up_domains: AUTH_SIGN_UP_DOMAINS.definition().cap_list(
-                &self
-                    .database
-                    .resolve_setting(&AUTH_SIGN_UP_DOMAINS, &scopes)
-                    .await?,
-            ),
+            session_idle_minutes: SECURITY_SESSION_IDLE_MINUTES
+                .definition()
+                .clamp(resolved(&SECURITY_SESSION_IDLE_MINUTES, &layers)?),
+            session_absolute_hours: SECURITY_SESSION_ABSOLUTE_HOURS
+                .definition()
+                .clamp(resolved(&SECURITY_SESSION_ABSOLUTE_HOURS, &layers)?),
+            sign_up_enabled: resolved(&AUTH_SIGN_UP_ENABLED, &layers)?,
+            sign_up_domains: AUTH_SIGN_UP_DOMAINS
+                .definition()
+                .cap_list(&resolved(&AUTH_SIGN_UP_DOMAINS, &layers)?),
         })
     }
 

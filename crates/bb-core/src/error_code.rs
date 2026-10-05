@@ -80,6 +80,8 @@ error_codes! {
     TooMuch => ("access.too_much", 403, message::ERROR_ACCESS_TOO_MUCH),
     /// A person or group would have a role and *No access* in the same project.
     AssignmentConflict => ("assignment.conflict", 409, message::ERROR_ASSIGNMENT_CONFLICT),
+    /// An administrator locked the setting, so nobody lower down may change it (CFG-06).
+    SettingLocked => ("setting.locked", 409, message::ERROR_SETTING_LOCKED),
     /// A name of a group, role or project is used already.
     NameTaken => ("name.taken", 409, message::ERROR_NAME_TAKEN),
     /// There is no such thing, or the person may not know about it.

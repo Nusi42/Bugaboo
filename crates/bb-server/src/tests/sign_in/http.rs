@@ -244,14 +244,29 @@ pub(super) fn never_stored_reads() -> &'static BTreeSet<String> {
     })
 }
 
+/// Whether the address is one of the routes in `routes`: an address with an ID in it is the route
+/// whose address has a part in braces in that place.
+pub(super) fn is_route_in(routes: &BTreeSet<String>, address: &str) -> bool {
+    let parts: Vec<&str> = address.split('/').collect();
+    routes.iter().any(|route| {
+        let template: Vec<&str> = route.split('/').collect();
+        template.len() == parts.len()
+            && template
+                .iter()
+                .zip(&parts)
+                .all(|(wanted, found)| wanted == found || wanted.starts_with('{'))
+    })
+}
+
 /// What every answer of the API says about keeping it (PERF-03, `bb-api` `etag`), checked on
 /// every request of every test that goes through a [`Browser`]: a read of something that is not
 /// personal data may be kept and must be asked about again, and has a tag; everything else is
 /// never stored and has no tag.
 fn assert_cache_rules(method: &str, path: &str, reply: &Reply) {
     let route = path.split('?').next().unwrap_or(path);
-    let kept =
-        method == "GET" && reply.status == StatusCode::OK && !never_stored_reads().contains(route);
+    let kept = method == "GET"
+        && reply.status == StatusCode::OK
+        && !is_route_in(never_stored_reads(), route);
     let rule = reply.header("cache-control");
     if kept {
         assert_eq!(rule, "private, no-cache", "{method} {path}");
@@ -455,7 +470,9 @@ async fn sec_12_every_route_that_changes_something_checks_the_token_except_signi
                 let path = template
                     .replace("{session_id}", id)
                     .replace("{passkey_id}", id)
-                    .replace("{invitation_id}", id);
+                    .replace("{invitation_id}", id)
+                    .replace("{project_id}", id)
+                    .replace("{key}", "some.key");
                 let reply = browser
                     .send_as(
                         &method.to_uppercase(),

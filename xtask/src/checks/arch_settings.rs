@@ -5,6 +5,10 @@
 //! `crates/bb-core/src/settings/`, and the key of a registered setting written as text anywhere
 //! else (which would be a way around the registry).
 //!
+//! Migrations are left out of the second pattern: they are frozen text that names the keys of their
+//! time (a setting that was split in two, a key a migration carries values over to), and they can
+//! use no handle of a registry that changes after them.
+//!
 //! The storage part: the table of setting values (`SettingRow` in `bb-store`) is read and written
 //! in `crates/bb-store/src/settings.rs` only, which checks every key, level and type against the
 //! registry. Its name appearing anywhere else (except the schema and the migrations that create
@@ -18,6 +22,12 @@ use crate::rust_source::{Source, read_product_sources, without_tests};
 
 /// The only place settings are declared.
 const REGISTRY_FOLDER: &str = "crates/bb-core/src/settings/";
+/// The file of the registry, which the browser client's list of keys is made from.
+pub(crate) const CATALOG_PATH: &str = "crates/bb-core/src/settings/catalog.rs";
+/// Where the settings that exist only for tests start in the catalog.
+pub(crate) const TEST_SETTINGS_MARK: &str = "pub mod for_tests";
+/// Where the migrations are: they name the keys of their time as text, on purpose.
+const MIGRATIONS_FOLDER: &str = "crates/bb-store/src/migrations/";
 
 /// The name of the table of setting values in the schema, and the table itself as it is written
 /// in text (the name of the table is `setting`).
@@ -123,10 +133,9 @@ fn evaluate(sources: &[Source]) -> Vec<Finding> {
             }
         }
     }
-    for (path, text) in sources
-        .iter()
-        .filter(|(path, _)| !path.starts_with(REGISTRY_FOLDER))
-    {
+    for (path, text) in sources.iter().filter(|(path, _)| {
+        !path.starts_with(REGISTRY_FOLDER) && !path.starts_with(MIGRATIONS_FOLDER)
+    }) {
         let code = without_tests(text);
         for (index, line) in code.lines().enumerate() {
             let place = format!("{path}:{}", index + 1);
@@ -156,7 +165,7 @@ fn declares(line: &str) -> bool {
 }
 
 /// The keys in `key: "…",` lines of a declaration.
-fn declared_keys(text: &str) -> Vec<String> {
+pub(crate) fn declared_keys(text: &str) -> Vec<String> {
     text.lines()
         .filter_map(|line| {
             let rest = line.trim().strip_prefix("key:")?.trim();
@@ -209,6 +218,25 @@ mod tests {
             1,
             "tests may name keys"
         );
+    }
+
+    #[test]
+    fn good_example_a_migration_names_the_keys_of_its_time() {
+        let migration = (
+            "crates/bb-store/src/migrations/m0004_settings.rs".to_owned(),
+            "const MODE: &str = \"appearance.theme\";
+"
+            .to_owned(),
+        );
+        assert!(found(&[registry(DECLARATION), migration]).is_empty());
+        // Any other file of the store may not.
+        let repository = (
+            "crates/bb-store/src/jobs.rs".to_owned(),
+            "const MODE: &str = \"appearance.theme\";
+"
+            .to_owned(),
+        );
+        assert!(found(&[registry(DECLARATION), repository]).contains("written as text"));
     }
 
     #[test]

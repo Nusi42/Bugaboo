@@ -27,6 +27,7 @@ use crate::schema::Migration;
 mod m0001_initial;
 mod m0002_sign_in;
 mod m0003_policy;
+mod m0004_settings;
 
 /// The advisory lock PostgreSQL processes take while they migrate.
 const MIGRATION_LOCK: i64 = 0x4242_4D49_4752_0001;
@@ -111,6 +112,11 @@ const ALL: &[Definition] = &[
         version: 3,
         name: "policy",
         steps: m0003_policy::steps,
+    },
+    Definition {
+        version: 4,
+        name: "settings",
+        steps: m0004_settings::steps,
     },
 ];
 
@@ -348,13 +354,14 @@ mod tests {
     async fn migrations() -> TestResult {
         each_database("migrations", async |db| {
             let database = Database::connect(db.url()).await?;
-            assert_eq!(database.migrate(at(0)).await?, [1, 2, 3]);
+            assert_eq!(database.migrate(at(0)).await?, [1, 2, 3, 4]);
             assert_eq!(database.migrate(at(1)).await?, Vec::<i64>::new());
             let applied = database.applied_migrations().await?;
-            assert_eq!(applied.len(), 3);
+            assert_eq!(applied.len(), 4);
             assert_eq!(applied[0].name.as_str(), "initial");
             assert_eq!(applied[1].name.as_str(), "sign_in");
             assert_eq!(applied[2].name.as_str(), "policy");
+            assert_eq!(applied[3].name.as_str(), "settings");
             for (record, definition) in applied.iter().zip(ALL) {
                 assert_eq!(record.applied_at, at(0));
                 assert_eq!(record.checksum, definition.checksum()?);
@@ -435,7 +442,7 @@ mod tests {
                     error,
                     StoreError::SchemaTooNew {
                         found: 99,
-                        known: 3
+                        known: 4
                     }
                 ),
                 "{error}"
@@ -489,7 +496,7 @@ mod tests {
             update
                 .table(Migration::Table)
                 .value(Migration::Version, 0_i64)
-                .and_where(Expr::col(Migration::Version).eq(3_i64));
+                .and_where(Expr::col(Migration::Version).eq(4_i64));
             database.execute(&update).await?;
             let error = database.migrate(at(1)).await.unwrap_err();
             assert!(

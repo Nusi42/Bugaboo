@@ -6,5 +6,7 @@ mod events;
 mod failures;
 mod fake;
 mod fake_policy;
+mod fake_settings;
 mod scenarios;
+mod settings;
 mod world;

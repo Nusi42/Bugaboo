@@ -36,7 +36,9 @@ pub use layout::{DATABASE_FILE, KEYS_FOLDER, LOGS_FOLDER, SECURITY_LOG_ANCHOR_FI
 pub use migrations::latest_version;
 pub use schema::{StoredTable, tables};
 pub use security_log::NewSecurityLogEntry;
-pub use settings::{Scopes, SettingChange};
+#[cfg(feature = "testing")]
+pub use settings::M3Setting;
+pub use settings::{Scopes, SettingChange, StoredValue};
 #[cfg(feature = "testing")]
 pub use testing::M1Person;
 

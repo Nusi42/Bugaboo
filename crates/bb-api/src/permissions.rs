@@ -93,6 +93,41 @@ pub(crate) const ROUTES: &[(&str, Declared)] = &[
         "getServerStatus",
         Declared::Permission(Permission::SeeStatus),
     ),
+    (
+        "listOrganizationSettings",
+        Declared::Permission(Permission::ChangeOrganizationSettings),
+    ),
+    (
+        "changeOrganizationSetting",
+        Declared::Permission(Permission::ChangeOrganizationSettings),
+    ),
+    (
+        "resetOrganizationSetting",
+        Declared::Permission(Permission::ChangeOrganizationSettings),
+    ),
+    (
+        "lockOrganizationSetting",
+        Declared::Permission(Permission::ChangeOrganizationSettings),
+    ),
+    (
+        "unlockOrganizationSetting",
+        Declared::Permission(Permission::ChangeOrganizationSettings),
+    ),
+    (
+        "listProjectSettings",
+        Declared::Permission(Permission::ChangeProjectSettings),
+    ),
+    (
+        "changeProjectSetting",
+        Declared::Permission(Permission::ChangeProjectSettings),
+    ),
+    (
+        "resetProjectSetting",
+        Declared::Permission(Permission::ChangeProjectSettings),
+    ),
+    ("listMySettings", Declared::SignedIn),
+    ("changeMySetting", Declared::SignedIn),
+    ("resetMySetting", Declared::SignedIn),
 ];
 
 /// What the route with this operation ID needs, if it is declared.

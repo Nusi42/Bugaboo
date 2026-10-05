@@ -9,6 +9,7 @@ pub mod people;
 pub mod ports;
 pub mod projects;
 pub mod roles;
+pub mod settings;
 pub mod status;
 mod store_macros;
 

@@ -22,6 +22,8 @@ mod rig;
 mod second_step;
 mod secrets;
 mod sessions;
+mod settings;
+mod settings_http;
 mod setup_and_password;
 mod status;
 mod timing;

@@ -18,8 +18,8 @@ use bb_core::person::Person;
 use bb_core::project::Project;
 use bb_core::security_log::Digest;
 use bb_core::settings::{
-    AUTH_SIGN_UP_DOMAINS, AUTH_SIGN_UP_ENABLED, SECURITY_SESSION_ABSOLUTE_HOURS,
-    SECURITY_SESSION_IDLE_MINUTES, SettingValue,
+    AUTH_SIGN_UP_DOMAINS, AUTH_SIGN_UP_ENABLED, Integer, SECURITY_SESSION_ABSOLUTE_HOURS,
+    SECURITY_SESSION_IDLE_MINUTES, Scope, Setting, SettingValue, Text,
 };
 use bb_core::sign_in::{
     Invitation, SessionStage, SetupCode, SignInSession, StoredPasskey, TwoStep,
@@ -62,7 +62,7 @@ pub(crate) struct State {
     pub(crate) passkeys: Vec<StoredPasskey>,
     pub(crate) invitations: Vec<Invitation>,
     pub(crate) setup_code: Option<SetupCode>,
-    pub(crate) settings: Vec<(String, SettingValue)>,
+    pub(crate) settings: Vec<super::fake_settings::FakeSetting>,
     pub(crate) starting_roles_made: bool,
     pub(crate) legacy_administrators: Vec<UserId>,
     pub(crate) roles: Vec<RoleRecord>,
@@ -335,34 +335,22 @@ impl AuthStore for FakeStore {
 
     async fn auth_settings(&self) -> Result<AuthSettings, FakeError> {
         Ok(self.read(|state| {
-            let setting = |key: &str| {
-                state
-                    .settings
-                    .iter()
-                    .find(|(name, _)| name == key)
-                    .map(|(_, value)| value.clone())
+            let layers = super::fake_settings::layers_of(state, None, None);
+            let number = |setting: &Setting<Integer>| {
+                setting.resolve(Some(&layers.resolve(setting.definition()).value))
+            };
+            let text = |setting: &Setting<Text>| {
+                setting.resolve(Some(&layers.resolve(setting.definition()).value))
             };
             AuthSettings {
-                session_idle_minutes: match setting(
-                    SECURITY_SESSION_IDLE_MINUTES.definition().key(),
-                ) {
-                    Some(SettingValue::Integer(value)) => value,
-                    _ => 30,
-                },
-                session_absolute_hours: match setting(
-                    SECURITY_SESSION_ABSOLUTE_HOURS.definition().key(),
-                ) {
-                    Some(SettingValue::Integer(value)) => value,
-                    _ => 24,
-                },
-                sign_up_enabled: matches!(
-                    setting(AUTH_SIGN_UP_ENABLED.definition().key()),
-                    Some(SettingValue::Bool(true))
-                ),
-                sign_up_domains: match setting(AUTH_SIGN_UP_DOMAINS.definition().key()) {
-                    Some(SettingValue::Text(text)) => text,
-                    _ => String::new(),
-                },
+                session_idle_minutes: number(&SECURITY_SESSION_IDLE_MINUTES).unwrap_or(30),
+                session_absolute_hours: number(&SECURITY_SESSION_ABSOLUTE_HOURS).unwrap_or(24),
+                sign_up_enabled: AUTH_SIGN_UP_ENABLED
+                    .resolve(Some(
+                        &layers.resolve(AUTH_SIGN_UP_ENABLED.definition()).value,
+                    ))
+                    .unwrap_or(false),
+                sign_up_domains: text(&AUTH_SIGN_UP_DOMAINS).unwrap_or_default(),
             }
         }))
     }
@@ -638,8 +626,7 @@ impl AuthStore for FakeStore {
         value: &SettingValue,
         _at: Timestamp,
     ) -> Result<(), FakeError> {
-        tx.state.settings.retain(|(name, _)| name != key);
-        tx.state.settings.push((key.to_owned(), value.clone()));
+        super::fake_settings::put(&mut tx.state, Scope::Organization, key, value);
         Ok(())
     }
 }

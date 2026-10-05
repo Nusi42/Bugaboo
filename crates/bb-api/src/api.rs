@@ -40,6 +40,7 @@ mod auth;
 mod auth_factors;
 mod auth_people;
 mod auth_sign_in;
+mod settings;
 
 pub use admin::ProbeHandle;
 pub use auth::AuthHandle;
@@ -119,6 +120,7 @@ where
         .routes(routes!(get_openapi))
         .merge(auth::routes(limits))
         .merge(admin::routes())
+        .merge(settings::routes())
 }
 
 /// Whether the address belongs to the API. Escapes are decoded first; an address with a

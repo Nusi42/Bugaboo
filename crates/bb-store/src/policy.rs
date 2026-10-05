@@ -80,7 +80,7 @@ fn in_list<T: Copy>(ids: &[T], bytes: impl Fn(T) -> [u8; 16]) -> Vec<Vec<u8>> {
 // ---- Reads that run in a snapshot ----
 
 /// The projects from the top down to `project`; `None` when it does not exist.
-async fn chain_of(
+pub(crate) async fn chain_of(
     transaction: &mut Transaction,
     project: ProjectId,
 ) -> Result<Option<Vec<ProjectId>>, StoreError> {

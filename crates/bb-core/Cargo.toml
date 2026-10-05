@@ -11,6 +11,9 @@ publish.workspace = true
 openapi = ["dep:utoipa"]
 # `SequentialIds`, the predictable ID source for tests. Only `[dev-dependencies]` switch it on.
 fake-ids = []
+# The settings that only exist for tests (`settings::for_tests`), so the project level can be
+# tested while no real setting is set on a project. Only `[dev-dependencies]` switch it on.
+test-settings = []
 
 [dependencies]
 bb-macros = { path = "../bb-macros" }

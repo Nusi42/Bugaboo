@@ -105,6 +105,19 @@ pub(crate) enum SettingRow {
     UpdatedAt,
 }
 
+/// The values of settings that people chose for themselves in *My settings*. Only `settings.rs`
+/// reads or writes this table (ARCH-SETTINGS); it is its own table so the person it belongs to is
+/// a column of its own with a personal-data mark.
+#[derive(Clone, Copy, Iden)]
+pub(crate) enum PersonSettingRow {
+    #[iden = "person_setting"]
+    Table,
+    Person,
+    Key,
+    Value,
+    UpdatedAt,
+}
+
 /// The people who can sign in. The password is not here: it has its own table, so no query for a
 /// person can hand a hash to code that does not need it.
 #[derive(Clone, Copy, Iden)]
@@ -559,6 +572,12 @@ stored_tables! {
         Scope => scope,
         Value => value,
         Locked => locked,
+        UpdatedAt => updated_at,
+    },
+    PersonSettingRow => bb_core::settings::StoredPersonSetting {
+        Person => person,
+        Key => key,
+        Value => value,
         UpdatedAt => updated_at,
     },
 }
