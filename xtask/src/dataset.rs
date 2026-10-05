@@ -25,6 +25,8 @@ use crate::steps::{self, Profile};
 const LAYOUT_FILE: &str = "tools/dev/sample.json";
 /// The moment every run of `--check` ends at: 2027-01-15 08:00:00 UTC, an arbitrary fixed one.
 const CHECK_START: i64 = 1_800_000_000;
+/// The database of the throwaway cluster that holds the sample made with `--database postgres`.
+const SAMPLE_DATABASE: &str = "bbsample";
 /// What `--check` makes of the tables of a PostgreSQL run, so the scan for secrets covers them.
 const POSTGRES_DUMP_FILE: &str = "postgres.sql";
 /// The runs of `--check`: twice on each database.
@@ -67,6 +69,14 @@ impl Layout {
     }
 }
 
+/// The folder `relative` (written with `/` in the layout) inside `root`, with the separator of
+/// this system on every part, so a path in a message does not mix both.
+fn in_folder(root: &Path, relative: &str) -> PathBuf {
+    relative
+        .split('/')
+        .fold(root.to_path_buf(), |folder, part| folder.join(part))
+}
+
 /// Which database the sample is made on.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum DatabaseKind {
@@ -105,8 +115,8 @@ pub(crate) fn run(repo: &Repo, request: &Request) -> anyhow::Result<bool> {
     let out = match (&request.out, request.database) {
         (Some(out), _) => std::path::absolute(out)
             .with_context(|| format!("{} is not a usable folder", out.display()))?,
-        (None, DatabaseKind::Sqlite) => repo.root().join(&layout.out),
-        (None, DatabaseKind::Postgres) => repo.root().join(&layout.out_postgres),
+        (None, DatabaseKind::Sqlite) => in_folder(repo.root(), &layout.out),
+        (None, DatabaseKind::Postgres) => in_folder(repo.root(), &layout.out_postgres),
     };
     let make = |url: Option<&str>| {
         let mut command = program_command(
@@ -127,10 +137,32 @@ pub(crate) fn run(repo: &Repo, request: &Request) -> anyhow::Result<bool> {
     };
     match request.database {
         DatabaseKind::Sqlite => make(None),
-        DatabaseKind::Postgres => db::with_postgres(repo, |postgres| {
-            make(Some(&postgres.empty_database("bbsample")?))
-        }),
+        DatabaseKind::Postgres => {
+            let finished = db::with_postgres(repo, |postgres| {
+                make(Some(&postgres.empty_database(SAMPLE_DATABASE)?))
+            })?;
+            if finished {
+                output::info(&how_to_start_on_postgres(&out.join(&layout.data_folder)));
+            }
+            Ok(finished)
+        }
     }
+}
+
+/// What a person needs to start a server on the sample that is in PostgreSQL: the cluster is
+/// stopped again when this command ends (when it started it), and the keys are in the data folder.
+fn how_to_start_on_postgres(data_folder: &Path) -> String {
+    format!(
+        concat!(
+            "The sample is in the database {database} of the test PostgreSQL; its keys are in ",
+            "{folder}. To start a server on it: run `cargo xtask db start`, set ",
+            "BUGABOO_DATABASE_URL to the address that `cargo xtask db url` prints with its last ",
+            "part, postgres, changed to {database}, and run `bugaboo serve --data-dir {folder}`. ",
+            "Stop the database afterwards with `cargo xtask db stop`."
+        ),
+        database = SAMPLE_DATABASE,
+        folder = data_folder.display()
+    )
 }
 
 /// Makes the sample on SQLite for `cargo xtask dev --sample`, new every time, and returns its data
@@ -140,7 +172,7 @@ pub(crate) fn make_for_dev(root: &Path) -> anyhow::Result<Option<PathBuf>> {
         return Ok(None);
     };
     let layout = Layout::load(root)?;
-    let out = root.join(&layout.dev_out);
+    let out = in_folder(root, &layout.dev_out);
     let status = program_command(
         &program,
         root,
@@ -210,7 +242,7 @@ fn program_command(
 fn check(repo: &Repo, program: &Path, seed: Option<u64>) -> anyhow::Result<bool> {
     let root = repo.root();
     let layout = Layout::load(root)?;
-    let folder = root.join(&layout.check_out);
+    let folder = in_folder(root, &layout.check_out);
     if folder.exists() {
         fs::remove_dir_all(&folder)
             .with_context(|| format!("could not remove the old {}", folder.display()))?;
@@ -295,6 +327,30 @@ mod tests {
                 kind.name()
             );
         }
+    }
+
+    #[test]
+    fn a_folder_of_the_layout_has_one_kind_of_separator_in_a_message() {
+        let folder = in_folder(Path::new("work"), "target/sample");
+        assert_eq!(folder, Path::new("work").join("target").join("sample"));
+        let shown = in_folder(Path::new("work"), "target/sample")
+            .join("data")
+            .display()
+            .to_string();
+        let other = if std::path::MAIN_SEPARATOR == '/' {
+            char::from(92)
+        } else {
+            '/'
+        };
+        assert!(!shown.contains(other), "{shown}");
+    }
+
+    #[test]
+    fn the_tip_for_a_server_on_the_postgres_sample_names_the_database_and_the_folder() {
+        let tip = how_to_start_on_postgres(Path::new("somewhere").join("data").as_path());
+        assert!(tip.contains(SAMPLE_DATABASE));
+        assert!(tip.contains(&Path::new("somewhere").join("data").display().to_string()));
+        assert!(tip.contains("BUGABOO_DATABASE_URL") && tip.contains("cargo xtask db start"));
     }
 
     #[test]
