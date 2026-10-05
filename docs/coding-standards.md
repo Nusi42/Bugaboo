@@ -86,7 +86,7 @@ Every piece of knowledge has exactly one authoritative home. Everything else is
 - **No hard-coded user-facing text:** JSX text, `aria-*`, `title`, `alt` and `placeholder`
   values must come from the message catalog. Enforced by: TXT-LITERAL.
 - **No hard-coded styles:** no hex/rgb colors, pixel magic numbers or inline `style=` for
-  theming. Only design tokens.
+  theming. Only design tokens. Enforced by: STY-TOKENS.
 - No `dangerouslySetInnerHTML`, `eval`, `new Function`, or inline event-handler strings
   (these would break the CSP).
 

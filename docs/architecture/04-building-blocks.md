@@ -145,11 +145,13 @@ One **tool registry** (search issues, get issue, create, change status, comment,
 web/app/src/
 ├── routes/              TanStack Router routes in code (guest, signed-in and administrator
 │                        layouts decide who may open what); URL search params are typed state
-├── features/            shell, sign-in, sign-up, invitation, setup, account (sign-in and security,
-│                        where you're signed in), admin (invitations, status), home;
+├── features/            shell (sidebar, top bar, phone bar, quick search, frames), sign-in, sign-up,
+│                        invitation, setup, account (sign-in and security, where you're signed in),
+│                        admin (invitations, status), home;
 │                        later: issues, search, board, timeline, calendar, relation-map,
 │                        documents, time, dashboards, notifications, assistant
-├── shared/              api client, session, errors, formatting (Intl), page title
+├── shared/              api client, session, errors, formatting (Intl), page title and focus,
+│                        the shortcut registry, the helpers for instant changes
 └── main.tsx
 ```
 
@@ -157,4 +159,9 @@ web/app/src/
 - **Forms** get their validation rules from the server's exported schema; the server still decides.
 - **Components** come from `@bugaboo/ui`, built on React Aria Components; styles use token variables only. The content security policy allows no inline styles, so React Aria's one injected style element is replaced by a rule in `global.css` (the element is declared in `index.html`).
 - **Who is signed in** is read once with `GET /api/v1/auth/me`; a `401` anywhere (a session that ended, a wrong CSRF token) takes the person to the sign-in page with the reason in the address, and the guest layout does not send a signed-in person away while a reason is shown.
+- **The frame** (`features/shell`) lays out three sizes from the `bp-*` tokens: a sidebar on a computer (1280 px and wider), a menu that slides in on a tablet, a bottom bar and one screen at a time on a phone. `places.ts` is the one list of the screens that exist (menus, the trail at the top, quick search and the topics of the settings frames read it), so nothing is shown that does not exist. Other features add to the shell through registries (`addSidebarSection` for the project tree, `addQuickSearchSource` for search results). Which item is open lives in the address (typed search parameters), so it can be shared and Back closes it.
+- **Shortcuts** are defined once in `shared/shortcuts.ts` (ID, default keys, words, where they work, the visible button that does the same). One engine handles sequences such as `g h` and stays silent while a text field has the focus; a person's own keys come from one source that WP-07 moves to the server.
+- **Instant changes**: `useOptimisticMutation` shows a change in the query cache at once, goes back with a plain message when the server refuses, and reports *Saving…*, *Saved* or *Not saved yet*; skeletons appear only after 0.3 s; *Undo* is on offer for 10 seconds.
+- **Appearance** (theme with one light and one dark choice, spacing, text size, motion) is one `AppearanceSource`; the browser is the source until WP-07 adds the server.
+- **Rules the checks keep:** feature folders are reached only through their `index.ts` and shared code and packages never import features or the app (`ARCH-WEB-FEATURES`); all text comes from the catalog (`TXT-LITERAL`); no color is written out and no style is set from code (`STY-TOKENS`); every address in `paths.ts` is opened by the accessibility suite in the four themes on a computer and a phone (`TEST-A11Y`).
 - **Heavy features** (timeline, relation map, document editor, workflow editor, theme editor, WebAssembly) are split into separate chunks and loaded when first opened.

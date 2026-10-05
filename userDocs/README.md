@@ -3,6 +3,7 @@
 End-user and administrator documentation. It is written alongside the work on Bugaboo.
 
 - [Install Bugaboo](install/README.md): on [Windows](install/windows.md), on [Linux](install/linux.md) and on [Windows with WSL](install/wsl.md)
+- [The basics](basics/README.md): finding your way around, keyboard shortcuts, appearance
 - [Your first sign-in](sign-in/first-sign-in.md)
 - [Signing in](sign-in/sign-in.md): password, passkey, second step, where you're signed in, invitations
 - [Cookies we use](cookies.md)

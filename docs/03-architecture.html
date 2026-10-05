@@ -265,17 +265,24 @@
 <pre><code>web/app/src/
 ├── routes/              TanStack Router routes in code (guest, signed-in and administrator
 │                        layouts decide who may open what); URL search params are typed state
-├── features/            shell, sign-in, sign-up, invitation, setup, account (sign-in and security,
-│                        where you're signed in), admin (invitations, status), home;
+├── features/            shell (sidebar, top bar, phone bar, quick search, frames), sign-in, sign-up,
+│                        invitation, setup, account (sign-in and security, where you're signed in),
+│                        admin (invitations, status), home;
 │                        later: issues, search, board, timeline, calendar, relation-map,
 │                        documents, time, dashboards, notifications, assistant
-├── shared/              api client, session, errors, formatting (Intl), page title
+├── shared/              api client, session, errors, formatting (Intl), page title and focus,
+│                        the shortcut registry, the helpers for instant changes
 └── main.tsx</code></pre>
 <ul>
 <li><strong>Server data</strong> lives only in the TanStack Query cache, fetched through the generated client, keyed by generated query keys.</li>
 <li><strong>Forms</strong> get their validation rules from the server's exported schema; the server still decides.</li>
 <li><strong>Components</strong> come from <code>@bugaboo/ui</code>, built on React Aria Components; styles use token variables only. The content security policy allows no inline styles, so React Aria's one injected style element is replaced by a rule in <code>global.css</code> (the element is declared in <code>index.html</code>).</li>
 <li><strong>Who is signed in</strong> is read once with <code>GET /api/v1/auth/me</code>; a <code>401</code> anywhere (a session that ended, a wrong CSRF token) takes the person to the sign-in page with the reason in the address, and the guest layout does not send a signed-in person away while a reason is shown.</li>
+<li><strong>The frame</strong> (<code>features/shell</code>) lays out three sizes from the <code>bp-*</code> tokens: a sidebar on a computer (1280 px and wider), a menu that slides in on a tablet, a bottom bar and one screen at a time on a phone. <code>places.ts</code> is the one list of the screens that exist (menus, the trail at the top, quick search and the topics of the settings frames read it), so nothing is shown that does not exist. Other features add to the shell through registries (<code>addSidebarSection</code> for the project tree, <code>addQuickSearchSource</code> for search results). Which item is open lives in the address (typed search parameters), so it can be shared and Back closes it.</li>
+<li><strong>Shortcuts</strong> are defined once in <code>shared/shortcuts.ts</code> (ID, default keys, words, where they work, the visible button that does the same). One engine handles sequences such as <code>g h</code> and stays silent while a text field has the focus; a person's own keys come from one source that WP-07 moves to the server.</li>
+<li><strong>Instant changes</strong>: <code>useOptimisticMutation</code> shows a change in the query cache at once, goes back with a plain message when the server refuses, and reports <em>Saving…</em>, <em>Saved</em> or <em>Not saved yet</em>; skeletons appear only after 0.3 s; <em>Undo</em> is on offer for 10 seconds.</li>
+<li><strong>Appearance</strong> (theme with one light and one dark choice, spacing, text size, motion) is one <code>AppearanceSource</code>; the browser is the source until WP-07 adds the server.</li>
+<li><strong>Rules the checks keep:</strong> feature folders are reached only through their <code>index.ts</code> and shared code and packages never import features or the app (<code>ARCH-WEB-FEATURES</code>); all text comes from the catalog (<code>TXT-LITERAL</code>); no color is written out and no style is set from code (<code>STY-TOKENS</code>); every address in <code>paths.ts</code> is opened by the accessibility suite in the four themes on a computer and a phone (<code>TEST-A11Y</code>).</li>
 <li><strong>Heavy features</strong> (timeline, relation map, document editor, workflow editor, theme editor, WebAssembly) are split into separate chunks and loaded when first opened.</li>
 </ul>
 
@@ -1387,6 +1394,8 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 <li><code>cargo xtask gen tokens</code> produces: CSS variables per theme, TypeScript token names, and the Rust validation used by the theme editor (allowed values, contrast checks).</li>
 <li>Components use <strong>CSS Modules</strong> with <code>var(--token)</code> only. The hooks reject raw colors, pixel sizes outside tokens and inline styles.</li>
 <li>Custom themes and field looks store <strong>token values or token names</strong>, never CSS.</li>
+<li>The choices of a person that are not a theme (<em>Compact</em> spacing, <em>Larger text</em>, <em>Less motion</em>) are <strong>variants</strong> in the token file: each switches token values through an attribute on the page (<code>data-spacing</code>, <code>data-text</code>, <code>data-motion</code>), and <em>Less motion</em> also follows the device. Sizes of spacing and text are written as the usual size times a factor token, so one choice scales everything. Where the layout changes (<code>bp-tablet</code>, <code>bp-computer</code>) is a token too, read by the app through the generated TypeScript.</li>
+<li>Every theme has stronger colors for <code>prefers-contrast: more</code> (<code>contrastMore</code>). STY-CONTRAST checks them at 7:1 for text and 3:1 for lines.</li>
 </ul>
 <h4>Consequences</h4>
 <ul>
