@@ -221,17 +221,17 @@ mod tests {
     #[test]
     fn placeholders_become_typed_arguments() {
         let repo = Repo::discover().unwrap();
-        let output = generate(&repo, r#"{"a.b": "Hi {name}", "a.c": "Plain"}"#).unwrap();
+        let output = generate(&repo, r#"{"home.b": "Hi {name}", "home.c": "Plain"}"#).unwrap();
         assert!(
             output[0]
                 .content
-                .contains("\"a.b\": { name: string | number };")
+                .contains("\"home.b\": { name: string | number };")
         );
-        assert!(!output[0].content.contains("\"a.c\": {"));
+        assert!(!output[0].content.contains("\"home.c\": {"));
         assert!(
             output[1]
                 .content
-                .contains("pub fn a_b(name: impl std::fmt::Display)")
+                .contains("pub fn home_b(name: impl std::fmt::Display)")
         );
     }
 
