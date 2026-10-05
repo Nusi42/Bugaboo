@@ -10,7 +10,9 @@
 //! Calling a command a query is a way around the rule; review looks at the names (the type of the
 //! input is part of the signature, not just a parameter name). This check reads the code; the
 //! generated test that runs every command against the in-memory fakes and asserts the event
-//! comes with the first use cases (M1-F18).
+//! comes with the first use cases (M1-F18). The table of that test (`crates/bb-app/src/tests/events.rs`)
+//! must name every public command, as a string with its name (a private function that writes a
+//! change is a part of one), so a new command cannot be left untested.
 
 use super::{Check, Context, Finding};
 use crate::rust_source::{Source, before_tests, read_product_sources};
@@ -21,6 +23,8 @@ const USE_CASES_FOLDER: &str = "crates/bb-app/src/";
 const PORT: &str = "trait ChangeStore";
 /// The method of the port that writes a change with its event.
 const RECORD: &str = "record_change";
+/// The file with the table of the test that runs every command.
+const TABLE_FILE: &str = "crates/bb-app/src/tests/events.rs";
 /// The ending of the input type of a use case that only reads.
 const QUERY_SUFFIX: &str = "Query";
 
@@ -32,7 +36,13 @@ impl Check for ArchEvents {
     }
 
     fn run(&self, context: &Context<'_>) -> anyhow::Result<Vec<Finding>> {
-        Ok(evaluate(&read_product_sources(context.repo)?))
+        let table = std::fs::read_to_string(context.repo.path(TABLE_FILE))
+            .ok()
+            .map(|text| text.replace("\r\n", "\n"));
+        Ok(evaluate(
+            &read_product_sources(context.repo)?,
+            table.as_deref(),
+        ))
     }
 }
 
@@ -201,7 +211,7 @@ fn is_query(ty: &str) -> bool {
     name.is_some_and(|name| name.ends_with(QUERY_SUFFIX))
 }
 
-fn evaluate(sources: &[Source]) -> Vec<Finding> {
+fn evaluate(sources: &[Source], table: Option<&str>) -> Vec<Finding> {
     let mut findings = Vec::new();
     let in_app: Vec<&Source> = sources
         .iter()
@@ -221,6 +231,12 @@ fn evaluate(sources: &[Source]) -> Vec<Finding> {
                 "`bb-app` does not define the port `{PORT}` with a method `{RECORD}`. Commands \
                  write through it, and `bb-store` implements it (ADR-0007)."
             ),
+        ));
+    }
+    if table.is_none() {
+        findings.push(Finding::at(
+            TABLE_FILE,
+            "The table of the test that runs every command is missing (ADR-0007, M1-F18).",
         ));
     }
     for (path, text) in in_app {
@@ -246,7 +262,20 @@ fn evaluate(sources: &[Source]) -> Vec<Finding> {
             let Some(body) = balanced(&after[body_start..], '{', '}') else {
                 continue;
             };
-            if !body.contains(&format!("{RECORD}(")) {
+            if body.contains(&format!("{RECORD}(")) {
+                let line_start = code[..at].rfind('\n').map_or(0, |newline| newline + 1);
+                let is_public = code[line_start..at].trim_start().starts_with("pub");
+                if is_public && table.is_some_and(|table| !table.contains(&format!("\"{name}\""))) {
+                    let line = code[..at].matches('\n').count() + 1;
+                    findings.push(Finding::at(
+                        format!("{path}:{line}"),
+                        format!(
+                            "The command `{name}` is not in the table of `{TABLE_FILE}`. Add a \
+                             scenario that runs it, so its event is tested (ADR-0007, M1-F18)."
+                        ),
+                    ));
+                }
+            } else {
                 let line = code[..at].matches('\n').count() + 1;
                 findings.push(Finding::at(
                     format!("{path}:{line}"),
@@ -278,11 +307,14 @@ mod tests {
             ),
             ("crates/bb-app/src/issues.rs".to_owned(), text.to_owned()),
         ];
-        evaluate(&sources)
+        evaluate(&sources, Some(TABLE))
             .into_iter()
             .map(|finding| finding.message)
             .collect()
     }
+
+    /// The table of the test, as far as these examples need it.
+    const TABLE: &str = "table! { \"change_status\" => s::change_status_scenario, }";
 
     #[test]
     fn good_example_a_command_that_writes_through_the_port() {
@@ -305,6 +337,34 @@ mod tests {
     }
 
     #[test]
+    fn bad_example_a_command_that_the_table_of_the_test_does_not_name() {
+        let text = "pub async fn archive_issue(ctx: &Ctx, cmd: Archive) -> Result<(), AppError> {\n    ctx.store().record_change(&event, async |tx| Ok(())).await?;\n    Ok(())\n}\n";
+        let messages = found(text);
+        assert_eq!(messages.len(), 1, "{messages:?}");
+        assert!(messages[0].contains("`archive_issue`"), "{messages:?}");
+        assert!(messages[0].contains("not in the table"), "{messages:?}");
+    }
+
+    #[test]
+    fn good_example_a_private_part_of_a_command_needs_no_line_of_its_own() {
+        let text = "async fn part(ctx: &Ctx) {\n    ctx.store().record_change(&event, async |tx| Ok(())).await?;\n}\n";
+        assert!(found(text).is_empty());
+    }
+
+    #[test]
+    fn bad_example_the_table_of_the_test_is_missing() {
+        let sources = vec![(
+            "crates/bb-app/src/ports.rs".to_owned(),
+            PORT_SOURCE.to_owned(),
+        )];
+        let messages: Vec<String> = evaluate(&sources, None)
+            .into_iter()
+            .map(|f| f.message)
+            .collect();
+        assert!(messages[0].contains("table of the test"), "{messages:?}");
+    }
+
+    #[test]
     fn bad_example_a_mention_in_a_comment_or_string_is_not_a_call() {
         let text = "pub async fn sneaky(ctx: &Ctx, cmd: Do) {\n    // ctx.store().record_change(&event, f)\n    let _ = \"record_change(\";\n    /* record_change( */\n    let _ = r#\"record_change(\"#;\n}\n";
         assert_eq!(found(text).len(), 1);
@@ -316,7 +376,10 @@ mod tests {
             "crates/bb-app/src/lib.rs".to_owned(),
             "pub fn nothing() {}\n".to_owned(),
         )];
-        let messages: Vec<String> = evaluate(&sources).into_iter().map(|f| f.message).collect();
+        let messages: Vec<String> = evaluate(&sources, Some(TABLE))
+            .into_iter()
+            .map(|f| f.message)
+            .collect();
         assert!(
             messages[0].contains("does not define the port"),
             "{messages:?}"
@@ -350,14 +413,15 @@ mod tests {
                 "{PORT_SOURCE}#[cfg(test)]\nmod tests {{ async fn go(ctx: &Ctx, cmd: u32) {{}} }}\n"
             ),
         );
-        assert!(evaluate(&[other, in_tests]).is_empty());
+        assert!(evaluate(&[other, in_tests], Some(TABLE)).is_empty());
     }
 
     #[test]
     fn the_use_cases_of_this_repository_pass() {
         let repo = crate::repo::Repo::discover().unwrap();
         let sources = read_product_sources(&repo).unwrap();
-        let messages: Vec<String> = evaluate(&sources)
+        let table = std::fs::read_to_string(repo.path(TABLE_FILE)).unwrap();
+        let messages: Vec<String> = evaluate(&sources, Some(&table.replace("\r\n", "\n")))
             .into_iter()
             .map(|finding| finding.message)
             .collect();
