@@ -6,11 +6,18 @@ edition.workspace = true
 rust-version.workspace = true
 publish.workspace = true
 
+[features]
+# Lets a test look at what a use case answered (`Authorized::into_value`). Only `[dev-dependencies]`
+# switch it on (ARCH-AUTHZ-ONLY).
+peek = ["bb-policy/peek"]
+
 [dependencies]
 bb-auth = { path = "../bb-auth" }
 bb-core = { path = "../bb-core" }
+bb-policy = { path = "../bb-policy" }
 getrandom = { workspace = true }
 jiff = { workspace = true }
+serde = { workspace = true }
 serde_json = { workspace = true }
 tracing = { workspace = true }
 zeroize = { workspace = true }

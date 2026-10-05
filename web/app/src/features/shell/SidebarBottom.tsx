@@ -11,15 +11,16 @@ import { toggleSidebar } from "./sidebar-state.ts";
 export interface BottomProps extends Pick<PlaceLinkProps, "narrow" | "onNavigate"> {
   /** The sidebar is inside the menu of a tablet: no button to narrow it. */
   readonly inDrawer: boolean;
-  readonly administrator: boolean;
+  /** The person may open *Organization settings*. */
+  readonly organizationSettings: boolean;
 }
 
 /** *My settings*, *Organization settings*, the list of shortcuts and the button to narrow the bar. */
-export function Bottom({ narrow, inDrawer, administrator, onNavigate }: BottomProps) {
+export function Bottom({ narrow, inDrawer, organizationSettings, onNavigate }: BottomProps) {
   return (
     <ul className={styles.bottom}>
       <PlaceLink path={paths.mySettings} narrow={narrow} onNavigate={onNavigate} />
-      {administrator ? (
+      {organizationSettings ? (
         <PlaceLink path={paths.organizationSettings} narrow={narrow} onNavigate={onNavigate} />
       ) : null}
       <li>

@@ -4,8 +4,8 @@ use sea_query::{ColumnDef, ForeignKey, Index, Table};
 
 use super::Step;
 use crate::schema::{
-    BackupCode, Invitation, PasskeyRow, PasswordLogin, PersonRow, SetupCodeRow, SignInSession,
-    TwoStep,
+    BackupCode, Invitation, PasskeyRow, PasswordLogin, PersonRow, Retired, SetupCodeRow,
+    SignInSession, TwoStep,
 };
 
 pub(super) fn steps() -> Vec<Step> {
@@ -42,11 +42,7 @@ fn people() -> Vec<Step> {
                         .big_integer()
                         .not_null(),
                 )
-                .col(
-                    ColumnDef::new(PersonRow::Administrator)
-                        .boolean()
-                        .not_null(),
-                )
+                .col(ColumnDef::new(Retired::Administrator).boolean().not_null())
                 .to_owned(),
         ),
         Step::Table(

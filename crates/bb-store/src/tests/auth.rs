@@ -31,7 +31,6 @@ fn person(source: &mut impl IdSource, email: &str) -> Person {
         display_name: "Test Person".to_owned(),
         email: email.to_owned(),
         created_at: at(0),
-        administrator: false,
     }
 }
 
@@ -105,7 +104,6 @@ async fn auth_01_one_address_is_one_account_and_the_password_is_read_with_it() -
             .ok_or("no account")?;
         assert_eq!(kept.person, ada);
         assert_eq!(kept.password_hash.as_deref(), Some("hash-1"));
-        assert_eq!(storage.administrators().await?, 0);
         Ok(())
     })
     .await

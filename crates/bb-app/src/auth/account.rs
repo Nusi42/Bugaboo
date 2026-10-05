@@ -49,23 +49,18 @@ pub(crate) fn clean_display_name(name: &str) -> Result<String, AppError> {
 
 impl<S: AuthStore> Ctx<'_, S> {
     /// A new person (not stored yet).
-    fn new_person(
-        &self,
-        display_name: String,
-        email: &EmailAddress,
-        administrator: bool,
-    ) -> Person {
+    fn new_person(&self, display_name: String, email: &EmailAddress) -> Person {
         Person {
             id: UserId::generate(&mut self.ids()),
             display_name,
             email: email.as_str().to_owned(),
             created_at: self.now(),
-            administrator,
         }
     }
 }
 
-/// Makes the setup code of the first start, when no administrator exists. Called by the server
+/// Makes the setup code of the first start, while nobody can manage roles for the whole
+/// organization. Called by the server
 /// at every start; the code printed before stops working. When setup is over, a code that is
 /// left over is removed and nothing is returned.
 ///
@@ -75,18 +70,14 @@ pub async fn issue_setup_code<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     _input: IssueSetupCode,
 ) -> Result<Option<HumanCode>, AppError> {
-    let administrators = ctx
-        .store()
-        .administrators()
-        .await
-        .map_err(|error| internal::<S>(&error))?;
+    let setup_open = ctx.setup_is_open().await?;
     let waiting = ctx
         .store()
         .setup_code()
         .await
         .map_err(|error| internal::<S>(&error))?
         .is_some();
-    let code = if administrators == 0 {
+    let code = if setup_open {
         Some(HumanCode::generate()?)
     } else if waiting {
         None
@@ -142,17 +133,13 @@ pub async fn complete_setup<S: AuthStore>(
             .setup_code()
             .await
             .map_err(|error| internal::<S>(&error))?;
-        let administrators = ctx
-            .store()
-            .administrators()
-            .await
-            .map_err(|error| internal::<S>(&error))?;
-        Ok::<_, AppError>((stored, administrators))
+        let setup_open = ctx.setup_is_open().await?;
+        Ok::<_, AppError>((stored, setup_open))
     }
     .await;
-    let (stored, administrators) = ctx.unless_internal(&slot, looked)?;
+    let (stored, setup_open) = ctx.unless_internal(&slot, looked)?;
     let typed = code_hash(Purpose::SetupCode, &input.code);
-    let right = administrators == 0
+    let right = setup_open
         && matches!(
             (&stored, &typed),
             (Some(stored), Some(typed)) if same_digest(&stored.code_hash, typed)
@@ -172,16 +159,23 @@ pub async fn complete_setup<S: AuthStore>(
         .hasher
         .hash(Zeroizing::new(input.password))
         .await?;
-    let person = ctx.new_person(display_name, &email, true);
+    let person = ctx.new_person(display_name, &email);
     let old = ctx
         .previous_session(input.previous_session.as_deref())
         .await?;
     let new = ctx.new_session(person.id, SessionStage::Active)?;
     let settings = ctx.settings().await?;
+    // The starting roles exist from here on (made once); the person gets the Administrator role for
+    // the whole organization in the same change as the account (ADR-0025, decision 5).
+    let assignment = ctx.administrator_assignment(person.id).await?;
+    let (assignment_id, administrator) = (assignment.id, assignment.role);
     let event = ctx.event(
         by(person.id),
         entity("person", person.id)?,
-        vec![changed("account"), set_to("administrator", json!(true))],
+        vec![
+            changed("account"),
+            set_to("role", json!(administrator.map(|role| role.to_string()))),
+        ],
     )?;
     let (store, stored_person, session, now) =
         (ctx.store(), person.clone(), new.session.clone(), ctx.now());
@@ -194,7 +188,9 @@ pub async fn complete_setup<S: AuthStore>(
                 if let Some(old) = old {
                     S::delete_session(transaction, old).await?;
                 }
+                S::lock_policy(transaction).await?;
                 S::insert_person(transaction, &stored_person, &hash, now).await?;
+                S::insert_assignment(transaction, &assignment).await?;
                 S::insert_session(transaction, &session).await
             })
         })
@@ -211,6 +207,12 @@ pub async fn complete_setup<S: AuthStore>(
         SecurityAction::SetupCompleted,
         Some(person.id),
         Some(entity("person", person.id)?),
+    )
+    .await;
+    ctx.note(
+        SecurityAction::AssignmentMade,
+        Some(person.id),
+        Some(entity("assignment", assignment_id)?),
     )
     .await;
     ctx.started(&new, &person, &settings, None)
@@ -239,7 +241,7 @@ pub async fn sign_up<S: AuthStore>(ctx: &Ctx<'_, S>, input: SignUp) -> Result<St
         .hasher
         .hash(Zeroizing::new(input.password))
         .await?;
-    let person = ctx.new_person(display_name, &email, false);
+    let person = ctx.new_person(display_name, &email);
     let old = ctx
         .previous_session(input.previous_session.as_deref())
         .await?;
@@ -313,7 +315,7 @@ pub async fn accept_invitation<S: AuthStore>(
         .hasher
         .hash(Zeroizing::new(input.password))
         .await?;
-    let person = ctx.new_person(display_name, &email, false);
+    let person = ctx.new_person(display_name, &email);
     let old = ctx
         .previous_session(input.previous_session.as_deref())
         .await?;

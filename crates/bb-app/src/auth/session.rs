@@ -35,14 +35,10 @@ pub async fn status<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     _input: StatusQuery,
 ) -> Result<AuthStatus, AppError> {
-    let administrators = ctx
-        .store()
-        .administrators()
-        .await
-        .map_err(|error| internal::<S>(&error))?;
+    let setup_needed = ctx.setup_is_open().await?;
     let settings = ctx.settings().await?;
     Ok(AuthStatus {
-        setup_needed: administrators == 0,
+        setup_needed,
         sign_up_open: settings.sign_up_enabled,
         passkeys_available: ctx.services.passkeys.is_some(),
     })
@@ -57,10 +53,14 @@ pub async fn authenticate<S: AuthStore>(
     input: AuthenticateQuery,
 ) -> Result<Authenticated, AppError> {
     let record = ctx.active(&input.session_token).await?;
+    let access = ctx
+        .evaluate(record.person.id, bb_policy::Place::Organization)
+        .await?;
     Ok(Authenticated {
         person: PersonView::from(&record.person),
         session_id: record.session.id,
         started_at: record.session.created_at,
+        access: (*access).clone(),
     })
 }
 

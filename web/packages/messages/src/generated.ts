@@ -126,7 +126,8 @@ export const messages = {
   "home.title": "Welcome, {name}",
   "home.intro":
     "You are signed in. Projects and issues come with the next versions of Bugaboo. For now you can look after your account.",
-  "home.admin": "You are an administrator: you can invite people and see how the server is doing.",
+  "home.admin":
+    "You can look after this server. Organization settings shows what you may do there.",
   "page.not-found.title": "This page does not exist",
   "page.not-found.text": "The address may be mistyped, or the page may have moved.",
   "page.not-found.home": "Go to the start page",

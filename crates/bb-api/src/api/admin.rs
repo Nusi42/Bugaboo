@@ -1,4 +1,4 @@
-//! What only administrators see: the status page of the server (OPS-08).
+//! What only people with the permission see: the status page of the server (OPS-08).
 
 use std::sync::Arc;
 
@@ -9,12 +9,15 @@ use bb_app::status::{
     Access, DataFolderRights, DatabaseKind, LogBreak, LogState, ServerProbe, Snapshot,
 };
 use bb_core::ErrorCode;
+use bb_policy::{Masked, Permission};
 use serde::Serialize;
 use utoipa::ToSchema;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 
-use super::auth::{AuthHandle, ForbiddenAnswer, Info, NotSignedInAnswer, Session, answer};
+use super::auth::{
+    AuthHandle, ForbiddenAnswer, Info, NotSignedInAnswer, Session, answer_authorized,
+};
 use crate::errors::ApiError;
 
 /// How the server measures itself, if it can. Without a probe (tests of other parts of the API)
@@ -243,6 +246,8 @@ impl From<DataFolderRights> for DataFolderOpenBody {
     }
 }
 
+impl Masked for ServerStatusBody {}
+
 /// The status of the server, as the status page shows it.
 #[derive(Serialize, ToSchema)]
 struct ServerStatusBody {
@@ -286,7 +291,7 @@ impl From<Snapshot> for ServerStatusBody {
 }
 
 /// How the server is doing: version, uptime, database, certificate and the check of the security
-/// log. Administrators only.
+/// log. Needs the permission *See how the server is doing*.
 #[utoipa::path(
     get,
     path = "/api/v1/admin/status",
@@ -305,13 +310,16 @@ async fn get_server_status(
         .api()?
         .authenticate(info, AuthenticateQuery { session_token })
         .await?;
-    if !who.person.administrator {
+    if !who.access.allows(Permission::SeeStatus) {
         return Err(ApiError::new(ErrorCode::Forbidden));
     }
     let probe = probe
         .probe()
         .ok_or_else(|| ApiError::new(ErrorCode::Unavailable))?;
-    Ok(answer(ServerStatusBody::from(probe.snapshot().await)))
+    answer_authorized(
+        &who.access
+            .authorize(ServerStatusBody::from(probe.snapshot().await)),
+    )
 }
 
 /// The routes only administrators use.

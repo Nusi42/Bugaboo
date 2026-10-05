@@ -155,6 +155,7 @@ test("auth_06 people who are not administrators do not see invitations", async (
   await signIn(page, cleo);
   await openMenu(page);
   await expect(page.getByRole("link", { name: t("nav.organization-settings") })).toHaveCount(0);
+  // The screen is not shown to them at all, as if it did not exist (M2-F17).
   await page.goto("/settings/invitations");
-  await expect(page).toHaveURL(/\/$/u);
+  await expect(page.getByRole("heading", { name: t("page.not-found.title") })).toBeVisible();
 });

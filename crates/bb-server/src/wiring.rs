@@ -13,6 +13,7 @@ use std::sync::Arc;
 use anyhow::anyhow;
 use bb_api::tls::ServedCertificate;
 use bb_api::{AuthHandle, FailureLimits, ProbeHandle};
+use bb_app::access::{MakeStartingRoles, make_starting_roles};
 use bb_app::auth::{AuthServices, IssueSetupCode, RequestInfo, issue_setup_code};
 use bb_app::context::SystemClock;
 use bb_app::ports::SetupCodeFile;
@@ -147,6 +148,12 @@ pub(crate) async fn wire(
         services.log_writes(),
         data.root().to_path_buf(),
     );
+    // The starting roles are made once, here at the first start, and the people who were
+    // administrators in M1 get their role (ADR-0025, decisions 4 and 5); then the setup code,
+    // while nobody can manage roles yet.
+    make_starting_roles(&services.ctx(RequestInfo::default()), MakeStartingRoles)
+        .await
+        .map_err(|error| anyhow!(error.to_string()))?;
     let setup_code = issue_setup_code(&services.ctx(RequestInfo::default()), IssueSetupCode)
         .await
         .map_err(|error| anyhow!(error.to_string()))?

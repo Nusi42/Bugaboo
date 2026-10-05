@@ -61,9 +61,9 @@ words! {
         SessionsEndedAll => "session.ended_all",
         /// A person changed their password.
         PasswordChanged => "password.changed",
-        /// An administrator made an invitation.
+        /// Somebody with the permission made an invitation.
         InvitationCreated => "invitation.created",
-        /// An administrator took an invitation back.
+        /// Somebody with the permission took an invitation back.
         InvitationRevoked => "invitation.revoked",
         /// Somebody accepted an invitation and made an account.
         InvitationAccepted => "invitation.accepted",
@@ -73,12 +73,42 @@ words! {
         SignUpAccepted => "sign_up.accepted",
         /// A sign-up was turned away.
         SignUpRefused => "sign_up.refused",
-        /// An administrator changed who may sign up.
+        /// Somebody with the permission changed who may sign up.
         SignUpPolicyChanged => "sign_up.policy_changed",
         /// The first administrator was made with the setup code.
         SetupCompleted => "setup.completed",
         /// A wrong setup code was tried.
         SetupFailed => "setup.failed",
+        /// The starting roles were made (once, at the first start).
+        StartingRolesMade => "starting_roles.made",
+        /// A role was made.
+        RoleMade => "role.made",
+        /// A role was changed: its name, its permissions or its two-step switch.
+        RoleChanged => "role.changed",
+        /// A role was deleted.
+        RoleDeleted => "role.deleted",
+        /// A starting role got its starting permissions back.
+        RoleReset => "role.reset",
+        /// A group was made.
+        GroupMade => "group.made",
+        /// A group was renamed.
+        GroupRenamed => "group.renamed",
+        /// A group was deleted.
+        GroupDeleted => "group.deleted",
+        /// A person was put into a group.
+        GroupMemberAdded => "group.member_added",
+        /// A person was taken out of a group.
+        GroupMemberRemoved => "group.member_removed",
+        /// A role, or *No access*, was given to a person or a group.
+        AssignmentMade => "assignment.made",
+        /// A role, or *No access*, was taken away.
+        AssignmentRemoved => "assignment.removed",
+        /// The level of a field for a role was changed.
+        FieldLevelChanged => "field_level.changed",
+        /// How a role sees one kind of people information was changed.
+        PeopleLevelChanged => "people_level.changed",
+        /// A project was made.
+        ProjectMade => "project.made",
     }
 }
 

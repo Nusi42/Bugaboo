@@ -172,6 +172,16 @@ impl<T> Authorized<T> {
     }
 }
 
+#[cfg(feature = "peek")]
+impl<T> Authorized<T> {
+    /// The value without its mask, for tests that check what a use case answered. Not part of the
+    /// product: only `[dev-dependencies]` switch the feature on.
+    #[must_use]
+    pub fn into_value(self) -> T {
+        self.value
+    }
+}
+
 impl<T: Masked + Serialize> Authorized<T> {
     /// The value as JSON with the hidden fields left out.
     ///

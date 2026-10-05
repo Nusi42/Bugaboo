@@ -61,7 +61,7 @@ flowchart TB
   testing["bb-testing<br/>database test harness"]
 
   server --> api & jobs & store & files & ai & notify & auth & app & core
-  api --> app & auth & mcp & core
+  api --> app & auth & mcp & core & policy
   mcp --> app & ai
   jobs --> app
   app --> policy & core & search & md & auth

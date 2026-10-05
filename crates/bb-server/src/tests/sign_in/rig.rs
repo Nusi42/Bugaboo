@@ -4,9 +4,12 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicI64, Ordering};
 
 use bb_api::FailureLimits;
+use bb_app::access::Permission;
+use bb_app::access::{MakeStartingRoles, PolicyStore as _, make_starting_roles};
 use bb_app::auth::{
-    AcceptInvitation, AppError, AuthApi, AuthServices, AuthStore as _, CompleteSetup,
-    CreateInvitation, IssueSetupCode, RequestInfo, SignIn, Started, issue_setup_code,
+    AcceptInvitation, AppError, AuthApi, AuthServices, AuthStore as _, AuthenticateQuery,
+    CompleteSetup, CreateInvitation, IssueSetupCode, RequestInfo, SignIn, Started,
+    issue_setup_code,
 };
 use bb_app::context::Clock;
 use bb_auth::{CsrfKey, Passkeys, PasswordHasher, RelyingParty};
@@ -69,6 +72,25 @@ impl Rig {
         failures: u32,
         passkeys: bool,
     ) -> Result<Self, Box<dyn std::error::Error + Send + Sync>> {
+        let rig = Self::build(db, failures, passkeys).await?;
+        if rig.setup_code.is_empty() {
+            return Err("no setup code on a new database".into());
+        }
+        Ok(rig)
+    }
+
+    /// A server on a database that somebody set up already (an upgraded one): no setup code.
+    pub(super) async fn start_upgraded(
+        db: &TestDatabase,
+    ) -> Result<Self, Box<dyn std::error::Error + Send + Sync>> {
+        Self::build(db, 10, true).await
+    }
+
+    async fn build(
+        db: &TestDatabase,
+        failures: u32,
+        passkeys: bool,
+    ) -> Result<Self, Box<dyn std::error::Error + Send + Sync>> {
         let database = Database::connect(db.url()).await?;
         database.migrate(Timestamp::from_second(START)?).await?;
         let folder = tempfile::tempdir()?;
@@ -92,17 +114,22 @@ impl Rig {
             FailureLimits::new(failures),
             "Bugaboo".to_owned(),
         ));
+        // The first start, as the wiring does it: the starting roles first, then the setup code.
+        make_starting_roles(&services.ctx(RequestInfo::default()), MakeStartingRoles)
+            .await
+            .map_err(|error| error.to_string())?;
         let code = issue_setup_code(&services.ctx(RequestInfo::default()), IssueSetupCode)
             .await
-            .map_err(|error| error.to_string())?
-            .ok_or("no setup code on a new database")?;
+            .map_err(|error| error.to_string())?;
         Ok(Self {
             database,
             storage,
             services,
             clock,
             seal,
-            setup_code: code.as_str().to_owned(),
+            setup_code: code
+                .map(|code| code.as_str().to_owned())
+                .unwrap_or_default(),
             folder,
         })
     }
@@ -148,7 +175,8 @@ impl Rig {
                     email: email.to_owned(),
                 },
             )
-            .await?;
+            .await?
+            .into_value();
         self.api()
             .accept_invitation(
                 Self::info(),
@@ -174,6 +202,32 @@ impl Rig {
                 },
             )
             .await
+    }
+
+    /// What the person behind a session may do for the whole organization.
+    pub(super) async fn permissions(
+        &self,
+        session: &str,
+    ) -> Result<Vec<Permission>, Box<dyn std::error::Error + Send + Sync>> {
+        let me = self
+            .api()
+            .authenticate(
+                Self::info(),
+                AuthenticateQuery {
+                    session_token: session.to_owned(),
+                },
+            )
+            .await
+            .map_err(|error| error.to_string())?;
+        Ok(me.access.permissions().iter().copied().collect())
+    }
+
+    /// How many people can manage roles for the whole organization (setup is open while it is 0).
+    pub(super) async fn role_managers(
+        &self,
+    ) -> Result<usize, Box<dyn std::error::Error + Send + Sync>> {
+        let state = self.storage.organization_state().await?;
+        Ok(bb_app::access::guards::role_managers(&state).len())
     }
 
     /// The person with this address.

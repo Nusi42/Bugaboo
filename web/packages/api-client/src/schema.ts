@@ -10,7 +10,7 @@ export interface paths {
     };
     /**
      * How the server is doing: version, uptime, database, certificate and the check of the security
-     *     log. Administrators only.
+     *     log. Needs the permission *See how the server is doing*.
      */
     get: operations["getServerStatus"];
     put?: never;
@@ -65,10 +65,10 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    /** The open invitations, a page at a time. Administrators only. */
+    /** The open invitations, a page at a time. Needs the permission *Invite people*. */
     get: operations["listInvitations"];
     put?: never;
-    /** Makes an invitation. The link is shown once. Administrators only. */
+    /** Makes an invitation. The link is shown once. Needs the permission *Invite people*. */
     post: operations["createInvitation"];
     delete?: never;
     options?: never;
@@ -86,7 +86,7 @@ export interface paths {
     get?: never;
     put?: never;
     post?: never;
-    /** Takes an invitation back. Administrators only. */
+    /** Takes an invitation back. Needs the permission *Invite people*. */
     delete: operations["revokeInvitation"];
     options?: never;
     head?: never;
@@ -382,9 +382,9 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    /** Who may sign up on their own. Administrators only. */
+    /** Who may sign up on their own. Needs the permission *Change organization settings*. */
     get: operations["getSignUpPolicy"];
-    /** Changes who may sign up on their own. Administrators only. */
+    /** Changes who may sign up on their own. Needs the permission *Change organization settings*. */
     put: operations["changeSignUpPolicy"];
     post?: never;
     delete?: never;
@@ -661,6 +661,10 @@ export interface components {
       | "auth.passkey_rejected"
       | "auth.not_signed_in"
       | "access.forbidden"
+      | "access.would_lock_out"
+      | "access.too_much"
+      | "assignment.conflict"
+      | "name.taken"
       | "resource.not_found"
       | "request.invalid"
       | "request.unknown_field"
@@ -727,8 +731,22 @@ export interface components {
      */
     LogResult: "valid" | "broken" | "unreadable";
     /**
+     * @description Who is signed in, and what they may do for the whole organization (the menus of the browser app
+     *     follow it; the server decides again at every request).
+     */
+    MeBody: {
+      /** @description The name others see. */
+      display_name: string;
+      /** @description The e-mail address used to sign in. */
+      email: string;
+      /** @description The ID of the person. */
+      id: string;
+      /** @description What the person may do for the whole organization. */
+      permissions: components["schemas"]["Permission"][];
+    };
+    /**
      * @description One page of a list. `T` is the view of an item for the API description; an answer holds the
-     *     items cut to the chosen fields ([`Page::of`]).
+     *     items cut to the chosen fields ([`Page::of_authorized`]).
      */
     Page_InvitationItem: {
       /** @description The items of this page. */
@@ -775,10 +793,27 @@ export interface components {
       /** @description The password. */
       password: string;
     };
+    /**
+     * @description One permission of the catalogue.
+     * @enum {string}
+     */
+    Permission:
+      | "see-projects"
+      | "make-projects"
+      | "make-sub-projects"
+      | "move-projects"
+      | "change-project-settings"
+      | "decide-roles"
+      | "decide-what-roles-see"
+      | "check-access"
+      | "manage-people"
+      | "manage-invitations"
+      | "manage-groups"
+      | "manage-roles"
+      | "change-organization-settings"
+      | "see-status";
     /** @description Who a person is, as the browser app shows them. */
     PersonBody: {
-      /** @description Whether the person is an administrator. */
-      administrator: boolean;
       /** @description The name others see. */
       display_name: string;
       /** @description The e-mail address used to sign in. */
@@ -1438,7 +1473,7 @@ export interface operations {
     };
     requestBody?: never;
     responses: {
-      /** @description The signed-in person. */
+      /** @description The signed-in person and what they may do for the whole organization. */
       200: {
         headers: {
           /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
@@ -1446,7 +1481,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["PersonBody"];
+          "application/json": components["schemas"]["MeBody"];
         };
       };
       /** @description Nothing changed since the `ETag` that `If-None-Match` named. No body. */

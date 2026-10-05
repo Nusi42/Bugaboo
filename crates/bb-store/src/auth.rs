@@ -97,17 +97,15 @@ fn read_person(row: &Row) -> Result<Person, StoreError> {
         display_name: row.get(PersonRow::DisplayName)?,
         email: row.get(PersonRow::Email)?,
         created_at: row.time(PersonRow::CreatedAt)?,
-        administrator: row.get(PersonRow::Administrator)?,
     })
 }
 
-fn person_columns() -> [PersonRow; 5] {
+fn person_columns() -> [PersonRow; 4] {
     [
         PersonRow::Id,
         PersonRow::DisplayName,
         PersonRow::Email,
         PersonRow::CreatedAt,
-        PersonRow::Administrator,
     ]
 }
 
@@ -240,6 +238,17 @@ impl AuthStore for AuthStorage {
         matches!(error, StoreError::Aborted)
     }
 
+    fn refused(refusal: bb_policy::guards::Refusal) -> StoreError {
+        StoreError::Refused(refusal)
+    }
+
+    fn as_refusal(error: &StoreError) -> Option<bb_policy::guards::Refusal> {
+        match error {
+            StoreError::Refused(refusal) => Some(*refusal),
+            _ => None,
+        }
+    }
+
     fn describe(error: &StoreError) -> String {
         error.to_string()
     }
@@ -299,15 +308,6 @@ impl AuthStore for AuthStorage {
             .iter()
             .map(read_session)
             .collect()
-    }
-
-    async fn administrators(&self) -> Result<i64, StoreError> {
-        let mut select = Query::select();
-        select
-            .expr_as(Expr::col(PersonRow::Id).count(), Computed::Total)
-            .from(PersonRow::Table)
-            .and_where(Expr::col(PersonRow::Administrator).eq(true));
-        self.count(&select).await
     }
 
     async fn setup_code(&self) -> Result<Option<SetupCode>, StoreError> {
@@ -520,7 +520,6 @@ impl AuthStore for AuthStorage {
                 Expr::val(person.display_name.as_str()),
                 Expr::val(person.email.as_str()),
                 Expr::val(to_micros(person.created_at)),
-                Expr::val(person.administrator),
             ])
             .map_err(|_| StoreError::Corrupt("a person"))?;
         transaction.execute(&insert).await?;

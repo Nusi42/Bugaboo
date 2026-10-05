@@ -9,6 +9,7 @@ export {
   type QuickSearchAsker,
   type QuickSearchSource,
 } from "./quick-search-sources.ts";
+export { mayOpen } from "./places.ts";
 export { SettingsFrame } from "./SettingsFrame.tsx";
 export { addSidebarSection, type SidebarSection } from "./sidebar-sections.ts";
 export { ShortcutsPage } from "./ShortcutsPage.tsx";

@@ -1,5 +1,6 @@
 //! Invitations and signing up on one's own (AUTH-06).
 
+use bb_app::access::Authorized;
 use bb_app::auth::{
     AcceptInvitation, AuthStore as _, ChangeSignUpPolicy, CreateInvitation, InvitationLookupQuery,
     InvitationsQuery, RevokeInvitation, SignUp, SignUpPolicy, SignUpPolicyQuery, StatusQuery,
@@ -23,7 +24,8 @@ async fn invite(rig: &Rig, session: &str, email: &str) -> Result<String, bb_app:
                 email: email.to_owned(),
             },
         )
-        .await?;
+        .await?
+        .into_value();
     Ok(secret_of(&created.link_path))
 }
 
@@ -82,7 +84,8 @@ async fn auth_06_an_administrator_invites_and_the_link_works_once() -> Outcome {
                     email: " Bob@Example.TEST ".to_owned(),
                 },
             )
-            .await?;
+            .await?
+            .into_value();
         assert!(created.link_path.starts_with("/invitation#"));
         let secret = secret_of(&created.link_path);
         assert_eq!(secret.len(), 43, "256 bits of randomness");
@@ -109,7 +112,7 @@ async fn auth_06_an_administrator_invites_and_the_link_works_once() -> Outcome {
             Some(ErrorCode::PasswordTooShort)
         );
         let bob = accept(&rig, &secret, PASSWORD).await?;
-        assert!(!bob.person.administrator);
+        assert!(rig.permissions(&bob.session_token).await?.is_empty());
         assert_eq!(bob.person.email, "bob@example.test");
         rig.sign_in("bob@example.test", PASSWORD).await?;
 
@@ -132,7 +135,8 @@ async fn auth_06_an_administrator_invites_and_the_link_works_once() -> Outcome {
                     limit: 50,
                 },
             )
-            .await?;
+            .await?
+            .into_value();
         assert!(open.items.is_empty());
         assert_eq!(
             action_count(&rig, SecurityAction::InvitationCreated).await?,
@@ -190,6 +194,7 @@ async fn auth_06_only_administrators_manage_invitations() -> Outcome {
                 },
             )
             .await?
+            .into_value()
             .items[0]
             .id;
         let revoke = |token: &str, id| {
@@ -263,7 +268,8 @@ async fn auth_06_an_invitation_runs_out_after_seven_days() -> Outcome {
                     limit: 50,
                 },
             )
-            .await?;
+            .await?
+            .into_value();
         assert!(
             open.items.is_empty(),
             "an invitation that ran out is not open"
@@ -322,6 +328,7 @@ async fn policy(rig: &Rig, session: &str) -> Result<SignUpPolicy, bb_app::auth::
             },
         )
         .await
+        .map(Authorized::into_value)
 }
 
 async fn change_policy(
@@ -342,6 +349,7 @@ async fn change_policy(
             },
         )
         .await
+        .map(Authorized::into_value)
 }
 
 #[tokio::test]
@@ -441,7 +449,7 @@ async fn auth_06_signing_up_follows_the_rule_of_the_administrator() -> Outcome {
             Some(ErrorCode::PasswordTooShort)
         );
         let eve = sign_up(&rig, "Eve@Example.test", PASSWORD).await?;
-        assert!(!eve.person.administrator);
+        assert!(rig.permissions(&eve.session_token).await?.is_empty());
         // An address that has an account gets the same answer as a closed door.
         for taken in ["eve@example.test", "bob@example.test"] {
             assert_eq!(
@@ -487,6 +495,7 @@ async fn page(
             },
         )
         .await
+        .map(Authorized::into_value)
 }
 
 #[tokio::test]

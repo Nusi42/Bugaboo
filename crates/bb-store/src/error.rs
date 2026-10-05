@@ -41,6 +41,9 @@ pub enum StoreError {
     Contended,
     /// A change decided not to go ahead (a check inside its transaction failed) and was undone.
     Aborted,
+    /// A rule of the policy engine stopped a change (the last administrator, no escalation) and
+    /// it was undone.
+    Refused(bb_policy::guards::Refusal),
     /// The name is kept for the store itself (for example the head of the outbox).
     ReservedName,
     /// The anchor file of the security log could not be read or written.
@@ -110,6 +113,10 @@ impl fmt::Display for StoreError {
             }
             Self::Secret(problem) => write!(formatter, "the secret operation failed: {problem:?}"),
             Self::Aborted => formatter.write_str("the change stopped itself and was undone"),
+            Self::Refused(refusal) => write!(
+                formatter,
+                "a rule of the policy engine stopped the change and it was undone: {refusal:?}"
+            ),
             Self::ReservedName => formatter.write_str("this name is reserved for the store"),
             Self::Contended => formatter.write_str("too many writers at once; try again"),
             Self::KeyFile(error) => write!(formatter, "a key file failed: {error}"),

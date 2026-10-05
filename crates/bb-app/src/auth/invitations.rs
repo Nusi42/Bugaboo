@@ -6,6 +6,7 @@ use bb_core::ErrorCode;
 use bb_core::id::InvitationId;
 use bb_core::settings::{AUTH_SIGN_UP_DOMAINS, AUTH_SIGN_UP_ENABLED, SettingValue};
 use bb_core::sign_in::{Invitation, SecurityAction};
+use bb_policy::{Authorized, Permission, Place};
 use jiff::Timestamp;
 use serde_json::json;
 
@@ -32,13 +33,16 @@ fn view(invitation: &Invitation) -> InvitationView {
 /// Makes an invitation. The link with its secret is returned once; only a hash is kept.
 ///
 /// # Errors
-/// `access.forbidden` for people who are not administrators, `request.invalid` for an address
-/// that cannot be one or that has an account already.
+/// `access.forbidden` without *Invite people*, `request.invalid` for an address that cannot be one
+/// or that has an account already.
 pub async fn create_invitation<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: CreateInvitation,
-) -> Result<CreatedInvitation, AppError> {
-    let record = ctx.administrator(&input.session_token).await?;
+) -> Result<Authorized<CreatedInvitation>, AppError> {
+    let actor = ctx.actor(&input.session_token).await?;
+    let access = ctx
+        .require(&actor, Permission::ManageInvitations, Place::Organization)
+        .await?;
     let email = EmailAddress::parse(&input.email).ok_or(ErrorCode::InvalidRequest)?;
     if ctx
         .store()
@@ -57,13 +61,13 @@ pub async fn create_invitation<S: AuthStore>(
         id: InvitationId::generate(&mut ctx.ids()),
         token_hash: secret.hash(Purpose::Invitation),
         email: email.as_str().to_owned(),
-        invited_by: record.person.id,
+        invited_by: actor.person.id,
         created_at: now,
         expires_at,
         used_at: None,
     };
     let event = ctx.event(
-        by(record.person.id),
+        by(actor.person.id),
         entity("invitation", invitation.id)?,
         vec![set_to("email", json!(invitation.email))],
     )?;
@@ -76,29 +80,30 @@ pub async fn create_invitation<S: AuthStore>(
         .map_err(|error| change_failed::<S>(&error, None))?;
     ctx.note(
         SecurityAction::InvitationCreated,
-        Some(record.person.id),
+        Some(actor.person.id),
         Some(entity("invitation", invitation.id)?),
     )
     .await;
-    Ok(CreatedInvitation {
+    Ok(access.authorize(CreatedInvitation {
         invitation: view(&invitation),
         link_path: format!("/invitation#{}", secret.encode()),
-    })
+    }))
 }
 
 /// Takes an invitation back.
 ///
 /// # Errors
-/// `access.forbidden` for people who are not administrators, `resource.not_found` for an unknown
-/// invitation.
+/// `access.forbidden` without *Invite people*, `resource.not_found` for an unknown invitation.
 pub async fn revoke_invitation<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: RevokeInvitation,
 ) -> Result<Done, AppError> {
-    let record = ctx.administrator(&input.session_token).await?;
+    let actor = ctx.actor(&input.session_token).await?;
+    ctx.require(&actor, Permission::ManageInvitations, Place::Organization)
+        .await?;
     let id = input.invitation_id;
     let event = ctx.event(
-        by(record.person.id),
+        by(actor.person.id),
         entity("invitation", id)?,
         vec![changed("invitation")],
     )?;
@@ -117,7 +122,7 @@ pub async fn revoke_invitation<S: AuthStore>(
         .map_err(|error| change_failed::<S>(&error, Some(ErrorCode::NotFound)))?;
     ctx.note(
         SecurityAction::InvitationRevoked,
-        Some(record.person.id),
+        Some(actor.person.id),
         Some(entity("invitation", id)?),
     )
     .await;
@@ -138,13 +143,15 @@ fn read_cursor(text: &str) -> Result<(Timestamp, InvitationId), ()> {
 /// The open invitations, one page at a time (newest first).
 ///
 /// # Errors
-/// `access.forbidden` for people who are not administrators, `request.invalid` for a cursor that
-/// is not one.
+/// `access.forbidden` without *Invite people*, `request.invalid` for a cursor that is not one.
 pub async fn invitations<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: InvitationsQuery,
-) -> Result<InvitationPage, AppError> {
-    ctx.administrator(&input.session_token).await?;
+) -> Result<Authorized<InvitationPage>, AppError> {
+    let actor = ctx.actor(&input.session_token).await?;
+    let access = ctx
+        .require(&actor, Permission::ManageInvitations, Place::Organization)
+        .await?;
     let limit = u64::from(bb_core::paging::page_size(Some(input.limit)));
     let after = input
         .cursor
@@ -161,10 +168,10 @@ pub async fn invitations<S: AuthStore>(
     let more = u64::try_from(found.len()).is_ok_and(|count| count > limit);
     found.truncate(usize::try_from(limit).unwrap_or(usize::MAX));
     let next_cursor = more.then(|| found.last().map(write_cursor)).flatten();
-    Ok(InvitationPage {
+    Ok(access.authorize(InvitationPage {
         items: found.iter().map(view).collect(),
         next_cursor,
-    })
+    }))
 }
 
 /// Which address an invitation link is for, so the page can show it.
@@ -199,30 +206,44 @@ fn domains_of(list: &str) -> Vec<String> {
 /// Who may sign up on their own.
 ///
 /// # Errors
-/// `access.forbidden` for people who are not administrators.
+/// `access.forbidden` without *Change organization settings*.
 pub async fn sign_up_policy<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: SignUpPolicyQuery,
-) -> Result<SignUpPolicy, AppError> {
-    ctx.administrator(&input.session_token).await?;
+) -> Result<Authorized<SignUpPolicy>, AppError> {
+    let actor = ctx.actor(&input.session_token).await?;
+    let access = ctx
+        .require(
+            &actor,
+            Permission::ChangeOrganizationSettings,
+            Place::Organization,
+        )
+        .await?;
     let settings = ctx.settings().await?;
-    Ok(SignUpPolicy {
+    Ok(access.authorize(SignUpPolicy {
         enabled: settings.sign_up_enabled,
         domains: domains_of(&settings.sign_up_domains),
-    })
+    }))
 }
 
 /// Changes who may sign up on their own. An empty list of domains lets every address sign up
 /// while signing up is on.
 ///
 /// # Errors
-/// `access.forbidden` for people who are not administrators, `request.invalid` for a domain that
+/// `access.forbidden` without *Change organization settings*, `request.invalid` for a domain that
 /// cannot be one.
 pub async fn change_sign_up_policy<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: ChangeSignUpPolicy,
-) -> Result<SignUpPolicy, AppError> {
-    let record = ctx.administrator(&input.session_token).await?;
+) -> Result<Authorized<SignUpPolicy>, AppError> {
+    let actor = ctx.actor(&input.session_token).await?;
+    let access = ctx
+        .require(
+            &actor,
+            Permission::ChangeOrganizationSettings,
+            Place::Organization,
+        )
+        .await?;
     let mut domains: Vec<String> = Vec::new();
     for domain in input
         .policy
@@ -254,7 +275,7 @@ pub async fn change_sign_up_policy<S: AuthStore>(
         return Err(ErrorCode::InvalidRequest.into());
     }
     let event = ctx.event(
-        by(record.person.id),
+        by(actor.person.id),
         fixed_entity("setting", "auth.sign-up-policy")?,
         vec![
             set_to("auth_sign_up_enabled", json!(policy.enabled)),
@@ -285,9 +306,9 @@ pub async fn change_sign_up_policy<S: AuthStore>(
         .map_err(|error| change_failed::<S>(&error, None))?;
     ctx.note(
         SecurityAction::SignUpPolicyChanged,
-        Some(record.person.id),
+        Some(actor.person.id),
         None,
     )
     .await;
-    Ok(policy)
+    Ok(access.authorize(policy))
 }

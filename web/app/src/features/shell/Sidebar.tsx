@@ -10,7 +10,8 @@ export interface SidebarProps extends PersonProps {
   readonly inDrawer?: boolean;
   /** A screen has narrowed the sidebar; the button that would widen it is not shown. */
   readonly locked?: boolean;
-  readonly administrator: boolean;
+  /** The person may open *Organization settings*. */
+  readonly organizationSettings: boolean;
   /** Called after a link was used, for a menu that closes. */
   readonly onNavigate?: () => void;
 }
@@ -24,7 +25,7 @@ export function Sidebar({
   narrow,
   inDrawer = false,
   locked = false,
-  administrator,
+  organizationSettings,
   name,
   onSignOut,
   signingOut,
@@ -43,7 +44,7 @@ export function Sidebar({
       <Bottom
         narrow={narrow}
         inDrawer={inDrawer || locked}
-        administrator={administrator}
+        organizationSettings={organizationSettings}
         onNavigate={onNavigate}
       />
       <Person narrow={narrow} name={name} onSignOut={onSignOut} signingOut={signingOut} />

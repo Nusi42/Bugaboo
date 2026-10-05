@@ -1,3 +1,4 @@
+import type { Permissions } from "../../shared/permissions.ts";
 import { createRegistry, useRegistry } from "./registry.ts";
 
 /** One thing quick search found. */
@@ -14,7 +15,7 @@ export interface QuickResult {
 
 /** Who is asking: sources show only what this person may see. */
 export interface QuickSearchAsker {
-  readonly administrator: boolean;
+  readonly permissions: Permissions;
 }
 
 /**

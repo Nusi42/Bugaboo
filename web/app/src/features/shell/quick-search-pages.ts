@@ -15,7 +15,7 @@ function matches(text: string, query: string): boolean {
 
 /** The pages of the app: every screen that exists and that this person may open. */
 function findPages(query: string, asker: QuickSearchAsker): readonly QuickResult[] {
-  return placesFor(asker.administrator)
+  return placesFor(asker.permissions)
     .filter((place) => place.listed)
     .flatMap((place) => {
       const parent = place.parent === null ? undefined : placeAt(place.parent);

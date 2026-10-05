@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { collectResults, resultKey } from "./quick-search-collect.ts";
 import type { QuickSearchSource } from "./quick-search-sources.ts";
 
-const asker = { administrator: false };
+const asker = { permissions: [] };
 
 /** A source that answers with these titles, as a list or after a moment. */
 function source(id: string, titles: readonly string[]): QuickSearchSource {

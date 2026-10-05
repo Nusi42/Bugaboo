@@ -25,6 +25,7 @@ use bb_auth::Device;
 use bb_core::ErrorCode;
 use bb_core::error_code::PROBLEM_CONTENT_TYPE;
 use bb_core::network::NetworkPrefix;
+use bb_policy::{Authorized, Masked, Permission};
 use serde::Serialize;
 use std::collections::BTreeMap;
 
@@ -155,8 +156,6 @@ pub(crate) struct PersonBody {
     display_name: String,
     /// The e-mail address used to sign in.
     email: String,
-    /// Whether the person is an administrator.
-    administrator: bool,
 }
 
 impl From<&bb_app::auth::PersonView> for PersonBody {
@@ -165,10 +164,25 @@ impl From<&bb_app::auth::PersonView> for PersonBody {
             id: person.id.to_string(),
             display_name: person.display_name.clone(),
             email: person.email.clone(),
-            administrator: person.administrator,
         }
     }
 }
+
+/// Who is signed in, and what they may do for the whole organization (the menus of the browser app
+/// follow it; the server decides again at every request).
+#[derive(Serialize, ToSchema)]
+pub(crate) struct MeBody {
+    /// The ID of the person.
+    pub(crate) id: String,
+    /// The name others see.
+    pub(crate) display_name: String,
+    /// The e-mail address used to sign in.
+    pub(crate) email: String,
+    /// What the person may do for the whole organization.
+    pub(crate) permissions: Vec<Permission>,
+}
+
+impl Masked for MeBody {}
 
 /// Which ways there are to finish signing in.
 #[derive(Serialize, ToSchema)]
@@ -233,6 +247,18 @@ pub(crate) fn done() -> Response {
 /// (`crate::etag`), from the marks in the API description.
 pub(crate) fn answer<T: Serialize>(body: T) -> Response {
     axum::Json(body).into_response()
+}
+
+/// The one answer wrapper of data that leaves a use case: an `Authorized<T>` is sent with its
+/// hidden fields left out (SEC-04, ADR-0004). Handlers that return what a use case gave them use
+/// this and nothing else.
+pub(crate) fn answer_authorized<T: Masked + Serialize>(
+    body: &Authorized<T>,
+) -> Result<Response, ApiError> {
+    let value = body
+        .masked_value()
+        .map_err(|error| ApiError::internal(&error))?;
+    Ok(answer(value))
 }
 
 /// Refuses a change that carries a session cookie without the token of that session. A change

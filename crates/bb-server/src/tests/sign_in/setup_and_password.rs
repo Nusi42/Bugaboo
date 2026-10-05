@@ -1,5 +1,6 @@
 //! The setup code of the first start (AUTH-09) and signing in with a password (AUTH-01, SEC-14).
 
+use bb_app::access::Permission;
 use bb_app::auth::{
     AppError, AuthApi as _, AuthStore as _, AuthenticateQuery, CompleteSetup, IssueSetupCode,
     RequestInfo, SignIn, StatusQuery, issue_setup_code,
@@ -75,7 +76,7 @@ async fn auth_09_a_wrong_setup_code_is_refused_counted_and_written_to_the_log() 
         assert!(matches!(result, Err(AppError::Limited { retry_after }) if retry_after > 0));
         assert_eq!(action_count(&rig, SecurityAction::SetupFailed).await?, 3);
         assert_eq!(action_count(&rig, SecurityAction::SignInLimited).await?, 1);
-        assert_eq!(rig.storage.administrators().await?, 0);
+        assert_eq!(rig.role_managers().await?, 0);
         Ok(())
     })
     .await
@@ -126,7 +127,9 @@ async fn auth_09_the_setup_code_makes_an_administrator_once_and_setup_is_closed_
         assert_eq!(refused(invalid), Some(ErrorCode::InvalidRequest));
 
         let started = rig.admin("Ada@Example.TEST").await?;
-        assert!(started.person.administrator);
+        let permissions = rig.permissions(&started.session_token).await?;
+        assert!(permissions.contains(&Permission::ManageRoles));
+        assert!(permissions.contains(&Permission::DecideRoles));
         assert_eq!(started.person.email, "ada@example.test");
         assert!(started.second_step_needed.is_none());
         let me = rig
@@ -160,7 +163,7 @@ async fn auth_09_two_requests_with_the_same_setup_code_make_one_administrator() 
             tokio::join!(rig.admin("ada@example.test"), rig.admin("eve@example.test"));
         let made = [first.is_ok(), second.is_ok()];
         assert_eq!(made.iter().filter(|made| **made).count(), 1, "{made:?}");
-        assert_eq!(rig.storage.administrators().await?, 1);
+        assert_eq!(rig.role_managers().await?, 1);
         Ok(())
     })
     .await

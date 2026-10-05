@@ -2780,7 +2780,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("frames.title", "Page frames"),
     (
         "home.admin",
-        "You are an administrator: you can invite people and see how the server is doing.",
+        "You can look after this server. Organization settings shows what you may do there.",
     ),
     (
         "home.intro",

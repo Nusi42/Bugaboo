@@ -11,7 +11,7 @@ import { UndoHost } from "./UndoHost.tsx";
 
 export interface ShellOverlaysProps extends Pick<
   SidebarProps,
-  "administrator" | "name" | "onSignOut" | "signingOut"
+  "organizationSettings" | "name" | "onSignOut" | "signingOut"
 > {
   readonly layout: LayoutMode;
 }
@@ -41,7 +41,7 @@ export function ShellOverlays({ layout, ...person }: ShellOverlaysProps) {
       {tablet ? <Drawer {...person} /> : null}
       {phone ? (
         <MoreSheet
-          administrator={person.administrator}
+          organizationSettings={person.organizationSettings}
           name={person.name}
           onSignOut={person.onSignOut}
           signingOut={person.signingOut}

@@ -9,6 +9,9 @@ publish.workspace = true
 [features]
 # Describes the types of the API for OpenAPI (utoipa); only the HTTP layer turns it on.
 openapi = ["dep:utoipa", "bb-core/openapi"]
+# `Authorized::into_value`, so a test can look at what a use case answered. Only `[dev-dependencies]`
+# switch it on (ARCH-AUTHZ-ONLY).
+peek = []
 
 [dependencies]
 bb-core = { path = "../bb-core" }

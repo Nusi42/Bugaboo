@@ -84,7 +84,8 @@ async fn adr_0007_accounts_sessions_and_invitations_append_one_event_per_change(
                     email: "bob@example.test".to_owned(),
                 },
             )
-            .await?;
+            .await?
+            .into_value();
         count.one_more("invite").await?;
         let revoke = RevokeInvitation {
             session_token: session.clone(),
@@ -195,7 +196,8 @@ async fn sec_16_no_secret_is_written_to_an_event_or_to_the_security_log() -> Out
                     email: "bob@example.test".to_owned(),
                 },
             )
-            .await?;
+            .await?
+            .into_value();
         let _ = rig.sign_in("ada@example.test", "Wrong-Password-1").await;
         let _ = rig.sign_in("ada@example.test", PASSWORD).await?;
         let hash = rig
@@ -254,20 +256,22 @@ async fn sec_15_the_security_log_of_signing_in_verifies_and_names_what_happened(
         assert_eq!(
             actions,
             [
+                "starting_roles.made",
                 "setup.completed",
+                "assignment.made",
                 "sign_in.failed",
                 "sign_in.failed",
                 "sign_in.succeeded"
             ]
         );
         // A failed try has nobody signed in; a success names the person.
-        assert!(entries[1].person.is_none() && entries[2].person.is_none());
-        assert!(entries[3].person.is_some());
+        assert!(entries[3].person.is_none() && entries[4].person.is_none());
+        assert!(entries[5].person.is_some());
         match rig.database.verify_security_log(&rig.seal).await? {
             Verification::Valid {
                 entries, anchored, ..
             } => {
-                assert_eq!(entries, 4);
+                assert_eq!(entries, 6);
                 assert!(
                     anchored,
                     "the end of the log is written down outside the database"

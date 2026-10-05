@@ -6,6 +6,7 @@ use std::time::Duration;
 
 use bb_core::id::{InvitationId, PasskeyId, SessionId, UserId};
 use bb_core::person::Person;
+use bb_policy::Evaluation;
 use jiff::Timestamp;
 use serde_json::Value;
 
@@ -18,8 +19,6 @@ pub struct PersonView {
     pub display_name: String,
     /// The e-mail address used to sign in.
     pub email: String,
-    /// Whether the person is an administrator.
-    pub administrator: bool,
 }
 
 impl From<&Person> for PersonView {
@@ -28,7 +27,6 @@ impl From<&Person> for PersonView {
             id: person.id,
             display_name: person.display_name.clone(),
             email: person.email.clone(),
-            administrator: person.administrator,
         }
     }
 }
@@ -78,6 +76,9 @@ pub struct Authenticated {
     pub session_id: SessionId,
     /// When the session started.
     pub started_at: Timestamp,
+    /// What the person may do for the whole organization (the engine's answer for this request);
+    /// the browser app shows its menus from it, and handlers wrap their answers with it.
+    pub access: Evaluation,
 }
 
 /// One session in *Where you're signed in*.
@@ -530,7 +531,6 @@ mod tests {
             id: UserId::from_random([7; 16]),
             display_name: "Ada".to_owned(),
             email: "ada@example.test".to_owned(),
-            administrator: true,
         };
         let started = Started {
             session_token: "SESSION-SECRET".to_owned(),

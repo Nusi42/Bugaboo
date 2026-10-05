@@ -4,8 +4,9 @@
 //! Helpers that need the context are methods of [`Ctx`], not free functions, so the only free
 //! `async fn`s that take a `Ctx` are the use cases themselves (ARCH-EVENTS reads them).
 
+use std::collections::HashMap;
 use std::fmt;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 use bb_auth::{
     CsrfKey, Device, Passkeys, PasswordHasher, Purpose, SecretToken, StoredCredential, same_digest,
@@ -16,6 +17,7 @@ use bb_core::id::{EntityId, EventId, IdSource, SessionId, UserId};
 use bb_core::network::NetworkPrefix;
 use bb_core::person::Person;
 use bb_core::sign_in::{SecurityAction, SessionStage, SignInSession, StoredPasskey};
+use bb_policy::{Evaluation, Place};
 use jiff::Timestamp;
 use zeroize::Zeroizing;
 
@@ -163,12 +165,14 @@ impl<S> AuthServices<S> {
         Arc::clone(&self.log_writes)
     }
 
-    /// The context of one request.
+    /// The context of one request. Its evaluations of who may do what live as long as the
+    /// context does: a request, never longer (ADR-0025, decision 3).
     #[must_use]
-    pub const fn ctx(&self, request: RequestInfo) -> Ctx<'_, S> {
+    pub fn ctx(&self, request: RequestInfo) -> Ctx<'_, S> {
         Ctx {
             services: self,
             request,
+            evaluations: Mutex::default(),
         }
     }
 
@@ -181,10 +185,18 @@ impl<S> AuthServices<S> {
     }
 }
 
+/// The evaluations a request has made, by person and place.
+pub(crate) type Evaluations = Mutex<HashMap<(UserId, Place), Arc<Evaluation>>>;
+
 /// The services plus the request, which is what a use case takes.
+///
+/// The context lives for one request. It holds the evaluations of the policy engine made during
+/// the request (the per-request cache of ADR-0025, decision 3); nothing is kept across requests,
+/// so a role taken away counts from the next request.
 pub struct Ctx<'a, S> {
     pub(crate) services: &'a AuthServices<S>,
     pub(crate) request: RequestInfo,
+    pub(crate) evaluations: Evaluations,
 }
 
 /// Makes IDs from the clock of the context and the secure random source.
@@ -541,16 +553,6 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// The signed-in person behind a cookie.
     pub(crate) async fn active(&self, token_text: &str) -> Result<SessionRecord, AppError> {
         self.session(token_text, SessionStage::Active).await
-    }
-
-    /// The signed-in administrator behind a cookie.
-    pub(crate) async fn administrator(&self, token_text: &str) -> Result<SessionRecord, AppError> {
-        let record = self.active(token_text).await?;
-        if record.person.administrator {
-            Ok(record)
-        } else {
-            Err(AppError::Refused(ErrorCode::Forbidden))
-        }
     }
 
     /// Checks the password a signed-in person types again before a sensitive change. Wrong

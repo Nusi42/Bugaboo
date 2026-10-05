@@ -413,6 +413,7 @@ dependencies = [
  "bb-app",
  "bb-auth",
  "bb-core",
+ "bb-policy",
  "brotli",
  "getrandom 0.4.3",
  "h2",
@@ -443,8 +444,10 @@ version = "0.0.0"
 dependencies = [
  "bb-auth",
  "bb-core",
+ "bb-policy",
  "getrandom 0.4.3",
  "jiff",
+ "serde",
  "serde_json",
  "tracing",
  "zeroize",
@@ -559,6 +562,7 @@ dependencies = [
  "tracing-subscriber",
  "webauthn-authenticator-rs",
  "windows-service",
+ "zeroize",
 ]
 
 [[package]]
@@ -567,6 +571,7 @@ version = "0.0.0"
 dependencies = [
  "bb-app",
  "bb-core",
+ "bb-policy",
  "bb-testing",
  "chacha20poly1305",
  "getrandom 0.4.3",

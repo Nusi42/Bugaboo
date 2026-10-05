@@ -10,6 +10,7 @@ use bb_app::auth::{
 };
 use bb_core::ErrorCode;
 use bb_core::id::InvitationId;
+use bb_policy::{Authorized, Masked};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 use utoipa_axum::router::OpenApiRouter;
@@ -17,10 +18,10 @@ use utoipa_axum::routes;
 
 use super::auth::{
     AuthHandle, ForbiddenAnswer, Info, InvalidAnswer, NotFoundAnswer, NotSignedInAnswer,
-    PreviousSession, Session, SignedInBody, answer, done, signed_in,
+    PreviousSession, Session, SignedInBody, answer, answer_authorized, done, signed_in,
 };
 use crate::errors::{ApiError, ApiJson, ApiPath, ApiQuery};
-use crate::lean::{FieldSpec, ListParams, Page};
+use crate::lean::{FieldSpec, ListParams, Listed, Page};
 
 /// The first administrator, with the setup code.
 #[derive(Deserialize, ToSchema)]
@@ -107,6 +108,8 @@ pub(crate) struct InvitationItem {
     expires_at: Option<String>,
 }
 
+impl Masked for InvitationItem {}
+
 impl From<&bb_app::auth::InvitationView> for InvitationItem {
     fn from(invitation: &bb_app::auth::InvitationView) -> Self {
         Self {
@@ -153,6 +156,8 @@ pub(crate) struct CreatedInvitationBody {
     link_path: String,
 }
 
+impl Masked for CreatedInvitationBody {}
+
 /// Who may sign up on their own.
 #[derive(Serialize, Deserialize, ToSchema)]
 pub(crate) struct SignUpPolicyBody {
@@ -161,6 +166,8 @@ pub(crate) struct SignUpPolicyBody {
     /// The e-mail domains that may sign up. Empty: every domain, while signing up is on.
     domains: Vec<String>,
 }
+
+impl Masked for SignUpPolicyBody {}
 
 /// Makes the first administrator with the setup code, and signs them in. Setup is closed for
 /// good afterwards.
@@ -292,7 +299,7 @@ async fn accept_invitation(
     signed_in(&started)
 }
 
-/// The open invitations, a page at a time. Administrators only.
+/// The open invitations, a page at a time. Needs the permission *Invite people*.
 #[utoipa::path(
     get,
     path = "/api/v1/auth/invitations",
@@ -310,8 +317,8 @@ async fn list_invitations(
 ) -> Result<Response, ApiError> {
     // Who asks is judged first (401 and 403 before 400): a person who may not list learns
     // nothing about the fields or cursors of the list. A cursor that does not open is passed on
-    // as one the use case cannot read, so its answer comes after the check of the person.
-    let fields = params.fields(&INVITATION_FIELDS);
+    // as one the use case cannot read, so its answer comes after the check of the person; the
+    // fields are judged last, once the mask of the person is known.
     let position = params.position(INVITATIONS_LIST);
     let cursor = match &position {
         Ok(position) => position.clone(),
@@ -334,16 +341,20 @@ async fn list_invitations(
             other => ApiError::from(other),
         })?;
     position?;
-    let items: Vec<InvitationItem> = page.items.iter().map(InvitationItem::from).collect();
-    Ok(answer(Page::of(
+    let list = page.map(|page| Listed {
+        items: page.items.iter().map(InvitationItem::from).collect(),
+        next: page.next_cursor,
+    });
+    // A field that is hidden from this person is refused like one that does not exist.
+    let fields = params.fields_readable(&INVITATION_FIELDS, &list.hidden_properties())?;
+    Ok(answer(Page::of_authorized(
         INVITATIONS_LIST,
-        &items,
-        &fields?,
-        page.next_cursor.as_deref(),
+        &list,
+        &fields,
     )?))
 }
 
-/// Makes an invitation. The link is shown once. Administrators only.
+/// Makes an invitation. The link is shown once. Needs the permission *Invite people*.
 #[utoipa::path(
     post,
     path = "/api/v1/auth/invitations",
@@ -373,13 +384,13 @@ async fn create_invitation(
             },
         )
         .await?;
-    Ok(answer(CreatedInvitationBody {
+    answer_authorized(&created.map(|created| CreatedInvitationBody {
         invitation: InvitationBody::from(&created.invitation),
         link_path: created.link_path,
     }))
 }
 
-/// Takes an invitation back. Administrators only.
+/// Takes an invitation back. Needs the permission *Invite people*.
 #[utoipa::path(
     delete,
     path = "/api/v1/auth/invitations/{invitation_id}",
@@ -409,14 +420,14 @@ async fn revoke_invitation(
     Ok(done())
 }
 
-fn policy_body(policy: SignUpPolicy) -> Response {
-    answer(SignUpPolicyBody {
+fn policy_body(policy: Authorized<SignUpPolicy>) -> Result<Response, ApiError> {
+    answer_authorized(&policy.map(|policy| SignUpPolicyBody {
         enabled: policy.enabled,
         domains: policy.domains,
-    })
+    }))
 }
 
-/// Who may sign up on their own. Administrators only.
+/// Who may sign up on their own. Needs the permission *Change organization settings*.
 #[utoipa::path(
     get,
     path = "/api/v1/auth/sign-up-policy",
@@ -433,10 +444,10 @@ async fn get_sign_up_policy(
         .api()?
         .sign_up_policy(info, SignUpPolicyQuery { session_token })
         .await?;
-    Ok(policy_body(policy))
+    policy_body(policy)
 }
 
-/// Changes who may sign up on their own. Administrators only.
+/// Changes who may sign up on their own. Needs the permission *Change organization settings*.
 #[utoipa::path(
     put,
     path = "/api/v1/auth/sign-up-policy",
@@ -469,7 +480,7 @@ async fn change_sign_up_policy(
             },
         )
         .await?;
-    Ok(policy_body(policy))
+    policy_body(policy)
 }
 
 /// The routes that try a setup code, an invitation or an address: they get the small

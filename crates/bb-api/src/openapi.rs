@@ -10,6 +10,7 @@ use std::sync::OnceLock;
 
 use axum::http::header::{ETAG, RETRY_AFTER};
 use bb_core::{ErrorCode, Problem, error_code::PROBLEM_CONTENT_TYPE};
+use utoipa::openapi::extensions::Extensions;
 use utoipa::openapi::path::{Operation, PathItem};
 use utoipa::openapi::response::{ResponseBuilder, ResponsesBuilder};
 use utoipa::openapi::security::{ApiKey, ApiKeyValue, SecurityScheme};
@@ -25,6 +26,10 @@ pub const SECRET_MARK: &str = "x-secret";
 /// The mark of a route whose answer holds personal data and is never stored, set with
 /// `extensions` on the route.
 pub const NEVER_STORED_MARK: &str = "x-never-stored";
+
+/// The mark of a route that says what it needs: a key of the permission catalogue, or `public`,
+/// `signed-in` or `own-account` (`crate::permissions`, M1-F32).
+pub const PERMISSION_MARK: &str = "x-permission";
 
 /// The name of the security scheme for the session cookie.
 const SESSION_SCHEME: &str = "sessionCookie";
@@ -117,12 +122,32 @@ impl Modify for StandardParts {
         for item in openapi.paths.paths.values_mut() {
             for operation in operations(item) {
                 add_standard_answers(operation);
+                add_permission(operation);
             }
             if let Some(read) = item.get.as_mut() {
                 add_read_answers(read);
             }
         }
     }
+}
+
+/// What the route needs, as `x-permission` (M1-F32): the declaration of `crate::permissions` for
+/// the operation ID. A route that is not declared gets no mark, and the test of that file fails.
+fn add_permission(operation: &mut Operation) {
+    let Some(declared) = operation
+        .operation_id
+        .as_deref()
+        .and_then(crate::permissions::declared)
+    else {
+        return;
+    };
+    let mark = Extensions::builder()
+        .add(PERMISSION_MARK, serde_json::json!(declared.key()))
+        .build();
+    operation
+        .extensions
+        .get_or_insert_with(Extensions::default)
+        .merge(mark);
 }
 
 fn operations(item: &mut PathItem) -> impl Iterator<Item = &mut Operation> {

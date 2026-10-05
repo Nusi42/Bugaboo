@@ -20,7 +20,8 @@ use bb_core::sign_in::{
 use jiff::Timestamp;
 use zeroize::Zeroizing;
 
-use crate::ports::ChangeStore;
+use crate::access::PolicyStore;
+use crate::store_macros::{reads, writes};
 
 /// A person with the password hash they sign in with.
 #[derive(Clone)]
@@ -90,29 +91,8 @@ pub struct SecurityEvent {
     pub network: Option<NetworkPrefix>,
 }
 
-/// The reads of the port: `fn name(args) -> Type` becomes a method returning
-/// `Result<Type, Self::Error>`.
-macro_rules! reads {
-    ($($(#[$meta:meta])* fn $name:ident($($arg:ident: $ty:ty),*) -> $ret:ty;)+) => {
-        $($(#[$meta])*
-        fn $name(&self $(, $arg: $ty)*)
-            -> impl Future<Output = Result<$ret, Self::Error>> + Send;)+
-    };
-}
-
-/// The writes of the port: the same, inside the transaction of a change. They are associated
-/// functions, not methods: the closure of a change is called with the transaction and nothing
-/// else, so it cannot hold on to the store.
-macro_rules! writes {
-    ($($(#[$meta:meta])* fn $name:ident($($arg:ident: $ty:ty),*) -> $ret:ty;)+) => {
-        $($(#[$meta])*
-        fn $name(transaction: &mut Self::Transaction $(, $arg: $ty)*)
-            -> impl Future<Output = Result<$ret, Self::Error>> + Send;)+
-    };
-}
-
 /// What the sign-in use cases need from storage.
-pub trait AuthStore: ChangeStore + 'static {
+pub trait AuthStore: PolicyStore + 'static {
     /// Whether the error is a unique key that was used twice (for example the e-mail address of
     /// two people at the same moment).
     fn is_duplicate(error: &Self::Error) -> bool;
@@ -124,6 +104,13 @@ pub trait AuthStore: ChangeStore + 'static {
 
     /// Whether the error is the one from [`Self::aborted`].
     fn is_aborted(error: &Self::Error) -> bool;
+
+    /// The error a change returns when a rule of the policy engine stops it (the last
+    /// administrator, no escalation): nothing it wrote stays, and no event is appended.
+    fn refused(refusal: bb_policy::guards::Refusal) -> Self::Error;
+
+    /// The rule behind an error made by [`Self::refused`].
+    fn as_refusal(error: &Self::Error) -> Option<bb_policy::guards::Refusal>;
 
     /// The text of an error, for the log.
     fn describe(error: &Self::Error) -> String;
@@ -137,8 +124,6 @@ pub trait AuthStore: ChangeStore + 'static {
         fn session_by_hash(hash: &Digest) -> Option<SessionRecord>;
         /// The sessions of a person, newest first.
         fn sessions_of(person: UserId) -> Vec<SignInSession>;
-        /// How many administrators exist.
-        fn administrators() -> i64;
         /// The setup code of the first start, if one is waiting.
         fn setup_code() -> Option<SetupCode>;
         /// How the code app of a person is set up.
@@ -240,7 +225,6 @@ mod tests {
             display_name: "Ada Lovelace".to_owned(),
             email: "ada@example.test".to_owned(),
             created_at: Timestamp::UNIX_EPOCH,
-            administrator: true,
         };
         let account = Account {
             person: person.clone(),

@@ -1,7 +1,6 @@
-import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 
-import { meOptions } from "../../shared/session.ts";
+import { usePermissions } from "../../shared/use-me.ts";
 import { collectResults, type Collected } from "./quick-search-collect.ts";
 import { pagesSource } from "./quick-search-pages.ts";
 import { useQuickSearchSources } from "./quick-search-sources.ts";
@@ -14,13 +13,13 @@ const nothingYet: Collected = { groups: [], failed: false };
  * question counts.
  */
 export function useQuickResults(query: string): Collected {
-  const administrator = useQuery(meOptions()).data?.administrator === true;
+  const permissions = usePermissions();
   const registered = useQuickSearchSources();
   const sources = useMemo(() => [pagesSource, ...registered], [registered]);
   const [found, setFound] = useState<Collected>(nothingYet);
   useEffect(() => {
     let latest = true;
-    void collectResults(sources, query, { administrator }).then((collected) => {
+    void collectResults(sources, query, { permissions }).then((collected) => {
       if (latest) {
         setFound(collected);
       }
@@ -28,6 +27,6 @@ export function useQuickResults(query: string): Collected {
     return () => {
       latest = false;
     };
-  }, [query, administrator, sources]);
+  }, [query, permissions, sources]);
   return found;
 }

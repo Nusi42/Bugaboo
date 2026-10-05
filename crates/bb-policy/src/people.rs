@@ -24,6 +24,7 @@ pub enum PersonRef {
     /// By name, with the ID for links.
     Name {
         /// The ID of the person.
+        #[cfg_attr(feature = "openapi", schema(value_type = String))]
         id: UserId,
         /// The name.
         name: String,
