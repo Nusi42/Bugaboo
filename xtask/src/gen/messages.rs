@@ -14,6 +14,25 @@ use crate::repo::Repo;
 pub(crate) const SOURCE_LOCALE_PATH: &str = "messages/en.json";
 pub(crate) const OUTPUT: &str = "web/packages/messages/src/generated.ts";
 
+/// The areas (first part of a key) that only the server and its command line show. Everything else
+/// is shown in the browser too: errors, help for settings and every screen.
+const SERVER_ONLY_AREAS: [&str; 8] = [
+    "cli",
+    "config",
+    "cookie",
+    "data-folder",
+    "keys",
+    "server",
+    "service",
+    "tls",
+];
+
+/// Whether a message is shown by the server only, and so is left out of the browser's catalog.
+fn is_server_only(key: &str) -> bool {
+    key.split_once('.')
+        .is_some_and(|(area, _)| SERVER_ONLY_AREAS.contains(&area))
+}
+
 /// The line width of oxfmt (its default).
 const PRINT_WIDTH: usize = 100;
 
@@ -35,7 +54,14 @@ pub(crate) fn output_paths() -> Vec<&'static str> {
 
 /// The TypeScript and the Rust output from the one catalog.
 pub(crate) fn generate(repo: &Repo, catalog_text: &str) -> anyhow::Result<Vec<Generated>> {
-    let messages: Vec<(String, String)> = read_catalog(catalog_text)?;
+    let all_messages: Vec<(String, String)> = read_catalog(catalog_text)?;
+    // The browser gets only what it shows (M1-F12): the server's own words never ship to it, and
+    // a `t("config.…")` in the app is a type error.
+    let messages: Vec<(String, String)> = all_messages
+        .iter()
+        .filter(|(key, _)| !is_server_only(key))
+        .cloned()
+        .collect();
     let mut out = String::from(TS_HEADER);
     out.push_str("\nexport const messages = {\n");
     for (key, text) in &messages {
@@ -87,7 +113,7 @@ pub(crate) fn generate(repo: &Repo, catalog_text: &str) -> anyhow::Result<Vec<Ge
         }
         out.push_str("}\n");
     }
-    let rust = messages_rust::generate(repo, &messages)?;
+    let rust = messages_rust::generate(repo, &all_messages)?;
     Ok(vec![
         Generated::new(OUTPUT, out),
         Generated::new(messages_rust::OUTPUT, rust),
@@ -178,6 +204,19 @@ mod tests {
                 .content
                 .contains("pub fn a_b(name: impl std::fmt::Display)")
         );
+    }
+
+    #[test]
+    fn the_browser_catalog_leaves_out_what_only_the_server_shows() {
+        let repo = Repo::discover().unwrap();
+        let text = r#"{"error.a.b": "Oops", "config.x.y": "Server", "server.listening": "Up {address}", "home.title": "Hi"}"#;
+        let output = generate(&repo, text).unwrap();
+        assert!(output[0].content.contains("\"error.a.b\""));
+        assert!(output[0].content.contains("\"home.title\""));
+        assert!(!output[0].content.contains("config.x.y"));
+        assert!(!output[0].content.contains("server.listening"));
+        assert!(output[1].content.contains("CONFIG_X_Y"));
+        assert!(output[1].content.contains("server_listening"));
     }
 
     #[test]
