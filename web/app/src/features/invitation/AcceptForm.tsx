@@ -20,7 +20,11 @@ export function AcceptForm({ secret, email }: AcceptFormProps) {
   const [name, setName] = useState("");
   const [password, setPassword] = useState("");
   const accept = api.query.useMutation("post", "/api/v1/auth/invitation/accept", {
-    onSuccess: afterSignIn,
+    onSuccess: (answer) => {
+      // The secret is used up: it leaves the address and the history of the browser.
+      window.history.replaceState(null, "", window.location.pathname + window.location.search);
+      afterSignIn(answer);
+    },
   });
   const tooWeak = isPasswordProblem(accept.error);
   return (

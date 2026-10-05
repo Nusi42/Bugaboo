@@ -90,3 +90,10 @@ export async function setUpCodeApp(page: Page, password: string): Promise<CodeAp
   await expect(page.getByRole("region", { name: t("backup.title") })).toBeVisible();
   return { app, backupCodes };
 }
+
+/** Every address in the history of the browser tab, one text: what the back button could show. */
+export async function historyAddresses(page: Page): Promise<string> {
+  const tab = await page.context().newCDPSession(page);
+  const { entries } = await tab.send("Page.getNavigationHistory");
+  return entries.map((entry: { readonly url: string }) => entry.url).join(" ");
+}

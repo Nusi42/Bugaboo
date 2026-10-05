@@ -4,7 +4,13 @@ import { type Page } from "@playwright/test";
 import { type ApiSession } from "./support/api.ts";
 import { ada, bob, cleo, invite, makeAdmin, makePerson } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
-import { anotherBrowser, expectHome, openFromMenu, signIn } from "./support/flows.ts";
+import {
+  anotherBrowser,
+  expectHome,
+  historyAddresses,
+  openFromMenu,
+  signIn,
+} from "./support/flows.ts";
 import { inOrder } from "./support/sequence.ts";
 
 /** The administrator, signed in through the API, for making many invitations quickly. */
@@ -63,6 +69,9 @@ test("auth_06 an administrator makes an invitation and the person makes an accou
   await expect(guest.getByText(t("invitation.intro", { email: bob.email }))).toBeVisible();
   await acceptInvitation(guest, bob.name, bob.password);
   await expectHome(guest, bob);
+  // The secret is used up and leaves the address and the history of the browser.
+  const secret = link.slice(link.indexOf("#") + 1);
+  expect(await historyAddresses(guest)).not.toContain(secret);
   await guest.context().close();
 });
 
