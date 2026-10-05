@@ -3,8 +3,8 @@
 //! The health endpoints, the API below `/api/v1` with its OpenAPI document, problem+json errors,
 //! rate limits and the cookie policy, the browser app (embedded in release builds, read from disk
 //! in debug builds or from a folder), HTTPS, the security headers on every response (SEC-10,
-//! SEC-11), response compression (never for JSON) and one log line per request without personal
-//! data (OPS-08).
+//! SEC-11), response compression (never for an answer with a secret) and one log line per request
+//! without personal data (OPS-08).
 
 #![forbid(unsafe_code)]
 

@@ -4,10 +4,12 @@
 //! requests of all tests that use a `Browser` (`http::assert_cache_rules`).
 
 use axum::Router;
-use axum::http::StatusCode;
+use axum::body::Body;
+use axum::http::{Request, StatusCode};
 use bb_api::openapi;
 use bb_testing::each_database;
 use serde_json::json;
+use tower::ServiceExt as _;
 
 use super::http::{Browser, Failure, called, never_stored_reads, setup_body, totp};
 use super::rig::{Outcome, PASSWORD, Rig};
@@ -225,6 +227,26 @@ async fn perf_03_answers_with_a_secret_are_not_stored_or_compressed() -> Outcome
             assert_eq!(reply.header("etag"), "");
             assert_eq!(reply.header("content-encoding"), "");
         }
+        // An answer that sets a cookie is never compressed either (signing in has no secret
+        // field, but the session it starts is one).
+        let mut again = Browser::new(&app, &called());
+        again.set_header("accept-encoding", "br, gzip, deflate, zstd");
+        let signed_in = again
+            .send(
+                "POST",
+                "/api/v1/auth/sign-in",
+                Some(json!({"email": "ada@example.test", "password": PASSWORD})),
+            )
+            .await?;
+        assert!(!signed_in.cookies().is_empty());
+        assert_eq!(signed_in.header("content-encoding"), "");
+        // The control: this very server does compress a big answer that holds no secret (the API
+        // description), so the plain answers above are plain by the rule and not by chance.
+        let request = Request::get("/api/v1/openapi.json")
+            .header("accept-encoding", "br, gzip")
+            .body(Body::empty())?;
+        let big = app.clone().oneshot(request).await?;
+        assert_eq!(big.headers()["content-encoding"], "br");
         Ok(())
     })
     .await

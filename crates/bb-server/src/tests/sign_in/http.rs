@@ -53,7 +53,7 @@ impl Reply {
             .unwrap_or_default()
     }
 
-    fn cookies(&self) -> Vec<String> {
+    pub(super) fn cookies(&self) -> Vec<String> {
         self.headers
             .get_all(header::SET_COOKIE)
             .iter()
