@@ -209,6 +209,23 @@ impl<S: AuthStore> Ctx<'_, S> {
     }
 }
 
+/// What `person` holds at `place`, read inside a change after the policy lock: what a rule of the
+/// change is judged on, not what was stored when the request began.
+///
+/// # Errors
+/// [`Refusal::TooMuch`] (as the error of the store) when the place is gone, or the error of the
+/// store.
+pub(crate) async fn held_in<S: AuthStore>(
+    transaction: &mut S::Transaction,
+    person: UserId,
+    place: Place,
+) -> Result<Evaluation, S::Error> {
+    match S::policy_inputs_in(transaction, person, place).await? {
+        Some(inputs) => Ok(evaluate(&inputs)),
+        None => Err(S::refused(Refusal::TooMuch)),
+    }
+}
+
 /// Whether `giver` may give this row: they hold every permission of its role at the place it is
 /// given (ADR-0025, decision 6; organization permissions count nowhere in a project and are left
 /// out there). A row for a project *and its sub-projects* reaches the sub-projects that are made

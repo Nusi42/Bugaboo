@@ -18,7 +18,7 @@ use bb_core::event::FieldChange;
 use bb_core::id::RoleId;
 use bb_core::sign_in::SecurityAction;
 use bb_core::technical::TechnicalName;
-use bb_policy::guards::{ensure_a_manager_remains, ensure_no_escalation};
+use bb_policy::guards::{Refusal, ensure_a_manager_remains, ensure_no_escalation};
 use bb_policy::{Authorized, Permission, Place, StartingRole};
 use serde_json::json;
 
@@ -27,10 +27,8 @@ pub use check::*;
 pub use levels::{role_levels, set_field_level, set_people_level};
 pub use types::*;
 
-use crate::access::RoleRecord;
-use crate::auth::{
-    AppError, AuthStore, Ctx, Done, by, change_failed, changed, entity, internal, set_to,
-};
+use crate::access::{RoleRecord, held_in};
+use crate::auth::{AppError, AuthStore, Ctx, Done, by, changed, entity, internal, set_to};
 use crate::people::{clean_name, stopped};
 
 /// The keys of the permissions in a set: what an event and a view say.
@@ -89,7 +87,6 @@ pub async fn make_role<S: AuthStore>(
         .await?;
     let name = clean_name(&input.name)?;
     let permissions = set_of(&input.permissions);
-    ensure_no_escalation(&access, &permissions)?;
     let position = ctx
         .store()
         .roles()
@@ -120,15 +117,19 @@ pub async fn make_role<S: AuthStore>(
         role.clone(),
         permissions.iter().copied().collect::<Vec<_>>(),
     );
+    let maker = actor.person.id;
     ctx.store()
         .record_change(&event, move |transaction| {
             Box::pin(async move {
                 S::lock_policy(transaction).await?;
+                // Nobody gives a role what they do not hold, as it is stored now.
+                let held = held_in::<S>(transaction, maker, Place::Organization).await?;
+                ensure_no_escalation(&held, &set_of(&stored_permissions)).map_err(S::refused)?;
                 S::insert_role(transaction, &stored, &stored_permissions, &[], &[]).await
             })
         })
         .await
-        .map_err(|error| change_failed::<S>(&error, Some(ErrorCode::NameTaken)))?;
+        .map_err(|error| stopped::<S>(&error, ErrorCode::NotFound, ErrorCode::NameTaken))?;
     ctx.note(
         SecurityAction::RoleMade,
         Some(actor.person.id),
@@ -163,12 +164,6 @@ pub async fn change_role<S: AuthStore>(
         .as_deref()
         .map_or_else(|| before.permissions.clone(), set_of);
     let two_step = input.two_step.unwrap_or(before.role.two_step);
-    // Nobody adds a permission they do not hold; taking one away needs nothing.
-    let added: BTreeSet<Permission> = permissions
-        .difference(&before.permissions)
-        .copied()
-        .collect();
-    ensure_no_escalation(&access, &added)?;
     let id = before.role.id;
     let event = ctx.event(
         by(actor.person.id),
@@ -195,10 +190,23 @@ pub async fn change_role<S: AuthStore>(
         name.clone(),
         permissions.iter().copied().collect::<Vec<_>>(),
     );
+    let wanted = input.permissions.as_deref().map(set_of);
+    let editor = actor.person.id;
     ctx.store()
         .record_change(&event, move |transaction| {
             Box::pin(async move {
                 S::lock_policy(transaction).await?;
+                // Nobody adds a permission they do not hold; taking one away needs nothing. Both
+                // the role and what the person holds are read now, after the lock.
+                let Some(current) = S::role_in(transaction, id).await? else {
+                    return Err(S::aborted());
+                };
+                let held = held_in::<S>(transaction, editor, Place::Organization).await?;
+                if let Some(wanted) = &wanted {
+                    let added: BTreeSet<Permission> =
+                        wanted.difference(&current.permissions).copied().collect();
+                    ensure_no_escalation(&held, &added).map_err(S::refused)?;
+                }
                 let state_before = S::organization_state_in(transaction).await?;
                 if !S::update_role(transaction, id, &new_name, two_step).await? {
                     return Err(S::aborted());
@@ -288,11 +296,6 @@ pub async fn reset_role<S: AuthStore>(
         .and_then(StartingRole::from_key)
         .ok_or(ErrorCode::InvalidRequest)?;
     let permissions: BTreeSet<Permission> = starting.permissions().into_iter().collect();
-    let added: BTreeSet<Permission> = permissions
-        .difference(&before.permissions)
-        .copied()
-        .collect();
-    ensure_no_escalation(&access, &added)?;
     let fields: Vec<_> = bb_core::fields::Field::ALL
         .iter()
         .map(|field| (*field, starting.field_level(*field)))
@@ -301,16 +304,6 @@ pub async fn reset_role<S: AuthStore>(
         .iter()
         .map(|kind| (*kind, starting.people_level(*kind)))
         .collect();
-    // Levels follow the same rule as permissions: nobody gives a level they do not have.
-    if fields
-        .iter()
-        .any(|(field, level)| access.field_level(*field) < *level)
-        || people
-            .iter()
-            .any(|(kind, level)| access.kind_level(*kind) < *level)
-    {
-        return Err(ErrorCode::TooMuch.into());
-    }
     let id = before.role.id;
     let event = ctx.event(
         by(actor.person.id),
@@ -325,10 +318,32 @@ pub async fn reset_role<S: AuthStore>(
         before.role.name.clone(),
         permissions.iter().copied().collect::<Vec<_>>(),
     );
+    let editor = actor.person.id;
     ctx.store()
         .record_change(&event, move |transaction| {
             Box::pin(async move {
                 S::lock_policy(transaction).await?;
+                // The reset adds what the role lacks now and sets levels: nobody gives what they
+                // do not hold, judged on the role and on the person as they are stored now.
+                let Some(current) = S::role_in(transaction, id).await? else {
+                    return Err(S::aborted());
+                };
+                let held = held_in::<S>(transaction, editor, Place::Organization).await?;
+                let added: BTreeSet<Permission> = new_permissions
+                    .iter()
+                    .copied()
+                    .filter(|permission| !current.permissions.contains(permission))
+                    .collect();
+                ensure_no_escalation(&held, &added).map_err(S::refused)?;
+                if fields
+                    .iter()
+                    .any(|(field, level)| held.field_level(*field) < *level)
+                    || people
+                        .iter()
+                        .any(|(kind, level)| held.kind_level(*kind) < *level)
+                {
+                    return Err(S::refused(Refusal::TooMuch));
+                }
                 let state_before = S::organization_state_in(transaction).await?;
                 if !S::update_role(transaction, id, &name, starting.two_step()).await? {
                     return Err(S::aborted());
