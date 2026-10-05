@@ -201,6 +201,8 @@ enum AccessBody {
     Private,
     /// Other accounts can open it: too open.
     Open,
+    /// The rights could not be read, so nothing can be said.
+    Unknown,
 }
 
 impl From<Access> for AccessBody {
@@ -208,6 +210,7 @@ impl From<Access> for AccessBody {
         match access {
             Access::Private => Self::Private,
             Access::Open => Self::Open,
+            Access::Unknown => Self::Unknown,
         }
     }
 }

@@ -797,6 +797,9 @@ pub const STATUS_DATA_FOLDER_CLOSED: MessageKey = MessageKey::new("status.data-f
 /// The message `status.data-folder.open`.
 pub const STATUS_DATA_FOLDER_OPEN: MessageKey = MessageKey::new("status.data-folder.open");
 
+/// The message `status.data-folder.unknown`.
+pub const STATUS_DATA_FOLDER_UNKNOWN: MessageKey = MessageKey::new("status.data-folder.unknown");
+
 /// The message `status.database`.
 pub const STATUS_DATABASE: MessageKey = MessageKey::new("status.database");
 
@@ -1110,6 +1113,18 @@ pub fn data_folder_protect_failed(
         vec![
             ("path", Value::Text(path.to_string())),
             ("reason", Value::Text(reason.to_string())),
+        ],
+    )
+}
+
+/// The message `data-folder.unknown`.
+#[must_use]
+pub fn data_folder_unknown(part: impl std::fmt::Display, path: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("data-folder.unknown"),
+        vec![
+            ("part", Value::Text(part.to_string())),
+            ("path", Value::Text(path.to_string())),
         ],
     )
 }
@@ -2100,6 +2115,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "data-folder.protect-failed",
         "The data folder {path} could not be made private to its owner: {reason}",
     ),
+    (
+        "data-folder.unknown",
+        "{part} {path} could not be checked, because Bugaboo could not read its access rights. Check them yourself: other accounts on this computer should not be able to open it, unless you want that.",
+    ),
     ("error.access.forbidden", "You are not allowed to do that."),
     (
         "error.auth.invitation-invalid",
@@ -2723,6 +2742,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "status.data-folder.open",
         "Other accounts on this computer can open these. Bugaboo leaves them as they are, in case you set these rights on purpose. If nobody else should read them, remove the rights of the other accounts.",
+    ),
+    (
+        "status.data-folder.unknown",
+        "Bugaboo could not read the rights of these, so it cannot say whether other accounts can open them. Check them yourself:",
     ),
     ("status.database", "Database"),
     (

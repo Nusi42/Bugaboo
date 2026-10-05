@@ -35,6 +35,7 @@ fn app_with_probe(rig: &Rig, certificate: Option<Arc<ServedCertificate>>) -> axu
         )
         .with_log_checking(LogChecking {
             keep: std::time::Duration::ZERO,
+            rights_keep: std::time::Duration::ZERO,
             ..LogChecking::default()
         }),
     ));
@@ -229,14 +230,14 @@ async fn ops_08_the_status_page_follows_the_log_and_reuses_its_answer_until_some
             &rig,
             LogChecking {
                 keep: std::time::Duration::from_hours(1),
-                full_every: std::time::Duration::from_hours(24),
+                ..LogChecking::default()
             },
         );
         let always = probe_of(
             &rig,
             LogChecking {
                 keep: std::time::Duration::ZERO,
-                full_every: std::time::Duration::from_hours(24),
+                ..LogChecking::default()
             },
         );
         rig.admin("ada@example.test").await?;
@@ -391,14 +392,20 @@ async fn sec_16_the_status_page_shows_what_of_the_data_folder_is_too_open() -> O
         let rig = Rig::start(db, 10).await?;
         let data = crate::data_folder::DataFolder::prepare(&rig.folder.path().join("data"))?;
         let mut options = options(&rig, LimitsConfig::default(), true);
-        options.probe = ProbeHandle::new(Arc::new(Probe::new(
-            rig.database.clone(),
-            rig.seal.clone(),
-            DatabaseKind::BuiltIn,
-            None,
-            rig.services.log_writes(),
-            data.root().to_path_buf(),
-        )));
+        options.probe = ProbeHandle::new(Arc::new(
+            Probe::new(
+                rig.database.clone(),
+                rig.seal.clone(),
+                DatabaseKind::BuiltIn,
+                None,
+                rig.services.log_writes(),
+                data.root().to_path_buf(),
+            )
+            .with_log_checking(LogChecking {
+                rights_keep: std::time::Duration::ZERO,
+                ..LogChecking::default()
+            }),
+        ));
         let app = router(options);
         let mut ada = Browser::new(&app, &called());
         ada.send("POST", "/api/v1/auth/setup", Some(setup_body(&rig)))
@@ -423,6 +430,36 @@ async fn sec_16_the_status_page_shows_what_of_the_data_folder_is_too_open() -> O
             data.rights().backups.is_open(),
             "the rights were left as they are"
         );
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn sec_16_the_status_page_says_unknown_when_the_data_folder_cannot_be_looked_at() -> Outcome {
+    each_database("sec_16_status_unknown", async |db| {
+        let rig = Rig::start(db, 10).await?;
+        // The folder is not there to look at: the page must not say that all is well.
+        let probe = Probe::new(
+            rig.database.clone(),
+            rig.seal.clone(),
+            DatabaseKind::BuiltIn,
+            None,
+            rig.services.log_writes(),
+            rig.folder.path().join("no-such-data-folder"),
+        );
+        let rights = probe.snapshot().await.data_folder;
+        assert_eq!(rights, bb_app::status::DataFolderRights::unknown());
+        let mut options = options(&rig, LimitsConfig::default(), true);
+        options.probe = ProbeHandle::new(Arc::new(probe));
+        let app = router(options);
+        let mut ada = Browser::new(&app, &called());
+        ada.send("POST", "/api/v1/auth/setup", Some(setup_body(&rig)))
+            .await?;
+        let reply = ada.send("GET", STATUS, None).await?;
+        for part in ["folder", "database", "files", "backups", "setup_code_file"] {
+            assert_eq!(reply.body["data_folder_open"][part], "unknown", "{part}");
+        }
         Ok(())
     })
     .await

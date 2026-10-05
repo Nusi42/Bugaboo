@@ -12,6 +12,7 @@ use bb_api::tls::{ServedCertificate, TlsError, TlsSource, certificate_path, serv
 use bb_api::{
     HSTS_MAX_AGE_SELF_SIGNED, HSTS_MAX_AGE_TRUSTED, Incoming, ListenerOptions, Options, WebSource,
 };
+use bb_app::status::DataFolderRights;
 use bb_core::message::{self, Message};
 use tokio::net::TcpListener;
 
@@ -41,7 +42,7 @@ pub(super) async fn serve_settings(
     shutdown: impl Future<Output = ()> + Send + 'static,
 ) -> anyhow::Result<()> {
     let data = DataFolder::prepare(&settings.data_dir)?;
-    report_open_parts(&data);
+    report_open_parts(&data, data.rights(), &mut output::warning);
     let (listener_options, certificate) = listener_options(&settings, &data)?;
     let hsts_max_age = hsts_max_age(&settings);
     // The database, the keys and the sign-in services come first: when one of them fails the
@@ -107,15 +108,16 @@ pub(super) async fn serve_settings(
 }
 
 /// Says what of an existing data folder other accounts on this computer can open, in the log and on
-/// the console (SEC-16, M1-F65). Nothing is changed: a person may have made or moved the folder on
-/// purpose. The status page shows the same.
-fn report_open_parts(data: &DataFolder) {
-    for (part, sentence) in data.open_parts(data.rights()) {
+/// the console (SEC-16, M1-F65): `say` gets one sentence for each part. Nothing is changed: a
+/// person may have set the rights on purpose. The status page shows the same. What cannot be
+/// read is reported too, because a check that cannot look must not say that all is well.
+fn report_open_parts(data: &DataFolder, rights: DataFolderRights, say: &mut dyn FnMut(&str)) {
+    for (part, sentence) in data.open_parts(rights) {
         tracing::warn!(
             part,
-            "a part of the data folder can be opened by other accounts"
+            "a part of the data folder is open or could not be checked"
         );
-        output::warning(&sentence);
+        say(&sentence);
     }
 }
 
@@ -427,5 +429,33 @@ mod tests {
         assert!(!line.contains("secret") && !line.contains("db.example"));
         assert!(database_line(Some("sqlite:data.db")).contains("SQLite"));
         assert!(database_line(None).contains("built-in"));
+    }
+    #[test]
+    fn sec_16_the_start_reports_what_is_too_open_and_what_could_not_be_checked() {
+        let folder = tempfile::tempdir().unwrap();
+        let data = DataFolder::prepare(&folder.path().join("data")).unwrap();
+        let mut told = Vec::new();
+        report_open_parts(&data, DataFolderRights::default(), &mut |text| {
+            told.push(text.to_owned());
+        });
+        assert!(
+            told.is_empty(),
+            "a private folder is not reported: {told:?}"
+        );
+
+        let rights = DataFolderRights {
+            files: bb_app::status::Access::Open,
+            backups: bb_app::status::Access::Unknown,
+            ..DataFolderRights::default()
+        };
+        report_open_parts(&data, rights, &mut |text| told.push(text.to_owned()));
+        assert_eq!(told.len(), 2, "{told:?}");
+        assert!(
+            told[0].starts_with("The folder for attachments "),
+            "{told:?}"
+        );
+        assert!(told[0].contains("can be opened"), "{told:?}");
+        assert!(told[1].starts_with("The folder for backups "), "{told:?}");
+        assert!(told[1].contains("could not be checked"), "{told:?}");
     }
 }

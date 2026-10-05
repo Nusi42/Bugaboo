@@ -10,7 +10,8 @@ use std::time::{Duration, Instant};
 use bb_api::tls::ServedCertificate;
 use bb_app::ports::BoxFuture;
 use bb_app::status::{
-    CertificateState, DatabaseKind, LogBreak, LogState, LogWrites, ServerProbe, Snapshot,
+    CertificateState, DataFolderRights, DatabaseKind, LogBreak, LogState, LogWrites, ServerProbe,
+    Snapshot,
 };
 use bb_core::security_log::Digest;
 use bb_store::{BreakReason, Database, LogSeal, Verification};
@@ -32,6 +33,9 @@ pub(crate) struct LogChecking {
     /// How often the whole log is read again, so that an old entry that was changed is found
     /// within a day also by the page, not only by the command.
     pub(crate) full_every: Duration,
+    /// How long the rights of the data folder are kept: looking at them can start a system tool
+    /// for each part (Windows), which a page that people open often must not do every time.
+    pub(crate) rights_keep: Duration,
 }
 
 impl Default for LogChecking {
@@ -39,6 +43,7 @@ impl Default for LogChecking {
         Self {
             keep: Duration::from_secs(5),
             full_every: Duration::from_hours(24),
+            rights_keep: Duration::from_mins(1),
         }
     }
 }
@@ -78,6 +83,7 @@ pub(crate) struct Probe {
     data_folder: PathBuf,
     log_checking: LogChecking,
     log_memory: Mutex<LogMemory>,
+    rights_memory: Mutex<Option<(Instant, DataFolderRights)>>,
     started: Instant,
     started_at: Timestamp,
 }
@@ -101,6 +107,7 @@ impl Probe {
             data_folder,
             log_checking: LogChecking::default(),
             log_memory: Mutex::new(LogMemory::default()),
+            rights_memory: Mutex::new(None),
             started: Instant::now(),
             started_at: Timestamp::now(),
         }
@@ -111,6 +118,28 @@ impl Probe {
     pub(crate) fn with_log_checking(mut self, checking: LogChecking) -> Self {
         self.log_checking = checking;
         self
+    }
+
+    /// What of the data folder other accounts can open. Looked at on a thread of its own (it reads
+    /// files and may start a system tool) and kept for a short time. A look that fails is
+    /// *unknown* for every part, never private.
+    async fn check_rights(&self) -> DataFolderRights {
+        let mut memory = self.rights_memory.lock().await;
+        let now = Instant::now();
+        if let Some((at, rights)) = *memory
+            && now.duration_since(at) < self.log_checking.rights_keep
+        {
+            return rights;
+        }
+        let folder = self.data_folder.clone();
+        let rights = tokio::task::spawn_blocking(move || {
+            DataFolder::existing(&folder)
+                .map_or_else(DataFolderRights::unknown, |data| data.rights())
+        })
+        .await
+        .unwrap_or_else(|_| DataFolderRights::unknown());
+        *memory = Some((now, rights));
+        rights
     }
 
     /// Checks the security log as the status page does: from the end of the last good check, and
@@ -223,9 +252,7 @@ impl ServerProbe for Probe {
                 certificate,
                 security_log,
                 log_write_failures: self.log_writes.failed(),
-                data_folder: DataFolder::existing(&self.data_folder)
-                    .map(|folder| folder.rights())
-                    .unwrap_or_default(),
+                data_folder: self.check_rights().await,
             }
         })
     }

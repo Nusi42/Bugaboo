@@ -8,6 +8,7 @@ import {
   levelOf,
   openParts,
   serverNow,
+  unknownParts,
 } from "./status.ts";
 
 type State = Schema<"ServerStatusBody">;
@@ -96,6 +97,16 @@ describe("sec_15 and ops_08 what the page makes of the server", () => {
     expect(openParts(healthy().data_folder_open)).toEqual([]);
     expect(openParts(open)).toEqual(["database", "backups"]);
     expect(levelOf({ ...healthy(), data_folder_open: open }, NOW)).toBe("warning");
+  });
+
+  it("asks for a look, and never says all is well, when the rights could not be read", () => {
+    const unknown: State["data_folder_open"] = {
+      ...healthy().data_folder_open,
+      files: "unknown",
+    };
+    expect(openParts(unknown)).toEqual([]);
+    expect(unknownParts(unknown)).toEqual(["files"]);
+    expect(levelOf({ ...healthy(), data_folder_open: unknown }, NOW)).toBe("warning");
   });
 
   it("takes the time of the server from when it started and how long it has run", () => {

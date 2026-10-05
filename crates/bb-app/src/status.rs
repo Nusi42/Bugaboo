@@ -103,6 +103,9 @@ pub enum Access {
     Private,
     /// Other accounts can open it: too open.
     Open,
+    /// The rights could not be read (the system tool failed, or its answer was not understood).
+    /// It is never taken for private.
+    Unknown,
 }
 
 impl Access {
@@ -116,6 +119,16 @@ impl Access {
     #[must_use]
     pub const fn is_open(self) -> bool {
         matches!(self, Self::Open)
+    }
+
+    /// The one of the two that needs more attention: open before unknown before private.
+    #[must_use]
+    pub const fn worse(self, other: Self) -> Self {
+        match (self, other) {
+            (Self::Open, _) | (_, Self::Open) => Self::Open,
+            (Self::Unknown, _) | (_, Self::Unknown) => Self::Unknown,
+            _ => Self::Private,
+        }
     }
 }
 
@@ -136,6 +149,28 @@ pub struct DataFolderRights {
 }
 
 impl DataFolderRights {
+    /// Nothing could be read: every part is unknown.
+    #[must_use]
+    pub const fn unknown() -> Self {
+        Self {
+            folder: Access::Unknown,
+            database: Access::Unknown,
+            files: Access::Unknown,
+            backups: Access::Unknown,
+            setup_code_file: Access::Unknown,
+        }
+    }
+
+    /// Whether the rights of anything could not be read.
+    #[must_use]
+    pub const fn any_unknown(&self) -> bool {
+        matches!(self.folder, Access::Unknown)
+            || matches!(self.database, Access::Unknown)
+            || matches!(self.files, Access::Unknown)
+            || matches!(self.backups, Access::Unknown)
+            || matches!(self.setup_code_file, Access::Unknown)
+    }
+
     /// Whether anything is too open.
     #[must_use]
     pub const fn any(&self) -> bool {

@@ -6,7 +6,7 @@ import type { ReactNode } from "react";
 import { daysUntil, formatDate, formatDateTime, splitUptime } from "../../shared/format.ts";
 import styles from "./Admin.module.css";
 import { LogStatus } from "./LogStatus.tsx";
-import { CERTIFICATE_WARNING_DAYS, openParts, serverNow } from "./status.ts";
+import { CERTIFICATE_WARNING_DAYS, openParts, serverNow, unknownParts } from "./status.ts";
 
 type State = Schema<"ServerStatusBody">;
 
@@ -34,20 +34,39 @@ const partNames: Readonly<Record<keyof State["data_folder_open"], MessageKey>> =
   setup_code_file: "data-folder.part.setup-code-file",
 };
 
-/** What of the data folder other accounts on this computer can open, or that nothing is. */
-function DataFolderRights({ open }: { readonly open: State["data_folder_open"] }) {
-  const parts = openParts(open);
-  if (parts.length === 0) {
-    return <span>{t("status.data-folder.closed")}</span>;
-  }
+/** The parts of the data folder under a sentence that says why they are listed. */
+function Parts({
+  parts,
+  heading,
+}: {
+  readonly parts: readonly (keyof State["data_folder_open"])[];
+  readonly heading: string;
+}) {
   return (
     <>
-      <Alert warning>{t("status.data-folder.open")}</Alert>
+      <Alert warning>{heading}</Alert>
       <ul className={styles.list}>
         {parts.map((part) => (
           <li key={part}>{t(partNames[part])}</li>
         ))}
       </ul>
+    </>
+  );
+}
+
+/** What of the data folder other accounts on this computer can open, or that nothing is. */
+function DataFolderRights({ open }: { readonly open: State["data_folder_open"] }) {
+  const opened = openParts(open);
+  const unknown = unknownParts(open);
+  if (opened.length === 0 && unknown.length === 0) {
+    return <span>{t("status.data-folder.closed")}</span>;
+  }
+  return (
+    <>
+      {opened.length === 0 ? null : <Parts parts={opened} heading={t("status.data-folder.open")} />}
+      {unknown.length === 0 ? null : (
+        <Parts parts={unknown} heading={t("status.data-folder.unknown")} />
+      )}
     </>
   );
 }

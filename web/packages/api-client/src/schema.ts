@@ -549,7 +549,7 @@ export interface components {
      * @description Whether other accounts on this computer can open a part of the data folder.
      * @enum {string}
      */
-    AccessBody: "private" | "open";
+    AccessBody: "private" | "open" | "unknown";
     /** @description A passkey the device made, with the name the person gives it. */
     AddPasskeyBody: {
       /** @description The challenge that was answered. */

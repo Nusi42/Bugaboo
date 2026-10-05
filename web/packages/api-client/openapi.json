@@ -2739,7 +2739,7 @@
       "AccessBody": {
         "type": "string",
         "description": "Whether other accounts on this computer can open a part of the data folder.",
-        "enum": ["private", "open"]
+        "enum": ["private", "open", "unknown"]
       },
       "AddPasskeyBody": {
         "type": "object",

@@ -24,16 +24,22 @@ export function hasWriteFailures(log: SecurityLog): boolean {
   return log.write_failures > 0;
 }
 
+const dataFolderParts: readonly (keyof DataFolderOpen)[] = [
+  "folder",
+  "database",
+  "files",
+  "backups",
+  "setup_code_file",
+];
+
 /** The parts of the data folder that other accounts on this computer can open (SEC-16, M1-F65). */
 export function openParts(open: DataFolderOpen): readonly (keyof DataFolderOpen)[] {
-  const parts: readonly (keyof DataFolderOpen)[] = [
-    "folder",
-    "database",
-    "files",
-    "backups",
-    "setup_code_file",
-  ];
-  return parts.filter((part) => open[part] === "open");
+  return dataFolderParts.filter((part) => open[part] === "open");
+}
+
+/** The parts whose rights the server could not read: never taken for private. */
+export function unknownParts(open: DataFolderOpen): readonly (keyof DataFolderOpen)[] {
+  return dataFolderParts.filter((part) => open[part] === "unknown");
 }
 
 /**
@@ -64,6 +70,7 @@ export function levelOf(state: State, nowMs: number): Level {
     isUnanchored(log) ||
     hasWriteFailures(log) ||
     openParts(state.data_folder_open).length > 0 ||
+    unknownParts(state.data_folder_open).length > 0 ||
     (days !== null && days < CERTIFICATE_WARNING_DAYS)
   ) {
     return "warning";

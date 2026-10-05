@@ -480,6 +480,10 @@ export const messages = {
     "Take over a data folder that holds only your own files in its tls folder, such as a certificate you put there before the first start",
   "setup.database-url-password":
     "The database address on the command line has a password in it, and other people on this computer can read the command line, for example in the list of running programs. This time the address is saved in {file}. Next time answer the database question of setup instead of using the option, or set the environment variable {variable}.",
+  "data-folder.unknown":
+    "{part} {path} could not be checked, because Bugaboo could not read its access rights. Check them yourself: other accounts on this computer should not be able to open it, unless you want that.",
+  "status.data-folder.unknown":
+    "Bugaboo could not read the rights of these, so it cannot say whether other accounts can open them. Check them yourself:",
 } as const;
 
 export type MessageKey = keyof typeof messages;
@@ -510,6 +514,7 @@ export interface MessageArguments {
   "data-folder.open": { part: string | number; path: string | number };
   "data-folder.own-certificate": { flag: string | number; path: string | number };
   "data-folder.protect-failed": { path: string | number; reason: string | number };
+  "data-folder.unknown": { part: string | number; path: string | number };
   "first-run.step-of": { name: string | number; step: string | number; total: string | number };
   "home.title": { name: string | number };
   "invitation.intro": { email: string | number };
