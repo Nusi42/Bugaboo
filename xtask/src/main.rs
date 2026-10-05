@@ -55,8 +55,8 @@ enum Command {
     },
     /// Start the Vite dev server and the Bugaboo server on the ports from tools/dev/ports.json.
     Dev {
-        /// Start on a fresh sample organization (50 fictional people; the passwords are in
-        /// target/dev-sample/sign-in.txt).
+        /// Start on a fresh sample organization (50 fictional people; the program says where
+        /// the passwords are).
         #[arg(long)]
         sample: bool,
     },
@@ -116,15 +116,15 @@ enum DatasetKind {
         /// The number the sample is made from (default 42).
         #[arg(long)]
         seed: Option<u64>,
-        /// Which database to make it on.
-        #[arg(long, value_enum, default_value = "sqlite")]
-        database: DatabaseChoice,
-        /// The folder for the data folder and the sign-in details (default target/sample, or
-        /// target/sample-postgres on PostgreSQL).
-        #[arg(long)]
+        /// Which database to make it on (default sqlite).
+        #[arg(long, value_enum, conflicts_with = "check")]
+        database: Option<DatabaseChoice>,
+        /// The folder for the data folder and the sign-in details (default: the folder that
+        /// tools/dev/sample.json names).
+        #[arg(long, conflicts_with = "check")]
         out: Option<PathBuf>,
         /// Instead: make it twice on each database and check that the dumps are the same and
-        /// fictional (TEST-SAMPLE-DATA).
+        /// fictional (TEST-SAMPLE-DATA). It always uses both databases and its own folders.
         #[arg(long)]
         check: bool,
     },
@@ -249,7 +249,7 @@ fn run() -> anyhow::Result<ExitCode> {
         } => {
             let request = dataset::Request {
                 seed,
-                database: match database {
+                database: match database.unwrap_or(DatabaseChoice::Sqlite) {
                     DatabaseChoice::Sqlite => dataset::DatabaseKind::Sqlite,
                     DatabaseChoice::Postgres => dataset::DatabaseKind::Postgres,
                 },
@@ -310,4 +310,29 @@ fn commit_msg(file: &std::path::Path) -> anyhow::Result<ExitCode> {
     } else {
         ExitCode::FAILURE
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn parses(arguments: &[&str]) -> bool {
+        Cli::try_parse_from(
+            ["xtask", "dataset", "sample"]
+                .into_iter()
+                .chain(arguments.iter().copied()),
+        )
+        .is_ok()
+    }
+
+    #[test]
+    fn the_check_makes_its_own_runs_and_refuses_a_database_or_a_folder() {
+        assert!(parses(&["--check"]));
+        assert!(parses(&["--check", "--seed", "7"]));
+        assert!(!parses(&["--check", "--database", "postgres"]));
+        assert!(!parses(&["--check", "--out", "somewhere"]));
+        // Without --check both are fine.
+        assert!(parses(&["--database", "postgres", "--out", "somewhere"]));
+        assert!(parses(&[]));
+    }
 }
