@@ -214,10 +214,14 @@ async fn health_ready(State(state): State<AppState>) -> Response {
     };
     let word = |ok: bool| if ok { "ok" } else { "failed" };
     let ready = folder && database != Some(false);
-    let mut checks = format!(r#""data_folder":"{}""#, word(folder));
-    if let Some(ok) = database {
-        checks.push_str(&format!(r#","database":"{}""#, word(ok)));
-    }
+    let checks = match database {
+        Some(ok) => format!(
+            r#""data_folder":"{}","database":"{}""#,
+            word(folder),
+            word(ok)
+        ),
+        None => format!(r#""data_folder":"{}""#, word(folder)),
+    };
     let status = if ready { "ok" } else { "unavailable" };
     json(
         if ready {
