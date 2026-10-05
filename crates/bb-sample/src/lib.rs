@@ -34,7 +34,7 @@ mod tests;
 
 pub use clock::SampleClock;
 pub use dump::Dump;
-pub use error::SampleError;
+pub use error::{SampleError, Step};
 pub use folder::{DATA_FOLDER, DUMP_FILE, MARKER_FILE, Output, SIGN_IN_FILE};
 pub use generate::{
     DEFAULT_SEED, Later, MadePerson, NothingMore, Options, STEP_SECONDS, Sample, Target, World,

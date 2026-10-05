@@ -26,7 +26,7 @@ use bb_store::{
 use jiff::Timestamp;
 
 use crate::clock::SampleClock;
-use crate::error::SampleError;
+use crate::error::{SampleError, Step};
 use crate::limits::Unlimited;
 use crate::names::NameList;
 use crate::password::random_password;
@@ -139,12 +139,11 @@ impl Sample {
             Verification::Valid {
                 entries, anchored, ..
             } if anchored || entries == 0 => Ok(entries),
-            Verification::Valid { .. } => Err(SampleError::LogBroken(
-                "nothing vouches for the end of the log".to_owned(),
-            )),
-            Verification::Broken { seq, reason } => {
-                Err(SampleError::LogBroken(format!("{reason:?} at entry {seq}")))
-            }
+            Verification::Valid { .. } => Err(SampleError::LogNotAnchored),
+            Verification::Broken { seq, reason } => Err(SampleError::LogBroken {
+                seq,
+                reason: format!("{reason:?}"),
+            }),
         }
     }
 
@@ -218,7 +217,7 @@ pub async fn make<L: Later>(
     let services = AuthServices::new(
         storage.clone(),
         clock.clone(),
-        PasswordHasher::new().map_err(|error| SampleError::step("password hasher", &error))?,
+        PasswordHasher::new().map_err(|error| SampleError::step(Step::PasswordHasher, &error))?,
         // Passkeys come later (AUTH-08, PRIV-04 and the sample of M3 on).
         None,
         csrf,
@@ -295,11 +294,8 @@ async fn first_administrator(
 ) -> Result<Started, SampleError> {
     let code = issue_setup_code(&services.ctx(request()), IssueSetupCode)
         .await
-        .map_err(|error| SampleError::step("setup code", &error))?
-        .ok_or_else(|| SampleError::Step {
-            step: "setup code",
-            reason: "setup was closed already".to_owned(),
-        })?;
+        .map_err(|error| SampleError::step(Step::SetupCode, &error))?
+        .ok_or(SampleError::SetupClosed)?;
     let api: &dyn AuthApi = services;
     api.complete_setup(
         request(),
@@ -312,7 +308,7 @@ async fn first_administrator(
         },
     )
     .await
-    .map_err(|error| SampleError::step("first administrator", &error))
+    .map_err(|error| SampleError::step(Step::FirstAdministrator, &error))
 }
 
 /// Makes a person as the administrator does: an invitation, and the person accepting it.
@@ -331,7 +327,7 @@ async fn invited(
             },
         )
         .await
-        .map_err(|error| SampleError::step("invitation", &error))?;
+        .map_err(|error| SampleError::step(Step::Invitation, &error))?;
     api.accept_invitation(
         request(),
         AcceptInvitation {
@@ -342,7 +338,7 @@ async fn invited(
         },
     )
     .await
-    .map_err(|error| SampleError::step("accepting the invitation", &error))
+    .map_err(|error| SampleError::step(Step::AcceptingInvitation, &error))
 }
 
 /// Ends the session, so nobody of the sample is signed in when it is done.
@@ -350,13 +346,13 @@ async fn sign_out(api: &dyn AuthApi, session_token: String) -> Result<(), Sample
     api.sign_out(request(), SignOut { session_token })
         .await
         .map(|_| ())
-        .map_err(|error| SampleError::step("signing out", &error))
+        .map_err(|error| SampleError::step(Step::SigningOut, &error))
 }
 
 /// A moment `seconds` after (or, negative, before) `from`.
 fn moment(from: Timestamp, seconds: i64) -> Result<Timestamp, SampleError> {
     Timestamp::from_second(from.as_second().saturating_add(seconds))
-        .map_err(|error| SampleError::step("dates", &error))
+        .map_err(|error| SampleError::step(Step::Dates, &error))
 }
 
 /// The database with what the use cases need around it.
@@ -404,7 +400,7 @@ async fn add_code_app(
     person: UserId,
     password: &str,
 ) -> Result<String, SampleError> {
-    let step = "code app";
+    let step = Step::CodeApp;
     let setup = api
         .start_code_app(
             request(),
@@ -419,10 +415,7 @@ async fn add_code_app(
     let stored = storage
         .totp_secret(person)
         .await?
-        .ok_or_else(|| SampleError::Step {
-            step,
-            reason: "the secret was not stored".to_owned(),
-        })?;
+        .ok_or(SampleError::SecretNotStored)?;
     let code = TotpSecret::from_bytes(&stored)
         .code_at(clock.now())
         .map_err(|error| SampleError::step(step, &error))?;

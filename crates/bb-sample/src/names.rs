@@ -35,20 +35,16 @@ impl NameList {
     pub fn parse(text: &str) -> Result<Self, SampleError> {
         let list: Self =
             toml::from_str(text).map_err(|error| SampleError::Names(error.to_string()))?;
-        for (what, names) in [("first", &list.first), ("last", &list.last)] {
+        for names in [&list.first, &list.last] {
             let distinct: BTreeSet<&String> = names.iter().collect();
             if names.is_empty() || distinct.len() != names.len() {
-                return Err(SampleError::Names(format!(
-                    "the {what} names are empty or repeat a name"
-                )));
+                return Err(SampleError::NamesRepeated);
             }
             if let Some(odd) = names
                 .iter()
                 .find(|name| name.is_empty() || !name.chars().all(|c| c.is_ascii_alphabetic()))
             {
-                return Err(SampleError::Names(format!(
-                    "`{odd}` has other characters than the letters a to z"
-                )));
+                return Err(SampleError::NameNotLetters(odd.clone()));
             }
         }
         Ok(list)
@@ -92,28 +88,19 @@ mod tests {
 
     #[test]
     fn a_list_with_a_repeated_or_odd_name_is_refused() {
-        let error = |text: &str| NameList::parse(text).unwrap_err().to_string();
-        assert!(
-            error(
-                r#"first = ["Ana", "Ana"]
-last = ["Moreno"]"#
-            )
-            .contains("repeat")
-        );
-        assert!(
-            error(
-                r#"first = ["Ana"]
-last = []"#
-            )
-            .contains("empty")
-        );
-        assert!(
-            error(
-                r#"first = ["Zoë"]
-last = ["Moreno"]"#
-            )
-            .contains("letters")
-        );
-        assert!(error("not toml at all").contains("expected"));
+        let error = |text: &str| NameList::parse(text).unwrap_err();
+        assert!(matches!(
+            error("first = [\"Ana\", \"Ana\"]\nlast = [\"Moreno\"]"),
+            SampleError::NamesRepeated
+        ));
+        assert!(matches!(
+            error("first = [\"Ana\"]\nlast = []"),
+            SampleError::NamesRepeated
+        ));
+        assert!(matches!(
+            error("first = [\"Zo\u{eb}\"]\nlast = [\"Moreno\"]"),
+            SampleError::NameNotLetters(name) if name == "Zo\u{eb}"
+        ));
+        assert!(matches!(error("not toml at all"), SampleError::Names(_)));
     }
 }

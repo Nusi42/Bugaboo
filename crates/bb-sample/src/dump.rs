@@ -115,10 +115,7 @@ impl Sample {
                 .storage
                 .account_by_email(&made.person.email)
                 .await?
-                .ok_or_else(|| SampleError::Step {
-                    step: "dump",
-                    reason: "a person of the plan has no account".to_owned(),
-                })?;
+                .ok_or(SampleError::PersonMissing)?;
             // The label counts the person at the moment they first show up in the dump.
             let _ = labels.label("person", account.person.id.to_bytes());
             let code_app = self

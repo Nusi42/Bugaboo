@@ -138,9 +138,7 @@ pub fn roster(seed: u64, names: &NameList) -> Result<Vec<SamplePerson>, SampleEr
     while people.len() < PEOPLE {
         tries += 1;
         let (Some(role), true) = (roles.last().copied(), tries < PEOPLE * 1000) else {
-            return Err(SampleError::Names(
-                "the list is too short for 50 different people".to_owned(),
-            ));
+            return Err(SampleError::TooFewNames);
         };
         let first = &names.first()[random.below(names.first().len())];
         let last = &names.last()[random.below(names.last().len())];
