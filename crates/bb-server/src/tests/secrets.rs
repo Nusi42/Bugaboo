@@ -249,3 +249,36 @@ async fn sec_16_exported_keys_are_for_the_owner_and_the_administrators_on_window
     assert!(!listing.contains("(I)"), "{listing}");
     Ok(())
 }
+
+#[test]
+fn sec_16_the_hint_repeats_the_arguments_that_were_given() {
+    let none = StoreArgs::default();
+    let placeholder = command_line("rotate-key", &none, None);
+    assert_eq!(
+        placeholder,
+        "bugaboo rotate-key --config <the settings file of the service>"
+    );
+    let config = StoreArgs {
+        config: Some(Path::new("/etc/bugaboo/bugaboo.toml").to_path_buf()),
+        ..StoreArgs::default()
+    };
+    assert_eq!(
+        command_line("security-log verify", &config, None),
+        "bugaboo security-log verify --config /etc/bugaboo/bugaboo.toml"
+    );
+    // The data folder that was named is named again, and a database address never is: it can
+    // hold a password.
+    let data = StoreArgs {
+        data_dir: Some("/var/lib/bugaboo".to_owned()),
+        database_url: Some("postgres://bugaboo:secret@db/bugaboo".to_owned()),
+        ..StoreArgs::default()
+    };
+    let hint = command_line("rotate-key", &data, None);
+    assert_eq!(hint, "bugaboo rotate-key --data-dir /var/lib/bugaboo");
+    assert!(!hint.contains("secret"), "{hint}");
+    // The target folder of an export is part of the command, quoted when it has a space.
+    assert_eq!(
+        command_line("keys export", &config, Some(Path::new("/srv/key backup"))),
+        "bugaboo keys export \"/srv/key backup\" --config /etc/bugaboo/bugaboo.toml"
+    );
+}

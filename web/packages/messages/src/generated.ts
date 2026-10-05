@@ -450,6 +450,7 @@ export const messages = {
     "The settings file {path} is inside the data folder, which the service account can write to. Move the file out of the data folder, so that the service cannot change its own settings.",
   "service.settings-folder-open":
     "The folder {path} that holds the settings file can be changed by other accounts. Keep the settings file in a folder that only administrators can change, for example /etc/bugaboo.",
+  "keys.settings-placeholder": "--config <the settings file of the service>",
 } as const;
 
 export type MessageKey = keyof typeof messages;

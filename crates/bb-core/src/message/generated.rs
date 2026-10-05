@@ -399,6 +399,9 @@ pub const INVITATIONS_TAKEN_BACK: MessageKey = MessageKey::new("invitations.take
 /// The message `invitations.title`.
 pub const INVITATIONS_TITLE: MessageKey = MessageKey::new("invitations.title");
 
+/// The message `keys.settings-placeholder`.
+pub const KEYS_SETTINGS_PLACEHOLDER: MessageKey = MessageKey::new("keys.settings-placeholder");
+
 /// The message `nav.home`.
 pub const NAV_HOME: MessageKey = MessageKey::new("nav.home");
 
@@ -2156,6 +2159,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "keys.rotated",
         "Made a new master key and used it for {secrets, plural, one {# stored secret} other {# stored secrets}}. Back up the key files again.",
+    ),
+    (
+        "keys.settings-placeholder",
+        "--config <the settings file of the service>",
     ),
     ("nav.home", "Home"),
     ("nav.invitations", "Invitations"),

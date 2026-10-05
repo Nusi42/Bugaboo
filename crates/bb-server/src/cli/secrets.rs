@@ -36,6 +36,43 @@ fn unusable_key(keys: &Path) -> Option<PathBuf> {
         })
 }
 
+/// A word of a command line, in quotes when it has a space.
+fn word(text: &str) -> String {
+    if text.contains(char::is_whitespace) {
+        format!("\"{text}\"")
+    } else {
+        text.to_owned()
+    }
+}
+
+/// The command a person types to do again what they typed, as the right account: the arguments
+/// that were given (the settings file and the data folder, and the `folder` of an export). A
+/// database address is left out, because it can hold a password. When nothing names the
+/// installation, the words say that the settings file of the service is meant.
+fn command_line(command: &str, args: &StoreArgs, folder: Option<&Path>) -> String {
+    let mut line = format!("bugaboo {command}");
+    if let Some(folder) = folder {
+        line.push(' ');
+        line.push_str(&word(&folder.display().to_string()));
+    }
+    let mut named = false;
+    if let Some(config) = &args.config {
+        line.push_str(" --config ");
+        line.push_str(&word(&config.display().to_string()));
+        named = true;
+    }
+    if let Some(data_dir) = &args.data_dir {
+        line.push_str(" --data-dir ");
+        line.push_str(&word(data_dir));
+        named = true;
+    }
+    if !named {
+        line.push(' ');
+        line.push_str(&Message::from(message::KEYS_SETTINGS_PLACEHOLDER).render());
+    }
+    line
+}
+
 /// What a person types to run `command` as `owner`, in the way of this system.
 fn how_to_run(command: &str, owner: &str) -> Message {
     #[cfg(windows)]
@@ -55,12 +92,9 @@ fn require_own_installation(
     data: &DataFolder,
     args: &StoreArgs,
     command: &str,
+    folder: Option<&Path>,
 ) -> anyhow::Result<()> {
-    let config = args.config.as_deref().map_or_else(
-        || "<the settings file of the service>".to_owned(),
-        |file| file.display().to_string(),
-    );
-    let command = format!("bugaboo {command} --config {config}");
+    let command = command_line(command, args, folder);
     if let Some(owner) = other_owner(data.root()) {
         let how = how_to_run(&command, &owner).render();
         return Err(anyhow!(
@@ -77,14 +111,18 @@ fn require_own_installation(
 }
 
 /// The installation the command works on, found from the settings, and its opened store.
-async fn open(args: &StoreArgs, command: &str) -> anyhow::Result<(Settings, Store)> {
+async fn open(
+    args: &StoreArgs,
+    command: &str,
+    folder: Option<&Path>,
+) -> anyhow::Result<(Settings, Store)> {
     let settings = load_settings(args.config.as_deref(), &args.settings(), false)?;
     // A built-in database that is not there means the data folder is the wrong one: opening it
     // would make a new, empty database.
     let data = DataFolder::existing(&settings.data_dir)
         .filter(|data| settings.database_url.is_some() || data.database_file().is_file())
         .ok_or_else(|| anyhow!(message::cli_no_data(settings.data_dir.display()).render()))?;
-    require_own_installation(&data, args, command)?;
+    require_own_installation(&data, args, command, folder)?;
     let store = wiring::open_store(&settings, &data).await?;
     Ok((settings, store))
 }
@@ -105,7 +143,7 @@ const fn reason_key(reason: LogBreak) -> MessageKey {
 /// what the last entry is, so the person can keep a copy of it to compare later. A log with
 /// entries and no anchor is a warning (nothing vouches for its end); a broken chain is an error.
 pub(super) async fn verify_security_log(args: &StoreArgs) -> anyhow::Result<()> {
-    let (_, store) = open(args, "security-log verify").await?;
+    let (_, store) = open(args, "security-log verify", None).await?;
     let result = store.database.verify_security_log(&store.seal).await;
     if let Err(error) = &result {
         return Err(anyhow!("{error}"))
@@ -145,7 +183,7 @@ fn summarize(state: &LogState) -> anyhow::Result<()> {
 /// `bugaboo rotate-key`: adds a new master key, wraps every stored secret with it and drops the
 /// old keys that nothing uses any more.
 pub(super) async fn rotate_key(args: &StoreArgs) -> anyhow::Result<()> {
-    let (_, store) = open(args, "rotate-key").await?;
+    let (_, store) = open(args, "rotate-key", None).await?;
     let secrets = store
         .database
         .rotate_master_key(&store.keys, Timestamp::now())
@@ -159,7 +197,7 @@ pub(super) async fn rotate_key(args: &StoreArgs) -> anyhow::Result<()> {
 /// private before the key goes in; a copy that is already there is never replaced, and a run that
 /// meets one takes back what it made.
 pub(super) async fn export_keys(args: &StoreArgs, folder: &Path) -> anyhow::Result<()> {
-    let (_, store) = open(args, "keys export").await?;
+    let (_, store) = open(args, "keys export", Some(folder)).await?;
     copy_keys(&store.keys.backup_files(), folder)?;
     output::line(&message::keys_exported(folder.display()).render());
     Ok(())
