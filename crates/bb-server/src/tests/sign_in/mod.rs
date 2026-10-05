@@ -19,6 +19,7 @@ mod policy_probes;
 mod policy_rig;
 mod policy_rules;
 mod projects;
+mod projects_agree;
 mod projects_http;
 mod projects_review;
 mod rig;
