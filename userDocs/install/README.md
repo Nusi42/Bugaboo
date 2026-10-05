@@ -42,6 +42,8 @@ Bugaboo keeps secrets in its database, such as the keys of code apps. The key fi
 bugaboo keys export <folder>
 ```
 
+The folder can be on a USB stick. A stick with the file system FAT32 or exFAT cannot keep the copies private to you: anybody who gets the stick can read them. Keep it somewhere safe.
+
 ### When Bugaboo runs as a service
 
 The key files, the database and the security log belong to the account of the service. The commands `bugaboo keys export`, `bugaboo rotate-key` and `bugaboo security-log verify` therefore check which account runs them. On Linux they refuse to run from another account (root included), and say so: a command from another account could leave files that the service can no longer read. Run them as the account of the service, and name the settings file of the service with `--config`:

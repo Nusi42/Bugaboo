@@ -385,15 +385,51 @@ fn write_private_with(
             write(&mut file)?;
             std::io::Write::flush(&mut file)
         })
-        .and_then(|()| match existing {
-            Existing::Replace => std::fs::rename(&staged, path),
-            // A hard link fails when the target is there, and never replaces it.
-            Existing::Refuse => std::fs::hard_link(&staged, path),
+        .and_then(|()| {
+            place(&staged, path, existing, |from, to| {
+                std::fs::hard_link(from, to)
+            })
         });
     // Whatever happened, nothing stays in the folder of the file but the file itself.
     let _ = std::fs::remove_file(&staged);
     let _ = std::fs::remove_dir(&staging);
     placed
+}
+
+/// Moves the staged file to `target`. Replacing is a rename. Never replacing is a hard link,
+/// which fails when the target is there. A drive without hard links (FAT32, exFAT, some network
+/// drives) makes `link` fail for another reason: then the file is made new in the target with
+/// `create_new`, which fails when the target is there as well. Such drives have no access lists
+/// to keep, so nothing of the privacy of the file is lost (on Windows it is made private where the
+/// drive allows).
+fn place(
+    staged: &Path,
+    target: &Path,
+    existing: Existing,
+    link: impl FnOnce(&Path, &Path) -> std::io::Result<()>,
+) -> std::io::Result<()> {
+    match existing {
+        Existing::Replace => std::fs::rename(staged, target),
+        Existing::Refuse => match link(staged, target) {
+            Err(error) if error.kind() != std::io::ErrorKind::AlreadyExists => {
+                copy_new(staged, target)
+            }
+            other => other,
+        },
+    }
+}
+
+/// Copies `from` to a file that is new at `to`, and takes it back if the copy fails.
+fn copy_new(from: &Path, to: &Path) -> std::io::Result<()> {
+    let mut source = std::fs::File::open(from)?;
+    let mut target = open_new_where_allowed(to)?;
+    let copied =
+        std::io::copy(&mut source, &mut target).and_then(|_| std::io::Write::flush(&mut target));
+    drop(target);
+    if copied.is_err() {
+        let _ = std::fs::remove_file(to);
+    }
+    copied
 }
 
 /// How many names are tried for the staging folder before giving up.
@@ -464,6 +500,23 @@ fn create_owner_only_folder(folder: &Path) -> std::io::Result<()> {
         let _ = std::fs::remove_dir(folder);
     }
     made
+}
+
+/// A new file in the target of an export on a drive without hard links: for the owner only where
+/// the drive can say so (on Windows a drive without access lists, such as FAT32, cannot).
+#[cfg(unix)]
+fn open_new_where_allowed(path: &Path) -> std::io::Result<std::fs::File> {
+    open_private(path)
+}
+
+#[cfg(windows)]
+fn open_new_where_allowed(path: &Path) -> std::io::Result<std::fs::File> {
+    let file = std::fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(path)?;
+    let _ = restrict_file(path);
+    Ok(file)
 }
 
 /// A new file for the owner only, in a folder that is for the owner only.
@@ -745,6 +798,31 @@ mod tests {
         let listing = String::from_utf8_lossy(&output.stdout).into_owned();
         assert_eq!(listing.matches(":(").count(), 1, "{listing}");
         assert!(!listing.contains("(I)"), "{listing}");
+    }
+
+    #[test]
+    fn sec_16_without_hard_links_a_new_file_is_made_in_the_target() {
+        let temp = tempfile::tempdir().unwrap();
+        let staged = temp.path().join("staged.txt");
+        std::fs::write(&staged, "the secret").unwrap();
+        let target = temp.path().join("target.txt");
+        // A drive without hard links (FAT32, exFAT, some network drives) says "unsupported".
+        let unsupported =
+            |_: &Path, _: &Path| Err(std::io::Error::from(std::io::ErrorKind::Unsupported));
+        place(&staged, &target, Existing::Refuse, unsupported).unwrap();
+        assert_eq!(std::fs::read_to_string(&target).unwrap(), "the secret");
+        // It still never replaces a file that is there.
+        std::fs::write(&staged, "another secret").unwrap();
+        let error = place(&staged, &target, Existing::Refuse, unsupported).unwrap_err();
+        assert_eq!(error.kind(), std::io::ErrorKind::AlreadyExists);
+        assert_eq!(std::fs::read_to_string(&target).unwrap(), "the secret");
+        // A link that fails because the target is there is not a drive without links.
+        let taken =
+            |_: &Path, _: &Path| Err(std::io::Error::from(std::io::ErrorKind::AlreadyExists));
+        let other = temp.path().join("other.txt");
+        let error = place(&staged, &other, Existing::Refuse, taken).unwrap_err();
+        assert_eq!(error.kind(), std::io::ErrorKind::AlreadyExists);
+        assert!(!other.exists(), "the fallback ran for a taken name");
     }
 
     #[test]
