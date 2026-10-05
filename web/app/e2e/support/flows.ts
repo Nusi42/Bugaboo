@@ -3,6 +3,7 @@ import { type Browser, expect, type Page } from "@playwright/test";
 
 import { type Person } from "./accounts.ts";
 import { type Instance } from "./server.ts";
+import { type CodeApp, codeApp } from "./totp.ts";
 
 /** Types the e-mail address and the password into the sign-in form that is open, and sends them. */
 export async function fillSignIn(
@@ -65,4 +66,27 @@ export async function addPasskey(page: Page, label: string, password: string): P
   await passkeys.getByLabel(t("field.confirm-password"), { exact: true }).fill(password);
   await passkeys.getByRole("button", { name: t("passkeys.add") }).click();
   await expect(page.getByText(t("passkeys.added", { name: label }))).toBeVisible();
+}
+
+/** A code app that was set up on the security page, and the backup codes that were shown. */
+export interface CodeAppSetUp {
+  readonly app: CodeApp;
+  readonly backupCodes: readonly string[];
+}
+
+/** Sets up the code app on the security page, as a person does, and keeps the backup codes. */
+export async function setUpCodeApp(page: Page, password: string): Promise<CodeAppSetUp> {
+  const section = page.getByRole("region", { name: t("code-app.title") });
+  await section.getByLabel(t("field.confirm-password"), { exact: true }).fill(password);
+  await section.getByRole("button", { name: t("code-app.setup") }).click();
+  await expect(page.getByRole("img", { name: t("code-app.qr-alt") })).toBeVisible();
+  const app = codeApp((await section.locator("code").textContent()) ?? "");
+  await section.getByLabel(t("code-app.confirm-code")).fill(await app.next());
+  await section.getByRole("button", { name: t("code-app.confirm") }).click();
+  await expect(page.getByText(t("backup.shown-once"))).toBeVisible();
+  const codes = page.getByRole("list", { name: t("backup.list") }).getByRole("listitem");
+  const backupCodes = await codes.allTextContents();
+  await page.getByRole("button", { name: t("backup.saved") }).click();
+  await expect(page.getByRole("region", { name: t("backup.title") })).toBeVisible();
+  return { app, backupCodes };
 }

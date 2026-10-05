@@ -1,4 +1,4 @@
-import { spawn } from "node:child_process";
+import { execFile, spawn } from "node:child_process";
 import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { connect } from "node:net";
 import { tmpdir } from "node:os";
@@ -13,6 +13,11 @@ export interface Instance {
   readonly url: string;
   /** The setup code of the first start, from the file the server saves it in. */
   readonly setupCode: () => string;
+  /**
+   * What `bugaboo security-log verify` says about the data folder of this server, which it checks
+   * from the outside, like an administrator would. Fails when the program says the log is broken.
+   */
+  readonly verifySecurityLog: () => Promise<string>;
   /** Stops the server and deletes its data. */
   readonly stop: () => Promise<void>;
 }
@@ -126,6 +131,23 @@ async function remove(folder: string, triesLeft = 20): Promise<void> {
   }
 }
 
+/** What `bugaboo security-log verify` prints for a data folder; it fails when the log is broken. */
+function verifySecurityLog(executable: string, dataDir: string): Promise<string> {
+  return new Promise((done, failed) => {
+    execFile(
+      executable,
+      ["security-log", "verify", "--data-dir", dataDir],
+      (error: unknown, stdout: string, stderr: string) => {
+        if (error === null) {
+          done(stdout);
+        } else {
+          failed(new Error(`${stdout}${stderr}`));
+        }
+      },
+    );
+  });
+}
+
 /**
  * Starts the real program on `port` with an empty data folder and waits until it answers. The
  * program is the one `cargo build` made and the app is the one `npm run build` made: the tests
@@ -160,6 +182,7 @@ export async function startServer(
   return {
     url: `https://localhost:${String(port)}`,
     setupCode: () => readFileSync(join(dataDir, SETUP_CODE_FILE), "utf8").trim(),
+    verifySecurityLog: () => verifySecurityLog(executable, dataDir),
     stop,
   };
 }
