@@ -60,7 +60,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             });
         // A parent that is gone holds nobody back from nothing: it is not one they may make in.
         Ok(self
-            .evaluate(actor.person.id, place)
+            .evaluation_of(actor, place)
             .await
             .is_ok_and(|held| held.allows(permission)))
     }
@@ -79,21 +79,19 @@ pub async fn project<S: AuthStore>(
     let actor = ctx.actor(&input.session_token).await?;
     // A project that is hidden and one that is missing take the same reads and the same
     // evaluation before either is answered, so the answer is not the only thing that is equal.
-    let shown = ctx.shown_to(actor.person.id).await?;
+    let shown = ctx.shown_to(&actor).await?;
     let found = ctx.find_project(&input.address).await?;
     let place = found.as_ref().map_or(Place::Organization, |found| {
         Place::Project(found.project.id)
     });
-    let held = ctx.evaluate(actor.person.id, place).await?;
+    let held = ctx.evaluation_of(&actor, place).await?;
     let Some(found) = found.filter(|_| held.sees_project()) else {
         return Err(AppError::Refused(ErrorCode::NotFound));
     };
     let (trail, truncated) = shown.trail(&found.project);
     let project = found.project;
-    let old_parent = ctx
-        .evaluate(actor.person.id, place_of(project.parent))
-        .await?;
-    let organization = ctx.evaluate(actor.person.id, Place::Organization).await?;
+    let old_parent = ctx.evaluation_of(&actor, place_of(project.parent)).await?;
+    let organization = ctx.evaluation_of(&actor, Place::Organization).await?;
     let may_move = if !old_parent.allows(Permission::MoveProjects) {
         MoveRight::Nowhere
     } else if project.parent.is_some()
@@ -160,8 +158,8 @@ pub async fn projects<S: AuthStore>(
     let actor = ctx.actor(&input.session_token).await?;
     // The projects of the answer are the ones the person sees, from their rows: the answer is
     // wrapped by the evaluation for the whole organization, which holds no field of a project.
-    let access = ctx.evaluate(actor.person.id, Place::Organization).await?;
-    let shown = ctx.shown_to(actor.person.id).await?;
+    let access = ctx.evaluation_of(&actor, Place::Organization).await?;
+    let shown = ctx.shown_to(&actor).await?;
     let words: Vec<String> = input
         .search
         .as_deref()

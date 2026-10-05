@@ -173,6 +173,8 @@ impl<S> AuthServices<S> {
             services: self,
             request,
             evaluations: Mutex::default(),
+            #[cfg(test)]
+            test_scope: None,
         }
     }
 
@@ -197,6 +199,19 @@ pub struct Ctx<'a, S> {
     pub(crate) services: &'a AuthServices<S>,
     pub(crate) request: RequestInfo,
     pub(crate) evaluations: Evaluations,
+    /// For the tests: the scope of an access key that whoever asks counts as having come with
+    /// (M2-F27). Nothing outside the tests sets it; a key in use sets the scope of its actor.
+    #[cfg(test)]
+    pub(crate) test_scope: Option<bb_policy::Narrowing>,
+}
+
+#[cfg(test)]
+impl<S> Ctx<'_, S> {
+    /// This request as if every person in it came with an access key of this scope.
+    pub(crate) fn with_key(mut self, scope: bb_policy::Narrowing) -> Self {
+        self.test_scope = Some(scope);
+        self
+    }
 }
 
 /// Makes IDs from the clock of the context and the secure random source.

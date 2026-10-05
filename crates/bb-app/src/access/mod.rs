@@ -19,7 +19,7 @@ use bb_core::id::{ProjectId, UserId};
 use bb_core::people_kinds::PeopleKind;
 use bb_core::person::Person;
 use bb_policy::guards::{Refusal, ensure_no_escalation};
-use bb_policy::{Evaluation, PeopleContext, Target, evaluate, resolve};
+use bb_policy::{Evaluation, Narrowing, PeopleContext, Target, evaluate, resolve};
 
 pub use bb_policy::{Authorized, Masked, Permission, PersonRef, Place, StartingRole, Tree, guards};
 pub use starting::{MakeStartingRoles, make_starting_roles};
@@ -29,11 +29,33 @@ use serde::Serialize;
 
 use crate::auth::{AppError, AuthStore, Ctx, internal};
 
-/// Who asks: the signed-in person behind a session.
+/// Who asks: the signed-in person behind a session, or, when an access key made the request, its
+/// owner narrowed to what the key allows.
 #[derive(Clone, Debug)]
 pub(crate) struct Actor {
     /// The person.
     pub(crate) person: Person,
+    /// What the access key behind the request narrows its owner to: its choice and its projects
+    /// (AUTH-07). `None` for a person who signed in with a session. Everything that decides what
+    /// the actor sees or may do reads it through [`Actor::key_scope`] (M2-F27).
+    scope: Option<Narrowing>,
+}
+
+impl Actor {
+    /// A person signed in with a session: nothing narrows them.
+    pub(crate) const fn person(person: Person) -> Self {
+        Self {
+            person,
+            scope: None,
+        }
+    }
+
+    /// What the access key behind the request narrows its owner to, if there is one. The one
+    /// place that tells it: every decision about what the actor sees (the list, the search, the
+    /// trail, the references, the preview of a move, the re-check of a move) is made with it.
+    pub(crate) const fn key_scope(&self) -> Option<&Narrowing> {
+        self.scope.as_ref()
+    }
 }
 
 impl From<Refusal> for AppError {
@@ -67,8 +89,32 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// The signed-in person behind a cookie.
     pub(crate) async fn actor(&self, token_text: &str) -> Result<Actor, AppError> {
         let record = self.active(token_text).await?;
-        Ok(Actor {
-            person: record.person,
+        let actor = Actor::person(record.person);
+        #[cfg(test)]
+        let actor = Actor {
+            scope: self.test_scope.clone(),
+            ..actor
+        };
+        Ok(actor)
+    }
+
+    /// What `actor` may do at `place`: the evaluation of their person, narrowed by the access key
+    /// they came with, if they came with one (a key never widens anything and follows its owner's
+    /// roles at once, ADR-0025, decision 8). Every judgment about the actor goes through here or
+    /// [`Self::require`], never through [`Self::evaluate`] with their ID (ARCH-AUTHZ-ONLY finds
+    /// that).
+    ///
+    /// # Errors
+    /// `resource.not_found` when the place is a project that does not exist.
+    pub(crate) async fn evaluation_of(
+        &self,
+        actor: &Actor,
+        place: Place,
+    ) -> Result<Arc<Evaluation>, AppError> {
+        let owners = self.evaluate(actor.person.id, place).await?;
+        Ok(match actor.key_scope() {
+            Some(key) => Arc::new(owners.narrowed(key)),
+            None => owners,
         })
     }
 
@@ -125,7 +171,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         permission: Permission,
         place: Place,
     ) -> Result<Arc<Evaluation>, AppError> {
-        let evaluation = self.evaluate(actor.person.id, place).await?;
+        let evaluation = self.evaluation_of(actor, place).await?;
         if evaluation.allows(permission) {
             return Ok(evaluation);
         }
@@ -187,10 +233,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         actor: &Actor,
         project: ProjectId,
     ) -> Result<ProjectLabel, AppError> {
-        let Ok(evaluation) = self
-            .evaluate(actor.person.id, Place::Project(project))
-            .await
-        else {
+        let Ok(evaluation) = self.evaluation_of(actor, Place::Project(project)).await else {
             return Ok(ProjectLabel::Hidden);
         };
         if !evaluation.knows_project() {

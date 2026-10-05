@@ -18,6 +18,11 @@
 //! - a glob import of the policy crate (`use bb_policy::*`, `use bb_policy::{self, *}`, also across
 //!   lines) outside the same places: it would bring `evaluate` and `Inputs` in without naming them
 //!   (M2-F24);
+//! - in `bb-app` outside its access module: a judgment about the actor that skips the narrowing of
+//!   an access key, `ctx.evaluate(actor.person.id, …)` or the policy's `visible(` and
+//!   `evaluate_at(` (use `ctx.evaluation_of(actor, …)`, `ctx.require(…)`, `visible_as` and
+//!   `evaluate_as` with the actor's key scope), so a key can never see more than it was given
+//!   (M2-F27);
 //! - inside `bb-policy`: a `pub` field in the definition of `Authorized`, a `pub` constructor
 //!   (`new`, `from`), or a derive that would make one out of nothing (`Default`, `Deserialize`).
 //!
@@ -34,6 +39,25 @@ const ENGINE_CALLER_FOLDER: &str = "crates/bb-app/src/access/";
 /// The one place outside `bb-policy` and the access module that builds the input of the engine,
 /// from the stored rows.
 const INPUT_BUILDER_FOLDER: &str = "crates/bb-store/src/";
+/// What a use case must not write about the actor: each skips the narrowing of an access key
+/// (M2-F27), with what to write instead.
+const UNNARROWED: [(&str, &str); 3] = [
+    (
+        ".evaluate(actor.person",
+        "`ctx.evaluate(actor.person.id, …)` skips the narrowing of an access key. Judge the actor \
+         with `ctx.evaluation_of(actor, place)` or `ctx.require(actor, permission, place)`.",
+    ),
+    (
+        ".visible(",
+        "`Policy::visible` does not narrow to an access key. Use `visible_as(person, \
+         actor.key_scope(), tree)` for the actor.",
+    ),
+    (
+        ".evaluate_at(",
+        "`Policy::evaluate_at` does not narrow to an access key. Use `evaluate_as(person, \
+         actor.key_scope(), tree, place)` for the actor.",
+    ),
+];
 /// The crate whose names a glob import must not pull in.
 const POLICY_CRATE: &str = "bb_policy";
 /// The type.
@@ -166,6 +190,9 @@ fn evaluate(sources: &[Source]) -> Vec<Finding> {
                 ));
             }
         }
+        if path.starts_with(USE_CASES_FOLDER) && !path.starts_with(ENGINE_CALLER_FOLDER) {
+            findings.extend(unnarrowed_findings(path, &code));
+        }
         let may_name_engine = path.starts_with(POLICY_FOLDER)
             || path.starts_with(ENGINE_CALLER_FOLDER)
             || path.starts_with(INPUT_BUILDER_FOLDER);
@@ -174,6 +201,30 @@ fn evaluate(sources: &[Source]) -> Vec<Finding> {
         }
         if path.starts_with(POLICY_FOLDER) {
             findings.extend(definition_findings(path, &code));
+        }
+    }
+    findings
+}
+
+/// Where the use cases are.
+const USE_CASES_FOLDER: &str = "crates/bb-app/src/";
+
+/// The judgments about the actor that skip an access key's narrowing. The text is read with its
+/// white space gone, so a call that rustfmt split over lines is found too.
+fn unnarrowed_findings(path: &str, code: &str) -> Vec<Finding> {
+    let mut squeezed = String::new();
+    let mut lines = Vec::new();
+    for (index, line) in code.lines().enumerate() {
+        for character in line.chars().filter(|c| !c.is_whitespace()) {
+            squeezed.push(character);
+            lines.push(index + 1);
+        }
+    }
+    let mut findings = Vec::new();
+    for (pattern, advice) in UNNARROWED {
+        for (at, _) in squeezed.match_indices(pattern) {
+            let line = lines.get(at).copied().unwrap_or(1);
+            findings.push(Finding::at(format!("{path}:{line}"), advice));
         }
     }
     findings
@@ -537,6 +588,61 @@ const T: &str = \"use bb_policy::*;\";
                 "{path}"
             );
         }
+    }
+
+    #[test]
+    fn bad_example_a_judgment_about_the_actor_that_skips_the_narrowing_of_an_access_key() {
+        for text in [
+            "async fn f(ctx: &Ctx, actor: &Actor) { ctx.evaluate(actor.person.id, place).await; }\n",
+            "async fn f() {\n    let held = ctx\n        .evaluate(\n            actor.person.id,\n            place,\n        )\n        .await;\n}\n",
+            "fn f() { let seen = policy.visible(actor.person.id, &tree); }\n",
+            "fn f() { let held = policy.evaluate_at(person, &tree, place); }\n",
+        ] {
+            let found = evaluate(&source("crates/bb-app/src/projects/x.rs", text));
+            assert_eq!(found.len(), 1, "{text}");
+            assert!(found[0].message.contains("narrow"), "{text}");
+        }
+        // The line of a split call is the line of the call.
+        let split = evaluate(&source(
+            "crates/bb-app/src/projects/x.rs",
+            "fn f() {\n    ctx\n        .evaluate(\n            actor.person.id,\n        );\n}\n",
+        ));
+        assert!(
+            split[0]
+                .location
+                .as_deref()
+                .is_some_and(|place| place.ends_with(":3")),
+            "{:?}",
+            split[0].location
+        );
+    }
+
+    #[test]
+    fn good_example_the_narrowed_judgments_other_people_and_the_access_module() {
+        for text in [
+            "async fn f() { ctx.evaluation_of(actor, place).await; ctx.require(actor, p, place).await; }\n",
+            "fn f() { let seen = policy.visible_as(actor.person.id, actor.key_scope(), &tree); }\n",
+            "fn f() { let held = policy.evaluate_as(person, key, &tree, place); }\n",
+            // Another person than the actor is judged as they are: a key narrows its own owner.
+            "async fn f() { ctx.evaluate(input.person, place).await; }\n",
+            "async fn f() { ctx.evaluate(record.person.id, place).await; }\n",
+            "fn f() { let x = 1; } // ctx.evaluate(actor.person.id, place)\n",
+        ] {
+            let found = evaluate(&source("crates/bb-app/src/projects/x.rs", text));
+            assert!(found.is_empty(), "{text}");
+        }
+        // The access module is where the narrowing is made.
+        let access = evaluate(&source(
+            "crates/bb-app/src/access/mod.rs",
+            "async fn f() { self.evaluate(actor.person.id, place).await; }\n",
+        ));
+        assert!(access.is_empty());
+        // Other crates are not use cases.
+        let policy = evaluate(&source(
+            "crates/bb-policy/src/tree.rs",
+            "fn f() { self.evaluate_at(person, tree, place); self.visible(person, tree); }\n",
+        ));
+        assert!(policy.is_empty());
     }
 
     #[test]

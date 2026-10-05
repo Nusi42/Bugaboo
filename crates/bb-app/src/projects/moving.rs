@@ -128,9 +128,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             .await
             .map_err(|error| internal::<S>(&error))?
             .ok_or_else(not_found)?;
-        let viewer = self
-            .evaluate(actor.person.id, Place::Project(project))
-            .await?;
+        let viewer = self.evaluation_of(actor, Place::Project(project)).await?;
         if !viewer.sees_project() {
             return Err(not_found());
         }
@@ -139,16 +137,14 @@ impl<S: AuthStore> Ctx<'_, S> {
             .await?;
         if to.is_none() {
             // The top level is the organization: a project that goes there is made there.
-            let whole = self.evaluate(actor.person.id, Place::Organization).await?;
+            let whole = self.evaluation_of(actor, Place::Organization).await?;
             if !whole.allows(Permission::MakeProjects) {
                 return Err(ErrorCode::Forbidden.into());
             }
         }
         // The old parent: a person who sees the project but not what holds it is told they may not,
         // as for a parent they see; nothing says the parent is hidden.
-        let old = self
-            .evaluate(actor.person.id, place_of(found.parent))
-            .await?;
+        let old = self.evaluation_of(actor, place_of(found.parent)).await?;
         if !old.allows(Permission::MoveProjects) {
             return Err(ErrorCode::Forbidden.into());
         }
@@ -184,7 +180,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         policy: &Policy,
     ) -> Result<MovePreview, AppError> {
         let tree = &judged.tree;
-        let seen: BTreeSet<ProjectId> = policy.visible(actor.person.id, tree);
+        let seen: BTreeSet<ProjectId> = policy.visible_as(actor.person.id, actor.key_scope(), tree);
         let projects: BTreeMap<ProjectId, Project> = {
             let all = self
                 .store()
@@ -372,7 +368,7 @@ pub async fn move_project<S: AuthStore>(
     let (project, viewer) = ctx.check_move(&actor, input.project, input.to).await?;
     let shown_parent = match input.to {
         Some(to) => ctx
-            .evaluate(actor.person.id, Place::Project(to))
+            .evaluation_of(&actor, Place::Project(to))
             .await?
             .sees_project()
             .then_some(to),
@@ -380,6 +376,7 @@ pub async fn move_project<S: AuthStore>(
     };
     let id = project.id;
     let (to, person, expected) = (input.to, actor.person.id, input.preview);
+    let key = actor.key_scope().cloned();
     let event = ctx.event(
         by(person),
         entity("project", id)?,
@@ -403,7 +400,8 @@ pub async fn move_project<S: AuthStore>(
                 let projects = S::project_tree_in(transaction).await?;
                 let policy = S::policy_in(transaction).await?;
                 let judged = judge(&policy, &projects, &now, to);
-                let held = |place: Place| policy.evaluate_at(person, &judged.tree, place);
+                let held =
+                    |place: Place| policy.evaluate_as(person, key.as_ref(), &judged.tree, place);
                 if !held(Place::Project(id)).is_some_and(|held| held.sees_project()) {
                     return Err(stopped.stop::<S>(ErrorCode::NotFound));
                 }
