@@ -19,8 +19,8 @@ use super::ctx::{AppError, Ctx, by, change_failed, changed, entity, internal, pe
 use super::store::AuthStore;
 use super::types::{
     AuthStatus, AuthenticateQuery, Authenticated, Done, EndSession, MAX_SESSIONS_LISTED,
-    PasskeySecondStep, PersonView, SecondStep, SecondStepMethods, SessionList, SessionView,
-    SessionsQuery, SignIn, SignOut, SignOutEverywhere, Started, StatusQuery,
+    PasskeySecondStep, PersonView, SecondStep, SecondStepMethods, SessionEnded, SessionList,
+    SessionView, SessionsQuery, SignIn, SignOut, SignOutEverywhere, Started, StatusQuery,
 };
 
 /// Long text in the key of a failure counter is cut here: the key only has to tell accounts
@@ -495,7 +495,7 @@ pub async fn sign_out_everywhere<S: AuthStore>(
 pub async fn end_session<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: EndSession,
-) -> Result<Done, AppError> {
+) -> Result<SessionEnded, AppError> {
     let record = ctx.active(&input.session_token).await?;
     let person = record.person.id;
     let id = input.session_id;
@@ -523,7 +523,9 @@ pub async fn end_session<S: AuthStore>(
         Some(entity("session", id)?),
     )
     .await;
-    Ok(Done)
+    Ok(SessionEnded {
+        own: record.session.id == id,
+    })
 }
 
 /// The sessions of the signed-in person, newest first, with the one of the request marked.

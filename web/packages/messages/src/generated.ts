@@ -29,6 +29,9 @@ export const messages = {
   "error.resource.not-found": "We could not find that.",
   "error.request.invalid":
     "Something in your request is not valid. Check what you typed and try again.",
+  "error.request.unknown-field":
+    "We could not find one of the fields you asked for. Check the field names and try again.",
+  "error.request.bad-cursor": "This list changed. Start again from the top.",
   "error.request.wrong-origin":
     "That did not come from a Bugaboo page. Reload the page and try again.",
   "error.request.method-not-allowed": "Bugaboo does not do that here.",
@@ -53,6 +56,10 @@ export const messages = {
     "Let people make an account on their own, without an invitation. Bugaboo cannot check that an address belongs to the person until e-mail is available, so use this only on a network you trust.",
   "setting.auth.sign-up-domains.help":
     "The e-mail domains that may sign up on their own, as a list separated by commas, like example.com. Leave the list empty to let every address sign up while signing up is on, so write your domains in first.",
+  "data-folder.create-failed": "The data folder {path} could not be prepared: {reason}",
+  "data-folder.protect-failed":
+    "The data folder {path} could not be made private to its owner: {reason}",
+  "data-folder.account-unknown": "the account that runs Bugaboo could not be identified",
   "setup.welcome":
     "Welcome to Bugaboo. A few questions, then your answers are saved in a settings file. Press Enter to accept the answer in brackets.",
   "setup.ask.data-dir": "Where should Bugaboo keep its data? Give the path of a folder.",
@@ -93,6 +100,8 @@ export const messages = {
     "entries were deleted without a signed checkpoint, or the checkpoint is wrong.",
   "security-log.reason.truncated": "entries at the end of the log were cut off or rewritten.",
   "security-log.reason.anchor": "the anchor file that vouches for the end of the log was changed.",
+  "security-log.reason.behind":
+    "the database lacks the newest entries that the anchor file knows of. Check whether the database was restored from an older backup or lost its last writes. If neither happened, somebody removed entries.",
   "common.cancel": "Cancel",
   "common.loading": "Loading…",
   "common.try-again": "Try again",
@@ -310,6 +319,8 @@ export const messages = {
   "status.certificate.none":
     "Not shown. Either another program in front of Bugaboo handles HTTPS, or the certificate file cannot be read.",
   "status.log": "Security log",
+  "data-folder.not-a-data-folder":
+    "The folder {path} has other files in it and does not look like a Bugaboo data folder. Installing the service would change who owns them. Choose an empty folder or a Bugaboo data folder as the data folder in your settings.",
   "common.close": "Close",
   "common.undo": "Undo",
   "shell.search": "Search",
@@ -324,7 +335,7 @@ export const messages = {
   "nav.organization-settings": "Organization settings",
   "nav.appearance": "Appearance",
   "nav.shortcuts": "Keyboard shortcuts",
-  "nav.frames": "Screen frames",
+  "nav.frames": "Page frames",
   "nav.group.look": "Look and feel",
   "nav.group.sign-in": "Sign-in",
   "nav.group.people": "People",
@@ -353,7 +364,7 @@ export const messages = {
   "shortcut.everywhere": "Everywhere",
   "shortcut.title": "Keyboard shortcuts",
   "shortcut.intro":
-    "Press these keys instead of clicking. Every shortcut also has a button on the screen.",
+    "Press these keys instead of clicking. Every shortcut also has a button on the page.",
   "shortcut.change-link": "Change the keys",
   "list.next": "Next",
   "list.previous": "Previous",
@@ -388,7 +399,7 @@ export const messages = {
   "shortcuts.reset-done": "The usual keys are back.",
   "shortcuts.conflict": "{keys} is already used for: {action}. Choose other keys.",
   "shortcuts.invalid": "These keys cannot be used. Press one key, or two in a row.",
-  "frames.title": "Screen frames",
+  "frames.title": "Page frames",
   "frames.intro":
     "Issues, documents and settings open in these frames. They are empty for now, so this page shows how they work.",
   "frames.list": "Example items",
@@ -408,12 +419,40 @@ export const messages = {
   "save.saving": "Saving…",
   "save.saved": "Saved",
   "save.not-saved": "Not saved yet",
+  "status.log-failures":
+    "{count, plural, one {# entry} other {# entries}} of the security log could not be written since the server started. Check that the disk is not full and that the account that runs Bugaboo can write in the data folder, then look at the server log.",
+  "data-folder.part.folder": "The data folder",
+  "data-folder.part.database": "The database file",
+  "data-folder.part.files": "The folder for attachments",
+  "data-folder.part.backups": "The folder for backups",
+  "data-folder.part.setup-code-file": "The setup code file",
+  "data-folder.open":
+    "{part} {path} can be opened by other accounts on this computer. Bugaboo leaves it as it is, in case you set these rights on purpose. If nobody else should read it, remove the rights of the other accounts: on Linux run chmod go-rwx on it, on Windows open the Security tab of its properties.",
+  "status.data-folder": "Data folder rights",
+  "status.data-folder.closed":
+    "Only the account that runs Bugaboo can open the parts of the data folder.",
+  "status.data-folder.open":
+    "Other accounts on this computer can open these. Bugaboo leaves them as they are, in case you set these rights on purpose. If nobody else should read them, remove the rights of the other accounts.",
+  "data-folder.own-certificate":
+    "The folder {path} holds only files of your own in its tls folder, such as a certificate. Installing the service would change who owns them. If this folder is meant to become the data folder of Bugaboo, run the command again with {flag}.",
+  "setup.database-url-password":
+    "The database address on the command line has a password in it, and other people on this computer can read the command line, for example in the list of running programs. This time the address is saved in {file}. Next time answer the database question of setup instead of using the option, or set the environment variable {variable}.",
+  "data-folder.unknown":
+    "{part} {path} could not be checked, because Bugaboo could not read its access rights. Check them yourself: other accounts on this computer should not be able to open it, unless you want that.",
+  "status.data-folder.unknown":
+    "Bugaboo could not read the rights of these, so it cannot say whether other accounts can open them. Check them yourself:",
 } as const;
 
 export type MessageKey = keyof typeof messages;
 
 export interface MessageArguments {
   "backup.left": { count: number };
+  "data-folder.create-failed": { path: string | number; reason: string | number };
+  "data-folder.not-a-data-folder": { path: string | number };
+  "data-folder.open": { part: string | number; path: string | number };
+  "data-folder.own-certificate": { flag: string | number; path: string | number };
+  "data-folder.protect-failed": { path: string | number; reason: string | number };
+  "data-folder.unknown": { part: string | number; path: string | number };
   "first-run.step-of": { name: string | number; step: string | number; total: string | number };
   "frames.open-focus": { name: string | number };
   "frames.remove-name": { name: string | number };
@@ -439,6 +478,7 @@ export interface MessageArguments {
   "sessions.network": { network: string | number };
   "sessions.started": { when: string | number };
   "setup.ask.replace": { path: string | number };
+  "setup.database-url-password": { file: string | number; variable: string | number };
   "setup.exists": { path: string | number };
   "setup.not-usable": { reason: string | number };
   "setup.saved": { path: string | number };
@@ -447,6 +487,7 @@ export interface MessageArguments {
   "status.certificate.expired": { date: string | number };
   "status.certificate.soon": { date: string | number; days: number };
   "status.certificate.valid": { date: string | number; days: number };
+  "status.log-failures": { count: number };
   "status.started": { when: string | number };
   "status.uptime": { days: number; hours: number; minutes: number };
   "theme.device-resolved": { device: string | number; theme: string | number };

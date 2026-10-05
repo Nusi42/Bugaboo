@@ -11,7 +11,7 @@ use jiff::Timestamp;
 
 use super::*;
 use crate::config::{Sources, resolve};
-use crate::wiring::wire;
+use crate::wiring::{Serving, wire};
 
 type Failure = Box<dyn std::error::Error + Send + Sync>;
 
@@ -28,7 +28,7 @@ async fn installation(root: &Path) -> Result<(StoreArgs, DataFolder), Failure> {
         cli: &given,
         base: root,
     })?;
-    wire(&settings, &data).await?;
+    wire(&settings, &data, Serving::default()).await?;
     let store = wiring::open_store(&settings, &data).await?;
     for _ in 0..2 {
         store
@@ -97,6 +97,22 @@ async fn m1_f20_a_log_without_an_anchor_is_a_warning_and_a_broken_one_is_an_erro
         "{text}"
     );
     assert!(summarize(&LogState::Unreadable).is_err());
+    Ok(())
+}
+
+#[tokio::test]
+async fn sec_15_verify_names_an_anchor_that_is_ahead_of_the_database_and_says_what_to_check()
+-> TestResult {
+    let behind = LogState::Broken {
+        seq: 5,
+        reason: LogBreak::Behind,
+    };
+    let error = summarize(&behind).err().ok_or("a log that lags passed")?;
+    let text = format!("{error:#}");
+    assert!(
+        text.contains("entry 5") && text.contains("older backup") && text.contains("anchor file"),
+        "{text}"
+    );
     Ok(())
 }
 

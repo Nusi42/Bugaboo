@@ -141,6 +141,7 @@ const fn reason_key(reason: LogBreak) -> MessageKey {
         LogBreak::Checkpoint => message::SECURITY_LOG_REASON_CHECKPOINT,
         LogBreak::Truncated => message::SECURITY_LOG_REASON_TRUNCATED,
         LogBreak::Anchor => message::SECURITY_LOG_REASON_ANCHOR,
+        LogBreak::Behind => message::SECURITY_LOG_REASON_BEHIND,
     }
 }
 

@@ -98,9 +98,12 @@ pub enum BreakReason {
     ChangedContent,
     /// The checkpoint's signature is wrong, or entries were deleted without a checkpoint.
     Checkpoint,
-    /// The anchor file knows of an entry that the database does not have (or has changed): the
-    /// end of the log was cut off or rewritten.
+    /// The anchor file knows of an entry that the database has changed: the end of the log was
+    /// rewritten.
     Truncated,
+    /// The anchor file reaches further than the database: the database lacks the newest entries
+    /// (it was restored from an older backup, lost its last writes, or the end was cut off).
+    Behind,
     /// A line of the anchor file does not carry the log key's signature.
     Anchor,
 }

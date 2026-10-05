@@ -9,6 +9,7 @@
 //!
 //! Every text a person reads, the help of each option included, comes from the message catalog.
 
+mod renewal;
 mod secrets;
 mod serve;
 mod service;
@@ -20,7 +21,7 @@ use std::process::ExitCode;
 use bb_core::message::{self, Message, MessageKey};
 use clap::{Args, Parser, Subcommand};
 
-use crate::config::{self, ConfigError, FILE_ENV, Settings, Sources};
+use crate::config::{self, ConfigError, DEFAULT_FILE, FILE_ENV, Settings, Sources};
 use crate::output;
 
 /// The text of a message without placeholders, for the help texts of the command line.
@@ -65,7 +66,7 @@ enum Command {
 #[derive(Subcommand)]
 enum ServiceCommand {
     #[command(about = text(message::CLI_ABOUT_SERVICE_INSTALL))]
-    Install(ConfigArgs),
+    Install(InstallArgs),
     #[command(about = text(message::CLI_ABOUT_SERVICE_UNINSTALL))]
     Uninstall,
     /// Started by the Windows service manager, never by a person.
@@ -126,6 +127,16 @@ impl ServeArgs {
 pub(crate) struct ConfigArgs {
     #[arg(long, help = text(message::CLI_HELP_CONFIG))]
     config: Option<PathBuf>,
+}
+
+/// What `bugaboo service install` needs: the settings file and whether a data folder with only
+/// the person's own certificate may be taken over (M1-F66).
+#[derive(Args, Clone, Default)]
+pub(crate) struct InstallArgs {
+    #[command(flatten)]
+    config: ConfigArgs,
+    #[arg(long, help = text(message::CLI_HELP_TAKE_OVER_DATA_FOLDER))]
+    take_over_data_folder: bool,
 }
 
 /// What a command that works on the stored data (and does not listen) needs to find it.
@@ -189,6 +200,19 @@ pub(crate) async fn run() -> ExitCode {
     }
 }
 
+/// The warning for a database address with a password on the command line, or `None` when the
+/// command line holds none. Other people on the computer can read the command line (in the list
+/// of running programs), so the warning names the places that are safe: the settings file and the
+/// environment variable. It never repeats the address.
+fn password_warning(given: &[(&'static str, String)], file: &str) -> Option<String> {
+    given
+        .iter()
+        .any(|(name, value)| *name == "database_url" && config::has_password(value))
+        .then(|| {
+            message::cli_database_url_password(file, config::env_name("database_url")).render()
+        })
+}
+
 /// The settings of a command: the settings file, the environment and the options given.
 fn load_settings(
     config: Option<&Path>,
@@ -198,6 +222,15 @@ fn load_settings(
     let named = config
         .map(Path::to_path_buf)
         .or_else(|| std::env::var_os(FILE_ENV).map(PathBuf::from));
+    if let Some(warning) = password_warning(
+        given,
+        &named.as_ref().map_or_else(
+            || DEFAULT_FILE.to_owned(),
+            |path| path.display().to_string(),
+        ),
+    ) {
+        output::warning(&warning);
+    }
     let base = program_folder();
     let file = config::read_file(named, &base)?;
     let sources = Sources {
@@ -262,6 +295,8 @@ mod tests {
             "bugaboo setup --non-interactive --port 8443 --tls off --overwrite",
             "bugaboo service install",
             "bugaboo service install --config bugaboo.toml",
+            "bugaboo service install --take-over-data-folder",
+            "bugaboo service install --config bugaboo.toml --take-over-data-folder",
             "bugaboo service uninstall",
             "bugaboo security-log verify",
             "bugaboo security-log verify --data-dir data",
@@ -282,5 +317,40 @@ mod tests {
             ..StoreArgs::default()
         };
         assert_eq!(args.settings(), [("data_dir", "data".to_owned())]);
+    }
+
+    #[test]
+    fn ops_10_a_database_url_with_a_password_on_the_command_line_warns() {
+        let given = |url: &str| vec![("database_url", url.to_owned())];
+        let warning = password_warning(
+            &given("postgres://bugaboo:Hunter2-Secret@db.example.test/bugaboo"),
+            "bugaboo.toml",
+        )
+        .unwrap_or_default();
+        // It names the safe places, in plain words ...
+        assert!(warning.contains("bugaboo.toml"), "{warning}");
+        assert!(warning.contains("BUGABOO_DATABASE_URL"), "{warning}");
+        assert!(warning.contains("command line"), "{warning}");
+        // ... and never repeats the password or the address.
+        assert!(!warning.contains("Hunter2") && !warning.contains("db.example"));
+        let in_query = password_warning(
+            &given("postgres://db.example.test/bugaboo?user=a&password=Hunter2-Secret"),
+            "settings.toml",
+        )
+        .unwrap_or_default();
+        assert!(in_query.contains("settings.toml") && !in_query.contains("Hunter2"));
+        // No password, no warning: a user name alone, a SQLite file, no address, other options.
+        for quiet in [
+            "postgres://bugaboo@db.example.test/bugaboo",
+            "postgres://bugaboo:@db.example.test/bugaboo",
+            "postgresql://db.example.test/bugaboo?sslmode=require",
+            "sqlite:data/bugaboo.db",
+        ] {
+            assert!(
+                password_warning(&given(quiet), "bugaboo.toml").is_none(),
+                "{quiet}"
+            );
+        }
+        assert!(password_warning(&[("port", "1".to_owned())], "bugaboo.toml").is_none());
     }
 }

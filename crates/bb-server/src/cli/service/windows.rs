@@ -109,11 +109,11 @@ fn grant(data_dir: &std::path::Path) -> anyhow::Result<()> {
 }
 
 /// `bugaboo service install`.
-pub(super) fn install(found: &Found) -> anyhow::Result<()> {
+pub(super) fn install(found: &Found, take_over: bool) -> anyhow::Result<()> {
     let manager =
         ServiceManager::local_computer(None::<&str>, ServiceManagerAccess::CREATE_SERVICE)
             .map_err(|error| explain(&error))?;
-    check_for_service(&found.settings.data_dir)?;
+    check_for_service(&found.settings.data_dir, take_over)?;
     DataFolder::prepare(&found.settings.data_dir)?;
     let service = manager
         .create_service(

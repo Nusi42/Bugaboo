@@ -200,6 +200,13 @@ pub async fn complete_setup<S: AuthStore>(
         })
         .await
         .map_err(|error| change_failed::<S>(&error, Some(ErrorCode::WrongSetupCode)))?;
+    // The code is dead from here on: the file that holds it goes now, not at the next start. The
+    // start-up clean-up stays as a safety net for a file that cannot be removed now.
+    if let Some(file) = &ctx.services.setup_code_file
+        && let Err(error) = file.remove()
+    {
+        tracing::warn!(cause = %error, "the setup code file could not be removed");
+    }
     ctx.note(
         SecurityAction::SetupCompleted,
         Some(person.id),

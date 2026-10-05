@@ -86,7 +86,7 @@ use_cases! {
     /// Ends all sessions of the person.
     sign_out_everywhere(SignOutEverywhere) -> Done;
     /// Ends one session of the person.
-    end_session(EndSession) -> Done;
+    end_session(EndSession) -> SessionEnded;
     /// Lists the sessions of the person.
     sessions(SessionsQuery) -> SessionList;
     /// Changes the password.

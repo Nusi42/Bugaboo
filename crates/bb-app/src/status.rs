@@ -4,6 +4,7 @@
 //! an adapter in `bb-server`, because only the server knows its database, its certificate and the
 //! security log together.
 
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::Duration;
 
 use jiff::Timestamp;
@@ -36,6 +37,39 @@ pub enum LogBreak {
     Truncated,
     /// The file that vouches for the end of the log was changed.
     Anchor,
+    /// The anchor file knows of newer entries than the database has: the database was restored
+    /// from an older backup, lost its last writes, or the end of the log was cut off.
+    Behind,
+}
+
+/// How many security-log entries the server has written, and how many it could not write, since
+/// it started (SEC-15, M1-F40). A failed write does not refuse the request (the decision of M1),
+/// so this count is how the status page can tell that the log lags. The number of entries
+/// written also tells the status page that the log has changed since it last looked.
+#[derive(Debug, Default)]
+pub struct LogWrites {
+    written: AtomicU64,
+    failed: AtomicU64,
+}
+
+impl LogWrites {
+    /// Notes the result of one write.
+    pub(crate) fn record(&self, written: bool) {
+        let count = if written { &self.written } else { &self.failed };
+        count.fetch_add(1, Ordering::Relaxed);
+    }
+
+    /// How many entries were written since the server started.
+    #[must_use]
+    pub fn written(&self) -> u64 {
+        self.written.load(Ordering::Relaxed)
+    }
+
+    /// How many entries could not be written since the server started.
+    #[must_use]
+    pub fn failed(&self) -> u64 {
+        self.failed.load(Ordering::Relaxed)
+    }
 }
 
 /// What checking the security log found.
@@ -59,6 +93,93 @@ pub enum LogState {
     },
     /// The log could not be read at all (the database or the anchor file failed).
     Unreadable,
+}
+
+/// Whether other accounts on this computer can open a part of the data folder.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum Access {
+    /// Only the account that runs Bugaboo (and the administrators of the computer).
+    #[default]
+    Private,
+    /// Other accounts can open it: too open.
+    Open,
+    /// The rights could not be read (the system tool failed, or its answer was not understood).
+    /// It is never taken for private.
+    Unknown,
+}
+
+impl Access {
+    /// `Open` when `open` is true.
+    #[must_use]
+    pub const fn of(open: bool) -> Self {
+        if open { Self::Open } else { Self::Private }
+    }
+
+    /// Whether it is too open.
+    #[must_use]
+    pub const fn is_open(self) -> bool {
+        matches!(self, Self::Open)
+    }
+
+    /// The one of the two that needs more attention: open before unknown before private.
+    #[must_use]
+    pub const fn worse(self, other: Self) -> Self {
+        match (self, other) {
+            (Self::Open, _) | (_, Self::Open) => Self::Open,
+            (Self::Unknown, _) | (_, Self::Unknown) => Self::Unknown,
+            _ => Self::Private,
+        }
+    }
+}
+
+/// Which parts of the data folder other accounts on this computer can open. Bugaboo only looks: a
+/// folder that a person made or moved keeps its rights (SEC-16, M1-F65).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct DataFolderRights {
+    /// The data folder itself.
+    pub folder: Access,
+    /// The built-in database file and the files next to it.
+    pub database: Access,
+    /// The folder for attachments.
+    pub files: Access,
+    /// The folder for backups.
+    pub backups: Access,
+    /// The file with the setup code of a server without a console.
+    pub setup_code_file: Access,
+}
+
+impl DataFolderRights {
+    /// Nothing could be read: every part is unknown.
+    #[must_use]
+    pub const fn unknown() -> Self {
+        Self {
+            folder: Access::Unknown,
+            database: Access::Unknown,
+            files: Access::Unknown,
+            backups: Access::Unknown,
+            setup_code_file: Access::Unknown,
+        }
+    }
+
+    /// Whether the rights of anything could not be read.
+    #[must_use]
+    pub const fn any_unknown(&self) -> bool {
+        matches!(self.folder, Access::Unknown)
+            || matches!(self.database, Access::Unknown)
+            || matches!(self.files, Access::Unknown)
+            || matches!(self.backups, Access::Unknown)
+            || matches!(self.setup_code_file, Access::Unknown)
+    }
+
+    /// Whether anything is too open.
+    #[must_use]
+    pub const fn any(&self) -> bool {
+        self.folder.is_open()
+            || self.database.is_open()
+            || self.files.is_open()
+            || self.backups.is_open()
+            || self.setup_code_file.is_open()
+    }
 }
 
 /// The HTTPS certificate in use.
@@ -85,6 +206,11 @@ pub struct Snapshot {
     pub certificate: Option<CertificateState>,
     /// The result of checking the security log.
     pub security_log: LogState,
+    /// How many entries of the security log could not be written since the server started.
+    /// Signing in goes on when a write fails (the decision of M1), so this is the only sign.
+    pub log_write_failures: u64,
+    /// Which parts of the data folder other accounts on this computer can open.
+    pub data_folder: DataFolderRights,
 }
 
 /// Measures the server for the status page and for `/health/ready`.
@@ -92,7 +218,7 @@ pub trait ServerProbe: Send + Sync {
     /// Whether the database answers. Cheap: `/health/ready` calls it often.
     fn database_ok(&self) -> BoxFuture<'_, bool>;
 
-    /// Everything the status page shows. This checks the whole security log, so it is not for
-    /// frequent calls.
+    /// Everything the status page shows. The security log is checked from the end of the last
+    /// good check, not from the start.
     fn snapshot(&self) -> BoxFuture<'_, Snapshot>;
 }

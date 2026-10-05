@@ -124,6 +124,10 @@ pub const CLI_HELP_PORT: MessageKey = MessageKey::new("cli.help.port");
 /// The message `cli.help.public-url`.
 pub const CLI_HELP_PUBLIC_URL: MessageKey = MessageKey::new("cli.help.public-url");
 
+/// The message `cli.help.take-over-data-folder`.
+pub const CLI_HELP_TAKE_OVER_DATA_FOLDER: MessageKey =
+    MessageKey::new("cli.help.take-over-data-folder");
+
 /// The message `cli.help.tls`.
 pub const CLI_HELP_TLS: MessageKey = MessageKey::new("cli.help.tls");
 
@@ -232,6 +236,22 @@ pub const COOKIE_SESSION_PURPOSE: MessageKey = MessageKey::new("cookie.session.p
 /// The message `data-folder.account-unknown`.
 pub const DATA_FOLDER_ACCOUNT_UNKNOWN: MessageKey = MessageKey::new("data-folder.account-unknown");
 
+/// The message `data-folder.part.backups`.
+pub const DATA_FOLDER_PART_BACKUPS: MessageKey = MessageKey::new("data-folder.part.backups");
+
+/// The message `data-folder.part.database`.
+pub const DATA_FOLDER_PART_DATABASE: MessageKey = MessageKey::new("data-folder.part.database");
+
+/// The message `data-folder.part.files`.
+pub const DATA_FOLDER_PART_FILES: MessageKey = MessageKey::new("data-folder.part.files");
+
+/// The message `data-folder.part.folder`.
+pub const DATA_FOLDER_PART_FOLDER: MessageKey = MessageKey::new("data-folder.part.folder");
+
+/// The message `data-folder.part.setup-code-file`.
+pub const DATA_FOLDER_PART_SETUP_CODE_FILE: MessageKey =
+    MessageKey::new("data-folder.part.setup-code-file");
+
 /// The message `error.access.forbidden`.
 pub const ERROR_ACCESS_FORBIDDEN: MessageKey = MessageKey::new("error.access.forbidden");
 
@@ -273,6 +293,9 @@ pub const ERROR_EDIT_VERSION_CHANGED: MessageKey = MessageKey::new("error.edit.v
 /// The message `error.rate-limit.exceeded`.
 pub const ERROR_RATE_LIMIT_EXCEEDED: MessageKey = MessageKey::new("error.rate-limit.exceeded");
 
+/// The message `error.request.bad-cursor`.
+pub const ERROR_REQUEST_BAD_CURSOR: MessageKey = MessageKey::new("error.request.bad-cursor");
+
 /// The message `error.request.invalid`.
 pub const ERROR_REQUEST_INVALID: MessageKey = MessageKey::new("error.request.invalid");
 
@@ -285,6 +308,9 @@ pub const ERROR_REQUEST_TIMED_OUT: MessageKey = MessageKey::new("error.request.t
 
 /// The message `error.request.too-large`.
 pub const ERROR_REQUEST_TOO_LARGE: MessageKey = MessageKey::new("error.request.too-large");
+
+/// The message `error.request.unknown-field`.
+pub const ERROR_REQUEST_UNKNOWN_FIELD: MessageKey = MessageKey::new("error.request.unknown-field");
 
 /// The message `error.request.wrong-origin`.
 pub const ERROR_REQUEST_WRONG_ORIGIN: MessageKey = MessageKey::new("error.request.wrong-origin");
@@ -645,6 +671,9 @@ pub const SECOND_STEP_TITLE: MessageKey = MessageKey::new("second-step.title");
 
 /// The message `security-log.reason.anchor`.
 pub const SECURITY_LOG_REASON_ANCHOR: MessageKey = MessageKey::new("security-log.reason.anchor");
+
+/// The message `security-log.reason.behind`.
+pub const SECURITY_LOG_REASON_BEHIND: MessageKey = MessageKey::new("security-log.reason.behind");
 
 /// The message `security-log.reason.broken-link`.
 pub const SECURITY_LOG_REASON_BROKEN_LINK: MessageKey =
@@ -1027,6 +1056,18 @@ pub const STATUS_CERTIFICATE: MessageKey = MessageKey::new("status.certificate")
 /// The message `status.certificate.none`.
 pub const STATUS_CERTIFICATE_NONE: MessageKey = MessageKey::new("status.certificate.none");
 
+/// The message `status.data-folder`.
+pub const STATUS_DATA_FOLDER: MessageKey = MessageKey::new("status.data-folder");
+
+/// The message `status.data-folder.closed`.
+pub const STATUS_DATA_FOLDER_CLOSED: MessageKey = MessageKey::new("status.data-folder.closed");
+
+/// The message `status.data-folder.open`.
+pub const STATUS_DATA_FOLDER_OPEN: MessageKey = MessageKey::new("status.data-folder.open");
+
+/// The message `status.data-folder.unknown`.
+pub const STATUS_DATA_FOLDER_UNKNOWN: MessageKey = MessageKey::new("status.data-folder.unknown");
+
 /// The message `status.database`.
 pub const STATUS_DATABASE: MessageKey = MessageKey::new("status.database");
 
@@ -1102,6 +1143,21 @@ pub fn backup_left(count: i64) -> Message {
     Message::with_arguments(
         MessageKey::new("backup.left"),
         vec![("count", Value::Number(count))],
+    )
+}
+
+/// The message `cli.database-url-password`.
+#[must_use]
+pub fn cli_database_url_password(
+    file: impl std::fmt::Display,
+    variable: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("cli.database-url-password"),
+        vec![
+            ("file", Value::Text(file.to_string())),
+            ("variable", Value::Text(variable.to_string())),
+        ],
     )
 }
 
@@ -1287,6 +1343,33 @@ pub fn data_folder_not_a_data_folder(path: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `data-folder.open`.
+#[must_use]
+pub fn data_folder_open(part: impl std::fmt::Display, path: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("data-folder.open"),
+        vec![
+            ("part", Value::Text(part.to_string())),
+            ("path", Value::Text(path.to_string())),
+        ],
+    )
+}
+
+/// The message `data-folder.own-certificate`.
+#[must_use]
+pub fn data_folder_own_certificate(
+    flag: impl std::fmt::Display,
+    path: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("data-folder.own-certificate"),
+        vec![
+            ("flag", Value::Text(flag.to_string())),
+            ("path", Value::Text(path.to_string())),
+        ],
+    )
+}
+
 /// The message `data-folder.protect-failed`.
 #[must_use]
 pub fn data_folder_protect_failed(
@@ -1298,6 +1381,18 @@ pub fn data_folder_protect_failed(
         vec![
             ("path", Value::Text(path.to_string())),
             ("reason", Value::Text(reason.to_string())),
+        ],
+    )
+}
+
+/// The message `data-folder.unknown`.
+#[must_use]
+pub fn data_folder_unknown(part: impl std::fmt::Display, path: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("data-folder.unknown"),
+        vec![
+            ("part", Value::Text(part.to_string())),
+            ("path", Value::Text(path.to_string())),
         ],
     )
 }
@@ -1855,6 +1950,21 @@ pub fn setup_ask_replace(path: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `setup.database-url-password`.
+#[must_use]
+pub fn setup_database_url_password(
+    file: impl std::fmt::Display,
+    variable: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("setup.database-url-password"),
+        vec![
+            ("file", Value::Text(file.to_string())),
+            ("variable", Value::Text(variable.to_string())),
+        ],
+    )
+}
+
 /// The message `setup.exists`.
 #[must_use]
 pub fn setup_exists(path: impl std::fmt::Display) -> Message {
@@ -1933,6 +2043,15 @@ pub fn status_certificate_valid(date: impl std::fmt::Display, days: i64) -> Mess
             ("date", Value::Text(date.to_string())),
             ("days", Value::Number(days)),
         ],
+    )
+}
+
+/// The message `status.log-failures`.
+#[must_use]
+pub fn status_log_failures(count: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("status.log-failures"),
+        vec![("count", Value::Number(count))],
     )
 }
 
@@ -2116,6 +2235,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "Answer a few questions and save the answers in the settings file",
     ),
     (
+        "cli.database-url-password",
+        "The database address on the command line has a password in it, and other people on this computer can read the command line, for example in the list of running programs. Put database_url in your settings file ({file}) or in the environment variable {variable} instead, and leave the option out.",
+    ),
+    (
         "cli.help.address",
         "The address to listen on (default 127.0.0.1, this computer only)",
     ),
@@ -2144,6 +2267,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "cli.help.public-url",
         "The web address people type to reach Bugaboo, like https://bugaboo.example.com",
+    ),
+    (
+        "cli.help.take-over-data-folder",
+        "Take over a data folder that holds only your own files in its tls folder, such as a certificate you put there before the first start",
     ),
     ("cli.help.tls", "HTTPS mode: self-signed, files or off"),
     (
@@ -2297,8 +2424,25 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "The folder {path} has other files in it and does not look like a Bugaboo data folder. Installing the service would change who owns them. Choose an empty folder or a Bugaboo data folder as the data folder in your settings.",
     ),
     (
+        "data-folder.open",
+        "{part} {path} can be opened by other accounts on this computer. Bugaboo leaves it as it is, in case you set these rights on purpose. If nobody else should read it, remove the rights of the other accounts: on Linux run chmod go-rwx on it, on Windows open the Security tab of its properties.",
+    ),
+    (
+        "data-folder.own-certificate",
+        "The folder {path} holds only files of your own in its tls folder, such as a certificate. Installing the service would change who owns them. If this folder is meant to become the data folder of Bugaboo, run the command again with {flag}.",
+    ),
+    ("data-folder.part.backups", "The folder for backups"),
+    ("data-folder.part.database", "The database file"),
+    ("data-folder.part.files", "The folder for attachments"),
+    ("data-folder.part.folder", "The data folder"),
+    ("data-folder.part.setup-code-file", "The setup code file"),
+    (
         "data-folder.protect-failed",
         "The data folder {path} could not be made private to its owner: {reason}",
+    ),
+    (
+        "data-folder.unknown",
+        "{part} {path} could not be checked, because Bugaboo could not read its access rights. Check them yourself: other accounts on this computer should not be able to open it, unless you want that.",
     ),
     ("error.access.forbidden", "You are not allowed to do that."),
     (
@@ -2343,6 +2487,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "Too many tries. Please wait a little and try again.",
     ),
     (
+        "error.request.bad-cursor",
+        "This list changed. Start again from the top.",
+    ),
+    (
         "error.request.invalid",
         "Something in your request is not valid. Check what you typed and try again.",
     ),
@@ -2355,6 +2503,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "Your request took too long to arrive. Please try again.",
     ),
     ("error.request.too-large", "That is too big to send."),
+    (
+        "error.request.unknown-field",
+        "We could not find one of the fields you asked for. Check the field names and try again.",
+    ),
     (
         "error.request.wrong-origin",
         "That did not come from a Bugaboo page. Reload the page and try again.",
@@ -2447,7 +2599,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("frames.remove", "Remove"),
     ("frames.remove-name", "Remove {name}"),
     ("frames.removed", "{name} was removed."),
-    ("frames.title", "Screen frames"),
+    ("frames.title", "Page frames"),
     (
         "home.admin",
         "You are an administrator: you can invite people and see how the server is doing.",
@@ -2543,7 +2695,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("list.next", "Next"),
     ("list.previous", "Previous"),
     ("nav.appearance", "Appearance"),
-    ("nav.frames", "Screen frames"),
+    ("nav.frames", "Page frames"),
     ("nav.group.look", "Look and feel"),
     ("nav.group.people", "People"),
     ("nav.group.sign-in", "Sign-in"),
@@ -2636,6 +2788,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "security-log.reason.anchor",
         "the anchor file that vouches for the end of the log was changed.",
+    ),
+    (
+        "security-log.reason.behind",
+        "the database lacks the newest entries that the anchor file knows of. Check whether the database was restored from an older backup or lost its last writes. If neither happened, somebody removed entries.",
     ),
     (
         "security-log.reason.broken-link",
@@ -2779,7 +2935,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "service.settings-in-data",
-        "The settings file {path} is inside the data folder, which the service account can write to. Move the file out of the data folder, so that the service cannot change its own settings.",
+        "The settings file {path} is inside the data folder, which the account that runs the service can write to. Move the file out of the data folder, so that the service cannot change its own settings.",
     ),
     (
         "service.settings-is-link",
@@ -2877,6 +3033,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("setup.ask.tls-key", "Where is the private key file?"),
     ("setup.database-built-in", "built-in"),
     (
+        "setup.database-url-password",
+        "The database address on the command line has a password in it, and other people on this computer can read the command line, for example in the list of running programs. This time the address is saved in {file}. Next time answer the database question of setup instead of using the option, or set the environment variable {variable}.",
+    ),
+    (
         "setup.exists",
         "The settings file {path} already exists. Add --overwrite to replace it.",
     ),
@@ -2916,7 +3076,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("shortcut.in-lists", "Where a list is shown"),
     (
         "shortcut.intro",
-        "Press these keys instead of clicking. Every shortcut also has a button on the screen.",
+        "Press these keys instead of clicking. Every shortcut also has a button on the page.",
     ),
     ("shortcut.key.alt", "Alt"),
     ("shortcut.key.enter", "Enter"),
@@ -3013,6 +3173,19 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "status.certificate.valid",
         "Valid until {date}, which is {days, plural, one {# day} other {# days}} from now.",
     ),
+    ("status.data-folder", "Data folder rights"),
+    (
+        "status.data-folder.closed",
+        "Only the account that runs Bugaboo can open the parts of the data folder.",
+    ),
+    (
+        "status.data-folder.open",
+        "Other accounts on this computer can open these. Bugaboo leaves them as they are, in case you set these rights on purpose. If nobody else should read them, remove the rights of the other accounts.",
+    ),
+    (
+        "status.data-folder.unknown",
+        "Bugaboo could not read the rights of these, so it cannot say whether other accounts can open them. Check them yourself:",
+    ),
     ("status.database", "Database"),
     (
         "status.database.built-in",
@@ -3024,6 +3197,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("status.database.sqlite", "A SQLite file"),
     ("status.intro", "How this Bugaboo server is doing."),
     ("status.log", "Security log"),
+    (
+        "status.log-failures",
+        "{count, plural, one {# entry} other {# entries}} of the security log could not be written since the server started. Check that the disk is not full and that the account that runs Bugaboo can write in the data folder, then look at the server log.",
+    ),
     ("status.refresh", "Check again"),
     ("status.running", "Running for"),
     ("status.started", "Started {when}"),

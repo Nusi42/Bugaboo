@@ -485,7 +485,7 @@ the start. See [compliance.md](compliance.md) for what each model means legally.
 | Live updates | Kept for 1.0, implemented last (ISS-14, PERF-06)                         |
 | Editing      | No real-time co-editing in 1.0; edit locks with heartbeats, kept drafts and confirmed saves instead (ISS-17) |
 | Proposals    | UX design and architecture accepted                                      |
-| Testing      | Sample organization (4 projects, 2 with sub-projects, ≈ 10,000 issues, 50 people), 10-person concurrency tests, Vite + Vitest + Playwright on ports 47200–47299 (architecture §11) |
+| Testing      | Sample organization (4 projects, 2 with sub-projects, ≈ 10,000 issues, 50 people), 10-person concurrency tests, Vite + Vitest + Playwright on ports 47200–48099, a block of 100 for each work folder (architecture §11) |
 | People and IDs | Who sees people is configurable per role (PRIV-12); issue IDs counting or random, random by default (ISS-01a) |
 | Engineering  | SSOT, DRY, ODR mandatory; enforced by hooks ([coding-standards.md](coding-standards.md)) |
 | Calendar     | In 1.0 (PLAN-09)                                                         |

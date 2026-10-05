@@ -10,8 +10,8 @@ End-user and administrator documentation. It is written alongside the work on Bu
 
 Planned sections:
 
-- Using Bugaboo (issues, queries, boards, Gantt, time tracking)
-- Bugaboo Query Language (BQL) reference
+- Using Bugaboo (issues, searches, boards, Gantt, time tracking)
+- Search language reference
 - Administration (users, groups, roles, permissions, workflows, custom fields, themes)
 - AI assistant and MCP integration
 - Security hardening, backup and upgrade

@@ -1,0 +1,15 @@
+{
+  "paths": {
+    "/api/v1/issue/{id}": {},
+    "/api/v1/blogging": {}
+  },
+  "components": {
+    "schemas": {
+      "SignOutBody": {
+        "properties": {
+          "sign_in_name": {}
+        }
+      }
+    }
+  }
+}

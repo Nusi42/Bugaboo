@@ -12,7 +12,7 @@ export interface paths {
      * How the server is doing: version, uptime, database, certificate and the check of the security
      *     log. Administrators only.
      */
-    get: operations["getServerState"];
+    get: operations["getServerStatus"];
     put?: never;
     post?: never;
     delete?: never;
@@ -545,6 +545,11 @@ export interface components {
       /** @description The secret from the invitation link (the part after the `#`). */
       secret: string;
     };
+    /**
+     * @description Whether other accounts on this computer can open a part of the data folder.
+     * @enum {string}
+     */
+    AccessBody: "private" | "open" | "unknown";
     /** @description A passkey the device made, with the name the person gives it. */
     AddPasskeyBody: {
       /** @description The challenge that was answered. */
@@ -613,6 +618,22 @@ export interface components {
        */
       link_path: string;
     };
+    /**
+     * @description Which parts of the data folder other accounts on this computer can open. Bugaboo only looks;
+     *     a folder that somebody made or moved keeps its rights.
+     */
+    DataFolderOpenBody: {
+      /** @description The folder for backups. */
+      backups: components["schemas"]["AccessBody"];
+      /** @description The built-in database file and the files next to it. */
+      database: components["schemas"]["AccessBody"];
+      /** @description The folder for attachments. */
+      files: components["schemas"]["AccessBody"];
+      /** @description The data folder itself. */
+      folder: components["schemas"]["AccessBody"];
+      /** @description The file with the setup code of a server without a console. */
+      setup_code_file: components["schemas"]["AccessBody"];
+    };
     /** @description The database. */
     DatabaseBody: {
       /** @description Which one it is. The address is never shown: it can hold a password. */
@@ -642,6 +663,8 @@ export interface components {
       | "access.forbidden"
       | "resource.not_found"
       | "request.invalid"
+      | "request.unknown_field"
+      | "request.bad_cursor"
       | "request.wrong_origin"
       | "request.wrong_token"
       | "request.method_not_allowed"
@@ -662,7 +685,10 @@ export interface components {
       /** @description The ID of the invitation. */
       id: string;
     };
-    /** @description An invitation in a list: only the fields that were asked for. */
+    /**
+     * @description An invitation in a list: the fields that can be asked for. An answer holds only those that
+     *     were asked for.
+     */
     InvitationItem: {
       /** @description When it was made. */
       created_at?: string | null;
@@ -678,13 +704,6 @@ export interface components {
       /** @description The address the account will get. */
       email: string;
     };
-    /** @description One page of the open invitations, newest first. */
-    InvitationsBody: {
-      /** @description The invitations of this page. Only invitations that are still open are listed. */
-      items: components["schemas"]["InvitationItem"][];
-      /** @description The cursor of the next page; missing on the last page. */
-      next_cursor?: string | null;
-    };
     /** @description Somebody to invite. */
     InviteBody: {
       /** @description The e-mail address to invite. */
@@ -694,12 +713,38 @@ export interface components {
      * @description Why the chain of the security log does not verify.
      * @enum {string}
      */
-    LogBreakBody: "gap" | "broken_link" | "changed_content" | "checkpoint" | "truncated" | "anchor";
+    LogBreakBody:
+      | "gap"
+      | "broken_link"
+      | "changed_content"
+      | "checkpoint"
+      | "truncated"
+      | "anchor"
+      | "behind";
     /**
      * @description The result of checking the security log.
      * @enum {string}
      */
     LogResult: "valid" | "broken" | "unreadable";
+    /**
+     * @description One page of a list. `T` is the view of an item for the API description; an answer holds the
+     *     items cut to the chosen fields ([`Page::of`]).
+     */
+    Page_InvitationItem: {
+      /** @description The items of this page. */
+      items: {
+        /** @description When it was made. */
+        created_at?: string | null;
+        /** @description The address it is for. */
+        email?: string | null;
+        /** @description When it stops working. */
+        expires_at?: string | null;
+        /** @description The ID of the invitation. */
+        id?: string | null;
+      }[];
+      /** @description The cursor of the next page; `null` on the last page. */
+      next_cursor: string | null;
+    };
     /** @description What the device answered to a passkey challenge. */
     PasskeyAnswerBody: {
       /** @description The challenge that was answered. */
@@ -811,10 +856,24 @@ export interface components {
       reason?: components["schemas"]["LogBreakBody"] | null;
       /** @description The outcome. */
       result: components["schemas"]["LogResult"];
+      /**
+       * Format: int64
+       * @description How many entries could not be written since the server started. A failed write does not
+       *     stop a sign-in, so a number above zero means the log lags: check the disk and the rights
+       *     on the data folder.
+       */
+      write_failures: number;
     };
-    /** @description The state of the server, as the status page shows it. */
-    ServerStateBody: {
+    /** @description What `GET /api/v1/status` answers: the server is up. */
+    ServerStatus: {
+      /** @description Always `ok`; an answer at all means the server is running. */
+      status: components["schemas"]["StatusValue"];
+    };
+    /** @description The status of the server, as the status page shows it. */
+    ServerStatusBody: {
       certificate?: components["schemas"]["CertificateBody"] | null;
+      /** @description What of the data folder other accounts on this computer can open. */
+      data_folder_open: components["schemas"]["DataFolderOpenBody"];
       /** @description The database. */
       database: components["schemas"]["DatabaseBody"];
       /** @description The check of the security log. */
@@ -828,11 +887,6 @@ export interface components {
       uptime_seconds: number;
       /** @description The version of the program. */
       version: string;
-    };
-    /** @description What `GET /api/v1/status` answers: the server is up. */
-    ServerStatus: {
-      /** @description Always `ok`; an answer at all means the server is running. */
-      status: components["schemas"]["StatusValue"];
     };
     /** @description One session in *Where you're signed in*. */
     SessionBody: {
@@ -931,7 +985,7 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
-  getServerState: {
+  getServerStatus: {
     parameters: {
       query?: never;
       header?: never;
@@ -940,14 +994,25 @@ export interface operations {
     };
     requestBody?: never;
     responses: {
-      /** @description The state of the server. */
+      /** @description The status of the server. */
       200: {
         headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["ServerStateBody"];
+          "application/json": components["schemas"]["ServerStatusBody"];
         };
+      };
+      /** @description Nothing changed since the `ETag` that `If-None-Match` named. No body. */
+      304: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content?: never;
       };
       /** @description Not signed in (auth.not_signed_in). */
       401: {
@@ -1125,11 +1190,11 @@ export interface operations {
   listInvitations: {
     parameters: {
       query?: {
-        /** @description The fields each invitation holds, separated by commas: `id`, `email`, `created_at`, `expires_at`. Everything when left out. */
+        /** @description The fields each item holds, separated by commas. The answer schema names every field that can be asked for; when this is left out the route's own small default is used. */
         fields?: string;
         /** @description Where the page starts: the `next_cursor` of the page before. */
         cursor?: string;
-        /** @description How many invitations a page holds at most (default 50). */
+        /** @description How many items a page holds at most (default 50, at most 100). */
         limit?: number;
       };
       header?: never;
@@ -1138,14 +1203,25 @@ export interface operations {
     };
     requestBody?: never;
     responses: {
-      /** @description The open invitations. */
+      /** @description The open invitations, newest first. Only invitations that are still open are listed. */
       200: {
         headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["InvitationsBody"];
+          "application/json": components["schemas"]["Page_InvitationItem"];
         };
+      };
+      /** @description Nothing changed since the `ETag` that `If-None-Match` named. No body. */
+      304: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content?: never;
       };
       /** @description Not signed in (auth.not_signed_in). */
       401: {
@@ -1365,11 +1441,22 @@ export interface operations {
       /** @description The signed-in person. */
       200: {
         headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
           [name: string]: unknown;
         };
         content: {
           "application/json": components["schemas"]["PersonBody"];
         };
+      };
+      /** @description Nothing changed since the `ETag` that `If-None-Match` named. No body. */
+      304: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content?: never;
       };
       /** @description Not signed in (auth.not_signed_in). */
       401: {
@@ -2064,11 +2151,22 @@ export interface operations {
       /** @description Where the person is signed in. */
       200: {
         headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
           [name: string]: unknown;
         };
         content: {
           "application/json": components["schemas"]["SessionsBody"];
         };
+      };
+      /** @description Nothing changed since the `ETag` that `If-None-Match` named. No body. */
+      304: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content?: never;
       };
       /** @description Not signed in (auth.not_signed_in). */
       401: {
@@ -2542,11 +2640,22 @@ export interface operations {
       /** @description The rule for signing up. */
       200: {
         headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
           [name: string]: unknown;
         };
         content: {
           "application/json": components["schemas"]["SignUpPolicyBody"];
         };
+      };
+      /** @description Nothing changed since the `ETag` that `If-None-Match` named. No body. */
+      304: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content?: never;
       };
       /** @description Not signed in (auth.not_signed_in). */
       401: {
@@ -2689,11 +2798,22 @@ export interface operations {
       /** @description What the app needs before anybody signs in. */
       200: {
         headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
           [name: string]: unknown;
         };
         content: {
           "application/json": components["schemas"]["AuthStatusBody"];
         };
+      };
+      /** @description Nothing changed since the `ETag` that `If-None-Match` named. No body. */
+      304: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content?: never;
       };
       /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
       429: {
@@ -2738,11 +2858,22 @@ export interface operations {
       /** @description The second step of the person. */
       200: {
         headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
           [name: string]: unknown;
         };
         content: {
           "application/json": components["schemas"]["TwoStepBody"];
         };
+      };
+      /** @description Nothing changed since the `ETag` that `If-None-Match` named. No body. */
+      304: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content?: never;
       };
       /** @description Not signed in (auth.not_signed_in). */
       401: {
@@ -3105,11 +3236,22 @@ export interface operations {
       /** @description The OpenAPI document of this API. */
       200: {
         headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
           [name: string]: unknown;
         };
         content: {
           "application/json": Record<string, unknown>;
         };
+      };
+      /** @description Nothing changed since the `ETag` that `If-None-Match` named. No body. */
+      304: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content?: never;
       };
       /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
       429: {
@@ -3154,11 +3296,22 @@ export interface operations {
       /** @description The server is running. */
       200: {
         headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
           [name: string]: unknown;
         };
         content: {
           "application/json": components["schemas"]["ServerStatus"];
         };
+      };
+      /** @description Nothing changed since the `ETag` that `If-None-Match` named. No body. */
+      304: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content?: never;
       };
       /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
       429: {

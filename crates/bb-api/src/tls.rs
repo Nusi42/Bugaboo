@@ -8,7 +8,7 @@ use std::fmt;
 use std::fs;
 use std::io::{self, Write as _};
 use std::path::{Path, PathBuf};
-use std::sync::Arc;
+use std::sync::{Arc, Mutex, PoisonError, RwLock};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use rcgen::{CertificateParams, DistinguishedName, DnType, KeyPair, date_time_ymd};
@@ -16,6 +16,8 @@ use rustls::ServerConfig;
 use rustls::crypto::ring::default_provider;
 use rustls::pki_types::pem::PemObject as _;
 use rustls::pki_types::{CertificateDer, PrivateKeyDer};
+use rustls::server::{ClientHello, ResolvesServerCert};
+use rustls::sign::CertifiedKey;
 
 /// File names inside the data folder's `tls/` folder.
 const CERT_FILE: &str = "self-signed-cert.pem";
@@ -120,11 +122,126 @@ pub fn certificate_end(cert: &Path) -> Option<i64> {
 }
 
 /// The server-side TLS settings for `source`. A self-signed certificate is made (or renewed)
-/// here if needed.
+/// here if needed. The settings never change while the server runs; [`serve_certificate`] gives
+/// the ones that follow a renewed or replaced certificate.
 ///
 /// # Errors
 /// Returns what is wrong with the files, or why a certificate could not be made.
 pub fn server_config(source: &TlsSource) -> Result<Arc<ServerConfig>, TlsError> {
+    serve_certificate(source).map(|served| served.config())
+}
+
+/// What a check of the certificate found (see [`ServedCertificate::renew`]).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Renewal {
+    /// The certificate in use is still the right one.
+    Kept,
+    /// The server made a new certificate (it was close to its end, or its names changed) and
+    /// serves it from now on.
+    Renewed,
+    /// The owner put another certificate in the files, and the server serves it from now on.
+    Reloaded,
+}
+
+/// The certificate the server hands out. Connections that start after a swap get the new
+/// certificate; connections that are open keep the one they started with.
+#[derive(Debug)]
+struct Swappable(RwLock<Arc<CertifiedKey>>);
+
+impl Swappable {
+    fn new(key: Arc<CertifiedKey>) -> Self {
+        Self(RwLock::new(key))
+    }
+
+    fn current(&self) -> Arc<CertifiedKey> {
+        Arc::clone(&self.0.read().unwrap_or_else(PoisonError::into_inner))
+    }
+
+    fn replace(&self, key: Arc<CertifiedKey>) {
+        *self.0.write().unwrap_or_else(PoisonError::into_inner) = key;
+    }
+}
+
+impl ResolvesServerCert for Swappable {
+    fn resolve(&self, _hello: ClientHello<'_>) -> Option<Arc<CertifiedKey>> {
+        Some(self.current())
+    }
+}
+
+/// The certificate in use, as the status page shows it and the renewal compares it.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+struct Served {
+    /// Which certificate it is: a short digest of its first (own) certificate.
+    id: u64,
+    /// When it stops being valid, in seconds since 1970.
+    ends: Option<i64>,
+}
+
+/// The TLS settings of a running server together with what keeps them current (SEC-10, M1-F03):
+/// [`renew`](Self::renew) makes a new generated certificate when under 30 days are left and
+/// picks up own certificate files that changed, without a restart.
+pub struct ServedCertificate {
+    source: TlsSource,
+    resolver: Arc<Swappable>,
+    config: Arc<ServerConfig>,
+    served: Mutex<Served>,
+}
+
+impl ServedCertificate {
+    /// The settings for the listener. They stay the same object for the life of the server; the
+    /// certificate inside them is swapped.
+    #[must_use]
+    pub fn config(&self) -> Arc<ServerConfig> {
+        Arc::clone(&self.config)
+    }
+
+    /// When the certificate in use stops being valid, in seconds since 1970; `None` when the
+    /// certificate has no readable end.
+    #[must_use]
+    pub fn expires_at(&self) -> Option<i64> {
+        self.served
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .ends
+    }
+
+    /// Looks at the certificate at the moment `now` (seconds since 1970) and swaps in a new one
+    /// when it is due. A self-signed certificate is renewed when less than 30 days are left or
+    /// the wanted names changed (see `ensure_self_signed`); an own certificate is read again and
+    /// swapped when the files hold another one. A pair of files that cannot be used is left
+    /// alone: the old certificate keeps serving, and the error says what is wrong.
+    ///
+    /// # Errors
+    /// Returns what is wrong with the files, or why a certificate could not be made. The
+    /// certificate in use is not changed then.
+    pub fn renew(&self, now: i64) -> Result<Renewal, TlsError> {
+        let (cert, key) = match &self.source {
+            TlsSource::SelfSigned { folder, names } => {
+                ensure_self_signed(folder, names, now)?;
+                (folder.join(CERT_FILE), folder.join(KEY_FILE))
+            }
+            TlsSource::Files { cert, key } => (cert.clone(), key.clone()),
+        };
+        let (certified, served) = load_certified(&cert, &key)?;
+        let mut current = self.served.lock().unwrap_or_else(PoisonError::into_inner);
+        if current.id == served.id {
+            return Ok(Renewal::Kept);
+        }
+        self.resolver.replace(certified);
+        *current = served;
+        Ok(match self.source {
+            TlsSource::SelfSigned { .. } => Renewal::Renewed,
+            TlsSource::Files { .. } => Renewal::Reloaded,
+        })
+    }
+}
+
+/// The certificate and key of `source` (a self-signed pair is made or renewed first), ready to
+/// be served and to be swapped later.
+///
+/// # Errors
+/// Returns what is wrong with the files, or why a certificate could not be made.
+pub fn serve_certificate(source: &TlsSource) -> Result<ServedCertificate, TlsError> {
     let (cert, key) = match source {
         TlsSource::SelfSigned { folder, names } => {
             ensure_self_signed(folder, names, now_seconds())?;
@@ -132,33 +249,72 @@ pub fn server_config(source: &TlsSource) -> Result<Arc<ServerConfig>, TlsError> 
         }
         TlsSource::Files { cert, key } => (cert.clone(), key.clone()),
     };
-    load(&cert, &key)
+    let (certified, served) = load_certified(&cert, &key)?;
+    let resolver = Arc::new(Swappable::new(certified));
+    let config = settings_for(Arc::clone(&resolver))?;
+    Ok(ServedCertificate {
+        source: source.clone(),
+        resolver,
+        config,
+        served: Mutex::new(served),
+    })
 }
 
-/// Reads a certificate chain and key and builds the settings. Fails when the key does not
-/// belong to the certificate.
-fn load(cert: &Path, key: &Path) -> Result<Arc<ServerConfig>, TlsError> {
+/// The TLS settings that hand out whatever certificate `resolver` holds.
+fn settings_for(resolver: Arc<Swappable>) -> Result<Arc<ServerConfig>, TlsError> {
+    let mut config = ServerConfig::builder_with_provider(Arc::new(default_provider()))
+        .with_safe_default_protocol_versions()
+        .map_err(|error| unusable(&error))?
+        .with_no_client_auth()
+        .with_cert_resolver(resolver);
+    config.alpn_protocols = vec![b"h2".to_vec(), b"http/1.1".to_vec()];
+    Ok(Arc::new(config))
+}
+
+fn unusable(error: &rustls::Error) -> TlsError {
+    TlsError::Unusable {
+        reason: error.to_string(),
+    }
+}
+
+/// Reads a certificate chain and key. Fails when the key does not belong to the certificate.
+fn load_certified(cert: &Path, key: &Path) -> Result<(Arc<CertifiedKey>, Served), TlsError> {
     let chain = CertificateDer::pem_file_iter(cert)
         .map_err(|error| pem_error(cert, error, false))?
         .collect::<Result<Vec<_>, _>>()
         .map_err(|error| pem_error(cert, error, false))?;
-    if chain.is_empty() {
+    let Some(leaf) = chain.first() else {
         return Err(TlsError::NoCertificate {
             path: cert.to_path_buf(),
         });
-    }
-    let key_der = PrivateKeyDer::from_pem_file(key).map_err(|error| pem_error(key, error, true))?;
-    let unusable = |error: rustls::Error| TlsError::Unusable {
-        reason: error.to_string(),
     };
-    let mut config = ServerConfig::builder_with_provider(Arc::new(default_provider()))
-        .with_safe_default_protocol_versions()
-        .map_err(unusable)?
-        .with_no_client_auth()
-        .with_single_cert(chain, key_der)
-        .map_err(unusable)?;
-    config.alpn_protocols = vec![b"h2".to_vec(), b"http/1.1".to_vec()];
-    Ok(Arc::new(config))
+    let key_der = PrivateKeyDer::from_pem_file(key).map_err(|error| pem_error(key, error, true))?;
+    // The whole chain and the key tell the certificate in use from the one in the files: an owner
+    // may replace the intermediate certificates or the key and keep the first certificate.
+    let mut parts: Vec<&[u8]> = chain.iter().map(AsRef::as_ref).collect();
+    parts.push(key_der.secret_der());
+    let served = Served {
+        id: digest(&parts),
+        ends: not_after(leaf.as_ref()),
+    };
+    let certified = CertifiedKey::from_der(chain, key_der, &default_provider())
+        .map_err(|error| unusable(&error))?;
+    Ok((Arc::new(certified), served))
+}
+
+/// A short digest of the parts (every certificate of the chain and the key, each with its length
+/// in front): enough to tell the certificate in use from the one in the files, not a security
+/// measure.
+fn digest(parts: &[&[u8]]) -> u64 {
+    // FNV-1a.
+    let mut hash: u64 = 0xcbf2_9ce4_8422_2325;
+    for part in parts {
+        let length = u64::try_from(part.len()).unwrap_or(u64::MAX).to_be_bytes();
+        for byte in length.iter().chain(part.iter()) {
+            hash = (hash ^ u64::from(*byte)).wrapping_mul(0x0100_0000_01b3);
+        }
+    }
+    hash
 }
 
 fn pem_error(path: &Path, error: rustls::pki_types::pem::Error, key: bool) -> TlsError {
@@ -187,7 +343,7 @@ fn ensure_self_signed(folder: &Path, extra: &[String], now: i64) -> Result<(), T
         .is_ok_and(|text| text.lines().eq(wanted.iter().map(String::as_str)));
     let fresh = end.is_some_and(|end| end - now > RENEW_BEFORE_DAYS * SECONDS_PER_DAY);
     // A key that does not match (a half-finished write, a copied file) is replaced too.
-    if fresh && same_names && load(&cert_path, &key_path).is_ok() {
+    if fresh && same_names && load_certified(&cert_path, &key_path).is_ok() {
         #[cfg(unix)]
         for path in [&key_path, &cert_path, &names_path] {
             restrict_file(path)?;
@@ -493,7 +649,7 @@ mod tests {
         ensure_self_signed(other.path(), &[], now).unwrap();
         fs::copy(other.path().join(KEY_FILE), folder.path().join(KEY_FILE)).unwrap();
         assert!(
-            load(
+            load_certified(
                 &certificate_path(folder.path()),
                 &folder.path().join(KEY_FILE)
             )
@@ -501,7 +657,7 @@ mod tests {
         );
         ensure_self_signed(folder.path(), &[], now).unwrap();
         assert!(
-            load(
+            load_certified(
                 &certificate_path(folder.path()),
                 &folder.path().join(KEY_FILE)
             )
@@ -545,5 +701,111 @@ mod tests {
             server_config(&mixed),
             Err(TlsError::Unusable { .. })
         ));
+    }
+
+    fn self_signed(folder: &Path) -> ServedCertificate {
+        serve_certificate(&TlsSource::SelfSigned {
+            folder: folder.to_path_buf(),
+            names: vec![],
+        })
+        .unwrap()
+    }
+
+    #[test]
+    fn sec_10_a_certificate_near_its_end_is_renewed_in_place_and_the_end_moves() {
+        let folder = tempfile::tempdir().unwrap();
+        let served = self_signed(folder.path());
+        let settings = served.config();
+        let first = served.expires_at().unwrap();
+        let now = now_seconds();
+        assert_eq!(served.renew(now).unwrap(), Renewal::Kept);
+        assert_eq!(served.expires_at(), Some(first));
+
+        // Eleven months later less than 30 days are left: a new certificate is made and served.
+        let late = now + (VALID_DAYS - RENEW_BEFORE_DAYS + 1) * SECONDS_PER_DAY;
+        assert_eq!(served.renew(late).unwrap(), Renewal::Renewed);
+        let renewed = served.expires_at().unwrap();
+        assert!(
+            renewed > first + 300 * SECONDS_PER_DAY,
+            "{first} -> {renewed}"
+        );
+        assert_eq!(
+            renewed,
+            certificate_end(&certificate_path(folder.path())).unwrap()
+        );
+        assert!(
+            Arc::ptr_eq(&settings, &served.config()),
+            "the settings stay one object"
+        );
+        // Looking again changes nothing.
+        assert_eq!(served.renew(late).unwrap(), Renewal::Kept);
+    }
+
+    /// Writes a new certificate and key as the files an owner would provide.
+    fn provide(folder: &Path, name: &str, now: i64) -> (PathBuf, PathBuf) {
+        let (cert, key) = generate(&wanted_names(&[]), now).unwrap();
+        let (cert_path, key_path) = (
+            folder.join(format!("{name}-cert.pem")),
+            folder.join(format!("{name}-key.pem")),
+        );
+        fs::write(&cert_path, cert).unwrap();
+        fs::write(&key_path, key).unwrap();
+        (cert_path, key_path)
+    }
+
+    #[test]
+    fn sec_10_an_own_certificate_is_read_again_when_the_files_change() {
+        let folder = tempfile::tempdir().unwrap();
+        let now = now_seconds();
+        let (cert, key) = provide(folder.path(), "own", now);
+        let served = serve_certificate(&TlsSource::Files {
+            cert: cert.clone(),
+            key: key.clone(),
+        })
+        .unwrap();
+        let first = served.expires_at().unwrap();
+        assert_eq!(served.renew(now).unwrap(), Renewal::Kept);
+
+        // The owner puts in a certificate that is valid for longer.
+        let (cert_pem, key_pem) =
+            generate(&wanted_names(&[]), now + 100 * SECONDS_PER_DAY).unwrap();
+        fs::write(&cert, &cert_pem).unwrap();
+        fs::write(&key, &key_pem).unwrap();
+        assert_eq!(served.renew(now).unwrap(), Renewal::Reloaded);
+        assert!(served.expires_at().unwrap() > first + 90 * SECONDS_PER_DAY);
+
+        // Files that cannot be used (a certificate that has no matching key, half a copy) leave
+        // the certificate in use alone and say what is wrong; the next good pair is picked up.
+        let in_use = served.expires_at();
+        let (other_cert, _) = provide(folder.path(), "other", now);
+        fs::copy(&other_cert, &cert).unwrap();
+        assert!(matches!(served.renew(now), Err(TlsError::Unusable { .. })));
+        fs::write(&cert, "not a certificate").unwrap();
+        assert!(matches!(
+            served.renew(now),
+            Err(TlsError::NoCertificate { .. })
+        ));
+        assert_eq!(served.expires_at(), in_use);
+        fs::write(&cert, &cert_pem).unwrap();
+        assert_eq!(served.renew(now).unwrap(), Renewal::Kept);
+    }
+
+    #[test]
+    fn sec_10_a_changed_chain_with_the_same_first_certificate_is_served() {
+        let folder = tempfile::tempdir().unwrap();
+        let now = now_seconds();
+        let (cert, key) = provide(folder.path(), "own", now);
+        let served = serve_certificate(&TlsSource::Files {
+            cert: cert.clone(),
+            key: key.clone(),
+        })
+        .unwrap();
+        assert_eq!(served.renew(now).unwrap(), Renewal::Kept);
+        // The owner adds an intermediate certificate behind the first one; the first is the same.
+        let leaf = fs::read_to_string(&cert).unwrap();
+        let (other, _) = generate(&wanted_names(&[]), now).unwrap();
+        fs::write(&cert, format!("{leaf}{other}")).unwrap();
+        assert_eq!(served.renew(now).unwrap(), Renewal::Reloaded);
+        assert_eq!(served.renew(now).unwrap(), Renewal::Kept);
     }
 }

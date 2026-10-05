@@ -77,6 +77,26 @@ async fn open_sqlite_once(options: SqliteConnectOptions) -> Result<SqlitePool, s
         .await
 }
 
+/// Makes the database file before SQLite does, readable by its owner only: SQLite would make it
+/// with the mode the umask leaves (0644), and the `-wal` and `-shm` files it keeps next to it copy
+/// that mode (SEC-16, M1-F65). A file that exists keeps the rights it has. On Windows the file
+/// inherits the access list of the data folder.
+#[cfg(unix)]
+fn make_private_file(file: &std::path::Path) -> Result<(), StoreError> {
+    use std::os::unix::fs::OpenOptionsExt as _;
+    match std::fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .mode(0o600)
+        .open(file)
+    {
+        Err(error) if error.kind() != std::io::ErrorKind::AlreadyExists => {
+            Err(StoreError::Database(sqlx::Error::Io(error)))
+        }
+        _ => Ok(()),
+    }
+}
+
 /// The two databases Bugaboo supports.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Dialect {
@@ -131,6 +151,8 @@ impl Database {
     /// # Errors
     /// Fails when the database cannot be opened.
     pub async fn connect_file(file: &std::path::Path) -> Result<Self, StoreError> {
+        #[cfg(unix)]
+        make_private_file(file)?;
         Ok(Self {
             pool: Pool::Sqlite(open_sqlite(SqliteConnectOptions::new().filename(file)).await?),
         })
@@ -544,5 +566,33 @@ mod tests {
     fn m1_f24_only_a_busy_or_locked_database_is_tried_again() {
         assert!(!is_locked(&sqlx::Error::RowNotFound));
         assert!(!is_locked(&sqlx::Error::PoolTimedOut));
+    }
+    /// The built-in database and the files SQLite keeps next to it are for the owner only, also
+    /// under the usual umask (SEC-16, M1-F65).
+    #[cfg(unix)]
+    #[tokio::test]
+    async fn sec_16_the_database_file_and_its_companions_are_private()
+    -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        use std::os::unix::fs::PermissionsExt as _;
+        let folder = tempfile::tempdir()?;
+        let file = folder.path().join("bugaboo.db");
+        let database = Database::connect_file(&file).await?;
+        database.ping().await?;
+        database.migrate(Timestamp::now()).await?;
+        for suffix in ["", "-wal", "-shm"] {
+            let mut name = file.clone().into_os_string();
+            name.push(suffix);
+            let mode = std::fs::metadata(&name)?.permissions().mode() & 0o777;
+            assert_eq!(mode & 0o077, 0, "{suffix}: {mode:o}");
+        }
+        // A file that exists keeps the rights it has.
+        database.close().await;
+        std::fs::set_permissions(&file, std::fs::Permissions::from_mode(0o640))?;
+        Database::connect_file(&file).await?;
+        assert_eq!(
+            std::fs::metadata(&file)?.permissions().mode() & 0o777,
+            0o640
+        );
+        Ok(())
     }
 }

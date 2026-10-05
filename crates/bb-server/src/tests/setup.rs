@@ -79,6 +79,46 @@ fn written(target: &Path) -> Result<Settings, Box<dyn std::error::Error + Send +
 }
 
 #[test]
+fn ops_10_a_database_url_with_a_password_on_the_setup_command_line_warns() -> TestResult {
+    let folder = tempfile::tempdir()?;
+    let target = folder.path().join("bugaboo.toml");
+    let line = "--non-interactive --port 8443 --database-url postgres://bugaboo:Hunter2-Secret@db.example.test/bugaboo";
+    let mut terminal = Script::new(&[]);
+    execute(&args(line), &mut terminal, &target, &all_free)?;
+    let said = terminal.said.join(
+        "
+",
+    );
+    // It says where the address went and where to put it next time, and never repeats it.
+    assert!(said.contains("command line"), "{said}");
+    assert!(said.contains("BUGABOO_DATABASE_URL"), "{said}");
+    assert!(said.contains(&target.display().to_string()), "{said}");
+    assert!(
+        !said.contains("Hunter2") && !said.contains("db.example"),
+        "{said}"
+    );
+    // The address itself is saved in the settings file.
+    assert!(std::fs::read_to_string(&target)?.contains("db.example.test"));
+
+    // No password, no warning.
+    let quiet = folder.path().join("quiet.toml");
+    let mut terminal = Script::new(&[]);
+    let plain =
+        "--non-interactive --port 8443 --database-url postgres://bugaboo@db.example.test/bugaboo";
+    execute(&args(plain), &mut terminal, &quiet, &all_free)?;
+    assert!(
+        !terminal
+            .said
+            .join(
+                "
+"
+            )
+            .contains("command line")
+    );
+    Ok(())
+}
+
+#[test]
 fn ops_03_the_defaults_make_a_file_the_server_accepts() -> TestResult {
     let folder = tempfile::tempdir()?;
     let target = folder.path().join("bugaboo.toml");

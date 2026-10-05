@@ -425,12 +425,11 @@ pub struct InvitationsQuery {
     pub session_token: String,
     /// Where the page after the last one starts (`next_cursor` of the page before), if any.
     pub cursor: Option<String>,
-    /// How many invitations a page holds at most; more than [`MAX_PAGE`] is cut to it.
+    /// How many invitations a page holds at most; more than `bb_core::paging::PAGE_SIZE_MAX` is
+    /// cut to it.
     pub limit: u32,
 }
 
-/// The most invitations a page holds.
-pub const MAX_PAGE: u32 = 100;
 /// The most sessions *Where you're signed in* lists.
 pub const MAX_SESSIONS_LISTED: usize = 50;
 /// The most passkeys the second-step answer lists (the most a person can have).
@@ -476,6 +475,13 @@ pub struct SignUpPolicyQuery {
 /// The backup codes made by [`RenewBackupCodes`] and [`ConfirmCodeApp`], shown once.
 #[derive(Clone)]
 pub struct BackupCodes(pub Vec<String>);
+
+/// One session of the person was ended.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct SessionEnded {
+    /// Whether it was the session of the request itself, so the person is signed out here.
+    pub own: bool,
+}
 
 /// Nothing to report; the request worked.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

@@ -10,15 +10,34 @@
       "get": {
         "tags": ["admin"],
         "summary": "How the server is doing: version, uptime, database, certificate and the check of the security\nlog. Administrators only.",
-        "operationId": "getServerState",
+        "operationId": "getServerStatus",
         "responses": {
           "200": {
-            "description": "The state of the server.",
+            "description": "The status of the server.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ServerStateBody"
+                  "$ref": "#/components/schemas/ServerStatusBody"
                 }
+              }
+            }
+          },
+          "304": {
+            "description": "Nothing changed since the `ETag` that `If-None-Match` named. No body.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
               }
             }
           },
@@ -80,7 +99,8 @@
               }
             }
           }
-        }
+        },
+        "x-never-stored": true
       }
     },
     "/api/v1/auth/invitation/accept": {
@@ -246,7 +266,7 @@
           {
             "name": "fields",
             "in": "query",
-            "description": "The fields each invitation holds, separated by commas: `id`, `email`, `created_at`, `expires_at`. Everything when left out.",
+            "description": "The fields each item holds, separated by commas. The answer schema names every field that can be asked for; when this is left out the route's own small default is used.",
             "required": false,
             "schema": {
               "type": "string"
@@ -264,11 +284,10 @@
           {
             "name": "limit",
             "in": "query",
-            "description": "How many invitations a page holds at most (default 50).",
+            "description": "How many items a page holds at most (default 50, at most 100).",
             "required": false,
             "schema": {
               "type": "integer",
-              "format": "int32",
               "maximum": 100,
               "minimum": 1
             }
@@ -276,12 +295,31 @@
         ],
         "responses": {
           "200": {
-            "description": "The open invitations.",
+            "description": "The open invitations, newest first. Only invitations that are still open are listed.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/InvitationsBody"
+                  "$ref": "#/components/schemas/Page_InvitationItem"
                 }
+              }
+            }
+          },
+          "304": {
+            "description": "Nothing changed since the `ETag` that `If-None-Match` named. No body.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
               }
             }
           },
@@ -343,7 +381,8 @@
               }
             }
           }
-        }
+        },
+        "x-never-stored": true
       },
       "post": {
         "tags": ["auth"],
@@ -540,11 +579,30 @@
         "responses": {
           "200": {
             "description": "The signed-in person.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/PersonBody"
                 }
+              }
+            }
+          },
+          "304": {
+            "description": "Nothing changed since the `ETag` that `If-None-Match` named. No body.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
               }
             }
           },
@@ -596,7 +654,8 @@
               }
             }
           }
-        }
+        },
+        "x-never-stored": true
       }
     },
     "/api/v1/auth/passkey/sign-in": {
@@ -1384,11 +1443,30 @@
         "responses": {
           "200": {
             "description": "Where the person is signed in.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/SessionsBody"
                 }
+              }
+            }
+          },
+          "304": {
+            "description": "Nothing changed since the `ETag` that `If-None-Match` named. No body.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
               }
             }
           },
@@ -1440,7 +1518,8 @@
               }
             }
           }
-        }
+        },
+        "x-never-stored": true
       },
       "delete": {
         "tags": ["auth"],
@@ -1941,11 +2020,30 @@
         "responses": {
           "200": {
             "description": "The rule for signing up.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/SignUpPolicyBody"
                 }
+              }
+            }
+          },
+          "304": {
+            "description": "Nothing changed since the `ETag` that `If-None-Match` named. No body.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
               }
             }
           },
@@ -2113,11 +2211,30 @@
         "responses": {
           "200": {
             "description": "What the app needs before anybody signs in.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/AuthStatusBody"
                 }
+              }
+            }
+          },
+          "304": {
+            "description": "Nothing changed since the `ETag` that `If-None-Match` named. No body.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
               }
             }
           },
@@ -2170,11 +2287,30 @@
         "responses": {
           "200": {
             "description": "The second step of the person.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/TwoStepBody"
                 }
+              }
+            }
+          },
+          "304": {
+            "description": "Nothing changed since the `ETag` that `If-None-Match` named. No body.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
               }
             }
           },
@@ -2226,7 +2362,8 @@
               }
             }
           }
-        }
+        },
+        "x-never-stored": true
       }
     },
     "/api/v1/auth/two-step/backup-codes": {
@@ -2608,11 +2745,30 @@
         "responses": {
           "200": {
             "description": "The OpenAPI document of this API.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object"
                 }
+              }
+            }
+          },
+          "304": {
+            "description": "Nothing changed since the `ETag` that `If-None-Match` named. No body.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
               }
             }
           },
@@ -2665,11 +2821,30 @@
         "responses": {
           "200": {
             "description": "The server is running.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ServerStatus"
                 }
+              }
+            }
+          },
+          "304": {
+            "description": "Nothing changed since the `ETag` that `If-None-Match` named. No body.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
               }
             }
           },
@@ -2736,6 +2911,11 @@
           }
         }
       },
+      "AccessBody": {
+        "type": "string",
+        "description": "Whether other accounts on this computer can open a part of the data folder.",
+        "enum": ["private", "open", "unknown"]
+      },
       "AddPasskeyBody": {
         "type": "object",
         "description": "A passkey the device made, with the name the person gives it.",
@@ -2786,7 +2966,8 @@
           "codes": {
             "type": "array",
             "items": {
-              "type": "string"
+              "type": "string",
+              "x-secret": true
             },
             "description": "The codes. They are not stored in this form and cannot be shown again."
           }
@@ -2825,15 +3006,18 @@
         "properties": {
           "otpauth_url": {
             "type": "string",
-            "description": "The address the code app reads."
+            "description": "The address the code app reads.",
+            "x-secret": true
           },
           "qr_png_base64": {
             "type": "string",
-            "description": "The QR picture of the address (PNG, base64)."
+            "description": "The QR picture of the address (PNG, base64).",
+            "x-secret": true
           },
           "secret": {
             "type": "string",
-            "description": "The secret as text, for typing it into the app."
+            "description": "The secret as text, for typing it into the app.",
+            "x-secret": true
           }
         }
       },
@@ -2874,7 +3058,35 @@
           },
           "link_path": {
             "type": "string",
-            "description": "The page the link opens, with the secret after the `#`. Put the address of this server\nin front. The secret is not stored and cannot be shown again."
+            "description": "The page the link opens, with the secret after the `#`. Put the address of this server\nin front. The secret is not stored and cannot be shown again.",
+            "x-secret": true
+          }
+        }
+      },
+      "DataFolderOpenBody": {
+        "type": "object",
+        "description": "Which parts of the data folder other accounts on this computer can open. Bugaboo only looks;\na folder that somebody made or moved keeps its rights.",
+        "required": ["folder", "database", "files", "backups", "setup_code_file"],
+        "properties": {
+          "backups": {
+            "$ref": "#/components/schemas/AccessBody",
+            "description": "The folder for backups."
+          },
+          "database": {
+            "$ref": "#/components/schemas/AccessBody",
+            "description": "The built-in database file and the files next to it."
+          },
+          "files": {
+            "$ref": "#/components/schemas/AccessBody",
+            "description": "The folder for attachments."
+          },
+          "folder": {
+            "$ref": "#/components/schemas/AccessBody",
+            "description": "The data folder itself."
+          },
+          "setup_code_file": {
+            "$ref": "#/components/schemas/AccessBody",
+            "description": "The file with the setup code of a server without a console."
           }
         }
       },
@@ -2914,6 +3126,8 @@
           "access.forbidden",
           "resource.not_found",
           "request.invalid",
+          "request.unknown_field",
+          "request.bad_cursor",
           "request.wrong_origin",
           "request.wrong_token",
           "request.method_not_allowed",
@@ -2950,7 +3164,7 @@
       },
       "InvitationItem": {
         "type": "object",
-        "description": "An invitation in a list: only the fields that were asked for.",
+        "description": "An invitation in a list: the fields that can be asked for. An answer holds only those that\nwere asked for.",
         "properties": {
           "created_at": {
             "type": ["string", "null"],
@@ -2981,24 +3195,6 @@
           }
         }
       },
-      "InvitationsBody": {
-        "type": "object",
-        "description": "One page of the open invitations, newest first.",
-        "required": ["items"],
-        "properties": {
-          "items": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/InvitationItem"
-            },
-            "description": "The invitations of this page. Only invitations that are still open are listed."
-          },
-          "next_cursor": {
-            "type": ["string", "null"],
-            "description": "The cursor of the next page; missing on the last page."
-          }
-        }
-      },
       "InviteBody": {
         "type": "object",
         "description": "Somebody to invite.",
@@ -3013,12 +3209,57 @@
       "LogBreakBody": {
         "type": "string",
         "description": "Why the chain of the security log does not verify.",
-        "enum": ["gap", "broken_link", "changed_content", "checkpoint", "truncated", "anchor"]
+        "enum": [
+          "gap",
+          "broken_link",
+          "changed_content",
+          "checkpoint",
+          "truncated",
+          "anchor",
+          "behind"
+        ]
       },
       "LogResult": {
         "type": "string",
         "description": "The result of checking the security log.",
         "enum": ["valid", "broken", "unreadable"]
+      },
+      "Page_InvitationItem": {
+        "type": "object",
+        "description": "One page of a list. `T` is the view of an item for the API description; an answer holds the\nitems cut to the chosen fields ([`Page::of`]).",
+        "required": ["items", "next_cursor"],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "An invitation in a list: the fields that can be asked for. An answer holds only those that\nwere asked for.",
+              "properties": {
+                "created_at": {
+                  "type": ["string", "null"],
+                  "description": "When it was made."
+                },
+                "email": {
+                  "type": ["string", "null"],
+                  "description": "The address it is for."
+                },
+                "expires_at": {
+                  "type": ["string", "null"],
+                  "description": "When it stops working."
+                },
+                "id": {
+                  "type": ["string", "null"],
+                  "description": "The ID of the invitation."
+                }
+              }
+            },
+            "description": "The items of this page."
+          },
+          "next_cursor": {
+            "type": ["string", "null"],
+            "description": "The cursor of the next page; `null` on the last page."
+          }
+        }
       },
       "PasskeyAnswerBody": {
         "type": "object",
@@ -3181,7 +3422,7 @@
       "SecurityLogBody": {
         "type": "object",
         "description": "What checking the security log found.",
-        "required": ["result"],
+        "required": ["result", "write_failures"],
         "properties": {
           "anchored": {
             "type": ["boolean", "null"],
@@ -3221,13 +3462,37 @@
           "result": {
             "$ref": "#/components/schemas/LogResult",
             "description": "The outcome."
+          },
+          "write_failures": {
+            "type": "integer",
+            "format": "int64",
+            "description": "How many entries could not be written since the server started. A failed write does not\nstop a sign-in, so a number above zero means the log lags: check the disk and the rights\non the data folder.",
+            "minimum": 0
           }
         }
       },
-      "ServerStateBody": {
+      "ServerStatus": {
         "type": "object",
-        "description": "The state of the server, as the status page shows it.",
-        "required": ["version", "started_at", "uptime_seconds", "database", "security_log"],
+        "description": "What `GET /api/v1/status` answers: the server is up.",
+        "required": ["status"],
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/StatusValue",
+            "description": "Always `ok`; an answer at all means the server is running."
+          }
+        }
+      },
+      "ServerStatusBody": {
+        "type": "object",
+        "description": "The status of the server, as the status page shows it.",
+        "required": [
+          "version",
+          "started_at",
+          "uptime_seconds",
+          "database",
+          "security_log",
+          "data_folder_open"
+        ],
         "properties": {
           "certificate": {
             "oneOf": [
@@ -3239,6 +3504,10 @@
                 "type": "null"
               }
             ]
+          },
+          "data_folder_open": {
+            "$ref": "#/components/schemas/DataFolderOpenBody",
+            "description": "What of the data folder other accounts on this computer can open."
           },
           "database": {
             "$ref": "#/components/schemas/DatabaseBody",
@@ -3261,17 +3530,6 @@
           "version": {
             "type": "string",
             "description": "The version of the program."
-          }
-        }
-      },
-      "ServerStatus": {
-        "type": "object",
-        "description": "What `GET /api/v1/status` answers: the server is up.",
-        "required": ["status"],
-        "properties": {
-          "status": {
-            "$ref": "#/components/schemas/StatusValue",
-            "description": "Always `ok`; an answer at all means the server is running."
           }
         }
       },

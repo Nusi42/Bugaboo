@@ -1,6 +1,6 @@
 # Keyboard shortcuts
 
-Shortcuts are extras: everything they do also has a button on the screen.
+Shortcuts are extras: everything they do also has a button on the page.
 
 ## Seeing all shortcuts
 

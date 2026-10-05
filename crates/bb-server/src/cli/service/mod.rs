@@ -20,7 +20,7 @@ use bb_core::message;
 #[cfg(not(windows))]
 use bb_core::message::Message;
 
-use super::{ConfigArgs, load_settings, program_folder};
+use super::{ConfigArgs, InstallArgs, load_settings, program_folder};
 use crate::config::{DEFAULT_FILE, Settings};
 use crate::data_folder::DataFolder;
 #[cfg(unix)]
@@ -80,14 +80,14 @@ fn tell_about_setup_code(data_dir: &Path) {
 }
 
 /// `bugaboo service install`.
-pub(super) fn install(args: &ConfigArgs) -> anyhow::Result<()> {
+pub(super) fn install(args: &InstallArgs) -> anyhow::Result<()> {
     #[cfg(windows)]
     {
-        windows::install(&find(args)?)
+        windows::install(&find(&args.config)?, args.take_over_data_folder)
     }
     #[cfg(unix)]
     {
-        systemd_install(&find(args)?)
+        systemd_install(&find(&args.config)?, args.take_over_data_folder)
     }
     #[cfg(not(any(windows, unix)))]
     {
@@ -135,7 +135,7 @@ fn unsupported() -> anyhow::Result<()> {
 }
 
 #[cfg(unix)]
-fn systemd_install(found: &Found) -> anyhow::Result<()> {
+fn systemd_install(found: &Found, take_over: bool) -> anyhow::Result<()> {
     use systemd::{Installation, Step, USER, plan};
 
     require_systemd()?;
@@ -151,7 +151,7 @@ fn systemd_install(found: &Found) -> anyhow::Result<()> {
             .render(),
         );
     }
-    check_for_service(&data_dir)?;
+    check_for_service(&data_dir, take_over)?;
     systemd::check_settings_file(&found.config, &data_dir)
         .map_err(|problem| anyhow!(problem.render()))?;
     let known_files = DataFolder::existing(&data_dir)

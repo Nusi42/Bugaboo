@@ -16,15 +16,8 @@ pub(crate) const OUTPUT: &str = "web/packages/messages/src/generated.ts";
 
 /// The areas (first part of a key) that only the server and its command line show. Everything else
 /// is shown in the browser too: errors, help for settings and every screen.
-const SERVER_ONLY_AREAS: [&str; 8] = [
-    "cli",
-    "config",
-    "cookie",
-    "data-folder",
-    "keys",
-    "server",
-    "service",
-    "tls",
+const SERVER_ONLY_AREAS: [&str; 7] = [
+    "cli", "config", "cookie", "keys", "server", "service", "tls",
 ];
 
 /// Whether a message is shown by the server only, and so is left out of the browser's catalog.

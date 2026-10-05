@@ -1,0 +1,4 @@
+{
+  "$comment": "Single source for the quality the server compresses its answers with (Brotli and gzip). The first-page budget check (PERF-BUNDLE) measures with the same number, so what it counts is what a browser receives. Change it only here.",
+  "quality": 4
+}

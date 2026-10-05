@@ -51,6 +51,7 @@ mod meta_speed;
 pub(crate) mod meta_suppress;
 mod meta_wiring;
 mod node_tool;
+mod perf_bundle;
 mod plan_trace;
 mod sec_cookies;
 mod sec_headers;
@@ -60,6 +61,7 @@ mod sty_tokens;
 mod test_a11y;
 mod txt_catalog;
 mod txt_literal;
+mod txt_terms;
 mod web_source;
 
 use crate::catalog::Catalog;
@@ -163,10 +165,12 @@ pub(crate) fn registry() -> Vec<Box<dyn Check>> {
         Box::new(test_a11y::TestA11y),
         Box::new(txt_catalog::TxtCatalog),
         Box::new(txt_literal::TxtLiteral),
+        Box::new(txt_terms::TxtTerms),
         Box::new(doc_generated::DocGenerated),
         Box::new(doc_adr_enforced::DocAdrEnforced),
         Box::new(plan_trace::PlanTrace),
         Box::new(arch_map_sync::ArchMapSync),
+        Box::new(perf_bundle::PerfBundle),
         Box::new(meta_fixtures::MetaFixtures),
         Box::new(meta_coverage::MetaCoverage),
         Box::new(meta_new_module::MetaNewModule),

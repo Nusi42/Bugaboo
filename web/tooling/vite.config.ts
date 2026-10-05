@@ -16,5 +16,6 @@ export default defineConfig({
   server: { host, port: ports.web, strictPort: true },
   preview: { host, port: ports.webPreview, strictPort: true },
   css: { modules: { localsConvention: "camelCaseOnly" } },
-  build: { outDir: "dist", emptyOutDir: true },
+  // The manifest lists what the first page loads; PERF-BUNDLE measures it.
+  build: { outDir: "dist", emptyOutDir: true, manifest: true },
 });

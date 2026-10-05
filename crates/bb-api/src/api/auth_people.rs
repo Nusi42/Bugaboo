@@ -4,8 +4,9 @@
 use axum::extract::State;
 use axum::response::Response;
 use bb_app::auth::{
-    AcceptInvitation, ChangeSignUpPolicy, CompleteSetup, CreateInvitation, InvitationLookupQuery,
-    InvitationsQuery, RevokeInvitation, SignUp, SignUpPolicy, SignUpPolicyQuery,
+    AcceptInvitation, AppError, ChangeSignUpPolicy, CompleteSetup, CreateInvitation,
+    InvitationLookupQuery, InvitationsQuery, RevokeInvitation, SignUp, SignUpPolicy,
+    SignUpPolicyQuery,
 };
 use bb_core::ErrorCode;
 use bb_core::id::InvitationId;
@@ -16,9 +17,10 @@ use utoipa_axum::routes;
 
 use super::auth::{
     AuthHandle, ForbiddenAnswer, Info, InvalidAnswer, NotFoundAnswer, NotSignedInAnswer,
-    PreviousSession, Session, SignedInBody, done, private, signed_in,
+    PreviousSession, Session, SignedInBody, answer, done, signed_in,
 };
 use crate::errors::{ApiError, ApiJson, ApiPath, ApiQuery};
+use crate::lean::{FieldSpec, ListParams, Page};
 
 /// The first administrator, with the setup code.
 #[derive(Deserialize, ToSchema)]
@@ -76,24 +78,19 @@ pub(crate) struct InviteBody {
     email: String,
 }
 
-/// What a list of invitations may be asked for.
-#[derive(Deserialize)]
-pub(crate) struct InvitationsParams {
-    /// The fields each invitation holds, separated by commas: `id`, `email`, `created_at`,
-    /// `expires_at`. Everything when left out.
-    fields: Option<String>,
-    /// Where the page starts: the `next_cursor` of the page before.
-    cursor: Option<String>,
-    /// How many invitations a page holds at most (default 50).
-    limit: Option<u32>,
-}
+/// The fields of an invitation that can be asked for, and which of them a list holds when the
+/// request names none: what *Open invitations* needs to find the person to take back.
+const INVITATION_FIELDS: [FieldSpec; 4] = [
+    FieldSpec::by_default("id"),
+    FieldSpec::by_default("email"),
+    FieldSpec::on_request("created_at"),
+    FieldSpec::on_request("expires_at"),
+];
+/// The name of the list, so its cursors are its own.
+const INVITATIONS_LIST: &str = "invitations";
 
-/// The fields of an invitation that can be asked for, once.
-const INVITATION_FIELDS: [&str; 4] = ["id", "email", "created_at", "expires_at"];
-/// How many invitations a page holds when the request does not say.
-const DEFAULT_PAGE: u32 = 50;
-
-/// An invitation in a list: only the fields that were asked for.
+/// An invitation in a list: the fields that can be asked for. An answer holds only those that
+/// were asked for.
 #[derive(Serialize, ToSchema)]
 pub(crate) struct InvitationItem {
     /// The ID of the invitation.
@@ -110,14 +107,13 @@ pub(crate) struct InvitationItem {
     expires_at: Option<String>,
 }
 
-impl InvitationItem {
-    fn of(invitation: &bb_app::auth::InvitationView, fields: &[&str]) -> Self {
-        let asked = |name: &str| fields.contains(&name);
+impl From<&bb_app::auth::InvitationView> for InvitationItem {
+    fn from(invitation: &bb_app::auth::InvitationView) -> Self {
         Self {
-            id: asked("id").then(|| invitation.id.to_string()),
-            email: asked("email").then(|| invitation.email.clone()),
-            created_at: asked("created_at").then(|| invitation.created_at.to_string()),
-            expires_at: asked("expires_at").then(|| invitation.expires_at.to_string()),
+            id: Some(invitation.id.to_string()),
+            email: Some(invitation.email.clone()),
+            created_at: Some(invitation.created_at.to_string()),
+            expires_at: Some(invitation.expires_at.to_string()),
         }
     }
 }
@@ -146,16 +142,6 @@ impl From<&bb_app::auth::InvitationView> for InvitationBody {
     }
 }
 
-/// One page of the open invitations, newest first.
-#[derive(Serialize, ToSchema)]
-pub(crate) struct InvitationsBody {
-    /// The invitations of this page. Only invitations that are still open are listed.
-    items: Vec<InvitationItem>,
-    /// The cursor of the next page; missing on the last page.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    next_cursor: Option<String>,
-}
-
 /// A new invitation: the secret is shown only now.
 #[derive(Serialize, ToSchema)]
 pub(crate) struct CreatedInvitationBody {
@@ -163,6 +149,7 @@ pub(crate) struct CreatedInvitationBody {
     invitation: InvitationBody,
     /// The page the link opens, with the secret after the `#`. Put the address of this server
     /// in front. The secret is not stored and cannot be shown again.
+    #[schema(extensions(("x-secret" = json!(true))))]
     link_path: String,
 }
 
@@ -269,7 +256,7 @@ async fn look_up_invitation(
             },
         )
         .await?;
-    Ok(private(InvitationLookupBody { email: found.email }))
+    Ok(answer(InvitationLookupBody { email: found.email }))
 }
 
 /// Makes an account from an invitation link, and signs the person in.
@@ -311,48 +298,49 @@ async fn accept_invitation(
     path = "/api/v1/auth/invitations",
     operation_id = "listInvitations",
     tag = "auth",
-    params(
-        ("fields" = Option<String>, Query, description = "The fields each invitation holds, separated by commas: `id`, `email`, `created_at`, `expires_at`. Everything when left out."),
-        ("cursor" = Option<String>, Query, description = "Where the page starts: the `next_cursor` of the page before."),
-        ("limit" = Option<u32>, Query, minimum = 1, maximum = 100, description = "How many invitations a page holds at most (default 50).")
-    ),
-    responses((status = 200, description = "The open invitations.", body = InvitationsBody), NotSignedInAnswer, ForbiddenAnswer)
+    extensions(("x-never-stored" = json!(true))),
+    params(ListParams),
+    responses((status = 200, description = "The open invitations, newest first. Only invitations that are still open are listed.", body = Page<InvitationItem>), NotSignedInAnswer, ForbiddenAnswer)
 )]
 async fn list_invitations(
     State(auth): State<AuthHandle>,
     Info(info): Info,
     Session(session_token): Session,
-    ApiQuery(params): ApiQuery<InvitationsParams>,
+    ApiQuery(params): ApiQuery<ListParams>,
 ) -> Result<Response, ApiError> {
-    let fields: Vec<&str> = match params.fields.as_deref() {
-        None => INVITATION_FIELDS.to_vec(),
-        Some(text) => text.split(',').map(str::trim).collect(),
+    // Who asks is judged first (401 and 403 before 400): a person who may not list learns
+    // nothing about the fields or cursors of the list. A cursor that does not open is passed on
+    // as one the use case cannot read, so its answer comes after the check of the person.
+    let fields = params.fields(&INVITATION_FIELDS);
+    let position = params.position(INVITATIONS_LIST);
+    let cursor = match &position {
+        Ok(position) => position.clone(),
+        Err(_) => Some(String::new()),
     };
-    if fields
-        .iter()
-        .any(|field| !INVITATION_FIELDS.contains(field))
-    {
-        return Err(ApiError::new(ErrorCode::InvalidRequest));
-    }
     let page = auth
         .api()?
         .invitations(
             info,
             InvitationsQuery {
                 session_token,
-                cursor: params.cursor,
-                limit: params.limit.unwrap_or(DEFAULT_PAGE),
+                cursor,
+                limit: params.limit(),
             },
         )
-        .await?;
-    Ok(private(InvitationsBody {
-        items: page
-            .items
-            .iter()
-            .map(|invitation| InvitationItem::of(invitation, &fields))
-            .collect(),
-        next_cursor: page.next_cursor,
-    }))
+        .await
+        .map_err(|error| match error {
+            // The only thing the use case can find invalid is the cursor.
+            AppError::Refused(ErrorCode::InvalidRequest) => ApiError::new(ErrorCode::BadCursor),
+            other => ApiError::from(other),
+        })?;
+    position?;
+    let items: Vec<InvitationItem> = page.items.iter().map(InvitationItem::from).collect();
+    Ok(answer(Page::of(
+        INVITATIONS_LIST,
+        &items,
+        &fields?,
+        page.next_cursor.as_deref(),
+    )?))
 }
 
 /// Makes an invitation. The link is shown once. Administrators only.
@@ -385,7 +373,7 @@ async fn create_invitation(
             },
         )
         .await?;
-    Ok(private(CreatedInvitationBody {
+    Ok(answer(CreatedInvitationBody {
         invitation: InvitationBody::from(&created.invitation),
         link_path: created.link_path,
     }))
@@ -422,7 +410,7 @@ async fn revoke_invitation(
 }
 
 fn policy_body(policy: SignUpPolicy) -> Response {
-    private(SignUpPolicyBody {
+    answer(SignUpPolicyBody {
         enabled: policy.enabled,
         domains: policy.domains,
     })
@@ -508,4 +496,20 @@ where
         .routes(routes!(list_invitations, create_invitation))
         .routes(routes!(revoke_invitation))
         .routes(routes!(get_sign_up_policy, change_sign_up_policy))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn perf_02_the_field_table_names_exactly_the_fields_of_an_invitation() {
+        let item = InvitationItem {
+            id: Some("i".to_owned()),
+            email: Some("e".to_owned()),
+            created_at: Some("c".to_owned()),
+            expires_at: Some("x".to_owned()),
+        };
+        crate::lean::assert_fields_are_the_keys_of(&INVITATION_FIELDS, &item);
+    }
 }
