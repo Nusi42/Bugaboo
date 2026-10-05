@@ -50,8 +50,39 @@ impl DistinctSpec {
     }
 }
 
+/// The stronger rules for people whose device asks for more contrast (`prefers-contrast: more`).
+pub(crate) struct MoreSpec {
+    /// Smallest contrast ratio of the listed text colors on their backgrounds.
+    pub(crate) min_text: f64,
+    /// Smallest contrast ratio of the listed line colors on the plain surfaces.
+    pub(crate) min_line: f64,
+    pub(crate) text: Vec<String>,
+    pub(crate) lines: Vec<String>,
+    pub(crate) line_on: Vec<String>,
+}
+
+impl MoreSpec {
+    fn parse(spec: &Value) -> anyhow::Result<Self> {
+        let spec = spec.as_object().context("`more` must be an object")?;
+        reason(spec)?;
+        let number = |key: &str| {
+            spec.get(key)
+                .and_then(Value::as_f64)
+                .with_context(|| format!("`{key}` must be a number"))
+        };
+        Ok(Self {
+            min_text: number("minText")?,
+            min_line: number("minLine")?,
+            text: names(spec, "text")?,
+            lines: names(spec, "lines")?,
+            line_on: names(spec, "lineOn")?,
+        })
+    }
+}
+
 pub(crate) struct ContrastSpec {
     pub(crate) min: f64,
+    pub(crate) more: MoreSpec,
     pub(crate) text: Vec<String>,
     pub(crate) backgrounds: Vec<String>,
     pub(crate) restricted: Vec<Restricted>,
@@ -85,11 +116,17 @@ impl ContrastSpec {
 
     /// Every color name used anywhere in the rules (exact names, no patterns).
     pub(crate) fn named_colors(&self) -> impl Iterator<Item = &String> {
-        self.text.iter().chain(&self.backgrounds).chain(
-            self.restricted
-                .iter()
-                .flat_map(|r| std::iter::once(&r.text).chain(&r.on)),
-        )
+        self.text
+            .iter()
+            .chain(&self.backgrounds)
+            .chain(&self.more.text)
+            .chain(&self.more.lines)
+            .chain(&self.more.line_on)
+            .chain(
+                self.restricted
+                    .iter()
+                    .flat_map(|r| std::iter::once(&r.text).chain(&r.on)),
+            )
     }
 
     /// Whether the rules say what this color is: text, a background, or not text at all.
@@ -157,6 +194,7 @@ impl ContrastSpec {
                 .get("min")
                 .and_then(Value::as_f64)
                 .context("`min` of the contrast rules must be a number")?,
+            more: MoreSpec::parse(spec.get("more").context("`more` is missing")?)?,
             text: names(spec, "text")?,
             backgrounds: names(spec, "backgrounds")?,
             restricted,
