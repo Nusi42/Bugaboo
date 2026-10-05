@@ -245,6 +245,14 @@ impl KeyRing {
         self.folder.join(MASTER_FILE)
     }
 
+    /// The files a backup of the keys must hold: the master keys, which read every stored secret,
+    /// and the log key, which verifies the security log. (The CSRF key is made again when it is
+    /// missing and protects nothing that is stored.)
+    #[must_use]
+    pub fn backup_files(&self) -> [PathBuf; 2] {
+        [self.master_path(), self.folder.join(LOG_FILE)]
+    }
+
     /// The master keys as the file has them now.
     fn current(&self) -> Result<Arc<Vec<MasterKey>>, StoreError> {
         let path = self.master_path();

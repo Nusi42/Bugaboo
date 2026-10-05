@@ -30,8 +30,39 @@ const SQLITE_MAX_CONNECTIONS: u32 = 8;
 /// The most connections PostgreSQL gets when the number of processors is unknown.
 const POSTGRES_FALLBACK_CONNECTIONS: u32 = 8;
 
-/// Opens a SQLite pool in WAL mode with foreign keys on and a busy timeout.
+/// How often opening a SQLite file is tried when another process holds it, and how long to wait
+/// between tries. Switching a brand-new file to WAL mode needs a lock that the busy timeout does
+/// not cover, so two programs that start at the same moment can fail with "database is locked";
+/// the second one only has to wait a moment (M1-F24).
+const SQLITE_OPEN_TRIES: u32 = 20;
+const SQLITE_OPEN_WAIT: Duration = Duration::from_millis(100);
+
+/// Whether the database refused because another connection holds the file (`SQLITE_BUSY` is 5,
+/// `SQLITE_LOCKED` is 6).
+fn is_locked(error: &sqlx::Error) -> bool {
+    matches!(
+        error,
+        sqlx::Error::Database(database)
+            if matches!(database.code().as_deref(), Some("5" | "6"))
+    )
+}
+
+/// Opens a SQLite pool in WAL mode with foreign keys on and a busy timeout. A file that another
+/// process is just setting up is tried again for a little while.
 async fn open_sqlite(options: SqliteConnectOptions) -> Result<SqlitePool, StoreError> {
+    let mut tries = 1;
+    loop {
+        match open_sqlite_once(options.clone()).await {
+            Err(error) if is_locked(&error) && tries < SQLITE_OPEN_TRIES => {
+                tries += 1;
+                tokio::time::sleep(SQLITE_OPEN_WAIT).await;
+            }
+            other => return Ok(other?),
+        }
+    }
+}
+
+async fn open_sqlite_once(options: SqliteConnectOptions) -> Result<SqlitePool, sqlx::Error> {
     let options = options
         .create_if_missing(true)
         .journal_mode(SqliteJournalMode::Wal)
@@ -40,10 +71,10 @@ async fn open_sqlite(options: SqliteConnectOptions) -> Result<SqlitePool, StoreE
         .synchronous(SqliteSynchronous::Full)
         .foreign_keys(true)
         .busy_timeout(SQLITE_BUSY_TIMEOUT);
-    Ok(SqlitePoolOptions::new()
+    SqlitePoolOptions::new()
         .max_connections(SQLITE_MAX_CONNECTIONS)
         .connect_with(options)
-        .await?)
+        .await
 }
 
 /// The two databases Bugaboo supports.
@@ -478,5 +509,40 @@ impl Database {
             .fetch_one(pool)
             .await?;
         Ok((mode, keys, sync))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Many programs that start at the same moment on a brand-new SQLite file all get a working
+    /// database; none of them fails with "database is locked" (M1-F24).
+    #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+    async fn m1_f24_programs_that_start_together_on_a_new_file_all_get_the_database()
+    -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        for round in 0..5 {
+            let folder = tempfile::tempdir()?;
+            let file = folder.path().join(format!("round-{round}.db"));
+            let mut starts = Vec::new();
+            for _ in 0..12 {
+                let file = file.clone();
+                starts.push(tokio::spawn(async move {
+                    let database = Database::connect_file(&file).await?;
+                    database.ping().await?;
+                    Ok::<_, StoreError>(())
+                }));
+            }
+            for start in starts {
+                start.await??;
+            }
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn m1_f24_only_a_busy_or_locked_database_is_tried_again() {
+        assert!(!is_locked(&sqlx::Error::RowNotFound));
+        assert!(!is_locked(&sqlx::Error::PoolTimedOut));
     }
 }
