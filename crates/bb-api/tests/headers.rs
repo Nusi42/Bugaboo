@@ -8,6 +8,7 @@ use base64ct as _;
 use bb_app as _;
 use bb_auth as _;
 use bb_core as _;
+use brotli as _;
 use getrandom as _;
 use h2 as _;
 use hmac as _;

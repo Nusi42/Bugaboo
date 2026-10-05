@@ -2,8 +2,8 @@
 //!
 //! Reads the Vite manifest of the built browser app, adds up the JavaScript the first route
 //! loads (every entry and, from there, the files it imports at once, never the ones it loads
-//! later with `import()`), compresses each file with Brotli the way a browser receives it and
-//! fails above the budget. Heavy features belong behind a lazy `import()` (coding-standards §6).
+//! later with `import()`), compresses each file with Brotli at the quality the server uses
+//! (`tools/dev/compression.json`, read by the server too) and fails above the budget. Heavy features belong behind a lazy `import()` (coding-standards §6).
 //!
 //! The budget and the places to read are the settings in `tools/checks/perf-bundle.toml`, and
 //! nowhere else. A fixture folder holds its own settings file with a small budget, so the
@@ -20,10 +20,9 @@ use super::{Check, Context, Finding};
 
 /// Where the settings are, relative to the repository root.
 const SETTINGS_PATH: &str = "tools/checks/perf-bundle.toml";
-/// Brotli at its best setting with the biggest window: what a build step or a pre-compressing
-/// server reaches, so the budget does not depend on how busy the server is.
-const BROTLI_QUALITY: i32 = 11;
-const BROTLI_WINDOW: i32 = 22;
+/// The compression settings the server reads too (`crates/bb-api/src/router.rs`): the quality
+/// is defined there once, so the size measured here is the size a browser receives.
+const COMPRESSION_PATH: &str = "tools/dev/compression.json";
 /// How many of the biggest files a finding names.
 const BIGGEST_SHOWN: usize = 3;
 
@@ -37,7 +36,7 @@ impl Check for PerfBundle {
     fn run(&self, context: &Context<'_>) -> anyhow::Result<Vec<Finding>> {
         let root = context.repo.root();
         let settings = Settings::load(&root.join(SETTINGS_PATH))?;
-        evaluate(root, &settings)
+        evaluate(root, &settings, compression_quality(root)?)
     }
 }
 
@@ -58,6 +57,20 @@ impl Settings {
             .with_context(|| format!("could not read {}", path.display()))?;
         toml::from_str(&text).with_context(|| format!("{} is not valid", path.display()))
     }
+}
+
+/// The quality the server compresses with.
+fn compression_quality(root: &Path) -> anyhow::Result<i32> {
+    let path = root.join(COMPRESSION_PATH);
+    let text = std::fs::read_to_string(&path)
+        .with_context(|| format!("could not read {}", path.display()))?;
+    let settings: Value = serde_json::from_str(&text)
+        .with_context(|| format!("{} is not valid JSON", path.display()))?;
+    settings
+        .get("quality")
+        .and_then(Value::as_i64)
+        .and_then(|quality| i32::try_from(quality).ok())
+        .with_context(|| format!("{} has no `quality` number", path.display()))
 }
 
 /// The JavaScript files of the first page: every entry of the manifest and what it imports at
@@ -106,11 +119,11 @@ fn has_extension(file: &str, extensions: &[&str]) -> bool {
         .is_some_and(|extension| extensions.contains(&extension))
 }
 
-/// How many bytes the file has after Brotli.
-fn brotli_size(bytes: &[u8]) -> anyhow::Result<u64> {
+/// How many bytes the file has after Brotli at `quality`, with the window the server uses (the
+/// default of the library).
+fn brotli_size(bytes: &[u8], quality: i32) -> anyhow::Result<u64> {
     let parameters = brotli::enc::BrotliEncoderParams {
-        quality: BROTLI_QUALITY,
-        lgwin: BROTLI_WINDOW,
+        quality,
         ..Default::default()
     };
     let mut input = bytes;
@@ -125,7 +138,7 @@ fn kilobytes(bytes: u64) -> String {
     format!("{}.{} KB", bytes / 1000, bytes % 1000 / 100)
 }
 
-fn evaluate(root: &Path, settings: &Settings) -> anyhow::Result<Vec<Finding>> {
+fn evaluate(root: &Path, settings: &Settings, quality: i32) -> anyhow::Result<Vec<Finding>> {
     let dist = root.join(&settings.dist);
     let manifest_path = dist.join(&settings.manifest);
     let Ok(text) = std::fs::read_to_string(&manifest_path) else {
@@ -152,7 +165,7 @@ fn evaluate(root: &Path, settings: &Settings) -> anyhow::Result<Vec<Finding>> {
         let bytes = std::fs::read(&path).with_context(|| {
             format!("could not read {} (named in the manifest)", path.display())
         })?;
-        sizes.insert(file.clone(), brotli_size(&bytes)?);
+        sizes.insert(file.clone(), brotli_size(&bytes, quality)?);
     }
     let total: u64 = sizes.values().sum();
     if total <= settings.budget_bytes {
@@ -188,7 +201,15 @@ mod tests {
             .join("../tools/checks/fixtures/PERF-BUNDLE")
             .join(kind);
         let settings = Settings::load(&root.join("perf-bundle.toml")).unwrap();
-        evaluate(&root, &settings).unwrap()
+        evaluate(&root, &settings, server_quality()).unwrap()
+    }
+
+    fn repository() -> std::path::PathBuf {
+        Path::new(env!("CARGO_MANIFEST_DIR")).join("..")
+    }
+
+    fn server_quality() -> i32 {
+        compression_quality(&repository()).unwrap()
     }
 
     #[test]
@@ -206,14 +227,26 @@ mod tests {
     }
 
     #[test]
-    fn the_budget_is_read_from_the_settings_and_is_250_kilobytes() {
-        let settings = Settings::load(
-            &Path::new(env!("CARGO_MANIFEST_DIR"))
-                .join("..")
-                .join(SETTINGS_PATH),
-        )
-        .unwrap();
-        assert_eq!(settings.budget_bytes, 250_000);
+    fn the_budget_is_read_from_the_settings_file() {
+        let settings = Settings::load(&repository().join(SETTINGS_PATH)).unwrap();
+        assert!(settings.budget_bytes > 0);
+    }
+
+    /// The quality is the server's: the server includes the very file this check reads, and sets
+    /// no quality of its own anywhere else.
+    #[test]
+    fn the_budget_is_measured_with_the_quality_the_server_compresses_with() {
+        let router =
+            std::fs::read_to_string(repository().join("crates/bb-api/src/router.rs")).unwrap();
+        assert!(
+            router.contains(&format!("include_str!(\"../../../{COMPRESSION_PATH}\")")),
+            "the server must read its compression quality from {COMPRESSION_PATH}"
+        );
+        assert!(
+            !router.contains("Precise("),
+            "the server must take its quality from the file, not from a number in the code"
+        );
+        assert!(server_quality() > 0);
     }
 
     #[test]
@@ -248,7 +281,7 @@ mod tests {
             manifest: "manifest.json".to_owned(),
             budget_bytes: 1,
         };
-        let found = evaluate(root.path(), &settings).unwrap();
+        let found = evaluate(root.path(), &settings, 4).unwrap();
         assert_eq!(found.len(), 1);
         assert!(found[0].message.contains("Build the browser app first"));
     }

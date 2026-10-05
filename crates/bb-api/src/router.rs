@@ -15,7 +15,7 @@ use axum::routing::get;
 use axum::{Extension, Router};
 use bb_core::message::{self, Message};
 use tower_http::compression::predicate::{Predicate as _, SizeAbove};
-use tower_http::compression::{CompressionLayer, DefaultPredicate};
+use tower_http::compression::{CompressionLayer, CompressionLevel, DefaultPredicate};
 
 use crate::api::{AuthHandle, ProbeHandle};
 use crate::limits::{Limits, LimitsConfig};
@@ -39,6 +39,9 @@ const CACHE_REVALIDATE: &str = "no-cache";
 const NO_PAGE_FALLBACK: [&str; 3] = ["assets", "health", "api"];
 /// Smaller answers are not worth compressing.
 const COMPRESS_FROM_BYTES: u64 = 256;
+/// The compression quality, written once in a file that the budget check of the first page
+/// (PERF-BUNDLE) reads too, so the size it measures is the size this server sends.
+const COMPRESSION_SETTINGS: &str = include_str!("../../../tools/dev/compression.json");
 /// Running requests get this long to finish when the server stops.
 const SHUTDOWN_GRACE: Duration = Duration::from_secs(10);
 
@@ -108,7 +111,11 @@ pub fn router(options: Options) -> Router {
         .method_not_allowed_fallback(api::method_not_allowed)
         .with_state(state);
     let app = api::rules(app, limits, auth)
-        .layer(CompressionLayer::new().compress_when(compress))
+        .layer(
+            CompressionLayer::new()
+                .quality(compression_level())
+                .compress_when(compress),
+        )
         .layer(from_fn_with_state(
             LogContext::new(&options.trusted_proxies),
             log_request,
@@ -176,6 +183,20 @@ pub async fn serve(
     })
     .await;
     Ok(())
+}
+
+/// The quality from the settings file; an unreadable file (a test keeps it readable) leaves the
+/// default of the library.
+fn compression_level() -> CompressionLevel {
+    compression_quality().map_or(CompressionLevel::Default, CompressionLevel::Precise)
+}
+
+fn compression_quality() -> Option<i32> {
+    serde_json::from_str::<serde_json::Value>(COMPRESSION_SETTINGS)
+        .ok()?
+        .get("quality")?
+        .as_i64()
+        .and_then(|quality| i32::try_from(quality).ok())
 }
 
 /// Text compresses well; images, fonts and archives are already compressed.
@@ -312,6 +333,8 @@ async fn not_found(web: &WebSource) -> Response {
 
 #[cfg(test)]
 mod tests {
+    use std::fmt::Write as _;
+
     use axum::body::Body;
     use axum::http::{Method, Request};
     use tower::ServiceExt as _;
@@ -457,6 +480,55 @@ mod tests {
         let again = router(options(web())).oneshot(request).await.unwrap();
         assert_eq!(again.status(), StatusCode::NOT_MODIFIED);
         assert!(body(again).await.is_empty());
+    }
+
+    #[test]
+    fn perf_04_the_compression_settings_are_readable() {
+        assert_eq!(compression_quality(), Some(4));
+    }
+
+    /// What the budget check counts is what a browser gets: the script, asked for with Brotli,
+    /// comes back as many bytes as the Brotli of the file at the quality of the settings file.
+    #[tokio::test]
+    async fn perf_04_the_server_compresses_with_the_quality_the_budget_is_measured_with() {
+        // Text that compresses very differently at different qualities.
+        let mut script = String::new();
+        for n in 0..4000 {
+            writeln!(
+                script,
+                "export const item{n} = {{ name: \"entry {}\", weight: {} }};",
+                n * 7919 % 1013,
+                n * 31 % 97
+            )
+            .unwrap();
+        }
+        let dir = app_folder();
+        std::fs::write(dir.path().join("assets/big-3c4d.js"), &script).unwrap();
+        let request = Request::get("/assets/big-3c4d.js")
+            .header("accept-encoding", "br")
+            .body(Body::empty())
+            .unwrap();
+        let response = router(options(WebSource::Folder(dir.path().into())))
+            .oneshot(request)
+            .await
+            .unwrap();
+        assert_eq!(header_of(&response, "content-encoding"), "br");
+        let sent = axum::body::to_bytes(response.into_body(), usize::MAX)
+            .await
+            .unwrap();
+        let size_at = |quality: i32| {
+            let parameters = brotli::enc::BrotliEncoderParams {
+                quality,
+                ..Default::default()
+            };
+            let mut output = Vec::new();
+            brotli::BrotliCompress(&mut script.as_bytes(), &mut output, &parameters).unwrap();
+            output.len()
+        };
+        let quality = compression_quality().unwrap();
+        assert_eq!(sent.len(), size_at(quality));
+        // The qualities differ here, so the test would notice a change of either side.
+        assert_ne!(size_at(quality), size_at(11));
     }
 
     #[tokio::test]

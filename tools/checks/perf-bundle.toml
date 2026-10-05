@@ -4,6 +4,7 @@
 dist = "web/app/dist"
 manifest = ".vite/manifest.json"
 
-# The most JavaScript the first page may load, after Brotli: 250 KB (1 KB is 1000 bytes).
-# WebAssembly joins the budget when `bb-wasm` exists (M1-F10).
+# The most JavaScript the first page may load, after Brotli, in bytes (1 KB is 1000 bytes). The
+# quality is the server's (tools/dev/compression.json). The WebAssembly part joins the check with
+# `bb-wasm` (follow-up M2-F03).
 budget_bytes = 250000

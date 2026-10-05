@@ -413,6 +413,7 @@ dependencies = [
  "bb-app",
  "bb-auth",
  "bb-core",
+ "brotli",
  "getrandom 0.4.3",
  "h2",
  "hmac 0.13.0",
