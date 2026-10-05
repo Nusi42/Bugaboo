@@ -109,6 +109,25 @@ export function isValidSequence(sequence: string): boolean {
   );
 }
 
+/**
+ * Keys that belong to the browser and to every text field: select all, copy, paste, cut, undo and
+ * redo. A shortcut of Bugaboo may not take them (the usual ones, like Undo, are the registry's own).
+ */
+const reservedChords: ReadonlySet<string> = new Set([
+  "Mod+a",
+  "Mod+c",
+  "Mod+v",
+  "Mod+x",
+  "Mod+z",
+  "Mod+y",
+  "Mod+Shift+z",
+]);
+
+/** Whether these keys are one of the browser's own (copy, paste, undo ...). */
+export function isReservedKeys(sequence: string): boolean {
+  return chordsOfSequence(sequence).some((chord) => reservedChords.has(chord));
+}
+
 /** What a key sequence collides with, if anything. */
 export interface Conflict {
   readonly id: ShortcutId;
@@ -157,7 +176,7 @@ export function parseOverrides(text: string | null): ShortcutOverrides {
       const valid = keys.filter(
         (key): key is string => typeof key === "string" && isValidSequence(key),
       );
-      if (valid.length === keys.length) {
+      if (valid.length === keys.length && !valid.some((one) => isReservedKeys(one))) {
         result[id] = valid;
       }
     }

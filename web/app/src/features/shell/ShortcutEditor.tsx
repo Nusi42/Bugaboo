@@ -4,7 +4,9 @@ import { useState } from "react";
 
 import {
   conflictFor,
+  type Conflict,
   definitionOf,
+  isReservedKeys,
   isValidSequence,
   keysOf,
   type ShortcutId,
@@ -33,6 +35,33 @@ function KeyRow({ label, keys }: { readonly label: string; readonly keys: readon
   );
 }
 
+interface ProblemsProps {
+  readonly conflict: Conflict | null;
+  readonly invalid: boolean;
+  readonly reserved: boolean;
+  readonly saved: "keys" | "usual" | null;
+}
+
+/** What is wrong with the keys that were recorded, or the good news that they are kept. */
+function Problems({ conflict, invalid, reserved, saved }: ProblemsProps) {
+  return (
+    <>
+      {conflict === null ? null : (
+        <Alert warning>
+          {t("shortcuts.conflict", {
+            keys: describeKeys(conflict.keys),
+            action: t(definitionOf(conflict.id).message),
+          })}
+        </Alert>
+      )}
+      {invalid ? <Alert warning>{t("shortcuts.invalid")}</Alert> : null}
+      {reserved ? <Alert warning>{t("shortcuts.reserved")}</Alert> : null}
+      {saved === "keys" ? <Alert success>{t("shortcuts.saved")}</Alert> : null}
+      {saved === "usual" ? <Alert success>{t("shortcuts.reset-done")}</Alert> : null}
+    </>
+  );
+}
+
 /**
  * The editor in the side panel of *Keyboard shortcuts*: record new keys, or go back to the usual
  * ones. Keys another shortcut already uses are refused with a sentence that names it.
@@ -43,6 +72,7 @@ export function ShortcutEditor({ id, overrides }: ShortcutEditorProps) {
   const definition = definitionOf(id);
   const conflict = recorded === "" ? null : conflictFor(id, recorded, overrides);
   const invalid = recorded !== "" && !isValidSequence(recorded);
+  const reserved = recorded !== "" && isReservedKeys(recorded);
   const use = (): void => {
     setShortcutKeys(id, [recorded]);
     setSaved("keys");
@@ -65,19 +95,13 @@ export function ShortcutEditor({ id, overrides }: ShortcutEditorProps) {
           }}
         />
       </div>
-      {conflict === null ? null : (
-        <Alert warning>
-          {t("shortcuts.conflict", {
-            keys: describeKeys(conflict.keys),
-            action: t(definitionOf(conflict.id).message),
-          })}
-        </Alert>
-      )}
-      {invalid ? <Alert warning>{t("shortcuts.invalid")}</Alert> : null}
-      {saved === "keys" ? <Alert success>{t("shortcuts.saved")}</Alert> : null}
-      {saved === "usual" ? <Alert success>{t("shortcuts.reset-done")}</Alert> : null}
+      <Problems conflict={conflict} invalid={invalid} reserved={reserved} saved={saved} />
       <div className={styles.actions}>
-        <Button primary isDisabled={recorded === "" || conflict !== null || invalid} onPress={use}>
+        <Button
+          primary
+          isDisabled={recorded === "" || conflict !== null || invalid || reserved}
+          onPress={use}
+        >
           {t("shortcuts.use")}
         </Button>
         <Button onPress={reset}>{t("shortcuts.reset")}</Button>

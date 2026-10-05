@@ -12,6 +12,7 @@ import {
 } from "./shortcuts-engine.ts";
 import {
   conflictFor,
+  isReservedKeys,
   isValidSequence,
   keysOf,
   parseOverrides,
@@ -34,7 +35,7 @@ function press(key: string, extra: Partial<PressLike> = {}): PressLike {
 }
 
 /** An engine whose handlers write what they did into `log`. */
-function engineWith(overrides: ShortcutOverrides = {}) {
+function engineWith(overrides: ShortcutOverrides = {}, mac = false) {
   const log: ShortcutId[] = [];
   let time = 0;
   const handlers = Object.fromEntries(
@@ -49,6 +50,7 @@ function engineWith(overrides: ShortcutOverrides = {}) {
     overrides: () => overrides,
     handlers: () => handlers,
     now: () => time,
+    mac: () => mac,
   });
   return {
     log,
@@ -84,9 +86,8 @@ describe("ux_05 pressing a shortcut", () => {
   it("does what the shortcut says, with Ctrl or Cmd for Mod", () => {
     const { log, handle } = engineWith();
     expect(handle(press("k", { ctrlKey: true }))).toBe(true);
-    expect(handle(press("K", { metaKey: true, shiftKey: true }))).toBe(true);
     expect(handle(press("?", { shiftKey: true }))).toBe(true);
-    expect(log).toEqual(["quick-search", "quick-search", "show-shortcuts"]);
+    expect(log).toEqual(["quick-search", "show-shortcuts"]);
   });
 
   it("understands sequences such as g h, and lets the second key take its time", () => {
@@ -142,8 +143,7 @@ describe("ux_05 a shortcut never fires while somebody types", () => {
   it.each(fields)("except quick search, which is wanted from anywhere: in %o", (target) => {
     const { log, handle } = engineWith();
     expect(handle(press("k", { ctrlKey: true, target }))).toBe(true);
-    expect(handle(press("k", { metaKey: true, target }))).toBe(true);
-    expect(log).toEqual(["quick-search", "quick-search"]);
+    expect(log).toEqual(["quick-search"]);
   });
 
   it("never lets a key with no Ctrl or Cmd through, whatever the shortcut says", () => {
@@ -200,10 +200,49 @@ describe("ux_05 a person's own keys", () => {
   });
 });
 
+describe("ux_05 Ctrl and Cmd", () => {
+  it("is Ctrl on most computers: Cmd (the Windows key) does nothing", () => {
+    const { log, handle } = engineWith();
+    expect(handle(press("k", { metaKey: true }))).toBe(false);
+    expect(handle(press("k", { ctrlKey: true }))).toBe(true);
+    expect(log).toEqual(["quick-search"]);
+  });
+
+  it("is Cmd on a Mac: Ctrl stays Ctrl, so Ctrl+K still deletes to the end of the line", () => {
+    const { log, handle } = engineWith({}, true);
+    expect(handle(press("k", { ctrlKey: true }))).toBe(false);
+    expect(handle(press("k", { metaKey: true }))).toBe(true);
+    expect(log).toEqual(["quick-search"]);
+    expect(chordOf(press("k", { ctrlKey: true }), true)).toBe("Ctrl+k");
+    expect(chordOf(press("k", { metaKey: true }), false)).toBe("Meta+k");
+  });
+
+  it("keeps Shift when Ctrl or Cmd is pressed, so Redo never does Undo", () => {
+    const { log, handle } = engineWith();
+    expect(handle(press("z", { ctrlKey: true, shiftKey: true }))).toBe(false);
+    expect(handle(press("Z", { ctrlKey: true, shiftKey: true }))).toBe(false);
+    expect(handle(press("z", { ctrlKey: true }))).toBe(true);
+    expect(log).toEqual(["undo"]);
+    expect(chordOf(press("z", { ctrlKey: true, shiftKey: true }), false)).toBe("Mod+Shift+z");
+    // The shift of a sign alone is part of the character.
+    expect(chordOf(press("?", { shiftKey: true }), false)).toBe("?");
+  });
+
+  it("refuses the keys of the browser as own keys: select all, copy, paste, cut, undo, redo", () => {
+    for (const keys of ["Mod+a", "Mod+c", "Mod+v", "Mod+x", "Mod+z", "Mod+y", "Mod+Shift+z"]) {
+      expect(isReservedKeys(keys)).toBe(true);
+      expect(parseOverrides(JSON.stringify({ "go-home": [keys] }))).toEqual({});
+    }
+    expect(isReservedKeys("Mod+k")).toBe(false);
+    expect(isReservedKeys("g h")).toBe(false);
+    expect(isReservedKeys("Mod+Shift+k")).toBe(false);
+  });
+});
+
 describe("ux_05 how keys are written", () => {
   it("reads the chord of a press", () => {
-    expect(chordOf(press("k", { ctrlKey: true }))).toBe("Mod+k");
-    expect(chordOf(press("Tab", { shiftKey: true }))).toBe("Shift+Tab");
+    expect(chordOf(press("k", { ctrlKey: true }), false)).toBe("Mod+k");
+    expect(chordOf(press("Tab", { shiftKey: true }), false)).toBe("Shift+Tab");
     expect(chordOf(press("?", { shiftKey: true }))).toBe("?");
     expect(chordOf(press("Shift", { shiftKey: true }))).toBeNull();
   });

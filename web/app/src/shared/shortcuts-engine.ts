@@ -21,29 +21,44 @@ export interface KeyEventLike {
 
 const modifierKeys = new Set(["Control", "Shift", "Alt", "Meta", "AltGraph", "CapsLock"]);
 
+/** Whether this computer is a Mac (or an iPhone or iPad), where Cmd is the key for shortcuts. */
+export function onMac(): boolean {
+  return typeof navigator !== "undefined" && /Mac|iPhone|iPad/u.test(navigator.platform);
+}
+
 /**
  * The chord a key press makes, written as in the definitions (`Mod+k`, `?`, `Escape`), or `null`
- * for the press of a modifier alone. Shift only counts for keys that are not a single character:
- * the shift of `?` is part of the character. With Ctrl or Cmd a letter is the same key whatever the
- * shift or caps lock says.
+ * for the press of a modifier alone.
+ *
+ * `Mod` is Cmd on a Mac and Ctrl everywhere else. The other one stays what it is (`Ctrl` on a Mac,
+ * `Meta` elsewhere), so Ctrl+K on a Mac still deletes to the end of the line and matches nothing.
+ * Shift counts for every key that is not a single character, and for every key pressed with `Mod`,
+ * so Redo (Ctrl+Shift+Z) never fires Undo; the shift of `?` alone is part of the character. With
+ * `Mod` a letter is the same key whatever the caps lock says.
  */
-export function chordOf(event: KeyEventLike): string | null {
+export function chordOf(event: KeyEventLike, mac: boolean = onMac()): string | null {
   if (modifierKeys.has(event.key)) {
     return null;
   }
   const single = event.key.length === 1;
-  const withMod = event.ctrlKey || event.metaKey;
+  const mod = mac ? event.metaKey : event.ctrlKey;
   const parts: string[] = [];
-  if (withMod) {
+  if (mod) {
     parts.push("Mod");
+  }
+  if (event.ctrlKey && !mod) {
+    parts.push("Ctrl");
+  }
+  if (event.metaKey && !mod) {
+    parts.push("Meta");
   }
   if (event.altKey) {
     parts.push("Alt");
   }
-  if (event.shiftKey && !single) {
+  if (event.shiftKey && (!single || mod)) {
     parts.push("Shift");
   }
-  parts.push(single && withMod ? event.key.toLowerCase() : event.key);
+  parts.push(single && mod ? event.key.toLowerCase() : event.key);
   return parts.join("+");
 }
 
@@ -87,6 +102,8 @@ export interface EngineOptions {
   /** The handlers of the screen that is open now. */
   readonly handlers: () => ShortcutHandlers;
   readonly now: () => number;
+  /** Whether this is a Mac; the computer that is running by default. */
+  readonly mac?: () => boolean;
 }
 
 /** What the engine needs of a key press and where it happened. */
@@ -131,7 +148,7 @@ export function createEngine(options: EngineOptions): (press: PressLike) => bool
   let pending: readonly string[] = [];
   let pendingSince = 0;
   return (press) => {
-    const chord = chordOf(press);
+    const chord = chordOf(press, options.mac?.() ?? onMac());
     if (chord === null) {
       return false;
     }

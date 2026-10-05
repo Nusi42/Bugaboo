@@ -965,6 +965,9 @@ pub const SHORTCUTS_NOTHING: MessageKey = MessageKey::new("shortcuts.nothing");
 /// The message `shortcuts.now`.
 pub const SHORTCUTS_NOW: MessageKey = MessageKey::new("shortcuts.now");
 
+/// The message `shortcuts.reserved`.
+pub const SHORTCUTS_RESERVED: MessageKey = MessageKey::new("shortcuts.reserved");
+
 /// The message `shortcuts.reset`.
 pub const SHORTCUTS_RESET: MessageKey = MessageKey::new("shortcuts.reset");
 
@@ -3110,6 +3113,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("shortcuts.nothing", "No shortcut matches your search."),
     ("shortcuts.now", "Keys now"),
+    (
+        "shortcuts.reserved",
+        "Your browser uses these keys for copying, pasting and undoing. Choose other keys.",
+    ),
     ("shortcuts.reset", "Use the usual keys"),
     ("shortcuts.reset-done", "The usual keys are back."),
     ("shortcuts.saved", "The keys are saved."),

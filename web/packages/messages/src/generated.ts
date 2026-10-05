@@ -397,6 +397,8 @@ export const messages = {
   "shortcuts.saved": "The keys are saved.",
   "shortcuts.reset-done": "The usual keys are back.",
   "shortcuts.conflict": "{keys} is already used for: {action}. Choose other keys.",
+  "shortcuts.reserved":
+    "Your browser uses these keys for copying, pasting and undoing. Choose other keys.",
   "shortcuts.invalid": "These keys cannot be used. Press one key, or two in a row.",
   "frames.title": "Page frames",
   "frames.intro":
