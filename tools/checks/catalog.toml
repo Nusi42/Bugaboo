@@ -170,12 +170,12 @@ status = "active"
 # ───────────── Text, words and style ─────────────
 [[check]]
 id = "TXT-LITERAL"
-title = "No hard-coded user-facing text in components or API messages"
+title = "No hard-coded user-facing text in components"
 rule = "UX-07, coding-standards §4"
-tool = "ast-grep rules (JSX text, aria-*, title, alt, placeholder; Rust error strings)"
+tool = "oxlint (react/jsx-no-literals, one configuration with LINT-TS): JSX text and the string values of aria-*, title, alt and placeholder"
 when = ["edit", "commit", "ci"]
-files = ["web/**/*.tsx", "crates/**/*.rs"]
-status = "planned"
+files = ["web/**/*.tsx"]
+status = "active"
 
 [[check]]
 id = "TXT-CATALOG"
@@ -199,10 +199,10 @@ status = "planned"
 id = "STY-TOKENS"
 title = "Only design tokens in code: no hex/rgb colors, no inline style attributes"
 rule = "ADR-0010"
-tool = "ast-grep + stylelint"
+tool = "xtask (no color values and no inline styles in the TypeScript and CSS of the app; sizes in CSS are LINT-CSS)"
 when = ["edit", "commit", "ci"]
-files = ["web/**/*.{tsx,css}"]
-status = "planned"
+files = ["web/**/*.{ts,tsx,css}"]
+status = "active"
 
 [[check]]
 id = "STY-CONTRAST"
@@ -367,12 +367,12 @@ status = "active"
 
 [[check]]
 id = "ARCH-WEB-FEATURES"
-title = "Browser feature folders import each other only through their public index"
+title = "Browser feature folders import each other only through their public index; shared code and packages never import features or the app"
 rule = "architecture §4 (browser app)"
-tool = "oxlint import rules"
+tool = "xtask (imports of web/app/src and web/packages)"
 when = ["edit", "commit", "ci"]
-files = ["web/app/src/features/**"]
-status = "planned"
+files = ["web/**/*.{ts,tsx}"]
+status = "active"
 
 [[check]]
 id = "ARCH-MAP-SYNC"
@@ -607,10 +607,10 @@ status = "planned"
 id = "TEST-A11Y"
 title = "No accessibility violations on key screens in all four themes"
 rule = "UX-04"
-tool = "Playwright + axe"
-when = ["ci"]
-files = ["web/**"]
-status = "planned"
+tool = "Playwright + axe (web/app/e2e/a11y*.spec.ts); xtask checks that every address in paths.ts has an entry there, the suite itself runs in cargo xtask ci"
+when = ["commit", "ci"]
+files = ["web/app/src/shared/paths.ts", "web/app/e2e/a11y*.spec.ts"]
+status = "active"
 
 [[check]]
 id = "TEST-SEARCH-ROUNDTRIP"
