@@ -1,12 +1,14 @@
 import { createRoute, lazyRouteComponent } from "@tanstack/react-router";
 
 import { HomePage } from "../features/home/index.ts";
-import { AppearancePage, type FramesShow } from "../features/shell/index.ts";
+import { AppearancePage, RegionPage } from "../features/my-settings/index.ts";
+import { SignInRulesPage, ThemesPage } from "../features/settings/index.ts";
+import { type FramesShow } from "../features/shell/index.ts";
 import { paths } from "../shared/paths.ts";
 import { shortcutIdOf, type ShortcutId } from "../shared/shortcuts.ts";
 import { appRoute, mySettingsRoute, organizationSettingsRoute } from "./layouts.tsx";
 import { OnlyWith } from "./OnlyWith.tsx";
-import { FramesRoute, ShortcutsRoute } from "./settings-routes.tsx";
+import { FramesRoute, ShortcutsRoute, StartPageRoute } from "./settings-routes.tsx";
 
 // The pages that are not the first one are loaded when they are first opened, so the first page
 // stays small (coding-standards section 6).
@@ -45,6 +47,18 @@ export const appearanceRoute = createRoute({
   getParentRoute: () => mySettingsRoute,
   path: paths.appearance,
   component: AppearancePage,
+});
+
+export const regionRoute = createRoute({
+  getParentRoute: () => mySettingsRoute,
+  path: paths.region,
+  component: RegionPage,
+});
+
+export const startPageRoute = createRoute({
+  getParentRoute: () => mySettingsRoute,
+  path: paths.startPage,
+  component: StartPageRoute,
 });
 
 export const shortcutsRoute = createRoute({
@@ -99,6 +113,30 @@ export const statusRoute = createRoute({
     return (
       <OnlyWith path={paths.status}>
         <StatusScreen />
+      </OnlyWith>
+    );
+  },
+});
+
+export const signInRulesRoute = createRoute({
+  getParentRoute: () => organizationSettingsRoute,
+  path: paths.signInRules,
+  component: function SignInRules() {
+    return (
+      <OnlyWith path={paths.signInRules}>
+        <SignInRulesPage />
+      </OnlyWith>
+    );
+  },
+});
+
+export const themesRoute = createRoute({
+  getParentRoute: () => organizationSettingsRoute,
+  path: paths.themes,
+  component: function Themes() {
+    return (
+      <OnlyWith path={paths.themes}>
+        <ThemesPage />
       </OnlyWith>
     );
   },

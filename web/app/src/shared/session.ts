@@ -2,6 +2,7 @@ import type { Schema } from "@bugaboo/api-client";
 
 import { api } from "./api.ts";
 import { codeOf } from "./errors.ts";
+import { forgetPersonalChoices } from "./personal-sources.ts";
 import { queryClient } from "./query-client.ts";
 
 /** The person who is signed in, with what they may do for the whole organization. */
@@ -37,12 +38,15 @@ export async function currentPerson(): Promise<Person | null> {
   try {
     const { data } = await api.client.GET("/api/v1/auth/me");
     if (data === undefined) {
+      forgetPersonalChoices();
       return null;
     }
     queryClient.setQueryData(meOptions().queryKey, data);
     return data;
   } catch (error) {
     if (codeOf(error) === "auth.not_signed_in") {
+      // Nobody is signed in: what the last person chose is not kept for the next one (M2-F13).
+      forgetPersonalChoices();
       return null;
     }
     throw error;
@@ -66,6 +70,7 @@ export function forgetPerson(): void {
  * requests fail half way.
  */
 export async function leaveSession(go: () => Promise<void>): Promise<void> {
+  forgetPersonalChoices();
   queryClient.removeQueries({ queryKey: meOptions().queryKey });
   await go();
   queryClient.clear();

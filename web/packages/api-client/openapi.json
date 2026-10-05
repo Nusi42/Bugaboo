@@ -2776,20 +2776,20 @@
         "parameters": [
           {
             "name": "topic",
-            "in": "path",
-            "description": "Only the settings whose key starts with this text, like `TopicParams`.",
-            "required": true,
+            "in": "query",
+            "description": "Only the settings whose key starts with one of these texts, separated by commas, like\n`region.` for a topic.",
+            "required": false,
             "schema": {
-              "type": ["string", "null"]
+              "type": "string"
             }
           },
           {
             "name": "project",
-            "in": "path",
+            "in": "query",
             "description": "The ID of the project the person works in: the values of the project (and of the\nprojects above it) then count for them.",
-            "required": true,
+            "required": false,
             "schema": {
-              "type": ["string", "null"]
+              "type": "string"
             }
           }
         ],
@@ -3216,11 +3216,11 @@
           },
           {
             "name": "topic",
-            "in": "path",
-            "description": "Only the settings whose key starts with this text: `security.` for a topic, or longer\n(`auth.access-key-`) for part of one. Left out, every setting of the level.",
-            "required": true,
+            "in": "query",
+            "description": "Only the settings whose key starts with one of these texts, separated by commas:\n`security.` for a topic, or longer (`auth.access-key-`) for part of one, so\n`security.,auth.access-key-` is the settings of one page. Left out, every setting of\nthe level.",
+            "required": false,
             "schema": {
-              "type": ["string", "null"]
+              "type": "string"
             }
           }
         ],
@@ -3589,11 +3589,11 @@
         "parameters": [
           {
             "name": "topic",
-            "in": "path",
-            "description": "Only the settings whose key starts with this text: `security.` for a topic, or longer\n(`auth.access-key-`) for part of one. Left out, every setting of the level.",
-            "required": true,
+            "in": "query",
+            "description": "Only the settings whose key starts with one of these texts, separated by commas:\n`security.` for a topic, or longer (`auth.access-key-`) for part of one, so\n`security.,auth.access-key-` is the settings of one page. Left out, every setting of\nthe level.",
+            "required": false,
             "schema": {
-              "type": ["string", "null"]
+              "type": "string"
             }
           }
         ],

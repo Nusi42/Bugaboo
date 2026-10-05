@@ -1,5 +1,4 @@
 export { AppLayout } from "./AppLayout.tsx";
-export { AppearancePage } from "./AppearancePage.tsx";
 export { FramesPage, type FramesShow } from "./FramesPage.tsx";
 export { GuestLayout } from "./GuestLayout.tsx";
 export { ErrorPage, NotFoundPage, PendingPage } from "./Pages.tsx";
@@ -10,6 +9,7 @@ export {
   type QuickSearchSource,
 } from "./quick-search-sources.ts";
 export { mayOpen } from "./places.ts";
+export { useQuickResults } from "./use-quick-results.ts";
 export { SettingsFrame } from "./SettingsFrame.tsx";
 export { addSidebarSection, type SidebarSection } from "./sidebar-sections.ts";
 export { ShortcutsPage } from "./ShortcutsPage.tsx";

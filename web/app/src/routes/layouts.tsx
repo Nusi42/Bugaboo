@@ -9,6 +9,7 @@ import {
   SettingsFrame,
 } from "../features/shell/index.ts";
 import { paths } from "../shared/paths.ts";
+import { loadMySettings } from "../shared/my-settings.ts";
 import { currentPerson, type Person } from "../shared/session.ts";
 import { OnlyWith } from "./OnlyWith.tsx";
 import { Root } from "./Root.tsx";
@@ -54,6 +55,8 @@ export const appRoute = createRoute({
     if (person === null) {
       throw redirect({ to: await startPath() });
     }
+    // The person's own settings come before the first page, so the look is theirs from the start.
+    await loadMySettings();
     return { person };
   },
   component: AppLayout,

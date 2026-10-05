@@ -3523,17 +3523,20 @@ export interface operations {
   };
   listMySettings: {
     parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Only the settings whose key starts with this text, like `TopicParams`. */
-        topic: string | null;
+      query?: {
+        /**
+         * @description Only the settings whose key starts with one of these texts, separated by commas, like
+         *     `region.` for a topic.
+         */
+        topic?: string;
         /**
          * @description The ID of the project the person works in: the values of the project (and of the
          *     projects above it) then count for them.
          */
-        project: string | null;
+        project?: string;
       };
+      header?: never;
+      path?: never;
       cookie?: never;
     };
     requestBody?: never;
@@ -3858,16 +3861,19 @@ export interface operations {
   };
   listProjectSettings: {
     parameters: {
-      query?: never;
+      query?: {
+        /**
+         * @description Only the settings whose key starts with one of these texts, separated by commas:
+         *     `security.` for a topic, or longer (`auth.access-key-`) for part of one, so
+         *     `security.,auth.access-key-` is the settings of one page. Left out, every setting of
+         *     the level.
+         */
+        topic?: string;
+      };
       header?: never;
       path: {
         /** @description The ID of the project. */
         project_id: string;
-        /**
-         * @description Only the settings whose key starts with this text: `security.` for a topic, or longer
-         *     (`auth.access-key-`) for part of one. Left out, every setting of the level.
-         */
-        topic: string | null;
       };
       cookie?: never;
     };
@@ -4146,15 +4152,17 @@ export interface operations {
   };
   listOrganizationSettings: {
     parameters: {
-      query?: never;
-      header?: never;
-      path: {
+      query?: {
         /**
-         * @description Only the settings whose key starts with this text: `security.` for a topic, or longer
-         *     (`auth.access-key-`) for part of one. Left out, every setting of the level.
+         * @description Only the settings whose key starts with one of these texts, separated by commas:
+         *     `security.` for a topic, or longer (`auth.access-key-`) for part of one, so
+         *     `security.,auth.access-key-` is the settings of one page. Left out, every setting of
+         *     the level.
          */
-        topic: string | null;
+        topic?: string;
       };
+      header?: never;
+      path?: never;
       cookie?: never;
     };
     requestBody?: never;

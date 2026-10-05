@@ -221,6 +221,12 @@ pub const COMMON_CONTINUE: MessageKey = MessageKey::new("common.continue");
 /// The message `common.loading`.
 pub const COMMON_LOADING: MessageKey = MessageKey::new("common.loading");
 
+/// The message `common.off`.
+pub const COMMON_OFF: MessageKey = MessageKey::new("common.off");
+
+/// The message `common.on`.
+pub const COMMON_ON: MessageKey = MessageKey::new("common.on");
+
 /// The message `common.save`.
 pub const COMMON_SAVE: MessageKey = MessageKey::new("common.save");
 
@@ -611,6 +617,9 @@ pub const NAV_FRAMES: MessageKey = MessageKey::new("nav.frames");
 /// The message `nav.group.look`.
 pub const NAV_GROUP_LOOK: MessageKey = MessageKey::new("nav.group.look");
 
+/// The message `nav.group.look-org`.
+pub const NAV_GROUP_LOOK_ORG: MessageKey = MessageKey::new("nav.group.look-org");
+
 /// The message `nav.group.people`.
 pub const NAV_GROUP_PEOPLE: MessageKey = MessageKey::new("nav.group.people");
 
@@ -632,17 +641,29 @@ pub const NAV_MY_SETTINGS: MessageKey = MessageKey::new("nav.my-settings");
 /// The message `nav.organization-settings`.
 pub const NAV_ORGANIZATION_SETTINGS: MessageKey = MessageKey::new("nav.organization-settings");
 
+/// The message `nav.region`.
+pub const NAV_REGION: MessageKey = MessageKey::new("nav.region");
+
 /// The message `nav.security`.
 pub const NAV_SECURITY: MessageKey = MessageKey::new("nav.security");
 
 /// The message `nav.sessions`.
 pub const NAV_SESSIONS: MessageKey = MessageKey::new("nav.sessions");
 
+/// The message `nav.sign-in-rules`.
+pub const NAV_SIGN_IN_RULES: MessageKey = MessageKey::new("nav.sign-in-rules");
+
 /// The message `nav.sign-out`.
 pub const NAV_SIGN_OUT: MessageKey = MessageKey::new("nav.sign-out");
 
+/// The message `nav.start-page`.
+pub const NAV_START_PAGE: MessageKey = MessageKey::new("nav.start-page");
+
 /// The message `nav.status`.
 pub const NAV_STATUS: MessageKey = MessageKey::new("nav.status");
+
+/// The message `nav.themes`.
+pub const NAV_THEMES: MessageKey = MessageKey::new("nav.themes");
 
 /// The message `page.not-found.home`.
 pub const PAGE_NOT_FOUND_HOME: MessageKey = MessageKey::new("page.not-found.home");
@@ -1065,6 +1086,20 @@ pub const SETTING_AUTH_SIGN_UP_ENABLED_HELP: MessageKey =
 pub const SETTING_AUTH_SIGN_UP_ENABLED_NAME: MessageKey =
     MessageKey::new("setting.auth.sign-up-enabled.name");
 
+/// The message `setting.page.region-intro`.
+pub const SETTING_PAGE_REGION_INTRO: MessageKey = MessageKey::new("setting.page.region-intro");
+
+/// The message `setting.page.sign-in-rules-intro`.
+pub const SETTING_PAGE_SIGN_IN_RULES_INTRO: MessageKey =
+    MessageKey::new("setting.page.sign-in-rules-intro");
+
+/// The message `setting.page.start-page-intro`.
+pub const SETTING_PAGE_START_PAGE_INTRO: MessageKey =
+    MessageKey::new("setting.page.start-page-intro");
+
+/// The message `setting.page.themes-intro`.
+pub const SETTING_PAGE_THEMES_INTRO: MessageKey = MessageKey::new("setting.page.themes-intro");
+
 /// The message `setting.region.date-format.day-month-year`.
 pub const SETTING_REGION_DATE_FORMAT_DAY_MONTH_YEAR: MessageKey =
     MessageKey::new("setting.region.date-format.day-month-year");
@@ -1168,6 +1203,41 @@ pub const SETTING_START_PAGE_HELP: MessageKey = MessageKey::new("setting.start.p
 
 /// The message `setting.start.page.name`.
 pub const SETTING_START_PAGE_NAME: MessageKey = MessageKey::new("setting.start.page.name");
+
+/// The message `setting.ui.lock`.
+pub const SETTING_UI_LOCK: MessageKey = MessageKey::new("setting.ui.lock");
+
+/// The message `setting.ui.lock-help`.
+pub const SETTING_UI_LOCK_HELP: MessageKey = MessageKey::new("setting.ui.lock-help");
+
+/// The message `setting.ui.locked`.
+pub const SETTING_UI_LOCKED: MessageKey = MessageKey::new("setting.ui.locked");
+
+/// The message `setting.ui.locked-why`.
+pub const SETTING_UI_LOCKED_WHY: MessageKey = MessageKey::new("setting.ui.locked-why");
+
+/// The message `setting.ui.nothing`.
+pub const SETTING_UI_NOTHING: MessageKey = MessageKey::new("setting.ui.nothing");
+
+/// The message `setting.ui.reset`.
+pub const SETTING_UI_RESET: MessageKey = MessageKey::new("setting.ui.reset");
+
+/// The message `setting.ui.search`.
+pub const SETTING_UI_SEARCH: MessageKey = MessageKey::new("setting.ui.search");
+
+/// The message `setting.ui.source-default`.
+pub const SETTING_UI_SOURCE_DEFAULT: MessageKey = MessageKey::new("setting.ui.source-default");
+
+/// The message `setting.ui.source-hidden-project`.
+pub const SETTING_UI_SOURCE_HIDDEN_PROJECT: MessageKey =
+    MessageKey::new("setting.ui.source-hidden-project");
+
+/// The message `setting.ui.source-organization`.
+pub const SETTING_UI_SOURCE_ORGANIZATION: MessageKey =
+    MessageKey::new("setting.ui.source-organization");
+
+/// The message `setting.ui.source-person`.
+pub const SETTING_UI_SOURCE_PERSON: MessageKey = MessageKey::new("setting.ui.source-person");
 
 /// The message `setup.answer-yes`.
 pub const SETUP_ANSWER_YES: MessageKey = MessageKey::new("setup.answer-yes");
@@ -2452,6 +2522,63 @@ pub fn sessions_started(when: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `setting.ui.between`.
+#[must_use]
+pub fn setting_ui_between(least: impl std::fmt::Display, most: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("setting.ui.between"),
+        vec![
+            ("least", Value::Text(least.to_string())),
+            ("most", Value::Text(most.to_string())),
+        ],
+    )
+}
+
+/// The message `setting.ui.device-zone`.
+#[must_use]
+pub fn setting_ui_device_zone(zone: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("setting.ui.device-zone"),
+        vec![("zone", Value::Text(zone.to_string()))],
+    )
+}
+
+/// The message `setting.ui.example-moment`.
+#[must_use]
+pub fn setting_ui_example_moment(moment: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("setting.ui.example-moment"),
+        vec![("moment", Value::Text(moment.to_string()))],
+    )
+}
+
+/// The message `setting.ui.example-number`.
+#[must_use]
+pub fn setting_ui_example_number(number: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("setting.ui.example-number"),
+        vec![("number", Value::Text(number.to_string()))],
+    )
+}
+
+/// The message `setting.ui.reset-name`.
+#[must_use]
+pub fn setting_ui_reset_name(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("setting.ui.reset-name"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `setting.ui.source-project`.
+#[must_use]
+pub fn setting_ui_source_project(project: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("setting.ui.source-project"),
+        vec![("project", Value::Text(project.to_string()))],
+    )
+}
+
 /// The message `setup.ask.replace`.
 #[must_use]
 pub fn setup_ask_replace(path: impl std::fmt::Display) -> Message {
@@ -2682,7 +2809,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "appearance.device-settings",
-        "Your device may already ask for less motion or more contrast. Bugaboo follows both. These choices stay on this device.",
+        "Your device may already ask for less motion or more contrast. Bugaboo follows both. Your choices are kept with you, so they follow you to every browser you sign in from.",
     ),
     ("appearance.issue-view.panel", "Side panel"),
     ("appearance.larger-text", "Larger text"),
@@ -2858,6 +2985,8 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("common.close", "Close"),
     ("common.continue", "Continue"),
     ("common.loading", "Loading…"),
+    ("common.off", "Off"),
+    ("common.on", "On"),
     ("common.save", "Save"),
     ("common.try-again", "Try again"),
     ("common.undo", "Undo"),
@@ -3267,6 +3396,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("nav.appearance", "Appearance"),
     ("nav.frames", "Page frames"),
     ("nav.group.look", "Look and feel"),
+    ("nav.group.look-org", "Look"),
     ("nav.group.people", "People"),
     ("nav.group.sign-in", "Sign-in"),
     ("nav.group.system", "System"),
@@ -3274,10 +3404,14 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("nav.invitations", "Invitations"),
     ("nav.my-settings", "My settings"),
     ("nav.organization-settings", "Organization settings"),
+    ("nav.region", "Region"),
     ("nav.security", "Sign-in & security"),
     ("nav.sessions", "Where you're signed in"),
+    ("nav.sign-in-rules", "Sign-in rules"),
     ("nav.sign-out", "Sign out"),
+    ("nav.start-page", "Start page"),
     ("nav.status", "Server status"),
+    ("nav.themes", "Themes"),
     ("page.not-found.home", "Go to the start page"),
     (
         "page.not-found.text",
@@ -3743,6 +3877,22 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "Sign up without an invitation",
     ),
     (
+        "setting.page.region-intro",
+        "These choices are kept with you, so they follow you to every browser you sign in from.",
+    ),
+    (
+        "setting.page.sign-in-rules-intro",
+        "How long people stay signed in, and the rules for signing in. They apply to everybody.",
+    ),
+    (
+        "setting.page.start-page-intro",
+        "Choose the page Bugaboo opens after you sign in.",
+    ),
+    (
+        "setting.page.themes-intro",
+        "The organization's choice of look. People can choose their own, unless you lock a setting.",
+    ),
+    (
         "setting.region.date-format.day-month-year",
         "Day, month, year (31.12.2026)",
     ),
@@ -3811,6 +3961,44 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "The page Bugaboo opens after you sign in.",
     ),
     ("setting.start.page.name", "Start page"),
+    (
+        "setting.ui.between",
+        "A whole number between {least} and {most}.",
+    ),
+    ("setting.ui.device-zone", "Match my device ({zone})"),
+    (
+        "setting.ui.example-moment",
+        "Right now, a time looks like this: {moment}",
+    ),
+    (
+        "setting.ui.example-number",
+        "A number looks like this: {number}",
+    ),
+    ("setting.ui.lock", "Lock for everyone"),
+    (
+        "setting.ui.lock-help",
+        "While this is locked, nobody can choose their own value.",
+    ),
+    ("setting.ui.locked", "Set by your organization"),
+    (
+        "setting.ui.locked-why",
+        "An administrator chose this for everyone, so you can't change it here.",
+    ),
+    ("setting.ui.nothing", "No setting matches your search."),
+    ("setting.ui.reset", "Reset to default"),
+    ("setting.ui.reset-name", "Reset to default: {name}"),
+    ("setting.ui.search", "Search settings"),
+    ("setting.ui.source-default", "Bugaboo's standard value"),
+    (
+        "setting.ui.source-hidden-project",
+        "From a project you can't see",
+    ),
+    (
+        "setting.ui.source-organization",
+        "Your organization's choice",
+    ),
+    ("setting.ui.source-person", "Your own choice"),
+    ("setting.ui.source-project", "From {project}"),
     ("setup.answer-yes", "yes"),
     (
         "setup.ask.address",

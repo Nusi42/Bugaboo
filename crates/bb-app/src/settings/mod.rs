@@ -51,7 +51,8 @@ pub struct SettingsQuery {
     pub session_token: String,
     /// Where the settings are.
     pub scope: SettingsScope,
-    /// Only the settings whose key starts with this text (`security.`, `auth.access-key-`).
+    /// Only the settings whose key starts with one of these texts, separated by commas
+    /// (`security.,auth.access-key-`): the settings of one page.
     pub topic: Option<String>,
     /// For a person's own settings: the project they work in, so the values of that project (and
     /// of the projects above it) count for them. The person must be able to see the project.
@@ -371,10 +372,11 @@ pub async fn settings<S: AuthStore>(
     let mut settings = Vec::new();
     for definition in registry().filter(|definition| {
         definition.levels().contains(&level)
-            && input
-                .topic
-                .as_deref()
-                .is_none_or(|topic| definition.key().starts_with(topic))
+            && input.topic.as_deref().is_none_or(|topic| {
+                topic
+                    .split(',')
+                    .any(|start| !start.is_empty() && definition.key().starts_with(start))
+            })
     }) {
         settings.push(
             ctx.view_of(&actor, input.scope, definition, &layers)

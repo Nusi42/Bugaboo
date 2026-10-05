@@ -52,6 +52,35 @@ export const messages = {
     "Let people make an account on their own, without an invitation. Bugaboo cannot check that an address belongs to the person until e-mail is available, so use this only on a network you trust.",
   "setting.auth.sign-up-domains.help":
     "The e-mail domains that may sign up on their own, as a list separated by commas, like example.com. Leave the list empty to let every address sign up while signing up is on, so write your domains in first.",
+  "setting.ui.search": "Search settings",
+  "setting.ui.nothing": "No setting matches your search.",
+  "setting.ui.reset": "Reset to default",
+  "setting.ui.reset-name": "Reset to default: {name}",
+  "setting.ui.locked": "Set by your organization",
+  "setting.ui.locked-why": "An administrator chose this for everyone, so you can't change it here.",
+  "setting.ui.lock": "Lock for everyone",
+  "setting.ui.lock-help": "While this is locked, nobody can choose their own value.",
+  "setting.ui.source-default": "Bugaboo's standard value",
+  "setting.ui.source-organization": "Your organization's choice",
+  "setting.ui.source-project": "From {project}",
+  "setting.ui.source-hidden-project": "From a project you can't see",
+  "setting.ui.source-person": "Your own choice",
+  "setting.ui.device-zone": "Match my device ({zone})",
+  "setting.ui.between": "A whole number between {least} and {most}.",
+  "setting.ui.example-moment": "Right now, a time looks like this: {moment}",
+  "setting.ui.example-number": "A number looks like this: {number}",
+  "setting.page.region-intro":
+    "These choices are kept with you, so they follow you to every browser you sign in from.",
+  "setting.page.start-page-intro": "Choose the page Bugaboo opens after you sign in.",
+  "setting.page.sign-in-rules-intro":
+    "How long people stay signed in, and the rules for signing in. They apply to everybody.",
+  "setting.page.themes-intro":
+    "The organization's choice of look. People can choose their own, unless you lock a setting.",
+  "nav.region": "Region",
+  "nav.start-page": "Start page",
+  "nav.sign-in-rules": "Sign-in rules",
+  "nav.themes": "Themes",
+  "nav.group.look-org": "Look",
   "setting.appearance.mode.help":
     "The colors Bugaboo uses on your screen. Match my device follows the light or dark setting of your device.",
   "setting.appearance.light-theme.help":
@@ -147,6 +176,8 @@ export const messages = {
   "common.try-again": "Try again",
   "common.continue": "Continue",
   "common.save": "Save",
+  "common.on": "On",
+  "common.off": "Off",
   "validation.required": "Please fill this in.",
   "validation.email": "Type an e-mail address like name@example.com.",
   "field.email": "E-mail address",
@@ -424,7 +455,7 @@ export const messages = {
   "appearance.larger-text": "Larger text",
   "appearance.less-motion": "Less motion",
   "appearance.device-settings":
-    "Your device may already ask for less motion or more contrast. Bugaboo follows both. These choices stay on this device.",
+    "Your device may already ask for less motion or more contrast. Bugaboo follows both. Your choices are kept with you, so they follow you to every browser you sign in from.",
   "shortcuts.intro": "Choose the keys you like. Open a shortcut to change its keys.",
   "shortcuts.search": "Search the shortcuts",
   "shortcuts.nothing": "No shortcut matches your search.",
@@ -526,6 +557,12 @@ export interface MessageArguments {
   "sessions.last-seen": { when: string | number };
   "sessions.network": { network: string | number };
   "sessions.started": { when: string | number };
+  "setting.ui.between": { least: string | number; most: string | number };
+  "setting.ui.device-zone": { zone: string | number };
+  "setting.ui.example-moment": { moment: string | number };
+  "setting.ui.example-number": { number: string | number };
+  "setting.ui.reset-name": { name: string | number };
+  "setting.ui.source-project": { project: string | number };
   "setup.ask.replace": { path: string | number };
   "setup.database-url-password": { file: string | number; variable: string | number };
   "setup.exists": { path: string | number };

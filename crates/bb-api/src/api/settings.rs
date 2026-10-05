@@ -337,16 +337,21 @@ mod query {
 
     /// Which settings to list.
     #[derive(Deserialize, IntoParams)]
+    #[into_params(parameter_in = Query)]
     pub(super) struct TopicParams {
-        /// Only the settings whose key starts with this text: `security.` for a topic, or longer
-        /// (`auth.access-key-`) for part of one. Left out, every setting of the level.
+        /// Only the settings whose key starts with one of these texts, separated by commas:
+        /// `security.` for a topic, or longer (`auth.access-key-`) for part of one, so
+        /// `security.,auth.access-key-` is the settings of one page. Left out, every setting of
+        /// the level.
         pub(super) topic: Option<String>,
     }
 
     /// Which of a person's own settings to list, and where they work.
     #[derive(Deserialize, IntoParams)]
+    #[into_params(parameter_in = Query)]
     pub(super) struct MineParams {
-        /// Only the settings whose key starts with this text, like `TopicParams`.
+        /// Only the settings whose key starts with one of these texts, separated by commas, like
+        /// `region.` for a topic.
         pub(super) topic: Option<String>,
         /// The ID of the project the person works in: the values of the project (and of the
         /// projects above it) then count for them.

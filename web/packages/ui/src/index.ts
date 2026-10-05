@@ -5,6 +5,7 @@ export {
   applyAppearance,
   applyChoices,
   applyInitialAppearance,
+  currentSource,
   defaultAppearance,
   parseAppearance,
   setAppearanceSource,
@@ -34,6 +35,7 @@ export { OrDivider, type OrDividerProps } from "./OrDivider.tsx";
 export { Overlay, type OverlayProps } from "./Overlay.tsx";
 export { SaveStatus, type SaveState, type SaveStatusProps } from "./SaveStatus.tsx";
 export { SearchField, type SearchFieldProps } from "./SearchField.tsx";
+export { SelectField, type SelectChoice, type SelectFieldProps } from "./SelectField.tsx";
 export { Skeleton, type SkeletonProps } from "./Skeleton.tsx";
 export { Switch, type SwitchProps } from "./Switch.tsx";
 export { TextField, type TextFieldProps } from "./TextField.tsx";

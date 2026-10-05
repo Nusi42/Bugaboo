@@ -6,12 +6,16 @@ import { createRoot } from "react-dom/client";
 
 import "@bugaboo/ui/tokens.css";
 
+import { installPersonalSources } from "./shared/personal-sources.ts";
 import { paths } from "./shared/paths.ts";
 import { onSessionLost, queryClient } from "./shared/query-client.ts";
 import { leaveSession } from "./shared/session.ts";
 import { router } from "./routes/router.tsx";
 import "./global.css";
 
+// The person's own choices come from the server once they are signed in; until then the page is
+// drawn with the copy kept for the first frame, or the device's look.
+installPersonalSources();
 applyInitialAppearance();
 
 // An answer that says the sign-in is gone, or does not fit this page, takes the person to the

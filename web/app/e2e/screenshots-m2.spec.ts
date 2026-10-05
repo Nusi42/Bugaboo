@@ -1,7 +1,7 @@
 import { t } from "@bugaboo/messages";
 import { type Page } from "@playwright/test";
 
-import { ada, makeAdmin } from "./support/accounts.ts";
+import { ada, forgetChoices, makeAdmin } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { screenshotFolder, shoot } from "./support/screenshots.ts";
@@ -64,6 +64,7 @@ async function phoneScreens(page: Page): Promise<void> {
 
 async function quickScreens(page: Page): Promise<void> {
   await page.goto("/");
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
   await page.keyboard.press("Control+k");
   await page.getByRole("searchbox", { name: t("search.label"), exact: true }).fill("a");
   await expect(page.getByRole("option").first()).toBeVisible();
@@ -90,6 +91,38 @@ async function frameScreens(page: Page): Promise<void> {
   await shot(page, "11-undo-phone");
 }
 
+/** The pages of *My settings* and the organization's settings that WP-07 added, at phone width. */
+async function settingsScreens(page: Page): Promise<void> {
+  await page.setViewportSize(sizes.phone);
+  await page.goto("/me/region");
+  await expect(page.getByRole("heading", { level: 1, name: t("nav.region") })).toBeVisible();
+  await shot(page, "20-region-phone");
+  await page.goto("/me/start-page");
+  await expect(page.getByRole("heading", { level: 1, name: t("nav.start-page") })).toBeVisible();
+  await shot(page, "21-start-page-phone");
+  await page.goto("/me/appearance");
+  await expect(page.getByRole("heading", { level: 1, name: t("appearance.title") })).toBeVisible();
+  await shot(page, "22-appearance-samples-phone");
+  await page.goto("/settings/sign-in-rules");
+  await expect(page.getByRole("heading", { level: 1, name: t("nav.sign-in-rules") })).toBeVisible();
+  await shot(page, "23-sign-in-rules-phone");
+  // The administrator locks the theme; the page of a person then says why it cannot be changed.
+  await page.goto("/settings/themes");
+  const row = page.getByRole("listitem").filter({
+    has: page.getByRole("group", { name: t("theme.legend"), exact: true }),
+  });
+  await row.getByText(t("setting.ui.lock"), { exact: true }).click();
+  await expect(row.getByRole("switch", { name: t("setting.ui.lock") })).toBeChecked();
+  await expect(page.getByRole("status").filter({ hasText: t("save.saved") })).toBeVisible();
+  await shot(page, "24-themes-lock-phone");
+  await page.goto("/me/appearance");
+  await expect(page.getByText(t("setting.ui.locked"), { exact: true }).first()).toBeVisible();
+  await shot(page, "25-appearance-locked-phone");
+  await page.goto("/me/shortcuts");
+  await expect(page.getByRole("heading", { level: 1, name: t("shortcut.title") })).toBeVisible();
+  await shot(page, "26-keyboard-shortcuts-kept-phone");
+}
+
 async function largerScreens(page: Page): Promise<void> {
   await page.setViewportSize(sizes.computer);
   await page.goto("/me/appearance");
@@ -108,11 +141,13 @@ async function largerScreens(page: Page): Promise<void> {
   await shot(page, "15-menu-tablet");
 }
 
-test("the screens of the app shell", async ({ page }) => {
+test("the screens of the app shell", async ({ page, server }) => {
   test.setTimeout(TAKING_ALL_MS);
+  await forgetChoices(server, ada, true);
   await signIn(page, ada);
   await phoneScreens(page);
   await quickScreens(page);
   await frameScreens(page);
+  await settingsScreens(page);
   await largerScreens(page);
 });
