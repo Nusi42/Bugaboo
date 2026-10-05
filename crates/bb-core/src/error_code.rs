@@ -72,6 +72,16 @@ error_codes! {
     NotSignedIn => ("auth.not_signed_in", 401, message::ERROR_AUTH_NOT_SIGNED_IN),
     /// The person can see the thing but may not do this to it.
     Forbidden => ("access.forbidden", 403, message::ERROR_ACCESS_FORBIDDEN),
+    /// The change would leave nobody who can manage roles and decide who has which role for the
+    /// whole organization (ADR-0025, decision 6).
+    WouldLockOut => ("access.would_lock_out", 409, message::ERROR_ACCESS_WOULD_LOCK_OUT),
+    /// Somebody tried to add or give more than they hold in that place themselves (ADR-0025,
+    /// decision 6).
+    TooMuch => ("access.too_much", 403, message::ERROR_ACCESS_TOO_MUCH),
+    /// A person or group would have a role and *No access* in the same project.
+    AssignmentConflict => ("assignment.conflict", 409, message::ERROR_ASSIGNMENT_CONFLICT),
+    /// A name of a group, role or project is used already.
+    NameTaken => ("name.taken", 409, message::ERROR_NAME_TAKEN),
     /// There is no such thing, or the person may not know about it.
     NotFound => ("resource.not_found", 404, message::ERROR_RESOURCE_NOT_FOUND),
     /// The request is not valid.

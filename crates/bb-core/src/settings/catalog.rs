@@ -36,17 +36,6 @@ settings! {
         bounds: (1, 720),
     }
 
-    /// The roles whose members must use two-step sign-in (a list separated by commas). Takes
-    /// effect once roles exist (M2).
-    SECURITY_TWO_STEP_REQUIRED_ROLES: Text = {
-        key: "security.two-step-required-roles",
-        default: "",
-        levels: [Organization],
-        changed_by: Administrators,
-        help: message::SETTING_SECURITY_TWO_STEP_REQUIRED_ROLES_HELP,
-        lockable: false,
-    }
-
     /// Whether people may make an account without an invitation (AUTH-06).
     AUTH_SIGN_UP_ENABLED: Bool = {
         key: "auth.sign-up-enabled",

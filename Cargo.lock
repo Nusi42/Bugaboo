@@ -516,6 +516,15 @@ version = "0.0.0"
 [[package]]
 name = "bb-policy"
 version = "0.0.0"
+dependencies = [
+ "bb-core",
+ "jiff",
+ "proptest",
+ "serde",
+ "serde_json",
+ "trybuild",
+ "utoipa",
+]
 
 [[package]]
 name = "bb-searchlang"

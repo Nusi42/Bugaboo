@@ -1,0 +1,7 @@
+error: cannot construct `Evaluation` with struct literal syntax due to private fields
+ --> tests/ui/evaluation_by_hand.rs:5:19
+  |
+5 |     let _forged = Evaluation { person: None };
+  |                   ^^^^^^^^^^   ------------ private field
+  |
+  = note: ...and other private fields that were not provided

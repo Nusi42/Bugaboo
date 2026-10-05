@@ -8,9 +8,11 @@ extern crate self as bb_core;
 #[macro_use]
 mod words;
 
+pub mod access;
 pub mod entities;
 pub mod error_code;
 pub mod event;
+pub mod fields;
 pub mod id;
 pub mod job;
 pub mod message;
@@ -18,8 +20,10 @@ pub mod migration;
 pub mod network;
 pub mod outbox;
 pub mod paging;
+pub mod people_kinds;
 pub mod person;
 pub mod personal;
+pub mod project;
 pub mod secret;
 pub mod security_log;
 pub mod settings;

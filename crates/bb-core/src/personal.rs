@@ -19,6 +19,8 @@ words! {
         Credentials => "credentials",
         /// What a person did and when: who changed what, who is assigned.
         Activity => "activity",
+        /// Where a person works: their groups and the roles they have, and where (ADR-0025).
+        Organization => "organization",
         /// What a person wrote: comments, descriptions, reasons.
         Content => "content",
         /// Working hours and the accounting fields of time entries.

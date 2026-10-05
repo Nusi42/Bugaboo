@@ -1,0 +1,188 @@
+//! `PersonRef` and *Who sees people* (PRIV-12, PRIV-13, ADR-0022, ADR-0025 decision 11,
+//! architecture §7 *How `PersonRef` resolves*).
+//!
+//! Every person in an answer is a [`PersonRef`], resolved for the viewer, the kind of people
+//! information and the place. A role label and *Someone* carry no ID of the person, so a browser
+//! cannot tell two hidden people apart or follow one through the answers. E-mail addresses are
+//! part of no `PersonRef`. Enforced by: ARCH-PERSON-REF.
+
+use std::collections::BTreeSet;
+
+use bb_core::access::PeopleLevel;
+use bb_core::id::{IdSource, UserId};
+use bb_core::people_kinds::PeopleKind;
+use serde::Serialize;
+
+use crate::catalogue::Permission;
+use crate::evaluate::Evaluation;
+
+/// How a person is shown to one viewer.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
+#[serde(tag = "shown", rename_all = "lowercase")]
+pub enum PersonRef {
+    /// By name, with the ID for links.
+    Name {
+        /// The ID of the person.
+        id: UserId,
+        /// The name.
+        name: String,
+    },
+    /// By the label of their role; the screen says "a {role}". No ID.
+    Role {
+        /// The name of the role.
+        role: String,
+    },
+    /// As *Someone*. Nothing else.
+    Someone,
+    /// A removed person: the screen says "Former user {label}". No ID.
+    Former {
+        /// The random code, like `K7Q2`.
+        label: String,
+    },
+}
+
+/// Where a person is shown: in an ordinary answer, or in a screen where the people who manage
+/// people or roles work (*Organization settings*, *Who has which role*, *Check access*).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum PeopleContext {
+    /// An ordinary place: the viewer's level for the kind counts.
+    Ordinary,
+    /// A management screen (M2-Q3): people who manage see names, everybody else sees the
+    /// people there by the kind *Project members*.
+    Management,
+}
+
+/// The permissions that make a viewer a manager of people or roles at a place (M2-Q3).
+const MANAGERS: [Permission; 4] = [
+    Permission::ManagePeople,
+    Permission::ManageGroups,
+    Permission::ManageRoles,
+    Permission::DecideRoles,
+];
+
+impl Evaluation {
+    /// How the viewer sees people of `kind` here. The viewer's level is the most open of their
+    /// roles; in a management screen a person who manages people or roles always sees names.
+    #[must_use]
+    pub fn people_level(&self, kind: PeopleKind, context: PeopleContext) -> PeopleLevel {
+        match context {
+            PeopleContext::Ordinary => self.kind_level(kind),
+            PeopleContext::Management => {
+                if MANAGERS.iter().any(|permission| self.allows(*permission)) {
+                    PeopleLevel::Names
+                } else {
+                    self.kind_level(PeopleKind::ProjectMembers)
+                }
+            }
+        }
+    }
+
+    /// Whether a picture of a person may be shown: only where the kind of the place also gives
+    /// *Names*.
+    #[must_use]
+    pub fn shows_picture(&self, kind: PeopleKind, context: PeopleContext) -> bool {
+        self.kind_level(PeopleKind::Pictures) == PeopleLevel::Names
+            && self.people_level(kind, context) == PeopleLevel::Names
+    }
+}
+
+/// A removed person, as the viewer needs to know them (PRIV-04, M9).
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct FormerUser {
+    /// The random code stored with the tombstone.
+    pub label: String,
+}
+
+/// The person to show, with what the store knows of them.
+#[derive(Clone, Copy, Debug)]
+pub struct Target<'a> {
+    /// The ID of the person.
+    pub id: UserId,
+    /// Their name.
+    pub name: &'a str,
+    /// The label of their first role in the order of roles at the place, if they have one.
+    pub role: Option<&'a str>,
+    /// Set when the person was removed.
+    pub removed: Option<&'a FormerUser>,
+}
+
+/// Shows `target` to `viewer` as `kind` says (steps 1 to 3 of *How `PersonRef` resolves*).
+#[must_use]
+pub fn resolve(
+    viewer: &Evaluation,
+    kind: PeopleKind,
+    context: PeopleContext,
+    target: Target<'_>,
+) -> PersonRef {
+    if viewer.person() == Some(target.id) {
+        return PersonRef::Name {
+            id: target.id,
+            name: target.name.to_owned(),
+        };
+    }
+    let level = viewer.people_level(kind, context);
+    if let Some(former) = target.removed {
+        return if level == PeopleLevel::Names {
+            PersonRef::Former {
+                label: former.label.clone(),
+            }
+        } else {
+            PersonRef::Someone
+        };
+    }
+    match level {
+        PeopleLevel::Names => PersonRef::Name {
+            id: target.id,
+            name: target.name.to_owned(),
+        },
+        PeopleLevel::RoleOnly => target
+            .role
+            .map_or(PersonRef::Someone, |role| PersonRef::Role {
+                role: role.to_owned(),
+            }),
+        PeopleLevel::Hidden => PersonRef::Someone,
+    }
+}
+
+/// The 32 characters of Crockford Base32: no `I`, `L`, `O` or `U`, so a code is easy to read out.
+const CROCKFORD: &[u8; 32] = b"0123456789ABCDEFGHJKMNPQRSTVWXYZ";
+/// The length of a label when there is room: four characters, 32^4 = over a million labels.
+const LABEL_LENGTH: usize = 4;
+/// The longest label.
+const LABEL_LENGTH_MAX: usize = 12;
+/// How often a length is tried again after a clash before the label gets longer.
+const TRIES_PER_LENGTH: usize = 16;
+
+/// Makes the random code of a *Former user* (PRIV-13): four characters of Crockford Base32 from
+/// the secure random source, drawn again on a clash and longer when four run short. Never made
+/// from the person's ID or from a counter, so labels do not count up and cannot be traced back.
+///
+/// `taken` says whether a label belongs to a removed person already. `None` only when even the
+/// longest labels clash, which would mean the random source is broken.
+#[must_use]
+pub fn former_user_label(
+    source: &mut impl IdSource,
+    taken: &dyn Fn(&str) -> bool,
+) -> Option<String> {
+    for length in LABEL_LENGTH..=LABEL_LENGTH_MAX {
+        for _ in 0..TRIES_PER_LENGTH {
+            let random = source.random();
+            let label: String = random
+                .iter()
+                .take(length)
+                // 256 is a multiple of 32, so the lowest five bits are uniform.
+                .map(|byte| char::from(CROCKFORD[usize::from(byte & 0x1F)]))
+                .collect();
+            if !taken(&label) {
+                return Some(label);
+            }
+        }
+    }
+    None
+}
+
+/// The set of labels as the store's rows give them, for [`former_user_label`].
+pub fn taken_in(labels: &BTreeSet<String>) -> impl Fn(&str) -> bool + '_ {
+    move |label| labels.contains(label)
+}
