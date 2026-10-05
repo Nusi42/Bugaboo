@@ -5,6 +5,7 @@
 //! through the port [`AuthStore`]. [`AuthApi`] lists them once for the HTTP layer: it is what
 //! `bb-api` holds, with the store behind it erased, so `bb-api` never names an adapter.
 
+mod access_keys;
 mod account;
 mod ctx;
 mod invitations;
@@ -32,6 +33,9 @@ use crate::roles::{
     roles, set_field_level, set_people_level,
 };
 
+#[cfg(test)]
+pub(crate) use access_keys::narrowing_of;
+pub use access_keys::{access_key_rules, access_keys, delete_access_key, make_access_key};
 pub use account::{accept_invitation, change_password, complete_setup, issue_setup_code, sign_up};
 pub use ctx::{AppError, AuthServices, Ctx, FailureLimit, NETWORK_KEY_PREFIX, RequestInfo};
 pub(crate) use ctx::{by, change_failed, changed, entity, fixed_entity, internal, set_to};
@@ -45,10 +49,10 @@ pub use second_factor::{
     remove_passkey, renew_backup_codes, start_code_app, two_step,
 };
 pub use session::{
-    authenticate, end_session, passkey_second_step, second_step, sessions, sign_in, sign_out,
-    sign_out_everywhere, status,
+    authenticate, end_session, passkey_second_step, second_step, second_step_gap, sessions,
+    sign_in, sign_out, sign_out_everywhere, status,
 };
-pub use store::{Account, AuthSettings, AuthStore, SecurityEvent, SessionRecord};
+pub use store::{AccessKeyRecord, Account, AuthSettings, AuthStore, SecurityEvent, SessionRecord};
 pub use types::*;
 
 /// A future that can move between threads, which is what an HTTP handler needs to wait for.
@@ -128,6 +132,16 @@ use_cases! {
     add_passkey(AddPasskey) -> PasskeyView;
     /// Removes a passkey.
     remove_passkey(RemovePasskey) -> Done;
+    /// Makes an access key.
+    make_access_key(MakeAccessKey) -> Authorized<CreatedAccessKey>;
+    /// Deletes an access key.
+    delete_access_key(DeleteAccessKey) -> Done;
+    /// Lists the access keys of the person.
+    access_keys(AccessKeysQuery) -> Authorized<AccessKeyPage>;
+    /// How long a new access key lives in this organization.
+    access_key_rules(AccessKeyRulesQuery) -> Authorized<AccessKeyRules>;
+    /// How many people with a role have no second step yet.
+    second_step_gap(SecondStepGapQuery) -> Authorized<SecondStepGap>;
     /// Makes an invitation.
     create_invitation(CreateInvitation) -> Authorized<CreatedInvitation>;
     /// Takes an invitation back.

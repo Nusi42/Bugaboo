@@ -68,6 +68,8 @@ table! {
     "set_field_level" => s::set_field_level_scenario,
     "set_people_level" => s::set_people_level_scenario,
     "make_project" => s::make_project_scenario,
+    "make_access_key" => s::make_access_key_scenario,
+    "delete_access_key" => s::delete_access_key_scenario,
 }
 
 #[test]

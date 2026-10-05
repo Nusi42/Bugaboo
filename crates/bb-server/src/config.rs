@@ -12,14 +12,14 @@ use std::path::{Path, PathBuf};
 use std::time::Duration;
 
 use bb_api::{
-    DEFAULT_MAX_CONNECTIONS, DEFAULT_REQUESTS_PER_MINUTE, DEFAULT_SIGN_IN_ATTEMPTS_PER_MINUTE,
-    DEFAULT_SIGN_IN_FAILURES_PER_MINUTE, LimitsConfig,
+    DEFAULT_ACCESS_KEY_REQUESTS_PER_MINUTE, DEFAULT_MAX_CONNECTIONS, DEFAULT_REQUESTS_PER_MINUTE,
+    DEFAULT_SIGN_IN_ATTEMPTS_PER_MINUTE, DEFAULT_SIGN_IN_FAILURES_PER_MINUTE, LimitsConfig,
 };
 
 use bb_core::message::{self, Message};
 
 /// Every start-up setting, once. The environment variable of `port` is `BUGABOO_PORT`.
-const KEYS: [&str; 16] = [
+const KEYS: [&str; 17] = [
     "address",
     "port",
     "data_dir",
@@ -36,6 +36,7 @@ const KEYS: [&str; 16] = [
     "rate_limit_per_minute",
     "sign_in_attempts_per_minute",
     "sign_in_failures_per_minute",
+    "access_key_requests_per_minute",
 ];
 /// Settings that name files or folders: relative paths in the settings file are relative to it.
 const PATH_KEYS: [&str; 3] = ["data_dir", "tls_cert", "tls_key"];
@@ -363,6 +364,11 @@ fn settings_from(
             values,
             "sign_in_failures_per_minute",
             DEFAULT_SIGN_IN_FAILURES_PER_MINUTE,
+        )?,
+        access_key_requests_per_minute: rate_limit(
+            values,
+            "access_key_requests_per_minute",
+            DEFAULT_ACCESS_KEY_REQUESTS_PER_MINUTE,
         )?,
     };
 

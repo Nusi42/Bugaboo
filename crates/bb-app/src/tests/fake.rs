@@ -12,14 +12,15 @@ use std::sync::{Arc, Mutex, MutexGuard};
 use bb_core::access::{Assignment, FieldLevel, Group, GroupMember, PeopleLevel};
 use bb_core::event::DomainEvent;
 use bb_core::fields::Field;
-use bb_core::id::{InvitationId, PasskeyId, ProjectId, RoleId, SessionId, UserId};
+use bb_core::id::{AccessKeyId, InvitationId, PasskeyId, ProjectId, RoleId, SessionId, UserId};
 use bb_core::people_kinds::PeopleKind;
 use bb_core::person::Person;
 use bb_core::project::Project;
 use bb_core::security_log::Digest;
 use bb_core::settings::{
-    AUTH_SIGN_UP_DOMAINS, AUTH_SIGN_UP_ENABLED, SECURITY_SESSION_ABSOLUTE_HOURS,
-    SECURITY_SESSION_IDLE_MINUTES, SettingValue,
+    AUTH_ACCESS_KEY_DEFAULT_DAYS, AUTH_ACCESS_KEY_LONGEST_DAYS, AUTH_SIGN_UP_DOMAINS,
+    AUTH_SIGN_UP_ENABLED, SECURITY_SESSION_ABSOLUTE_HOURS, SECURITY_SESSION_IDLE_MINUTES,
+    SECURITY_TWO_STEP_REQUIRED, SettingValue,
 };
 use bb_core::sign_in::{
     Invitation, SessionStage, SetupCode, SignInSession, StoredPasskey, TwoStep,
@@ -29,7 +30,9 @@ use jiff::Timestamp;
 use zeroize::Zeroizing;
 
 use crate::access::RoleRecord;
-use crate::auth::{Account, AuthSettings, AuthStore, SecurityEvent, SessionRecord};
+use crate::auth::{
+    AccessKeyRecord, Account, AuthSettings, AuthStore, SecurityEvent, SessionRecord,
+};
 use crate::ports::{BoxFuture, ChangeStore};
 
 /// What the fake store can fail with.
@@ -61,6 +64,7 @@ pub(crate) struct State {
     pub(crate) backup_codes: Vec<(UserId, Digest, Option<Timestamp>)>,
     pub(crate) passkeys: Vec<StoredPasskey>,
     pub(crate) invitations: Vec<Invitation>,
+    pub(crate) access_keys: Vec<AccessKeyRecord>,
     pub(crate) setup_code: Option<SetupCode>,
     pub(crate) settings: Vec<(String, SettingValue)>,
     pub(crate) starting_roles_made: bool,
@@ -363,8 +367,166 @@ impl AuthStore for FakeStore {
                     Some(SettingValue::Text(text)) => text,
                     _ => String::new(),
                 },
+                access_key_default_days: match setting(
+                    AUTH_ACCESS_KEY_DEFAULT_DAYS.definition().key(),
+                ) {
+                    Some(SettingValue::Integer(value)) => value,
+                    _ => 90,
+                },
+                access_key_longest_days: match setting(
+                    AUTH_ACCESS_KEY_LONGEST_DAYS.definition().key(),
+                ) {
+                    Some(SettingValue::Integer(value)) => value,
+                    _ => 365,
+                },
             }
         }))
+    }
+
+    async fn access_key_by_hash(
+        &self,
+        hash: &Digest,
+    ) -> Result<Option<AccessKeyRecord>, FakeError> {
+        Ok(self.read(|state| {
+            state
+                .access_keys
+                .iter()
+                .find(|record| record.key.secret_hash == *hash)
+                .cloned()
+        }))
+    }
+
+    async fn access_keys_of(
+        &self,
+        owner: UserId,
+        after: Option<(Timestamp, AccessKeyId)>,
+        limit: u64,
+    ) -> Result<Vec<AccessKeyRecord>, FakeError> {
+        Ok(self.read(|state| {
+            let mut found: Vec<AccessKeyRecord> = state
+                .access_keys
+                .iter()
+                .filter(|record| record.key.owner == owner)
+                .cloned()
+                .collect();
+            found.sort_by(|a, b| {
+                b.key
+                    .created_at
+                    .cmp(&a.key.created_at)
+                    .then(a.key.id.cmp(&b.key.id))
+            });
+            found
+                .into_iter()
+                .filter(|record| {
+                    after.is_none_or(|(created, id)| {
+                        record.key.created_at < created
+                            || (record.key.created_at == created && record.key.id > id)
+                    })
+                })
+                .take(usize::try_from(limit).unwrap_or(usize::MAX))
+                .collect()
+        }))
+    }
+
+    async fn access_key_count(&self, owner: UserId) -> Result<i64, FakeError> {
+        Ok(self.read(|state| {
+            let held = state
+                .access_keys
+                .iter()
+                .filter(|record| record.key.owner == owner)
+                .count();
+            i64::try_from(held).unwrap_or(i64::MAX)
+        }))
+    }
+
+    async fn second_step_required(&self, person: UserId) -> Result<bool, FakeError> {
+        Ok(self.read(|state| {
+            let everybody = state.settings.iter().any(|(name, value)| {
+                name == SECURITY_TWO_STEP_REQUIRED.definition().key()
+                    && *value == SettingValue::Bool(true)
+            });
+            let groups: Vec<_> = state
+                .members
+                .iter()
+                .filter(|member| member.person == person)
+                .map(|member| member.group)
+                .collect();
+            everybody
+                || state.assignments.iter().any(|row| {
+                    let mine = row.person == Some(person)
+                        || row.group.is_some_and(|group| groups.contains(&group));
+                    mine && row.role.is_some_and(|role| {
+                        state
+                            .roles
+                            .iter()
+                            .any(|record| record.role.id == role && record.role.two_step)
+                    })
+                })
+        }))
+    }
+
+    async fn has_second_step(&self, person: UserId) -> Result<bool, FakeError> {
+        Ok(self.read(|state| {
+            state
+                .two_steps
+                .iter()
+                .any(|step| step.person == person && step.confirmed)
+                || state
+                    .passkeys
+                    .iter()
+                    .any(|passkey| passkey.person == person)
+        }))
+    }
+
+    async fn people_without_second_step(&self, role: RoleId) -> Result<Vec<UserId>, FakeError> {
+        Ok(self.read(|state| {
+            let mut holders: Vec<UserId> = Vec::new();
+            for row in state
+                .assignments
+                .iter()
+                .filter(|row| row.role == Some(role))
+            {
+                holders.extend(row.person);
+                if let Some(group) = row.group {
+                    holders.extend(
+                        state
+                            .members
+                            .iter()
+                            .filter(|member| member.group == group)
+                            .map(|member| member.person),
+                    );
+                }
+            }
+            holders.sort();
+            holders.dedup();
+            holders
+                .into_iter()
+                .filter(|person| {
+                    !state
+                        .two_steps
+                        .iter()
+                        .any(|step| step.person == *person && step.confirmed)
+                        && !state
+                            .passkeys
+                            .iter()
+                            .any(|passkey| passkey.person == *person)
+                })
+                .collect()
+        }))
+    }
+
+    async fn touch_access_key(&self, id: AccessKeyId, at: Timestamp) -> Result<(), FakeError> {
+        let mut shared = self.lock();
+        if let Some(record) = shared
+            .state
+            .access_keys
+            .iter_mut()
+            .find(|record| record.key.id == id)
+            && record.key.last_used_at.is_none_or(|last| last < at)
+        {
+            record.key.last_used_at = Some(at);
+        }
+        Ok(())
     }
 
     async fn touch_session(&self, id: SessionId, at: Timestamp) -> Result<(), FakeError> {
@@ -580,6 +742,29 @@ impl AuthStore for FakeStore {
             .passkeys
             .retain(|passkey| !(passkey.id == id && passkey.person == person));
         Ok(tx.state.passkeys.len() < before)
+    }
+
+    async fn insert_access_key(tx: &mut Tx, record: &AccessKeyRecord) -> Result<(), FakeError> {
+        let used = tx.state.access_keys.iter().any(|other| {
+            other.key.prefix == record.key.prefix || other.key.secret_hash == record.key.secret_hash
+        });
+        if used {
+            return Err(FakeError::Duplicate);
+        }
+        tx.state.access_keys.push(record.clone());
+        Ok(())
+    }
+
+    async fn delete_access_key(
+        tx: &mut Tx,
+        owner: UserId,
+        id: AccessKeyId,
+    ) -> Result<bool, FakeError> {
+        let before = tx.state.access_keys.len();
+        tx.state
+            .access_keys
+            .retain(|record| !(record.key.id == id && record.key.owner == owner));
+        Ok(tx.state.access_keys.len() < before)
     }
 
     async fn insert_invitation(tx: &mut Tx, invitation: &Invitation) -> Result<(), FakeError> {

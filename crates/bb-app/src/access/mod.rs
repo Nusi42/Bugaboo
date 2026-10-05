@@ -13,13 +13,14 @@ mod store;
 
 use std::sync::Arc;
 
+use bb_auth::looks_like_access_key;
 use bb_core::ErrorCode;
 use bb_core::access::{AppliesTo, Assignment};
-use bb_core::id::{ProjectId, UserId};
+use bb_core::id::{AccessKeyId, ProjectId, UserId};
 use bb_core::people_kinds::PeopleKind;
 use bb_core::person::Person;
 use bb_policy::guards::{Refusal, ensure_no_escalation};
-use bb_policy::{Evaluation, PeopleContext, Place, Target, evaluate, resolve};
+use bb_policy::{Evaluation, Narrowing, PeopleContext, Place, Target, evaluate, resolve};
 
 pub use bb_policy::{Authorized, Masked, Permission, PersonRef, StartingRole, guards};
 pub use starting::{MakeStartingRoles, make_starting_roles};
@@ -29,11 +30,24 @@ use serde::Serialize;
 
 use crate::auth::{AppError, AuthStore, Ctx, internal};
 
-/// Who asks: the signed-in person behind a session.
+/// Who asks: the signed-in person behind a session, or the owner of the access key a script
+/// came with.
 #[derive(Clone, Debug)]
 pub(crate) struct Actor {
     /// The person.
     pub(crate) person: Person,
+    /// The access key behind the request, if the actor is a script: what it narrows its owner to.
+    pub(crate) key: Option<KeyInUse>,
+}
+
+/// An access key in use (AUTH-07): the owner does everything as themselves, narrowed by this at
+/// every request.
+#[derive(Clone, Debug)]
+pub(crate) struct KeyInUse {
+    /// The key.
+    pub(crate) id: AccessKeyId,
+    /// What it narrows the owner's permissions to: its choice and its projects.
+    pub(crate) narrowing: Narrowing,
 }
 
 impl From<Refusal> for AppError {
@@ -64,11 +78,36 @@ pub enum ProjectLabel {
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
-    /// The signed-in person behind a cookie.
+    /// Who asks: the signed-in person behind a cookie, or the owner of an access key (`bb_...`,
+    /// sent as `Authorization: Bearer`). Use cases that judge a permission start here; what
+    /// belongs to the owner's own sign-in data starts at `active` and so never opens for a key.
     pub(crate) async fn actor(&self, token_text: &str) -> Result<Actor, AppError> {
+        if looks_like_access_key(token_text) {
+            return self.key_actor(token_text).await;
+        }
         let record = self.active(token_text).await?;
         Ok(Actor {
             person: record.person,
+            key: None,
+        })
+    }
+
+    /// What `actor` may do at `place`: the evaluation of their person, narrowed by the access
+    /// key if they came with one, at every request (a key never widens anything and follows its
+    /// owner's roles at once, ADR-0025, decision 8). Every judgment about the actor goes through
+    /// here or [`Self::require`], never through [`Self::evaluate`] with their ID.
+    ///
+    /// # Errors
+    /// `resource.not_found` when the place is a project that does not exist.
+    pub(crate) async fn evaluation_of(
+        &self,
+        actor: &Actor,
+        place: Place,
+    ) -> Result<Arc<Evaluation>, AppError> {
+        let owners = self.evaluate(actor.person.id, place).await?;
+        Ok(match &actor.key {
+            Some(key) => Arc::new(owners.narrowed(&key.narrowing)),
+            None => owners,
         })
     }
 
@@ -125,7 +164,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         permission: Permission,
         place: Place,
     ) -> Result<Arc<Evaluation>, AppError> {
-        let evaluation = self.evaluate(actor.person.id, place).await?;
+        let evaluation = self.evaluation_of(actor, place).await?;
         if evaluation.allows(permission) {
             return Ok(evaluation);
         }
@@ -187,10 +226,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         actor: &Actor,
         project: ProjectId,
     ) -> Result<ProjectLabel, AppError> {
-        let Ok(evaluation) = self
-            .evaluate(actor.person.id, Place::Project(project))
-            .await
-        else {
+        let Ok(evaluation) = self.evaluation_of(actor, Place::Project(project)).await else {
             return Ok(ProjectLabel::Hidden);
         };
         if !evaluation.knows_project() {

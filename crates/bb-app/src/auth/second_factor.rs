@@ -40,7 +40,7 @@ pub async fn two_step<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: TwoStepQuery,
 ) -> Result<TwoStepStatus, AppError> {
-    let person = ctx.active(&input.session_token).await?.person.id;
+    let person = ctx.active_to_set_up(&input.session_token).await?.person.id;
     let code_app = ctx
         .store()
         .two_step(person)
@@ -219,7 +219,7 @@ pub async fn start_code_app<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: StartCodeApp,
 ) -> Result<CodeAppSetup, AppError> {
-    let record = ctx.active(&input.session_token).await?;
+    let record = ctx.active_to_set_up(&input.session_token).await?;
     ctx.confirm_password(&record.person, input.password).await?;
     let person = record.person;
     if ctx
@@ -285,7 +285,7 @@ pub async fn confirm_code_app<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: ConfirmCodeApp,
 ) -> Result<BackupCodes, AppError> {
-    let record = ctx.active(&input.session_token).await?;
+    let record = ctx.active_to_set_up(&input.session_token).await?;
     ctx.confirm_password(&record.person, input.password).await?;
     let person = record.person.id;
     let two_step = ctx
@@ -414,7 +414,7 @@ pub async fn passkey_registration_options<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: PasskeyRegistrationQuery,
 ) -> Result<PasskeyChallenge, AppError> {
-    let record = ctx.active(&input.session_token).await?;
+    let record = ctx.active_to_set_up(&input.session_token).await?;
     ctx.confirm_password(&record.person, input.password).await?;
     let (_, credentials) = ctx.credentials(record.person.id).await?;
     let (id, options) = ctx
@@ -443,7 +443,7 @@ pub async fn add_passkey<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: AddPasskey,
 ) -> Result<PasskeyView, AppError> {
-    let record = ctx.active(&input.session_token).await?;
+    let record = ctx.active_to_set_up(&input.session_token).await?;
     ctx.confirm_password(&record.person, input.password).await?;
     let person = record.person.id;
     let label = input.label.trim().to_owned();

@@ -8,6 +8,8 @@
 //! cookies, limits), `timing` (equal time for unknown accounts) and `tls` (a real browser-like
 //! client over TLS and HTTP/2).
 
+mod access_keys;
+mod access_keys_http;
 mod caching;
 mod http;
 mod invitations;
@@ -20,7 +22,9 @@ mod policy_rig;
 mod policy_rules;
 mod rig;
 mod second_step;
+mod second_step_by_role;
 mod secrets;
+mod session_ended;
 mod sessions;
 mod setup_and_password;
 mod status;

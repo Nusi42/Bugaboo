@@ -6,6 +6,7 @@
 use base64ct::{Base64UrlUnpadded, Encoding as _};
 use bb_auth::TotpSecret;
 use bb_core::access::AppliesTo;
+use bb_core::access_key::KeyChoice;
 use bb_core::fields::Field;
 use bb_core::id::{GroupId, ProjectId, RoleId, UserId};
 use bb_core::people_kinds::PeopleKind;
@@ -18,16 +19,18 @@ use super::world::{OTHER_PASSWORD, PASSWORD, PUBLIC_URL, World};
 use crate::access::{MakeStartingRoles, Permission, make_starting_roles};
 use crate::auth::{
     AddPasskey, AuthStore as _, ChangePassword, ChangeSignUpPolicy, CompleteSetup, ConfirmCodeApp,
-    CreateInvitation, EndSession, IssueSetupCode, PasskeyRegistrationQuery, PasskeySecondStep,
-    PasskeySecondStepQuery, PasskeySignIn, PasskeySignInQuery, RemoveCodeApp, RemovePasskey,
-    RenewBackupCodes, RevokeInvitation, SecondStep, SignIn, SignOut, SignOutEverywhere, SignUp,
-    SignUpPolicy, StartCodeApp, Started, accept_invitation, add_passkey, change_password,
-    change_sign_up_policy, complete_setup, confirm_code_app, create_invitation, end_session,
-    issue_setup_code, passkey_registration_options, passkey_second_step,
-    passkey_second_step_options, passkey_sign_in, passkey_sign_in_options, remove_code_app,
-    remove_passkey, renew_backup_codes, revoke_invitation, second_step, sessions, sign_in,
-    sign_out, sign_out_everywhere, sign_up, start_code_app,
+    CreateInvitation, DeleteAccessKey, EndSession, IssueSetupCode, MakeAccessKey,
+    PasskeyRegistrationQuery, PasskeySecondStep, PasskeySecondStepQuery, PasskeySignIn,
+    PasskeySignInQuery, RemoveCodeApp, RemovePasskey, RenewBackupCodes, RevokeInvitation,
+    SecondStep, SignIn, SignOut, SignOutEverywhere, SignUp, SignUpPolicy, StartCodeApp, Started,
+    accept_invitation, add_passkey, change_password, change_sign_up_policy, complete_setup,
+    confirm_code_app, create_invitation, end_session, issue_setup_code,
+    passkey_registration_options, passkey_second_step, passkey_second_step_options,
+    passkey_sign_in, passkey_sign_in_options, remove_code_app, remove_passkey, renew_backup_codes,
+    revoke_invitation, second_step, sessions, sign_in, sign_out, sign_out_everywhere, sign_up,
+    start_code_app,
 };
+use crate::auth::{delete_access_key, make_access_key};
 use crate::people::{
     AddGroupMember, DeleteGroup, MakeGroup, RemoveGroupMember, RenameGroup, add_group_member,
     delete_group, make_group, remove_group_member, rename_group,
@@ -940,6 +943,47 @@ pub(crate) async fn make_project_scenario(world: &World) -> Added {
                 parent: None,
                 short_name: "ACME".to_owned(),
                 name: "Acme".to_owned(),
+            },
+        ),
+    )
+    .await
+}
+
+// ---- Access keys ----
+
+/// Ada makes a key that may only see.
+fn see_only_key(world: &World) -> MakeAccessKey {
+    MakeAccessKey {
+        session_token: token(world),
+        password: PASSWORD.to_owned(),
+        name: "Nightly report".to_owned(),
+        choice: KeyChoice::SeeOnly,
+        permissions: Vec::new(),
+        projects: Vec::new(),
+        expires_at: None,
+    }
+}
+
+pub(crate) async fn make_access_key_scenario(world: &World) -> Added {
+    measured(
+        &world.store,
+        make_access_key(&world.ctx(), see_only_key(world)),
+    )
+    .await
+}
+
+pub(crate) async fn delete_access_key_scenario(world: &World) -> Added {
+    let made = make_access_key(&world.ctx(), see_only_key(world))
+        .await
+        .map_err(text)?
+        .into_value();
+    measured(
+        &world.store,
+        delete_access_key(
+            &world.ctx(),
+            DeleteAccessKey {
+                session_token: token(world),
+                id: made.key.id,
             },
         ),
     )

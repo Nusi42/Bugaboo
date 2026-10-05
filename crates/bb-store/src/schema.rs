@@ -296,6 +296,40 @@ pub(crate) enum ProjectPeopleLevelRow {
     Level,
 }
 
+/// The access keys of people (AUTH-07). Only the hash of the secret is stored.
+#[derive(Clone, Copy, Iden)]
+pub(crate) enum AccessKeyRow {
+    #[iden = "access_key"]
+    Table,
+    Id,
+    Owner,
+    Name,
+    Prefix,
+    SecretHash,
+    Choice,
+    CreatedAt,
+    ExpiresAt,
+    LastUsedAt,
+}
+
+/// The single permissions of a key whose choice is *More options*.
+#[derive(Clone, Copy, Iden)]
+pub(crate) enum AccessKeyPermissionRow {
+    #[iden = "access_key_permission"]
+    Table,
+    Key,
+    Permission,
+}
+
+/// The projects a key is limited to.
+#[derive(Clone, Copy, Iden)]
+pub(crate) enum AccessKeyProjectRow {
+    #[iden = "access_key_project"]
+    Table,
+    Key,
+    Project,
+}
+
 /// The people who were administrators in M1, until the first start gives them the role.
 #[derive(Clone, Copy, Iden)]
 pub(crate) enum LegacyAdministratorRow {
@@ -552,6 +586,25 @@ stored_tables! {
     },
     StartingRolesMadeRow => bb_core::access::StartingRolesMade {
         MadeAt => made_at,
+    },
+    AccessKeyRow => bb_core::access_key::AccessKey {
+        Id => id,
+        Owner => owner,
+        Name => name,
+        Prefix => prefix,
+        SecretHash => secret_hash,
+        Choice => choice,
+        CreatedAt => created_at,
+        ExpiresAt => expires_at,
+        LastUsedAt => last_used_at,
+    },
+    AccessKeyPermissionRow => bb_core::access_key::AccessKeyPermission {
+        Key => key,
+        Permission => permission,
+    },
+    AccessKeyProjectRow => bb_core::access_key::AccessKeyProject {
+        Key => key,
+        Project => project,
     },
     SettingRow => bb_core::settings::StoredSetting {
         Key => key,

@@ -7,6 +7,8 @@ use axum::Router;
 use axum::body::Body;
 use axum::http::{Request, StatusCode};
 use bb_api::openapi;
+use bb_app::access::Permission;
+use bb_app::roles::MakeRole;
 use bb_testing::each_database;
 use serde_json::json;
 use tower::ServiceExt as _;
@@ -66,12 +68,32 @@ async fn perf_03_every_get_answers_an_etag_and_304_on_a_match() -> Outcome {
         ada.send("POST", "/api/v1/auth/setup", Some(setup_body(&rig)))
             .await?;
 
+        // A role for the routes that name one.
+        let admin = rig
+            .sign_in("ada@example.test", PASSWORD)
+            .await?
+            .session_token;
+        let role = rig
+            .api()
+            .make_role(
+                Rig::info(),
+                MakeRole {
+                    session_token: admin,
+                    name: "Checker".to_owned(),
+                    permissions: vec![Permission::SeeProjects],
+                    two_step: false,
+                },
+            )
+            .await?
+            .into_value();
         let routes = get_routes()?;
         assert!(routes.len() >= 9, "{routes:?}");
         let (mut kept, mut never_stored) = (0, 0);
-        for path in &routes {
+        for template in &routes {
             // A route with a part to fill in needs an example address here; fail loudly so a
             // new route is never left out of this test.
+            let filled = template.replace("{role_id}", &role.id.to_string());
+            let path = &filled;
             assert!(
                 !path.contains('{'),
                 "{path} has a part to fill in: add an example address to this test"
@@ -80,7 +102,7 @@ async fn perf_03_every_get_answers_an_etag_and_304_on_a_match() -> Outcome {
             let first = ada.send("GET", path, None).await?;
             assert_eq!(first.status, StatusCode::OK, "{path}");
 
-            if never_stored_reads().contains(path) {
+            if never_stored_reads().contains(template) {
                 // Personal data: no tag to ask with, and a tag or `*` changes nothing.
                 never_stored += 1;
                 assert_eq!(first.header("cache-control"), "no-store", "{path}");

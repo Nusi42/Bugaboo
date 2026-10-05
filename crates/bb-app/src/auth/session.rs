@@ -7,10 +7,14 @@
 //! - only failed tries count against the limit, and success clears it (M1-F27);
 //! - every sign-in event goes to the security log.
 
-use bb_auth::{EmailAddress, MAX_LENGTH, Purpose, SecretToken, TotpSecret, Verdict, code_hash};
+use bb_auth::{
+    EmailAddress, MAX_LENGTH, Purpose, SecretToken, TotpSecret, Verdict, code_hash,
+    looks_like_access_key,
+};
 use bb_core::ErrorCode;
 use bb_core::id::UserId;
 use bb_core::sign_in::{SecurityAction, SessionStage};
+use bb_policy::{Authorized, Evaluation, Permission, Place};
 use jiff::Timestamp;
 use serde_json::json;
 use zeroize::Zeroizing;
@@ -19,8 +23,9 @@ use super::ctx::{AppError, Ctx, by, change_failed, changed, entity, internal, pe
 use super::store::AuthStore;
 use super::types::{
     AuthStatus, AuthenticateQuery, Authenticated, Done, EndSession, MAX_SESSIONS_LISTED,
-    PasskeySecondStep, PersonView, SecondStep, SecondStepMethods, SessionEnded, SessionList,
-    SessionView, SessionsQuery, SignIn, SignOut, SignOutEverywhere, Started, StatusQuery,
+    PasskeySecondStep, PersonView, SecondStep, SecondStepGap, SecondStepGapQuery,
+    SecondStepMethods, SessionEnded, SessionList, SessionView, SessionsQuery, SignIn, SignOut,
+    SignOutEverywhere, Started, StatusQuery,
 };
 
 /// Long text in the key of a failure counter is cut here: the key only has to tell accounts
@@ -52,19 +57,47 @@ pub async fn authenticate<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: AuthenticateQuery,
 ) -> Result<Authenticated, AppError> {
-    let record = ctx.active(&input.session_token).await?;
-    let access = ctx
-        .evaluate(record.person.id, bb_policy::Place::Organization)
-        .await?;
+    let record = ctx.active_to_set_up(&input.session_token).await?;
+    let person = record.person.id;
+    // A person who has to set up a second step can do nothing else: the answer says so and
+    // holds no permission, so the browser app shows only that screen.
+    let second_step_setup_required = ctx.must_set_up_second_step(person).await?;
+    let access = if second_step_setup_required {
+        Evaluation::nothing(person)
+    } else {
+        (*ctx.evaluate(person, Place::Organization).await?).clone()
+    };
     Ok(Authenticated {
         person: PersonView::from(&record.person),
         session_id: record.session.id,
         started_at: record.session.created_at,
-        access: (*access).clone(),
+        access,
+        second_step_setup_required,
     })
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
+    /// Whether the person has to set up a second step before anything else (M1-F45, AUTH-03):
+    /// the organization asks it of everybody or any role they hold anywhere has the switch, and
+    /// they have no code app and no passkey. Asked at every
+    /// request, so a switch that is turned on counts from the next request, also for a session
+    /// that was open before (ADR-0025, decision 7). Until then the session can only set one up.
+    pub(crate) async fn must_set_up_second_step(&self, person: UserId) -> Result<bool, AppError> {
+        // The common case first: a person who has a second step is never asked.
+        if self
+            .store()
+            .has_second_step(person)
+            .await
+            .map_err(|error| internal::<S>(&error))?
+        {
+            return Ok(false);
+        }
+        self.store()
+            .second_step_required(person)
+            .await
+            .map_err(|error| internal::<S>(&error))
+    }
+
     /// Which ways there are to finish signing in for a person, if they have any.
     pub(crate) async fn second_step_methods(
         &self,
@@ -427,6 +460,10 @@ pub async fn passkey_second_step<S: AuthStore>(
 /// # Errors
 /// Fails when the store fails.
 pub async fn sign_out<S: AuthStore>(ctx: &Ctx<'_, S>, input: SignOut) -> Result<Done, AppError> {
+    // A key has no session to end: it is turned away like on every route of the sign-in data.
+    if looks_like_access_key(&input.session_token) {
+        return Err(ctx.key_on_sign_in_data(&input.session_token).await);
+    }
     let Some(token) = SecretToken::parse(&input.session_token) else {
         return Ok(Done);
     };
@@ -572,4 +609,35 @@ pub async fn sessions<S: AuthStore>(
         sessions,
         truncated,
     })
+}
+
+/// How many people with a role still have to set up a second step: what an administrator sees when
+/// they switch *Two-step sign-in for everyone with this role* on. The people are those who hold
+/// the role through their own rows or their groups', at any place. Whoever holds *Manage roles*
+/// sees names everywhere in *Organization settings* (M2-Q3), so the count holds nobody they could
+/// not see.
+///
+/// # Errors
+/// `access.forbidden` without *Manage roles*, `resource.not_found` for a role that does not exist.
+pub async fn second_step_gap<S: AuthStore>(
+    ctx: &Ctx<'_, S>,
+    input: SecondStepGapQuery,
+) -> Result<Authorized<SecondStepGap>, AppError> {
+    let actor = ctx.actor(&input.session_token).await?;
+    let access = ctx
+        .require(&actor, Permission::ManageRoles, Place::Organization)
+        .await?;
+    ctx.store()
+        .role(input.role)
+        .await
+        .map_err(|error| internal::<S>(&error))?
+        .ok_or(AppError::Refused(ErrorCode::NotFound))?;
+    let people = ctx
+        .store()
+        .people_without_second_step(input.role)
+        .await
+        .map_err(|error| internal::<S>(&error))?;
+    Ok(access.authorize(SecondStepGap {
+        still_to_set_up: u64::try_from(people.len()).unwrap_or(u64::MAX),
+    }))
 }

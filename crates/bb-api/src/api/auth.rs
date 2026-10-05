@@ -92,6 +92,7 @@ impl From<AppError> for ApiError {
     fn from(error: AppError) -> Self {
         match error {
             AppError::Refused(code) => Self::new(code),
+            AppError::SessionEnded => Self::new(ErrorCode::NotSignedIn).with_session_ended(),
             AppError::Limited { retry_after } => {
                 Self::new(ErrorCode::TooManyRequests).with_retry_after(retry_after)
             }
@@ -121,7 +122,11 @@ impl<S: Send + Sync> FromRequestParts<S> for Info {
     }
 }
 
-/// The secret in the session cookie. A request without one is not signed in.
+/// What the request signs in with: the secret in the session cookie, or else the access key of
+/// a script (`Authorization: Bearer bb_…`). A request with neither is not signed in. The use case
+/// tells the two apart: what judges a permission takes both (a key is narrowed to what it may do),
+/// and what belongs to the person's own sign-in data takes sessions only and turns a key away, so
+/// a route cannot forget to keep keys out of it (`bb_app::auth`, `Ctx::actor` and `Ctx::session`).
 pub(crate) struct Session(pub(crate) String);
 
 impl<S: Send + Sync> FromRequestParts<S> for Session {
@@ -130,6 +135,7 @@ impl<S: Send + Sync> FromRequestParts<S> for Session {
     async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self, ApiError> {
         Cookie::Session
             .read(&parts.headers)
+            .or_else(|| super::presented_key(&parts.headers).map(str::to_owned))
             .map(Self)
             .ok_or_else(|| ApiError::new(ErrorCode::NotSignedIn))
     }
@@ -280,6 +286,10 @@ pub(crate) async fn csrf_check(
     let Some(api) = auth.0.as_deref() else {
         return next.run(request).await;
     };
+    // A script with an access key has no cookie for a forged request to ride on.
+    if super::is_key_request(request.headers()) {
+        return next.run(request).await;
+    }
     let Some(session) = Cookie::Session.read(request.headers()) else {
         return ApiError::new(ErrorCode::NotSignedIn).into_response();
     };
@@ -322,7 +332,7 @@ problem_answers! {
     /// Not signed in.
     NotSignedInAnswer => ("401", "Not signed in (auth.not_signed_in)."),
     /// A change without the right token, or not allowed.
-    ForbiddenAnswer => ("403", "Not allowed (access.forbidden, request.wrong_token)."),
+    ForbiddenAnswer => ("403", "Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed)."),
     /// Unknown.
     NotFoundAnswer => ("404", "There is no such thing (resource.not_found)."),
 }

@@ -590,8 +590,9 @@ mod tests {
                 );
             }
         }
-        // The invitation link, the code app, its confirmation and the backup codes.
-        assert_eq!(marked, 4);
+        // The invitation link, the code app, its confirmation, the backup codes and a new
+        // access key.
+        assert_eq!(marked, 5);
     }
 
     /// Asks `app` for `method` and `path` with every kind of compression the server knows, and says
@@ -653,7 +654,7 @@ mod tests {
                 assert_eq!(encoding.as_deref(), Some("br"), "{method} {route}");
             }
         }
-        assert_eq!(secret, 4);
+        assert_eq!(secret, 5);
         assert!(other > 10, "{other}");
     }
 

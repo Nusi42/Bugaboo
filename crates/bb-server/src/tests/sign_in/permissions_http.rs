@@ -49,6 +49,11 @@ fn example(method: &str, path: &str) -> Result<(String, Option<Value>), Failure>
         ("DELETE", "/api/v1/auth/invitations/{invitation_id}") => {
             (path.replace("{invitation_id}", some_id), None)
         }
+        ("GET", "/api/v1/roles/{role_id}/second-step-gap") => {
+            // The ID of a role is a time-ordered one.
+            let role = "0190f4c2-7a3e-7c1d-9b52-3d6e8f1a2b4c";
+            (path.replace("{role_id}", role), None)
+        }
         ("PUT", "/api/v1/auth/sign-up-policy") => (
             path.to_owned(),
             Some(json!({"enabled": false, "domains": []})),
