@@ -7,7 +7,10 @@ use bb_app::access::{
     MakeStartingRoles, Permission, PolicyStore as _, StartingRole, make_starting_roles,
 };
 use bb_app::people::{DeleteGroup, RemoveGroupMember};
-use bb_app::roles::{Given, ReasonView, RemoveAssignment, SetFieldLevel, SetPeopleLevel, Subject};
+use bb_app::roles::{
+    Given, ReasonView, RemoveAssignment, ResetRole, RolesQuery, SetFieldLevel, SetPeopleLevel,
+    Subject,
+};
 use bb_core::ErrorCode;
 use bb_core::access::{AppliesTo, FieldLevel, PeopleLevel};
 use bb_core::event::DomainEvent;
@@ -145,7 +148,7 @@ async fn sec_03_decide_roles_is_not_kept_from_a_row_at_the_same_depth_as_the_no_
             .api()
             .roles(
                 Rig::info(),
-                bb_app::roles::RolesQuery {
+                RolesQuery {
                     session_token: org.admin.session.clone(),
                     place: None,
                 },
@@ -559,6 +562,216 @@ async fn sec_08_two_servers_starting_together_make_the_starting_roles_once() -> 
             .filter(|entry| entry.action.as_str() == SecurityAction::StartingRolesMade.code())
             .count();
         assert_eq!(entries, 1, "the log says it once");
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn sec_04_nobody_sets_a_people_level_above_their_own() -> Outcome {
+    each_database("sec_04_people_level_too_much", async |db| {
+        let rig = Rig::start(db, 10).await?;
+        let org = Org::start(&rig).await?;
+        let acme = org.project(None, "ACME").await?.id;
+        let bob = org.person().await?;
+        // Bob's own level for time entries is *Role only*.
+        let setter = setter(&org).await?;
+        org.give(&bob, setter, acme).await?;
+        let target = org.role("Target", &[Permission::SeeProjects]).await?;
+        let api = org.rig.api();
+        let set = |level| {
+            api.set_people_level(
+                Rig::info(),
+                SetPeopleLevel {
+                    session_token: bob.session.clone(),
+                    role: target.id,
+                    project: Some(acme),
+                    kind: PeopleKind::TimeEntries,
+                    level,
+                },
+            )
+        };
+        assert_eq!(
+            refused(set(Some(PeopleLevel::Names)).await),
+            Some(ErrorCode::TooMuch)
+        );
+        set(Some(PeopleLevel::RoleOnly)).await?;
+        set(Some(PeopleLevel::Hidden)).await?;
+        Ok(())
+    })
+    .await
+}
+
+/// Gives the role the highest level of every field.
+async fn all_fields(org: &Org<'_>, role: RoleId) -> Run<()> {
+    for field in Field::ALL {
+        org.rig
+            .api()
+            .set_field_level(
+                Rig::info(),
+                SetFieldLevel {
+                    session_token: org.admin.session.clone(),
+                    role,
+                    project: None,
+                    field: *field,
+                    level: Some(FieldLevel::CanChange),
+                },
+            )
+            .await?;
+    }
+    Ok(())
+}
+
+/// Gives the role the highest level of every kind of people information.
+async fn all_kinds(org: &Org<'_>, role: RoleId) -> Run<()> {
+    for kind in PeopleKind::ALL {
+        org.rig
+            .api()
+            .set_people_level(
+                Rig::info(),
+                SetPeopleLevel {
+                    session_token: org.admin.session.clone(),
+                    role,
+                    project: None,
+                    kind: *kind,
+                    level: Some(PeopleLevel::Names),
+                },
+            )
+            .await?;
+    }
+    Ok(())
+}
+
+#[tokio::test]
+async fn sec_04_nobody_resets_a_role_to_levels_above_their_own() -> Outcome {
+    // Once for each half of the rule: the field levels and the levels of people information.
+    for (fields_first, name) in [
+        (true, "sec_04_reset_fields_first"),
+        (false, "sec_04_reset_kinds_first"),
+    ] {
+        each_database(name, async |db| {
+            let rig = Rig::start(db, 10).await?;
+            let org = Org::start(&rig).await?;
+            let kim = org.person().await?;
+            // Kim manages roles and holds every permission of the Viewer role, but sees nothing.
+            let keeper = org
+                .role(
+                    "Role keeper",
+                    &[Permission::ManageRoles, Permission::SeeProjects],
+                )
+                .await?;
+            org.give_everywhere(&kim, keeper.id).await?;
+            let viewer = org
+                .rig
+                .api()
+                .roles(
+                    Rig::info(),
+                    RolesQuery {
+                        session_token: org.admin.session.clone(),
+                        place: None,
+                    },
+                )
+                .await?
+                .into_value()
+                .roles
+                .into_iter()
+                .find(|role| role.name == "Viewer")
+                .ok_or("the Viewer role")?;
+            let reset = || {
+                org.rig.api().reset_role(
+                    Rig::info(),
+                    ResetRole {
+                        session_token: kim.session.clone(),
+                        role: viewer.id,
+                    },
+                )
+            };
+            // The Viewer role starts with levels she does not have.
+            assert_eq!(refused(reset().await), Some(ErrorCode::TooMuch));
+            // Holding the one half is not enough...
+            if fields_first {
+                all_fields(&org, keeper.id).await?;
+            } else {
+                all_kinds(&org, keeper.id).await?;
+            }
+            assert_eq!(refused(reset().await), Some(ErrorCode::TooMuch));
+            // ...holding both is.
+            if fields_first {
+                all_kinds(&org, keeper.id).await?;
+            } else {
+                all_fields(&org, keeper.id).await?;
+            }
+            reset().await?;
+            Ok(())
+        })
+        .await?;
+    }
+    Ok(())
+}
+
+#[tokio::test]
+async fn sec_02_only_rows_that_can_exist_are_made() -> Outcome {
+    each_database("sec_02_valid_rows", async |db| {
+        let rig = Rig::start(db, 10).await?;
+        let org = Org::start(&rig).await?;
+        let acme = org.project(None, "ACME").await?.id;
+        let bob = org.person().await?;
+        let reader = org.role("Reader", &[Permission::SeeProjects]).await?;
+        let make = |given, project, applies_to| {
+            org.assign(
+                &org.admin,
+                Subject::Person(bob.id),
+                given,
+                project,
+                applies_to,
+            )
+        };
+        let role = Given::Role(reader.id);
+        let invalid = Some(ErrorCode::InvalidRequest);
+        // A role for the whole organization counts everywhere and says so; *No access* is only
+        // set on a project and covers it and what is below it; a role on a project is for the
+        // project alone or with what is below it.
+        assert_eq!(refused(make(role, None, AppliesTo::Project).await), invalid);
+        assert_eq!(
+            refused(make(role, None, AppliesTo::ProjectAndSubProjects).await),
+            invalid
+        );
+        for applies_to in [
+            AppliesTo::Organization,
+            AppliesTo::Project,
+            AppliesTo::ProjectAndSubProjects,
+        ] {
+            assert_eq!(
+                refused(make(Given::NoAccess, None, applies_to).await),
+                invalid,
+                "No access for the whole organization: {applies_to:?}"
+            );
+        }
+        assert_eq!(
+            refused(make(Given::NoAccess, Some(acme), AppliesTo::Project).await),
+            invalid
+        );
+        assert_eq!(
+            refused(make(Given::NoAccess, Some(acme), AppliesTo::Organization).await),
+            invalid
+        );
+        assert_eq!(
+            refused(make(role, Some(acme), AppliesTo::Organization).await),
+            invalid
+        );
+        // The three that can exist (a role and *No access* for one person on one project are a
+        // conflict of their own, so *No access* is for somebody else).
+        make(role, None, AppliesTo::Organization).await?;
+        make(role, Some(acme), AppliesTo::Project).await?;
+        let cleo = org.person().await?;
+        org.assign(
+            &org.admin,
+            Subject::Person(cleo.id),
+            Given::NoAccess,
+            Some(acme),
+            AppliesTo::ProjectAndSubProjects,
+        )
+        .await?;
         Ok(())
     })
     .await

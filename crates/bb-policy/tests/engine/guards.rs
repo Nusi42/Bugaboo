@@ -187,3 +187,34 @@ fn sec_02_nobody_gives_a_role_with_more_than_they_hold_there() {
         Err(Refusal::TooMuch)
     );
 }
+
+#[test]
+fn sec_08_somebody_who_only_manages_roles_does_not_keep_the_organization_open() {
+    let mut org = org();
+    // Ana is the only one with both halves. Bob holds only *Manage roles*, through his own row,
+    // and the people of a group hold only *Manage roles* too.
+    // Numbers that the organization above did not use.
+    let mut ids = SequentialIds::default();
+    for _ in 0..20 {
+        let _ = UserId::generate(&mut ids);
+    }
+    let group = GroupId::generate(&mut ids).unwrap();
+    let cleo = UserId::generate(&mut ids);
+    org.state.rows = vec![
+        (Holder::Person(org.ana), org.admin),
+        (Holder::Person(org.bob), org.managers),
+        (Holder::Group(group), org.managers),
+    ];
+    org.state.members = vec![(group, cleo)];
+    assert_eq!(role_managers(&org.state), BTreeSet::from([org.ana]));
+    // So taking Ana's row away leaves nobody, whoever else can manage roles.
+    let mut after = org.state.clone();
+    after
+        .rows
+        .retain(|(holder, _)| *holder != Holder::Person(org.ana));
+    assert!(!anybody_manages_roles(&after));
+    assert_eq!(
+        ensure_a_manager_remains(&org.state, &after),
+        Err(Refusal::WouldLockOut)
+    );
+}
