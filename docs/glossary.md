@@ -12,7 +12,7 @@ Rules:
    entry here *before* it is named anywhere else.
 4. The "Don't say" column feeds the terminology check in the hooks
    (coding-standards §7). Those words fail the check when they appear in the message catalog,
-   in the user docs or in API names (paths, schema names, property names); a word inside a
+   in the user docs or in API names (paths, schema names, property names, enum values, operation IDs, parameter names); a word inside a
    longer word does not count. A bracket at the end of a cell says where an entry applies:
    `(in UI)` and its kind are checked, the others (`(as object)`) are left to review. A word
    that is right in another sense gets a reason in `tools/checks/terms-exemptions.toml`.

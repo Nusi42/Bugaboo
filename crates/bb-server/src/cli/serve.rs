@@ -430,6 +430,7 @@ mod tests {
         assert!(database_line(Some("sqlite:data.db")).contains("SQLite"));
         assert!(database_line(None).contains("built-in"));
     }
+
     #[test]
     fn sec_16_the_start_reports_what_is_too_open_and_what_could_not_be_checked() {
         let folder = tempfile::tempdir().unwrap();

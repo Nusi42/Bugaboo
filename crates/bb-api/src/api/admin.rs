@@ -294,7 +294,7 @@ impl From<Snapshot> for ServerStatusBody {
     tag = "admin",
     responses((status = 200, description = "The status of the server.", body = ServerStatusBody), NotSignedInAnswer, ForbiddenAnswer)
 )]
-async fn get_server_state(
+async fn get_server_status(
     State(auth): State<AuthHandle>,
     State(probe): State<ProbeHandle>,
     Info(info): Info,
@@ -320,5 +320,5 @@ where
     AuthHandle: axum::extract::FromRef<S>,
     ProbeHandle: axum::extract::FromRef<S>,
 {
-    OpenApiRouter::new().routes(routes!(get_server_state))
+    OpenApiRouter::new().routes(routes!(get_server_status))
 }

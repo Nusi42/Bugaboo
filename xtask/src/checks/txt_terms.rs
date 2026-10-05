@@ -1,15 +1,19 @@
 //! TXT-TERMS: the words of the glossary's *Don't say* column do not appear in what people read
 //! (glossary rule 4).
 //!
-//! Three places are read: every value of the message catalogs (`messages/*.json`), the user
-//! documentation (`userDocs/**/*.md`, prose only: code spans and code blocks are left out) and the
-//! names in the API description (paths, schema names and property names). The words come from the
+//! Three places are read: every value of the message catalogs (`messages/*.json`, without the
+//! names of placeholders and the keywords of plurals and selects), the user documentation
+//! (`userDocs/**/*.md`, prose only: code spans, fenced and indented code are left out) and the
+//! names in the API description (paths, schema names, property names, the values of enums,
+//! operation IDs and the names of parameters). The words come from the
 //! tables of `docs/glossary.md`: in every table with a *Don't say* column, each entry of that
 //! column is a banned word or phrase.
 //!
 //! How an entry is read:
 //!
-//! - Entries are separated by commas (commas inside brackets do not count). A word that stands
+//! - Entries are separated by commas (commas inside brackets do not count). An entry with a
+//!   slash is read as its parts when one of them has several words (`check out / check in`); a list
+//!   of single words (`none / read / write`) names a set of labels and stays one phrase. A word that stands
 //!   inside a longer word does not count: `login` fails, `blogging` does not. In text, spaces and
 //!   hyphens match each other (`sub-task` finds "sub task"); an underscore belongs to the word, so
 //!   a setting name such as `public_url` is not the phrase "public URL". API names are cut into
@@ -24,8 +28,9 @@
 //!   review as well.
 //!
 //! A word that is right in another sense (a *link* to send, the *network* a session came from)
-//! gets an entry in `tools/checks/terms-exemptions.toml`, with the places it is allowed in and a
-//! reason. An entry that no longer matches anything fails, so the file cannot go stale.
+//! gets an entry in `tools/checks/terms-exemptions.toml`, with the places it is allowed in (for a
+//! page of the user docs, the phrases it is allowed in) and a reason. An entry that no longer
+//! matches anything fails, so the file cannot go stale.
 
 use std::collections::BTreeSet;
 use std::fs;
@@ -38,6 +43,8 @@ use serde_json::Value;
 
 use super::{Check, Context, Finding};
 use crate::generate::api::SPEC_PATH;
+
+mod readable;
 
 const GLOSSARY: &str = "docs/glossary.md";
 const MESSAGES_FOLDER: &str = "messages";
@@ -103,11 +110,15 @@ struct Exemptions {
 
 /// A word that is right in the places named: the banned entry as written in the glossary, the
 /// places (`messages/en.json#key`, `userDocs/file.md`, `api:property Schema.name`; `*` matches
-/// anything), and why.
+/// anything), optionally the phrases it is right in, and why.
 #[derive(Deserialize)]
 struct Allow {
     term: String,
     at: Vec<String>,
+    /// When given, the word is only right inside these phrases of the place, not everywhere in
+    /// it (for a page of the user docs). Without phrases the whole place is exempt.
+    #[serde(default)]
+    phrases: Vec<String>,
     reason: String,
 }
 
@@ -152,7 +163,7 @@ fn sources(root: &Path) -> anyhow::Result<Vec<Source>> {
                         shown: format!("{name}: {key}"),
                     },
                     kind: Kind::Text,
-                    text: without_placeholders(message),
+                    text: readable::message_text(message),
                 });
             }
         }
@@ -168,7 +179,7 @@ fn sources(root: &Path) -> anyhow::Result<Vec<Source>> {
                 shown: name,
             },
             kind: Kind::Text,
-            text: prose(&text),
+            text: readable::prose(&text),
         });
     }
     let spec_path = root.join(SPEC_PATH);
@@ -176,7 +187,14 @@ fn sources(root: &Path) -> anyhow::Result<Vec<Source>> {
         .with_context(|| format!("could not read {SPEC_PATH}; run `cargo xtask gen api`"))?;
     let spec: Value =
         serde_json::from_str(&spec).with_context(|| format!("{SPEC_PATH} is not valid JSON"))?;
-    sources.extend(api_names(&spec));
+    for name in readable::api_names(&spec) {
+        let (key, shown) = readable::api_place(&name);
+        sources.push(Source {
+            place: Place { key, shown },
+            kind: Kind::Name,
+            text: name.text,
+        });
+    }
     Ok(sources)
 }
 
@@ -208,104 +226,6 @@ fn files(folder: &Path, ending: &str) -> anyhow::Result<Vec<PathBuf>> {
         }
     }
     Ok(found)
-}
-
-/// A message without the names of its placeholders: `{path}` is code, not text. The words
-/// around it and the text inside `{count, plural, one {…}}` stay.
-fn without_placeholders(message: &str) -> String {
-    let mut text = String::with_capacity(message.len());
-    let mut rest = message;
-    while let Some(start) = rest.find('{') {
-        let (before, from) = rest.split_at(start);
-        text.push_str(before);
-        match from.find('}') {
-            Some(end)
-                if from[1..end]
-                    .chars()
-                    .all(|c| c.is_alphanumeric() || c == '_') =>
-            {
-                text.push(' ');
-                rest = &from[end + 1..];
-            }
-            _ => {
-                text.push('{');
-                rest = &from[1..];
-            }
-        }
-    }
-    text.push_str(rest);
-    text
-}
-
-/// A Markdown page without what is not prose: code blocks, code spans and the addresses of links.
-fn prose(page: &str) -> String {
-    let mut text = String::with_capacity(page.len());
-    let mut in_block = false;
-    for line in page.lines() {
-        if line.trim_start().starts_with("```") {
-            in_block = !in_block;
-            text.push('\n');
-            continue;
-        }
-        if !in_block {
-            text.push_str(&without_spans(line));
-        }
-        text.push('\n');
-    }
-    text
-}
-
-/// A line without `code spans` and without the address of a link: `[text](address)`.
-fn without_spans(line: &str) -> String {
-    let mut text = String::with_capacity(line.len());
-    let mut in_span = false;
-    let mut in_address = false;
-    let mut previous = ' ';
-    for c in line.chars() {
-        match c {
-            '`' => in_span = !in_span,
-            '(' if previous == ']' && !in_span => in_address = true,
-            ')' if in_address => in_address = false,
-            _ if in_span || in_address => {}
-            _ => text.push(c),
-        }
-        previous = c;
-    }
-    text
-}
-
-/// The names in the API description: paths, schema names and property names.
-fn api_names(spec: &Value) -> Vec<Source> {
-    let mut names = Vec::new();
-    let mut add = |kind: &str, name: &str, shown: String| {
-        names.push(Source {
-            place: Place {
-                key: format!("api:{kind} {name}"),
-                shown: format!("{SPEC_PATH}: {kind} {name}"),
-            },
-            kind: Kind::Name,
-            text: shown,
-        });
-    };
-    if let Some(paths) = spec.get("paths").and_then(Value::as_object) {
-        for path in paths.keys() {
-            add("path", path, path.clone());
-        }
-    }
-    if let Some(schemas) = spec
-        .pointer("/components/schemas")
-        .and_then(Value::as_object)
-    {
-        for (name, schema) in schemas {
-            add("schema", name, name.clone());
-            if let Some(properties) = schema.get("properties").and_then(Value::as_object) {
-                for property in properties.keys() {
-                    add("property", &format!("{name}.{property}"), property.clone());
-                }
-            }
-        }
-    }
-    names
 }
 
 /// The banned words of every table with a *Don't say* column.
@@ -361,24 +281,34 @@ fn cell_terms(cell: &str, say: &str) -> Vec<Term> {
         if !read || written.is_empty() || written == "—" || written.contains('"') {
             continue;
         }
-        let exact = written.chars().any(char::is_uppercase);
-        let words = words(written, true)
-            .into_iter()
-            .map(|(word, _)| {
-                if exact {
-                    word.to_owned()
-                } else {
-                    word.to_lowercase()
-                }
-            })
-            .collect::<Vec<_>>();
-        if !words.is_empty() {
-            terms.push(Term {
-                written: written.to_owned(),
-                say: say.to_owned(),
-                words,
-                exact,
-            });
+        // `check out / check in` is two phrases. A list of single words (`none / read / write`)
+        // names a set of labels and stays one phrase: `read` and `write` alone are ordinary words.
+        let parts: Vec<&str> = written.split(" / ").map(str::trim).collect();
+        let parts = if parts.iter().all(|part| !part.contains(' ')) {
+            vec![written]
+        } else {
+            parts
+        };
+        for part in parts {
+            let exact = part.chars().any(char::is_uppercase);
+            let words = words(part, true)
+                .into_iter()
+                .map(|(word, _)| {
+                    if exact {
+                        word.to_owned()
+                    } else {
+                        word.to_lowercase()
+                    }
+                })
+                .collect::<Vec<_>>();
+            if !words.is_empty() {
+                terms.push(Term {
+                    written: part.to_owned(),
+                    say: say.to_owned(),
+                    words,
+                    exact,
+                });
+            }
         }
     }
     terms
@@ -485,6 +415,27 @@ fn find(text: &str, term: &Term, kind: Kind) -> Option<usize> {
     None
 }
 
+/// The text with every occurrence of the phrases (in any case) blanked out, keeping its length and
+/// its lines.
+fn without_phrases(text: &str, phrases: &[String]) -> String {
+    let mut bytes = text.as_bytes().to_vec();
+    let lower = text.to_ascii_lowercase();
+    for phrase in phrases {
+        let phrase = phrase.to_ascii_lowercase();
+        if phrase.is_empty() {
+            continue;
+        }
+        for (at, _) in lower.match_indices(&phrase) {
+            for byte in &mut bytes[at..at + phrase.len()] {
+                if *byte != b'\n' {
+                    *byte = b' ';
+                }
+            }
+        }
+    }
+    String::from_utf8(bytes).unwrap_or_else(|_| text.to_owned())
+}
+
 /// The line (counting from 1) the byte offset is on.
 fn line_of(text: &str, at: usize) -> usize {
     text[..at].matches('\n').count() + 1
@@ -530,19 +481,34 @@ fn evaluate(
             let Some(at) = find(&text, term, source.kind) else {
                 continue;
             };
-            let exemption = exemptions
-                .allow
-                .iter()
-                .enumerate()
-                .filter(|(_, allow)| allow.term.eq_ignore_ascii_case(&term.written))
-                .find_map(|(number, _)| {
-                    allowed[number]
-                        .iter()
-                        .position(|matcher| matcher.is_match(&source.place.key))
-                        .map(|pattern| (number, pattern))
-                });
-            if let Some(entry) = exemption {
-                used.insert(entry);
+            // The entries of the word that name this place. One with phrases is used when it
+            // blanks something out, and covers the word when nothing of it is left.
+            let mut covered = false;
+            for (number, allow) in exemptions.allow.iter().enumerate() {
+                if !allow.term.eq_ignore_ascii_case(&term.written) {
+                    continue;
+                }
+                let Some(pattern) = allowed[number]
+                    .iter()
+                    .position(|matcher| matcher.is_match(&source.place.key))
+                else {
+                    continue;
+                };
+                if allow.phrases.is_empty() {
+                    used.insert((number, pattern));
+                    covered = true;
+                    break;
+                }
+                let rest = without_phrases(&text, &allow.phrases);
+                if rest != text {
+                    used.insert((number, pattern));
+                }
+                if find(&rest, term, source.kind).is_none() {
+                    covered = true;
+                    break;
+                }
+            }
+            if covered {
                 continue;
             }
             let shown = if source.kind == Kind::Text && !source.place.key.contains('#') {
@@ -684,38 +650,67 @@ mod tests {
     #[test]
     fn txt_terms_a_name_in_a_setting_or_a_placeholder_is_not_text() {
         assert!(hits("Set log_in_url first.").is_empty());
-        assert!(without_placeholders("Open {ticket} now").contains("Open"));
-        assert!(
-            evaluate(
-                &terms(),
-                &[text(&without_placeholders("Open {ticket} now"))],
-                &Exemptions::default()
-            )
-            .unwrap()
-            .is_empty()
-        );
+        let open = readable::message_text("Open {ticket} now");
+        assert!(open.contains("Open"));
+        assert!(hits(&open).is_empty());
         // The text inside a plural stays.
-        assert_eq!(
-            evaluate(
-                &terms(),
-                &[text(&without_placeholders(
-                    "{count, plural, one {# ticket} other {# tickets}}"
-                ))],
-                &Exemptions::default()
-            )
-            .unwrap()
-            .len(),
-            1
-        );
+        let plural = readable::message_text("{count, plural, one {# ticket} other {# tickets}}");
+        assert_eq!(hits(&plural).len(), 1);
+        // The keywords of a plural or a select are code, not words.
+        let select = readable::message_text("{kind, select, ticket {Sorted} other {Plain}} list");
+        assert!(hits(&select).is_empty(), "{select}");
+        assert!(select.contains("Sorted") && select.contains("list"));
+        let nested =
+            readable::message_text("{n, plural, =0 {none} one {one {kind} login} other {many}}");
+        assert_eq!(hits(&nested).len(), 1, "{nested}");
+        // A brace that is never closed is plain text.
+        assert!(readable::message_text("a { b").contains("a { b"));
     }
 
     #[test]
     fn txt_terms_pages_are_read_without_code() {
-        let page = "A `login` span and [a link](https://example.test/login) and\n```\nlogin\n```\nplain login";
-        let prose = prose(page);
+        let page = "A `login` span and [a link](https://example.test/login) and
+```
+login
+```
+plain login";
+        let prose = readable::prose(page);
         assert_eq!(hits(&prose).len(), 1);
         assert!(prose.contains("plain login"));
         assert!(!prose.contains("example.test"));
+        // Tilde fences and indented code are code too, and the lines keep their numbers.
+        let more = "intro
+
+~~~
+login
+~~~
+
+    login
+    login
+
+plain login
+";
+        let prose = readable::prose(more);
+        assert_eq!(prose.lines().count(), more.lines().count());
+        assert_eq!(hits(&prose).len(), 1, "{prose}");
+        // Inside a list, four spaces continue the item, which is prose.
+        let list = "- an item
+
+    continues with login
+";
+        assert_eq!(hits(&readable::prose(list)).len(), 1);
+        // A closed fence ends: what follows is prose again.
+        assert_eq!(
+            hits(&readable::prose(
+                "```
+x
+```
+login
+"
+            ))
+            .len(),
+            1
+        );
     }
 
     #[test]
@@ -760,6 +755,7 @@ mod tests {
             allow: vec![Allow {
                 term: term.to_owned(),
                 at: vec![at.to_owned()],
+                phrases: Vec::new(),
                 reason: "a test".to_owned(),
             }],
         }
@@ -784,6 +780,98 @@ mod tests {
         let findings = evaluate(&terms(), &[text("Fine.")], &stale).unwrap();
         assert_eq!(findings.len(), 1);
         assert_eq!(findings[0].location.as_deref(), Some(EXEMPTIONS_PATH));
+    }
+
+    #[test]
+    fn txt_terms_an_entry_with_a_slash_is_read_as_its_parts() {
+        let terms = banned_terms(
+            "| Say | Meaning | Don't say |
+|---|---|---|
+| **Lock** | x | check out / check in, none / read (in UI) |
+",
+        );
+        let written: Vec<&str> = terms.iter().map(|term| term.written.as_str()).collect();
+        // A list of single words stays one phrase: `read` alone is an ordinary word.
+        assert_eq!(written, ["check out", "check in", "none / read"]);
+    }
+
+    #[test]
+    fn txt_terms_the_whole_api_description_is_read() {
+        let spec: Value = serde_json::from_str(
+            r#"{
+              "paths": {"/api/v1/log-in": {"get": {
+                "operationId": "getTicketNumber",
+                "parameters": [{"name": "work_item", "in": "query"}]
+              }}},
+              "components": {"schemas": {"Body": {"properties": {
+                "kind": {"type": "string", "enum": ["login", "sign_in"]},
+                "list": {"type": "array", "items": {"properties": {"ticket": {}}}}
+              }}}}
+            }"#,
+        )
+        .unwrap();
+        let found: Vec<(&str, String)> = readable::api_names(&spec)
+            .into_iter()
+            .map(|name| (name.kind, name.place))
+            .collect();
+        for wanted in [
+            ("operation", "getTicketNumber"),
+            ("parameter", "work_item"),
+            ("enum", "Body login"),
+            ("property", "Body.ticket"),
+        ] {
+            assert!(
+                found.contains(&(wanted.0, wanted.1.to_owned())),
+                "{wanted:?} in {found:?}"
+            );
+        }
+        // Every one of them is checked as a name.
+        let sources: Vec<Source> = readable::api_names(&spec)
+            .into_iter()
+            .map(|name| {
+                let (key, shown) = readable::api_place(&name);
+                Source {
+                    place: Place { key, shown },
+                    kind: Kind::Name,
+                    text: name.text,
+                }
+            })
+            .collect();
+        let findings = evaluate(&terms(), &sources, &Exemptions::default()).unwrap();
+        let places: Vec<String> = findings.into_iter().filter_map(|f| f.location).collect();
+        for wanted in [
+            "operation getTicketNumber",
+            "parameter work_item",
+            "enum Body login",
+        ] {
+            assert!(
+                places.iter().any(|place| place.ends_with(wanted)),
+                "{wanted}: {places:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn txt_terms_an_exemption_with_phrases_covers_only_those_phrases() {
+        let exemptions = Exemptions {
+            allow: vec![Allow {
+                term: "login".to_owned(),
+                at: vec!["page.md".to_owned()],
+                phrases: vec!["the login page".to_owned()],
+                reason: "a test".to_owned(),
+            }],
+        };
+        let check = |page: &str| {
+            evaluate(&terms(), &[text(page)], &exemptions)
+                .unwrap()
+                .len()
+        };
+        // Only the phrase: nothing is found and the exemption is used.
+        assert_eq!(check("Open The Login Page."), 0);
+        // The word anywhere else in the place is found, and the stale entry says nothing more.
+        assert_eq!(check("Open the login page, then login."), 1);
+        // Without the phrase the place is not covered, and the exemption is stale.
+        assert_eq!(check("Please login."), 2);
     }
 
     fn fixture(side: &str) -> PathBuf {

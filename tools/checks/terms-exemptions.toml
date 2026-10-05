@@ -11,12 +11,29 @@ at = [
   "messages/en.json#invitations.*",
   "messages/en.json#service.settings-is-link",
   "messages/en.json#service.data-folder-real",
-  "userDocs/sign-in/sign-in.md",
-  "userDocs/install/linux.md",
-  "userDocs/cookies.md",
   "api:property CreatedInvitationBody.link_path",
+  "api:enum LogBreakBody broken_link",
 ]
-reason = "A web link that a person sends or opens (the glossary entry Invitation calls it a link), or a link in the file system. Not the connection between two issues, which is a Relation."
+reason = "A web link that a person sends or opens (the glossary entry Invitation calls it a link), a link in the file system, or a link in the chain of the security log (an entry that does not point to the one before it). Not the connection between two issues, which is a Relation."
+
+# The user docs: only the phrases named here, not the whole page.
+[[allow]]
+term = "link"
+at = ["userDocs/sign-in/sign-in.md"]
+phrases = ["copies the link", "the link works once"]
+reason = "The web link of an invitation (the glossary entry Invitation calls it a link)."
+
+[[allow]]
+term = "link"
+at = ["userDocs/install/linux.md"]
+phrases = ["must not be a link", "the data folder is a link"]
+reason = "A link in the file system (a symbolic link), which the install refuses or follows."
+
+[[allow]]
+term = "link"
+at = ["userDocs/cookies.md"]
+phrases = ["from a link on another website"]
+reason = "A web link on another website, which the browser follows to Bugaboo."
 
 [[allow]]
 term = "network"
@@ -34,10 +51,14 @@ at = [
   "messages/en.json#setting.appearance.theme.help",
   "messages/en.json#second-step.passkey-help",
   "messages/en.json#passkeys.intro",
-  "userDocs/sign-in/first-sign-in.md",
-  "userDocs/sign-in/sign-in.md",
 ]
 reason = "The display of the device and the screen lock of the device. Not a Layout."
+
+[[allow]]
+term = "screen"
+at = ["userDocs/sign-in/first-sign-in.md", "userDocs/sign-in/sign-in.md"]
+phrases = ["screen lock"]
+reason = "The screen lock of the device. Not a Layout."
 
 [[allow]]
 term = "challenge"
@@ -47,4 +68,9 @@ at = [
   "api:property AddPasskeyBody.challenge_id",
   "api:property PasskeyAnswerBody.challenge_id",
 ]
-reason = "The name WebAuthn gives to the one-time question a device answers when it makes or uses a passkey; only scripts and the app see it, never a person (M2 WP-04: renaming it touches the generated client and the app)."
+reason = "The WebAuthn challenge: the random value the server sends so that the answer of a passkey cannot be used a second time. It is a field name of the protocol that only scripts and the app see; a person never reads it (renaming it touches the generated client and the app)."
+
+[[allow]]
+term = "token"
+at = ["api:enum ErrorCode request.wrong_token"]
+reason = "The name of the error code for the CSRF token that the browser app sends back in a header, a name for scripts and the app; the message a person reads says to sign in again."

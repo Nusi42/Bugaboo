@@ -702,6 +702,7 @@ mod tests {
             Err(TlsError::Unusable { .. })
         ));
     }
+
     fn self_signed(folder: &Path) -> ServedCertificate {
         serve_certificate(&TlsSource::SelfSigned {
             folder: folder.to_path_buf(),
@@ -788,6 +789,7 @@ mod tests {
         fs::write(&cert, &cert_pem).unwrap();
         assert_eq!(served.renew(now).unwrap(), Renewal::Kept);
     }
+
     #[test]
     fn sec_10_a_changed_chain_with_the_same_first_certificate_is_served() {
         let folder = tempfile::tempdir().unwrap();
