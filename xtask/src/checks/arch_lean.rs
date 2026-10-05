@@ -11,6 +11,12 @@
 //! answer must say when the cap cut the list off (`truncated`); an array that is the whole value of
 //! one setting (`whole_value`) needs no flag. An exemption that matches no list fails, so the file
 //! cannot go stale.
+//!
+//! Two more rules (PERF-03, PERF-02). Every `GET` documents the `ETag` header of its `200` answer
+//! and the `304` answer, so a client can ask again cheaply. A list names related things by ID
+//! (or by a reference schema whose name ends in `Ref`, like `PersonRef`); an item that embeds
+//! another object is only allowed when the route declares the query parameter `include` with the
+//! closed set of names it may embed, and `include` is only allowed on a route that embeds.
 
 use std::collections::BTreeSet;
 
@@ -29,6 +35,13 @@ const PAGED_LIST: &str = "items";
 const EXEMPTIONS_PATH: &str = "tools/checks/lean-exemptions.toml";
 /// What the answer of an exempt list must say.
 const CAP_FLAG: &str = "truncated";
+/// The header every `GET` answer documents, and the status of the answer to a match.
+const ETAG_HEADER: &str = "etag";
+const NOT_MODIFIED: &str = "304";
+/// The query parameter that asks for related objects inside the items.
+const INCLUDE_PARAMETER: &str = "include";
+/// A schema whose name ends like this is a reference to a thing, not the thing itself.
+const REFERENCE_SUFFIX: &str = "Ref";
 
 pub(crate) struct ArchLean;
 
@@ -153,6 +166,144 @@ fn paging_findings(spec: &Value, operation: &Value, schema: &Value, place: &str)
     findings
 }
 
+/// The rule of the entity tag: the `200` answer documents the header, and `304` exists.
+fn etag_findings(spec: &Value, operation: &Value, place: &str) -> Vec<Finding> {
+    let mut findings = Vec::new();
+    let ok = operation
+        .pointer("/responses/200")
+        .map(|ok| resolve(spec, ok));
+    let documents_header = ok
+        .and_then(|ok| ok.get("headers"))
+        .and_then(Value::as_object)
+        .is_some_and(|headers| {
+            headers
+                .keys()
+                .any(|name| name.eq_ignore_ascii_case(ETAG_HEADER))
+        });
+    if !documents_header {
+        findings.push(Finding::at(
+            place,
+            "The `200` answer of a GET must document the `ETag` header, so a client can ask again with `If-None-Match` (PERF-03).",
+        ));
+    }
+    if operation
+        .pointer(&format!("/responses/{NOT_MODIFIED}"))
+        .is_none()
+    {
+        findings.push(Finding::at(
+            place,
+            format!("A GET must document the `{NOT_MODIFIED}` answer to a request that already has the current `ETag` (PERF-03)."),
+        ));
+    }
+    findings
+}
+
+/// The schemas a property can stand for: itself, what a nullable or combined type is made of, and
+/// the items of an array.
+fn candidates<'a>(spec: &'a Value, property: &'a Value) -> Vec<&'a Value> {
+    let mut found = vec![property];
+    for key in ["anyOf", "oneOf", "allOf"] {
+        for member in property
+            .get(key)
+            .and_then(Value::as_array)
+            .into_iter()
+            .flatten()
+        {
+            found.push(member);
+        }
+    }
+    if let Some(items) = resolve(spec, property).get("items") {
+        found.push(items);
+    }
+    found
+}
+
+/// Whether a property of an item holds another object instead of its ID.
+fn embeds(spec: &Value, property: &Value) -> bool {
+    candidates(spec, property).into_iter().any(|candidate| {
+        let reference = candidate
+            .get("$ref")
+            .and_then(Value::as_str)
+            .and_then(|reference| reference.rsplit('/').next());
+        if reference.is_some_and(|name| name.ends_with(REFERENCE_SUFFIX)) {
+            return false;
+        }
+        let resolved = resolve(spec, candidate);
+        let object = resolved.get("type").and_then(Value::as_str) == Some("object")
+            || resolved
+                .get("type")
+                .and_then(Value::as_array)
+                .is_some_and(|kinds| kinds.iter().any(|kind| kind.as_str() == Some("object")));
+        object && resolved.get("properties").is_some()
+    })
+}
+
+/// The properties of the items of a paged list that embed another object.
+fn embedded_properties(spec: &Value, schema: &Value) -> Vec<String> {
+    let Some(item) = schema
+        .pointer(&format!("/properties/{PAGED_LIST}/items"))
+        .map(|item| resolve(spec, item))
+    else {
+        return Vec::new();
+    };
+    item.get("properties")
+        .and_then(Value::as_object)
+        .map(|properties| {
+            properties
+                .iter()
+                .filter(|(_, property)| embeds(spec, property))
+                .map(|(name, _)| name.clone())
+                .collect()
+        })
+        .unwrap_or_default()
+}
+
+/// The rule of `include`: declared, with a closed set of names, exactly when the items embed.
+fn include_findings(spec: &Value, operation: &Value, schema: &Value, place: &str) -> Vec<Finding> {
+    let include = operation
+        .get("parameters")
+        .and_then(Value::as_array)
+        .into_iter()
+        .flatten()
+        .map(|parameter| resolve(spec, parameter))
+        .find(|parameter| {
+            parameter.get("name").and_then(Value::as_str) == Some(INCLUDE_PARAMETER)
+                && parameter.get("in").and_then(Value::as_str) == Some("query")
+        });
+    let embedded = embedded_properties(spec, schema);
+    match (include, embedded.is_empty()) {
+        (None, false) => vec![Finding::at(
+            place,
+            format!(
+                "The items embed `{}`. Name related things by ID (or a `{REFERENCE_SUFFIX}` schema), or declare the query parameter `{INCLUDE_PARAMETER}` with the names that may be embedded.",
+                embedded.join("`, `")
+            ),
+        )],
+        (Some(_), true) => vec![Finding::at(
+            place,
+            format!(
+                "The route declares `{INCLUDE_PARAMETER}` but its items embed nothing. Remove it."
+            ),
+        )],
+        (Some(parameter), false) => {
+            let closed = ["/schema/enum", "/schema/items/enum"]
+                .iter()
+                .any(|pointer| parameter.pointer(pointer).is_some_and(Value::is_array));
+            if closed {
+                Vec::new()
+            } else {
+                vec![Finding::at(
+                    place,
+                    format!(
+                        "The parameter `{INCLUDE_PARAMETER}` must list the names that may be embedded (an `enum`)."
+                    ),
+                )]
+            }
+        }
+        (None, true) => Vec::new(),
+    }
+}
+
 fn evaluate(spec: &Value, exemptions: &[Exemption]) -> Vec<Finding> {
     let mut findings = Vec::new();
     let Some(paths) = spec.get("paths").and_then(Value::as_object) else {
@@ -163,10 +314,11 @@ fn evaluate(spec: &Value, exemptions: &[Exemption]) -> Vec<Finding> {
         let Some(operation) = item.get("get") else {
             continue;
         };
+        let place = format!("GET {path}");
+        findings.extend(etag_findings(spec, operation, &place));
         let Some(schema) = answer_schema(spec, operation) else {
             continue;
         };
-        let place = format!("GET {path}");
         // An answer that is a bare array has no room for `next_cursor` or `truncated`, so it is
         // never allowed: wrap it in an object with a list called `items`.
         if is_array(spec, schema) {
@@ -197,6 +349,7 @@ fn evaluate(spec: &Value, exemptions: &[Exemption]) -> Vec<Finding> {
                 }
             } else if property == PAGED_LIST {
                 findings.extend(paging_findings(spec, operation, schema, &place));
+                findings.extend(include_findings(spec, operation, schema, &place));
             } else {
                 findings.push(Finding::at(
                     &place,
@@ -250,9 +403,15 @@ mod tests {
             "paths": {
                 "/api/v1/issues": {"get": {
                     "parameters": parameters,
-                    "responses": {"200": {"description": "ok", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Page"}}}}}
+                    "responses": {
+                        "200": {"description": "ok", "headers": {"etag": {}}, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Page"}}}},
+                        "304": {"description": "not modified"}
+                    }
                 }},
-                "/api/v1/status": {"get": {"responses": {"200": {"content": {"application/json": {"schema": {"type": "object", "properties": {"status": {"type": "string"}}}}}}}}}
+                "/api/v1/status": {"get": {"responses": {
+                    "200": {"headers": {"ETag": {}}, "content": {"application/json": {"schema": {"type": "object", "properties": {"status": {"type": "string"}}}}}},
+                    "304": {"description": "not modified"}
+                }}}
             },
             "components": {"schemas": {"Page": schema}}
         })
@@ -410,12 +569,54 @@ mod tests {
 
     #[test]
     fn routes_that_are_not_lists_are_left_alone() {
-        let spec = json!({"paths": {"/api/v1/status": {"get": {"responses": {"200": {"content": {"application/json": {"schema": {"type": "object"}}}}}}}}});
+        let spec = json!({"paths": {"/api/v1/status": {"get": {"responses": {
+            "200": {"headers": {"etag": {}}, "content": {"application/json": {"schema": {"type": "object"}}}},
+            "304": {}
+        }}}}});
         assert!(messages(&spec, &[]).is_empty());
     }
 
     #[test]
     fn a_document_without_paths_is_a_finding() {
         assert_eq!(messages(&json!({}), &[]).len(), 1);
+    }
+
+    /// The fixtures: small API descriptions in `tools/checks/fixtures/ARCH-LEAN/{good,bad}`.
+    fn fixture(kind: &str, name: &str) -> Value {
+        let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../tools/checks/fixtures/ARCH-LEAN")
+            .join(kind)
+            .join(name);
+        let text = std::fs::read_to_string(&path).unwrap();
+        serde_json::from_str(&text).unwrap()
+    }
+
+    #[test]
+    fn good_example_fixtures_pass() {
+        for name in ["references-by-id.json", "embeds-with-include.json"] {
+            let found = messages(&fixture("good", name), &[]);
+            assert!(found.is_empty(), "{name}: {found:?}");
+        }
+    }
+
+    #[test]
+    fn bad_example_fixtures_fail_each_for_its_own_reason() {
+        for (name, expected) in [
+            ("no-etag-header.json", "document the `ETag` header"),
+            ("no-not-modified-answer.json", "`304` answer"),
+            ("embeds-without-include.json", "The items embed `project`"),
+            ("include-without-embedding.json", "embed nothing"),
+            ("include-without-names.json", "an `enum`"),
+        ] {
+            let found = messages(&fixture("bad", name), &[]);
+            assert_eq!(found.len(), 1, "{name}: {found:?}");
+            assert!(found[0].contains(expected), "{name}: {found:?}");
+        }
+    }
+
+    #[test]
+    fn a_get_without_a_json_answer_still_needs_the_tag_and_the_not_modified_answer() {
+        let spec = json!({"paths": {"/api/v1/file": {"get": {"responses": {"200": {"description": "bytes"}}}}}});
+        assert_eq!(messages(&spec, &[]).len(), 2);
     }
 }

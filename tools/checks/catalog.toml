@@ -303,9 +303,9 @@ status = "planned"
 
 [[check]]
 id = "ARCH-LEAN"
-title = "Every list endpoint supports fields=, cursor paging and a page-size cap"
+title = "Every list endpoint supports fields=, cursor paging and a page-size cap; every GET documents ETag and 304"
 rule = "PERF-02"
-tool = "xtask (reads the generated OpenAPI document: every GET with a list, that is any array property or an answer that is a bare array (refused: it has no room for next_cursor), takes fields, cursor and a limit with a maximum and answers next_cursor; the few small lists named in tools/checks/lean-exemptions.toml have a hard cap and a truncated flag)"
+tool = "xtask (reads the generated OpenAPI document: every GET with a list, that is any array property or an answer that is a bare array (refused: it has no room for next_cursor), takes fields, cursor and a limit with a maximum and answers next_cursor; the few small lists named in tools/checks/lean-exemptions.toml have a hard cap and a truncated flag; every GET documents the ETag header and the 304 answer; a list embeds another object only when it declares include with the names that may be embedded, and declares include only then)"
 when = ["push", "ci"]
 files = [
   "crates/bb-api/**",
