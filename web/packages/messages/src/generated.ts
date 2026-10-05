@@ -189,6 +189,8 @@ export const messages = {
     "entries were deleted without a signed checkpoint, or the checkpoint is wrong.",
   "security-log.reason.truncated": "entries at the end of the log were cut off or rewritten.",
   "security-log.reason.anchor": "the anchor file that vouches for the end of the log was changed.",
+  "security-log.reason.behind":
+    "the database lacks the newest entries that the anchor file knows of. Check whether the database was restored from an older backup or lost its last writes. If neither happened, somebody removed entries.",
   "keys.rotated":
     "Made a new master key and used it for {secrets, plural, one {# stored secret} other {# stored secrets}}. Back up the key files again.",
   "keys.exported":
@@ -450,7 +452,7 @@ export const messages = {
   "service.settings-is-link":
     "The settings file {path} is a link. Installing would change the rights of the file it points to. Name the real file with --config.",
   "service.settings-in-data":
-    "The settings file {path} is inside the data folder, which the service account can write to. Move the file out of the data folder, so that the service cannot change its own settings.",
+    "The settings file {path} is inside the data folder, which the account that runs the service can write to. Move the file out of the data folder, so that the service cannot change its own settings.",
   "service.settings-folder-open":
     "The folder {path} that holds the settings file can be changed by other accounts. Keep the settings file in a folder that only administrators can change, for example /etc/bugaboo.",
   "keys.settings-placeholder": "--config <the settings file of the service>",
@@ -459,12 +461,39 @@ export const messages = {
   "service.data-folder-real":
     "The data folder {path} is a link. The service uses the folder it leads to: {real}.",
   "keys.database-placeholder": "--database-url <the address of your database>",
+  "status.log-failures":
+    "{count, plural, one {# entry} other {# entries}} of the security log could not be written since the server started. Check that the disk is not full and that the account that runs Bugaboo can write in the data folder, then look at the server log.",
+  "cli.database-url-password":
+    "The database address on the command line has a password in it, and other people on this computer can read the command line, for example in the list of running programs. Put database_url in your settings file ({file}) or in the environment variable {variable} instead, and leave the option out.",
+  "data-folder.part.folder": "The data folder",
+  "data-folder.part.database": "The database file",
+  "data-folder.part.files": "The folder for attachments",
+  "data-folder.part.backups": "The folder for backups",
+  "data-folder.part.setup-code-file": "The setup code file",
+  "data-folder.open":
+    "{part} {path} can be opened by other accounts on this computer. Bugaboo leaves it as it is, in case you set these rights on purpose. If nobody else should read it, remove the rights of the other accounts: on Linux run chmod go-rwx on it, on Windows open the Security tab of its properties.",
+  "status.data-folder": "Data folder rights",
+  "status.data-folder.closed":
+    "Only the account that runs Bugaboo can open the parts of the data folder.",
+  "status.data-folder.open":
+    "Other accounts on this computer can open these. Bugaboo leaves them as they are, in case you set these rights on purpose. If nobody else should read them, remove the rights of the other accounts.",
+  "data-folder.own-certificate":
+    "The folder {path} holds only files of your own in its tls folder, such as a certificate. Installing the service would change who owns them. If this folder is meant to become the data folder of Bugaboo, run the command again with {flag}.",
+  "cli.help.take-over-data-folder":
+    "Take over a data folder that holds only your own files in its tls folder, such as a certificate you put there before the first start",
+  "setup.database-url-password":
+    "The database address on the command line has a password in it, and other people on this computer can read the command line, for example in the list of running programs. This time the address is saved in {file}. Next time answer the database question of setup instead of using the option, or set the environment variable {variable}.",
+  "data-folder.unknown":
+    "{part} {path} could not be checked, because Bugaboo could not read its access rights. Check them yourself: other accounts on this computer should not be able to open it, unless you want that.",
+  "status.data-folder.unknown":
+    "Bugaboo could not read the rights of these, so it cannot say whether other accounts can open them. Check them yourself:",
 } as const;
 
 export type MessageKey = keyof typeof messages;
 
 export interface MessageArguments {
   "backup.left": { count: number };
+  "cli.database-url-password": { file: string | number; variable: string | number };
   "cli.no-data": { path: string | number };
   "config.address-invalid": { value: string | number };
   "config.file-invalid": { path: string | number; reason: string | number };
@@ -485,7 +514,10 @@ export interface MessageArguments {
   "config.tls-off-public": { address: string | number };
   "data-folder.create-failed": { path: string | number; reason: string | number };
   "data-folder.not-a-data-folder": { path: string | number };
+  "data-folder.open": { part: string | number; path: string | number };
+  "data-folder.own-certificate": { flag: string | number; path: string | number };
   "data-folder.protect-failed": { path: string | number; reason: string | number };
+  "data-folder.unknown": { part: string | number; path: string | number };
   "first-run.step-of": { name: string | number; step: string | number; total: string | number };
   "home.title": { name: string | number };
   "invitation.intro": { email: string | number };
@@ -539,6 +571,7 @@ export interface MessageArguments {
   "sessions.network": { network: string | number };
   "sessions.started": { when: string | number };
   "setup.ask.replace": { path: string | number };
+  "setup.database-url-password": { file: string | number; variable: string | number };
   "setup.exists": { path: string | number };
   "setup.not-usable": { reason: string | number };
   "setup.saved": { path: string | number };
@@ -546,6 +579,7 @@ export interface MessageArguments {
   "status.certificate.expired": { date: string | number };
   "status.certificate.soon": { date: string | number; days: number };
   "status.certificate.valid": { date: string | number; days: number };
+  "status.log-failures": { count: number };
   "status.started": { when: string | number };
   "status.uptime": { days: number; hours: number; minutes: number };
   "theme.device-resolved": { device: string | number; theme: string | number };

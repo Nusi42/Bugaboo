@@ -15,12 +15,19 @@
 //! Windows an access list that removes inherited rights and grants only the current account
 //! (found by its SID, which no language or domain setting can change). `keys/`, `tls/` and `logs/`
 //! hold secrets or proof, so on every start they are checked and, if someone loosened them, made private
-//! again.
+//! again. The rest of a folder that exists is only looked at: what other accounts can open is
+//! reported and never changed (`rights.rs`).
 
 use std::fmt;
 use std::path::{Path, PathBuf};
 
+mod rights;
+
 use bb_core::message;
+
+/// The flag of `bugaboo service install` that takes over a folder with the person's own
+/// certificate in `tls/`; the messages name it.
+pub(crate) const TAKE_OVER_FLAG: &str = "--take-over-data-folder";
 
 const DATABASE_FILE: &str = "bugaboo.db";
 const FILES: &str = "files";
@@ -35,7 +42,6 @@ const SETUP_CODE_FILE: &str = "setup-code.txt";
 /// The folders `prepare` makes inside the data folder.
 pub(crate) const SUB_FOLDERS: [&str; 5] = [FILES, KEYS, BACKUPS, TLS, LOGS];
 /// What the built-in database (SQLite) keeps next to its file.
-#[cfg(any(unix, test))]
 const DATABASE_COMPANIONS: [&str; 3] = ["-wal", "-shm", "-journal"];
 
 /// The prepared data folder.
@@ -59,6 +65,11 @@ pub(crate) enum DataFolderError {
     NotADataFolder {
         path: PathBuf,
     },
+    /// A folder whose only content is files of the person's own in `tls/` (a certificate made
+    /// before the first start): taken over only when the person says so.
+    OwnCertificate {
+        path: PathBuf,
+    },
 }
 
 impl DataFolderError {
@@ -72,6 +83,9 @@ impl DataFolderError {
             }
             Self::NotADataFolder { path } => {
                 message::data_folder_not_a_data_folder(path.display()).render()
+            }
+            Self::OwnCertificate { path } => {
+                message::data_folder_own_certificate(path.display(), TAKE_OVER_FLAG).render()
             }
         }
     }
@@ -168,18 +182,87 @@ impl DataFolder {
 /// folder that has not run yet (all of its sub-folders, all empty). A folder with other things
 /// in it, such as documents or a `keys` folder of something else, is refused, so that installing
 /// never changes the owner of somebody's files.
-pub(crate) fn check_for_service(root: &Path) -> Result<(), DataFolderError> {
+///
+/// One more folder is taken over, but only when the person asks for it (`take_over`, the flag
+/// `--take-over-data-folder`): a folder whose only content is files of their own in `tls/`, such
+/// as a certificate put there before Bugaboo ever ran (follow-up M1-F66). The refusal names the
+/// flag when it would help.
+pub(crate) fn check_for_service(root: &Path, take_over: bool) -> Result<(), DataFolderError> {
     let empty = std::fs::read_dir(root).is_ok_and(|mut entries| entries.next().is_none());
     // A link where a sub-folder belongs would send the changes of rights somewhere else.
     let linked = SUB_FOLDERS.iter().any(|name| {
         std::fs::symlink_metadata(root.join(name)).is_ok_and(|data| data.file_type().is_symlink())
     });
-    if !linked && (!root.is_dir() || empty || made_by_bugaboo(root)) {
-        Ok(())
-    } else {
-        Err(DataFolderError::NotADataFolder {
+    if linked {
+        return Err(DataFolderError::NotADataFolder {
             path: root.to_path_buf(),
-        })
+        });
+    }
+    if !root.is_dir() || empty || made_by_bugaboo(root) {
+        return Ok(());
+    }
+    if holds_only_own_certificate(root) {
+        return if take_over {
+            Ok(())
+        } else {
+            Err(DataFolderError::OwnCertificate {
+                path: root.to_path_buf(),
+            })
+        };
+    }
+    Err(DataFolderError::NotADataFolder {
+        path: root.to_path_buf(),
+    })
+}
+
+/// Whether the only content of `root` is files in its `tls` folder: the other sub-folders may be
+/// there but are empty, nothing else is in the folder, and `tls` holds plain files (no folders,
+/// no links, which could lead anywhere, and on Linux no file with more than one name, which may
+/// be somebody else's file under another name). An entry that cannot be read refuses the folder:
+/// what cannot be seen cannot be called the person's own.
+fn holds_only_own_certificate(root: &Path) -> bool {
+    let Some(entries) = std::fs::read_dir(root).ok().and_then(all_ok) else {
+        return false;
+    };
+    let mut certificate_files = 0_usize;
+    for entry in entries {
+        let name = entry.file_name();
+        let path = entry.path();
+        let is_folder = std::fs::symlink_metadata(&path).is_ok_and(|data| data.is_dir());
+        if !is_folder || !SUB_FOLDERS.iter().any(|known| name == *known) {
+            return false;
+        }
+        let Some(inside) = std::fs::read_dir(&path).ok().and_then(all_ok) else {
+            return false;
+        };
+        for item in inside {
+            if name != TLS || !is_plain_file(&item.path()) {
+                return false;
+            }
+            certificate_files += 1;
+        }
+    }
+    certificate_files > 0
+}
+
+/// All the items, or `None` when one of them could not be read.
+fn all_ok<T, E>(items: impl Iterator<Item = Result<T, E>>) -> Option<Vec<T>> {
+    items.collect::<Result<Vec<_>, _>>().ok()
+}
+
+/// A regular file that is no link and, on Linux, has one name only.
+fn is_plain_file(path: &Path) -> bool {
+    let Ok(data) = std::fs::symlink_metadata(path) else {
+        return false;
+    };
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::MetadataExt as _;
+        data.is_file() && data.nlink() == 1
+    }
+    #[cfg(not(unix))]
+    {
+        data.is_file()
     }
 }
 
@@ -889,15 +972,15 @@ mod tests {
     fn sec_16_a_service_may_take_over_only_a_new_or_a_bugaboo_folder() {
         let temp = tempfile::tempdir().unwrap();
         // Not there yet, and empty: fine.
-        check_for_service(&temp.path().join("new")).unwrap();
+        check_for_service(&temp.path().join("new"), false).unwrap();
         let empty = temp.path().join("empty");
         std::fs::create_dir(&empty).unwrap();
-        check_for_service(&empty).unwrap();
+        check_for_service(&empty, false).unwrap();
         // A folder with somebody's own files is refused, and nothing in it changes.
         let mine = temp.path().join("documents");
         std::fs::create_dir(&mine).unwrap();
         std::fs::write(mine.join("tax.pdf"), "x").unwrap();
-        let error = check_for_service(&mine).unwrap_err();
+        let error = check_for_service(&mine, false).unwrap_err();
         assert!(error.message().contains("does not look like"), "{error}");
         // An unrelated folder named `keys` (or with all the names of a data folder but a file
         // in one of them) is no Bugaboo folder either.
@@ -906,7 +989,7 @@ mod tests {
         std::fs::write(other.join(KEYS).join("id_ed25519"), "x").unwrap();
         std::fs::write(other.join("notes.txt"), "x").unwrap();
         assert!(
-            check_for_service(&other).is_err(),
+            check_for_service(&other, false).is_err(),
             "a folder with a `keys` folder"
         );
         let layout = temp.path().join("layout");
@@ -914,24 +997,24 @@ mod tests {
         std::fs::write(layout.join(FILES).join("photo.jpg"), "x").unwrap();
         std::fs::write(layout.join("notes.txt"), "x").unwrap();
         assert!(
-            check_for_service(&layout).is_err(),
+            check_for_service(&layout, false).is_err(),
             "a layout with somebody's file in it"
         );
         // A data folder that Bugaboo made and has not filled yet: all of its folders, all empty.
         let fresh = temp.path().join("fresh");
         DataFolder::prepare(&fresh).unwrap();
-        check_for_service(&fresh).unwrap();
+        check_for_service(&fresh, false).unwrap();
         // One that has run holds the master key or the database, also with files added later.
         let used = temp.path().join("used");
         DataFolder::prepare(&used).unwrap();
         std::fs::write(used.join(KEYS).join(bb_store::MASTER_KEY_FILE), "x").unwrap();
         std::fs::write(used.join("notes.txt"), "x").unwrap();
-        check_for_service(&used).unwrap();
+        check_for_service(&used, false).unwrap();
         let with_database = temp.path().join("with-database");
         DataFolder::prepare(&with_database).unwrap();
         std::fs::write(with_database.join(DATABASE_FILE), "x").unwrap();
         std::fs::write(with_database.join("notes.txt"), "x").unwrap();
-        check_for_service(&with_database).unwrap();
+        check_for_service(&with_database, false).unwrap();
         // The known files are the database and its companions and the setup code.
         std::fs::write(with_database.join(format!("{DATABASE_FILE}-wal")), "x").unwrap();
         let known = DataFolder::existing(&with_database).unwrap().known_files();
@@ -960,7 +1043,7 @@ mod tests {
         std::fs::create_dir(&other).unwrap();
         std::fs::remove_dir(data.join(TLS)).unwrap();
         std::os::unix::fs::symlink(&other, data.join(TLS)).unwrap();
-        let error = check_for_service(&data).unwrap_err();
+        let error = check_for_service(&data, false).unwrap_err();
         assert!(error.message().contains("does not look like"), "{error}");
     }
 
@@ -971,5 +1054,101 @@ mod tests {
         std::fs::write(&file, "x").unwrap();
         let error = DataFolder::prepare(&file.join("data")).unwrap_err();
         assert!(error.message().contains("could not be prepared"), "{error}");
+    }
+    /// A data folder whose only content is the person's own certificate in `tls/`.
+    fn with_own_certificate(folder: &Path) {
+        std::fs::create_dir_all(folder.join(TLS)).unwrap();
+        std::fs::write(folder.join(TLS).join("certificate.pem"), "x").unwrap();
+        std::fs::write(folder.join(TLS).join("private-key.pem"), "x").unwrap();
+    }
+
+    #[test]
+    fn ops_03_a_data_folder_with_own_certificates_is_taken_over_only_with_the_flag() {
+        let temp = tempfile::tempdir().unwrap();
+        let mine = temp.path().join("mine");
+        with_own_certificate(&mine);
+        // The sub-folders that are empty do not matter.
+        std::fs::create_dir(mine.join(KEYS)).unwrap();
+        std::fs::create_dir(mine.join(FILES)).unwrap();
+
+        // Without the flag the folder is refused, and the message names the flag.
+        let error = check_for_service(&mine, false).unwrap_err();
+        assert!(
+            error.message().contains("--take-over-data-folder"),
+            "{error}"
+        );
+        assert!(error.message().contains("tls"), "{error}");
+        // With the flag it is taken over; nothing in it is changed by the check.
+        check_for_service(&mine, true).unwrap();
+        assert!(mine.join(TLS).join("private-key.pem").is_file());
+
+        // The flag takes over nothing else: any other content of the folder or of the
+        // sub-folders, a folder inside `tls`, and links are still refused, and the message of
+        // those does not offer the flag.
+        let refused = |name: &str, put: &dyn Fn(&Path)| {
+            let folder = temp.path().join(name);
+            with_own_certificate(&folder);
+            put(&folder);
+            let error = check_for_service(&folder, true).unwrap_err();
+            assert!(
+                !error.message().contains("--take-over-data-folder"),
+                "{name}: {error}"
+            );
+            assert!(check_for_service(&folder, false).is_err(), "{name}");
+        };
+        refused("with-notes", &|folder| {
+            std::fs::write(folder.join("notes.txt"), "x").unwrap();
+        });
+        refused("with-attachment", &|folder| {
+            std::fs::create_dir_all(folder.join(FILES)).unwrap();
+            std::fs::write(folder.join(FILES).join("photo.jpg"), "x").unwrap();
+        });
+        refused("with-key", &|folder| {
+            std::fs::create_dir_all(folder.join(KEYS)).unwrap();
+            std::fs::write(folder.join(KEYS).join("id_ed25519"), "x").unwrap();
+        });
+        refused("with-folder-in-tls", &|folder| {
+            std::fs::create_dir_all(folder.join(TLS).join("old")).unwrap();
+        });
+        refused("with-other-folder", &|folder| {
+            std::fs::create_dir(folder.join("documents")).unwrap();
+        });
+        #[cfg(unix)]
+        refused("with-link-in-tls", &|folder| {
+            std::os::unix::fs::symlink("/etc/passwd", folder.join(TLS).join("link.pem")).unwrap();
+        });
+        #[cfg(unix)]
+        refused("with-linked-tls", &|folder| {
+            std::fs::remove_dir_all(folder.join(TLS)).unwrap();
+            std::os::unix::fs::symlink(folder, folder.join(TLS)).unwrap();
+        });
+
+        #[cfg(unix)]
+        refused("with-second-name-in-tls", &|folder| {
+            // A file that is also in another place under another name.
+            let elsewhere = folder.parent().unwrap().join("somebody-elses.pem");
+            std::fs::write(&elsewhere, "x").unwrap();
+            std::fs::hard_link(&elsewhere, folder.join(TLS).join("linked.pem")).unwrap();
+        });
+
+        // A folder that has no files of its own in `tls` is as before, flag or not.
+        let empty = temp.path().join("only-folders");
+        DataFolder::prepare(&empty).unwrap();
+        check_for_service(&empty, false).unwrap();
+        check_for_service(&empty, true).unwrap();
+    }
+
+    #[test]
+    fn ops_03_an_entry_that_cannot_be_read_is_not_skipped() {
+        let items: Vec<Result<u8, std::io::Error>> = vec![
+            Ok(1),
+            Err(std::io::Error::from(std::io::ErrorKind::PermissionDenied)),
+            Ok(3),
+        ];
+        assert_eq!(all_ok(items.into_iter()), None);
+        assert_eq!(
+            all_ok(vec![Ok::<_, std::io::Error>(1), Ok(2)].into_iter()),
+            Some(vec![1, 2])
+        );
     }
 }

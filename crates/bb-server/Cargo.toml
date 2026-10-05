@@ -20,7 +20,14 @@ bb-store = { path = "../bb-store" }
 clap = { workspace = true }
 getrandom = { workspace = true }
 jiff = { workspace = true }
-tokio = { workspace = true, features = ["macros", "net", "rt-multi-thread", "signal", "sync"] }
+tokio = { workspace = true, features = [
+  "macros",
+  "net",
+  "rt-multi-thread",
+  "signal",
+  "sync",
+  "time",
+] }
 toml = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
@@ -28,6 +35,8 @@ tracing-subscriber = { workspace = true }
 # Runs Bugaboo as a Windows service (OPS-04): installing it and answering the service manager.
 [target.'cfg(windows)'.dependencies]
 windows-service = { workspace = true }
+# The access list of the data folder is saved to a temporary file and read back (SEC-16, M1-F65).
+tempfile = { workspace = true }
 
 [dev-dependencies]
 argon2 = { workspace = true }
@@ -38,7 +47,7 @@ h2 = { workspace = true }
 rustls = { workspace = true }
 serde_json = { workspace = true }
 tempfile = { workspace = true }
-tokio = { workspace = true, features = ["io-util", "sync", "time"] }
+tokio = { workspace = true, features = ["io-util"] }
 tokio-rustls = { workspace = true }
 tower = { workspace = true, features = ["util"] }
 webauthn-authenticator-rs = { workspace = true }

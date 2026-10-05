@@ -81,7 +81,7 @@ Exact license strings are confirmed by `cargo deny` and recorded in the third-pa
 | Fallback formatter | @biomejs/biome | 2.5.15 | MIT/Apache-2.0 |
 | Pattern rules (Rust + TS) | @ast-grep/cli | 0.45.3 | MIT |
 | Unit tests (browser code) | vitest | 5.0.3 | MIT |
-| Local ports | `tools/dev/ports.json` | — | — (47200–47299, strict; ADR-0023) |
+| Local ports | `tools/dev/ports.json` | — | — (47200–48099, a block of 100 for each work folder, strict; ADR-0023) |
 | End-to-end tests | @playwright/test | 1.63.0 | Apache-2.0 |
 | Accessibility checks | @axe-core/playwright | 4.13.0 | MPL-2.0 (test only, not shipped) |
 | Git hooks | lefthook | 2.1.16 | MIT |

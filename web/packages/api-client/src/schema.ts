@@ -12,7 +12,7 @@ export interface paths {
      * How the server is doing: version, uptime, database, certificate and the check of the security
      *     log. Administrators only.
      */
-    get: operations["getServerState"];
+    get: operations["getServerStatus"];
     put?: never;
     post?: never;
     delete?: never;
@@ -545,6 +545,11 @@ export interface components {
       /** @description The secret from the invitation link (the part after the `#`). */
       secret: string;
     };
+    /**
+     * @description Whether other accounts on this computer can open a part of the data folder.
+     * @enum {string}
+     */
+    AccessBody: "private" | "open" | "unknown";
     /** @description A passkey the device made, with the name the person gives it. */
     AddPasskeyBody: {
       /** @description The challenge that was answered. */
@@ -612,6 +617,22 @@ export interface components {
        *     in front. The secret is not stored and cannot be shown again.
        */
       link_path: string;
+    };
+    /**
+     * @description Which parts of the data folder other accounts on this computer can open. Bugaboo only looks;
+     *     a folder that somebody made or moved keeps its rights.
+     */
+    DataFolderOpenBody: {
+      /** @description The folder for backups. */
+      backups: components["schemas"]["AccessBody"];
+      /** @description The built-in database file and the files next to it. */
+      database: components["schemas"]["AccessBody"];
+      /** @description The folder for attachments. */
+      files: components["schemas"]["AccessBody"];
+      /** @description The data folder itself. */
+      folder: components["schemas"]["AccessBody"];
+      /** @description The file with the setup code of a server without a console. */
+      setup_code_file: components["schemas"]["AccessBody"];
     };
     /** @description The database. */
     DatabaseBody: {
@@ -692,7 +713,14 @@ export interface components {
      * @description Why the chain of the security log does not verify.
      * @enum {string}
      */
-    LogBreakBody: "gap" | "broken_link" | "changed_content" | "checkpoint" | "truncated" | "anchor";
+    LogBreakBody:
+      | "gap"
+      | "broken_link"
+      | "changed_content"
+      | "checkpoint"
+      | "truncated"
+      | "anchor"
+      | "behind";
     /**
      * @description The result of checking the security log.
      * @enum {string}
@@ -828,10 +856,24 @@ export interface components {
       reason?: components["schemas"]["LogBreakBody"] | null;
       /** @description The outcome. */
       result: components["schemas"]["LogResult"];
+      /**
+       * Format: int64
+       * @description How many entries could not be written since the server started. A failed write does not
+       *     stop a sign-in, so a number above zero means the log lags: check the disk and the rights
+       *     on the data folder.
+       */
+      write_failures: number;
     };
-    /** @description The state of the server, as the status page shows it. */
-    ServerStateBody: {
+    /** @description What `GET /api/v1/status` answers: the server is up. */
+    ServerStatus: {
+      /** @description Always `ok`; an answer at all means the server is running. */
+      status: components["schemas"]["StatusValue"];
+    };
+    /** @description The status of the server, as the status page shows it. */
+    ServerStatusBody: {
       certificate?: components["schemas"]["CertificateBody"] | null;
+      /** @description What of the data folder other accounts on this computer can open. */
+      data_folder_open: components["schemas"]["DataFolderOpenBody"];
       /** @description The database. */
       database: components["schemas"]["DatabaseBody"];
       /** @description The check of the security log. */
@@ -845,11 +887,6 @@ export interface components {
       uptime_seconds: number;
       /** @description The version of the program. */
       version: string;
-    };
-    /** @description What `GET /api/v1/status` answers: the server is up. */
-    ServerStatus: {
-      /** @description Always `ok`; an answer at all means the server is running. */
-      status: components["schemas"]["StatusValue"];
     };
     /** @description One session in *Where you're signed in*. */
     SessionBody: {
@@ -948,7 +985,7 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
-  getServerState: {
+  getServerStatus: {
     parameters: {
       query?: never;
       header?: never;
@@ -957,7 +994,7 @@ export interface operations {
     };
     requestBody?: never;
     responses: {
-      /** @description The state of the server. */
+      /** @description The status of the server. */
       200: {
         headers: {
           /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
@@ -965,7 +1002,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["ServerStateBody"];
+          "application/json": components["schemas"]["ServerStatusBody"];
         };
       };
       /** @description Nothing changed since the `ETag` that `If-None-Match` named. No body. */

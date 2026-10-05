@@ -10,10 +10,10 @@
       "get": {
         "tags": ["admin"],
         "summary": "How the server is doing: version, uptime, database, certificate and the check of the security\nlog. Administrators only.",
-        "operationId": "getServerState",
+        "operationId": "getServerStatus",
         "responses": {
           "200": {
-            "description": "The state of the server.",
+            "description": "The status of the server.",
             "headers": {
               "etag": {
                 "schema": {
@@ -25,7 +25,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ServerStateBody"
+                  "$ref": "#/components/schemas/ServerStatusBody"
                 }
               }
             }
@@ -2911,6 +2911,11 @@
           }
         }
       },
+      "AccessBody": {
+        "type": "string",
+        "description": "Whether other accounts on this computer can open a part of the data folder.",
+        "enum": ["private", "open", "unknown"]
+      },
       "AddPasskeyBody": {
         "type": "object",
         "description": "A passkey the device made, with the name the person gives it.",
@@ -3058,6 +3063,33 @@
           }
         }
       },
+      "DataFolderOpenBody": {
+        "type": "object",
+        "description": "Which parts of the data folder other accounts on this computer can open. Bugaboo only looks;\na folder that somebody made or moved keeps its rights.",
+        "required": ["folder", "database", "files", "backups", "setup_code_file"],
+        "properties": {
+          "backups": {
+            "$ref": "#/components/schemas/AccessBody",
+            "description": "The folder for backups."
+          },
+          "database": {
+            "$ref": "#/components/schemas/AccessBody",
+            "description": "The built-in database file and the files next to it."
+          },
+          "files": {
+            "$ref": "#/components/schemas/AccessBody",
+            "description": "The folder for attachments."
+          },
+          "folder": {
+            "$ref": "#/components/schemas/AccessBody",
+            "description": "The data folder itself."
+          },
+          "setup_code_file": {
+            "$ref": "#/components/schemas/AccessBody",
+            "description": "The file with the setup code of a server without a console."
+          }
+        }
+      },
       "DatabaseBody": {
         "type": "object",
         "description": "The database.",
@@ -3177,7 +3209,15 @@
       "LogBreakBody": {
         "type": "string",
         "description": "Why the chain of the security log does not verify.",
-        "enum": ["gap", "broken_link", "changed_content", "checkpoint", "truncated", "anchor"]
+        "enum": [
+          "gap",
+          "broken_link",
+          "changed_content",
+          "checkpoint",
+          "truncated",
+          "anchor",
+          "behind"
+        ]
       },
       "LogResult": {
         "type": "string",
@@ -3382,7 +3422,7 @@
       "SecurityLogBody": {
         "type": "object",
         "description": "What checking the security log found.",
-        "required": ["result"],
+        "required": ["result", "write_failures"],
         "properties": {
           "anchored": {
             "type": ["boolean", "null"],
@@ -3422,13 +3462,37 @@
           "result": {
             "$ref": "#/components/schemas/LogResult",
             "description": "The outcome."
+          },
+          "write_failures": {
+            "type": "integer",
+            "format": "int64",
+            "description": "How many entries could not be written since the server started. A failed write does not\nstop a sign-in, so a number above zero means the log lags: check the disk and the rights\non the data folder.",
+            "minimum": 0
           }
         }
       },
-      "ServerStateBody": {
+      "ServerStatus": {
         "type": "object",
-        "description": "The state of the server, as the status page shows it.",
-        "required": ["version", "started_at", "uptime_seconds", "database", "security_log"],
+        "description": "What `GET /api/v1/status` answers: the server is up.",
+        "required": ["status"],
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/StatusValue",
+            "description": "Always `ok`; an answer at all means the server is running."
+          }
+        }
+      },
+      "ServerStatusBody": {
+        "type": "object",
+        "description": "The status of the server, as the status page shows it.",
+        "required": [
+          "version",
+          "started_at",
+          "uptime_seconds",
+          "database",
+          "security_log",
+          "data_folder_open"
+        ],
         "properties": {
           "certificate": {
             "oneOf": [
@@ -3440,6 +3504,10 @@
                 "type": "null"
               }
             ]
+          },
+          "data_folder_open": {
+            "$ref": "#/components/schemas/DataFolderOpenBody",
+            "description": "What of the data folder other accounts on this computer can open."
           },
           "database": {
             "$ref": "#/components/schemas/DatabaseBody",
@@ -3462,17 +3530,6 @@
           "version": {
             "type": "string",
             "description": "The version of the program."
-          }
-        }
-      },
-      "ServerStatus": {
-        "type": "object",
-        "description": "What `GET /api/v1/status` answers: the server is up.",
-        "required": ["status"],
-        "properties": {
-          "status": {
-            "$ref": "#/components/schemas/StatusValue",
-            "description": "Always `ok`; an answer at all means the server is running."
           }
         }
       },

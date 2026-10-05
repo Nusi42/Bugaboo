@@ -1,12 +1,17 @@
 {
-  "$comment": "Single source for every local development and test port (ADR-0023). Chosen from 47200-47299: free on the main dev PC and outside Windows' reserved and dynamic ranges. Tools use strictPort and fail loudly if a port is busy. Change ports only here.",
-  "server": 47200,
-  "web": 47201,
-  "webPreview": 47202,
-  "e2eServer": 47203,
-  "vitestUi": 47204,
-  "e2eWorkersFrom": 47210,
-  "e2eWorkersTo": 47229,
-  "loadTestServer": 47230,
-  "postgres": 47240
+  "$comment": "Single source for every local development and test port (ADR-0023). Each work folder bugaboo.winN has a block of `stride` ports, block N starting at first + (N - 1) * stride, so several folders can build and test at the same time. Any other folder (CI, a fresh clone) uses block 1; BUGABOO_PORT_BLOCK names another block. The numbers below are offsets inside a block. The whole range 47200-48099 is free on the main dev PC and below Windows' dynamic range (49152 and up). Tools use strictPort and fail loudly if a port is busy. Change ports only here.",
+  "first": 47200,
+  "stride": 100,
+  "blocks": 9,
+  "offsets": {
+    "server": 0,
+    "web": 1,
+    "webPreview": 2,
+    "e2eServer": 3,
+    "vitestUi": 4,
+    "e2eWorkersFrom": 10,
+    "e2eWorkersTo": 29,
+    "loadTestServer": 30,
+    "postgres": 40
+  }
 }

@@ -192,8 +192,15 @@ title = "No words from the glossary's 'Don't say' column in UI text, user docs o
 rule = "glossary.md"
 tool = "xtask (reads glossary tables)"
 when = ["edit", "commit", "ci"]
-files = ["messages/**", "userDocs/**", "crates/bb-api/**"]
-status = "planned"
+files = [
+  "docs/glossary.md",
+  "messages/**",
+  "userDocs/**",
+  "crates/bb-api/**",
+  "web/packages/api-client/openapi.json",
+  "tools/checks/terms-exemptions.toml",
+]
+status = "active"
 
 [[check]]
 id = "STY-TOKENS"

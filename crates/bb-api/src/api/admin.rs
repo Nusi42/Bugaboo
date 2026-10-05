@@ -5,7 +5,9 @@ use std::sync::Arc;
 use axum::extract::State;
 use axum::response::Response;
 use bb_app::auth::AuthenticateQuery;
-use bb_app::status::{DatabaseKind, LogBreak, LogState, ServerProbe, Snapshot};
+use bb_app::status::{
+    Access, DataFolderRights, DatabaseKind, LogBreak, LogState, ServerProbe, Snapshot,
+};
 use bb_core::ErrorCode;
 use serde::Serialize;
 use utoipa::ToSchema;
@@ -101,6 +103,8 @@ enum LogBreakBody {
     Truncated,
     /// The file that vouches for the end of the log was changed.
     Anchor,
+    /// The anchor file knows of newer entries than the database has.
+    Behind,
 }
 
 impl From<LogBreak> for LogBreakBody {
@@ -112,6 +116,7 @@ impl From<LogBreak> for LogBreakBody {
             LogBreak::Checkpoint => Self::Checkpoint,
             LogBreak::Truncated => Self::Truncated,
             LogBreak::Anchor => Self::Anchor,
+            LogBreak::Behind => Self::Behind,
         }
     }
 }
@@ -146,6 +151,10 @@ struct SecurityLogBody {
     broken_at: Option<i64>,
     /// What is wrong with it (when it breaks).
     reason: Option<LogBreakBody>,
+    /// How many entries could not be written since the server started. A failed write does not
+    /// stop a sign-in, so a number above zero means the log lags: check the disk and the rights
+    /// on the data folder.
+    write_failures: u64,
 }
 
 impl From<LogState> for SecurityLogBody {
@@ -158,6 +167,7 @@ impl From<LogState> for SecurityLogBody {
             anchored: None,
             broken_at: None,
             reason: None,
+            write_failures: 0,
         };
         match state {
             LogState::Valid {
@@ -183,9 +193,59 @@ impl From<LogState> for SecurityLogBody {
     }
 }
 
-/// The state of the server, as the status page shows it.
+/// Whether other accounts on this computer can open a part of the data folder.
 #[derive(Serialize, ToSchema)]
-struct ServerStateBody {
+#[serde(rename_all = "snake_case")]
+enum AccessBody {
+    /// Only the account that runs Bugaboo can open it.
+    Private,
+    /// Other accounts can open it: too open.
+    Open,
+    /// The rights could not be read, so nothing can be said.
+    Unknown,
+}
+
+impl From<Access> for AccessBody {
+    fn from(access: Access) -> Self {
+        match access {
+            Access::Private => Self::Private,
+            Access::Open => Self::Open,
+            Access::Unknown => Self::Unknown,
+        }
+    }
+}
+
+/// Which parts of the data folder other accounts on this computer can open. Bugaboo only looks;
+/// a folder that somebody made or moved keeps its rights.
+#[derive(Serialize, ToSchema)]
+struct DataFolderOpenBody {
+    /// The data folder itself.
+    folder: AccessBody,
+    /// The built-in database file and the files next to it.
+    database: AccessBody,
+    /// The folder for attachments.
+    files: AccessBody,
+    /// The folder for backups.
+    backups: AccessBody,
+    /// The file with the setup code of a server without a console.
+    setup_code_file: AccessBody,
+}
+
+impl From<DataFolderRights> for DataFolderOpenBody {
+    fn from(rights: DataFolderRights) -> Self {
+        Self {
+            folder: rights.folder.into(),
+            database: rights.database.into(),
+            files: rights.files.into(),
+            backups: rights.backups.into(),
+            setup_code_file: rights.setup_code_file.into(),
+        }
+    }
+}
+
+/// The status of the server, as the status page shows it.
+#[derive(Serialize, ToSchema)]
+struct ServerStatusBody {
     /// The version of the program.
     version: String,
     /// When the server started.
@@ -199,9 +259,11 @@ struct ServerStateBody {
     certificate: Option<CertificateBody>,
     /// The check of the security log.
     security_log: SecurityLogBody,
+    /// What of the data folder other accounts on this computer can open.
+    data_folder_open: DataFolderOpenBody,
 }
 
-impl From<Snapshot> for ServerStateBody {
+impl From<Snapshot> for ServerStatusBody {
     fn from(snapshot: Snapshot) -> Self {
         Self {
             version: snapshot.version,
@@ -214,7 +276,11 @@ impl From<Snapshot> for ServerStateBody {
             certificate: snapshot.certificate.map(|certificate| CertificateBody {
                 expires_at: certificate.expires_at.to_string(),
             }),
-            security_log: snapshot.security_log.into(),
+            security_log: SecurityLogBody {
+                write_failures: snapshot.log_write_failures,
+                ..snapshot.security_log.into()
+            },
+            data_folder_open: snapshot.data_folder.into(),
         }
     }
 }
@@ -224,12 +290,12 @@ impl From<Snapshot> for ServerStateBody {
 #[utoipa::path(
     get,
     path = "/api/v1/admin/status",
-    operation_id = "getServerState",
+    operation_id = "getServerStatus",
     tag = "admin",
     extensions(("x-never-stored" = json!(true))),
-    responses((status = 200, description = "The state of the server.", body = ServerStateBody), NotSignedInAnswer, ForbiddenAnswer)
+    responses((status = 200, description = "The status of the server.", body = ServerStatusBody), NotSignedInAnswer, ForbiddenAnswer)
 )]
-async fn get_server_state(
+async fn get_server_status(
     State(auth): State<AuthHandle>,
     State(probe): State<ProbeHandle>,
     Info(info): Info,
@@ -245,7 +311,7 @@ async fn get_server_state(
     let probe = probe
         .probe()
         .ok_or_else(|| ApiError::new(ErrorCode::Unavailable))?;
-    Ok(answer(ServerStateBody::from(probe.snapshot().await)))
+    Ok(answer(ServerStatusBody::from(probe.snapshot().await)))
 }
 
 /// The routes only administrators use.
@@ -255,5 +321,5 @@ where
     AuthHandle: axum::extract::FromRef<S>,
     ProbeHandle: axum::extract::FromRef<S>,
 {
-    OpenApiRouter::new().routes(routes!(get_server_state))
+    OpenApiRouter::new().routes(routes!(get_server_status))
 }

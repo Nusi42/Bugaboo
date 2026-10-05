@@ -189,6 +189,21 @@ fn execute(
     port_is_free: &dyn Fn(IpAddr, u16) -> bool,
 ) -> anyhow::Result<()> {
     let interactive = !args.non_interactive;
+    // Setup saves the address in the settings file, which is a safe place; the command line it
+    // came from is not (M1-F62).
+    if args
+        .database_url
+        .as_deref()
+        .is_some_and(config::has_password)
+    {
+        terminal.say(
+            &message::setup_database_url_password(
+                target.display(),
+                config::env_name("database_url"),
+            )
+            .render(),
+        );
+    }
     if target.exists() && !args.overwrite {
         if !interactive {
             return Err(anyhow!(message::setup_exists(target.display()).render()));

@@ -22,6 +22,8 @@ use zeroize::Zeroizing;
 use super::store::{AuthSettings, AuthStore, SecurityEvent, SessionRecord};
 use super::types::{PersonView, Started};
 use crate::context::{Clock, SystemIds};
+use crate::ports::SetupCodeFile;
+use crate::status::LogWrites;
 
 /// A session that only had its password checked lives this long, in seconds.
 pub(crate) const PENDING_SECONDS: i64 = 300;
@@ -116,6 +118,8 @@ pub struct AuthServices<S> {
     pub(crate) csrf: CsrfKey,
     pub(crate) limiter: Arc<dyn FailureLimit>,
     pub(crate) product_name: String,
+    pub(crate) log_writes: Arc<LogWrites>,
+    pub(crate) setup_code_file: Option<Arc<dyn SetupCodeFile>>,
 }
 
 impl<S> AuthServices<S> {
@@ -139,7 +143,24 @@ impl<S> AuthServices<S> {
             csrf,
             limiter,
             product_name,
+            log_writes: Arc::new(LogWrites::default()),
+            setup_code_file: None,
         }
+    }
+
+    /// The file that holds the setup code of a server without a console, which the use case that
+    /// makes the first administrator removes (AUTH-09, M1-F58).
+    #[must_use]
+    pub fn with_setup_code_file(mut self, file: Arc<dyn SetupCodeFile>) -> Self {
+        self.setup_code_file = Some(file);
+        self
+    }
+
+    /// How many entries of the security log were written, and how many could not be, since the
+    /// server started. The status page reads it.
+    #[must_use]
+    pub fn log_writes(&self) -> Arc<LogWrites> {
+        Arc::clone(&self.log_writes)
     }
 
     /// The context of one request.
@@ -241,8 +262,8 @@ impl<S: AuthStore> Ctx<'_, S> {
     }
 
     /// Writes an entry into the security log. A log that cannot be written is reported in the
-    /// server log but does not undo or refuse what already happened (decision for review,
-    /// SEC-15).
+    /// server log and counted (the status page shows the count, M1-F40) but does not undo or
+    /// refuse what already happened (the decision of M1, SEC-15).
     pub(crate) async fn note(
         &self,
         action: SecurityAction,
@@ -260,7 +281,9 @@ impl<S: AuthStore> Ctx<'_, S> {
             subject,
             network: self.request.network.clone(),
         };
-        if let Err(error) = self.store().append_security_log(&event).await {
+        let written = self.store().append_security_log(&event).await;
+        self.services.log_writes.record(written.is_ok());
+        if let Err(error) = written {
             // IDs only: who and what it was about, never a secret or a name.
             tracing::error!(
                 action = action.code(),
