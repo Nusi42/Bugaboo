@@ -3199,14 +3199,14 @@
         "x-permission": "public"
       }
     },
-    "/api/v1/projects/{project_id}/settings": {
+    "/api/v1/projects/{project}/settings": {
       "get": {
         "tags": ["settings"],
         "summary": "The settings of one project, as they count there (a sub-project takes what the project above\nsets). Needs the permission *Change project settings* in the project.",
         "operationId": "listProjectSettings",
         "parameters": [
           {
-            "name": "project_id",
+            "name": "project",
             "in": "path",
             "description": "The ID of the project.",
             "required": true,
@@ -3327,14 +3327,14 @@
         "x-permission": "change-project-settings"
       }
     },
-    "/api/v1/projects/{project_id}/settings/{key}": {
+    "/api/v1/projects/{project}/settings/{key}": {
       "put": {
         "tags": ["settings"],
         "summary": "Changes the value of a setting on a project. Needs the permission *Change project settings*\nin the project.",
         "operationId": "changeProjectSetting",
         "parameters": [
           {
-            "name": "project_id",
+            "name": "project",
             "in": "path",
             "description": "The ID of the project.",
             "required": true,
@@ -3470,7 +3470,7 @@
         "operationId": "resetProjectSetting",
         "parameters": [
           {
-            "name": "project_id",
+            "name": "project",
             "in": "path",
             "description": "The ID of the project.",
             "required": true,

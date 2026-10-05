@@ -7,21 +7,21 @@ import { after, type Edit } from "./organization.ts";
 
 /** The settings that can be set on one project, with the values that count there. */
 export function projectOptions(projectId: string) {
-  return api.query.queryOptions("get", "/api/v1/projects/{project_id}/settings", {
-    params: { path: { project_id: projectId } },
+  return api.query.queryOptions("get", "/api/v1/projects/{project}/settings", {
+    params: { path: { project: projectId } },
   });
 }
 
 /** Sends an edit of a project's setting to the server; a project has no lock of its own. */
 async function send(projectId: string, edit: Edit): Promise<void> {
-  const path = { params: { path: { project_id: projectId, key: edit.key } } };
+  const path = { params: { path: { project: projectId, key: edit.key } } };
   if (edit.kind === "change") {
-    await api.client.PUT("/api/v1/projects/{project_id}/settings/{key}", {
+    await api.client.PUT("/api/v1/projects/{project}/settings/{key}", {
       ...path,
       body: { value: edit.value },
     });
   } else if (edit.kind === "reset") {
-    await api.client.DELETE("/api/v1/projects/{project_id}/settings/{key}", path);
+    await api.client.DELETE("/api/v1/projects/{project}/settings/{key}", path);
   }
 }
 

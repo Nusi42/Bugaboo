@@ -553,7 +553,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  "/api/v1/projects/{project_id}/settings": {
+  "/api/v1/projects/{project}/settings": {
     parameters: {
       query?: never;
       header?: never;
@@ -573,7 +573,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  "/api/v1/projects/{project_id}/settings/{key}": {
+  "/api/v1/projects/{project}/settings/{key}": {
     parameters: {
       query?: never;
       header?: never;
@@ -3873,7 +3873,7 @@ export interface operations {
       header?: never;
       path: {
         /** @description The ID of the project. */
-        project_id: string;
+        project: string;
       };
       cookie?: never;
     };
@@ -3963,7 +3963,7 @@ export interface operations {
       header?: never;
       path: {
         /** @description The ID of the project. */
-        project_id: string;
+        project: string;
         /** @description The key of the setting. */
         key: string;
       };
@@ -4066,7 +4066,7 @@ export interface operations {
       header?: never;
       path: {
         /** @description The ID of the project. */
-        project_id: string;
+        project: string;
         /** @description The key of the setting. */
         key: string;
       };

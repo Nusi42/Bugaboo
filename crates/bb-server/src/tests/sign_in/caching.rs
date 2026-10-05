@@ -88,7 +88,7 @@ async fn perf_03_every_get_answers_an_etag_and_304_on_a_match() -> Outcome {
         for template in &routes {
             // A route with a part to fill in needs an example address here; fail loudly so a
             // new route is never left out of this test.
-            let path = &template.replace("{project_id}", &acme.id.to_string());
+            let path = &template.replace("{project}", &acme.id.to_string());
             assert!(
                 !path.contains('{'),
                 "{path} has a part to fill in: add an example address to this test"

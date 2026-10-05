@@ -368,14 +368,14 @@ pub(crate) struct KeyPath {
 /// The path of a setting of a project.
 #[derive(Deserialize)]
 pub(crate) struct ProjectKeyPath {
-    project_id: String,
+    project: String,
     key: String,
 }
 
 /// The path of the settings of a project.
 #[derive(Deserialize)]
 pub(crate) struct ProjectPath {
-    project_id: String,
+    project: String,
 }
 
 fn project_of(text: &str) -> Result<ProjectId, ApiError> {
@@ -618,11 +618,11 @@ async fn unlock_organization_setting(
 /// sets). Needs the permission *Change project settings* in the project.
 #[utoipa::path(
     get,
-    path = "/api/v1/projects/{project_id}/settings",
+    path = "/api/v1/projects/{project}/settings",
     operation_id = "listProjectSettings",
     tag = "settings",
     extensions(("x-never-stored" = json!(true))),
-    params(("project_id" = String, Path, description = "The ID of the project."), query::TopicParams),
+    params(("project" = String, Path, description = "The ID of the project."), query::TopicParams),
     responses((status = 200, description = "The settings that can be set on a project, with the values that count there.", body = SettingsBody), NotSignedInAnswer, ForbiddenAnswer, NotFoundAnswer)
 )]
 async fn list_project_settings(
@@ -632,7 +632,7 @@ async fn list_project_settings(
     ApiPath(path): ApiPath<ProjectPath>,
     ApiQuery(params): ApiQuery<query::TopicParams>,
 ) -> Result<Response, ApiError> {
-    let project = project_of(&path.project_id)?;
+    let project = project_of(&path.project)?;
     list(
         &auth,
         info,
@@ -648,11 +648,11 @@ async fn list_project_settings(
 /// in the project.
 #[utoipa::path(
     put,
-    path = "/api/v1/projects/{project_id}/settings/{key}",
+    path = "/api/v1/projects/{project}/settings/{key}",
     operation_id = "changeProjectSetting",
     tag = "settings",
     params(
-        ("project_id" = String, Path, description = "The ID of the project."),
+        ("project" = String, Path, description = "The ID of the project."),
         ("key" = String, Path, description = "The key of the setting.")
     ),
     request_body = NewValueBody,
@@ -672,7 +672,7 @@ async fn change_project_setting(
     ApiPath(path): ApiPath<ProjectKeyPath>,
     ApiJson(body): ApiJson<NewValueBody>,
 ) -> Result<Response, ApiError> {
-    let project = project_of(&path.project_id)?;
+    let project = project_of(&path.project)?;
     change(
         &auth,
         info,
@@ -688,11 +688,11 @@ async fn change_project_setting(
 /// organization) counts again. Needs the permission *Change project settings* in the project.
 #[utoipa::path(
     delete,
-    path = "/api/v1/projects/{project_id}/settings/{key}",
+    path = "/api/v1/projects/{project}/settings/{key}",
     operation_id = "resetProjectSetting",
     tag = "settings",
     params(
-        ("project_id" = String, Path, description = "The ID of the project."),
+        ("project" = String, Path, description = "The ID of the project."),
         ("key" = String, Path, description = "The key of the setting.")
     ),
     responses(
@@ -709,7 +709,7 @@ async fn reset_project_setting(
     Session(session_token): Session,
     ApiPath(path): ApiPath<ProjectKeyPath>,
 ) -> Result<Response, ApiError> {
-    let project = project_of(&path.project_id)?;
+    let project = project_of(&path.project)?;
     reset(
         &auth,
         info,

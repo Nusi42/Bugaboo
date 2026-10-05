@@ -37,7 +37,7 @@ fn declared_routes() -> Result<Vec<(String, String, Permission)>, Failure> {
 /// that is not here fails the test loudly, so a new route with a permission is never left out.
 fn example(method: &str, path: &str, project: &str) -> Result<(String, Option<Value>), Failure> {
     let some_id = "0b8e5e6e-3b1d-4c1a-9d3e-5a5a5a5a5a5a";
-    let in_project = |path: &str| path.replace("{project_id}", project);
+    let in_project = |path: &str| path.replace("{project}", project);
     Ok(match (method, path) {
         (
             "GET",
@@ -67,12 +67,12 @@ fn example(method: &str, path: &str, project: &str) -> Result<(String, Option<Va
         ("PUT" | "DELETE", "/api/v1/settings/{key}/lock") => {
             (path.replace("{key}", "appearance.mode"), None)
         }
-        ("GET", "/api/v1/projects/{project_id}/settings") => (in_project(path), None),
-        ("PUT", "/api/v1/projects/{project_id}/settings/{key}") => (
+        ("GET", "/api/v1/projects/{project}/settings") => (in_project(path), None),
+        ("PUT", "/api/v1/projects/{project}/settings/{key}") => (
             in_project(path).replace("{key}", "test.project-note"),
             Some(json!({"value": "short"})),
         ),
-        ("DELETE", "/api/v1/projects/{project_id}/settings/{key}") => {
+        ("DELETE", "/api/v1/projects/{project}/settings/{key}") => {
             (in_project(path).replace("{key}", "test.project-note"), None)
         }
         _ => return Err(format!("{method} {path} needs an example request in this test").into()),
@@ -115,7 +115,7 @@ async fn m1_f32_a_route_enforces_the_permission_it_declares() -> Outcome {
             let mut nobody =
                 invited_person(&mut ada, &app, &format!("nobody{number}@example.test")).await?;
             let refused = nobody.send(method, &address, body.clone()).await?;
-            let (status, code) = if path.contains("{project_id}") {
+            let (status, code) = if path.contains("{project}") {
                 (StatusCode::NOT_FOUND, "resource.not_found")
             } else {
                 (StatusCode::FORBIDDEN, "access.forbidden")
