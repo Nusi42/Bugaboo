@@ -309,6 +309,9 @@ async fn perf_02_the_list_of_sessions_has_a_cap_and_says_when_it_cut() -> Outcom
         assert_eq!((few.sessions.len(), few.truncated), (1, false));
         let mut newest = first.session_token.clone();
         for _ in 0..54 {
+            // Sessions that start in the same second share a time and their order would be left
+            // to the random end of their IDs; one second apart, the newest is the newest.
+            rig.clock.advance(1);
             newest = rig
                 .sign_in("ada@example.test", PASSWORD)
                 .await?
