@@ -442,6 +442,7 @@ impl AuthStore for FakeStore {
     async fn projects_after(
         &self,
         after: Option<&str>,
+        skip: u64,
         limit: u64,
     ) -> Result<Vec<ProjectChoice>, FakeError> {
         Ok(self.read(|state| {
@@ -458,6 +459,7 @@ impl AuthStore for FakeStore {
             found.sort_by(|a, b| a.short_name.cmp(&b.short_name));
             found
                 .into_iter()
+                .skip(usize::try_from(skip).unwrap_or(usize::MAX))
                 .take(usize::try_from(limit).unwrap_or(usize::MAX))
                 .collect()
         }))

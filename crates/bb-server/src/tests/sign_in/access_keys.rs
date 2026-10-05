@@ -995,7 +995,7 @@ async fn auth_07_a_person_chooses_the_projects_of_a_key_from_those_they_know_abo
                 Rig::info(),
                 ProjectChoicesQuery {
                     session_token: bob.session.clone(),
-                    cursor: Some("not a short name".to_owned()),
+                    cursor: Some("not a count".to_owned()),
                     limit: 10,
                 },
             )

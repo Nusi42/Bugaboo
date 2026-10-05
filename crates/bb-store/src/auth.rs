@@ -498,9 +498,10 @@ impl AuthStore for AuthStorage {
     async fn projects_after(
         &self,
         after: Option<&str>,
+        skip: u64,
         limit: u64,
     ) -> Result<Vec<ProjectChoice>, StoreError> {
-        self.database.projects_after(after, limit).await
+        self.database.projects_after(after, skip, limit).await
     }
 
     async fn second_step_required(&self, person: UserId) -> Result<bool, StoreError> {

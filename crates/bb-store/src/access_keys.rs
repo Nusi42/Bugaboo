@@ -193,10 +193,12 @@ impl Database {
         }
     }
 
-    /// The projects by short name, after `after`, at most `limit`: id, short name and name only.
+    /// The projects by short name after `after`, leaving out the first `skip`, at most `limit`:
+    /// id, short name and name only. Short names are unique, so the order is the same every time.
     pub(crate) async fn projects_after(
         &self,
         after: Option<&str>,
+        skip: u64,
         limit: u64,
     ) -> Result<Vec<ProjectChoice>, StoreError> {
         let mut select = Query::select();
@@ -204,7 +206,8 @@ impl Database {
             .columns([ProjectRow::Id, ProjectRow::ShortName, ProjectRow::Name])
             .from(ProjectRow::Table)
             .order_by(ProjectRow::ShortName, Order::Asc)
-            .limit(limit);
+            .limit(limit)
+            .offset(skip);
         if let Some(after) = after {
             select.and_where(Expr::col(ProjectRow::ShortName).gt(after));
         }

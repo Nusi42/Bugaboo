@@ -455,11 +455,64 @@ pub async fn access_key_rules<S: AuthStore>(
 /// sees few of many projects gets a short page and a cursor, not a slow answer.
 const SCANNED_AT_MOST: u64 = 500;
 
+/// Where a page of the projects to choose from starts: after a short name (a project the person
+/// was shown, or the start) and past a number of projects, always a multiple of
+/// [`SCANNED_AT_MOST`].
+///
+/// A cursor is readable, so it holds nothing a person may not know about: the short name is the
+/// last project of the page before (which the person has seen), and the number only counts whole
+/// stretches that were looked at without filling a page, which says no more than the page that
+/// stopped there ("there is more"). It never holds the name or the ID of a project that is hidden
+/// from the person, and never a count of how many there are between two they can see.
+struct ChoicePosition {
+    after: Option<String>,
+    skip: u64,
+}
+
+impl ChoicePosition {
+    /// What the cursor text says: `NAME`, `NAME+500`, `+500`, or nothing for the start.
+    fn read(cursor: Option<&str>) -> Result<Self, AppError> {
+        let invalid = || AppError::Refused(ErrorCode::InvalidRequest);
+        let Some(text) = cursor else {
+            return Ok(Self {
+                after: None,
+                skip: 0,
+            });
+        };
+        let (name, skip) = match text.split_once('+') {
+            Some((name, skip)) => (name, skip.parse::<u64>().map_err(|_| invalid())?),
+            None => (text, 0),
+        };
+        if skip % SCANNED_AT_MOST != 0 {
+            return Err(invalid());
+        }
+        let after = if name.is_empty() {
+            None
+        } else {
+            Some(
+                bb_core::project::ShortName::new(name)
+                    .map_err(|_| invalid())?
+                    .to_string(),
+            )
+        };
+        Ok(Self { after, skip })
+    }
+
+    fn write(&self) -> String {
+        let name = self.after.as_deref().unwrap_or_default();
+        if self.skip == 0 {
+            name.to_owned()
+        } else {
+            format!("{name}+{}", self.skip)
+        }
+    }
+}
+
 /// The projects the person may choose for an access key: those they know about, by short name, a
-/// page at a time (the cursor is the short name of the last project of the page before).
+/// page at a time (see [`ChoicePosition`] for what the cursor holds).
 ///
 /// # Errors
-/// `request.invalid` for a cursor that is not a short name.
+/// `request.invalid` for a cursor that is not one of these.
 pub async fn project_choices<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: ProjectChoicesQuery,
@@ -467,30 +520,21 @@ pub async fn project_choices<S: AuthStore>(
     let record = ctx.active(&input.session_token).await?;
     let owner = record.person.id;
     let limit = usize::try_from(bb_core::paging::page_size(Some(input.limit))).unwrap_or(1);
-    let mut after = match input.cursor {
-        Some(name) => Some(
-            bb_core::project::ShortName::new(&name)
-                .map_err(|_| AppError::Refused(ErrorCode::InvalidRequest))?
-                .to_string(),
-        ),
-        None => None,
-    };
+    let start = ChoicePosition::read(input.cursor.as_deref())?;
     let actor = Actor {
         person: record.person,
         key: None,
     };
-    let (mut items, mut scanned, mut more) = (Vec::new(), 0_u64, false);
+    let (mut items, mut looked_at, mut more) = (Vec::new(), 0_u64, false);
     // One more than the page, to know whether there is a next one.
-    'scan: while scanned < SCANNED_AT_MOST {
+    'scan: while looked_at < SCANNED_AT_MOST {
         let batch = ctx
             .store()
-            .projects_after(after.as_deref(), 100)
+            .projects_after(start.after.as_deref(), start.skip + looked_at, 100)
             .await
             .map_err(|error| internal::<S>(&error))?;
         let full = batch.len() == 100;
         for project in batch {
-            scanned += 1;
-            after = Some(project.short_name.clone());
             let access = ctx
                 .evaluation_of(&actor, Place::Project(project.id))
                 .await?;
@@ -501,20 +545,30 @@ pub async fn project_choices<S: AuthStore>(
                 }
                 items.push(project);
             }
+            looked_at += 1;
         }
         if !full {
             break;
         }
     }
-    // A page that stopped because it looked at enough projects continues after the last it saw;
-    // a page that stopped for being full continues after its last project.
-    let next_cursor = if more {
-        items.last().map(|project| project.short_name.clone())
-    } else if scanned >= SCANNED_AT_MOST {
-        after
+    let next = if more {
+        // A full page continues after its last project, which the person has just been shown.
+        items.last().map(|last| ChoicePosition {
+            after: Some(last.short_name.clone()),
+            skip: 0,
+        })
+    } else if looked_at >= SCANNED_AT_MOST {
+        // A page that looked at enough projects continues past them.
+        Some(ChoicePosition {
+            after: start.after,
+            skip: start.skip + SCANNED_AT_MOST,
+        })
     } else {
         None
     };
     let access = ctx.evaluate(owner, Place::Organization).await?;
-    Ok(access.authorize(ProjectChoicePage { items, next_cursor }))
+    Ok(access.authorize(ProjectChoicePage {
+        items,
+        next_cursor: next.as_ref().map(ChoicePosition::write),
+    }))
 }
