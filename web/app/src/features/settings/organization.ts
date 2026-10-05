@@ -28,15 +28,20 @@ function edited(setting: Setting, edit: Edit): Setting {
     return { ...setting, value: edit.value, own: true, source: { kind: "organization" } };
   }
   if (edit.kind === "reset") {
+    // A lock stays: the standard value is held, still locked, until it is unlocked on its own.
     return {
       ...setting,
       value: setting.default,
       own: false,
-      locked: false,
-      source: { kind: "default" },
+      source: { kind: setting.locked ? "organization" : "default" },
     };
   }
-  return { ...setting, locked: edit.locked };
+  // A lock that holds no value of its own is the standard value held, so only the source moves.
+  return {
+    ...setting,
+    locked: edit.locked,
+    source: setting.own ? setting.source : { kind: edit.locked ? "organization" : "default" },
+  };
 }
 
 /** The list as it looks after an edit, before the server has answered. */

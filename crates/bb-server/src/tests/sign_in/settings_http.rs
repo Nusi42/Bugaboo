@@ -268,7 +268,7 @@ async fn cfg_06_a_project_the_person_cannot_see_is_not_found_over_http() -> Outc
         let missing = bob
             .send(
                 "GET",
-                "/api/v1/projects/0197a5e2-7c1f-4b0a-9a3e-2f6d1c8b4a10/settings",
+                "/api/v1/projects/0197a5e2-7c1f-7b0a-9a3e-2f6d1c8b4a10/settings",
                 None,
             )
             .await?;
@@ -288,6 +288,22 @@ async fn cfg_06_a_project_the_person_cannot_see_is_not_found_over_http() -> Outc
             .send("GET", &format!("/api/v1/me/settings?project={acme}"), None)
             .await?;
         assert_eq!(working_in.status, StatusCode::NOT_FOUND);
+        // A project can be named by its short name as well, with the same answers.
+        let by_name = ada
+            .send("GET", "/api/v1/projects/ACME/settings", None)
+            .await?;
+        assert_eq!(by_name.status, StatusCode::OK);
+        let hidden_by_name = bob
+            .send("GET", "/api/v1/projects/ACME/settings", None)
+            .await?;
+        assert_eq!(
+            (hidden_by_name.status, hidden_by_name.code()),
+            (hidden.status, hidden.code())
+        );
+        let working_in_by_name = bob
+            .send("GET", "/api/v1/me/settings?project=ACME", None)
+            .await?;
+        assert_eq!(working_in_by_name.status, StatusCode::NOT_FOUND);
         Ok(())
     })
     .await

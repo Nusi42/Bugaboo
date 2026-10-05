@@ -37,12 +37,27 @@ describe("cfg_06 an edit shows before the server has answered", () => {
     expect(changed?.settings[0]).toEqual(list.settings[0]);
   });
 
-  it("takes the value and the lock away on a reset", () => {
+  it("takes the value away on a reset and keeps the lock", () => {
     const reset = after(list, { kind: "reset", key: "a.one" });
     expect(reset?.settings[0]).toMatchObject({
       value: "none",
       own: false,
+      locked: true,
+      source: { kind: "organization" },
+    });
+  });
+
+  it("goes back to the default on a reset of a value that was not locked", () => {
+    const reset = after(list, { kind: "reset", key: "a.two" });
+    expect(reset?.settings[1]).toMatchObject({ own: false, source: { kind: "default" } });
+  });
+
+  it("shows an unlocked lock without a value of its own as the default again", () => {
+    const reset = after(list, { kind: "reset", key: "a.one" });
+    const unlocked = after(reset, { kind: "lock", key: "a.one", locked: false });
+    expect(unlocked?.settings[0]).toMatchObject({
       locked: false,
+      own: false,
       source: { kind: "default" },
     });
   });

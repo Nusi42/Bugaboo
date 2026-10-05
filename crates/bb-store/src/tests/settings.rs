@@ -411,6 +411,43 @@ async fn cfg_06_locking_a_setting_without_a_value_locks_its_default() -> TestRes
 }
 
 #[tokio::test]
+async fn cfg_06_unlocking_drops_a_row_that_only_held_the_lock_and_keeps_a_real_value() -> TestResult
+{
+    each_database("cfg_06_unlock", async |db| {
+        let fixture = fixture(db).await?;
+        let (storage, database) = (&fixture.storage, fixture.storage.database());
+        let mut source = ids();
+        // Unlocking a setting without a row changes nothing, not even a row.
+        lock(storage, &mut source, NOTE, false).await?;
+        let layers = database.setting_layers(&Scopes::default()).await?;
+        assert!(layers.organization.is_empty());
+        // A lock that held the standard value leaves no row behind when it goes.
+        lock(storage, &mut source, NOTE, true).await?;
+        lock(storage, &mut source, NOTE, false).await?;
+        let layers = database.setting_layers(&Scopes::default()).await?;
+        assert!(layers.organization.is_empty());
+        // A value of the organization stays when only the lock goes.
+        put(
+            storage,
+            &mut source,
+            Scope::Organization,
+            NOTE,
+            text("kept"),
+        )
+        .await?;
+        lock(storage, &mut source, NOTE, true).await?;
+        lock(storage, &mut source, NOTE, false).await?;
+        let layers = database.setting_layers(&Scopes::default()).await?;
+        assert_eq!(
+            resolved_note(&layers),
+            (text("kept"), Source::Organization, false)
+        );
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
 async fn cfg_06_reset_to_default_removes_only_that_layer() -> TestResult {
     each_database("cfg_06_reset", async |db| {
         let fixture = fixture(db).await?;

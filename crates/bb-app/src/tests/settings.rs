@@ -333,3 +333,86 @@ async fn cfg_06_a_locked_value_refuses_what_is_set_below_it_and_names_why() -> O
     );
     Ok(())
 }
+
+async fn lock(world: &World, key: &str, locked: bool) -> Result<SettingView, AppError> {
+    lock_setting(
+        &world.ctx(),
+        LockSetting {
+            session_token: world.admin.session_token.clone(),
+            key: key.to_owned(),
+            locked,
+        },
+    )
+    .await
+    .map(bb_policy::Authorized::into_value)
+}
+
+async fn reset(world: &World, scope: SettingsScope, key: &str) -> Result<SettingView, AppError> {
+    reset_setting(
+        &world.ctx(),
+        ResetSetting {
+            session_token: world.admin.session_token.clone(),
+            scope,
+            key: key.to_owned(),
+        },
+    )
+    .await
+    .map(bb_policy::Authorized::into_value)
+}
+
+#[tokio::test]
+async fn cfg_06_reset_of_an_organization_value_keeps_the_lock_until_it_is_unlocked() -> Outcome {
+    let world = World::new().await?;
+    let key = "appearance.mode";
+    change(&world, SettingsScope::Organization, key, text("dark")).await?;
+    lock(&world, key, true).await?;
+    let view = reset(&world, SettingsScope::Organization, key).await?;
+    // The standard value counts, still locked, and there is nothing of its own to reset again.
+    assert_eq!(
+        (view.value, view.locked, view.own),
+        (text("device"), true, false)
+    );
+    let below = refused(change(&world, SettingsScope::Person, key, text("light")).await);
+    assert_eq!(below, ErrorCode::SettingLocked);
+    // Unlocking is its own action.
+    let view = lock(&world, key, false).await?;
+    assert_eq!((view.locked, view.own), (false, false));
+    change(&world, SettingsScope::Person, key, text("light")).await?;
+    Ok(())
+}
+
+#[tokio::test]
+async fn cfg_06_a_lock_without_a_value_holds_the_standard_value_and_is_no_value_of_its_own()
+-> Outcome {
+    let world = World::new().await?;
+    let key = "appearance.mode";
+    let locked = lock(&world, key, true).await?;
+    assert_eq!((locked.locked, locked.own), (true, false));
+    let events = world.store.event_count();
+    let again = reset(&world, SettingsScope::Organization, key).await?;
+    assert_eq!((again.locked, again.own), (true, false));
+    assert_eq!(
+        world.store.event_count(),
+        events,
+        "nothing to reset, nothing written"
+    );
+    let open = lock(&world, key, false).await?;
+    assert_eq!((open.locked, open.own), (false, false));
+    Ok(())
+}
+
+#[tokio::test]
+async fn cfg_06_unlocking_a_setting_that_is_not_locked_changes_nothing() -> Outcome {
+    let world = World::new().await?;
+    let key = "appearance.mode";
+    let events = world.store.event_count();
+    let view = lock(&world, key, false).await?;
+    assert_eq!((view.locked, view.own), (false, false));
+    assert_eq!(world.store.event_count(), events);
+    change(&world, SettingsScope::Organization, key, text("dark")).await?;
+    let events = world.store.event_count();
+    let view = lock(&world, key, false).await?;
+    assert_eq!((view.value, view.own), (text("dark"), true));
+    assert_eq!(world.store.event_count(), events);
+    Ok(())
+}

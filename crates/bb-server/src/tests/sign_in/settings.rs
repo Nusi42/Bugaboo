@@ -261,6 +261,32 @@ async fn cfg_06_a_locked_organization_value_wins_and_lower_values_are_refused() 
 }
 
 #[tokio::test]
+async fn cfg_06_resetting_a_locked_organization_value_keeps_the_lock() -> Outcome {
+    each_database("cfg_06_reset_keeps_lock", async |db| {
+        let rig = Rig::start(db, 10).await?;
+        let org = Org::start(&rig).await?;
+        let team = people(&org).await?;
+        let (ada, viewer) = (&org.admin, &team.viewer);
+        change(&rig, ada, SettingsScope::Organization, NOTE, text("org")).await?;
+        lock(&rig, ada, NOTE, true).await?;
+        let back = reset(&rig, ada, SettingsScope::Organization, NOTE).await?;
+        // The standard value counts, still locked; there is nothing of its own left to reset.
+        assert_eq!(
+            (back.value, back.locked, back.own),
+            (text("none"), true, false)
+        );
+        let by_person = change(&rig, viewer, SettingsScope::Person, NOTE, text("x")).await;
+        assert_eq!(refused(by_person), Some(ErrorCode::SettingLocked));
+        // Unlocking is its own action, and leaves no value behind.
+        let open = lock(&rig, ada, NOTE, false).await?;
+        assert_eq!((open.locked, open.own), (false, false));
+        change(&rig, viewer, SettingsScope::Person, NOTE, text("mine")).await?;
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
 async fn cfg_06_reset_to_default_removes_only_that_layer() -> Outcome {
     each_database("cfg_06_reset_use_cases", async |db| {
         let rig = Rig::start(db, 10).await?;
