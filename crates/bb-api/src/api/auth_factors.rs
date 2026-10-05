@@ -71,10 +71,13 @@ pub(crate) struct TwoStepBody {
 #[derive(Serialize, ToSchema)]
 pub(crate) struct CodeAppBody {
     /// The address the code app reads.
+    #[schema(extensions(("x-secret" = json!(true))))]
     otpauth_url: String,
     /// The QR picture of the address (PNG, base64).
+    #[schema(extensions(("x-secret" = json!(true))))]
     qr_png_base64: String,
     /// The secret as text, for typing it into the app.
+    #[schema(extensions(("x-secret" = json!(true))))]
     secret: String,
 }
 
@@ -82,6 +85,7 @@ pub(crate) struct CodeAppBody {
 #[derive(Serialize, ToSchema)]
 pub(crate) struct BackupCodesBody {
     /// The codes. They are not stored in this form and cannot be shown again.
+    #[schema(extensions(("x-secret" = json!(true))))]
     codes: Vec<String>,
 }
 

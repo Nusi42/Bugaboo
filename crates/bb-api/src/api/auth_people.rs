@@ -154,6 +154,7 @@ pub(crate) struct CreatedInvitationBody {
     invitation: InvitationBody,
     /// The page the link opens, with the secret after the `#`. Put the address of this server
     /// in front. The secret is not stored and cannot be shown again.
+    #[schema(extensions(("x-secret" = json!(true))))]
     link_path: String,
 }
 

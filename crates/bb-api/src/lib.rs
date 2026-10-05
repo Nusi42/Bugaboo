@@ -11,6 +11,7 @@
 mod api;
 pub mod cookies;
 pub mod errors;
+mod etag;
 mod failures;
 mod headers;
 mod lean;

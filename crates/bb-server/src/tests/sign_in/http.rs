@@ -79,6 +79,8 @@ pub(super) struct Browser {
     jar: BTreeMap<String, String>,
     called: Arc<Mutex<BTreeSet<String>>>,
     peer: SocketAddr,
+    /// Headers every request of this browser carries besides the usual ones.
+    headers: Vec<(&'static str, String)>,
 }
 
 pub(super) fn options(rig: &Rig, limits: LimitsConfig, auth: bool) -> Options {
@@ -104,6 +106,7 @@ impl Browser {
             app: app.clone(),
             jar: BTreeMap::new(),
             called: Arc::clone(called),
+            headers: Vec::new(),
             // Every browser is on a network of its own, so the limit per network of one test
             // browser does not use up another's.
             peer: SocketAddr::from((
@@ -111,6 +114,17 @@ impl Browser {
                 50_000,
             )),
         }
+    }
+
+    /// From now on every request carries this header (`If-None-Match`, `Accept-Encoding`).
+    pub(super) fn set_header(&mut self, name: &'static str, value: &str) {
+        self.headers.retain(|(known, _)| *known != name);
+        self.headers.push((name, value.to_owned()));
+    }
+
+    /// From now on no extra headers.
+    pub(super) fn clear_headers(&mut self) {
+        self.headers.clear();
     }
 
     pub(super) async fn send(
@@ -156,6 +170,9 @@ impl Browser {
                 header::USER_AGENT,
                 "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:130.0) Gecko/20100101 Firefox/130.0",
             );
+        for (name, value) in &self.headers {
+            request = request.header(*name, value);
+        }
         if !self.jar.is_empty() {
             let line = self
                 .jar
@@ -197,6 +214,7 @@ impl Browser {
                 serde_json::from_slice(&bytes)?
             },
         };
+        assert_cache_rules(method, path, &reply);
         for cookie in reply.cookies() {
             let pair = cookie.split(';').next().unwrap_or_default();
             if let Some((name, value)) = pair.split_once('=') {
@@ -208,6 +226,23 @@ impl Browser {
             }
         }
         Ok(reply)
+    }
+}
+
+/// What every answer of the API says about keeping it (PERF-03, `bb-api` `etag`), checked on
+/// every request of every test that goes through a [`Browser`]: a read that worked may be kept
+/// and must be asked about again, and has a tag; everything else is never stored.
+fn assert_cache_rules(method: &str, path: &str, reply: &Reply) {
+    let kept = method == "GET" && reply.status == StatusCode::OK;
+    let rule = reply.header("cache-control");
+    if kept {
+        assert_eq!(rule, "private, no-cache", "{method} {path}");
+        assert!(reply.header("etag").starts_with("W/\""), "{method} {path}");
+    } else if reply.status == StatusCode::NOT_MODIFIED {
+        assert_eq!(rule, "private, no-cache", "{method} {path}");
+    } else {
+        assert_eq!(rule, "no-store", "{method} {path}");
+        assert_eq!(reply.header("etag"), "", "{method} {path}");
     }
 }
 
@@ -286,7 +321,7 @@ async fn sec_12_signing_in_sets_the_session_cookie_and_the_csrf_cookie() -> Outc
         let me = browser.send("GET", "/api/v1/auth/me", None).await?;
         assert_eq!(me.status, StatusCode::OK);
         assert_eq!(me.body["email"], "ada@example.test");
-        assert_eq!(me.header("cache-control"), "no-store");
+        assert_eq!(me.header("cache-control"), "private, no-cache");
         Ok(())
     })
     .await
@@ -616,7 +651,7 @@ fn origin() -> Result<Url, Failure> {
     Ok(Url::parse(PUBLIC_URL)?)
 }
 
-async fn totp(rig: &Rig, email: &str) -> Result<String, Failure> {
+pub(super) async fn totp(rig: &Rig, email: &str) -> Result<String, Failure> {
     let person = rig.person_id(email).await?;
     let secret = rig.storage.totp_secret(person).await?.ok_or("no secret")?;
     Ok(TotpSecret::from_bytes(&secret).code_at(rig.clock.now())?)

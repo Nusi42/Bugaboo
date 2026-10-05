@@ -948,11 +948,22 @@ export interface operations {
       /** @description The state of the server. */
       200: {
         headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
           [name: string]: unknown;
         };
         content: {
           "application/json": components["schemas"]["ServerStateBody"];
         };
+      };
+      /** @description Nothing changed since the `ETag` that `If-None-Match` named. No body. */
+      304: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content?: never;
       };
       /** @description Not signed in (auth.not_signed_in). */
       401: {
@@ -1149,11 +1160,22 @@ export interface operations {
       /** @description The open invitations. */
       200: {
         headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
           [name: string]: unknown;
         };
         content: {
           "application/json": components["schemas"]["InvitationsBody"];
         };
+      };
+      /** @description Nothing changed since the `ETag` that `If-None-Match` named. No body. */
+      304: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content?: never;
       };
       /** @description Not signed in (auth.not_signed_in). */
       401: {
@@ -1373,11 +1395,22 @@ export interface operations {
       /** @description The signed-in person. */
       200: {
         headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
           [name: string]: unknown;
         };
         content: {
           "application/json": components["schemas"]["PersonBody"];
         };
+      };
+      /** @description Nothing changed since the `ETag` that `If-None-Match` named. No body. */
+      304: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content?: never;
       };
       /** @description Not signed in (auth.not_signed_in). */
       401: {
@@ -2072,11 +2105,22 @@ export interface operations {
       /** @description Where the person is signed in. */
       200: {
         headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
           [name: string]: unknown;
         };
         content: {
           "application/json": components["schemas"]["SessionsBody"];
         };
+      };
+      /** @description Nothing changed since the `ETag` that `If-None-Match` named. No body. */
+      304: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content?: never;
       };
       /** @description Not signed in (auth.not_signed_in). */
       401: {
@@ -2550,11 +2594,22 @@ export interface operations {
       /** @description The rule for signing up. */
       200: {
         headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
           [name: string]: unknown;
         };
         content: {
           "application/json": components["schemas"]["SignUpPolicyBody"];
         };
+      };
+      /** @description Nothing changed since the `ETag` that `If-None-Match` named. No body. */
+      304: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content?: never;
       };
       /** @description Not signed in (auth.not_signed_in). */
       401: {
@@ -2697,11 +2752,22 @@ export interface operations {
       /** @description What the app needs before anybody signs in. */
       200: {
         headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
           [name: string]: unknown;
         };
         content: {
           "application/json": components["schemas"]["AuthStatusBody"];
         };
+      };
+      /** @description Nothing changed since the `ETag` that `If-None-Match` named. No body. */
+      304: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content?: never;
       };
       /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
       429: {
@@ -2746,11 +2812,22 @@ export interface operations {
       /** @description The second step of the person. */
       200: {
         headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
           [name: string]: unknown;
         };
         content: {
           "application/json": components["schemas"]["TwoStepBody"];
         };
+      };
+      /** @description Nothing changed since the `ETag` that `If-None-Match` named. No body. */
+      304: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content?: never;
       };
       /** @description Not signed in (auth.not_signed_in). */
       401: {
@@ -3113,11 +3190,22 @@ export interface operations {
       /** @description The OpenAPI document of this API. */
       200: {
         headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
           [name: string]: unknown;
         };
         content: {
           "application/json": Record<string, unknown>;
         };
+      };
+      /** @description Nothing changed since the `ETag` that `If-None-Match` named. No body. */
+      304: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content?: never;
       };
       /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
       429: {
@@ -3162,11 +3250,22 @@ export interface operations {
       /** @description The server is running. */
       200: {
         headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
           [name: string]: unknown;
         };
         content: {
           "application/json": components["schemas"]["ServerStatus"];
         };
+      };
+      /** @description Nothing changed since the `ETag` that `If-None-Match` named. No body. */
+      304: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content?: never;
       };
       /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
       429: {

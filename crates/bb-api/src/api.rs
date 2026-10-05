@@ -11,6 +11,7 @@
 //!   (M1-F06), and a body may be [`BODY_LIMIT_BYTES`] big;
 //! - a request that changes something must come from one of Bugaboo's own pages ([`origin_check`])
 //!   and, when it carries a session, with the token of that session (`auth::csrf_check`);
+//! - every answer has its cache rule, and every read an `ETag` and a `304` (`crate::etag`);
 //! - every error answer is problem+json with the request ID (`crate::errors`).
 
 use std::sync::Arc;
@@ -28,6 +29,7 @@ use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 
 use crate::errors::{self, ApiError};
+use crate::etag;
 use crate::limits::{self, Limits};
 use crate::logging::Scheme;
 use crate::openapi;
@@ -136,6 +138,8 @@ pub(crate) fn is_api(path: &str) -> bool {
 /// untouched.
 pub(crate) fn rules(router: Router, limits: Arc<Limits>, auth: AuthHandle) -> Router {
     router
+        // Innermost: the cache rules and ETags are made from the answer the route gave.
+        .layer(from_fn(etag::cache_rules))
         // Innermost of the checks on changes: the origin is judged first, then the token.
         .layer(from_fn_with_state(auth, auth::csrf_check))
         .layer(from_fn(origin_check))

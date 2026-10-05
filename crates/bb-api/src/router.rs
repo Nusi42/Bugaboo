@@ -437,6 +437,29 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn perf_03_files_with_a_content_hash_are_kept_forever_and_api_answers_are_asked_again() {
+        let dir = app_folder();
+        let web = || WebSource::Folder(dir.path().into());
+        // The file name holds the hash of the content: nothing to ask about.
+        let script = get_from(web(), "/assets/app-1a2b.js").await;
+        assert_eq!(
+            header_of(&script, "cache-control"),
+            "public, max-age=31536000, immutable"
+        );
+        // An API answer through the whole router: a tag, kept privately, `304` on a match.
+        let status = get_from(web(), "/api/v1/status").await;
+        assert_eq!(header_of(&status, "cache-control"), "private, no-cache");
+        let tag = header_of(&status, "etag").to_owned();
+        let request = Request::get("/api/v1/status")
+            .header("if-none-match", &tag)
+            .body(Body::empty())
+            .unwrap();
+        let again = router(options(web())).oneshot(request).await.unwrap();
+        assert_eq!(again.status(), StatusCode::NOT_MODIFIED);
+        assert!(body(again).await.is_empty());
+    }
+
+    #[tokio::test]
     async fn dist_01_percent_escapes_in_file_names_are_decoded() {
         let dir = app_folder();
         let response = get_from(WebSource::Folder(dir.path().into()), "/my%20file.txt").await;
