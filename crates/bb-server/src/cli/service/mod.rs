@@ -140,6 +140,8 @@ fn systemd_install(found: &Found) -> anyhow::Result<()> {
 
     require_systemd()?;
     check_for_service(&found.settings.data_dir)?;
+    systemd::check_settings_file(&found.config, &found.settings.data_dir)
+        .map_err(|problem| anyhow!(problem.render()))?;
     let known_files = DataFolder::existing(&found.settings.data_dir)
         .map(|data| data.known_files())
         .unwrap_or_default();

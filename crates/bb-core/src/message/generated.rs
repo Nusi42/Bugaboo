@@ -1434,6 +1434,33 @@ pub fn service_removed(name: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `service.settings-folder-open`.
+#[must_use]
+pub fn service_settings_folder_open(path: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("service.settings-folder-open"),
+        vec![("path", Value::Text(path.to_string()))],
+    )
+}
+
+/// The message `service.settings-in-data`.
+#[must_use]
+pub fn service_settings_in_data(path: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("service.settings-in-data"),
+        vec![("path", Value::Text(path.to_string()))],
+    )
+}
+
+/// The message `service.settings-is-link`.
+#[must_use]
+pub fn service_settings_is_link(path: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("service.settings-is-link"),
+        vec![("path", Value::Text(path.to_string()))],
+    )
+}
+
 /// The message `service.setup-code`.
 #[must_use]
 pub fn service_setup_code(path: impl std::fmt::Display) -> Message {
@@ -2332,6 +2359,18 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "service.removed",
         "The service {name} is removed. Your data stays where it is.",
+    ),
+    (
+        "service.settings-folder-open",
+        "The folder {path} that holds the settings file can be changed by other accounts. Keep the settings file in a folder that only administrators can change, for example /etc/bugaboo.",
+    ),
+    (
+        "service.settings-in-data",
+        "The settings file {path} is inside the data folder, which the service account can write to. Move the file out of the data folder, so that the service cannot change its own settings.",
+    ),
+    (
+        "service.settings-is-link",
+        "The settings file {path} is a link. Installing would change the rights of the file it points to. Name the real file with --config.",
     ),
     (
         "service.setup-code",

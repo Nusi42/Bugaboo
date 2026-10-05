@@ -102,6 +102,38 @@ pub(super) fn unit(installation: &Installation<'_>) -> String {
     )
 }
 
+/// Whether the settings file may be given to the account of the service: it is a file and no
+/// link (a `chmod` would follow a link to whatever it points to), it is not inside the data
+/// folder (the service could replace it there), and the folder that holds it cannot be changed
+/// by other accounts (they could replace the file or put a link in its place).
+pub(super) fn check_settings_file(config: &Path, data_dir: &Path) -> Result<(), Message> {
+    let shown = config.display();
+    if std::fs::symlink_metadata(config).is_ok_and(|data| data.file_type().is_symlink()) {
+        return Err(message::service_settings_is_link(shown));
+    }
+    if config.starts_with(data_dir) {
+        return Err(message::service_settings_in_data(shown));
+    }
+    match config.parent() {
+        Some(folder) if others_can_change(folder) => {
+            Err(message::service_settings_folder_open(folder.display()))
+        }
+        _ => Ok(()),
+    }
+}
+
+/// Linux: whether the group or everybody may write in the folder.
+#[cfg(unix)]
+fn others_can_change(folder: &Path) -> bool {
+    use std::os::unix::fs::PermissionsExt as _;
+    std::fs::metadata(folder).is_ok_and(|data| data.permissions().mode() & 0o022 != 0)
+}
+
+#[cfg(not(unix))]
+fn others_can_change(_folder: &Path) -> bool {
+    false
+}
+
 /// The steps that install the service. The account is made only when it does not exist yet.
 pub(super) fn plan(installation: &Installation<'_>, user_exists: bool) -> Vec<Step> {
     let owner = format!("{USER}:{USER}");
@@ -117,18 +149,20 @@ pub(super) fn plan(installation: &Installation<'_>, user_exists: bool) -> Vec<St
     steps.push(Step::PrepareDataFolder(installation.data_dir.to_path_buf()));
     // Only what Bugaboo made changes owner: the folder itself, its known files and its own
     // sub-folders. Never the whole folder with whatever else lies in it.
-    steps.push(run("chown", &[&owner, &data]));
+    // `-h` changes a link itself and never the file it points to, `-P` keeps the walk of `-R`
+    // from stepping through links.
+    steps.push(run("chown", &["-h", &owner, &data]));
     for file in installation.known_files {
-        steps.push(run("chown", &[&owner, &path_argument(file)]));
+        steps.push(run("chown", &["-h", &owner, &path_argument(file)]));
     }
     for name in SUB_FOLDERS {
         // Plain text, because this plan is for Linux whichever system the test runs on.
         let folder = format!("{}/{name}", data.trim_end_matches('/'));
-        steps.push(run("chown", &["-R", &owner, &folder]));
+        steps.push(run("chown", &["-h", "-R", "-P", &owner, &folder]));
     }
     // The settings file may hold a database password: the account that runs Bugaboo reads it,
-    // nobody else does.
-    steps.push(run("chown", &["root:bugaboo", &config]));
+    // nobody else does. `check_settings_file` made sure it is no link.
+    steps.push(run("chown", &["-h", "root:bugaboo", &config]));
     steps.push(run("chmod", &["640", &config]));
     steps.push(Step::Write {
         path: Path::new(UNIT_FOLDER).join(UNIT),
@@ -211,13 +245,13 @@ mod tests {
             [
                 "useradd --system --no-create-home --shell /usr/sbin/nologin bugaboo",
                 "prepare /var/lib/bugaboo",
-                "chown bugaboo:bugaboo /var/lib/bugaboo",
-                "chown -R bugaboo:bugaboo /var/lib/bugaboo/files",
-                "chown -R bugaboo:bugaboo /var/lib/bugaboo/keys",
-                "chown -R bugaboo:bugaboo /var/lib/bugaboo/backups",
-                "chown -R bugaboo:bugaboo /var/lib/bugaboo/tls",
-                "chown -R bugaboo:bugaboo /var/lib/bugaboo/logs",
-                "chown root:bugaboo /etc/bugaboo/bugaboo.toml",
+                "chown -h bugaboo:bugaboo /var/lib/bugaboo",
+                "chown -h -R -P bugaboo:bugaboo /var/lib/bugaboo/files",
+                "chown -h -R -P bugaboo:bugaboo /var/lib/bugaboo/keys",
+                "chown -h -R -P bugaboo:bugaboo /var/lib/bugaboo/backups",
+                "chown -h -R -P bugaboo:bugaboo /var/lib/bugaboo/tls",
+                "chown -h -R -P bugaboo:bugaboo /var/lib/bugaboo/logs",
+                "chown -h root:bugaboo /etc/bugaboo/bugaboo.toml",
                 "chmod 640 /etc/bugaboo/bugaboo.toml",
                 &format!("write {}", Path::new(UNIT_FOLDER).join(UNIT).display()),
                 "systemctl daemon-reload",
@@ -244,23 +278,99 @@ mod tests {
             })
             .collect();
         // The folder itself, without its content, and a known file without anything below it.
-        assert!(chowns.contains(&"bugaboo:bugaboo /var/lib/bugaboo".to_owned()));
-        assert!(chowns.contains(&"bugaboo:bugaboo /var/lib/bugaboo/bugaboo.db".to_owned()));
+        assert!(chowns.contains(&"-h bugaboo:bugaboo /var/lib/bugaboo".to_owned()));
+        assert!(chowns.contains(&"-h bugaboo:bugaboo /var/lib/bugaboo/bugaboo.db".to_owned()));
         // Nothing recurses over the folder as a whole, where somebody's own files may lie.
         assert!(
             !chowns
                 .iter()
-                .any(|line| line == "-R bugaboo:bugaboo /var/lib/bugaboo")
+                .any(|line| line == "-h -R -P bugaboo:bugaboo /var/lib/bugaboo")
         );
         assert!(
             chowns
                 .iter()
-                .filter(|line| line.starts_with("-R "))
+                .filter(|line| line.contains("-R"))
                 .all(|line| {
                     ["files", "keys", "backups", "tls", "logs"]
                         .iter()
                         .any(|name| line.ends_with(&format!("/var/lib/bugaboo/{name}")))
                 })
+        );
+    }
+
+    #[test]
+    fn sec_16_no_chown_follows_a_link() {
+        let files = [PathBuf::from("/var/lib/bugaboo/bugaboo.db")];
+        let installation = Installation {
+            known_files: &files,
+            ..installation()
+        };
+        for step in plan(&installation, true) {
+            if let Step::Run {
+                program: "chown",
+                arguments,
+            } = step
+            {
+                // `-h` changes a link itself and never what it points to; with `-R`, `-P` keeps
+                // the walk from stepping through links.
+                assert_eq!(arguments[0], "-h", "{arguments:?}");
+                if arguments.iter().any(|argument| argument == "-R") {
+                    assert!(
+                        arguments.iter().any(|argument| argument == "-P"),
+                        "{arguments:?}"
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn sec_16_a_settings_file_inside_the_data_folder_is_refused() {
+        let inside = check_settings_file(
+            Path::new("/var/lib/bugaboo/bugaboo.toml"),
+            Path::new("/var/lib/bugaboo"),
+        )
+        .unwrap_err();
+        assert!(
+            inside.render().contains("inside the data folder"),
+            "{}",
+            inside.render()
+        );
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn sec_16_a_settings_file_that_is_a_link_is_refused() {
+        let temp = tempfile::tempdir().unwrap();
+        let real = temp.path().join("real.toml");
+        std::fs::write(&real, "port = 1").unwrap();
+        let link = temp.path().join("link.toml");
+        std::os::unix::fs::symlink(&real, &link).unwrap();
+        let refused = check_settings_file(&link, Path::new("/var/lib/bugaboo")).unwrap_err();
+        assert!(
+            refused.render().contains("is a link"),
+            "{}",
+            refused.render()
+        );
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn sec_16_a_settings_file_in_a_folder_others_can_change_is_refused() {
+        use std::os::unix::fs::PermissionsExt as _;
+        let temp = tempfile::tempdir().unwrap();
+        let folder = temp.path().join("etc");
+        std::fs::create_dir(&folder).unwrap();
+        let config = folder.join("bugaboo.toml");
+        std::fs::write(&config, "port = 1").unwrap();
+        std::fs::set_permissions(&folder, std::fs::Permissions::from_mode(0o755)).unwrap();
+        check_settings_file(&config, Path::new("/var/lib/bugaboo")).unwrap();
+        std::fs::set_permissions(&folder, std::fs::Permissions::from_mode(0o775)).unwrap();
+        let refused = check_settings_file(&config, Path::new("/var/lib/bugaboo")).unwrap_err();
+        assert!(
+            refused.render().contains("other accounts"),
+            "{}",
+            refused.render()
         );
     }
 

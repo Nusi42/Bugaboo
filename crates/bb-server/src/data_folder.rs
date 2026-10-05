@@ -157,7 +157,8 @@ impl DataFolder {
             files.push(PathBuf::from(name));
         }
         files.push(self.setup_code_file());
-        files.retain(|file| file.is_file());
+        // A link is not Bugaboo's file, whatever it points to: `symlink_metadata` does not follow.
+        files.retain(|file| std::fs::symlink_metadata(file).is_ok_and(|data| data.is_file()));
         files
     }
 }
@@ -167,7 +168,11 @@ impl DataFolder {
 /// documents, is refused, so that installing never changes the owner of somebody's files.
 pub(crate) fn check_for_service(root: &Path) -> Result<(), DataFolderError> {
     let empty = std::fs::read_dir(root).is_ok_and(|mut entries| entries.next().is_none());
-    if !root.is_dir() || empty || root.join(KEYS).is_dir() {
+    // A link where a sub-folder belongs would send the changes of rights somewhere else.
+    let linked = SUB_FOLDERS.iter().any(|name| {
+        std::fs::symlink_metadata(root.join(name)).is_ok_and(|data| data.file_type().is_symlink())
+    });
+    if !linked && (!root.is_dir() || empty || root.join(KEYS).is_dir()) {
         Ok(())
     } else {
         Err(DataFolderError::NotADataFolder {
@@ -641,6 +646,28 @@ mod tests {
             .filter_map(|file| file.file_name()?.to_str())
             .collect();
         assert_eq!(names, ["bugaboo.db", "bugaboo.db-wal"]);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn sec_16_a_link_is_not_a_known_file_and_a_linked_sub_folder_is_refused() {
+        let temp = tempfile::tempdir().unwrap();
+        let data = temp.path().join("data");
+        DataFolder::prepare(&data).unwrap();
+        let elsewhere = temp.path().join("elsewhere.txt");
+        std::fs::write(&elsewhere, "x").unwrap();
+        // The setup code file is a link to somebody else's file: it is left alone.
+        std::os::unix::fs::symlink(&elsewhere, data.join(SETUP_CODE_FILE)).unwrap();
+        std::fs::write(data.join(DATABASE_FILE), "x").unwrap();
+        let known = DataFolder::existing(&data).unwrap().known_files();
+        assert_eq!(known, [data.join(DATABASE_FILE)]);
+        // A sub-folder that is a link to another place is refused for the service.
+        let other = temp.path().join("other");
+        std::fs::create_dir(&other).unwrap();
+        std::fs::remove_dir(data.join(TLS)).unwrap();
+        std::os::unix::fs::symlink(&other, data.join(TLS)).unwrap();
+        let error = check_for_service(&data).unwrap_err();
+        assert!(error.message().contains("does not look like"), "{error}");
     }
 
     #[test]

@@ -444,6 +444,12 @@ export const messages = {
     "The folder {path} can be opened by other accounts on this computer. Choose a folder that only you can open, or a new one, so the key files are not left where others can copy them.",
   "data-folder.not-a-data-folder":
     "The folder {path} has other files in it and does not look like a Bugaboo data folder. Installing the service would change who owns them. Choose an empty folder or a Bugaboo data folder as the data folder in your settings.",
+  "service.settings-is-link":
+    "The settings file {path} is a link. Installing would change the rights of the file it points to. Name the real file with --config.",
+  "service.settings-in-data":
+    "The settings file {path} is inside the data folder, which the service account can write to. Move the file out of the data folder, so that the service cannot change its own settings.",
+  "service.settings-folder-open":
+    "The folder {path} that holds the settings file can be changed by other accounts. Keep the settings file in a folder that only administrators can change, for example /etc/bugaboo.",
 } as const;
 
 export type MessageKey = keyof typeof messages;
@@ -511,6 +517,9 @@ export interface MessageArguments {
   "service.no-settings": { path: string | number };
   "service.not-installed": { name: string | number };
   "service.removed": { name: string | number };
+  "service.settings-folder-open": { path: string | number };
+  "service.settings-in-data": { path: string | number };
+  "service.settings-is-link": { path: string | number };
   "service.setup-code": { path: string | number };
   "service.stop-timeout": { name: string | number };
   "sessions.device": { browser: string | number; system: string | number };
