@@ -92,8 +92,11 @@ pub enum SampleError {
     },
     /// The start moment is not a moment in time.
     Start(i64),
-    /// The address of the PostgreSQL database is not in the environment.
-    DatabaseUrl,
+    /// The address of the PostgreSQL database is not in the environment (the variable it is
+    /// looked for in).
+    DatabaseUrl(String),
+    /// `tools/dev/sample.json` is not usable.
+    Layout(String),
 }
 
 impl SampleError {
@@ -121,7 +124,8 @@ impl SampleError {
             Self::LogNotAnchored => plain(message::SAMPLE_ERROR_LOG_NOT_ANCHORED),
             Self::LogBroken { seq, reason } => message::sample_error_log_broken(reason, seq),
             Self::Start(start) => message::sample_error_start(start),
-            Self::DatabaseUrl => message::sample_error_database_url(crate::DATABASE_URL_VARIABLE),
+            Self::DatabaseUrl(variable) => message::sample_error_database_url(variable),
+            Self::Layout(reason) => message::sample_error_layout(reason),
         }
     }
 
@@ -184,7 +188,8 @@ mod tests {
                 reason: "Gap".to_owned(),
             },
             SampleError::Start(-1),
-            SampleError::DatabaseUrl,
+            SampleError::DatabaseUrl("A_VARIABLE_NAME".to_owned()),
+            SampleError::Layout("a reason".to_owned()),
         ];
         for error in errors {
             let text = error.to_string();

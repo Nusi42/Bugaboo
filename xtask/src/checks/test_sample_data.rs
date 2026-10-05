@@ -34,16 +34,14 @@ use serde::Deserialize;
 use serde_json::Value;
 
 use super::{Check, Context, Finding};
+use crate::dataset::Layout;
 
 /// The list of names, written for Bugaboo. `bb-sample` reads the same file.
 pub(crate) const NAMES_FILE: &str = "crates/bb-sample/data/names.toml";
-/// The only domain a sample address may have (`bb-sample` has the same constant; a test keeps both
-/// in step).
+/// The only domain a sample address may have. Written out here on purpose, apart from the program
+/// that makes the addresses: the check is an independent witness, and fails if the program ever
+/// leaves this domain.
 const EMAIL_DOMAIN: &str = "bugaboo.example";
-/// The file of a run that may hold secrets.
-const SIGN_IN_FILE: &str = "sign-in.txt";
-/// The canonical dump of a run.
-const DUMP_FILE: &str = "dump.json";
 /// The step of `cargo xtask ci` that runs the real check.
 const CI_SOURCE: &str = "xtask/src/ci.rs";
 const CI_STEP: &str = r#"&["dataset", "sample", "--check"]"#;
@@ -57,6 +55,7 @@ impl Check for TestSampleData {
 
     fn run(&self, context: &Context<'_>) -> anyhow::Result<Vec<Finding>> {
         let mut findings = Vec::new();
+        Layout::load(context.repo.root())?;
         let names = fs::read_to_string(context.repo.path(NAMES_FILE))
             .with_context(|| format!("could not read {NAMES_FILE}"))?;
         if let Err(problem) = NameList::parse(&names) {
@@ -103,6 +102,8 @@ impl NameList {
 /// What one run of the program left in its folder.
 pub(crate) struct Run {
     pub(crate) label: String,
+    /// The name of the one file that may hold secrets, for the messages.
+    sign_in_file: String,
     dump: String,
     /// What must not show up outside the sign-in file: the passwords, the secrets of the code
     /// apps as text, and the raw bytes those secrets stand for.
@@ -113,17 +114,18 @@ pub(crate) struct Run {
 
 impl Run {
     /// Reads the folder of one run.
-    pub(crate) fn read(label: &str, folder: &Path) -> anyhow::Result<Self> {
+    pub(crate) fn read(label: &str, folder: &Path, layout: &Layout) -> anyhow::Result<Self> {
         let read = |name: &str| {
             fs::read_to_string(folder.join(name))
                 .with_context(|| format!("{label}: could not read {name}"))
         };
         let mut scanned = Vec::new();
-        collect(folder, folder, &mut scanned)?;
+        collect(folder, folder, &layout.sign_in_file, &mut scanned)?;
         Ok(Self {
             label: label.to_owned(),
-            dump: read(DUMP_FILE)?,
-            needles: needles_of(&read(SIGN_IN_FILE)?),
+            sign_in_file: layout.sign_in_file.clone(),
+            dump: read(&layout.dump_file)?,
+            needles: needles_of(&read(&layout.sign_in_file)?),
             scanned,
         })
     }
@@ -169,7 +171,12 @@ fn base32_decode(text: &str) -> Option<Vec<u8>> {
 }
 
 /// Every file below `folder` except the sign-in file of the run itself, with its bytes.
-fn collect(root: &Path, folder: &Path, found: &mut Vec<(String, Vec<u8>)>) -> anyhow::Result<()> {
+fn collect(
+    root: &Path,
+    folder: &Path,
+    sign_in_file: &str,
+    found: &mut Vec<(String, Vec<u8>)>,
+) -> anyhow::Result<()> {
     let mut entries: Vec<PathBuf> = fs::read_dir(folder)
         .with_context(|| format!("could not read {}", folder.display()))?
         .filter_map(|entry| entry.ok().map(|entry| entry.path()))
@@ -177,8 +184,8 @@ fn collect(root: &Path, folder: &Path, found: &mut Vec<(String, Vec<u8>)>) -> an
     entries.sort();
     for path in entries {
         if path.is_dir() {
-            collect(root, &path, found)?;
-        } else if path != root.join(SIGN_IN_FILE) {
+            collect(root, &path, sign_in_file, found)?;
+        } else if path != root.join(sign_in_file) {
             let name = path
                 .strip_prefix(root)
                 .unwrap_or(&path)
@@ -224,8 +231,9 @@ pub(crate) fn problems(names: &NameList, runs: &[Run]) -> Vec<String> {
         for (file, bytes) in &run.scanned {
             if run.needles.iter().any(|needle| contains(bytes, needle)) {
                 problems.push(format!(
-                    "{}: {file} holds a password or secret. They belong only in the ignored file {SIGN_IN_FILE}.",
-                    run.label
+                    "{}: {file} holds a password or secret. They belong only in the ignored file {}.",
+                    run.label,
+                    run.sign_in_file
                 ));
             }
         }
@@ -308,6 +316,10 @@ mod tests {
 
     const FIXTURES: &str = "../tools/checks/fixtures/TEST-SAMPLE-DATA";
 
+    fn layout() -> Layout {
+        Layout::load(Path::new(env!("CARGO_MANIFEST_DIR")).parent().unwrap()).unwrap()
+    }
+
     fn names() -> NameList {
         let text = include_str!("../../../crates/bb-sample/data/names.toml");
         NameList::parse(text).unwrap()
@@ -326,7 +338,7 @@ mod tests {
         labels.sort();
         labels
             .iter()
-            .map(|label| Run::read(label, &folder.join(label)).unwrap())
+            .map(|label| Run::read(label, &folder.join(label), &layout()).unwrap())
             .collect()
     }
 
@@ -402,6 +414,7 @@ mod tests {
         assert!(!problems(&names(), &[]).is_empty());
         let empty = Run {
             label: "only".to_owned(),
+            sign_in_file: layout().sign_in_file,
             dump: "{}".to_owned(),
             needles: Vec::new(),
             scanned: Vec::new(),
@@ -421,7 +434,7 @@ mod tests {
         let root = Path::new(env!("CARGO_MANIFEST_DIR")).parent().unwrap();
         let mut files = Vec::new();
         let fixtures = root.join("tools/checks/fixtures/TEST-SAMPLE-DATA");
-        collect(root, &fixtures, &mut files).unwrap();
+        collect(root, &fixtures, &layout().sign_in_file, &mut files).unwrap();
         let mut child = Command::new("git")
             .args(["check-ignore", "--stdin"])
             .current_dir(root)
@@ -468,6 +481,7 @@ mod tests {
         let sign_in = "ana@bugaboo.example\tPW-ONE\tcontributor\tAna Moreno\tMZXW6YTBOI\n";
         let leaking = Run {
             label: "only".to_owned(),
+            sign_in_file: layout().sign_in_file,
             dump: "{}".to_owned(),
             needles: needles_of(sign_in),
             scanned: vec![("data/keys.bin".to_owned(), b"header foobar".to_vec())],
@@ -476,17 +490,6 @@ mod tests {
         assert!(
             found.iter().any(|p| p.contains("data/keys.bin holds")),
             "{found:?}"
-        );
-    }
-
-    #[test]
-    fn the_domain_is_the_one_bb_sample_makes_its_addresses_with() {
-        let roster = include_str!("../../../crates/bb-sample/src/roster.rs");
-        assert!(
-            roster.contains(&format!(
-                "pub const EMAIL_DOMAIN: &str = \"{EMAIL_DOMAIN}\";"
-            )),
-            "bb-sample and this check name different domains"
         );
     }
 

@@ -12,6 +12,7 @@ use std::process::{Command, Stdio};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use anyhow::{Context as _, bail};
+use serde::Deserialize;
 
 use crate::checks::test_sample_data::{self, NAMES_FILE, NameList, Run};
 use crate::db;
@@ -19,21 +20,11 @@ use crate::output;
 use crate::repo::Repo;
 use crate::steps::{self, Profile};
 
-/// Where the sample is made when `--out` is not given.
-const SQLITE_OUT: &str = "target/sample";
-const POSTGRES_OUT: &str = "target/sample-postgres";
-/// Where `cargo xtask dev --sample` keeps its sample.
-const DEV_OUT: &str = "target/dev-sample";
-/// Where `--check` makes its runs, one folder each.
-const CHECK_OUT: &str = "target/sample-check";
-/// The data folder inside an output folder (`bb-sample` has the same name; the program says where
-/// it put it when it is done).
-const DATA_FOLDER: &str = "data";
+/// Where the folders and file names of the sample are written down once; the program `bb-sample`
+/// and the end-to-end tests read the same file.
+const LAYOUT_FILE: &str = "tools/dev/sample.json";
 /// The moment every run of `--check` ends at: 2027-01-15 08:00:00 UTC, an arbitrary fixed one.
 const CHECK_START: i64 = 1_800_000_000;
-/// The environment variable of the program that holds the address of its PostgreSQL database
-/// (a test keeps it in step with `bb-sample`).
-const DATABASE_URL_VARIABLE: &str = "BB_SAMPLE_DATABASE_URL";
 /// What `--check` makes of the tables of a PostgreSQL run, so the scan for secrets covers them.
 const POSTGRES_DUMP_FILE: &str = "postgres.sql";
 /// The runs of `--check`: twice on each database.
@@ -43,6 +34,38 @@ const CHECK_RUNS: [(&str, DatabaseKind); 4] = [
     ("postgres-1", DatabaseKind::Postgres),
     ("postgres-2", DatabaseKind::Postgres),
 ];
+
+/// `tools/dev/sample.json`: where the sample is made and what its files are called.
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct Layout {
+    /// Where the sample is made on SQLite when `--out` is not given.
+    out: String,
+    /// The same on PostgreSQL.
+    out_postgres: String,
+    /// Where `cargo xtask dev --sample` keeps its sample.
+    dev_out: String,
+    /// Where `--check` makes its runs, one folder each.
+    check_out: String,
+    /// The data folder inside an output folder.
+    data_folder: String,
+    /// The file with the passwords: the only file that may hold a secret.
+    pub(crate) sign_in_file: String,
+    /// The canonical dump.
+    pub(crate) dump_file: String,
+    /// The environment variable that holds the address of the PostgreSQL database of the program.
+    database_url_variable: String,
+}
+
+impl Layout {
+    /// Reads the layout of the repository at `root`.
+    pub(crate) fn load(root: &Path) -> anyhow::Result<Self> {
+        let path = root.join(LAYOUT_FILE);
+        let text = fs::read_to_string(&path)
+            .with_context(|| format!("could not read {}", path.display()))?;
+        serde_json::from_str(&text).with_context(|| format!("{LAYOUT_FILE} is not valid"))
+    }
+}
 
 /// Which database the sample is made on.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -78,11 +101,12 @@ pub(crate) fn run(repo: &Repo, request: &Request) -> anyhow::Result<bool> {
     if request.check {
         return check(repo, &program, request.seed);
     }
+    let layout = Layout::load(repo.root())?;
     let out = match (&request.out, request.database) {
         (Some(out), _) => std::path::absolute(out)
             .with_context(|| format!("{} is not a usable folder", out.display()))?,
-        (None, DatabaseKind::Sqlite) => repo.root().join(SQLITE_OUT),
-        (None, DatabaseKind::Postgres) => repo.root().join(POSTGRES_OUT),
+        (None, DatabaseKind::Sqlite) => repo.root().join(&layout.out),
+        (None, DatabaseKind::Postgres) => repo.root().join(&layout.out_postgres),
     };
     let make = |url: Option<&str>| {
         let mut command = program_command(
@@ -94,7 +118,7 @@ pub(crate) fn run(repo: &Repo, request: &Request) -> anyhow::Result<bool> {
                 database: request.database,
                 out: &out,
             },
-            url,
+            (&layout, url),
         );
         let status = command
             .status()
@@ -115,7 +139,8 @@ pub(crate) fn make_for_dev(root: &Path) -> anyhow::Result<Option<PathBuf>> {
     let Some(program) = build_program(root)? else {
         return Ok(None);
     };
-    let out = root.join(DEV_OUT);
+    let layout = Layout::load(root)?;
+    let out = root.join(&layout.dev_out);
     let status = program_command(
         &program,
         root,
@@ -125,11 +150,11 @@ pub(crate) fn make_for_dev(root: &Path) -> anyhow::Result<Option<PathBuf>> {
             database: DatabaseKind::Sqlite,
             out: &out,
         },
-        None,
+        (&layout, None),
     )
     .status()
     .with_context(|| format!("could not start {}", program.display()))?;
-    Ok(status.success().then(|| out.join(DATA_FOLDER)))
+    Ok(status.success().then(|| out.join(&layout.data_folder)))
 }
 
 /// Builds the program and returns where it is; `None` when the build failed (cargo said why).
@@ -160,7 +185,7 @@ fn program_command(
     program: &Path,
     root: &Path,
     arguments: &Arguments<'_>,
-    url: Option<&str>,
+    (layout, url): (&Layout, Option<&str>),
 ) -> Command {
     let mut command = Command::new(program);
     command.current_dir(root);
@@ -175,7 +200,7 @@ fn program_command(
         .arg("--out")
         .arg(arguments.out);
     if let Some(url) = url {
-        command.env(DATABASE_URL_VARIABLE, url);
+        command.env(&layout.database_url_variable, url);
     }
     command
 }
@@ -184,7 +209,8 @@ fn program_command(
 /// against each other and against the rules of TEST-SAMPLE-DATA.
 fn check(repo: &Repo, program: &Path, seed: Option<u64>) -> anyhow::Result<bool> {
     let root = repo.root();
-    let folder = root.join(CHECK_OUT);
+    let layout = Layout::load(root)?;
+    let folder = root.join(&layout.check_out);
     if folder.exists() {
         fs::remove_dir_all(&folder)
             .with_context(|| format!("could not remove the old {}", folder.display()))?;
@@ -211,7 +237,7 @@ fn check(repo: &Repo, program: &Path, seed: Option<u64>) -> anyhow::Result<bool>
                     database,
                     out: &out,
                 },
-                url.as_deref(),
+                (&layout, url.as_deref()),
             )
             .stdin(Stdio::null())
             .output()
@@ -231,7 +257,7 @@ fn check(repo: &Repo, program: &Path, seed: Option<u64>) -> anyhow::Result<bool>
                 // so a secret in them is found too.
                 postgres.dump_data(&database_name, &out.join(POSTGRES_DUMP_FILE))?;
             }
-            runs.push(Run::read(label, &out)?);
+            runs.push(Run::read(label, &out, &layout)?);
             if database == DatabaseKind::Postgres {
                 postgres.drop_database(&database_name)?;
             }
@@ -255,16 +281,12 @@ fn check(repo: &Repo, program: &Path, seed: Option<u64>) -> anyhow::Result<bool>
 mod tests {
     use super::*;
 
+    fn real_layout() -> Layout {
+        Layout::load(Path::new(env!("CARGO_MANIFEST_DIR")).parent().unwrap()).unwrap()
+    }
+
     #[test]
-    fn the_program_reads_the_same_variable_and_database_names() {
-        let library = include_str!("../../crates/bb-sample/src/lib.rs");
-        assert!(
-            library.contains(&format!(
-                "pub const DATABASE_URL_VARIABLE: &str = \"{DATABASE_URL_VARIABLE}\";"
-            )),
-            "the variable has another name in bb-sample"
-        );
-        // The program pins the names of its databases; these are the words xtask passes.
+    fn the_program_pins_the_names_of_the_databases_xtask_passes() {
         let program = include_str!("../../crates/bb-sample/src/main.rs");
         for kind in [DatabaseKind::Sqlite, DatabaseKind::Postgres] {
             assert!(
@@ -276,31 +298,42 @@ mod tests {
     }
 
     #[test]
-    fn the_data_folder_has_the_name_the_program_gives_it() {
-        let folder = include_str!("../../crates/bb-sample/src/folder.rs");
-        assert!(folder.contains(&format!("pub const DATA_FOLDER: &str = \"{DATA_FOLDER}\";")));
-    }
-
-    #[test]
-    fn the_browser_tests_read_where_the_sample_is_made() {
-        let tests = include_str!("../../web/app/e2e/support/sample.ts");
-        let folder = include_str!("../../crates/bb-sample/src/folder.rs");
-        assert!(tests.contains(&format!("const SAMPLE_FOLDER = \"{SQLITE_OUT}\";")));
-        for (name, constant) in [("DATA_FOLDER", "data"), ("SIGN_IN_FILE", "sign-in.txt")] {
-            assert!(
-                tests.contains(&format!("const {name} = \"{constant}\";")),
-                "{name}"
-            );
-            assert!(
-                folder.contains(&format!("pub const {name}: &str = \"{constant}\";")),
-                "{name}"
-            );
+    fn the_real_layout_file_is_usable() {
+        let root = Path::new(env!("CARGO_MANIFEST_DIR")).parent().unwrap();
+        let layout = Layout::load(root).unwrap();
+        for folder in [
+            &layout.out,
+            &layout.out_postgres,
+            &layout.dev_out,
+            &layout.check_out,
+        ] {
+            // Inside the work folder, written with / as separator.
+            assert!(folder.starts_with("target/"), "{folder}");
+            assert!(!folder.contains('\\') && !folder.contains(".."), "{folder}");
+        }
+        let distinct: std::collections::BTreeSet<&String> = [
+            &layout.out,
+            &layout.out_postgres,
+            &layout.dev_out,
+            &layout.check_out,
+        ]
+        .into_iter()
+        .collect();
+        assert_eq!(distinct.len(), 4, "every run has a folder of its own");
+        for name in [
+            &layout.data_folder,
+            &layout.sign_in_file,
+            &layout.dump_file,
+            &layout.database_url_variable,
+        ] {
+            assert!(!name.trim().is_empty());
         }
     }
 
     #[test]
     fn the_address_of_a_database_goes_in_the_environment_and_not_on_the_command_line() {
         let out = Path::new("out");
+        let layout = real_layout();
         let command = program_command(
             Path::new("bb-sample"),
             Path::new("."),
@@ -310,7 +343,7 @@ mod tests {
                 database: DatabaseKind::Postgres,
                 out,
             },
-            Some("postgres://bugaboo:secret@127.0.0.1:1/x"),
+            (&layout, Some("postgres://bugaboo:secret@127.0.0.1:1/x")),
         );
         let arguments: Vec<String> = command
             .get_args()
@@ -332,11 +365,12 @@ mod tests {
         assert!(!arguments.iter().any(|argument| argument.contains("secret")));
         let environment: Vec<_> = command.get_envs().collect();
         assert_eq!(environment.len(), 1);
-        assert_eq!(environment[0].0, DATABASE_URL_VARIABLE);
+        assert_eq!(environment[0].0, layout.database_url_variable.as_str());
     }
 
     #[test]
     fn without_a_seed_the_program_uses_its_own_default() {
+        let layout = real_layout();
         let command = program_command(
             Path::new("bb-sample"),
             Path::new("."),
@@ -346,7 +380,7 @@ mod tests {
                 database: DatabaseKind::Sqlite,
                 out: Path::new("out"),
             },
-            None,
+            (&layout, None),
         );
         assert!(command.get_args().all(|argument| argument != "--seed"));
     }

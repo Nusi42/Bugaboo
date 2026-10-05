@@ -8,11 +8,8 @@ use std::path::PathBuf;
 use std::process::ExitCode;
 
 use bb_core::message::{self, Message, MessageKey};
-use bb_sample::{
-    DATABASE_URL_VARIABLE, DEFAULT_SEED, DUMP_FILE, NothingMore, Options, Output, SIGN_IN_FILE,
-    SampleError, Target, make,
-};
-use clap::{Parser, ValueEnum};
+use bb_sample::{DEFAULT_SEED, Layout, NothingMore, Options, Output, SampleError, Target, make};
+use clap::{CommandFactory as _, FromArgMatches as _, Parser, ValueEnum};
 use jiff::Timestamp;
 
 // The library uses these; Cargo gives every dependency to the program too
@@ -46,25 +43,22 @@ struct Args {
     seed: u64,
     #[arg(long, help = text(message::CLI_HELP_SAMPLE_START))]
     start: i64,
-    #[arg(
-        long,
-        value_enum,
-        default_value = "sqlite",
-        help = message::cli_help_sample_database(DATABASE_URL_VARIABLE).render()
-    )]
+    // Its help names the environment variable of the layout, so it is set in `arguments`.
+    #[arg(long, value_enum, default_value = "sqlite")]
     database: DatabaseChoice,
     #[arg(long, help = text(message::CLI_HELP_SAMPLE_OUT))]
     out: PathBuf,
 }
 
-async fn run(args: &Args) -> Result<String, SampleError> {
+async fn run(args: &Args, layout: &Layout) -> Result<String, SampleError> {
     let start = Timestamp::from_second(args.start).map_err(|_| SampleError::Start(args.start))?;
-    let output = Output::prepare(&args.out)?;
+    let output = Output::prepare(&args.out, layout)?;
     output.mark(args.seed, args.start)?;
     let target = match args.database {
         DatabaseChoice::Sqlite => Target::BuiltIn,
         DatabaseChoice::Postgres => Target::Address(
-            std::env::var(DATABASE_URL_VARIABLE).map_err(|_| SampleError::DatabaseUrl)?,
+            std::env::var(&layout.database_url_variable)
+                .map_err(|_| SampleError::DatabaseUrl(layout.database_url_variable.clone()))?,
         ),
     };
     let options = Options {
@@ -73,8 +67,8 @@ async fn run(args: &Args) -> Result<String, SampleError> {
     };
     let sample = make(&options, &output.data_folder(), &target, &mut NothingMore).await?;
     sample.verify_security_log().await?;
-    output.write(DUMP_FILE, &sample.dump().await?.to_json()?)?;
-    output.write(SIGN_IN_FILE, &sample.sign_in_text())?;
+    output.write_dump(&sample.dump().await?.to_json()?)?;
+    output.write_sign_in(&sample.sign_in_text())?;
     let done = message::sample_done(
         output.sign_in_file().display(),
         output.data_folder().display(),
@@ -85,9 +79,25 @@ async fn run(args: &Args) -> Result<String, SampleError> {
     Ok(done.render())
 }
 
+/// The arguments, with the help of `--database` naming the variable of the layout.
+fn arguments(layout: &Layout) -> Args {
+    let matches = Args::command()
+        .mut_arg("database", |argument| {
+            argument.help(message::cli_help_sample_database(&layout.database_url_variable).render())
+        })
+        .get_matches();
+    Args::from_arg_matches(&matches).unwrap_or_else(|error| error.exit())
+}
+
+/// Reads the layout, takes the arguments and makes the sample.
+async fn start() -> Result<String, SampleError> {
+    let layout = Layout::bundled()?;
+    run(&arguments(&layout), &layout).await
+}
+
 #[tokio::main]
 async fn main() -> ExitCode {
-    match run(&Args::parse()).await {
+    match start().await {
         Ok(done) => {
             // Nobody to tell when the console is gone: the sample is made either way.
             let _ = writeln!(std::io::stdout(), "{done}");

@@ -6,8 +6,11 @@
 //! ├── data/          a data folder (database, keys, logs): copy it, start `bugaboo serve` on the copy
 //! ├── sign-in.txt    e-mail addresses and random passwords of the people: never leaves this folder
 //! ├── dump.json      the canonical dump (TEST-SAMPLE-DATA): no secret in it
-//! └── sample.json    says that this folder was made by the tool, so the next run may empty it
+//! ├── sample.json    says that this folder was made by the tool, so the next run may empty it
+//! └── .gitignore     keeps all of it out of Git
 //! ```
+//!
+//! What the files are called is in `tools/dev/sample.json` ([`Layout`]).
 
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -15,15 +18,8 @@ use std::path::{Path, PathBuf};
 use serde_json::json;
 
 use crate::error::SampleError;
+use crate::layout::Layout;
 
-/// The data folder inside the output folder.
-pub const DATA_FOLDER: &str = "data";
-/// The file with the passwords, inside the output folder. The only file with a secret in it.
-pub const SIGN_IN_FILE: &str = "sign-in.txt";
-/// The canonical dump, inside the output folder.
-pub const DUMP_FILE: &str = "dump.json";
-/// The file that marks a folder as made by this tool.
-pub const MARKER_FILE: &str = "sample.json";
 /// Tells Git to ignore everything in the folder, like Cargo does for `target/`: `sign-in.txt` holds
 /// passwords, and the folder can be anywhere (`--out`), not only under `target/`.
 const GIT_IGNORE_FILE: &str = ".gitignore";
@@ -33,6 +29,7 @@ const GIT_IGNORE_TEXT: &str = "*\n";
 #[derive(Clone, Debug)]
 pub struct Output {
     root: PathBuf,
+    layout: Layout,
 }
 
 impl Output {
@@ -42,7 +39,7 @@ impl Output {
     /// # Errors
     /// [`SampleError::NotASampleFolder`] for a folder with other things in it, and the errors of
     /// the file system.
-    pub fn prepare(root: &Path) -> Result<Self, SampleError> {
+    pub fn prepare(root: &Path, layout: &Layout) -> Result<Self, SampleError> {
         let failed = |error: &std::io::Error| SampleError::folder(root, error);
         if root.is_dir() {
             let empty = fs::read_dir(root)
@@ -50,12 +47,17 @@ impl Output {
                 .next()
                 .is_none();
             if !empty {
-                if !root.join(MARKER_FILE).is_file() {
+                if !root.join(&layout.marker_file).is_file() {
                     return Err(SampleError::NotASampleFolder(root.to_path_buf()));
                 }
                 // Only what this tool makes: the marker says the rest is ours too.
-                remove_folder(&root.join(DATA_FOLDER)).map_err(|error| failed(&error))?;
-                for file in [SIGN_IN_FILE, DUMP_FILE, MARKER_FILE, GIT_IGNORE_FILE] {
+                remove_folder(&root.join(&layout.data_folder)).map_err(|error| failed(&error))?;
+                for file in [
+                    &layout.sign_in_file,
+                    &layout.dump_file,
+                    &layout.marker_file,
+                    GIT_IGNORE_FILE,
+                ] {
                     remove_file(&root.join(file)).map_err(|error| failed(&error))?;
                 }
             }
@@ -63,6 +65,7 @@ impl Output {
         fs::create_dir_all(root).map_err(|error| failed(&error))?;
         Ok(Self {
             root: root.to_path_buf(),
+            layout: layout.clone(),
         })
     }
 
@@ -74,25 +77,25 @@ impl Output {
     pub fn mark(&self, seed: u64, start: i64) -> Result<(), SampleError> {
         self.write(GIT_IGNORE_FILE, GIT_IGNORE_TEXT)?;
         let text = json!({ "seed": seed, "start": start }).to_string();
-        self.write(MARKER_FILE, &text)
+        self.write(&self.layout.marker_file, &text)
     }
 
     /// The data folder.
     #[must_use]
     pub fn data_folder(&self) -> PathBuf {
-        self.root.join(DATA_FOLDER)
+        self.root.join(&self.layout.data_folder)
     }
 
     /// The file with the passwords.
     #[must_use]
     pub fn sign_in_file(&self) -> PathBuf {
-        self.root.join(SIGN_IN_FILE)
+        self.root.join(&self.layout.sign_in_file)
     }
 
     /// The dump.
     #[must_use]
     pub fn dump_file(&self) -> PathBuf {
-        self.root.join(DUMP_FILE)
+        self.root.join(&self.layout.dump_file)
     }
 
     /// The output folder.
@@ -101,12 +104,28 @@ impl Output {
         &self.root
     }
 
+    /// Writes the dump.
+    ///
+    /// # Errors
+    /// The errors of the file system.
+    pub fn write_dump(&self, text: &str) -> Result<(), SampleError> {
+        self.write(&self.layout.dump_file, text)
+    }
+
+    /// Writes the file with the passwords.
+    ///
+    /// # Errors
+    /// The errors of the file system.
+    pub fn write_sign_in(&self, text: &str) -> Result<(), SampleError> {
+        self.write(&self.layout.sign_in_file, text)
+    }
+
     /// Writes a file in the folder; one that holds secrets can be read by its owner only (on
     /// Unix; on Windows the rights of the user's folder apply).
     ///
     /// # Errors
     /// The errors of the file system.
-    pub fn write(&self, name: &str, text: &str) -> Result<(), SampleError> {
+    fn write(&self, name: &str, text: &str) -> Result<(), SampleError> {
         use std::io::Write as _;
         let path = self.root.join(name);
         let mut options = fs::OpenOptions::new();
@@ -142,21 +161,25 @@ fn remove_file(path: &Path) -> std::io::Result<()> {
 mod tests {
     use super::*;
 
+    fn layout() -> Layout {
+        Layout::bundled().unwrap()
+    }
+
     #[test]
     fn a_new_folder_is_made_and_an_older_sample_is_emptied() {
         let temp = tempfile::tempdir().unwrap();
         let root = temp.path().join("nested").join("sample");
-        let output = Output::prepare(&root).unwrap();
+        let output = Output::prepare(&root, &layout()).unwrap();
         output.mark(42, 1_800_000_000).unwrap();
         fs::create_dir_all(output.data_folder().join("keys")).unwrap();
         fs::write(output.data_folder().join("keys").join("old"), "x").unwrap();
         fs::write(output.sign_in_file(), "old").unwrap();
 
-        let again = Output::prepare(&root).unwrap();
+        let again = Output::prepare(&root, &layout()).unwrap();
         assert!(!again.data_folder().exists(), "the old data is gone");
         assert!(!again.sign_in_file().exists());
         assert!(
-            !root.join(MARKER_FILE).exists(),
+            !root.join(&layout().marker_file).exists(),
             "marked again when written"
         );
     }
@@ -173,12 +196,20 @@ mod tests {
         };
         assert!(git(&["init", "-q"]).status.success());
         // A folder outside `target/`, as `--out` allows.
-        let output = Output::prepare(&temp.path().join("somewhere").join("sample")).unwrap();
+        let output =
+            Output::prepare(&temp.path().join("somewhere").join("sample"), &layout()).unwrap();
         output.mark(42, 1_800_000_000).unwrap();
         output
-            .write(SIGN_IN_FILE, "ana@bugaboo.example\tsecret\n")
+            .write_sign_in("ana@bugaboo.example\tsecret\n")
             .unwrap();
-        for file in [SIGN_IN_FILE, DUMP_FILE, MARKER_FILE, "data/bugaboo.db"] {
+        let named = layout();
+        let database = format!("{}/bugaboo.db", named.data_folder);
+        for file in [
+            &named.sign_in_file,
+            &named.dump_file,
+            &named.marker_file,
+            &database,
+        ] {
             let path = format!("somewhere/sample/{file}");
             assert!(
                 git(&["check-ignore", "-q", &path]).status.success(),
@@ -186,7 +217,7 @@ mod tests {
             );
         }
         // The next run empties it again, the file that ignores included.
-        Output::prepare(output.root()).unwrap();
+        Output::prepare(output.root(), &layout()).unwrap();
         assert!(!output.root().join(GIT_IGNORE_FILE).exists());
     }
 
@@ -194,7 +225,7 @@ mod tests {
     fn bad_example_a_folder_with_other_things_in_it_is_left_alone() {
         let temp = tempfile::tempdir().unwrap();
         fs::write(temp.path().join("notes.txt"), "mine").unwrap();
-        let error = Output::prepare(temp.path()).unwrap_err();
+        let error = Output::prepare(temp.path(), &layout()).unwrap_err();
         assert!(matches!(error, SampleError::NotASampleFolder(_)), "{error}");
         assert_eq!(
             fs::read_to_string(temp.path().join("notes.txt")).unwrap(),
@@ -205,6 +236,6 @@ mod tests {
     #[test]
     fn an_empty_existing_folder_is_fine() {
         let temp = tempfile::tempdir().unwrap();
-        assert!(Output::prepare(temp.path()).is_ok());
+        assert!(Output::prepare(temp.path(), &layout()).is_ok());
     }
 }

@@ -24,6 +24,7 @@ mod dump;
 mod error;
 mod folder;
 mod generate;
+mod layout;
 mod limits;
 mod names;
 mod password;
@@ -35,14 +36,11 @@ mod tests;
 pub use clock::SampleClock;
 pub use dump::Dump;
 pub use error::{SampleError, Step};
-pub use folder::{DATA_FOLDER, DUMP_FILE, MARKER_FILE, Output, SIGN_IN_FILE};
+pub use folder::Output;
 pub use generate::{
     DEFAULT_SEED, Later, MadePerson, NothingMore, Options, STEP_SECONDS, Sample, Target, World,
     make,
 };
+pub use layout::Layout;
 pub use names::NameList;
 pub use roster::{EMAIL_DOMAIN, PEOPLE, ROLE_MIX, Role, SamplePerson, roster};
-
-/// The environment variable that holds the address of the empty PostgreSQL database of the
-/// program (an address with a password does not belong on a command line, M1-F62).
-pub const DATABASE_URL_VARIABLE: &str = "BB_SAMPLE_DATABASE_URL";

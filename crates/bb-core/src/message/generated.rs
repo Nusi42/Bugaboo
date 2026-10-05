@@ -1760,6 +1760,15 @@ pub fn sample_error_folder(
     )
 }
 
+/// The message `sample.error.layout`.
+#[must_use]
+pub fn sample_error_layout(reason: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("sample.error.layout"),
+        vec![("reason", Value::Text(reason.to_string()))],
+    )
+}
+
 /// The message `sample.error.log-broken`.
 #[must_use]
 pub fn sample_error_log_broken(
@@ -2974,6 +2983,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "sample.error.folder",
         "The sample cannot use {path}: {reason}",
+    ),
+    (
+        "sample.error.layout",
+        "The file tools/dev/sample.json is not usable: {reason}",
     ),
     (
         "sample.error.log-broken",

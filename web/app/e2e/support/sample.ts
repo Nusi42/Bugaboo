@@ -1,17 +1,9 @@
 import { cpSync, existsSync, readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 
+import layout from "../../../../tools/dev/sample.json" with { type: "json" };
 import { repoRoot } from "../../../tooling/ports.ts";
 import { type Person } from "./accounts.ts";
-
-/**
- * Where `cargo xtask dataset sample` makes the sample organization: this folder holds the data
- * folder (`data`) and the file with the ways to sign in. `xtask/src/dataset.rs` names the same
- * folder, and a test there keeps both in step.
- */
-const SAMPLE_FOLDER = "target/sample";
-const SIGN_IN_FILE = "sign-in.txt";
-const DATA_FOLDER = "data";
 
 /** Somebody of the sample organization: the person and how they are known in the sample. */
 export interface SamplePerson extends Person {
@@ -22,12 +14,12 @@ export interface SamplePerson extends Person {
 }
 
 function sampleFolder(): string {
-  return resolve(repoRoot, SAMPLE_FOLDER);
+  return resolve(repoRoot, layout.out);
 }
 
 /** Fails with what to do when the sample was not made. */
 function requireSample(): void {
-  if (!existsSync(join(sampleFolder(), SIGN_IN_FILE))) {
+  if (!existsSync(join(sampleFolder(), layout.signInFile))) {
     throw new Error(
       `Make the sample organization first: cargo xtask dataset sample (it makes ${sampleFolder()}).`,
     );
@@ -41,7 +33,7 @@ function requireSample(): void {
  */
 export function samplePeople(): readonly SamplePerson[] {
   requireSample();
-  return readFileSync(join(sampleFolder(), SIGN_IN_FILE), "utf8")
+  return readFileSync(join(sampleFolder(), layout.signInFile), "utf8")
     .split("\n")
     .map((line) => line.replace(/\r$/u, ""))
     .filter((line) => line.trim() !== "" && !line.startsWith("#"))
@@ -53,7 +45,7 @@ export function samplePeople(): readonly SamplePerson[] {
         role === undefined ||
         name === undefined
       ) {
-        throw new Error(`A line of ${SIGN_IN_FILE} does not have its four columns.`);
+        throw new Error(`A line of ${layout.signInFile} does not have its four columns.`);
       }
       return { name, email, password, role, codeAppSecret: secret === "" ? undefined : secret };
     });
@@ -88,5 +80,5 @@ export function sampleWithCodeApp(): { readonly person: SamplePerson; readonly s
 /** Puts a fresh copy of the sample's data folder into `folder`, which a server then starts on. */
 export function copySampleInto(folder: string): void {
   requireSample();
-  cpSync(join(sampleFolder(), DATA_FOLDER), folder, { recursive: true });
+  cpSync(join(sampleFolder(), layout.dataFolder), folder, { recursive: true });
 }

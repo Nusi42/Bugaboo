@@ -498,5 +498,6 @@
   "sample.error.setup-closed": "Setup was closed already, so the setup code does not work.",
   "sample.error.secret-not-stored": "The secret of the code app was not stored.",
   "sample.error.person-missing": "A person of the plan has no account in the database.",
-  "sample.error.log-not-anchored": "Nothing vouches for the end of the security log: its anchor file is missing."
+  "sample.error.log-not-anchored": "Nothing vouches for the end of the security log: its anchor file is missing.",
+  "sample.error.layout": "The file tools/dev/sample.json is not usable: {reason}"
 }
