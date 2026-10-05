@@ -2,6 +2,7 @@ import { t } from "@bugaboo/messages";
 import { type Browser, expect, type Page } from "@playwright/test";
 
 import { type Person } from "./accounts.ts";
+import { layoutOf } from "./layout.ts";
 import { type Instance } from "./server.ts";
 import { type CodeApp, codeApp } from "./totp.ts";
 
@@ -39,15 +40,11 @@ export async function signIn(page: Page, person: Person): Promise<void> {
   await expectHome(page, person);
 }
 
-/** The width of the window: where the layout changes, as the UX design says (§3). */
-const COMPUTER_FROM = 1280;
-const TABLET_FROM = 768;
-
 /** Opens what holds the menu when the screen has no sidebar: *Menu* on a tablet, *More* on a phone. */
 export async function openMenu(page: Page): Promise<void> {
-  const width = page.viewportSize()?.width ?? COMPUTER_FROM;
-  if (width < COMPUTER_FROM) {
-    const name = width >= TABLET_FROM ? t("shell.menu-button") : t("shell.more");
+  const layout = layoutOf(page);
+  if (layout !== "computer") {
+    const name = layout === "tablet" ? t("shell.menu-button") : t("shell.more");
     await page.getByRole("button", { name, exact: true }).click();
   }
 }
@@ -77,11 +74,10 @@ export async function openFromMenu(page: Page, topic: string): Promise<void> {
     : t("nav.my-settings");
   await openMenu(page);
   // On a phone the links are in the sheet that *More* opens, on larger screens in the menu.
-  const width = page.viewportSize()?.width ?? COMPUTER_FROM;
   const menu =
-    width >= TABLET_FROM
-      ? page.getByRole("navigation", { name: t("shell.menu"), exact: true })
-      : page.getByRole("dialog", { name: t("shell.more"), exact: true });
+    layoutOf(page) === "phone"
+      ? page.getByRole("dialog", { name: t("shell.more"), exact: true })
+      : page.getByRole("navigation", { name: t("shell.menu"), exact: true });
   await menu.getByRole("link", { name: settings, exact: true }).click();
   await page
     .getByRole("navigation", { name: settings, exact: true })

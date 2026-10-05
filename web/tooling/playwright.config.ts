@@ -23,6 +23,12 @@ export default defineConfig({
   // The servers use the certificate they made themselves.
   use: { ignoreHTTPSErrors: true, trace: "retain-on-failure" },
   projects: [
+    // A tablet: the sidebar is a menu that slides in. Only the tests of the shell look at it.
+    {
+      name: "tablet",
+      testMatch: "**/shell.spec.ts",
+      use: { browserName: "chromium", viewport: { width: 900, height: 1000 }, hasTouch: true },
+    },
     { name: "desktop", use: { browserName: "chromium", viewport: { width: 1280, height: 800 } } },
     {
       name: "phone",

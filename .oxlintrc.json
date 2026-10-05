@@ -102,6 +102,7 @@
             "name": [
               "APIRequestContext",
               "APIResponse",
+              "Route",
               "Browser",
               "BrowserContext",
               "Locator",
