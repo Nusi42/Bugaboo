@@ -208,8 +208,11 @@ test("ux_01 an address of the settings that does not exist shows the page that i
   page,
 }) => {
   await signIn(page, cleo);
+  // A person who may not invite people finds nothing at the address, like at one that is not there.
   await page.goto("/settings/invitations");
-  await expect(page).toHaveURL(/\/$/u);
+  await expect(
+    page.getByRole("heading", { level: 1, name: t("page.not-found.title") }),
+  ).toBeVisible();
   await page.goto("/me/nothing-here");
   await expect(
     page.getByRole("heading", { level: 1, name: t("page.not-found.title") }),
