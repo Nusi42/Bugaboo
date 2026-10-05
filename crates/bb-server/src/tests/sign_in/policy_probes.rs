@@ -6,7 +6,8 @@
 use bb_app::access::{
     MakeStartingRoles, Permission, PolicyStore as _, StartingRole, make_starting_roles,
 };
-use bb_app::people::{DeleteGroup, RemoveGroupMember};
+use bb_app::people::{AddGroupMember, DeleteGroup, RemoveGroupMember};
+use bb_app::projects::MakeProject;
 use bb_app::roles::{
     Given, ReasonView, RemoveAssignment, ResetRole, RolesQuery, SetFieldLevel, SetPeopleLevel,
     Subject,
@@ -772,6 +773,138 @@ async fn sec_02_only_rows_that_can_exist_are_made() -> Outcome {
             AppliesTo::ProjectAndSubProjects,
         )
         .await?;
+        Ok(())
+    })
+    .await
+}
+
+/// What a lead of one project holds: sees it, decides who has which role there, makes
+/// sub-projects.
+const SECTION_LEAD: [Permission; 3] = [
+    Permission::SeeProjects,
+    Permission::DecideRoles,
+    Permission::MakeSubProjects,
+];
+
+#[tokio::test]
+async fn sec_02_a_role_with_sub_projects_needs_a_row_that_reaches_sub_projects() -> Outcome {
+    each_database("sec_02_future_sub_projects", async |db| {
+        let rig = Rig::start(db, 10).await?;
+        let org = Org::start(&rig).await?;
+        let acme = org.project(None, "ACME").await?.id;
+        let (bob, cleo) = (org.person().await?, org.person().await?);
+        let lead = org.role("Section lead", &SECTION_LEAD).await?;
+        // Bob leads ACME, for ACME alone. ACME has no sub-projects yet.
+        org.assign(
+            &org.admin,
+            Subject::Person(bob.id),
+            Given::Role(lead.id),
+            Some(acme),
+            AppliesTo::Project,
+        )
+        .await?;
+        let with_sub_projects = |to: &Member| {
+            org.assign(
+                &bob,
+                Subject::Person(to.id),
+                Given::Role(lead.id),
+                Some(acme),
+                AppliesTo::ProjectAndSubProjects,
+            )
+        };
+        // He may not give the role with sub-projects, to himself or to somebody else: there are
+        // none to check it against today, but there will be, and it would reach them.
+        assert_eq!(
+            refused(with_sub_projects(&bob).await),
+            Some(ErrorCode::TooMuch)
+        );
+        assert_eq!(
+            refused(with_sub_projects(&cleo).await),
+            Some(ErrorCode::TooMuch)
+        );
+        // A sub-project made afterwards (by him, as he may) is not his to decide in.
+        let bobs = org
+            .rig
+            .api()
+            .make_project(
+                Rig::info(),
+                MakeProject {
+                    session_token: bob.session.clone(),
+                    parent: Some(acme),
+                    short_name: "BOBS".to_owned(),
+                    name: "Bob's own".to_owned(),
+                },
+            )
+            .await?
+            .into_value();
+        assert!(
+            !org.can(&bob, Permission::DecideRoles, Some(bobs.id))
+                .await?
+        );
+        assert!(
+            !org.can(&cleo, Permission::DecideRoles, Some(bobs.id))
+                .await?
+        );
+
+        // With a row of his own that reaches sub-projects he holds it there, and may.
+        org.give(&bob, lead.id, acme).await?;
+        with_sub_projects(&cleo).await?;
+        let web = org.project(Some(acme), "WEB").await?.id;
+        assert!(org.can(&cleo, Permission::DecideRoles, Some(web)).await?);
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn sec_02_a_group_with_a_role_for_sub_projects_is_not_joined_by_a_lead_of_one_project()
+-> Outcome {
+    each_database("sec_02_group_future_sub_projects", async |db| {
+        let rig = Rig::start(db, 10).await?;
+        let org = Org::start(&rig).await?;
+        let acme = org.project(None, "ACME").await?.id;
+        let (kim, bea) = (org.person().await?, org.person().await?);
+        let keeper = org
+            .role(
+                "Group keeper",
+                &[Permission::ManageGroups, Permission::SeeProjects],
+            )
+            .await?;
+        org.give_everywhere(&kim, keeper.id).await?;
+        let lead = org.role("Section lead", &SECTION_LEAD).await?;
+        // Kim leads ACME alone.
+        org.assign(
+            &org.admin,
+            Subject::Person(kim.id),
+            Given::Role(lead.id),
+            Some(acme),
+            AppliesTo::Project,
+        )
+        .await?;
+        // The group has the role for ACME and what will be in it.
+        let leads = org.group("Leads").await?;
+        org.assign(
+            &org.admin,
+            Subject::Group(leads),
+            Given::Role(lead.id),
+            Some(acme),
+            AppliesTo::ProjectAndSubProjects,
+        )
+        .await?;
+        let add = || {
+            org.rig.api().add_group_member(
+                Rig::info(),
+                AddGroupMember {
+                    session_token: kim.session.clone(),
+                    group: leads,
+                    person: bea.id,
+                },
+            )
+        };
+        assert_eq!(refused(add().await), Some(ErrorCode::TooMuch));
+        // Once she leads ACME and what is below it, she may.
+        org.give(&kim, lead.id, acme).await?;
+        add().await?;
         Ok(())
     })
     .await

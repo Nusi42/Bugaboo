@@ -538,6 +538,23 @@ mod tests {
     }
 
     #[test]
+    fn bad_example_a_raw_identifier_and_a_name_given_by_serde() {
+        let sources = api_source(
+            "#[derive(Serialize)]\npub struct Raw {\n    pub r#email: String,\n}\n\n#[derive(Serialize)]\npub struct Renamed {\n    #[serde(rename = \"email\")]\n    contact: String,\n    #[serde(rename(serialize = \"display_name\", deserialize = \"n\"))]\n    shown: String,\n    #[serde(rename = \"label\")]\n    display_name: String,\n}\n",
+        );
+        let findings = evaluate(&sources, &json!({}), &[]);
+        let messages: Vec<String> = findings.iter().map(|f| f.message.clone()).collect();
+        assert_eq!(findings.len(), 4, "{messages:?}");
+        assert!(messages.iter().any(|m| m.contains("`Raw.email`")));
+        assert!(messages.iter().any(|m| m.contains("`Renamed.email`")));
+        assert!(
+            messages
+                .iter()
+                .any(|m| m.contains("`Renamed.display_name`"))
+        );
+    }
+
+    #[test]
     fn an_exemption_that_matches_nothing_or_has_no_reason_fails() {
         let findings = evaluate(&[], &json!({}), &[exemption("Gone", "email")]);
         assert_eq!(findings.len(), 1);

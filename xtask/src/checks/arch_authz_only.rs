@@ -381,6 +381,26 @@ const CHAR: char = '\"';
     }
 
     #[test]
+    fn bad_example_an_import_or_an_alias_of_the_engine_or_its_input() {
+        for text in [
+            "use bb_policy::evaluate as judge;\n",
+            "fn f() { let ask = bb_policy::evaluate; }\n",
+            "use bb_policy::Inputs as In;\n",
+            "use bb_policy::{Inputs, evaluate};\n",
+            "fn f(make: fn(&Inputs) -> u8) {}\n",
+        ] {
+            let findings = evaluate(&source("crates/bb-api/src/api/x.rs", text));
+            assert!(!findings.is_empty(), "{text}");
+        }
+    }
+
+    #[test]
+    fn good_example_a_method_a_definition_and_names_that_only_contain_the_word() {
+        let text = "async fn f(ctx: &Ctx) { ctx.evaluate(a, b).await; }\nfn evaluate_all() {}\nstruct MyInputs { x: u8 }\nfn evaluate(x: u8) {}\n";
+        assert!(evaluate(&source("crates/bb-api/src/api/x.rs", text)).is_empty());
+    }
+
+    #[test]
     fn good_example_the_places_that_may_ask_and_build_and_the_methods_that_only_share_the_name() {
         assert!(
             evaluate(&source(

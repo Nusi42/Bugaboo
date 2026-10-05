@@ -294,3 +294,49 @@ fn sec_03_decide_roles_is_kept_only_from_rows_strictly_above_the_no_access() {
     assert!(!world.at(world.web).allows(Permission::DecideRoles));
     assert!(!world.at(world.acme).allows(Permission::DecideRoles));
 }
+
+#[test]
+fn sec_03_the_depth_of_a_no_access_counts_whoever_it_is_for() {
+    let lead = |world: &mut World| {
+        world.role(
+            "Project lead",
+            &[Permission::SeeProjects, Permission::DecideRoles],
+        )
+    };
+
+    // A role of one group and the *No access* of another group, both at ACME: they are of the
+    // same rank, the role is removed as a whole, and a *No access* in WEB brings nothing back.
+    let mut world = World::new();
+    let (leads, blocked) = (world.group(), world.group());
+    let role = lead(&mut world);
+    world.give_group(leads, role, world.acme);
+    world.no_access_group(blocked, world.acme);
+    for place in [world.acme, world.web] {
+        let held = world.at(place);
+        assert!(!held.allows(Permission::DecideRoles), "{place:?}");
+        assert!(!held.decide_roles_was_kept());
+    }
+    world.no_access(world.web);
+    assert!(!world.at(world.web).allows(Permission::DecideRoles));
+
+    // The person's own role in ACME stands above a group's *No access* there: in ACME it counts.
+    // With their own *No access* in WEB it is removed there, and Decide who has which role is
+    // kept from it, because the only *No access* at its depth ranks below it.
+    let mut world = World::new();
+    let blocked = world.group();
+    let role = lead(&mut world);
+    let row = world.give(role, world.acme);
+    world.no_access_group(blocked, world.acme);
+    let acme = world.at(world.acme);
+    assert!(acme.allows(Permission::DecideRoles));
+    assert!(!acme.decide_roles_was_kept(), "it counts, it is not kept");
+    let no_access = world.no_access(world.web);
+    let web = world.at(world.web);
+    assert!(web.allows(Permission::DecideRoles));
+    assert!(web.decide_roles_was_kept());
+    assert!(matches!(
+        web.explain(Permission::DecideRoles).reasons.as_slice(),
+        [Reason::KeptFromRemovedRow { row: kept, no_access: by, .. }]
+            if kept.assignment == row && by.assignment == no_access
+    ));
+}
