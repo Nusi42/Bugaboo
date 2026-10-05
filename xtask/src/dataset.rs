@@ -274,6 +274,23 @@ mod tests {
     }
 
     #[test]
+    fn the_browser_tests_read_where_the_sample_is_made() {
+        let tests = include_str!("../../web/app/e2e/support/sample.ts");
+        let folder = include_str!("../../crates/bb-sample/src/folder.rs");
+        assert!(tests.contains(&format!("const SAMPLE_FOLDER = \"{SQLITE_OUT}\";")));
+        for (name, constant) in [("DATA_FOLDER", "data"), ("SIGN_IN_FILE", "sign-in.txt")] {
+            assert!(
+                tests.contains(&format!("const {name} = \"{constant}\";")),
+                "{name}"
+            );
+            assert!(
+                folder.contains(&format!("pub const {name}: &str = \"{constant}\";")),
+                "{name}"
+            );
+        }
+    }
+
+    #[test]
     fn the_address_of_a_database_goes_in_the_environment_and_not_on_the_command_line() {
         let out = Path::new("out");
         let command = program_command(

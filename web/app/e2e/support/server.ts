@@ -6,6 +6,7 @@ import { join, resolve } from "node:path";
 import { setTimeout as sleep } from "node:timers/promises";
 
 import { repoRoot } from "../../../tooling/ports.ts";
+import { copySampleInto } from "./sample.ts";
 
 /** A Bugaboo server started for one group of tests, with a data folder of its own. */
 export interface Instance {
@@ -149,7 +150,8 @@ function verifySecurityLog(executable: string, dataDir: string): Promise<string>
 }
 
 /**
- * Starts the real program on `port` with an empty data folder and waits until it answers. The
+ * Starts the real program on `port` with an empty data folder, or with a fresh copy of the sample
+ * organization (`sample`, made by `cargo xtask dataset sample`), and waits until it answers. The
  * program is the one `cargo build` made and the app is the one `npm run build` made: the tests
  * drive what people get (ADR-0023). `label` names the data folder, to tell leftovers apart.
  */
@@ -157,6 +159,7 @@ export async function startServer(
   port: number,
   label: string,
   settings: Settings = {},
+  sample = false,
 ): Promise<Instance> {
   const executable = program();
   if (!existsSync(executable) || !existsSync(join(appFolder(), "index.html"))) {
@@ -166,6 +169,9 @@ export async function startServer(
     );
   }
   const dataDir = mkdtempSync(join(tmpdir(), `bugaboo-e2e-${label}-`));
+  if (sample) {
+    copySampleInto(dataDir);
+  }
   const server = launch(
     executable,
     ["serve", "--port", String(port), "--data-dir", dataDir, "--web", appFolder()],

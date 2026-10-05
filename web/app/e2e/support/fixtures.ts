@@ -10,9 +10,15 @@ type Prepare = (server: Instance) => Promise<void>;
 interface Servers {
   /**
    * The server for the file: the running one when the file is the same, else a new one with empty
-   * data, which `prepare` then brings to the state the file starts from.
+   * data (or a fresh copy of the sample organization), which `prepare` then brings to the state
+   * the file starts from.
    */
-  readonly forFile: (file: string, settings: Settings, prepare: Prepare) => Promise<Instance>;
+  readonly forFile: (
+    file: string,
+    settings: Settings,
+    sample: boolean,
+    prepare: Prepare,
+  ) => Promise<Instance>;
   readonly stop: () => Promise<void>;
 }
 
@@ -29,12 +35,12 @@ function servers(parallelIndex: number, label: string): Servers {
     running = null;
   };
   return {
-    forFile: async (file, settings, prepare) => {
+    forFile: async (file, settings, sample, prepare) => {
       if (running?.file === file) {
         return running.instance;
       }
       await stop();
-      const instance = await startServer(port, label, settings);
+      const instance = await startServer(port, label, settings, sample);
       running = { file, instance };
       await prepare(instance);
       return instance;
@@ -46,6 +52,12 @@ function servers(parallelIndex: number, label: string): Servers {
 interface Options {
   /** Start-up settings of the server of a file (`test.use({ serverSettings: … })`). */
   serverSettings: Settings;
+  /**
+   * Whether the server of a file starts on a fresh copy of the sample organization instead of an
+   * empty data folder (`test.use({ sample: true })`). The people and their passwords are in
+   * `samplePeople()`.
+   */
+  sample: boolean;
   /**
    * What a file needs in place before its first test (`test.use({ preparation: { run: … } })`).
    * A function inside an object, because Playwright takes a plain function for a fixture.
@@ -68,9 +80,10 @@ export const test = base.extend<Options & { server: Instance }, { pool: Servers 
     { scope: "worker" },
   ],
   serverSettings: [{}, { option: true }],
+  sample: [false, { option: true }],
   preparation: [{ run: () => Promise.resolve() }, { option: true }],
-  server: async ({ pool, serverSettings, preparation }, provide, testInfo) => {
-    await provide(await pool.forFile(testInfo.file, serverSettings, preparation.run));
+  server: async ({ pool, serverSettings, sample, preparation }, provide, testInfo) => {
+    await provide(await pool.forFile(testInfo.file, serverSettings, sample, preparation.run));
   },
   contextOptions: async ({ server }, provide) => {
     // Copying to the clipboard is allowed, as it is for a person who presses the button.
