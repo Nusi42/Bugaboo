@@ -1151,9 +1151,6 @@ pub const SET_UP_SECOND_STEP_READY: MessageKey = MessageKey::new("set-up-second-
 /// The message `set-up-second-step.title`.
 pub const SET_UP_SECOND_STEP_TITLE: MessageKey = MessageKey::new("set-up-second-step.title");
 
-/// The message `set-up-second-step.waiting`.
-pub const SET_UP_SECOND_STEP_WAITING: MessageKey = MessageKey::new("set-up-second-step.waiting");
-
 /// The message `set-up-second-step.why`.
 pub const SET_UP_SECOND_STEP_WHY: MessageKey = MessageKey::new("set-up-second-step.why");
 
@@ -3906,10 +3903,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("set-up-second-step.ready", "Your second step is set up."),
     ("set-up-second-step.title", "Set up your second step"),
-    (
-        "set-up-second-step.waiting",
-        "You can go on as soon as one of them is set up.",
-    ),
     (
         "set-up-second-step.why",
         "Your administrator asks you to sign in with a second step. It keeps your account safe even if somebody learns your password.",

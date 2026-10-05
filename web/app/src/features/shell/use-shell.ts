@@ -1,9 +1,8 @@
 import { useNavigate, useRouter } from "@tanstack/react-router";
 import { useEffect } from "react";
 
-import { api } from "../../shared/api.ts";
 import { paths } from "../../shared/paths.ts";
-import { leaveSession } from "../../shared/session.ts";
+import { useSignOut } from "../../shared/use-sign-out.ts";
 import { useMe } from "../../shared/use-me.ts";
 import { useShortcutHost, useShortcuts } from "../../shared/use-shortcuts.ts";
 import { closeOverlay, openOverlay } from "./overlay-state.ts";
@@ -26,10 +25,7 @@ export function useShell(): {
 } {
   const me = useMe();
   const navigate = useNavigate();
-  const signOut = api.query.useMutation("post", "/api/v1/auth/sign-out", {
-    onSuccess: () =>
-      leaveSession(() => navigate({ to: paths.signIn, search: { reason: "signed-out" } })),
-  });
+  const signOut = useSignOut();
   useShortcutHost();
   // A layer that was open does not stay open on the next page, or for the next person.
   const router = useRouter();
@@ -55,11 +51,9 @@ export function useShell(): {
     person: {
       organizationSettings: mayOpen(paths.organizationSettings, me?.permissions ?? []),
       name: me?.display_name,
-      onSignOut: () => {
-        signOut.mutate({});
-      },
+      onSignOut: signOut.signOut,
       signingOut: signOut.isPending,
     },
-    signOutProblem: signOut.isError ? signOut.error : null,
+    signOutProblem: signOut.error,
   };
 }

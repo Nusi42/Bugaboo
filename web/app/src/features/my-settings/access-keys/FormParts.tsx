@@ -2,16 +2,27 @@ import type { Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 import { Alert, autoComplete, Button, ChoiceGroup, TextField } from "@bugaboo/ui";
 
+import { formatDay } from "../../../shared/format.ts";
 import styles from "./AccessKeys.module.css";
 import { choiceHelp, choiceName, plainChoices } from "./choice.ts";
 import type { Draft } from "./draft.ts";
 
-const MS_PER_DAY = 86_400_000;
-const DAY_TEXT_LENGTH = 10;
+const DIGITS_OF_YEAR = 4;
+const DIGITS_OF_PART = 2;
 
-/** A day as the date field writes it (`2027-03-01`), `days` after today. */
-function dayAfter(days: number): string {
-  return new Date(Date.now() + days * MS_PER_DAY).toISOString().slice(0, DAY_TEXT_LENGTH);
+/** The day `days` after today (as milliseconds since 1970), by the calendar of the person's own clock, not by UTC. */
+function localDay(days: number): number {
+  const today = new Date();
+  return new Date(today.getFullYear(), today.getMonth(), today.getDate() + days).getTime();
+}
+
+/** A day as the date field writes it (`2027-03-01`). */
+function dayText(moment: number): string {
+  const day = new Date(moment);
+  const year = String(day.getFullYear()).padStart(DIGITS_OF_YEAR, "0");
+  const month = String(day.getMonth() + 1).padStart(DIGITS_OF_PART, "0");
+  const date = String(day.getDate()).padStart(DIGITS_OF_PART, "0");
+  return `${year}-${month}-${date}`;
 }
 
 export interface PartProps {
@@ -49,14 +60,21 @@ export interface ExpiryProps extends PartProps {
 
 /** The day the key runs out: the default, or a day of the person's own, up to the longest time. */
 export function Expiry({ draft, rules }: ExpiryProps) {
-  const latest = dayAfter(rules.longest_days - 1);
+  // The latest day is at least tomorrow, and the day filled in is never later than it, even when
+  // the organization's default is as long as its longest time.
+  const latestAt = Math.max(rules.longest_days - 1, 1);
+  const presetAt = Math.min(Math.max(rules.default_days, 1), latestAt);
+  const latest = dayText(localDay(latestAt));
   return (
     <TextField
       label={t("access-keys.expires")}
-      description={t("access-keys.expires-help", { days: rules.default_days, latest })}
+      description={t("access-keys.expires-help", {
+        days: rules.default_days,
+        latest: formatDay(localDay(latestAt)),
+      })}
       requiredMessage={t("validation.required")}
-      date={{ min: dayAfter(1), max: latest }}
-      value={draft.day ?? dayAfter(rules.default_days)}
+      date={{ min: dayText(localDay(1)), max: latest }}
+      value={draft.day ?? dayText(localDay(presetAt))}
       onChange={draft.setDay}
     />
   );

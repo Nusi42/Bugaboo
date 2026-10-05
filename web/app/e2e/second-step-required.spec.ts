@@ -52,7 +52,9 @@ test("auth_03 a person who is signed in is taken to set up a second step the mom
   // Nothing else opens, not even by typing the address.
   await page.goto("/me/sessions");
   await expectSetUpScreen(page);
-  await expect(page.getByText(t("set-up-second-step.waiting"))).toBeVisible();
+  await expect(page.getByText(t("set-up-second-step.how"))).toBeVisible();
+  // A person who cannot or will not set it up can still leave.
+  await expect(page.getByRole("button", { name: t("nav.sign-out"), exact: true })).toBeVisible();
   await expectGoodInEveryTheme(page);
 
   // The code app is set up here, with the password typed again, and then Bob goes on.
@@ -77,6 +79,11 @@ test("auth_03 a person who signs in with only a password and has to set up a sec
   server,
 }) => {
   server.setOrganizationSwitch(REQUIRED, true);
+  await sendPassword(page, cleo);
+  await expectSetUpScreen(page);
+  // A person who cannot set it up now can leave, and finds the same screen when coming back.
+  await page.getByRole("button", { name: t("nav.sign-out"), exact: true }).click();
+  await expect(page).toHaveURL(/\/sign-in/u);
   await sendPassword(page, cleo);
   await expectSetUpScreen(page);
   await page.goto("/");

@@ -2,9 +2,11 @@ import { t } from "@bugaboo/messages";
 import { Alert, Button, Card } from "@bugaboo/ui";
 import { useNavigate } from "@tanstack/react-router";
 
+import { messageOf } from "../../shared/errors.ts";
 import { paths } from "../../shared/paths.ts";
 import { forgetPerson } from "../../shared/session.ts";
 import { usePageTitle } from "../../shared/use-page.ts";
+import { useSignOut } from "../../shared/use-sign-out.ts";
 import { CodeAppSection, PasskeysSection, useHasSecondStep } from "../account/index.ts";
 import styles from "./SignIn.module.css";
 
@@ -17,6 +19,7 @@ export function SetUpSecondStepPage() {
   usePageTitle(t("set-up-second-step.title"));
   const ready = useHasSecondStep();
   const navigate = useNavigate();
+  const out = useSignOut();
   return (
     <div className={styles.stack}>
       <Card heading={t("set-up-second-step.title")} level={1}>
@@ -38,9 +41,13 @@ export function SetUpSecondStepPage() {
               </Button>
             </div>
           </>
-        ) : (
-          <p className={styles.hint}>{t("set-up-second-step.waiting")}</p>
-        )}
+        ) : null}
+        {out.error === null ? null : <Alert danger>{messageOf(out.error)}</Alert>}
+        <div>
+          <Button onPress={out.signOut} isPending={out.isPending}>
+            {t("nav.sign-out")}
+          </Button>
+        </div>
       </Card>
       <CodeAppSection />
       <PasskeysSection />
