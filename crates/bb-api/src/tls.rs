@@ -288,23 +288,33 @@ fn load_certified(cert: &Path, key: &Path) -> Result<(Arc<CertifiedKey>, Served)
             path: cert.to_path_buf(),
         });
     };
+    let key_der = PrivateKeyDer::from_pem_file(key).map_err(|error| pem_error(key, error, true))?;
+    // The whole chain and the key tell the certificate in use from the one in the files: an owner
+    // may replace the intermediate certificates or the key and keep the first certificate.
+    let mut parts: Vec<&[u8]> = chain.iter().map(AsRef::as_ref).collect();
+    parts.push(key_der.secret_der());
     let served = Served {
-        id: digest(leaf.as_ref()),
+        id: digest(&parts),
         ends: not_after(leaf.as_ref()),
     };
-    let key_der = PrivateKeyDer::from_pem_file(key).map_err(|error| pem_error(key, error, true))?;
     let certified = CertifiedKey::from_der(chain, key_der, &default_provider())
         .map_err(|error| unusable(&error))?;
     Ok((Arc::new(certified), served))
 }
 
-/// A short digest of a certificate: enough to tell the certificate in use from the one in the
-/// files, not a security measure.
-fn digest(der: &[u8]) -> u64 {
+/// A short digest of the parts (every certificate of the chain and the key, each with its length
+/// in front): enough to tell the certificate in use from the one in the files, not a security
+/// measure.
+fn digest(parts: &[&[u8]]) -> u64 {
     // FNV-1a.
-    der.iter().fold(0xcbf2_9ce4_8422_2325, |hash, byte| {
-        (hash ^ u64::from(*byte)).wrapping_mul(0x0100_0000_01b3)
-    })
+    let mut hash: u64 = 0xcbf2_9ce4_8422_2325;
+    for part in parts {
+        let length = u64::try_from(part.len()).unwrap_or(u64::MAX).to_be_bytes();
+        for byte in length.iter().chain(part.iter()) {
+            hash = (hash ^ u64::from(*byte)).wrapping_mul(0x0100_0000_01b3);
+        }
+    }
+    hash
 }
 
 fn pem_error(path: &Path, error: rustls::pki_types::pem::Error, key: bool) -> TlsError {
@@ -776,6 +786,24 @@ mod tests {
         ));
         assert_eq!(served.expires_at(), in_use);
         fs::write(&cert, &cert_pem).unwrap();
+        assert_eq!(served.renew(now).unwrap(), Renewal::Kept);
+    }
+    #[test]
+    fn sec_10_a_changed_chain_with_the_same_first_certificate_is_served() {
+        let folder = tempfile::tempdir().unwrap();
+        let now = now_seconds();
+        let (cert, key) = provide(folder.path(), "own", now);
+        let served = serve_certificate(&TlsSource::Files {
+            cert: cert.clone(),
+            key: key.clone(),
+        })
+        .unwrap();
+        assert_eq!(served.renew(now).unwrap(), Renewal::Kept);
+        // The owner adds an intermediate certificate behind the first one; the first is the same.
+        let leaf = fs::read_to_string(&cert).unwrap();
+        let (other, _) = generate(&wanted_names(&[]), now).unwrap();
+        fs::write(&cert, format!("{leaf}{other}")).unwrap();
+        assert_eq!(served.renew(now).unwrap(), Renewal::Reloaded);
         assert_eq!(served.renew(now).unwrap(), Renewal::Kept);
     }
 }
