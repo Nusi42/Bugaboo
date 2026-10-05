@@ -242,7 +242,7 @@ async fn auth_07_a_key_whose_public_prefix_is_taken_is_made_again_once() -> Outc
 
     use crate::auth::{MakeAccessKey, make_access_key};
     let world = World::new().await?;
-    let make = |name: &str| MakeAccessKey {
+    let ask_for = |name: &str| MakeAccessKey {
         session_token: world.admin.session_token.clone(),
         password: PASSWORD.to_owned(),
         name: name.to_owned(),
@@ -253,7 +253,7 @@ async fn auth_07_a_key_whose_public_prefix_is_taken_is_made_again_once() -> Outc
     };
     // One clash: the key is made with a new secret, and nobody sees that it happened.
     super::fake::clash_the_next_key_prefix();
-    let made = make_access_key(&world.ctx(), make("After a clash"))
+    let made = make_access_key(&world.ctx(), ask_for("After a clash"))
         .await?
         .into_value();
     assert_eq!(made.key.name, "After a clash");
@@ -261,7 +261,7 @@ async fn auth_07_a_key_whose_public_prefix_is_taken_is_made_again_once() -> Outc
     // The store refusing more than once is not a clash of prefixes: the use case gives up.
     super::fake::clash_the_next_key_prefix();
     super::fake::clash_the_next_key_prefix();
-    let again = make_access_key(&world.ctx(), make("Again")).await;
+    let again = make_access_key(&world.ctx(), ask_for("Again")).await;
     assert!(again.is_ok(), "a second key is stored after one clash");
     Ok(())
 }

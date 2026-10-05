@@ -260,7 +260,7 @@ fn a_try_at_the_key<S: AuthStore>(
 ) -> Result<(AccessKeySecret, AccessKeyRecord, DomainEvent), AppError> {
     let secret = AccessKeySecret::generate()?;
     let mut stored = draft.clone();
-    stored.key.prefix = secret.prefix().to_owned();
+    secret.prefix().clone_into(&mut stored.key.prefix);
     stored.key.secret_hash = secret.hash();
     let event = ctx.event(
         by(stored.key.owner),

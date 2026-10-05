@@ -52,7 +52,7 @@ async fn sec_14_keys_that_work_are_never_turned_away_when_they_are_used_at_the_s
         let org = Org::start(&rig).await?;
         let key = key_of(&rig, &org.admin, KeyChoice::Everything).await?;
         let call = || probe_from(&rig, HERE, &key);
-        let (a, b, c, d, e, f, g, h) = tokio::join!(
+        let answers = tokio::join!(
             call(),
             call(),
             call(),
@@ -62,7 +62,10 @@ async fn sec_14_keys_that_work_are_never_turned_away_when_they_are_used_at_the_s
             call(),
             call()
         );
-        for answer in [a, b, c, d, e, f, g, h] {
+        let answers = [
+            answers.0, answers.1, answers.2, answers.3, answers.4, answers.5, answers.6, answers.7,
+        ];
+        for answer in answers {
             assert_eq!(refused(answer), None);
         }
         Ok(())
