@@ -5,23 +5,26 @@ import { Header, ListBox, ListBoxItem, ListBoxSection, Text } from "react-aria-c
 
 import { closeOverlay } from "./overlay-state.ts";
 import styles from "./QuickSearch.module.css";
-import type { ResultGroup } from "./use-quick-results.ts";
+import { resultKey, type Collected } from "./quick-search-collect.ts";
 
 /** The words of React Aria Components for the slots of an item, not text for people. */
 const descriptionSlot = "description";
 
 export interface QuickResultsProps {
-  readonly groups: readonly ResultGroup[];
+  readonly found: Collected;
 }
 
 /** What quick search found, grouped by where it was found. */
-export function QuickResults({ groups }: QuickResultsProps) {
+export function QuickResults({ found }: QuickResultsProps) {
+  const { groups } = found;
   const router = useRouter();
   // Going to a result closes the dialog, also when the result is the page that is open already.
   const open = (id: string | number): void => {
-    const found = groups.flatMap((group) => group.results).find((result) => result.id === id);
-    if (found !== undefined) {
-      router.history.push(found.path);
+    for (const group of groups) {
+      const hit = group.results.find((result) => resultKey(group, result) === id);
+      if (hit !== undefined) {
+        router.history.push(hit.path);
+      }
     }
     closeOverlay();
   };
@@ -33,12 +36,12 @@ export function QuickResults({ groups }: QuickResultsProps) {
       onAction={open}
     >
       {groups.map((group) => (
-        <ListBoxSection key={group.heading} className={cx(styles.group)}>
+        <ListBoxSection key={group.id} className={cx(styles.group)}>
           <Header className={styles.heading}>{group.heading}</Header>
           {group.results.map((result) => (
             <ListBoxItem
-              key={result.id}
-              id={result.id}
+              key={resultKey(group, result)}
+              id={resultKey(group, result)}
               textValue={result.title}
               className={cx(styles.item)}
             >

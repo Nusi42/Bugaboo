@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { useEffect, useLayoutEffect, useRef } from "react";
+import { useEffect, useId, useLayoutEffect, useRef } from "react";
 
 import { chordOf, sequenceMs } from "../../shared/shortcuts-engine.ts";
 import { describeKeys } from "./key-words.ts";
@@ -21,6 +21,8 @@ const passThrough = new Set(["Tab", "Escape"]);
  */
 export function KeyCaptureField({ value, onChange }: KeyCaptureFieldProps) {
   const box = useRef<HTMLInputElement>(null);
+  const inputId = useId();
+  const helpId = useId();
   const latest = useRef({ value, onChange });
   const lastPress = useRef(0);
   useLayoutEffect(() => {
@@ -47,12 +49,21 @@ export function KeyCaptureField({ value, onChange }: KeyCaptureFieldProps) {
     };
   }, []);
   return (
-    <input
-      ref={box}
-      className={styles.box}
-      readOnly
-      aria-label={t("shortcuts.new-keys")}
-      value={value === "" ? "" : describeKeys(value)}
-    />
+    <div className={styles.field}>
+      <label htmlFor={inputId} className={styles.label}>
+        {t("shortcuts.new-keys")}
+      </label>
+      <input
+        ref={box}
+        id={inputId}
+        className={styles.box}
+        readOnly
+        aria-describedby={helpId}
+        value={value === "" ? "" : describeKeys(value)}
+      />
+      <p id={helpId} className={styles.help}>
+        {t("shortcuts.new-keys-help")}
+      </p>
+    </div>
   );
 }

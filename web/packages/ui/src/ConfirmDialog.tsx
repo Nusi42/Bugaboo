@@ -4,6 +4,7 @@ import { Dialog, DialogTrigger, Heading, Modal, ModalOverlay } from "react-aria-
 import { Button } from "./Button.tsx";
 import styles from "./ConfirmDialog.module.css";
 import { cx } from "./cx.ts";
+import { useLayout } from "./layout.ts";
 
 /** Words of React Aria Components and of the ARIA standard, not text for people. */
 const dialogRole = "alertdialog";
@@ -38,6 +39,8 @@ export interface ConfirmDialogProps {
 export function ConfirmDialog(props: ConfirmDialogProps) {
   const { triggerLabel, triggerName, onClosed } = props;
   const [isOpen, setOpen] = useState(false);
+  // A short task is a dialog, and on a phone the dialog fills the screen (UX §6).
+  const full = useLayout() === "phone";
   const changeOpen = (open: boolean): void => {
     setOpen(open);
     if (!open) {
@@ -49,8 +52,8 @@ export function ConfirmDialog(props: ConfirmDialogProps) {
       <Button {...(triggerName === undefined ? {} : { "aria-label": triggerName })}>
         {triggerLabel}
       </Button>
-      <ModalOverlay className={cx(styles.overlay)} isDismissable>
-        <Modal className={cx(styles.modal)}>
+      <ModalOverlay className={cx(styles.overlay, full && styles.full)} isDismissable>
+        <Modal className={cx(styles.modal, full && styles.full)}>
           <Question
             {...props}
             close={() => {

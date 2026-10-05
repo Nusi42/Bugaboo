@@ -78,3 +78,10 @@
   padding: var(--space-3);
   color: var(--fg-muted);
 }
+
+.quiet {
+  margin: 0;
+  padding: 0 var(--space-3);
+  color: var(--fg-muted);
+  font-size: var(--fs-base);
+}

@@ -16,7 +16,7 @@ import { useShell } from "./use-shell.ts";
  */
 export function AppLayout() {
   const layout = useLayout();
-  const { narrow } = useSidebarNarrow();
+  const { narrow, locked } = useSidebarNarrow();
   const { person, signOutProblem } = useShell();
   useAppearance();
   const computer = layout === "computer";
@@ -25,7 +25,7 @@ export function AppLayout() {
       <a className={styles.skip} href={CONTENT_HREF}>
         {t("shell.skip")}
       </a>
-      {computer ? <Sidebar narrow={narrow} {...person} /> : null}
+      {computer ? <Sidebar narrow={narrow} locked={locked} {...person} /> : null}
       <ShellColumn layout={layout} signOutProblem={signOutProblem} />
       <ShellOverlays layout={layout} {...person} />
     </div>

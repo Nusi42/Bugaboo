@@ -5,7 +5,7 @@ import { messageOf } from "../../shared/errors.ts";
 import { usePageFocus } from "../../shared/focus.ts";
 import styles from "./AppLayout.module.css";
 import { BottomBar } from "./BottomBar.tsx";
-import { CONTENT_ID } from "./content-id.ts";
+import { CONTENT_ID, scrollRestoration } from "./content-id.ts";
 import { TopBar } from "./TopBar.tsx";
 
 export interface ShellColumnProps {
@@ -21,7 +21,7 @@ export function ShellColumn({ layout, signOutProblem }: ShellColumnProps) {
   return (
     <div className={styles.column}>
       <TopBar layout={layout} />
-      <main id={CONTENT_ID} className={styles.main} tabIndex={-1}>
+      <main id={CONTENT_ID} className={styles.main} tabIndex={-1} {...scrollRestoration}>
         <div className={styles.inner}>
           {signOutProblem === null ? null : <Alert danger>{messageOf(signOutProblem)}</Alert>}
           <Outlet />

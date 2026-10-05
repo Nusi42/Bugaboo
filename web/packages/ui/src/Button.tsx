@@ -6,6 +6,7 @@ import { cx } from "./cx.ts";
 
 /** Words of the HTML standard, not text for people. */
 const buttonTypes = { button: "button", submit: "submit" } as const;
+const currentItem = "true";
 
 export interface ButtonProps {
   readonly children: ReactNode;
@@ -25,6 +26,8 @@ export interface ButtonProps {
    * accessibility checkers find without a name.)
    */
   readonly isPending?: boolean;
+  /** The button of the item that is open now, in a list of items: marked for screen readers. */
+  readonly current?: boolean;
   readonly isDisabled?: boolean;
   readonly onPress?: () => void;
   /** The name for screen readers when the text alone is not enough, for example in a list. */
@@ -39,6 +42,7 @@ export function Button({
   wide = false,
   submit = false,
   isPending = false,
+  current = false,
   onPress,
   ...props
 }: ButtonProps) {
@@ -49,6 +53,7 @@ export function Button({
       // A button that waits for an answer must not send the form a second time.
       type={submit && !isPending ? buttonTypes.submit : buttonTypes.button}
       aria-busy={isPending}
+      {...(current ? { "aria-current": currentItem } : {})}
       className={cx(
         styles.button,
         primary && styles.primary,

@@ -134,3 +134,11 @@ test("ux_05 the shortcuts are searchable, and the open one is in the address", a
   await page.goto("/me/shortcuts?edit=go-home");
   await expect(page.getByRole("complementary", { name: t("shortcut.go-home") })).toBeVisible();
 });
+
+test("ux_05 the box for new keys has a visible label and its help text", async ({ page }) => {
+  await signIn(page, ada);
+  const panel = await openEditor(page, t("shortcut.go-home"));
+  await expect(panel.getByText(t("shortcuts.new-keys"), { exact: true })).toBeVisible();
+  const box = panel.getByLabel(t("shortcuts.new-keys"), { exact: true });
+  await expect(box).toHaveAccessibleDescription(t("shortcuts.new-keys-help"));
+});

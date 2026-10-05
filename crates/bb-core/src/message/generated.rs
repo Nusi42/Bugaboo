@@ -633,6 +633,9 @@ pub const SEARCH_NOTHING: MessageKey = MessageKey::new("search.nothing");
 /// The message `search.pages`.
 pub const SEARCH_PAGES: MessageKey = MessageKey::new("search.pages");
 
+/// The message `search.partial`.
+pub const SEARCH_PARTIAL: MessageKey = MessageKey::new("search.partial");
+
 /// The message `search.placeholder`.
 pub const SEARCH_PLACEHOLDER: MessageKey = MessageKey::new("search.placeholder");
 
@@ -2750,6 +2753,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("search.label", "Search"),
     ("search.nothing", "Nothing found. Try another word."),
     ("search.pages", "Pages"),
+    ("search.partial", "Some results could not be loaded."),
     ("search.placeholder", "Search pages and settings"),
     ("search.results", "Results"),
     ("search.title", "Quick search"),

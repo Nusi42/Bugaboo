@@ -11,7 +11,7 @@ import { useQuickResults } from "./use-quick-results.ts";
 /** The inside of the dialog, made new every time the dialog opens so the box starts empty. */
 export function QuickSearchBox() {
   const [query, setQuery] = useState("");
-  const groups = useQuickResults(query);
+  const found = useQuickResults(query);
   const field = useRef<HTMLDivElement>(null);
   // The dialog is made for typing: the box has the focus as soon as it appears.
   useEffect(() => {
@@ -32,7 +32,8 @@ export function QuickSearchBox() {
           </div>
           <IconButton icon={iconName.close} label={t("common.close")} onPress={closeOverlay} />
         </div>
-        <QuickResults groups={groups} />
+        <QuickResults found={found} />
+        {found.failed ? <p className={styles.quiet}>{t("search.partial")}</p> : null}
       </div>
     </Autocomplete>
   );

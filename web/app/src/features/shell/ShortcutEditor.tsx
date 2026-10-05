@@ -64,7 +64,6 @@ export function ShortcutEditor({ id, overrides }: ShortcutEditorProps) {
             setSaved(null);
           }}
         />
-        <p className={styles.help}>{t("shortcuts.new-keys-help")}</p>
       </div>
       {conflict === null ? null : (
         <Alert warning>

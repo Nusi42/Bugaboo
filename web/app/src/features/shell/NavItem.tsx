@@ -1,11 +1,12 @@
 import { cx, Icon, type IconName } from "@bugaboo/ui";
 import type { ReactNode } from "react";
-import { Button, Link } from "react-aria-components";
+import { Button, Link, Tooltip, TooltipTrigger, VisuallyHidden } from "react-aria-components";
 
 import styles from "./NavItem.module.css";
 
-/** Words of the ARIA standard, not text for people. */
+/** Words of the ARIA standard and of React Aria Components, not text for people. */
 const currentPage = "page";
+const tooltipSide = { end: "end" } as const;
 
 interface ItemProps {
   readonly icon: IconName;
@@ -13,6 +14,47 @@ interface ItemProps {
   readonly label: string;
   /** The sidebar shows icons only. */
   readonly narrow?: boolean;
+}
+
+/** The icon and the words; with icons only the words are for screen readers and the tooltip. */
+function Content({ icon, label, narrow, hint }: ItemProps & { readonly hint?: ReactNode }) {
+  return (
+    <>
+      <Icon name={icon} />
+      {narrow === true ? (
+        <VisuallyHidden>{label}</VisuallyHidden>
+      ) : (
+        <span className={styles.label}>{label}</span>
+      )}
+      {narrow === true ? null : hint}
+    </>
+  );
+}
+
+/**
+ * With icons only the item says what it is in a tooltip that shows when the pointer is over it and
+ * also when it has the keyboard focus. Otherwise the item is what it is.
+ */
+function WithTooltip({
+  narrow,
+  label,
+  children,
+}: {
+  readonly narrow: boolean;
+  readonly label: string;
+  readonly children: ReactNode;
+}) {
+  if (!narrow) {
+    return children;
+  }
+  return (
+    <TooltipTrigger delay={0} closeDelay={0}>
+      {children}
+      <Tooltip placement={tooltipSide.end} className={cx(styles.tooltip)}>
+        {label}
+      </Tooltip>
+    </TooltipTrigger>
+  );
 }
 
 export interface NavLinkProps extends ItemProps {
@@ -33,16 +75,16 @@ export function NavLink({
   onNavigate,
 }: NavLinkProps) {
   return (
-    <Link
-      className={cx(styles.item)}
-      href={href}
-      {...(narrow ? { title: label } : {})}
-      {...(current ? { "aria-current": currentPage } : {})}
-      {...(onNavigate === undefined ? {} : { onPress: onNavigate })}
-    >
-      <Icon name={icon} />
-      <span className={narrow ? styles.hidden : styles.label}>{label}</span>
-    </Link>
+    <WithTooltip narrow={narrow} label={label}>
+      <Link
+        className={cx(styles.item)}
+        href={href}
+        {...(current ? { "aria-current": currentPage } : {})}
+        {...(onNavigate === undefined ? {} : { onPress: onNavigate })}
+      >
+        <Content icon={icon} label={label} narrow={narrow} />
+      </Link>
+    </WithTooltip>
   );
 }
 
@@ -66,16 +108,15 @@ export function NavButton({
   hint,
 }: NavButtonProps) {
   return (
-    <Button
-      className={cx(styles.item)}
-      onPress={onPress}
-      {...(isExpanded === undefined ? {} : { "aria-expanded": isExpanded })}
-      aria-busy={isPending}
-      {...(narrow ? { title: label } : {})}
-    >
-      <Icon name={icon} />
-      <span className={narrow ? styles.hidden : styles.label}>{label}</span>
-      {narrow ? null : hint}
-    </Button>
+    <WithTooltip narrow={narrow} label={label}>
+      <Button
+        className={cx(styles.item)}
+        onPress={onPress}
+        {...(isExpanded === undefined ? {} : { "aria-expanded": isExpanded })}
+        aria-busy={isPending}
+      >
+        <Content icon={icon} label={label} narrow={narrow} hint={hint} />
+      </Button>
+    </WithTooltip>
   );
 }

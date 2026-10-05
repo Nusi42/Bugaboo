@@ -40,9 +40,13 @@ function snapshot(): SidebarState {
 }
 
 /** Whether the sidebar shows icons only, by the person's choice or because a screen needs room. */
-export function useSidebarNarrow(): { readonly narrow: boolean; readonly chosen: boolean } {
+export function useSidebarNarrow(): {
+  readonly narrow: boolean;
+  /** A screen has narrowed it (the focus view): the person cannot widen it until that screen is closed. */
+  readonly locked: boolean;
+} {
   const current = useSyncExternalStore(subscribe, snapshot);
-  return { narrow: current.narrowed || current.squeezed > 0, chosen: current.narrowed };
+  return { narrow: current.narrowed || current.squeezed > 0, locked: current.squeezed > 0 };
 }
 
 /** Narrows or widens the sidebar, and remembers it. */

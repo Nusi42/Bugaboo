@@ -33,6 +33,7 @@ function SlimList({ items, open, onOpen }: SlimListProps) {
         <li key={example.id}>
           <Button
             quiet={example.id !== open}
+            current={example.id === open}
             onPress={() => {
               onOpen(example.id);
             }}

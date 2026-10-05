@@ -1,3 +1,21 @@
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.label {
+  font-size: var(--fs-md);
+  font-weight: 700;
+}
+
+.help {
+  margin: 0;
+  color: var(--fg-muted);
+  font-size: var(--fs-base);
+  line-height: 1.4;
+}
+
 .box {
   box-sizing: border-box;
   width: 100%;

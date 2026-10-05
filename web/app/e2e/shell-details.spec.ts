@@ -1,0 +1,123 @@
+import { t } from "@bugaboo/messages";
+import { type Locator, type Page } from "@playwright/test";
+
+import { ada, makeAdmin } from "./support/accounts.ts";
+import { expect, test } from "./support/fixtures.ts";
+import { signIn } from "./support/flows.ts";
+import { onThisLayout } from "./support/layout.ts";
+
+test.use({
+  preparation: {
+    run: async (server) => {
+      await (await makeAdmin(server)).dispose();
+    },
+  },
+});
+
+/** The menu of the app: the sidebar, or what a tablet slides in. */
+function mainMenu(page: Page): Locator {
+  return page.getByRole("navigation", { name: t("shell.menu"), exact: true });
+}
+
+async function stayingPut(page: Page): Promise<void> {
+  // A short window and a long page: the sidebar stays in the window, Sign out among it.
+  await page.setViewportSize({ width: 1280, height: 600 });
+  await page.goto("/me/appearance");
+  await page.mouse.wheel(0, 3000);
+  await expect(page.getByRole("button", { name: t("nav.sign-out"), exact: true })).toBeInViewport();
+  // A window so short that the sidebar does not fit scrolls the sidebar itself, not the page.
+  await page.setViewportSize({ width: 1280, height: 360 });
+  const signOut = page.getByRole("button", { name: t("nav.sign-out"), exact: true });
+  await signOut.scrollIntoViewIfNeeded();
+  await expect(signOut).toBeInViewport();
+}
+
+async function nothingToKeep(page: Page): Promise<void> {
+  // A tablet and a phone have no sidebar to keep in the window.
+  await expect(page.getByRole("button", { name: t("shell.narrow") })).toHaveCount(0);
+}
+
+test("ux_01 the sidebar of a computer stays in the window while the page scrolls", async ({
+  page,
+}) => {
+  await signIn(page, ada);
+  await onThisLayout(page, { computer: stayingPut, tablet: nothingToKeep, phone: nothingToKeep });
+});
+
+async function tooltipOnFocus(page: Page): Promise<void> {
+  const menu = mainMenu(page);
+  await menu.getByRole("button", { name: t("shell.narrow") }).click();
+  // With icons only, the keyboard focus shows what the icon is.
+  await menu.getByRole("button", { name: t("shell.search"), exact: true }).focus();
+  await page.keyboard.press("Tab");
+  await expect(menu.getByRole("link", { name: t("nav.home"), exact: true })).toBeFocused();
+  await expect(page.getByRole("tooltip")).toHaveText(t("nav.home"));
+}
+
+async function noNarrowMenu(page: Page): Promise<void> {
+  await expect(page.getByRole("button", { name: t("shell.narrow") })).toHaveCount(0);
+}
+
+test("ux_04 the narrow menu names an icon when it has the keyboard focus", async ({ page }) => {
+  await signIn(page, ada);
+  await onThisLayout(page, { computer: tooltipOnFocus, tablet: noNarrowMenu, phone: noNarrowMenu });
+});
+
+async function groupsOfTopics(page: Page): Promise<void> {
+  await expect(page.getByRole("list", { name: t("nav.group.look"), exact: true })).toBeVisible();
+  await expect(page.getByRole("list", { name: t("nav.group.sign-in"), exact: true })).toBeVisible();
+}
+
+async function groupsOnLargeScreens(page: Page): Promise<void> {
+  await page.goto("/me/appearance");
+  await groupsOfTopics(page);
+}
+
+async function groupsOnPhone(page: Page): Promise<void> {
+  await page.goto("/me");
+  await groupsOfTopics(page);
+}
+
+test("ux_04 the groups of the settings menu are labelled lists", async ({ page }) => {
+  await signIn(page, ada);
+  await onThisLayout(page, {
+    computer: groupsOnLargeScreens,
+    tablet: groupsOnLargeScreens,
+    phone: groupsOnPhone,
+  });
+});
+
+async function openQuestion(page: Page): Promise<{ width: number; height: number }> {
+  await page.goto("/me/sessions");
+  await page.getByRole("button", { name: t("sessions.everywhere") }).click();
+  const box = await page.getByRole("alertdialog").boundingBox();
+  return { width: box?.width ?? 0, height: box?.height ?? 0 };
+}
+
+async function questionFillsThePhone(page: Page): Promise<void> {
+  const box = await openQuestion(page);
+  expect(box).toEqual({ width: page.viewportSize()?.width, height: page.viewportSize()?.height });
+}
+
+async function questionIsADialog(page: Page): Promise<void> {
+  const box = await openQuestion(page);
+  expect(box.width).toBeLessThan(page.viewportSize()?.width ?? 0);
+}
+
+test("ux_01 a question before something that cannot be undone fills the screen of a phone", async ({
+  page,
+}) => {
+  await signIn(page, ada);
+  await onThisLayout(page, {
+    computer: questionIsADialog,
+    tablet: questionIsADialog,
+    phone: questionFillsThePhone,
+  });
+});
+
+test("ux_01 the content is named for the router, so going back brings the page to where it was", async ({
+  page,
+}) => {
+  await signIn(page, ada);
+  await expect(page.locator("main")).toHaveAttribute("data-scroll-restoration-id", "content");
+});

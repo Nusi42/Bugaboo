@@ -345,6 +345,7 @@ export const messages = {
   "search.results": "Results",
   "search.nothing": "Nothing found. Try another word.",
   "search.pages": "Pages",
+  "search.partial": "Some results could not be loaded.",
   "shortcut.quick-search": "Open quick search",
   "shortcut.show-shortcuts": "Show all keyboard shortcuts",
   "shortcut.go-home": "Go to the start page",
