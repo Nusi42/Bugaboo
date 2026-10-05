@@ -104,7 +104,9 @@ impl NameList {
 pub(crate) struct Run {
     pub(crate) label: String,
     dump: String,
-    secrets: Vec<String>,
+    /// What must not show up outside the sign-in file: the passwords, the secrets of the code
+    /// apps as text, and the raw bytes those secrets stand for.
+    needles: Vec<Vec<u8>>,
     /// Every other file of the run: the places a secret must not be.
     scanned: Vec<(String, Vec<u8>)>,
 }
@@ -121,27 +123,49 @@ impl Run {
         Ok(Self {
             label: label.to_owned(),
             dump: read(DUMP_FILE)?,
-            secrets: secrets_of(&read(SIGN_IN_FILE)?),
+            needles: needles_of(&read(SIGN_IN_FILE)?),
             scanned,
         })
     }
 }
 
-/// The passwords and code-app secrets of the text of a sign-in file: lines of tab-separated
-/// columns (address, password, role, name, secret), `#` for comments.
-fn secrets_of(text: &str) -> Vec<String> {
-    text.lines()
-        .filter(|line| !line.starts_with('#') && !line.trim().is_empty())
-        .flat_map(|line| {
-            let columns: Vec<&str> = line.split('\t').collect();
-            [columns.get(1), columns.get(4)]
-                .into_iter()
-                .flatten()
-                .filter(|secret| !secret.is_empty())
-                .map(|secret| (*secret).to_owned())
-                .collect::<Vec<_>>()
-        })
-        .collect()
+/// What the text of a sign-in file says must stay inside it: lines of tab-separated columns
+/// (address, password, role, name, secret), `#` for comments. The secret of a code app is written
+/// in base 32; a file that stores it as the 20 bytes it stands for leaks it as well, so those
+/// bytes are looked for too.
+fn needles_of(text: &str) -> Vec<Vec<u8>> {
+    let mut needles = Vec::new();
+    for line in text.lines().filter(|line| !line.starts_with('#')) {
+        let columns: Vec<&str> = line.split('\t').collect();
+        if let Some(password) = columns.get(1).filter(|password| !password.is_empty()) {
+            needles.push(password.as_bytes().to_vec());
+        }
+        if let Some(secret) = columns.get(4).filter(|secret| !secret.is_empty()) {
+            needles.push(secret.as_bytes().to_vec());
+            needles.extend(base32_decode(secret).filter(|raw| !raw.is_empty()));
+        }
+    }
+    needles
+}
+
+/// The bytes a base 32 text (RFC 4648, as code apps take it) stands for; `None` for any other
+/// character.
+fn base32_decode(text: &str) -> Option<Vec<u8>> {
+    const ALPHABET: &[u8; 32] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+    let mut bytes = Vec::new();
+    let (mut bits, mut count) = (0_u32, 0_u32);
+    for symbol in text.trim_end_matches('=').bytes() {
+        let value = ALPHABET
+            .iter()
+            .position(|known| *known == symbol.to_ascii_uppercase())?;
+        bits = (bits << 5) | u32::try_from(value).ok()?;
+        count += 5;
+        if count >= 8 {
+            count -= 8;
+            bytes.push(u8::try_from((bits >> count) & 0xFF).ok()?);
+        }
+    }
+    Some(bytes)
 }
 
 /// Every file below `folder` except the sign-in file of the run itself, with its bytes.
@@ -198,7 +222,7 @@ pub(crate) fn problems(names: &NameList, runs: &[Run]) -> Vec<String> {
     }
     for run in runs {
         for (file, bytes) in &run.scanned {
-            if run.secrets.iter().any(|secret| contains(bytes, secret)) {
+            if run.needles.iter().any(|needle| contains(bytes, needle)) {
                 problems.push(format!(
                     "{}: {file} holds a password or secret. They belong only in the ignored file {SIGN_IN_FILE}.",
                     run.label
@@ -274,11 +298,8 @@ fn difference(left: &Value, right: &Value, path: &str) -> Option<String> {
     }
 }
 
-fn contains(bytes: &[u8], secret: &str) -> bool {
-    !secret.is_empty()
-        && bytes
-            .windows(secret.len())
-            .any(|window| window == secret.as_bytes())
+fn contains(bytes: &[u8], needle: &[u8]) -> bool {
+    !needle.is_empty() && bytes.windows(needle.len()).any(|window| window == needle)
 }
 
 #[cfg(test)]
@@ -382,7 +403,7 @@ mod tests {
         let empty = Run {
             label: "only".to_owned(),
             dump: "{}".to_owned(),
-            secrets: Vec::new(),
+            needles: Vec::new(),
             scanned: Vec::new(),
         };
         let found = problems(&names(), &[empty]);
@@ -418,9 +439,44 @@ mod tests {
     }
 
     #[test]
-    fn the_secrets_are_the_password_and_the_code_app_column_only() {
-        let text = "# header\nana@bugaboo.example\tPW-ONE\tcontributor\tAna Moreno\nben@bugaboo.example\tPW-TWO\tteam_member\tBen Hale\tSECRET-TWO\n";
-        assert_eq!(secrets_of(text), ["PW-ONE", "PW-TWO", "SECRET-TWO"]);
+    fn the_needles_are_the_password_and_the_code_app_column_only() {
+        let text = "# header\nana@bugaboo.example\tPW-ONE\tcontributor\tAna Moreno\nben@bugaboo.example\tPW-TWO\tteam_member\tBen Hale\tMZXW6YTBOI\n";
+        let needles = needles_of(text);
+        assert_eq!(
+            needles,
+            [
+                b"PW-ONE".to_vec(),
+                b"PW-TWO".to_vec(),
+                b"MZXW6YTBOI".to_vec(),
+                b"foobar".to_vec()
+            ]
+        );
+    }
+
+    #[test]
+    fn base_32_is_decoded_the_way_code_apps_read_it() {
+        // RFC 4648 test vectors.
+        assert_eq!(base32_decode("MZXW6YTBOI").unwrap(), b"foobar");
+        assert_eq!(base32_decode("mzxw6ytboi======").unwrap(), b"foobar");
+        assert_eq!(base32_decode("").unwrap(), b"");
+        assert!(base32_decode("not base 32!").is_none());
+    }
+
+    #[test]
+    fn bad_example_the_raw_bytes_of_a_code_app_secret_in_a_file() {
+        // `MZXW6YTBOI` is the text of `foobar`; a file may keep the bytes instead of the text.
+        let sign_in = "ana@bugaboo.example\tPW-ONE\tcontributor\tAna Moreno\tMZXW6YTBOI\n";
+        let leaking = Run {
+            label: "only".to_owned(),
+            dump: "{}".to_owned(),
+            needles: needles_of(sign_in),
+            scanned: vec![("data/keys.bin".to_owned(), b"header foobar".to_vec())],
+        };
+        let found = problems(&names(), &[leaking]);
+        assert!(
+            found.iter().any(|p| p.contains("data/keys.bin holds")),
+            "{found:?}"
+        );
     }
 
     #[test]
