@@ -6,6 +6,9 @@
     ".": "./src/index.ts",
     "./tokens.css": "./src/tokens.css"
   },
+  "dependencies": {
+    "react-aria-components": "1.21.1"
+  },
   "peerDependencies": {
     "react": "19.3.0"
   }
