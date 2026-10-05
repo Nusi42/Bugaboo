@@ -19,6 +19,7 @@ mod keys;
 mod layout;
 mod migrations;
 mod policy;
+mod projects;
 mod schema;
 mod secrets;
 mod security_log;

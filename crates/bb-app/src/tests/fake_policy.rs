@@ -25,7 +25,7 @@ fn chain_of(state: &State, project: ProjectId) -> Option<Vec<ProjectId>> {
     Some(chain)
 }
 
-fn role_data(record: &RoleRecord) -> RoleData {
+pub(super) fn role_data(record: &RoleRecord) -> RoleData {
     RoleData {
         id: record.role.id,
         name: record.role.name.clone(),
@@ -147,6 +147,7 @@ impl PolicyStore for FakeStore {
     ) -> Result<Option<Inputs>, FakeError> {
         let mut shared = self.lock();
         shared.policy_loads += 1;
+        shared.reads += 1;
         Ok(inputs_of(&shared.state, person, place))
     }
 

@@ -1,7 +1,7 @@
 import { t } from "@bugaboo/messages";
 import { type Page } from "@playwright/test";
 
-import { paths } from "../src/shared/paths.ts";
+import { paths, projectAddress, projectSettingsAddress } from "../src/shared/paths.ts";
 import { ada, addCodeApp, bob, invite, makeAdmin, makePerson } from "./support/accounts.ts";
 import {
   expectGoodInEveryLook,
@@ -26,6 +26,7 @@ test.use({
       const session = await makePerson(server, admin, bob);
       await addCodeApp(session, bob.password);
       invitationLink = await invite(admin, "guest@example.test");
+      await admin.post("/api/v1/projects", { short_name: "WEB", name: "Website" });
       await admin.put("/api/v1/auth/sign-up-policy", { enabled: true, domains: ["example.test"] });
       await admin.dispose();
       await session.dispose();
@@ -105,6 +106,13 @@ const visits: readonly Visit[] = [
   },
   { address: paths.invitations, open: signedIn(paths.invitations), guest: false },
   { address: paths.status, open: signedIn(paths.status), guest: false },
+  { address: paths.projects, open: signedIn(paths.projects), guest: false },
+  { address: paths.project, open: signedIn(projectAddress("WEB")), guest: false },
+  {
+    address: paths.projectSettings,
+    open: signedIn(projectSettingsAddress("WEB")),
+    guest: false,
+  },
   { address: paths.frames, open: signedIn(paths.frames), guest: false },
 ];
 

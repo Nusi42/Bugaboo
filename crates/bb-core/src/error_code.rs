@@ -85,6 +85,14 @@ error_codes! {
     TooMuch => ("access.too_much", 403, message::ERROR_ACCESS_TOO_MUCH),
     /// A person or group would have a role and *No access* in the same project.
     AssignmentConflict => ("assignment.conflict", 409, message::ERROR_ASSIGNMENT_CONFLICT),
+    /// A move would let somebody take away a *No access* that applies to them (WP-08, M2-F23).
+    MoveLiftsNoAccess => ("project.move_lifts_no_access", 409, message::ERROR_PROJECT_MOVE_LIFTS_NO_ACCESS),
+    /// A project cannot go inside itself or one of its own sub-projects.
+    MoveIntoItself => ("project.move_into_itself", 409, message::ERROR_PROJECT_MOVE_INTO_ITSELF),
+    /// A project would be nested deeper than a tree of projects may go.
+    ProjectTooDeep => ("project.too_deep", 409, message::ERROR_PROJECT_TOO_DEEP),
+    /// The projects, or who has which role, changed since the move was previewed.
+    MovePreviewChanged => ("project.preview_changed", 409, message::ERROR_PROJECT_PREVIEW_CHANGED),
     /// A name of a group, role or project is used already.
     NameTaken => ("name.taken", 409, message::ERROR_NAME_TAKEN),
     /// There is no such thing, or the person may not know about it.

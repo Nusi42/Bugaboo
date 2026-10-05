@@ -45,6 +45,8 @@ mod auth;
 mod auth_factors;
 mod auth_people;
 mod auth_sign_in;
+mod projects;
+mod projects_move;
 mod second_step_gap;
 
 pub use admin::ProbeHandle;
@@ -127,6 +129,7 @@ where
         .merge(access_keys::routes())
         .merge(second_step_gap::routes())
         .merge(admin::routes())
+        .merge(projects::routes())
 }
 
 /// Whether the address belongs to the API. Escapes are decoded first; an address with a

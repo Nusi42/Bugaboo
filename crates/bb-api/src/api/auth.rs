@@ -339,6 +339,8 @@ problem_answers! {
     ForbiddenAnswer => ("403", "Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed)."),
     /// Unknown.
     NotFoundAnswer => ("404", "There is no such thing (resource.not_found)."),
+    /// Something stands in the way of a change.
+    ConflictAnswer => ("409", "Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed)."),
 }
 
 /// The routes of the sign-in family, with the small per-network limit of SEC-14 on those that

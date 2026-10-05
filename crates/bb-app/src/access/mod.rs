@@ -20,10 +20,10 @@ use bb_core::id::{AccessKeyId, ProjectId, UserId};
 use bb_core::people_kinds::PeopleKind;
 use bb_core::person::Person;
 use bb_policy::guards::{Refusal, ensure_no_escalation};
-use bb_policy::{Evaluation, Narrowing, PeopleContext, Place, Target, evaluate, resolve};
+use bb_policy::{Evaluation, Narrowing, PeopleContext, Target, evaluate, resolve};
 
 pub use bb_policy::{
-    Authorized, Masked, NOT_FOR_KEYS, Permission, PersonRef, StartingRole, guards,
+    Authorized, Masked, NOT_FOR_KEYS, Permission, PersonRef, Place, StartingRole, Tree, guards,
 };
 pub use starting::{MakeStartingRoles, make_starting_roles};
 pub use store::{PolicyStore, RoleRecord};

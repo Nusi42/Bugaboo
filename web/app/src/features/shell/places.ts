@@ -79,7 +79,7 @@ export const places: readonly Place[] = [
     name: "nav.organization-settings",
     icon: iconName.organization,
     parent: paths.home,
-    anyOf: ["manage-invitations", "see-status", "change-organization-settings"],
+    anyOf: ["manage-invitations", "see-status", "change-organization-settings", "make-projects"],
     listed: true,
   },
   {
@@ -92,6 +92,15 @@ export const places: readonly Place[] = [
     listed: true,
   },
   {
+    path: paths.projects,
+    name: "nav.projects",
+    icon: iconName.projects,
+    parent: paths.organizationSettings,
+    anyOf: ["make-projects"],
+    group: "nav.group.work",
+    listed: true,
+  },
+  {
     path: paths.status,
     name: "nav.status",
     icon: iconName.status,
@@ -99,6 +108,22 @@ export const places: readonly Place[] = [
     anyOf: ["see-status"],
     group: "nav.group.system",
     listed: true,
+  },
+  {
+    // The address of a project has a part to fill in: the screen is here so that it is known,
+    // the pages of the projects name themselves (`usePageTrail`).
+    path: paths.project,
+    name: "nav.projects",
+    icon: iconName.projects,
+    parent: paths.home,
+    listed: false,
+  },
+  {
+    path: paths.projectSettings,
+    name: "projects.settings-link",
+    icon: iconName.settings,
+    parent: paths.project,
+    listed: false,
   },
   {
     path: paths.frames,

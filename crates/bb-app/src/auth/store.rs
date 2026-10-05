@@ -24,6 +24,7 @@ use zeroize::Zeroizing;
 
 use super::types::ProjectChoice;
 use crate::access::PolicyStore;
+use crate::projects::ProjectStore;
 use crate::store_macros::{reads, writes};
 
 /// A person with the password hash they sign in with.
@@ -110,7 +111,7 @@ pub struct SecurityEvent {
 }
 
 /// What the sign-in use cases need from storage.
-pub trait AuthStore: PolicyStore + 'static {
+pub trait AuthStore: PolicyStore + ProjectStore + 'static {
     /// Whether the error is a unique key that was used twice (for example the e-mail address of
     /// two people at the same moment).
     fn is_duplicate(error: &Self::Error) -> bool;

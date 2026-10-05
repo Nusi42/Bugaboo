@@ -6,6 +6,8 @@ mod events;
 mod failures;
 mod fake;
 mod fake_policy;
+mod fake_projects;
+mod hidden;
 mod keys;
 mod scenarios;
 mod world;

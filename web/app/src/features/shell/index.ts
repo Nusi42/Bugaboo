@@ -11,7 +11,13 @@ export {
 } from "./quick-search-sources.ts";
 export { mayOpen } from "./places.ts";
 export { SettingsFrame } from "./SettingsFrame.tsx";
-export { addSidebarSection, type SidebarSection } from "./sidebar-sections.ts";
+export { NavLink, type NavLinkProps } from "./NavItem.tsx";
+export { usePageTrail, type TrailStep } from "./page-trail.ts";
+export {
+  addSidebarSection,
+  type SidebarSection,
+  type SidebarSectionView,
+} from "./sidebar-sections.ts";
 export { ShortcutsPage } from "./ShortcutsPage.tsx";
 export { FocusView, type FocusViewProps } from "./FocusView.tsx";
 export { ListEditor, type ListEditorProps, type ListRow } from "./ListEditor.tsx";

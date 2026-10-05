@@ -17,7 +17,7 @@ pub(crate) const OUTPUT: &str = "web/packages/messages/src/generated.ts";
 /// The areas (first part of a key) that the browser shows: an allow-list, so a new area ships to the
 /// browser only when it is added here (M1-F12). A key outside these areas is for the server and its
 /// command line. A `t("…")` of the app with a key from another area is a type error.
-const BROWSER_AREAS: [&str; 40] = [
+const BROWSER_AREAS: [&str; 45] = [
     "access-keys",
     "app",
     "appearance",
@@ -27,19 +27,24 @@ const BROWSER_AREAS: [&str; 40] = [
     "data-folder",
     "error",
     "field",
+    "field-level",
     "first-run",
     "focus",
     "frames",
     "home",
     "invitation",
     "invitations",
+    "issue-field",
     "list",
     "nav",
     "page",
     "panel",
     "passkeys",
+    "people-kind",
+    "people-level",
     "permission",
     "permission-topic",
+    "projects",
     "save",
     "search",
     "second-step",
@@ -199,13 +204,61 @@ fn ts_type(kind: ArgKind) -> &'static str {
     }
 }
 
+/// The text as the formatter writes a string: in double quotes, or in single quotes when it holds
+/// more double quotes than single ones (oxfmt follows Prettier here), so the generated file is
+/// already what the formatter would make of it.
 fn json_string(text: &str) -> anyhow::Result<String> {
-    Ok(serde_json::to_string(text)?)
+    const SINGLE: char = '\'';
+    const BACKSLASH: char = '\\';
+    let double = serde_json::to_string(text)?;
+    if text.matches('"').count() <= text.matches(SINGLE).count() {
+        return Ok(double);
+    }
+    let inner = double
+        .strip_prefix('"')
+        .and_then(|rest| rest.strip_suffix('"'))
+        .ok_or_else(|| anyhow::anyhow!("a JSON string is not in quotes"))?;
+    let mut single = String::from(SINGLE);
+    let mut chars = inner.chars();
+    while let Some(character) = chars.next() {
+        match character {
+            BACKSLASH => match chars.next() {
+                Some('"') => single.push('"'),
+                Some(escaped) => {
+                    single.push(BACKSLASH);
+                    single.push(escaped);
+                }
+                None => single.push(BACKSLASH),
+            },
+            SINGLE => {
+                single.push(BACKSLASH);
+                single.push(SINGLE);
+            }
+            other => single.push(other),
+        }
+    }
+    single.push(SINGLE);
+    Ok(single)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_string_with_more_double_than_single_quotes_is_written_in_single_quotes() {
+        assert_eq!(json_string("plain").unwrap(), "\"plain\"");
+        assert_eq!(json_string("it's").unwrap(), "\"it's\"");
+        assert_eq!(
+            json_string("\"… is editing\"").unwrap(),
+            "'\"… is editing\"'"
+        );
+        assert_eq!(
+            json_string("\"a\" it's \"b\"").unwrap(),
+            "'\"a\" it\\'s \"b\"'"
+        );
+        assert_eq!(json_string("\"a\\b\"").unwrap(), "'\"a\\\\b\"'");
+    }
 
     #[test]
     fn generated_file_is_up_to_date() {

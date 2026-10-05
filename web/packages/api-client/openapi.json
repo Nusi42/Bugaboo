@@ -3399,6 +3399,900 @@
         "x-permission": "public"
       }
     },
+    "/api/v1/projects": {
+      "get": {
+        "tags": ["projects"],
+        "summary": "The projects the person sees, a page at a time: the top of the tree, the projects inside one,\nor the projects that a search finds. Needs no permission of its own: it lists what the person\nmay see, which is nothing for a person without a role.",
+        "operationId": "listProjects",
+        "parameters": [
+          {
+            "name": "fields",
+            "in": "query",
+            "description": "The fields each item holds, separated by commas. The answer schema names every field that can be asked for; when this is left out the route's own small default is used.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "description": "Where the page starts: the `next_cursor` of the page before.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "How many items a page holds at most (default 50, at most 100).",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1
+            }
+          },
+          {
+            "name": "inside",
+            "in": "query",
+            "description": "The projects directly inside this one. Without it (and without `search`) the list is the top\nof the tree.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "description": "Words that name the projects to find anywhere in the tree, in their name or short name.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "outside",
+            "in": "query",
+            "description": "Leave out this project and everything inside it. Ignored for a project the person does not\nsee, or that does not exist.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "movable",
+            "in": "query",
+            "description": "Only the places this project may be moved into by the person: not itself, not inside\nitself, not where it is now, and only where they may move projects. Ignored for a project\nthe person does not see, or that does not exist.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The projects, by name.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_ProjectItem"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Nothing changed since the `ETag` that `If-None-Match` named. No body.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such thing (resource.not_found).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-never-stored": true,
+        "x-permission": "see-projects"
+      },
+      "post": {
+        "tags": ["projects"],
+        "summary": "Makes a project at the top level. Needs the permission *Make projects at the top level*.",
+        "operationId": "makeProject",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewProjectBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The project.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectBody"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-permission": "make-projects"
+      }
+    },
+    "/api/v1/projects/{project}": {
+      "get": {
+        "tags": ["projects"],
+        "summary": "One project by its address: its ID, or its short name (an old one too). Needs no permission of\nits own: a project the person may not see is not found.",
+        "operationId": "getProject",
+        "parameters": [
+          {
+            "name": "project",
+            "in": "path",
+            "description": "The ID of the project, or its short name.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The project.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectDetailBody"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Nothing changed since the `ETag` that `If-None-Match` named. No body.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such thing (resource.not_found).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-never-stored": true,
+        "x-permission": "see-projects"
+      },
+      "patch": {
+        "tags": ["projects"],
+        "summary": "Changes the name or the short name of a project. A short name that is changed leaves the old\none with the project, so its old addresses keep working. Needs the permission *Change the\nproject's name, short name and settings*; a short name also needs the right to make projects\nwhere the project sits.",
+        "operationId": "changeProject",
+        "parameters": [
+          {
+            "name": "project",
+            "in": "path",
+            "description": "The ID of the project.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangeProjectBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The project as it is now.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectBody"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such thing (resource.not_found).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-permission": "change-project-settings"
+      }
+    },
+    "/api/v1/projects/{project}/move": {
+      "post": {
+        "tags": ["projects"],
+        "summary": "Moves a project, with everything in it, into another project or to the top level. It works\nonly with the `preview` of a preview that is still true: when the projects, who has which\nrole or the levels of the roles changed since, it answers `project.preview_changed`. A move\nafter which somebody could take away a *No access* that applies to them is refused. Needs the\npermission *Move sub-projects into or out of the project* in the old and the new parent.",
+        "operationId": "moveProject",
+        "parameters": [
+          {
+            "name": "project",
+            "in": "path",
+            "description": "The ID of the project that moves.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MoveBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The project after the move.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectBody"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such thing (resource.not_found).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-permission": "move-projects"
+      }
+    },
+    "/api/v1/projects/{project}/move-preview": {
+      "post": {
+        "tags": ["projects"],
+        "summary": "What a move of a project would do: who gains or loses access or changes role, which fields and\nkinds of people information change for whom, and whether the move would be refused. Needs the\npermission *Move sub-projects into or out of the project*.",
+        "operationId": "previewProjectMove",
+        "parameters": [
+          {
+            "name": "project",
+            "in": "path",
+            "description": "The ID of the project that would move.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WhereToBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "What the move would do.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MovePreviewBody"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such thing (resource.not_found).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-permission": "move-projects"
+      }
+    },
+    "/api/v1/projects/{project}/sub-projects": {
+      "post": {
+        "tags": ["projects"],
+        "summary": "Makes a sub-project. Needs the permission *Make sub-projects inside the project* in the\nproject it goes into.",
+        "operationId": "makeSubProject",
+        "parameters": [
+          {
+            "name": "project",
+            "in": "path",
+            "description": "The ID of the project it goes into.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewProjectBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The project.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectBody"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such thing (resource.not_found).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-permission": "make-sub-projects"
+      }
+    },
     "/api/v1/roles/{role_id}/second-step-gap": {
       "get": {
         "tags": ["auth"],
@@ -3842,6 +4736,26 @@
           }
         }
       },
+      "ChangeProjectBody": {
+        "type": "object",
+        "description": "What to change about a project: what is left out stays as it is.",
+        "required": ["version"],
+        "properties": {
+          "name": {
+            "type": ["string", "null"],
+            "description": "A new name."
+          },
+          "short_name": {
+            "type": ["string", "null"],
+            "description": "A new short name. The old one stays with the project."
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The version the person looked at."
+          }
+        }
+      },
       "CodeAppBody": {
         "type": "object",
         "description": "What the setup screen of the code app shows.",
@@ -3988,6 +4902,10 @@
           "access.would_lock_out",
           "access.too_much",
           "assignment.conflict",
+          "project.move_lifts_no_access",
+          "project.move_into_itself",
+          "project.too_deep",
+          "project.preview_changed",
           "name.taken",
           "resource.not_found",
           "request.invalid",
@@ -4003,6 +4921,25 @@
           "server.unavailable",
           "server.internal"
         ]
+      },
+      "FieldLevelChangeBody": {
+        "type": "object",
+        "description": "A level of a field that the move changes for the person.",
+        "required": ["field", "before", "after"],
+        "properties": {
+          "after": {
+            "$ref": "#/components/schemas/WordBody",
+            "description": "The level after the move."
+          },
+          "before": {
+            "$ref": "#/components/schemas/WordBody",
+            "description": "The level now."
+          },
+          "field": {
+            "$ref": "#/components/schemas/WordBody",
+            "description": "The field."
+          }
+        }
       },
       "InvitationBody": {
         "type": "object",
@@ -4099,6 +5036,21 @@
           }
         }
       },
+      "LiftBody": {
+        "type": "object",
+        "description": "Somebody who could take away a *No access* that applies to them after the move.",
+        "required": ["person", "project"],
+        "properties": {
+          "person": {
+            "$ref": "#/components/schemas/PersonRef",
+            "description": "The person, as the person who asks may see them."
+          },
+          "project": {
+            "$ref": "#/components/schemas/ProjectRef",
+            "description": "The project the *No access* is on."
+          }
+        }
+      },
       "LogBreakBody": {
         "type": "string",
         "description": "Why the chain of the security log does not verify.",
@@ -4181,6 +5133,101 @@
           "second_step_setup_required": {
             "type": "boolean",
             "description": "The person has to set up a second step before they can do anything else (their role or\nthe organization asks for two-step sign-in and they have none)."
+          }
+        }
+      },
+      "MoveBody": {
+        "type": "object",
+        "description": "Where a project goes, and the version of the preview that was looked at.",
+        "required": ["preview"],
+        "properties": {
+          "preview": {
+            "type": "string",
+            "description": "The `preview` of the answer to the preview that was looked at."
+          },
+          "to": {
+            "type": ["string", "null"],
+            "description": "The ID of the project it goes into; `null` for the top level."
+          }
+        }
+      },
+      "MovePreviewBody": {
+        "type": "object",
+        "description": "What a move would do, before anything happens.",
+        "required": [
+          "project",
+          "preview",
+          "blocked",
+          "blocked_out_of_sight",
+          "people",
+          "lifts",
+          "truncated"
+        ],
+        "properties": {
+          "blocked": {
+            "type": "boolean",
+            "description": "The move would be refused: somebody could take away a *No access* that applies to them."
+          },
+          "blocked_out_of_sight": {
+            "type": "boolean",
+            "description": "Something in a project the person cannot see also stops the move."
+          },
+          "lifts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LiftBody"
+            },
+            "description": "Who could take away a *No access* after the move and could not before."
+          },
+          "people": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PersonChangeBody"
+            },
+            "description": "Who gains or loses access or changes role, in the projects the person sees."
+          },
+          "preview": {
+            "type": "string",
+            "description": "The version of this preview. The move asks for it, and works only while nothing it was made\nfrom has changed."
+          },
+          "project": {
+            "$ref": "#/components/schemas/ProjectRef",
+            "description": "The project that would move."
+          },
+          "to": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ProjectRef",
+                "description": "Where it would go, when the person may see that project; `null` for the top level."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "truncated": {
+            "type": "boolean",
+            "description": "The list was cut: it names the first people it found."
+          }
+        }
+      },
+      "MoveRightBody": {
+        "type": "string",
+        "description": "Where a person may move a project to.",
+        "enum": ["nowhere", "into-projects", "into-projects-or-top"]
+      },
+      "NewProjectBody": {
+        "type": "object",
+        "description": "A project to make.",
+        "required": ["short_name", "name"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "What it is called."
+          },
+          "short_name": {
+            "type": "string",
+            "description": "The letters of its issue IDs and address: 2 to 10 capital letters or digits, starting with a\nletter."
           }
         }
       },
@@ -4328,6 +5375,54 @@
           }
         }
       },
+      "Page_ProjectItem": {
+        "type": "object",
+        "description": "One page of a list. `T` is the view of an item for the API description; an answer holds the\nitems cut to the chosen fields ([`Page::of_authorized`]).",
+        "required": ["items", "next_cursor"],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "A project in a list: the fields that can be asked for. An answer holds only those that were\nasked for.",
+              "properties": {
+                "has_sub_projects": {
+                  "type": ["boolean", "null"],
+                  "description": "Whether it holds sub-projects the person sees. A yes or no, never a number."
+                },
+                "id": {
+                  "type": ["string", "null"],
+                  "description": "The ID of the project."
+                },
+                "name": {
+                  "type": ["string", "null"],
+                  "description": "What it is called."
+                },
+                "parent": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ProjectRef",
+                      "description": "The project it is inside, when the person may see that one."
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "short_name": {
+                  "type": ["string", "null"],
+                  "description": "The letters of its issue IDs and address."
+                }
+              }
+            },
+            "description": "The items of this page."
+          },
+          "next_cursor": {
+            "type": ["string", "null"],
+            "description": "The cursor of the next page; `null` on the last page."
+          }
+        }
+      },
       "PasskeyAnswerBody": {
         "type": "object",
         "description": "What the device answered to a passkey challenge.",
@@ -4392,6 +5487,25 @@
           }
         }
       },
+      "PeopleLevelChangeBody": {
+        "type": "object",
+        "description": "A level of a kind of people information that the move changes for the person.",
+        "required": ["kind", "before", "after"],
+        "properties": {
+          "after": {
+            "$ref": "#/components/schemas/WordBody",
+            "description": "The level after the move."
+          },
+          "before": {
+            "$ref": "#/components/schemas/WordBody",
+            "description": "The level now."
+          },
+          "kind": {
+            "$ref": "#/components/schemas/WordBody",
+            "description": "The kind of people information."
+          }
+        }
+      },
       "Permission": {
         "type": "string",
         "description": "One permission of the catalogue.",
@@ -4446,6 +5560,89 @@
           }
         }
       },
+      "PersonChangeBody": {
+        "type": "object",
+        "description": "What a move changes for one person.",
+        "required": ["person", "projects"],
+        "properties": {
+          "person": {
+            "$ref": "#/components/schemas/PersonRef",
+            "description": "The person, as the person who asks may see them."
+          },
+          "projects": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProjectChangeBody"
+            },
+            "description": "The projects where something changes for them."
+          }
+        }
+      },
+      "PersonRef": {
+        "oneOf": [
+          {
+            "type": "object",
+            "description": "By name, with the ID for links.",
+            "required": ["id", "name", "shown"],
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "The ID of the person."
+              },
+              "name": {
+                "type": "string",
+                "description": "The name."
+              },
+              "shown": {
+                "type": "string",
+                "enum": ["name"]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "description": "By the label of their role; the screen says \"a {role}\". No ID.",
+            "required": ["role", "shown"],
+            "properties": {
+              "role": {
+                "type": "string",
+                "description": "The name of the role."
+              },
+              "shown": {
+                "type": "string",
+                "enum": ["role"]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "description": "As *Someone*. Nothing else.",
+            "required": ["shown"],
+            "properties": {
+              "shown": {
+                "type": "string",
+                "enum": ["someone"]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "description": "A removed person: the screen says \"Former user {label}\". No ID.",
+            "required": ["label", "shown"],
+            "properties": {
+              "label": {
+                "type": "string",
+                "description": "The random code, like `K7Q2`."
+              },
+              "shown": {
+                "type": "string",
+                "enum": ["former"]
+              }
+            }
+          }
+        ],
+        "description": "How a person is shown to one viewer."
+      },
       "Problem": {
         "type": "object",
         "description": "The body of an error answer, as plain data. The HTTP layer only sends it.\n\nClients react to `code` and show the message for `message_key` and `params` in their own\nlanguage. `title` is the English text, only a fallback for clients that cannot do that. The\nfields are private and the only way to make a `Problem` is from an [`ErrorCode`], so no answer\ncarries a text or a status that does not belong to its code.",
@@ -4487,6 +5684,81 @@
           }
         }
       },
+      "ProjectBody": {
+        "type": "object",
+        "description": "A project after it was made, changed or moved.",
+        "required": ["id", "short_name", "name", "version"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The ID of the project."
+          },
+          "name": {
+            "type": "string",
+            "description": "What it is called."
+          },
+          "parent": {
+            "type": ["string", "null"],
+            "description": "The project it is inside, when the person may see that one."
+          },
+          "short_name": {
+            "type": "string",
+            "description": "The letters of its issue IDs and address."
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Counts up with every change. A change is made on the version that was looked at."
+          }
+        }
+      },
+      "ProjectChangeBody": {
+        "type": "object",
+        "description": "What a move changes for one person in one project that moves.",
+        "required": ["project", "now", "after", "gains", "loses", "fields", "people"],
+        "properties": {
+          "after": {
+            "$ref": "#/components/schemas/StandingBody",
+            "description": "What they would have after the move."
+          },
+          "fields": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FieldLevelChangeBody"
+            },
+            "description": "The fields whose level changes."
+          },
+          "gains": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Permission"
+            },
+            "description": "What they could not do and could after the move."
+          },
+          "loses": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Permission"
+            },
+            "description": "What they could do and could not after the move."
+          },
+          "now": {
+            "$ref": "#/components/schemas/StandingBody",
+            "description": "What the person has there now."
+          },
+          "people": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PeopleLevelChangeBody"
+            },
+            "description": "The kinds of people information whose level changes."
+          },
+          "project": {
+            "$ref": "#/components/schemas/ProjectRef",
+            "description": "The project."
+          }
+        }
+      },
       "ProjectChoiceItem": {
         "type": "object",
         "description": "A project a person may limit a key to.",
@@ -4502,6 +5774,102 @@
           "short_name": {
             "type": ["string", "null"],
             "description": "Its short name."
+          }
+        }
+      },
+      "ProjectDetailBody": {
+        "type": "object",
+        "description": "One project, with where it is and what the person may do there.",
+        "required": [
+          "project",
+          "trail",
+          "truncated",
+          "permissions",
+          "may_change_short_name",
+          "may_move"
+        ],
+        "properties": {
+          "may_change_short_name": {
+            "type": "boolean",
+            "description": "Whether the person may change the short name."
+          },
+          "may_move": {
+            "$ref": "#/components/schemas/MoveRightBody",
+            "description": "Where the person may move the project to."
+          },
+          "permissions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Permission"
+            },
+            "description": "What the person may do here."
+          },
+          "project": {
+            "$ref": "#/components/schemas/ProjectBody",
+            "description": "The project. Its `short_name` is the one it has now, also when the address named an old one."
+          },
+          "trail": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProjectRef"
+            },
+            "description": "*Where you are*: the projects above it that the person sees, from the top down. It stops at\nthe first one they cannot see."
+          },
+          "truncated": {
+            "type": "boolean",
+            "description": "The trail was cut."
+          }
+        }
+      },
+      "ProjectItem": {
+        "type": "object",
+        "description": "A project in a list: the fields that can be asked for. An answer holds only those that were\nasked for.",
+        "properties": {
+          "has_sub_projects": {
+            "type": ["boolean", "null"],
+            "description": "Whether it holds sub-projects the person sees. A yes or no, never a number."
+          },
+          "id": {
+            "type": ["string", "null"],
+            "description": "The ID of the project."
+          },
+          "name": {
+            "type": ["string", "null"],
+            "description": "What it is called."
+          },
+          "parent": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ProjectRef",
+                "description": "The project it is inside, when the person may see that one."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "short_name": {
+            "type": ["string", "null"],
+            "description": "The letters of its issue IDs and address."
+          }
+        }
+      },
+      "ProjectRef": {
+        "type": "object",
+        "description": "A project as a small reference: what a name in a sentence needs.",
+        "required": ["id", "short_name", "name"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The ID of the project."
+          },
+          "name": {
+            "type": "string",
+            "description": "What it is called."
+          },
+          "short_name": {
+            "type": "string",
+            "description": "The letters of its issue IDs and address."
           }
         }
       },
@@ -4823,6 +6191,28 @@
           }
         }
       },
+      "StandingBody": {
+        "type": "object",
+        "description": "What a person has in one project.",
+        "required": ["sees", "held_back", "roles"],
+        "properties": {
+          "held_back": {
+            "type": "boolean",
+            "description": "A *No access* holds the person back there."
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The names of their roles there, in the order of roles."
+          },
+          "sees": {
+            "type": "boolean",
+            "description": "The person sees the project."
+          }
+        }
+      },
       "StatusValue": {
         "type": "string",
         "description": "The only value a status can have today.",
@@ -4857,6 +6247,31 @@
           "truncated": {
             "type": "boolean",
             "description": "There are more passkeys than the list holds."
+          }
+        }
+      },
+      "WhereToBody": {
+        "type": "object",
+        "description": "Where a project would go.",
+        "properties": {
+          "to": {
+            "type": ["string", "null"],
+            "description": "The ID of the project it would go into; `null` for the top level."
+          }
+        }
+      },
+      "WordBody": {
+        "type": "object",
+        "description": "A word of the vocabulary with the message that names it: a field, a kind of people information\nor a level.",
+        "required": ["code", "message_key"],
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "The word, as it stands in the API (`cost-center`, `can-see`)."
+          },
+          "message_key": {
+            "type": "string",
+            "description": "The key of the message that names it."
           }
         }
       }

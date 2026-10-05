@@ -115,6 +115,12 @@ words! {
         AccessKeyDeleted => "access_key.deleted",
         /// An access key was turned away: it does not work, or it was used where no key may go.
         AccessKeyRefused => "access_key.refused",
+        /// A project got another name.
+        ProjectRenamed => "project.renamed",
+        /// A project got another short name; the old one stays with it.
+        ProjectShortNameChanged => "project.short_name_changed",
+        /// A project was moved into another project or to the top level.
+        ProjectMoved => "project.moved",
     }
 }
 

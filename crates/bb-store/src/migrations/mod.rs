@@ -27,6 +27,7 @@ use crate::schema::Migration;
 mod m0001_initial;
 mod m0002_sign_in;
 mod m0003_policy;
+mod m0005_projects;
 mod m0006_access_keys;
 
 /// The advisory lock PostgreSQL processes take while they migrate.
@@ -112,6 +113,12 @@ const ALL: &[Definition] = &[
         version: 3,
         name: "policy",
         steps: m0003_policy::steps,
+    },
+    // 4 is the number of the settings in layers (WP-07).
+    Definition {
+        version: 5,
+        name: "projects",
+        steps: || Ok(m0005_projects::steps()),
     },
     Definition {
         version: 6,
@@ -362,8 +369,10 @@ mod tests {
             assert_eq!(applied[0].name.as_str(), "initial");
             assert_eq!(applied[1].name.as_str(), "sign_in");
             assert_eq!(applied[2].name.as_str(), "policy");
-            assert_eq!(applied[3].name.as_str(), "access_keys");
+            assert_eq!(applied[3].name.as_str(), "projects");
+            assert_eq!(applied[4].name.as_str(), "access_keys");
             for (record, definition) in applied.iter().zip(ALL) {
+                assert_eq!(record.name.as_str(), definition.name);
                 assert_eq!(record.applied_at, at(0));
                 assert_eq!(record.checksum, definition.checksum()?);
             }
@@ -441,7 +450,10 @@ mod tests {
             assert!(
                 matches!(
                     error,
-                    StoreError::SchemaTooNew { found: 99, known } if known == latest_version()
+                    StoreError::SchemaTooNew {
+                        found: 99,
+                        known
+                    } if known == latest_version()
                 ),
                 "{error}"
             );

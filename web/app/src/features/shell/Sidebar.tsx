@@ -40,7 +40,7 @@ export function Sidebar({
     >
       <span className={narrow ? styles.brandNarrow : styles.brand}>{t("app.name")}</span>
       <Top narrow={narrow} onNavigate={onNavigate} />
-      <Sections narrow={narrow} />
+      <Sections narrow={narrow} onNavigate={onNavigate} />
       <Bottom
         narrow={narrow}
         inDrawer={inDrawer || locked}

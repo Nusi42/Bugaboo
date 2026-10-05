@@ -70,6 +70,8 @@ table! {
     "make_project" => s::make_project_scenario,
     "make_access_key" => s::make_access_key_scenario,
     "delete_access_key" => s::delete_access_key_scenario,
+    "change_project" => s::change_project_scenario,
+    "move_project" => s::move_project_scenario,
 }
 
 #[test]

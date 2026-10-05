@@ -587,6 +587,118 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/projects": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * The projects the person sees, a page at a time: the top of the tree, the projects inside one,
+     *     or the projects that a search finds. Needs no permission of its own: it lists what the person
+     *     may see, which is nothing for a person without a role.
+     */
+    get: operations["listProjects"];
+    put?: never;
+    /** Makes a project at the top level. Needs the permission *Make projects at the top level*. */
+    post: operations["makeProject"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/projects/{project}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * One project by its address: its ID, or its short name (an old one too). Needs no permission of
+     *     its own: a project the person may not see is not found.
+     */
+    get: operations["getProject"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /**
+     * Changes the name or the short name of a project. A short name that is changed leaves the old
+     *     one with the project, so its old addresses keep working. Needs the permission *Change the
+     *     project's name, short name and settings*; a short name also needs the right to make projects
+     *     where the project sits.
+     */
+    patch: operations["changeProject"];
+    trace?: never;
+  };
+  "/api/v1/projects/{project}/move": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Moves a project, with everything in it, into another project or to the top level. It works
+     *     only with the `preview` of a preview that is still true: when the projects, who has which
+     *     role or the levels of the roles changed since, it answers `project.preview_changed`. A move
+     *     after which somebody could take away a *No access* that applies to them is refused. Needs the
+     *     permission *Move sub-projects into or out of the project* in the old and the new parent.
+     */
+    post: operations["moveProject"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/projects/{project}/move-preview": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * What a move of a project would do: who gains or loses access or changes role, which fields and
+     *     kinds of people information change for whom, and whether the move would be refused. Needs the
+     *     permission *Move sub-projects into or out of the project*.
+     */
+    post: operations["previewProjectMove"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/projects/{project}/sub-projects": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Makes a sub-project. Needs the permission *Make sub-projects inside the project* in the
+     *     project it goes into.
+     */
+    post: operations["makeSubProject"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/roles/{role_id}/second-step-gap": {
     parameters: {
       query?: never;
@@ -741,6 +853,18 @@ export interface components {
       /** @description What the device is asked, to give to `navigator.credentials`. */
       options: Record<string, unknown>;
     };
+    /** @description What to change about a project: what is left out stays as it is. */
+    ChangeProjectBody: {
+      /** @description A new name. */
+      name?: string | null;
+      /** @description A new short name. The old one stays with the project. */
+      short_name?: string | null;
+      /**
+       * Format: int64
+       * @description The version the person looked at.
+       */
+      version: number;
+    };
     /** @description What the setup screen of the code app shows. */
     CodeAppBody: {
       /** @description The address the code app reads. */
@@ -830,6 +954,10 @@ export interface components {
       | "access.would_lock_out"
       | "access.too_much"
       | "assignment.conflict"
+      | "project.move_lifts_no_access"
+      | "project.move_into_itself"
+      | "project.too_deep"
+      | "project.preview_changed"
       | "name.taken"
       | "resource.not_found"
       | "request.invalid"
@@ -844,6 +972,15 @@ export interface components {
       | "rate_limit.exceeded"
       | "server.unavailable"
       | "server.internal";
+    /** @description A level of a field that the move changes for the person. */
+    FieldLevelChangeBody: {
+      /** @description The level after the move. */
+      after: components["schemas"]["WordBody"];
+      /** @description The level now. */
+      before: components["schemas"]["WordBody"];
+      /** @description The field. */
+      field: components["schemas"]["WordBody"];
+    };
     /** @description An invitation as the administrator sees it. */
     InvitationBody: {
       /** @description When it was made. */
@@ -897,6 +1034,13 @@ export interface components {
       short_name?: string | null;
       /** @description `visible` or `hidden`. */
       shown: components["schemas"]["ProjectShown"];
+    };
+    /** @description Somebody who could take away a *No access* that applies to them after the move. */
+    LiftBody: {
+      /** @description The person, as the person who asks may see them. */
+      person: components["schemas"]["PersonRef"];
+      /** @description The project the *No access* is on. */
+      project: components["schemas"]["ProjectRef"];
     };
     /**
      * @description Why the chain of the security log does not verify.
@@ -957,6 +1101,49 @@ export interface components {
        *     the organization asks for two-step sign-in and they have none).
        */
       second_step_setup_required: boolean;
+    };
+    /** @description Where a project goes, and the version of the preview that was looked at. */
+    MoveBody: {
+      /** @description The `preview` of the answer to the preview that was looked at. */
+      preview: string;
+      /** @description The ID of the project it goes into; `null` for the top level. */
+      to?: string | null;
+    };
+    /** @description What a move would do, before anything happens. */
+    MovePreviewBody: {
+      /** @description The move would be refused: somebody could take away a *No access* that applies to them. */
+      blocked: boolean;
+      /** @description Something in a project the person cannot see also stops the move. */
+      blocked_out_of_sight: boolean;
+      /** @description Who could take away a *No access* after the move and could not before. */
+      lifts: components["schemas"]["LiftBody"][];
+      /** @description Who gains or loses access or changes role, in the projects the person sees. */
+      people: components["schemas"]["PersonChangeBody"][];
+      /**
+       * @description The version of this preview. The move asks for it, and works only while nothing it was made
+       *     from has changed.
+       */
+      preview: string;
+      /** @description The project that would move. */
+      project: components["schemas"]["ProjectRef"];
+      to?: components["schemas"]["ProjectRef"] | null;
+      /** @description The list was cut: it names the first people it found. */
+      truncated: boolean;
+    };
+    /**
+     * @description Where a person may move a project to.
+     * @enum {string}
+     */
+    MoveRightBody: "nowhere" | "into-projects" | "into-projects-or-top";
+    /** @description A project to make. */
+    NewProjectBody: {
+      /** @description What it is called. */
+      name: string;
+      /**
+       * @description The letters of its issue IDs and address: 2 to 10 capital letters or digits, starting with a
+       *     letter.
+       */
+      short_name: string;
     };
     /**
      * @description One page of a list. `T` is the view of an item for the API description; an answer holds the
@@ -1024,6 +1211,26 @@ export interface components {
       /** @description The cursor of the next page; `null` on the last page. */
       next_cursor: string | null;
     };
+    /**
+     * @description One page of a list. `T` is the view of an item for the API description; an answer holds the
+     *     items cut to the chosen fields ([`Page::of_authorized`]).
+     */
+    Page_ProjectItem: {
+      /** @description The items of this page. */
+      items: {
+        /** @description Whether it holds sub-projects the person sees. A yes or no, never a number. */
+        has_sub_projects?: boolean | null;
+        /** @description The ID of the project. */
+        id?: string | null;
+        /** @description What it is called. */
+        name?: string | null;
+        parent?: components["schemas"]["ProjectRef"] | null;
+        /** @description The letters of its issue IDs and address. */
+        short_name?: string | null;
+      }[];
+      /** @description The cursor of the next page; `null` on the last page. */
+      next_cursor: string | null;
+    };
     /** @description What the device answered to a passkey challenge. */
     PasskeyAnswerBody: {
       /** @description The challenge that was answered. */
@@ -1053,6 +1260,15 @@ export interface components {
     PasswordOnlyBody: {
       /** @description The password. */
       password: string;
+    };
+    /** @description A level of a kind of people information that the move changes for the person. */
+    PeopleLevelChangeBody: {
+      /** @description The level after the move. */
+      after: components["schemas"]["WordBody"];
+      /** @description The level now. */
+      before: components["schemas"]["WordBody"];
+      /** @description The kind of people information. */
+      kind: components["schemas"]["WordBody"];
     };
     /**
      * @description One permission of the catalogue.
@@ -1092,6 +1308,39 @@ export interface components {
       /** @description The ID of the person. */
       id: string;
     };
+    /** @description What a move changes for one person. */
+    PersonChangeBody: {
+      /** @description The person, as the person who asks may see them. */
+      person: components["schemas"]["PersonRef"];
+      /** @description The projects where something changes for them. */
+      projects: components["schemas"]["ProjectChangeBody"][];
+    };
+    /** @description How a person is shown to one viewer. */
+    PersonRef:
+      | {
+          /** @description The ID of the person. */
+          id: string;
+          /** @description The name. */
+          name: string;
+          /** @enum {string} */
+          shown: "name";
+        }
+      | {
+          /** @description The name of the role. */
+          role: string;
+          /** @enum {string} */
+          shown: "role";
+        }
+      | {
+          /** @enum {string} */
+          shown: "someone";
+        }
+      | {
+          /** @description The random code, like `K7Q2`. */
+          label: string;
+          /** @enum {string} */
+          shown: "former";
+        };
     /**
      * @description The body of an error answer, as plain data. The HTTP layer only sends it.
      *
@@ -1121,6 +1370,39 @@ export interface components {
       /** @description A stable address of the kind of error, `urn:bugaboo:error:<code>`. */
       type: string;
     };
+    /** @description A project after it was made, changed or moved. */
+    ProjectBody: {
+      /** @description The ID of the project. */
+      id: string;
+      /** @description What it is called. */
+      name: string;
+      /** @description The project it is inside, when the person may see that one. */
+      parent?: string | null;
+      /** @description The letters of its issue IDs and address. */
+      short_name: string;
+      /**
+       * Format: int64
+       * @description Counts up with every change. A change is made on the version that was looked at.
+       */
+      version: number;
+    };
+    /** @description What a move changes for one person in one project that moves. */
+    ProjectChangeBody: {
+      /** @description What they would have after the move. */
+      after: components["schemas"]["StandingBody"];
+      /** @description The fields whose level changes. */
+      fields: components["schemas"]["FieldLevelChangeBody"][];
+      /** @description What they could not do and could after the move. */
+      gains: components["schemas"]["Permission"][];
+      /** @description What they could do and could not after the move. */
+      loses: components["schemas"]["Permission"][];
+      /** @description What the person has there now. */
+      now: components["schemas"]["StandingBody"];
+      /** @description The kinds of people information whose level changes. */
+      people: components["schemas"]["PeopleLevelChangeBody"][];
+      /** @description The project. */
+      project: components["schemas"]["ProjectRef"];
+    };
     /** @description A project a person may limit a key to. */
     ProjectChoiceItem: {
       /** @description The ID of the project. */
@@ -1129,6 +1411,48 @@ export interface components {
       name?: string | null;
       /** @description Its short name. */
       short_name?: string | null;
+    };
+    /** @description One project, with where it is and what the person may do there. */
+    ProjectDetailBody: {
+      /** @description Whether the person may change the short name. */
+      may_change_short_name: boolean;
+      /** @description Where the person may move the project to. */
+      may_move: components["schemas"]["MoveRightBody"];
+      /** @description What the person may do here. */
+      permissions: components["schemas"]["Permission"][];
+      /** @description The project. Its `short_name` is the one it has now, also when the address named an old one. */
+      project: components["schemas"]["ProjectBody"];
+      /**
+       * @description *Where you are*: the projects above it that the person sees, from the top down. It stops at
+       *     the first one they cannot see.
+       */
+      trail: components["schemas"]["ProjectRef"][];
+      /** @description The trail was cut. */
+      truncated: boolean;
+    };
+    /**
+     * @description A project in a list: the fields that can be asked for. An answer holds only those that were
+     *     asked for.
+     */
+    ProjectItem: {
+      /** @description Whether it holds sub-projects the person sees. A yes or no, never a number. */
+      has_sub_projects?: boolean | null;
+      /** @description The ID of the project. */
+      id?: string | null;
+      /** @description What it is called. */
+      name?: string | null;
+      parent?: components["schemas"]["ProjectRef"] | null;
+      /** @description The letters of its issue IDs and address. */
+      short_name?: string | null;
+    };
+    /** @description A project as a small reference: what a name in a sentence needs. */
+    ProjectRef: {
+      /** @description The ID of the project. */
+      id: string;
+      /** @description What it is called. */
+      name: string;
+      /** @description The letters of its issue IDs and address. */
+      short_name: string;
     };
     /**
      * @description Whether the owner may know the project.
@@ -1285,6 +1609,15 @@ export interface components {
       person?: components["schemas"]["PersonBody"] | null;
       second_step?: components["schemas"]["SecondStepBody"] | null;
     };
+    /** @description What a person has in one project. */
+    StandingBody: {
+      /** @description A *No access* holds the person back there. */
+      held_back: boolean;
+      /** @description The names of their roles there, in the order of roles. */
+      roles: string[];
+      /** @description The person sees the project. */
+      sees: boolean;
+    };
     /**
      * @description The only value a status can have today.
      * @enum {string}
@@ -1311,6 +1644,21 @@ export interface components {
       passkeys: components["schemas"]["PasskeyBody"][];
       /** @description There are more passkeys than the list holds. */
       truncated: boolean;
+    };
+    /** @description Where a project would go. */
+    WhereToBody: {
+      /** @description The ID of the project it would go into; `null` for the top level. */
+      to?: string | null;
+    };
+    /**
+     * @description A word of the vocabulary with the message that names it: a field, a kind of people information
+     *     or a level.
+     */
+    WordBody: {
+      /** @description The word, as it stands in the API (`cost-center`, `can-see`). */
+      code: string;
+      /** @description The key of the message that names it. */
+      message_key: string;
     };
   };
   responses: never;
@@ -4002,6 +4350,683 @@ export interface operations {
           [name: string]: unknown;
         };
         content?: never;
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  listProjects: {
+    parameters: {
+      query?: {
+        /** @description The fields each item holds, separated by commas. The answer schema names every field that can be asked for; when this is left out the route's own small default is used. */
+        fields?: string;
+        /** @description Where the page starts: the `next_cursor` of the page before. */
+        cursor?: string;
+        /** @description How many items a page holds at most (default 50, at most 100). */
+        limit?: number;
+        /**
+         * @description The projects directly inside this one. Without it (and without `search`) the list is the top
+         *     of the tree.
+         */
+        inside?: string;
+        /** @description Words that name the projects to find anywhere in the tree, in their name or short name. */
+        search?: string;
+        /**
+         * @description Leave out this project and everything inside it. Ignored for a project the person does not
+         *     see, or that does not exist.
+         */
+        outside?: string;
+        /**
+         * @description Only the places this project may be moved into by the person: not itself, not inside
+         *     itself, not where it is now, and only where they may move projects. Ignored for a project
+         *     the person does not see, or that does not exist.
+         */
+        movable?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The projects, by name. */
+      200: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Page_ProjectItem"];
+        };
+      };
+      /** @description Nothing changed since the `ETag` that `If-None-Match` named. No body. */
+      304: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  makeProject: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["NewProjectBody"];
+      };
+    };
+    responses: {
+      /** @description The project. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ProjectBody"];
+        };
+      };
+      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  getProject: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the project, or its short name. */
+        project: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The project. */
+      200: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ProjectDetailBody"];
+        };
+      };
+      /** @description Nothing changed since the `ETag` that `If-None-Match` named. No body. */
+      304: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  changeProject: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the project. */
+        project: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ChangeProjectBody"];
+      };
+    };
+    responses: {
+      /** @description The project as it is now. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ProjectBody"];
+        };
+      };
+      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  moveProject: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the project that moves. */
+        project: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["MoveBody"];
+      };
+    };
+    responses: {
+      /** @description The project after the move. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ProjectBody"];
+        };
+      };
+      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  previewProjectMove: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the project that would move. */
+        project: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["WhereToBody"];
+      };
+    };
+    responses: {
+      /** @description What the move would do. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["MovePreviewBody"];
+        };
+      };
+      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  makeSubProject: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the project it goes into. */
+        project: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["NewProjectBody"];
+      };
+    };
+    responses: {
+      /** @description The project. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ProjectBody"];
+        };
+      };
+      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
       };
       /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
       429: {
