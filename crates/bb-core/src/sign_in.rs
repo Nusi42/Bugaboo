@@ -109,6 +109,12 @@ words! {
         PeopleLevelChanged => "people_level.changed",
         /// A project was made.
         ProjectMade => "project.made",
+        /// A project got another name.
+        ProjectRenamed => "project.renamed",
+        /// A project got another short name; the old one stays with it.
+        ProjectShortNameChanged => "project.short_name_changed",
+        /// A project was moved into another project or to the top level.
+        ProjectMoved => "project.moved",
     }
 }
 

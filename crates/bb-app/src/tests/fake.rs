@@ -15,7 +15,7 @@ use bb_core::fields::Field;
 use bb_core::id::{InvitationId, PasskeyId, ProjectId, RoleId, SessionId, UserId};
 use bb_core::people_kinds::PeopleKind;
 use bb_core::person::Person;
-use bb_core::project::Project;
+use bb_core::project::{Project, ProjectAlias};
 use bb_core::security_log::Digest;
 use bb_core::settings::{
     AUTH_SIGN_UP_DOMAINS, AUTH_SIGN_UP_ENABLED, SECURITY_SESSION_ABSOLUTE_HOURS,
@@ -72,6 +72,7 @@ pub(crate) struct State {
     pub(crate) members: Vec<GroupMember>,
     pub(crate) assignments: Vec<Assignment>,
     pub(crate) projects: Vec<Project>,
+    pub(crate) aliases: Vec<ProjectAlias>,
 }
 
 /// The state, what was recorded, and the failures a test asked for.

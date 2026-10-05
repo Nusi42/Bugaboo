@@ -447,6 +447,12 @@ export const messages = {
   "error.assignment.conflict":
     "This person or group already has a role here, so it cannot also have No access here, and the other way round. Take the other row away first.",
   "error.name.taken": "That name is already used. Choose another one.",
+  "error.project.move-lifts-no-access":
+    "This move would let somebody take away a No access that applies to them. Take that No access away first, or move the project somewhere else.",
+  "error.project.move-into-itself":
+    "A project cannot go inside itself or inside one of its own sub-projects.",
+  "error.project.preview-changed":
+    "The projects, or who has which role, changed since you looked at the preview. Look at it again before you move the project.",
 } as const;
 
 export type MessageKey = keyof typeof messages;

@@ -36,34 +36,43 @@ const POLICY_LOCK: i64 = 0x4242_504F_4C49_0001;
 /// that cannot be right.
 const CHAIN_MAX: usize = 64;
 
-fn corrupt(what: &'static str) -> impl Fn(IdError) -> StoreError {
+pub(crate) fn corrupt(what: &'static str) -> impl Fn(IdError) -> StoreError {
     move |_| StoreError::Corrupt(what)
 }
 
-fn id_bytes(id: [u8; 16]) -> Vec<u8> {
+pub(crate) fn id_bytes(id: [u8; 16]) -> Vec<u8> {
     id.to_vec()
 }
 
-fn read_user(row: &DbRow, column: impl sea_query::Iden + Copy) -> Result<UserId, StoreError> {
+pub(crate) fn read_user(
+    row: &DbRow,
+    column: impl sea_query::Iden + Copy,
+) -> Result<UserId, StoreError> {
     UserId::from_bytes(row.id_bytes(column)?).map_err(corrupt("a person ID"))
 }
 
-fn read_role_id(row: &DbRow, column: impl sea_query::Iden + Copy) -> Result<RoleId, StoreError> {
+pub(crate) fn read_role_id(
+    row: &DbRow,
+    column: impl sea_query::Iden + Copy,
+) -> Result<RoleId, StoreError> {
     RoleId::from_bytes(row.id_bytes(column)?).map_err(corrupt("a role ID"))
 }
 
-fn read_group_id(row: &DbRow, column: impl sea_query::Iden + Copy) -> Result<GroupId, StoreError> {
+pub(crate) fn read_group_id(
+    row: &DbRow,
+    column: impl sea_query::Iden + Copy,
+) -> Result<GroupId, StoreError> {
     GroupId::from_bytes(row.id_bytes(column)?).map_err(corrupt("a group ID"))
 }
 
-fn read_project_id(
+pub(crate) fn read_project_id(
     row: &DbRow,
     column: impl sea_query::Iden + Copy,
 ) -> Result<ProjectId, StoreError> {
     ProjectId::from_bytes(row.id_bytes(column)?).map_err(corrupt("a project ID"))
 }
 
-fn optional<T>(
+pub(crate) fn optional<T>(
     bytes: Option<[u8; 16]>,
     make: impl FnOnce([u8; 16]) -> Result<T, IdError>,
     what: &'static str,
@@ -73,7 +82,7 @@ fn optional<T>(
         .transpose()
 }
 
-fn in_list<T: Copy>(ids: &[T], bytes: impl Fn(T) -> [u8; 16]) -> Vec<Vec<u8>> {
+pub(crate) fn in_list<T: Copy>(ids: &[T], bytes: impl Fn(T) -> [u8; 16]) -> Vec<Vec<u8>> {
     ids.iter().map(|id| id_bytes(bytes(*id))).collect()
 }
 
@@ -145,7 +154,7 @@ fn read_role(row: &DbRow) -> Result<Role, StoreError> {
 
 /// The roles (all, or those with these IDs) with their permissions. A permission that the
 /// catalogue does not know (one a later version dropped) is left out: that is the closed answer.
-async fn roles_in(
+pub(crate) async fn roles_in(
     transaction: &mut Transaction,
     only: Option<&[RoleId]>,
 ) -> Result<Vec<RoleRecord>, StoreError> {
@@ -185,7 +194,7 @@ async fn roles_in(
         .collect())
 }
 
-fn read_assignment(row: &DbRow) -> Result<Assignment, StoreError> {
+pub(crate) fn read_assignment(row: &DbRow) -> Result<Assignment, StoreError> {
     Ok(Assignment {
         id: AssignmentId::from_bytes(row.id_bytes(AssignmentRow::Id)?)
             .map_err(corrupt("an assignment ID"))?,
@@ -215,7 +224,7 @@ fn read_assignment(row: &DbRow) -> Result<Assignment, StoreError> {
     })
 }
 
-fn assignment_select() -> SelectStatement {
+pub(crate) fn assignment_select() -> SelectStatement {
     let mut select = Query::select();
     select
         .columns([
@@ -435,23 +444,29 @@ async fn level_rules(
     Ok((fields, people))
 }
 
-fn read_field(row: &DbRow, column: impl sea_query::Iden + Copy) -> Result<Field, StoreError> {
+pub(crate) fn read_field(
+    row: &DbRow,
+    column: impl sea_query::Iden + Copy,
+) -> Result<Field, StoreError> {
     Field::from_code(&row.get::<String>(column)?).ok_or(StoreError::Corrupt("a field key"))
 }
 
-fn read_kind(row: &DbRow, column: impl sea_query::Iden + Copy) -> Result<PeopleKind, StoreError> {
+pub(crate) fn read_kind(
+    row: &DbRow,
+    column: impl sea_query::Iden + Copy,
+) -> Result<PeopleKind, StoreError> {
     PeopleKind::from_code(&row.get::<String>(column)?)
         .ok_or(StoreError::Corrupt("a kind of people information"))
 }
 
-fn read_field_level(
+pub(crate) fn read_field_level(
     row: &DbRow,
     column: impl sea_query::Iden + Copy,
 ) -> Result<FieldLevel, StoreError> {
     FieldLevel::from_code(&row.get::<String>(column)?).ok_or(StoreError::Corrupt("a field level"))
 }
 
-fn read_people_level(
+pub(crate) fn read_people_level(
     row: &DbRow,
     column: impl sea_query::Iden + Copy,
 ) -> Result<PeopleLevel, StoreError> {
@@ -526,7 +541,7 @@ async fn organization_state_of(
     })
 }
 
-fn read_project(row: &DbRow) -> Result<Project, StoreError> {
+pub(crate) fn read_project(row: &DbRow) -> Result<Project, StoreError> {
     Ok(Project {
         id: read_project_id(row, ProjectRow::Id)?,
         parent: optional(
@@ -541,7 +556,7 @@ fn read_project(row: &DbRow) -> Result<Project, StoreError> {
     })
 }
 
-fn project_select() -> SelectStatement {
+pub(crate) fn project_select() -> SelectStatement {
     let mut select = Query::select();
     select
         .columns([

@@ -25,7 +25,7 @@ fn chain_of(state: &State, project: ProjectId) -> Option<Vec<ProjectId>> {
     Some(chain)
 }
 
-fn role_data(record: &RoleRecord) -> RoleData {
+pub(super) fn role_data(record: &RoleRecord) -> RoleData {
     RoleData {
         id: record.role.id,
         name: record.role.name.clone(),

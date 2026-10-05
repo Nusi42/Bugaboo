@@ -22,6 +22,7 @@ crate::entities! {
     crate::outbox::OutboxPosition,
     crate::person::Person,
     crate::project::Project,
+    crate::project::ProjectAlias,
     crate::secret::StoredSecret,
     crate::security_log::SecurityLogCheckpoint,
     crate::security_log::SecurityLogEntry,

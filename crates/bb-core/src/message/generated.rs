@@ -314,6 +314,18 @@ pub const ERROR_EDIT_VERSION_CHANGED: MessageKey = MessageKey::new("error.edit.v
 /// The message `error.name.taken`.
 pub const ERROR_NAME_TAKEN: MessageKey = MessageKey::new("error.name.taken");
 
+/// The message `error.project.move-into-itself`.
+pub const ERROR_PROJECT_MOVE_INTO_ITSELF: MessageKey =
+    MessageKey::new("error.project.move-into-itself");
+
+/// The message `error.project.move-lifts-no-access`.
+pub const ERROR_PROJECT_MOVE_LIFTS_NO_ACCESS: MessageKey =
+    MessageKey::new("error.project.move-lifts-no-access");
+
+/// The message `error.project.preview-changed`.
+pub const ERROR_PROJECT_PREVIEW_CHANGED: MessageKey =
+    MessageKey::new("error.project.preview-changed");
+
 /// The message `error.rate-limit.exceeded`.
 pub const ERROR_RATE_LIMIT_EXCEEDED: MessageKey = MessageKey::new("error.rate-limit.exceeded");
 
@@ -2888,6 +2900,18 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "error.name.taken",
         "That name is already used. Choose another one.",
+    ),
+    (
+        "error.project.move-into-itself",
+        "A project cannot go inside itself or inside one of its own sub-projects.",
+    ),
+    (
+        "error.project.move-lifts-no-access",
+        "This move would let somebody take away a No access that applies to them. Take that No access away first, or move the project somewhere else.",
+    ),
+    (
+        "error.project.preview-changed",
+        "The projects, or who has which role, changed since you looked at the preview. Look at it again before you move the project.",
     ),
     (
         "error.rate-limit.exceeded",
