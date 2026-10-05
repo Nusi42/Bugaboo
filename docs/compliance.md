@@ -209,6 +209,12 @@ reading anything on a person's device needs consent, unless it is strictly neces
 security), no tracking, no outside scripts or fonts. So no consent banner is needed
 (PRIV-01, COMP-13).
 
+The browser also keeps three interface preferences on the device, which only the person
+chose and which hold no personal data: `bugaboo.appearance` (theme, spacing, text size, motion),
+`bugaboo.shortcut-keys` (own keyboard shortcuts) and `bugaboo.sidebar-narrow` (menu narrowed to
+icons). They are strictly necessary for the service the person asked for (a screen that looks and
+works the way they set it), so they need no consent: TDDDG section 25 (2) no. 2.
+
 ---
 
 ## 7. Accessibility

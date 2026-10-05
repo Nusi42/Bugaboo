@@ -1,0 +1,104 @@
+import { t } from "@bugaboo/messages";
+import { type Page } from "@playwright/test";
+
+import { ada, cleo, makeAdmin, makePerson } from "./support/accounts.ts";
+import { expectGoodInEveryLook } from "./support/checks.ts";
+import { expect, test } from "./support/fixtures.ts";
+import { signIn } from "./support/flows.ts";
+
+test.use({
+  preparation: {
+    run: async (server) => {
+      const admin = await makeAdmin(server);
+      await (await makePerson(server, admin, cleo)).dispose();
+      await admin.dispose();
+    },
+  },
+});
+
+/** The dialog of quick search. */
+function dialog(page: Page) {
+  return page.getByRole("dialog", { name: t("search.title"), exact: true });
+}
+
+/** The box of quick search. */
+function box(page: Page) {
+  return dialog(page).getByRole("searchbox", { name: t("search.label"), exact: true });
+}
+
+test("cfg_08 Ctrl+K opens quick search, finds a page and goes there", async ({ page }) => {
+  await signIn(page, ada);
+  await page.keyboard.press("Control+k");
+  await expect(dialog(page)).toBeVisible();
+  await expect(box(page)).toBeFocused();
+  await box(page).fill("appear");
+  const found = dialog(page).getByRole("option", { name: new RegExp(t("nav.appearance"), "u") });
+  await expect(found).toBeVisible();
+  await expect(found).toContainText(t("nav.my-settings"));
+  await expectGoodInEveryLook(page);
+  await page.keyboard.press("ArrowDown");
+  await page.keyboard.press("Enter");
+  await expect(page).toHaveURL(/\/me\/appearance$/u);
+  await expect(dialog(page)).toHaveCount(0);
+  // The focus is on the heading of the page that opened, not left behind in the closed dialog.
+  await expect(page.getByRole("heading", { level: 1, name: t("appearance.title") })).toBeFocused();
+});
+
+test("cfg_08 Esc closes quick search and the focus goes back where it was", async ({ page }) => {
+  await signIn(page, ada);
+  const home = page.getByRole("link", { name: t("nav.home"), exact: true }).first();
+  await home.focus();
+  await page.keyboard.press("Control+k");
+  await expect(dialog(page)).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(dialog(page)).toHaveCount(0);
+  await expect(home).toBeFocused();
+  // The box starts empty every time, and the slash is kept for the search bar of a later version.
+  await page.keyboard.press("/");
+  await expect(dialog(page)).toHaveCount(0);
+  await page.keyboard.press("Control+k");
+  await expect(box(page)).toHaveValue("");
+  await page.keyboard.press("Escape");
+});
+
+test("cfg_08 the search button opens it too, and a word with no match says so", async ({
+  page,
+}) => {
+  await signIn(page, ada);
+  await page
+    .getByRole("button", { name: t("shell.search") })
+    .first()
+    .click();
+  await expect(dialog(page)).toBeVisible();
+  await expect(
+    dialog(page).getByRole("option", { name: new RegExp(t("nav.home"), "u") }),
+  ).toBeVisible();
+  await box(page).fill("zzzzzz");
+  await expect(dialog(page).getByText(t("search.nothing"))).toBeVisible();
+  await dialog(page)
+    .getByRole("button", { name: t("common.close") })
+    .click();
+  await expect(dialog(page)).toHaveCount(0);
+});
+
+test("cfg_08 quick search lists only the pages the person may open", async ({ page }) => {
+  await signIn(page, cleo);
+  await page.keyboard.press("Control+k");
+  await box(page).fill(t("nav.invitations"));
+  await expect(dialog(page).getByText(t("search.nothing"))).toBeVisible();
+  await box(page).fill(t("nav.appearance"));
+  await expect(
+    dialog(page).getByRole("option", { name: new RegExp(t("nav.appearance"), "u") }),
+  ).toBeVisible();
+});
+
+test("cfg_08 Ctrl+K opens quick search also while a text field has the focus", async ({ page }) => {
+  await signIn(page, ada);
+  await page.goto("/me/shortcuts");
+  const search = page.getByRole("searchbox", { name: t("shortcuts.search"), exact: true });
+  await search.focus();
+  await page.keyboard.press("Control+k");
+  await expect(dialog(page)).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(search).toBeFocused();
+});

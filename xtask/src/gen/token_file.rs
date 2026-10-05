@@ -21,8 +21,22 @@ pub(crate) struct BaseToken {
 pub(crate) enum BaseValue {
     /// A font stack, first choice first.
     FontFamily(Vec<String>),
-    /// A length such as `14px`.
+    /// A length such as `14px`, possibly scaled by another token (`calc(4px * var(--density))`).
     Dimension(String),
+    /// A duration such as `120ms` or a plain number such as `1`.
+    Plain(String),
+}
+
+/// A choice that changes token values without changing the theme: spacing, text size, motion.
+pub(crate) struct Variant {
+    pub(crate) name: String,
+    /// The attribute on `<html>` that switches it on, and its value.
+    pub(crate) attribute: String,
+    pub(crate) value: String,
+    /// A device setting that switches it on as well (`(prefers-reduced-motion: reduce)`).
+    pub(crate) media: Option<String>,
+    /// Token name (without `--`) and the value it has while the variant is on.
+    pub(crate) tokens: Vec<(String, String)>,
 }
 
 /// One layer of a shadow.
@@ -41,6 +55,8 @@ pub(crate) struct Theme {
     pub(crate) color_scheme: String,
     /// Color name and `#RRGGBB` value, in file order.
     pub(crate) colors: Vec<(String, String)>,
+    /// The colors that change when the device asks for more contrast (`prefers-contrast: more`).
+    pub(crate) more_contrast: Vec<(String, String)>,
     pub(crate) shadow: Vec<ShadowLayer>,
 }
 
@@ -51,11 +67,21 @@ impl Theme {
             .find(|(color, _)| color == name)
             .map(|(_, value)| value.as_str())
     }
+
+    /// The colors with more contrast: the theme's own, where `contrastMore` replaces them.
+    pub(crate) fn color_with_more_contrast(&self, name: &str) -> Option<&str> {
+        self.more_contrast
+            .iter()
+            .find(|(color, _)| color == name)
+            .map(|(_, value)| value.as_str())
+            .or_else(|| self.color(name))
+    }
 }
 
 pub(crate) struct TokenFile {
     pub(crate) base: Vec<BaseToken>,
     pub(crate) themes: Vec<Theme>,
+    pub(crate) variants: Vec<Variant>,
     pub(crate) default_light: String,
     pub(crate) default_dark: String,
     pub(crate) contrast: ContrastSpec,
@@ -81,6 +107,11 @@ impl TokenFile {
             .iter()
             .map(|(name, theme)| parse_theme(name, theme))
             .collect::<anyhow::Result<Vec<_>>>()?;
+        let variants = object(field(root, "variants")?, "variants")?
+            .iter()
+            .filter(|(name, _)| !name.starts_with('$'))
+            .map(|(name, variant)| parse_variant(name, variant))
+            .collect::<anyhow::Result<Vec<_>>>()?;
         let extension = object(
             field(
                 object(field(root, "$extensions")?, "$extensions")?,
@@ -93,6 +124,7 @@ impl TokenFile {
         let file = Self {
             base,
             themes,
+            variants,
             default_light: string(field(defaults, "light")?, "defaultThemes.light")?,
             default_dark: string(field(defaults, "dark")?, "defaultThemes.dark")?,
             contrast,
@@ -142,6 +174,27 @@ impl TokenFile {
                 "color `{name}` is not classified: list it under contrast `text`, `backgrounds` or `nonText` (with a reason)"
             );
         }
+        for theme in &self.themes {
+            if let Some((name, _)) = theme
+                .more_contrast
+                .iter()
+                .find(|(name, _)| theme.color(name).is_none())
+            {
+                bail!(
+                    "`contrastMore` of theme `{}` changes unknown color `{name}`",
+                    theme.name
+                );
+            }
+        }
+        for variant in &self.variants {
+            if let Some((name, _)) = variant
+                .tokens
+                .iter()
+                .find(|(name, _)| !self.base.iter().any(|token| &token.name == name))
+            {
+                bail!("variant `{}` changes unknown token `{name}`", variant.name);
+            }
+        }
         self.contrast.check_exclusions()?;
         let distinct = &self.distinct;
         if let Some(unknown) = distinct
@@ -168,6 +221,7 @@ fn parse_base(name: &str, token: &Value) -> anyhow::Result<BaseToken> {
                 .collect::<anyhow::Result<_>>()?,
         ),
         "dimension" => BaseValue::Dimension(string(value, name)?),
+        "duration" | "number" => BaseValue::Plain(string(value, name)?),
         other => bail!("base token `{name}` has unsupported type `{other}`"),
     };
     Ok(BaseToken {
@@ -176,13 +230,27 @@ fn parse_base(name: &str, token: &Value) -> anyhow::Result<BaseToken> {
     })
 }
 
-fn parse_theme(name: &str, theme: &Value) -> anyhow::Result<Theme> {
-    let theme = object(theme, name)?;
-    let extension = object(
-        field(object(field(theme, "$extensions")?, name)?, "bugaboo")?,
-        name,
-    )?;
-    let colors = object(field(theme, "color")?, name)?
+fn parse_variant(name: &str, variant: &Value) -> anyhow::Result<Variant> {
+    let variant = object(variant, name)?;
+    let tokens = object(field(variant, "tokens")?, name)?
+        .iter()
+        .map(|(token, value)| Ok((token.clone(), string(value, token)?)))
+        .collect::<anyhow::Result<Vec<_>>>()?;
+    Ok(Variant {
+        name: name.to_owned(),
+        attribute: string(field(variant, "attribute")?, name)?,
+        value: string(field(variant, "value")?, name)?,
+        media: variant
+            .get("media")
+            .map(|media| string(media, name))
+            .transpose()?,
+        tokens,
+    })
+}
+
+/// A list of `#RRGGBB` colors by name, as the `color` group of a theme holds them.
+fn parse_colors(name: &str, group: &Value) -> anyhow::Result<Vec<(String, String)>> {
+    object(group, name)?
         .iter()
         .map(|(color, token)| {
             let value = string(field(object(token, color)?, "$value")?, color)?;
@@ -194,7 +262,20 @@ fn parse_theme(name: &str, theme: &Value) -> anyhow::Result<Theme> {
             }
             Ok((color.clone(), value.to_ascii_uppercase()))
         })
-        .collect::<anyhow::Result<Vec<_>>>()?;
+        .collect()
+}
+
+fn parse_theme(name: &str, theme: &Value) -> anyhow::Result<Theme> {
+    let theme = object(theme, name)?;
+    let extension = object(
+        field(object(field(theme, "$extensions")?, name)?, "bugaboo")?,
+        name,
+    )?;
+    let colors = parse_colors(name, field(theme, "color")?)?;
+    let more_contrast = match theme.get("contrastMore") {
+        Some(more) => parse_colors(name, field(object(more, name)?, "color")?)?,
+        None => Vec::new(),
+    };
     let shadow = array(
         field(object(field(theme, "shadow")?, "shadow")?, "$value")?,
         "shadow",
@@ -206,6 +287,7 @@ fn parse_theme(name: &str, theme: &Value) -> anyhow::Result<Theme> {
         name: name.to_owned(),
         color_scheme: string(field(extension, "colorScheme")?, name)?,
         colors,
+        more_contrast,
         shadow,
     })
 }

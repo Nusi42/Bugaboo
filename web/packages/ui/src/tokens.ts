@@ -6,6 +6,22 @@ export type ThemeId = (typeof themeIds)[number];
 export const defaultLightTheme: ThemeId = "daylight";
 export const defaultDarkTheme: ThemeId = "dusk";
 
+export const lightThemeIds = ["daylight", "paper"] as const;
+export const darkThemeIds = ["dusk", "midnight"] as const;
+
+/** Where the layout changes, in pixels (the `bp-*` tokens). */
+export const breakpoints = {
+  tablet: 768,
+  computer: 1280,
+} as const;
+
+/** The choices that change token values: the attribute on <html> and its value. */
+export const variants = {
+  compact: { attribute: "data-spacing", value: "compact" },
+  "larger-text": { attribute: "data-text", value: "larger" },
+  "less-motion": { attribute: "data-motion", value: "less" },
+} as const;
+
 export const colorTokens = [
   "bg-canvas",
   "bg-surface",

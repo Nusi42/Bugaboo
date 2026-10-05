@@ -14,6 +14,54 @@ use crate::repo::Repo;
 pub(crate) const SOURCE_LOCALE_PATH: &str = "messages/en.json";
 pub(crate) const OUTPUT: &str = "web/packages/messages/src/generated.ts";
 
+/// The areas (first part of a key) that the browser shows: an allow-list, so a new area ships to the
+/// browser only when it is added here (M1-F12). A key outside these areas is for the server and its
+/// command line. A `t("…")` of the app with a key from another area is a type error.
+const BROWSER_AREAS: [&str; 36] = [
+    "app",
+    "appearance",
+    "backup",
+    "code-app",
+    "common",
+    "data-folder",
+    "error",
+    "field",
+    "first-run",
+    "focus",
+    "frames",
+    "home",
+    "invitation",
+    "invitations",
+    "list",
+    "nav",
+    "page",
+    "panel",
+    "passkeys",
+    "save",
+    "search",
+    "second-step",
+    "security",
+    "security-log",
+    "sessions",
+    "setting",
+    "setup",
+    "shell",
+    "shortcut",
+    "shortcuts",
+    "sign-in",
+    "sign-up",
+    "sign-up-policy",
+    "status",
+    "theme",
+    "validation",
+];
+
+/// Whether a message is shown by the server only, and so is left out of the browser's catalog.
+fn is_server_only(key: &str) -> bool {
+    key.split_once('.')
+        .is_none_or(|(area, _)| !BROWSER_AREAS.contains(&area))
+}
+
 /// The line width of oxfmt (its default).
 const PRINT_WIDTH: usize = 100;
 
@@ -35,7 +83,14 @@ pub(crate) fn output_paths() -> Vec<&'static str> {
 
 /// The TypeScript and the Rust output from the one catalog.
 pub(crate) fn generate(repo: &Repo, catalog_text: &str) -> anyhow::Result<Vec<Generated>> {
-    let messages: Vec<(String, String)> = read_catalog(catalog_text)?;
+    let all_messages: Vec<(String, String)> = read_catalog(catalog_text)?;
+    // The browser gets only what it shows (M1-F12): the server's own words never ship to it, and
+    // a `t("config.…")` in the app is a type error.
+    let messages: Vec<(String, String)> = all_messages
+        .iter()
+        .filter(|(key, _)| !is_server_only(key))
+        .cloned()
+        .collect();
     let mut out = String::from(TS_HEADER);
     out.push_str("\nexport const messages = {\n");
     for (key, text) in &messages {
@@ -87,7 +142,7 @@ pub(crate) fn generate(repo: &Repo, catalog_text: &str) -> anyhow::Result<Vec<Ge
         }
         out.push_str("}\n");
     }
-    let rust = messages_rust::generate(repo, &messages)?;
+    let rust = messages_rust::generate(repo, &all_messages)?;
     Ok(vec![
         Generated::new(OUTPUT, out),
         Generated::new(messages_rust::OUTPUT, rust),
@@ -166,18 +221,41 @@ mod tests {
     #[test]
     fn placeholders_become_typed_arguments() {
         let repo = Repo::discover().unwrap();
-        let output = generate(&repo, r#"{"a.b": "Hi {name}", "a.c": "Plain"}"#).unwrap();
+        let output = generate(&repo, r#"{"home.b": "Hi {name}", "home.c": "Plain"}"#).unwrap();
         assert!(
             output[0]
                 .content
-                .contains("\"a.b\": { name: string | number };")
+                .contains("\"home.b\": { name: string | number };")
         );
-        assert!(!output[0].content.contains("\"a.c\": {"));
+        assert!(!output[0].content.contains("\"home.c\": {"));
         assert!(
             output[1]
                 .content
-                .contains("pub fn a_b(name: impl std::fmt::Display)")
+                .contains("pub fn home_b(name: impl std::fmt::Display)")
         );
+    }
+
+    #[test]
+    fn the_browser_catalog_leaves_out_what_only_the_server_shows() {
+        let repo = Repo::discover().unwrap();
+        let text = r#"{"error.a.b": "Oops", "config.x.y": "Server", "server.listening": "Up {address}", "home.title": "Hi"}"#;
+        let output = generate(&repo, text).unwrap();
+        assert!(output[0].content.contains("\"error.a.b\""));
+        assert!(output[0].content.contains("\"home.title\""));
+        assert!(!output[0].content.contains("config.x.y"));
+        assert!(!output[0].content.contains("server.listening"));
+        assert!(output[1].content.contains("CONFIG_X_Y"));
+        assert!(output[1].content.contains("server_listening"));
+    }
+
+    #[test]
+    fn a_new_area_stays_out_of_the_browser_until_it_is_listed() {
+        let repo = Repo::discover().unwrap();
+        let text = r#"{"brand-new.title": "New", "home.title": "Hi"}"#;
+        let output = generate(&repo, text).unwrap();
+        assert!(!output[0].content.contains("brand-new.title"));
+        assert!(output[0].content.contains("home.title"));
+        assert!(output[1].content.contains("BRAND_NEW_TITLE"));
     }
 
     #[test]

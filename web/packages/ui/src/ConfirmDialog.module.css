@@ -47,3 +47,22 @@
   justify-content: flex-end;
   gap: var(--space-3);
 }
+
+/* On a phone the question fills the screen. */
+.overlay.full {
+  align-items: stretch;
+  padding: 0;
+}
+
+.modal.full {
+  display: flex;
+  flex-direction: column;
+  max-width: none;
+  border: 0;
+  border-radius: 0;
+}
+
+.modal.full .dialog {
+  flex: 1;
+  justify-content: center;
+}

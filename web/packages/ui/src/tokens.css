@@ -7,25 +7,43 @@
   --mono: "Atkinson Hyperlegible Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
   --r-ctl: 6px;
   --r-card: 10px;
-  --fs-xs: 12px;
-  --fs-sm: 13px;
-  --fs-base: 14px;
-  --fs-md: 16px;
-  --fs-lg: 20px;
-  --fs-xl: 24px;
-  --space-1: 4px;
-  --space-2: 8px;
-  --space-3: 12px;
-  --space-4: 16px;
-  --space-5: 24px;
-  --space-6: 32px;
+  --fs-xs: calc(12px * var(--text-scale));
+  --fs-sm: calc(13px * var(--text-scale));
+  --fs-base: calc(14px * var(--text-scale));
+  --fs-md: calc(16px * var(--text-scale));
+  --fs-lg: calc(20px * var(--text-scale));
+  --fs-xl: calc(24px * var(--text-scale));
+  --space-1: calc(4px * var(--density));
+  --space-2: calc(8px * var(--density));
+  --space-3: calc(12px * var(--density));
+  --space-4: calc(16px * var(--density));
+  --space-5: calc(24px * var(--density));
+  --space-6: calc(32px * var(--density));
   --size-content: 640px;
+  --size-page: 960px;
+  --size-menu: 240px;
   --size-form: 440px;
   --size-qr: 200px;
   --size-code: 220px;
   --size-target: 44px;
   --ring-width: 2px;
   --ring-offset: 2px;
+  --bp-tablet: 768px;
+  --bp-computer: 1280px;
+  --size-sidebar: 264px;
+  --size-sidebar-narrow: 72px;
+  --size-panel: 420px;
+  --size-bar: 56px;
+  --size-viewport: 100dvh;
+  --size-dialog: 560px;
+  --size-icon: 20px;
+  --size-icon-small: 16px;
+  --size-list: 300px;
+  --size-reading: 75ch;
+  --motion-fast: 120ms;
+  --motion-base: 200ms;
+  --density: 1;
+  --text-scale: 1;
   --bg-canvas: #ffffff;
   --bg-surface: #f6f7f9;
   --bg-raised: #ffffff;
@@ -333,4 +351,127 @@
   --cat6-fg: #72d8cd;
   --shadow: 0 0 0 1px #272a31, 0 8px 24px 0 #00000099;
   color-scheme: dark;
+}
+
+:root[data-spacing="compact"] {
+  --density: 0.75;
+}
+
+:root[data-text="larger"] {
+  --text-scale: 1.25;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-fast: 0ms;
+    --motion-base: 0ms;
+  }
+}
+
+:root[data-motion="less"] {
+  --motion-fast: 0ms;
+  --motion-base: 0ms;
+}
+
+@media (prefers-contrast: more) {
+  :root {
+    --fg-muted: #464c57;
+    --fg-subtle: #484c58;
+    --accent-fg: #492ec0;
+    --danger: #912222;
+    --warning: #7c3907;
+    --success: #165637;
+    --st-ns: #464c57;
+    --st-ip: #16489f;
+    --st-done: #165637;
+    --accent: #573cd0;
+    --border: #6d6f72;
+    --border-subtle: #8c8e91;
+  }
+}
+
+@media (prefers-contrast: more) and (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --fg-muted: #cbcfd6;
+    --fg-subtle: #cccfd5;
+    --accent-fg: #d0c8ff;
+    --danger: #ffbfb9;
+    --warning: #f7c781;
+    --success: #96dfb5;
+    --st-ns: #cbcfd6;
+    --st-ip: #b3d0ff;
+    --st-done: #96dfb5;
+    --accent: #a697ff;
+    --border: #999ca2;
+    --border-subtle: #797c84;
+  }
+}
+
+@media (prefers-contrast: more) {
+  :root[data-theme="dark"] {
+    --fg-muted: #cbcfd6;
+    --fg-subtle: #cccfd5;
+    --accent-fg: #d0c8ff;
+    --danger: #ffbfb9;
+    --warning: #f7c781;
+    --success: #96dfb5;
+    --st-ns: #cbcfd6;
+    --st-ip: #b3d0ff;
+    --st-done: #96dfb5;
+    --accent: #a697ff;
+    --border: #999ca2;
+    --border-subtle: #797c84;
+  }
+  :root[data-look="daylight"] {
+    --fg-muted: #464c57;
+    --fg-subtle: #484c58;
+    --accent-fg: #492ec0;
+    --danger: #912222;
+    --warning: #7c3907;
+    --success: #165637;
+    --st-ns: #464c57;
+    --st-ip: #16489f;
+    --st-done: #165637;
+    --accent: #573cd0;
+    --border: #6d6f72;
+    --border-subtle: #8c8e91;
+  }
+  :root[data-look="paper"] {
+    --fg-muted: #4d4740;
+    --fg-subtle: #4d4741;
+    --accent-fg: #264a6e;
+    --danger: #802a21;
+    --warning: #693e0c;
+    --success: #2e502a;
+    --st-ns: #4d4740;
+    --st-ip: #264a6e;
+    --st-done: #2e502a;
+    --accent: #2e5b87;
+    --border: #6e6a63;
+    --border-subtle: #8c8881;
+  }
+  :root[data-look="dusk"] {
+    --fg-muted: #cbcfd6;
+    --fg-subtle: #cccfd5;
+    --accent-fg: #d0c8ff;
+    --danger: #ffbfb9;
+    --warning: #f7c781;
+    --success: #96dfb5;
+    --st-ns: #cbcfd6;
+    --st-ip: #b3d0ff;
+    --st-done: #96dfb5;
+    --accent: #a697ff;
+    --border: #999ca2;
+    --border-subtle: #797c84;
+  }
+  :root[data-look="midnight"] {
+    --fg-muted: #b2b7c1;
+    --fg-subtle: #acb0b9;
+    --danger: #ff928a;
+    --st-ns: #abb1bb;
+    --st-ip: #82b1ff;
+    --accent: #9b8cff;
+    --border: #828388;
+    --border-subtle: #66676a;
+  }
 }

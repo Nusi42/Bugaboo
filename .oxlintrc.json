@@ -80,6 +80,8 @@
           // React's own types cannot be made readonly: what a component shows between its tags is
           // any React content (a mutable union), and the event of a form is React's event object.
           { "from": "package", "package": "react", "name": ["ReactNode", "FormEvent"] },
+          // The keyboard event of the browser is its own object; the shortcuts read a few fields of it.
+          { "from": "lib", "name": ["KeyboardEvent"] },
           {
             "from": "package",
             "package": "playwright",
@@ -100,6 +102,7 @@
             "name": [
               "APIRequestContext",
               "APIResponse",
+              "Route",
               "Browser",
               "BrowserContext",
               "Locator",

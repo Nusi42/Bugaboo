@@ -1,12 +1,9 @@
 import type { Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
-import { Alert, Button } from "@bugaboo/ui";
+import { Button } from "@bugaboo/ui";
 
-import { api } from "../../shared/api.ts";
-import { messageOf } from "../../shared/errors.ts";
 import { formatDateTime } from "../../shared/format.ts";
 import styles from "./Account.module.css";
-import { refreshSessions } from "./sessions.ts";
 
 type Session = Schema<"SessionBody">;
 
@@ -22,17 +19,11 @@ function deviceOf(session: Session): string {
 /** One place where the person is signed in, with a button to sign out of it. */
 export interface SessionRowProps {
   readonly session: Session;
-  /** The place was signed out of. */
-  readonly onEnded: () => void;
+  /** Sign out of this place: it leaves the list at once and the server is asked in the background. */
+  readonly onEnd: () => void;
 }
 
-export function SessionRow({ session, onEnded }: SessionRowProps) {
-  const end = api.query.useMutation("delete", "/api/v1/auth/sessions/{session_id}", {
-    onSuccess: () => {
-      refreshSessions();
-      onEnded();
-    },
-  });
+export function SessionRow({ session, onEnd }: SessionRowProps) {
   const device = deviceOf(session);
   return (
     <li className={styles.item}>
@@ -50,16 +41,9 @@ export function SessionRow({ session, onEnded }: SessionRowProps) {
             {t("sessions.network", { network: session.network })}
           </span>
         )}
-        {end.isError ? <Alert danger>{messageOf(end.error)}</Alert> : null}
       </span>
       {session.current ? null : (
-        <Button
-          aria-label={t("sessions.end-name", { device })}
-          isPending={end.isPending}
-          onPress={() => {
-            end.mutate({ params: { path: { session_id: session.id } } });
-          }}
-        >
+        <Button aria-label={t("sessions.end-name", { device })} onPress={onEnd}>
           {t("sessions.end")}
         </Button>
       )}

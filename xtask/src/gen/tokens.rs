@@ -2,7 +2,7 @@
 
 use std::fmt::Write as _;
 
-use super::token_file::{BaseToken, BaseValue, ShadowLayer, Theme, TokenFile};
+use super::token_file::{BaseToken, BaseValue, ShadowLayer, Theme, TokenFile, Variant};
 use super::{Generated, write_all};
 use crate::repo::Repo;
 
@@ -58,7 +58,62 @@ fn css(tokens: &TokenFile) -> String {
         theme_declarations(&mut out, theme, "  ");
         out.push_str("}\n");
     }
+    for variant in &tokens.variants {
+        variant_blocks(&mut out, variant);
+    }
+    more_contrast_blocks(&mut out, tokens, light, dark);
     out
+}
+
+/// What a choice (spacing, text size, motion) changes, switched on by its attribute on `<html>`
+/// and, where it has one, by the device setting too.
+fn variant_blocks(out: &mut String, variant: &Variant) {
+    if let Some(media) = &variant.media {
+        let _ = write!(out, "\n@media {media} {{\n  :root {{\n");
+        variant_declarations(out, variant, "    ");
+        out.push_str("  }\n}\n");
+    }
+    let _ = write!(
+        out,
+        "\n:root[{}=\"{}\"] {{\n",
+        variant.attribute, variant.value
+    );
+    variant_declarations(out, variant, "  ");
+    out.push_str("}\n");
+}
+
+fn variant_declarations(out: &mut String, variant: &Variant, indent: &str) {
+    for (name, value) in &variant.tokens {
+        let _ = writeln!(out, "{indent}--{name}: {value};");
+    }
+}
+
+/// The colors that change for people whose device asks for more contrast, for every way a theme
+/// is put on the page (the device fallback, `data-theme`, `data-look`).
+fn more_contrast_blocks(out: &mut String, tokens: &TokenFile, light: &Theme, dark: &Theme) {
+    out.push_str("\n@media (prefers-contrast: more) {\n  :root {\n");
+    color_overrides(out, light, "    ");
+    out.push_str("  }\n}\n");
+    out.push_str(
+        "\n@media (prefers-contrast: more) and (prefers-color-scheme: dark) {\n  :root:not([data-theme=\"light\"]) {\n",
+    );
+    color_overrides(out, dark, "    ");
+    out.push_str("  }\n}\n");
+    out.push_str("\n@media (prefers-contrast: more) {\n  :root[data-theme=\"dark\"] {\n");
+    color_overrides(out, dark, "    ");
+    out.push_str("  }\n");
+    for theme in &tokens.themes {
+        let _ = writeln!(out, "  :root[data-look=\"{}\"] {{", theme.name);
+        color_overrides(out, theme, "    ");
+        out.push_str("  }\n");
+    }
+    out.push_str("}\n");
+}
+
+fn color_overrides(out: &mut String, theme: &Theme, indent: &str) {
+    for (name, value) in &theme.more_contrast {
+        let _ = writeln!(out, "{indent}--{name}: {};", value.to_ascii_lowercase());
+    }
 }
 
 /// The generated-file notice followed by an explanation built from the token data.
@@ -73,7 +128,7 @@ fn css_header(tokens: &TokenFile) -> String {
         .iter()
         .filter_map(|token| match &token.value {
             BaseValue::FontFamily(families) => families.first().map(String::as_str),
-            BaseValue::Dimension(_) => None,
+            BaseValue::Dimension(_) | BaseValue::Plain(_) => None,
         })
         .collect();
     format!(
@@ -117,7 +172,7 @@ fn theme_declarations(out: &mut String, theme: &Theme, indent: &str) {
 
 fn base_value(token: &BaseToken) -> String {
     match &token.value {
-        BaseValue::Dimension(value) => value.clone(),
+        BaseValue::Dimension(value) | BaseValue::Plain(value) => value.clone(),
         BaseValue::FontFamily(names) => names
             .iter()
             .map(|name| {
@@ -171,6 +226,45 @@ fn typescript(tokens: &TokenFile) -> String {
         "\nexport const defaultLightTheme: ThemeId = \"{}\";\nexport const defaultDarkTheme: ThemeId = \"{}\";\n",
         tokens.default_light, tokens.default_dark
     );
+    let ids_with_scheme = |scheme: &str| -> String {
+        tokens
+            .themes
+            .iter()
+            .filter(|theme| theme.color_scheme == scheme)
+            .map(|theme| format!("\"{}\"", theme.name))
+            .collect::<Vec<_>>()
+            .join(", ")
+    };
+    let _ = write!(
+        out,
+        "\nexport const lightThemeIds = [{}] as const;\nexport const darkThemeIds = [{}] as const;\n",
+        ids_with_scheme("light"),
+        ids_with_scheme("dark")
+    );
+    out.push_str("\n/** Where the layout changes, in pixels (the `bp-*` tokens). */\nexport const breakpoints = {\n");
+    for token in &tokens.base {
+        if let (Some(name), BaseValue::Dimension(value)) =
+            (token.name.strip_prefix("bp-"), &token.value)
+        {
+            let _ = writeln!(out, "  {name}: {},", value.trim_end_matches("px"));
+        }
+    }
+    out.push_str("} as const;\n");
+    out.push_str("\n/** The choices that change token values: the attribute on <html> and its value. */\nexport const variants = {\n");
+    for variant in &tokens.variants {
+        // The formatter writes a key without quotes when it is a plain name.
+        let key = if variant.name.contains('-') {
+            format!("\"{}\"", variant.name)
+        } else {
+            variant.name.clone()
+        };
+        let _ = writeln!(
+            out,
+            "  {key}: {{ attribute: \"{}\", value: \"{}\" }},",
+            variant.attribute, variant.value
+        );
+    }
+    out.push_str("} as const;\n");
     out.push_str("\nexport const colorTokens = [\n");
     for (name, _) in &tokens.themes[0].colors {
         let _ = writeln!(out, "  \"{name}\",");
@@ -205,5 +299,36 @@ mod tests {
             assert!(css.contains(&format!(":root[data-look=\"{theme}\"]")));
         }
         assert!(css.contains("prefers-color-scheme: dark"));
+    }
+
+    #[test]
+    fn css_has_the_choices_and_more_contrast() {
+        let repo = Repo::discover().unwrap();
+        let css = css(&TokenFile::load(&repo).unwrap());
+        for expected in [
+            ":root[data-spacing=\"compact\"]",
+            ":root[data-text=\"larger\"]",
+            ":root[data-motion=\"less\"]",
+            "@media (prefers-reduced-motion: reduce)",
+            "@media (prefers-contrast: more)",
+            "--space-4: calc(16px * var(--density));",
+        ] {
+            assert!(css.contains(expected), "{expected}");
+        }
+    }
+
+    #[test]
+    fn typescript_has_the_breakpoints_and_the_choices() {
+        let repo = Repo::discover().unwrap();
+        let ts = typescript(&TokenFile::load(&repo).unwrap());
+        for expected in [
+            "tablet: 768,",
+            "computer: 1280,",
+            "lightThemeIds = [\"daylight\", \"paper\"]",
+            "darkThemeIds = [\"dusk\", \"midnight\"]",
+            "\"larger-text\": { attribute: \"data-text\", value: \"larger\" }",
+        ] {
+            assert!(ts.contains(expected), "{expected}");
+        }
     }
 }

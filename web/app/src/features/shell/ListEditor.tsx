@@ -1,0 +1,98 @@
+import { t } from "@bugaboo/messages";
+import { cx, SearchField, useLayout } from "@bugaboo/ui";
+import { useState, type ReactNode } from "react";
+import { Button } from "react-aria-components";
+
+import styles from "./ListEditor.module.css";
+import { SidePanel } from "./SidePanel.tsx";
+
+/** One row of the list. */
+export interface ListRow {
+  /** A name that does not change, for the address and for React. */
+  readonly key: string;
+  /** What the person calls the item: the list is searched by it, and the panel is named after it. */
+  readonly name: string;
+  /** The rest of the row, after the name. */
+  readonly details?: ReactNode;
+  /** What the side panel shows when this item is open: the editor of a simple item. */
+  readonly editor: ReactNode;
+}
+
+export interface ListEditorProps {
+  readonly rows: readonly ListRow[];
+  /** The name of the search box. */
+  readonly searchLabel: string;
+  /** What to say when nothing is left after searching. */
+  readonly nothing: string;
+  /** The key of the item that is open, from the address. */
+  readonly openKey: string | undefined;
+  readonly onOpen: (key: string) => void;
+  readonly onClose: () => void;
+}
+
+interface RowsProps extends Pick<ListEditorProps, "rows" | "openKey" | "onOpen"> {
+  /** The name of the list. */
+  readonly label: string;
+}
+
+/** The rows: the name of an item opens it, and the rest of the row follows. */
+function Rows({ rows, label, openKey, onOpen }: RowsProps) {
+  return (
+    <ul className={styles.rows} aria-label={label}>
+      {rows.map((row) => (
+        <li key={row.key} className={styles.row}>
+          <Button
+            className={cx(styles.open)}
+            aria-expanded={row.key === openKey}
+            onPress={() => {
+              onOpen(row.key);
+            }}
+          >
+            {row.name}
+          </Button>
+          {row.details}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/**
+ * The list → editor pattern of every settings screen (UX §5.1): a searchable list, where a simple
+ * item opens in a side panel next to it. (A big item gets a page of its own: its row is a link.)
+ * Which item is open lives in the address, so it can be shared and the back button closes it.
+ */
+export function ListEditor({
+  rows,
+  searchLabel,
+  nothing,
+  openKey,
+  onOpen,
+  onClose,
+}: ListEditorProps) {
+  const [query, setQuery] = useState("");
+  const shown = rows.filter((row) => row.name.toLowerCase().includes(query.trim().toLowerCase()));
+  const open = rows.find((row) => row.key === openKey);
+  // A phone shows one thing at a time: the open item takes the screen, and Back closes it. The
+  // list stays in the page, hidden, so the focus can go back to the row that was opened.
+  const alone = useLayout() === "phone" && open !== undefined;
+  return (
+    <div className={styles.frame}>
+      <div className={styles.list} hidden={alone}>
+        <SearchField
+          label={searchLabel}
+          clearLabel={t("search.clear")}
+          value={query}
+          onChange={setQuery}
+        />
+        {shown.length === 0 ? <p className={styles.nothing}>{nothing}</p> : null}
+        <Rows rows={shown} label={searchLabel} openKey={openKey} onOpen={onOpen} />
+      </div>
+      {open === undefined ? null : (
+        <SidePanel title={open.name} onClose={onClose}>
+          {open.editor}
+        </SidePanel>
+      )}
+    </div>
+  );
+}

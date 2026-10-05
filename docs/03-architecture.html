@@ -265,17 +265,24 @@
 <pre><code>web/app/src/
 ├── routes/              TanStack Router routes in code (guest, signed-in and administrator
 │                        layouts decide who may open what); URL search params are typed state
-├── features/            shell, sign-in, sign-up, invitation, setup, account (sign-in and security,
-│                        where you're signed in), admin (invitations, status), home;
+├── features/            shell (sidebar, top bar, phone bar, quick search, frames), sign-in, sign-up,
+│                        invitation, setup, account (sign-in and security, where you're signed in),
+│                        admin (invitations, status), home;
 │                        later: issues, search, board, timeline, calendar, relation-map,
 │                        documents, time, dashboards, notifications, assistant
-├── shared/              api client, session, errors, formatting (Intl), page title
+├── shared/              api client, session, errors, formatting (Intl), page title and focus,
+│                        the shortcut registry, the helpers for instant changes
 └── main.tsx</code></pre>
 <ul>
 <li><strong>Server data</strong> lives only in the TanStack Query cache, fetched through the generated client, keyed by generated query keys.</li>
 <li><strong>Forms</strong> get their validation rules from the server's exported schema; the server still decides.</li>
 <li><strong>Components</strong> come from <code>@bugaboo/ui</code>, built on React Aria Components; styles use token variables only. The content security policy allows no inline styles, so React Aria's one injected style element is replaced by a rule in <code>global.css</code> (the element is declared in <code>index.html</code>).</li>
 <li><strong>Who is signed in</strong> is read once with <code>GET /api/v1/auth/me</code>; a <code>401</code> anywhere (a session that ended, a wrong CSRF token) takes the person to the sign-in page with the reason in the address, and the guest layout does not send a signed-in person away while a reason is shown.</li>
+<li><strong>The frame</strong> (<code>features/shell</code>) lays out three sizes from the <code>bp-*</code> tokens: a sidebar on a computer (1280 px and wider), a menu that slides in on a tablet, a bottom bar and one screen at a time on a phone. <code>places.ts</code> is the one list of the screens that exist (menus, the trail at the top, quick search and the topics of the settings frames read it), so nothing is shown that does not exist. Other features add to the shell through registries (<code>addSidebarSection</code> for the project tree, <code>addQuickSearchSource</code> for search results). Which item is open lives in the address (typed search parameters), so it can be shared and Back closes it.</li>
+<li><strong>Shortcuts</strong> are defined once in <code>shared/shortcuts.ts</code> (ID, default keys, words, where they work, the visible button that does the same). One engine handles sequences such as <code>g h</code> and stays silent while a text field has the focus; a person's own keys come from one source that WP-07 moves to the server.</li>
+<li><strong>Instant changes</strong>: <code>useOptimisticMutation</code> shows a change in the query cache at once, goes back with a plain message when the server refuses, and reports <em>Saving…</em>, <em>Saved</em> or <em>Not saved yet</em>; skeletons appear only after 0.3 s; <em>Undo</em> is on offer for 10 seconds.</li>
+<li><strong>Appearance</strong> (theme with one light and one dark choice, spacing, text size, motion) is one <code>AppearanceSource</code>; the browser is the source until WP-07 adds the server.</li>
+<li><strong>Rules the checks keep:</strong> feature folders are reached only through their <code>index.ts</code> and shared code and packages never import features or the app (<code>ARCH-WEB-FEATURES</code>); all text comes from the catalog (<code>TXT-LITERAL</code>); no color is written out and no style is set from code (<code>STY-TOKENS</code>); every address in <code>paths.ts</code> is opened by the accessibility suite in the four themes on a computer and a phone (<code>TEST-A11Y</code>).</li>
 <li><strong>Heavy features</strong> (timeline, relation map, document editor, workflow editor, theme editor, WebAssembly) are split into separate chunks and loaded when first opened.</li>
 </ul>
 
@@ -926,10 +933,10 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 <tr><td><code>LINT-DRY</code></td><td>No copy-pasted code blocks above the duplication threshold</td><td>coding-standards §1 (DRY)</td><td>jscpd (Rust and TypeScript)</td><td>ci</td></tr>
 <tr><td><code>LINT-HYGIENE</code></td><td>No console.log, no any, no non-null !, no @ts-ignore, no TODO without an issue number, no dbg!/println!</td><td>coding-standards §2, §3, §4</td><td>oxlint rules + ast-grep</td><td>edit · commit · ci</td></tr>
 <tr><td><code>LINT-API-TYPES</code></td><td>No hand-written API response types in the browser app</td><td>ADR-0008</td><td>xtask (type and interface names in web/app against the schemas of the generated OpenAPI document, and names that say they are server answers)</td><td>edit · commit · ci</td></tr>
-<tr><td><code>TXT-LITERAL</code></td><td>No hard-coded user-facing text in components or API messages</td><td>UX-07, coding-standards §4</td><td>ast-grep rules (JSX text, aria-*, title, alt, placeholder; Rust error strings)</td><td>edit · commit · ci</td></tr>
+<tr><td><code>TXT-LITERAL</code></td><td>No hard-coded user-facing text in components</td><td>UX-07, coding-standards §4</td><td>oxlint (react/jsx-no-literals, one configuration with LINT-TS): JSX text and the string values of aria-*, title, alt and placeholder</td><td>edit · commit · ci</td></tr>
 <tr><td><code>TXT-CATALOG</code></td><td>Message catalog: no missing, unused or duplicate keys; placeholders match</td><td>UX-07</td><td>xtask (parses messages/en.json and code references)</td><td>edit · commit · ci</td></tr>
 <tr><td><code>TXT-TERMS</code></td><td>No words from the glossary's 'Don't say' column in UI text, user docs or API names</td><td>glossary.md</td><td>xtask (reads glossary tables)</td><td>edit · commit · ci</td></tr>
-<tr><td><code>STY-TOKENS</code></td><td>Only design tokens in code: no hex/rgb colors, no inline style attributes</td><td>ADR-0010</td><td>ast-grep + stylelint</td><td>edit · commit · ci</td></tr>
+<tr><td><code>STY-TOKENS</code></td><td>Only design tokens in code: no hex/rgb colors, no inline style attributes</td><td>ADR-0010</td><td>xtask (no color values and no inline styles in the TypeScript and CSS of the app; sizes in CSS are LINT-CSS)</td><td>edit · commit · ci</td></tr>
 <tr><td><code>STY-CONTRAST</code></td><td>Every text/background pair in the built-in themes passes WCAG AA</td><td>THM-03, UX-04</td><td>xtask (reads design/tokens.json)</td><td>commit · ci</td></tr>
 <tr><td><code>ARCH-DEPS</code></td><td>Crates depend only on what the module map allows</td><td>architecture §4 (dependency rules), ADR-0001</td><td>xtask (cargo metadata vs allowed edges)</td><td>push · ci</td></tr>
 <tr><td><code>ARCH-PURE</code></td><td>bb-core, bb-searchlang and bb-markdown do no I/O (no tokio, sqlx, std::fs, std::net)</td><td>architecture §4, ADR-0005, ADR-0011</td><td>xtask (dependency bans) + ast-grep</td><td>edit · push · ci</td></tr>
@@ -946,7 +953,7 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 <tr><td><code>ARCH-SETTINGS</code></td><td>Settings are only read and written through the settings registry</td><td>ADR-0018</td><td>xtask (declarations and key literals; the table of setting values is named in the settings repository only)</td><td>edit · commit · ci</td></tr>
 <tr><td><code>ARCH-AI-TOOLS</code></td><td>AI tools exist only in the tool registry and never reach people-ranking, assignment or working-hours use cases</td><td>ADR-0013, COMP-10</td><td>xtask (registry allow list) + ast-grep</td><td>edit · commit · ci</td></tr>
 <tr><td><code>ARCH-WEB-API</code></td><td>The browser app calls the server only through @bugaboo/api-client (no raw fetch)</td><td>ADR-0008</td><td>xtask (scans web/ outside the client package for fetch, XMLHttpRequest, WebSocket, EventSource, sendBeacon, HTTP libraries and imports into the client package); oxlint no-restricted-globals in .oxlintrc.json is a second guard</td><td>edit · commit · ci</td></tr>
-<tr><td><code>ARCH-WEB-FEATURES</code></td><td>Browser feature folders import each other only through their public index</td><td>architecture §4 (browser app)</td><td>oxlint import rules</td><td>edit · commit · ci</td></tr>
+<tr><td><code>ARCH-WEB-FEATURES</code></td><td>Browser feature folders import each other only through their public index; shared code and packages never import features or the app</td><td>architecture §4 (browser app)</td><td>xtask (imports of web/app/src and web/packages)</td><td>edit · commit · ci</td></tr>
 <tr><td><code>ARCH-MAP-SYNC</code></td><td>The module map in the architecture docs lists exactly the crates and packages that exist</td><td>architecture §4, COMP-06</td><td>xtask (parses 04-building-blocks.md vs workspace)</td><td>push · ci</td></tr>
 <tr><td><code>ARCH-DOC-CHANGE</code></td><td>Changed boundaries, interfaces or dependencies come with a doc or decision-record change</td><td>COMP-06, coding-standards §5</td><td>xtask (diff against main)</td><td>push · ci</td></tr>
 <tr><td><code>ARCH-NO-UNSAFE</code></td><td>Every crate forbids unsafe code unless an ADR allows it</td><td>coding-standards §3</td><td>xtask (checks #![forbid(unsafe_code)] in crate roots)</td><td>commit · ci</td></tr>
@@ -972,7 +979,7 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 <tr><td><code>PERF-BUNDLE</code></td><td>Initial JavaScript stays within its budget (Brotli)</td><td>PERF-04</td><td>xtask (reads the Vite manifest of the built app, adds up the JavaScript of the entry and what it imports at once, compresses each file with Brotli at the quality the server uses (tools/dev/compression.json) and fails above the budget in tools/checks/perf-bundle.toml; the WebAssembly part is not checked yet, M2-F03)</td><td>ci</td></tr>
 <tr><td><code>PERF-N1</code></td><td>List endpoints run a bounded number of queries</td><td>PERF-05</td><td>tests with a query counter</td><td>ci</td></tr>
 <tr><td><code>PERF-BENCH</code></td><td>Latency budgets hold on the 1 M-issue dataset</td><td>PERF-01</td><td>xtask dataset + benchmarks</td><td>nightly</td></tr>
-<tr><td><code>TEST-A11Y</code></td><td>No accessibility violations on key screens in all four themes</td><td>UX-04</td><td>Playwright + axe</td><td>ci</td></tr>
+<tr><td><code>TEST-A11Y</code></td><td>No accessibility violations on key screens in all four themes</td><td>UX-04</td><td>Playwright + axe (web/app/e2e/a11y*.spec.ts); xtask checks that every address in paths.ts has an entry there, the suite itself runs in cargo xtask ci</td><td>commit · ci</td></tr>
 <tr><td><code>TEST-SEARCH-ROUNDTRIP</code></td><td>Simple ⇄ Advanced search never loses information</td><td>QRY-02, ADR-0005</td><td>proptest: parse(print(tree)) == tree</td><td>ci</td></tr>
 <tr><td><code>TEST-EDIT-LOCKS</code></td><td>Edit locks and confirmed saves: lost lock, take-over, conflict and offline cases keep the person's text</td><td>ADR-0019, ISS-17</td><td>integration + Playwright tests</td><td>ci</td></tr>
 <tr><td><code>DEV-PORTS</code></td><td>No default framework ports; every port comes from tools/dev/ports.json and is strict</td><td>ADR-0023</td><td>xtask (scans vite, vitest and playwright configs)</td><td>edit · commit · ci</td></tr>
@@ -1401,6 +1408,8 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 <li><code>cargo xtask gen tokens</code> produces: CSS variables per theme, TypeScript token names, and the Rust validation used by the theme editor (allowed values, contrast checks).</li>
 <li>Components use <strong>CSS Modules</strong> with <code>var(--token)</code> only. The hooks reject raw colors, pixel sizes outside tokens and inline styles.</li>
 <li>Custom themes and field looks store <strong>token values or token names</strong>, never CSS.</li>
+<li>The choices of a person that are not a theme (<em>Compact</em> spacing, <em>Larger text</em>, <em>Less motion</em>) are <strong>variants</strong> in the token file: each switches token values through an attribute on the page (<code>data-spacing</code>, <code>data-text</code>, <code>data-motion</code>), and <em>Less motion</em> also follows the device. Sizes of spacing and text are written as the usual size times a factor token, so one choice scales everything. Where the layout changes (<code>bp-tablet</code>, <code>bp-computer</code>) is a token too, read by the app through the generated TypeScript.</li>
+<li>Every theme has stronger colors for <code>prefers-contrast: more</code> (<code>contrastMore</code>). STY-CONTRAST checks them at 7:1 for text and 3:1 for lines.</li>
 </ul>
 <h4>Consequences</h4>
 <ul>

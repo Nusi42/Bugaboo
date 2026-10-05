@@ -176,11 +176,39 @@ fn take_digits(text: &str) -> Option<(&str, &str)> {
     (end > 0).then(|| text.split_at(end))
 }
 
+/// The most characters of file names one call of a tool gets: the npm tools are `.cmd` files, whose
+/// command line may hold 8191 characters, and a whole repository of files does not fit in that.
+const BATCH_CHARS: usize = 6_000;
+
+/// The files split into batches that each fit on one command line.
+pub(crate) fn in_batches(files: &[String]) -> Vec<&[String]> {
+    let mut batches = Vec::new();
+    let mut start = 0;
+    let mut length = 0;
+    for (index, file) in files.iter().enumerate() {
+        if length + file.len() + 1 > BATCH_CHARS && index > start {
+            batches.push(&files[start..index]);
+            start = index;
+            length = 0;
+        }
+        length += file.len() + 1;
+    }
+    if start < files.len() {
+        batches.push(&files[start..]);
+    }
+    batches
+}
+
 /// Runs oxfmt in check mode and reports every file that is not formatted.
 pub(crate) fn unformatted(root: &Path, files: &[String]) -> anyhow::Result<Vec<Finding>> {
-    if files.is_empty() {
-        return Ok(Vec::new());
+    let mut findings = Vec::new();
+    for batch in in_batches(files) {
+        findings.extend(unformatted_batch(root, batch)?);
     }
+    Ok(findings)
+}
+
+fn unformatted_batch(root: &Path, files: &[String]) -> anyhow::Result<Vec<Finding>> {
     let mut args = vec!["--list-different", "--config", ".oxfmtrc.json"];
     args.extend(files.iter().map(String::as_str));
     let result = run(root, "oxfmt", &args)?;
@@ -203,4 +231,31 @@ pub(crate) fn unformatted(root: &Path, files: &[String]) -> anyhow::Result<Vec<F
         )));
     }
     Ok(findings)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_long_list_of_files_goes_to_the_tool_in_batches_that_keep_every_file() {
+        let files: Vec<String> = (0..2000)
+            .map(|number| format!("web/app/src/features/x/File{number}.tsx"))
+            .collect();
+        let batches = in_batches(&files);
+        assert!(batches.len() > 1);
+        assert!(
+            batches
+                .iter()
+                .all(|batch| batch.iter().map(|file| file.len() + 1).sum::<usize>() <= BATCH_CHARS)
+        );
+        assert_eq!(batches.concat(), files);
+    }
+
+    #[test]
+    fn a_short_list_is_one_batch_and_nothing_is_none() {
+        let files = vec!["a.ts".to_owned(), "b.ts".to_owned()];
+        assert_eq!(in_batches(&files).len(), 1);
+        assert!(in_batches(&[]).is_empty());
+    }
 }

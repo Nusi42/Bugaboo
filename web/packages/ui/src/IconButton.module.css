@@ -1,0 +1,10 @@
+.square {
+  width: var(--size-target);
+  padding: 0;
+}
+
+.hit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}

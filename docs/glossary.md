@@ -83,6 +83,8 @@ Rules:
 | **Milestone**            | An important date on the timeline                                  | —                                  |
 | **Dashboard**            | A page of boxes showing searches, numbers and charts               | —                                  |
 | **Quick search**         | The search box for everything, `Ctrl+K`                            | command palette, omnibox           |
+| **Focus view**           | An open item takes the main area; the menu shrinks to icons and a slim list stays on the left | full-screen mode, detail view |
+| **Side panel**           | A panel next to a list in which a simple item opens, so the list stays in view | drawer, flyout, split view |
 
 ## Time
 
@@ -159,6 +161,9 @@ Rules:
 | **Project settings**     | Settings of one project                                            | project admin                      |
 | **Organization settings**| Settings for the whole Bugaboo server                              | admin console, instance settings   |
 | **Layout**               | Which fields appear where: *issue layout*, *new-issue form*, *card layout* | screen, screen scheme      |
+| **Appearance**           | The choices about how Bugaboo looks: theme, *Spacing* (*Comfortable* or *Compact*), *Larger text* and *Less motion* | display settings |
+| **Keyboard shortcuts**   | Keys that do something faster; every shortcut also has a button, and a person can choose their own keys | hotkeys, keybindings |
+| **Undo**                 | Taking back what was just done; offered for 10 seconds after an action that can be reversed | revert, rollback (in UI) |
 | **Theme**                | Colors and fonts. Built in: *Daylight* and *Paper* (light), *Dusk* and *Midnight* (dark). *Match my device* uses your light or dark choice depending on the device setting | skin |
 | **Assistant**            | The built-in AI helper                                             | copilot, agent (in UI)             |
 | **Suggestions**          | Values the assistant proposes, shown for you to accept or reject   | triage                             |

@@ -56,99 +56,10 @@ export const messages = {
     "Let people make an account on their own, without an invitation. Bugaboo cannot check that an address belongs to the person until e-mail is available, so use this only on a network you trust.",
   "setting.auth.sign-up-domains.help":
     "The e-mail domains that may sign up on their own, as a list separated by commas, like example.com. Leave the list empty to let every address sign up while signing up is on, so write your domains in first.",
-  "cookie.session.purpose":
-    "Keeps you signed in on this device. Bugaboo removes it when you sign out or when your sign-in runs out.",
-  "cookie.csrf.purpose":
-    "Protects you from other websites that try to make Bugaboo do something in your name.",
-  "server.listening": "Bugaboo is running at {address}. Stop it with Ctrl+C.",
-  "server.database-built-in": "Database: built-in SQLite in the data folder.",
-  "server.database-sqlite": "Database: SQLite.",
-  "server.database-postgres": "Database: PostgreSQL.",
-  "server.database-failed": "Bugaboo could not open its database: {reason}",
-  "server.setup-code":
-    "Setup is open. Open Bugaboo in your browser and enter this setup code to make the first administrator: {code}",
-  "server.setup-code-hint": "The code works once and changes every time Bugaboo starts.",
-  "server.self-signed":
-    "HTTPS uses a certificate made by Bugaboo, so browsers warn until you trust it. The certificate is in {path}.",
-  "server.signal-failed":
-    "Bugaboo could not listen for the stop signal (Ctrl+C), so it cannot be stopped cleanly.",
-  "server.port-busy": "Port {port} is busy or not allowed. Choose another port.",
-  "server.warning": "Warning: {message}",
-  "server.error": "Error: {message}",
-  "config.file-unreadable": "The settings file {path} could not be read: {reason}",
-  "config.file-invalid": "The settings file {path} is not valid: {reason}",
-  "config.file-unknown-key":
-    "The settings file {path} has a setting Bugaboo does not know: {name}. Known settings are: {known}.",
-  "config.file-wrong-type":
-    "The setting {name} in {path} must be a text, a number or a list of texts.",
-  "config.port-missing":
-    "No port is set. Set port in bugaboo.toml, set BUGABOO_PORT, or start with --port.",
-  "config.port-invalid": "The port {value} is not a number from 1 to 65535.",
-  "config.address-invalid": "The address {value} is not an IP address such as 127.0.0.1 or ::1.",
-  "config.data-dir-empty": "The data folder is empty text. Give the path of a folder.",
-  "config.database-invalid":
-    "The database address must start with sqlite: or postgres:// (or postgresql://).",
-  "config.tls-mode-invalid": "The HTTPS mode {value} is not known. Use self-signed, files or off.",
-  "config.tls-files-missing": "HTTPS mode files needs both tls_cert and tls_key.",
-  "config.tls-files-unused":
-    "tls_cert and tls_key are only used with HTTPS mode files. Remove them or change the mode.",
-  "config.tls-off-public":
-    "HTTPS cannot be switched off on {address}, because anyone on the network could read what is sent. Use 127.0.0.1 or ::1, or list the proxy that adds HTTPS in trusted_proxies.",
-  "config.public-url-invalid":
-    "The public address {value} is not a web address like https://bugaboo.example.com.",
-  "config.public-url-needed":
-    "Bugaboo listens on {address}, so it cannot know the address people type in the browser. Set public_url, for example https://bugaboo.example.com.",
-  "config.public-url-proxy":
-    "A proxy is listed in trusted_proxies, so people reach Bugaboo through the address of the proxy, which Bugaboo cannot know. Set public_url, for example https://bugaboo.example.com.",
-  "config.proxy-invalid": "The trusted proxy {value} is not an IP address.",
-  "config.log-level-invalid": "The log level {value} is not known. Use error, warn, info or debug.",
   "data-folder.create-failed": "The data folder {path} could not be prepared: {reason}",
   "data-folder.protect-failed":
     "The data folder {path} could not be made private to its owner: {reason}",
   "data-folder.account-unknown": "the account that runs Bugaboo could not be identified",
-  "tls.read-failed": "The file {path} could not be read: {reason}",
-  "tls.write-failed": "The file {path} could not be written: {reason}",
-  "tls.no-certificate": "The file {path} has no certificate in it.",
-  "tls.no-key": "The file {path} has no private key in it.",
-  "tls.unusable": "The certificate and the private key cannot be used: {reason}",
-  "tls.generate-failed": "Bugaboo could not make a certificate: {reason}",
-  "config.number-invalid": "The setting {name} must be a whole number of 1 or more, not {value}.",
-  "tls.key-readable":
-    "The private key {path} can be read by other people on this computer. Make it readable by the account that runs Bugaboo only.",
-  "server.web-app-missing":
-    "The browser app is not built yet. Run `cargo xtask build`, or pass --web <folder>.",
-  "server.not-found": "Not found",
-  "server.keys-missing":
-    "The data folder has stored secrets or a security log, but its key files in the keys folder are missing. Restore them from your backup. Bugaboo does not make new keys, because the stored secrets could never be read again.",
-  "server.about": "Bugaboo: the issue tracker in one file",
-  "cli.about.serve": "Start the server",
-  "cli.about.openapi": "Print the description of the API (OpenAPI) and stop",
-  "cli.about.setup": "Answer a few questions and save the answers in the settings file",
-  "cli.about.service": "Run Bugaboo as a service that starts with the computer",
-  "cli.about.service-install": "Install the service and start it",
-  "cli.about.service-uninstall": "Stop the service and remove it. Your data stays where it is",
-  "cli.about.security-log": "Look at the security log",
-  "cli.about.security-log-verify": "Check that nobody changed the security log",
-  "cli.about.rotate-key": "Make a new master key and use it for every stored secret",
-  "cli.about.keys": "Look after the key files",
-  "cli.about.keys-export": "Copy the key files into a folder, for your backup",
-  "cli.help.config": "The settings file (default: bugaboo.toml next to the program, if it exists)",
-  "cli.help.port": "The port to listen on",
-  "cli.help.address": "The address to listen on (default 127.0.0.1, this computer only)",
-  "cli.help.data-dir": "The folder that holds all data",
-  "cli.help.database-url":
-    "The database: sqlite:<file> or postgres://<address> (default: the one inside the data folder)",
-  "cli.help.tls": "HTTPS mode: self-signed, files or off",
-  "cli.help.tls-cert": "The certificate file, for HTTPS mode files",
-  "cli.help.tls-key": "The private key file, for HTTPS mode files",
-  "cli.help.public-url":
-    "The web address people type to reach Bugaboo, like https://bugaboo.example.com",
-  "cli.help.web":
-    "Serve the browser app from this folder instead of the one built into the program",
-  "cli.help.non-interactive": "Ask nothing: use the options given here and the defaults",
-  "cli.help.overwrite": "Replace the settings file if it already exists",
-  "cli.help.keys-folder": "The folder to copy the key files into. It is made if it does not exist",
-  "cli.no-data": "There is no Bugaboo data in {path}. Check the data folder in your settings.",
   "setup.welcome":
     "Welcome to Bugaboo. A few questions, then your answers are saved in a settings file. Press Enter to accept the answer in brackets.",
   "setup.ask.data-dir": "Where should Bugaboo keep its data? Give the path of a folder.",
@@ -191,34 +102,6 @@ export const messages = {
   "security-log.reason.anchor": "the anchor file that vouches for the end of the log was changed.",
   "security-log.reason.behind":
     "the database lacks the newest entries that the anchor file knows of. Check whether the database was restored from an older backup or lost its last writes. If neither happened, somebody removed entries.",
-  "keys.rotated":
-    "Made a new master key and used it for {secrets, plural, one {# stored secret} other {# stored secrets}}. Back up the key files again.",
-  "keys.exported":
-    "Copied the key files into {path}. They can read everything Bugaboo stores in secret: keep them in a safe place, away from the database backup.",
-  "keys.export-exists":
-    "The folder {path} already holds a copy of a key file. Choose another folder, so no copy is overwritten.",
-  "keys.export-failed": "The key files could not be copied: {reason}",
-  "service.needs-admin":
-    "Installing or removing a service needs administrator rights. On Windows, open the terminal as an administrator. On Linux, run the command with sudo.",
-  "service.unsupported":
-    "Bugaboo can run as a service on Windows and on Linux with systemd. This computer has neither.",
-  "service.no-settings":
-    "There is no settings file at {path}. Run bugaboo setup first, or name the file with --config.",
-  "service.installed":
-    "The service {name} is installed and started. It runs as the account {account} and starts with the computer.",
-  "service.setup-code":
-    "Nobody has made an administrator yet. The setup code for the first administrator is saved in {path}. Read it there, and enter it in your browser.",
-  "service.exists":
-    "The service {name} is installed already. Remove it first with: bugaboo service uninstall",
-  "service.removed": "The service {name} is removed. Your data stays where it is.",
-  "service.not-installed": "The service {name} is not installed.",
-  "service.failed": "The system refused: {reason}",
-  "service.not-a-service":
-    "This command is for the service manager. To start Bugaboo yourself, use: bugaboo serve",
-  "server.setup-code-file":
-    "Setup is open. The setup code is saved in {path}. Read it there and enter it in your browser to make the first administrator.",
-  "service.stop-timeout":
-    "The service {name} did not stop in time. Stop it in the Services window and try again.",
   "common.cancel": "Cancel",
   "common.loading": "Loading…",
   "common.try-again": "Try again",
@@ -436,35 +319,109 @@ export const messages = {
   "status.certificate.none":
     "Not shown. Either another program in front of Bugaboo handles HTTPS, or the certificate file cannot be read.",
   "status.log": "Security log",
-  "server.setup-code-file-failed":
-    "Setup is open, but the setup code could not be saved in {path}: {reason}. Stop Bugaboo and start it in a terminal with: bugaboo serve. The terminal shows the code.",
-  "keys.not-owner":
-    "The data folder {path} belongs to the account {owner}, and you are using another one. A command run from here could leave files that the Bugaboo service cannot read. Run it as {owner}: {how}",
-  "keys.no-access":
-    "This account cannot read and change the key files in {path}. If Bugaboo runs as a service, run the command as the account that runs it: {how}",
-  "keys.how-linux": "sudo -u {owner} {command}",
-  "keys.how-windows":
-    "On Windows that account is {owner}. It has no password, so you cannot sign in as it: stop the service, start a terminal as that account with a tool that can do this, and run: {command}",
-  "keys.export-not-private":
-    "The folder {path} can be opened by other accounts on this computer. Choose a folder that only you can open, or a new one, so the key files are not left where others can copy them.",
   "data-folder.not-a-data-folder":
     "The folder {path} has other files in it and does not look like a Bugaboo data folder. Installing the service would change who owns them. Choose an empty folder or a Bugaboo data folder as the data folder in your settings.",
-  "service.settings-is-link":
-    "The settings file {path} is a link. Installing would change the rights of the file it points to. Name the real file with --config.",
-  "service.settings-in-data":
-    "The settings file {path} is inside the data folder, which the account that runs the service can write to. Move the file out of the data folder, so that the service cannot change its own settings.",
-  "service.settings-folder-open":
-    "The folder {path} that holds the settings file can be changed by other accounts. Keep the settings file in a folder that only administrators can change, for example /etc/bugaboo.",
-  "keys.settings-placeholder": "--config <the settings file of the service>",
-  "service.settings-folder-owner":
-    "The folder {path} that holds the settings file does not belong to the administrator account (root). Keep the settings file in a folder that root owns, for example /etc/bugaboo.",
-  "service.data-folder-real":
-    "The data folder {path} is a link. The service uses the folder it leads to: {real}.",
-  "keys.database-placeholder": "--database-url <the address of your database>",
+  "common.close": "Close",
+  "common.undo": "Undo",
+  "shell.search": "Search",
+  "shell.more": "More",
+  "shell.narrow": "Narrow the menu",
+  "shell.widen": "Widen the menu",
+  "shell.menu-button": "Menu",
+  "shell.back": "Back",
+  "shell.trail": "You are here",
+  "nav.my-settings": "My settings",
+  "nav.organization-settings": "Organization settings",
+  "nav.appearance": "Appearance",
+  "nav.frames": "Page frames",
+  "nav.group.look": "Look and feel",
+  "nav.group.sign-in": "Sign-in",
+  "nav.group.people": "People",
+  "nav.group.system": "System",
+  "search.title": "Quick search",
+  "search.label": "Search",
+  "search.placeholder": "Search pages and settings",
+  "search.clear": "Clear the search",
+  "search.results": "Results",
+  "search.nothing": "Nothing found. Try another word.",
+  "search.pages": "Pages",
+  "search.partial": "Some results could not be loaded.",
+  "shortcut.quick-search": "Open quick search",
+  "shortcut.show-shortcuts": "Show all keyboard shortcuts",
+  "shortcut.go-home": "Go to the start page",
+  "shortcut.list-next": "Open the next item in the list",
+  "shortcut.list-previous": "Open the previous item in the list",
+  "shortcut.key.mod": "Ctrl",
+  "shortcut.key.mod-mac": "⌘",
+  "shortcut.undo": "Undo the last action",
+  "shortcut.key.alt": "Alt",
+  "shortcut.key.shift": "Shift",
+  "shortcut.key.escape": "Esc",
+  "shortcut.key.enter": "Enter",
+  "shortcut.then": "then",
+  "shortcut.or": "or",
+  "shortcut.in-lists": "Where a list is shown",
+  "shortcut.everywhere": "Everywhere",
+  "shortcut.title": "Keyboard shortcuts",
+  "shortcut.intro":
+    "Press these keys instead of clicking. Every shortcut also has a button on the page.",
+  "shortcut.change-link": "Change the keys",
+  "list.next": "Next",
+  "list.previous": "Previous",
+  "focus.back": "Back to list",
+  "focus.hide-list": "Hide list",
+  "focus.show-list": "Show list",
+  "panel.close": "Close the panel",
+  "appearance.title": "Appearance",
+  "appearance.device-help":
+    "Match my device uses one theme when your device is light and one when it is dark. Choose both here.",
+  "appearance.light": "Theme when my device is light",
+  "appearance.dark": "Theme when my device is dark",
+  "appearance.spacing.legend": "Spacing",
+  "appearance.spacing.comfortable": "Comfortable",
+  "appearance.spacing.compact": "Compact",
+  "appearance.larger-text": "Larger text",
+  "appearance.less-motion": "Less motion",
+  "appearance.device-settings":
+    "Your device may already ask for less motion or more contrast. Bugaboo follows both. These choices stay on this device.",
+  "shortcuts.intro": "Choose the keys you like. Open a shortcut to change its keys.",
+  "shortcuts.search": "Search the shortcuts",
+  "shortcuts.nothing": "No shortcut matches your search.",
+  "shortcuts.now": "Keys now",
+  "shortcuts.usual": "Usual keys",
+  "shortcuts.new-keys": "New keys",
+  "shortcuts.new-keys-help":
+    "Click the box and press the keys you want. For two keys in a row, press one and then the other.",
+  "shortcuts.use": "Use these keys",
+  "shortcuts.reset": "Use the usual keys",
+  "shortcuts.saved": "The keys are saved.",
+  "shortcuts.reset-done": "The usual keys are back.",
+  "shortcuts.conflict": "{keys} is already used for: {action}. Choose other keys.",
+  "shortcuts.reserved":
+    "Your browser uses these keys for copying, pasting and undoing. Choose other keys.",
+  "shortcuts.invalid": "These keys cannot be used. Press one key, or two in a row.",
+  "frames.title": "Page frames",
+  "frames.intro":
+    "Issues, documents and settings open in these frames. They are empty for now, so this page shows how they work.",
+  "frames.list": "Example items",
+  "frames.item-1": "First example",
+  "frames.item-2": "Second example",
+  "frames.item-3": "Third example",
+  "frames.focus-view": "Focus view",
+  "frames.open-focus": "Open {name} in the focus view",
+  "frames.remove": "Remove",
+  "frames.remove-name": "Remove {name}",
+  "frames.removed": "{name} was removed.",
+  "frames.panel-text":
+    "This is the side panel. A simple item opens here and the list stays in view.",
+  "frames.focus-text":
+    "This is the focus view. The open item takes the main area and the list stays slim on the left.",
+  "frames.nothing": "No example items are left.",
+  "save.saving": "Saving…",
+  "save.saved": "Saved",
+  "save.not-saved": "Not saved yet",
   "status.log-failures":
     "{count, plural, one {# entry} other {# entries}} of the security log could not be written since the server started. Check that the disk is not full and that the account that runs Bugaboo can write in the data folder, then look at the server log.",
-  "cli.database-url-password":
-    "The database address on the command line has a password in it, and other people on this computer can read the command line, for example in the list of running programs. Put database_url in your settings file ({file}) or in the environment variable {variable} instead, and leave the option out.",
   "data-folder.part.folder": "The data folder",
   "data-folder.part.database": "The database file",
   "data-folder.part.files": "The folder for attachments",
@@ -479,8 +436,6 @@ export const messages = {
     "Other accounts on this computer can open these. Bugaboo leaves them as they are, in case you set these rights on purpose. If nobody else should read them, remove the rights of the other accounts.",
   "data-folder.own-certificate":
     "The folder {path} holds only files of your own in its tls folder, such as a certificate. Installing the service would change who owns them. If this folder is meant to become the data folder of Bugaboo, run the command again with {flag}.",
-  "cli.help.take-over-data-folder":
-    "Take over a data folder that holds only your own files in its tls folder, such as a certificate you put there before the first start",
   "setup.database-url-password":
     "The database address on the command line has a password in it, and other people on this computer can read the command line, for example in the list of running programs. This time the address is saved in {file}. Next time answer the database question of setup instead of using the option, or set the environment variable {variable}.",
   "data-folder.unknown":
@@ -493,25 +448,6 @@ export type MessageKey = keyof typeof messages;
 
 export interface MessageArguments {
   "backup.left": { count: number };
-  "cli.database-url-password": { file: string | number; variable: string | number };
-  "cli.no-data": { path: string | number };
-  "config.address-invalid": { value: string | number };
-  "config.file-invalid": { path: string | number; reason: string | number };
-  "config.file-unknown-key": {
-    known: string | number;
-    name: string | number;
-    path: string | number;
-  };
-  "config.file-unreadable": { path: string | number; reason: string | number };
-  "config.file-wrong-type": { name: string | number; path: string | number };
-  "config.log-level-invalid": { value: string | number };
-  "config.number-invalid": { name: string | number; value: string | number };
-  "config.port-invalid": { value: string | number };
-  "config.proxy-invalid": { value: string | number };
-  "config.public-url-invalid": { value: string | number };
-  "config.public-url-needed": { address: string | number };
-  "config.tls-mode-invalid": { value: string | number };
-  "config.tls-off-public": { address: string | number };
   "data-folder.create-failed": { path: string | number; reason: string | number };
   "data-folder.not-a-data-folder": { path: string | number };
   "data-folder.open": { part: string | number; path: string | number };
@@ -519,6 +455,9 @@ export interface MessageArguments {
   "data-folder.protect-failed": { path: string | number; reason: string | number };
   "data-folder.unknown": { part: string | number; path: string | number };
   "first-run.step-of": { name: string | number; step: string | number; total: string | number };
+  "frames.open-focus": { name: string | number };
+  "frames.remove-name": { name: string | number };
+  "frames.removed": { name: string | number };
   "home.title": { name: string | number };
   "invitation.intro": { email: string | number };
   "invitations.created": { email: string | number };
@@ -526,15 +465,6 @@ export interface MessageArguments {
   "invitations.made": { when: string | number };
   "invitations.take-back-name": { email: string | number };
   "invitations.take-back-title": { email: string | number };
-  "keys.export-exists": { path: string | number };
-  "keys.export-failed": { reason: string | number };
-  "keys.export-not-private": { path: string | number };
-  "keys.exported": { path: string | number };
-  "keys.how-linux": { command: string | number; owner: string | number };
-  "keys.how-windows": { command: string | number; owner: string | number };
-  "keys.no-access": { how: string | number; path: string | number };
-  "keys.not-owner": { how: string | number; owner: string | number; path: string | number };
-  "keys.rotated": { secrets: number };
   "passkeys.added": { name: string | number };
   "passkeys.added-on": { when: string | number };
   "passkeys.last-used": { when: string | number };
@@ -543,28 +473,6 @@ export interface MessageArguments {
   "security-log.broken": { reason: string | number; seq: string | number };
   "security-log.head": { hash: string | number; seq: string | number };
   "security-log.valid": { entries: number };
-  "server.database-failed": { reason: string | number };
-  "server.error": { message: string | number };
-  "server.listening": { address: string | number };
-  "server.port-busy": { port: string | number };
-  "server.self-signed": { path: string | number };
-  "server.setup-code": { code: string | number };
-  "server.setup-code-file": { path: string | number };
-  "server.setup-code-file-failed": { path: string | number; reason: string | number };
-  "server.warning": { message: string | number };
-  "service.data-folder-real": { path: string | number; real: string | number };
-  "service.exists": { name: string | number };
-  "service.failed": { reason: string | number };
-  "service.installed": { account: string | number; name: string | number };
-  "service.no-settings": { path: string | number };
-  "service.not-installed": { name: string | number };
-  "service.removed": { name: string | number };
-  "service.settings-folder-open": { path: string | number };
-  "service.settings-folder-owner": { path: string | number };
-  "service.settings-in-data": { path: string | number };
-  "service.settings-is-link": { path: string | number };
-  "service.setup-code": { path: string | number };
-  "service.stop-timeout": { name: string | number };
   "sessions.device": { browser: string | number; system: string | number };
   "sessions.end-name": { device: string | number };
   "sessions.last-seen": { when: string | number };
@@ -576,6 +484,7 @@ export interface MessageArguments {
   "setup.not-usable": { reason: string | number };
   "setup.saved": { path: string | number };
   "shell.signed-in-as": { name: string | number };
+  "shortcuts.conflict": { action: string | number; keys: string | number };
   "status.certificate.expired": { date: string | number };
   "status.certificate.soon": { date: string | number; days: number };
   "status.certificate.valid": { date: string | number; days: number };
@@ -583,11 +492,4 @@ export interface MessageArguments {
   "status.started": { when: string | number };
   "status.uptime": { days: number; hours: number; minutes: number };
   "theme.device-resolved": { device: string | number; theme: string | number };
-  "tls.generate-failed": { reason: string | number };
-  "tls.key-readable": { path: string | number };
-  "tls.no-certificate": { path: string | number };
-  "tls.no-key": { path: string | number };
-  "tls.read-failed": { path: string | number; reason: string | number };
-  "tls.unusable": { reason: string | number };
-  "tls.write-failed": { path: string | number; reason: string | number };
 }

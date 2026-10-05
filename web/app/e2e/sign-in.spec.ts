@@ -2,7 +2,7 @@ import { t } from "@bugaboo/messages";
 
 import { ada, makeAdmin } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
-import { expectHome, sendPassword, signIn, signOut } from "./support/flows.ts";
+import { expectHome, openMenu, sendPassword, signIn, signOut } from "./support/flows.ts";
 
 test.use({
   preparation: {
@@ -17,7 +17,7 @@ test("auth_01 somebody who is not signed in is taken to the sign-in page", async
   await page.goto("/");
   await expect(page).toHaveURL(/\/sign-in$/u);
   await expect(page.getByRole("heading", { level: 1, name: t("sign-in.title") })).toBeVisible();
-  await page.goto("/account/security");
+  await page.goto("/me/security");
   await expect(page).toHaveURL(/\/sign-in$/u);
 });
 
@@ -28,6 +28,7 @@ test("auth_01 the right password opens the start page, and a reload keeps the pe
   await expect(page).toHaveURL(/\/$/u);
   await page.reload();
   await expectHome(page, ada);
+  await openMenu(page);
   await expect(page.getByText(t("shell.signed-in-as", { name: ada.name }))).toBeVisible();
 });
 
@@ -53,7 +54,7 @@ test("auth_01 signing out ends the sign-in, and the pages need a new one", async
   await signIn(page, ada);
   await signOut(page);
   await expect(page.getByText(t("sign-in.signed-out"))).toBeVisible();
-  await page.goto("/account/sessions");
+  await page.goto("/me/sessions");
   await expect(page).toHaveURL(/\/sign-in$/u);
   await sendPassword(page, ada);
   await expectHome(page, ada);

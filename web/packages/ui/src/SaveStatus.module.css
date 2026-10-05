@@ -1,0 +1,9 @@
+.status {
+  color: var(--fg-muted);
+  font-size: var(--fs-base);
+}
+
+.status[data-state="not-saved"] {
+  color: var(--danger);
+  font-weight: 700;
+}

@@ -2,6 +2,7 @@ import { t } from "@bugaboo/messages";
 import { type Browser, expect, type Page } from "@playwright/test";
 
 import { type Person } from "./accounts.ts";
+import { layoutOf } from "./layout.ts";
 import { type Instance } from "./server.ts";
 import { type CodeApp, codeApp } from "./totp.ts";
 
@@ -39,17 +40,48 @@ export async function signIn(page: Page, person: Person): Promise<void> {
   await expectHome(page, person);
 }
 
+/** Opens what holds the menu when the screen has no sidebar: *Menu* on a tablet, *More* on a phone. */
+export async function openMenu(page: Page): Promise<void> {
+  const layout = layoutOf(page);
+  if (layout !== "computer") {
+    const name = layout === "tablet" ? t("shell.menu-button") : t("shell.more");
+    await page.getByRole("button", { name, exact: true }).click();
+  }
+}
+
+/** Presses *Sign out*, wherever the menu keeps it on this screen. */
+export async function pressSignOut(page: Page): Promise<void> {
+  await openMenu(page);
+  await page.getByRole("button", { name: t("nav.sign-out"), exact: true }).click();
+}
+
 /** Signs out with the button of the menu, and waits for the sign-in page. */
 export async function signOut(page: Page): Promise<void> {
-  await page.getByRole("button", { name: t("nav.sign-out"), exact: true }).click();
+  await pressSignOut(page);
   await expect(page.getByRole("heading", { level: 1, name: t("sign-in.title") })).toBeVisible();
 }
 
-/** Opens a page of the menu by its name. */
-export async function openFromMenu(page: Page, name: string): Promise<void> {
+/** The topics of *Organization settings*; every other topic is in *My settings*. */
+const organizationTopics: ReadonlySet<string> = new Set([t("nav.invitations"), t("nav.status")]);
+
+/**
+ * Opens a topic of *My settings* or *Organization settings* the way a person does: the menu (a
+ * sidebar, the *Menu* button or the *More* sheet), the settings, then the topic in the frame.
+ */
+export async function openFromMenu(page: Page, topic: string): Promise<void> {
+  const settings = organizationTopics.has(topic)
+    ? t("nav.organization-settings")
+    : t("nav.my-settings");
+  await openMenu(page);
+  // On a phone the links are in the sheet that *More* opens, on larger screens in the menu.
+  const menu =
+    layoutOf(page) === "phone"
+      ? page.getByRole("dialog", { name: t("shell.more"), exact: true })
+      : page.getByRole("navigation", { name: t("shell.menu"), exact: true });
+  await menu.getByRole("link", { name: settings, exact: true }).click();
   await page
-    .getByRole("navigation", { name: t("shell.menu") })
-    .getByRole("link", { name })
+    .getByRole("navigation", { name: settings, exact: true })
+    .getByRole("link", { name: topic, exact: true })
     .click();
 }
 

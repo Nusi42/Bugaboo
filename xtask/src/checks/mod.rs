@@ -16,6 +16,7 @@ mod arch_settings;
 mod arch_sql_edge;
 mod arch_wasm;
 mod arch_web_api;
+mod arch_web_features;
 mod build_location;
 mod data_logs;
 mod data_marks;
@@ -56,7 +57,10 @@ mod sec_cookies;
 mod sec_headers;
 mod sec_secrets;
 mod sty_contrast;
+mod sty_tokens;
+mod test_a11y;
 mod txt_catalog;
+mod txt_literal;
 mod txt_terms;
 mod web_source;
 
@@ -136,6 +140,7 @@ pub(crate) fn registry() -> Vec<Box<dyn Check>> {
         Box::new(arch_http_edge::ArchHttpEdge),
         Box::new(arch_lean::ArchLean),
         Box::new(arch_web_api::ArchWebApi),
+        Box::new(arch_web_features::ArchWebFeatures),
         Box::new(data_marks::DataMarks),
         Box::new(arch_db_parity::ArchDbParity),
         Box::new(data_migrations::DataMigrations),
@@ -156,7 +161,10 @@ pub(crate) fn registry() -> Vec<Box<dyn Check>> {
         Box::new(lint_html::LintHtml),
         Box::new(dev_ports::DevPorts),
         Box::new(sty_contrast::StyContrast),
+        Box::new(sty_tokens::StyTokens),
+        Box::new(test_a11y::TestA11y),
         Box::new(txt_catalog::TxtCatalog),
+        Box::new(txt_literal::TxtLiteral),
         Box::new(txt_terms::TxtTerms),
         Box::new(doc_generated::DocGenerated),
         Box::new(doc_adr_enforced::DocAdrEnforced),

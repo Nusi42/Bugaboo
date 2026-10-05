@@ -1,0 +1,92 @@
+/* The sidebar stays in the window while the page scrolls; if it is taller, it scrolls itself. */
+.sidebar {
+  position: sticky;
+  top: 0;
+  align-self: flex-start;
+  box-sizing: border-box;
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  gap: var(--space-4);
+  width: var(--size-sidebar);
+  height: var(--size-viewport);
+  overflow-y: auto;
+  padding: var(--space-3);
+  border-right: 1px solid var(--border);
+  background: var(--bg-surface);
+}
+
+.sidebar[data-narrow] {
+  width: var(--size-sidebar-narrow);
+  align-items: center;
+}
+
+/* Inside the menu that slides in, the sheet draws the edge and sets the width. */
+.sidebar[data-drawer] {
+  position: static;
+  height: auto;
+  overflow-y: visible;
+  width: 100%;
+  border-right: 0;
+  background: transparent;
+}
+
+.brand,
+.brandNarrow {
+  padding: var(--space-2) var(--space-3);
+  color: var(--accent-fg);
+  font-size: var(--fs-lg);
+  font-weight: 700;
+}
+
+.brandNarrow {
+  padding: var(--space-2) 0;
+  font-size: var(--fs-base);
+}
+
+.list,
+.bottom {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* The bottom group sits at the bottom of the bar however short the page is. */
+.bottom {
+  margin-top: auto;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  width: 100%;
+}
+
+.heading {
+  margin: 0;
+  padding: 0 var(--space-3);
+  color: var(--fg-muted);
+  font-size: var(--fs-base);
+  font-weight: 700;
+}
+
+.person {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  width: 100%;
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--border-subtle);
+}
+
+.who {
+  padding: 0 var(--space-3);
+  color: var(--fg-muted);
+  font-size: var(--fs-base);
+  overflow-wrap: anywhere;
+}

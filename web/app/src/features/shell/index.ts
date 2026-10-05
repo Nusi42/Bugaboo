@@ -1,3 +1,17 @@
 export { AppLayout } from "./AppLayout.tsx";
+export { AppearancePage } from "./AppearancePage.tsx";
+export { FramesPage, type FramesShow } from "./FramesPage.tsx";
 export { GuestLayout } from "./GuestLayout.tsx";
 export { ErrorPage, NotFoundPage, PendingPage } from "./Pages.tsx";
+export {
+  addQuickSearchSource,
+  type QuickResult,
+  type QuickSearchAsker,
+  type QuickSearchSource,
+} from "./quick-search-sources.ts";
+export { SettingsFrame } from "./SettingsFrame.tsx";
+export { addSidebarSection, type SidebarSection } from "./sidebar-sections.ts";
+export { ShortcutsPage } from "./ShortcutsPage.tsx";
+export { FocusView, type FocusViewProps } from "./FocusView.tsx";
+export { ListEditor, type ListEditorProps, type ListRow } from "./ListEditor.tsx";
+export { SidePanel, type SidePanelProps } from "./SidePanel.tsx";

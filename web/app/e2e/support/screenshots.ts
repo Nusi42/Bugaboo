@@ -11,9 +11,12 @@ export const screenshotFolder = process.env["BB_SCREENSHOT_DIR"];
 /** The two looks the maintainer sees: the device asks for a light or a dark look, as a phone does. */
 const looks = ["light", "dark"] as const;
 
-/** Takes the open screen in both looks, as `<name>-light.png` and `<name>-dark.png`. */
-export async function shoot(page: Page, name: string): Promise<void> {
-  const target = join(screenshotFolder ?? ".", "M1");
+/**
+ * Takes the open screen in both looks, as `<name>-light.png` and `<name>-dark.png`, in the folder
+ * of the milestone.
+ */
+export async function shoot(page: Page, name: string, milestone = "M1"): Promise<void> {
+  const target = join(screenshotFolder ?? ".", milestone);
   mkdirSync(target, { recursive: true });
   await inOrder(
     looks.map((look) => async () => {
