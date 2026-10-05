@@ -242,3 +242,55 @@ fn rows_of_other_people_and_other_projects_are_not_part_of_the_evaluation() {
         Some(UserId::from_random([9; 16]))
     );
 }
+
+#[test]
+fn sec_03_decide_roles_is_kept_only_from_rows_strictly_above_the_no_access() {
+    let lead = |world: &mut World| {
+        world.role(
+            "Project lead",
+            &[Permission::SeeProjects, Permission::DecideRoles],
+        )
+    };
+
+    // A role of one of the person's groups at the same depth as the person's own *No access* is
+    // removed as a whole: they cannot lift their own *No access* with it.
+    let mut world = World::new();
+    let leads = world.group();
+    let role = lead(&mut world);
+    world.give_group(leads, role, world.acme);
+    assert!(world.at(world.acme).allows(Permission::DecideRoles));
+    world.no_access(world.acme);
+    let acme = world.at(world.acme);
+    assert!(acme.permissions().is_empty());
+    assert!(!acme.decide_roles_was_kept());
+    assert!(!acme.knows_project());
+    assert!(matches!(
+        acme.explain(Permission::DecideRoles).reasons.as_slice(),
+        [Reason::RemovedByNoAccess { .. }]
+    ));
+
+    // A role for the whole organization is above every project: it is kept.
+    let mut world = World::new();
+    let role = lead(&mut world);
+    let row = world.give_everywhere(role);
+    let no_access = world.no_access(world.acme);
+    let acme = world.at(world.acme);
+    assert!(acme.allows(Permission::DecideRoles));
+    assert!(acme.decide_roles_was_kept());
+    assert!(matches!(
+        acme.explain(Permission::DecideRoles).reasons.as_slice(),
+        [Reason::KeptFromRemovedRow { row: kept, no_access: by, .. }]
+            if kept.assignment == row && by.assignment == no_access
+    ));
+
+    // A *No access* lower down does not bring back what a *No access* at the depth of the
+    // role took away: another *No access* never adds a permission.
+    let mut world = World::new();
+    let leads = world.group();
+    let role = lead(&mut world);
+    world.give_group(leads, role, world.acme);
+    world.no_access(world.acme);
+    world.no_access(world.web);
+    assert!(!world.at(world.web).allows(Permission::DecideRoles));
+    assert!(!world.at(world.acme).allows(Permission::DecideRoles));
+}

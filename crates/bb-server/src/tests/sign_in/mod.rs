@@ -15,6 +15,7 @@ mod lists;
 mod passkeys;
 mod permissions_http;
 mod policy;
+mod policy_probes;
 mod policy_rig;
 mod policy_rules;
 mod rig;
