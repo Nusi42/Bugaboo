@@ -1,0 +1,79 @@
+import type { Schema } from "@bugaboo/api-client";
+import { t } from "@bugaboo/messages";
+import { Alert, Button, Card, ConfirmDialog, Form, Switch, TextField } from "@bugaboo/ui";
+import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+
+import { api } from "../../shared/api.ts";
+import { messageOf } from "../../shared/errors.ts";
+import { queryClient } from "../../shared/query-client.ts";
+import { statusOptions } from "../../shared/session.ts";
+import styles from "./Admin.module.css";
+
+/** The domains as the administrator typed them: one per line, or separated by commas or spaces. */
+function domainsOf(text: string): string[] {
+  return text
+    .split(/[\s,]+/u)
+    .map((domain) => domain.trim())
+    .filter((domain) => domain !== "");
+}
+
+/** The switch and the list of domains, with the warning that belongs to an empty list (M1-F46). */
+function PolicyForm({ policy }: { readonly policy: Schema<"SignUpPolicyBody"> }) {
+  const [enabled, setEnabled] = useState(policy.enabled);
+  const [text, setText] = useState(policy.domains.join("\n"));
+  const save = api.query.useMutation("put", "/api/v1/auth/sign-up-policy", {
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: statusOptions().queryKey });
+    },
+  });
+  const domains = domainsOf(text);
+  const everybody = enabled && domains.length === 0;
+  const send = (): void => {
+    save.mutate({ body: { enabled, domains } });
+  };
+  return (
+    <Form onSubmit={send}>
+      <Switch label={t("sign-up-policy.switch")} isSelected={enabled} onChange={setEnabled} />
+      <TextField
+        label={t("sign-up-policy.domains")}
+        description={t("sign-up-policy.domains-help")}
+        multiline
+        value={text}
+        onChange={setText}
+      />
+      {everybody ? <Alert warning>{t("sign-up-policy.warning")}</Alert> : null}
+      {save.isError ? <Alert danger>{messageOf(save.error)}</Alert> : null}
+      {save.isSuccess ? <Alert success>{t("sign-up-policy.saved")}</Alert> : null}
+      <div className={styles.row}>
+        {everybody ? (
+          <ConfirmDialog
+            triggerLabel={t("common.save")}
+            title={t("sign-up-policy.confirm-title")}
+            text={t("sign-up-policy.confirm-text")}
+            confirmLabel={t("sign-up-policy.confirm-yes")}
+            cancelLabel={t("sign-up-policy.confirm-no")}
+            danger
+            onConfirm={send}
+          />
+        ) : (
+          <Button primary submit isPending={save.isPending}>
+            {t("common.save")}
+          </Button>
+        )}
+      </div>
+    </Form>
+  );
+}
+
+/** *Signing up without an invitation*: who may make their own account. */
+export function SignUpPolicySection() {
+  const policy = useQuery(api.query.queryOptions("get", "/api/v1/auth/sign-up-policy"));
+  return (
+    <Card heading={t("sign-up-policy.title")}>
+      <p className={styles.text}>{t("sign-up-policy.intro")}</p>
+      {policy.isError ? <Alert danger>{messageOf(policy.error)}</Alert> : null}
+      {policy.data === undefined ? null : <PolicyForm policy={policy.data} />}
+    </Card>
+  );
+}

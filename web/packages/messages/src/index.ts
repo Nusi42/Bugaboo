@@ -4,8 +4,8 @@ import { messages, type MessageArguments, type MessageKey } from "./generated.ts
 
 export type { MessageKey } from "./generated.ts";
 
-/** English is the only catalog for now; more languages come with UX-07. */
-const locale = "en";
+/** English is the only catalog for now; more languages come with UX-07. Dates and numbers follow it. */
+export const locale = "en";
 
 type ValuesOf<K extends MessageKey> = K extends keyof MessageArguments
   ? [values: MessageArguments[K]]

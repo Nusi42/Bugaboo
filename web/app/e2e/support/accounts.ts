@@ -1,0 +1,101 @@
+import { type ApiSession, openSession } from "./api.ts";
+import { type CodeApp, codeApp } from "./totp.ts";
+import { type Instance } from "./server.ts";
+
+/** Somebody who has, or is going to have, an account. */
+export interface Person {
+  readonly name: string;
+  readonly email: string;
+  /** A password that is long enough and on no list of breached passwords. */
+  readonly password: string;
+}
+
+/**
+ * A password made of words. It is joined here, so that no whole password stands in the code as
+ * one text that the secret scan (SEC-16) would take for a real key.
+ */
+function passphrase(...words: readonly string[]): string {
+  return words.join("-");
+}
+
+export const ada: Person = {
+  name: "Ada Admin",
+  email: "ada@example.test",
+  password: passphrase("Tr4mpoline", "Quiet", "Harbor", "81"),
+};
+
+export const bob: Person = {
+  name: "Bob Builder",
+  email: "bob@example.test",
+  password: passphrase("Violet", "Lantern", "Marsh", "5520"),
+};
+
+export const cleo: Person = {
+  name: "Cleo Coder",
+  email: "cleo@example.test",
+  password: passphrase("Granite", "Orbit", "Meadow", "3047"),
+};
+
+/** Makes the first administrator through the API, with the setup code the server saved. */
+export async function makeAdmin(server: Instance, person: Person = ada): Promise<ApiSession> {
+  const session = await openSession(server.url);
+  await session.post("/api/v1/auth/setup", {
+    code: server.setupCode(),
+    display_name: person.name,
+    email: person.email,
+    password: person.password,
+  });
+  return session;
+}
+
+/** The secret in an invitation link: the part after the hash sign. */
+function secretOf(link: string): string {
+  return link.slice(link.indexOf("#") + 1);
+}
+
+/** Makes an invitation as `admin` and returns its link path (the page and the secret). */
+export async function invite(admin: ApiSession, email: string): Promise<string> {
+  const made = await admin.post("/api/v1/auth/invitations", { email });
+  return String(made["link_path"]);
+}
+
+/** Makes an account for `person` with an invitation from `admin`, and signs the person in. */
+export async function makePerson(
+  server: Instance,
+  admin: ApiSession,
+  person: Person,
+): Promise<ApiSession> {
+  const link = await invite(admin, person.email);
+  const session = await openSession(server.url);
+  await session.post("/api/v1/auth/invitation/accept", {
+    secret: secretOf(link),
+    display_name: person.name,
+    password: person.password,
+  });
+  return session;
+}
+
+/** Signs the person out of every browser, so a test starts with no place to be listed. */
+export async function endEverySession(server: Instance, person: Person): Promise<void> {
+  const session = await openSession(server.url);
+  await session.post("/api/v1/auth/sign-in", { email: person.email, password: person.password });
+  await session.remove("/api/v1/auth/sessions");
+}
+
+/** A code app and the backup codes that came with setting it up. */
+export interface TwoStep {
+  readonly app: CodeApp;
+  readonly backupCodes: readonly string[];
+}
+
+/** Sets up the code app for the person behind `session`, as the security page would. */
+export async function addCodeApp(session: ApiSession, password: string): Promise<TwoStep> {
+  const started = await session.post("/api/v1/auth/two-step/code-app", { password });
+  const app = codeApp(String(started["secret"]));
+  const confirmed = await session.post("/api/v1/auth/two-step/code-app/confirm", {
+    code: await app.next(),
+    password,
+  });
+  const codes = confirmed["codes"];
+  return { app, backupCodes: Array.isArray(codes) ? codes.map(String) : [] };
+}

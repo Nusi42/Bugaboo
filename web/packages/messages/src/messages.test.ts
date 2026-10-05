@@ -8,7 +8,7 @@ describe("ux_07 message catalog", () => {
   });
 
   it("fills in placeholders", () => {
-    expect(t("hello.current", { theme: "Dusk" })).toBe("Your theme: Dusk.");
+    expect(t("shell.signed-in-as", { name: "Ana" })).toBe("Signed in as Ana");
   });
 });
 

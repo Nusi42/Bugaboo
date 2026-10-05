@@ -1,8 +1,6 @@
 import { t } from "@bugaboo/messages";
 import { ThemePicker, useTheme, type ThemeChoice } from "@bugaboo/ui";
 
-import styles from "./App.module.css";
-
 const themeLabels = {
   daylight: t("theme.daylight"),
   paper: t("theme.paper"),
@@ -10,8 +8,9 @@ const themeLabels = {
   midnight: t("theme.midnight"),
 } as const;
 
-export function App() {
-  const { choice, resolved, deviceTheme, choose } = useTheme();
+/** The choice of theme that is at the bottom of every page: it works before anybody signs in. */
+export function ThemeBar() {
+  const { choice, deviceTheme, choose } = useTheme();
   const labels: Readonly<Record<ThemeChoice, string>> = {
     ...themeLabels,
     device: t("theme.device-resolved", {
@@ -20,11 +19,6 @@ export function App() {
     }),
   };
   return (
-    <main className={styles.page}>
-      <h1 className={styles.brand}>{t("hello.title")}</h1>
-      <p className={styles.intro}>{t("hello.intro")}</p>
-      <ThemePicker legend={t("theme.legend")} labels={labels} value={choice} onChange={choose} />
-      <p className={styles.current}>{t("hello.current", { theme: themeLabels[resolved] })}</p>
-    </main>
+    <ThemePicker legend={t("theme.legend")} labels={labels} value={choice} onChange={choose} />
   );
 }
