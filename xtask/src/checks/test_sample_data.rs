@@ -359,7 +359,10 @@ mod tests {
     fn bad_example_a_secret_outside_the_sign_in_file() {
         let found = found("secret-outside-the-sign-in-file");
         assert_eq!(found.len(), 1, "{found:?}");
-        assert!(found[0].contains("data/bugaboo.db"), "{found:?}");
+        assert!(
+            found[0].contains("data/logs/security-head.log"),
+            "{found:?}"
+        );
         assert!(found[0].contains("holds a password or secret"));
     }
 
@@ -375,6 +378,33 @@ mod tests {
         let found = problems(&names(), &[empty]);
         assert!(found.iter().any(|p| p.contains("Fewer than two runs")));
         assert!(found.iter().any(|p| p.contains("no people")));
+    }
+
+    /// A fixture file that Git ignores is missing from every fresh clone, and the bad example that
+    /// needed it then finds nothing: so none of them may be ignored (`*.db` is, for one).
+    #[test]
+    fn no_fixture_file_is_ignored_by_git() {
+        use std::io::Write as _;
+        use std::process::{Command, Stdio};
+
+        let root = Path::new(env!("CARGO_MANIFEST_DIR")).parent().unwrap();
+        let mut files = Vec::new();
+        let fixtures = root.join("tools/checks/fixtures/TEST-SAMPLE-DATA");
+        collect(root, &fixtures, &mut files).unwrap();
+        let mut child = Command::new("git")
+            .args(["check-ignore", "--stdin"])
+            .current_dir(root)
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .spawn()
+            .unwrap();
+        let mut stdin = child.stdin.take().unwrap();
+        for (name, _) in &files {
+            writeln!(stdin, "{name}").unwrap();
+        }
+        drop(stdin);
+        let ignored = String::from_utf8(child.wait_with_output().unwrap().stdout).unwrap();
+        assert!(ignored.trim().is_empty(), "ignored by Git: {ignored}");
     }
 
     #[test]
