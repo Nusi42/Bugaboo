@@ -3,10 +3,13 @@
 
 use std::collections::BTreeSet;
 
-use bb_core::access::{AppliesTo, Assignment, FieldLevel, GroupMember};
+use bb_core::access::{AppliesTo, Assignment, FieldLevel, GroupMember, PeopleLevel};
 use bb_core::fields::Field;
 use bb_core::id::{AssignmentId, GroupId, ProjectId, RoleId, SequentialIds, UserId};
-use bb_policy::{FieldRule, Lift, Permission, Place, Policy, RoleData, Tree, preview_move};
+use bb_core::people_kinds::PeopleKind;
+use bb_policy::{
+    FieldRule, Lift, PeopleRule, Permission, Place, Policy, RoleData, Tree, preview_move,
+};
 use jiff::Timestamp;
 use proptest::prelude::*;
 
@@ -296,6 +299,8 @@ struct Spec {
     members: Vec<(usize, usize)>,
     rows: Vec<RowSpec>,
     rules: Vec<(Option<usize>, usize, usize, usize)>,
+    /// The levels of *Who sees people*: project, role, kind, level.
+    people_rules: Vec<(Option<usize>, usize, usize, usize)>,
     moved: usize,
     to: Option<usize>,
 }
@@ -336,16 +341,26 @@ fn spec() -> impl Strategy<Value = Spec> {
             ),
             0..8,
         ),
+        prop::collection::vec(
+            (
+                prop::option::of(0..6_usize),
+                0..3_usize,
+                0..PeopleKind::ALL.len(),
+                0..PeopleLevel::ALL.len(),
+            ),
+            0..8,
+        ),
         0..6_usize,
         prop::option::of(0..6_usize),
     )
         .prop_map(
-            |(parents, permissions, members, rows, rules, moved, to)| Spec {
+            |(parents, permissions, members, rows, rules, people_rules, moved, to)| Spec {
                 parents,
                 permissions,
                 members,
                 rows,
                 rules,
+                people_rules,
                 moved,
                 to,
             },
@@ -407,6 +422,14 @@ fn build(spec: &Spec) -> Option<(World, Vec<UserId>, ProjectId, Option<ProjectId
             level: FieldLevel::ALL[*level],
         });
     }
+    for (project, role, kind, level) in &spec.people_rules {
+        world.policy.people_rules.push(PeopleRule {
+            project: project.map(|project| projects[project]),
+            role: roles[*role],
+            kind: PeopleKind::ALL[*kind],
+            level: PeopleLevel::ALL[*level],
+        });
+    }
     let moved = projects[spec.moved];
     let to = spec.to.map(|to| projects[to]);
     let tree = world.tree();
@@ -441,6 +464,7 @@ proptest! {
                             found.permissions().clone(),
                             found.roles().iter().map(|role| role.name.clone()).collect::<Vec<_>>(),
                             Field::ALL.iter().map(|field| found.field_level(*field)).collect::<Vec<_>>(),
+                            PeopleKind::ALL.iter().map(|kind| found.kind_level(*kind)).collect::<Vec<_>>(),
                         )
                     })
                 };
