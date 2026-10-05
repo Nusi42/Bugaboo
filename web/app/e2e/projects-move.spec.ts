@@ -31,6 +31,15 @@ test("prj_03 the preview says in plain sentences who gains and loses access, and
   await expectGoodInEveryLook(page);
 });
 
+test("prj_03 the places offered leave out where the project is now", async ({ page }) => {
+  await signIn(page, ada);
+  const dialog = await openMove(page, "/p/DOCS/settings");
+  // DOCS is inside WEB: the top level is a place it can go, WEB is not.
+  await expect(dialog.getByRole("radio", { name: t("projects.picker-top") })).toBeVisible();
+  await dialog.getByLabel(t("projects.picker-search")).fill("Website");
+  await expect(dialog.getByText(t("projects.picker-nothing"))).toBeVisible();
+});
+
 test("prj_03 moving shows what changes and then moves the project", async ({ page }) => {
   await signIn(page, ada);
   const dialog = await openMove(page, "/p/DOCS/settings");
@@ -55,4 +64,14 @@ test("prj_03 a project cannot be offered a place inside itself", async ({ page }
   await expect(dialog.getByText(t("projects.picker-nothing"))).toBeVisible();
   await dialog.getByLabel(t("projects.picker-search")).fill("Documents");
   await expect(dialog.getByRole("radio", { name: /Documents/u })).toBeVisible();
+});
+
+test("prj_03 a project at the top level is not offered the top level", async ({ page }) => {
+  await signIn(page, ada);
+  await page.goto("/p/WEB/settings");
+  await page.getByRole("button", { name: t("projects.move-button"), exact: true }).click();
+  const dialog = page.getByRole("alertdialog");
+  await dialog.getByLabel(t("projects.picker-search")).fill("Documents");
+  await expect(dialog.getByRole("radio", { name: /Documents/u })).toBeVisible();
+  await expect(dialog.getByRole("radio", { name: t("projects.picker-top") })).toHaveCount(0);
 });

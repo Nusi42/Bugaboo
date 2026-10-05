@@ -10,8 +10,10 @@ import { linesOf, SEARCH_SIZE, useProjectList, type ProjectLine } from "./use-pr
 const radio = "radio";
 
 export interface ProjectPickerProps {
-  /** The project that moves: it, and what is inside it, are not offered. */
+  /** The project that moves: it, what is inside it, where it is and where the person may not move it to are not offered. */
   readonly moving: string;
+  /** Whether the person may move projects to the top level. */
+  readonly top: boolean;
   /** Where it goes: another project (an ID), the top level (`null`), or nothing picked yet. */
   readonly value: string | null | undefined;
   readonly onChange: (value: string | null) => void;
@@ -38,23 +40,25 @@ function Option({ group, checked, label, hint, onPick }: OptionProps) {
   );
 }
 
-interface OptionListProps extends Pick<ProjectPickerProps, "value" | "onChange"> {
+interface OptionListProps extends Pick<ProjectPickerProps, "value" | "onChange" | "top"> {
   readonly projects: readonly ProjectLine[];
 }
 
 /** The top level, then the projects found. */
-function OptionList({ projects, value, onChange }: OptionListProps) {
+function OptionList({ projects, top, value, onChange }: OptionListProps) {
   const group = useId();
   return (
     <ul className={styles.options} aria-label={t("projects.picker-list")}>
-      <Option
-        group={group}
-        checked={value === null}
-        label={t("projects.picker-top")}
-        onPick={() => {
-          onChange(null);
-        }}
-      />
+      {top ? (
+        <Option
+          group={group}
+          checked={value === null}
+          label={t("projects.picker-top")}
+          onPick={() => {
+            onChange(null);
+          }}
+        />
+      ) : null}
       {projects.map((project) => (
         <Option
           key={project.id}
@@ -73,11 +77,11 @@ function OptionList({ projects, value, onChange }: OptionListProps) {
 
 /**
  * Where a project goes (PRJ-03): the top level, or one of the projects the person finds by
- * searching. The project itself and what is inside it are left out; the server decides again.
+ * searching. The server leaves out the places the person may not move it to; it decides again.
  */
-export function ProjectPicker({ moving, value, onChange }: ProjectPickerProps) {
+export function ProjectPicker({ moving, top, value, onChange }: ProjectPickerProps) {
   const [query, setQuery] = useState("");
-  const found = useProjectList({ search: query.trim(), outside: moving }, true, SEARCH_SIZE);
+  const found = useProjectList({ search: query.trim(), movable: moving }, true, SEARCH_SIZE);
   const projects = linesOf(found.data?.pages);
   return (
     <fieldset className={styles.picker}>
@@ -88,7 +92,7 @@ export function ProjectPicker({ moving, value, onChange }: ProjectPickerProps) {
         value={query}
         onChange={setQuery}
       />
-      <OptionList projects={projects} value={value} onChange={onChange} />
+      <OptionList projects={projects} top={top} value={value} onChange={onChange} />
       {found.isError ? <Alert danger>{messageOf(found.error)}</Alert> : null}
       {found.isSuccess && projects.length === 0 ? (
         <p className={styles.muted}>{t("projects.picker-nothing")}</p>

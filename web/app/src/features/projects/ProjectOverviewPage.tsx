@@ -91,9 +91,7 @@ function Facts({ project }: { readonly project: OneProject }) {
 
 /** The page itself, once the project is known. */
 function Overview({ project }: { readonly project: OneProject }) {
-  const mayChange =
-    project.permissions.includes("change-project-settings") ||
-    project.permissions.includes("move-projects");
+  const mayChange = project.permissions.includes("change-project-settings") || project.may_move;
   return (
     <div className={styles.stack}>
       <Card heading={project.project.name} level={1}>

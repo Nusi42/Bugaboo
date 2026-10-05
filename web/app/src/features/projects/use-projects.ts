@@ -32,6 +32,8 @@ export interface ProjectFilter {
   readonly search?: string;
   /** Leave out this project (an ID) and everything inside it. */
   readonly outside?: string;
+  /** Only the places this project (an ID) may be moved into by the person. */
+  readonly movable?: string;
 }
 
 /** A project that has what a line of a list needs (the fields can be missing in an answer). */

@@ -19,7 +19,7 @@ export function ProjectSettings({
 }) {
   const navigate = useNavigate();
   const mayChange = project.permissions.includes("change-project-settings");
-  const mayMove = project.permissions.includes("move-projects");
+  const mayMove = project.may_move;
   const { id, name, short_name: shortName } = project.project;
   if (!mayChange && !mayMove) {
     return <NotFoundPage />;

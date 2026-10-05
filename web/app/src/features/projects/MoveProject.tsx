@@ -20,6 +20,19 @@ function PreviewOf({ project, to }: { readonly project: string; readonly to: str
   return <MovePreviewView preview={preview.data} />;
 }
 
+/** What the last move did: it failed with a sentence, or the project was moved. */
+function Outcome(props: {
+  readonly failed: string | null;
+  readonly moved: boolean;
+  readonly name: string;
+}) {
+  const { failed, moved, name } = props;
+  if (failed !== null) {
+    return <Alert danger>{failed}</Alert>;
+  }
+  return moved ? <Alert success>{t("projects.moved", { name })}</Alert> : null;
+}
+
 /**
  * *Move*: pick where the project goes, read in plain words who gains or loses access, and then
  * confirm (PRJ-03, *Show, then do*). The move asks for the version of the preview that was read; a
@@ -37,8 +50,7 @@ export function MoveProject({ project }: { readonly project: OneProject }) {
   return (
     <div className={styles.stack}>
       <p className={styles.text}>{t("projects.move-text", { name })}</p>
-      {move.isError ? <Alert danger>{messageOf(move.error)}</Alert> : null}
-      {moved ? <Alert success>{t("projects.moved", { name })}</Alert> : null}
+      <Outcome failed={move.isError ? messageOf(move.error) : null} moved={moved} name={name} />
       <div className={styles.row}>
         <ConfirmDialog
           triggerLabel={t("projects.move-button")}
@@ -64,6 +76,7 @@ export function MoveProject({ project }: { readonly project: OneProject }) {
         >
           <ProjectPicker
             moving={id}
+            top={project.may_move_to_top}
             value={picked?.to}
             onChange={(place) => {
               setPicked({ to: place });
