@@ -56,7 +56,7 @@ test("the project screens at phone width", async ({ page }) => {
   await page.goto("/p/WEB");
   const region = await tree(page);
   await region
-    .getByRole("button", { name: t("projects.expand-name", { name: "Acme Corporation" }) })
+    .getByRole("button", { name: t("projects.toggle-name", { name: "Acme Corporation" }) })
     .click();
   await expect(region.getByRole("link", { name: /^Website/u })).toBeVisible();
   await shot(page, "32-project-tree");

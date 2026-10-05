@@ -34,11 +34,9 @@ function Node({ project, pathname, onNavigate }: NodeProps) {
       <div className={styles.row}>
         {project.hasSubProjects ? (
           <TreeButton
-            className={cx(styles.toggle)}
+            className={styles.toggle}
             aria-expanded={opened}
-            aria-label={t(opened ? "projects.collapse-name" : "projects.expand-name", {
-              name: project.name,
-            })}
+            aria-label={t("projects.toggle-name", { name: project.name })}
             onPress={() => {
               toggleOpened(project.id);
             }}

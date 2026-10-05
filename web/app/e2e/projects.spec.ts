@@ -56,14 +56,14 @@ test("prj_01 the tree opens to the sub-projects and remembers what was open", as
   await signIn(page, ada);
   const region = await tree(page);
   await region
-    .getByRole("button", { name: t("projects.expand-name", { name: "Website" }) })
+    .getByRole("button", { name: t("projects.toggle-name", { name: "Website" }) })
     .click();
   await expect(region.getByRole("link", { name: /^Documents/u })).toBeVisible();
   await page.reload();
   const again = await tree(page);
   await expect(again.getByRole("link", { name: /^Documents/u })).toBeVisible();
   await expect(
-    again.getByRole("button", { name: t("projects.collapse-name", { name: "Website" }) }),
+    again.getByRole("button", { name: t("projects.toggle-name", { name: "Website" }) }),
   ).toHaveAttribute("aria-expanded", "true");
 });
 

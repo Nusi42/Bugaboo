@@ -508,8 +508,7 @@ export const messages = {
   "projects.heading": "Projects",
   "projects.tree-empty": "You do not see any project yet.",
   "projects.tree-more": "Show more projects",
-  "projects.expand-name": "Show the sub-projects of {name}",
-  "projects.collapse-name": "Hide the sub-projects of {name}",
+  "projects.toggle-name": "Sub-projects of {name}",
   "projects.title": "Projects",
   "projects.intro":
     "The projects you can see. Open one to change its name or short name. A project is moved on its own settings page.",
@@ -612,8 +611,6 @@ export interface MessageArguments {
   "passkeys.last-used": { when: string | number };
   "passkeys.remove-name": { name: string | number };
   "passkeys.remove-title": { name: string | number };
-  "projects.collapse-name": { name: string | number };
-  "projects.expand-name": { name: string | number };
   "projects.inside": { name: string | number };
   "projects.line-can-no-more": {
     person: string | number;
@@ -661,6 +658,7 @@ export interface MessageArguments {
   "projects.person-former": { label: string | number };
   "projects.person-role": { role: string | number };
   "projects.settings-title": { name: string | number };
+  "projects.toggle-name": { name: string | number };
   "security-log.broken": { reason: string | number; seq: string | number };
   "security-log.head": { hash: string | number; seq: string | number };
   "security-log.valid": { entries: number };
