@@ -75,7 +75,7 @@ Every piece of knowledge has exactly one authoritative home. Everything else is
 
 - `strict` plus `noUncheckedIndexedAccess` and `exactOptionalPropertyTypes`.
 - No `any`, no non-null `!`, no `@ts-ignore`. Use `@ts-expect-error` only with a reason.
-- A secret scan hit on a fake test credential is marked with `gitleaks:allow` and a reason that names a section or an issue, on that line (`// gitleaks:allow -- fake test credential, SEC-16`). META-SUPPRESS counts it like any suppression; never word-join or encode a credential to dodge the scan.
+- A secret scan hit on a fake test credential is marked on that line with `// gitleaks:allow -- fake test credential, SEC-16`: the marker, and a reason that names a section or an issue. META-SUPPRESS counts it in every tracked text file, like any suppression; never word-join or encode a credential to dodge the scan.
 - API types come **only** from the generated client. Never hand-write a response type.
 - Server data is held in one place: the server-state cache. Components never keep their own
   copy of server data.

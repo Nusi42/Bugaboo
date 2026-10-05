@@ -70,7 +70,7 @@
     // A comment next to code is not allowed, except the marker that the secret scan reads on the
     // line of a fake test credential (coding-standards section 3: it needs a reason, and
     // META-SUPPRESS counts it).
-    "no-inline-comments": ["error", { "ignorePattern": "gitleaks:allow" }],
+    "no-inline-comments": ["error", { "ignorePattern": "gitleaks:allow" }], // lets the marker stand next to a fake credential, SEC-16
     // Playwright's own fixture types (page, context ...) cannot be made readonly; every other
     // parameter type is still checked. The API client has its own, narrower list (overrides).
     "typescript/prefer-readonly-parameter-types": [

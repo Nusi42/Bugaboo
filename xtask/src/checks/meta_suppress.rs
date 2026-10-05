@@ -41,15 +41,18 @@ const RUST_MARKERS: [&str; 4] = ["#[allow(", "#![allow(", "#[expect(", "#![expec
 const RUST_CONDITIONAL: &str = "cfg_attr(";
 
 /// Comment markers of the other tools.
-const COMMENT_MARKERS: [&str; 7] = [
+const COMMENT_MARKERS: [&str; 6] = [
     "eslint-disable",
     "oxlint-disable",
     "stylelint-disable",
     "ast-grep-ignore",
     "@ts-ignore",
     "@ts-expect-error",
-    "gitleaks:allow",
 ];
+
+/// Markers that count in every tracked text file, whatever its type: the secret scan reads its
+/// marker on the line of the secret in any file (Rust, Markdown, JSON, HTML, scripts ...).
+const ANY_FILE_MARKERS: [&str; 1] = ["gitleaks:allow"];
 
 /// Markers in Markdown files, only counted inside an HTML comment.
 const MARKDOWN_MARKERS: [&str; 2] = ["rumdl-disable", "markdownlint-disable"];
@@ -98,14 +101,25 @@ fn scan_repo(repo: &Repo) -> anyhow::Result<Scan> {
     for file in repo.all_files()? {
         let scanned = SCANNED_TYPES.iter().any(|kind| has_extension(&file, kind));
         let exempt = SELF_EXEMPT.iter().any(|(path, _)| *path == file);
-        if !scanned || exempt || file.contains("/fixtures/") {
+        if exempt || file.contains("/fixtures/") {
             continue;
         }
-        let mut source = read_text(repo, &file)?;
+        // The other files (JSON, HTML, scripts ...) are searched for the markers of every file
+        // only; a file that is no text (a picture) has none.
+        let Some(mut source) = (if scanned {
+            Some(read_text(repo, &file)?)
+        } else {
+            fs::read(repo.path(&file))
+                .ok()
+                .and_then(|bytes| String::from_utf8(bytes).ok())
+                .map(|text| normalize(&text))
+        }) else {
+            continue;
+        };
         if file == SELF_PATH {
             source = without_definitions(&source);
         }
-        let (count, problems) = scan_source(&file, &source);
+        let (count, problems) = scan_source(&file, &source, scanned);
         if count > 0 {
             counts.insert(file.clone(), count);
         }
@@ -152,11 +166,12 @@ fn compare_list(expected: &str, on_disk: Option<&str>) -> Option<Finding> {
     })
 }
 
-/// Counts the suppressions in one file and reports those without a good reason.
-fn scan_source(file: &str, source: &str) -> (usize, Vec<Finding>) {
-    let is_rust = has_extension(file, "rs");
-    let is_markdown = has_extension(file, "md");
-    let is_toml = has_extension(file, "toml");
+/// Counts the suppressions in one file and reports those without a good reason. A file of a type
+/// that is not `scanned` is searched for the markers of every file only.
+fn scan_source(file: &str, source: &str, scanned: bool) -> (usize, Vec<Finding>) {
+    let is_rust = scanned && has_extension(file, "rs");
+    let is_markdown = scanned && has_extension(file, "md");
+    let is_toml = scanned && has_extension(file, "toml");
     let mut count = 0;
     let mut findings = Vec::new();
     let mut offset = 0;
@@ -188,7 +203,7 @@ fn scan_source(file: &str, source: &str) -> (usize, Vec<Finding>) {
                     }
                 }
             }
-        } else {
+        } else if scanned {
             for marker in COMMENT_MARKERS {
                 reasons.extend(
                     line.match_indices(marker)
@@ -201,6 +216,12 @@ fn scan_source(file: &str, source: &str) -> (usize, Vec<Finding>) {
                         .map(|(at, _)| line[at..].to_owned()),
                 );
             }
+        }
+        for marker in ANY_FILE_MARKERS {
+            reasons.extend(
+                line.match_indices(marker)
+                    .map(|(at, _)| line[at..].to_owned()),
+            );
         }
         for reason in reasons {
             count += 1;
@@ -290,7 +311,7 @@ mod tests {
     use super::*;
 
     fn counted(file: &str, source: &str) -> (usize, usize) {
-        let (count, findings) = scan_source(file, source);
+        let (count, findings) = scan_source(file, source, true);
         (count, findings.len())
     }
 
@@ -315,7 +336,7 @@ mod tests {
         assert_eq!(counted("a.ts", &ts), (1, 0));
         let secret = format!(
             "const password = \"x\"; // {} -- fake test credential, SEC-16\n",
-            COMMENT_MARKERS[6]
+            ANY_FILE_MARKERS[0]
         );
         assert_eq!(counted("a.ts", &secret), (1, 0));
         let md = format!("<!-- {} MD013 -- ADR-0014 -->\n", MARKDOWN_MARKERS[0]);
@@ -341,7 +362,7 @@ mod tests {
         assert_eq!(counted("a.ts", &ts), (1, 1));
         let tsx = format!("// {}\n", COMMENT_MARKERS[5]);
         assert_eq!(counted("a.tsx", &tsx), (1, 1));
-        let secret = format!("const password = \"x\"; // {}\n", COMMENT_MARKERS[6]);
+        let secret = format!("const password = \"x\"; // {}\n", ANY_FILE_MARKERS[0]);
         assert_eq!(counted("a.ts", &secret), (1, 1));
         let yml = format!("# {}-line\n", COMMENT_MARKERS[0]);
         assert_eq!(counted("a.yml", &yml), (1, 1));
@@ -349,6 +370,33 @@ mod tests {
         assert_eq!(counted("a.md", &md), (1, 1));
         let deny = format!("ignore = [\"{ADVISORY_MARKER}2024-1\"]\n");
         assert_eq!(counted("deny.toml", &deny), (1, 1));
+    }
+
+    #[test]
+    fn the_marker_of_the_secret_scan_counts_in_every_type_of_file() {
+        let marker = ANY_FILE_MARKERS[0];
+        // Rust and Markdown have markers of their own and still count this one.
+        let rust = format!("let password = \"x\"; // {marker} -- fake credential, SEC-16\n");
+        assert_eq!(counted("a.rs", &rust), (1, 0));
+        assert_eq!(counted("a.rs", &format!("let x = \"{marker}\";\n")), (1, 1));
+        let md = format!("password: x {marker} -- fake credential, SEC-16\n");
+        assert_eq!(counted("a.md", &md), (1, 0));
+        assert_eq!(counted("a.md", &format!("password: x {marker}\n")), (1, 1));
+        // A type that is not searched for anything else is searched for this one.
+        let json = format!("{{ \"password\": \"x\" }} // {marker} -- fake credential, SEC-16\n");
+        assert_eq!(scan_source("a.json", &json, false).0, 1);
+        assert!(scan_source("a.json", &json, false).1.is_empty());
+        let bare = format!("password=x # {marker}\n");
+        let (count, findings) = scan_source("a.ps1", &bare, false);
+        assert_eq!((count, findings.len()), (1, 1));
+        // And no other marker counts there.
+        let other = format!("// {} x\n", COMMENT_MARKERS[1]);
+        assert_eq!(scan_source("a.json", &other, false).0, 0);
+        // One line, one marker: not counted twice.
+        assert_eq!(
+            counted("a.ts", &format!("x // {marker} -- SEC-16\n")),
+            (1, 0)
+        );
     }
 
     #[test]
