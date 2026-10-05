@@ -4180,7 +4180,7 @@
             "description": "The person, as the person who asks may see them."
           },
           "project": {
-            "$ref": "#/components/schemas/ProjectRefBody",
+            "$ref": "#/components/schemas/ProjectRef",
             "description": "The project the *No access* is on."
           }
         }
@@ -4272,13 +4272,13 @@
             "description": "The version of this preview. The move asks for it, and works only while nothing it was made\nfrom has changed."
           },
           "project": {
-            "$ref": "#/components/schemas/ProjectRefBody",
+            "$ref": "#/components/schemas/ProjectRef",
             "description": "The project that would move."
           },
           "to": {
             "oneOf": [
               {
-                "$ref": "#/components/schemas/ProjectRefBody",
+                "$ref": "#/components/schemas/ProjectRef",
                 "description": "Where it would go, when the person may see that project; `null` for the top level."
               },
               {
@@ -4370,7 +4370,7 @@
                 "parent": {
                   "oneOf": [
                     {
-                      "$ref": "#/components/schemas/ProjectRefBody",
+                      "$ref": "#/components/schemas/ProjectRef",
                       "description": "The project it is inside, when the person may see that one."
                     },
                     {
@@ -4708,7 +4708,7 @@
             "description": "The kinds of people information whose level changes."
           },
           "project": {
-            "$ref": "#/components/schemas/ProjectRefBody",
+            "$ref": "#/components/schemas/ProjectRef",
             "description": "The project."
           }
         }
@@ -4736,7 +4736,7 @@
           "trail": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/ProjectRefBody"
+              "$ref": "#/components/schemas/ProjectRef"
             },
             "description": "*Where you are*: the projects above it that the person sees, from the top down. It stops at\nthe first one they cannot see."
           },
@@ -4765,7 +4765,7 @@
           "parent": {
             "oneOf": [
               {
-                "$ref": "#/components/schemas/ProjectRefBody",
+                "$ref": "#/components/schemas/ProjectRef",
                 "description": "The project it is inside, when the person may see that one."
               },
               {
@@ -4779,7 +4779,7 @@
           }
         }
       },
-      "ProjectRefBody": {
+      "ProjectRef": {
         "type": "object",
         "description": "A project as a small reference: what a name in a sentence needs.",
         "required": ["id", "short_name", "name"],

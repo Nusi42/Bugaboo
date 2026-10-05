@@ -854,7 +854,7 @@ export interface components {
       /** @description The person, as the person who asks may see them. */
       person: components["schemas"]["PersonRef"];
       /** @description The project the *No access* is on. */
-      project: components["schemas"]["ProjectRefBody"];
+      project: components["schemas"]["ProjectRef"];
     };
     /**
      * @description Why the chain of the security log does not verify.
@@ -908,8 +908,8 @@ export interface components {
        */
       preview: string;
       /** @description The project that would move. */
-      project: components["schemas"]["ProjectRefBody"];
-      to?: components["schemas"]["ProjectRefBody"] | null;
+      project: components["schemas"]["ProjectRef"];
+      to?: components["schemas"]["ProjectRef"] | null;
       /** @description The list was cut: it names the first people it found. */
       truncated: boolean;
     };
@@ -955,7 +955,7 @@ export interface components {
         id?: string | null;
         /** @description What it is called. */
         name?: string | null;
-        parent?: components["schemas"]["ProjectRefBody"] | null;
+        parent?: components["schemas"]["ProjectRef"] | null;
         /** @description The letters of its issue IDs and address. */
         short_name?: string | null;
       }[];
@@ -1122,7 +1122,7 @@ export interface components {
       /** @description The kinds of people information whose level changes. */
       people: components["schemas"]["PeopleLevelChangeBody"][];
       /** @description The project. */
-      project: components["schemas"]["ProjectRefBody"];
+      project: components["schemas"]["ProjectRef"];
     };
     /** @description One project, with where it is and what the person may do there. */
     ProjectDetailBody: {
@@ -1136,7 +1136,7 @@ export interface components {
        * @description *Where you are*: the projects above it that the person sees, from the top down. It stops at
        *     the first one they cannot see.
        */
-      trail: components["schemas"]["ProjectRefBody"][];
+      trail: components["schemas"]["ProjectRef"][];
       /** @description The trail was cut. */
       truncated: boolean;
     };
@@ -1151,12 +1151,12 @@ export interface components {
       id?: string | null;
       /** @description What it is called. */
       name?: string | null;
-      parent?: components["schemas"]["ProjectRefBody"] | null;
+      parent?: components["schemas"]["ProjectRef"] | null;
       /** @description The letters of its issue IDs and address. */
       short_name?: string | null;
     };
     /** @description A project as a small reference: what a name in a sentence needs. */
-    ProjectRefBody: {
+    ProjectRef: {
       /** @description The ID of the project. */
       id: string;
       /** @description What it is called. */

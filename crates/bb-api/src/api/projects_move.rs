@@ -22,7 +22,7 @@ use super::auth::{
     AuthHandle, ConflictAnswer, ForbiddenAnswer, Info, InvalidAnswer, NotFoundAnswer,
     NotSignedInAnswer, Session, answer_authorized,
 };
-use super::projects::{ProjectBody, ProjectRefBody, project_id};
+use super::projects::{ProjectBody, ProjectRef, project_id};
 use crate::errors::{ApiError, ApiJson, ApiPath};
 
 /// A word of the vocabulary with the message that names it: a field, a kind of people information
@@ -120,7 +120,7 @@ impl From<&PeopleLevelChange> for PeopleLevelChangeBody {
 #[derive(Serialize, ToSchema)]
 pub(crate) struct ProjectChangeBody {
     /// The project.
-    project: ProjectRefBody,
+    project: ProjectRef,
     /// What the person has there now.
     now: StandingBody,
     /// What they would have after the move.
@@ -138,7 +138,7 @@ pub(crate) struct ProjectChangeBody {
 impl From<&ProjectChange> for ProjectChangeBody {
     fn from(change: &ProjectChange) -> Self {
         Self {
-            project: ProjectRefBody::from(&change.project),
+            project: ProjectRef::from(&change.project),
             now: StandingBody::from(&change.now),
             after: StandingBody::from(&change.after),
             gains: change.gains.clone(),
@@ -173,14 +173,14 @@ pub(crate) struct LiftBody {
     /// The person, as the person who asks may see them.
     person: PersonRef,
     /// The project the *No access* is on.
-    project: ProjectRefBody,
+    project: ProjectRef,
 }
 
 impl From<&LiftView> for LiftBody {
     fn from(lift: &LiftView) -> Self {
         Self {
             person: lift.person.clone(),
-            project: ProjectRefBody::from(&lift.project),
+            project: ProjectRef::from(&lift.project),
         }
     }
 }
@@ -189,9 +189,9 @@ impl From<&LiftView> for LiftBody {
 #[derive(Serialize, ToSchema)]
 pub(crate) struct MovePreviewBody {
     /// The project that would move.
-    project: ProjectRefBody,
+    project: ProjectRef,
     /// Where it would go, when the person may see that project; `null` for the top level.
-    to: Option<ProjectRefBody>,
+    to: Option<ProjectRef>,
     /// The version of this preview. The move asks for it, and works only while nothing it was made
     /// from has changed.
     preview: String,
@@ -210,8 +210,8 @@ impl Masked for MovePreviewBody {}
 impl From<MovePreview> for MovePreviewBody {
     fn from(preview: MovePreview) -> Self {
         Self {
-            project: ProjectRefBody::from(&preview.project),
-            to: preview.to.as_ref().map(ProjectRefBody::from),
+            project: ProjectRef::from(&preview.project),
+            to: preview.to.as_ref().map(ProjectRef::from),
             preview: preview.preview,
             blocked: preview.blocked,
             people: preview.people.iter().map(Into::into).collect(),

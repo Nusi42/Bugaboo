@@ -11,7 +11,7 @@ use axum::response::Response;
 use bb_app::auth::AppError;
 use bb_app::projects::{
     ChangeProject, MakeProject, ProjectDetail, ProjectItem as AppProjectItem, ProjectQuery,
-    ProjectRef, ProjectView, ProjectsQuery,
+    ProjectRef as AppProjectRef, ProjectView, ProjectsQuery,
 };
 use bb_core::ErrorCode;
 use bb_core::id::ProjectId;
@@ -30,7 +30,7 @@ use crate::lean::{FieldSpec, ListParams, Listed, Page};
 
 /// A project as a small reference: what a name in a sentence needs.
 #[derive(Serialize, ToSchema)]
-pub(crate) struct ProjectRefBody {
+pub(crate) struct ProjectRef {
     /// The ID of the project.
     pub(crate) id: String,
     /// The letters of its issue IDs and address.
@@ -39,10 +39,10 @@ pub(crate) struct ProjectRefBody {
     pub(crate) name: String,
 }
 
-impl Masked for ProjectRefBody {}
+impl Masked for ProjectRef {}
 
-impl From<&ProjectRef> for ProjectRefBody {
-    fn from(project: &ProjectRef) -> Self {
+impl From<&AppProjectRef> for ProjectRef {
+    fn from(project: &AppProjectRef) -> Self {
         Self {
             id: project.id.to_string(),
             short_name: project.short_name.to_string(),
@@ -110,7 +110,7 @@ pub(crate) struct ProjectItem {
     has_sub_projects: Option<bool>,
     /// The project it is inside, when the person may see that one.
     #[serde(skip_serializing_if = "Option::is_none")]
-    parent: Option<ProjectRefBody>,
+    parent: Option<ProjectRef>,
 }
 
 impl Masked for ProjectItem {}
@@ -122,7 +122,7 @@ impl From<&AppProjectItem> for ProjectItem {
             short_name: Some(project.short_name.to_string()),
             name: Some(project.name.clone()),
             has_sub_projects: Some(project.has_sub_projects),
-            parent: project.parent.as_ref().map(ProjectRefBody::from),
+            parent: project.parent.as_ref().map(ProjectRef::from),
         }
     }
 }
@@ -147,7 +147,7 @@ pub(crate) struct ProjectDetailBody {
     project: ProjectBody,
     /// *Where you are*: the projects above it that the person sees, from the top down. It stops at
     /// the first one they cannot see.
-    trail: Vec<ProjectRefBody>,
+    trail: Vec<ProjectRef>,
     /// The trail was cut.
     truncated: bool,
     /// What the person may do here.
@@ -162,7 +162,7 @@ impl From<ProjectDetail> for ProjectDetailBody {
     fn from(detail: ProjectDetail) -> Self {
         Self {
             project: detail.project.into(),
-            trail: detail.trail.iter().map(ProjectRefBody::from).collect(),
+            trail: detail.trail.iter().map(ProjectRef::from).collect(),
             truncated: detail.truncated,
             permissions: detail.permissions,
             may_change_short_name: detail.may_change_short_name,
@@ -430,7 +430,7 @@ mod tests {
             short_name: Some("s".to_owned()),
             name: Some("n".to_owned()),
             has_sub_projects: Some(false),
-            parent: Some(ProjectRefBody {
+            parent: Some(ProjectRef {
                 id: "p".to_owned(),
                 short_name: "P".to_owned(),
                 name: "p".to_owned(),

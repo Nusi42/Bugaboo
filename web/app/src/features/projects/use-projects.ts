@@ -9,7 +9,7 @@ export type ListItem = Schema<"ProjectItem">;
 /** One project with where it is and what the person may do there. */
 export type OneProject = Schema<"ProjectDetailBody">;
 /** A project as a name in a sentence. */
-export type Near = Schema<"ProjectRefBody">;
+export type Near = Schema<"ProjectRef">;
 /** What a move would do. */
 export type Preview = Schema<"MovePreviewBody">;
 
