@@ -66,7 +66,7 @@ async fn cfg_04_my_settings_over_http_say_what_each_setting_is_and_where_its_val
             .filter_map(|choice| choice["value"].as_str())
             .collect();
         assert_eq!(choices, ["device", "light", "dark"]);
-        let switch = setting(&list.body, "appearance.reduce-motion")?;
+        let switch = setting(&list.body, "appearance.less-motion")?;
         assert_eq!(
             (&switch["kind"], &switch["value"]),
             (&json!("bool"), &json!(false))
@@ -103,7 +103,7 @@ async fn cfg_04_my_settings_over_http_say_what_each_setting_is_and_where_its_val
         for (key, value) in [
             ("appearance.mode", json!("sometimes")),
             ("appearance.mode", json!(true)),
-            ("appearance.reduce-motion", json!("yes")),
+            ("appearance.less-motion", json!("yes")),
             ("region.time-zone", json!("Nowhere")),
             ("start.page", json!("https://evil.test/")),
         ] {

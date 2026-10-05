@@ -83,12 +83,27 @@ fn read_web_sources(repo: &Repo) -> anyhow::Result<Vec<Source>> {
     Ok(sources)
 }
 
+/// What comes before a string that names a message of the catalog, not a setting: messages and
+/// settings are separate namespaces, so a message may have the same text as the key of a setting
+/// (`appearance.larger-text` is a message and a setting).
+const MESSAGE_CALLS: [&str; 3] = ["t(", "isMessageKey(", "MessageKey::new("];
+
 /// Whether `line` has `key` as the whole text of a string: in double, single or backtick quotes, or
-/// in a raw string (`r#"key"#`).
+/// in a raw string (`r#"key"#`). A string that is the argument of a call that looks up a message
+/// does not count.
 fn has_key_literal(line: &str, key: &str) -> bool {
+    let is_quote = |c: char| matches!(c, '"' | '\x27' | '`');
     line.match_indices(key).any(|(at, _)| {
-        let quote = |c: Option<char>| matches!(c, Some('"' | '\x27' | '`'));
-        quote(line[..at].chars().next_back()) && quote(line[at + key.len()..].chars().next())
+        let before = &line[..at];
+        let opens_a_message = before.strip_suffix(is_quote).is_some_and(|call| {
+            MESSAGE_CALLS.iter().any(|name| {
+                call.strip_suffix(name)
+                    .is_some_and(|rest| !rest.ends_with(|c: char| c.is_alphanumeric() || c == '_'))
+            })
+        });
+        !opens_a_message
+            && before.chars().next_back().is_some_and(is_quote)
+            && line[at + key.len()..].chars().next().is_some_and(is_quote)
     })
 }
 
@@ -134,7 +149,9 @@ fn evaluate(sources: &[Source]) -> Vec<Finding> {
         }
     }
     for (path, text) in sources.iter().filter(|(path, _)| {
-        !path.starts_with(REGISTRY_FOLDER) && !path.starts_with(MIGRATIONS_FOLDER)
+        !path.starts_with(REGISTRY_FOLDER)
+            && !path.starts_with(MIGRATIONS_FOLDER)
+            && !path.contains("generated.")
     }) {
         let code = without_tests(text);
         for (index, line) in code.lines().enumerate() {
@@ -295,11 +312,54 @@ let text = \"setting\";
             "appearance.theme"
         ));
         assert!(!has_key_literal("// appearance.theme", "appearance.theme"));
+        // A message of the catalog may be called like a setting: they are separate namespaces.
+        for line in [
+            "t(\"appearance.theme\")",
+            "label={t(\"appearance.theme\")}",
+            "isMessageKey(\"appearance.theme\")",
+            "MessageKey::new(\"appearance.theme\")",
+        ] {
+            assert!(!has_key_literal(line, "appearance.theme"), "{line}");
+        }
+        // A function whose name only ends like a message call is not one.
+        assert!(has_key_literal(
+            "fruit(\"appearance.theme\")",
+            "appearance.theme"
+        ));
+        assert!(has_key_literal(
+            "set(\"appearance.theme\")",
+            "appearance.theme"
+        ));
         let web = (
             "web/app/src/a.ts".to_owned(),
             "load('appearance.theme');\n".to_owned(),
         );
         assert!(found(&[registry(DECLARATION), web]).contains("written as text"));
+    }
+
+    #[test]
+    fn good_example_the_browser_names_a_setting_through_the_generated_keys() {
+        let keys = (
+            "web/packages/api-client/src/setting-keys.generated.ts".to_owned(),
+            "export const settingKeys = { appearanceMode: \"appearance.theme\" };
+"
+            .to_owned(),
+        );
+        let uses = (
+            "web/app/src/a.ts".to_owned(),
+            "load(settingKeys.appearanceMode);
+const name = t(\"appearance.theme\");
+"
+            .to_owned(),
+        );
+        let generated_rust = (
+            "crates/bb-core/src/message/generated.rs".to_owned(),
+            "pub const X: MessageKey = MessageKey::new(\"appearance.theme\");
+(\"appearance.theme\", \"x\"),
+"
+            .to_owned(),
+        );
+        assert!(found(&[registry(DECLARATION), keys, uses, generated_rust]).is_empty());
     }
 
     #[test]

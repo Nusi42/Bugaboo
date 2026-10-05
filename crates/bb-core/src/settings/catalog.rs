@@ -115,7 +115,7 @@ settings! {
 
     /// *Less motion*: fewer moving effects, also when the device does not ask for it.
     APPEARANCE_LESS_MOTION: Bool = {
-        key: "appearance.reduce-motion",
+        key: "appearance.less-motion",
         name: message::APPEARANCE_LESS_MOTION,
         default: false,
         levels: [Organization, Person],
@@ -126,7 +126,7 @@ settings! {
 
     /// *Larger text*: all text a step bigger.
     APPEARANCE_LARGER_TEXT: Bool = {
-        key: "appearance.enlarge-text",
+        key: "appearance.larger-text",
         name: message::APPEARANCE_LARGER_TEXT,
         default: false,
         levels: [Organization, Person],

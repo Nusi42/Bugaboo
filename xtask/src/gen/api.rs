@@ -280,7 +280,7 @@ export const CSRF_HEADER = \"{}\";
     ))
 }
 
-/// `appearance.reduce-motion` as `appearanceReduceMotion`.
+/// `appearance.less-motion` as `appearanceLessMotion`.
 fn camel_case(key: &str) -> String {
     let mut name = String::new();
     let mut up = false;
@@ -379,10 +379,7 @@ mod tests {
 
     #[test]
     fn the_keys_of_the_registry_become_names_for_the_browser() {
-        assert_eq!(
-            camel_case("appearance.reduce-motion"),
-            "appearanceReduceMotion"
-        );
+        assert_eq!(camel_case("appearance.less-motion"), "appearanceLessMotion");
         assert_eq!(camel_case("start.page"), "startPage");
         let catalog = (
             CATALOG_PATH.to_owned(),

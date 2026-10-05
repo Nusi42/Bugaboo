@@ -131,11 +131,7 @@ async fn cfg_06_a_value_the_setting_does_not_accept_is_refused_and_nothing_is_wr
             text("soon"),
         ),
         (SettingsScope::Person, "appearance.mode", text("sometimes")),
-        (
-            SettingsScope::Person,
-            "appearance.reduce-motion",
-            text("yes"),
-        ),
+        (SettingsScope::Person, "appearance.less-motion", text("yes")),
         (
             SettingsScope::Person,
             "start.page",

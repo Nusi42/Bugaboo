@@ -349,9 +349,9 @@ status = "active"
 id = "ARCH-SETTINGS"
 title = "Settings are only read and written through the settings registry"
 rule = "ADR-0018"
-tool = "xtask (declarations and key literals; the table of setting values is named in the settings repository only)"
+tool = "xtask (declarations and key literals in Rust and in the browser app, except generated files, migrations and the argument of a message lookup; the tables of setting values are named in the settings repository only)"
 when = ["edit", "commit", "ci"]
-files = ["crates/**/*.rs"]
+files = ["crates/**/*.rs", "web/**/*.{ts,tsx}"]
 status = "active"
 
 [[check]]

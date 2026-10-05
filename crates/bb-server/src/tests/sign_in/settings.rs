@@ -517,8 +517,8 @@ async fn cfg_04_my_settings_are_kept_for_the_person_and_follow_them_to_another_b
         for (key, value) in [
             ("appearance.mode", text("dark")),
             ("appearance.dark-theme", text("midnight")),
-            ("appearance.reduce-motion", SettingValue::Bool(true)),
-            ("appearance.enlarge-text", SettingValue::Bool(true)),
+            ("appearance.less-motion", SettingValue::Bool(true)),
+            ("appearance.larger-text", SettingValue::Bool(true)),
             ("region.time-zone", text("Pacific/Auckland")),
             ("start.page", text("/me/appearance")),
             ("shortcuts.keys", text(r#"{"go-home":["g i"]}"#)),
@@ -528,8 +528,8 @@ async fn cfg_04_my_settings_are_kept_for_the_person_and_follow_them_to_another_b
         for (key, value) in [
             ("appearance.mode", text("dark")),
             ("appearance.dark-theme", text("midnight")),
-            ("appearance.reduce-motion", SettingValue::Bool(true)),
-            ("appearance.enlarge-text", SettingValue::Bool(true)),
+            ("appearance.less-motion", SettingValue::Bool(true)),
+            ("appearance.larger-text", SettingValue::Bool(true)),
             ("region.time-zone", text("Pacific/Auckland")),
             ("start.page", text("/me/appearance")),
             ("shortcuts.keys", text(r#"{"go-home":["g i"]}"#)),

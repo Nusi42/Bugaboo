@@ -100,8 +100,8 @@ export interface PersonalAppearance {
   readonly light: LightThemeId;
   readonly dark: DarkThemeId;
   readonly spacing: SpacingChoice;
-  readonly reduceMotion: boolean;
-  readonly enlargeText: boolean;
+  readonly lessMotionOn: boolean;
+  readonly largerTextOn: boolean;
   readonly issueView: IssueView;
 }
 
@@ -135,8 +135,8 @@ export function appearanceOf(settings?: MySettings): PersonalAppearance {
       textOf(settings, settingKeys.appearanceSpacing, defaultAppearance.spacing),
       defaultAppearance.spacing,
     ),
-    reduceMotion: flagOf(settings, settingKeys.appearanceReduceMotion, false),
-    enlargeText: flagOf(settings, settingKeys.appearanceEnlargeText, false),
+    lessMotionOn: flagOf(settings, settingKeys.appearanceLessMotion, false),
+    largerTextOn: flagOf(settings, settingKeys.appearanceLargerText, false),
     issueView: oneOf(
       issueViews,
       textOf(settings, settingKeys.appearanceIssueView, "focus"),
@@ -153,8 +153,8 @@ export function appearanceForShell(look: PersonalAppearance): Appearance {
     light: look.light,
     dark: look.dark,
     spacing: look.spacing,
-    lessMotion: look.reduceMotion,
-    largerText: look.enlargeText,
+    lessMotion: look.lessMotionOn,
+    largerText: look.largerTextOn,
   };
 }
 
@@ -195,10 +195,10 @@ export function changesForAppearance(
     changes.push({ key: settingKeys.appearanceSpacing, value: next.spacing });
   }
   if (next.lessMotion !== before.lessMotion) {
-    changes.push({ key: settingKeys.appearanceReduceMotion, value: next.lessMotion });
+    changes.push({ key: settingKeys.appearanceLessMotion, value: next.lessMotion });
   }
   if (next.largerText !== before.largerText) {
-    changes.push({ key: settingKeys.appearanceEnlargeText, value: next.largerText });
+    changes.push({ key: settingKeys.appearanceLargerText, value: next.largerText });
   }
   return changes;
 }

@@ -58,7 +58,7 @@ function shellLook(mode: string) {
         [settingKeys.appearanceMode]: mode,
         [settingKeys.appearanceLightTheme]: "paper",
         [settingKeys.appearanceDarkTheme]: "midnight",
-        [settingKeys.appearanceReduceMotion]: true,
+        [settingKeys.appearanceLessMotion]: true,
       }),
     ),
   );
@@ -72,7 +72,7 @@ describe("cfg_04 the look a person chose, as the server holds it", () => {
         [settingKeys.appearanceMode]: "sometimes",
         [settingKeys.appearanceLightTheme]: "midnight",
         [settingKeys.appearanceSpacing]: 12,
-        [settingKeys.appearanceReduceMotion]: "yes",
+        [settingKeys.appearanceLessMotion]: "yes",
       }),
     );
     expect(look).toEqual({
@@ -80,8 +80,8 @@ describe("cfg_04 the look a person chose, as the server holds it", () => {
       light: "daylight",
       dark: "dusk",
       spacing: "comfortable",
-      reduceMotion: false,
-      enlargeText: false,
+      lessMotionOn: false,
+      largerTextOn: false,
       issueView: "focus",
     });
   });
@@ -106,7 +106,7 @@ describe("cfg_04 a change of the look is sent as the settings that differ", () =
       changesForAppearance(before, { ...before, largerText: true, spacing: "compact" }),
     ).toEqual([
       { key: settingKeys.appearanceSpacing, value: "compact" },
-      { key: settingKeys.appearanceEnlargeText, value: true },
+      { key: settingKeys.appearanceLargerText, value: true },
     ]);
     expect(changesForAppearance(before, { ...before, theme: "paper" })).toEqual([
       { key: settingKeys.appearanceMode, value: "light" },
