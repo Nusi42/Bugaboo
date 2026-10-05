@@ -82,8 +82,10 @@ async function makeAndCopy(page: Page): Promise<string> {
   const shown = page.getByRole("region", { name: t("access-keys.shown-title") });
   await expect(shown).toBeVisible();
   const key = await keyShown(page);
-  await shown.getByRole("button", { name: t("access-keys.copy") }).click();
-  await expect(shown.getByRole("button", { name: t("access-keys.copied") })).toBeVisible();
+  await shown.getByRole("button", { name: t("access-keys.copy"), exact: true }).click();
+  await expect(
+    shown.getByRole("button", { name: t("access-keys.copied"), exact: true }),
+  ).toBeVisible();
   expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(key);
   await expectGoodInEveryTheme(page);
   return key;
