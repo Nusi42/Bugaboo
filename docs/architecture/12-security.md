@@ -205,8 +205,9 @@ flowchart LR
 | Access key (WP-09) | what it may do, projects, runs out on | no | – | – |
 | Setting value on the person level (WP-07) | the value (time zone, region, appearance, shortcuts) | yes | `content` | `contract` |
 | Setting value on the person level (WP-07) | the person it belongs to | yes | `identity` | `contract` |
+| Setting value on the person level (WP-07) | when it was last changed | yes | `activity` | `contract` |
 
-The person a setting value belongs to is held today in `scope`, which is marked as not personal because it also holds project IDs; WP-07 gives the person its own field with the mark above, so DATA-MARKS sees it.
+The person a setting value belongs to is a column of its own in the table `person_setting` (migration `m0004`), marked as above, so DATA-MARKS sees it; the table of the organization's and the projects' values keeps `scope` for project IDs only, which is marked as not personal.
 
 | Data | Purpose | Legal basis (GDPR Art. 6) | Kept |
 |------|---------|---------------------------|------|

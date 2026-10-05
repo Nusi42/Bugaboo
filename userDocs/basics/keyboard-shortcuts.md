@@ -18,4 +18,4 @@ A shortcut does nothing while a text box has the focus, so typing never starts s
 
 Open *My settings*, then "Keyboard shortcuts". The list can be searched. Open a shortcut to see its keys now and its usual keys. Click the box "New keys" and press the keys you want: one key, or two in a row. Bugaboo tells you when another shortcut already uses those keys, and does not let you take them. Press "Use these keys" to keep them. The old keys then stop working. "Use the usual keys" brings them back.
 
-Your own keys are kept on this device for now.
+Your own keys are kept with you, on the server, so they follow you to every browser and device you sign in from.
