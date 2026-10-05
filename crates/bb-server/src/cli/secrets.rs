@@ -70,6 +70,11 @@ fn command_line(command: &str, args: &StoreArgs, folder: Option<&Path>) -> Strin
         line.push(' ');
         line.push_str(&Message::from(message::KEYS_SETTINGS_PLACEHOLDER).render());
     }
+    // Only that an address was given, never the address: it can hold a password.
+    if args.database_url.is_some() {
+        line.push(' ');
+        line.push_str(&Message::from(message::KEYS_DATABASE_PLACEHOLDER).render());
+    }
     line
 }
 

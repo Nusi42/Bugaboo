@@ -451,6 +451,11 @@ export const messages = {
   "service.settings-folder-open":
     "The folder {path} that holds the settings file can be changed by other accounts. Keep the settings file in a folder that only administrators can change, for example /etc/bugaboo.",
   "keys.settings-placeholder": "--config <the settings file of the service>",
+  "service.settings-folder-owner":
+    "The folder {path} that holds the settings file does not belong to the administrator account (root). Keep the settings file in a folder that root owns, for example /etc/bugaboo.",
+  "service.data-folder-real":
+    "The data folder {path} is a link. The service uses the folder it leads to: {real}.",
+  "keys.database-placeholder": "--database-url <the address of your database>",
 } as const;
 
 export type MessageKey = keyof typeof messages;
@@ -512,6 +517,7 @@ export interface MessageArguments {
   "server.setup-code-file": { path: string | number };
   "server.setup-code-file-failed": { path: string | number; reason: string | number };
   "server.warning": { message: string | number };
+  "service.data-folder-real": { path: string | number; real: string | number };
   "service.exists": { name: string | number };
   "service.failed": { reason: string | number };
   "service.installed": { account: string | number; name: string | number };
@@ -519,6 +525,7 @@ export interface MessageArguments {
   "service.not-installed": { name: string | number };
   "service.removed": { name: string | number };
   "service.settings-folder-open": { path: string | number };
+  "service.settings-folder-owner": { path: string | number };
   "service.settings-in-data": { path: string | number };
   "service.settings-is-link": { path: string | number };
   "service.setup-code": { path: string | number };

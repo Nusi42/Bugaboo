@@ -139,16 +139,28 @@ fn systemd_install(found: &Found) -> anyhow::Result<()> {
     use systemd::{Installation, Step, USER, plan};
 
     require_systemd()?;
-    check_for_service(&found.settings.data_dir)?;
-    systemd::check_settings_file(&found.config, &found.settings.data_dir)
+    // `chown -h` changes a link and not the folder it leads to: the plan and the unit name the
+    // real folder, and the person is told when that is another one.
+    let data_dir = systemd::real_path(&found.settings.data_dir);
+    if data_dir != found.settings.data_dir {
+        output::line(
+            &message::service_data_folder_real(
+                found.settings.data_dir.display(),
+                data_dir.display(),
+            )
+            .render(),
+        );
+    }
+    check_for_service(&data_dir)?;
+    systemd::check_settings_file(&found.config, &data_dir)
         .map_err(|problem| anyhow!(problem.render()))?;
-    let known_files = DataFolder::existing(&found.settings.data_dir)
+    let known_files = DataFolder::existing(&data_dir)
         .map(|data| data.known_files())
         .unwrap_or_default();
     let installation = Installation {
         program: &found.program,
         config: &found.config,
-        data_dir: &found.settings.data_dir,
+        data_dir: &data_dir,
         known_files: &known_files,
     };
     let user_exists = succeeds("id", &["-u", USER]);

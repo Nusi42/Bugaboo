@@ -274,7 +274,22 @@ fn sec_16_the_hint_repeats_the_arguments_that_were_given() {
         ..StoreArgs::default()
     };
     let hint = command_line("rotate-key", &data, None);
-    assert_eq!(hint, "bugaboo rotate-key --data-dir /var/lib/bugaboo");
+    assert_eq!(
+        hint,
+        "bugaboo rotate-key --data-dir /var/lib/bugaboo --database-url <the address of your database>"
+    );
+    assert!(!hint.contains("secret"), "{hint}");
+    // A database address is not repeated; a placeholder says that one was used.
+    let postgres = StoreArgs {
+        config: Some(Path::new("/etc/bugaboo/bugaboo.toml").to_path_buf()),
+        database_url: Some("postgres://bugaboo:secret@db/bugaboo".to_owned()),
+        ..StoreArgs::default()
+    };
+    let hint = command_line("rotate-key", &postgres, None);
+    assert_eq!(
+        hint,
+        "bugaboo rotate-key --config /etc/bugaboo/bugaboo.toml --database-url <the address of your database>"
+    );
     assert!(!hint.contains("secret"), "{hint}");
     // The target folder of an export is part of the command, quoted when it has a space.
     assert_eq!(

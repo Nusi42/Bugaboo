@@ -399,6 +399,9 @@ pub const INVITATIONS_TAKEN_BACK: MessageKey = MessageKey::new("invitations.take
 /// The message `invitations.title`.
 pub const INVITATIONS_TITLE: MessageKey = MessageKey::new("invitations.title");
 
+/// The message `keys.database-placeholder`.
+pub const KEYS_DATABASE_PLACEHOLDER: MessageKey = MessageKey::new("keys.database-placeholder");
+
 /// The message `keys.settings-placeholder`.
 pub const KEYS_SETTINGS_PLACEHOLDER: MessageKey = MessageKey::new("keys.settings-placeholder");
 
@@ -1380,6 +1383,21 @@ pub fn server_warning(message: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `service.data-folder-real`.
+#[must_use]
+pub fn service_data_folder_real(
+    path: impl std::fmt::Display,
+    real: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("service.data-folder-real"),
+        vec![
+            ("path", Value::Text(path.to_string())),
+            ("real", Value::Text(real.to_string())),
+        ],
+    )
+}
+
 /// The message `service.exists`.
 #[must_use]
 pub fn service_exists(name: impl std::fmt::Display) -> Message {
@@ -1442,6 +1460,15 @@ pub fn service_removed(name: impl std::fmt::Display) -> Message {
 pub fn service_settings_folder_open(path: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("service.settings-folder-open"),
+        vec![("path", Value::Text(path.to_string()))],
+    )
+}
+
+/// The message `service.settings-folder-owner`.
+#[must_use]
+pub fn service_settings_folder_owner(path: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("service.settings-folder-owner"),
         vec![("path", Value::Text(path.to_string()))],
     )
 }
@@ -2128,6 +2155,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("invitations.taken-back", "The invitation is taken back."),
     ("invitations.title", "Invitations"),
     (
+        "keys.database-placeholder",
+        "--database-url <the address of your database>",
+    ),
+    (
         "keys.export-exists",
         "The folder {path} already holds a copy of a key file. Choose another folder, so no copy is overwritten.",
     ),
@@ -2339,6 +2370,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "The browser app is not built yet. Run `cargo xtask build`, or pass --web <folder>.",
     ),
     (
+        "service.data-folder-real",
+        "The data folder {path} is a link. The service uses the folder it leads to: {real}.",
+    ),
+    (
         "service.exists",
         "The service {name} is installed already. Remove it first with: bugaboo service uninstall",
     ),
@@ -2370,6 +2405,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "service.settings-folder-open",
         "The folder {path} that holds the settings file can be changed by other accounts. Keep the settings file in a folder that only administrators can change, for example /etc/bugaboo.",
+    ),
+    (
+        "service.settings-folder-owner",
+        "The folder {path} that holds the settings file does not belong to the administrator account (root). Keep the settings file in a folder that root owns, for example /etc/bugaboo.",
     ),
     (
         "service.settings-in-data",

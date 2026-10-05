@@ -102,36 +102,69 @@ pub(super) fn unit(installation: &Installation<'_>) -> String {
     )
 }
 
+/// The real path of `path` when it exists, with every link in it followed (`..` and links in
+/// the middle included); a path that is not there yet stays as it is.
+pub(super) fn real_path(path: &Path) -> PathBuf {
+    std::fs::canonicalize(path).unwrap_or_else(|_| path.to_path_buf())
+}
+
+/// Why the folder of the settings file is not trusted.
+#[derive(Debug, PartialEq, Eq)]
+enum Untrusted {
+    /// The group or everybody may write in it, so they could replace the file.
+    OthersCanWrite,
+    /// It belongs to somebody but root, who could replace the file.
+    NotRoots,
+}
+
+/// Whether a folder with this mode and owner (user number) may hold the settings file.
+fn trust_of(mode: u32, owner: u32) -> Option<Untrusted> {
+    if mode & 0o022 != 0 {
+        Some(Untrusted::OthersCanWrite)
+    } else if owner != 0 {
+        Some(Untrusted::NotRoots)
+    } else {
+        None
+    }
+}
+
+/// Linux: the reason the folder is not trusted, if it is not.
+#[cfg(unix)]
+fn untrusted(folder: &Path) -> Option<Untrusted> {
+    use std::os::unix::fs::MetadataExt as _;
+    let data = std::fs::metadata(folder).ok()?;
+    trust_of(data.mode(), data.uid())
+}
+
+#[cfg(not(unix))]
+fn untrusted(_folder: &Path) -> Option<Untrusted> {
+    None
+}
+
 /// Whether the settings file may be given to the account of the service: it is a file and no
 /// link (a `chmod` would follow a link to whatever it points to), it is not inside the data
-/// folder (the service could replace it there), and the folder that holds it cannot be changed
+/// folder (the service could replace it there; both are compared by their real paths, so `..`
+/// and links do not hide it), and the folder that holds it belongs to root and cannot be changed
 /// by other accounts (they could replace the file or put a link in its place).
 pub(super) fn check_settings_file(config: &Path, data_dir: &Path) -> Result<(), Message> {
     let shown = config.display();
     if std::fs::symlink_metadata(config).is_ok_and(|data| data.file_type().is_symlink()) {
         return Err(message::service_settings_is_link(shown));
     }
-    if config.starts_with(data_dir) {
-        return Err(message::service_settings_in_data(shown));
+    let config = real_path(config);
+    if config.starts_with(real_path(data_dir)) {
+        return Err(message::service_settings_in_data(config.display()));
     }
-    match config.parent() {
-        Some(folder) if others_can_change(folder) => {
+    let Some(folder) = config.parent() else {
+        return Ok(());
+    };
+    match untrusted(folder) {
+        Some(Untrusted::OthersCanWrite) => {
             Err(message::service_settings_folder_open(folder.display()))
         }
-        _ => Ok(()),
+        Some(Untrusted::NotRoots) => Err(message::service_settings_folder_owner(folder.display())),
+        None => Ok(()),
     }
-}
-
-/// Linux: whether the group or everybody may write in the folder.
-#[cfg(unix)]
-fn others_can_change(folder: &Path) -> bool {
-    use std::os::unix::fs::PermissionsExt as _;
-    std::fs::metadata(folder).is_ok_and(|data| data.permissions().mode() & 0o022 != 0)
-}
-
-#[cfg(not(unix))]
-fn others_can_change(_folder: &Path) -> bool {
-    false
 }
 
 /// The steps that install the service. The account is made only when it does not exist yet.
@@ -354,24 +387,107 @@ mod tests {
         );
     }
 
+    #[test]
+    fn sec_16_the_folder_of_the_settings_file_must_be_root_s_and_closed() {
+        assert_eq!(trust_of(0o755, 0), None);
+        assert_eq!(trust_of(0o700, 0), None);
+        assert_eq!(trust_of(0o775, 0), Some(Untrusted::OthersCanWrite));
+        assert_eq!(trust_of(0o754, 0), None, "only writing counts, not reading");
+        assert_eq!(trust_of(0o777, 0), Some(Untrusted::OthersCanWrite));
+        assert_eq!(trust_of(0o755, 1000), Some(Untrusted::NotRoots));
+        // Somebody else's folder that is open as well is named for what is worse.
+        assert_eq!(trust_of(0o777, 1000), Some(Untrusted::OthersCanWrite));
+    }
+
     #[cfg(unix)]
     #[test]
-    fn sec_16_a_settings_file_in_a_folder_others_can_change_is_refused() {
-        use std::os::unix::fs::PermissionsExt as _;
+    fn sec_16_a_settings_file_in_a_folder_others_can_change_or_root_does_not_own_is_refused() {
+        use std::os::unix::fs::{MetadataExt as _, PermissionsExt as _};
         let temp = tempfile::tempdir().unwrap();
         let folder = temp.path().join("etc");
         std::fs::create_dir(&folder).unwrap();
         let config = folder.join("bugaboo.toml");
         std::fs::write(&config, "port = 1").unwrap();
+        let data = Path::new("/var/lib/bugaboo");
         std::fs::set_permissions(&folder, std::fs::Permissions::from_mode(0o755)).unwrap();
-        check_settings_file(&config, Path::new("/var/lib/bugaboo")).unwrap();
+        // The test's folder belongs to the account that runs the test: fine only for root.
+        let is_root = std::fs::metadata(&folder).unwrap().uid() == 0;
+        let answer = check_settings_file(&config, data);
+        if is_root {
+            answer.unwrap();
+        } else {
+            let refused = answer.unwrap_err();
+            assert!(
+                refused.render().contains("does not belong"),
+                "{}",
+                refused.render()
+            );
+        }
         std::fs::set_permissions(&folder, std::fs::Permissions::from_mode(0o775)).unwrap();
-        let refused = check_settings_file(&config, Path::new("/var/lib/bugaboo")).unwrap_err();
+        let refused = check_settings_file(&config, data).unwrap_err();
         assert!(
             refused.render().contains("other accounts"),
             "{}",
             refused.render()
         );
+    }
+
+    #[test]
+    fn sec_16_a_data_folder_given_by_a_path_that_climbs_is_still_the_same_folder() {
+        let temp = tempfile::tempdir().unwrap();
+        let data = temp.path().join("bugaboo");
+        std::fs::create_dir(&data).unwrap();
+        std::fs::create_dir(temp.path().join("other")).unwrap();
+        let config = data.join("bugaboo.toml");
+        std::fs::write(&config, "port = 1").unwrap();
+        // `other/../bugaboo` is the data folder, and the file in it is inside it.
+        let climbing = temp.path().join("other").join("..").join("bugaboo");
+        let refused = check_settings_file(&config, &climbing).unwrap_err();
+        assert!(
+            refused.render().contains("inside the data folder"),
+            "{}",
+            refused.render()
+        );
+        // And the file named the same way is inside the plain folder.
+        let climbing_config = temp
+            .path()
+            .join("other")
+            .join("..")
+            .join("bugaboo")
+            .join("bugaboo.toml");
+        let refused = check_settings_file(&climbing_config, &data).unwrap_err();
+        assert!(
+            refused.render().contains("inside the data folder"),
+            "{}",
+            refused.render()
+        );
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn sec_16_a_data_folder_that_is_a_link_is_planned_with_its_real_path() {
+        let temp = tempfile::tempdir().unwrap();
+        let real = temp.path().join("disk").join("bugaboo");
+        std::fs::create_dir_all(&real).unwrap();
+        let link = temp.path().join("bugaboo");
+        std::os::unix::fs::symlink(&real, &link).unwrap();
+        assert_eq!(real_path(&link), std::fs::canonicalize(&real).unwrap());
+        // The plan and the unit name the folder the link leads to, so that `chown -h` changes
+        // the folder and not the link.
+        let resolved = real_path(&link);
+        let installation = Installation {
+            data_dir: &resolved,
+            ..installation()
+        };
+        let text = unit(&installation);
+        assert!(!text.contains(link.to_str().unwrap()), "{text}");
+        assert!(text.contains(resolved.to_str().unwrap()), "{text}");
+    }
+
+    #[test]
+    fn sec_16_a_path_that_is_not_there_yet_stays_as_it_is() {
+        let new = Path::new("/var/lib/not-there-yet/bugaboo");
+        assert_eq!(real_path(new), new);
     }
 
     #[test]
