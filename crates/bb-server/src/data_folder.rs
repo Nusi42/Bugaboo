@@ -217,32 +217,53 @@ pub(crate) fn check_for_service(root: &Path, take_over: bool) -> Result<(), Data
 
 /// Whether the only content of `root` is files in its `tls` folder: the other sub-folders may be
 /// there but are empty, nothing else is in the folder, and `tls` holds plain files (no folders,
-/// no links, which could lead anywhere).
+/// no links, which could lead anywhere, and on Linux no file with more than one name, which may
+/// be somebody else's file under another name). An entry that cannot be read refuses the folder:
+/// what cannot be seen cannot be called the person's own.
 fn holds_only_own_certificate(root: &Path) -> bool {
-    let Ok(entries) = std::fs::read_dir(root) else {
+    let Some(entries) = std::fs::read_dir(root).ok().and_then(all_ok) else {
         return false;
     };
     let mut certificate_files = 0_usize;
-    for entry in entries.flatten() {
+    for entry in entries {
         let name = entry.file_name();
         let path = entry.path();
         let is_folder = std::fs::symlink_metadata(&path).is_ok_and(|data| data.is_dir());
         if !is_folder || !SUB_FOLDERS.iter().any(|known| name == *known) {
             return false;
         }
-        let Ok(inside) = std::fs::read_dir(&path) else {
+        let Some(inside) = std::fs::read_dir(&path).ok().and_then(all_ok) else {
             return false;
         };
-        for item in inside.flatten() {
-            let plain_file =
-                std::fs::symlink_metadata(item.path()).is_ok_and(|data| data.is_file());
-            if name != TLS || !plain_file {
+        for item in inside {
+            if name != TLS || !is_plain_file(&item.path()) {
                 return false;
             }
             certificate_files += 1;
         }
     }
     certificate_files > 0
+}
+
+/// All the items, or `None` when one of them could not be read.
+fn all_ok<T, E>(items: impl Iterator<Item = Result<T, E>>) -> Option<Vec<T>> {
+    items.collect::<Result<Vec<_>, _>>().ok()
+}
+
+/// A regular file that is no link and, on Linux, has one name only.
+fn is_plain_file(path: &Path) -> bool {
+    let Ok(data) = std::fs::symlink_metadata(path) else {
+        return false;
+    };
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::MetadataExt as _;
+        data.is_file() && data.nlink() == 1
+    }
+    #[cfg(not(unix))]
+    {
+        data.is_file()
+    }
 }
 
 /// Whether `root` holds something that only Bugaboo makes (see `check_for_service`).
@@ -1102,10 +1123,32 @@ mod tests {
             std::os::unix::fs::symlink(folder, folder.join(TLS)).unwrap();
         });
 
+        #[cfg(unix)]
+        refused("with-second-name-in-tls", &|folder| {
+            // A file that is also in another place under another name.
+            let elsewhere = folder.parent().unwrap().join("somebody-elses.pem");
+            std::fs::write(&elsewhere, "x").unwrap();
+            std::fs::hard_link(&elsewhere, folder.join(TLS).join("linked.pem")).unwrap();
+        });
+
         // A folder that has no files of its own in `tls` is as before, flag or not.
         let empty = temp.path().join("only-folders");
         DataFolder::prepare(&empty).unwrap();
         check_for_service(&empty, false).unwrap();
         check_for_service(&empty, true).unwrap();
+    }
+
+    #[test]
+    fn ops_03_an_entry_that_cannot_be_read_is_not_skipped() {
+        let items: Vec<Result<u8, std::io::Error>> = vec![
+            Ok(1),
+            Err(std::io::Error::from(std::io::ErrorKind::PermissionDenied)),
+            Ok(3),
+        ];
+        assert_eq!(all_ok(items.into_iter()), None);
+        assert_eq!(
+            all_ok(vec![Ok::<_, std::io::Error>(1), Ok(2)].into_iter()),
+            Some(vec![1, 2])
+        );
     }
 }
