@@ -4,6 +4,7 @@
 //! [`Check`] here, and add a failing and a passing example (`bad_example` / `good_example` tests
 //! or `tools/checks/fixtures/<ID>/`).
 
+mod arch_authz_only;
 pub(crate) mod arch_db_parity;
 mod arch_deps;
 mod arch_errors;
@@ -12,6 +13,7 @@ mod arch_http_edge;
 mod arch_lean;
 mod arch_map_sync;
 mod arch_no_unsafe;
+mod arch_person_ref;
 mod arch_settings;
 mod arch_sql_edge;
 mod arch_wasm;
@@ -136,6 +138,8 @@ pub(crate) fn registry() -> Vec<Box<dyn Check>> {
         Box::new(arch_settings::ArchSettings),
         Box::new(arch_sql_edge::ArchSqlEdge),
         Box::new(arch_events::ArchEvents),
+        Box::new(arch_authz_only::ArchAuthzOnly),
+        Box::new(arch_person_ref::ArchPersonRef),
         Box::new(arch_wasm::ArchWasm),
         Box::new(arch_http_edge::ArchHttpEdge),
         Box::new(arch_lean::ArchLean),

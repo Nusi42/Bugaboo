@@ -1,0 +1,39 @@
+# Fields that show a person's name or address outside `PersonRef` (ARCH-PERSON-REF, architecture
+# section 7). Each is the person's own account or an address that belongs to nobody yet, with the
+# reason. The type is the struct in the code and the schema in the API description; an entry that
+# matches neither fails.
+
+[[exempt]]
+type = "PersonBody"
+field = "display_name"
+reason = "The person who signed in sees their own name: the answer of signing in is about their own account."
+
+[[exempt]]
+type = "PersonBody"
+field = "email"
+reason = "The person who signed in sees their own address: the answer of signing in is about their own account."
+
+[[exempt]]
+type = "MeBody"
+field = "display_name"
+reason = "Who is signed in is the person's own account; a person always sees their own name."
+
+[[exempt]]
+type = "MeBody"
+field = "email"
+reason = "Who is signed in is the person's own account; a person always sees their own address."
+
+[[exempt]]
+type = "InvitationItem"
+field = "email"
+reason = "The address an invitation is for belongs to nobody yet, because there is no account. Only people who hold Invite people see the list."
+
+[[exempt]]
+type = "InvitationBody"
+field = "email"
+reason = "The address an invitation is for belongs to nobody yet, because there is no account. Only people who hold Invite people see it."
+
+[[exempt]]
+type = "InvitationLookupBody"
+field = "email"
+reason = "The page of an invitation link shows the address the invitation is for to whoever holds the secret link, who is that person. There is no account yet."
