@@ -305,7 +305,7 @@ status = "planned"
 id = "ARCH-LEAN"
 title = "Every list endpoint supports fields=, cursor paging and a page-size cap; every GET documents ETag and 304"
 rule = "PERF-02"
-tool = "xtask (reads the generated OpenAPI document: every GET with a list, that is any array property or an answer that is a bare array (refused: it has no room for next_cursor), takes fields, cursor and a limit with a maximum and answers next_cursor; the few small lists named in tools/checks/lean-exemptions.toml have a hard cap and a truncated flag; every GET documents the ETag header and the 304 answer; a list embeds another object only when it declares include with the names that may be embedded, and declares include only then)"
+tool = "xtask (reads the generated OpenAPI document: every GET with a list, that is any array property or an answer that is a bare array (refused: it has no room for next_cursor), takes fields, cursor and a limit with a maximum and answers next_cursor; the few small lists named in tools/checks/lean-exemptions.toml have a hard cap and a truncated flag; every GET documents the ETag header and the 304 answer (except a route marked x-never-stored); a list embeds another object only when it declares include with the names that may be embedded, and declares include only then)"
 when = ["push", "ci"]
 files = [
   "crates/bb-api/**",
@@ -578,11 +578,11 @@ status = "active"
 # ───────────── Performance and quality ─────────────
 [[check]]
 id = "PERF-BUNDLE"
-title = "Initial JavaScript ≤ 250 KB (Brotli); WebAssembly ≤ 150 KB"
+title = "Initial JavaScript stays within its budget (Brotli)"
 rule = "PERF-04"
-tool = "xtask (reads the Vite manifest of the built app, adds up the JavaScript of the entry and what it imports at once, compresses each file with Brotli and fails above the budget in tools/checks/perf-bundle.toml; the WebAssembly part joins with bb-wasm, M1-F10)"
+tool = "xtask (reads the Vite manifest of the built app, adds up the JavaScript of the entry and what it imports at once, compresses each file with Brotli at the quality the server uses (tools/dev/compression.json) and fails above the budget in tools/checks/perf-bundle.toml; the WebAssembly part is not checked yet, M2-F03)"
 when = ["ci"]
-files = ["web/**", "tools/checks/perf-bundle.toml"]
+files = ["web/**", "tools/checks/perf-bundle.toml", "tools/dev/compression.json"]
 status = "active"
 
 [[check]]
