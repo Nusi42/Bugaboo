@@ -380,7 +380,7 @@ storage, preview and search systems as issues and attachments, so nothing is bui
   - every list endpoint returns only the fields the view asks for, and only the fields the user may read;
   - cursor pagination with capped page sizes;
   - no embedded objects unless requested.
-- **PERF-03 (M)** — Compression (Brotli/zstd) and caching validators (ETag / 304) for API responses. Static assets are content-hashed and cached forever.
+- **PERF-03 (M)** — Compression (Brotli and gzip; JSON above 1 KiB, never an answer that holds a secret) and caching validators (ETag / 304) for API responses. Static assets are content-hashed and cached forever.
 - **PERF-04 (M)** — Frontend budgets, enforced in CI:
   - initial route JavaScript ≤ 250 KB (Brotli);
   - Gantt, workflow editor, theme editor, document editor and the search-language WebAssembly are loaded only when first opened;
