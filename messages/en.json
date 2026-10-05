@@ -474,7 +474,7 @@
   "cli.help.sample-database": "Where the sample is kept: sqlite (a file in the data folder) or postgres (the address of an empty database is in the environment variable {variable})",
   "cli.help.sample-out": "The folder for the data folder, the sign-in details and the dump of the sample",
   "sample.done": "Made the sample organization with {people} people from seed {seed}. Data folder: {folder}. How to sign in as them: {file}",
-  "sample.sign-in-header": "Sample organization: how to sign in.\nThe passwords are random and belong to this run only. Never copy this file anywhere.\nOne line per person, separated by tabs: e-mail address, password, role, and the secret of the code app for the people who have one.",
+  "sample.sign-in-header": "Sample organization: how to sign in.\nThe passwords are random and belong to this run only. Never copy this file anywhere.\nOne line per person, separated by tabs: e-mail address, password, role, name, and the secret of the code app for the people who have one.",
   "sample.error.names": "The list of names cannot be used: {reason}",
   "sample.error.random": "The system gave no secure random numbers for the passwords.",
   "sample.error.folder": "The sample cannot use {path}: {reason}",

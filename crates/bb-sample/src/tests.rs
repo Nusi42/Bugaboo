@@ -211,6 +211,31 @@ async fn no_password_or_secret_is_written_outside_the_sign_in_text() -> TestResu
     Ok(())
 }
 
+#[tokio::test]
+async fn the_sign_in_text_has_a_line_for_every_person_with_the_columns_the_tests_read() -> TestResult
+{
+    let folder = tempfile::tempdir()?;
+    let sample = built_in(DEFAULT_SEED, folder.path()).await?;
+    let text = sample.sign_in_text();
+    let lines: Vec<Vec<&str>> = text
+        .lines()
+        .filter(|line| !line.starts_with('#'))
+        .map(|line| line.split(char::from(9)).collect())
+        .collect();
+    assert_eq!(lines.len(), PEOPLE);
+    for (columns, made) in lines.iter().zip(sample.people()) {
+        // Address, password, role, name, and the secret of the code app when there is one.
+        assert_eq!(columns[0], made.person.email);
+        assert_eq!(columns[1], made.password);
+        assert_eq!(columns[2], made.person.role.code());
+        assert_eq!(columns[3], made.person.name);
+        assert_eq!(columns.get(4).copied(), made.code_app_secret.as_deref());
+    }
+    assert!(text.starts_with("# "), "the file explains itself first");
+    sample.close().await;
+    Ok(())
+}
+
 /// Every file below `folder` with its bytes.
 fn collect(folder: &Path, found: &mut Vec<(String, Vec<u8>)>) -> Result<(), Failure> {
     for entry in std::fs::read_dir(folder)? {

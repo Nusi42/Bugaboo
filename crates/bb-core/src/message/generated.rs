@@ -2935,7 +2935,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("sample.error.store", "The database failed: {reason}"),
     (
         "sample.sign-in-header",
-        "Sample organization: how to sign in.\nThe passwords are random and belong to this run only. Never copy this file anywhere.\nOne line per person, separated by tabs: e-mail address, password, role, and the secret of the code app for the people who have one.",
+        "Sample organization: how to sign in.\nThe passwords are random and belong to this run only. Never copy this file anywhere.\nOne line per person, separated by tabs: e-mail address, password, role, name, and the secret of the code app for the people who have one.",
     ),
     ("save.not-saved", "Not saved yet"),
     ("save.saved", "Saved"),

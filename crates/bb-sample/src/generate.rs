@@ -167,6 +167,8 @@ impl Sample {
             text.push_str(&made.password);
             text.push('\t');
             text.push_str(made.person.role.code());
+            text.push('\t');
+            text.push_str(&made.person.name);
             if let Some(secret) = &made.code_app_secret {
                 text.push('\t');
                 text.push_str(secret);

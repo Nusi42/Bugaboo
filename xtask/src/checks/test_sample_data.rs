@@ -11,7 +11,7 @@
 //!
 //! ```text
 //! <run>/dump.json    the canonical dump (IDs, hashes and secrets left out by design)
-//! <run>/sign-in.txt  e-mail address, password, role and code-app secret of every person: the
+//! <run>/sign-in.txt  e-mail address, password, role, name and code-app secret of every person: the
 //!                    only file that may hold a secret
 //! <run>/output.txt   what the program said; <run>/data/ the data folder it made
 //! ```
@@ -128,13 +128,13 @@ impl Run {
 }
 
 /// The passwords and code-app secrets of the text of a sign-in file: lines of tab-separated
-/// columns (address, password, role, secret), `#` for comments.
+/// columns (address, password, role, name, secret), `#` for comments.
 fn secrets_of(text: &str) -> Vec<String> {
     text.lines()
         .filter(|line| !line.starts_with('#') && !line.trim().is_empty())
         .flat_map(|line| {
             let columns: Vec<&str> = line.split('\t').collect();
-            [columns.get(1), columns.get(3)]
+            [columns.get(1), columns.get(4)]
                 .into_iter()
                 .flatten()
                 .filter(|secret| !secret.is_empty())
@@ -379,7 +379,7 @@ mod tests {
 
     #[test]
     fn the_secrets_are_the_password_and_the_code_app_column_only() {
-        let text = "# header\nana@bugaboo.example\tPW-ONE\tcontributor\nben@bugaboo.example\tPW-TWO\tteam_member\tSECRET-TWO\n";
+        let text = "# header\nana@bugaboo.example\tPW-ONE\tcontributor\tAna Moreno\nben@bugaboo.example\tPW-TWO\tteam_member\tBen Hale\tSECRET-TWO\n";
         assert_eq!(secrets_of(text), ["PW-ONE", "PW-TWO", "SECRET-TWO"]);
     }
 
