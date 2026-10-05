@@ -452,6 +452,8 @@ export const messages = {
   "error.name.taken": "That name is already used. Choose another one.",
   "error.project.move-lifts-no-access":
     "This move would let somebody take away a No access that applies to them. Take that No access away first, or move the project somewhere else.",
+  "error.project.too-deep":
+    "Projects cannot be nested any deeper than this. Make or move it somewhere higher up.",
   "error.project.move-into-itself":
     "A project cannot go inside itself or inside one of its own sub-projects.",
   "error.project.preview-changed":

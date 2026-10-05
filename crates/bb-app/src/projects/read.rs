@@ -5,6 +5,7 @@ use bb_core::ErrorCode;
 use bb_core::id::ProjectId;
 use bb_core::project::ShortName;
 use bb_policy::{Authorized, Permission, Place};
+use jiff::Timestamp;
 
 use super::shown::Shown;
 use super::store::Found;
@@ -15,26 +16,34 @@ use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, internal};
 
 impl<S: AuthStore> Ctx<'_, S> {
-    /// The project an address names: an ID, or a short name (also an old one).
+    /// The project an address names: an ID, or a short name (also an old one). An address that is
+    /// neither asks the store for a project that is not there, so every address, good or not,
+    /// costs one question.
     async fn find_project(&self, address: &str) -> Result<Option<Found>, AppError> {
-        if let Ok(id) = address.parse::<ProjectId>() {
-            return Ok(self
-                .store()
-                .project(id)
-                .await
-                .map_err(|error| internal::<S>(&error))?
-                .map(|project| Found {
-                    project,
-                    old_name: false,
-                }));
-        }
-        let Ok(short_name) = ShortName::new(address) else {
-            return Ok(None);
+        let nowhere = ProjectId::from_parts(Timestamp::UNIX_EPOCH, [0; 10])
+            .map_err(|error| AppError::Internal(error.to_string()))?;
+        let by_name = if address.parse::<ProjectId>().is_ok() {
+            None
+        } else {
+            ShortName::new(address).ok()
         };
-        self.store()
-            .project_by_address(&short_name)
+        if let Some(short_name) = by_name {
+            return self
+                .store()
+                .project_by_address(&short_name)
+                .await
+                .map_err(|error| internal::<S>(&error));
+        }
+        let id = address.parse::<ProjectId>().unwrap_or(nowhere);
+        Ok(self
+            .store()
+            .project(id)
             .await
-            .map_err(|error| internal::<S>(&error))
+            .map_err(|error| internal::<S>(&error))?
+            .map(|project| Found {
+                project,
+                old_name: false,
+            }))
     }
 
     /// Whether the actor may make projects where the project sits: *Make projects* for the whole
@@ -68,26 +77,33 @@ pub async fn project<S: AuthStore>(
     input: ProjectQuery,
 ) -> Result<Authorized<ProjectDetail>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
-    let not_found = || AppError::Refused(ErrorCode::NotFound);
-    let found = ctx
-        .find_project(&input.address)
-        .await?
-        .ok_or_else(not_found)?;
-    let held = ctx
-        .evaluate(actor.person.id, Place::Project(found.project.id))
-        .await?;
-    if !held.sees_project() {
-        return Err(not_found());
-    }
+    // A project that is hidden and one that is missing take the same reads and the same
+    // evaluation before either is answered, so the answer is not the only thing that is equal.
     let shown = ctx.shown_to(actor.person.id).await?;
+    let found = ctx.find_project(&input.address).await?;
+    let place = found.as_ref().map_or(Place::Organization, |found| {
+        Place::Project(found.project.id)
+    });
+    let held = ctx.evaluate(actor.person.id, place).await?;
+    let Some(found) = found.filter(|_| held.sees_project()) else {
+        return Err(AppError::Refused(ErrorCode::NotFound));
+    };
     let (trail, truncated) = shown.trail(&found.project);
     let project = found.project;
+    let old_parent = ctx
+        .evaluate(actor.person.id, place_of(project.parent))
+        .await?;
+    let organization = ctx.evaluate(actor.person.id, Place::Organization).await?;
     Ok(held.authorize(ProjectDetail {
         trail,
         truncated,
         permissions: held.permissions().iter().copied().collect(),
         may_change_short_name: held.allows(Permission::ChangeProjectSettings)
             && ctx.may_make_projects_beside(&actor, project.parent).await?,
+        may_move: old_parent.allows(Permission::MoveProjects),
+        may_move_to_top: project.parent.is_some()
+            && organization.allows(Permission::MoveProjects)
+            && organization.allows(Permission::MakeProjects),
         project: ProjectView {
             id: project.id,
             parent: shown.shown_parent(&project),
@@ -96,6 +112,11 @@ pub async fn project<S: AuthStore>(
             version: project.version,
         },
     }))
+}
+
+/// The place where a project with this parent sits: the organization for the top level.
+fn place_of(parent: Option<ProjectId>) -> Place {
+    parent.map_or(Place::Organization, Place::Project)
 }
 
 /// Where a page ends, as text: the name the list is sorted by and the ID of the last project.
@@ -158,8 +179,13 @@ pub async fn projects<S: AuthStore>(
             .filter(|project| matches(&words, &project.name, project.short_name.as_str()))
             .collect()
     };
-    if let Some(outside) = input.outside {
+    // Leaving a project out is only done for one the person sees: naming one they do not see
+    // would show, by what drops out of the list, that it is there and what is inside it.
+    if let Some(outside) = input.outside.filter(|outside| shown.sees(*outside)) {
         candidates = leave_out(&shown, candidates, outside);
+    }
+    if let Some(moving) = input.movable.filter(|moving| shown.sees(*moving)) {
+        candidates = movable_into(&shown, candidates, moving);
     }
     candidates.sort_by(|a, b| {
         a.name
@@ -199,5 +225,19 @@ fn leave_out<'a>(
     candidates
         .into_iter()
         .filter(|project| !shown.is_inside(project, outside))
+        .collect()
+}
+
+/// The candidates this project may be moved into by the person: not itself, not what is inside it,
+/// not the place it sits in already, and only where they may move projects.
+fn movable_into<'a>(
+    shown: &Shown,
+    candidates: Vec<&'a bb_core::project::Project>,
+    moving: ProjectId,
+) -> Vec<&'a bb_core::project::Project> {
+    let from = shown.parent_of(moving);
+    leave_out(shown, candidates, moving)
+        .into_iter()
+        .filter(|place| from != Some(place.id) && shown.allows(place.id, Permission::MoveProjects))
         .collect()
 }

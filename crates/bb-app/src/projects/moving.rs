@@ -134,23 +134,40 @@ impl<S: AuthStore> Ctx<'_, S> {
         if !viewer.sees_project() {
             return Err(not_found());
         }
+        // The new parent: one the person may not know about answers like one that is not there.
         self.require(actor, Permission::MoveProjects, place_of(to))
             .await?;
-        self.require(actor, Permission::MoveProjects, place_of(found.parent))
-            .await?;
-        if let Some(target) = to {
-            let chain = self
-                .store()
-                .project_chain(target)
-                .await
-                .map_err(|error| internal::<S>(&error))?
-                .ok_or_else(not_found)?;
-            if chain.contains(&project) {
-                return Err(ErrorCode::MoveIntoItself.into());
+        if to.is_none() {
+            // The top level is the organization: a project that goes there is made there.
+            let whole = self.evaluate(actor.person.id, Place::Organization).await?;
+            if !whole.allows(Permission::MakeProjects) {
+                return Err(ErrorCode::Forbidden.into());
             }
+        }
+        // The old parent: a person who sees the project but not what holds it is told they may not,
+        // as for a parent they see; nothing says the parent is hidden.
+        let old = self
+            .evaluate(actor.person.id, place_of(found.parent))
+            .await?;
+        if !old.allows(Permission::MoveProjects) {
+            return Err(ErrorCode::Forbidden.into());
+        }
+        let projects = self
+            .store()
+            .project_tree()
+            .await
+            .map_err(|error| internal::<S>(&error))?;
+        let tree = Tree::new(projects.iter().map(|known| (known.id, known.parent)));
+        if let Some(target) = to
+            && tree.chain(target).ok_or_else(not_found)?.contains(&project)
+        {
+            return Err(ErrorCode::MoveIntoItself.into());
         }
         if found.parent == to {
             return Err(ErrorCode::InvalidRequest.into());
+        }
+        if tree.moved(project, to).too_deep_below(project) {
+            return Err(ErrorCode::ProjectTooDeep.into());
         }
         Ok((found, viewer))
     }
@@ -239,6 +256,11 @@ impl<S: AuthStore> Ctx<'_, S> {
             to: to.and_then(|target| shown_ref(target.id)),
             preview: judged.version.clone(),
             blocked: !judged.preview.lifts.is_empty(),
+            blocked_out_of_sight: judged
+                .preview
+                .lifts
+                .iter()
+                .any(|lift| !seen.contains(&lift.project)),
             people,
             lifts,
             truncated,
@@ -306,7 +328,8 @@ fn project_change(project: ProjectRef, change: &Change) -> ProjectChange {
 /// # Errors
 /// `resource.not_found` for a project or a new parent the person may not know about,
 /// `access.forbidden` without *Move projects* in the old and the new parent,
-/// `project.move_into_itself` for a move below itself, `request.invalid` for a move to where the
+/// `project.move_into_itself` for a move below itself, `project.too_deep` for a move that pushes
+/// what is inside past the depth of a tree, `request.invalid` for a move to where the
 /// project is.
 pub async fn preview_move<S: AuthStore>(
     ctx: &Ctx<'_, S>,
@@ -389,11 +412,20 @@ pub async fn move_project<S: AuthStore>(
                         return Err(stopped.stop::<S>(ErrorCode::Forbidden));
                     }
                 }
+                if to.is_none()
+                    && !held(Place::Organization)
+                        .is_some_and(|held| held.allows(Permission::MakeProjects))
+                {
+                    return Err(stopped.stop::<S>(ErrorCode::Forbidden));
+                }
                 if to.is_some_and(|target| judged.tree.is_within(target, id)) {
                     return Err(stopped.stop::<S>(ErrorCode::MoveIntoItself));
                 }
                 if now.parent == to {
                     return Err(stopped.stop::<S>(ErrorCode::InvalidRequest));
+                }
+                if judged.tree.moved(id, to).too_deep_below(id) {
+                    return Err(stopped.stop::<S>(ErrorCode::ProjectTooDeep));
                 }
                 // The rule of M2-F23: a move lifts no *No access*. It comes before the look at
                 // the preview, so no preview, stale or made up, gets around it.

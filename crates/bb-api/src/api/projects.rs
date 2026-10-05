@@ -136,8 +136,13 @@ pub(crate) struct ProjectFilter {
     inside: Option<String>,
     /// Words that name the projects to find anywhere in the tree, in their name or short name.
     search: Option<String>,
-    /// Leave out this project and everything inside it: where it cannot be moved to.
+    /// Leave out this project and everything inside it. Ignored for a project the person does not
+    /// see, or that does not exist.
     outside: Option<String>,
+    /// Only the places this project may be moved into by the person: not itself, not inside
+    /// itself, not where it is now, and only where they may move projects. Ignored for a project
+    /// the person does not see, or that does not exist.
+    movable: Option<String>,
 }
 
 /// One project, with where it is and what the person may do there.
@@ -154,6 +159,11 @@ pub(crate) struct ProjectDetailBody {
     permissions: Vec<Permission>,
     /// Whether the person may change the short name.
     may_change_short_name: bool,
+    /// Whether the person may move the project.
+    may_move: bool,
+    /// Whether the person may move this project to the top level: it is not there yet, and they may
+    /// move projects and make top-level projects.
+    may_move_to_top: bool,
 }
 
 impl Masked for ProjectDetailBody {}
@@ -166,6 +176,8 @@ impl From<ProjectDetail> for ProjectDetailBody {
             truncated: detail.truncated,
             permissions: detail.permissions,
             may_change_short_name: detail.may_change_short_name,
+            may_move: detail.may_move,
+            may_move_to_top: detail.may_move_to_top,
         }
     }
 }
@@ -224,6 +236,7 @@ async fn list_projects(
     };
     let inside = filter.inside.as_deref().map(project_id).transpose();
     let outside = filter.outside.as_deref().map(project_id).transpose();
+    let movable = filter.movable.as_deref().map(project_id).transpose();
     let page = auth
         .api()?
         .projects(
@@ -233,6 +246,7 @@ async fn list_projects(
                 inside: inside.as_ref().ok().copied().flatten(),
                 search: filter.search,
                 outside: outside.as_ref().ok().copied().flatten(),
+                movable: movable.as_ref().ok().copied().flatten(),
                 cursor,
                 limit: params.limit(),
             },
@@ -247,6 +261,7 @@ async fn list_projects(
     // A project that is no ID is a project that is not there.
     inside?;
     outside?;
+    movable?;
     let list = page.map(|page| Listed {
         items: page.items.iter().map(ProjectItem::from).collect(),
         next: page.next_cursor,

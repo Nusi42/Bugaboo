@@ -12,14 +12,11 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use bb_core::access::{Assignment, GroupMember};
 use bb_core::id::{GroupId, ProjectId, RoleId, UserId};
+use bb_core::project::DEPTH_MAX;
 
 use crate::evaluate::{
     Evaluation, FieldRule, Inputs, PeopleRule, Place, RoleData, Row, Who, evaluate,
 };
-
-/// The deepest tree of projects that is followed. A longer chain (or a loop) is data that cannot
-/// be right.
-const DEPTH_MAX: usize = 64;
 
 /// The tree of projects: the parent of each project, or `None` at the top level.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
@@ -76,6 +73,15 @@ impl Tree {
     pub fn is_within(&self, project: ProjectId, ancestor: ProjectId) -> bool {
         self.chain(project)
             .is_some_and(|chain| chain.contains(&ancestor))
+    }
+
+    /// Whether `project` or something inside it is nested deeper than [`DEPTH_MAX`] levels, or
+    /// not in the tree at all.
+    #[must_use]
+    pub fn too_deep_below(&self, project: ProjectId) -> bool {
+        self.subtree(project)
+            .into_iter()
+            .any(|inside| self.chain(inside).is_none())
     }
 
     /// `project` and every project inside it, at any depth, the project first.

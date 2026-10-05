@@ -10,17 +10,17 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use bb_core::id::{ProjectId, UserId};
-use bb_core::project::Project;
-use bb_policy::Tree;
+use bb_core::project::{DEPTH_MAX, Project};
+use bb_policy::{Permission, Place, Policy, Tree};
 
 use super::types::{ProjectItem, ProjectRef, TRAIL_MAX};
 use crate::auth::{AppError, AuthStore, Ctx, internal};
 
-/// The deepest tree that is followed; a deeper one is stored data that cannot be right.
-const DEPTH_MAX: usize = 64;
-
 /// The projects, and which of them one person sees.
 pub(crate) struct Shown {
+    person: UserId,
+    policy: Policy,
+    tree: Tree,
     projects: BTreeMap<ProjectId, Project>,
     visible: BTreeSet<ProjectId>,
 }
@@ -41,6 +41,9 @@ impl<S: AuthStore> Ctx<'_, S> {
         let tree = Tree::new(projects.iter().map(|project| (project.id, project.parent)));
         Ok(Shown {
             visible: policy.visible(person, &tree),
+            person,
+            policy,
+            tree,
             projects: projects
                 .into_iter()
                 .map(|project| (project.id, project))
@@ -53,6 +56,20 @@ impl Shown {
     /// Whether the person sees the project.
     pub(crate) fn sees(&self, project: ProjectId) -> bool {
         self.visible.contains(&project)
+    }
+
+    /// Whether the person holds the permission in the project, from the same rows and the same
+    /// engine as every other decision.
+    pub(crate) fn allows(&self, project: ProjectId, permission: Permission) -> bool {
+        self.policy
+            .evaluate_at(self.person, &self.tree, Place::Project(project))
+            .is_some_and(|held| held.allows(permission))
+    }
+
+    /// The parent a stored project has, whether the person sees it or not: only for comparing
+    /// places, never to be named.
+    pub(crate) fn parent_of(&self, project: ProjectId) -> Option<ProjectId> {
+        self.projects.get(&project).and_then(|found| found.parent)
     }
 
     /// The project, if the person sees it.

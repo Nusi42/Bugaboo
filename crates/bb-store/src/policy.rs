@@ -13,7 +13,7 @@ use bb_core::access::{AppliesTo, Assignment, FieldLevel, Group, GroupMember, Peo
 use bb_core::fields::Field;
 use bb_core::id::{AssignmentId, GroupId, IdError, ProjectId, RoleId, UserId};
 use bb_core::people_kinds::PeopleKind;
-use bb_core::project::{Project, ShortName};
+use bb_core::project::{DEPTH_MAX, Project, ShortName};
 use bb_core::technical::TechnicalName;
 use bb_policy::guards::{Holder, OrganizationState};
 use bb_policy::{FieldRule, Inputs, PeopleRule, Permission, Place, RoleData, Row, Who};
@@ -32,9 +32,6 @@ use crate::schema::{
 /// The lock that changes of roles and rows take on PostgreSQL, so two of them cannot both leave
 /// the last administrator in place and together leave none.
 const POLICY_LOCK: i64 = 0x4242_504F_4C49_0001;
-/// The deepest tree of projects that is followed. A longer chain (or a loop) is a stored value
-/// that cannot be right.
-const CHAIN_MAX: usize = 64;
 
 pub(crate) fn corrupt(what: &'static str) -> impl Fn(IdError) -> StoreError {
     move |_| StoreError::Corrupt(what)
@@ -113,7 +110,7 @@ async fn chain_of(
             chain.reverse();
             return Ok(Some(chain));
         };
-        if chain.len() >= CHAIN_MAX || chain.contains(&parent) {
+        if chain.len() >= DEPTH_MAX || chain.contains(&parent) {
             return Err(StoreError::Corrupt("a tree of projects"));
         }
         chain.push(parent);

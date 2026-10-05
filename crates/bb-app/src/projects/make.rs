@@ -2,9 +2,9 @@
 
 use bb_core::ErrorCode;
 use bb_core::id::ProjectId;
-use bb_core::project::{Project, ShortName};
+use bb_core::project::{DEPTH_MAX, Project, ShortName};
 use bb_core::sign_in::SecurityAction;
-use bb_policy::{Authorized, Permission, Place};
+use bb_policy::{Authorized, Permission, Place, Tree};
 use serde_json::json;
 
 use super::Why;
@@ -18,7 +18,8 @@ use crate::people::clean_name;
 /// # Errors
 /// `access.forbidden` without the permission (`resource.not_found` for a parent the person may
 /// not know about), `request.invalid` for a short name or a name that cannot be one,
-/// `name.taken` when the short name is taken, or was used by a project once (only a person who
+/// `project.too_deep` when the project would be nested deeper than a tree may go, `name.taken`
+/// when the short name is taken, or was used by a project once (only a person who
 /// may make projects there is told, with the same answer whether the project is hidden or not).
 pub async fn make_project<S: AuthStore>(
     ctx: &Ctx<'_, S>,
@@ -76,6 +77,18 @@ pub async fn make_project<S: AuthStore>(
                 // A project made while somebody gives a role for sub-projects is seen by them or
                 // reached by it: the two wait for each other.
                 S::lock_policy(transaction).await?;
+                // A project goes no deeper than the tree may: judged on the tree as it is now.
+                if let Some(parent) = stored.parent {
+                    let projects = S::project_tree_in(transaction).await?;
+                    let tree = Tree::new(projects.iter().map(|known| (known.id, known.parent)));
+                    match tree.chain(parent) {
+                        Some(chain) if chain.len() >= DEPTH_MAX => {
+                            return Err(stopped.stop::<S>(ErrorCode::ProjectTooDeep));
+                        }
+                        Some(_) => {}
+                        None => return Err(stopped.stop::<S>(ErrorCode::NotFound)),
+                    }
+                }
                 // Judged again on what is stored now: two people who make a project with the
                 // same short name at the same moment cannot both succeed.
                 if S::short_name_owner_in(transaction, &stored.short_name)

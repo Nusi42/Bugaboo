@@ -83,8 +83,13 @@ pub struct ProjectsQuery {
     /// Words that every found project holds in its name or short name, anywhere in the tree;
     /// the text may be empty, which finds every project the person sees.
     pub search: Option<String>,
-    /// Leave out this project and everything inside it (where it cannot be moved to).
+    /// Leave out this project and everything inside it, when the person sees the project; for a
+    /// project they do not see, or that does not exist, nothing is left out.
     pub outside: Option<ProjectId>,
+    /// List only the places this project (which the person sees) may be moved into by them:
+    /// not itself, not inside itself, not where it is, and only where they may move projects.
+    /// For a project they do not see, or that does not exist, it is ignored.
+    pub movable: Option<ProjectId>,
     /// Where the page after the last one starts (`next_cursor` of the page before), if any.
     pub cursor: Option<String>,
     /// How many projects a page holds at most; more than `bb_core::paging::PAGE_SIZE_MAX` is cut
@@ -170,6 +175,12 @@ pub struct ProjectDetail {
     /// may make projects where it sits, so a short name that is taken can be told to them
     /// (ADR-0025, decision 13).
     pub may_change_short_name: bool,
+    /// Whether the person may move the project: they may move projects in the place it sits in
+    /// (its parent, or the organization at the top level).
+    pub may_move: bool,
+    /// Whether the person may move this project to the top level: it is not there yet, and they
+    /// may move projects and make them for the whole organization.
+    pub may_move_to_top: bool,
 }
 
 impl Masked for ProjectDetail {}
@@ -264,6 +275,9 @@ pub struct MovePreview {
     /// The move would be refused, because somebody could take away a *No access* that applies to
     /// them (`lifts` says who).
     pub blocked: bool,
+    /// Something in a project the person cannot see also stops the move: one sentence says so,
+    /// without a name or a number.
+    pub blocked_out_of_sight: bool,
     /// Who gains or loses access or changes role, where the person who asks can see the project.
     pub people: Vec<PersonChange>,
     /// Who could take away a *No access* after the move and could not before.

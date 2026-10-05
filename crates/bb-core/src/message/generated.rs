@@ -326,6 +326,9 @@ pub const ERROR_PROJECT_MOVE_LIFTS_NO_ACCESS: MessageKey =
 pub const ERROR_PROJECT_PREVIEW_CHANGED: MessageKey =
     MessageKey::new("error.project.preview-changed");
 
+/// The message `error.project.too-deep`.
+pub const ERROR_PROJECT_TOO_DEEP: MessageKey = MessageKey::new("error.project.too-deep");
+
 /// The message `error.rate-limit.exceeded`.
 pub const ERROR_RATE_LIMIT_EXCEEDED: MessageKey = MessageKey::new("error.rate-limit.exceeded");
 
@@ -3358,6 +3361,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "error.project.preview-changed",
         "The projects, or who has which role, changed since you looked at the preview. Look at it again before you move the project.",
+    ),
+    (
+        "error.project.too-deep",
+        "Projects cannot be nested any deeper than this. Make or move it somewhere higher up.",
     ),
     (
         "error.rate-limit.exceeded",

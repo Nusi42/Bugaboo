@@ -83,6 +83,8 @@ pub(crate) struct Shared {
     pub(crate) log: Vec<SecurityEvent>,
     /// How many times the engine asked for the rows of a person at a place.
     pub(crate) policy_loads: usize,
+    /// How many reads of any kind the store answered.
+    pub(crate) reads: usize,
     /// The security log cannot be written.
     pub(crate) log_fails: bool,
     /// Changes fail as the database does when it breaks.
@@ -129,7 +131,14 @@ impl FakeStore {
 
     /// Reads from the state.
     pub(crate) fn read<T>(&self, read: impl FnOnce(&State) -> T) -> T {
-        read(&self.lock().state)
+        let mut shared = self.lock();
+        shared.reads += 1;
+        read(&shared.state)
+    }
+
+    /// How many reads the store answered so far, of any kind.
+    pub(crate) fn reads(&self) -> usize {
+        self.lock().reads
     }
 
     /// How many times the engine loaded the rows of a person at a place.

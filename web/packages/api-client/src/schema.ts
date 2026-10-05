@@ -790,6 +790,7 @@ export interface components {
       | "assignment.conflict"
       | "project.move_lifts_no_access"
       | "project.move_into_itself"
+      | "project.too_deep"
       | "project.preview_changed"
       | "name.taken"
       | "resource.not_found"
@@ -898,6 +899,8 @@ export interface components {
     MovePreviewBody: {
       /** @description The move would be refused: somebody could take away a *No access* that applies to them. */
       blocked: boolean;
+      /** @description Something in a project the person cannot see also stops the move. */
+      blocked_out_of_sight: boolean;
       /** @description Who could take away a *No access* after the move and could not before. */
       lifts: components["schemas"]["LiftBody"][];
       /** @description Who gains or loses access or changes role, in the projects the person sees. */
@@ -1128,6 +1131,10 @@ export interface components {
     ProjectDetailBody: {
       /** @description Whether the person may change the short name. */
       may_change_short_name: boolean;
+      /** @description Whether the person may move the project. */
+      may_move: boolean;
+      /** @description Whether the person may move projects to the top level. */
+      may_move_to_top: boolean;
       /** @description What the person may do here. */
       permissions: components["schemas"]["Permission"][];
       /** @description The project. Its `short_name` is the one it has now, also when the address named an old one. */
@@ -3673,8 +3680,17 @@ export interface operations {
         inside?: string;
         /** @description Words that name the projects to find anywhere in the tree, in their name or short name. */
         search?: string;
-        /** @description Leave out this project and everything inside it: where it cannot be moved to. */
+        /**
+         * @description Leave out this project and everything inside it. Ignored for a project the person does not
+         *     see, or that does not exist.
+         */
         outside?: string;
+        /**
+         * @description Only the places this project may be moved into by the person: not itself, not inside
+         *     itself, not where it is now, and only where they may move projects. Ignored for a project
+         *     the person does not see, or that does not exist.
+         */
+        movable?: string;
       };
       header?: never;
       path?: never;
@@ -3800,7 +3816,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.preview_changed). */
+      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
       409: {
         headers: {
           [name: string]: unknown;
@@ -3982,7 +3998,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.preview_changed). */
+      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
       409: {
         headers: {
           [name: string]: unknown;
@@ -4083,7 +4099,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.preview_changed). */
+      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
       409: {
         headers: {
           [name: string]: unknown;
@@ -4184,7 +4200,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.preview_changed). */
+      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
       409: {
         headers: {
           [name: string]: unknown;
@@ -4285,7 +4301,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.preview_changed). */
+      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
       409: {
         headers: {
           [name: string]: unknown;

@@ -19,7 +19,7 @@ use super::policy_rig::{Member, Org};
 use super::rig::{Outcome, Rig, refused};
 
 /// What a lead of a project may do.
-const LEAD: [Permission; 5] = [
+pub(super) const LEAD: [Permission; 5] = [
     Permission::SeeProjects,
     Permission::MakeSubProjects,
     Permission::MoveProjects,
@@ -27,13 +27,17 @@ const LEAD: [Permission; 5] = [
     Permission::DecideRoles,
 ];
 /// What somebody who only looks may do.
-const VIEW: [Permission; 1] = [Permission::SeeProjects];
+pub(super) const VIEW: [Permission; 1] = [Permission::SeeProjects];
 
-fn api<'o>(org: &'o Org<'_>) -> &'o dyn bb_app::auth::AuthApi {
+pub(super) fn api<'o>(org: &'o Org<'_>) -> &'o dyn bb_app::auth::AuthApi {
     org.rig.api()
 }
 
-async fn detail(org: &Org<'_>, by: &Member, address: &str) -> Result<ProjectDetail, AppError> {
+pub(super) async fn detail(
+    org: &Org<'_>,
+    by: &Member,
+    address: &str,
+) -> Result<ProjectDetail, AppError> {
     Ok(api(org)
         .project(
             Rig::info(),
@@ -46,7 +50,7 @@ async fn detail(org: &Org<'_>, by: &Member, address: &str) -> Result<ProjectDeta
         .into_value())
 }
 
-async fn list(
+pub(super) async fn list(
     org: &Org<'_>,
     by: &Member,
     inside: Option<ProjectId>,
@@ -60,6 +64,7 @@ async fn list(
                 inside,
                 search: search.map(str::to_owned),
                 outside: None,
+                movable: None,
                 cursor: None,
                 limit: 100,
             },
@@ -68,7 +73,7 @@ async fn list(
         .into_value())
 }
 
-async fn make(
+pub(super) async fn make(
     org: &Org<'_>,
     by: &Member,
     parent: Option<ProjectId>,
@@ -88,7 +93,7 @@ async fn make(
         .into_value())
 }
 
-async fn change(
+pub(super) async fn change(
     org: &Org<'_>,
     by: &Member,
     project: &ProjectView,
@@ -110,7 +115,7 @@ async fn change(
         .into_value())
 }
 
-async fn preview(
+pub(super) async fn preview(
     org: &Org<'_>,
     by: &Member,
     project: ProjectId,
@@ -129,7 +134,7 @@ async fn preview(
         .into_value())
 }
 
-async fn relocate(
+pub(super) async fn relocate(
     org: &Org<'_>,
     by: &Member,
     project: ProjectId,
@@ -152,16 +157,16 @@ async fn relocate(
 
 /// The project as the person asks for it by address, without the answer's content: only whether
 /// and how it was refused.
-async fn asked(org: &Org<'_>, by: &Member, address: &str) -> Option<AppError> {
+pub(super) async fn asked(org: &Org<'_>, by: &Member, address: &str) -> Option<AppError> {
     detail(org, by, address).await.err()
 }
 
-fn missing_id() -> ProjectId {
+pub(super) fn missing_id() -> ProjectId {
     ProjectId::from_parts(jiff::Timestamp::UNIX_EPOCH, [9; 10])
         .unwrap_or_else(|_| unreachable!("the epoch is not before 1970"))
 }
 
-fn names(page: &ProjectPage) -> Vec<String> {
+pub(super) fn names(page: &ProjectPage) -> Vec<String> {
     page.items
         .iter()
         .map(|item| item.short_name.to_string())

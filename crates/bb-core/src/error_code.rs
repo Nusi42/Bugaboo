@@ -84,6 +84,8 @@ error_codes! {
     MoveLiftsNoAccess => ("project.move_lifts_no_access", 409, message::ERROR_PROJECT_MOVE_LIFTS_NO_ACCESS),
     /// A project cannot go inside itself or one of its own sub-projects.
     MoveIntoItself => ("project.move_into_itself", 409, message::ERROR_PROJECT_MOVE_INTO_ITSELF),
+    /// A project would be nested deeper than a tree of projects may go.
+    ProjectTooDeep => ("project.too_deep", 409, message::ERROR_PROJECT_TOO_DEEP),
     /// The projects, or who has which role, changed since the move was previewed.
     MovePreviewChanged => ("project.preview_changed", 409, message::ERROR_PROJECT_PREVIEW_CHANGED),
     /// A name of a group, role or project is used already.

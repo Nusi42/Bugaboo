@@ -147,6 +147,7 @@ impl PolicyStore for FakeStore {
     ) -> Result<Option<Inputs>, FakeError> {
         let mut shared = self.lock();
         shared.policy_loads += 1;
+        shared.reads += 1;
         Ok(inputs_of(&shared.state, person, place))
     }
 

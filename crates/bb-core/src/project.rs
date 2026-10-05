@@ -12,6 +12,9 @@ use crate::personal::Entity;
 pub const SHORT_NAME_MIN: usize = 2;
 /// The most characters of a short name.
 pub const SHORT_NAME_MAX: usize = 10;
+/// The most levels a tree of projects has: a top-level project is level 1. A project below this is
+/// refused when it is made or moved, so no stored tree is deeper than the code follows.
+pub const DEPTH_MAX: usize = 64;
 
 /// The text is not a short name.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

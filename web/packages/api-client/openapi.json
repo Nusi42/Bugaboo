@@ -2901,7 +2901,16 @@
           {
             "name": "outside",
             "in": "query",
-            "description": "Leave out this project and everything inside it: where it cannot be moved to.",
+            "description": "Leave out this project and everything inside it. Ignored for a project the person does not\nsee, or that does not exist.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "movable",
+            "in": "query",
+            "description": "Only the places this project may be moved into by the person: not itself, not inside\nitself, not where it is now, and only where they may move projects. Ignored for a project\nthe person does not see, or that does not exist.",
             "required": false,
             "schema": {
               "type": "string"
@@ -3056,7 +3065,7 @@
             }
           },
           "409": {
-            "description": "Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.preview_changed).",
+            "description": "Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed).",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -3292,7 +3301,7 @@
             }
           },
           "409": {
-            "description": "Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.preview_changed).",
+            "description": "Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed).",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -3421,7 +3430,7 @@
             }
           },
           "409": {
-            "description": "Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.preview_changed).",
+            "description": "Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed).",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -3550,7 +3559,7 @@
             }
           },
           "409": {
-            "description": "Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.preview_changed).",
+            "description": "Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed).",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -3679,7 +3688,7 @@
             }
           },
           "409": {
-            "description": "Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.preview_changed).",
+            "description": "Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed).",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -4067,6 +4076,7 @@
           "assignment.conflict",
           "project.move_lifts_no_access",
           "project.move_into_itself",
+          "project.too_deep",
           "project.preview_changed",
           "name.taken",
           "resource.not_found",
@@ -4247,11 +4257,23 @@
       "MovePreviewBody": {
         "type": "object",
         "description": "What a move would do, before anything happens.",
-        "required": ["project", "preview", "blocked", "people", "lifts", "truncated"],
+        "required": [
+          "project",
+          "preview",
+          "blocked",
+          "blocked_out_of_sight",
+          "people",
+          "lifts",
+          "truncated"
+        ],
         "properties": {
           "blocked": {
             "type": "boolean",
             "description": "The move would be refused: somebody could take away a *No access* that applies to them."
+          },
+          "blocked_out_of_sight": {
+            "type": "boolean",
+            "description": "Something in a project the person cannot see also stops the move."
           },
           "lifts": {
             "type": "array",
@@ -4716,11 +4738,27 @@
       "ProjectDetailBody": {
         "type": "object",
         "description": "One project, with where it is and what the person may do there.",
-        "required": ["project", "trail", "truncated", "permissions", "may_change_short_name"],
+        "required": [
+          "project",
+          "trail",
+          "truncated",
+          "permissions",
+          "may_change_short_name",
+          "may_move",
+          "may_move_to_top"
+        ],
         "properties": {
           "may_change_short_name": {
             "type": "boolean",
             "description": "Whether the person may change the short name."
+          },
+          "may_move": {
+            "type": "boolean",
+            "description": "Whether the person may move the project."
+          },
+          "may_move_to_top": {
+            "type": "boolean",
+            "description": "Whether the person may move projects to the top level."
           },
           "permissions": {
             "type": "array",
