@@ -24,6 +24,10 @@ pub const SIGN_IN_FILE: &str = "sign-in.txt";
 pub const DUMP_FILE: &str = "dump.json";
 /// The file that marks a folder as made by this tool.
 pub const MARKER_FILE: &str = "sample.json";
+/// Tells Git to ignore everything in the folder, like Cargo does for `target/`: `sign-in.txt` holds
+/// passwords, and the folder can be anywhere (`--out`), not only under `target/`.
+const GIT_IGNORE_FILE: &str = ".gitignore";
+const GIT_IGNORE_TEXT: &str = "*\n";
 
 /// The output folder of a run, emptied of an older sample.
 #[derive(Clone, Debug)]
@@ -51,7 +55,7 @@ impl Output {
                 }
                 // Only what this tool makes: the marker says the rest is ours too.
                 remove_folder(&root.join(DATA_FOLDER)).map_err(|error| failed(&error))?;
-                for file in [SIGN_IN_FILE, DUMP_FILE, MARKER_FILE] {
+                for file in [SIGN_IN_FILE, DUMP_FILE, MARKER_FILE, GIT_IGNORE_FILE] {
                     remove_file(&root.join(file)).map_err(|error| failed(&error))?;
                 }
             }
@@ -62,11 +66,13 @@ impl Output {
         })
     }
 
-    /// Writes the marker: from now on the folder may be emptied by the next run.
+    /// Writes the marker, from now on the folder may be emptied by the next run, and the file that
+    /// keeps everything in the folder out of Git.
     ///
     /// # Errors
     /// The errors of the file system.
     pub fn mark(&self, seed: u64, start: i64) -> Result<(), SampleError> {
+        self.write(GIT_IGNORE_FILE, GIT_IGNORE_TEXT)?;
         let text = json!({ "seed": seed, "start": start }).to_string();
         self.write(MARKER_FILE, &text)
     }
@@ -153,6 +159,35 @@ mod tests {
             !root.join(MARKER_FILE).exists(),
             "marked again when written"
         );
+    }
+
+    #[test]
+    fn git_ignores_everything_in_the_folder_wherever_it_is() {
+        let temp = tempfile::tempdir().unwrap();
+        let git = |args: &[&str]| {
+            std::process::Command::new("git")
+                .args(args)
+                .current_dir(temp.path())
+                .output()
+                .unwrap()
+        };
+        assert!(git(&["init", "-q"]).status.success());
+        // A folder outside `target/`, as `--out` allows.
+        let output = Output::prepare(&temp.path().join("somewhere").join("sample")).unwrap();
+        output.mark(42, 1_800_000_000).unwrap();
+        output
+            .write(SIGN_IN_FILE, "ana@bugaboo.example\tsecret\n")
+            .unwrap();
+        for file in [SIGN_IN_FILE, DUMP_FILE, MARKER_FILE, "data/bugaboo.db"] {
+            let path = format!("somewhere/sample/{file}");
+            assert!(
+                git(&["check-ignore", "-q", &path]).status.success(),
+                "{path} is not ignored by Git"
+            );
+        }
+        // The next run empties it again, the file that ignores included.
+        Output::prepare(output.root()).unwrap();
+        assert!(!output.root().join(GIT_IGNORE_FILE).exists());
     }
 
     #[test]
