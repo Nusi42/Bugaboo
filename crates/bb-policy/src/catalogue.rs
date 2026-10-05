@@ -100,8 +100,10 @@ impl Kind {
 }
 
 /// The permissions an access key never keeps, whatever its choice, even *Everything I can do*
-/// and single permissions (owner decision of 2026-10-06): a key cannot invite people or change who
-/// has which role. These stay in the app, where the person is signed in. Defined once, here
+/// and single permissions (owner decisions of 2026-10-06): a key cannot invite people, change who
+/// has which role or change the settings of the organization (which could switch off the two-step
+/// requirement, open signing up or change how long sessions last). These stay in the app, where
+/// the person is signed in. Defined once, here
 /// beside the kinds a key's choice keeps; narrowing, the key form and the key's own checks all
 /// read this list.
 pub const NOT_FOR_KEYS: &[Permission] = &[
@@ -111,6 +113,7 @@ pub const NOT_FOR_KEYS: &[Permission] = &[
     Permission::ManageRoles,
     Permission::DecideRoles,
     Permission::DecideWhatRolesSee,
+    Permission::ChangeOrganizationSettings,
 ];
 
 /// Declares the permissions: one line per permission, with the key, topic, where it counts, kind

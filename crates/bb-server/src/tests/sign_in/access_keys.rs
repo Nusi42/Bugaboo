@@ -293,25 +293,25 @@ async fn auth_07_a_key_does_what_its_choice_allows_and_never_more_than_its_owner
             judge(check(&rig, &single, bob.id, None).await),
             Some(ErrorCode::Forbidden)
         );
-        // A key never holds more than its owner: Ada may change organization settings, Bob may
+        // A key never holds more than its owner: Ada may see the status of the server, Bob may
         // not, and a key of Bob with that permission (a single permission, or everything) cannot
         // either.
         let greedy = make(
             &rig,
             &bob,
             KeyChoice::Permissions,
-            &[Permission::ChangeOrganizationSettings],
+            &[Permission::SeeStatus],
             &[],
         )
         .await?
         .secret;
-        let policy = |credential: String| {
+        let status = |credential: String| {
             let rig = &rig;
             async move {
                 rig.api()
-                    .sign_up_policy(
+                    .see_server_status(
                         Rig::info(),
-                        bb_app::auth::SignUpPolicyQuery {
+                        bb_app::auth::SeeServerStatusQuery {
                             session_token: credential,
                         },
                     )
@@ -319,18 +319,18 @@ async fn auth_07_a_key_does_what_its_choice_allows_and_never_more_than_its_owner
             }
         };
         assert_eq!(
-            refused(policy(greedy.clone()).await),
+            refused(status(greedy.clone()).await),
             Some(ErrorCode::Forbidden)
         );
         assert_eq!(
-            refused(policy(all.clone()).await),
+            refused(status(all.clone()).await),
             Some(ErrorCode::Forbidden)
         );
         // The keys of the administrator hold what she holds (and no more than keys may).
         let ada = make(&rig, &org.admin, KeyChoice::Everything, &[], &[])
             .await?
             .secret;
-        assert!(policy(ada).await.is_ok());
+        assert!(status(ada).await.is_ok());
         Ok(())
     })
     .await
@@ -447,6 +447,28 @@ async fn auth_07_an_expired_a_deleted_and_an_unknown_key_get_the_same_answer() -
         // The key that did not run out keeps working (the session of the owner ran out meanwhile,
         // a key does not need it).
         assert_eq!(refused(probe(&rig, &works.secret).await), None);
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn auth_07_the_prefix_of_a_key_has_to_be_the_stored_one() -> Outcome {
+    each_database("auth_07_prefix_is_compared", async |db| {
+        let rig = Rig::start(db, 50).await?;
+        let org = Org::start(&rig).await?;
+        let bob = bob(&org).await?;
+        let key = make(&rig, &bob, KeyChoice::Everything, &[], &[]).await?;
+        assert_eq!(refused(probe(&rig, &key.secret).await), None);
+        // The right secret under another public prefix is not the key: one text only.
+        let (start, secret) = key.secret.split_at(3 + 8);
+        let other = if &start[3..4] == "0" { "1" } else { "0" };
+        let altered = format!("bb_{other}{}{secret}", &start[4..]);
+        assert_ne!(altered, key.secret);
+        assert_eq!(
+            refused(probe(&rig, &altered).await),
+            Some(ErrorCode::NotSignedIn)
+        );
         Ok(())
     })
     .await

@@ -37,6 +37,7 @@ use crate::roles::{
 pub(crate) use access_keys::narrowing_of;
 pub use access_keys::{
     access_key_rules, access_keys, delete_access_key, make_access_key, project_choices,
+    require_session, see_server_status,
 };
 pub use account::{accept_invitation, change_password, complete_setup, issue_setup_code, sign_up};
 pub use ctx::{AppError, AuthServices, Ctx, FailureLimit, NETWORK_KEY_PREFIX, RequestInfo};
@@ -134,6 +135,10 @@ use_cases! {
     add_passkey(AddPasskey) -> PasskeyView;
     /// Removes a passkey.
     remove_passkey(RemovePasskey) -> Done;
+    /// Judges who asks before the rest of a request is read.
+    require_session(RequireSessionQuery) -> Done;
+    /// Whether the person (or the access key) may see how the server is doing.
+    see_server_status(SeeServerStatusQuery) -> Authorized<Done>;
     /// Makes an access key.
     make_access_key(MakeAccessKey) -> Authorized<CreatedAccessKey>;
     /// Deletes an access key.

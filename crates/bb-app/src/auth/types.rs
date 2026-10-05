@@ -505,6 +505,19 @@ pub struct IssueSetupCode;
 /// What the app needs to know before anybody signs in.
 pub struct StatusQuery;
 
+/// Who asks, judged before anything else of the request is read: a session passes, an access key
+/// is turned away from the routes of the person's own sign-in data.
+pub struct RequireSessionQuery {
+    /// The secret of the session of the request.
+    pub session_token: String,
+}
+
+/// Whether the person behind a session or an access key may see how the server is doing.
+pub struct SeeServerStatusQuery {
+    /// The secret of the session, or the access key, of the request.
+    pub session_token: String,
+}
+
 /// Who is behind this session.
 pub struct AuthenticateQuery {
     /// The secret of the session of the request.

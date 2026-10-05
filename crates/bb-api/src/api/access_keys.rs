@@ -11,7 +11,7 @@ use axum::response::Response;
 use bb_app::access::ProjectLabel;
 use bb_app::auth::{
     AccessKeyRulesQuery, AccessKeyView, AccessKeysQuery, AppError, DeleteAccessKey, MakeAccessKey,
-    ProjectChoice, ProjectChoicesQuery,
+    ProjectChoice, ProjectChoicesQuery, RequireSessionQuery,
 };
 use bb_core::ErrorCode;
 use bb_core::access_key::KeyChoice;
@@ -312,8 +312,18 @@ async fn make_access_key(
     State(auth): State<AuthHandle>,
     Info(info): Info,
     Session(session_token): Session,
-    ApiJson(body): ApiJson<MakeKeyBody>,
+    body: Result<ApiJson<MakeKeyBody>, ApiError>,
 ) -> Result<Response, ApiError> {
+    // Who asks comes before what is asked: a key is turned away before its body is looked at.
+    auth.api()?
+        .require_session(
+            info.clone(),
+            RequireSessionQuery {
+                session_token: session_token.clone(),
+            },
+        )
+        .await?;
+    let ApiJson(body) = body?;
     let invalid = || ApiError::new(ErrorCode::InvalidRequest);
     let projects = body
         .projects
@@ -356,6 +366,15 @@ async fn delete_access_key(
     Session(session_token): Session,
     ApiPath(access_key_id): ApiPath<String>,
 ) -> Result<Response, ApiError> {
+    // Who asks comes before what is asked: a key is turned away before the address is looked at.
+    auth.api()?
+        .require_session(
+            info.clone(),
+            RequireSessionQuery {
+                session_token: session_token.clone(),
+            },
+        )
+        .await?;
     let id: AccessKeyId = access_key_id
         .parse()
         .map_err(|_| ApiError::new(ErrorCode::NotFound))?;

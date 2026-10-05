@@ -16,7 +16,9 @@ test.use({
 });
 test.describe.configure({ mode: "serial" });
 
-/** A route that lets people in who may change organization settings: the one keys are tried on. */
+/** A route that lets people in who may see how the server is doing: the one keys are tried on. */
+const STATUS = "/api/v1/admin/status";
+/** A route that needs a permission no key ever keeps (changing the settings of the organization). */
 const SETTINGS = "/api/v1/auth/sign-up-policy";
 
 const KEY_SHAPE = /^bb_[0-9a-z]{8}_[0-9a-z]{52}$/u;
@@ -133,10 +135,12 @@ test("auth_07 a person makes a key, copies it, uses it from a script, deletes it
   const key = await makeAndCopy(page);
   // A script that has the key works as the person.
   const script = await useKey(server.url, key);
-  expect(await script.get(SETTINGS)).toEqual({ status: 200, code: undefined });
+  expect(await script.get(STATUS)).toEqual({ status: 200, code: undefined });
+  // Not even the key that may do everything changes the settings of the organization.
+  expect(await script.get(SETTINGS)).toEqual({ status: 403, code: "access.forbidden" });
   await expectNotShownAgain(page, key);
   await deleteTheKey(page);
-  expect(await script.get(SETTINGS)).toEqual({ status: 401, code: "auth.not_signed_in" });
+  expect(await script.get(STATUS)).toEqual({ status: 401, code: "auth.not_signed_in" });
   await script.dispose();
   await signOut(page);
 });
@@ -148,20 +152,22 @@ test("auth_07 a key that may only see is refused what needs more, and single per
   await signIn(page, ada);
   await openAccessKeys(page);
 
-  // The first choice is *See only*: changing settings is more than looking.
+  // The first choice is *See only*: it looks at the status and changes nothing.
   const seeOnly = await makeKey(page, await startKey(page, "Only looking"));
   const lookingScript = await useKey(server.url, seeOnly);
+  expect(await lookingScript.get(STATUS)).toEqual({ status: 200, code: undefined });
   expect(await lookingScript.get(SETTINGS)).toEqual({ status: 403, code: "access.forbidden" });
 
-  // Under *More options*, one permission: changing the settings. Nothing else.
-  const form = await startKey(page, "Only settings");
+  // Under *More options*, one permission: seeing the status. Nothing else.
+  const form = await startKey(page, "Only status");
   await form.getByText(t("access-keys.more")).click();
   await pressWords(form, t("access-keys.single"));
-  await tick(form, t("permission.change-organization-settings"));
+  await tick(form, t("permission.see-status"));
   await expectGoodInEveryTheme(page);
-  const settings = await makeKey(page, form);
-  const settingsScript = await useKey(server.url, settings);
-  expect(await settingsScript.get(SETTINGS)).toEqual({ status: 200, code: undefined });
+  const status = await makeKey(page, form);
+  const statusScript = await useKey(server.url, status);
+  expect(await statusScript.get(STATUS)).toEqual({ status: 200, code: undefined });
+  expect(await statusScript.get(SETTINGS)).toEqual({ status: 403, code: "access.forbidden" });
 
   // The list says what each key may do, and how often a key was used.
   const list = page.getByRole("list", { name: t("access-keys.list") });
@@ -175,7 +181,7 @@ test("auth_07 a key that may only see is refused what needs more, and single per
   const own = await lookingScript.get("/api/v1/auth/sessions");
   expect(own).toEqual({ status: 403, code: "auth.access_key_not_allowed" });
   await lookingScript.dispose();
-  await settingsScript.dispose();
+  await statusScript.dispose();
   await signOut(page);
 });
 
@@ -192,6 +198,9 @@ test("auth_07 the form asks for a name, a permission when single ones are chosen
   await expect(form.getByText(t("access-keys.never"))).toBeVisible();
   await expect(form.getByText(t("permission.manage-invitations"), { exact: true })).toHaveCount(0);
   await expect(form.getByText(t("permission.manage-roles"), { exact: true })).toHaveCount(0);
+  await expect(
+    form.getByText(t("permission.change-organization-settings"), { exact: true }),
+  ).toHaveCount(0);
   await expect(form.getByText(t("permission.see-status"), { exact: true })).toBeVisible();
   await form.getByLabel(t("field.confirm-password"), { exact: true }).fill(ada.password);
   await form.getByRole("button", { name: t("access-keys.submit") }).click();

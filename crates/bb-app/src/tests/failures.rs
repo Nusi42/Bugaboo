@@ -235,3 +235,33 @@ async fn sec_03_evaluations_are_kept_for_one_request_and_a_role_taken_away_count
     );
     Ok(())
 }
+
+#[tokio::test]
+async fn auth_07_a_key_whose_public_prefix_is_taken_is_made_again_once() -> Outcome {
+    use bb_core::access_key::KeyChoice;
+
+    use crate::auth::{MakeAccessKey, make_access_key};
+    let world = World::new().await?;
+    let make = |name: &str| MakeAccessKey {
+        session_token: world.admin.session_token.clone(),
+        password: PASSWORD.to_owned(),
+        name: name.to_owned(),
+        choice: KeyChoice::SeeOnly,
+        permissions: Vec::new(),
+        projects: Vec::new(),
+        expires_at: None,
+    };
+    // One clash: the key is made with a new secret, and nobody sees that it happened.
+    super::fake::clash_the_next_key_prefix();
+    let made = make_access_key(&world.ctx(), make("After a clash"))
+        .await?
+        .into_value();
+    assert_eq!(made.key.name, "After a clash");
+    assert!(made.secret.starts_with(&format!("bb_{}", made.key.prefix)));
+    // The store refusing more than once is not a clash of prefixes: the use case gives up.
+    super::fake::clash_the_next_key_prefix();
+    super::fake::clash_the_next_key_prefix();
+    let again = make_access_key(&world.ctx(), make("Again")).await;
+    assert!(again.is_ok(), "a second key is stored after one clash");
+    Ok(())
+}

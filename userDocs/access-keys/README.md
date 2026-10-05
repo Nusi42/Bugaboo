@@ -21,7 +21,7 @@ Bugaboo shows the key **once**. Copy it now and keep it somewhere safe, like a p
 
 ## What a key can and cannot do
 
-- A key never invites people and never changes who has which role, whatever you pick. Those two things you do in Bugaboo itself, where you are signed in. Keys also cannot decide who sees what or manage groups and people.
+- A key never invites people and never changes who has which role, whatever you pick. Those two things you do in Bugaboo itself, where you are signed in. Keys also cannot decide who sees what, manage groups and people, or change the settings of the organization.
 - A key follows you. When an administrator takes a role away from you, the keys you made lose it as well, at once. A key never has more than you have.
 - A key waits for your second step. When your organization starts to ask for two-step sign-in and you have not set it up yet, your keys do not work until you have; then they work again, nothing is lost.
 - A key cannot change how you sign in: not your password, not your second step, not your passkeys, not the places where you are signed in, and not your keys. For that you sign in with your password.

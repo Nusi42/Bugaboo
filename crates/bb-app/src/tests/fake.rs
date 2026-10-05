@@ -35,6 +35,17 @@ use crate::auth::{
 };
 use crate::ports::{BoxFuture, ChangeStore};
 
+thread_local! {
+    /// Whether the next key to be stored finds its public prefix taken (once). Tests run on a
+    /// thread each, so one test cannot set it for another.
+    static CLASH_ONCE: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
+}
+
+/// The next access key that is stored is refused once, as if its public prefix were taken.
+pub(crate) fn clash_the_next_key_prefix() {
+    CLASH_ONCE.set(true);
+}
+
 /// What the fake store can fail with.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) enum FakeError {
@@ -771,6 +782,10 @@ impl AuthStore for FakeStore {
     }
 
     async fn insert_access_key(tx: &mut Tx, record: &AccessKeyRecord) -> Result<(), FakeError> {
+        // A test can make the store say that the public prefix of the next key is taken.
+        if CLASH_ONCE.replace(false) {
+            return Err(FakeError::Duplicate);
+        }
         let used = tx.state.access_keys.iter().any(|other| {
             other.key.prefix == record.key.prefix || other.key.secret_hash == record.key.secret_hash
         });

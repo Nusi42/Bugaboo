@@ -4,15 +4,17 @@
 
 use bb_app::access::Permission;
 use bb_app::auth::{
-    AccessKeysQuery, AppError, AuthStore as _, AuthenticateQuery, ConfirmCodeApp, InvitationsQuery,
-    SecondStepGapQuery, SessionsQuery, StartCodeApp, TwoStepQuery,
+    AccessKeyRulesQuery, AccessKeysQuery, AppError, AuthStore as _, AuthenticateQuery,
+    ConfirmCodeApp, DeleteAccessKey, InvitationsQuery, MakeAccessKey, SecondStepGapQuery,
+    SessionsQuery, StartCodeApp, TwoStepQuery,
 };
 use bb_app::context::Clock as _;
 use bb_app::roles::{AssignRole, ChangeRole, Given, MakeRole, Subject};
 use bb_auth::TotpSecret;
 use bb_core::ErrorCode;
 use bb_core::access::AppliesTo;
-use bb_core::id::{RoleId, UserId};
+use bb_core::access_key::KeyChoice;
+use bb_core::id::{AccessKeyId, RoleId, UserId};
 use bb_testing::each_database;
 use webauthn_authenticator_rs::softpasskey::SoftPasskey;
 
@@ -135,6 +137,44 @@ async fn only_setting_up_is_open(rig: &Rig, bob: &Member) -> Run<()> {
         )
         .await;
     assert_eq!(refused(keys), REQUIRED);
+    // Nor can it make or delete a key, or ask for the rules of a new one.
+    let made = rig
+        .api()
+        .make_access_key(
+            Rig::info(),
+            MakeAccessKey {
+                session_token: session.clone(),
+                password: PASSWORD.to_owned(),
+                name: "A key".to_owned(),
+                choice: KeyChoice::SeeOnly,
+                permissions: Vec::new(),
+                projects: Vec::new(),
+                expires_at: None,
+            },
+        )
+        .await;
+    assert_eq!(refused(made), REQUIRED);
+    let deleted = rig
+        .api()
+        .delete_access_key(
+            Rig::info(),
+            DeleteAccessKey {
+                session_token: session.clone(),
+                id: "0197a5e2-7c1f-4b0a-9a3e-2f6d1c8b4a10".parse::<AccessKeyId>()?,
+            },
+        )
+        .await;
+    assert_eq!(refused(deleted), REQUIRED);
+    let rules = rig
+        .api()
+        .access_key_rules(
+            Rig::info(),
+            AccessKeyRulesQuery {
+                session_token: session.clone(),
+            },
+        )
+        .await;
+    assert_eq!(refused(rules), REQUIRED);
     // Who is behind it is still answered, with nothing they may do and the reason.
     let me = rig
         .api()

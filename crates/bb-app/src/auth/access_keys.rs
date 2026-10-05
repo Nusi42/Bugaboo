@@ -21,8 +21,9 @@ use std::collections::BTreeSet;
 use bb_auth::{AccessKeySecret, same_digest};
 use bb_core::ErrorCode;
 use bb_core::access_key::{AccessKey, KeyChoice, MOST_KEYS, MOST_PROJECTS, NAME_MAX};
+use bb_core::event::DomainEvent;
 use bb_core::id::{AccessKeyId, ProjectId, UserId};
-use bb_core::sign_in::SecurityAction;
+use bb_core::sign_in::{SecurityAction, SessionStage};
 use bb_policy::{Authorized, Choice, Narrowing, Permission, Place};
 use jiff::Timestamp;
 use serde_json::json;
@@ -32,6 +33,7 @@ use super::store::{AccessKeyRecord, AuthStore};
 use super::types::{
     AccessKeyPage, AccessKeyRules, AccessKeyRulesQuery, AccessKeyView, AccessKeysQuery,
     CreatedAccessKey, DeleteAccessKey, Done, MakeAccessKey, ProjectChoicePage, ProjectChoicesQuery,
+    RequireSessionQuery, SeeServerStatusQuery,
 };
 use crate::access::{Actor, KeyInUse};
 
@@ -82,8 +84,13 @@ impl<S: AuthStore> Ctx<'_, S> {
         else {
             return Ok(None);
         };
-        // The lookup is by hash; this comparison is for the record that came back.
-        if !same_digest(&record.key.secret_hash, &hash) || record.key.expires_at <= self.now() {
+        // The lookup is by hash; this comparison is for the record that came back. The prefix of
+        // the key as it was presented has to be the one that is stored, so the text of a key is
+        // only ever one text.
+        if !same_digest(&record.key.secret_hash, &hash)
+            || record.key.prefix != secret.prefix()
+            || record.key.expires_at <= self.now()
+        {
             return Ok(None);
         }
         let Some(owner) = self
@@ -127,10 +134,14 @@ impl<S: AuthStore> Ctx<'_, S> {
         }
         self.via_key
             .store(true, std::sync::atomic::Ordering::Relaxed);
-        self.store()
-            .touch_access_key(record.key.id, to_the_minute(self.now()))
-            .await
-            .map_err(|error| internal::<S>(&error))?;
+        // A busy key does not write at all within the minute it was last used in.
+        let minute = to_the_minute(self.now());
+        if record.key.last_used_at != Some(minute) {
+            self.store()
+                .touch_access_key(record.key.id, minute)
+                .await
+                .map_err(|error| internal::<S>(&error))?;
+        }
         Ok(Actor {
             person: owner,
             key: Some(KeyInUse {
@@ -239,6 +250,30 @@ fn clean_choice(
     Ok(wanted.into_iter().collect())
 }
 
+/// A try at making the key: a new secret, the key made from `draft` with it, and the event that
+/// names what the key may do and when it runs out; never the secret or its hash. The public
+/// prefix is 8 symbols and unique, so two keys can (very rarely) draw the same one: the store
+/// refuses the second, and the key is made once more with a new secret.
+fn a_try_at_the_key<S: AuthStore>(
+    ctx: &Ctx<'_, S>,
+    draft: &AccessKeyRecord,
+) -> Result<(AccessKeySecret, AccessKeyRecord, DomainEvent), AppError> {
+    let secret = AccessKeySecret::generate()?;
+    let mut stored = draft.clone();
+    stored.key.prefix = secret.prefix().to_owned();
+    stored.key.secret_hash = secret.hash();
+    let event = ctx.event(
+        by(stored.key.owner),
+        entity("access_key", stored.key.id)?,
+        vec![
+            set_to("name", json!(stored.key.name)),
+            set_to("choice", json!(stored.key.choice.code())),
+            set_to("expires_at", json!(stored.key.expires_at.to_string())),
+        ],
+    )?;
+    Ok((secret, stored, event))
+}
+
 /// Makes an access key for the person. The key is returned once; only a hash of its secret is
 /// kept. The password is asked again, so a stolen session cannot make a key that outlives it.
 ///
@@ -298,14 +333,13 @@ pub async fn make_access_key<S: AuthStore>(
     if usize::try_from(held).map_or(true, |held| held >= MOST_KEYS) {
         return Err(ErrorCode::InvalidRequest.into());
     }
-    let secret = AccessKeySecret::generate()?;
-    let stored = AccessKeyRecord {
+    let draft = AccessKeyRecord {
         key: AccessKey {
             id: AccessKeyId::generate(&mut ctx.ids()),
             owner,
             name,
-            prefix: secret.prefix().to_owned(),
-            secret_hash: secret.hash(),
+            prefix: String::new(),
+            secret_hash: bb_core::security_log::Digest::new([0; 32]),
             choice: input.choice,
             created_at: now,
             expires_at,
@@ -314,23 +348,22 @@ pub async fn make_access_key<S: AuthStore>(
         permissions,
         projects,
     };
-    // The event names what the key may do and when it runs out; never the secret or its hash.
-    let event = ctx.event(
-        by(owner),
-        entity("access_key", stored.key.id)?,
-        vec![
-            set_to("name", json!(stored.key.name)),
-            set_to("choice", json!(stored.key.choice.code())),
-            set_to("expires_at", json!(stored.key.expires_at.to_string())),
-        ],
-    )?;
-    let to_store = stored.clone();
-    ctx.store()
-        .record_change(&event, move |transaction| {
-            Box::pin(async move { S::insert_access_key(transaction, &to_store).await })
-        })
-        .await
-        .map_err(|error| change_failed::<S>(&error, None))?;
+    let mut clashed = false;
+    let (secret, stored) = loop {
+        let (secret, stored, event) = a_try_at_the_key(ctx, &draft)?;
+        let to_store = stored.clone();
+        let result = ctx
+            .store()
+            .record_change(&event, move |transaction| {
+                Box::pin(async move { S::insert_access_key(transaction, &to_store).await })
+            })
+            .await;
+        match result {
+            Ok(()) => break (secret, stored),
+            Err(error) if S::is_duplicate(&error) && !clashed => clashed = true,
+            Err(error) => return Err(change_failed::<S>(&error, None)),
+        }
+    };
     ctx.note(
         SecurityAction::AccessKeyMade,
         Some(owner),
@@ -576,4 +609,36 @@ pub async fn project_choices<S: AuthStore>(
         items,
         next_cursor: next.as_ref().map(ChoicePosition::write),
     }))
+}
+
+/// Whether the person behind a session, or behind an access key, may see how the server is doing:
+/// a key counts with the narrowing it has, so a key that may see the status is let in.
+///
+/// # Errors
+/// `auth.not_signed_in`, `auth.access_key_not_allowed` never (a key is the actor here),
+/// `access.forbidden` without the permission.
+pub async fn see_server_status<S: AuthStore>(
+    ctx: &Ctx<'_, S>,
+    input: SeeServerStatusQuery,
+) -> Result<Authorized<Done>, AppError> {
+    let actor = ctx.actor(&input.session_token).await?;
+    let access = ctx
+        .require(&actor, Permission::SeeStatus, Place::Organization)
+        .await?;
+    Ok(access.authorize(Done))
+}
+
+/// Who asks, judged before anything else is read: an access key is turned away (and written into
+/// the security log) from the routes of the person's own sign-in data before a malformed body or
+/// an address that does not exist gets an answer of its own. A session passes.
+///
+/// # Errors
+/// `auth.access_key_not_allowed` for a key, `auth.not_signed_in` for no session.
+pub async fn require_session<S: AuthStore>(
+    ctx: &Ctx<'_, S>,
+    input: RequireSessionQuery,
+) -> Result<Done, AppError> {
+    ctx.session(&input.session_token, SessionStage::Active)
+        .await
+        .map(|_| Done)
 }

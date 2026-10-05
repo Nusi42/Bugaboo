@@ -4,19 +4,24 @@
 
 use axum::http::{StatusCode, header};
 use bb_api::{LimitsConfig, openapi, router};
-use bb_app::auth::DeleteAccessKey;
+use bb_app::access::Permission;
+use bb_app::auth::{DeleteAccessKey, MakeAccessKey};
 use bb_auth::AccessKeySecret;
 use bb_core::access_key::KeyChoice;
+use bb_core::sign_in::SecurityAction;
 use bb_testing::each_database;
 use serde_json::{Value, json};
 
 use super::http::{Browser, called, options};
 use super::policy_rig::Org;
 use super::rig::{Outcome, PASSWORD, Rig};
+use super::status::{app_with_probe, app_with_probe_and_limits};
 
-/// What the keys of these tests may do: invite people (a change) and see who is invited.
-/// A route that lets people in who may change organization settings (a permission keys may hold).
-const KEY_ROUTE: &str = "/api/v1/auth/sign-up-policy";
+/// A route that a key may use (it needs *See status*, a permission keys may hold) ...
+const KEY_ROUTE: &str = "/api/v1/admin/status";
+/// ... and one that no key may use (a change of organization settings): a request that reaches it
+/// has passed the origin and token checks, and is turned away for what it asks.
+const CHANGE_ROUTE: &str = "/api/v1/auth/sign-up-policy";
 
 /// The same answer, whatever made it: the status, the code and the message, not the request ID.
 fn alike(reply: &super::http::Reply) -> (u16, String, String) {
@@ -36,32 +41,35 @@ async fn auth_07_a_script_with_a_key_needs_no_origin_no_token_and_no_cookie() ->
         let rig = Rig::start(db, 50).await?;
         let org = Org::start(&rig).await?;
         let key = super::access_keys::key_of(&rig, &org.admin, KeyChoice::Everything).await?;
-        let app = router(options(&rig, LimitsConfig::default(), true));
+        let app = app_with_probe(&rig, None);
         let mut script = Browser::new(&app, &called());
-        // A change from a program: only the header. A page needs an origin and a token.
+        // A change from a program: only the header. A page needs an origin and a token. The key
+        // gets past both and is turned away for what it asks: no key changes the settings of the
+        // organization.
         let made = script
             .script(
                 "PUT",
-                KEY_ROUTE,
+                CHANGE_ROUTE,
                 Some(json!({"enabled": false, "domains": []})),
                 &key,
             )
             .await?;
-        assert_eq!(made.status, StatusCode::OK, "{:?}", made.body);
+        assert_eq!(made.status, StatusCode::FORBIDDEN, "{:?}", made.body);
+        assert_eq!(made.code(), "access.forbidden");
         assert!(made.cookies().is_empty(), "a key never sets a cookie");
         let listed = script.script("GET", KEY_ROUTE, None, &key).await?;
         assert_eq!(listed.status, StatusCode::OK);
-        assert_eq!(listed.body["enabled"], false);
+        assert!(listed.body.get("version").is_some());
         // Without a key the same request from a program is a change that comes from nowhere
         // (no key, so no way around the origin check).
         let nothing = script
             .finish(
                 axum::http::Request::builder()
                     .method("PUT")
-                    .uri(KEY_ROUTE)
+                    .uri(CHANGE_ROUTE)
                     .header(header::HOST, "bugaboo.test"),
                 "PUT",
-                KEY_ROUTE,
+                CHANGE_ROUTE,
                 Some(json!({"enabled": false, "domains": []})),
             )
             .await?;
@@ -77,7 +85,11 @@ async fn auth_07_a_script_with_a_key_needs_no_origin_no_token_and_no_cookie() ->
         .await?;
         page.set_header("authorization", &format!("Bearer {key}"));
         let no_token = page
-            .send_without_token("PUT", KEY_ROUTE, json!({"enabled": false, "domains": []}))
+            .send_without_token(
+                "PUT",
+                CHANGE_ROUTE,
+                json!({"enabled": false, "domains": []}),
+            )
             .await?;
         assert_eq!(no_token.code(), "request.wrong_token");
         Ok(())
@@ -91,7 +103,7 @@ async fn sec_06_a_page_of_another_website_cannot_send_a_key() -> Outcome {
         let rig = Rig::start(db, 50).await?;
         let org = Org::start(&rig).await?;
         let key = super::access_keys::key_of(&rig, &org.admin, KeyChoice::Everything).await?;
-        let app = router(options(&rig, LimitsConfig::default(), true));
+        let app = app_with_probe(&rig, None);
         let mut page = Browser::new(&app, &called());
         // A script on another website can only send the header after a preflight, and a preflight
         // is answered without a single CORS header, so the browser never sends the request.
@@ -99,13 +111,13 @@ async fn sec_06_a_page_of_another_website_cannot_send_a_key() -> Outcome {
             .finish(
                 axum::http::Request::builder()
                     .method("OPTIONS")
-                    .uri(KEY_ROUTE)
+                    .uri(CHANGE_ROUTE)
                     .header(header::HOST, "bugaboo.test")
                     .header(header::ORIGIN, "https://evil.test")
                     .header("access-control-request-method", "POST")
                     .header("access-control-request-headers", "authorization"),
                 "OPTIONS",
-                KEY_ROUTE,
+                CHANGE_ROUTE,
                 None,
             )
             .await?;
@@ -118,12 +130,12 @@ async fn sec_06_a_page_of_another_website_cannot_send_a_key() -> Outcome {
             .finish(
                 axum::http::Request::builder()
                     .method("PUT")
-                    .uri(KEY_ROUTE)
+                    .uri(CHANGE_ROUTE)
                     .header(header::HOST, "bugaboo.test")
                     .header(header::AUTHORIZATION, "Bearer not-a-key")
                     .header(header::ORIGIN, "https://evil.test"),
                 "PUT",
-                KEY_ROUTE,
+                CHANGE_ROUTE,
                 Some(json!({"enabled": false, "domains": []})),
             )
             .await?;
@@ -133,11 +145,11 @@ async fn sec_06_a_page_of_another_website_cannot_send_a_key() -> Outcome {
             .finish(
                 axum::http::Request::builder()
                     .method("PUT")
-                    .uri(KEY_ROUTE)
+                    .uri(CHANGE_ROUTE)
                     .header(header::HOST, "bugaboo.test")
                     .header(header::AUTHORIZATION, format!("Basic {key}")),
                 "PUT",
-                KEY_ROUTE,
+                CHANGE_ROUTE,
                 Some(json!({"enabled": false, "domains": []})),
             )
             .await?;
@@ -168,7 +180,7 @@ async fn sec_14_a_key_has_its_own_limit() -> Outcome {
             access_key_requests_per_minute: 3,
             ..LimitsConfig::default()
         };
-        let app = router(options(&rig, limits, true));
+        let app = app_with_probe_and_limits(&rig, None, limits);
         let mut script = Browser::new(&app, &called());
         for _ in 0..3 {
             let reply = script.script("GET", KEY_ROUTE, None, &first).await?;
@@ -230,7 +242,7 @@ async fn auth_07_an_expired_a_deleted_and_an_unknown_key_get_the_same_answer_ove
                 },
             )
             .await?;
-        let app = router(options(&rig, LimitsConfig::default(), true));
+        let app = app_with_probe(&rig, None);
         let mut script = Browser::new(&app, &called());
         let works = script
             .script("GET", KEY_ROUTE, None, &runs_out.secret)
@@ -267,7 +279,7 @@ async fn auth_07_no_route_of_the_owners_sign_in_data_opens_for_a_key() -> Outcom
         let rig = Rig::start(db, 50).await?;
         let org = Org::start(&rig).await?;
         let key = super::access_keys::key_of(&rig, &org.admin, KeyChoice::Everything).await?;
-        let app = router(options(&rig, LimitsConfig::default(), true));
+        let app = app_with_probe(&rig, None);
         let mut script = Browser::new(&app, &called());
         let document = serde_json::to_value(openapi::document())?;
         let id = "0197a5e2-7c1f-4b0a-9a3e-2f6d1c8b4a10";
@@ -357,7 +369,7 @@ async fn auth_07_a_person_makes_lists_and_deletes_keys_over_http() -> Outcome {
     each_database("auth_07_keys_over_http", async |db| {
         let rig = Rig::start(db, 50).await?;
         Org::start(&rig).await?;
-        let app = router(options(&rig, LimitsConfig::default(), true));
+        let app = app_with_probe(&rig, None);
         let mut ada = ada_in_a_browser(&app).await?;
         let make = |name: &str| json!({"password": PASSWORD, "name": name, "choice": "see-only"});
         // The answer that makes a key holds its secret once, and it is never stored.
@@ -430,7 +442,10 @@ async fn auth_07_a_person_makes_lists_and_deletes_keys_over_http() -> Outcome {
         let id = first.body["key"]["id"].as_str().ok_or("no id")?.to_owned();
         let mut script = Browser::new(&app, &called());
         assert_eq!(
-            script.script("GET", KEY_ROUTE, None, &secret).await?.status,
+            script
+                .script("GET", CHANGE_ROUTE, None, &secret)
+                .await?
+                .status,
             StatusCode::FORBIDDEN,
             "a key that may only see is not let into a route that needs more"
         );
@@ -450,6 +465,95 @@ async fn auth_07_a_person_makes_lists_and_deletes_keys_over_http() -> Outcome {
             .send("DELETE", "/api/v1/access-keys/not-an-id", None)
             .await?;
         assert_eq!(nonsense.code(), "resource.not_found");
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn auth_07_a_key_is_judged_before_the_body_or_the_address_of_the_request_is_read() -> Outcome
+{
+    each_database("auth_07_actor_before_body", async |db| {
+        let rig = Rig::start(db, 50).await?;
+        let org = Org::start(&rig).await?;
+        let key = super::access_keys::key_of(&rig, &org.admin, KeyChoice::Everything).await?;
+        let app = app_with_probe(&rig, None);
+        let mut script = Browser::new(&app, &called());
+        let before = rig.database.security_log_entries(0, 1000).await?.len();
+        // A body that is not valid, and an address that is not a key: a key gets the answer of a
+        // key where no key may go, not a 400 or a 404 that depends on what it sent.
+        let bad_body = script
+            .script("POST", "/api/v1/access-keys", Some(json!({})), &key)
+            .await?;
+        assert_eq!(bad_body.status, StatusCode::FORBIDDEN);
+        assert_eq!(bad_body.code(), "auth.access_key_not_allowed");
+        let bad_address = script
+            .script("DELETE", "/api/v1/access-keys/not-an-id", None, &key)
+            .await?;
+        assert_eq!(bad_address.status, StatusCode::FORBIDDEN);
+        assert_eq!(bad_address.code(), "auth.access_key_not_allowed");
+        // Both are written into the security log.
+        let entries = rig.database.security_log_entries(0, 1000).await?;
+        let refused = entries
+            .iter()
+            .skip(before)
+            .filter(|entry| entry.action.as_str() == SecurityAction::AccessKeyRefused.code())
+            .count();
+        assert_eq!(refused, 2);
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn auth_07_a_key_that_may_see_the_status_reads_it_and_no_other_key_does() -> Outcome {
+    each_database("auth_07_status_by_key", async |db| {
+        let rig = Rig::start(db, 50).await?;
+        let org = Org::start(&rig).await?;
+        let app = app_with_probe(&rig, None);
+        let mut script = Browser::new(&app, &called());
+        let only = |permission: Permission| {
+            let rig = &rig;
+            let org = &org;
+            async move {
+                rig.api()
+                    .make_access_key(
+                        Rig::info(),
+                        MakeAccessKey {
+                            session_token: org.admin.session.clone(),
+                            password: PASSWORD.to_owned(),
+                            name: "Status".to_owned(),
+                            choice: KeyChoice::Permissions,
+                            permissions: vec![permission],
+                            projects: Vec::new(),
+                            expires_at: None,
+                        },
+                    )
+                    .await
+                    .map(|created| created.into_value().secret)
+            }
+        };
+        let status = only(Permission::SeeStatus).await?;
+        let reply = script
+            .script("GET", "/api/v1/admin/status", None, &status)
+            .await?;
+        assert_eq!(reply.status, StatusCode::OK, "{:?}", reply.body);
+        assert!(reply.body.get("version").is_some());
+        let see_only = super::access_keys::key_of(&rig, &org.admin, KeyChoice::SeeOnly).await?;
+        let reply = script
+            .script("GET", "/api/v1/admin/status", None, &see_only)
+            .await?;
+        assert_eq!(reply.status, StatusCode::OK);
+        // A key without *See status* is turned away, and no key at all is not signed in.
+        let other = only(Permission::CheckAccess).await?;
+        let reply = script
+            .script("GET", "/api/v1/admin/status", None, &other)
+            .await?;
+        assert_eq!(reply.status, StatusCode::FORBIDDEN);
+        let nobody = script
+            .script("GET", "/api/v1/admin/status", None, "bb_nonsense")
+            .await?;
+        assert_eq!(nobody.status, StatusCode::UNAUTHORIZED);
         Ok(())
     })
     .await

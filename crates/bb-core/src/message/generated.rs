@@ -2838,7 +2838,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "access-keys.never",
-        "No key can invite people, change who has which role, or change how you sign in. You do that here, where you are signed in.",
+        "No key can invite people, change who has which role, change the settings of the organization, or change how you sign in. You do that here, where you are signed in.",
     ),
     (
         "access-keys.pick-one",

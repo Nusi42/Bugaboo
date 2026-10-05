@@ -4,8 +4,8 @@
 
 use bb_app::access::{NOT_FOR_KEYS, Permission};
 use bb_app::auth::{
-    AccessKeyRulesQuery, AppError, ChangePassword, CreateInvitation, MakeAccessKey,
-    SignOutEverywhere,
+    AccessKeyRulesQuery, AppError, ChangePassword, ChangeSignUpPolicy, CreateInvitation,
+    MakeAccessKey, SignOutEverywhere, SignUpPolicy, SignUpPolicyQuery,
 };
 use bb_app::roles::ChangeRole;
 use bb_core::ErrorCode;
@@ -25,6 +25,31 @@ async fn invite(rig: &Rig, credential: &str) -> Result<(), AppError> {
             CreateInvitation {
                 session_token: credential.to_owned(),
                 email: "new.person@example.test".to_owned(),
+            },
+        )
+        .await
+        .map(|_| ())
+}
+
+/// Reads and changes who may sign up on their own: an organization setting.
+async fn settings_of_the_organization(rig: &Rig, credential: &str) -> Result<(), AppError> {
+    rig.api()
+        .sign_up_policy(
+            Rig::info(),
+            SignUpPolicyQuery {
+                session_token: credential.to_owned(),
+            },
+        )
+        .await?;
+    rig.api()
+        .change_sign_up_policy(
+            Rig::info(),
+            ChangeSignUpPolicy {
+                session_token: credential.to_owned(),
+                policy: SignUpPolicy {
+                    enabled: true,
+                    domains: Vec::new(),
+                },
             },
         )
         .await
@@ -75,6 +100,19 @@ async fn auth_07_a_key_never_invites_people_or_changes_roles_whatever_its_choice
             );
             assert_eq!(
                 refused(invitations(&rig, key).await),
+                Some(ErrorCode::Forbidden)
+            );
+        }
+        // Nor the settings of the organization: a key cannot turn off the two-step requirement,
+        // open signing up or change how long sessions last.
+        assert!(
+            settings_of_the_organization(&rig, &org.admin.session)
+                .await
+                .is_ok()
+        );
+        for key in [&everything, &see_and_change] {
+            assert_eq!(
+                refused(settings_of_the_organization(&rig, key).await),
                 Some(ErrorCode::Forbidden)
             );
         }
