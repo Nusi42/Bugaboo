@@ -61,7 +61,7 @@ pub enum Reason {
         role: RoleId,
     },
     /// *Decide who has which role* is kept from a row that a *No access* removed, so nobody is
-    /// locked out (ADR-0025, decision 6).
+    /// locked out (ADR-0025, decision 6). Only from a row strictly above the *No access*.
     KeptFromRemovedRow {
         /// The row that was removed.
         row: ReasonRow,
@@ -164,7 +164,14 @@ impl Evaluation {
                 }
                 RowStatus::RemovedBy(decides) => {
                     if let Some(no_access) = by_id(decides) {
-                        let kept = permission == Permission::DecideRoles && self.kept_decide_roles;
+                        // Kept only from a row strictly above every *No access* that removes it.
+                        let kept = permission == Permission::DecideRoles
+                            && !self.trace.iter().any(|other| {
+                                other.row.role.is_none()
+                                    && other.depth == trace.depth
+                                    && (other.row.who == Who::Person)
+                                        >= (trace.row.who == Who::Person)
+                            });
                         reasons.push(if kept {
                             Reason::KeptFromRemovedRow {
                                 row,
@@ -236,13 +243,16 @@ impl Evaluation {
         }
     }
 
-    /// Everything *Check access* shows for the place.
+    /// Everything *Check access* shows for the place: at a project only the permissions that
+    /// count in a project (the others count nowhere there, architecture §7), at the whole
+    /// organization all of them.
     #[must_use]
     pub fn report(&self) -> AccessReport {
         AccessReport {
             place: self.place,
             permissions: Permission::ALL
                 .iter()
+                .filter(|permission| self.counts_in_this_place(**permission))
                 .map(|permission| self.explain(*permission))
                 .collect(),
             fields: Field::ALL

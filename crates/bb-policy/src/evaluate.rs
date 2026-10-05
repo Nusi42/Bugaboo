@@ -11,7 +11,8 @@
 //! 3. every row has a rank: the depth of its project (the whole organization lowest), then the
 //!    person's own row above a row of one of their groups;
 //! 4. the highest-ranked *No access* removes every role row of equal or lower rank, but
-//!    *Decide who has which role* from a removed row is kept;
+//!    *Decide who has which role* from a removed row strictly above it (a project higher up, or
+//!    the whole organization) is kept;
 //! 5. the permissions are the union of the remaining roles, filtered by where they count;
 //! 6. narrowing for an access key is [`Evaluation::narrowed`] (see `narrowing.rs`);
 //! 7. the field mask and 8. the *Who sees people* levels come from the same remaining roles.
@@ -208,7 +209,7 @@ pub struct Evaluation {
     pub(crate) place: Place,
     pub(crate) chain: Vec<ProjectId>,
     pub(crate) permissions: BTreeSet<Permission>,
-    /// *Decide who has which role* that came only from a row that *No access* removed.
+    /// *Decide who has which role* that came only from a row that a *No access* below it removed.
     pub(crate) kept_decide_roles: bool,
     pub(crate) roles: Vec<HeldRole>,
     pub(crate) fields: BTreeMap<Field, FieldLevel>,
@@ -257,7 +258,7 @@ pub fn evaluate(inputs: &Inputs) -> Evaluation {
     let mut held: Vec<&RoleData> = Vec::new();
     let mut permissions = BTreeSet::new();
     let mut kept_decide_roles = false;
-    for (_, trace) in &traced {
+    for (rank, trace) in &traced {
         let Some(role) = trace.row.role.and_then(|id| roles.get(&id).copied()) else {
             continue;
         };
@@ -274,8 +275,15 @@ pub fn evaluate(inputs: &Inputs) -> Evaluation {
                 );
             }
             RowStatus::RemovedBy(_) => {
-                // Nobody is locked out by a project below them (ADR-0025, decision 6).
-                if role.permissions.contains(&Permission::DecideRoles) {
+                // Nobody is locked out by a project below them (ADR-0025, decision 6): the right
+                // to decide is kept from a row strictly above the *No access* that removed it,
+                // the whole organization included. A row at the depth of a *No access* that
+                // removes it by itself (a group's role next to the person's own *No access*) is
+                // removed as a whole, or a person could lift their own *No access*.
+                let at_its_own_depth = traced.iter().any(|(other_rank, other)| {
+                    other.row.role.is_none() && other_rank.depth == rank.depth && other_rank >= rank
+                });
+                if role.permissions.contains(&Permission::DecideRoles) && !at_its_own_depth {
                     kept_decide_roles = true;
                 }
             }

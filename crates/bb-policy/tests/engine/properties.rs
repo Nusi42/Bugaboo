@@ -335,7 +335,12 @@ proptest! {
             evaluation = evaluation.narrowed(&narrowing_of(&tree, kinds, permissions, projects, true));
         }
         let report = evaluation.report();
-        prop_assert_eq!(report.permissions.len(), Permission::ALL.len());
+        // Only what counts at the place is listed.
+        let counting = Permission::ALL
+            .iter()
+            .filter(|permission| evaluation.counts_in_this_place(**permission))
+            .count();
+        prop_assert_eq!(report.permissions.len(), counting);
         for decision in &report.permissions {
             // The decision is the engine's.
             prop_assert_eq!(decision.allowed, evaluation.allows(decision.permission));
