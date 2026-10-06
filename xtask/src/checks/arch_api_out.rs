@@ -5,11 +5,13 @@
 //! `Authorized<T>`, which only `bb-policy` can make. This check finds the ways around them that a
 //! text can show, in `bb-api` and `bb-mcp`:
 //!
-//! - a **handler** (a function with `#[utoipa::path]`) that answers through the plain wrapper
-//!   `answer(…)` or the sign-in answer `signed_in(…)`, which take any value: its operation must be
-//!   in `tools/checks/api-out-exemptions.toml` with a reason (the steps of signing in, which are
-//!   about the caller and hold nothing of anybody else). `answer(Page::of_authorized(…))` is a
-//!   page of authorized items and needs no entry;
+//! - **any function** that answers through the plain wrapper `answer(…)` or the sign-in answer
+//!   `signed_in(…)`, which take any value, a handler or a helper that a handler calls: a handler
+//!   (a function with `#[utoipa::path]`) must have its operation in
+//!   `tools/checks/api-out-exemptions.toml` with a reason (the steps of signing in, which are
+//!   about the caller and hold nothing of anybody else), a helper its name and file. The wrappers
+//!   themselves are named that way too. `answer(Page::of_authorized(…))` is a page of authorized
+//!   items and needs no entry;
 //! - **`axum::Json`** used to answer (`Json(…)`, `Json<…>`) anywhere outside the functions named in
 //!   the same file with a reason (the wrapper itself, the health answer, the description of the
 //!   API): a handler that answers a plain struct this way never asked the engine.
@@ -242,26 +244,31 @@ fn evaluate(sources: &[Source], exemptions: &[Exemption]) -> Vec<Finding> {
                     ));
                 }
             }
-            // A handler that answers through the wrappers that take any value.
-            if function.operation.is_none() {
-                continue;
-            }
+            // Any function, a handler or a helper, that answers through the wrappers that take any
+            // value: a handler by its operation, a helper (and the wrappers themselves) by name.
             for word in PLAIN {
                 for at in calls(&function.code, word) {
                     if argument_at(&function.code, at, word).starts_with(AUTHORIZED_PAGE) {
                         continue;
                     }
-                    if allowed_operation(&mut used).is_some() {
+                    if allowed_operation(&mut used).is_some()
+                        || allowed_function(&mut used).is_some()
+                    {
                         continue;
                     }
                     let line = function.lines.0 + function.code[..at].matches('\n').count();
+                    let (what, how) = if function.operation.is_some() {
+                        ("handler", "name the operation")
+                    } else {
+                        ("function", "name the function and its file")
+                    };
                     findings.push(Finding::at(
                         place(line),
                         format!(
-                            "The handler `{}` answers with `{word}(…)`, which takes any value. \
+                            "The {what} `{}` answers with `{word}(…)`, which takes any value. \
                              Answer with `answer_authorized` and a value made by the engine, or \
-                             name the operation in {EXEMPTIONS_PATH} with the reason it holds \
-                             nothing of anybody but the caller.",
+                             {how} in {EXEMPTIONS_PATH} with the reason it holds nothing of \
+                             anybody but the caller.",
                             function.name
                         ),
                     ));
@@ -450,5 +457,26 @@ mod tests {
         let found = evaluate(&source(FILE, &text), &[]);
         let line = found[0].location.as_deref().unwrap_or_default();
         assert!(line.ends_with(":10"), "{line}");
+    }
+
+    #[test]
+    fn bad_example_a_helper_answers_a_plain_struct_for_a_handler() {
+        // The handler calls a helper that answers: the helper is a function like any other.
+        let helper = "fn sessions_body(list: Vec<Session>) -> Response {\n    answer(SessionsBody { list })\n}\n\
+                      fn other(started: &Started) -> Result<Response, ApiError> {\n    signed_in(started)\n}\n";
+        let found = evaluate(&source(FILE, helper), &[]);
+        assert_eq!(
+            found.len(),
+            2,
+            "{:?}",
+            found.iter().map(|f| &f.message).collect::<Vec<_>>()
+        );
+        assert!(found.iter().all(|f| f.message.contains("The function")));
+        // It may when it is named with its file, and the entry is then needed.
+        let exemptions = [function("sessions_body", FILE), function("other", FILE)];
+        assert!(evaluate(&source(FILE, helper), &exemptions).is_empty());
+        // A helper that answers a page of authorized items needs no entry.
+        let page = "fn page_body() -> Response {\n    answer(Page::of_authorized(LIST, &list, &fields)?)\n}\n";
+        assert!(evaluate(&source(FILE, page), &[]).is_empty());
     }
 }

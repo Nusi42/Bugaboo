@@ -95,3 +95,18 @@ reason = "The health answer: whether the server is up. It holds nothing of anybo
 function = "from_request"
 file = "crates/bb-api/src/errors.rs"
 reason = "Reads the body of a request (the extractor `ApiJson`): it answers nothing."
+
+[[exempt]]
+function = "signed_in"
+file = "crates/bb-api/src/api/auth.rs"
+reason = "The answer of a new session (the body, the session cookie and the token): the steps of signing in above answer through it, each named by its operation."
+
+[[exempt]]
+function = "answer_authorized"
+file = "crates/bb-api/src/api/auth.rs"
+reason = "The wrapper of an Authorized view: it takes an Authorized<T> only, so what leaves through it went through the engine."
+
+[[exempt]]
+function = "add_standard_answers"
+file = "crates/bb-api/src/openapi.rs"
+reason = "Builds the description of the API: its `answer(code)` makes a response object of the description, not an answer of the server."
