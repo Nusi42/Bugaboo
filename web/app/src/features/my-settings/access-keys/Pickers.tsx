@@ -3,9 +3,10 @@ import { t } from "@bugaboo/messages";
 import { Checkbox } from "@bugaboo/ui";
 import { useQuery } from "@tanstack/react-query";
 
+import { permissionSentence, topicHeading } from "../../../shared/access-words.ts";
 import styles from "./AccessKeys.module.css";
 import { projectsOptions } from "./access-keys.ts";
-import { permissionSentence, topicGroups, topicHeading } from "./choice.ts";
+import { topicGroups } from "./choice.ts";
 import type { Draft } from "./draft.ts";
 
 export interface PermissionPickerProps {

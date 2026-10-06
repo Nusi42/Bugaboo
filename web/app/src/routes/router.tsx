@@ -1,11 +1,18 @@
 import { createRouter } from "@tanstack/react-router";
 
 import {
+  groupsRoute,
+  peopleRoute,
+  personRoute,
+  projectRolesRoute,
+  roleRoute,
+  rolesRoute,
+} from "./access-pages.tsx";
+import {
   accessKeysRoute,
   appearanceRoute,
   framesRoute,
   homeRoute,
-  invitationsRoute,
   mySettingsIndexRoute,
   organizationSettingsIndexRoute,
   regionRoute,
@@ -40,6 +47,7 @@ const routeTree = rootRoute.addChildren([
     framesRoute,
     projectRoute,
     projectSettingsRoute,
+    projectRolesRoute,
     mySettingsRoute.addChildren([
       mySettingsIndexRoute,
       appearanceRoute,
@@ -52,7 +60,11 @@ const routeTree = rootRoute.addChildren([
     ]),
     organizationSettingsRoute.addChildren([
       organizationSettingsIndexRoute,
-      invitationsRoute,
+      peopleRoute,
+      personRoute,
+      groupsRoute,
+      rolesRoute,
+      roleRoute,
       signInRulesRoute,
       themesRoute,
       projectsRoute,

@@ -8,7 +8,7 @@ import { api } from "../../shared/api.ts";
 import { messageOf } from "../../shared/errors.ts";
 import { queryClient } from "../../shared/query-client.ts";
 import { statusOptions } from "../../shared/session.ts";
-import styles from "./Admin.module.css";
+import styles from "./People.module.css";
 
 /** The domains as the administrator typed them: one per line, or separated by commas or spaces. */
 function domainsOf(text: string): string[] {

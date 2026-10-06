@@ -25,7 +25,11 @@ async function found(query: string, permissions: Permissions): Promise<readonly 
 
 /** What an administrator holds for the whole organization, as far as the screens ask for it. */
 const administrator: Permissions = [
+  "manage-people",
   "manage-invitations",
+  "manage-groups",
+  "manage-roles",
+  "decide-roles",
   "see-status",
   "change-organization-settings",
 ];
@@ -44,16 +48,20 @@ describe("ux_01 the screens that exist", () => {
   it("hides the screens that ask for a permission from people who do not hold one", () => {
     const names = placesFor([]).map((place) => place.path);
     expect(names).not.toContain(paths.organizationSettings);
-    expect(names).not.toContain(paths.invitations);
-    expect(placesFor(administrator).map((place) => place.path)).toContain(paths.invitations);
+    expect(names).not.toContain(paths.people);
+    expect(placesFor(administrator).map((place) => place.path)).toContain(paths.people);
   });
 
   it("shows each topic of the organization only to people who hold its permission", () => {
     expect(visible(["see-status"])).toContain(paths.status);
     expect(visible(["see-status"])).toContain(paths.organizationSettings);
-    expect(visible(["see-status"])).not.toContain(paths.invitations);
-    expect(visible(["manage-invitations"])).toContain(paths.invitations);
+    expect(visible(["see-status"])).not.toContain(paths.people);
+    expect(visible(["manage-invitations"])).toContain(paths.people);
     expect(visible(["manage-invitations"])).not.toContain(paths.status);
+    expect(visible(["manage-groups"])).toContain(paths.groups);
+    expect(visible(["manage-groups"])).not.toContain(paths.roles);
+    expect(visible(["decide-roles"])).toContain(paths.roles);
+    expect(visible(["manage-roles"])).toContain(paths.role);
     expect(mayOpen(paths.status, [])).toBe(false);
     expect(mayOpen(paths.status, ["see-status"])).toBe(true);
   });
@@ -86,7 +94,14 @@ describe("ux_01 the topics of a settings screen", () => {
       topicGroups(paths.organizationSettings, administrator).flatMap((group) =>
         group.topics.map((topic) => topic.path),
       ),
-    ).toEqual([paths.invitations, paths.signInRules, paths.themes, paths.status]);
+    ).toEqual([
+      paths.people,
+      paths.groups,
+      paths.roles,
+      paths.signInRules,
+      paths.themes,
+      paths.status,
+    ]);
   });
 });
 
@@ -101,8 +116,9 @@ describe("sec_01 who may open organization settings", () => {
 describe("cfg_08 quick search finds the pages of the app", () => {
   it("matches every word in any order and leaves out what the person may not open", async () => {
     expect(await found("security sign", [])).toEqual([paths.security]);
-    expect(await found("invitations", [])).toEqual([]);
-    expect(await found("invitations", administrator)).toEqual([paths.invitations]);
+    expect(await found("people", [])).toEqual([]);
+    expect(await found("people", administrator)).toEqual([paths.people]);
+    expect(await found("roles", administrator)).toEqual([paths.roles]);
     expect((await found("", [])).length).toBeGreaterThan(3);
     expect(await found("", [])).not.toContain(paths.frames);
   });

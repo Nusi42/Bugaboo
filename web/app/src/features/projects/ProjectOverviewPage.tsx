@@ -3,7 +3,7 @@ import { Alert, Button, Card, Link } from "@bugaboo/ui";
 import { useState } from "react";
 
 import { messageOf } from "../../shared/errors.ts";
-import { projectAddress, projectSettingsAddress } from "../../shared/paths.ts";
+import { projectAddress, projectRolesAddress, projectSettingsAddress } from "../../shared/paths.ts";
 import { MakeProjectForm } from "./MakeProjectForm.tsx";
 import { ProjectGate } from "./ProjectGate.tsx";
 import styles from "./Projects.module.css";
@@ -97,13 +97,18 @@ function Overview({ project }: { readonly project: OneProject }) {
     <div className={styles.stack}>
       <Card heading={project.project.name} level={1}>
         <Facts project={project} />
-        {mayChange ? (
-          <div className={styles.row}>
+        <div className={styles.row}>
+          {mayChange ? (
             <Link href={projectSettingsAddress(project.project.short_name)}>
               {t("projects.settings-link")}
             </Link>
-          </div>
-        ) : null}
+          ) : null}
+          {project.permissions.includes("decide-roles") ? (
+            <Link href={projectRolesAddress(project.project.short_name)}>
+              {t("roles.project-link")}
+            </Link>
+          ) : null}
+        </div>
       </Card>
       <SubProjects project={project} />
     </div>

@@ -1,7 +1,14 @@
 import { t } from "@bugaboo/messages";
 import { type Page } from "@playwright/test";
 
-import { paths, projectAddress, projectSettingsAddress } from "../src/shared/paths.ts";
+import {
+  paths,
+  personAddress,
+  projectAddress,
+  projectRolesAddress,
+  projectSettingsAddress,
+  roleAddress,
+} from "../src/shared/paths.ts";
 import { ada, addCodeApp, bob, invite, makeAdmin, makePerson } from "./support/accounts.ts";
 import {
   expectGoodInEveryLook,
@@ -18,12 +25,17 @@ import { sendPassword, signIn } from "./support/flows.ts";
 
 /** The link of an invitation that nobody has used. */
 let invitationLink = "";
+/** The IDs of a person and of a role, for the pages of one. */
+let somebody = "";
+let someRole = "";
 
 test.use({
   preparation: {
     run: async (server) => {
       const admin = await makeAdmin(server);
       const session = await makePerson(server, admin, bob);
+      somebody = idOf(await session.get("/api/v1/auth/me"));
+      someRole = idOf(await admin.get("/api/v1/roles?limit=1"), "items");
       await addCodeApp(session, bob.password);
       invitationLink = await invite(admin, "guest@example.test");
       await admin.post("/api/v1/projects", { short_name: "WEB", name: "Website" });
@@ -33,6 +45,14 @@ test.use({
     },
   },
 });
+
+/** The ID in an answer, or in the first item of its list `items`. */
+function idOf(body: Readonly<Record<string, unknown>>, list?: string): string {
+  const found: unknown = list === undefined ? body : Reflect.get(body, list);
+  const first: unknown = Array.isArray(found) ? found[0] : found;
+  const id: unknown = typeof first === "object" && first !== null ? Reflect.get(first, "id") : "";
+  return typeof id === "string" ? id : "";
+}
 
 /** How a person gets to an address, and whether the theme is chosen on the page or put on it. */
 interface Visit {
@@ -53,6 +73,15 @@ function signedIn(address: string): Visit["open"] {
   return async (page) => {
     await signIn(page, ada);
     await page.goto(address);
+    await shown(page);
+  };
+}
+
+/** Signs in and goes to an address that is only known once the server has made what it names. */
+function signedInAt(address: () => string): Visit["open"] {
+  return async (page) => {
+    await signIn(page, ada);
+    await page.goto(address());
     await shown(page);
   };
 }
@@ -106,7 +135,11 @@ const visits: readonly Visit[] = [
     open: signedIn(paths.organizationSettings),
     guest: false,
   },
-  { address: paths.invitations, open: signedIn(paths.invitations), guest: false },
+  { address: paths.people, open: signedIn(paths.people), guest: false },
+  { address: paths.person, open: signedInAt(() => personAddress(somebody)), guest: false },
+  { address: paths.groups, open: signedIn(paths.groups), guest: false },
+  { address: paths.roles, open: signedIn(paths.roles), guest: false },
+  { address: paths.role, open: signedInAt(() => roleAddress(someRole)), guest: false },
   { address: paths.signInRules, open: signedIn(paths.signInRules), guest: false },
   { address: paths.themes, open: signedIn(paths.themes), guest: false },
   { address: paths.status, open: signedIn(paths.status), guest: false },
@@ -115,6 +148,11 @@ const visits: readonly Visit[] = [
   {
     address: paths.projectSettings,
     open: signedIn(projectSettingsAddress("WEB")),
+    guest: false,
+  },
+  {
+    address: paths.projectRoles,
+    open: signedIn(projectRolesAddress("WEB")),
     guest: false,
   },
   { address: paths.frames, open: signedIn(paths.frames), guest: false },

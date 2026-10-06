@@ -104,7 +104,7 @@ async function theAdministratorsPages(page: Page): Promise<string> {
     page.getByRole("list", { name: t("sessions.list") }).getByRole("listitem"),
   ).toHaveCount(2);
   await shoot(page, "11-where-signed-in");
-  await openFromMenu(page, t("nav.invitations"));
+  await openFromMenu(page, t("nav.people"));
   await page.getByLabel(t("field.email")).fill("new.colleague@example.test");
   await page.getByRole("button", { name: t("invitations.create") }).click();
   await expect(page.getByText(t("invitations.link-help"))).toBeVisible();

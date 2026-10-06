@@ -6,7 +6,7 @@ import { useState } from "react";
 import { api } from "../../shared/api.ts";
 import { messageOf } from "../../shared/errors.ts";
 import { formatDateTime } from "../../shared/format.ts";
-import styles from "./Admin.module.css";
+import styles from "./People.module.css";
 import { refreshInvitations, useOpenInvitations } from "./invitations.ts";
 
 type Invitation = Schema<"InvitationItem">;
