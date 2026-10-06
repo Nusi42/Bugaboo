@@ -86,10 +86,16 @@ test("sec_08 a role is made from a copy of a starting role, changed and kept", a
   await expect(page.getByRole("switch", { name: t("roles.two-step"), exact: true })).toBeChecked();
   await expect(page.getByText(t("save.saved"), { exact: true })).toBeVisible();
   // And off again, so that the people who get this role later are not asked for a second step.
+  // The change is on the server before the next test signs somebody in with this role: the page
+  // is read again until the switch stays off.
   await press(page, "roles.two-step");
-  await expect(
-    page.getByRole("switch", { name: t("roles.two-step"), exact: true }),
-  ).not.toBeChecked();
+  const twoStep = page.getByRole("switch", { name: t("roles.two-step"), exact: true });
+  await expect
+    .poll(async () => {
+      await page.reload();
+      return twoStep.isChecked();
+    })
+    .toBe(false);
 });
 
 test("sec_08 taking away a permission that manages roles asks first", async ({ page }) => {
