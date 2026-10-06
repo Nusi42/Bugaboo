@@ -149,7 +149,7 @@ test("priv_12 hiding who is assigned from Guests shows them Someone, and the scr
   await open(page, paths.peopleVisibility, t("nav.people-visibility"));
   const preview = t("people-visibility.preview-heading", { role: roleName.guest });
   await expect(page.getByRole("heading", { name: preview })).toBeVisible();
-  const asRole = t("people-visibility.who-role", { role: t("starting-role.team-member") });
+  const asRole = t("access.person-role-inside", { role: t("starting-role.team-member") });
   await expect(
     page.getByText(t("people-visibility.example-assigned", { who: asRole })),
   ).toBeVisible();
@@ -209,6 +209,11 @@ test("sec_03 checking Ana's access in Website reads as a sentence with its reaso
   );
   await expect(page.getByText(t("check-access.fields-heading"), { exact: true })).toBeVisible();
   await expect(page.getByText(t("check-access.people-heading"), { exact: true })).toBeVisible();
+  // Fields with the same level for the same reason are told together; every field can be shown.
+  await expect(page.getByText(t("check-access.all-other-fields"))).toBeVisible();
+  await expect(page.getByText(t("issue-field.title"), { exact: true })).toHaveCount(0);
+  await page.getByRole("button", { name: t("check-access.show-every-field") }).click();
+  await expect(page.getByText(t("issue-field.title"), { exact: true })).toBeVisible();
 });
 
 test("sec_03 a lead who cannot see the project a role comes from reads a project you can't see", async ({

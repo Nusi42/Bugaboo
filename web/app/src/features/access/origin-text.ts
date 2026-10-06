@@ -9,8 +9,8 @@ export function projectText(project: ProjectLabel): string {
     : t("access.hidden-project");
 }
 
-/** Where the level of a cell was set, in words; nothing for a role's own level on the organization's table. */
-export function originText(origin: Origin, inProject: boolean): string | undefined {
+/** Where the level of a cell was set, in words; nothing for a role's own level, which is the usual case. */
+export function originText(origin: Origin): string | undefined {
   if (origin.kind === "set_here") {
     return t("access.origin-here");
   }
@@ -20,5 +20,5 @@ export function originText(origin: Origin, inProject: boolean): string | undefin
   if (origin.kind === "unset") {
     return t("access.origin-unset");
   }
-  return inProject ? t("access.origin-role-own") : undefined;
+  return undefined;
 }

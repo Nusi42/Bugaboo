@@ -7,7 +7,7 @@ import {
   projectCheckAccessRoute,
   projectFieldsRoute,
   projectPeopleRoute,
-} from "./access-pages.tsx";
+} from "./what-roles-see-pages.tsx";
 import {
   accessKeysRoute,
   appearanceRoute,

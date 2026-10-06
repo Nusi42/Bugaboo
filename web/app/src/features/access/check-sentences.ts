@@ -113,30 +113,32 @@ export function reasonSentences(
   return partsOf(person, place, reason).filter((part): part is string => part !== undefined);
 }
 
-/** The sentences that say why a field or a kind has its level for the person. */
+/**
+ * The sentences that say why a field or a kind has its level for the person. They do not name
+ * the field or kind, so the same reason reads the same for every one that has it and can be told
+ * once for a group.
+ */
 export function levelSentences(
   person: Person,
-  subject: string,
   levelName: (level: string) => string,
   says: readonly RoleSays[],
   cappedByKey: boolean,
 ): readonly string[] {
   if (says.length === 0) {
-    return [t("check-access.level.no-role", { person: personNameInside(person) })];
+    return [t("check-access.level.no-role", { person: personName(person) })];
   }
   const sentences = says.map((each) => {
     const level = levelName(each.level);
     if (each.set.kind === "project") {
       return t("check-access.level.role-project", {
         role: each.role.name,
-        subject,
         level,
         project: projectText(each.set.project),
       });
     }
     return each.set.kind === "role_own"
-      ? t("check-access.level.role-organization", { role: each.role.name, subject, level })
-      : t("check-access.level.role-unset", { role: each.role.name, subject });
+      ? t("check-access.level.role-organization", { role: each.role.name, level })
+      : t("check-access.level.role-unset", { role: each.role.name });
   });
   return [
     ...sentences,

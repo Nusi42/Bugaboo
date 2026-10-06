@@ -753,7 +753,6 @@ export const messages = {
   "access.cell-label": "{subject} for {role}",
   "access.origin-here": "Set for this project",
   "access.origin-from": "From {project}",
-  "access.origin-role-own": "The role's own level",
   "access.origin-unset": "Nothing set, so it is hidden",
   "access.hidden-project": "a project you can't see",
   "access.reset": "Reset",
@@ -782,7 +781,6 @@ export const messages = {
   "people-visibility.preview-role": "See what this role sees",
   "people-visibility.preview-heading": "What {role} sees",
   "people-visibility.who-names": "Ana",
-  "people-visibility.who-role": "a {role}",
   "people-visibility.example-assigned": "Assigned to {who}",
   "people-visibility.example-comment": "Comment by {who}",
   "people-visibility.example-editing": "{who} is editing the description",
@@ -829,14 +827,23 @@ export const messages = {
   "check-access.reason.narrowed-by-key": "The access key does not keep this.",
   "check-access.reason.outside-key": "The access key does not count in this project.",
   "check-access.reason.none": "No role {person} has here gives this.",
-  "check-access.level.role-project": "The role {role} sets {subject} to {level} for {project}.",
-  "check-access.level.role-organization":
-    "The role {role} sets {subject} to {level} for the whole organization.",
-  "check-access.level.role-unset":
-    "The role {role} sets nothing for {subject}, so it counts as hidden.",
   "check-access.level.highest": "The highest level counts.",
   "check-access.level.no-role": "{person} has no role here, so nothing is shown.",
   "check-access.level.capped": "The access key lowers it to Can see.",
+  "access.person-role-inside": "a {role}",
+  "access.person-someone-inside": "someone",
+  "access.person-former-inside": "former user {label}",
+  "check-access.level.role-project": "The role {role} gives {level} for {project}.",
+  "check-access.level.role-organization":
+    "The role {role} gives {level} for the whole organization.",
+  "check-access.level.role-unset": "The role {role} sets nothing, so it counts as hidden.",
+  "check-access.all-fields": "All fields",
+  "check-access.all-other-fields": "All other fields",
+  "check-access.all-kinds": "All kinds of people information",
+  "check-access.all-other-kinds": "All other kinds of people information",
+  "check-access.show-every-field": "Show every field",
+  "check-access.show-every-kind": "Show every kind",
+  "check-access.group-the-same": "Group those with the same reason",
 } as const;
 
 export type MessageKey = keyof typeof messages;
@@ -853,21 +860,18 @@ export interface MessageArguments {
   "access-keys.row.projects-some": { names: string | number };
   "access.cell-label": { role: string | number; subject: string | number };
   "access.origin-from": { project: string | number };
+  "access.person-former-inside": { label: string | number };
+  "access.person-role-inside": { role: string | number };
   "access.reset-label": { role: string | number; subject: string | number };
   "backup.left": { count: number };
   "check-access.level.no-role": { person: string | number };
-  "check-access.level.role-organization": {
-    level: string | number;
-    role: string | number;
-    subject: string | number;
-  };
+  "check-access.level.role-organization": { level: string | number; role: string | number };
   "check-access.level.role-project": {
     level: string | number;
     project: string | number;
     role: string | number;
-    subject: string | number;
   };
-  "check-access.level.role-unset": { role: string | number; subject: string | number };
+  "check-access.level.role-unset": { role: string | number };
   "check-access.project-title": { project: string | number };
   "check-access.reason.blocked-group": {
     group: string | number;
@@ -929,7 +933,6 @@ export interface MessageArguments {
   "people-visibility.intro-project": { project: string | number };
   "people-visibility.preview-heading": { role: string | number };
   "people-visibility.project-title": { project: string | number };
-  "people-visibility.who-role": { role: string | number };
   "projects.inside": { name: string | number };
   "projects.line-can-no-more": {
     person: string | number;

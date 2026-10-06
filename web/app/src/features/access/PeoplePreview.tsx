@@ -14,7 +14,7 @@ function who(level: PeopleLevelCode, startOfSentence: boolean): string {
     const role = t("starting-role.team-member");
     return startOfSentence
       ? t("projects.person-role", { role })
-      : t("people-visibility.who-role", { role });
+      : t("access.person-role-inside", { role });
   }
   return t("projects.person-someone");
 }

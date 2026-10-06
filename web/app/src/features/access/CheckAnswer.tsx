@@ -1,9 +1,11 @@
-import { isMessageKey, t } from "@bugaboo/messages";
-import { Card } from "@bugaboo/ui";
+import { isMessageKey, locale, t } from "@bugaboo/messages";
+import { Button, Card } from "@bugaboo/ui";
+import { useState } from "react";
 
 import { personName } from "../../shared/person.ts";
 import styles from "./Access.module.css";
 import { levelSentences, reasonSentences } from "./check-sentences.ts";
+import { groupLevels, type LevelEntry } from "./group-levels.ts";
 import { projectText } from "./origin-text.ts";
 import type { CheckAnswerBody } from "./use-check.ts";
 
@@ -57,30 +59,6 @@ function PermissionLine({ answer, permission }: PermissionLineProps) {
   );
 }
 
-interface LevelLineProps {
-  readonly answer: CheckAnswerBody;
-  readonly subject: string;
-  readonly level: string;
-  readonly levelName: (level: string) => string;
-  readonly says: FieldAnswer["roles"] | KindAnswer["roles"];
-  readonly cappedByKey: boolean;
-}
-
-/** One field or kind: its name and level, and why in sentences. */
-function LevelLine({ answer, subject, level, levelName, says, cappedByKey }: LevelLineProps) {
-  return (
-    <li className={styles.answer}>
-      <div className={styles.answerHead}>
-        <p className={styles.answerName}>{subject}</p>
-        <span className={styles.verdict}>{levelName(level)}</span>
-      </div>
-      <p className={styles.reasons}>
-        {levelSentences(answer.person, subject, levelName, says, cappedByKey).join(" ")}
-      </p>
-    </li>
-  );
-}
-
 /** What the person can do here, by topic, under the heading that says who and where. */
 function Permissions({
   answer,
@@ -105,6 +83,83 @@ function Permissions({
   );
 }
 
+interface LevelSectionProps {
+  readonly answer: CheckAnswerBody;
+  readonly heading: string;
+  /** The fields or the kinds, each with what it is called. */
+  readonly entries: readonly (LevelEntry & {
+    readonly says: FieldAnswer["roles"] | KindAnswer["roles"];
+    readonly cappedByKey: boolean;
+  })[];
+  readonly levelName: (level: string) => string;
+  /** The words for the group of everything, the group of the rest, and the two ways to look. */
+  readonly words: {
+    readonly all: string;
+    readonly allOther: string;
+    readonly every: string;
+  };
+}
+
+/** How the names of a group are told: a list in words. */
+function listOf(names: readonly string[]): string {
+  return new Intl.ListFormat(locale, { type: "conjunction" }).format(names);
+}
+
+/**
+ * The fields (or kinds) with their level and the reasons. Fields that have the same level for the
+ * same reason are told together, so each reason is read once; every one can be shown on its own.
+ */
+function LevelSection({ answer, heading, entries, levelName, words }: LevelSectionProps) {
+  const [every, setEvery] = useState(false);
+  const told: readonly LevelEntry[] = entries.map((entry) => ({
+    name: entry.name,
+    level: entry.level,
+    sentences: levelSentences(answer.person, levelName, entry.says, entry.cappedByKey),
+  }));
+  const groups = groupLevels(told);
+  return (
+    <Card heading={heading}>
+      <div className={styles.row}>
+        <Button
+          quiet
+          onPress={() => {
+            setEvery(!every);
+          }}
+        >
+          {every ? t("check-access.group-the-same") : words.every}
+        </Button>
+      </div>
+      <ul className={styles.answers}>
+        {every
+          ? told.map((entry) => (
+              <li key={entry.name} className={styles.answer}>
+                <div className={styles.answerHead}>
+                  <p className={styles.answerName}>{entry.name}</p>
+                  <span className={styles.verdict}>{levelName(entry.level)}</span>
+                </div>
+                <p className={styles.reasons}>{entry.sentences.join(" ")}</p>
+              </li>
+            ))
+          : groups.map((group, at) => (
+              <li key={group.names.join()} className={styles.answer}>
+                <div className={styles.answerHead}>
+                  <p className={styles.answerName}>
+                    {groups.length === 1
+                      ? words.all
+                      : at === 0
+                        ? words.allOther
+                        : listOf(group.names)}
+                  </p>
+                  <span className={styles.verdict}>{levelName(group.level)}</span>
+                </div>
+                <p className={styles.reasons}>{group.sentences.join(" ")}</p>
+              </li>
+            ))}
+      </ul>
+    </Card>
+  );
+}
+
 /** The answer of *Check access*: what the person can do, every field, and how they see people. */
 export function CheckAnswer({ answer }: { readonly answer: CheckAnswerBody }) {
   const place =
@@ -117,36 +172,40 @@ export function CheckAnswer({ answer }: { readonly answer: CheckAnswerBody }) {
         answer={answer}
         heading={t("check-access.result-heading", { person: personName(answer.person), place })}
       />
-      <Card heading={t("check-access.fields-heading")}>
-        <ul className={styles.answers}>
-          {answer.fields.map((field) => (
-            <LevelLine
-              key={field.subject}
-              answer={answer}
-              subject={t(`issue-field.${field.subject}`)}
-              level={field.level}
-              levelName={fieldLevelName}
-              says={field.roles}
-              cappedByKey={field.capped_by_key}
-            />
-          ))}
-        </ul>
-      </Card>
-      <Card heading={t("check-access.people-heading")}>
-        <ul className={styles.answers}>
-          {answer.kinds.map((kind) => (
-            <LevelLine
-              key={kind.subject}
-              answer={answer}
-              subject={t(`people-kind.${kind.subject}`)}
-              level={kind.level}
-              levelName={peopleLevelName}
-              says={kind.roles}
-              cappedByKey={kind.capped_by_key}
-            />
-          ))}
-        </ul>
-      </Card>
+      <LevelSection
+        answer={answer}
+        heading={t("check-access.fields-heading")}
+        entries={answer.fields.map((field) => ({
+          name: t(`issue-field.${field.subject}`),
+          level: field.level,
+          sentences: [],
+          says: field.roles,
+          cappedByKey: field.capped_by_key,
+        }))}
+        levelName={fieldLevelName}
+        words={{
+          all: t("check-access.all-fields"),
+          allOther: t("check-access.all-other-fields"),
+          every: t("check-access.show-every-field"),
+        }}
+      />
+      <LevelSection
+        answer={answer}
+        heading={t("check-access.people-heading")}
+        entries={answer.kinds.map((kind) => ({
+          name: t(`people-kind.${kind.subject}`),
+          level: kind.level,
+          sentences: [],
+          says: kind.roles,
+          cappedByKey: kind.capped_by_key,
+        }))}
+        levelName={peopleLevelName}
+        words={{
+          all: t("check-access.all-kinds"),
+          allOther: t("check-access.all-other-kinds"),
+          every: t("check-access.show-every-kind"),
+        }}
+      />
     </>
   );
 }

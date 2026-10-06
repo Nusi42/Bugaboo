@@ -9,8 +9,8 @@
 You then read three parts:
 
 - **What the person can do**, grouped by topic. Every permission says "Yes." or "No." and gives the reasons in sentences.
-- **Fields**: every field with its level for that person, and which role set it, and where.
-- **How they see people**: every kind of people information with its level.
+- **Fields**: the level of every field for that person, and which role gives it, and where. Fields that have the same level for the same reason are told together ("All other fields: Can change ..."), followed by the exceptions. **Show every field** lists them one by one.
+- **How they see people**: the same for every kind of people information, with **Show every kind**.
 
 ## An example
 
@@ -20,7 +20,7 @@ A "No." says why not: no role gives it, a *No access* wins over the role (and wh
 
 ## Names and hidden projects
 
-- If you manage people or roles, you see names. Otherwise the person is shown as *Project members* are shown to you: by role, or as "Someone". Without names you cannot choose anybody, so the list stays empty.
+- If you manage people or roles, you see names and can choose everybody. Otherwise you can choose only people who have a role that reaches the place (the people *Project members* would show you), and the person is shown as *Project members* are shown to you: by name, by role, or as "Someone". Without names you cannot choose anybody, so the list stays empty. Anybody else is as good as not there.
 - A reason never names a project you may not see. It says *a project you can't see*.
 - The page never shows a number that counts people, fields or projects.
 

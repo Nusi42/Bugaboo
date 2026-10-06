@@ -18,8 +18,16 @@ export function personName(person: Person): string {
   return t("projects.person-someone");
 }
 
-/** How a person is named in the middle of a sentence: a name stays, "A Team member" becomes "a Team member". */
+/** How a person is named in the middle of a sentence: a name stays, a role is "a Team member". */
 export function personNameInside(person: Person): string {
-  const name = personName(person);
-  return person.shown === "name" ? name : `${name.charAt(0).toLowerCase()}${name.slice(1)}`;
+  if (person.shown === "name") {
+    return person.name;
+  }
+  if (person.shown === "role") {
+    return t("access.person-role-inside", { role: person.role });
+  }
+  if (person.shown === "former") {
+    return t("access.person-former-inside", { label: person.label });
+  }
+  return t("access.person-someone-inside");
 }

@@ -146,11 +146,12 @@ pub const ACCESS_NO_ROLES: MessageKey = MessageKey::new("access.no-roles");
 /// The message `access.origin-here`.
 pub const ACCESS_ORIGIN_HERE: MessageKey = MessageKey::new("access.origin-here");
 
-/// The message `access.origin-role-own`.
-pub const ACCESS_ORIGIN_ROLE_OWN: MessageKey = MessageKey::new("access.origin-role-own");
-
 /// The message `access.origin-unset`.
 pub const ACCESS_ORIGIN_UNSET: MessageKey = MessageKey::new("access.origin-unset");
+
+/// The message `access.person-someone-inside`.
+pub const ACCESS_PERSON_SOMEONE_INSIDE: MessageKey =
+    MessageKey::new("access.person-someone-inside");
 
 /// The message `access.project-links-intro`.
 pub const ACCESS_PROJECT_LINKS_INTRO: MessageKey = MessageKey::new("access.project-links-intro");
@@ -240,8 +241,25 @@ pub const BACKUP_SHOWN_ONCE: MessageKey = MessageKey::new("backup.shown-once");
 /// The message `backup.title`.
 pub const BACKUP_TITLE: MessageKey = MessageKey::new("backup.title");
 
+/// The message `check-access.all-fields`.
+pub const CHECK_ACCESS_ALL_FIELDS: MessageKey = MessageKey::new("check-access.all-fields");
+
+/// The message `check-access.all-kinds`.
+pub const CHECK_ACCESS_ALL_KINDS: MessageKey = MessageKey::new("check-access.all-kinds");
+
+/// The message `check-access.all-other-fields`.
+pub const CHECK_ACCESS_ALL_OTHER_FIELDS: MessageKey =
+    MessageKey::new("check-access.all-other-fields");
+
+/// The message `check-access.all-other-kinds`.
+pub const CHECK_ACCESS_ALL_OTHER_KINDS: MessageKey =
+    MessageKey::new("check-access.all-other-kinds");
+
 /// The message `check-access.fields-heading`.
 pub const CHECK_ACCESS_FIELDS_HEADING: MessageKey = MessageKey::new("check-access.fields-heading");
+
+/// The message `check-access.group-the-same`.
+pub const CHECK_ACCESS_GROUP_THE_SAME: MessageKey = MessageKey::new("check-access.group-the-same");
 
 /// The message `check-access.in-organization`.
 pub const CHECK_ACCESS_IN_ORGANIZATION: MessageKey =
@@ -310,6 +328,14 @@ pub const CHECK_ACCESS_REASON_NARROWED_BY_KEY: MessageKey =
 /// The message `check-access.reason.outside-key`.
 pub const CHECK_ACCESS_REASON_OUTSIDE_KEY: MessageKey =
     MessageKey::new("check-access.reason.outside-key");
+
+/// The message `check-access.show-every-field`.
+pub const CHECK_ACCESS_SHOW_EVERY_FIELD: MessageKey =
+    MessageKey::new("check-access.show-every-field");
+
+/// The message `check-access.show-every-kind`.
+pub const CHECK_ACCESS_SHOW_EVERY_KIND: MessageKey =
+    MessageKey::new("check-access.show-every-kind");
 
 /// The message `check-access.yes`.
 pub const CHECK_ACCESS_YES: MessageKey = MessageKey::new("check-access.yes");
@@ -2207,6 +2233,24 @@ pub fn access_origin_from(project: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `access.person-former-inside`.
+#[must_use]
+pub fn access_person_former_inside(label: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("access.person-former-inside"),
+        vec![("label", Value::Text(label.to_string()))],
+    )
+}
+
+/// The message `access.person-role-inside`.
+#[must_use]
+pub fn access_person_role_inside(role: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("access.person-role-inside"),
+        vec![("role", Value::Text(role.to_string()))],
+    )
+}
+
 /// The message `access.reset-label`.
 #[must_use]
 pub fn access_reset_label(
@@ -2245,14 +2289,12 @@ pub fn check_access_level_no_role(person: impl std::fmt::Display) -> Message {
 pub fn check_access_level_role_organization(
     level: impl std::fmt::Display,
     role: impl std::fmt::Display,
-    subject: impl std::fmt::Display,
 ) -> Message {
     Message::with_arguments(
         MessageKey::new("check-access.level.role-organization"),
         vec![
             ("level", Value::Text(level.to_string())),
             ("role", Value::Text(role.to_string())),
-            ("subject", Value::Text(subject.to_string())),
         ],
     )
 }
@@ -2263,7 +2305,6 @@ pub fn check_access_level_role_project(
     level: impl std::fmt::Display,
     project: impl std::fmt::Display,
     role: impl std::fmt::Display,
-    subject: impl std::fmt::Display,
 ) -> Message {
     Message::with_arguments(
         MessageKey::new("check-access.level.role-project"),
@@ -2271,23 +2312,16 @@ pub fn check_access_level_role_project(
             ("level", Value::Text(level.to_string())),
             ("project", Value::Text(project.to_string())),
             ("role", Value::Text(role.to_string())),
-            ("subject", Value::Text(subject.to_string())),
         ],
     )
 }
 
 /// The message `check-access.level.role-unset`.
 #[must_use]
-pub fn check_access_level_role_unset(
-    role: impl std::fmt::Display,
-    subject: impl std::fmt::Display,
-) -> Message {
+pub fn check_access_level_role_unset(role: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("check-access.level.role-unset"),
-        vec![
-            ("role", Value::Text(role.to_string())),
-            ("subject", Value::Text(subject.to_string())),
-        ],
+        vec![("role", Value::Text(role.to_string()))],
     )
 }
 
@@ -3027,15 +3061,6 @@ pub fn people_visibility_project_title(project: impl std::fmt::Display) -> Messa
     Message::with_arguments(
         MessageKey::new("people-visibility.project-title"),
         vec![("project", Value::Text(project.to_string()))],
-    )
-}
-
-/// The message `people-visibility.who-role`.
-#[must_use]
-pub fn people_visibility_who_role(role: impl std::fmt::Display) -> Message {
-    Message::with_arguments(
-        MessageKey::new("people-visibility.who-role"),
-        vec![("role", Value::Text(role.to_string()))],
     )
 }
 
@@ -4103,8 +4128,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("access.no-roles", "There is no role yet."),
     ("access.origin-from", "From {project}"),
     ("access.origin-here", "Set for this project"),
-    ("access.origin-role-own", "The role's own level"),
     ("access.origin-unset", "Nothing set, so it is hidden"),
+    ("access.person-former-inside", "former user {label}"),
+    ("access.person-role-inside", "a {role}"),
+    ("access.person-someone-inside", "someone"),
     (
         "access.project-links-intro",
         "Which fields and which people each role sees in this project, and what a person can do here.",
@@ -4160,7 +4187,18 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "These codes are shown only now. Save them before you leave this page.",
     ),
     ("backup.title", "Backup codes"),
+    ("check-access.all-fields", "All fields"),
+    ("check-access.all-kinds", "All kinds of people information"),
+    ("check-access.all-other-fields", "All other fields"),
+    (
+        "check-access.all-other-kinds",
+        "All other kinds of people information",
+    ),
     ("check-access.fields-heading", "Fields"),
+    (
+        "check-access.group-the-same",
+        "Group those with the same reason",
+    ),
     ("check-access.in-organization", "the whole organization"),
     (
         "check-access.intro",
@@ -4177,15 +4215,15 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "check-access.level.role-organization",
-        "The role {role} sets {subject} to {level} for the whole organization.",
+        "The role {role} gives {level} for the whole organization.",
     ),
     (
         "check-access.level.role-project",
-        "The role {role} sets {subject} to {level} for {project}.",
+        "The role {role} gives {level} for {project}.",
     ),
     (
         "check-access.level.role-unset",
-        "The role {role} sets nothing for {subject}, so it counts as hidden.",
+        "The role {role} sets nothing, so it counts as hidden.",
     ),
     ("check-access.no", "No."),
     ("check-access.people-heading", "How they see people"),
@@ -4266,6 +4304,8 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "check-access.result-heading",
         "What {person} can do in {place}",
     ),
+    ("check-access.show-every-field", "Show every field"),
+    ("check-access.show-every-kind", "Show every kind"),
     ("check-access.yes", "Yes."),
     ("cli.about.keys", "Look after the key files"),
     (
@@ -4967,7 +5007,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "How each role sees each kind of people information",
     ),
     ("people-visibility.who-names", "Ana"),
-    ("people-visibility.who-role", "a {role}"),
     ("permission-topic.people", "People"),
     ("permission-topic.projects", "Projects"),
     ("permission-topic.settings", "Settings"),

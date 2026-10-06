@@ -23,8 +23,19 @@ export interface AccessProject {
   readonly permissions: readonly PermissionKey[];
 }
 
+/** The pages of *What roles see here* of a project (words of the code, not text for people). */
+const accessPage = { fields: "fields", people: "people", check: "check" } as const;
+type ProjectAccessPage = (typeof accessPage)[keyof typeof accessPage];
+
 /** The links to the pages of *What roles see here*, for those the person may open. */
-function AccessLinks({ project }: { readonly project: AccessProject }) {
+function AccessLinks({
+  project,
+  current,
+}: {
+  readonly project: AccessProject;
+  /** The page that is open, whose link is marked. */
+  readonly current?: ProjectAccessPage;
+}) {
   const decide = project.permissions.includes(DECIDE);
   const check = project.permissions.includes(CHECK);
   return (
@@ -33,12 +44,18 @@ function AccessLinks({ project }: { readonly project: AccessProject }) {
         {decide ? (
           <>
             <li>
-              <Link href={projectPageAddress(paths.projectFields, project.shortName)}>
+              <Link
+                href={projectPageAddress(paths.projectFields, project.shortName)}
+                current={current === accessPage.fields}
+              >
                 {t("nav.field-permissions")}
               </Link>
             </li>
             <li>
-              <Link href={projectPageAddress(paths.projectPeople, project.shortName)}>
+              <Link
+                href={projectPageAddress(paths.projectPeople, project.shortName)}
+                current={current === accessPage.people}
+              >
                 {t("nav.people-visibility")}
               </Link>
             </li>
@@ -46,7 +63,10 @@ function AccessLinks({ project }: { readonly project: AccessProject }) {
         ) : null}
         {check ? (
           <li>
-            <Link href={projectPageAddress(paths.projectCheckAccess, project.shortName)}>
+            <Link
+              href={projectPageAddress(paths.projectCheckAccess, project.shortName)}
+              current={current === accessPage.check}
+            >
               {t("nav.check-access")}
             </Link>
           </li>
@@ -76,20 +96,22 @@ interface ProjectFrameProps {
   readonly project: AccessProject;
   /** The permission the page needs in the project; a person without it finds nothing, as at an address that is not there. */
   readonly needs: PermissionKey;
+  /** The page that is open. */
+  readonly page: ProjectAccessPage;
   readonly heading: string;
   readonly intro: string;
   readonly children: ReactNode;
 }
 
 /** What every page of *What roles see here* has: the links to its sisters, *Back*, the heading and the introduction. */
-function ProjectFrame({ project, needs, heading, intro, children }: ProjectFrameProps) {
+function ProjectFrame({ project, needs, page, heading, intro, children }: ProjectFrameProps) {
   if (!project.permissions.includes(needs)) {
     return <NotFoundPage />;
   }
   return (
     <Card heading={heading} level={1}>
       <div className={styles.stack}>
-        <AccessLinks project={project} />
+        <AccessLinks project={project} current={page} />
         <Link href={projectSettingsAddress(project.shortName)}>{t("access.back-to-settings")}</Link>
         <p className={styles.intro}>{intro}</p>
         {children}
@@ -104,6 +126,7 @@ export function ProjectFieldPermissionsPage({ project }: { readonly project: Acc
     <ProjectFrame
       project={project}
       needs={DECIDE}
+      page={accessPage.fields}
       heading={t("field-permissions.project-title", { project: project.name })}
       intro={t("field-permissions.intro-project", { project: project.name })}
     >
@@ -118,6 +141,7 @@ export function ProjectPeopleVisibilityPage({ project }: { readonly project: Acc
     <ProjectFrame
       project={project}
       needs={DECIDE}
+      page={accessPage.people}
       heading={t("people-visibility.project-title", { project: project.name })}
       intro={t("people-visibility.intro-project", { project: project.name })}
     >
@@ -132,6 +156,7 @@ export function ProjectCheckAccessPage({ project }: { readonly project: AccessPr
     <ProjectFrame
       project={project}
       needs={CHECK}
+      page={accessPage.check}
       heading={t("check-access.project-title", { project: project.name })}
       intro={t("check-access.intro")}
     >

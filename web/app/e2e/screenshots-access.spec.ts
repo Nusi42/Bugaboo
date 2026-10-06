@@ -51,6 +51,9 @@ test.use({
   },
 });
 
+/** A computer, to show the matrix as it stands there. */
+const COMPUTER = { width: 1280, height: 800 } as const;
+
 /** The tallest the window is made for a picture: longer than any screen of these pages. */
 const TALLEST = 6000;
 
@@ -73,12 +76,16 @@ function wholeHeight(page: Page): Promise<number> {
 }
 
 /** Takes the open screen, all of it, in both looks, once everything on it has settled. */
-async function shot(page: Page, name: string): Promise<void> {
+async function shot(
+  page: Page,
+  name: string,
+  size: { readonly width: number; readonly height: number } = PHONE,
+): Promise<void> {
   await page.waitForTimeout(SETTLING_MS);
-  await page.setViewportSize({ width: PHONE.width, height: await wholeHeight(page) });
+  await page.setViewportSize({ width: size.width, height: await wholeHeight(page) });
   await page.waitForTimeout(SETTLING_MS);
   await shoot(page, name, MILESTONE);
-  await page.setViewportSize(PHONE);
+  await page.setViewportSize(size);
 }
 
 test("what roles see at phone width", async ({ page, server }) => {
@@ -174,4 +181,18 @@ test("a level that is set and taken away at phone width", async ({ page }) => {
   const list = await levelList(page, t("issue-field.cost-center"), roleName.contributor);
   await pickLevel(list, page, t("field-level.can-see"));
   await shot(page, "67-field-permissions-changed-below");
+});
+
+test("the matrix of field permissions on a computer", async ({ page }) => {
+  test.setTimeout(180_000);
+  await page.setViewportSize(COMPUTER);
+  await signIn(page, ada);
+  await page.goto(projectPageAddress(paths.projectFields, "ACME"));
+  await expect(
+    page.getByLabel(
+      t("access.cell-label", { subject: t("issue-field.cost-center"), role: roleName.contributor }),
+      { exact: true },
+    ),
+  ).toBeVisible();
+  await shot(page, "68-field-permissions-computer", COMPUTER);
 });

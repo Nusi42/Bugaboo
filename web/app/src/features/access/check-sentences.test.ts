@@ -103,8 +103,8 @@ describe("sec_04 the levels of Check access in plain sentences", () => {
         set: { kind: "project", project: acme },
       },
     ] as const;
-    expect(levelSentences(ana, "Cost center", name, says, false)).toEqual([
-      "The role Contributor sets Cost center to HIDDEN for ACME.",
+    expect(levelSentences(ana, name, says, false)).toEqual([
+      "The role Contributor gives HIDDEN for ACME.",
     ]);
   });
 
@@ -113,9 +113,9 @@ describe("sec_04 the levels of Check access in plain sentences", () => {
       { role: { id: "r", name: "Viewer" }, level: "can-see", set: { kind: "role_own" } },
       { role: { id: "q", name: "Guest" }, level: "hidden", set: { kind: "unset" } },
     ] as const;
-    const sentences = levelSentences(ana, "Title", name, says, true);
-    expect(sentences[0]).toBe("The role Viewer sets Title to CAN-SEE for the whole organization.");
-    expect(sentences[1]).toBe("The role Guest sets nothing for Title, so it counts as hidden.");
+    const sentences = levelSentences(ana, name, says, true);
+    expect(sentences[0]).toBe("The role Viewer gives CAN-SEE for the whole organization.");
+    expect(sentences[1]).toBe("The role Guest sets nothing, so it counts as hidden.");
     expect(sentences.slice(2)).toEqual([
       "The highest level counts.",
       "The access key lowers it to Can see.",
@@ -123,7 +123,7 @@ describe("sec_04 the levels of Check access in plain sentences", () => {
   });
 
   it("says when the person has no role there", () => {
-    expect(levelSentences(ana, "Title", name, [], false)).toEqual([
+    expect(levelSentences(ana, name, [], false)).toEqual([
       "Ana has no role here, so nothing is shown.",
     ]);
   });

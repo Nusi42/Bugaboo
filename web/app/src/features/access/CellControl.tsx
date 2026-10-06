@@ -37,12 +37,13 @@ export function CellControl<Level extends string>({
   inProject,
   onChange,
 }: CellControlProps<Level>) {
-  const origin = originText(cell.origin, inProject);
+  const origin = originText(cell.origin);
   return (
     <div className={styles.cell}>
       <SelectField
         label={label}
         hideLabel={hideLabel}
+        {...(origin === undefined ? {} : { description: origin })}
         choices={levels.map((level) => ({
           value: level,
           label: levelName(level),
@@ -51,7 +52,6 @@ export function CellControl<Level extends string>({
         value={cell.level}
         onChange={onChange}
       />
-      {origin === undefined ? null : <p className={styles.origin}>{origin}</p>}
       {inProject && cell.origin.kind === "set_here" ? (
         <Button
           quiet
