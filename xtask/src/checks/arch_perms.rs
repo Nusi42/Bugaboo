@@ -54,7 +54,8 @@ impl Check for ArchPerms {
         };
         let spec: Value = serde_json::from_str(&read(SPEC_PATH, "; run `cargo xtask gen api`")?)
             .with_context(|| format!("{SPEC_PATH} is not valid JSON"))?;
-        let catalogue = read_catalogue(&read(CATALOGUE_PATH, "")?.replace("\r\n", "\n"));
+        let source = read(CATALOGUE_PATH, "")?.replace("\r\n", "\n");
+        let catalogue = read_catalogue(&source);
         let messages: Value = serde_json::from_str(&read(MESSAGES_PATH, "")?)
             .with_context(|| format!("{MESSAGES_PATH} is not valid JSON"))?;
         let message_keys: BTreeSet<String> = messages
@@ -63,12 +64,14 @@ impl Check for ArchPerms {
             .unwrap_or_default();
         let exemptions: Exemptions = toml::from_str(&read(EXEMPTIONS_PATH, "")?)
             .with_context(|| format!("{EXEMPTIONS_PATH} is not valid"))?;
-        Ok(evaluate(
+        let mut findings = reading_findings(&source, &catalogue);
+        findings.extend(evaluate(
             &spec,
             &catalogue,
             &message_keys,
             &exemptions.engine_only,
-        ))
+        ));
+        Ok(findings)
     }
 }
 
@@ -109,6 +112,42 @@ pub(super) fn read_catalogue(source: &str) -> Vec<Declared> {
             })
         })
         .collect()
+}
+
+/// How many variants the source of the enum declares: the lines that start with a name and `=>`
+/// (the line of a variant whose declaration is broken over lines starts so too, and has no key on
+/// it).
+fn variant_lines(source: &str) -> usize {
+    source
+        .lines()
+        .map(str::trim_start)
+        .filter(|line| !line.starts_with("//"))
+        .filter(|line| {
+            let name: String = line
+                .chars()
+                .take_while(|c| c.is_alphanumeric() || *c == '_')
+                .collect();
+            name.chars().next().is_some_and(char::is_uppercase)
+                && line[name.len()..].trim_start().starts_with("=>")
+        })
+        .count()
+}
+
+/// A variant that the check could not read is a permission it would not hold to the rules: the
+/// number of variants must be the number of permissions it read.
+fn reading_findings(source: &str, catalogue: &[Declared]) -> Vec<Finding> {
+    let variants = variant_lines(source);
+    if variants == catalogue.len() {
+        return Vec::new();
+    }
+    vec![Finding::at(
+        CATALOGUE_PATH,
+        format!(
+            "The enum declares {variants} permissions but the check read {}: write each as one \
+             line `Variant => (\"key\", Topic, …)`, so none is left out of the rules.",
+            catalogue.len()
+        ),
+    )]
 }
 
 /// The name of a topic as the message catalog spells it (`Projects` is `projects`).
@@ -297,6 +336,19 @@ mod tests {
                 ("manage-roles".to_owned(), "People".to_owned())
             ]
         );
+    }
+
+    #[test]
+    fn bad_example_a_permission_declared_over_several_lines_is_not_read_and_says_so() {
+        let one_line = "A => (\"a\", Projects, Project, See, message::A),\nB => (\"b\", People, Organization, Manage, message::B),\n";
+        let broken = "A => (\"a\", Projects, Project, See, message::A),\nB =>\n    (\"b\", People, Organization, Manage, message::B),\n";
+        assert!(reading_findings(one_line, &read_catalogue(one_line)).is_empty());
+        let found = reading_findings(broken, &read_catalogue(broken));
+        assert_eq!(found.len(), 1);
+        assert!(found[0].message.contains("declares 2 permissions"));
+        // The macro pattern and the comments are no variants.
+        let pattern = "$($variant:ident => ($key:literal),+)\n// C => (\"c\", X, Y, Z, m)\n";
+        assert_eq!(variant_lines(pattern), 0);
     }
 
     #[test]

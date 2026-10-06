@@ -15,7 +15,7 @@ reason = "Counts only the people the viewer may see: the answer needs Manage rol
 [[exempt]]
 route = "GET /api/v1/admin/status"
 property = "entries"
-reason = "The log is the whole organization's and only people with See how the server is doing may ask: they may see all of it, so the number holds nothing they may not see."
+reason = "The number of the server's own log entries, shown only to people with See how the server is doing, who may see all of the log."
 
 [[exempt]]
 route = "GET /api/v1/admin/status"

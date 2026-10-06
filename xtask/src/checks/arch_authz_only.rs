@@ -41,7 +41,7 @@ const ENGINE_CALLER_FOLDER: &str = "crates/bb-app/src/access/";
 const INPUT_BUILDER_FOLDER: &str = "crates/bb-store/src/";
 /// What a use case must not write about the actor: each skips the narrowing of an access key
 /// (M2-F27), with what to write instead.
-const UNNARROWED: [(&str, &str); 3] = [
+const UNNARROWED: [(&str, &str); 5] = [
     (
         ".evaluate(actor.person",
         "`ctx.evaluate(actor.person.id, …)` skips the narrowing of an access key. Judge the actor \
@@ -53,11 +53,24 @@ const UNNARROWED: [(&str, &str); 3] = [
          actor.key_scope(), tree)` for the actor.",
     ),
     (
+        "Policy::visible(",
+        "`Policy::visible` does not narrow to an access key. Use `visible_as(person, \
+         actor.key_scope(), tree)` for the actor.",
+    ),
+    (
+        "Policy::evaluate_at(",
+        "`Policy::evaluate_at` does not narrow to an access key. Use `evaluate_as(person, \
+         actor.key_scope(), tree, place)` for the actor.",
+    ),
+    (
         ".evaluate_at(",
         "`Policy::evaluate_at` does not narrow to an access key. Use `evaluate_as(person, \
          actor.key_scope(), tree, place)` for the actor.",
     ),
 ];
+/// The narrowed forms, which narrow to nothing when they are given no key: the second argument
+/// of each is the key scope.
+const NARROWED: [&str; 2] = ["evaluate_as(", "visible_as("];
 /// The crate whose names a glob import must not pull in.
 const POLICY_CRATE: &str = "bb_policy";
 /// The type.
@@ -220,6 +233,21 @@ fn unnarrowed_findings(path: &str, code: &str) -> Vec<Finding> {
             findings.push(Finding::at(format!("{path}:{line}"), advice));
         }
     }
+    // `evaluate_as(person, None, …)` and `visible_as(person, None, …)` judge the actor without
+    // their key: a literal `None` in place of the key scope is no scope.
+    for name in NARROWED {
+        for (at, _) in squeezed.match_indices(name) {
+            let arguments = &squeezed[at + name.len()..];
+            if arguments.split(',').nth(1) == Some("None") {
+                let line = lines.get(at).copied().unwrap_or(1);
+                findings.push(Finding::at(
+                    format!("{path}:{line}"),
+                    "`None` in place of the key scope skips the narrowing: the actor is judged as if they came without \
+                     their access key. Pass `actor.key_scope()`.",
+                ));
+            }
+        }
+    }
     findings
 }
 
@@ -256,7 +284,9 @@ fn glob_import_findings(path: &str, code: &str) -> Vec<Finding> {
         if names_policy && statement.contains('*') {
             findings.push(Finding::at(
                 format!("{path}:{}", at + 1),
-                "A glob import of `bb_policy` would bring the engine (`evaluate`, `Inputs`) in                  without naming it. Import the names you use; only `bb-app/src/access` asks the                  engine and only `bb-store` builds its input.",
+                "A glob import of `bb_policy` would bring the engine (`evaluate`, `Inputs`) in \
+                 without naming it. Import the names you use; only `bb-app/src/access` asks the \
+                 engine and only `bb-store` builds its input.",
             ));
         }
         at = end + 1;
@@ -590,6 +620,10 @@ const T: &str = \"use bb_policy::*;\";
             "async fn f() {\n    let held = ctx\n        .evaluate(\n            actor.person.id,\n            place,\n        )\n        .await;\n}\n",
             "fn f() { let seen = policy.visible(actor.person.id, &tree); }\n",
             "fn f() { let held = policy.evaluate_at(person, &tree, place); }\n",
+            "fn f() { let held = Policy::evaluate_at(&policy, person, &tree, place); }\n",
+            "fn f() { let seen = Policy::visible(&policy, person, &tree); }\n",
+            "fn f() { let held = policy.evaluate_as(person, None, &tree, place); }\n",
+            "fn f() { let seen = policy.visible_as(\n    person,\n    None,\n    &tree,\n); }\n",
         ] {
             let found = evaluate(&source("crates/bb-app/src/projects/x.rs", text));
             assert_eq!(found.len(), 1, "{text}");
