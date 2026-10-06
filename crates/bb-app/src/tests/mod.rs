@@ -8,6 +8,6 @@ mod fake;
 mod fake_policy;
 mod fake_projects;
 mod hidden;
-mod keys;
+mod key_scope;
 mod scenarios;
 mod world;
