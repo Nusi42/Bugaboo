@@ -96,19 +96,19 @@ property = "roles"
 reason = "The columns are the roles, which an administrator makes and which stay a few dozen: the table holds at most 100 and says when it cut the list off (`truncated`); paging columns of a matrix is not worth it before an organization has more (M2-F90)."
 
 [[exempt]]
-route = "GET /api/v1/check-access"
+route = "GET /api/v1/check-access/people/{person}"
 property = "permissions"
 whole_value = true
 reason = "The answer holds one entry for each permission of the catalogue that counts in the place (at most 14 in M2): a list bounded by the code, not one that grows with data (M2-F20)."
 
 [[exempt]]
-route = "GET /api/v1/check-access"
+route = "GET /api/v1/check-access/people/{person}"
 property = "fields"
 whole_value = true
 reason = "The answer holds one entry for each field of the catalogue (16 in M2): a list bounded by the code, not one that grows with data (M2-F20)."
 
 [[exempt]]
-route = "GET /api/v1/check-access"
+route = "GET /api/v1/check-access/people/{person}"
 property = "kinds"
 whole_value = true
 reason = "The answer holds one entry for each kind of people information (10 in M2): a list bounded by the code, not one that grows with data (M2-F20)."
