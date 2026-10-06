@@ -309,11 +309,10 @@ impl AuthStore for AuthStorage {
             .order_by_expr(name().into(), Order::Asc)
             .order_by(PersonRow::Id, Order::Asc)
             .limit(limit);
-        if let Some(words) = search
-            .map(wildcards_removed)
-            .filter(|words| !words.is_empty())
-        {
-            let pattern = format!("%{words}%");
+        // Every word of the search is held by the name (or, if asked for, by the address).
+        let words = search.map(wildcards_removed).unwrap_or_default();
+        for word in words.split_whitespace() {
+            let pattern = format!("%{word}%");
             let mut any = Cond::any().add(
                 Expr::expr(name()).binary(BinOper::Like, Func::lower(Expr::val(pattern.clone()))),
             );

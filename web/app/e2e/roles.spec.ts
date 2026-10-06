@@ -6,6 +6,7 @@ import { ada, bob, cleo, makeAdmin, makePerson } from "./support/accounts.ts";
 import { expectGoodInEveryLook } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { openFromMenu, signIn } from "./support/flows.ts";
+import { twoStepOf } from "./support/roles.ts";
 import { makeProject } from "./support/projects.ts";
 
 // Roles & permissions and Who has which role (SEC-02, SEC-03, SEC-08, WP-11): a role is made from a
@@ -86,16 +87,10 @@ test("sec_08 a role is made from a copy of a starting role, changed and kept", a
   await expect(page.getByRole("switch", { name: t("roles.two-step"), exact: true })).toBeChecked();
   await expect(page.getByText(t("save.saved"), { exact: true })).toBeVisible();
   // And off again, so that the people who get this role later are not asked for a second step.
-  // The change is on the server before the next test signs somebody in with this role: the page
-  // is read again until the switch stays off.
+  // The change is on the server before the next test signs somebody in with this role: ask the
+  // server until the switch is off (a reload of the page could cut the change short).
   await press(page, "roles.two-step");
-  const twoStep = page.getByRole("switch", { name: t("roles.two-step"), exact: true });
-  await expect
-    .poll(async () => {
-      await page.reload();
-      return twoStep.isChecked();
-    })
-    .toBe(false);
+  await expect.poll(() => twoStepOf(page)).toBe(false);
 });
 
 test("sec_08 taking away a permission that manages roles asks first", async ({ page }) => {

@@ -163,11 +163,11 @@ impl Masked for ChoicePage {}
 
 /// Where a page of people ends, as text: the ID and then the name as it is written (a name may
 /// hold anything, an ID holds no space).
-fn write_cursor(last: &Person) -> String {
+pub(crate) fn write_cursor(last: &Person) -> String {
     format!("{} {}", last.id, last.display_name)
 }
 
-fn read_cursor(text: &str) -> Result<PeoplePosition, AppError> {
+pub(crate) fn read_cursor(text: &str) -> Result<PeoplePosition, AppError> {
     let invalid = || AppError::Refused(ErrorCode::InvalidRequest);
     let (id, name) = text.split_once(' ').ok_or_else(invalid)?;
     Ok(PeoplePosition {

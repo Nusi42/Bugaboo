@@ -2,19 +2,19 @@ import type { Schema } from "@bugaboo/api-client";
 import { locale, t, type MessageKey } from "@bugaboo/messages";
 
 /** Where a role given to somebody counts, as the API names it. */
-export type AppliesTo = Schema<"AppliesToBody">;
+export type WhereItCounts = Schema<"AppliesToBody">;
 
 /** Where a row of *Who has which role* is: the whole organization, a project, or one that is not named. */
 export type RowPlace = Schema<"PlaceRef">;
 
-const appliesTexts: Readonly<Record<AppliesTo, MessageKey>> = {
+const appliesTexts: Readonly<Record<WhereItCounts, MessageKey>> = {
   organization: "roles.applies.organization",
   project: "roles.applies.project",
   "project-and-sub-projects": "roles.applies.project-and-sub-projects",
 };
 
 /** *Where it counts*, in the words of the glossary. */
-export function appliesToText(appliesTo: AppliesTo): string {
+export function appliesToText(appliesTo: WhereItCounts): string {
   return t(appliesTexts[appliesTo]);
 }
 

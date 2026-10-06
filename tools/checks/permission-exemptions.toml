@@ -2,11 +2,3 @@
 # cases that have no route of their own so far (ARCH-PERMS, architecture section 7). Each entry
 # names the permission and a reason that names the follow-up that tracks it. An entry for a
 # permission that a route asks for fails, so the file shrinks as the routes arrive.
-
-[[engine-only]]
-permission = "decide-what-roles-see"
-reason = "Judged by the use cases that set field and people levels; its routes come with the screens of WP-12 (M2-F60)."
-
-[[engine-only]]
-permission = "check-access"
-reason = "Judged by the use case Check access; its route comes with the screen of WP-12 (M2-F60)."

@@ -2,7 +2,7 @@ import { ApiError, type Schema } from "@bugaboo/api-client";
 import { useInfiniteQuery } from "@tanstack/react-query";
 
 import { assignmentsKey } from "../../shared/access-cache.ts";
-import type { AppliesTo, RowPlace } from "../../shared/access-words.ts";
+import type { WhereItCounts, RowPlace } from "../../shared/access-words.ts";
 import { api } from "../../shared/api.ts";
 
 /** How many rows, and how many choices, one page holds. */
@@ -23,7 +23,7 @@ export interface RowLine {
   /** The role, or `null` for *No access*. */
   readonly role: Schema<"RoleRef"> | null;
   readonly place: RowPlace;
-  readonly appliesTo: AppliesTo;
+  readonly appliesTo: WhereItCounts;
   /** The row comes from above the place the list is for. */
   readonly inherited: boolean;
 }

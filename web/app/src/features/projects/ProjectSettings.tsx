@@ -1,25 +1,16 @@
 import { t } from "@bugaboo/messages";
 import { Card, Link } from "@bugaboo/ui";
-import { Navigate, useNavigate } from "@tanstack/react-router";
+import { useNavigate } from "@tanstack/react-router";
 
-import { paths, projectAddress, projectRolesAddress } from "../../shared/paths.ts";
-import { NotFoundPage } from "../shell/index.ts";
+import { paths, projectAddress } from "../../shared/paths.ts";
 import { ChangeProjectForm } from "./ChangeProjectForm.tsx";
 import { MoveProject } from "./MoveProject.tsx";
+import { OtherTab } from "./OtherTab.tsx";
 import { ProjectTabs } from "./ProjectTabs.tsx";
 import styles from "./Projects.module.css";
 import type { OneProject } from "./use-projects.ts";
 
-/** For a person who may do neither of the two: the page of the roles if they decide there, else nothing. */
-function OnlyRoles({ project }: { readonly project: OneProject }) {
-  return project.permissions.includes("decide-roles") ? (
-    <Navigate to={projectRolesAddress(project.project.short_name)} replace />
-  ) : (
-    <NotFoundPage />
-  );
-}
-
-/** The settings once the project is known: the name and short name, and *Move*. */
+/** The settings once the project is known: the name and short name, and *Move*, below the tabs. */
 export function ProjectSettings({
   project,
   address,
@@ -32,7 +23,7 @@ export function ProjectSettings({
   const mayMove = project.may_move !== "nowhere";
   const { id, name, short_name: shortName } = project.project;
   if (!mayChange && !mayMove) {
-    return <OnlyRoles project={project} />;
+    return <OtherTab project={project} />;
   }
   return (
     <div className={styles.stack}>

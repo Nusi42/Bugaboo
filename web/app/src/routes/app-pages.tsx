@@ -1,10 +1,4 @@
-import {
-  createRoute,
-  lazyRouteComponent,
-  useNavigate,
-  useParams,
-  useSearch,
-} from "@tanstack/react-router";
+import { createRoute, lazyRouteComponent, useNavigate, useSearch } from "@tanstack/react-router";
 
 import { HomePage } from "../features/home/index.ts";
 import { AppearancePage, RegionPage } from "../features/my-settings/index.ts";
@@ -105,14 +99,6 @@ const ProjectsScreen = lazyRouteComponent(
   () => import("../features/projects/index.ts"),
   "ProjectsPage",
 );
-const ProjectOverviewScreen = lazyRouteComponent(
-  () => import("../features/projects/index.ts"),
-  "ProjectOverviewPage",
-);
-const ProjectSettingsScreen = lazyRouteComponent(
-  () => import("../features/projects/index.ts"),
-  "ProjectSettingsPage",
-);
 
 /** *Organization settings › Projects*: the address says which project is open in the side panel. */
 export const projectsRoute = createRoute({
@@ -137,34 +123,6 @@ export const projectsRoute = createRoute({
         />
       </OnlyWith>
     );
-  },
-});
-
-/** The short name (or ID) in the address of a project page, if the address has one. */
-function useProjectOfAddress(): string | undefined {
-  const params: unknown = useParams({ strict: false });
-  const project: unknown =
-    typeof params === "object" && params !== null ? Reflect.get(params, "project") : undefined;
-  return typeof project === "string" ? project : undefined;
-}
-
-/** The overview of a project, `/p/WEB`. The project decides who sees it: nobody else finds it. */
-export const projectRoute = createRoute({
-  getParentRoute: () => appRoute,
-  path: paths.project,
-  component: function Project() {
-    const project = useProjectOfAddress();
-    return project === undefined ? null : <ProjectOverviewScreen address={project} />;
-  },
-});
-
-/** The settings of a project, `/p/WEB/settings`. */
-export const projectSettingsRoute = createRoute({
-  getParentRoute: () => appRoute,
-  path: paths.projectSettings,
-  component: function ProjectSettings() {
-    const project = useProjectOfAddress();
-    return project === undefined ? null : <ProjectSettingsScreen address={project} />;
   },
 });
 

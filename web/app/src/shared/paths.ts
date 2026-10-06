@@ -29,9 +29,15 @@ export const paths = {
   themes: "/settings/themes",
   status: "/settings/status",
   projects: "/settings/projects",
+  fieldPermissions: "/settings/field-permissions",
+  peopleVisibility: "/settings/people-visibility",
+  checkAccess: "/settings/check-access",
   project: "/p/$project",
   projectSettings: "/p/$project/settings",
   projectRoles: "/p/$project/settings/roles",
+  projectFields: "/p/$project/settings/fields",
+  projectPeople: "/p/$project/settings/people",
+  projectCheckAccess: "/p/$project/settings/check-access",
   frames: "/frames",
 } as const;
 
@@ -58,6 +64,14 @@ export function roleAddress(id: string): string {
 /** The address of *Who has which role* in a project, `/p/WEB/settings/roles`. */
 export function projectRolesAddress(shortName: string): string {
   return paths.projectRoles.replace("$project", encodeURIComponent(shortName));
+}
+
+/** The address of a page below the settings of a project, `/p/WEB/settings/fields`, with the short name filled in. */
+export function projectPageAddress(
+  path: typeof paths.projectFields | typeof paths.projectPeople | typeof paths.projectCheckAccess,
+  shortName: string,
+): string {
+  return path.replace("$project", encodeURIComponent(shortName));
 }
 
 /** The address of the settings of a project, `/p/WEB/settings`. */

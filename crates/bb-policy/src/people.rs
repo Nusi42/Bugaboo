@@ -15,6 +15,7 @@ use serde::Serialize;
 
 use crate::catalogue::Permission;
 use crate::evaluate::Evaluation;
+use crate::mask::Masked;
 
 /// How a person is shown to one viewer.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
@@ -43,6 +44,9 @@ pub enum PersonRef {
     },
 }
 
+/// A person holds no field of the catalogue: a list of them is masked as it is.
+impl Masked for PersonRef {}
+
 /// Where a person is shown: in an ordinary answer, or in a screen where the people who manage
 /// people or roles work (*Organization settings*, *Who has which role*, *Check access*).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -63,6 +67,14 @@ const MANAGERS: [Permission; 4] = [
 ];
 
 impl Evaluation {
+    /// Whether the viewer manages people or roles here (*Manage people*, *Manage groups*, *Manage
+    /// roles* or *Decide who has which role*): they always see names in the management screens
+    /// and see everybody there (M2-Q3).
+    #[must_use]
+    pub fn manages_people(&self) -> bool {
+        MANAGERS.iter().any(|permission| self.allows(*permission))
+    }
+
     /// How the viewer sees people of `kind` here. The viewer's level is the most open of their
     /// roles; in a management screen a person who manages people or roles always sees names.
     #[must_use]
@@ -70,7 +82,7 @@ impl Evaluation {
         match context {
             PeopleContext::Ordinary => self.kind_level(kind),
             PeopleContext::Management => {
-                if MANAGERS.iter().any(|permission| self.allows(*permission)) {
+                if self.manages_people() {
                     PeopleLevel::Names
                 } else {
                     self.kind_level(PeopleKind::ProjectMembers)

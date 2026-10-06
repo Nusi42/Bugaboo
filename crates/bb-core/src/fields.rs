@@ -46,6 +46,11 @@ words! {
     }
 }
 
+words_in_api!(
+    Field,
+    "A built-in field of the field catalogue, by its key."
+);
+
 /// The thing a field belongs to.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum BelongsTo {

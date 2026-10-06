@@ -47,8 +47,11 @@ mod auth;
 mod auth_factors;
 mod auth_people;
 mod auth_sign_in;
+mod check_access;
+mod field_permissions;
 mod groups;
 mod people;
+mod people_visibility;
 mod projects;
 mod projects_move;
 mod roles;
@@ -141,6 +144,9 @@ where
         .merge(groups::routes())
         .merge(roles::routes())
         .merge(assignments::routes())
+        .merge(field_permissions::routes())
+        .merge(people_visibility::routes())
+        .merge(check_access::routes())
 }
 
 /// Whether the address belongs to the API. Escapes are decoded first; an address with a

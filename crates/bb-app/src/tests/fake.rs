@@ -240,14 +240,18 @@ impl AuthStore for FakeStore {
         after: Option<&PeoplePosition>,
         limit: u64,
     ) -> Result<Vec<Person>, FakeError> {
-        let words = search.map(|words| {
-            words
-                .trim()
-                .chars()
-                .filter(|character| !matches!(character, '%' | '_' | '\\'))
-                .collect::<String>()
-                .to_lowercase()
-        });
+        let words: Vec<String> = search
+            .map(|words| {
+                words
+                    .chars()
+                    .filter(|character| !matches!(character, '%' | '_' | '\\'))
+                    .collect::<String>()
+                    .to_lowercase()
+                    .split_whitespace()
+                    .map(str::to_owned)
+                    .collect()
+            })
+            .unwrap_or_default();
         let key = |name: &str, id: UserId| (name.to_lowercase(), id);
         Ok(self.read(|state| {
             let mut people: Vec<Person> = state
@@ -255,10 +259,9 @@ impl AuthStore for FakeStore {
                 .iter()
                 .map(|(person, _)| person.clone())
                 .filter(|person| {
-                    words.as_deref().is_none_or(|words| {
-                        words.is_empty()
-                            || person.display_name.to_lowercase().contains(words)
-                            || (by_email && person.email.to_lowercase().contains(words))
+                    words.iter().all(|word| {
+                        person.display_name.to_lowercase().contains(word)
+                            || (by_email && person.email.to_lowercase().contains(word))
                     })
                 })
                 .collect();

@@ -51,7 +51,8 @@ const ACCESS_KEY_SCHEME: &str = "accessKey";
         (name = "server", description = "The server itself."),
         (name = "auth", description = "Signing in, sessions, second step, passkeys, invitations and setup."),
         (name = "admin", description = "What only administrators see: the state of the server."),
-        (name = "settings", description = "Settings in layers: the organization's, a project's and a person's own.")
+        (name = "settings", description = "Settings in layers: the organization's, a project's and a person's own."),
+        (name = "access", description = "What roles see (field permissions, who sees people) and what a person can do and why (check access).")
     )
 )]
 struct ApiDoc;

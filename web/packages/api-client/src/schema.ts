@@ -636,6 +636,92 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/check-access/people": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * The people to choose from for *Check access*, a page at a time, by name. A person who cannot
+     *     see names there is listed nobody. Needs the permission *Check what other people can do, and
+     *     why* in the place.
+     */
+    get: operations["listPeopleToCheck"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/check-access/people/{person}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * What a person can do in a project, or in the whole organization when no project is named:
+     *     every permission with *yes* or *no*, every field with its level and how the person sees
+     *     people, each with the reasons. Needs the permission *Check what other people can do, and why*
+     *     in the place.
+     */
+    get: operations["checkAccess"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/field-permissions": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Which level every role has for every field, for the whole organization or for one project,
+     *     and where each level was set. Needs the permission *Decide which fields and which people
+     *     information each role sees*.
+     */
+    get: operations["getFieldPermissions"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/field-permissions/{role}/{field}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /**
+     * Sets the level of a field for a role, for the whole organization (the role's own level) or for
+     *     one project and its sub-projects; `null` takes a project's setting away. A level above the
+     *     person's own is refused. Needs the permission *Decide which fields and which people
+     *     information each role sees* in the place.
+     */
+    put: operations["changeFieldPermission"];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/groups": {
     parameters: {
       query?: never;
@@ -820,6 +906,49 @@ export interface paths {
      */
     get: operations["listPeople"];
     put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/people-visibility": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * How every role sees every kind of people information, for the whole organization or for one
+     *     project, and where each level was set. Needs the permission *Decide which fields and which
+     *     people information each role sees*.
+     */
+    get: operations["getPeopleVisibility"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/people-visibility/{role}/{kind}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /**
+     * Sets how a role sees one kind of people information, for the whole organization (the role's
+     *     own level) or for one project and its sub-projects; `null` takes a project's setting away. A
+     *     level above the person's own is refused. Needs the permission *Decide which fields and which
+     *     people information each role sees* in the place.
+     */
+    put: operations["changePeopleVisibility"];
     post?: never;
     delete?: never;
     options?: never;
@@ -1358,6 +1487,11 @@ export interface components {
       password: string;
     };
     /**
+     * @description Where a role given to someone counts: the whole organization, only one project, or a project and its sub-projects.
+     * @enum {string}
+     */
+    AppliesTo: "organization" | "project" | "project-and-sub-projects";
+    /**
      * @description Where a role given to somebody counts (*Where it counts*).
      * @enum {string}
      */
@@ -1438,6 +1572,18 @@ export interface components {
       permissions?: components["schemas"]["Permission"][] | null;
       /** @description The two-step switch from now on. */
       two_step?: boolean | null;
+    };
+    /** @description What a person can do in a place, and why. */
+    CheckAccessBody: {
+      /** @description Every field of the catalogue. */
+      fields: components["schemas"]["LevelAnswerBody_Field_FieldLevel"][];
+      /** @description Every kind of people information. */
+      kinds: components["schemas"]["LevelAnswerBody_PeopleKind_PeopleLevel"][];
+      /** @description Every permission that counts here. */
+      permissions: components["schemas"]["PermissionAnswerBody"][];
+      /** @description The person who was checked, as the person who asks may see them. */
+      person: components["schemas"]["PersonRef"];
+      project?: components["schemas"]["KeyProjectRef"] | null;
     };
     /** @description One value of a setting that has a fixed list. */
     ChoiceBody: {
@@ -1574,6 +1720,32 @@ export interface components {
       | "rate_limit.exceeded"
       | "server.unavailable"
       | "server.internal";
+    /**
+     * @description A built-in field of the field catalogue, by its key.
+     * @enum {string}
+     */
+    Field:
+      | "title"
+      | "description"
+      | "status"
+      | "priority"
+      | "assigned-to"
+      | "reported-by"
+      | "due-date"
+      | "labels"
+      | "tags"
+      | "planned-for-release"
+      | "found-in-release"
+      | "estimated-time"
+      | "time-left"
+      | "time-spent"
+      | "activity"
+      | "cost-center";
+    /**
+     * @description What a role may do with a field: it is hidden, it can be seen, or it can be changed.
+     * @enum {string}
+     */
+    FieldLevel: "hidden" | "can-see" | "can-change";
     /** @description A level of a field that the move changes for the person. */
     FieldLevelChangeBody: {
       /** @description The level after the move. */
@@ -1619,6 +1791,13 @@ export interface components {
       /** @description The ID of the group. */
       id: string;
       /** @description What it is called. */
+      name: string;
+    };
+    /** @description A group named in a reason. */
+    GroupRefBody: {
+      /** @description The ID of the group. */
+      id: string;
+      /** @description What the group is called. */
       name: string;
     };
     /** @description What a group is used for, as far as the person who asks may see. */
@@ -1696,11 +1875,211 @@ export interface components {
      * @enum {string}
      */
     KindBody: "bool" | "integer" | "text";
+    /** @description A field or a kind with its level and what each role says. */
+    LevelAnswerBody_Field_FieldLevel: {
+      /** @description An access key lowered the level to *Can see*. */
+      capped_by_key: boolean;
+      /**
+       * @description What a role may do with a field: it is hidden, it can be seen, or it can be changed.
+       * @enum {string}
+       */
+      level: "hidden" | "can-see" | "can-change";
+      /** @description What each role that counts says. */
+      roles: components["schemas"]["RoleSaysBody_FieldLevel"][];
+      /**
+       * @description A built-in field of the field catalogue, by its key.
+       * @enum {string}
+       */
+      subject:
+        | "title"
+        | "description"
+        | "status"
+        | "priority"
+        | "assigned-to"
+        | "reported-by"
+        | "due-date"
+        | "labels"
+        | "tags"
+        | "planned-for-release"
+        | "found-in-release"
+        | "estimated-time"
+        | "time-left"
+        | "time-spent"
+        | "activity"
+        | "cost-center";
+    };
+    /** @description A field or a kind with its level and what each role says. */
+    LevelAnswerBody_PeopleKind_PeopleLevel: {
+      /** @description An access key lowered the level to *Can see*. */
+      capped_by_key: boolean;
+      /**
+       * @description How people of one kind are shown: by name, by their role only, or hidden.
+       * @enum {string}
+       */
+      level: "hidden" | "role-only" | "names";
+      /** @description What each role that counts says. */
+      roles: components["schemas"]["RoleSaysBody_PeopleLevel"][];
+      /**
+       * @description A kind of people information, by its key.
+       * @enum {string}
+       */
+      subject:
+        | "assigned-to"
+        | "reported-by"
+        | "last-changed-by"
+        | "authors"
+        | "editing"
+        | "followers"
+        | "time-entries"
+        | "mentions"
+        | "pictures"
+        | "project-members";
+    };
     /**
      * @description Where a setting can be set.
      * @enum {string}
      */
     LevelBody: "organization" | "project" | "person";
+    /** @description The level of one role. */
+    LevelCellBody_FieldLevel: {
+      /**
+       * @description What a role may do with a field: it is hidden, it can be seen, or it can be changed.
+       * @enum {string}
+       */
+      level: "hidden" | "can-see" | "can-change";
+      /** @description Where it was set. */
+      origin: components["schemas"]["LevelOriginBody"];
+      /** @description The ID of the role. */
+      role: string;
+    };
+    /** @description The level of one role. */
+    LevelCellBody_PeopleLevel: {
+      /**
+       * @description How people of one kind are shown: by name, by their role only, or hidden.
+       * @enum {string}
+       */
+      level: "hidden" | "role-only" | "names";
+      /** @description Where it was set. */
+      origin: components["schemas"]["LevelOriginBody"];
+      /** @description The ID of the role. */
+      role: string;
+    };
+    /** @description Where the level of a cell was set. */
+    LevelOriginBody:
+      | {
+          /** @enum {string} */
+          kind: "set_here";
+        }
+      | {
+          /** @description The project above, or *a project you can't see*. */
+          from: components["schemas"]["KeyProjectRef"];
+          /** @enum {string} */
+          kind: "inherited";
+        }
+      | {
+          /** @enum {string} */
+          kind: "role_own";
+        }
+      | {
+          /** @enum {string} */
+          kind: "unset";
+        };
+    /** @description Where the level a role says was set. */
+    LevelPlaceBody:
+      | {
+          /** @enum {string} */
+          kind: "project";
+          /** @description The project, or *a project you can't see*. */
+          project: components["schemas"]["KeyProjectRef"];
+        }
+      | {
+          /** @enum {string} */
+          kind: "role_own";
+        }
+      | {
+          /** @enum {string} */
+          kind: "unset";
+        };
+    /** @description A field or a kind of people information with the level of every role. */
+    LevelRowBody_Field_FieldLevel: {
+      /** @description One cell for each role, in the order of `roles`. */
+      cells: components["schemas"]["LevelCellBody_FieldLevel"][];
+      /**
+       * @description A built-in field of the field catalogue, by its key.
+       * @enum {string}
+       */
+      subject:
+        | "title"
+        | "description"
+        | "status"
+        | "priority"
+        | "assigned-to"
+        | "reported-by"
+        | "due-date"
+        | "labels"
+        | "tags"
+        | "planned-for-release"
+        | "found-in-release"
+        | "estimated-time"
+        | "time-left"
+        | "time-spent"
+        | "activity"
+        | "cost-center";
+      /**
+       * @description What a role may do with a field: it is hidden, it can be seen, or it can be changed.
+       * @enum {string}
+       */
+      yours: "hidden" | "can-see" | "can-change";
+    };
+    /** @description A field or a kind of people information with the level of every role. */
+    LevelRowBody_PeopleKind_PeopleLevel: {
+      /** @description One cell for each role, in the order of `roles`. */
+      cells: components["schemas"]["LevelCellBody_PeopleLevel"][];
+      /**
+       * @description A kind of people information, by its key.
+       * @enum {string}
+       */
+      subject:
+        | "assigned-to"
+        | "reported-by"
+        | "last-changed-by"
+        | "authors"
+        | "editing"
+        | "followers"
+        | "time-entries"
+        | "mentions"
+        | "pictures"
+        | "project-members";
+      /**
+       * @description How people of one kind are shown: by name, by their role only, or hidden.
+       * @enum {string}
+       */
+      yours: "hidden" | "role-only" | "names";
+    };
+    /** @description What each role sees, for one place. */
+    LevelTableBody_Field_FieldLevel: {
+      /** @description The levels a cell can be set to, the lowest first. */
+      levels: ("hidden" | "can-see" | "can-change")[];
+      project?: components["schemas"]["KeyProjectRef"] | null;
+      /** @description The roles, in the order of roles: the columns. */
+      roles: components["schemas"]["RoleRefBody"][];
+      /** @description The fields or kinds, in the order of their catalogue: the rows. */
+      rows: components["schemas"]["LevelRowBody_Field_FieldLevel"][];
+      /** @description There are more roles than the table holds; the first ones are shown. */
+      truncated: boolean;
+    };
+    /** @description What each role sees, for one place. */
+    LevelTableBody_PeopleKind_PeopleLevel: {
+      /** @description The levels a cell can be set to, the lowest first. */
+      levels: ("hidden" | "role-only" | "names")[];
+      project?: components["schemas"]["KeyProjectRef"] | null;
+      /** @description The roles, in the order of roles: the columns. */
+      roles: components["schemas"]["RoleRefBody"][];
+      /** @description The fields or kinds, in the order of their catalogue: the rows. */
+      rows: components["schemas"]["LevelRowBody_PeopleKind_PeopleLevel"][];
+      /** @description There are more roles than the table holds; the first ones are shown. */
+      truncated: boolean;
+    };
     /** @description Somebody who could take away a *No access* that applies to them after the move. */
     LiftBody: {
       /** @description The person, as the person who asks may see them. */
@@ -1820,12 +2199,26 @@ export interface components {
      * @enum {string}
      */
     MoveRightBody: "nowhere" | "into-projects" | "into-projects-or-top";
+    /**
+     * @description The level to set, or `null` to take away what the project set for the role, so the level
+     *     from above counts again.
+     */
+    NewFieldLevelBody: {
+      level?: components["schemas"]["FieldLevel"] | null;
+    };
     /** @description A row for the whole organization to give: to a person or to a group, and the role. */
     NewOrganizationRowBody: {
       /** @description The ID of the role. */
       role: string;
       /** @description Whom the row is for. */
       who: components["schemas"]["WhoBody"];
+    };
+    /**
+     * @description The level to set, or `null` to take away what the project set for the role, so the level
+     *     from above counts again.
+     */
+    NewPeopleLevelBody: {
+      level?: components["schemas"]["PeopleLevel"] | null;
     };
     /** @description A project to make. */
     NewProjectBody: {
@@ -2011,6 +2404,41 @@ export interface components {
      * @description One page of a list. `T` is the view of an item for the API description; an answer holds the
      *     items cut to the chosen fields ([`Page::of_authorized`]).
      */
+    Page_PersonRef: {
+      /** @description The items of this page. */
+      items: (
+        | {
+            /** @description The ID of the person. */
+            id: string;
+            /** @description The name. */
+            name: string;
+            /** @enum {string} */
+            shown: "name";
+          }
+        | {
+            /** @description The name of the role. */
+            role: string;
+            /** @enum {string} */
+            shown: "role";
+          }
+        | {
+            /** @enum {string} */
+            shown: "someone";
+          }
+        | {
+            /** @description The random code, like `K7Q2`. */
+            label: string;
+            /** @enum {string} */
+            shown: "former";
+          }
+      )[];
+      /** @description The cursor of the next page; `null` on the last page. */
+      next_cursor: string | null;
+    };
+    /**
+     * @description One page of a list. `T` is the view of an item for the API description; an answer holds the
+     *     items cut to the chosen fields ([`Page::of_authorized`]).
+     */
     Page_ProjectChoiceItem: {
       /** @description The items of this page. */
       items: {
@@ -2100,6 +2528,26 @@ export interface components {
       /** @description The password. */
       password: string;
     };
+    /**
+     * @description A kind of people information, by its key.
+     * @enum {string}
+     */
+    PeopleKind:
+      | "assigned-to"
+      | "reported-by"
+      | "last-changed-by"
+      | "authors"
+      | "editing"
+      | "followers"
+      | "time-entries"
+      | "mentions"
+      | "pictures"
+      | "project-members";
+    /**
+     * @description How people of one kind are shown: by name, by their role only, or hidden.
+     * @enum {string}
+     */
+    PeopleLevel: "hidden" | "role-only" | "names";
     /** @description A level of a kind of people information that the move changes for the person. */
     PeopleLevelChangeBody: {
       /** @description The level after the move. */
@@ -2128,6 +2576,17 @@ export interface components {
       | "manage-roles"
       | "change-organization-settings"
       | "see-status";
+    /** @description One permission with *yes* or *no* and the reasons. */
+    PermissionAnswerBody: {
+      /** @description Whether the person has it here. */
+      allowed: boolean;
+      /** @description The key of the permission; its sentence is the message `permission.<key>`. */
+      permission: components["schemas"]["Permission"];
+      /** @description Why. */
+      reasons: components["schemas"]["ReasonBody"][];
+      /** @description What the permission is about; the topic is the message `permission-topic.<topic>`. */
+      topic: components["schemas"]["Topic"];
+    };
     /**
      * @description One permission of the catalogue as the role page lists it. The sentence is the message
      *     `permission.<key>` and the name of the topic `permission-topic.<topic>`.
@@ -2370,6 +2829,80 @@ export interface components {
      * @enum {string}
      */
     ProjectShown: "visible" | "hidden";
+    /** @description Why a permission is given or not. */
+    ReasonBody:
+      | {
+          /** @enum {string} */
+          kind: "given_by_role";
+          /** @description The role. */
+          role: components["schemas"]["RoleRefBody"];
+          /** @description The row. */
+          row: components["schemas"]["ReasonRowBody"];
+        }
+      | {
+          /** @enum {string} */
+          kind: "kept_from_removed_row";
+          /** @description The *No access* that decided. */
+          no_access: components["schemas"]["ReasonRowBody"];
+          /** @description Its role. */
+          role: components["schemas"]["RoleRefBody"];
+          /** @description The row. */
+          row: components["schemas"]["ReasonRowBody"];
+        }
+      | {
+          /** @enum {string} */
+          kind: "removed_by_no_access";
+          /** @description The *No access* that decided. */
+          no_access: components["schemas"]["ReasonRowBody"];
+          /** @description Its role. */
+          role: components["schemas"]["RoleRefBody"];
+          /** @description The row. */
+          row: components["schemas"]["ReasonRowBody"];
+        }
+      | {
+          /** @enum {string} */
+          kind: "counts_only_for_the_organization";
+          /** @description The role. */
+          role: components["schemas"]["RoleRefBody"];
+          /** @description The row. */
+          row: components["schemas"]["ReasonRowBody"];
+        }
+      | {
+          /** @enum {string} */
+          kind: "narrowed_by_key";
+        }
+      | {
+          /** @enum {string} */
+          kind: "outside_key_projects";
+        }
+      | {
+          /** @enum {string} */
+          kind: "no_role_gives_it";
+        };
+    /** @description One row of *Who has which role* that played a part. */
+    ReasonRowBody: {
+      /** @description Where it counts. */
+      applies_to: components["schemas"]["AppliesTo"];
+      /** @description The ID of the row. */
+      assignment: string;
+      /** @description Whether it comes from above the place that was checked. */
+      inherited: boolean;
+      project?: components["schemas"]["KeyProjectRef"] | null;
+      /** @description Whom it is for. */
+      who: components["schemas"]["ReasonWhoBody"];
+    };
+    /** @description Whom a row of *Who has which role* was for. */
+    ReasonWhoBody:
+      | {
+          /** @enum {string} */
+          kind: "person";
+        }
+      | {
+          /** @description The group. */
+          group: components["schemas"]["GroupRefBody"];
+          /** @enum {string} */
+          kind: "group";
+        };
     /**
      * @description A role (or *No access*) that somebody has, and where: what a sentence like "Team member in
      *     Website" needs.
@@ -2432,6 +2965,37 @@ export interface components {
       id: string;
       /** @description What it is called; empty when the role was deleted meanwhile. */
       name: string;
+    };
+    /** @description A role as a column of the table. */
+    RoleRefBody: {
+      /** @description The ID of the role. */
+      id: string;
+      /** @description What the role is called. */
+      name: string;
+    };
+    /** @description What one role says about a field or a kind. */
+    RoleSaysBody_FieldLevel: {
+      /**
+       * @description What a role may do with a field: it is hidden, it can be seen, or it can be changed.
+       * @enum {string}
+       */
+      level: "hidden" | "can-see" | "can-change";
+      /** @description The role. */
+      role: components["schemas"]["RoleRefBody"];
+      /** @description Where it was set. */
+      set: components["schemas"]["LevelPlaceBody"];
+    };
+    /** @description What one role says about a field or a kind. */
+    RoleSaysBody_PeopleLevel: {
+      /**
+       * @description How people of one kind are shown: by name, by their role only, or hidden.
+       * @enum {string}
+       */
+      level: "hidden" | "role-only" | "names";
+      /** @description The role. */
+      role: components["schemas"]["RoleRefBody"];
+      /** @description Where it was set. */
+      set: components["schemas"]["LevelPlaceBody"];
     };
     /** @description What a role is used for, as far as the person who asks may see. */
     RoleUsedByBody: {
@@ -5735,6 +6299,394 @@ export interface operations {
       };
     };
   };
+  listPeopleToCheck: {
+    parameters: {
+      query?: {
+        /** @description The fields each item holds, separated by commas. The answer schema names every field that can be asked for; when this is left out the route's own small default is used. */
+        fields?: string;
+        /** @description Where the page starts: the `next_cursor` of the page before. */
+        cursor?: string;
+        /** @description How many items a page holds at most (default 50, at most 100). */
+        limit?: number;
+        /**
+         * @description The ID of the project. Without it the answer is about the whole organization: the level
+         *     each role has of its own.
+         */
+        project?: string;
+        /** @description Words that every found name holds, in any order; left out or empty, everybody is listed. */
+        search?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The people, by name. */
+      200: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Page_PersonRef"];
+        };
+      };
+      /** @description Nothing changed since the `ETag` that `If-None-Match` named. No body. */
+      304: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  checkAccess: {
+    parameters: {
+      query?: {
+        /**
+         * @description The ID of the project. Without it the answer is about the whole organization: the level
+         *     each role has of its own.
+         */
+        project?: string;
+      };
+      header?: never;
+      path: {
+        /** @description The ID of the person to check. */
+        person: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description What the person can do, and why. */
+      200: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CheckAccessBody"];
+        };
+      };
+      /** @description Nothing changed since the `ETag` that `If-None-Match` named. No body. */
+      304: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  getFieldPermissions: {
+    parameters: {
+      query?: {
+        /**
+         * @description The ID of the project. Without it the answer is about the whole organization: the level
+         *     each role has of its own.
+         */
+        project?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The field permissions. */
+      200: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["LevelTableBody_Field_FieldLevel"];
+        };
+      };
+      /** @description Nothing changed since the `ETag` that `If-None-Match` named. No body. */
+      304: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  changeFieldPermission: {
+    parameters: {
+      query?: {
+        /**
+         * @description The ID of the project. Without it the answer is about the whole organization: the level
+         *     each role has of its own.
+         */
+        project?: string;
+      };
+      header?: never;
+      path: {
+        /** @description The ID of the role. */
+        role: string;
+        /** @description The key of the field. */
+        field: components["schemas"]["Field"];
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["NewFieldLevelBody"];
+      };
+    };
+    responses: {
+      /** @description The level was set. */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
   listGroups: {
     parameters: {
       query?: {
@@ -6939,6 +7891,197 @@ export interface operations {
       };
       /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
       403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  getPeopleVisibility: {
+    parameters: {
+      query?: {
+        /**
+         * @description The ID of the project. Without it the answer is about the whole organization: the level
+         *     each role has of its own.
+         */
+        project?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description How roles see people. */
+      200: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["LevelTableBody_PeopleKind_PeopleLevel"];
+        };
+      };
+      /** @description Nothing changed since the `ETag` that `If-None-Match` named. No body. */
+      304: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  changePeopleVisibility: {
+    parameters: {
+      query?: {
+        /**
+         * @description The ID of the project. Without it the answer is about the whole organization: the level
+         *     each role has of its own.
+         */
+        project?: string;
+      };
+      header?: never;
+      path: {
+        /** @description The ID of the role. */
+        role: string;
+        /** @description The key of the kind of people information. */
+        kind: components["schemas"]["PeopleKind"];
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["NewPeopleLevelBody"];
+      };
+    };
+    responses: {
+      /** @description The level was set. */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
         headers: {
           [name: string]: unknown;
         };

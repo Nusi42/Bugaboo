@@ -123,6 +123,7 @@ async fn perf_03_every_get_answers_an_etag_and_304_on_a_match() -> Outcome {
                 .replace("{role_id}", &role.id.to_string())
                 .replace("{group_id}", &group_id)
                 .replace("{person_id}", &person_id)
+                .replace("{person}", &person_id)
                 .replace("{project}", project);
             let path = &filled;
             assert!(
