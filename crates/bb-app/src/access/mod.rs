@@ -19,7 +19,7 @@ use std::sync::Arc;
 use bb_auth::looks_like_access_key;
 use bb_core::ErrorCode;
 use bb_core::access::{AppliesTo, Assignment};
-use bb_core::id::{AccessKeyId, ProjectId, UserId};
+use bb_core::id::{AccessKeyId, GroupId, ProjectId, UserId};
 use bb_core::people_kinds::PeopleKind;
 use bb_core::person::Person;
 use bb_policy::guards::{Refusal, ensure_no_escalation};
@@ -75,6 +75,7 @@ impl From<Refusal> for AppError {
         Self::Refused(match refusal {
             Refusal::WouldLockOut => ErrorCode::WouldLockOut,
             Refusal::TooMuch => ErrorCode::TooMuch,
+            Refusal::CannotLift => ErrorCode::CannotLift,
             Refusal::InUse => ErrorCode::RoleInUse,
         })
     }
@@ -330,6 +331,34 @@ pub(crate) async fn ensure_may_give_in<S: AuthStore>(
             });
         }
         ensure_no_escalation(&evaluate(&inputs), &record.permissions).map_err(S::refused)?;
+    }
+    Ok(())
+}
+
+/// Whether `actor` may lift the *No access* rows of `group`, which taking people out of the group
+/// or deleting it does for them: they must decide who has which role in each project where it has
+/// one, as for taking the row itself away (ADR-0025, decision 6). It runs inside the change, after
+/// the policy lock, so it judges what is stored now.
+///
+/// # Errors
+/// [`Refusal::CannotLift`] (as the error of the store) when they may not decide in such a project
+/// (or the project is gone), or the error of the store.
+pub(crate) async fn ensure_may_lift_in<S: AuthStore>(
+    transaction: &mut S::Transaction,
+    actor: UserId,
+    group: GroupId,
+) -> Result<(), S::Error> {
+    for row in S::assignments_of_group_in(transaction, group).await? {
+        let (None, Some(project)) = (row.role, row.project) else {
+            continue;
+        };
+        let may = match S::policy_inputs_in(transaction, actor, Place::Project(project)).await? {
+            Some(inputs) => evaluate(&inputs).allows(Permission::DecideRoles),
+            None => false,
+        };
+        if !may {
+            return Err(S::refused(Refusal::CannotLift));
+        }
     }
     Ok(())
 }

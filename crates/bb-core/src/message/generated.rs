@@ -615,6 +615,9 @@ pub const DATA_FOLDER_PART_FOLDER: MessageKey = MessageKey::new("data-folder.par
 pub const DATA_FOLDER_PART_SETUP_CODE_FILE: MessageKey =
     MessageKey::new("data-folder.part.setup-code-file");
 
+/// The message `error.access.cannot-lift`.
+pub const ERROR_ACCESS_CANNOT_LIFT: MessageKey = MessageKey::new("error.access.cannot-lift");
+
 /// The message `error.access.forbidden`.
 pub const ERROR_ACCESS_FORBIDDEN: MessageKey = MessageKey::new("error.access.forbidden");
 
@@ -5262,6 +5265,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "data-folder.unknown",
         "{part} {path} could not be checked, because Bugaboo could not read its access rights. Check them yourself: other accounts on this computer should not be able to open it, unless you want that.",
+    ),
+    (
+        "error.access.cannot-lift",
+        "This group has No access in a project that you cannot decide in. Taking people out of it, or deleting it, would lift that No access, so ask somebody who decides there.",
     ),
     ("error.access.forbidden", "You are not allowed to do that."),
     (

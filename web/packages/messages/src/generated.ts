@@ -529,6 +529,8 @@ export const messages = {
     "Bugaboo could not read the rights of these, so it cannot say whether other accounts can open them. Check them yourself:",
   "error.access.would-lock-out":
     "That would leave nobody who can manage roles and decide who has which role for the whole organization. Keep at least one person who can do both.",
+  "error.access.cannot-lift":
+    "This group has No access in a project that you cannot decide in. Taking people out of it, or deleting it, would lift that No access, so ask somebody who decides there.",
   "error.access.too-much": "You can only add or give what you can do yourself in this place.",
   "error.setting.locked": "An administrator locked this setting, so it can't be changed here.",
   "error.assignment.conflict":

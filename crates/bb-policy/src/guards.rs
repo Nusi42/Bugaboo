@@ -25,6 +25,9 @@ pub enum Refusal {
     WouldLockOut,
     /// It adds or gives more than the person holds at that place.
     TooMuch,
+    /// A group has a *No access* in a project the person may not decide in, so they may not lift it
+    /// by taking people out of the group or deleting it.
+    CannotLift,
     /// A role that is in use cannot be deleted without saying which role takes its place.
     InUse,
 }

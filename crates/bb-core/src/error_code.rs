@@ -77,6 +77,9 @@ error_codes! {
     NotSignedIn => ("auth.not_signed_in", 401, message::ERROR_AUTH_NOT_SIGNED_IN),
     /// The person can see the thing but may not do this to it.
     Forbidden => ("access.forbidden", 403, message::ERROR_ACCESS_FORBIDDEN),
+    /// The group has a *No access* in a project the person may not decide in (or know about), and
+    /// taking people out of it or deleting it would lift that *No access* (ADR-0025, decision 6).
+    CannotLift => ("access.cannot_lift", 403, message::ERROR_ACCESS_CANNOT_LIFT),
     /// The change would leave nobody who can manage roles and decide who has which role for the
     /// whole organization (ADR-0025, decision 6).
     WouldLockOut => ("access.would_lock_out", 409, message::ERROR_ACCESS_WOULD_LOCK_OUT),

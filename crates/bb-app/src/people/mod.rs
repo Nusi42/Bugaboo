@@ -30,7 +30,7 @@ use jiff::Timestamp;
 use serde::Serialize;
 use serde_json::json;
 
-use crate::access::ensure_may_give_in;
+use crate::access::{ensure_may_give_in, ensure_may_lift_in};
 use crate::auth::{
     AppError, AuthStore, Ctx, Done, by, change_failed, changed, entity, internal, set_to,
 };
@@ -281,16 +281,18 @@ pub async fn delete_group<S: AuthStore>(
     ctx.require(&actor, Permission::ManageGroups, Place::Organization)
         .await?;
     let id = ctx.group_or_missing(input.group).await?.id;
-    ctx.ensure_may_lift_no_access_of(&actor, id).await?;
     let event = ctx.event(
         by(actor.person.id),
         entity("group", id)?,
         vec![changed("group")],
     )?;
+    let by_person = actor.person.id;
     ctx.store()
         .record_change(&event, move |transaction| {
             Box::pin(async move {
                 S::lock_policy(transaction).await?;
+                // Deleting the group lifts the *No access* it has, for its people.
+                ensure_may_lift_in::<S>(transaction, by_person, id).await?;
                 let before = S::organization_state_in(transaction).await?;
                 if !S::delete_group(transaction, id).await? {
                     return Err(S::aborted());
@@ -308,34 +310,6 @@ pub async fn delete_group<S: AuthStore>(
     )
     .await;
     Ok(Done)
-}
-
-impl<S: AuthStore> Ctx<'_, S> {
-    /// Whether the actor may take people out of the group, or delete it: where the group has a
-    /// *No access*, taking a person out (or the whole group) lifts it for them, so the actor must
-    /// decide who has which role there, as for taking the row itself away (ADR-0025, decision 6).
-    ///
-    /// # Errors
-    /// `access.forbidden` (`resource.not_found` for a project the actor may not know about) where
-    /// they may not decide.
-    async fn ensure_may_lift_no_access_of(
-        &self,
-        actor: &crate::access::Actor,
-        group: GroupId,
-    ) -> Result<(), AppError> {
-        for row in self
-            .store()
-            .assignments_of_group(group)
-            .await
-            .map_err(|error| internal::<S>(&error))?
-        {
-            if let (None, Some(project)) = (row.role, row.project) {
-                self.require(actor, Permission::DecideRoles, Place::Project(project))
-                    .await?;
-            }
-        }
-        Ok(())
-    }
 }
 
 /// What a change that stopped itself says: the rule of the policy engine that refused it, that the
@@ -428,17 +402,19 @@ pub async fn remove_group_member<S: AuthStore>(
     ctx.require(&actor, Permission::ManageGroups, Place::Organization)
         .await?;
     let group = ctx.group_or_missing(input.group).await?.id;
-    ctx.ensure_may_lift_no_access_of(&actor, group).await?;
     let person = input.person;
     let event = ctx.event(
         by(actor.person.id),
         entity("group", group)?,
         vec![changed("member")],
     )?;
+    let by_person = actor.person.id;
     ctx.store()
         .record_change(&event, move |transaction| {
             Box::pin(async move {
                 S::lock_policy(transaction).await?;
+                // Taking the person out lifts the *No access* the group has, for them.
+                ensure_may_lift_in::<S>(transaction, by_person, group).await?;
                 let before = S::organization_state_in(transaction).await?;
                 if !S::delete_group_member(transaction, group, person).await? {
                     return Err(S::aborted());

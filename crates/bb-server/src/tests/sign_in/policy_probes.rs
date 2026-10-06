@@ -33,7 +33,10 @@ const LEAD: [Permission; 3] = [
 
 /// Refused because the person may not do it, or may not even know the project.
 fn not_allowed(code: Option<ErrorCode>) -> bool {
-    matches!(code, Some(ErrorCode::Forbidden | ErrorCode::NotFound))
+    matches!(
+        code,
+        Some(ErrorCode::Forbidden | ErrorCode::NotFound | ErrorCode::CannotLift)
+    )
 }
 
 async fn remove(
@@ -341,6 +344,60 @@ async fn sec_02_manage_groups_does_not_lift_a_no_access_of_the_group() -> Outcom
         take_out(&kim).await?;
         org.add_to_group(blocked, cleo.id).await?;
         delete(&kim).await?;
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn sec_02_a_group_with_a_no_access_the_person_cannot_see_is_refused_in_its_own_words()
+-> Outcome {
+    each_database("sec_02_group_no_access_hidden", async |db| {
+        let rig = Rig::start(db, 10).await?;
+        let org = Org::start(&rig).await?;
+        let acme = org.project(None, "ACME").await?.id;
+        let (kim, cleo) = (org.person().await?, org.person().await?);
+        // Kim manages groups and sees no project at all, so ACME is not hers to know about.
+        let keeper = org
+            .role("Group keeper", &[Permission::ManageGroups])
+            .await?;
+        org.give_everywhere(&kim, keeper.id).await?;
+        let blocked = org.group("Blocked").await?;
+        org.add_to_group(blocked, cleo.id).await?;
+        org.assign(
+            &org.admin,
+            Subject::Group(blocked),
+            Given::NoAccess,
+            Some(acme),
+            AppliesTo::ProjectAndSubProjects,
+        )
+        .await?;
+        let api = org.rig.api();
+        // The group is hers to see and change; what holds her back is said in its own words, and
+        // not as a group that does not exist.
+        let take_out = refused(
+            api.remove_group_member(
+                Rig::info(),
+                RemoveGroupMember {
+                    session_token: kim.session.clone(),
+                    group: blocked,
+                    person: cleo.id,
+                },
+            )
+            .await,
+        );
+        assert_eq!(take_out, Some(ErrorCode::CannotLift));
+        let delete = refused(
+            api.delete_group(
+                Rig::info(),
+                DeleteGroup {
+                    session_token: kim.session.clone(),
+                    group: blocked,
+                },
+            )
+            .await,
+        );
+        assert_eq!(delete, Some(ErrorCode::CannotLift));
         Ok(())
     })
     .await

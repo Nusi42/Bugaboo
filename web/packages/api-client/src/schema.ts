@@ -1717,6 +1717,7 @@ export interface components {
       | "auth.access_key_not_allowed"
       | "auth.not_signed_in"
       | "access.forbidden"
+      | "access.cannot_lift"
       | "access.would_lock_out"
       | "access.too_much"
       | "role.in_use"
