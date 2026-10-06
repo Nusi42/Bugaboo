@@ -250,6 +250,15 @@ test("cfg_06 the sign-in rules are drawn from the registry and saved at once", a
   await signIn(page, ada);
   await page.goto("/settings/sign-in-rules");
   const idle = t("setting.security.session-idle-minutes.name");
+  // The two settings of access keys are on the page too, each with the bounds it accepts.
+  const days = t("setting.ui.between", { least: 1, most: 365 });
+  await expect(
+    page.getByLabel(t("setting.auth.access-key-default-days.name"), { exact: true }),
+  ).toHaveValue("90");
+  await expect(
+    page.getByLabel(t("setting.auth.access-key-longest-days.name"), { exact: true }),
+  ).toHaveValue("365");
+  await expect(page.getByText(days)).toHaveCount(2);
   await page.getByLabel(idle, { exact: true }).fill("45");
   await page
     .getByRole("button", { name: t("common.save") })

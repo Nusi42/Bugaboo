@@ -20,13 +20,13 @@ use bb_testing::each_database;
 use super::policy_rig::{Member, Org, Run};
 use super::rig::{Outcome, PASSWORD, Rig, refused};
 
-fn text(value: &str) -> SettingValue {
+pub(super) fn text(value: &str) -> SettingValue {
     SettingValue::Text(value.to_owned())
 }
 
-const NOTE: &str = "test.project-note";
+pub(super) const NOTE: &str = "test.project-note";
 
-async fn change(
+pub(super) async fn change(
     rig: &Rig,
     who: &Member,
     scope: SettingsScope,
@@ -48,7 +48,7 @@ async fn change(
         .into_value())
 }
 
-async fn reset(
+pub(super) async fn reset(
     rig: &Rig,
     who: &Member,
     scope: SettingsScope,
@@ -68,7 +68,7 @@ async fn reset(
         .into_value())
 }
 
-async fn list(
+pub(super) async fn list(
     rig: &Rig,
     who: &Member,
     scope: SettingsScope,
@@ -91,7 +91,7 @@ async fn list(
 }
 
 /// The one setting of a list of one key.
-async fn one(
+pub(super) async fn one(
     rig: &Rig,
     who: &Member,
     scope: SettingsScope,
@@ -103,7 +103,12 @@ async fn one(
     Ok(found.remove(0))
 }
 
-async fn lock(rig: &Rig, who: &Member, key: &str, locked: bool) -> Result<SettingView, AppError> {
+pub(super) async fn lock(
+    rig: &Rig,
+    who: &Member,
+    key: &str,
+    locked: bool,
+) -> Result<SettingView, AppError> {
     Ok(rig
         .api()
         .lock_setting(
@@ -119,14 +124,14 @@ async fn lock(rig: &Rig, who: &Member, key: &str, locked: bool) -> Result<Settin
 }
 
 /// The administrator, a lead of ACME (and so of WEB inside it), and somebody who may only look.
-struct People {
-    lead: Member,
-    viewer: Member,
-    acme: ProjectId,
-    web: ProjectId,
+pub(super) struct People {
+    pub(super) lead: Member,
+    pub(super) viewer: Member,
+    pub(super) acme: ProjectId,
+    pub(super) web: ProjectId,
 }
 
-async fn people(org: &Org<'_>) -> Run<People> {
+pub(super) async fn people(org: &Org<'_>) -> Run<People> {
     let acme = org.project(None, "ACME").await?.id;
     let web = org.project(Some(acme), "WEB").await?.id;
     let leader = org
@@ -610,8 +615,8 @@ async fn cfg_06_a_change_of_a_setting_that_touches_security_is_in_the_security_l
             &rig,
             ada,
             SettingsScope::Organization,
-            "security.two-step-required",
-            SettingValue::Bool(true),
+            "security.session-idle-minutes",
+            SettingValue::Integer(20),
         )
         .await?;
         assert_eq!(entries(SecurityAction::SettingChanged).await?, 1);
@@ -619,7 +624,7 @@ async fn cfg_06_a_change_of_a_setting_that_touches_security_is_in_the_security_l
             &rig,
             ada,
             SettingsScope::Organization,
-            "security.two-step-required",
+            "security.session-idle-minutes",
         )
         .await?;
         assert_eq!(entries(SecurityAction::SettingReset).await?, 1);

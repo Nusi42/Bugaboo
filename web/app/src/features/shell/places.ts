@@ -83,6 +83,14 @@ export const places: readonly Place[] = [
     listed: true,
   },
   {
+    path: paths.accessKeys,
+    name: "nav.access-keys",
+    icon: iconName["access-keys"],
+    parent: paths.mySettings,
+    group: "nav.group.sign-in",
+    listed: true,
+  },
+  {
     path: paths.organizationSettings,
     name: "nav.organization-settings",
     icon: iconName.organization,

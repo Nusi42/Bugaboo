@@ -448,6 +448,7 @@ dependencies = [
  "bb-policy",
  "getrandom 0.4.3",
  "jiff",
+ "proptest",
  "serde",
  "serde_json",
  "tokio",

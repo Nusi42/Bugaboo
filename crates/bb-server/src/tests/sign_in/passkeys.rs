@@ -25,7 +25,7 @@ fn origin() -> Result<Url, Failure> {
 }
 
 /// Adds a passkey on `device` for the person behind `session`.
-async fn add(
+pub(super) async fn add(
     rig: &Rig,
     session: &str,
     device: &mut SoftPasskey,

@@ -261,8 +261,14 @@ impl<S: AuthStore> Ctx<'_, S> {
                     return Err(ErrorCode::Forbidden.into());
                 }
                 // Changing one's own settings needs no permission, only an actor that may change
-                // things at all. An access key that may only look is not one: WP-09 adds that
-                // judgment here, in the same place as the other keys' limits.
+                // things at all: a key that may only look reads them and writes nothing.
+                if actor
+                    .key
+                    .as_ref()
+                    .is_some_and(|key| !key.narrowing.may_change())
+                {
+                    return Err(ErrorCode::Forbidden.into());
+                }
                 self.evaluation_of(actor, Place::Organization).await?
             }
         };

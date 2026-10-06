@@ -30,6 +30,8 @@ pub enum Purpose {
     SetupCode,
     /// A backup code.
     BackupCode,
+    /// The secret of an access key.
+    AccessKey,
 }
 
 impl Purpose {
@@ -39,6 +41,7 @@ impl Purpose {
             Self::Invitation => b"bugaboo.invitation.v1",
             Self::SetupCode => b"bugaboo.setup-code.v1",
             Self::BackupCode => b"bugaboo.backup-code.v1",
+            Self::AccessKey => b"bugaboo.access-key.v1",
         }
     }
 

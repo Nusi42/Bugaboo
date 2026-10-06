@@ -9,6 +9,7 @@ mod fake_policy;
 mod fake_projects;
 mod fake_settings;
 mod hidden;
+mod keys;
 mod scenarios;
 mod settings;
 mod world;

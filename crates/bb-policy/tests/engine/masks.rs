@@ -4,7 +4,9 @@ use std::collections::BTreeSet;
 
 use bb_core::access::FieldLevel;
 use bb_core::fields::Field;
-use bb_policy::{Choice, Kind, Masked, Narrowing, Permission, Reason, drop_hidden, mask_member};
+use bb_policy::{
+    Choice, Kind, Masked, NOT_FOR_KEYS, Narrowing, Permission, Reason, drop_hidden, mask_member,
+};
 use serde::Serialize;
 use serde_json::{Value, json};
 
@@ -229,9 +231,18 @@ fn auth_07_a_key_with_see_only_keeps_only_permissions_of_the_kind_see_and_no_fie
         ["see-projects", "make-sub-projects", "check-access"]
     );
     assert_eq!(key.field_level(Field::Title), FieldLevel::CanChange);
-    // Everything I can do is exactly the owner.
+    // Everything I can do is the owner without what no key holds: inviting people and changing
+    // who has which role stay in the app (decision on access keys).
     let key = owner.narrowed(&Narrowing::everything());
-    assert_eq!(key.permissions(), owner.permissions());
+    let owners_without: BTreeSet<Permission> = owner
+        .permissions()
+        .iter()
+        .copied()
+        .filter(|permission| !NOT_FOR_KEYS.contains(permission))
+        .collect();
+    assert_eq!(key.permissions(), &owners_without);
+    assert!(owner.permissions().contains(&Permission::DecideRoles));
+    assert!(!key.permissions().contains(&Permission::DecideRoles));
     // The owner's own evaluation is untouched.
     assert_eq!(owner.permissions().len(), 4);
 }

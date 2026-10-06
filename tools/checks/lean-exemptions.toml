@@ -54,3 +54,9 @@ route = "GET /api/v1/projects/{project}"
 property = "permissions"
 whole_value = true
 reason = "The permissions of one person at one project are at most as many as the catalogue has (14 in M2): a list bounded by the code, not one that grows with data (M2-F20)."
+
+[[exempt]]
+route = "GET /api/v1/access-keys/rules"
+property = "permissions"
+whole_value = true
+reason = "The single permissions a key can be limited to are those of the catalogue that a key may hold (at most 14 in M2): a list bounded by the code, not one that grows with data, and the form of an access key needs all of them at once (M2-F20)."

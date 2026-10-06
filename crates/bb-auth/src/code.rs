@@ -11,8 +11,9 @@ use zeroize::Zeroizing;
 use crate::error::{AuthError, random};
 use crate::token::Purpose;
 
-/// The symbols of a code: digits and letters without `i`, `l`, `o` and `u`.
-const ALPHABET: &[u8; 32] = b"0123456789abcdefghjkmnpqrstvwxyz";
+/// The symbols of a code: digits and letters without `i`, `l`, `o` and `u`. Access keys write
+/// their prefix and their secret in the same symbols (`access_key.rs`).
+pub(crate) const ALPHABET: &[u8; 32] = b"0123456789abcdefghjkmnpqrstvwxyz";
 /// How many symbols a code has.
 const SYMBOLS: usize = 16;
 /// How many symbols stand together before a hyphen.

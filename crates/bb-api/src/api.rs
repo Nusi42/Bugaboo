@@ -10,7 +10,11 @@
 //! - a request has [`TIME_LIMIT`] to finish, which also ends a body that arrives too slowly
 //!   (M1-F06), and a body may be [`BODY_LIMIT_BYTES`] big;
 //! - a request that changes something must come from one of Bugaboo's own pages ([`origin_check`])
-//!   and, when it carries a session, with the token of that session (`auth::csrf_check`);
+//!   and, when it carries a session, with the token of that session (`auth::csrf_check`); a
+//!   request that comes with an access key (`Authorization: Bearer bb_…`) and no session cookie is
+//!   from a script: it has no cookie for a forged request to ride on, and a page of another
+//!   website cannot send that header (there is no CORS), so it needs neither;
+//! - a request that comes with an access key counts against the key as well (`limits`);
 //! - every answer has its cache rule, and every read an `ETag` and a `304` (`crate::etag`);
 //! - every error answer is problem+json with the request ID (`crate::errors`).
 
@@ -19,7 +23,7 @@ use std::time::Duration;
 
 use axum::Router;
 use axum::extract::{DefaultBodyLimit, Request};
-use axum::http::{Method, header};
+use axum::http::{HeaderMap, Method, header};
 use axum::middleware::{Next, from_fn, from_fn_with_state};
 use axum::response::{IntoResponse as _, Response};
 use bb_core::ErrorCode;
@@ -35,6 +39,7 @@ use crate::logging::Scheme;
 use crate::openapi;
 use crate::web::decode_path;
 
+mod access_keys;
 mod admin;
 mod auth;
 mod auth_factors;
@@ -42,6 +47,7 @@ mod auth_people;
 mod auth_sign_in;
 mod projects;
 mod projects_move;
+mod second_step_gap;
 mod settings;
 
 pub use admin::ProbeHandle;
@@ -121,6 +127,8 @@ where
         .routes(routes!(get_status))
         .routes(routes!(get_openapi))
         .merge(auth::routes(limits))
+        .merge(access_keys::routes())
+        .merge(second_step_gap::routes())
         .merge(admin::routes())
         .merge(settings::routes())
         .merge(projects::routes())
@@ -137,6 +145,24 @@ pub(crate) fn is_api(path: &str) -> bool {
         .is_some_and(|first| first.eq_ignore_ascii_case(API_PREFIX))
 }
 
+/// The access key a request presents: `Authorization: Bearer bb_…`. Anything else in that header
+/// is no key and is left alone, so a page's own requests never meet this.
+pub(crate) fn presented_key(headers: &HeaderMap) -> Option<&str> {
+    headers
+        .get(header::AUTHORIZATION)?
+        .to_str()
+        .ok()?
+        .strip_prefix("Bearer ")
+        .map(str::trim)
+        .filter(|key| bb_auth::looks_like_access_key(key))
+}
+
+/// Whether the request comes from a script with an access key: it presents one and has no
+/// session cookie. A request with a cookie is judged as a request of a browser, key or not.
+pub(crate) fn is_key_request(headers: &HeaderMap) -> bool {
+    presented_key(headers).is_some() && crate::cookies::Cookie::Session.read(headers).is_none()
+}
+
 /// Puts the rules for API requests around `router`.
 ///
 /// The layers apply to requests below `/api` only; pages, files and health checks pass through
@@ -149,6 +175,10 @@ pub(crate) fn rules(router: Router, limits: Arc<Limits>, auth: AuthHandle) -> Ro
         .layer(from_fn_with_state(auth, auth::csrf_check))
         .layer(from_fn(origin_check))
         .layer(from_fn(time_limit))
+        .layer(from_fn_with_state(
+            Arc::clone(&limits),
+            limits::limit_access_keys,
+        ))
         .layer(from_fn_with_state(limits, limits::limit_requests))
         .layer(DefaultBodyLimit::max(BODY_LIMIT_BYTES))
         .layer(from_fn(errors::add_request_id))
@@ -163,7 +193,11 @@ async fn origin_check(request: Request, next: Next) -> Response {
         *request.method(),
         Method::GET | Method::HEAD | Method::OPTIONS
     );
-    if unsafe_method && is_api(request.uri().path()) && !is_same_origin(&request) {
+    if unsafe_method
+        && is_api(request.uri().path())
+        && !is_key_request(request.headers())
+        && !is_same_origin(&request)
+    {
         return ApiError::new(ErrorCode::WrongOrigin).into_response();
     }
     next.run(request).await

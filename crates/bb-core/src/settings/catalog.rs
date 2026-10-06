@@ -277,6 +277,30 @@ settings! {
         help: message::SETTING_SECURITY_TWO_STEP_REQUIRED_HELP,
         lockable: false,
     }
+
+    /// How many days a new access key lives when the person picks no other date.
+    AUTH_ACCESS_KEY_DEFAULT_DAYS: Integer = {
+        key: "auth.access-key-default-days",
+        name: message::SETTING_AUTH_ACCESS_KEY_DEFAULT_DAYS_NAME,
+        default: 90,
+        levels: [Organization],
+        changed_by: Administrators,
+        help: message::SETTING_AUTH_ACCESS_KEY_DEFAULT_DAYS_HELP,
+        lockable: false,
+        bounds: (1, 365),
+    }
+
+    /// The most days an access key can live, whatever date the person picks.
+    AUTH_ACCESS_KEY_LONGEST_DAYS: Integer = {
+        key: "auth.access-key-longest-days",
+        name: message::SETTING_AUTH_ACCESS_KEY_LONGEST_DAYS_NAME,
+        default: 365,
+        levels: [Organization],
+        changed_by: Administrators,
+        help: message::SETTING_AUTH_ACCESS_KEY_LONGEST_DAYS_HELP,
+        lockable: false,
+        bounds: (1, 365),
+    }
 }
 
 /// Settings that exist only for tests, so the project level and the other rules of the layers can

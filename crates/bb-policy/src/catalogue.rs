@@ -29,6 +29,16 @@ impl Topic {
     /// Every topic, in the order of the role page.
     pub const ALL: &'static [Self] = &[Self::Projects, Self::People, Self::Settings];
 
+    /// The word of the topic in the API (`projects`).
+    #[must_use]
+    pub const fn code(self) -> &'static str {
+        match self {
+            Self::Projects => "projects",
+            Self::People => "people",
+            Self::Settings => "settings",
+        }
+    }
+
     /// The message that names the topic (`permission-topic.<topic>`).
     #[must_use]
     pub const fn name(self) -> MessageKey {
@@ -39,6 +49,28 @@ impl Topic {
         }
     }
 }
+
+impl Serialize for Topic {
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        serializer.serialize_str(self.code())
+    }
+}
+
+/// In the API description a topic is one of its words, so clients get a union type.
+#[cfg(feature = "openapi")]
+impl utoipa::PartialSchema for Topic {
+    fn schema() -> utoipa::openapi::RefOr<utoipa::openapi::schema::Schema> {
+        use utoipa::openapi::schema::{ObjectBuilder, Type};
+        ObjectBuilder::new()
+            .schema_type(Type::String)
+            .description(Some("What a group of permissions is about."))
+            .enum_values(Some(Self::ALL.iter().map(|topic| topic.code())))
+            .into()
+    }
+}
+
+#[cfg(feature = "openapi")]
+impl utoipa::ToSchema for Topic {}
 
 /// Where a permission counts (ADR-0025, decision 1).
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -66,6 +98,23 @@ impl Kind {
     /// Every kind, from the least to the most.
     pub const ALL: &'static [Self] = &[Self::See, Self::Change, Self::Manage];
 }
+
+/// The permissions an access key never keeps, whatever its choice, even *Everything I can do*
+/// and single permissions (owner decisions of 2026-10-06): a key cannot invite people, change who
+/// has which role or change the settings of the organization (which could switch off the two-step
+/// requirement, open signing up or change how long sessions last). These stay in the app, where
+/// the person is signed in. Defined once, here
+/// beside the kinds a key's choice keeps; narrowing, the key form and the key's own checks all
+/// read this list.
+pub const NOT_FOR_KEYS: &[Permission] = &[
+    Permission::ManageInvitations,
+    Permission::ManagePeople,
+    Permission::ManageGroups,
+    Permission::ManageRoles,
+    Permission::DecideRoles,
+    Permission::DecideWhatRolesSee,
+    Permission::ChangeOrganizationSettings,
+];
 
 /// Declares the permissions: one line per permission, with the key, topic, where it counts, kind
 /// and the message of its sentence. Everything else is made from this list.
@@ -103,6 +152,13 @@ macro_rules! permissions {
             #[must_use]
             pub const fn kind(self) -> Kind {
                 match self { $(Self::$variant => Kind::$kind),+ }
+            }
+
+            /// Whether an access key may hold the permission at all ([`NOT_FOR_KEYS`] says which it
+            /// may not).
+            #[must_use]
+            pub fn keys_may_hold(self) -> bool {
+                !NOT_FOR_KEYS.contains(&self)
             }
 
             /// The sentence on the role page (`permission.<key>`).

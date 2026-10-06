@@ -24,6 +24,10 @@ export const messages = {
   "error.auth.passkey-rejected": "The passkey could not be checked. Please try again.",
   "error.request.wrong-token":
     "Your sign-in does not fit this page any more. Sign in again and then try again.",
+  "error.auth.second-step-required":
+    "Before you go on, set up your second step. Your administrator asks for it, and it keeps your account safe even if your password leaks.",
+  "error.auth.access-key-not-allowed":
+    "An access key cannot do that. Sign in with your password to change your own sign-in details.",
   "error.auth.not-signed-in": "Please sign in to continue.",
   "error.access.forbidden": "You are not allowed to do that.",
   "error.resource.not-found": "We could not find that.",
@@ -48,6 +52,10 @@ export const messages = {
     "Ask everyone to use two-step sign-in. People who have not set it up are asked to do so the next time they sign in.",
   "setting.security.session-absolute-hours.help":
     "How many hours a sign-in can last at most, even when somebody keeps working. After that, people sign in again. Between 1 hour and 30 days (720 hours).",
+  "setting.auth.access-key-default-days.help":
+    "How many days a new access key lives when the person picks no other date. Between 1 and 365 days.",
+  "setting.auth.access-key-longest-days.help":
+    "The most days an access key can live, whatever date the person picks. Between 1 and 365 days.",
   "setting.auth.sign-up-enabled.help":
     "Let people make an account on their own, without an invitation. Bugaboo cannot check that an address belongs to the person until e-mail is available, so use this only on a network you trust.",
   "setting.auth.sign-up-domains.help":
@@ -126,6 +134,8 @@ export const messages = {
   "setting.security.two-step-required.name": "Two-step sign-in for everybody",
   "setting.auth.sign-up-enabled.name": "Sign up without an invitation",
   "setting.auth.sign-up-domains.name": "E-mail domains that may sign up",
+  "setting.auth.access-key-default-days.name": "Access key lasts (days), when no date is picked",
+  "setting.auth.access-key-longest-days.name": "Longest an access key can last (days)",
   "data-folder.create-failed": "The data folder {path} could not be prepared: {reason}",
   "data-folder.protect-failed":
     "The data folder {path} could not be made private to its owner: {reason}",
@@ -329,7 +339,7 @@ export const messages = {
   "sessions.everywhere": "Sign out everywhere",
   "sessions.everywhere-title": "Sign out everywhere?",
   "sessions.everywhere-text":
-    "You will be signed out of every browser, this one included, and have to sign in again.",
+    "You will be signed out of every browser, this one included, and have to sign in again. Your access keys are deleted and stop working too.",
   "sessions.cut-off": "Only the newest places are shown.",
   "invitations.title": "Invitations",
   "invitations.intro":
@@ -533,6 +543,75 @@ export const messages = {
     "A project cannot go inside itself or inside one of its own sub-projects.",
   "error.project.preview-changed":
     "The projects, or who has which role, changed since you looked at the preview. Look at it again before you move the project.",
+  "permission-topic.projects": "Projects",
+  "permission-topic.people": "People",
+  "permission-topic.settings": "Settings",
+  "nav.access-keys": "Access keys",
+  "access-keys.title": "Access keys",
+  "access-keys.intro":
+    "An access key lets a script or an app work as you. It can do at most what you can do, and it always runs out. You see a key once, when you make it.",
+  "access-keys.list": "Your access keys",
+  "access-keys.empty": "You have no access keys yet.",
+  "access-keys.make": "Make an access key",
+  "access-keys.name": "Name",
+  "access-keys.name-help": "What the key is for, like “Nightly report”.",
+  "access-keys.may": "What it may do",
+  "access-keys.choice.see-only": "See only",
+  "access-keys.choice.see-and-change": "See and change",
+  "access-keys.choice.everything": "Everything I can do",
+  "access-keys.help.see-only":
+    "The key can look at what you can look at, and it can change nothing.",
+  "access-keys.help.see-and-change":
+    "The key can also change what you may change, but it cannot manage people, roles or settings.",
+  "access-keys.help.everything": "The key can do all that you can do, except what no key can do.",
+  "access-keys.never":
+    "No key can invite people, change who has which role, change the settings of the organization, or change how you sign in. You do that here, where you are signed in.",
+  "access-keys.help.permissions":
+    "The key can do only what you tick below, and only what you can do yourself.",
+  "access-keys.more": "More options",
+  "access-keys.single": "Choose single permissions instead",
+  "access-keys.projects": "Only for these projects",
+  "access-keys.projects-help":
+    "Tick none for every project. A key for some projects works in them and in the projects inside them, and gives nothing for the whole organization.",
+  "access-keys.projects-none": "You have no projects to choose from yet.",
+  "access-keys.expires": "Runs out on",
+  "access-keys.expires-help":
+    "Without another day, the key runs out in {days, plural, one {# day} other {# days}}. The latest day is {latest}.",
+  "access-keys.submit": "Make the key",
+  "access-keys.cancel": "Cancel",
+  "access-keys.shown-title": "Your new access key",
+  "access-keys.shown-once":
+    "Copy the key now and keep it safe. Bugaboo shows it only this once and cannot show it again.",
+  "access-keys.key-label": "The access key",
+  "access-keys.copy": "Copy the key",
+  "access-keys.copied": "Copied",
+  "access-keys.done": "I have copied it",
+  "access-keys.row.prefix": "Starts with {prefix}",
+  "access-keys.row.permissions":
+    "{count, plural, one {# single permission} other {# single permissions}}",
+  "access-keys.row.projects-all": "For every project",
+  "access-keys.row.projects-some": "Only for {names}",
+  "access-keys.row.hidden-project": "a project you can't see",
+  "access-keys.row.expires": "Runs out on {when}",
+  "access-keys.row.expired": "Ran out on {when}",
+  "access-keys.row.last-used": "Last used {when}",
+  "access-keys.row.never-used": "Never used",
+  "access-keys.delete": "Delete",
+  "access-keys.delete-name": "Delete the access key {name}",
+  "access-keys.delete-title": "Delete this access key?",
+  "access-keys.delete-text":
+    "Anything that uses it stops working at once. A deleted key cannot come back.",
+  "access-keys.delete-confirm": "Delete the key",
+  "access-keys.deleted": "The access key was deleted.",
+  "set-up-second-step.title": "Set up your second step",
+  "set-up-second-step.why":
+    "Your administrator asks you to sign in with a second step. It keeps your account safe even if somebody learns your password.",
+  "set-up-second-step.how":
+    "Choose a code app or a passkey below. When one of them is set up, you can go on.",
+  "set-up-second-step.ready": "Your second step is set up.",
+  "set-up-second-step.continue": "Go on",
+  "access-keys.pick-one": "Tick at least one permission, or switch single permissions off.",
+  "access-keys.project-label": "{short_name}: {name}",
   "permission.see-projects": "See the project and what is in it",
   "permission.make-projects": "Make projects at the top level",
   "permission.make-sub-projects": "Make sub-projects inside the project",
@@ -665,6 +744,15 @@ export const messages = {
 export type MessageKey = keyof typeof messages;
 
 export interface MessageArguments {
+  "access-keys.delete-name": { name: string | number };
+  "access-keys.expires-help": { days: number; latest: string | number };
+  "access-keys.project-label": { name: string | number; short_name: string | number };
+  "access-keys.row.expired": { when: string | number };
+  "access-keys.row.expires": { when: string | number };
+  "access-keys.row.last-used": { when: string | number };
+  "access-keys.row.permissions": { count: number };
+  "access-keys.row.prefix": { prefix: string | number };
+  "access-keys.row.projects-some": { names: string | number };
   "backup.left": { count: number };
   "data-folder.create-failed": { path: string | number; reason: string | number };
   "data-folder.not-a-data-folder": { path: string | number };

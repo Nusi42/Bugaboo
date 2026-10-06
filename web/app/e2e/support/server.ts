@@ -1,5 +1,6 @@
 import { execFile, spawn } from "node:child_process";
 import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { DatabaseSync } from "node:sqlite";
 import { connect } from "node:net";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
@@ -19,6 +20,12 @@ export interface Instance {
    * from the outside, like an administrator would. Fails when the program says the log is broken.
    */
   readonly verifySecurityLog: () => Promise<string>;
+  /**
+   * Switches a yes-or-no setting of the organization the way the settings screen will: there is no
+   * screen for it yet, so the value is written into the database of the running server. It counts
+   * from the next request, as a change made on a screen would.
+   */
+  readonly setOrganizationSwitch: (key: string, on: boolean) => void;
   /** Stops the server and deletes its data. */
   readonly stop: () => Promise<void>;
 }
@@ -30,6 +37,10 @@ export type Settings = Readonly<Record<string, string>>;
 const START_LIMIT_MS = 30_000;
 const POLL_MS = 100;
 const SETUP_CODE_FILE = "setup-code.txt";
+/** The built-in database in the data folder (`bb_store::DATABASE_FILE`). */
+const DATABASE_FILE = "bugaboo.db";
+const BUSY_MS = 5000;
+const MICROSECONDS_PER_MS = 1000;
 
 /** Limits that never get in the way of a test, unless a test sets its own. */
 const generousLimits: Settings = {
@@ -132,6 +143,24 @@ async function remove(folder: string, triesLeft = 20): Promise<void> {
   }
 }
 
+/** Writes the value of a setting of the whole organization into the database of a server. */
+function putOrganizationSwitch(dataDir: string, key: string, on: boolean): void {
+  const database = new DatabaseSync(join(dataDir, DATABASE_FILE));
+  try {
+    database.exec(`PRAGMA busy_timeout = ${String(BUSY_MS)}`);
+    database
+      .prepare(
+        "INSERT INTO setting (key, level, scope, value, locked, updated_at) " +
+          "VALUES (?, 'organization', ?, ?, 0, ?) " +
+          "ON CONFLICT (key, level, scope) DO UPDATE SET value = excluded.value, " +
+          "updated_at = excluded.updated_at",
+      )
+      .run(key, new Uint8Array(), JSON.stringify(on), Date.now() * MICROSECONDS_PER_MS);
+  } finally {
+    database.close();
+  }
+}
+
 /** What `bugaboo security-log verify` prints for a data folder; it fails when the log is broken. */
 function verifySecurityLog(executable: string, dataDir: string): Promise<string> {
   return new Promise((done, failed) => {
@@ -189,6 +218,9 @@ export async function startServer(
     url: `https://localhost:${String(port)}`,
     setupCode: () => readFileSync(join(dataDir, SETUP_CODE_FILE), "utf8").trim(),
     verifySecurityLog: () => verifySecurityLog(executable, dataDir),
+    setOrganizationSwitch: (key, on) => {
+      putOrganizationSwitch(dataDir, key, on);
+    },
     stop,
   };
 }

@@ -81,6 +81,16 @@ export function formatNumber(value: number, region: Region = currentRegion()): s
   return new Intl.NumberFormat(numberLocales[region.numberFormat]).format(value);
 }
 
+/** A day (milliseconds since 1970, a date on the person's own calendar) as people write it: "October 5, 2026". */
+export function formatDay(moment: number, region: Region = currentRegion()): string {
+  // A day on the person's own calendar, picked on this device: the zone of the region does not
+  // move it to another day, the way the person wrote it (date format only).
+  const onDevice: Region = { ...region, timeZone: "device" };
+  return region.dateFormat === "device"
+    ? new Intl.DateTimeFormat(locale, dateStyles.date).format(moment)
+    : numeric(moment, onDevice);
+}
+
 /** Whole days from `nowMs` (milliseconds since 1970) to `moment`; negative when the moment has passed. */
 export function daysUntil(moment: string, nowMs: number): number {
   return Math.floor((new Date(moment).getTime() - nowMs) / (MS_PER_SECOND * SECONDS_PER_DAY));

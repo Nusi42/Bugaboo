@@ -20,6 +20,8 @@ export const settingKeys = {
   authSignUpEnabled: "auth.sign-up-enabled",
   authSignUpDomains: "auth.sign-up-domains",
   securityTwoStepRequired: "security.two-step-required",
+  authAccessKeyDefaultDays: "auth.access-key-default-days",
+  authAccessKeyLongestDays: "auth.access-key-longest-days",
 } as const;
 
 /** The key of a setting of the registry. */

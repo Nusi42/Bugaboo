@@ -355,6 +355,7 @@ async fn get_me(
         display_name: me.person.display_name.clone(),
         email: me.person.email.clone(),
         permissions,
+        second_step_setup_required: me.second_step_setup_required,
     }))
 }
 

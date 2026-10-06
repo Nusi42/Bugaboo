@@ -8,6 +8,7 @@
 
 #![forbid(unsafe_code)]
 
+mod access_key;
 mod breached;
 mod code;
 mod csrf;
@@ -19,6 +20,7 @@ mod password;
 mod token;
 mod totp;
 
+pub use access_key::{AccessKeySecret, KEY_START, PREFIX_SYMBOLS, looks_like_access_key};
 pub use code::{HumanCode, code_hash};
 pub use csrf::CsrfKey;
 pub use device::Device;

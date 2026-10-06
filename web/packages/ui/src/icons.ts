@@ -7,6 +7,7 @@ import {
   Globe,
   House,
   Keyboard,
+  KeyRound,
   LayoutPanelLeft,
   LogOut,
   Menu,
@@ -29,6 +30,7 @@ import {
  * the icons of this list are imported, so only those ship (UX §7.5).
  */
 export const iconName = {
+  "access-keys": "access-keys",
   back: "back",
   close: "close",
   frames: "frames",
@@ -57,6 +59,7 @@ export type IconName = (typeof iconName)[keyof typeof iconName];
 
 /** The drawing of each icon; the compiler makes sure no name is left out. */
 export const glyphs: Readonly<Record<IconName, LucideIcon>> = {
+  "access-keys": KeyRound,
   back: ChevronLeft,
   close: X,
   frames: LayoutPanelLeft,

@@ -6,10 +6,12 @@
 
 use std::collections::HashMap;
 use std::fmt;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 
 use bb_auth::{
-    CsrfKey, Device, Passkeys, PasswordHasher, Purpose, SecretToken, StoredCredential, same_digest,
+    CsrfKey, Device, Passkeys, PasswordHasher, Purpose, SecretToken, StoredCredential,
+    looks_like_access_key, same_digest,
 };
 use bb_core::ErrorCode;
 use bb_core::event::{Actor, Channel, DomainEvent, EntityKind, EntityRef, FieldChange};
@@ -39,6 +41,11 @@ pub(crate) const INVITATION_SECONDS: i64 = 7 * 24 * 3600;
 pub enum AppError {
     /// The request was turned away for a reason a person may be told (an error code).
     Refused(ErrorCode),
+    /// The session of the cookie has ended (it ran out, was ended, or never was one): the same
+    /// answer as [`ErrorCode::NotSignedIn`], and the browser is told to forget the cookie and
+    /// what it kept (M2-F06). A session that is only not at the stage the request needs (the
+    /// password step used where a finished sign-in is needed) is not this: it is still waiting.
+    SessionEnded,
     /// Too many failed tries: wait this many seconds.
     Limited {
         /// Seconds until the next try may work.
@@ -46,6 +53,19 @@ pub enum AppError {
     },
     /// Something failed inside the server. The text is for the log only.
     Internal(String),
+}
+
+impl AppError {
+    /// The error code of a refusal, whatever kind of refusal it is. A session that has ended
+    /// is refused as not signed in.
+    #[must_use]
+    pub const fn code(&self) -> Option<ErrorCode> {
+        match self {
+            Self::Refused(code) => Some(*code),
+            Self::SessionEnded => Some(ErrorCode::NotSignedIn),
+            Self::Limited { .. } | Self::Internal(_) => None,
+        }
+    }
 }
 
 impl From<ErrorCode> for AppError {
@@ -64,6 +84,7 @@ impl fmt::Display for AppError {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Refused(code) => write!(formatter, "refused: {code}"),
+            Self::SessionEnded => write!(formatter, "refused: the session has ended"),
             Self::Limited { retry_after } => {
                 write!(formatter, "limited for {retry_after} seconds")
             }
@@ -173,6 +194,7 @@ impl<S> AuthServices<S> {
             services: self,
             request,
             evaluations: Mutex::default(),
+            via_key: AtomicBool::new(false),
         }
     }
 
@@ -197,6 +219,9 @@ pub struct Ctx<'a, S> {
     pub(crate) services: &'a AuthServices<S>,
     pub(crate) request: RequestInfo,
     pub(crate) evaluations: Evaluations,
+    /// The request came with an access key, so what it changes is recorded as made through the
+    /// API (the channel of its events).
+    pub(crate) via_key: AtomicBool,
 }
 
 /// Makes IDs from the clock of the context and the secure random source.
@@ -266,7 +291,11 @@ impl<S: AuthStore> Ctx<'_, S> {
                 .map_err(|error| AppError::Internal(error.to_string()))?,
             time: self.now(),
             actor,
-            channel: Channel::Ui,
+            channel: if self.via_key.load(Ordering::Relaxed) {
+                Channel::Api
+            } else {
+                Channel::Ui
+            },
             entity,
             changes,
             reason: None,
@@ -348,6 +377,29 @@ impl<S: AuthStore> Ctx<'_, S> {
                 Err(wait_error(wait))
             }
         }
+    }
+
+    /// Reserves a try of the client network alone, for a purpose that has no account to count
+    /// against (guessing access keys). It is asked for after a failure, not before the check, so
+    /// it counts as one and is never given back; the keys of a network keep a window of a minute
+    /// and never grow.
+    pub(crate) fn reserve_network(&self, purpose: &str) -> Result<Slot, AppError> {
+        let network = self
+            .request
+            .network
+            .as_ref()
+            .map_or_else(|| "unknown".to_owned(), ToString::to_string);
+        let key = format!("{NETWORK_KEY_PREFIX}{purpose}:{network}");
+        let tipped = self
+            .services
+            .limiter
+            .reserve(&key)
+            .map_err(|retry_after| AppError::Limited { retry_after })?;
+        Ok(Slot {
+            key,
+            network: None,
+            tipped,
+        })
     }
 
     /// The reserved try gets its slot back: the server failed before the try could be checked, so
@@ -509,18 +561,28 @@ impl<S: AuthStore> Ctx<'_, S> {
         token_text: &str,
         wanted: SessionStage,
     ) -> Result<SessionRecord, AppError> {
-        let not_signed_in = || AppError::Refused(ErrorCode::NotSignedIn);
-        let token = SecretToken::parse(token_text).ok_or_else(not_signed_in)?;
+        // An access key never opens a session: where a session is needed (the owner's own
+        // sign-in data) a key is turned away.
+        if looks_like_access_key(token_text) {
+            return Err(self.key_on_sign_in_data(token_text).await);
+        }
+        // A cookie that opens no session (garbage, unknown, run out) belongs to one that has
+        // ended: the browser is told to forget it. A session at another stage is still waiting.
+        let ended = || AppError::SessionEnded;
+        let token = SecretToken::parse(token_text).ok_or_else(ended)?;
         let hash = token.hash(Purpose::Session);
         let record = self
             .store()
             .session_by_hash(&hash)
             .await
             .map_err(|error| internal::<S>(&error))?
-            .ok_or_else(not_signed_in)?;
+            .ok_or_else(ended)?;
         // The lookup is by hash; this comparison is for the record that came back.
-        if !same_digest(&record.session.token_hash, &hash) || record.session.stage != wanted {
-            return Err(not_signed_in());
+        if !same_digest(&record.session.token_hash, &hash) {
+            return Err(ended());
+        }
+        if record.session.stage != wanted {
+            return Err(AppError::Refused(ErrorCode::NotSignedIn));
         }
         let now = self.now();
         let age = now
@@ -539,7 +601,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             (PENDING_SECONDS, PENDING_SECONDS)
         };
         if age > absolute || idle > idle_limit {
-            return Err(not_signed_in());
+            return Err(ended());
         }
         if idle >= TOUCH_EVERY_SECONDS {
             self.store()
@@ -550,8 +612,26 @@ impl<S: AuthStore> Ctx<'_, S> {
         Ok(record)
     }
 
-    /// The signed-in person behind a cookie.
+    /// The signed-in person behind a cookie, who may use their session for anything: a person
+    /// who still has to set up a second step may not (it counts from this request on, also for a
+    /// session that was open before: ADR-0025, decision 7).
+    ///
+    /// # Errors
+    /// `auth.second_step_required` while the person has to set up a second step.
     pub(crate) async fn active(&self, token_text: &str) -> Result<SessionRecord, AppError> {
+        let record = self.session(token_text, SessionStage::Active).await?;
+        if self.must_set_up_second_step(record.person.id).await? {
+            return Err(AppError::Refused(ErrorCode::SecondStepRequired));
+        }
+        Ok(record)
+    }
+
+    /// The signed-in person behind a cookie, whether or not they still have to set up a second
+    /// step: only what sets one up (and says that it has to be) uses this.
+    pub(crate) async fn active_to_set_up(
+        &self,
+        token_text: &str,
+    ) -> Result<SessionRecord, AppError> {
         self.session(token_text, SessionStage::Active).await
     }
 

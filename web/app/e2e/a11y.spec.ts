@@ -100,6 +100,7 @@ const visits: readonly Visit[] = [
   { address: paths.shortcuts, open: signedIn(paths.shortcuts), guest: false },
   { address: paths.security, open: signedIn(paths.security), guest: false },
   { address: paths.sessions, open: signedIn(paths.sessions), guest: false },
+  { address: paths.accessKeys, open: signedIn(paths.accessKeys), guest: false },
   {
     address: paths.organizationSettings,
     open: signedIn(paths.organizationSettings),
@@ -130,3 +131,25 @@ for (const visit of visits) {
     await expectGoodInEveryTheme(page, visit.guest);
   });
 }
+
+/** The setting that asks everybody in the organization for a second step. */
+const TWO_STEP_REQUIRED = "security.two-step-required";
+
+// The screen of somebody who has to set up a second step exists only while the organization asks
+// for one, so its visit switches that on and puts it back.
+test(`ux_04 ${paths.setUpSecondStep} has no accessibility problems in the four themes, also with more contrast`, async ({
+  page,
+  server,
+}) => {
+  server.setOrganizationSwitch(TWO_STEP_REQUIRED, true);
+  try {
+    await sendPassword(page, ada);
+    await expect(page).toHaveURL(new RegExp(paths.setUpSecondStep, "u"));
+    await shown(page);
+    await expectGoodInEveryTheme(page, true);
+    await page.emulateMedia({ contrast: "more" });
+    await expectGoodInEveryTheme(page, true);
+  } finally {
+    server.setOrganizationSwitch(TWO_STEP_REQUIRED, false);
+  }
+});

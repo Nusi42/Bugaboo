@@ -1,0 +1,2 @@
+# A fake access key, in the form of the real ones. The secret scan must find it.
+key = "bb_k7q2x9mf_0123456789abcdefghjkmnpqrstvwxyz0123456789abcdefghjk"  # gitleaks:allow -- fake access key for the secret-scan fixture, SEC-16

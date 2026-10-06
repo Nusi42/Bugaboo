@@ -18,6 +18,7 @@ use bb_core::{ErrorCode, Problem, error_code::PROBLEM_CONTENT_TYPE};
 use serde::de::DeserializeOwned;
 
 use crate::api::is_api;
+use crate::cookies::Cookie;
 use crate::logging::RequestId;
 
 /// An error answer in the making.
@@ -28,6 +29,9 @@ use crate::logging::RequestId;
 pub struct ApiError {
     code: ErrorCode,
     retry_after: Option<u64>,
+    /// The session of the request has ended: the answer also makes the browser forget the
+    /// session cookie and what it kept (M2-F06).
+    ends_session: bool,
 }
 
 /// Tells [`add_request_id`] which answers to rewrite.
@@ -41,6 +45,7 @@ impl ApiError {
         Self {
             code,
             retry_after: None,
+            ends_session: false,
         }
     }
 
@@ -56,6 +61,15 @@ impl ApiError {
     #[must_use]
     pub const fn with_retry_after(mut self, seconds: u64) -> Self {
         self.retry_after = Some(seconds);
+        self
+    }
+
+    /// Marks the answer as the one for a session that has ended: it clears both cookies, and
+    /// with them the cache of the browser (`crate::etag` adds `Clear-Site-Data` to every answer
+    /// that clears the session cookie).
+    #[must_use]
+    pub const fn with_session_ended(mut self) -> Self {
+        self.ends_session = true;
         self
     }
 
@@ -100,6 +114,10 @@ impl IntoResponse for ApiError {
             response
                 .headers_mut()
                 .insert(header::RETRY_AFTER, HeaderValue::from(seconds));
+        }
+        if self.ends_session {
+            Cookie::Session.forget(&mut response);
+            Cookie::Csrf.forget(&mut response);
         }
         response.extensions_mut().insert(ProblemOf(self.code));
         response

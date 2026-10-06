@@ -117,6 +117,12 @@ words! {
         SettingLocked => "setting.locked",
         /// An administrator unlocked a setting that touches security.
         SettingUnlocked => "setting.unlocked",
+        /// A person made an access key.
+        AccessKeyMade => "access_key.made",
+        /// A person deleted an access key.
+        AccessKeyDeleted => "access_key.deleted",
+        /// An access key was turned away: it does not work, or it was used where no key may go.
+        AccessKeyRefused => "access_key.refused",
         /// A project got another name.
         ProjectRenamed => "project.renamed",
         /// A project got another short name; the old one stays with it.

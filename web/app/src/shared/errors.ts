@@ -14,6 +14,11 @@ export function messageOf(error: unknown): string {
   return t(error instanceof ApiError ? error.messageKey : "error.server.unavailable");
 }
 
+/** Whether the answer says that the person has to set up a second step before anything else. */
+export function isSecondStepRequired(error: unknown): boolean {
+  return codeOf(error) === "auth.second_step_required";
+}
+
 /** Whether a password was refused for what it is: too short, or one of the passwords that are tried first. */
 export function isPasswordProblem(error: unknown): boolean {
   const code = codeOf(error);

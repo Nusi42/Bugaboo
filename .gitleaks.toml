@@ -1,3 +1,12 @@
-# Secret scan (SEC-SECRETS): the default rules of gitleaks, nothing switched off.
+# Secret scan (SEC-SECRETS): the default rules of gitleaks, nothing switched off, and one rule of
+# our own for the access keys of Bugaboo (AUTH-07): `bb_`, 8 symbols, `_` and 52 symbols of the
+# alphabet of codes (digits and letters without i, l, o and u). `bb-auth` makes the keys in this
+# form (`access_key.rs`); the fixtures in `tools/checks/fixtures/SEC-SECRETS` show what it finds.
 [extend]
 useDefault = true
+
+[[rules]]
+id = "bugaboo-access-key"
+description = "A Bugaboo access key"
+regex = '''\bbb_[0-9a-hjkmnp-tv-z]{8}_[0-9a-hjkmnp-tv-z]{52}\b'''
+keywords = ["bb_"]

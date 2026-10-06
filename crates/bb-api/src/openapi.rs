@@ -13,7 +13,7 @@ use bb_core::{ErrorCode, Problem, error_code::PROBLEM_CONTENT_TYPE};
 use utoipa::openapi::extensions::Extensions;
 use utoipa::openapi::path::{Operation, PathItem};
 use utoipa::openapi::response::{ResponseBuilder, ResponsesBuilder};
-use utoipa::openapi::security::{ApiKey, ApiKeyValue, SecurityScheme};
+use utoipa::openapi::security::{ApiKey, ApiKeyValue, Http, HttpAuthScheme, SecurityScheme};
 use utoipa::openapi::{ContentBuilder, HeaderBuilder, ObjectBuilder, Ref, RefOr, Type};
 use utoipa::{Modify, OpenApi};
 
@@ -35,6 +35,8 @@ pub const PERMISSION_MARK: &str = "x-permission";
 const SESSION_SCHEME: &str = "sessionCookie";
 /// The name of the security scheme for the CSRF header.
 const CSRF_SCHEME: &str = "csrfToken";
+/// The name of the security scheme for the access key of a script or an app.
+const ACCESS_KEY_SCHEME: &str = "accessKey";
 
 /// The parts of the document that do not belong to one route.
 #[derive(OpenApi)]
@@ -121,6 +123,13 @@ impl Modify for StandardParts {
             SESSION_SCHEME,
             SecurityScheme::ApiKey(ApiKey::Cookie(ApiKeyValue::new(Cookie::Session.name()))),
         );
+        let mut bearer = Http::new(HttpAuthScheme::Bearer);
+        bearer.bearer_format = Some("bb_ access key".to_owned());
+        bearer.description = Some(
+            "An access key from My settings, sent as `Authorization: Bearer bb_…`. It can do at most what its owner can do at the moment of the request, and nothing on the owner's own sign-in data."
+                .to_owned(),
+        );
+        components.add_security_scheme(ACCESS_KEY_SCHEME, SecurityScheme::Http(bearer));
         components.add_security_scheme(
             CSRF_SCHEME,
             SecurityScheme::ApiKey(ApiKey::Header(ApiKeyValue::new(CSRF_HEADER))),

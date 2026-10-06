@@ -9,6 +9,7 @@ extern crate self as bb_core;
 mod words;
 
 pub mod access;
+pub mod access_key;
 pub mod entities;
 pub mod error_code;
 pub mod event;

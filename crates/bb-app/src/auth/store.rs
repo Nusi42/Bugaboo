@@ -8,8 +8,9 @@
 use std::fmt;
 use std::future::Future;
 
+use bb_core::access_key::AccessKey;
 use bb_core::event::EntityRef;
-use bb_core::id::{InvitationId, PasskeyId, SessionId, UserId};
+use bb_core::id::{AccessKeyId, InvitationId, PasskeyId, ProjectId, RoleId, SessionId, UserId};
 use bb_core::network::NetworkPrefix;
 use bb_core::person::Person;
 use bb_core::security_log::Digest;
@@ -17,9 +18,11 @@ use bb_core::settings::SettingValue;
 use bb_core::sign_in::{
     Invitation, SecurityAction, SetupCode, SignInSession, StoredPasskey, TwoStep,
 };
+use bb_policy::Permission;
 use jiff::Timestamp;
 use zeroize::Zeroizing;
 
+use super::types::ProjectChoice;
 use crate::access::PolicyStore;
 use crate::projects::ProjectStore;
 use crate::settings::SettingsStore;
@@ -65,6 +68,17 @@ impl fmt::Debug for SessionRecord {
     }
 }
 
+/// An access key with what it may do and where, as stored.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct AccessKeyRecord {
+    /// The key (never its secret: only the hash is stored).
+    pub key: AccessKey,
+    /// The single permissions, for a key whose choice is *More options*; empty otherwise.
+    pub permissions: Vec<Permission>,
+    /// The projects the key is limited to; empty for every project of its owner.
+    pub projects: Vec<ProjectId>,
+}
+
 /// The settings that sign-in depends on, as the registry resolves them.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct AuthSettings {
@@ -76,6 +90,10 @@ pub struct AuthSettings {
     pub sign_up_enabled: bool,
     /// The approved e-mail domains, separated by commas.
     pub sign_up_domains: String,
+    /// Days a new access key lives when the person picks no other date.
+    pub access_key_default_days: i64,
+    /// The most days an access key can live.
+    pub access_key_longest_days: i64,
 }
 
 /// Something to write into the security log.
@@ -147,6 +165,32 @@ pub trait AuthStore: PolicyStore + ProjectStore + SettingsStore + 'static {
         ) -> Vec<Invitation>;
         /// The sign-in settings.
         fn auth_settings() -> AuthSettings;
+        /// The access key with this secret hash, with what it may do and where.
+        fn access_key_by_hash(hash: &Digest) -> Option<AccessKeyRecord>;
+        /// The access keys of a person, newest first (then by ID), after the position `after`
+        /// (the last one of the page before), at most `limit`.
+        fn access_keys_of(
+            owner: UserId,
+            after: Option<(Timestamp, AccessKeyId)>,
+            limit: u64
+        ) -> Vec<AccessKeyRecord>;
+        /// How many access keys a person has.
+        fn access_key_count(owner: UserId) -> i64;
+        /// The projects by short name after `after` (a short name, or the start), leaving out the
+        /// first `skip` of them, at most `limit`: what a person chooses from for an access key.
+        fn projects_after(after: Option<&str>, skip: u64, limit: u64) -> Vec<ProjectChoice>;
+        /// Whether the person needs a second step: the organization asks it of everybody, or any
+        /// role they hold anywhere (their own rows and their groups', at any place) has the
+        /// switch for two-step sign-in (ADR-0025, decision 7).
+        fn second_step_required(person: UserId) -> bool;
+        /// Whether the person has a second step they can sign in with: a confirmed code app or
+        /// a passkey.
+        fn has_second_step(person: UserId) -> bool;
+        /// The people with the role, their own rows and their groups' at any place, who have no
+        /// second step yet.
+        fn people_without_second_step(role: RoleId) -> Vec<UserId>;
+        /// Records when an access key was used, to the minute. Bookkeeping, not a domain change.
+        fn touch_access_key(id: AccessKeyId, at: Timestamp) -> ();
         /// Records when a session was last used. Bookkeeping, not a domain change.
         fn touch_session(id: SessionId, at: Timestamp) -> ();
         /// Stores the shared secret of the code app of a person, encrypted. Replaces an older one.
@@ -194,6 +238,12 @@ pub trait AuthStore: PolicyStore + ProjectStore + SettingsStore + 'static {
         fn use_passkey(id: PasskeyId, data: Option<&str>, at: Timestamp) -> ();
         /// Removes a passkey of a person; `false` if there was none.
         fn delete_passkey(person: UserId, id: PasskeyId) -> bool;
+        /// Adds an access key with its permissions and projects.
+        fn insert_access_key(record: &AccessKeyRecord) -> ();
+        /// Removes an access key of its owner; `false` if the owner has no such key.
+        fn delete_access_key(owner: UserId, id: AccessKeyId) -> bool;
+        /// Removes every access key of a person and returns their IDs.
+        fn delete_access_keys_of(owner: UserId) -> Vec<AccessKeyId>;
         /// Adds an invitation.
         fn insert_invitation(invitation: &Invitation) -> ();
         /// Removes an invitation; `false` if there was none.

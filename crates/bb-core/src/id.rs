@@ -283,10 +283,17 @@ define_random_id! {
     InvitationId
 }
 
+define_random_id! {
+    /// The ID of an access key (the part of the key people see in their list). It is not the
+    /// secret of the key and opens nothing.
+    AccessKeyId
+}
+
 // Random references to records; they say nothing about a person by themselves.
 impl crate::personal::NotPersonal for SessionId {}
 impl crate::personal::NotPersonal for PasskeyId {}
 impl crate::personal::NotPersonal for InvitationId {}
+impl crate::personal::NotPersonal for AccessKeyId {}
 
 /// The ID of a record whose kind is named next to it, for example in an event (ADR-0007). It can
 /// hold the ID of any kind of record, so it takes any UUID version.
@@ -323,7 +330,8 @@ into_entity_id!(
     JobId,
     SessionId,
     PasskeyId,
-    InvitationId
+    InvitationId,
+    AccessKeyId
 );
 
 #[cfg(test)]

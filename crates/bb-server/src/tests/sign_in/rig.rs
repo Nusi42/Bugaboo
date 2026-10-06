@@ -12,10 +12,13 @@ use bb_app::auth::{
     issue_setup_code,
 };
 use bb_app::context::Clock;
+use bb_app::context::SystemIds;
 use bb_auth::{CsrfKey, Passkeys, PasswordHasher, RelyingParty};
 use bb_core::ErrorCode;
-use bb_core::id::UserId;
-use bb_store::{AuthStorage, Database, LogSeal};
+use bb_core::event::{Actor, Channel, DomainEvent, EntityKind, EntityRef};
+use bb_core::id::{EntityId, EventId, UserId};
+use bb_core::settings::SettingValue;
+use bb_store::{AuthStorage, Database, LogSeal, SettingChange};
 use bb_testing::{TestDatabase, TestResult};
 use jiff::Timestamp;
 
@@ -147,6 +150,61 @@ impl Rig {
         })
     }
 
+    /// The moment on the clock of the test.
+    pub(super) fn clock_now(&self) -> Timestamp {
+        self.clock.now()
+    }
+
+    /// Sets a whole-number setting of the organization, the way the settings screen will.
+    pub(super) async fn set_organization_setting(
+        &self,
+        key: &str,
+        value: i64,
+    ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        self.put_setting(key, SettingValue::Integer(value)).await
+    }
+
+    /// Sets a yes-or-no setting of the organization.
+    pub(super) async fn set_organization_switch(
+        &self,
+        key: &str,
+        value: bool,
+    ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        self.put_setting(key, SettingValue::Bool(value)).await
+    }
+
+    async fn put_setting(
+        &self,
+        key: &str,
+        value: SettingValue,
+    ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        let mut ids = SystemIds;
+        let event = DomainEvent {
+            id: EventId::generate(&mut ids)?,
+            time: self.clock_now(),
+            actor: Actor::System,
+            channel: Channel::System,
+            entity: EntityRef {
+                kind: EntityKind::new("setting")?,
+                id: EntityId::from_bytes(bb_auth::stable_id("setting", key))?,
+            },
+            changes: vec![],
+            reason: None,
+        };
+        self.database
+            .set_setting(
+                &event,
+                &SettingChange {
+                    key: key.to_owned(),
+                    scope: bb_core::settings::Scope::Organization,
+                    value,
+                    locked: false,
+                },
+            )
+            .await?;
+        Ok(())
+    }
+
     /// The use cases as the HTTP layer sees them.
     pub(super) fn api(&self) -> &dyn AuthApi {
         &*self.services
@@ -265,12 +323,16 @@ pub(super) fn secret_of(link_path: &str) -> String {
         .unwrap_or_default()
 }
 
-/// The error code of a refused request.
+/// The error code of a refused request, or `None` when it was not refused. A wait (429) or a
+/// failure of the server is no refusal with a code and no success either: it fails the test, so
+/// that `None` always means that the request went through.
 pub(super) fn refused<T>(result: Result<T, AppError>) -> Option<ErrorCode> {
-    match result.err() {
-        Some(AppError::Refused(code)) => Some(code),
-        _ => None,
-    }
+    let error = result.err()?;
+    assert!(
+        error.code().is_some(),
+        "{error:?} is neither a success nor a refusal with a code"
+    );
+    error.code()
 }
 
 /// Runs a test body that returns a plain error.

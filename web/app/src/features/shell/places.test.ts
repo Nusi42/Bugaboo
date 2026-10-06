@@ -5,11 +5,15 @@ import type { Permissions } from "../../shared/permissions.ts";
 import { mayOpen, placeAt, places, placesFor, topicGroups, trailTo } from "./places.ts";
 import { pagesSource } from "./quick-search-pages.ts";
 
-/** The addresses of the pages before sign-in: they are not screens of the signed-in app. */
+/**
+ * The addresses of the pages before sign-in, and the one page of a person who may only set up a
+ * second step: they are not screens of the signed-in app.
+ */
 const guestPaths: ReadonlySet<string> = new Set([
   paths.setup,
   paths.signIn,
   paths.secondStep,
+  paths.setUpSecondStep,
   paths.signUp,
   paths.invitation,
 ]);
@@ -75,6 +79,7 @@ describe("ux_01 the topics of a settings screen", () => {
       paths.shortcuts,
       paths.security,
       paths.sessions,
+      paths.accessKeys,
     ]);
     expect(topicGroups(paths.organizationSettings, [])).toEqual([]);
     expect(

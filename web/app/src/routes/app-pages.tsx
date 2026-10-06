@@ -88,6 +88,12 @@ export const sessionsRoute = createRoute({
   component: lazyRouteComponent(() => import("../features/account/index.ts"), "SessionsPage"),
 });
 
+export const accessKeysRoute = createRoute({
+  getParentRoute: () => mySettingsRoute,
+  path: paths.accessKeys,
+  component: lazyRouteComponent(() => import("../features/my-settings/index.ts"), "AccessKeysPage"),
+});
+
 /** Where *Organization settings* starts. */
 export const organizationSettingsIndexRoute = createRoute({
   getParentRoute: () => organizationSettingsRoute,
