@@ -9,8 +9,8 @@ use bb_app::access::{
 use bb_app::people::{AddGroupMember, DeleteGroup, RemoveGroupMember};
 use bb_app::projects::MakeProject;
 use bb_app::roles::{
-    Given, ReasonView, RemoveAssignment, ResetRole, RolesQuery, SetFieldLevel, SetPeopleLevel,
-    Subject,
+    DeleteRole, Given, ReasonView, RemoveAssignment, ResetRole, RolesQuery, SetFieldLevel,
+    SetPeopleLevel, Subject,
 };
 use bb_core::ErrorCode;
 use bb_core::access::{AppliesTo, FieldLevel, PeopleLevel};
@@ -398,6 +398,61 @@ async fn sec_02_a_group_with_a_no_access_the_person_cannot_see_is_refused_in_its
             .await,
         );
         assert_eq!(delete, Some(ErrorCode::CannotLift));
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn sec_08_the_rows_made_for_a_replacement_are_each_in_the_security_log() -> Outcome {
+    each_database("sec_08_replacement_in_the_log", async |db| {
+        let rig = Rig::start(db, 10).await?;
+        let org = Org::start(&rig).await?;
+        let acme = org.project(None, "ACME").await?.id;
+        let (bob, cleo) = (org.person().await?, org.person().await?);
+        let used = org.role("Used", &[Permission::SeeProjects]).await?;
+        let other = org.role("Other", &[Permission::SeeProjects]).await?;
+        let old_bob = org.give(&bob, used.id, acme).await?;
+        let old_cleo = org.give(&cleo, used.id, acme).await?;
+        let before = rig.database.security_log_entries(0, 10_000).await?.len();
+        org.rig
+            .api()
+            .delete_role(
+                Rig::info(),
+                DeleteRole {
+                    session_token: org.admin.session.clone(),
+                    role: used.id,
+                    replacement: Some(other.id),
+                },
+            )
+            .await?;
+        // Every permission change is in the security log (ADR-0025, decision 9): a row for each
+        // person who had the role, then the deletion of the role itself.
+        let entries = rig.database.security_log_entries(0, 10_000).await?;
+        let new: Vec<_> = entries.iter().skip(before).collect();
+        let actions: Vec<&str> = new.iter().map(|entry| entry.action.as_str()).collect();
+        assert_eq!(
+            actions,
+            [
+                SecurityAction::AssignmentMade.code(),
+                SecurityAction::AssignmentMade.code(),
+                SecurityAction::RoleDeleted.code(),
+            ]
+        );
+        let made: Vec<_> = new[..2].iter().map(|entry| entry.subject.clone()).collect();
+        assert!(made.iter().all(Option::is_some) && made[0] != made[1]);
+        // They are new rows, not the old ones under another role.
+        for old in [old_bob.id, old_cleo.id] {
+            assert!(
+                !made
+                    .iter()
+                    .flatten()
+                    .any(|subject| format!("{subject:?}").contains(&old.to_string()))
+            );
+        }
+        for entry in &new {
+            assert_eq!(entry.person, Some(org.admin.id));
+        }
         Ok(())
     })
     .await

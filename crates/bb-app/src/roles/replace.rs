@@ -10,9 +10,10 @@ use crate::access::ensure_may_give_in;
 use crate::auth::AuthStore;
 
 /// Makes, for every row that gives a role, a row for the same person or group, place and reach
-/// that gives `replacement`, unless such a row is there already. Nobody gives a role they do not
-/// hold themselves, so `giver` must hold the replacement wherever it is given. It runs inside the
-/// change, after the policy lock.
+/// that gives `replacement`, unless such a row is there already, and returns the rows it made (each
+/// is a permission change for the security log, ADR-0025 decision 9). Nobody gives a role they do
+/// not hold themselves, so `giver` must hold the replacement wherever it is given. It runs inside
+/// the change, after the policy lock.
 ///
 /// # Errors
 /// [`bb_policy::guards::Refusal::TooMuch`] (as the error of the store) when the giver holds less
@@ -24,7 +25,8 @@ pub(super) async fn give_to_replacement<S: AuthStore>(
     replacement: RoleId,
     now: Timestamp,
     ids: &mut impl IdSource,
-) -> Result<(), S::Error> {
+) -> Result<Vec<Assignment>, S::Error> {
+    let mut made = Vec::new();
     for old in rows {
         let new = Assignment {
             id: AssignmentId::generate(ids).map_err(|_| S::aborted())?,
@@ -41,7 +43,8 @@ pub(super) async fn give_to_replacement<S: AuthStore>(
         });
         if !already {
             S::insert_assignment(transaction, &new).await?;
+            made.push(new);
         }
     }
-    Ok(())
+    Ok(made)
 }

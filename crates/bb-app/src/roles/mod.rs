@@ -274,18 +274,20 @@ pub async fn delete_role<S: AuthStore>(
         ],
     )?;
     let (giver, now, mut ids) = (actor.person.id, ctx.now(), ctx.owned_ids());
-    ctx.store()
+    let made = ctx
+        .store()
         .record_change(&event, move |transaction| {
             Box::pin(async move {
                 S::lock_policy(transaction).await?;
                 let before = S::organization_state_in(transaction).await?;
                 let rows = S::assignments_of_role_in(transaction, id).await?;
+                let mut made = Vec::new();
                 if !rows.is_empty() {
                     // Judged on the rows that are stored now, after the lock.
                     let Some(replacement) = replacement else {
                         return Err(S::refused(Refusal::InUse));
                     };
-                    replace::give_to_replacement::<S>(
+                    made = replace::give_to_replacement::<S>(
                         transaction,
                         giver,
                         &rows,
@@ -299,11 +301,21 @@ pub async fn delete_role<S: AuthStore>(
                     return Err(S::aborted());
                 }
                 let after = S::organization_state_in(transaction).await?;
-                ensure_a_manager_remains(&before, &after).map_err(S::refused)
+                ensure_a_manager_remains(&before, &after).map_err(S::refused)?;
+                Ok(made)
             })
         })
         .await
         .map_err(|error| stopped::<S>(&error, ErrorCode::NotFound, ErrorCode::NotFound))?;
+    // Every row that the replacement made is a permission change of its own (ADR-0025, decision 9).
+    for row in &made {
+        ctx.note(
+            SecurityAction::AssignmentMade,
+            Some(actor.person.id),
+            Some(entity("assignment", row.id)?),
+        )
+        .await;
+    }
     ctx.note(
         SecurityAction::RoleDeleted,
         Some(actor.person.id),
