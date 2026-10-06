@@ -67,6 +67,14 @@ const MANAGERS: [Permission; 4] = [
 ];
 
 impl Evaluation {
+    /// Whether the viewer manages people or roles here (*Manage people*, *Manage groups*, *Manage
+    /// roles* or *Decide who has which role*): they always see names in the management screens
+    /// and see everybody there (M2-Q3).
+    #[must_use]
+    pub fn manages_people(&self) -> bool {
+        MANAGERS.iter().any(|permission| self.allows(*permission))
+    }
+
     /// How the viewer sees people of `kind` here. The viewer's level is the most open of their
     /// roles; in a management screen a person who manages people or roles always sees names.
     #[must_use]
@@ -74,7 +82,7 @@ impl Evaluation {
         match context {
             PeopleContext::Ordinary => self.kind_level(kind),
             PeopleContext::Management => {
-                if MANAGERS.iter().any(|permission| self.allows(*permission)) {
+                if self.manages_people() {
                     PeopleLevel::Names
                 } else {
                     self.kind_level(PeopleKind::ProjectMembers)

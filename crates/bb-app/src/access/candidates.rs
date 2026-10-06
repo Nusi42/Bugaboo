@@ -49,7 +49,20 @@ fn read_cursor(text: &str) -> Result<(String, UserId), ()> {
     Ok((name.to_owned(), id.parse().map_err(|_| ())?))
 }
 
-/// The people the checker can choose from, a page at a time, by name.
+impl<S: AuthStore> Ctx<'_, S> {
+    /// Whether a person has a role that reaches the place (and so is a member there).
+    pub(crate) async fn has_a_role_at(
+        &self,
+        person: UserId,
+        place: Place,
+    ) -> Result<bool, AppError> {
+        Ok(!self.evaluate(person, place).await?.roles().is_empty())
+    }
+}
+
+/// The people the checker can choose from, a page at a time, by name. A checker who manages
+/// people or roles there chooses among everybody; the others among the people who have a role
+/// that reaches the place.
 ///
 /// # Errors
 /// `access.forbidden` without *Check access* there (`resource.not_found` for a project the
@@ -103,15 +116,22 @@ pub async fn people_to_check<S: AuthStore>(
             .then(a.id.cmp(&b.id))
     });
     let limit = usize::try_from(bb_core::paging::page_size(Some(input.limit))).unwrap_or(1);
-    let mut page: Vec<PersonName> = candidates
-        .into_iter()
-        .filter(|person| {
-            after.as_ref().is_none_or(|(name, id)| {
-                (person.display_name.to_lowercase(), person.id) > (name.clone(), *id)
-            })
+    let manages = checker.manages_people();
+    let mut page: Vec<PersonName> = Vec::with_capacity(limit + 1);
+    for person in candidates.into_iter().filter(|person| {
+        after.as_ref().is_none_or(|(name, id)| {
+            (person.display_name.to_lowercase(), person.id) > (name.clone(), *id)
         })
-        .take(limit + 1)
-        .collect();
+    }) {
+        if page.len() > limit {
+            break;
+        }
+        // Whoever does not manage people or roles chooses among the people who have a role that
+        // reaches the place, as *Project members* are shown (M2-Q3).
+        if manages || ctx.has_a_role_at(person.id, place).await? {
+            page.push(person);
+        }
+    }
     let more = page.len() > limit;
     page.truncate(limit);
     let next_cursor = more.then(|| page.last().map(write_cursor)).flatten();

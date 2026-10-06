@@ -12,10 +12,10 @@ use bb_core::access::{FieldLevel, PeopleLevel};
 use bb_core::fields::Field;
 use bb_core::id::{ProjectId, RoleId};
 use bb_core::people_kinds::PeopleKind;
-use bb_policy::{Authorized, Masked, Permission};
+use bb_policy::{Authorized, LevelSource, Masked, Permission, nearest_rule};
 use serde::Serialize;
 
-use super::{Actor, ProjectLabel, RoleRecord};
+use super::{Actor, LevelRules, ProjectLabel, RoleRecord};
 use crate::auth::{AppError, AuthStore, Ctx, internal};
 use crate::roles::{RoleRef, place_of};
 
@@ -98,45 +98,10 @@ pub type FieldPermissions = LevelTable<Field, FieldLevel>;
 /// *Who sees people*: kinds of people information by roles.
 pub type PeopleVisibility = LevelTable<PeopleKind, PeopleLevel>;
 
-/// Where a role's level for a field or a kind came from, before a parent is named.
-#[derive(Clone, Copy)]
-enum Found {
-    Project(ProjectId),
-    RoleOwn,
-    Unset,
-}
-
-/// The levels one role has set in one place.
-struct Set<K, L> {
-    role: RoleId,
-    place: Option<ProjectId>,
-    levels: Vec<(K, L)>,
-}
+/// One level a role has set: the role, the project (`None` for its own) and the subject.
+type Rule<K, L> = (RoleId, Option<ProjectId>, K, L);
 
 impl<S: AuthStore> Ctx<'_, S> {
-    /// The places a level is looked up in: the project itself, its parents nearest first, and
-    /// last the role's own level (`None`).
-    async fn places_from(
-        &self,
-        project: Option<ProjectId>,
-    ) -> Result<Vec<Option<ProjectId>>, AppError> {
-        let Some(project) = project else {
-            return Ok(vec![None]);
-        };
-        let chain = self
-            .store()
-            .project_chain(project)
-            .await
-            .map_err(|error| internal::<S>(&error))?
-            .unwrap_or_default();
-        Ok(chain
-            .iter()
-            .rev()
-            .map(|parent| Some(*parent))
-            .chain(std::iter::once(None))
-            .collect())
-    }
-
     /// The roles for the columns, in the order of roles, and whether some were cut off.
     async fn columns(&self) -> Result<(Vec<RoleRecord>, bool), AppError> {
         let mut roles = self
@@ -149,7 +114,51 @@ impl<S: AuthStore> Ctx<'_, S> {
         Ok((roles, truncated))
     }
 
-    /// The table from what the roles have set in each place of the walk.
+    /// Every level the shown roles have set, for the organization and the projects down to
+    /// `project`, in one read.
+    async fn rules_of(
+        &self,
+        roles: &[RoleRecord],
+        project: Option<ProjectId>,
+    ) -> Result<LevelRules, AppError> {
+        self.store()
+            .level_rules(roles.iter().map(|record| record.role.id).collect(), project)
+            .await
+            .map_err(|error| internal::<S>(&error))?
+            .ok_or(AppError::Refused(bb_core::ErrorCode::NotFound))
+    }
+
+    /// Where a level was set, for a person who may or may not know the project it was set on.
+    async fn origin_of(
+        &self,
+        actor: &Actor,
+        place: Option<ProjectId>,
+        source: LevelSource,
+        named: &mut Vec<(ProjectId, ProjectLabel)>,
+    ) -> Result<LevelOrigin, AppError> {
+        Ok(match source {
+            LevelSource::Project(above) if Some(above) == place => LevelOrigin::SetHere,
+            LevelSource::Project(above) => {
+                let known = named
+                    .iter()
+                    .find(|(project, _)| *project == above)
+                    .map(|(_, label)| label.clone());
+                let label = if let Some(label) = known {
+                    label
+                } else {
+                    let label = self.project_label(actor, above).await?;
+                    named.push((above, label.clone()));
+                    label
+                };
+                LevelOrigin::Inherited { from: label }
+            }
+            LevelSource::RoleOwn => LevelOrigin::RoleOwn,
+            LevelSource::Unset => LevelOrigin::Unset,
+        })
+    }
+
+    /// The table: for each subject and role the nearest level of the walk the engine makes (steps
+    /// 7 and 8 of the evaluation), and where it was set.
     async fn level_table<K: Copy + PartialEq, L: Copy>(
         &self,
         actor: &Actor,
@@ -159,8 +168,8 @@ impl<S: AuthStore> Ctx<'_, S> {
             project,
             roles,
             truncated,
-            places,
-            sets,
+            chain,
+            rules,
             subjects,
             closed,
             yours,
@@ -171,39 +180,18 @@ impl<S: AuthStore> Ctx<'_, S> {
             let mut cells = Vec::with_capacity(roles.len());
             for record in roles {
                 let role = record.role.id;
-                let (level, found) = places
-                    .iter()
-                    .find_map(|place| {
-                        let set = sets
-                            .iter()
-                            .find(|set| set.role == role && set.place == *place)?;
-                        let (_, level) = set.levels.iter().find(|(known, _)| known == subject)?;
-                        Some((*level, place.map_or(Found::RoleOwn, Found::Project)))
-                    })
-                    .unwrap_or((closed, Found::Unset));
-                let origin = match found {
-                    Found::Project(above) if Some(above) == project => LevelOrigin::SetHere,
-                    Found::Project(above) => {
-                        let known = named
-                            .iter()
-                            .find(|(project, _)| *project == above)
-                            .map(|(_, label)| label.clone());
-                        let label = if let Some(label) = known {
-                            label
-                        } else {
-                            let label = self.project_label(actor, above).await?;
-                            named.push((above, label.clone()));
-                            label
-                        };
-                        LevelOrigin::Inherited { from: label }
-                    }
-                    Found::RoleOwn => LevelOrigin::RoleOwn,
-                    Found::Unset => LevelOrigin::Unset,
-                };
+                let found = nearest_rule(
+                    chain,
+                    rules
+                        .iter()
+                        .filter(|(of, _, known, _)| *of == role && known == subject)
+                        .map(|(_, at, _, level)| (*at, *level)),
+                );
+                let (source, level) = found.unwrap_or((LevelSource::Unset, closed));
                 cells.push(LevelCell {
                     role,
                     level,
-                    origin,
+                    origin: self.origin_of(actor, project, source, &mut named).await?,
                 });
             }
             rows.push(LevelRow {
@@ -236,8 +224,9 @@ struct Wanted<'a, K, L> {
     project: Option<ProjectId>,
     roles: &'a [RoleRecord],
     truncated: bool,
-    places: &'a [Option<ProjectId>],
-    sets: &'a [Set<K, L>],
+    /// The projects from the top down to the place.
+    chain: &'a [ProjectId],
+    rules: &'a [Rule<K, L>],
     subjects: &'a [K],
     closed: L,
     /// What the person who asks may set, for each subject in the same order.
@@ -263,21 +252,12 @@ pub async fn field_permissions<S: AuthStore>(
         )
         .await?;
     let (roles, truncated) = ctx.columns().await?;
-    let places = ctx.places_from(input.project).await?;
-    let mut sets = Vec::with_capacity(roles.len() * places.len());
-    for record in &roles {
-        for place in &places {
-            sets.push(Set {
-                role: record.role.id,
-                place: *place,
-                levels: ctx
-                    .store()
-                    .field_levels(record.role.id, *place)
-                    .await
-                    .map_err(|error| internal::<S>(&error))?,
-            });
-        }
-    }
+    let read = ctx.rules_of(&roles, input.project).await?;
+    let set: Vec<_> = read
+        .fields
+        .iter()
+        .map(|rule| (rule.role, rule.project, rule.field, rule.level))
+        .collect();
     let table = ctx
         .level_table(
             &actor,
@@ -285,8 +265,8 @@ pub async fn field_permissions<S: AuthStore>(
                 project: input.project,
                 roles: &roles,
                 truncated,
-                places: &places,
-                sets: &sets,
+                chain: &read.chain,
+                rules: &set,
                 subjects: Field::ALL,
                 closed: FieldLevel::Hidden,
                 yours: &Field::ALL
@@ -317,21 +297,12 @@ pub async fn people_visibility<S: AuthStore>(
         )
         .await?;
     let (roles, truncated) = ctx.columns().await?;
-    let places = ctx.places_from(input.project).await?;
-    let mut sets = Vec::with_capacity(roles.len() * places.len());
-    for record in &roles {
-        for place in &places {
-            sets.push(Set {
-                role: record.role.id,
-                place: *place,
-                levels: ctx
-                    .store()
-                    .people_levels(record.role.id, *place)
-                    .await
-                    .map_err(|error| internal::<S>(&error))?,
-            });
-        }
-    }
+    let read = ctx.rules_of(&roles, input.project).await?;
+    let set: Vec<_> = read
+        .people
+        .iter()
+        .map(|rule| (rule.role, rule.project, rule.kind, rule.level))
+        .collect();
     let table = ctx
         .level_table(
             &actor,
@@ -339,8 +310,8 @@ pub async fn people_visibility<S: AuthStore>(
                 project: input.project,
                 roles: &roles,
                 truncated,
-                places: &places,
-                sets: &sets,
+                chain: &read.chain,
+                rules: &set,
                 subjects: PeopleKind::ALL,
                 closed: PeopleLevel::Hidden,
                 yours: &PeopleKind::ALL

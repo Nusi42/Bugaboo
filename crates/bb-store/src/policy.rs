@@ -8,7 +8,7 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
-use bb_app::access::{PersonName, PolicyStore, RoleRecord};
+use bb_app::access::{LevelRules, PersonName, PolicyStore, RoleRecord};
 use bb_core::access::{AppliesTo, Assignment, FieldLevel, Group, GroupMember, PeopleLevel, Role};
 use bb_core::fields::Field;
 use bb_core::id::{AssignmentId, GroupId, IdError, ProjectId, RoleId, UserId};
@@ -613,6 +613,34 @@ impl PolicyStore for AuthStorage {
     async fn role(&self, id: RoleId) -> Result<Option<RoleRecord>, StoreError> {
         let mut transaction = self.database().begin_read().await?;
         Ok(roles_in(&mut transaction, Some(&[id])).await?.pop())
+    }
+
+    async fn level_rules(
+        &self,
+        roles: Vec<RoleId>,
+        project: Option<ProjectId>,
+    ) -> Result<Option<LevelRules>, StoreError> {
+        let mut transaction = self.database().begin_read().await?;
+        let chain = match project {
+            None => Vec::new(),
+            Some(project) => match chain_of(&mut transaction, project).await? {
+                Some(chain) => chain,
+                None => return Ok(None),
+            },
+        };
+        if roles.is_empty() {
+            return Ok(Some(LevelRules {
+                chain,
+                fields: Vec::new(),
+                people: Vec::new(),
+            }));
+        }
+        let (fields, people) = level_rules(&mut transaction, &roles, &chain).await?;
+        Ok(Some(LevelRules {
+            chain,
+            fields,
+            people,
+        }))
     }
 
     async fn people_names(&self) -> Result<Vec<PersonName>, StoreError> {

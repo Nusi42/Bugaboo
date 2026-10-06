@@ -12,12 +12,14 @@ use bb_core::fields::Field;
 use bb_core::id::{ProjectId, RoleId};
 use bb_core::people_kinds::PeopleKind;
 use bb_core::sign_in::SecurityAction;
+use bb_policy::guards::Refusal;
 use bb_policy::{Authorized, Permission, Place};
 use serde_json::json;
 
 use super::types::{
     FieldLevelView, Levels, LevelsQuery, PeopleLevelView, SetFieldLevel, SetPeopleLevel,
 };
+use crate::access::held_in;
 use crate::auth::{AppError, AuthStore, Ctx, Done, by, change_failed, entity, internal};
 
 /// The place a level is set at.
@@ -87,6 +89,15 @@ impl<S: AuthStore> Ctx<'_, S> {
     }
 }
 
+/// The answer for a change that did not go through: a refusal of a rule (nobody gives more than
+/// they hold), a thing that is not there, or a failure.
+fn refused_or_failed<S: AuthStore>(error: &S::Error) -> AppError {
+    match S::as_refusal(error) {
+        Some(refusal) => refusal.into(),
+        None => change_failed::<S>(error, Some(ErrorCode::NotFound)),
+    }
+}
+
 /// Sets, or takes away, the level of a field for a role. A role's own level cannot be taken
 /// away, only changed. Taking a project's setting away is the same as setting the level that then
 /// applies there (the nearest parent's, else the role's own), so that level is held to the same
@@ -124,6 +135,7 @@ pub async fn set_field_level<S: AuthStore>(
         return Err(ErrorCode::TooMuch.into());
     }
     let (project, field, level) = (input.project, input.field, input.level);
+    let editor = actor.person.id;
     // What was there before, so the history can tell what a change did.
     let before = ctx
         .store()
@@ -148,11 +160,21 @@ pub async fn set_field_level<S: AuthStore>(
                 // The version of a move preview is made from these levels: a move waits for a
                 // change of them, or the change for the move.
                 S::lock_policy(transaction).await?;
+                // A level set on a project reaches what is inside it: nobody gives there more than
+                // they hold there, judged now, after the lock.
+                if let (Some(project), Some(wanted)) = (project, level_then) {
+                    for below in S::sub_projects_in(transaction, project).await? {
+                        let held = held_in::<S>(transaction, editor, Place::Project(below)).await?;
+                        if held.field_level(field) < wanted {
+                            return Err(S::refused(Refusal::TooMuch));
+                        }
+                    }
+                }
                 S::put_field_level(transaction, role, project, field, level).await
             })
         })
         .await
-        .map_err(|error| change_failed::<S>(&error, Some(ErrorCode::NotFound)))?;
+        .map_err(|error| refused_or_failed::<S>(&error))?;
     ctx.note(
         SecurityAction::FieldLevelChanged,
         Some(actor.person.id),
@@ -194,6 +216,7 @@ pub async fn set_people_level<S: AuthStore>(
         return Err(ErrorCode::TooMuch.into());
     }
     let (project, kind, level) = (input.project, input.kind, input.level);
+    let editor = actor.person.id;
     let before = ctx
         .store()
         .people_levels(role, project)
@@ -217,11 +240,20 @@ pub async fn set_people_level<S: AuthStore>(
                 // The version of a move preview is made from these levels: a move waits for a
                 // change of them, or the change for the move.
                 S::lock_policy(transaction).await?;
+                // The same as for fields: what is set on a project reaches what is inside it.
+                if let (Some(project), Some(wanted)) = (project, level_then) {
+                    for below in S::sub_projects_in(transaction, project).await? {
+                        let held = held_in::<S>(transaction, editor, Place::Project(below)).await?;
+                        if held.kind_level(kind) < wanted {
+                            return Err(S::refused(Refusal::TooMuch));
+                        }
+                    }
+                }
                 S::put_people_level(transaction, role, project, kind, level).await
             })
         })
         .await
-        .map_err(|error| change_failed::<S>(&error, Some(ErrorCode::NotFound)))?;
+        .map_err(|error| refused_or_failed::<S>(&error))?;
     ctx.note(
         SecurityAction::PeopleLevelChanged,
         Some(actor.person.id),

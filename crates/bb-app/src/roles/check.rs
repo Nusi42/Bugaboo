@@ -324,7 +324,8 @@ impl<S: AuthStore> Ctx<'_, S> {
 ///
 /// # Errors
 /// `access.forbidden` without *Check access* there (`resource.not_found` for a project the person
-/// may not know about), `resource.not_found` for an unknown person to check.
+/// may not know about), `resource.not_found` for an unknown person to check, and for a person
+/// without a role there when the checker does not manage people or roles.
 pub async fn check_access<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: CheckAccessQuery,
@@ -338,6 +339,11 @@ pub async fn check_access<S: AuthStore>(
         .map_err(|error| internal::<S>(&error))?
         .ok_or(AppError::Refused(ErrorCode::NotFound))?;
     let theirs = ctx.evaluate(input.person, place).await?;
+    // Whoever does not manage people or roles reads the access of the people they could choose:
+    // those who have a role there. Anybody else is as good as not there.
+    if !checker.manages_people() && theirs.roles().is_empty() {
+        return Err(AppError::Refused(ErrorCode::NotFound));
+    }
     let person = ctx
         .person_ref(
             &checker,

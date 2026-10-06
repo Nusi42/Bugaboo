@@ -11,7 +11,7 @@ use bb_policy::{FieldRule, Inputs, PeopleRule, Permission, Place, RoleData, Row,
 use jiff::Timestamp;
 
 use super::fake::{FakeError, FakeStore, State, Tx};
-use crate::access::{PersonName, PolicyStore, RoleRecord};
+use crate::access::{LevelRules, PersonName, PolicyStore, RoleRecord};
 
 /// The projects from the top down to `project`; `None` when it does not exist.
 pub(super) fn chain_of(state: &State, project: ProjectId) -> Option<Vec<ProjectId>> {
@@ -178,6 +178,45 @@ impl PolicyStore for FakeStore {
                 .iter()
                 .find(|record| record.role.id == id)
                 .cloned()
+        }))
+    }
+
+    async fn level_rules(
+        &self,
+        roles: Vec<RoleId>,
+        project: Option<ProjectId>,
+    ) -> Result<Option<LevelRules>, FakeError> {
+        Ok(self.read(|state| {
+            let chain = match project {
+                None => Vec::new(),
+                Some(project) => chain_of(state, project)?,
+            };
+            let here = |place: Option<ProjectId>| place.is_none_or(|place| chain.contains(&place));
+            Some(LevelRules {
+                fields: state
+                    .field_levels
+                    .iter()
+                    .filter(|(role, place, _, _)| roles.contains(role) && here(*place))
+                    .map(|(role, place, field, level)| FieldRule {
+                        project: *place,
+                        role: *role,
+                        field: *field,
+                        level: *level,
+                    })
+                    .collect(),
+                people: state
+                    .people_levels
+                    .iter()
+                    .filter(|(role, place, _, _)| roles.contains(role) && here(*place))
+                    .map(|(role, place, kind, level)| PeopleRule {
+                        project: *place,
+                        role: *role,
+                        kind: *kind,
+                        level: *level,
+                    })
+                    .collect(),
+                chain,
+            })
         }))
     }
 

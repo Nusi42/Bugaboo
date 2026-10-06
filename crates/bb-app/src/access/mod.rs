@@ -29,7 +29,7 @@ pub use bb_policy::{
 };
 pub use candidates::{PeopleToCheckQuery, PersonPage, people_to_check};
 pub use starting::{MakeStartingRoles, make_starting_roles};
-pub use store::{PersonName, PolicyStore, RoleRecord};
+pub use store::{LevelRules, PersonName, PolicyStore, RoleRecord};
 pub use visibility::{
     FieldPermissions, FieldPermissionsQuery, LevelCell, LevelOrigin, LevelRow, LevelTable,
     PeopleVisibility, PeopleVisibilityQuery, ROLES_MAX, field_permissions, people_visibility,

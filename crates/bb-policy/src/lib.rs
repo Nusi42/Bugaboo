@@ -24,7 +24,7 @@ mod tree;
 pub use catalogue::{Counts, Kind, NOT_FOR_KEYS, Permission, Topic, UnknownPermission};
 pub use evaluate::{
     Evaluation, FieldRule, HeldRole, Inputs, LevelSource, PeopleRule, Place, RoleData, RoleLevel,
-    Row, RowStatus, RowTrace, Who, evaluate,
+    Row, RowStatus, RowTrace, Who, evaluate, nearest_rule,
 };
 pub use explain::{AccessReport, LevelDecision, PermissionDecision, Reason, ReasonRow};
 pub use mask::{Authorized, FieldMask, Masked, drop_hidden, mask_member};

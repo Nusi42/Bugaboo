@@ -16,14 +16,14 @@ use super::policy_rig::{Member, Org};
 use super::rig::{Outcome, PASSWORD, Rig, secret_of};
 use super::status::app_with_probe;
 
-const FIELDS: &str = "/api/v1/field-permissions";
-const PEOPLE: &str = "/api/v1/people-visibility";
-const CHECK: &str = "/api/v1/check-access/people";
+pub(super) const FIELDS: &str = "/api/v1/field-permissions";
+pub(super) const PEOPLE: &str = "/api/v1/people-visibility";
+pub(super) const CHECK: &str = "/api/v1/check-access/people";
 /// An ID that no person, role or project has (the random kind).
-const NOBODY: &str = "5b0f6a3e-2d1c-4e8a-9f77-0a1b2c3d4e5f";
+pub(super) const NOBODY: &str = "5b0f6a3e-2d1c-4e8a-9f77-0a1b2c3d4e5f";
 
 /// The role of the starting kind, as the administrator lists the roles.
-async fn role(org: &Org<'_>, starting: StartingRole) -> Result<RoleId, Failure> {
+pub(super) async fn role(org: &Org<'_>, starting: StartingRole) -> Result<RoleId, Failure> {
     let list = org
         .rig
         .api()
@@ -45,7 +45,7 @@ async fn role(org: &Org<'_>, starting: StartingRole) -> Result<RoleId, Failure> 
 }
 
 /// A person with a name of their own and no role yet.
-async fn named(org: &Org<'_>, name: &str, email: &str) -> Result<Member, Failure> {
+pub(super) async fn named(org: &Org<'_>, name: &str, email: &str) -> Result<Member, Failure> {
     let created = org
         .rig
         .api()
@@ -80,7 +80,7 @@ async fn named(org: &Org<'_>, name: &str, email: &str) -> Result<Member, Failure
 }
 
 /// A browser of the person with this address, signed in.
-async fn browser_of(app: &Router, email: &str) -> Result<Browser, Failure> {
+pub(super) async fn browser_of(app: &Router, email: &str) -> Result<Browser, Failure> {
     let mut browser = Browser::new(app, &called());
     let signed_in = browser
         .send(
@@ -94,7 +94,11 @@ async fn browser_of(app: &Router, email: &str) -> Result<Browser, Failure> {
 }
 
 /// The cell of a table: the row of the subject, the cell of the role.
-fn cell<'a>(table: &'a Value, subject: &str, role: RoleId) -> Result<&'a Value, Failure> {
+pub(super) fn cell<'a>(
+    table: &'a Value,
+    subject: &str,
+    role: RoleId,
+) -> Result<&'a Value, Failure> {
     table["rows"]
         .as_array()
         .into_iter()
@@ -108,7 +112,7 @@ fn cell<'a>(table: &'a Value, subject: &str, role: RoleId) -> Result<&'a Value, 
 }
 
 /// The path of a project, as the query of a route.
-fn at(project: ProjectId) -> String {
+pub(super) fn at(project: ProjectId) -> String {
     format!("?project={project}")
 }
 
