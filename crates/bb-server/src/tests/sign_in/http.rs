@@ -37,7 +37,7 @@ const CSRF: &str = "__Host-bb_csrf";
 /// What the server answered.
 pub(super) struct Reply {
     pub(super) status: StatusCode,
-    headers: HeaderMap,
+    pub(super) headers: HeaderMap,
     pub(super) body: Value,
 }
 
@@ -122,6 +122,11 @@ impl Browser {
         self.headers.push((name, value.to_owned()));
     }
 
+    /// The browser holds this cookie, as if it had been set by an earlier answer.
+    pub(super) fn set_cookie(&mut self, name: &str, value: &str) {
+        self.jar.insert(name.to_owned(), value.to_owned());
+    }
+
     /// From now on no extra headers.
     pub(super) fn clear_headers(&mut self) {
         self.headers.clear();
@@ -191,6 +196,53 @@ impl Browser {
             Token::Nothing => {}
             Token::Is(value) => request = request.header("x-csrf-token", value),
         }
+        self.finish(request, method, path, body).await
+    }
+
+    /// A change that carries no token of the session (a page that forgot it, or a forger).
+    pub(super) async fn send_without_token(
+        &mut self,
+        method: &str,
+        path: &str,
+        body: Value,
+    ) -> Result<Reply, Failure> {
+        self.send_as(
+            method,
+            path,
+            Some(body),
+            Token::Nothing,
+            "http://bugaboo.test",
+        )
+        .await
+    }
+
+    /// A script with an access key: no cookie, no token and no `Origin` (a program that is not
+    /// a web page sends none of them), only `Authorization: Bearer <key>`.
+    pub(super) async fn script(
+        &mut self,
+        method: &str,
+        path: &str,
+        body: Option<Value>,
+        key: &str,
+    ) -> Result<Reply, Failure> {
+        let request = Request::builder()
+            .method(method)
+            .uri(path)
+            .header(header::HOST, "bugaboo.test")
+            .header(header::AUTHORIZATION, format!("Bearer {key}"))
+            .header(header::USER_AGENT, "curl/8.5.0");
+        self.finish(request, method, path, body).await
+    }
+
+    /// Sends the request with its body, keeps the cookies the answer sets and checks what every
+    /// answer says about keeping it.
+    pub(super) async fn finish(
+        &mut self,
+        mut request: axum::http::request::Builder,
+        method: &str,
+        path: &str,
+        body: Option<Value>,
+    ) -> Result<Reply, Failure> {
         let body = match body {
             Some(value) => {
                 request = request.header(header::CONTENT_TYPE, "application/json");
@@ -470,7 +522,8 @@ async fn sec_12_every_route_that_changes_something_checks_the_token_except_signi
                 let path = template
                     .replace("{session_id}", id)
                     .replace("{passkey_id}", id)
-                    .replace("{invitation_id}", id);
+                    .replace("{invitation_id}", id)
+                    .replace("{access_key_id}", id);
                 let reply = browser
                     .send_as(
                         &method.to_uppercase(),

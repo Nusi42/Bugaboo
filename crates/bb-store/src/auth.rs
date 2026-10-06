@@ -8,16 +8,19 @@
 
 use std::sync::Arc;
 
-use bb_app::auth::{Account, AuthSettings, AuthStore, SecurityEvent, SessionRecord};
+use bb_app::auth::{
+    AccessKeyRecord, Account, AuthSettings, AuthStore, ProjectChoice, SecurityEvent, SessionRecord,
+};
 use bb_app::ports::{BoxFuture, ChangeStore};
 use bb_core::event::DomainEvent;
-use bb_core::id::{IdError, InvitationId, PasskeyId, SessionId, UserId};
+use bb_core::id::{AccessKeyId, IdError, InvitationId, PasskeyId, RoleId, SessionId, UserId};
 use bb_core::network::NetworkPrefix;
 use bb_core::person::Person;
 use bb_core::security_log::Digest;
 use bb_core::settings::{
-    AUTH_SIGN_UP_DOMAINS, AUTH_SIGN_UP_ENABLED, SECURITY_SESSION_ABSOLUTE_HOURS,
-    SECURITY_SESSION_IDLE_MINUTES, SettingValue,
+    AUTH_ACCESS_KEY_DEFAULT_DAYS, AUTH_ACCESS_KEY_LONGEST_DAYS, AUTH_SIGN_UP_DOMAINS,
+    AUTH_SIGN_UP_ENABLED, SECURITY_SESSION_ABSOLUTE_HOURS, SECURITY_SESSION_IDLE_MINUTES,
+    SettingValue,
 };
 use bb_core::sign_in::{
     Invitation, SessionStage, SetupCode, SignInSession, StoredPasskey, TwoStep,
@@ -459,7 +462,62 @@ impl AuthStore for AuthStorage {
                     .resolve_setting(&AUTH_SIGN_UP_DOMAINS, &scopes)
                     .await?,
             ),
+            access_key_default_days: AUTH_ACCESS_KEY_DEFAULT_DAYS.definition().clamp(
+                self.database
+                    .resolve_setting(&AUTH_ACCESS_KEY_DEFAULT_DAYS, &scopes)
+                    .await?,
+            ),
+            access_key_longest_days: AUTH_ACCESS_KEY_LONGEST_DAYS.definition().clamp(
+                self.database
+                    .resolve_setting(&AUTH_ACCESS_KEY_LONGEST_DAYS, &scopes)
+                    .await?,
+            ),
         })
+    }
+
+    async fn access_key_by_hash(
+        &self,
+        hash: &Digest,
+    ) -> Result<Option<AccessKeyRecord>, StoreError> {
+        self.database.access_key_by_hash(hash).await
+    }
+
+    async fn access_keys_of(
+        &self,
+        owner: UserId,
+        after: Option<(Timestamp, AccessKeyId)>,
+        limit: u64,
+    ) -> Result<Vec<AccessKeyRecord>, StoreError> {
+        self.database.access_keys_of(owner, after, limit).await
+    }
+
+    async fn access_key_count(&self, owner: UserId) -> Result<i64, StoreError> {
+        self.database.access_key_count(owner).await
+    }
+
+    async fn projects_after(
+        &self,
+        after: Option<&str>,
+        skip: u64,
+        limit: u64,
+    ) -> Result<Vec<ProjectChoice>, StoreError> {
+        self.database.projects_after(after, skip, limit).await
+    }
+
+    async fn second_step_required(&self, person: UserId) -> Result<bool, StoreError> {
+        self.database.second_step_required(person).await
+    }
+
+    async fn has_second_step(&self, person: UserId) -> Result<bool, StoreError> {
+        self.database.has_second_step(person).await
+    }
+
+    async fn people_without_second_step(&self, role: RoleId) -> Result<Vec<UserId>, StoreError> {
+        self.database.people_without_second_step(role).await
+    }
+
+    async fn touch_access_key(&self, id: AccessKeyId, at: Timestamp) -> Result<(), StoreError> {
+        self.database.touch_access_key(id, at).await
     }
 
     async fn touch_session(&self, id: SessionId, at: Timestamp) -> Result<(), StoreError> {
@@ -806,6 +864,28 @@ impl AuthStore for AuthStorage {
             .and_where(Expr::col(PasskeyRow::Id).eq(id.to_bytes().to_vec()))
             .and_where(Expr::col(PasskeyRow::Person).eq(person_bytes(person)));
         Ok(transaction.execute(&delete).await? > 0)
+    }
+
+    async fn insert_access_key(
+        transaction: &mut Transaction,
+        record: &AccessKeyRecord,
+    ) -> Result<(), StoreError> {
+        crate::access_keys::insert_access_key(transaction, record).await
+    }
+
+    async fn delete_access_key(
+        transaction: &mut Transaction,
+        owner: UserId,
+        id: AccessKeyId,
+    ) -> Result<bool, StoreError> {
+        crate::access_keys::delete_access_key(transaction, owner, id).await
+    }
+
+    async fn delete_access_keys_of(
+        transaction: &mut Transaction,
+        owner: UserId,
+    ) -> Result<Vec<AccessKeyId>, StoreError> {
+        crate::access_keys::delete_access_keys_of(transaction, owner).await
     }
 
     async fn insert_invitation(

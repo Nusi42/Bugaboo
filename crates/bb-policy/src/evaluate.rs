@@ -474,6 +474,22 @@ fn people_levels(
 }
 
 impl Evaluation {
+    /// What a person may do who holds nothing at the organization: no permission, every field
+    /// and every kind of people information closed (default deny). For a session that may only
+    /// set up a second step.
+    #[must_use]
+    pub fn nothing(person: UserId) -> Self {
+        evaluate(&Inputs {
+            person,
+            place: Place::Organization,
+            chain: Vec::new(),
+            rows: Vec::new(),
+            roles: Vec::new(),
+            field_rules: Vec::new(),
+            people_rules: Vec::new(),
+        })
+    }
+
     /// Whether the permission counts at the place of this evaluation at all (an organization
     /// permission counts only at the organization).
     #[must_use]

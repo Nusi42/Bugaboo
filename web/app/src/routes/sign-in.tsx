@@ -3,11 +3,12 @@ import { createRoute, redirect } from "@tanstack/react-router";
 import {
   isSignInReason,
   SecondStepPage,
+  SetUpSecondStepPage,
   SignInPage,
   type SignInReason,
 } from "../features/sign-in/index.ts";
 import { paths } from "../shared/paths.ts";
-import { guestRoute } from "./layouts.tsx";
+import { guestRoute, setUpRoute } from "./layouts.tsx";
 import { startPath } from "./start.ts";
 
 export const signInRoute = createRoute({
@@ -42,4 +43,11 @@ export const secondStepRoute = createRoute({
     passkey: flag(search["passkey"]),
   }),
   component: SecondStepPage,
+});
+
+/** *Set up your second step*, for a person whose role or organization asks for one. */
+export const setUpSecondStepRoute = createRoute({
+  getParentRoute: () => setUpRoute,
+  path: paths.setUpSecondStep,
+  component: SetUpSecondStepPage,
 });

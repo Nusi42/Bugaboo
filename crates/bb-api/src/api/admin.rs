@@ -4,12 +4,12 @@ use std::sync::Arc;
 
 use axum::extract::State;
 use axum::response::Response;
-use bb_app::auth::AuthenticateQuery;
+use bb_app::auth::SeeServerStatusQuery;
 use bb_app::status::{
     Access, DataFolderRights, DatabaseKind, LogBreak, LogState, ServerProbe, Snapshot,
 };
 use bb_core::ErrorCode;
-use bb_policy::{Masked, Permission};
+use bb_policy::Masked;
 use serde::Serialize;
 use utoipa::ToSchema;
 use utoipa_axum::router::OpenApiRouter;
@@ -306,20 +306,16 @@ async fn get_server_status(
     Info(info): Info,
     Session(session_token): Session,
 ) -> Result<Response, ApiError> {
-    let who = auth
+    // A person or an access key that may see the status: a key counts with what it keeps.
+    let allowed = auth
         .api()?
-        .authenticate(info, AuthenticateQuery { session_token })
+        .see_server_status(info, SeeServerStatusQuery { session_token })
         .await?;
-    if !who.access.allows(Permission::SeeStatus) {
-        return Err(ApiError::new(ErrorCode::Forbidden));
-    }
     let probe = probe
         .probe()
         .ok_or_else(|| ApiError::new(ErrorCode::Unavailable))?;
-    answer_authorized(
-        &who.access
-            .authorize(ServerStatusBody::from(probe.snapshot().await)),
-    )
+    let snapshot = probe.snapshot().await;
+    answer_authorized(&allowed.map(|_| ServerStatusBody::from(snapshot)))
 }
 
 /// The routes only administrators use.

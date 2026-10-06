@@ -7,6 +7,7 @@ error[E0277]: `String` may hold personal data, so a field of this type cannot be
   = help: the trait `NotPersonal` is not implemented for `String`
   = note: or implement `NotPersonal` for the type, if it can never hold personal data (DATA-MARKS)
   = help: the following other types implement trait `NotPersonal`:
+            AccessKeyId
             AppliesTo
             AssignmentId
             Basis
@@ -14,7 +15,6 @@ error[E0277]: `String` may hold personal data, so a field of this type cannot be
             Category
             Channel
             Digest
-            EntityId
           and $N others
 note: required by a bound in `not_personal`
  --> tests/ui/not_personal_text.rs:3:10

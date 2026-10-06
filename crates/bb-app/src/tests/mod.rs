@@ -9,5 +9,6 @@ mod fake_policy;
 mod fake_projects;
 mod hidden;
 mod key_scope;
+mod keys;
 mod scenarios;
 mod world;

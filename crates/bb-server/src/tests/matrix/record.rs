@@ -115,6 +115,7 @@ const fn word(expected: Expect) -> &'static str {
         Expect::NotSignedIn => "not-signed-in",
         Expect::Forbidden => "forbidden",
         Expect::NotFound => "not-found",
+        Expect::NotForKeys => "not-for-keys",
     }
 }
 

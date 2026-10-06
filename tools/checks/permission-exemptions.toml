@@ -22,7 +22,3 @@ reason = "Decides who sees e-mail addresses and may correct names; the routes of
 [[engine-only]]
 permission = "manage-groups"
 reason = "Judged by the use cases of groups; the routes of Groups come with WP-11 (M2-F60)."
-
-[[engine-only]]
-permission = "manage-roles"
-reason = "Judged by the use cases of roles; the routes of Roles and permissions come with WP-11 (M2-F60)."

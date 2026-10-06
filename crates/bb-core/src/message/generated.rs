@@ -2,6 +2,129 @@
 
 use super::{Message, MessageKey, Value};
 
+/// The message `access-keys.cancel`.
+pub const ACCESS_KEYS_CANCEL: MessageKey = MessageKey::new("access-keys.cancel");
+
+/// The message `access-keys.choice.everything`.
+pub const ACCESS_KEYS_CHOICE_EVERYTHING: MessageKey =
+    MessageKey::new("access-keys.choice.everything");
+
+/// The message `access-keys.choice.see-and-change`.
+pub const ACCESS_KEYS_CHOICE_SEE_AND_CHANGE: MessageKey =
+    MessageKey::new("access-keys.choice.see-and-change");
+
+/// The message `access-keys.choice.see-only`.
+pub const ACCESS_KEYS_CHOICE_SEE_ONLY: MessageKey = MessageKey::new("access-keys.choice.see-only");
+
+/// The message `access-keys.copied`.
+pub const ACCESS_KEYS_COPIED: MessageKey = MessageKey::new("access-keys.copied");
+
+/// The message `access-keys.copy`.
+pub const ACCESS_KEYS_COPY: MessageKey = MessageKey::new("access-keys.copy");
+
+/// The message `access-keys.delete`.
+pub const ACCESS_KEYS_DELETE: MessageKey = MessageKey::new("access-keys.delete");
+
+/// The message `access-keys.delete-confirm`.
+pub const ACCESS_KEYS_DELETE_CONFIRM: MessageKey = MessageKey::new("access-keys.delete-confirm");
+
+/// The message `access-keys.delete-text`.
+pub const ACCESS_KEYS_DELETE_TEXT: MessageKey = MessageKey::new("access-keys.delete-text");
+
+/// The message `access-keys.delete-title`.
+pub const ACCESS_KEYS_DELETE_TITLE: MessageKey = MessageKey::new("access-keys.delete-title");
+
+/// The message `access-keys.deleted`.
+pub const ACCESS_KEYS_DELETED: MessageKey = MessageKey::new("access-keys.deleted");
+
+/// The message `access-keys.done`.
+pub const ACCESS_KEYS_DONE: MessageKey = MessageKey::new("access-keys.done");
+
+/// The message `access-keys.empty`.
+pub const ACCESS_KEYS_EMPTY: MessageKey = MessageKey::new("access-keys.empty");
+
+/// The message `access-keys.expires`.
+pub const ACCESS_KEYS_EXPIRES: MessageKey = MessageKey::new("access-keys.expires");
+
+/// The message `access-keys.help.everything`.
+pub const ACCESS_KEYS_HELP_EVERYTHING: MessageKey = MessageKey::new("access-keys.help.everything");
+
+/// The message `access-keys.help.permissions`.
+pub const ACCESS_KEYS_HELP_PERMISSIONS: MessageKey =
+    MessageKey::new("access-keys.help.permissions");
+
+/// The message `access-keys.help.see-and-change`.
+pub const ACCESS_KEYS_HELP_SEE_AND_CHANGE: MessageKey =
+    MessageKey::new("access-keys.help.see-and-change");
+
+/// The message `access-keys.help.see-only`.
+pub const ACCESS_KEYS_HELP_SEE_ONLY: MessageKey = MessageKey::new("access-keys.help.see-only");
+
+/// The message `access-keys.intro`.
+pub const ACCESS_KEYS_INTRO: MessageKey = MessageKey::new("access-keys.intro");
+
+/// The message `access-keys.key-label`.
+pub const ACCESS_KEYS_KEY_LABEL: MessageKey = MessageKey::new("access-keys.key-label");
+
+/// The message `access-keys.list`.
+pub const ACCESS_KEYS_LIST: MessageKey = MessageKey::new("access-keys.list");
+
+/// The message `access-keys.make`.
+pub const ACCESS_KEYS_MAKE: MessageKey = MessageKey::new("access-keys.make");
+
+/// The message `access-keys.may`.
+pub const ACCESS_KEYS_MAY: MessageKey = MessageKey::new("access-keys.may");
+
+/// The message `access-keys.more`.
+pub const ACCESS_KEYS_MORE: MessageKey = MessageKey::new("access-keys.more");
+
+/// The message `access-keys.name`.
+pub const ACCESS_KEYS_NAME: MessageKey = MessageKey::new("access-keys.name");
+
+/// The message `access-keys.name-help`.
+pub const ACCESS_KEYS_NAME_HELP: MessageKey = MessageKey::new("access-keys.name-help");
+
+/// The message `access-keys.never`.
+pub const ACCESS_KEYS_NEVER: MessageKey = MessageKey::new("access-keys.never");
+
+/// The message `access-keys.pick-one`.
+pub const ACCESS_KEYS_PICK_ONE: MessageKey = MessageKey::new("access-keys.pick-one");
+
+/// The message `access-keys.projects`.
+pub const ACCESS_KEYS_PROJECTS: MessageKey = MessageKey::new("access-keys.projects");
+
+/// The message `access-keys.projects-help`.
+pub const ACCESS_KEYS_PROJECTS_HELP: MessageKey = MessageKey::new("access-keys.projects-help");
+
+/// The message `access-keys.projects-none`.
+pub const ACCESS_KEYS_PROJECTS_NONE: MessageKey = MessageKey::new("access-keys.projects-none");
+
+/// The message `access-keys.row.hidden-project`.
+pub const ACCESS_KEYS_ROW_HIDDEN_PROJECT: MessageKey =
+    MessageKey::new("access-keys.row.hidden-project");
+
+/// The message `access-keys.row.never-used`.
+pub const ACCESS_KEYS_ROW_NEVER_USED: MessageKey = MessageKey::new("access-keys.row.never-used");
+
+/// The message `access-keys.row.projects-all`.
+pub const ACCESS_KEYS_ROW_PROJECTS_ALL: MessageKey =
+    MessageKey::new("access-keys.row.projects-all");
+
+/// The message `access-keys.shown-once`.
+pub const ACCESS_KEYS_SHOWN_ONCE: MessageKey = MessageKey::new("access-keys.shown-once");
+
+/// The message `access-keys.shown-title`.
+pub const ACCESS_KEYS_SHOWN_TITLE: MessageKey = MessageKey::new("access-keys.shown-title");
+
+/// The message `access-keys.single`.
+pub const ACCESS_KEYS_SINGLE: MessageKey = MessageKey::new("access-keys.single");
+
+/// The message `access-keys.submit`.
+pub const ACCESS_KEYS_SUBMIT: MessageKey = MessageKey::new("access-keys.submit");
+
+/// The message `access-keys.title`.
+pub const ACCESS_KEYS_TITLE: MessageKey = MessageKey::new("access-keys.title");
+
 /// The message `app.name`.
 pub const APP_NAME: MessageKey = MessageKey::new("app.name");
 
@@ -276,6 +399,10 @@ pub const ERROR_ACCESS_WOULD_LOCK_OUT: MessageKey = MessageKey::new("error.acces
 /// The message `error.assignment.conflict`.
 pub const ERROR_ASSIGNMENT_CONFLICT: MessageKey = MessageKey::new("error.assignment.conflict");
 
+/// The message `error.auth.access-key-not-allowed`.
+pub const ERROR_AUTH_ACCESS_KEY_NOT_ALLOWED: MessageKey =
+    MessageKey::new("error.auth.access-key-not-allowed");
+
 /// The message `error.auth.invitation-invalid`.
 pub const ERROR_AUTH_INVITATION_INVALID: MessageKey =
     MessageKey::new("error.auth.invitation-invalid");
@@ -293,6 +420,10 @@ pub const ERROR_AUTH_PASSWORD_BREACHED: MessageKey =
 /// The message `error.auth.password-too-short`.
 pub const ERROR_AUTH_PASSWORD_TOO_SHORT: MessageKey =
     MessageKey::new("error.auth.password-too-short");
+
+/// The message `error.auth.second-step-required`.
+pub const ERROR_AUTH_SECOND_STEP_REQUIRED: MessageKey =
+    MessageKey::new("error.auth.second-step-required");
 
 /// The message `error.auth.sign-up-refused`.
 pub const ERROR_AUTH_SIGN_UP_REFUSED: MessageKey = MessageKey::new("error.auth.sign-up-refused");
@@ -613,6 +744,9 @@ pub const LIST_NEXT: MessageKey = MessageKey::new("list.next");
 
 /// The message `list.previous`.
 pub const LIST_PREVIOUS: MessageKey = MessageKey::new("list.previous");
+
+/// The message `nav.access-keys`.
+pub const NAV_ACCESS_KEYS: MessageKey = MessageKey::new("nav.access-keys");
 
 /// The message `nav.appearance`.
 pub const NAV_APPEARANCE: MessageKey = MessageKey::new("nav.appearance");
@@ -1208,9 +1342,32 @@ pub const SESSIONS_TITLE: MessageKey = MessageKey::new("sessions.title");
 /// The message `sessions.unknown-device`.
 pub const SESSIONS_UNKNOWN_DEVICE: MessageKey = MessageKey::new("sessions.unknown-device");
 
+/// The message `set-up-second-step.continue`.
+pub const SET_UP_SECOND_STEP_CONTINUE: MessageKey = MessageKey::new("set-up-second-step.continue");
+
+/// The message `set-up-second-step.how`.
+pub const SET_UP_SECOND_STEP_HOW: MessageKey = MessageKey::new("set-up-second-step.how");
+
+/// The message `set-up-second-step.ready`.
+pub const SET_UP_SECOND_STEP_READY: MessageKey = MessageKey::new("set-up-second-step.ready");
+
+/// The message `set-up-second-step.title`.
+pub const SET_UP_SECOND_STEP_TITLE: MessageKey = MessageKey::new("set-up-second-step.title");
+
+/// The message `set-up-second-step.why`.
+pub const SET_UP_SECOND_STEP_WHY: MessageKey = MessageKey::new("set-up-second-step.why");
+
 /// The message `setting.appearance.theme.help`.
 pub const SETTING_APPEARANCE_THEME_HELP: MessageKey =
     MessageKey::new("setting.appearance.theme.help");
+
+/// The message `setting.auth.access-key-default-days.help`.
+pub const SETTING_AUTH_ACCESS_KEY_DEFAULT_DAYS_HELP: MessageKey =
+    MessageKey::new("setting.auth.access-key-default-days.help");
+
+/// The message `setting.auth.access-key-longest-days.help`.
+pub const SETTING_AUTH_ACCESS_KEY_LONGEST_DAYS_HELP: MessageKey =
+    MessageKey::new("setting.auth.access-key-longest-days.help");
 
 /// The message `setting.auth.sign-up-domains.help`.
 pub const SETTING_AUTH_SIGN_UP_DOMAINS_HELP: MessageKey =
@@ -1568,6 +1725,96 @@ pub const VALIDATION_EMAIL: MessageKey = MessageKey::new("validation.email");
 
 /// The message `validation.required`.
 pub const VALIDATION_REQUIRED: MessageKey = MessageKey::new("validation.required");
+
+/// The message `access-keys.delete-name`.
+#[must_use]
+pub fn access_keys_delete_name(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("access-keys.delete-name"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `access-keys.expires-help`.
+#[must_use]
+pub fn access_keys_expires_help(days: i64, latest: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("access-keys.expires-help"),
+        vec![
+            ("days", Value::Number(days)),
+            ("latest", Value::Text(latest.to_string())),
+        ],
+    )
+}
+
+/// The message `access-keys.project-label`.
+#[must_use]
+pub fn access_keys_project_label(
+    name: impl std::fmt::Display,
+    short_name: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("access-keys.project-label"),
+        vec![
+            ("name", Value::Text(name.to_string())),
+            ("short_name", Value::Text(short_name.to_string())),
+        ],
+    )
+}
+
+/// The message `access-keys.row.expired`.
+#[must_use]
+pub fn access_keys_row_expired(when: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("access-keys.row.expired"),
+        vec![("when", Value::Text(when.to_string()))],
+    )
+}
+
+/// The message `access-keys.row.expires`.
+#[must_use]
+pub fn access_keys_row_expires(when: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("access-keys.row.expires"),
+        vec![("when", Value::Text(when.to_string()))],
+    )
+}
+
+/// The message `access-keys.row.last-used`.
+#[must_use]
+pub fn access_keys_row_last_used(when: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("access-keys.row.last-used"),
+        vec![("when", Value::Text(when.to_string()))],
+    )
+}
+
+/// The message `access-keys.row.permissions`.
+#[must_use]
+pub fn access_keys_row_permissions(count: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("access-keys.row.permissions"),
+        vec![("count", Value::Number(count))],
+    )
+}
+
+/// The message `access-keys.row.prefix`.
+#[must_use]
+pub fn access_keys_row_prefix(prefix: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("access-keys.row.prefix"),
+        vec![("prefix", Value::Text(prefix.to_string()))],
+    )
+}
+
+/// The message `access-keys.row.projects-some`.
+#[must_use]
+pub fn access_keys_row_projects_some(names: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("access-keys.row.projects-some"),
+        vec![("names", Value::Text(names.to_string()))],
+    )
+}
 
 /// The message `backup.left`.
 #[must_use]
@@ -2990,6 +3237,96 @@ pub fn tls_write_failed(path: impl std::fmt::Display, reason: impl std::fmt::Dis
 
 /// Every message, sorted by key.
 pub(super) const CATALOG: &[(&str, &str)] = &[
+    ("access-keys.cancel", "Cancel"),
+    ("access-keys.choice.everything", "Everything I can do"),
+    ("access-keys.choice.see-and-change", "See and change"),
+    ("access-keys.choice.see-only", "See only"),
+    ("access-keys.copied", "Copied"),
+    ("access-keys.copy", "Copy the key"),
+    ("access-keys.delete", "Delete"),
+    ("access-keys.delete-confirm", "Delete the key"),
+    ("access-keys.delete-name", "Delete the access key {name}"),
+    (
+        "access-keys.delete-text",
+        "Anything that uses it stops working at once. A deleted key cannot come back.",
+    ),
+    ("access-keys.delete-title", "Delete this access key?"),
+    ("access-keys.deleted", "The access key was deleted."),
+    ("access-keys.done", "I have copied it"),
+    ("access-keys.empty", "You have no access keys yet."),
+    ("access-keys.expires", "Runs out on"),
+    (
+        "access-keys.expires-help",
+        "Without another day, the key runs out in {days, plural, one {# day} other {# days}}. The latest day is {latest}.",
+    ),
+    (
+        "access-keys.help.everything",
+        "The key can do all that you can do, except what no key can do.",
+    ),
+    (
+        "access-keys.help.permissions",
+        "The key can do only what you tick below, and only what you can do yourself.",
+    ),
+    (
+        "access-keys.help.see-and-change",
+        "The key can also change what you may change, but it cannot manage people, roles or settings.",
+    ),
+    (
+        "access-keys.help.see-only",
+        "The key can look at what you can look at, and it can change nothing.",
+    ),
+    (
+        "access-keys.intro",
+        "An access key lets a script or an app work as you. It can do at most what you can do, and it always runs out. You see a key once, when you make it.",
+    ),
+    ("access-keys.key-label", "The access key"),
+    ("access-keys.list", "Your access keys"),
+    ("access-keys.make", "Make an access key"),
+    ("access-keys.may", "What it may do"),
+    ("access-keys.more", "More options"),
+    ("access-keys.name", "Name"),
+    (
+        "access-keys.name-help",
+        "What the key is for, like “Nightly report”.",
+    ),
+    (
+        "access-keys.never",
+        "No key can invite people, change who has which role, change the settings of the organization, or change how you sign in. You do that here, where you are signed in.",
+    ),
+    (
+        "access-keys.pick-one",
+        "Tick at least one permission, or switch single permissions off.",
+    ),
+    ("access-keys.project-label", "{short_name}: {name}"),
+    ("access-keys.projects", "Only for these projects"),
+    (
+        "access-keys.projects-help",
+        "Tick none for every project. A key for some projects works in them and in the projects inside them, and gives nothing for the whole organization.",
+    ),
+    (
+        "access-keys.projects-none",
+        "You have no projects to choose from yet.",
+    ),
+    ("access-keys.row.expired", "Ran out on {when}"),
+    ("access-keys.row.expires", "Runs out on {when}"),
+    ("access-keys.row.hidden-project", "a project you can't see"),
+    ("access-keys.row.last-used", "Last used {when}"),
+    ("access-keys.row.never-used", "Never used"),
+    (
+        "access-keys.row.permissions",
+        "{count, plural, one {# single permission} other {# single permissions}}",
+    ),
+    ("access-keys.row.prefix", "Starts with {prefix}"),
+    ("access-keys.row.projects-all", "For every project"),
+    ("access-keys.row.projects-some", "Only for {names}"),
+    (
+        "access-keys.shown-once",
+        "Copy the key now and keep it safe. Bugaboo shows it only this once and cannot show it again.",
+    ),
+    ("access-keys.shown-title", "Your new access key"),
+    ("access-keys.single", "Choose single permissions instead"),
+    ("access-keys.submit", "Make the key"),
+    ("access-keys.title", "Access keys"),
     ("app.name", "Bugaboo"),
     ("appearance.dark", "Theme when my device is dark"),
     (
@@ -3305,6 +3642,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "This person or group already has a role here, so it cannot also have No access here, and the other way round. Take the other row away first.",
     ),
     (
+        "error.auth.access-key-not-allowed",
+        "An access key cannot do that. Sign in with your password to change your own sign-in details.",
+    ),
+    (
         "error.auth.invitation-invalid",
         "This invitation does not work. It may have run out or been used already. Ask for a new one.",
     ),
@@ -3320,6 +3661,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "error.auth.password-too-short",
         "Choose a password with at least 12 characters. Length matters more than special characters.",
+    ),
+    (
+        "error.auth.second-step-required",
+        "Before you go on, set up your second step. Your administrator asks for it, and it keeps your account safe even if your password leaks.",
     ),
     (
         "error.auth.sign-up-refused",
@@ -3592,6 +3937,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("list.next", "Next"),
     ("list.previous", "Previous"),
+    ("nav.access-keys", "Access keys"),
     ("nav.appearance", "Appearance"),
     ("nav.frames", "Page frames"),
     ("nav.group.look", "Look and feel"),
@@ -4160,7 +4506,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("sessions.everywhere", "Sign out everywhere"),
     (
         "sessions.everywhere-text",
-        "You will be signed out of every browser, this one included, and have to sign in again.",
+        "You will be signed out of every browser, this one included, and have to sign in again. Your access keys are deleted and stop working too.",
     ),
     ("sessions.everywhere-title", "Sign out everywhere?"),
     (
@@ -4174,9 +4520,28 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("sessions.this", "This browser"),
     ("sessions.title", "Where you're signed in"),
     ("sessions.unknown-device", "A browser we do not know"),
+    ("set-up-second-step.continue", "Go on"),
+    (
+        "set-up-second-step.how",
+        "Choose a code app or a passkey below. When one of them is set up, you can go on.",
+    ),
+    ("set-up-second-step.ready", "Your second step is set up."),
+    ("set-up-second-step.title", "Set up your second step"),
+    (
+        "set-up-second-step.why",
+        "Your administrator asks you to sign in with a second step. It keeps your account safe even if somebody learns your password.",
+    ),
     (
         "setting.appearance.theme.help",
         "The colors Bugaboo uses on your screen. Match my device follows the light or dark setting of your device.",
+    ),
+    (
+        "setting.auth.access-key-default-days.help",
+        "How many days a new access key lives when the person picks no other date. Between 1 and 365 days.",
+    ),
+    (
+        "setting.auth.access-key-longest-days.help",
+        "The most days an access key can live, whatever date the person picks. Between 1 and 365 days.",
     ),
     (
         "setting.auth.sign-up-domains.help",

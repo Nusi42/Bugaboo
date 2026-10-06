@@ -6,6 +6,560 @@
     "version": "0.0.0"
   },
   "paths": {
+    "/api/v1/access-keys": {
+      "get": {
+        "tags": ["access-keys"],
+        "summary": "The access keys of the person, a page at a time.",
+        "operationId": "listAccessKeys",
+        "parameters": [
+          {
+            "name": "fields",
+            "in": "query",
+            "description": "The fields each item holds, separated by commas. The answer schema names every field that can be asked for; when this is left out the route's own small default is used.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "description": "Where the page starts: the `next_cursor` of the page before.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "How many items a page holds at most (default 50, at most 100).",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The keys of the person, newest first.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_AccessKeyItem"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Nothing changed since the `ETag` that `If-None-Match` named. No body.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-never-stored": true,
+        "x-permission": "own-account"
+      },
+      "post": {
+        "tags": ["access-keys"],
+        "summary": "Makes an access key. The key is shown once. The password is asked again.",
+        "operationId": "makeAccessKey",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MakeKeyBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The key, with its secret.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreatedAccessKeyBody"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such thing (resource.not_found).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-permission": "own-account"
+      }
+    },
+    "/api/v1/access-keys/projects": {
+      "get": {
+        "tags": ["access-keys"],
+        "summary": "The projects the person may limit a key to: those they know about, by short name, a page at a\ntime.",
+        "operationId": "listProjectChoices",
+        "parameters": [
+          {
+            "name": "fields",
+            "in": "query",
+            "description": "The fields each item holds, separated by commas. The answer schema names every field that can be asked for; when this is left out the route's own small default is used.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "description": "Where the page starts: the `next_cursor` of the page before.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "How many items a page holds at most (default 50, at most 100).",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The projects the person may know about, by short name.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_ProjectChoiceItem"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Nothing changed since the `ETag` that `If-None-Match` named. No body.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-never-stored": true,
+        "x-permission": "own-account"
+      }
+    },
+    "/api/v1/access-keys/rules": {
+      "get": {
+        "tags": ["access-keys"],
+        "summary": "How long a new access key lives in this organization.",
+        "operationId": "getAccessKeyRules",
+        "responses": {
+          "200": {
+            "description": "The default and the longest time a key lives, in days.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccessKeyRulesBody"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Nothing changed since the `ETag` that `If-None-Match` named. No body.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-never-stored": true,
+        "x-permission": "own-account"
+      }
+    },
+    "/api/v1/access-keys/{access_key_id}": {
+      "delete": {
+        "tags": ["access-keys"],
+        "summary": "Deletes an access key at once. A deleted key cannot come back.",
+        "operationId": "deleteAccessKey",
+        "parameters": [
+          {
+            "name": "access_key_id",
+            "in": "path",
+            "description": "The ID of the key.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted."
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such thing (resource.not_found).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-permission": "own-account"
+      }
+    },
     "/api/v1/admin/status": {
       "get": {
         "tags": ["admin"],
@@ -52,7 +606,7 @@
             }
           },
           "403": {
-            "description": "Not allowed (access.forbidden, request.wrong_token).",
+            "description": "Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed).",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -337,7 +891,7 @@
             }
           },
           "403": {
-            "description": "Not allowed (access.forbidden, request.wrong_token).",
+            "description": "Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed).",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -434,7 +988,7 @@
             }
           },
           "403": {
-            "description": "Not allowed (access.forbidden, request.wrong_token).",
+            "description": "Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed).",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -516,7 +1070,7 @@
             }
           },
           "403": {
-            "description": "Not allowed (access.forbidden, request.wrong_token).",
+            "description": "Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed).",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -848,7 +1402,7 @@
             }
           },
           "403": {
-            "description": "Not allowed (access.forbidden, request.wrong_token).",
+            "description": "Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed).",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -936,7 +1490,7 @@
             }
           },
           "403": {
-            "description": "Not allowed (access.forbidden, request.wrong_token).",
+            "description": "Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed).",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -1028,7 +1582,7 @@
             }
           },
           "403": {
-            "description": "Not allowed (access.forbidden, request.wrong_token).",
+            "description": "Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed).",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -1136,7 +1690,7 @@
             }
           },
           "403": {
-            "description": "Not allowed (access.forbidden, request.wrong_token).",
+            "description": "Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed).",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -1224,7 +1778,7 @@
             }
           },
           "403": {
-            "description": "Not allowed (access.forbidden, request.wrong_token).",
+            "description": "Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed).",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -1322,7 +1876,7 @@
             }
           },
           "403": {
-            "description": "Not allowed (access.forbidden, request.wrong_token).",
+            "description": "Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed).",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -1400,7 +1954,7 @@
             }
           },
           "403": {
-            "description": "Not allowed (access.forbidden, request.wrong_token).",
+            "description": "Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed).",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -1557,7 +2111,7 @@
             }
           },
           "403": {
-            "description": "Not allowed (access.forbidden, request.wrong_token).",
+            "description": "Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed).",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -1639,7 +2193,7 @@
             }
           },
           "403": {
-            "description": "Not allowed (access.forbidden, request.wrong_token).",
+            "description": "Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed).",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -1896,7 +2450,7 @@
             }
           },
           "403": {
-            "description": "Not allowed (access.forbidden, request.wrong_token).",
+            "description": "Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed).",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -2081,7 +2635,7 @@
             }
           },
           "403": {
-            "description": "Not allowed (access.forbidden, request.wrong_token).",
+            "description": "Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed).",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -2177,7 +2731,7 @@
             }
           },
           "403": {
-            "description": "Not allowed (access.forbidden, request.wrong_token).",
+            "description": "Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed).",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -2440,7 +2994,7 @@
             }
           },
           "403": {
-            "description": "Not allowed (access.forbidden, request.wrong_token).",
+            "description": "Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed).",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -2538,7 +3092,7 @@
             }
           },
           "403": {
-            "description": "Not allowed (access.forbidden, request.wrong_token).",
+            "description": "Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed).",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -2636,7 +3190,7 @@
             }
           },
           "403": {
-            "description": "Not allowed (access.forbidden, request.wrong_token).",
+            "description": "Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed).",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -2717,7 +3271,7 @@
             }
           },
           "403": {
-            "description": "Not allowed (access.forbidden, request.wrong_token).",
+            "description": "Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed).",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -3055,7 +3609,7 @@
             }
           },
           "403": {
-            "description": "Not allowed (access.forbidden, request.wrong_token).",
+            "description": "Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed).",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -3281,7 +3835,7 @@
             }
           },
           "403": {
-            "description": "Not allowed (access.forbidden, request.wrong_token).",
+            "description": "Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed).",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -3410,7 +3964,7 @@
             }
           },
           "403": {
-            "description": "Not allowed (access.forbidden, request.wrong_token).",
+            "description": "Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed).",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -3539,7 +4093,7 @@
             }
           },
           "403": {
-            "description": "Not allowed (access.forbidden, request.wrong_token).",
+            "description": "Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed).",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -3668,7 +4222,7 @@
             }
           },
           "403": {
-            "description": "Not allowed (access.forbidden, request.wrong_token).",
+            "description": "Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed).",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -3737,6 +4291,125 @@
           }
         },
         "x-permission": "make-sub-projects"
+      }
+    },
+    "/api/v1/roles/{role_id}/second-step-gap": {
+      "get": {
+        "tags": ["auth"],
+        "summary": "How many people with a role still have to set up a second step. Needs the permission *Make,\nchange and delete roles*.",
+        "operationId": "getSecondStepGap",
+        "parameters": [
+          {
+            "name": "role_id",
+            "in": "path",
+            "description": "The ID of the role.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "How many people with the role have no second step yet.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SecondStepGapBody"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Nothing changed since the `ETag` that `If-None-Match` named. No body.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such thing (resource.not_found).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-never-stored": true,
+        "x-permission": "manage-roles"
       }
     },
     "/api/v1/status": {
@@ -3842,6 +4515,143 @@
         "type": "string",
         "description": "Whether other accounts on this computer can open a part of the data folder.",
         "enum": ["private", "open", "unknown"]
+      },
+      "AccessKeyBody": {
+        "type": "object",
+        "description": "An access key as its owner sees it after making it.",
+        "required": [
+          "id",
+          "name",
+          "prefix",
+          "choice",
+          "permissions",
+          "projects",
+          "created_at",
+          "expires_at"
+        ],
+        "properties": {
+          "choice": {
+            "$ref": "#/components/schemas/KeyChoice",
+            "description": "What it may do."
+          },
+          "created_at": {
+            "type": "string",
+            "description": "When it was made."
+          },
+          "expires_at": {
+            "type": "string",
+            "description": "When it stops working."
+          },
+          "id": {
+            "type": "string",
+            "description": "The ID of the key."
+          },
+          "name": {
+            "type": "string",
+            "description": "What the person called it."
+          },
+          "permissions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Permission"
+            },
+            "description": "The single permissions, when the choice is `permissions`."
+          },
+          "prefix": {
+            "type": "string",
+            "description": "The public start of the key, after `bb_`."
+          },
+          "projects": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/KeyProjectRef"
+            },
+            "description": "The projects the key is limited to; empty for every project."
+          }
+        }
+      },
+      "AccessKeyItem": {
+        "type": "object",
+        "description": "An access key in a list: the fields that can be asked for. An answer holds only those that\nwere asked for.",
+        "properties": {
+          "choice": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/KeyChoice",
+                "description": "What it may do."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "created_at": {
+            "type": ["string", "null"],
+            "description": "When it was made."
+          },
+          "expired": {
+            "type": ["boolean", "null"],
+            "description": "Whether it has stopped working."
+          },
+          "expires_at": {
+            "type": ["string", "null"],
+            "description": "When it stops working."
+          },
+          "id": {
+            "type": ["string", "null"],
+            "description": "The ID of the key."
+          },
+          "last_used_at": {
+            "type": ["string", "null"],
+            "description": "The last time it was used, to the minute. Left out when it was never used."
+          },
+          "name": {
+            "type": ["string", "null"],
+            "description": "What the person called it."
+          },
+          "permissions": {
+            "type": ["array", "null"],
+            "items": {
+              "$ref": "#/components/schemas/Permission"
+            },
+            "description": "The single permissions, when the choice is `permissions`."
+          },
+          "prefix": {
+            "type": ["string", "null"],
+            "description": "The public start of the key, after `bb_`."
+          },
+          "projects": {
+            "type": ["array", "null"],
+            "items": {
+              "$ref": "#/components/schemas/KeyProjectRef"
+            },
+            "description": "The projects the key is limited to; empty for every project."
+          }
+        }
+      },
+      "AccessKeyRulesBody": {
+        "type": "object",
+        "description": "How long a new access key lives in this organization, and what a key can be limited to.",
+        "required": ["default_days", "longest_days", "permissions"],
+        "properties": {
+          "default_days": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The days a new key lives when the person picks no other date."
+          },
+          "longest_days": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The most days a key can live."
+          },
+          "permissions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PermissionChoiceBody"
+            },
+            "description": "The single permissions a key can be limited to under *More options*, in the order of the\ncatalogue."
+          }
+        }
       },
       "AddPasskeyBody": {
         "type": "object",
@@ -3994,6 +4804,22 @@
           }
         }
       },
+      "CreatedAccessKeyBody": {
+        "type": "object",
+        "description": "A new access key: the secret is shown only now.",
+        "required": ["key", "secret"],
+        "properties": {
+          "key": {
+            "$ref": "#/components/schemas/AccessKeyBody",
+            "description": "The key as it will be listed."
+          },
+          "secret": {
+            "type": "string",
+            "description": "The whole key, `bb_`, the prefix, `_` and the secret. Send it as\n`Authorization: Bearer <key>`. It is not stored and cannot be shown again.",
+            "x-secret": true
+          }
+        }
+      },
       "CreatedInvitationBody": {
         "type": "object",
         "description": "A new invitation: the secret is shown only now.",
@@ -4069,6 +4895,8 @@
           "auth.invitation_invalid",
           "auth.sign_up_refused",
           "auth.passkey_rejected",
+          "auth.second_step_required",
+          "auth.access_key_not_allowed",
           "auth.not_signed_in",
           "access.forbidden",
           "access.would_lock_out",
@@ -4180,6 +5008,34 @@
           }
         }
       },
+      "KeyChoice": {
+        "type": "string",
+        "description": "What the key may do: see only, see and change, everything its owner can do, or single permissions.",
+        "enum": ["see-only", "see-and-change", "everything", "permissions"]
+      },
+      "KeyProjectRef": {
+        "type": "object",
+        "description": "A project a key is limited to, as its owner may see it: a reference by ID, and the names only\nof a project the owner may know about (*a project you can't see* otherwise).",
+        "required": ["shown"],
+        "properties": {
+          "id": {
+            "type": ["string", "null"],
+            "description": "The ID of the project. Only for a visible one."
+          },
+          "name": {
+            "type": ["string", "null"],
+            "description": "Its name. Only for a visible one."
+          },
+          "short_name": {
+            "type": ["string", "null"],
+            "description": "Its short name. Only for a visible one."
+          },
+          "shown": {
+            "$ref": "#/components/schemas/ProjectShown",
+            "description": "`visible` or `hidden`."
+          }
+        }
+      },
       "LiftBody": {
         "type": "object",
         "description": "Somebody who could take away a *No access* that applies to them after the move.",
@@ -4213,10 +5069,47 @@
         "description": "The result of checking the security log.",
         "enum": ["valid", "broken", "unreadable"]
       },
+      "MakeKeyBody": {
+        "type": "object",
+        "description": "An access key to make.",
+        "required": ["password", "name", "choice"],
+        "properties": {
+          "choice": {
+            "$ref": "#/components/schemas/KeyChoice",
+            "description": "What it may do."
+          },
+          "expires_at": {
+            "type": ["string", "null"],
+            "description": "When it stops working (a date and time such as `2027-03-01T00:00:00Z`). Left out: the\ndefault number of days from now. It cannot be later than the longest time."
+          },
+          "name": {
+            "type": "string",
+            "description": "What the key is called."
+          },
+          "password": {
+            "type": "string",
+            "description": "The password of the person, asked again so a stolen session cannot make a key."
+          },
+          "permissions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Permission"
+            },
+            "description": "The single permissions; only with the choice `permissions`, and then at least one."
+          },
+          "projects": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The projects the key is limited to; leave empty for every project. The key counts in\nthem and in their sub-projects, and gives nothing for the whole organization."
+          }
+        }
+      },
       "MeBody": {
         "type": "object",
         "description": "Who is signed in, and what they may do for the whole organization (the menus of the browser app\nfollow it; the server decides again at every request).",
-        "required": ["id", "display_name", "email", "permissions"],
+        "required": ["id", "display_name", "email", "permissions", "second_step_setup_required"],
         "properties": {
           "display_name": {
             "type": "string",
@@ -4235,7 +5128,11 @@
             "items": {
               "$ref": "#/components/schemas/Permission"
             },
-            "description": "What the person may do for the whole organization."
+            "description": "What the person may do for the whole organization. Nothing while the person still has to\nset up a second step."
+          },
+          "second_step_setup_required": {
+            "type": "boolean",
+            "description": "The person has to set up a second step before they can do anything else (their role or\nthe organization asks for two-step sign-in and they have none)."
           }
         }
       },
@@ -4334,6 +5231,80 @@
           }
         }
       },
+      "Page_AccessKeyItem": {
+        "type": "object",
+        "description": "One page of a list. `T` is the view of an item for the API description; an answer holds the\nitems cut to the chosen fields ([`Page::of_authorized`]).",
+        "required": ["items", "next_cursor"],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "An access key in a list: the fields that can be asked for. An answer holds only those that\nwere asked for.",
+              "properties": {
+                "choice": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/KeyChoice",
+                      "description": "What it may do."
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "created_at": {
+                  "type": ["string", "null"],
+                  "description": "When it was made."
+                },
+                "expired": {
+                  "type": ["boolean", "null"],
+                  "description": "Whether it has stopped working."
+                },
+                "expires_at": {
+                  "type": ["string", "null"],
+                  "description": "When it stops working."
+                },
+                "id": {
+                  "type": ["string", "null"],
+                  "description": "The ID of the key."
+                },
+                "last_used_at": {
+                  "type": ["string", "null"],
+                  "description": "The last time it was used, to the minute. Left out when it was never used."
+                },
+                "name": {
+                  "type": ["string", "null"],
+                  "description": "What the person called it."
+                },
+                "permissions": {
+                  "type": ["array", "null"],
+                  "items": {
+                    "$ref": "#/components/schemas/Permission"
+                  },
+                  "description": "The single permissions, when the choice is `permissions`."
+                },
+                "prefix": {
+                  "type": ["string", "null"],
+                  "description": "The public start of the key, after `bb_`."
+                },
+                "projects": {
+                  "type": ["array", "null"],
+                  "items": {
+                    "$ref": "#/components/schemas/KeyProjectRef"
+                  },
+                  "description": "The projects the key is limited to; empty for every project."
+                }
+              }
+            },
+            "description": "The items of this page."
+          },
+          "next_cursor": {
+            "type": ["string", "null"],
+            "description": "The cursor of the next page; `null` on the last page."
+          }
+        }
+      },
       "Page_InvitationItem": {
         "type": "object",
         "description": "One page of a list. `T` is the view of an item for the API description; an answer holds the\nitems cut to the chosen fields ([`Page::of_authorized`]).",
@@ -4360,6 +5331,39 @@
                 "id": {
                   "type": ["string", "null"],
                   "description": "The ID of the invitation."
+                }
+              }
+            },
+            "description": "The items of this page."
+          },
+          "next_cursor": {
+            "type": ["string", "null"],
+            "description": "The cursor of the next page; `null` on the last page."
+          }
+        }
+      },
+      "Page_ProjectChoiceItem": {
+        "type": "object",
+        "description": "One page of a list. `T` is the view of an item for the API description; an answer holds the\nitems cut to the chosen fields ([`Page::of_authorized`]).",
+        "required": ["items", "next_cursor"],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "A project a person may limit a key to.",
+              "properties": {
+                "id": {
+                  "type": ["string", "null"],
+                  "description": "The ID of the project."
+                },
+                "name": {
+                  "type": ["string", "null"],
+                  "description": "Its name."
+                },
+                "short_name": {
+                  "type": ["string", "null"],
+                  "description": "Its short name."
                 }
               }
             },
@@ -4521,6 +5525,21 @@
           "change-organization-settings",
           "see-status"
         ]
+      },
+      "PermissionChoiceBody": {
+        "type": "object",
+        "description": "One permission a key can be limited to, with the topic it is listed under. The sentence is the\nmessage `permission.<key>` and the name of the topic `permission-topic.<topic>`.",
+        "required": ["key", "topic"],
+        "properties": {
+          "key": {
+            "$ref": "#/components/schemas/Permission",
+            "description": "The key of the permission."
+          },
+          "topic": {
+            "$ref": "#/components/schemas/Topic",
+            "description": "What it is about."
+          }
+        }
       },
       "PersonBody": {
         "type": "object",
@@ -4740,6 +5759,24 @@
           }
         }
       },
+      "ProjectChoiceItem": {
+        "type": "object",
+        "description": "A project a person may limit a key to.",
+        "properties": {
+          "id": {
+            "type": ["string", "null"],
+            "description": "The ID of the project."
+          },
+          "name": {
+            "type": ["string", "null"],
+            "description": "Its name."
+          },
+          "short_name": {
+            "type": ["string", "null"],
+            "description": "Its short name."
+          }
+        }
+      },
       "ProjectDetailBody": {
         "type": "object",
         "description": "One project, with where it is and what the person may do there.",
@@ -4836,6 +5873,11 @@
           }
         }
       },
+      "ProjectShown": {
+        "type": "string",
+        "description": "Whether the owner may know the project.",
+        "enum": ["visible", "hidden"]
+      },
       "SecondStepBody": {
         "type": "object",
         "description": "Which ways there are to finish signing in.",
@@ -4852,6 +5894,19 @@
           "passkey": {
             "type": "boolean",
             "description": "A passkey."
+          }
+        }
+      },
+      "SecondStepGapBody": {
+        "type": "object",
+        "description": "How many people with a role have no second step yet.",
+        "required": ["still_to_set_up"],
+        "properties": {
+          "still_to_set_up": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The people who hold the role, through their own rows or their groups', anywhere, and have\nno code app and no passkey yet. Only people the person who asks may see are counted: the\nanswer needs *Manage roles*, and whoever holds it sees names everywhere in *Organization\nsettings*.",
+            "minimum": 0
           }
         }
       },
@@ -5163,6 +6218,11 @@
         "description": "The only value a status can have today.",
         "enum": ["ok"]
       },
+      "Topic": {
+        "type": "string",
+        "description": "What a group of permissions is about.",
+        "enum": ["projects", "people", "settings"]
+      },
       "TwoStepBody": {
         "type": "object",
         "description": "How the second step of a person is set up.",
@@ -5217,6 +6277,12 @@
       }
     },
     "securitySchemes": {
+      "accessKey": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "bb_ access key",
+        "description": "An access key from My settings, sent as `Authorization: Bearer bb_…`. It can do at most what its owner can do at the moment of the request, and nothing on the owner's own sign-in data."
+      },
       "csrfToken": {
         "type": "apiKey",
         "in": "header",

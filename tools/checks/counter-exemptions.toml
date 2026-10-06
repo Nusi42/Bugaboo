@@ -6,14 +6,11 @@
 #
 # [[counting]]: a folder or file whose code may make numbers that count up. Only the counting issue IDs of
 # a project (ADR-0021, M3) and labels that nobody sees belong here. An entry with nothing that counts fails.
-#
-# WP-09 adds the route `GET /api/v1/roles/{role_id}/second-step-gap` (M2-F47). When it is merged,
-# add:
-#
-# [[exempt]]
-# route = "GET /api/v1/roles/{role_id}/second-step-gap"
-# property = "still_to_set_up"
-# reason = "Counts only the people the viewer may see: whoever holds Manage roles sees names everywhere in Organization settings (M2-Q3, M2-F47)."
+
+[[exempt]]
+route = "GET /api/v1/roles/{role_id}/second-step-gap"
+property = "still_to_set_up"
+reason = "Counts only the people the viewer may see: the answer needs Manage roles, and whoever holds it sees names everywhere in Organization settings (M2-Q3, M2-F47)."
 
 [[exempt]]
 route = "GET /api/v1/admin/status"

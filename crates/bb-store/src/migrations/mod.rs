@@ -28,6 +28,7 @@ mod m0001_initial;
 mod m0002_sign_in;
 mod m0003_policy;
 mod m0005_projects;
+mod m0006_access_keys;
 
 /// The advisory lock PostgreSQL processes take while they migrate.
 const MIGRATION_LOCK: i64 = 0x4242_4D49_4752_0001;
@@ -118,6 +119,11 @@ const ALL: &[Definition] = &[
         version: 5,
         name: "projects",
         steps: || Ok(m0005_projects::steps()),
+    },
+    Definition {
+        version: 6,
+        name: "access_keys",
+        steps: || Ok(m0006_access_keys::steps()),
     },
 ];
 
@@ -363,6 +369,8 @@ mod tests {
             assert_eq!(applied[0].name.as_str(), "initial");
             assert_eq!(applied[1].name.as_str(), "sign_in");
             assert_eq!(applied[2].name.as_str(), "policy");
+            assert_eq!(applied[3].name.as_str(), "projects");
+            assert_eq!(applied[4].name.as_str(), "access_keys");
             for (record, definition) in applied.iter().zip(ALL) {
                 assert_eq!(record.name.as_str(), definition.name);
                 assert_eq!(record.applied_at, at(0));

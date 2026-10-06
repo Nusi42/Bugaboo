@@ -5,3 +5,8 @@ error: cannot construct `Evaluation` with struct literal syntax due to private f
   |                   ^^^^^^^^^^   ------------ private field
   |
   = note: ...and other private fields that were not provided
+help: you might have meant to use the `nothing` associated function
+  |
+5 -     let _forged = Evaluation { person: None };
+5 +     let _forged = Evaluation::nothing(_);
+  |

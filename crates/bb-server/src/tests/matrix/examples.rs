@@ -128,10 +128,18 @@ pub(super) const EXAMPLES: &[Example] = &[
     Example::route("previewProjectMove").hides_unseen(),
     Example::route("makeSubProject"),
     Example::route("getStatus"),
+    Example::route("listAccessKeys"),
+    Example::route("makeAccessKey"),
+    Example::route("deleteAccessKey").names_a_missing_thing(),
+    Example::route("getAccessKeyRules"),
+    Example::route("listProjectChoices"),
+    Example::route("getSecondStepGap"),
 ];
 
-/// An ID that no project, invitation, session or passkey has.
-const NOBODYS_ID: &str = "0190f4c2-7a3e-7c1d-9b52-3d6e8f1a2b4c";
+/// An ID that no invitation, session, passkey or access key has (the random kind: a time-ordered
+/// one would not be an ID of these, and the route would say "not found" before it looked at
+/// anything).
+const NOBODYS_RANDOM_ID: &str = "5b0f6a3e-2d1c-4e8a-9f77-0a1b2c3d4e5f";
 
 /// A short name that no other call of the matrix used, for a project to make.
 fn unique_short_name(fixture: &Fixture<'_>) -> String {
@@ -216,10 +224,10 @@ pub(super) async fn request(
                     .as_array()
                     .and_then(|list| list.iter().find(|session| session["current"] == true))
                     .and_then(|session| session["id"].as_str())
-                    .unwrap_or(NOBODYS_ID)
+                    .unwrap_or(NOBODYS_RANDOM_ID)
                     .to_owned()
             } else {
-                NOBODYS_ID.to_owned()
+                NOBODYS_RANDOM_ID.to_owned()
             };
             ("DELETE", format!("/api/v1/auth/sessions/{id}"), None)
         }
@@ -263,7 +271,7 @@ pub(super) async fn request(
         ),
         "removePasskey" => (
             "POST",
-            format!("/api/v1/auth/passkeys/{NOBODYS_ID}/remove"),
+            format!("/api/v1/auth/passkeys/{NOBODYS_RANDOM_ID}/remove"),
             Some(json!({"password": wrong})),
         ),
         "finishSignInWithCode" => (
@@ -316,6 +324,26 @@ pub(super) async fn request(
             Some(json!({"enabled": false, "domains": []})),
         ),
         "getServerStatus" => ("GET", "/api/v1/admin/status".into(), None),
+        // The access keys of a person: their own sign-in data, which a key never reaches.
+        "listAccessKeys" => ("GET", "/api/v1/access-keys".into(), None),
+        "makeAccessKey" => (
+            "POST",
+            "/api/v1/access-keys".into(),
+            Some(json!({"password": wrong, "name": "Made by the matrix", "choice": "see-only"})),
+        ),
+        "deleteAccessKey" => (
+            "DELETE",
+            format!("/api/v1/access-keys/{NOBODYS_RANDOM_ID}"),
+            None,
+        ),
+        "getAccessKeyRules" => ("GET", "/api/v1/access-keys/rules".into(), None),
+        "listProjectChoices" => ("GET", "/api/v1/access-keys/projects".into(), None),
+        // How many people with a role still have to set up a second step.
+        "getSecondStepGap" => (
+            "GET",
+            format!("/api/v1/roles/{}/second-step-gap", fixture.a_role()?),
+            None,
+        ),
         // Projects.
         "listProjects" => ("GET", "/api/v1/projects".into(), None),
         "makeProject" => (

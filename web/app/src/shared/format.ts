@@ -18,6 +18,11 @@ export function formatDate(moment: string): string {
   return date.format(new Date(moment));
 }
 
+/** A day (milliseconds since 1970, a date on the person's own calendar) as people write it: "October 5, 2026". */
+export function formatDay(moment: number): string {
+  return date.format(moment);
+}
+
 /** Whole days from `nowMs` (milliseconds since 1970) to `moment`; negative when the moment has passed. */
 export function daysUntil(moment: string, nowMs: number): number {
   return Math.floor((new Date(moment).getTime() - nowMs) / (MS_PER_SECOND * SECONDS_PER_DAY));

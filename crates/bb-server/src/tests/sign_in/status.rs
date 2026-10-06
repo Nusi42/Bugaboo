@@ -24,7 +24,16 @@ pub(super) fn app_with_probe(
     rig: &Rig,
     certificate: Option<Arc<ServedCertificate>>,
 ) -> axum::Router {
-    let mut options = options(rig, LimitsConfig::default(), true);
+    app_with_probe_and_limits(rig, certificate, LimitsConfig::default())
+}
+
+/// The same, with the limits of requests the test wants.
+pub(super) fn app_with_probe_and_limits(
+    rig: &Rig,
+    certificate: Option<Arc<ServedCertificate>>,
+    limits: LimitsConfig,
+) -> axum::Router {
+    let mut options = options(rig, limits, true);
     // These tests change the log or its anchor file from outside and look again at once, so the
     // page keeps no answer.
     options.probe = ProbeHandle::new(Arc::new(

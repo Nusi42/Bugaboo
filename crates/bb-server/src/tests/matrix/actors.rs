@@ -66,8 +66,7 @@ pub(super) enum Actor {
     KeyForAnotherProject,
 }
 
-/// The actors that run today. The two actors with an access key are listed in
-/// [`Actor::WITH_A_KEY`]: they run when WP-09 is merged.
+/// The actors of the matrix, the two with an access key (WP-09) last.
 pub(super) fn actors() -> Vec<Actor> {
     let mut all = vec![Actor::Nobody, Actor::NoRole];
     all.extend(StartingRole::ALL.iter().copied().map(Actor::Role));
@@ -77,14 +76,13 @@ pub(super) fn actors() -> Vec<Actor> {
         Actor::NoAccessOnTarget,
         Actor::NoAccessUnderLead,
     ]);
+    all.extend(Actor::WITH_A_KEY);
     all
 }
 
 impl Actor {
-    /// The actors that come with an access key. TODO(M2-F27): enable at the merge of WP-09 (access
-    /// keys): make the key as the owner (`POST /api/v1/access-keys`: *See only*, and one for the
-    /// sibling project), send it as `Authorization: Bearer …` (`Browser::set_header`), and add
-    /// these two to [`actors`]. Their rows below are written already.
+    /// The actors that come with an access key (M2-F27): the key is made by its owner and sent as
+    /// `Authorization: Bearer …`.
     pub(super) const WITH_A_KEY: [Self; 2] = [Self::KeySeeOnly, Self::KeyForAnotherProject];
 
     /// The actor that holds exactly what a route declares.
@@ -139,6 +137,19 @@ const ORGANIZATION_ONLY: [Permission; 7] = [
     Permission::ManageRoles,
     Permission::ChangeOrganizationSettings,
     Permission::SeeStatus,
+];
+
+/// The permissions no access key keeps, whatever its choice (`NOT_FOR_KEYS`, owner decisions of
+/// 2026-10-06): inviting people, deciding who has which role and changing organization settings
+/// stay in the app.
+const NOT_FOR_KEYS: [Permission; 7] = [
+    Permission::ManageInvitations,
+    Permission::ManagePeople,
+    Permission::ManageGroups,
+    Permission::ManageRoles,
+    Permission::DecideRoles,
+    Permission::DecideWhatRolesSee,
+    Permission::ChangeOrganizationSettings,
 ];
 
 /// The permissions of the kind *See*, which an access key that may only see keeps (*Kind: See*).
@@ -262,7 +273,9 @@ pub(super) fn standing(actor: Actor, at: Where) -> Standing {
         Actor::KeySeeOnly => Standing::of(
             given_everywhere(StartingRole::Administrator, at)
                 .into_iter()
-                .filter(|permission| KIND_SEE.contains(permission))
+                .filter(|permission| {
+                    KIND_SEE.contains(permission) && !NOT_FOR_KEYS.contains(permission)
+                })
                 .collect(),
         ),
         // A key for the sibling project counts there and below, and nowhere else, not even for
@@ -329,13 +342,32 @@ mod tests {
     }
 
     #[test]
-    fn the_actors_are_named_once_and_the_two_with_a_key_wait_for_their_merge() {
+    fn the_actors_are_named_once_and_the_two_with_a_key_are_among_them() {
         let names: BTreeSet<String> = actors().into_iter().map(Actor::name).collect();
         assert_eq!(names.len(), actors().len());
         for keyed in Actor::WITH_A_KEY {
-            assert!(!actors().contains(&keyed));
-            assert!(keyed.has_a_key() && !names.contains(&keyed.name()));
+            assert!(actors().contains(&keyed));
+            assert!(keyed.has_a_key() && names.contains(&keyed.name()));
         }
+    }
+
+    #[test]
+    fn a_key_never_keeps_what_stays_in_the_app() {
+        // `Everything I can do` would still not manage roles; the see-only key keeps three.
+        let seen = standing(Actor::KeySeeOnly, Where::Organization).permissions;
+        assert_eq!(
+            seen,
+            BTreeSet::from([
+                Permission::SeeProjects,
+                Permission::CheckAccess,
+                Permission::SeeStatus
+            ])
+        );
+        assert!(
+            NOT_FOR_KEYS
+                .iter()
+                .all(|permission| !seen.contains(permission))
+        );
     }
 
     #[test]

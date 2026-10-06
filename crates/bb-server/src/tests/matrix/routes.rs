@@ -22,7 +22,9 @@ use axum::Router;
 use axum::http::StatusCode;
 use bb_api::openapi;
 use bb_app::access::{Permission, StartingRole};
+use bb_app::auth::MakeAccessKey;
 use bb_app::roles::RolesQuery;
+use bb_core::access_key::KeyChoice;
 use bb_core::id::{ProjectId, RoleId};
 use bb_testing::each_database;
 use serde_json::json;
@@ -48,6 +50,8 @@ pub(super) enum Expect {
     Forbidden,
     /// The actor may not know about the project: `resource.not_found`.
     NotFound,
+    /// An access key at a route of the owner's own sign-in data: `auth.access_key_not_allowed`.
+    NotForKeys,
 }
 
 /// What a route needs, as the API description declares it.
@@ -87,12 +91,15 @@ pub(super) fn expectation(actor: Actor, route: &Route, example: &Example) -> Exp
     if route.declared == "public" {
         return Expect::Allowed;
     }
+    // A key never reaches its owner's own sign-in data (ADR-0025, decision 8); `signed-in` is about
+    // the session of a browser: who is signed in, signing out.
+    if actor.has_a_key() && matches!(route.declared.as_str(), "signed-in" | "own-account") {
+        return Expect::NotForKeys;
+    }
     if !actor.signed_in() || example.finishes_a_half_done_sign_in {
         return Expect::NotSignedIn;
     }
     match route.declared.as_str() {
-        // A key never reaches its owner's own sign-in data (ADR-0025, decision 8).
-        "own-account" if actor.has_a_key() => Expect::Forbidden,
         "signed-in" | "own-account" => Expect::Allowed,
         key => {
             let Some(permission) = Permission::from_code(key) else {
@@ -132,6 +139,7 @@ fn seen(reply: &Reply) -> Expect {
         "auth.not_signed_in" => Expect::NotSignedIn,
         "access.forbidden" => Expect::Forbidden,
         "resource.not_found" => Expect::NotFound,
+        "auth.access_key_not_allowed" => Expect::NotForKeys,
         _ => Expect::Allowed,
     }
 }
@@ -142,6 +150,10 @@ pub(super) struct Fixture<'a> {
     app: Router,
     projects: BTreeMap<&'static str, ProjectId>,
     people: Vec<(Actor, String)>,
+    /// The secrets of the access keys of the actors that come with one.
+    keys: Vec<(Actor, String)>,
+    /// The roles by their starting key, for the routes that name a role.
+    roles: BTreeMap<String, RoleId>,
     numbers: Cell<u32>,
 }
 
@@ -160,6 +172,14 @@ impl<'a> Fixture<'a> {
     /// The project of the matrix.
     pub(super) fn project(&self, project: Project) -> ProjectId {
         self.projects[short_name(project)]
+    }
+
+    /// A role of the organization, for the routes that name one.
+    pub(super) fn a_role(&self) -> Result<RoleId, Failure> {
+        self.roles
+            .get(StartingRole::Viewer.key())
+            .copied()
+            .ok_or_else(|| "the organization has no viewer role".into())
     }
 
     /// A number that no other call of the matrix had.
@@ -188,6 +208,7 @@ impl<'a> Fixture<'a> {
         let roles = starting_roles(&org).await?;
         let role = |role: StartingRole| roles[role.key()];
         let mut people = Vec::new();
+        let mut keys = Vec::new();
         let mut everyone = actors();
         everyone.extend(
             Permission::ALL
@@ -234,8 +255,34 @@ impl<'a> Fixture<'a> {
                         .await?;
                     org.forbid(&member, target).await?;
                 }
+                // An administrator who comes with a key: one that may only see, and one for the
+                // sibling project (a key made by its owner, with the password asked again).
                 Actor::KeySeeOnly | Actor::KeyForAnotherProject => {
-                    return Err("the actors with an access key are not made yet (M2-F27)".into());
+                    org.give_everywhere(&member, role(StartingRole::Administrator))
+                        .await?;
+                    let (choice, projects) = if actor == Actor::KeySeeOnly {
+                        (KeyChoice::SeeOnly, Vec::new())
+                    } else {
+                        (KeyChoice::Everything, vec![sibling])
+                    };
+                    let made = rig
+                        .api()
+                        .make_access_key(
+                            Rig::info(),
+                            MakeAccessKey {
+                                session_token: member.session.clone(),
+                                password: PASSWORD.to_owned(),
+                                name: actor.name(),
+                                choice,
+                                permissions: Vec::new(),
+                                projects,
+                                expires_at: None,
+                            },
+                        )
+                        .await
+                        .map_err(|error| error.to_string())?
+                        .into_value();
+                    keys.push((actor, made.secret));
                 }
             }
             people.push((actor, email));
@@ -247,6 +294,8 @@ impl<'a> Fixture<'a> {
             app,
             projects,
             people,
+            keys,
+            roles,
             numbers: Cell::new(0),
         })
     }
@@ -254,6 +303,11 @@ impl<'a> Fixture<'a> {
     /// A browser of the actor, signed in (nobody's is not).
     async fn browser(&self, actor: Actor) -> Result<Browser, Failure> {
         let mut browser = Browser::new(&self.app, &called());
+        if let Some((_, secret)) = self.keys.iter().find(|(known, _)| *known == actor) {
+            // A script: no cookie, the key in the header.
+            browser.set_header("authorization", &format!("Bearer {secret}"));
+            return Ok(browser);
+        }
         if let Some((_, email)) = self.people.iter().find(|(known, _)| *known == actor) {
             let signed_in = browser
                 .send(
@@ -420,22 +474,6 @@ async fn sec_01_every_route_answers_every_actor_as_the_permission_table_says() -
         Ok(())
     })
     .await
-}
-
-#[tokio::test]
-#[ignore = "TODO(M2-F27): enable at the merge of WP-09 (access keys): add the two actors with a key, see Actor::WITH_A_KEY"]
-async fn auth_07_access_keys_are_actors_of_the_matrix_too() -> Outcome {
-    // When WP-09 is merged: `Fixture::start` makes the key of each actor with
-    // `POST /api/v1/access-keys` as its owner (*See only*; one for the sibling project), the
-    // browser of the actor sends it as `Authorization: Bearer …`, and `actors()` lists both. This
-    // test then asserts that they are in the list, so it cannot stay disabled by accident.
-    assert!(
-        actors()
-            .iter()
-            .any(|actor| Actor::WITH_A_KEY.contains(actor)),
-        "the actors with an access key are in the matrix"
-    );
-    Ok(())
 }
 
 #[test]

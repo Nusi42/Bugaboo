@@ -51,7 +51,13 @@ const KEY_ACTORS: [&str; 2] = ["key-see-only", "key-for-another-project"];
 /// The route that makes an access key.
 const KEY_ROUTE: &str = "makeAccessKey";
 /// What an answer is called in the record.
-const ANSWERS: [&str; 4] = ["allowed", "not-signed-in", "forbidden", "not-found"];
+const ANSWERS: [&str; 5] = [
+    "allowed",
+    "not-signed-in",
+    "forbidden",
+    "not-found",
+    "not-for-keys",
+];
 
 pub(crate) struct SecMatrix;
 

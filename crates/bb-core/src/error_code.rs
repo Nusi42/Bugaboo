@@ -68,6 +68,11 @@ error_codes! {
     SignUpRefused => ("auth.sign_up_refused", 403, message::ERROR_AUTH_SIGN_UP_REFUSED),
     /// A passkey or a passkey ceremony did not check out.
     PasskeyRejected => ("auth.passkey_rejected", 400, message::ERROR_AUTH_PASSKEY_REJECTED),
+    /// The person must set up a second step before anything else (a role of theirs, or the
+    /// organization, asks for two-step sign-in and they have none yet).
+    SecondStepRequired => ("auth.second_step_required", 403, message::ERROR_AUTH_SECOND_STEP_REQUIRED),
+    /// An access key was used where no key may go: the owner's own sign-in data.
+    AccessKeyNotAllowed => ("auth.access_key_not_allowed", 403, message::ERROR_AUTH_ACCESS_KEY_NOT_ALLOWED),
     /// The request needs a signed-in person.
     NotSignedIn => ("auth.not_signed_in", 401, message::ERROR_AUTH_NOT_SIGNED_IN),
     /// The person can see the thing but may not do this to it.
