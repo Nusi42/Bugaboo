@@ -32,7 +32,7 @@ use serde_json::json;
 use super::actors::{
     Actor, Project, Where, actors, everything_seen, short_name, standing, top_of_the_tree,
 };
-use super::examples::{EXAMPLES, Example, request};
+use super::examples::{EXAMPLES, Example, Quirk, request};
 use super::record::Record;
 use crate::sign_in_tests::http::{Browser, Failure, Reply, called};
 use crate::sign_in_tests::policy_rig::{Member, Org};
@@ -96,7 +96,7 @@ pub(super) fn expectation(actor: Actor, route: &Route, example: &Example) -> Exp
     if actor.has_a_key() && matches!(route.declared.as_str(), "signed-in" | "own-account") {
         return Expect::NotForKeys;
     }
-    if !actor.signed_in() || example.finishes_a_half_done_sign_in {
+    if !actor.signed_in() || example.has(Quirk::FinishesAHalfDoneSignIn) {
         return Expect::NotSignedIn;
     }
     match route.declared.as_str() {
@@ -105,7 +105,7 @@ pub(super) fn expectation(actor: Actor, route: &Route, example: &Example) -> Exp
             let Some(permission) = Permission::from_code(key) else {
                 return Expect::Forbidden;
             };
-            if example.filters_what_is_seen {
+            if example.has(Quirk::FiltersWhatIsSeen) {
                 return Expect::Allowed;
             }
             let at = if route.path.contains("{project}") {
@@ -114,16 +114,17 @@ pub(super) fn expectation(actor: Actor, route: &Route, example: &Example) -> Exp
                 Where::Organization
             };
             let held = standing(actor, at);
-            if at == Where::Target && example.hides_unseen && !held.sees() {
+            if at == Where::Target && example.has(Quirk::HidesUnseen) && !held.sees() {
                 // What is inside a project is not told to a person who does not see it.
                 Expect::NotFound
             } else if held.permissions.contains(&permission) {
-                if at == Where::Target && example.needs_to_see_the_project && !held.sees() {
+                if at == Where::Target && example.has(Quirk::NeedsToSeeTheProject) && !held.sees() {
                     Expect::NotFound
                 } else {
                     Expect::Allowed
                 }
-            } else if at == Where::Target && (!held.knows || (example.hides_unseen && !held.sees()))
+            } else if at == Where::Target
+                && (!held.knows || (example.has(Quirk::HidesUnseen) && !held.sees()))
             {
                 Expect::NotFound
             } else {
@@ -192,21 +193,21 @@ impl<'a> Fixture<'a> {
     /// The projects of the matrix, the person of every actor, and what they hold.
     async fn start(rig: &'a Rig) -> Result<Self, Failure> {
         let org = Org::start(rig).await?;
-        let make = async |parent: Option<ProjectId>, project: Project| {
+        let new_project = async |parent: Option<ProjectId>, project: Project| {
             org.project(parent, short_name(project))
                 .await
                 .map(|view| view.id)
         };
-        let parent = make(None, Project::Parent).await?;
-        let target = make(Some(parent), Project::Target).await?;
-        let sibling = make(Some(parent), Project::Sibling).await?;
+        let parent = new_project(None, Project::Parent).await?;
+        let target = new_project(Some(parent), Project::Target).await?;
+        let sibling = new_project(Some(parent), Project::Sibling).await?;
         let projects = BTreeMap::from([
             (short_name(Project::Parent), parent),
             (short_name(Project::Target), target),
             (short_name(Project::Sibling), sibling),
         ]);
         let roles = starting_roles(&org).await?;
-        let role = |role: StartingRole| roles[role.key()];
+        let places = [parent, target, sibling];
         let mut people = Vec::new();
         let mut keys = Vec::new();
         let mut everyone = actors();
@@ -226,64 +227,8 @@ impl<'a> Fixture<'a> {
                 id: started.person.id,
                 session: started.session_token,
             };
-            match actor {
-                Actor::Nobody | Actor::NoRole | Actor::Exactly(None) => {}
-                Actor::Exactly(Some(permission)) => {
-                    let only = org
-                        .role(&format!("Exactly {}", permission.code()), &[permission])
-                        .await?;
-                    org.give_everywhere(&member, only.id).await?;
-                }
-                Actor::Role(starting) => {
-                    org.give_everywhere(&member, role(starting)).await?;
-                }
-                Actor::LeadOnParent => {
-                    org.give(&member, role(StartingRole::ProjectLead), parent)
-                        .await?;
-                }
-                Actor::LeadOnSiblingOnly => {
-                    org.give(&member, role(StartingRole::ProjectLead), sibling)
-                        .await?;
-                }
-                Actor::NoAccessOnTarget => {
-                    org.give_everywhere(&member, role(StartingRole::Viewer))
-                        .await?;
-                    org.forbid(&member, target).await?;
-                }
-                Actor::NoAccessUnderLead => {
-                    org.give_everywhere(&member, role(StartingRole::ProjectLead))
-                        .await?;
-                    org.forbid(&member, target).await?;
-                }
-                // An administrator who comes with a key: one that may only see, and one for the
-                // sibling project (a key made by its owner, with the password asked again).
-                Actor::KeySeeOnly | Actor::KeyForAnotherProject => {
-                    org.give_everywhere(&member, role(StartingRole::Administrator))
-                        .await?;
-                    let (choice, projects) = if actor == Actor::KeySeeOnly {
-                        (KeyChoice::SeeOnly, Vec::new())
-                    } else {
-                        (KeyChoice::Everything, vec![sibling])
-                    };
-                    let made = rig
-                        .api()
-                        .make_access_key(
-                            Rig::info(),
-                            MakeAccessKey {
-                                session_token: member.session.clone(),
-                                password: PASSWORD.to_owned(),
-                                name: actor.name(),
-                                choice,
-                                permissions: Vec::new(),
-                                projects,
-                                expires_at: None,
-                            },
-                        )
-                        .await
-                        .map_err(|error| error.to_string())?
-                        .into_value();
-                    keys.push((actor, made.secret));
-                }
+            if let Some(secret) = hold(&org, rig, actor, &member, &places, &roles).await? {
+                keys.push((actor, secret));
             }
             people.push((actor, email));
         }
@@ -324,6 +269,81 @@ impl<'a> Fixture<'a> {
         }
         Ok(browser)
     }
+}
+
+/// Gives the person of an actor what the actor holds: the roles and the *No access*, and for an
+/// actor that comes with an access key, the key, which is made by its owner with the password asked
+/// again. The secret of the key, if there is one.
+async fn hold(
+    org: &Org<'_>,
+    rig: &Rig,
+    actor: Actor,
+    member: &Member,
+    places: &[ProjectId; 3],
+    roles: &BTreeMap<String, RoleId>,
+) -> Result<Option<String>, Failure> {
+    let [parent, target, sibling] = *places;
+    let role = |role: StartingRole| roles[role.key()];
+    match actor {
+        Actor::Nobody | Actor::NoRole | Actor::Exactly(None) => {}
+        Actor::Exactly(Some(permission)) => {
+            let only = org
+                .role(&format!("Exactly {}", permission.code()), &[permission])
+                .await?;
+            org.give_everywhere(member, only.id).await?;
+        }
+        Actor::Role(starting) => {
+            org.give_everywhere(member, role(starting)).await?;
+        }
+        Actor::LeadOnParent => {
+            org.give(member, role(StartingRole::ProjectLead), parent)
+                .await?;
+        }
+        Actor::LeadOnSiblingOnly => {
+            org.give(member, role(StartingRole::ProjectLead), sibling)
+                .await?;
+        }
+        Actor::NoAccessOnTarget => {
+            org.give_everywhere(member, role(StartingRole::Viewer))
+                .await?;
+            org.forbid(member, target).await?;
+        }
+        Actor::NoAccessUnderLead => {
+            org.give_everywhere(member, role(StartingRole::ProjectLead))
+                .await?;
+            org.forbid(member, target).await?;
+        }
+        // An administrator who comes with a key: one that may only see, and one for the
+        // sibling project (a key made by its owner, with the password asked again).
+        Actor::KeySeeOnly | Actor::KeyForAnotherProject => {
+            org.give_everywhere(member, role(StartingRole::Administrator))
+                .await?;
+            let (choice, projects) = if actor == Actor::KeySeeOnly {
+                (KeyChoice::SeeOnly, Vec::new())
+            } else {
+                (KeyChoice::Everything, vec![sibling])
+            };
+            let made = rig
+                .api()
+                .make_access_key(
+                    Rig::info(),
+                    MakeAccessKey {
+                        session_token: member.session.clone(),
+                        password: PASSWORD.to_owned(),
+                        name: actor.name(),
+                        choice,
+                        permissions: Vec::new(),
+                        projects,
+                        expires_at: None,
+                    },
+                )
+                .await
+                .map_err(|error| error.to_string())?
+                .into_value();
+            return Ok(Some(made.secret));
+        }
+    }
+    Ok(None)
 }
 
 /// The starting roles of the organization by their key (`administrator`, …).
@@ -448,15 +468,17 @@ async fn run(rig: &Rig, actors: &[Actor]) -> Result<Record, Failure> {
             let got = seen(&reply);
             let fine = got == expected
                 || (expected == Expect::Allowed
-                    && example.names_a_missing_thing
+                    && example.has(Quirk::NamesAMissingThing)
                     && got == Expect::NotFound);
             assert!(fine, "{}: expected {expected:?}, got {got:?}", place());
-            if expected == Expect::Allowed {
-                if let Err(wrong) = check_content(*actor, route, &reply) {
-                    panic!("{}: {wrong}", place());
-                }
+            if let (Expect::Allowed, Err(wrong)) = (expected, check_content(*actor, route, &reply))
+            {
+                panic!("{}: {wrong}", place());
             }
-            if example.ends_the_session && expected == Expect::Allowed && actor.signed_in() {
+            if example.has(Quirk::EndsTheSession)
+                && expected == Expect::Allowed
+                && actor.signed_in()
+            {
                 browsers.insert(actor.key(), fixture.browser(*actor).await?);
             }
             record.ran(route, *actor, expected);

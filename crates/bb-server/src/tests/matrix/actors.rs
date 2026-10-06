@@ -240,7 +240,14 @@ fn given_everywhere(role: StartingRole, at: Where) -> BTreeSet<Permission> {
 /// What the actor holds at the place.
 pub(super) fn standing(actor: Actor, at: Where) -> Standing {
     match actor {
-        Actor::Nobody | Actor::NoRole | Actor::Exactly(None) => Standing::nothing(),
+        // Nobody, a person without a role, a role on a sibling project only, and a key for the
+        // sibling project (it counts there and below, and nowhere else, not even for the whole
+        // organization, ADR-0025 decision 8): nothing at the organization and at the target.
+        Actor::Nobody
+        | Actor::NoRole
+        | Actor::Exactly(None)
+        | Actor::LeadOnSiblingOnly
+        | Actor::KeyForAnotherProject => Standing::nothing(),
         // The one permission, for the whole organization: at a project it counts only when it
         // counts in projects.
         Actor::Exactly(Some(permission)) => match at {
@@ -259,7 +266,6 @@ pub(super) fn standing(actor: Actor, at: Where) -> Standing {
                     .collect(),
             ),
         },
-        Actor::LeadOnSiblingOnly => Standing::nothing(),
         Actor::NoAccessOnTarget => match at {
             Where::Organization => Standing::of(given_everywhere(StartingRole::Viewer, at)),
             Where::Target => Standing::nothing(),
@@ -278,9 +284,6 @@ pub(super) fn standing(actor: Actor, at: Where) -> Standing {
                 })
                 .collect(),
         ),
-        // A key for the sibling project counts there and below, and nowhere else, not even for
-        // the whole organization (ADR-0025, decision 8).
-        Actor::KeyForAnotherProject => Standing::nothing(),
     }
 }
 

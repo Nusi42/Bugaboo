@@ -104,8 +104,9 @@ fn names(items: &[ProjectItem]) -> Vec<&str> {
     names
 }
 
-fn refused(error: Option<AppError>, code: ErrorCode) -> bool {
-    error == Some(AppError::Refused(code))
+/// What a use case answers when it refuses with the code.
+fn refusal(code: ErrorCode) -> AppError {
+    AppError::Refused(code)
 }
 
 fn query(token: &str, address: &str) -> ProjectQuery {
@@ -144,7 +145,7 @@ async fn auth_07_a_key_for_a_project_lists_that_project_and_below_and_nothing_el
     }));
     for hidden in [tree.acme, tree.other] {
         let error = projects(&ctx, list(&key, Some(hidden), None)).await.err();
-        assert!(refused(error, ErrorCode::NotFound), "{hidden}");
+        assert_eq!(error, Some(refusal(ErrorCode::NotFound)), "{hidden}");
     }
     // The search finds only what the key sees; a word of a hidden project finds nothing.
     let found = projects(&ctx, list(&key, None, Some("project")))
@@ -211,7 +212,7 @@ async fn auth_07_the_trail_of_a_key_stops_at_the_project_it_is_for() -> Outcome 
         "OTHER".to_owned(),
     ] {
         let error = project(&ctx, query(&key, &address)).await.err();
-        assert!(refused(error, ErrorCode::NotFound), "{address}");
+        assert_eq!(error, Some(refusal(ErrorCode::NotFound)), "{address}");
     }
     Ok(())
 }
@@ -240,13 +241,13 @@ async fn auth_07_the_answer_of_a_change_does_not_name_a_parent_the_key_cannot_se
     let error = change_project(&ctx, rename(&key, tree.other, 1))
         .await
         .err();
-    assert!(refused(error, ErrorCode::NotFound));
+    assert_eq!(error, Some(refusal(ErrorCode::NotFound)));
     // A key that may only see changes nothing, in the project it is for.
     let see_only = key_for(&world, tree.web, KeyChoice::SeeOnly).await?;
     let error = change_project(&ctx, rename(&see_only, tree.api, 1))
         .await
         .err();
-    assert!(refused(error, ErrorCode::Forbidden));
+    assert_eq!(error, Some(refusal(ErrorCode::Forbidden)));
     Ok(())
 }
 
@@ -264,7 +265,7 @@ async fn auth_07_the_preview_and_the_move_of_a_key_stay_inside_the_key() -> Outc
     // Into a project the key cannot see, or of a project it cannot see: not found; the owner may.
     for (moved, to) in [(tree.api, Some(tree.acme)), (tree.other, Some(tree.sub))] {
         let error = preview_move(&ctx, preview_of(&key, moved, to)).await.err();
-        assert!(refused(error, ErrorCode::NotFound), "{moved}");
+        assert_eq!(error, Some(refusal(ErrorCode::NotFound)), "{moved}");
         assert!(
             preview_move(&ctx, preview_of(&owner, moved, to))
                 .await
@@ -301,7 +302,7 @@ async fn auth_07_the_preview_and_the_move_of_a_key_stay_inside_the_key() -> Outc
     )
     .await
     .err();
-    assert!(refused(outside, ErrorCode::NotFound));
+    assert_eq!(outside, Some(refusal(ErrorCode::NotFound)));
     Ok(())
 }
 

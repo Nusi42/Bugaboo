@@ -17,72 +17,53 @@ use super::routes::Fixture;
 use crate::sign_in_tests::http::{Browser, Failure};
 use crate::sign_in_tests::rig::{OTHER_PASSWORD, PASSWORD, Rig};
 
-/// How a route behaves at the edges the API description does not say.
+/// What a route does at the edges the API description does not say.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(super) enum Quirk {
+    /// The route answers a project that the actor cannot see with `resource.not_found` before it
+    /// looks at the permission, also an actor who knows it exists (they hold *Decide who has which
+    /// role* there): it is about what is inside the project.
+    HidesUnseen,
+    /// The route looks at the permission first, and then answers `resource.not_found` to somebody
+    /// who holds it but does not see the project: changing what one cannot see is not possible.
+    NeedsToSeeTheProject,
+    /// The route lists what the actor may see: a person without the permission is not refused but
+    /// gets what they see, which may be nothing (M2-F30). Only the routes named here may do that.
+    FiltersWhatIsSeen,
+    /// The call ends the session of whoever makes it, so they sign in again afterwards.
+    EndsTheSession,
+    /// The route names a thing that is not there (a passkey nobody added), so a person who is let
+    /// in is told `resource.not_found`, which is not a refusal of the permission.
+    NamesAMissingThing,
+    /// The route finishes a sign-in that is half done (the second step): a session that is whole
+    /// has nothing to finish, so it is told it is not signed in for this.
+    FinishesAHalfDoneSignIn,
+}
+
+/// One row of the table: a route and what is special about it.
 #[derive(Clone, Copy, Debug)]
 pub(super) struct Example {
     /// The operation ID of the route in the API description.
     pub(super) operation: &'static str,
-    /// The route answers a project that the actor cannot see with `resource.not_found` before it
-    /// looks at the permission, also an actor who knows it exists (they hold *Decide who has which
-    /// role* there): it is about what is inside the project.
-    pub(super) hides_unseen: bool,
-    /// The route looks at the permission first, and then answers `resource.not_found` to somebody
-    /// who holds it but does not see the project: changing what one cannot see is not possible.
-    pub(super) needs_to_see_the_project: bool,
-    /// The route lists what the actor may see: a person without the permission is not refused but
-    /// gets what they see, which may be nothing (M2-F30). Only the routes named here may do that.
-    pub(super) filters_what_is_seen: bool,
-    /// The call ends the session of whoever makes it, so they sign in again afterwards.
-    pub(super) ends_the_session: bool,
-    /// The route names a thing that is not there (a passkey nobody added), so a person who is let
-    /// in is told `resource.not_found`, which is not a refusal of the permission.
-    pub(super) names_a_missing_thing: bool,
-    /// The route finishes a sign-in that is half done (the second step): a session that is whole
-    /// has nothing to finish, so it is told it is not signed in for this.
-    pub(super) finishes_a_half_done_sign_in: bool,
+    /// What is special about the route.
+    pub(super) quirks: &'static [Quirk],
 }
 
 impl Example {
     const fn route(operation: &'static str) -> Self {
         Self {
             operation,
-            hides_unseen: false,
-            needs_to_see_the_project: false,
-            filters_what_is_seen: false,
-            ends_the_session: false,
-            names_a_missing_thing: false,
-            finishes_a_half_done_sign_in: false,
+            quirks: &[],
         }
     }
 
-    const fn hides_unseen(mut self) -> Self {
-        self.hides_unseen = true;
-        self
+    const fn with(operation: &'static str, quirks: &'static [Quirk]) -> Self {
+        Self { operation, quirks }
     }
 
-    const fn needs_to_see_the_project(mut self) -> Self {
-        self.needs_to_see_the_project = true;
-        self
-    }
-
-    const fn filters_what_is_seen(mut self) -> Self {
-        self.filters_what_is_seen = true;
-        self
-    }
-
-    const fn ends_the_session(mut self) -> Self {
-        self.ends_the_session = true;
-        self
-    }
-
-    const fn names_a_missing_thing(mut self) -> Self {
-        self.names_a_missing_thing = true;
-        self
-    }
-
-    const fn finishes_a_half_done_sign_in(mut self) -> Self {
-        self.finishes_a_half_done_sign_in = true;
-        self
+    /// Whether the route has this quirk.
+    pub(super) fn has(&self, quirk: Quirk) -> bool {
+        self.quirks.contains(&quirk)
     }
 }
 
@@ -99,17 +80,20 @@ pub(super) const EXAMPLES: &[Example] = &[
     Example::route("startPasskeySignIn"),
     Example::route("addPasskey"),
     Example::route("startAddPasskey"),
-    Example::route("removePasskey").names_a_missing_thing(),
+    Example::with("removePasskey", &[Quirk::NamesAMissingThing]),
     Example::route("changePassword"),
-    Example::route("finishSignInWithCode").finishes_a_half_done_sign_in(),
-    Example::route("finishSignInWithPasskey").finishes_a_half_done_sign_in(),
-    Example::route("startSecondStepWithPasskey").finishes_a_half_done_sign_in(),
+    Example::with("finishSignInWithCode", &[Quirk::FinishesAHalfDoneSignIn]),
+    Example::with("finishSignInWithPasskey", &[Quirk::FinishesAHalfDoneSignIn]),
+    Example::with(
+        "startSecondStepWithPasskey",
+        &[Quirk::FinishesAHalfDoneSignIn],
+    ),
     Example::route("listSessions"),
-    Example::route("signOutEverywhere").ends_the_session(),
-    Example::route("endSession").ends_the_session(),
+    Example::with("signOutEverywhere", &[Quirk::EndsTheSession]),
+    Example::with("endSession", &[Quirk::EndsTheSession]),
     Example::route("completeSetup"),
     Example::route("signIn"),
-    Example::route("signOut").ends_the_session(),
+    Example::with("signOut", &[Quirk::EndsTheSession]),
     Example::route("signUp"),
     Example::route("getSignUpPolicy"),
     Example::route("changeSignUpPolicy"),
@@ -120,17 +104,17 @@ pub(super) const EXAMPLES: &[Example] = &[
     Example::route("confirmCodeApp"),
     Example::route("removeCodeApp"),
     Example::route("getOpenApi"),
-    Example::route("listProjects").filters_what_is_seen(),
+    Example::with("listProjects", &[Quirk::FiltersWhatIsSeen]),
     Example::route("makeProject"),
-    Example::route("getProject").hides_unseen(),
-    Example::route("changeProject").needs_to_see_the_project(),
-    Example::route("moveProject").hides_unseen(),
-    Example::route("previewProjectMove").hides_unseen(),
+    Example::with("getProject", &[Quirk::HidesUnseen]),
+    Example::with("changeProject", &[Quirk::NeedsToSeeTheProject]),
+    Example::with("moveProject", &[Quirk::HidesUnseen]),
+    Example::with("previewProjectMove", &[Quirk::HidesUnseen]),
     Example::route("makeSubProject"),
     Example::route("getStatus"),
     Example::route("listAccessKeys"),
     Example::route("makeAccessKey"),
-    Example::route("deleteAccessKey").names_a_missing_thing(),
+    Example::with("deleteAccessKey", &[Quirk::NamesAMissingThing]),
     Example::route("getAccessKeyRules"),
     Example::route("listProjectChoices"),
     Example::route("getSecondStepGap"),
@@ -155,22 +139,13 @@ fn unique_short_name(fixture: &Fixture<'_>) -> String {
     }
 }
 
-/// The request of an example: the method, the address with its parts filled in, and a body that
-/// is valid for the route. Changes that need a thing to change make it first (a new invitation to
-/// take back, the session of the actor to end).
-///
-/// # Errors
-/// A failure of the set-up, or an operation that has a row but no request here.
-pub(super) async fn request(
-    fixture: &Fixture<'_>,
-    example: &Example,
-    actor: Actor,
-    browser: &mut Browser,
-) -> Result<(&'static str, String, Option<Value>), Failure> {
-    let target = fixture.project(Project::Target).to_string();
-    let sibling = fixture.project(Project::Sibling).to_string();
+/// A request: the method, the address and the body.
+type Request = (&'static str, String, Option<Value>);
+
+/// The routes of everybody and of whoever is signed in.
+fn open_request(operation: &str) -> Result<Option<Request>, Failure> {
     let wrong = "not the password";
-    Ok(match example.operation {
+    Ok(Some(match operation {
         // Open to everybody.
         "getStatus" => ("GET", "/api/v1/status".into(), None),
         "getOpenApi" => ("GET", "/api/v1/openapi.json".into(), None),
@@ -213,6 +188,18 @@ pub(super) async fn request(
         // Whoever is signed in.
         "getMe" => ("GET", "/api/v1/auth/me".into(), None),
         "signOut" => ("POST", "/api/v1/auth/sign-out".into(), None),
+        _ => return Ok(None),
+    }))
+}
+
+/// A person's own sign-in data and access keys.
+async fn own_request(
+    operation: &str,
+    actor: Actor,
+    browser: &mut Browser,
+) -> Result<Option<Request>, Failure> {
+    let wrong = "not the password";
+    Ok(Some(match operation {
         // A person's own sign-in data.
         "listSessions" => ("GET", "/api/v1/auth/sessions".into(), None),
         "signOutEverywhere" => ("DELETE", "/api/v1/auth/sessions".into(), None),
@@ -289,6 +276,30 @@ pub(super) async fn request(
             "/api/v1/auth/second-step/passkey".into(),
             Some(json!({"challenge_id": "none", "credential": {}})),
         ),
+        // The access keys of a person: their own sign-in data, which a key never reaches.
+        "listAccessKeys" => ("GET", "/api/v1/access-keys".into(), None),
+        "makeAccessKey" => (
+            "POST",
+            "/api/v1/access-keys".into(),
+            Some(json!({"password": wrong, "name": "Made by the matrix", "choice": "see-only"})),
+        ),
+        "deleteAccessKey" => (
+            "DELETE",
+            format!("/api/v1/access-keys/{NOBODYS_RANDOM_ID}"),
+            None,
+        ),
+        "getAccessKeyRules" => ("GET", "/api/v1/access-keys/rules".into(), None),
+        "listProjectChoices" => ("GET", "/api/v1/access-keys/projects".into(), None),
+        _ => return Ok(None),
+    }))
+}
+
+/// The organization.
+async fn organization_request(
+    fixture: &Fixture<'_>,
+    operation: &str,
+) -> Result<Option<Request>, Failure> {
+    Ok(Some(match operation {
         // The organization.
         "listInvitations" => ("GET", "/api/v1/auth/invitations".into(), None),
         "createInvitation" => (
@@ -324,26 +335,21 @@ pub(super) async fn request(
             Some(json!({"enabled": false, "domains": []})),
         ),
         "getServerStatus" => ("GET", "/api/v1/admin/status".into(), None),
-        // The access keys of a person: their own sign-in data, which a key never reaches.
-        "listAccessKeys" => ("GET", "/api/v1/access-keys".into(), None),
-        "makeAccessKey" => (
-            "POST",
-            "/api/v1/access-keys".into(),
-            Some(json!({"password": wrong, "name": "Made by the matrix", "choice": "see-only"})),
-        ),
-        "deleteAccessKey" => (
-            "DELETE",
-            format!("/api/v1/access-keys/{NOBODYS_RANDOM_ID}"),
-            None,
-        ),
-        "getAccessKeyRules" => ("GET", "/api/v1/access-keys/rules".into(), None),
-        "listProjectChoices" => ("GET", "/api/v1/access-keys/projects".into(), None),
         // How many people with a role still have to set up a second step.
         "getSecondStepGap" => (
             "GET",
             format!("/api/v1/roles/{}/second-step-gap", fixture.a_role()?),
             None,
         ),
+        _ => return Ok(None),
+    }))
+}
+
+/// The projects.
+fn project_request(fixture: &Fixture<'_>, operation: &str) -> Result<Option<Request>, Failure> {
+    let target = fixture.project(Project::Target).to_string();
+    let sibling = fixture.project(Project::Sibling).to_string();
+    Ok(Some(match operation {
         // Projects.
         "listProjects" => ("GET", "/api/v1/projects".into(), None),
         "makeProject" => (
@@ -372,8 +378,36 @@ pub(super) async fn request(
             format!("/api/v1/projects/{target}/move"),
             Some(json!({"to": sibling, "preview": "not a preview"})),
         ),
-        other => return Err(format!("{other} has a row in the table but no request").into()),
-    })
+        _ => return Ok(None),
+    }))
+}
+
+/// The request of an example: the method, the address with its parts filled in, and a body that
+/// is valid for the route. Changes that need a thing to change make it first (a new invitation to
+/// take back, the session of the actor to end).
+///
+/// # Errors
+/// A failure of the set-up, or an operation that has a row but no request here.
+pub(super) async fn request(
+    fixture: &Fixture<'_>,
+    example: &Example,
+    actor: Actor,
+    browser: &mut Browser,
+) -> Result<Request, Failure> {
+    let operation = example.operation;
+    if let Some(found) = open_request(operation)? {
+        return Ok(found);
+    }
+    if let Some(found) = own_request(operation, actor, browser).await? {
+        return Ok(found);
+    }
+    if let Some(found) = organization_request(fixture, operation).await? {
+        return Ok(found);
+    }
+    if let Some(found) = project_request(fixture, operation)? {
+        return Ok(found);
+    }
+    Err(format!("{operation} has a row in the table but no request").into())
 }
 
 #[cfg(test)]
@@ -392,7 +426,7 @@ mod tests {
     fn only_the_routes_that_list_what_is_seen_may_answer_a_person_without_the_permission() {
         let filtering: Vec<&str> = EXAMPLES
             .iter()
-            .filter(|example| example.filters_what_is_seen)
+            .filter(|example| example.has(Quirk::FiltersWhatIsSeen))
             .map(|example| example.operation)
             .collect();
         assert_eq!(

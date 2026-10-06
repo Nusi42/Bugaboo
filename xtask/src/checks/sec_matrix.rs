@@ -29,8 +29,8 @@ use crate::generate::api::SPEC_PATH;
 const RECORD_PATH: &str = "tools/checks/sec-matrix-record.txt";
 /// The table of example requests.
 const EXAMPLES_PATH: &str = "crates/bb-server/src/tests/matrix/examples.rs";
-/// How a row of the table starts.
-const ROW_START: &str = "Example::route(\"";
+/// How a row of the table starts: a plain route, or one with quirks.
+const ROW_STARTS: [&str; 2] = ["Example::route(\"", "Example::with(\""];
 /// The actors every record has.
 const ACTORS: [&str; 12] = [
     "nobody",
@@ -159,27 +159,26 @@ fn parse(record: &str) -> (Vec<String>, BTreeMap<String, Line>) {
 }
 
 /// The operations that have a row in the table of examples.
-fn rows(examples: &str) -> BTreeSet<&str> {
-    examples
-        .split(ROW_START)
-        .skip(1)
-        .filter_map(|rest| rest.split_once('"').map(|(operation, _)| operation))
+fn rows(examples: &str) -> BTreeSet<String> {
+    // Without white space, so a row that rustfmt broke over lines is read as one.
+    let text: String = examples.split_whitespace().collect();
+    ROW_STARTS
+        .iter()
+        .flat_map(|start| {
+            text.split(start)
+                .skip(1)
+                .map(str::to_owned)
+                .collect::<Vec<_>>()
+        })
+        .filter_map(|rest| {
+            rest.split_once('"')
+                .map(|(operation, _)| operation.to_owned())
+        })
         .collect()
 }
 
-fn evaluate(spec: &Value, record: Option<&str>, examples: &str) -> Vec<Finding> {
-    let routes = routes(spec);
-    if routes.is_empty() {
-        return vec![Finding::at(SPEC_PATH, "The document has no routes.")];
-    }
-    let Some(record) = record else {
-        return vec![Finding::at(
-            RECORD_PATH,
-            "The record of the matrix is missing. Run the matrix and write it: \
-             `BB_SEC_MATRIX_RECORD=write cargo xtask db run -- cargo test -p bb-server sec_01_every_route`.",
-        )];
-    };
-    let (actors, lines) = parse(record);
+/// The actors the record must name: the fixed list, and the two with a key once the API has keys.
+fn actor_findings(actors: &[String], routes: &[Route]) -> Vec<Finding> {
     let mut findings = Vec::new();
     let has_keys = routes.iter().any(|route| route.operation == KEY_ROUTE);
     let wanted: Vec<&str> = if has_keys {
@@ -201,62 +200,90 @@ fn evaluate(spec: &Value, record: Option<&str>, examples: &str) -> Vec<Finding> 
             ));
         }
     }
+    findings
+}
+
+/// What the record and the table say about one route.
+fn route_findings(
+    route: &Route,
+    rows: &BTreeSet<String>,
+    lines: &BTreeMap<String, Line>,
+    actors: &[String],
+) -> Vec<Finding> {
+    let mut found = Vec::new();
+    let place = format!("{} {} ({})", route.method, route.path, route.operation);
+    if !rows.contains(route.operation.as_str()) {
+        found.push(Finding::at(
+            EXAMPLES_PATH,
+            format!("{place} has no example request: add its row to the table."),
+        ));
+    }
+    let Some(line) = lines.get(&route.operation) else {
+        found.push(Finding::at(
+            RECORD_PATH,
+            format!("{place} is missing from the record of the matrix: run the matrix."),
+        ));
+        return found;
+    };
+    if line.method != route.method || line.path != route.path || line.declared != route.declared {
+        found.push(Finding::at(
+            RECORD_PATH,
+            format!(
+                "{place} was run as `{} {}` declaring `{}`, but the description says \
+                 `{}`: run the matrix again.",
+                line.method, line.path, line.declared, route.declared
+            ),
+        ));
+    }
+    for actor in actors {
+        match line.answers.get(actor) {
+            None => found.push(Finding::at(
+                RECORD_PATH,
+                format!("{place} was not run as `{actor}`."),
+            )),
+            Some(answer) if !ANSWERS.contains(&answer.as_str()) => found.push(Finding::at(
+                RECORD_PATH,
+                format!("{place} as `{actor}`: `{answer}` is no answer the matrix knows."),
+            )),
+            Some(_) => {}
+        }
+    }
+    let nobody = line.answers.get("nobody").map(String::as_str);
+    let expected = if route.declared == "public" {
+        "allowed"
+    } else {
+        "not-signed-in"
+    };
+    if nobody.is_some_and(|answer| answer != expected) {
+        found.push(Finding::at(
+            RECORD_PATH,
+            format!(
+                "{place} declares `{}`, so nobody signed in must be `{expected}`, not `{}`.",
+                route.declared,
+                nobody.unwrap_or_default()
+            ),
+        ));
+    }
+    found
+}
+
+fn evaluate(spec: &Value, record: Option<&str>, examples: &str) -> Vec<Finding> {
+    let routes = routes(spec);
+    if routes.is_empty() {
+        return vec![Finding::at(SPEC_PATH, "The document has no routes.")];
+    }
+    let Some(record) = record else {
+        return vec![Finding::at(
+            RECORD_PATH,
+            "The record of the matrix is missing. Run the matrix and write it: \
+             `BB_SEC_MATRIX_RECORD=write cargo xtask db run -- cargo test -p bb-server sec_01_every_route`.",
+        )];
+    };
+    let (actors, lines) = parse(record);
+    let mut findings = actor_findings(&actors, &routes);
     let rows = rows(examples);
     for route in &routes {
-        let place = format!("{} {} ({})", route.method, route.path, route.operation);
-        if !rows.contains(route.operation.as_str()) {
-            findings.push(Finding::at(
-                EXAMPLES_PATH,
-                format!("{place} has no example request: add its row to the table."),
-            ));
-        }
-        let Some(line) = lines.get(&route.operation) else {
-            findings.push(Finding::at(
-                RECORD_PATH,
-                format!("{place} is missing from the record of the matrix: run the matrix."),
-            ));
-            continue;
-        };
-        if line.method != route.method || line.path != route.path || line.declared != route.declared
-        {
-            findings.push(Finding::at(
-                RECORD_PATH,
-                format!(
-                    "{place} was run as `{} {}` declaring `{}`, but the description says \
-                     `{}`: run the matrix again.",
-                    line.method, line.path, line.declared, route.declared
-                ),
-            ));
-        }
-        for actor in &actors {
-            match line.answers.get(actor) {
-                None => findings.push(Finding::at(
-                    RECORD_PATH,
-                    format!("{place} was not run as `{actor}`."),
-                )),
-                Some(answer) if !ANSWERS.contains(&answer.as_str()) => findings.push(Finding::at(
-                    RECORD_PATH,
-                    format!("{place} as `{actor}`: `{answer}` is no answer the matrix knows."),
-                )),
-                Some(_) => {}
-            }
-        }
-        let nobody = line.answers.get("nobody").map(String::as_str);
-        let expected = if route.declared == "public" {
-            "allowed"
-        } else {
-            "not-signed-in"
-        };
-        if nobody.is_some_and(|answer| answer != expected) {
-            findings.push(Finding::at(
-                RECORD_PATH,
-                format!(
-                    "{place} declares `{}`, so nobody signed in must be `{expected}`, not `{}`.",
-                    route.declared,
-                    nobody.unwrap_or_default()
-                ),
-            ));
-        }
+        findings.extend(route_findings(route, &rows, &lines, &actors));
     }
     let described: BTreeSet<&str> = routes
         .iter()
@@ -270,7 +297,10 @@ fn evaluate(spec: &Value, record: Option<&str>, examples: &str) -> Vec<Finding> 
             ));
         }
     }
-    for operation in rows.difference(&described) {
+    for operation in rows
+        .iter()
+        .filter(|operation| !described.contains(operation.as_str()))
+    {
         findings.push(Finding::at(
             EXAMPLES_PATH,
             format!(
@@ -488,5 +518,19 @@ mod tests {
         );
         let found = messages(&with_keys, Some(&with), &examples);
         assert!(found.is_empty(), "{found:?}");
+    }
+
+    #[test]
+    fn a_row_that_rustfmt_broke_over_lines_is_still_a_row() {
+        let table = "Example::with(
+        \"getStatus\",
+        &[Quirk::EndsTheSession],
+    ),
+Example::route(\"x\"),
+";
+        assert_eq!(
+            rows(table),
+            BTreeSet::from(["getStatus".to_owned(), "x".to_owned()])
+        );
     }
 }
