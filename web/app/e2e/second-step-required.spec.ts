@@ -4,14 +4,7 @@ import { type Page } from "@playwright/test";
 import { bob, cleo, makeAdmin, makePerson } from "./support/accounts.ts";
 import { expectGoodInEveryTheme } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
-import {
-  expectHome,
-  openFromMenu,
-  sendPassword,
-  setUpCodeApp,
-  signIn,
-  signOut,
-} from "./support/flows.ts";
+import { expectHome, sendPassword, setUpCodeApp, signIn, signOut } from "./support/flows.ts";
 
 /** The setting that asks everybody in the organization for a second step. */
 const REQUIRED = "security.two-step-required";
@@ -46,8 +39,9 @@ test("auth_03 a person who is signed in is taken to set up a second step the mom
 }) => {
   await signIn(page, bob);
   server.setOrganizationSwitch(REQUIRED, true);
-  // The next thing the page asks the server takes Bob there, in the same session.
-  await openFromMenu(page, t("nav.sessions"));
+  // The next thing the page asks the server takes Bob there, in the same session (a page that
+  // asks again, as when it is opened again, or as the projects of the sidebar do).
+  await page.reload();
   await expectSetUpScreen(page);
   // Nothing else opens, not even by typing the address.
   await page.goto("/me/sessions");
