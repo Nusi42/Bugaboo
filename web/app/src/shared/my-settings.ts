@@ -228,9 +228,19 @@ export function regionOf(settings?: MySettings): Region {
   };
 }
 
-/** The address of the page that opens after signing in. */
+/**
+ * Whether an address is a page of this app: one slash at the start, so never another website
+ * (`//evil.test`, `https://…`, `/\\evil.test`). The server checks the same when it stores the
+ * address; the browser checks again, because it is the one that navigates.
+ */
+export function isPageOfTheApp(address: string): boolean {
+  return address.startsWith("/") && !address.startsWith("//") && !address.startsWith("/\\");
+}
+
+/** The address of the page that opens after signing in; the home page for any other address. */
 export function startPageOf(settings?: MySettings): string {
-  return textOf(settings, settingKeys.startPage, "/");
+  const address = textOf(settings, settingKeys.startPage, "/");
+  return isPageOfTheApp(address) ? address : "/";
 }
 
 /** The keys the person chose for shortcuts. */

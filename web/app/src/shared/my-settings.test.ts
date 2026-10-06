@@ -173,6 +173,14 @@ describe("cfg_04 region, start page and shortcut keys", () => {
   });
 });
 
+describe("cfg_04 the start page is only ever a page of this app", () => {
+  it("opens the home page for an address that is not one", () => {
+    for (const bad of ["//evil.test", "/\\evil.test", "https://evil.test/", "me/region", ""]) {
+      expect(startPageOf(list({ [settingKeys.startPage]: bad }))).toBe("/");
+    }
+  });
+});
+
 describe("cfg_04 a change shows before the server has answered", () => {
   it("makes the value the person's own, and a reset the standard value", () => {
     const before = list({ [settingKeys.appearanceMode]: "dark" });

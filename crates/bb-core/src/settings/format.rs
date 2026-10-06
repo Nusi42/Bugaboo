@@ -62,7 +62,8 @@ pub enum Format {
     Choices(&'static [Choice]),
     /// `device`, or a time zone of the IANA list (`Europe/Berlin`, `UTC`).
     TimeZone,
-    /// The address of a page of the app: starts with a slash, never names another website.
+    /// The address of a page of the app: starts with one slash and never names another website: no
+    /// `//` anywhere, no `..` segment, no encoded slash, backslash or dot.
     PageAddress,
     /// The keys a person chose for shortcuts: a JSON object from the ID of a shortcut to the key
     /// sequences that do it. The browser knows which IDs exist; the server only keeps the shape
@@ -109,9 +110,19 @@ fn is_time_zone(text: &str) -> bool {
         })
 }
 
+/// Percent-encoded characters that change what an address means once something decodes it: a
+/// slash, a backslash and a dot (`%2e%2e` is `..`).
+const ENCODED_SEPARATORS: [&str; 3] = ["%2f", "%5c", "%2e"];
+
 fn is_page_address(text: &str) -> bool {
+    let lower = text.to_ascii_lowercase();
+    let path = text.split(['?', '#']).next().unwrap_or_default();
     text.starts_with('/')
-        && !text.starts_with("//")
+        && !text.contains("//")
+        && !path.split('/').any(|segment| segment == "..")
+        && !ENCODED_SEPARATORS
+            .iter()
+            .any(|encoded| lower.contains(encoded))
         && text.len() <= PAGE_ADDRESS_LONGEST
         && text.chars().all(|c| {
             c.is_ascii_alphanumeric()
@@ -207,6 +218,8 @@ mod tests {
             "/time",
             "/p/WEB/issues?show=board&s=1",
             "/me/appearance",
+            "/p/WEB/issues.2024",
+            "/a?q=..",
         ] {
             assert!(Format::PageAddress.accepts(good), "{good}");
         }
@@ -219,6 +232,14 @@ mod tests {
             "/a b",
             "/a\nb",
             "/javascript:alert(1)",
+            "/a//evil.test",
+            "/a?next=//evil.test",
+            "/p/../admin",
+            "/..",
+            "/a/..?x=1",
+            "/a%2Fb",
+            "/a%5cb",
+            "/%2e%2e/admin",
             &format!("/{}", "a".repeat(200)),
         ] {
             assert!(!Format::PageAddress.accepts(bad), "{bad}");
