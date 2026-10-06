@@ -13,6 +13,7 @@ mod arch_http_edge;
 mod arch_lean;
 mod arch_map_sync;
 mod arch_no_unsafe;
+mod arch_perms;
 mod arch_person_ref;
 mod arch_settings;
 mod arch_sql_edge;
@@ -140,6 +141,7 @@ pub(crate) fn registry() -> Vec<Box<dyn Check>> {
         Box::new(arch_sql_edge::ArchSqlEdge),
         Box::new(arch_events::ArchEvents),
         Box::new(arch_authz_only::ArchAuthzOnly),
+        Box::new(arch_perms::ArchPerms),
         Box::new(arch_person_ref::ArchPersonRef),
         Box::new(arch_wasm::ArchWasm),
         Box::new(arch_http_edge::ArchHttpEdge),

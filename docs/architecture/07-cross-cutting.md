@@ -66,7 +66,7 @@ flowchart LR
 
 ### The permission catalogue
 
-One enum, `Permission` in `bb-policy`. The key is also the value of `x-permission` in the API description; the sentence is the message `permission.<key>`; the topic is the message `permission-topic.<topic>`. *Counts* says where a permission counts (ADR-0025, decision 1); *Kind* is what an access key's choice keeps (decision 8). Routes that need no catalogue permission declare `public`, `signed-in` or `own-account`. Enforced by: ARCH-PERMS.
+One enum, `Permission` in `bb-policy`. The key is also the value of `x-permission` in the API description; the sentence is the message `permission.<key>`; the topic is the message `permission-topic.<topic>`. *Counts* says where a permission counts (ADR-0025, decision 1); *Kind* is what an access key's choice keeps (decision 8). Routes that need no catalogue permission declare `public`, `signed-in` or `own-account`. A permission that no route asks for yet, because a use case judges it and its screen and routes come later, is named in `tools/checks/permission-exemptions.toml` with a reason that names the follow-up; the entry must go when a route asks for the permission. Enforced by: ARCH-PERMS (every operation of the API description has `x-permission` with a key of the catalogue or one of the three words; every permission is asked by a route or named in the file; every permission and topic has its message).
 
 | Key | Topic | Counts | Kind | Sentence on the role page |
 |-----|-------|--------|------|---------------------------|

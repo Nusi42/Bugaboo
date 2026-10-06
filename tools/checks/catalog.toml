@@ -325,10 +325,17 @@ status = "active"
 id = "ARCH-PERMS"
 title = "Every endpoint and MCP tool declares its permission; every permission is used and explained"
 rule = "SEC-01, ADR-0004"
-tool = "xtask (OpenAPI x-permission + permission catalogue)"
+tool = "xtask (reads x-permission in the generated API description, the permission catalogue in bb-policy, the message catalog and tools/checks/permission-exemptions.toml)"
 when = ["push", "ci"]
-files = ["crates/bb-api/**", "crates/bb-mcp/**", "crates/bb-policy/**"]
-status = "planned"
+files = [
+  "crates/bb-api/**",
+  "crates/bb-mcp/**",
+  "crates/bb-policy/**",
+  "messages/en.json",
+  "tools/checks/permission-exemptions.toml",
+  "web/packages/api-client/openapi.json",
+]
+status = "active"
 
 [[check]]
 id = "ARCH-ERRORS"
