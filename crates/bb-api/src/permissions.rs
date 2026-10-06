@@ -162,6 +162,27 @@ pub(crate) const ROUTES: &[(&str, Declared)] = &[
         "moveProject",
         Declared::Permission(Permission::MoveProjects),
     ),
+    (
+        "getFieldPermissions",
+        Declared::Permission(Permission::DecideWhatRolesSee),
+    ),
+    (
+        "changeFieldPermission",
+        Declared::Permission(Permission::DecideWhatRolesSee),
+    ),
+    (
+        "getPeopleVisibility",
+        Declared::Permission(Permission::DecideWhatRolesSee),
+    ),
+    (
+        "changePeopleVisibility",
+        Declared::Permission(Permission::DecideWhatRolesSee),
+    ),
+    ("checkAccess", Declared::Permission(Permission::CheckAccess)),
+    (
+        "listPeopleToCheck",
+        Declared::Permission(Permission::CheckAccess),
+    ),
 ];
 
 /// What the route with this operation ID needs, if it is declared.

@@ -25,14 +25,28 @@ export const paths = {
   themes: "/settings/themes",
   status: "/settings/status",
   projects: "/settings/projects",
+  fieldPermissions: "/settings/field-permissions",
+  peopleVisibility: "/settings/people-visibility",
+  checkAccess: "/settings/check-access",
   project: "/p/$project",
   projectSettings: "/p/$project/settings",
+  projectFields: "/p/$project/settings/fields",
+  projectPeople: "/p/$project/settings/people",
+  projectCheckAccess: "/p/$project/settings/check-access",
   frames: "/frames",
 } as const;
 
 /** The address of a project: its short name, or an old one, in `/p/WEB`. */
 export function projectAddress(shortName: string): string {
   return paths.project.replace("$project", encodeURIComponent(shortName));
+}
+
+/** The address of a page below the settings of a project, `/p/WEB/settings/fields`, with the short name filled in. */
+export function projectPageAddress(
+  path: typeof paths.projectFields | typeof paths.projectPeople | typeof paths.projectCheckAccess,
+  shortName: string,
+): string {
+  return path.replace("$project", encodeURIComponent(shortName));
 }
 
 /** The address of the settings of a project, `/p/WEB/settings`. */

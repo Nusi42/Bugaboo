@@ -3322,6 +3322,540 @@
         "x-permission": "own-account"
       }
     },
+    "/api/v1/check-access/people": {
+      "get": {
+        "tags": ["access"],
+        "summary": "The people to choose from for *Check access*, a page at a time, by name. A person who cannot\nsee names there is listed nobody. Needs the permission *Check what other people can do, and\nwhy* in the place.",
+        "operationId": "listPeopleToCheck",
+        "parameters": [
+          {
+            "name": "fields",
+            "in": "query",
+            "description": "The fields each item holds, separated by commas. The answer schema names every field that can be asked for; when this is left out the route's own small default is used.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "description": "Where the page starts: the `next_cursor` of the page before.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "How many items a page holds at most (default 50, at most 100).",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1
+            }
+          },
+          {
+            "name": "project",
+            "in": "query",
+            "description": "The ID of the project. Without it the answer is about the whole organization: the level\neach role has of its own.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "description": "Words that every found name holds, in any order; left out or empty, everybody is listed.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The people, by name.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_PersonRef"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Nothing changed since the `ETag` that `If-None-Match` named. No body.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such thing (resource.not_found).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-never-stored": true,
+        "x-permission": "check-access"
+      }
+    },
+    "/api/v1/check-access/people/{person}": {
+      "get": {
+        "tags": ["access"],
+        "summary": "What a person can do in a project, or in the whole organization when no project is named:\nevery permission with *yes* or *no*, every field with its level and how the person sees\npeople, each with the reasons. Needs the permission *Check what other people can do, and why*\nin the place.",
+        "operationId": "checkAccess",
+        "parameters": [
+          {
+            "name": "person",
+            "in": "path",
+            "description": "The ID of the person to check.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "project",
+            "in": "query",
+            "description": "The ID of the project. Without it the answer is about the whole organization: the level\neach role has of its own.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "What the person can do, and why.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckAccessBody"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Nothing changed since the `ETag` that `If-None-Match` named. No body.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such thing (resource.not_found).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-never-stored": true,
+        "x-permission": "check-access"
+      }
+    },
+    "/api/v1/field-permissions": {
+      "get": {
+        "tags": ["access"],
+        "summary": "Which level every role has for every field, for the whole organization or for one project,\nand where each level was set. Needs the permission *Decide which fields and which people\ninformation each role sees*.",
+        "operationId": "getFieldPermissions",
+        "parameters": [
+          {
+            "name": "project",
+            "in": "query",
+            "description": "The ID of the project. Without it the answer is about the whole organization: the level\neach role has of its own.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The field permissions.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LevelTableBody_Field_FieldLevel"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Nothing changed since the `ETag` that `If-None-Match` named. No body.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such thing (resource.not_found).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-never-stored": true,
+        "x-permission": "decide-what-roles-see"
+      }
+    },
+    "/api/v1/field-permissions/{role}/{field}": {
+      "put": {
+        "tags": ["access"],
+        "summary": "Sets the level of a field for a role, for the whole organization (the role's own level) or for\none project and its sub-projects; `null` takes a project's setting away. A level above the\nperson's own is refused. Needs the permission *Decide which fields and which people\ninformation each role sees* in the place.",
+        "operationId": "changeFieldPermission",
+        "parameters": [
+          {
+            "name": "role",
+            "in": "path",
+            "description": "The ID of the role.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "field",
+            "in": "path",
+            "description": "The key of the field.",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Field"
+            }
+          },
+          {
+            "name": "project",
+            "in": "query",
+            "description": "The ID of the project. Without it the answer is about the whole organization: the level\neach role has of its own.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewFieldLevelBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "The level was set."
+          },
+          "400": {
+            "description": "The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such thing (resource.not_found).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-permission": "decide-what-roles-see"
+      }
+    },
     "/api/v1/me/settings": {
       "get": {
         "tags": ["settings"],
@@ -3751,6 +4285,255 @@
           }
         },
         "x-permission": "public"
+      }
+    },
+    "/api/v1/people-visibility": {
+      "get": {
+        "tags": ["access"],
+        "summary": "How every role sees every kind of people information, for the whole organization or for one\nproject, and where each level was set. Needs the permission *Decide which fields and which\npeople information each role sees*.",
+        "operationId": "getPeopleVisibility",
+        "parameters": [
+          {
+            "name": "project",
+            "in": "query",
+            "description": "The ID of the project. Without it the answer is about the whole organization: the level\neach role has of its own.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "How roles see people.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LevelTableBody_PeopleKind_PeopleLevel"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Nothing changed since the `ETag` that `If-None-Match` named. No body.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such thing (resource.not_found).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-never-stored": true,
+        "x-permission": "decide-what-roles-see"
+      }
+    },
+    "/api/v1/people-visibility/{role}/{kind}": {
+      "put": {
+        "tags": ["access"],
+        "summary": "Sets how a role sees one kind of people information, for the whole organization (the role's\nown level) or for one project and its sub-projects; `null` takes a project's setting away. A\nlevel above the person's own is refused. Needs the permission *Decide which fields and which\npeople information each role sees* in the place.",
+        "operationId": "changePeopleVisibility",
+        "parameters": [
+          {
+            "name": "role",
+            "in": "path",
+            "description": "The ID of the role.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "kind",
+            "in": "path",
+            "description": "The key of the kind of people information.",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/PeopleKind"
+            }
+          },
+          {
+            "name": "project",
+            "in": "query",
+            "description": "The ID of the project. Without it the answer is about the whole organization: the level\neach role has of its own.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewPeopleLevelBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "The level was set."
+          },
+          "400": {
+            "description": "The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such thing (resource.not_found).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-permission": "decide-what-roles-see"
       }
     },
     "/api/v1/projects": {
@@ -5963,6 +6746,11 @@
           }
         }
       },
+      "AppliesTo": {
+        "type": "string",
+        "description": "Where a role given to someone counts: the whole organization, only one project, or a project and its sub-projects.",
+        "enum": ["organization", "project", "project-and-sub-projects"]
+      },
       "AuthStatusBody": {
         "type": "object",
         "description": "What the app needs to know before anybody signs in.",
@@ -6057,6 +6845,49 @@
             "type": "integer",
             "format": "int64",
             "description": "The version the person looked at."
+          }
+        }
+      },
+      "CheckAccessBody": {
+        "type": "object",
+        "description": "What a person can do in a place, and why.",
+        "required": ["person", "permissions", "fields", "kinds"],
+        "properties": {
+          "fields": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LevelAnswerBody_Field_FieldLevel"
+            },
+            "description": "Every field of the catalogue."
+          },
+          "kinds": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LevelAnswerBody_PeopleKind_PeopleLevel"
+            },
+            "description": "Every kind of people information."
+          },
+          "permissions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PermissionAnswerBody"
+            },
+            "description": "Every permission that counts here."
+          },
+          "person": {
+            "$ref": "#/components/schemas/PersonRef",
+            "description": "The person who was checked, as the person who asks may see them."
+          },
+          "project": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/KeyProjectRef",
+                "description": "The project that was checked, or `null` for the whole organization."
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         }
       },
@@ -6242,6 +7073,33 @@
           "server.internal"
         ]
       },
+      "Field": {
+        "type": "string",
+        "description": "A built-in field of the field catalogue, by its key.",
+        "enum": [
+          "title",
+          "description",
+          "status",
+          "priority",
+          "assigned-to",
+          "reported-by",
+          "due-date",
+          "labels",
+          "tags",
+          "planned-for-release",
+          "found-in-release",
+          "estimated-time",
+          "time-left",
+          "time-spent",
+          "activity",
+          "cost-center"
+        ]
+      },
+      "FieldLevel": {
+        "type": "string",
+        "description": "What a role may do with a field: it is hidden, it can be seen, or it can be changed.",
+        "enum": ["hidden", "can-see", "can-change"]
+      },
       "FieldLevelChangeBody": {
         "type": "object",
         "description": "A level of a field that the move changes for the person.",
@@ -6265,6 +7123,21 @@
         "type": "string",
         "description": "What kind of text a text setting holds.",
         "enum": ["free", "choice", "time_zone", "page_address", "shortcut_keys"]
+      },
+      "GroupRefBody": {
+        "type": "object",
+        "description": "A group named in a reason.",
+        "required": ["id", "name"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The ID of the group."
+          },
+          "name": {
+            "type": "string",
+            "description": "What the group is called."
+          }
+        }
       },
       "InvitationBody": {
         "type": "object",
@@ -6366,10 +7239,395 @@
         "description": "The type of a setting.",
         "enum": ["bool", "integer", "text"]
       },
+      "LevelAnswerBody_Field_FieldLevel": {
+        "type": "object",
+        "description": "A field or a kind with its level and what each role says.",
+        "required": ["subject", "level", "roles", "capped_by_key"],
+        "properties": {
+          "capped_by_key": {
+            "type": "boolean",
+            "description": "An access key lowered the level to *Can see*."
+          },
+          "level": {
+            "type": "string",
+            "description": "What a role may do with a field: it is hidden, it can be seen, or it can be changed.",
+            "enum": ["hidden", "can-see", "can-change"]
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RoleSaysBody_FieldLevel"
+            },
+            "description": "What each role that counts says."
+          },
+          "subject": {
+            "type": "string",
+            "description": "A built-in field of the field catalogue, by its key.",
+            "enum": [
+              "title",
+              "description",
+              "status",
+              "priority",
+              "assigned-to",
+              "reported-by",
+              "due-date",
+              "labels",
+              "tags",
+              "planned-for-release",
+              "found-in-release",
+              "estimated-time",
+              "time-left",
+              "time-spent",
+              "activity",
+              "cost-center"
+            ]
+          }
+        }
+      },
+      "LevelAnswerBody_PeopleKind_PeopleLevel": {
+        "type": "object",
+        "description": "A field or a kind with its level and what each role says.",
+        "required": ["subject", "level", "roles", "capped_by_key"],
+        "properties": {
+          "capped_by_key": {
+            "type": "boolean",
+            "description": "An access key lowered the level to *Can see*."
+          },
+          "level": {
+            "type": "string",
+            "description": "How people of one kind are shown: by name, by their role only, or hidden.",
+            "enum": ["hidden", "role-only", "names"]
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RoleSaysBody_PeopleLevel"
+            },
+            "description": "What each role that counts says."
+          },
+          "subject": {
+            "type": "string",
+            "description": "A kind of people information, by its key.",
+            "enum": [
+              "assigned-to",
+              "reported-by",
+              "last-changed-by",
+              "authors",
+              "editing",
+              "followers",
+              "time-entries",
+              "mentions",
+              "pictures",
+              "project-members"
+            ]
+          }
+        }
+      },
       "LevelBody": {
         "type": "string",
         "description": "Where a setting can be set.",
         "enum": ["organization", "project", "person"]
+      },
+      "LevelCellBody_FieldLevel": {
+        "type": "object",
+        "description": "The level of one role.",
+        "required": ["role", "level", "origin"],
+        "properties": {
+          "level": {
+            "type": "string",
+            "description": "What a role may do with a field: it is hidden, it can be seen, or it can be changed.",
+            "enum": ["hidden", "can-see", "can-change"]
+          },
+          "origin": {
+            "$ref": "#/components/schemas/LevelOriginBody",
+            "description": "Where it was set."
+          },
+          "role": {
+            "type": "string",
+            "description": "The ID of the role."
+          }
+        }
+      },
+      "LevelCellBody_PeopleLevel": {
+        "type": "object",
+        "description": "The level of one role.",
+        "required": ["role", "level", "origin"],
+        "properties": {
+          "level": {
+            "type": "string",
+            "description": "How people of one kind are shown: by name, by their role only, or hidden.",
+            "enum": ["hidden", "role-only", "names"]
+          },
+          "origin": {
+            "$ref": "#/components/schemas/LevelOriginBody",
+            "description": "Where it was set."
+          },
+          "role": {
+            "type": "string",
+            "description": "The ID of the role."
+          }
+        }
+      },
+      "LevelOriginBody": {
+        "oneOf": [
+          {
+            "type": "object",
+            "description": "For the project itself.",
+            "required": ["kind"],
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": ["set_here"]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "description": "For a project above, which this project and its sub-projects inherit.",
+            "required": ["from", "kind"],
+            "properties": {
+              "from": {
+                "$ref": "#/components/schemas/KeyProjectRef",
+                "description": "The project above, or *a project you can't see*."
+              },
+              "kind": {
+                "type": "string",
+                "enum": ["inherited"]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "description": "The role's own level, for the whole organization.",
+            "required": ["kind"],
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": ["role_own"]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "description": "Nothing is set: closed.",
+            "required": ["kind"],
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": ["unset"]
+              }
+            }
+          }
+        ],
+        "description": "Where the level of a cell was set."
+      },
+      "LevelPlaceBody": {
+        "oneOf": [
+          {
+            "type": "object",
+            "description": "For a project (the place or the nearest parent that set one).",
+            "required": ["project", "kind"],
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": ["project"]
+              },
+              "project": {
+                "$ref": "#/components/schemas/KeyProjectRef",
+                "description": "The project, or *a project you can't see*."
+              }
+            }
+          },
+          {
+            "type": "object",
+            "description": "The role's own level, for the whole organization.",
+            "required": ["kind"],
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": ["role_own"]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "description": "Nothing is set: closed.",
+            "required": ["kind"],
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": ["unset"]
+              }
+            }
+          }
+        ],
+        "description": "Where the level a role says was set."
+      },
+      "LevelRowBody_Field_FieldLevel": {
+        "type": "object",
+        "description": "A field or a kind of people information with the level of every role.",
+        "required": ["subject", "yours", "cells"],
+        "properties": {
+          "cells": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LevelCellBody_FieldLevel"
+            },
+            "description": "One cell for each role, in the order of `roles`."
+          },
+          "subject": {
+            "type": "string",
+            "description": "A built-in field of the field catalogue, by its key.",
+            "enum": [
+              "title",
+              "description",
+              "status",
+              "priority",
+              "assigned-to",
+              "reported-by",
+              "due-date",
+              "labels",
+              "tags",
+              "planned-for-release",
+              "found-in-release",
+              "estimated-time",
+              "time-left",
+              "time-spent",
+              "activity",
+              "cost-center"
+            ]
+          },
+          "yours": {
+            "type": "string",
+            "description": "What a role may do with a field: it is hidden, it can be seen, or it can be changed.",
+            "enum": ["hidden", "can-see", "can-change"]
+          }
+        }
+      },
+      "LevelRowBody_PeopleKind_PeopleLevel": {
+        "type": "object",
+        "description": "A field or a kind of people information with the level of every role.",
+        "required": ["subject", "yours", "cells"],
+        "properties": {
+          "cells": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LevelCellBody_PeopleLevel"
+            },
+            "description": "One cell for each role, in the order of `roles`."
+          },
+          "subject": {
+            "type": "string",
+            "description": "A kind of people information, by its key.",
+            "enum": [
+              "assigned-to",
+              "reported-by",
+              "last-changed-by",
+              "authors",
+              "editing",
+              "followers",
+              "time-entries",
+              "mentions",
+              "pictures",
+              "project-members"
+            ]
+          },
+          "yours": {
+            "type": "string",
+            "description": "How people of one kind are shown: by name, by their role only, or hidden.",
+            "enum": ["hidden", "role-only", "names"]
+          }
+        }
+      },
+      "LevelTableBody_Field_FieldLevel": {
+        "type": "object",
+        "description": "What each role sees, for one place.",
+        "required": ["roles", "truncated", "levels", "rows"],
+        "properties": {
+          "levels": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "description": "What a role may do with a field: it is hidden, it can be seen, or it can be changed.",
+              "enum": ["hidden", "can-see", "can-change"]
+            },
+            "description": "The levels a cell can be set to, the lowest first."
+          },
+          "project": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/KeyProjectRef",
+                "description": "The project, or `null` for the whole organization."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RoleRefBody"
+            },
+            "description": "The roles, in the order of roles: the columns."
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LevelRowBody_Field_FieldLevel"
+            },
+            "description": "The fields or kinds, in the order of their catalogue: the rows."
+          },
+          "truncated": {
+            "type": "boolean",
+            "description": "There are more roles than the table holds; the first ones are shown."
+          }
+        }
+      },
+      "LevelTableBody_PeopleKind_PeopleLevel": {
+        "type": "object",
+        "description": "What each role sees, for one place.",
+        "required": ["roles", "truncated", "levels", "rows"],
+        "properties": {
+          "levels": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "description": "How people of one kind are shown: by name, by their role only, or hidden.",
+              "enum": ["hidden", "role-only", "names"]
+            },
+            "description": "The levels a cell can be set to, the lowest first."
+          },
+          "project": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/KeyProjectRef",
+                "description": "The project, or `null` for the whole organization."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RoleRefBody"
+            },
+            "description": "The roles, in the order of roles: the columns."
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LevelRowBody_PeopleKind_PeopleLevel"
+            },
+            "description": "The fields or kinds, in the order of their catalogue: the rows."
+          },
+          "truncated": {
+            "type": "boolean",
+            "description": "There are more roles than the table holds; the first ones are shown."
+          }
+        }
       },
       "LiftBody": {
         "type": "object",
@@ -6570,6 +7828,40 @@
         "description": "Where a person may move a project to.",
         "enum": ["nowhere", "into-projects", "into-projects-or-top"]
       },
+      "NewFieldLevelBody": {
+        "type": "object",
+        "description": "The level to set, or `null` to take away what the project set for the role, so the level\nfrom above counts again.",
+        "properties": {
+          "level": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/FieldLevel",
+                "description": "One of the `levels` of the table, or `null` (only for a project)."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "NewPeopleLevelBody": {
+        "type": "object",
+        "description": "The level to set, or `null` to take away what the project set for the role, so the level\nfrom above counts again.",
+        "properties": {
+          "level": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/PeopleLevel",
+                "description": "One of the `levels` of the table, or `null` (only for a project)."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
       "NewProjectBody": {
         "type": "object",
         "description": "A project to make.",
@@ -6698,6 +7990,86 @@
                   "description": "The ID of the invitation."
                 }
               }
+            },
+            "description": "The items of this page."
+          },
+          "next_cursor": {
+            "type": ["string", "null"],
+            "description": "The cursor of the next page; `null` on the last page."
+          }
+        }
+      },
+      "Page_PersonRef": {
+        "type": "object",
+        "description": "One page of a list. `T` is the view of an item for the API description; an answer holds the\nitems cut to the chosen fields ([`Page::of_authorized`]).",
+        "required": ["items", "next_cursor"],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "By name, with the ID for links.",
+                  "required": ["id", "name", "shown"],
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "description": "The ID of the person."
+                    },
+                    "name": {
+                      "type": "string",
+                      "description": "The name."
+                    },
+                    "shown": {
+                      "type": "string",
+                      "enum": ["name"]
+                    }
+                  }
+                },
+                {
+                  "type": "object",
+                  "description": "By the label of their role; the screen says \"a {role}\". No ID.",
+                  "required": ["role", "shown"],
+                  "properties": {
+                    "role": {
+                      "type": "string",
+                      "description": "The name of the role."
+                    },
+                    "shown": {
+                      "type": "string",
+                      "enum": ["role"]
+                    }
+                  }
+                },
+                {
+                  "type": "object",
+                  "description": "As *Someone*. Nothing else.",
+                  "required": ["shown"],
+                  "properties": {
+                    "shown": {
+                      "type": "string",
+                      "enum": ["someone"]
+                    }
+                  }
+                },
+                {
+                  "type": "object",
+                  "description": "A removed person: the screen says \"Former user {label}\". No ID.",
+                  "required": ["label", "shown"],
+                  "properties": {
+                    "label": {
+                      "type": "string",
+                      "description": "The random code, like `K7Q2`."
+                    },
+                    "shown": {
+                      "type": "string",
+                      "enum": ["former"]
+                    }
+                  }
+                }
+              ],
+              "description": "How a person is shown to one viewer."
             },
             "description": "The items of this page."
           },
@@ -6852,6 +8224,27 @@
           }
         }
       },
+      "PeopleKind": {
+        "type": "string",
+        "description": "A kind of people information, by its key.",
+        "enum": [
+          "assigned-to",
+          "reported-by",
+          "last-changed-by",
+          "authors",
+          "editing",
+          "followers",
+          "time-entries",
+          "mentions",
+          "pictures",
+          "project-members"
+        ]
+      },
+      "PeopleLevel": {
+        "type": "string",
+        "description": "How people of one kind are shown: by name, by their role only, or hidden.",
+        "enum": ["hidden", "role-only", "names"]
+      },
       "PeopleLevelChangeBody": {
         "type": "object",
         "description": "A level of a kind of people information that the move changes for the person.",
@@ -6890,6 +8283,32 @@
           "change-organization-settings",
           "see-status"
         ]
+      },
+      "PermissionAnswerBody": {
+        "type": "object",
+        "description": "One permission with *yes* or *no* and the reasons.",
+        "required": ["permission", "topic", "allowed", "reasons"],
+        "properties": {
+          "allowed": {
+            "type": "boolean",
+            "description": "Whether the person has it here."
+          },
+          "permission": {
+            "$ref": "#/components/schemas/Permission",
+            "description": "The key of the permission; its sentence is the message `permission.<key>`."
+          },
+          "reasons": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReasonBody"
+            },
+            "description": "Why."
+          },
+          "topic": {
+            "$ref": "#/components/schemas/Topic",
+            "description": "What the permission is about; the topic is the message `permission-topic.<topic>`."
+          }
+        }
       },
       "PermissionChoiceBody": {
         "type": "object",
@@ -7261,6 +8680,248 @@
         "type": "string",
         "description": "Whether the owner may know the project.",
         "enum": ["visible", "hidden"]
+      },
+      "ReasonBody": {
+        "oneOf": [
+          {
+            "type": "object",
+            "description": "The role of a row gives it.",
+            "required": ["row", "role", "kind"],
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": ["given_by_role"]
+              },
+              "role": {
+                "$ref": "#/components/schemas/RoleRefBody",
+                "description": "The role."
+              },
+              "row": {
+                "$ref": "#/components/schemas/ReasonRowBody",
+                "description": "The row."
+              }
+            }
+          },
+          {
+            "type": "object",
+            "description": "*Decide who has which role* is kept from a row that *No access* removed.",
+            "required": ["row", "role", "no_access", "kind"],
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": ["kept_from_removed_row"]
+              },
+              "no_access": {
+                "$ref": "#/components/schemas/ReasonRowBody",
+                "description": "The *No access* that decided."
+              },
+              "role": {
+                "$ref": "#/components/schemas/RoleRefBody",
+                "description": "Its role."
+              },
+              "row": {
+                "$ref": "#/components/schemas/ReasonRowBody",
+                "description": "The row."
+              }
+            }
+          },
+          {
+            "type": "object",
+            "description": "The role of a row has it, but *No access* removed the role.",
+            "required": ["row", "role", "no_access", "kind"],
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": ["removed_by_no_access"]
+              },
+              "no_access": {
+                "$ref": "#/components/schemas/ReasonRowBody",
+                "description": "The *No access* that decided."
+              },
+              "role": {
+                "$ref": "#/components/schemas/RoleRefBody",
+                "description": "Its role."
+              },
+              "row": {
+                "$ref": "#/components/schemas/ReasonRowBody",
+                "description": "The row."
+              }
+            }
+          },
+          {
+            "type": "object",
+            "description": "The role has it, but it counts only for the whole organization.",
+            "required": ["row", "role", "kind"],
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": ["counts_only_for_the_organization"]
+              },
+              "role": {
+                "$ref": "#/components/schemas/RoleRefBody",
+                "description": "The role."
+              },
+              "row": {
+                "$ref": "#/components/schemas/ReasonRowBody",
+                "description": "The row."
+              }
+            }
+          },
+          {
+            "type": "object",
+            "description": "The access key does not keep it.",
+            "required": ["kind"],
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": ["narrowed_by_key"]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "description": "The access key does not count here.",
+            "required": ["kind"],
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": ["outside_key_projects"]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "description": "No role gives it.",
+            "required": ["kind"],
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": ["no_role_gives_it"]
+              }
+            }
+          }
+        ],
+        "description": "Why a permission is given or not."
+      },
+      "ReasonRowBody": {
+        "type": "object",
+        "description": "One row of *Who has which role* that played a part.",
+        "required": ["assignment", "who", "applies_to", "inherited"],
+        "properties": {
+          "applies_to": {
+            "$ref": "#/components/schemas/AppliesTo",
+            "description": "Where it counts."
+          },
+          "assignment": {
+            "type": "string",
+            "description": "The ID of the row."
+          },
+          "inherited": {
+            "type": "boolean",
+            "description": "Whether it comes from above the place that was checked."
+          },
+          "project": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/KeyProjectRef",
+                "description": "The project it is on, or `null` for the whole organization; *a project you can't see* when\nthe person who asks may not know it."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "who": {
+            "$ref": "#/components/schemas/ReasonWhoBody",
+            "description": "Whom it is for."
+          }
+        }
+      },
+      "ReasonWhoBody": {
+        "oneOf": [
+          {
+            "type": "object",
+            "description": "The person who is checked.",
+            "required": ["kind"],
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": ["person"]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "description": "A group of theirs.",
+            "required": ["group", "kind"],
+            "properties": {
+              "group": {
+                "$ref": "#/components/schemas/GroupRefBody",
+                "description": "The group."
+              },
+              "kind": {
+                "type": "string",
+                "enum": ["group"]
+              }
+            }
+          }
+        ],
+        "description": "Whom a row of *Who has which role* was for."
+      },
+      "RoleRefBody": {
+        "type": "object",
+        "description": "A role as a column of the table.",
+        "required": ["id", "name"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The ID of the role."
+          },
+          "name": {
+            "type": "string",
+            "description": "What the role is called."
+          }
+        }
+      },
+      "RoleSaysBody_FieldLevel": {
+        "type": "object",
+        "description": "What one role says about a field or a kind.",
+        "required": ["role", "level", "set"],
+        "properties": {
+          "level": {
+            "type": "string",
+            "description": "What a role may do with a field: it is hidden, it can be seen, or it can be changed.",
+            "enum": ["hidden", "can-see", "can-change"]
+          },
+          "role": {
+            "$ref": "#/components/schemas/RoleRefBody",
+            "description": "The role."
+          },
+          "set": {
+            "$ref": "#/components/schemas/LevelPlaceBody",
+            "description": "Where it was set."
+          }
+        }
+      },
+      "RoleSaysBody_PeopleLevel": {
+        "type": "object",
+        "description": "What one role says about a field or a kind.",
+        "required": ["role", "level", "set"],
+        "properties": {
+          "level": {
+            "type": "string",
+            "description": "How people of one kind are shown: by name, by their role only, or hidden.",
+            "enum": ["hidden", "role-only", "names"]
+          },
+          "role": {
+            "$ref": "#/components/schemas/RoleRefBody",
+            "description": "The role."
+          },
+          "set": {
+            "$ref": "#/components/schemas/LevelPlaceBody",
+            "description": "Where it was set."
+          }
+        }
       },
       "SecondStepBody": {
         "type": "object",
@@ -7855,6 +9516,10 @@
     {
       "name": "settings",
       "description": "Settings in layers: the organization's, a project's and a person's own."
+    },
+    {
+      "name": "access",
+      "description": "What roles see (field permissions, who sees people) and what a person can do and why (check access)."
     }
   ]
 }

@@ -1,25 +1,12 @@
 import type { Schema } from "@bugaboo/api-client";
 import { isMessageKey, t } from "@bugaboo/messages";
 
+import { personName } from "../../shared/person.ts";
+
 import type { Preview } from "./use-projects.ts";
 
-type Person = Schema<"PersonRef">;
 type Change = Preview["people"][number]["projects"][number];
 type Word = Schema<"WordBody">;
-
-/** How a person is named in a sentence: by name, by their role, or as *Someone*. */
-function personName(person: Person): string {
-  if (person.shown === "name") {
-    return person.name;
-  }
-  if (person.shown === "role") {
-    return t("projects.person-role", { role: person.role });
-  }
-  if (person.shown === "former") {
-    return t("projects.person-former", { label: person.label });
-  }
-  return t("projects.person-someone");
-}
 
 /** The text of a message the server named, or the word itself for a message this app lacks. */
 function say(key: string, fallback: string): string {

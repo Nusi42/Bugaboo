@@ -94,6 +94,8 @@ async fn perf_03_every_get_answers_an_etag_and_304_on_a_match() -> Outcome {
             )
             .await?;
         assert_eq!(made.status, StatusCode::OK);
+        let me = ada.send("GET", "/api/v1/auth/me", None).await?;
+        let person = me.body["id"].as_str().ok_or("no id")?.to_owned();
         let routes = get_routes()?;
         assert!(routes.len() >= 9, "{routes:?}");
         let (mut kept, mut never_stored) = (0, 0);
@@ -102,6 +104,7 @@ async fn perf_03_every_get_answers_an_etag_and_304_on_a_match() -> Outcome {
             // new route is never left out of this test.
             let filled = template
                 .replace("{role_id}", &role.id.to_string())
+                .replace("{person}", &person)
                 .replace("{project}", "EXAMPLE");
             let path = &filled;
             assert!(

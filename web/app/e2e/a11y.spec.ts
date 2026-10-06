@@ -1,7 +1,12 @@
 import { t } from "@bugaboo/messages";
 import { type Page } from "@playwright/test";
 
-import { paths, projectAddress, projectSettingsAddress } from "../src/shared/paths.ts";
+import {
+  paths,
+  projectAddress,
+  projectPageAddress,
+  projectSettingsAddress,
+} from "../src/shared/paths.ts";
 import { ada, addCodeApp, bob, invite, makeAdmin, makePerson } from "./support/accounts.ts";
 import {
   expectGoodInEveryLook,
@@ -111,10 +116,28 @@ const visits: readonly Visit[] = [
   { address: paths.themes, open: signedIn(paths.themes), guest: false },
   { address: paths.status, open: signedIn(paths.status), guest: false },
   { address: paths.projects, open: signedIn(paths.projects), guest: false },
+  { address: paths.fieldPermissions, open: signedIn(paths.fieldPermissions), guest: false },
+  { address: paths.peopleVisibility, open: signedIn(paths.peopleVisibility), guest: false },
+  { address: paths.checkAccess, open: signedIn(paths.checkAccess), guest: false },
   { address: paths.project, open: signedIn(projectAddress("WEB")), guest: false },
   {
     address: paths.projectSettings,
     open: signedIn(projectSettingsAddress("WEB")),
+    guest: false,
+  },
+  {
+    address: paths.projectFields,
+    open: signedIn(projectPageAddress(paths.projectFields, "WEB")),
+    guest: false,
+  },
+  {
+    address: paths.projectPeople,
+    open: signedIn(projectPageAddress(paths.projectPeople, "WEB")),
+    guest: false,
+  },
+  {
+    address: paths.projectCheckAccess,
+    open: signedIn(projectPageAddress(paths.projectCheckAccess, "WEB")),
     guest: false,
   },
   { address: paths.frames, open: signedIn(paths.frames), guest: false },

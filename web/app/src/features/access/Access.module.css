@@ -1,0 +1,278 @@
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.intro {
+  margin: 0;
+  color: var(--fg-muted);
+  font-size: var(--fs-base);
+  line-height: 1.4;
+}
+
+.muted {
+  margin: 0;
+  color: var(--fg-muted);
+  font-size: var(--fs-base);
+  line-height: 1.4;
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+/* The matrix: a table of roles by fields that scrolls by itself when the roles do not fit. */
+.scroll {
+  /* The names of the lists that only screen readers read are positioned boxes: this keeps them in the region. */
+  position: relative;
+  overflow-x: auto;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--r-ctl);
+  background: var(--bg-surface);
+}
+
+.scroll:focus-visible {
+  outline: var(--ring-width) solid var(--accent);
+  outline-offset: 0;
+}
+
+.matrix {
+  border-collapse: separate;
+  border-spacing: 0;
+  width: 100%;
+}
+
+.matrix th,
+.matrix td {
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--border-subtle);
+  text-align: start;
+  vertical-align: top;
+}
+
+.matrix thead th {
+  position: sticky;
+  top: 0;
+  background: var(--bg-sunken);
+  color: var(--fg);
+  font-weight: 700;
+  min-width: calc(var(--size-target) * 3);
+}
+
+.matrix tbody th {
+  position: sticky;
+  inset-inline-start: 0;
+  background: var(--bg-surface);
+  color: var(--fg);
+  font-weight: 700;
+  min-width: calc(var(--size-target) * 3);
+}
+
+.matrix thead th:first-child {
+  inset-inline-start: 0;
+  z-index: 1;
+}
+
+.matrix tr:last-child th,
+.matrix tr:last-child td {
+  border-bottom: 0;
+}
+
+/* One role as a list, on a phone and on a tablet. */
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.listItem {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--r-ctl);
+  background: var(--bg-surface);
+  min-width: 0;
+}
+
+.cell {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.cell > div {
+  width: 100%;
+}
+
+.preview {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--r-ctl);
+  background: var(--bg-sunken);
+}
+
+.previewHeading {
+  margin: 0;
+  font-size: var(--fs-md);
+  font-weight: 700;
+  color: var(--fg);
+}
+
+.previewLines {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.previewLine {
+  font-size: var(--fs-md);
+  color: var(--fg);
+}
+
+.nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Check access. */
+.options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.option {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: var(--size-target);
+  padding: var(--space-1) var(--space-3);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--r-ctl);
+  background: var(--bg-surface);
+  cursor: pointer;
+}
+
+.option input {
+  flex: none;
+}
+
+.optionName {
+  font-weight: 700;
+  color: var(--fg);
+  overflow-wrap: anywhere;
+}
+
+.optionHint {
+  color: var(--fg-muted);
+  font-size: var(--fs-sm);
+}
+
+.fieldset {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.legend {
+  padding: 0;
+  font-size: var(--fs-md);
+  font-weight: 700;
+  color: var(--fg);
+}
+
+.answers {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.answer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-3);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--r-ctl);
+  background: var(--bg-surface);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.answerHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-1) var(--space-3);
+}
+
+.answerName {
+  margin: 0;
+  font-size: var(--fs-md);
+  font-weight: 700;
+  color: var(--fg);
+}
+
+.verdict {
+  font-weight: 700;
+  color: var(--fg);
+}
+
+.verdictYes,
+.verdictNo {
+  margin-inline-end: var(--space-1);
+}
+
+.verdictYes {
+  color: var(--success);
+}
+
+.verdictNo {
+  color: var(--danger);
+}
+
+.reasons {
+  margin: 0;
+  color: var(--fg);
+  font-size: var(--fs-base);
+  line-height: 1.5;
+}
+
+.topic {
+  margin: 0;
+  font-size: var(--fs-md);
+  font-weight: 700;
+  color: var(--fg);
+}

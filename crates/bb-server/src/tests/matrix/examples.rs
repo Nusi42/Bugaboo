@@ -30,6 +30,10 @@ pub(super) enum Quirk {
     /// The route lists what the actor may see: a person without the permission is not refused but
     /// gets what they see, which may be nothing (M2-F30). Only the routes named here may do that.
     FiltersWhatIsSeen,
+    /// The route is about the target project through its query (`?project=`) and not through its
+    /// address: it counts what the actor holds in that project, and a project the actor may not
+    /// know about is `resource.not_found`, like one in the address.
+    AtTheTargetProject,
     /// The call ends the session of whoever makes it, so they sign in again afterwards.
     EndsTheSession,
     /// The route names a thing that is not there (a passkey nobody added), so a person who is let
@@ -178,6 +182,12 @@ pub(super) const EXAMPLES: &[Example] = &[
     Example::with("listMySettings", &[Quirk::KeysActAsThePerson]),
     Example::with("changeMySetting", &[Quirk::KeysActAsThePerson]),
     Example::with("resetMySetting", &[Quirk::KeysActAsThePerson]),
+    Example::with("getFieldPermissions", &[Quirk::AtTheTargetProject]),
+    Example::with("changeFieldPermission", &[Quirk::AtTheTargetProject]),
+    Example::with("getPeopleVisibility", &[Quirk::AtTheTargetProject]),
+    Example::with("changePeopleVisibility", &[Quirk::AtTheTargetProject]),
+    Example::with("checkAccess", &[Quirk::AtTheTargetProject]),
+    Example::with("listPeopleToCheck", &[Quirk::AtTheTargetProject]),
 ];
 
 /// An ID that no invitation, session, passkey or access key has (the random kind: a time-ordered
@@ -472,6 +482,46 @@ fn project_request(fixture: &Fixture<'_>, operation: &str) -> Result<Option<Requ
             "POST",
             format!("/api/v1/projects/{target}/move"),
             Some(json!({"to": sibling, "preview": "not a preview"})),
+        ),
+        // What roles see, and what a person can do and why: in the target project.
+        "getFieldPermissions" => (
+            "GET",
+            format!("/api/v1/field-permissions?project={target}"),
+            None,
+        ),
+        "changeFieldPermission" => (
+            "PUT",
+            format!(
+                "/api/v1/field-permissions/{}/cost-center?project={target}",
+                fixture.a_role()?
+            ),
+            Some(json!({"level": "hidden"})),
+        ),
+        "getPeopleVisibility" => (
+            "GET",
+            format!("/api/v1/people-visibility?project={target}"),
+            None,
+        ),
+        "changePeopleVisibility" => (
+            "PUT",
+            format!(
+                "/api/v1/people-visibility/{}/followers?project={target}",
+                fixture.a_role()?
+            ),
+            Some(json!({"level": "hidden"})),
+        ),
+        "checkAccess" => (
+            "GET",
+            format!(
+                "/api/v1/check-access/people/{}?project={target}",
+                fixture.a_person()
+            ),
+            None,
+        ),
+        "listPeopleToCheck" => (
+            "GET",
+            format!("/api/v1/check-access/people?project={target}"),
+            None,
         ),
         _ => return Ok(None),
     }))

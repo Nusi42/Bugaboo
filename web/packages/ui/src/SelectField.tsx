@@ -1,4 +1,5 @@
 import { useId, useRef } from "react";
+import { VisuallyHidden } from "react-aria-components";
 
 import styles from "./Field.module.css";
 import selectStyles from "./SelectField.module.css";
@@ -7,6 +8,8 @@ export interface SelectChoice<Value extends string> {
   readonly value: Value;
   /** The visible name of the choice, already in the person's language. */
   readonly label: string;
+  /** The choice is shown but cannot be picked. */
+  readonly disabled?: boolean;
 }
 
 export interface SelectFieldProps<Value extends string> {
@@ -14,6 +17,12 @@ export interface SelectFieldProps<Value extends string> {
   readonly label: string;
   /** Help under the name. */
   readonly description?: string;
+  /**
+   * The name is there for screen readers and voice control only, for a list of many fields that
+   * each stand next to what they are about (a table of levels). Never the way to save room when
+   * the name matters to everybody.
+   */
+  readonly hideLabel?: boolean;
   readonly choices: readonly SelectChoice<Value>[];
   readonly value: Value;
   readonly onChange: (value: Value) => void;
@@ -27,6 +36,7 @@ export interface SelectFieldProps<Value extends string> {
 export function SelectField<Value extends string>({
   label,
   description,
+  hideLabel = false,
   choices,
   value,
   onChange,
@@ -37,7 +47,7 @@ export function SelectField<Value extends string>({
   return (
     <div className={styles.field}>
       <label className={styles.label} htmlFor={id}>
-        {label}
+        {hideLabel ? <VisuallyHidden>{label}</VisuallyHidden> : label}
       </label>
       {description === undefined ? null : (
         <span id={helpId} className={styles.description}>
@@ -58,7 +68,7 @@ export function SelectField<Value extends string>({
         }}
       >
         {choices.map((choice) => (
-          <option key={choice.value} value={choice.value}>
+          <option key={choice.value} value={choice.value} disabled={choice.disabled === true}>
             {choice.label}
           </option>
         ))}

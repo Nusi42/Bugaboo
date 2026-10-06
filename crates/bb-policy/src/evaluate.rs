@@ -389,8 +389,10 @@ fn chain_depth(chain: &[ProjectId], project: ProjectId) -> Option<usize> {
 }
 
 /// The nearest rule of a role: the project of the chain closest to the place that has one, else
-/// the role's own.
-fn nearest<R: Copy>(
+/// the role's own. The one walk of steps 7 and 8, also read
+/// by the tables of what roles see.
+#[must_use]
+pub fn nearest_rule<R: Copy>(
     chain: &[ProjectId],
     rules: impl Iterator<Item = (Option<ProjectId>, R)>,
 ) -> Option<(LevelSource, R)> {
@@ -427,8 +429,8 @@ fn field_mask(inputs: &Inputs, held: &[&RoleData]) -> (BTreeMap<Field, FieldLeve
                 .iter()
                 .filter(|rule| rule.role == role.id && rule.field == field)
                 .map(|rule| (rule.project, rule.level));
-            let (source, level) =
-                nearest(&inputs.chain, rules).unwrap_or((LevelSource::Unset, FieldLevel::Hidden));
+            let (source, level) = nearest_rule(&inputs.chain, rules)
+                .unwrap_or((LevelSource::Unset, FieldLevel::Hidden));
             highest = highest.max(level);
             per_role.push(RoleLevel {
                 role: role.id,
@@ -458,8 +460,8 @@ fn people_levels(
                 .iter()
                 .filter(|rule| rule.role == role.id && rule.kind == kind)
                 .map(|rule| (rule.project, rule.level));
-            let (source, level) =
-                nearest(&inputs.chain, rules).unwrap_or((LevelSource::Unset, PeopleLevel::Hidden));
+            let (source, level) = nearest_rule(&inputs.chain, rules)
+                .unwrap_or((LevelSource::Unset, PeopleLevel::Hidden));
             highest = highest.max(level);
             per_role.push(RoleLevel {
                 role: role.id,

@@ -17,17 +17,20 @@ pub(crate) const OUTPUT: &str = "web/packages/messages/src/generated.ts";
 /// The areas (first part of a key) that the browser shows: an allow-list, so a new area ships to the
 /// browser only when it is added here (M1-F12). A key outside these areas is for the server and its
 /// command line. A `t("…")` of the app with a key from another area is a type error.
-const BROWSER_AREAS: [&str; 45] = [
+const BROWSER_AREAS: [&str; 50] = [
+    "access",
     "access-keys",
     "app",
     "appearance",
     "backup",
+    "check-access",
     "code-app",
     "common",
     "data-folder",
     "error",
     "field",
     "field-level",
+    "field-permissions",
     "first-run",
     "focus",
     "frames",
@@ -42,6 +45,7 @@ const BROWSER_AREAS: [&str; 45] = [
     "passkeys",
     "people-kind",
     "people-level",
+    "people-visibility",
     "permission",
     "permission-topic",
     "projects",
@@ -60,6 +64,7 @@ const BROWSER_AREAS: [&str; 45] = [
     "sign-in",
     "sign-up",
     "sign-up-policy",
+    "starting-role",
     "status",
     "theme",
     "validation",

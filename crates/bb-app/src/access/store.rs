@@ -15,7 +15,7 @@ use bb_core::id::{AssignmentId, GroupId, ProjectId, RoleId, UserId};
 use bb_core::people_kinds::PeopleKind;
 use bb_core::project::{Project, ShortName};
 use bb_policy::guards::OrganizationState;
-use bb_policy::{Inputs, Permission, Place};
+use bb_policy::{FieldRule, Inputs, PeopleRule, Permission, Place};
 use jiff::Timestamp;
 
 use crate::ports::ChangeStore;
@@ -28,6 +28,27 @@ pub struct RoleRecord {
     pub role: Role,
     /// What it allows.
     pub permissions: BTreeSet<Permission>,
+}
+
+/// The levels roles have set, for the organization and for the projects from the top down to a
+/// place: what the tables of what roles see are made from, with one read.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct LevelRules {
+    /// The projects from the top down to the place; empty for the organization.
+    pub chain: Vec<ProjectId>,
+    /// The field levels.
+    pub fields: Vec<FieldRule>,
+    /// The levels of the kinds of people information.
+    pub people: Vec<PeopleRule>,
+}
+
+/// A person as a name in a list to choose from: the ID and the name, never the e-mail address.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct PersonName {
+    /// The ID of the person.
+    pub id: UserId,
+    /// The name the person is called.
+    pub display_name: String,
 }
 
 /// What the policy engine and its management use cases need from storage.
@@ -48,6 +69,9 @@ pub trait PolicyStore: ChangeStore + 'static {
         fn roles() -> Vec<RoleRecord>;
         /// One role with its permissions.
         fn role(id: RoleId) -> Option<RoleRecord>;
+        /// Everybody who can sign in, with the name they are called, in no particular order: what
+        /// *Check access* chooses a person from (M2-F91).
+        fn people_names() -> Vec<PersonName>;
         /// Every group, by name.
         fn groups() -> Vec<Group>;
         /// One group.
@@ -67,6 +91,9 @@ pub trait PolicyStore: ChangeStore + 'static {
         fn project_chain(id: ProjectId) -> Option<Vec<ProjectId>>;
         /// The project with this short name.
         fn project_by_short_name(name: &ShortName) -> Option<Project>;
+        /// Every level the roles have set, their own and those for the projects from the top down
+        /// to `project`; `None` when the project does not exist.
+        fn level_rules(roles: Vec<RoleId>, project: Option<ProjectId>) -> Option<LevelRules>;
         /// The levels a role has set for the fields of the catalogue: in a project (`Some`) or its
         /// own (`None`).
         fn field_levels(role: RoleId, project: Option<ProjectId>) -> Vec<(Field, FieldLevel)>;

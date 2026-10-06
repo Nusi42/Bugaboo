@@ -204,6 +204,9 @@ test("ux_01 Organization settings lists the topics that exist, by heading", asyn
   await expect(topics(page, t("nav.organization-settings"))).toHaveText([
     t("nav.invitations"),
     t("nav.sign-in-rules"),
+    t("nav.field-permissions"),
+    t("nav.people-visibility"),
+    t("nav.check-access"),
     t("nav.themes"),
     t("nav.projects"),
     t("nav.status"),

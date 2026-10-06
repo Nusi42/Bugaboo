@@ -19,6 +19,10 @@ use std::pin::Pin;
 
 use bb_policy::Authorized;
 
+use crate::access::{
+    FieldPermissions, FieldPermissionsQuery, PeopleToCheckQuery, PeopleVisibility,
+    PeopleVisibilityQuery, PersonPage, field_permissions, people_to_check, people_visibility,
+};
 use crate::people::{
     AddGroupMember, DeleteGroup, GroupList, GroupMembers, GroupMembersQuery, GroupView,
     GroupsQuery, MakeGroup, RemoveGroupMember, RenameGroup, add_group_member, delete_group,
@@ -215,6 +219,12 @@ use_cases! {
     role_levels(LevelsQuery) -> Authorized<Levels>;
     /// Checks what a person can do in a place, and why.
     check_access(CheckAccessQuery) -> Authorized<AccessAnswer>;
+    /// Lists which level every role has for every field.
+    field_permissions(FieldPermissionsQuery) -> Authorized<FieldPermissions>;
+    /// Lists how every role sees every kind of people information.
+    people_visibility(PeopleVisibilityQuery) -> Authorized<PeopleVisibility>;
+    /// Lists the people *Check access* can choose from.
+    people_to_check(PeopleToCheckQuery) -> Authorized<PersonPage>;
     /// Makes a project.
     make_project(MakeProject) -> Authorized<ProjectView>;
     /// Lists the settings of the organization, of a project or of the person who asks.

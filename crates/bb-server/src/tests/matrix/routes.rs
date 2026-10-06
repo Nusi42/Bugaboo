@@ -117,7 +117,7 @@ pub(super) fn expectation(actor: Actor, route: &Route, example: &Example) -> Exp
             if example.has(Quirk::FiltersWhatIsSeen) {
                 return Expect::Allowed;
             }
-            let at = if route.path.contains("{project}") {
+            let at = if route.path.contains("{project}") || example.has(Quirk::AtTheTargetProject) {
                 Where::Target
             } else {
                 Where::Organization
@@ -189,6 +189,11 @@ impl<'a> Fixture<'a> {
     /// The project of the matrix.
     pub(super) fn project(&self, project: Project) -> ProjectId {
         self.projects[short_name(project)]
+    }
+
+    /// A person of the organization, for the routes that name one: the administrator.
+    pub(super) fn a_person(&self) -> bb_core::id::UserId {
+        self.org.admin.id
     }
 
     /// A role of the organization, for the routes that name one.
