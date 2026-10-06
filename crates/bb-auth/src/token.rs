@@ -11,6 +11,7 @@ use sha2::{Digest as _, Sha256};
 use subtle::ConstantTimeEq as _;
 use zeroize::Zeroizing;
 
+use crate::access_key::looks_like_access_key;
 use crate::error::{AuthError, random};
 
 /// Length of a secret in bytes (256 bits).
@@ -71,7 +72,21 @@ impl SecretToken {
     /// # Errors
     /// Fails when the system gives no secure random bytes.
     pub fn generate() -> Result<Self, AuthError> {
-        Ok(Self(Zeroizing::new(random()?)))
+        Self::generate_from(random)
+    }
+
+    /// A new secret from `fresh` bytes, drawn again while the text would start like an access key
+    /// (`bb_`): a request that carries such a text is taken for a key, so a session or a link that
+    /// starts so would be refused as a key that does not work.
+    fn generate_from(
+        mut fresh: impl FnMut() -> Result<[u8; LENGTH], AuthError>,
+    ) -> Result<Self, AuthError> {
+        loop {
+            let token = Self(Zeroizing::new(fresh()?));
+            if !looks_like_access_key(&token.encode()) {
+                return Ok(token);
+            }
+        }
     }
 
     /// The secret as text for a cookie or a link (base64url, 43 characters).
@@ -127,6 +142,24 @@ pub fn same_digest(a: &Digest, b: &Digest) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn sec_12_a_secret_never_starts_like_an_access_key() {
+        // The first 18 bits of these bytes are the characters `bb_` in base64url.
+        let mut unlucky = [0_u8; LENGTH];
+        unlucky[0] = 0x6D;
+        unlucky[1] = 0xBF;
+        unlucky[2] = 0xC0;
+        assert!(Base64UrlUnpadded::encode_string(&unlucky).starts_with("bb_"));
+        let mut tries = vec![[1_u8; LENGTH], unlucky];
+        let token =
+            SecretToken::generate_from(|| tries.pop().ok_or(AuthError::NoRandomness)).unwrap();
+        assert_eq!(token.bytes(), &[1_u8; LENGTH]);
+        assert!(
+            tries.is_empty(),
+            "the unlucky bytes were drawn and left out"
+        );
+    }
 
     #[test]
     fn adr_0007_a_fixed_record_has_one_id_that_depends_on_its_kind_and_name() {
