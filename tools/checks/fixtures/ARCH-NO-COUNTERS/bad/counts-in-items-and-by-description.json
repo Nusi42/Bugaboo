@@ -1,0 +1,51 @@
+{
+  "paths": {
+    "/api/v1/projects": {
+      "get": {
+        "operationId": "listProjects",
+        "responses": {
+          "200": {
+            "description": "The projects.",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProjectPage" } } }
+          }
+        }
+      }
+    },
+    "/api/v1/roles/{role_id}/second-step-gap": {
+      "get": {
+        "operationId": "getSecondStepGap",
+        "responses": {
+          "200": {
+            "description": "How many have no second step yet.",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Gap" } } }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ProjectPage": {
+        "type": "object",
+        "properties": {
+          "items": { "type": "array", "items": { "$ref": "#/components/schemas/ProjectItem" } },
+          "next_cursor": { "type": ["string", "null"] }
+        }
+      },
+      "ProjectItem": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "member_count": { "type": "integer" },
+          "sub_projects_count": { "type": "integer" }
+        }
+      },
+      "Gap": {
+        "type": "object",
+        "properties": {
+          "still_to_set_up": { "type": "integer", "description": "The people who hold the role and have no second step yet; counted for the viewer." }
+        }
+      }
+    }
+  }
+}

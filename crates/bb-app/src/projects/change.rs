@@ -123,7 +123,7 @@ pub async fn change_project<S: AuthStore>(
 ) -> Result<Authorized<ProjectView>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
     let (access, plan) = ctx.plan_change(&actor, &input).await?;
-    let shown = ctx.shown_to(actor.person.id).await?;
+    let shown = ctx.shown_to(&actor).await?;
     let view = |version: i64| ProjectView {
         id: plan.current.id,
         parent: shown.shown_parent(&plan.current),

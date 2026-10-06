@@ -5924,7 +5924,7 @@
           "default_days": {
             "type": "integer",
             "format": "int64",
-            "description": "How many days a new key lives when the person picks no other date."
+            "description": "The days a new key lives when the person picks no other date."
           },
           "longest_days": {
             "type": "integer",
@@ -7410,7 +7410,7 @@
           "uptime_seconds": {
             "type": "integer",
             "format": "int64",
-            "description": "How many seconds it has been running.",
+            "description": "How long it has been running, in seconds.",
             "minimum": 0
           },
           "version": {

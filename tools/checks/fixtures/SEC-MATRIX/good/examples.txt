@@ -1,0 +1,3 @@
+Example::route("getStatus"),
+Example::with("listProjects", &[Quirk::FiltersWhatIsSeen]),
+Example::route("changeProject"),

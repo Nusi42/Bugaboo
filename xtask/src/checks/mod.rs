@@ -4,6 +4,7 @@
 //! [`Check`] here, and add a failing and a passing example (`bad_example` / `good_example` tests
 //! or `tools/checks/fixtures/<ID>/`).
 
+mod arch_api_out;
 mod arch_authz_only;
 pub(crate) mod arch_db_parity;
 mod arch_deps;
@@ -12,7 +13,9 @@ mod arch_events;
 mod arch_http_edge;
 mod arch_lean;
 mod arch_map_sync;
+mod arch_no_counters;
 mod arch_no_unsafe;
+mod arch_perms;
 mod arch_person_ref;
 pub(crate) mod arch_settings;
 mod arch_sql_edge;
@@ -57,6 +60,7 @@ mod perf_bundle;
 mod plan_trace;
 mod sec_cookies;
 mod sec_headers;
+mod sec_matrix;
 mod sec_secrets;
 mod sty_contrast;
 mod sty_tokens;
@@ -140,6 +144,9 @@ pub(crate) fn registry() -> Vec<Box<dyn Check>> {
         Box::new(arch_sql_edge::ArchSqlEdge),
         Box::new(arch_events::ArchEvents),
         Box::new(arch_authz_only::ArchAuthzOnly),
+        Box::new(arch_perms::ArchPerms),
+        Box::new(arch_api_out::ArchApiOut),
+        Box::new(arch_no_counters::ArchNoCounters),
         Box::new(arch_person_ref::ArchPersonRef),
         Box::new(arch_wasm::ArchWasm),
         Box::new(arch_http_edge::ArchHttpEdge),
@@ -151,6 +158,7 @@ pub(crate) fn registry() -> Vec<Box<dyn Check>> {
         Box::new(data_migrations::DataMigrations),
         Box::new(sec_secrets::SecSecrets),
         Box::new(sec_headers::SecHeaders),
+        Box::new(sec_matrix::SecMatrix),
         Box::new(sec_cookies::SecCookies),
         Box::new(data_logs::DataLogs),
         Box::new(dep_register::DepRegister),

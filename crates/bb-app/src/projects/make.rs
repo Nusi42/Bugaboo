@@ -32,8 +32,15 @@ pub async fn make_project<S: AuthStore>(
                 .await?
         }
         Some(parent) => {
-            ctx.require(&actor, Permission::MakeSubProjects, Place::Project(parent))
-                .await?
+            let access = ctx
+                .require(&actor, Permission::MakeSubProjects, Place::Project(parent))
+                .await?;
+            // A project the person does not see is not there for them, whatever they may make in
+            // it: otherwise making in it would tell them it exists.
+            if !access.sees_project() {
+                return Err(AppError::Refused(ErrorCode::NotFound));
+            }
+            access
         }
     };
     let short_name =

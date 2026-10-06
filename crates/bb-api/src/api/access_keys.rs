@@ -211,7 +211,7 @@ pub(crate) struct PermissionChoiceBody {
 /// How long a new access key lives in this organization, and what a key can be limited to.
 #[derive(Serialize, ToSchema)]
 pub(crate) struct AccessKeyRulesBody {
-    /// How many days a new key lives when the person picks no other date.
+    /// The days a new key lives when the person picks no other date.
     default_days: i64,
     /// The most days a key can live.
     longest_days: i64,

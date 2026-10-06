@@ -1,0 +1,9 @@
+{
+  "paths": {
+    "/api/v1/status": { "get": { "operationId": "getStatus", "x-permission": "public" } },
+    "/api/v1/auth/me": { "get": { "operationId": "getMe", "x-permission": "signed-in" } },
+    "/api/v1/auth/sessions": { "get": { "operationId": "listSessions", "x-permission": "own-account" } },
+    "/api/v1/projects": { "get": { "operationId": "listProjects", "x-permission": "see-projects" } },
+    "/api/v1/roles": { "post": { "operationId": "makeRole", "x-permission": "manage-roles" } }
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "paths": {
+    "/api/v1/projects": { "get": { "operationId": "listProjects", "x-permission": "see-projects" } },
+    "/api/v1/roles": { "post": { "operationId": "makeRole", "x-permission": "manage-roles" } },
+    "/api/v1/everything": { "get": { "operationId": "getEverything", "x-permission": "see-everything" } }
+  }
+}

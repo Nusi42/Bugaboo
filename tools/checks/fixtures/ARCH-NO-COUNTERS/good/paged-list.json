@@ -1,0 +1,35 @@
+{
+  "paths": {
+    "/api/v1/projects": {
+      "get": {
+        "operationId": "listProjects",
+        "responses": {
+          "200": {
+            "description": "The projects.",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProjectPage" } } }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ProjectPage": {
+        "type": "object",
+        "properties": {
+          "items": { "type": "array", "items": { "$ref": "#/components/schemas/ProjectItem" } },
+          "next_cursor": { "type": ["string", "null"] }
+        }
+      },
+      "ProjectItem": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "has_sub_projects": { "type": "boolean", "description": "Whether it holds sub-projects the person sees. A yes or no." },
+          "version": { "type": "integer", "description": "Counts up with every change of this project." }
+        }
+      }
+    }
+  }
+}

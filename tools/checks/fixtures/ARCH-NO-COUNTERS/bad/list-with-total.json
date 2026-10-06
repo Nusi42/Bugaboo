@@ -1,0 +1,27 @@
+{
+  "paths": {
+    "/api/v1/projects": {
+      "get": {
+        "operationId": "listProjects",
+        "responses": {
+          "200": {
+            "description": "The projects.",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProjectPage" } } }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ProjectPage": {
+        "type": "object",
+        "properties": {
+          "items": { "type": "array", "items": { "type": "object", "properties": { "id": { "type": "string" } } } },
+          "next_cursor": { "type": ["string", "null"] },
+          "total": { "type": "integer" }
+        }
+      }
+    }
+  }
+}

@@ -59,3 +59,76 @@ async fn prj_01_a_hidden_project_and_a_missing_one_cost_the_same_reads() -> Outc
     }
     Ok(())
 }
+
+#[tokio::test]
+async fn prj_01_a_person_who_may_only_make_sub_projects_in_a_project_they_cannot_see_finds_it_not_there()
+-> Outcome {
+    use bb_core::access::AppliesTo;
+    use bb_policy::Permission;
+
+    use crate::roles::{AssignRole, Given, MakeRole, Subject, assign_role, make_role};
+
+    let world = World::new().await?;
+    let admin = world.admin.session_token.clone();
+    let secret = make_project(
+        &world.ctx(),
+        MakeProject {
+            session_token: admin.clone(),
+            parent: None,
+            short_name: "SECRET".to_owned(),
+            name: "Secret".to_owned(),
+        },
+    )
+    .await?
+    .into_value();
+    // A role that only lets them make sub-projects, given in the project: it does not let them
+    // see it, so the project is not there for them, as for anybody who does not see it.
+    let only = make_role(
+        &world.ctx(),
+        MakeRole {
+            session_token: admin.clone(),
+            name: "Only sub-projects".to_owned(),
+            permissions: vec![Permission::MakeSubProjects],
+            two_step: false,
+        },
+    )
+    .await?
+    .into_value();
+    let bob = world.person("bob@example.test").await?;
+    assign_role(
+        &world.ctx(),
+        AssignRole {
+            session_token: admin,
+            subject: Subject::Person(bob.person.id),
+            given: Given::Role(only.id),
+            project: Some(secret.id),
+            applies_to: AppliesTo::ProjectAndSubProjects,
+        },
+    )
+    .await?;
+    let make_in = |parent: Option<bb_core::id::ProjectId>, short: &str| MakeProject {
+        session_token: bob.session_token.clone(),
+        parent,
+        short_name: short.to_owned(),
+        name: "Mine".to_owned(),
+    };
+    let hidden = make_project(&world.ctx(), make_in(Some(secret.id), "MINE"))
+        .await
+        .err();
+    let missing = make_project(
+        &world.ctx(),
+        make_in(
+            Some(bb_core::id::ProjectId::from_parts(
+                jiff::Timestamp::UNIX_EPOCH,
+                [7; 10],
+            )?),
+            "MINE",
+        ),
+    )
+    .await
+    .err();
+    let not_found = Some(AppError::Refused(ErrorCode::NotFound));
+    assert_eq!(missing, not_found);
+    assert_eq!(hidden, not_found, "a project they cannot see is not there");
+    Ok(())
+}

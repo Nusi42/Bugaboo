@@ -14,7 +14,11 @@ mod evaluation;
 #[cfg(test)] // Clippy lets tests unwrap only inside test modules (clippy.toml).
 mod guards;
 #[cfg(test)] // Clippy lets tests unwrap only inside test modules (clippy.toml).
+mod keys;
+#[cfg(test)] // Clippy lets tests unwrap only inside test modules (clippy.toml).
 mod masks;
+#[cfg(test)] // Clippy lets tests unwrap only inside test modules (clippy.toml).
+mod matrix;
 #[cfg(test)] // Clippy lets tests unwrap only inside test modules (clippy.toml).
 mod moves;
 #[cfg(test)] // Clippy lets tests unwrap only inside test modules (clippy.toml).

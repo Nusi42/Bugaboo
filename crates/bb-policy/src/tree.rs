@@ -17,6 +17,7 @@ use bb_core::project::DEPTH_MAX;
 use crate::evaluate::{
     Evaluation, FieldRule, Inputs, PeopleRule, Place, RoleData, Row, Who, evaluate,
 };
+use crate::narrowing::Narrowing;
 
 /// The tree of projects: the parent of each project, or `None` at the top level.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
@@ -273,14 +274,49 @@ impl Policy {
         self.evaluate_with(person, &self.rows_of(person), tree, place)
     }
 
+    /// What the actor `person` may do at `place` in `tree`: their own evaluation, narrowed to the
+    /// access key they came with, if they came with one (ADR-0025, decision 8, M2-F27). A key
+    /// never widens anything, so this is the only way to judge what **the actor** may see or do;
+    /// [`Policy::evaluate_at`] is for judging other people (the preview of a move).
+    #[must_use]
+    pub fn evaluate_as(
+        &self,
+        person: UserId,
+        key: Option<&Narrowing>,
+        tree: &Tree,
+        place: Place,
+    ) -> Option<Evaluation> {
+        let held = self.evaluate_at(person, tree, place)?;
+        Some(match key {
+            Some(key) => held.narrowed(key),
+            None => held,
+        })
+    }
+
     /// The projects of the tree that `person` sees, in the order of their IDs.
     #[must_use]
     pub fn visible(&self, person: UserId, tree: &Tree) -> BTreeSet<ProjectId> {
+        self.visible_as(person, None, tree)
+    }
+
+    /// The projects of the tree that the actor `person` sees, narrowed to the access key they came
+    /// with, if any: a key for a project sees that project and what is inside it, nothing above
+    /// it and nothing beside it (M2-F27).
+    #[must_use]
+    pub fn visible_as(
+        &self,
+        person: UserId,
+        key: Option<&Narrowing>,
+        tree: &Tree,
+    ) -> BTreeSet<ProjectId> {
         let rows = self.rows_of(person);
         tree.projects()
             .filter(|project| {
                 self.evaluate_with(person, &rows, tree, Place::Project(*project))
-                    .is_some_and(|found| found.sees_project())
+                    .is_some_and(|found| match key {
+                        Some(key) => found.narrowed(key).sees_project(),
+                        None => found.sees_project(),
+                    })
             })
             .collect()
     }

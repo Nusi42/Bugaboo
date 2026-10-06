@@ -255,7 +255,7 @@ struct ServerStatusBody {
     version: String,
     /// When the server started.
     started_at: String,
-    /// How many seconds it has been running.
+    /// How long it has been running, in seconds.
     uptime_seconds: u64,
     /// The database.
     database: DatabaseBody,

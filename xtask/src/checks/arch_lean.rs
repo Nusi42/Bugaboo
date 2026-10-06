@@ -378,7 +378,7 @@ fn evaluate(spec: &Value, exemptions: &[Exemption]) -> Vec<Finding> {
 }
 
 /// Whether the reason names a follow-up like `M1-F44`.
-fn names_a_follow_up(reason: &str) -> bool {
+pub(super) fn names_a_follow_up(reason: &str) -> bool {
     reason
         .split(|c: char| !c.is_ascii_alphanumeric() && c != '-')
         .any(|word| {

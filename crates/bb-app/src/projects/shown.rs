@@ -11,14 +11,19 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use bb_core::id::{ProjectId, UserId};
 use bb_core::project::{DEPTH_MAX, Project};
-use bb_policy::{Permission, Place, Policy, Tree};
+use bb_policy::{Narrowing, Permission, Place, Policy, Tree};
 
 use super::types::{ProjectItem, ProjectRef, TRAIL_MAX};
+use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, internal};
 
 /// The projects, and which of them one person sees.
 pub(crate) struct Shown {
     person: UserId,
+    /// What the access key behind the request narrows the person to, if one is in use: it counts
+    /// in everything below, so a key for one project sees that project and what is inside it, and
+    /// its trail stops there (M2-F27).
+    key: Option<Narrowing>,
     policy: Policy,
     tree: Tree,
     projects: BTreeMap<ProjectId, Project>,
@@ -26,8 +31,10 @@ pub(crate) struct Shown {
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
-    /// What `person` sees of the tree, as it is stored now.
-    pub(crate) async fn shown_to(&self, person: UserId) -> Result<Shown, AppError> {
+    /// What the actor sees of the tree, as it is stored now: their own view, narrowed to the access
+    /// key they came with, if any.
+    pub(crate) async fn shown_to(&self, actor: &Actor) -> Result<Shown, AppError> {
+        let person = actor.person.id;
         let projects = self
             .store()
             .project_tree()
@@ -40,8 +47,9 @@ impl<S: AuthStore> Ctx<'_, S> {
             .map_err(|error| internal::<S>(&error))?;
         let tree = Tree::new(projects.iter().map(|project| (project.id, project.parent)));
         Ok(Shown {
-            visible: policy.visible(person, &tree),
+            visible: policy.visible_as(person, actor.key_scope(), &tree),
             person,
+            key: actor.key_scope().cloned(),
             policy,
             tree,
             projects: projects
@@ -62,7 +70,12 @@ impl Shown {
     /// engine as every other decision.
     pub(crate) fn allows(&self, project: ProjectId, permission: Permission) -> bool {
         self.policy
-            .evaluate_at(self.person, &self.tree, Place::Project(project))
+            .evaluate_as(
+                self.person,
+                self.key.as_ref(),
+                &self.tree,
+                Place::Project(project),
+            )
             .is_some_and(|held| held.allows(permission))
     }
 

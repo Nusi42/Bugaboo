@@ -52,6 +52,15 @@ pub(crate) struct KeyInUse {
     pub(crate) narrowing: Narrowing,
 }
 
+impl Actor {
+    /// What the access key behind the request narrows its owner to, if there is one. The one
+    /// place that tells it: every decision about what the actor sees (the list, the search, the
+    /// trail, the references, the preview of a move, the re-check of a move) is made with it.
+    pub(crate) fn key_scope(&self) -> Option<&Narrowing> {
+        self.key.as_ref().map(|key| &key.narrowing)
+    }
+}
+
 impl From<Refusal> for AppError {
     fn from(refusal: Refusal) -> Self {
         Self::Refused(match refusal {
