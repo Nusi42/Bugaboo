@@ -2062,7 +2062,7 @@ export interface components {
          * @description The place in the order of roles.
          */
         position?: number | null;
-        /** @description The starting role it is a copy of (`administrator`, …), `null` for a role of its own. */
+        /** @description The starting role it is a copy of (`administrator`, …); not there for a role of its own. */
         starting?: string | null;
         /** @description Whether everybody with it needs two-step sign-in. */
         two_step?: boolean | null;
@@ -2421,7 +2421,7 @@ export interface components {
        * @description The place in the order of roles.
        */
       position?: number | null;
-      /** @description The starting role it is a copy of (`administrator`, …), `null` for a role of its own. */
+      /** @description The starting role it is a copy of (`administrator`, …); not there for a role of its own. */
       starting?: string | null;
       /** @description Whether everybody with it needs two-step sign-in. */
       two_step?: boolean | null;

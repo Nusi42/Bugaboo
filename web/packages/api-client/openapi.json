@@ -9229,7 +9229,7 @@
             "oneOf": [
               {
                 "$ref": "#/components/schemas/GroupRef",
-                "description": "The group the row is for; `null` for a person."
+                "description": "The group the row is for; not there for a person."
               },
               {
                 "type": "null"
@@ -9248,7 +9248,7 @@
             "oneOf": [
               {
                 "$ref": "#/components/schemas/PersonRef",
-                "description": "The person the row is for, shown as the person who asks may see them; `null` for a\ngroup."
+                "description": "The person the row is for, shown as the person who asks may see them; not there for a\ngroup."
               },
               {
                 "type": "null"
@@ -9270,7 +9270,7 @@
             "oneOf": [
               {
                 "$ref": "#/components/schemas/RoleRef",
-                "description": "The role; `null` for *No access*."
+                "description": "The role; not there for *No access*."
               },
               {
                 "type": "null"
@@ -10242,7 +10242,7 @@
                   "oneOf": [
                     {
                       "$ref": "#/components/schemas/GroupRef",
-                      "description": "The group the row is for; `null` for a person."
+                      "description": "The group the row is for; not there for a person."
                     },
                     {
                       "type": "null"
@@ -10261,7 +10261,7 @@
                   "oneOf": [
                     {
                       "$ref": "#/components/schemas/PersonRef",
-                      "description": "The person the row is for, shown as the person who asks may see them; `null` for a\ngroup."
+                      "description": "The person the row is for, shown as the person who asks may see them; not there for a\ngroup."
                     },
                     {
                       "type": "null"
@@ -10283,7 +10283,7 @@
                   "oneOf": [
                     {
                       "$ref": "#/components/schemas/RoleRef",
-                      "description": "The role; `null` for *No access*."
+                      "description": "The role; not there for *No access*."
                     },
                     {
                       "type": "null"
@@ -10599,7 +10599,7 @@
                 },
                 "starting": {
                   "type": ["string", "null"],
-                  "description": "The starting role it is a copy of (`administrator`, …), `null` for a role of its own."
+                  "description": "The starting role it is a copy of (`administrator`, …); not there for a role of its own."
                 },
                 "two_step": {
                   "type": ["boolean", "null"],
@@ -11328,7 +11328,7 @@
           },
           "starting": {
             "type": ["string", "null"],
-            "description": "The starting role it is a copy of (`administrator`, …), `null` for a role of its own."
+            "description": "The starting role it is a copy of (`administrator`, …); not there for a role of its own."
           },
           "two_step": {
             "type": ["boolean", "null"],

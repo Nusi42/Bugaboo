@@ -105,6 +105,40 @@ async fn sec_02_people_and_groups_get_roles_on_the_whole_organization_a_project_
         // Finn sees ACME only: the row is for the project alone.
         assert!(sees(&mut finn, "acme").await?);
         assert!(!sees(&mut finn, "web").await?);
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn sec_02_the_rows_of_a_place_say_where_they_count() -> Outcome {
+    each_database("sec_02_http_rows_say_where", async |db| {
+        let mut org = start(db).await?;
+        let viewer = org.role_named("Viewer").await?;
+        let acme = org
+            .make(
+                "/api/v1/projects",
+                json!({"short_name": "ACME", "name": "Acme"}),
+            )
+            .await?;
+        let (_bob, bob_id) = org.person("Bob Builder", "bob@example.test").await?;
+        let (_dana, dana_id) = org.person("Dana Desk", "dana@example.test").await?;
+        let (_finn, finn_id) = org.person("Finn Field", "finn@example.test").await?;
+        org.make(
+            &format!("/api/v1/projects/{acme}/assignments"),
+            json!({"who": {"person": bob_id}, "role": viewer, "applies_to": "project-and-sub-projects"}),
+        )
+        .await?;
+        org.make(
+            &format!("/api/v1/projects/{acme}/assignments"),
+            json!({"who": {"person": finn_id}, "role": viewer, "applies_to": "project"}),
+        )
+        .await?;
+        org.make(
+            "/api/v1/assignments",
+            json!({"who": {"person": dana_id}, "role": viewer}),
+        )
+        .await?;
 
         // The rows say where they count.
         let rows = org

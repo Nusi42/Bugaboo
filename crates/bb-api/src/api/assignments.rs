@@ -58,16 +58,16 @@ pub(crate) struct AssignmentItem {
     /// The ID of the row.
     #[serde(skip_serializing_if = "Option::is_none")]
     id: Option<String>,
-    /// The person the row is for, shown as the person who asks may see them; `null` for a
+    /// The person the row is for, shown as the person who asks may see them; not there for a
     /// group.
     #[serde(skip_serializing_if = "Option::is_none")]
-    person: Option<Option<PersonRef>>,
-    /// The group the row is for; `null` for a person.
+    person: Option<PersonRef>,
+    /// The group the row is for; not there for a person.
     #[serde(skip_serializing_if = "Option::is_none")]
-    group: Option<Option<GroupRef>>,
-    /// The role; `null` for *No access*.
+    group: Option<GroupRef>,
+    /// The role; not there for *No access*.
     #[serde(skip_serializing_if = "Option::is_none")]
-    role: Option<Option<RoleRef>>,
+    role: Option<RoleRef>,
     /// Where the row is.
     #[serde(skip_serializing_if = "Option::is_none")]
     place: Option<PlaceRef>,
@@ -93,9 +93,9 @@ impl From<&AssignmentView> for AssignmentItem {
         };
         Self {
             id: Some(row.id.to_string()),
-            person: Some(person),
-            group: Some(group),
-            role: Some(row.role.as_ref().map(RoleRef::from)),
+            person,
+            group,
+            role: row.role.as_ref().map(RoleRef::from),
             place: Some(PlaceRef::from(row.project.as_ref())),
             applies_to: Some(row.applies_to.into()),
             inherited: Some(row.inherited),
@@ -492,9 +492,15 @@ mod tests {
     fn perf_02_the_field_table_names_exactly_the_fields_of_a_row_in_a_list() {
         let item = AssignmentItem {
             id: Some("i".to_owned()),
-            person: Some(None),
-            group: Some(None),
-            role: Some(None),
+            person: Some(PersonRef::Someone),
+            group: Some(GroupRef {
+                id: "g".to_owned(),
+                name: "n".to_owned(),
+            }),
+            role: Some(RoleRef {
+                id: "r".to_owned(),
+                name: "n".to_owned(),
+            }),
             place: Some(PlaceRef::Organization),
             applies_to: Some(AppliesToBody::Organization),
             inherited: Some(false),

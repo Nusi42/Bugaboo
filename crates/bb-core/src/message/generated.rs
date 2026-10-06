@@ -168,6 +168,92 @@ pub const APPEARANCE_SPACING_LEGEND: MessageKey = MessageKey::new("appearance.sp
 /// The message `appearance.title`.
 pub const APPEARANCE_TITLE: MessageKey = MessageKey::new("appearance.title");
 
+/// The message `assignments.change-here`.
+pub const ASSIGNMENTS_CHANGE_HERE: MessageKey = MessageKey::new("assignments.change-here");
+
+/// The message `assignments.choose-role`.
+pub const ASSIGNMENTS_CHOOSE_ROLE: MessageKey = MessageKey::new("assignments.choose-role");
+
+/// The message `assignments.give`.
+pub const ASSIGNMENTS_GIVE: MessageKey = MessageKey::new("assignments.give");
+
+/// The message `assignments.give-no-access`.
+pub const ASSIGNMENTS_GIVE_NO_ACCESS: MessageKey = MessageKey::new("assignments.give-no-access");
+
+/// The message `assignments.give-title`.
+pub const ASSIGNMENTS_GIVE_TITLE: MessageKey = MessageKey::new("assignments.give-title");
+
+/// The message `assignments.give-to`.
+pub const ASSIGNMENTS_GIVE_TO: MessageKey = MessageKey::new("assignments.give-to");
+
+/// The message `assignments.incomplete`.
+pub const ASSIGNMENTS_INCOMPLETE: MessageKey = MessageKey::new("assignments.incomplete");
+
+/// The message `assignments.intro-organization`.
+pub const ASSIGNMENTS_INTRO_ORGANIZATION: MessageKey =
+    MessageKey::new("assignments.intro-organization");
+
+/// The message `assignments.intro-project`.
+pub const ASSIGNMENTS_INTRO_PROJECT: MessageKey = MessageKey::new("assignments.intro-project");
+
+/// The message `assignments.kind-group`.
+pub const ASSIGNMENTS_KIND_GROUP: MessageKey = MessageKey::new("assignments.kind-group");
+
+/// The message `assignments.kind-person`.
+pub const ASSIGNMENTS_KIND_PERSON: MessageKey = MessageKey::new("assignments.kind-person");
+
+/// The message `assignments.list`.
+pub const ASSIGNMENTS_LIST: MessageKey = MessageKey::new("assignments.list");
+
+/// The message `assignments.more`.
+pub const ASSIGNMENTS_MORE: MessageKey = MessageKey::new("assignments.more");
+
+/// The message `assignments.no-access-help`.
+pub const ASSIGNMENTS_NO_ACCESS_HELP: MessageKey = MessageKey::new("assignments.no-access-help");
+
+/// The message `assignments.none`.
+pub const ASSIGNMENTS_NONE: MessageKey = MessageKey::new("assignments.none");
+
+/// The message `assignments.own-text`.
+pub const ASSIGNMENTS_OWN_TEXT: MessageKey = MessageKey::new("assignments.own-text");
+
+/// The message `assignments.own-title`.
+pub const ASSIGNMENTS_OWN_TITLE: MessageKey = MessageKey::new("assignments.own-title");
+
+/// The message `assignments.pick-group`.
+pub const ASSIGNMENTS_PICK_GROUP: MessageKey = MessageKey::new("assignments.pick-group");
+
+/// The message `assignments.pick-list`.
+pub const ASSIGNMENTS_PICK_LIST: MessageKey = MessageKey::new("assignments.pick-list");
+
+/// The message `assignments.pick-more`.
+pub const ASSIGNMENTS_PICK_MORE: MessageKey = MessageKey::new("assignments.pick-more");
+
+/// The message `assignments.pick-nothing`.
+pub const ASSIGNMENTS_PICK_NOTHING: MessageKey = MessageKey::new("assignments.pick-nothing");
+
+/// The message `assignments.pick-person`.
+pub const ASSIGNMENTS_PICK_PERSON: MessageKey = MessageKey::new("assignments.pick-person");
+
+/// The message `assignments.remove`.
+pub const ASSIGNMENTS_REMOVE: MessageKey = MessageKey::new("assignments.remove");
+
+/// The message `assignments.role`.
+pub const ASSIGNMENTS_ROLE: MessageKey = MessageKey::new("assignments.role");
+
+/// The message `assignments.search-groups`.
+pub const ASSIGNMENTS_SEARCH_GROUPS: MessageKey = MessageKey::new("assignments.search-groups");
+
+/// The message `assignments.search-people`.
+pub const ASSIGNMENTS_SEARCH_PEOPLE: MessageKey = MessageKey::new("assignments.search-people");
+
+/// The message `assignments.title-organization`.
+pub const ASSIGNMENTS_TITLE_ORGANIZATION: MessageKey =
+    MessageKey::new("assignments.title-organization");
+
+/// The message `assignments.where`.
+pub const ASSIGNMENTS_WHERE: MessageKey = MessageKey::new("assignments.where");
+
 /// The message `backup.copied`.
 pub const BACKUP_COPIED: MessageKey = MessageKey::new("backup.copied");
 
@@ -644,6 +730,81 @@ pub const FRAMES_REMOVE: MessageKey = MessageKey::new("frames.remove");
 /// The message `frames.title`.
 pub const FRAMES_TITLE: MessageKey = MessageKey::new("frames.title");
 
+/// The message `groups.add`.
+pub const GROUPS_ADD: MessageKey = MessageKey::new("groups.add");
+
+/// The message `groups.add-list`.
+pub const GROUPS_ADD_LIST: MessageKey = MessageKey::new("groups.add-list");
+
+/// The message `groups.add-more`.
+pub const GROUPS_ADD_MORE: MessageKey = MessageKey::new("groups.add-more");
+
+/// The message `groups.add-nothing`.
+pub const GROUPS_ADD_NOTHING: MessageKey = MessageKey::new("groups.add-nothing");
+
+/// The message `groups.add-search`.
+pub const GROUPS_ADD_SEARCH: MessageKey = MessageKey::new("groups.add-search");
+
+/// The message `groups.add-title`.
+pub const GROUPS_ADD_TITLE: MessageKey = MessageKey::new("groups.add-title");
+
+/// The message `groups.delete`.
+pub const GROUPS_DELETE: MessageKey = MessageKey::new("groups.delete");
+
+/// The message `groups.field-name`.
+pub const GROUPS_FIELD_NAME: MessageKey = MessageKey::new("groups.field-name");
+
+/// The message `groups.gone`.
+pub const GROUPS_GONE: MessageKey = MessageKey::new("groups.gone");
+
+/// The message `groups.in-already`.
+pub const GROUPS_IN_ALREADY: MessageKey = MessageKey::new("groups.in-already");
+
+/// The message `groups.intro`.
+pub const GROUPS_INTRO: MessageKey = MessageKey::new("groups.intro");
+
+/// The message `groups.make`.
+pub const GROUPS_MAKE: MessageKey = MessageKey::new("groups.make");
+
+/// The message `groups.make-intro`.
+pub const GROUPS_MAKE_INTRO: MessageKey = MessageKey::new("groups.make-intro");
+
+/// The message `groups.make-title`.
+pub const GROUPS_MAKE_TITLE: MessageKey = MessageKey::new("groups.make-title");
+
+/// The message `groups.members`.
+pub const GROUPS_MEMBERS: MessageKey = MessageKey::new("groups.members");
+
+/// The message `groups.members-more`.
+pub const GROUPS_MEMBERS_MORE: MessageKey = MessageKey::new("groups.members-more");
+
+/// The message `groups.members-none`.
+pub const GROUPS_MEMBERS_NONE: MessageKey = MessageKey::new("groups.members-none");
+
+/// The message `groups.more`.
+pub const GROUPS_MORE: MessageKey = MessageKey::new("groups.more");
+
+/// The message `groups.none-yet`.
+pub const GROUPS_NONE_YET: MessageKey = MessageKey::new("groups.none-yet");
+
+/// The message `groups.nothing`.
+pub const GROUPS_NOTHING: MessageKey = MessageKey::new("groups.nothing");
+
+/// The message `groups.remove`.
+pub const GROUPS_REMOVE: MessageKey = MessageKey::new("groups.remove");
+
+/// The message `groups.saved`.
+pub const GROUPS_SAVED: MessageKey = MessageKey::new("groups.saved");
+
+/// The message `groups.search`.
+pub const GROUPS_SEARCH: MessageKey = MessageKey::new("groups.search");
+
+/// The message `groups.used-nothing`.
+pub const GROUPS_USED_NOTHING: MessageKey = MessageKey::new("groups.used-nothing");
+
+/// The message `groups.used-whole`.
+pub const GROUPS_USED_WHOLE: MessageKey = MessageKey::new("groups.used-whole");
+
 /// The message `home.admin`.
 pub const HOME_ADMIN: MessageKey = MessageKey::new("home.admin");
 
@@ -793,11 +954,11 @@ pub const NAV_GROUP_SYSTEM: MessageKey = MessageKey::new("nav.group.system");
 /// The message `nav.group.work`.
 pub const NAV_GROUP_WORK: MessageKey = MessageKey::new("nav.group.work");
 
+/// The message `nav.groups`.
+pub const NAV_GROUPS: MessageKey = MessageKey::new("nav.groups");
+
 /// The message `nav.home`.
 pub const NAV_HOME: MessageKey = MessageKey::new("nav.home");
-
-/// The message `nav.invitations`.
-pub const NAV_INVITATIONS: MessageKey = MessageKey::new("nav.invitations");
 
 /// The message `nav.my-settings`.
 pub const NAV_MY_SETTINGS: MessageKey = MessageKey::new("nav.my-settings");
@@ -805,11 +966,17 @@ pub const NAV_MY_SETTINGS: MessageKey = MessageKey::new("nav.my-settings");
 /// The message `nav.organization-settings`.
 pub const NAV_ORGANIZATION_SETTINGS: MessageKey = MessageKey::new("nav.organization-settings");
 
+/// The message `nav.people`.
+pub const NAV_PEOPLE: MessageKey = MessageKey::new("nav.people");
+
 /// The message `nav.projects`.
 pub const NAV_PROJECTS: MessageKey = MessageKey::new("nav.projects");
 
 /// The message `nav.region`.
 pub const NAV_REGION: MessageKey = MessageKey::new("nav.region");
+
+/// The message `nav.roles`.
+pub const NAV_ROLES: MessageKey = MessageKey::new("nav.roles");
 
 /// The message `nav.security`.
 pub const NAV_SECURITY: MessageKey = MessageKey::new("nav.security");
@@ -925,6 +1092,27 @@ pub const PEOPLE_LEVEL_NAMES: MessageKey = MessageKey::new("people-level.names")
 /// The message `people-level.role-only`.
 pub const PEOPLE_LEVEL_ROLE_ONLY: MessageKey = MessageKey::new("people-level.role-only");
 
+/// The message `people.intro`.
+pub const PEOPLE_INTRO: MessageKey = MessageKey::new("people.intro");
+
+/// The message `people.list`.
+pub const PEOPLE_LIST: MessageKey = MessageKey::new("people.list");
+
+/// The message `people.list-ask`.
+pub const PEOPLE_LIST_ASK: MessageKey = MessageKey::new("people.list-ask");
+
+/// The message `people.more`.
+pub const PEOPLE_MORE: MessageKey = MessageKey::new("people.more");
+
+/// The message `people.no-groups`.
+pub const PEOPLE_NO_GROUPS: MessageKey = MessageKey::new("people.no-groups");
+
+/// The message `people.nothing`.
+pub const PEOPLE_NOTHING: MessageKey = MessageKey::new("people.nothing");
+
+/// The message `people.search`.
+pub const PEOPLE_SEARCH: MessageKey = MessageKey::new("people.search");
+
 /// The message `permission-topic.people`.
 pub const PERMISSION_TOPIC_PEOPLE: MessageKey = MessageKey::new("permission-topic.people");
 
@@ -980,6 +1168,24 @@ pub const PERMISSION_SEE_PROJECTS: MessageKey = MessageKey::new("permission.see-
 
 /// The message `permission.see-status`.
 pub const PERMISSION_SEE_STATUS: MessageKey = MessageKey::new("permission.see-status");
+
+/// The message `person.back`.
+pub const PERSON_BACK: MessageKey = MessageKey::new("person.back");
+
+/// The message `person.email`.
+pub const PERSON_EMAIL: MessageKey = MessageKey::new("person.email");
+
+/// The message `person.groups`.
+pub const PERSON_GROUPS: MessageKey = MessageKey::new("person.groups");
+
+/// The message `person.roles`.
+pub const PERSON_ROLES: MessageKey = MessageKey::new("person.roles");
+
+/// The message `person.roles-where`.
+pub const PERSON_ROLES_WHERE: MessageKey = MessageKey::new("person.roles-where");
+
+/// The message `person.since`.
+pub const PERSON_SINCE: MessageKey = MessageKey::new("person.since");
 
 /// The message `projects.at-the-top`.
 pub const PROJECTS_AT_THE_TOP: MessageKey = MessageKey::new("projects.at-the-top");
@@ -1133,6 +1339,12 @@ pub const PROJECTS_SUB_PROJECTS_EMPTY: MessageKey = MessageKey::new("projects.su
 /// The message `projects.sub-projects-more`.
 pub const PROJECTS_SUB_PROJECTS_MORE: MessageKey = MessageKey::new("projects.sub-projects-more");
 
+/// The message `projects.tab-general`.
+pub const PROJECTS_TAB_GENERAL: MessageKey = MessageKey::new("projects.tab-general");
+
+/// The message `projects.tabs`.
+pub const PROJECTS_TABS: MessageKey = MessageKey::new("projects.tabs");
+
 /// The message `projects.title`.
 pub const PROJECTS_TITLE: MessageKey = MessageKey::new("projects.title");
 
@@ -1141,6 +1353,142 @@ pub const PROJECTS_TREE_EMPTY: MessageKey = MessageKey::new("projects.tree-empty
 
 /// The message `projects.tree-more`.
 pub const PROJECTS_TREE_MORE: MessageKey = MessageKey::new("projects.tree-more");
+
+/// The message `roles.actions-title`.
+pub const ROLES_ACTIONS_TITLE: MessageKey = MessageKey::new("roles.actions-title");
+
+/// The message `roles.applies.organization`.
+pub const ROLES_APPLIES_ORGANIZATION: MessageKey = MessageKey::new("roles.applies.organization");
+
+/// The message `roles.applies.project`.
+pub const ROLES_APPLIES_PROJECT: MessageKey = MessageKey::new("roles.applies.project");
+
+/// The message `roles.applies.project-and-sub-projects`.
+pub const ROLES_APPLIES_PROJECT_AND_SUB_PROJECTS: MessageKey =
+    MessageKey::new("roles.applies.project-and-sub-projects");
+
+/// The message `roles.ask-first`.
+pub const ROLES_ASK_FIRST: MessageKey = MessageKey::new("roles.ask-first");
+
+/// The message `roles.ask-first-keep`.
+pub const ROLES_ASK_FIRST_KEEP: MessageKey = MessageKey::new("roles.ask-first-keep");
+
+/// The message `roles.ask-first-yes`.
+pub const ROLES_ASK_FIRST_YES: MessageKey = MessageKey::new("roles.ask-first-yes");
+
+/// The message `roles.back`.
+pub const ROLES_BACK: MessageKey = MessageKey::new("roles.back");
+
+/// The message `roles.copy`.
+pub const ROLES_COPY: MessageKey = MessageKey::new("roles.copy");
+
+/// The message `roles.copy-field`.
+pub const ROLES_COPY_FIELD: MessageKey = MessageKey::new("roles.copy-field");
+
+/// The message `roles.copy-help`.
+pub const ROLES_COPY_HELP: MessageKey = MessageKey::new("roles.copy-help");
+
+/// The message `roles.counts-organization`.
+pub const ROLES_COUNTS_ORGANIZATION: MessageKey = MessageKey::new("roles.counts-organization");
+
+/// The message `roles.delete`.
+pub const ROLES_DELETE: MessageKey = MessageKey::new("roles.delete");
+
+/// The message `roles.delete-unused`.
+pub const ROLES_DELETE_UNUSED: MessageKey = MessageKey::new("roles.delete-unused");
+
+/// The message `roles.delete-used`.
+pub const ROLES_DELETE_USED: MessageKey = MessageKey::new("roles.delete-used");
+
+/// The message `roles.field-name`.
+pub const ROLES_FIELD_NAME: MessageKey = MessageKey::new("roles.field-name");
+
+/// The message `roles.from-hidden`.
+pub const ROLES_FROM_HIDDEN: MessageKey = MessageKey::new("roles.from-hidden");
+
+/// The message `roles.from-organization`.
+pub const ROLES_FROM_ORGANIZATION: MessageKey = MessageKey::new("roles.from-organization");
+
+/// The message `roles.intro`.
+pub const ROLES_INTRO: MessageKey = MessageKey::new("roles.intro");
+
+/// The message `roles.list`.
+pub const ROLES_LIST: MessageKey = MessageKey::new("roles.list");
+
+/// The message `roles.make`.
+pub const ROLES_MAKE: MessageKey = MessageKey::new("roles.make");
+
+/// The message `roles.make-intro`.
+pub const ROLES_MAKE_INTRO: MessageKey = MessageKey::new("roles.make-intro");
+
+/// The message `roles.make-title`.
+pub const ROLES_MAKE_TITLE: MessageKey = MessageKey::new("roles.make-title");
+
+/// The message `roles.more`.
+pub const ROLES_MORE: MessageKey = MessageKey::new("roles.more");
+
+/// The message `roles.no-access`.
+pub const ROLES_NO_ACCESS: MessageKey = MessageKey::new("roles.no-access");
+
+/// The message `roles.own`.
+pub const ROLES_OWN: MessageKey = MessageKey::new("roles.own");
+
+/// The message `roles.permissions-intro`.
+pub const ROLES_PERMISSIONS_INTRO: MessageKey = MessageKey::new("roles.permissions-intro");
+
+/// The message `roles.permissions-title`.
+pub const ROLES_PERMISSIONS_TITLE: MessageKey = MessageKey::new("roles.permissions-title");
+
+/// The message `roles.place.hidden`.
+pub const ROLES_PLACE_HIDDEN: MessageKey = MessageKey::new("roles.place.hidden");
+
+/// The message `roles.place.organization`.
+pub const ROLES_PLACE_ORGANIZATION: MessageKey = MessageKey::new("roles.place.organization");
+
+/// The message `roles.project-link`.
+pub const ROLES_PROJECT_LINK: MessageKey = MessageKey::new("roles.project-link");
+
+/// The message `roles.replace-choose`.
+pub const ROLES_REPLACE_CHOOSE: MessageKey = MessageKey::new("roles.replace-choose");
+
+/// The message `roles.replace-field`.
+pub const ROLES_REPLACE_FIELD: MessageKey = MessageKey::new("roles.replace-field");
+
+/// The message `roles.replace-help`.
+pub const ROLES_REPLACE_HELP: MessageKey = MessageKey::new("roles.replace-help");
+
+/// The message `roles.reset`.
+pub const ROLES_RESET: MessageKey = MessageKey::new("roles.reset");
+
+/// The message `roles.reset-help`.
+pub const ROLES_RESET_HELP: MessageKey = MessageKey::new("roles.reset-help");
+
+/// The message `roles.saved`.
+pub const ROLES_SAVED: MessageKey = MessageKey::new("roles.saved");
+
+/// The message `roles.start-empty`.
+pub const ROLES_START_EMPTY: MessageKey = MessageKey::new("roles.start-empty");
+
+/// The message `roles.start-from`.
+pub const ROLES_START_FROM: MessageKey = MessageKey::new("roles.start-from");
+
+/// The message `roles.starting-badge`.
+pub const ROLES_STARTING_BADGE: MessageKey = MessageKey::new("roles.starting-badge");
+
+/// The message `roles.two-step`.
+pub const ROLES_TWO_STEP: MessageKey = MessageKey::new("roles.two-step");
+
+/// The message `roles.two-step-badge`.
+pub const ROLES_TWO_STEP_BADGE: MessageKey = MessageKey::new("roles.two-step-badge");
+
+/// The message `roles.two-step-help`.
+pub const ROLES_TWO_STEP_HELP: MessageKey = MessageKey::new("roles.two-step-help");
+
+/// The message `roles.used-nothing`.
+pub const ROLES_USED_NOTHING: MessageKey = MessageKey::new("roles.used-nothing");
+
+/// The message `roles.used-whole`.
+pub const ROLES_USED_WHOLE: MessageKey = MessageKey::new("roles.used-whole");
 
 /// The message `sample.error.link-missing`.
 pub const SAMPLE_ERROR_LINK_MISSING: MessageKey = MessageKey::new("sample.error.link-missing");
@@ -2040,6 +2388,69 @@ pub fn access_keys_row_projects_some(names: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `assignments.change-here-name`.
+#[must_use]
+pub fn assignments_change_here_name(who: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("assignments.change-here-name"),
+        vec![("who", Value::Text(who.to_string()))],
+    )
+}
+
+/// The message `assignments.picked`.
+#[must_use]
+pub fn assignments_picked(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("assignments.picked"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `assignments.remove-name`.
+#[must_use]
+pub fn assignments_remove_name(
+    what: impl std::fmt::Display,
+    who: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("assignments.remove-name"),
+        vec![
+            ("what", Value::Text(what.to_string())),
+            ("who", Value::Text(who.to_string())),
+        ],
+    )
+}
+
+/// The message `assignments.removed`.
+#[must_use]
+pub fn assignments_removed(what: impl std::fmt::Display, who: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("assignments.removed"),
+        vec![
+            ("what", Value::Text(what.to_string())),
+            ("who", Value::Text(who.to_string())),
+        ],
+    )
+}
+
+/// The message `assignments.title-project`.
+#[must_use]
+pub fn assignments_title_project(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("assignments.title-project"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `assignments.who-group`.
+#[must_use]
+pub fn assignments_who_group(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("assignments.who-group"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
 /// The message `backup.left`.
 #[must_use]
 pub fn backup_left(count: i64) -> Message {
@@ -2353,6 +2764,102 @@ pub fn frames_removed(name: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `groups.add-name`.
+#[must_use]
+pub fn groups_add_name(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("groups.add-name"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `groups.added`.
+#[must_use]
+pub fn groups_added(group: impl std::fmt::Display, name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("groups.added"),
+        vec![
+            ("group", Value::Text(group.to_string())),
+            ("name", Value::Text(name.to_string())),
+        ],
+    )
+}
+
+/// The message `groups.delete-name`.
+#[must_use]
+pub fn groups_delete_name(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("groups.delete-name"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `groups.delete-text`.
+#[must_use]
+pub fn groups_delete_text(members: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("groups.delete-text"),
+        vec![("members", Value::Number(members))],
+    )
+}
+
+/// The message `groups.delete-title`.
+#[must_use]
+pub fn groups_delete_title(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("groups.delete-title"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `groups.made`.
+#[must_use]
+pub fn groups_made(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("groups.made"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `groups.remove-name`.
+#[must_use]
+pub fn groups_remove_name(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("groups.remove-name"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `groups.removed`.
+#[must_use]
+pub fn groups_removed(group: impl std::fmt::Display, name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("groups.removed"),
+        vec![
+            ("group", Value::Text(group.to_string())),
+            ("name", Value::Text(name.to_string())),
+        ],
+    )
+}
+
+/// The message `groups.used`.
+#[must_use]
+pub fn groups_used(places: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("groups.used"),
+        vec![("places", Value::Text(places.to_string()))],
+    )
+}
+
+/// The message `groups.used-projects`.
+#[must_use]
+pub fn groups_used_projects(count: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("groups.used-projects"),
+        vec![("count", Value::Number(count))],
+    )
+}
+
 /// The message `home.title`.
 #[must_use]
 pub fn home_title(name: impl std::fmt::Display) -> Message {
@@ -2555,6 +3062,33 @@ pub fn passkeys_remove_name(name: impl std::fmt::Display) -> Message {
 pub fn passkeys_remove_title(name: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("passkeys.remove-title"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `people.in-groups`.
+#[must_use]
+pub fn people_in_groups(groups: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("people.in-groups"),
+        vec![("groups", Value::Text(groups.to_string()))],
+    )
+}
+
+/// The message `person.groups-none`.
+#[must_use]
+pub fn person_groups_none(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("person.groups-none"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `person.roles-none`.
+#[must_use]
+pub fn person_roles_none(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("person.roles-none"),
         vec![("name", Value::Text(name.to_string()))],
     )
 }
@@ -2809,6 +3343,121 @@ pub fn projects_toggle_name(name: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("projects.toggle-name"),
         vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `roles.copy-of`.
+#[must_use]
+pub fn roles_copy_of(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("roles.copy-of"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `roles.delete-name`.
+#[must_use]
+pub fn roles_delete_name(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("roles.delete-name"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `roles.delete-title`.
+#[must_use]
+pub fn roles_delete_title(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("roles.delete-title"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `roles.from-project`.
+#[must_use]
+pub fn roles_from_project(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("roles.from-project"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `roles.held`.
+#[must_use]
+pub fn roles_held(place: impl std::fmt::Display, role: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("roles.held"),
+        vec![
+            ("place", Value::Text(place.to_string())),
+            ("role", Value::Text(role.to_string())),
+        ],
+    )
+}
+
+/// The message `roles.reset-done`.
+#[must_use]
+pub fn roles_reset_done(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("roles.reset-done"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `roles.reset-text`.
+#[must_use]
+pub fn roles_reset_text(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("roles.reset-text"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `roles.reset-title`.
+#[must_use]
+pub fn roles_reset_title(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("roles.reset-title"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `roles.second-step-gap`.
+#[must_use]
+pub fn roles_second_step_gap(count: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("roles.second-step-gap"),
+        vec![("count", Value::Number(count))],
+    )
+}
+
+/// The message `roles.start-copy`.
+#[must_use]
+pub fn roles_start_copy(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("roles.start-copy"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `roles.used`.
+#[must_use]
+pub fn roles_used(groups: i64, people: i64, places: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("roles.used"),
+        vec![
+            ("groups", Value::Number(groups)),
+            ("people", Value::Number(people)),
+            ("places", Value::Text(places.to_string())),
+        ],
+    )
+}
+
+/// The message `roles.used-projects`.
+#[must_use]
+pub fn roles_used_projects(count: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("roles.used-projects"),
+        vec![("count", Value::Number(count))],
     )
 }
 
@@ -3628,6 +4277,64 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("appearance.spacing.compact", "Compact"),
     ("appearance.spacing.legend", "Spacing"),
     ("appearance.title", "Appearance"),
+    ("assignments.change-here", "Change for this project"),
+    (
+        "assignments.change-here-name",
+        "Change for this project: {who}",
+    ),
+    ("assignments.choose-role", "Choose a role"),
+    ("assignments.give", "Give the role"),
+    ("assignments.give-no-access", "Set No access"),
+    ("assignments.give-title", "Give a role"),
+    ("assignments.give-to", "Give it to"),
+    (
+        "assignments.incomplete",
+        "Choose whom to give it to, and which role.",
+    ),
+    (
+        "assignments.intro-organization",
+        "The people and groups with a role in the whole organization. A role given here counts in every project.",
+    ),
+    (
+        "assignments.intro-project",
+        "The people and groups with a role here. A row that comes from a parent project says so; change it for this project by giving a row here. No access hides this project and its sub-projects, whatever role comes from above.",
+    ),
+    ("assignments.kind-group", "A group"),
+    ("assignments.kind-person", "A person"),
+    ("assignments.list", "Who has which role"),
+    ("assignments.more", "Show more rows"),
+    (
+        "assignments.no-access-help",
+        "No access covers this project and its sub-projects. It wins over any role from above and over a role through a group on this project. A role given on a sub-project still counts there.",
+    ),
+    ("assignments.none", "Nobody has a role here yet."),
+    (
+        "assignments.own-text",
+        "This row gives you a role. Without it you may lose this page, and what you can do here. Bugaboo does not let you leave nobody who can manage roles.",
+    ),
+    ("assignments.own-title", "Take away your own role?"),
+    ("assignments.pick-group", "Choose the group"),
+    ("assignments.pick-list", "To choose from"),
+    ("assignments.pick-more", "Show more"),
+    (
+        "assignments.pick-nothing",
+        "Nothing found. Try another word.",
+    ),
+    ("assignments.pick-person", "Choose the person"),
+    ("assignments.picked", "Chosen: {name}"),
+    ("assignments.remove", "Take away"),
+    ("assignments.remove-name", "Take away {what} from {who}"),
+    ("assignments.removed", "Taken away: {what} for {who}."),
+    ("assignments.role", "Role"),
+    ("assignments.search-groups", "Search groups"),
+    ("assignments.search-people", "Search people by name"),
+    (
+        "assignments.title-organization",
+        "Who has which role in the whole organization",
+    ),
+    ("assignments.title-project", "Who has which role in {name}"),
+    ("assignments.where", "Where it counts"),
+    ("assignments.who-group", "Group {name}"),
     ("backup.copied", "Copied"),
     ("backup.copy", "Copy the codes"),
     (
@@ -4121,6 +4828,62 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("frames.remove-name", "Remove {name}"),
     ("frames.removed", "{name} was removed."),
     ("frames.title", "Page frames"),
+    ("groups.add", "Put in"),
+    ("groups.add-list", "People you can put into the group"),
+    ("groups.add-more", "Show more people"),
+    ("groups.add-name", "Put in {name}"),
+    ("groups.add-nothing", "Nobody found. Try another word."),
+    ("groups.add-search", "Search people by name"),
+    ("groups.add-title", "Put people into the group"),
+    ("groups.added", "{name} is in the group {group}."),
+    ("groups.delete", "Delete the group"),
+    ("groups.delete-name", "Delete the group {name}"),
+    (
+        "groups.delete-text",
+        "This deletes the group and takes away every role and every No access it was given. {members, plural, one {The # person in it stays} other {The # people in it stay}} and keep the roles they have in other ways. This cannot be taken back.",
+    ),
+    ("groups.delete-title", "Delete the group {name}?"),
+    ("groups.field-name", "Name of the group"),
+    ("groups.gone", "This group does not exist any more."),
+    ("groups.in-already", "In the group"),
+    (
+        "groups.intro",
+        "A group is a set of people. Give a role to a group, and everybody in it has that role.",
+    ),
+    (
+        "groups.made",
+        "The group {name} is made. Open it in the list to put people into it.",
+    ),
+    ("groups.make", "Make the group"),
+    (
+        "groups.make-intro",
+        "A new group is empty. Put people into it afterwards.",
+    ),
+    ("groups.make-title", "Make a group"),
+    ("groups.members", "People in the group"),
+    ("groups.members-more", "Show more people"),
+    ("groups.members-none", "Nobody is in this group yet."),
+    ("groups.more", "Show more groups"),
+    (
+        "groups.none-yet",
+        "There are no groups yet. Make the first one below.",
+    ),
+    ("groups.nothing", "No group found. Try another word."),
+    ("groups.remove", "Take out"),
+    ("groups.remove-name", "Take out {name} from the group"),
+    ("groups.removed", "{name} is out of the group {group}."),
+    ("groups.saved", "Saved."),
+    ("groups.search", "Search groups"),
+    ("groups.used", "Used {places}."),
+    (
+        "groups.used-nothing",
+        "Not used for the whole organization or in a project you can see.",
+    ),
+    (
+        "groups.used-projects",
+        "{count, plural, one {in # project you can see} other {in # projects you can see}}",
+    ),
+    ("groups.used-whole", "for the whole organization"),
     (
         "home.admin",
         "You can look after this server. Organization settings shows what you may do there.",
@@ -4240,12 +5003,14 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("nav.group.sign-in", "Sign-in"),
     ("nav.group.system", "System"),
     ("nav.group.work", "Work"),
+    ("nav.groups", "Groups"),
     ("nav.home", "Home"),
-    ("nav.invitations", "Invitations"),
     ("nav.my-settings", "My settings"),
     ("nav.organization-settings", "Organization settings"),
+    ("nav.people", "People"),
     ("nav.projects", "Projects"),
     ("nav.region", "Region"),
+    ("nav.roles", "Roles & permissions"),
     ("nav.security", "Sign-in & security"),
     ("nav.sessions", "Where you're signed in"),
     ("nav.sign-in-rules", "Sign-in rules"),
@@ -4307,6 +5072,20 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("people-level.hidden", "Hidden"),
     ("people-level.names", "Names"),
     ("people-level.role-only", "Role only"),
+    ("people.in-groups", "In the groups {groups}"),
+    (
+        "people.intro",
+        "Everybody who has an account. Open a person to see the groups they are in and the roles they have.",
+    ),
+    ("people.list", "People"),
+    (
+        "people.list-ask",
+        "The list of everybody is for people who manage people. Ask an administrator if you need it.",
+    ),
+    ("people.more", "Show more people"),
+    ("people.no-groups", "In no group"),
+    ("people.nothing", "Nobody found. Try another word."),
+    ("people.search", "Search people by name or e-mail address"),
     ("permission-topic.people", "People"),
     ("permission-topic.projects", "Projects"),
     ("permission-topic.settings", "Settings"),
@@ -4357,6 +5136,20 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "See the project and what is in it",
     ),
     ("permission.see-status", "See how the server is doing"),
+    ("person.back", "All people"),
+    ("person.email", "E-mail address"),
+    ("person.groups", "Groups"),
+    ("person.groups-none", "{name} is in no group."),
+    ("person.roles", "Roles"),
+    (
+        "person.roles-none",
+        "{name} has no role in the places you decide about.",
+    ),
+    (
+        "person.roles-where",
+        "You see the roles in the whole organization and in the projects where you decide who has which role. Change them in Roles & permissions and in the settings of a project.",
+    ),
+    ("person.since", "Account made"),
     ("projects.at-the-top", "At the top level"),
     ("projects.edit-title", "Name and short name"),
     ("projects.field-name", "Name"),
@@ -4496,10 +5289,126 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "This project has no sub-projects yet.",
     ),
     ("projects.sub-projects-more", "Show more sub-projects"),
+    ("projects.tab-general", "Name and place"),
+    ("projects.tabs", "Settings of the project"),
     ("projects.title", "Projects"),
     ("projects.toggle-name", "Sub-projects of {name}"),
     ("projects.tree-empty", "You do not see any project yet."),
     ("projects.tree-more", "Show more projects"),
+    ("roles.actions-title", "More about this role"),
+    ("roles.applies.organization", "Whole organization"),
+    ("roles.applies.project", "Only this project"),
+    (
+        "roles.applies.project-and-sub-projects",
+        "This project and its sub-projects",
+    ),
+    (
+        "roles.ask-first",
+        "This role lets people manage roles. If you have this role yourself, taking this away takes away your own way to manage roles. Bugaboo never leaves nobody who can manage roles, but you could lose it.",
+    ),
+    ("roles.ask-first-keep", "Keep it"),
+    ("roles.ask-first-yes", "Take it away"),
+    ("roles.back", "All roles"),
+    ("roles.copy", "Copy this role"),
+    ("roles.copy-field", "Name of the copy"),
+    (
+        "roles.copy-help",
+        "Make a new role that starts with the permissions of this one.",
+    ),
+    ("roles.copy-of", "Copy of {name}"),
+    (
+        "roles.counts-organization",
+        "Counts only when the role is given for the whole organization.",
+    ),
+    ("roles.delete", "Delete the role"),
+    ("roles.delete-name", "Delete the role {name}"),
+    ("roles.delete-title", "Delete the role {name}?"),
+    (
+        "roles.delete-unused",
+        "Nobody has this role. It is deleted at once and cannot come back.",
+    ),
+    (
+        "roles.delete-used",
+        "Choose the role that takes its place: everybody who has this role gets the other one, in the same place and with the same reach. This cannot be taken back.",
+    ),
+    ("roles.field-name", "Name of the role"),
+    ("roles.from-hidden", "from a project you can't see"),
+    ("roles.from-organization", "from the whole organization"),
+    ("roles.from-project", "from {name}"),
+    ("roles.held", "{role} in {place}"),
+    (
+        "roles.intro",
+        "A role is a set of permissions, given to people or groups. Open a role to change what it allows.",
+    ),
+    ("roles.list", "Roles"),
+    ("roles.make", "Make the role"),
+    (
+        "roles.make-intro",
+        "Start from an empty role, or from a copy of the role that is closest to what you need. Then choose what it allows.",
+    ),
+    ("roles.make-title", "Make a role"),
+    ("roles.more", "Show more roles"),
+    ("roles.no-access", "No access"),
+    ("roles.own", "Role of your organization"),
+    (
+        "roles.permissions-intro",
+        "Tick what people with this role may do. A change is saved at once.",
+    ),
+    ("roles.permissions-title", "What this role allows"),
+    ("roles.place.hidden", "a project you can't see"),
+    ("roles.place.organization", "the whole organization"),
+    ("roles.project-link", "Who has which role"),
+    ("roles.replace-choose", "Choose a role"),
+    ("roles.replace-field", "Role that takes its place"),
+    (
+        "roles.replace-help",
+        "Rows that give this role give the role you choose instead.",
+    ),
+    ("roles.reset", "Reset to the starting permissions"),
+    (
+        "roles.reset-done",
+        "{name} has its starting permissions again.",
+    ),
+    (
+        "roles.reset-help",
+        "This is a starting role. You can give it back the permissions it had at the start.",
+    ),
+    (
+        "roles.reset-text",
+        "The permissions and the two-step switch of {name} go back to what they were at the start. The name stays. What was changed since is lost.",
+    ),
+    ("roles.reset-title", "Reset {name}?"),
+    ("roles.saved", "Saved."),
+    (
+        "roles.second-step-gap",
+        "{count, plural, one {# person with this role has not set up a second step yet.} other {# people with this role have not set up a second step yet.}}",
+    ),
+    ("roles.start-copy", "A copy of {name}"),
+    ("roles.start-empty", "An empty role"),
+    ("roles.start-from", "Start from"),
+    ("roles.starting-badge", "Starting role"),
+    (
+        "roles.two-step",
+        "Two-step sign-in for everyone with this role",
+    ),
+    ("roles.two-step-badge", "Two-step sign-in"),
+    (
+        "roles.two-step-help",
+        "People with this role must set up a code app or a passkey before they can do anything else.",
+    ),
+    (
+        "roles.used",
+        "Used {places}, and {people, plural, one {# person has} other {# people have}} it, with {groups, plural, one {# group} other {# groups}}.",
+    ),
+    (
+        "roles.used-nothing",
+        "Nobody has this role in a place you can see.",
+    ),
+    (
+        "roles.used-projects",
+        "{count, plural, one {in # project you can see} other {in # projects you can see}}",
+    ),
+    ("roles.used-whole", "for the whole organization"),
     (
         "sample.done",
         "Made the sample organization with {people} people from seed {seed}. Data folder: {folder}. How to sign in as them: {file}",

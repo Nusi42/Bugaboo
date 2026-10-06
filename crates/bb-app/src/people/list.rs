@@ -218,20 +218,20 @@ impl<S: AuthStore> Ctx<'_, S> {
             };
             let role = match row.role {
                 Some(id) => {
-                    if !names.contains_key(&id) {
-                        let name = self
+                    let name = if let Some(known) = names.get(&id) {
+                        known.clone()
+                    } else {
+                        let found = self
                             .store()
                             .role(id)
                             .await
                             .map_err(|error| internal::<S>(&error))?
                             .map(|record| record.role.name)
                             .unwrap_or_default();
-                        names.insert(id, name);
-                    }
-                    Some(RoleRef {
-                        id,
-                        name: names.get(&id).cloned().unwrap_or_default(),
-                    })
+                        names.insert(id, found.clone());
+                        found
+                    };
+                    Some(RoleRef { id, name })
                 }
                 None => None,
             };

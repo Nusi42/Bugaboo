@@ -80,12 +80,11 @@ async fn a_row(fixture: &Fixture<'_>) -> Result<String, Failure> {
     Ok(given.id.to_string())
 }
 
-/// The request of an example of this family, or `None` for a route of another family.
-pub(super) async fn people_request(
+/// The people and the groups.
+async fn groups_request(
     fixture: &Fixture<'_>,
     operation: &str,
 ) -> Result<Option<Request>, Failure> {
-    let target = fixture.project(Project::Target).to_string();
     Ok(Some(match operation {
         "listPeople" => ("GET", "/api/v1/people?search=ada".into(), None),
         "getPerson" => (
@@ -157,6 +156,13 @@ pub(super) async fn people_request(
             ),
             None,
         ),
+        _ => return Ok(None),
+    }))
+}
+
+/// The roles and the permission catalogue.
+async fn roles_request(fixture: &Fixture<'_>, operation: &str) -> Result<Option<Request>, Failure> {
+    Ok(Some(match operation {
         "listRoles" => ("GET", "/api/v1/roles".into(), None),
         "makeRole" => (
             "POST",
@@ -189,6 +195,14 @@ pub(super) async fn people_request(
             None,
         ),
         "listPermissions" => ("GET", "/api/v1/permissions".into(), None),
+        _ => return Ok(None),
+    }))
+}
+
+/// *Who has which role*: the rows and the choices of the form.
+async fn rows_request(fixture: &Fixture<'_>, operation: &str) -> Result<Option<Request>, Failure> {
+    let target = fixture.project(Project::Target).to_string();
+    Ok(Some(match operation {
         "listAssignments" => ("GET", "/api/v1/assignments".into(), None),
         "assignRole" => (
             "POST",
@@ -229,4 +243,18 @@ pub(super) async fn people_request(
         ),
         _ => return Ok(None),
     }))
+}
+
+/// The request of an example of this family, or `None` for a route of another family.
+pub(super) async fn people_request(
+    fixture: &Fixture<'_>,
+    operation: &str,
+) -> Result<Option<Request>, Failure> {
+    if let Some(found) = groups_request(fixture, operation).await? {
+        return Ok(Some(found));
+    }
+    if let Some(found) = roles_request(fixture, operation).await? {
+        return Ok(Some(found));
+    }
+    rows_request(fixture, operation).await
 }

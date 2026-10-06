@@ -479,15 +479,24 @@ async fn sec_08_nobody_can_remove_the_last_way_to_manage_roles() -> Outcome {
             refused(change(&org, &org.admin, administrator.id, Some(weaker)).await),
             Some(ErrorCode::WouldLockOut)
         );
-        let delete = org.rig.api().delete_role(
-            Rig::info(),
-            DeleteRole {
-                session_token: org.admin.session.clone(),
-                role: administrator.id,
-                replacement: None,
-            },
+        // A role that somebody has is first asked for the role that takes its place; with a
+        // replacement that does not manage roles, the deletion is what would lock the organization.
+        let viewer = role_named(&org, "Viewer").await?;
+        let delete = |replacement| {
+            org.rig.api().delete_role(
+                Rig::info(),
+                DeleteRole {
+                    session_token: org.admin.session.clone(),
+                    role: administrator.id,
+                    replacement,
+                },
+            )
+        };
+        assert_eq!(refused(delete(None).await), Some(ErrorCode::RoleInUse));
+        assert_eq!(
+            refused(delete(Some(viewer.id)).await),
+            Some(ErrorCode::WouldLockOut)
         );
-        assert_eq!(refused(delete.await), Some(ErrorCode::WouldLockOut));
         // A second administrator through a group: now Ada's row may go.
         let (bea, ops) = (org.person().await?, org.group("Operators").await?);
         org.add_to_group(ops, bea.id).await?;

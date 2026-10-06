@@ -50,9 +50,9 @@ pub(crate) struct RoleItem {
     /// What it is called.
     #[serde(skip_serializing_if = "Option::is_none")]
     name: Option<String>,
-    /// The starting role it is a copy of (`administrator`, …), `null` for a role of its own.
+    /// The starting role it is a copy of (`administrator`, …); not there for a role of its own.
     #[serde(skip_serializing_if = "Option::is_none")]
-    starting: Option<Option<String>>,
+    starting: Option<String>,
     /// Whether everybody with it needs two-step sign-in.
     #[serde(skip_serializing_if = "Option::is_none")]
     two_step: Option<bool>,
@@ -71,7 +71,7 @@ impl From<&RoleView> for RoleItem {
         Self {
             id: Some(role.id.to_string()),
             name: Some(role.name.clone()),
-            starting: Some(role.starting.clone()),
+            starting: role.starting.clone(),
             two_step: Some(role.two_step),
             position: Some(role.position),
             permissions: Some(role.permissions.clone()),
@@ -568,7 +568,7 @@ mod tests {
         let item = RoleItem {
             id: Some("i".to_owned()),
             name: Some("n".to_owned()),
-            starting: Some(None),
+            starting: Some("viewer".to_owned()),
             two_step: Some(false),
             position: Some(0),
             permissions: Some(Vec::new()),

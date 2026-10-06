@@ -112,6 +112,26 @@ async fn sec_08_a_role_is_made_from_a_copy_changed_and_deleted_over_http() -> Ou
             "a copy of a starting role is no starting role"
         );
 
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn sec_08_a_role_is_changed_and_deleted_over_http() -> Outcome {
+    each_database("sec_08_http_change_role", async |db| {
+        let mut org = start(db).await?;
+        let viewer = org.role_named("Viewer").await?;
+        let copy = org
+            .ada
+            .send(
+                "POST",
+                &format!("/api/v1/roles/{viewer}/copy"),
+                Some(json!({"name": "Reviewer"})),
+            )
+            .await?;
+        let reviewer = id_of(&copy)?;
+
         // Change its permissions and the switch for two-step sign-in, and its name.
         let changed = org
             .ada

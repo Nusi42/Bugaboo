@@ -284,11 +284,9 @@ async fn sec_02_the_page_of_a_person_lists_their_groups_and_the_roles_the_viewer
 }
 
 #[tokio::test]
-async fn sec_02_groups_are_made_renamed_filled_and_deleted_over_http() -> Outcome {
-    each_database("sec_02_http_groups", async |db| {
+async fn sec_02_groups_are_made_and_renamed_over_http() -> Outcome {
+    each_database("sec_02_http_groups_made", async |db| {
         let mut org = start(db).await?;
-        let (_bob, bob_id) = org.person("Bob Builder", "bob@example.test").await?;
-        let (_cleo, cleo_id) = org.person("Cleo Coder", "cleo@example.test").await?;
         let group = org
             .make("/api/v1/groups", json!({"name": "Backend"}))
             .await?;
@@ -318,6 +316,21 @@ async fn sec_02_groups_are_made_renamed_filled_and_deleted_over_http() -> Outcom
         let list = org.ada.send("GET", "/api/v1/groups", None).await?;
         assert_eq!(list.body["items"].as_array().map(Vec::len), Some(1));
         assert_eq!(list.body["items"][0]["name"], "Back end");
+
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn sec_02_the_people_of_a_group_are_listed_picked_and_taken_out_over_http() -> Outcome {
+    each_database("sec_02_http_group_members", async |db| {
+        let mut org = start(db).await?;
+        let (_bob, bob_id) = org.person("Bob Builder", "bob@example.test").await?;
+        let (_cleo, cleo_id) = org.person("Cleo Coder", "cleo@example.test").await?;
+        let group = org
+            .make("/api/v1/groups", json!({"name": "Backend"}))
+            .await?;
 
         // Putting people in, with the picker that says who is in already.
         for person in [&bob_id, &cleo_id] {
@@ -356,30 +369,6 @@ async fn sec_02_groups_are_made_renamed_filled_and_deleted_over_http() -> Outcom
         ];
         names.sort_by_key(ToString::to_string);
         assert_eq!(names, [json!("Bob Builder"), json!("Cleo Coder")]);
-        let choices = org
-            .ada
-            .send(
-                "GET",
-                &format!(
-                    "/api/v1/groups/{group}/member-choices?fields=id,name,already_in&search=ada"
-                ),
-                None,
-            )
-            .await?;
-        assert_eq!(choices.body["items"][0]["name"], "Ada Admin");
-        assert_eq!(choices.body["items"][0]["already_in"], false);
-        assert!(choices.body["items"][0].get("email").is_none());
-        let in_already = org
-            .ada
-            .send(
-                "GET",
-                &format!(
-                    "/api/v1/groups/{group}/member-choices?fields=id,name,already_in&search=bob"
-                ),
-                None,
-            )
-            .await?;
-        assert_eq!(in_already.body["items"][0]["already_in"], true);
 
         // The page of the group says what it is used for: nothing yet.
         let page = org
@@ -423,6 +412,50 @@ async fn sec_02_groups_are_made_renamed_filled_and_deleted_over_http() -> Outcom
             .send("GET", &format!("/api/v1/groups/{group}"), None)
             .await?;
         assert_eq!(gone.code(), "resource.not_found");
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn sec_02_the_picker_of_a_group_names_people_and_says_who_is_in_already() -> Outcome {
+    each_database("sec_02_http_group_picker", async |db| {
+        let mut org = start(db).await?;
+        let (_bob, bob_id) = org.person("Bob Builder", "bob@example.test").await?;
+        let group = org
+            .make("/api/v1/groups", json!({"name": "Backend"}))
+            .await?;
+        org.ada
+            .send(
+                "PUT",
+                &format!("/api/v1/groups/{group}/members/{bob_id}"),
+                None,
+            )
+            .await?;
+        let choices = org
+            .ada
+            .send(
+                "GET",
+                &format!(
+                    "/api/v1/groups/{group}/member-choices?fields=id,name,already_in&search=ada"
+                ),
+                None,
+            )
+            .await?;
+        assert_eq!(choices.body["items"][0]["name"], "Ada Admin");
+        assert_eq!(choices.body["items"][0]["already_in"], false);
+        assert!(choices.body["items"][0].get("email").is_none());
+        let in_already = org
+            .ada
+            .send(
+                "GET",
+                &format!(
+                    "/api/v1/groups/{group}/member-choices?fields=id,name,already_in&search=bob"
+                ),
+                None,
+            )
+            .await?;
+        assert_eq!(in_already.body["items"][0]["already_in"], true);
         Ok(())
     })
     .await
