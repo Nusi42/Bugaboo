@@ -53,8 +53,8 @@ describe("cfg_04 the person's choices never reach the storage of the browser", (
       .catch(() => {
         // The answer is the failure the test wants in the cache.
       });
-    currentSource().write({ ...defaultAppearance, mode: "dark" });
-    expect(currentSource().read().mode).toBe("dark");
+    currentSource().write({ ...defaultAppearance, theme: "midnight" });
+    expect(currentSource().read().theme).toBe("midnight");
     expect(saveProgress.read().state).toBe("not-saved");
     expect(storage.length).toBe(0);
   });
