@@ -1,6 +1,6 @@
 import { t } from "@bugaboo/messages";
 import { Alert, Card } from "@bugaboo/ui";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { AssignmentList } from "./AssignmentList.tsx";
 import type { Subject } from "./assignments.ts";
@@ -24,11 +24,19 @@ export function AssignmentsSection({ project, level = 2 }: AssignmentsSectionPro
   const id = project === null ? null : project.id;
   const changes = useRowChanges(id);
   const [preset, setPreset] = useState<Subject>();
+  const form = useRef<HTMLDivElement>(null);
+  // "Change for this project" leads to the form, with the person or group in it: the focus goes to
+  // the field that is left to fill in, and the page scrolls there (also on a phone).
+  useEffect(() => {
+    if (preset !== undefined) {
+      form.current?.querySelector("select")?.focus();
+    }
+  }, [preset]);
   const here =
     project === null
       ? undefined
       : (from: { readonly who: Subject }) => {
-          setPreset(from.who);
+          setPreset({ ...from.who });
         };
   return (
     <>
@@ -47,14 +55,16 @@ export function AssignmentsSection({ project, level = 2 }: AssignmentsSectionPro
         <AssignmentList project={id} onRemove={changes.remove} onChangeHere={here} />
       </Card>
       {changes.dialog}
-      <Card heading={t("assignments.give-title")}>
-        <GiveRoleForm
-          key={preset === undefined ? "none" : `${preset.kind}:${preset.id}`}
-          project={id}
-          give={changes.give}
-          preset={preset}
-        />
-      </Card>
+      <div ref={form}>
+        <Card heading={t("assignments.give-title")}>
+          <GiveRoleForm
+            key={preset === undefined ? "none" : `${preset.kind}:${preset.id}`}
+            project={id}
+            give={changes.give}
+            preset={preset}
+          />
+        </Card>
+      </div>
     </>
   );
 }

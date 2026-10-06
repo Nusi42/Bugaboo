@@ -20,5 +20,9 @@ export function roleUsedText(used: Schema<"RoleUsedByBody">): string {
   if (parts.length === 0) {
     return t("roles.used-nothing");
   }
-  return t("roles.used", { places: listOf(parts), people: used.people, groups: used.groups });
+  const places = listOf(parts);
+  if (used.people === 0 && used.groups === 0) {
+    return t("roles.used-by-nobody", { places });
+  }
+  return t("roles.used", { places, people: used.people, groups: used.groups });
 }

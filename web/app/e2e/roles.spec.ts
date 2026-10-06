@@ -138,9 +138,16 @@ test("sec_02 a group gets the role on a project and the sub-project shows the ro
     .getByRole("listitem")
     .filter({ hasText: t("assignments.who-group", { name: "Backend" }) });
   await expect(backend).toContainText(t("roles.from-project", { name: "Acme" }));
+  // The row of the whole organization says where it comes from once.
+  await expect(inherited).toContainText(`Administrator · ${t("roles.from-organization")}`);
+  await expect(inherited).not.toContainText(
+    `${t("roles.applies.organization")}, ${t("roles.from-organization")}`,
+  );
   await page
     .getByRole("button", { name: t("assignments.change-here-name", { who: "Backend" }) })
     .click();
+  // The form is where the focus goes, on a phone too, with the group in it and the role left to choose.
+  await expect(page.getByLabel(t("assignments.role"), { exact: true })).toBeFocused();
   await page.getByLabel(t("assignments.role"), { exact: true }).selectOption({
     label: t("roles.no-access"),
   });

@@ -3854,6 +3854,18 @@ pub fn projects_toggle_name(name: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `roles.badge-used`.
+#[must_use]
+pub fn roles_badge_used(badge: impl std::fmt::Display, used: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("roles.badge-used"),
+        vec![
+            ("badge", Value::Text(badge.to_string())),
+            ("used", Value::Text(used.to_string())),
+        ],
+    )
+}
+
 /// The message `roles.copy-of`.
 #[must_use]
 pub fn roles_copy_of(name: impl std::fmt::Display) -> Message {
@@ -3957,6 +3969,15 @@ pub fn roles_used(groups: i64, people: i64, places: impl std::fmt::Display) -> M
             ("people", Value::Number(people)),
             ("places", Value::Text(places.to_string())),
         ],
+    )
+}
+
+/// The message `roles.used-by-nobody`.
+#[must_use]
+pub fn roles_used_by_nobody(places: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("roles.used-by-nobody"),
+        vec![("places", Value::Text(places.to_string()))],
     )
 }
 
@@ -6014,6 +6035,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "This project and its sub-projects",
     ),
     ("roles.back", "All roles"),
+    ("roles.badge-used", "{badge}. {used}"),
     ("roles.copy", "Copy this role"),
     ("roles.copy-field", "Name of the copy"),
     (
@@ -6103,7 +6125,11 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "roles.used",
-        "Used {places}, and {people, plural, one {# person has} other {# people have}} it, with {groups, plural, one {# group} other {# groups}}.",
+        "Used {places}: {people, plural, =0 {no people} one {# person} other {# people}} and {groups, plural, =0 {no groups} one {# group} other {# groups}} have it.",
+    ),
+    (
+        "roles.used-by-nobody",
+        "Used {places}. Nobody has it by name or through a group.",
     ),
     (
         "roles.used-nothing",

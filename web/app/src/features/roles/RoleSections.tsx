@@ -24,7 +24,10 @@ export function RoleSections({ role, used }: RoleSectionsProps) {
     <>
       <Card heading={role.name} level={1}>
         <p className={styles.muted}>
-          {t(own ? "roles.own" : "roles.starting-badge")} {roleUsedText(used)}
+          {t("roles.badge-used", {
+            badge: t(own ? "roles.own" : "roles.starting-badge"),
+            used: roleUsedText(used),
+          })}
         </p>
         <RoleName key={role.name} id={role.id} name={role.name} />
         <div className={styles.row}>

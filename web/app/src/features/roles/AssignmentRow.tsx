@@ -23,6 +23,10 @@ function fromText(row: RowLine): string {
 
 /** What the row says, in one line: the role (or *No access*) and where it counts. */
 function whatText(row: RowLine): string {
+  // A row that comes from the whole organization counts everywhere: saying so twice says nothing more.
+  if (row.inherited && row.place.kind === "organization") {
+    return `${roleText(row.role)} · ${fromText(row)}`;
+  }
   const where = row.inherited
     ? `${appliesToText(row.appliesTo)}, ${fromText(row)}`
     : appliesToText(row.appliesTo);
@@ -56,7 +60,7 @@ export function AssignmentRow({ row, onRemove, onChangeHere }: AssignmentRowProp
       <span className={styles.itemText}>
         <span className={styles.itemTitle}>{who}</span>
         <span className={row.role === null ? styles.noAccess : styles.muted}>{whatText(row)}</span>
-        {row.place.kind === "hidden" ? (
+        {row.place.kind === "hidden" && !row.inherited ? (
           <span className={styles.muted}>{placeText(row.place)}</span>
         ) : null}
       </span>

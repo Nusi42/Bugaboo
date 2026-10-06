@@ -855,7 +855,9 @@ export const messages = {
   "roles.replace-help": "Rows that give this role give the role you choose instead.",
   "roles.replace-choose": "Choose a role",
   "roles.used":
-    "Used {places}, and {people, plural, one {# person has} other {# people have}} it, with {groups, plural, one {# group} other {# groups}}.",
+    "Used {places}: {people, plural, =0 {no people} one {# person} other {# people}} and {groups, plural, =0 {no groups} one {# group} other {# groups}} have it.",
+  "roles.used-by-nobody": "Used {places}. Nobody has it by name or through a group.",
+  "roles.badge-used": "{badge}. {used}",
   "roles.used-whole": "for the whole organization",
   "roles.used-projects":
     "{count, plural, one {in # project you can see} other {in # projects you can see}}",
@@ -1166,6 +1168,7 @@ export interface MessageArguments {
   "projects.person-role": { role: string | number };
   "projects.settings-title": { name: string | number };
   "projects.toggle-name": { name: string | number };
+  "roles.badge-used": { badge: string | number; used: string | number };
   "roles.copy-of": { name: string | number };
   "roles.delete-name": { name: string | number };
   "roles.delete-title": { name: string | number };
@@ -1177,6 +1180,7 @@ export interface MessageArguments {
   "roles.second-step-gap": { count: number };
   "roles.start-copy": { name: string | number };
   "roles.used": { groups: number; people: number; places: string | number };
+  "roles.used-by-nobody": { places: string | number };
   "roles.used-projects": { count: number };
   "security-log.broken": { reason: string | number; seq: string | number };
   "security-log.head": { hash: string | number; seq: string | number };
