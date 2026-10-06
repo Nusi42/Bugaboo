@@ -3,6 +3,7 @@ import { Button, ChoiceGroup, Form, SelectField, Switch, TextField } from "@buga
 import { useState } from "react";
 
 import { type Setting, type SettingValue } from "../../shared/my-settings.ts";
+import { numberIn } from "./number.ts";
 import { wordsOf } from "./texts.ts";
 
 /** What a control needs: the setting, and what to do with a new value. */
@@ -31,20 +32,38 @@ function timeZoneChoices(
 /** A text or a number the person types, saved with its own button. */
 function TypedControl({ setting, onChange }: SettingControlProps) {
   const [draft, setDraft] = useState(String(setting.value));
+  const [problem, setProblem] = useState<string>();
   const bounds = setting.bounds ?? undefined;
   const number = setting.kind === "integer";
+  const between =
+    bounds === undefined
+      ? undefined
+      : t("setting.ui.between", { least: bounds.least, most: bounds.most });
   const submit = (): void => {
-    onChange(number ? Number(draft) : draft);
+    if (!number) {
+      onChange(draft);
+      return;
+    }
+    // A number that is none, or outside the bounds, is not sent: the server would only refuse it.
+    const value = numberIn(draft, bounds);
+    if (value === null) {
+      setProblem(between ?? t("setting.ui.whole-number"));
+      return;
+    }
+    setProblem(undefined);
+    onChange(value);
   };
   return (
     <Form onSubmit={submit}>
       <TextField
         label={wordsOf(setting.name_key)}
-        {...(bounds === undefined
-          ? {}
-          : { description: t("setting.ui.between", { least: bounds.least, most: bounds.most }) })}
+        {...(between === undefined ? {} : { description: between })}
+        errorMessage={problem}
         value={draft}
-        onChange={setDraft}
+        onChange={(next) => {
+          setDraft(next);
+          setProblem(undefined);
+        }}
       />
       <Button primary submit>
         {t("common.save")}

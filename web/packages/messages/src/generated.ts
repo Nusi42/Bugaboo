@@ -67,6 +67,7 @@ export const messages = {
   "setting.ui.source-person": "Your own choice",
   "setting.ui.device-zone": "Match my device ({zone})",
   "setting.ui.between": "A whole number between {least} and {most}.",
+  "setting.ui.whole-number": "Enter a whole number.",
   "setting.ui.example-moment": "Right now, a time looks like this: {moment}",
   "setting.ui.example-number": "A number looks like this: {number}",
   "setting.page.region-intro":

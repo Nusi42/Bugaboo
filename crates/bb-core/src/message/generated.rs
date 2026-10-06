@@ -1442,6 +1442,9 @@ pub const SETTING_UI_SOURCE_ORGANIZATION: MessageKey =
 /// The message `setting.ui.source-person`.
 pub const SETTING_UI_SOURCE_PERSON: MessageKey = MessageKey::new("setting.ui.source-person");
 
+/// The message `setting.ui.whole-number`.
+pub const SETTING_UI_WHOLE_NUMBER: MessageKey = MessageKey::new("setting.ui.whole-number");
+
 /// The message `setup.answer-yes`.
 pub const SETUP_ANSWER_YES: MessageKey = MessageKey::new("setup.answer-yes");
 
@@ -4623,6 +4626,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("setting.ui.source-person", "Your own choice"),
     ("setting.ui.source-project", "From {project}"),
+    ("setting.ui.whole-number", "Enter a whole number."),
     ("setup.answer-yes", "yes"),
     (
         "setup.ask.address",
