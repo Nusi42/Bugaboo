@@ -122,6 +122,9 @@ async fn list_people(
                 search: filter.search,
                 cursor,
                 limit: params.limit(),
+                // The groups and the roles of a person are read only when the request asks.
+                groups: params.asks_for(&PEOPLE_FIELDS, "groups"),
+                roles: params.asks_for(&PEOPLE_FIELDS, "roles"),
             },
         )
         .await

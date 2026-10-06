@@ -13,7 +13,7 @@ use serde::Serialize;
 
 use super::Place;
 use crate::auth::{AppError, AuthStore, Ctx, PeoplePosition, internal};
-use crate::people::{read_cursor, write_cursor};
+use crate::people::write_cursor;
 use crate::roles::place_of;
 
 /// List the people to choose from for *Check access*.
@@ -66,7 +66,7 @@ pub async fn people_to_check<S: AuthStore>(
     let actor = ctx.actor(&input.session_token).await?;
     let place: Place = place_of(input.place);
     let checker = ctx.require(&actor, Permission::CheckAccess, place).await?;
-    let mut after = input.cursor.as_deref().map(read_cursor).transpose()?;
+    let mut after = ctx.people_position(input.cursor.as_deref()).await?;
     let names_shown = checker.people_level(PeopleKind::ProjectMembers, PeopleContext::Management)
         == PeopleLevel::Names;
     if !names_shown {

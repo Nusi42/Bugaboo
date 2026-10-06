@@ -35,6 +35,10 @@ pub struct PeopleQuery {
     pub cursor: Option<String>,
     /// How many people the page holds at most.
     pub limit: u32,
+    /// Whether the groups of each person are wanted: they are read only then.
+    pub groups: bool,
+    /// Whether the roles of each person are wanted: they are read only then.
+    pub roles: bool,
 }
 
 /// One person, with their groups and roles.
@@ -161,19 +165,35 @@ pub struct ChoicePage {
 
 impl Masked for ChoicePage {}
 
-/// Where a page of people ends, as text: the ID and then the name as it is written (a name may
-/// hold anything, an ID holds no space).
+/// Where a page of people ends, as text: the ID of the last person that was shown, and nothing
+/// else (a name that was left out of the page must not be in the cursor).
 pub(crate) fn write_cursor(last: &Person) -> String {
-    format!("{} {}", last.id, last.display_name)
+    last.id.to_string()
 }
 
-pub(crate) fn read_cursor(text: &str) -> Result<PeoplePosition, AppError> {
-    let invalid = || AppError::Refused(ErrorCode::InvalidRequest);
-    let (id, name) = text.split_once(' ').ok_or_else(invalid)?;
-    Ok(PeoplePosition {
-        name: name.to_owned(),
-        id: id.parse().map_err(|_| invalid())?,
-    })
+impl<S: AuthStore> Ctx<'_, S> {
+    /// The position a cursor stands for: the name of the person it names, found again, so the
+    /// next page starts after them. A person who is gone, or text that is no ID, is no cursor.
+    pub(crate) async fn people_position(
+        &self,
+        cursor: Option<&str>,
+    ) -> Result<Option<PeoplePosition>, AppError> {
+        let Some(text) = cursor else {
+            return Ok(None);
+        };
+        let invalid = || AppError::Refused(ErrorCode::InvalidRequest);
+        let id: UserId = text.parse().map_err(|_| invalid())?;
+        let person = self
+            .store()
+            .person(id)
+            .await
+            .map_err(|error| internal::<S>(&error))?
+            .ok_or_else(invalid)?;
+        Ok(Some(PeoplePosition {
+            name: person.display_name,
+            id,
+        }))
+    }
 }
 
 /// A person by name, to those who manage people (they always see names, M2-Q3). The place of
@@ -254,8 +274,9 @@ impl<S: AuthStore> Ctx<'_, S> {
         actor: &Actor,
         viewer: &Evaluation,
         person: &Person,
+        wanted: Wanted,
     ) -> Result<PersonLine, AppError> {
-        let groups = if viewer.allows(Permission::ManageGroups) {
+        let groups = if wanted.groups && viewer.allows(Permission::ManageGroups) {
             Some(
                 self.store()
                     .groups_of(person.id)
@@ -268,16 +289,21 @@ impl<S: AuthStore> Ctx<'_, S> {
         } else {
             None
         };
-        let rows = self
-            .store()
-            .assignments_of_person(person.id)
-            .await
-            .map_err(|error| internal::<S>(&error))?;
+        let roles = if wanted.roles {
+            let rows = self
+                .store()
+                .assignments_of_person(person.id)
+                .await
+                .map_err(|error| internal::<S>(&error))?;
+            self.held_roles_seen_by(actor, &rows).await?
+        } else {
+            Vec::new()
+        };
         Ok(PersonLine {
             person: shown(viewer, person),
             email: person.email.clone(),
             groups,
-            roles: self.held_roles_seen_by(actor, &rows).await?,
+            roles,
         })
     }
 }
@@ -295,7 +321,7 @@ pub async fn people<S: AuthStore>(
         .require(&actor, Permission::ManagePeople, Place::Organization)
         .await?;
     let limit = u64::from(bb_core::paging::page_size(Some(input.limit)));
-    let after = input.cursor.as_deref().map(read_cursor).transpose()?;
+    let after = ctx.people_position(input.cursor.as_deref()).await?;
     // One more than the page, to know whether there is a next one.
     let mut found = ctx
         .store()
@@ -307,7 +333,11 @@ pub async fn people<S: AuthStore>(
     let next_cursor = more.then(|| found.last().map(write_cursor)).flatten();
     let mut items = Vec::with_capacity(found.len());
     for person in &found {
-        items.push(ctx.person_line(&actor, &access, person).await?);
+        let wanted = Wanted {
+            groups: input.groups,
+            roles: input.roles,
+        };
+        items.push(ctx.person_line(&actor, &access, person, wanted).await?);
     }
     Ok(access.authorize(PersonPage { items, next_cursor }))
 }
@@ -331,7 +361,17 @@ pub async fn person<S: AuthStore>(
         .map_err(|error| internal::<S>(&error))?
         .ok_or(AppError::Refused(ErrorCode::NotFound))?;
     Ok(access.authorize(PersonDetail {
-        line: ctx.person_line(&actor, &access, &found).await?,
+        line: ctx
+            .person_line(
+                &actor,
+                &access,
+                &found,
+                Wanted {
+                    groups: true,
+                    roles: true,
+                },
+            )
+            .await?,
         created_at: found.created_at,
     }))
 }
@@ -397,7 +437,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         already_in: impl Fn(&Person) -> Option<bool> + Send,
     ) -> Result<ChoicePage, AppError> {
         let limit = u64::from(bb_core::paging::page_size(Some(limit)));
-        let after = cursor.map(read_cursor).transpose()?;
+        let after = self.people_position(cursor).await?;
         let mut found = self
             .store()
             .people_page(search, false, after.as_ref(), limit + 1)
@@ -405,11 +445,25 @@ impl<S: AuthStore> Ctx<'_, S> {
             .map_err(|error| internal::<S>(&error))?;
         let more = u64::try_from(found.len()).is_ok_and(|count| count > limit);
         found.truncate(usize::try_from(limit).unwrap_or(usize::MAX));
-        let next_cursor = more.then(|| found.last().map(write_cursor)).flatten();
-        let items = found
-            .iter()
-            .filter_map(|person| person_choice(viewer, person, already_in(person)))
-            .collect();
+        let mut shown = Vec::new();
+        let mut items = Vec::new();
+        for person in &found {
+            if let Some(choice) = person_choice(viewer, person, already_in(person)) {
+                shown.push(person);
+                items.push(choice);
+            }
+        }
+        // The cursor names the last person who is in the page, not the last one that was looked at.
+        let next_cursor = more
+            .then(|| shown.last().map(|last| write_cursor(last)))
+            .flatten();
         Ok(ChoicePage { items, next_cursor })
     }
+}
+
+/// What of a person a request wants besides their name and address.
+#[derive(Clone, Copy)]
+pub(crate) struct Wanted {
+    pub(crate) groups: bool,
+    pub(crate) roles: bool,
 }

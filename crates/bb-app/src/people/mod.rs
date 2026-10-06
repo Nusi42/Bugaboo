@@ -12,11 +12,11 @@ mod list;
 mod used_by;
 
 pub use group_page::{GroupQuery, group};
+pub(crate) use list::write_cursor;
 pub use list::{
     AssignmentChoicesQuery, ChoiceKind, ChoicePage, ChoiceView, HeldRole, MemberChoicesQuery,
     PeopleQuery, PersonDetail, PersonLine, PersonPage, PersonQuery, member_choices, people, person,
 };
-pub(crate) use list::{read_cursor, write_cursor};
 pub use used_by::{GroupDetail, GroupUsedBy, RoleUsedBy};
 
 use bb_core::ErrorCode;

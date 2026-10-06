@@ -119,6 +119,18 @@ impl ListParams {
         Fields::choose(self.fields.as_deref(), &readable)
     }
 
+    /// Whether the answer will hold the field: the request names it, or it names none and the
+    /// field is one of the defaults. A name that is not a field asks for nothing here (the answer
+    /// refuses it later, in its own words).
+    pub(crate) fn asks_for(&self, fields: &[FieldSpec], name: &str) -> bool {
+        match self.fields.as_deref() {
+            Some(asked) => asked.split(',').any(|each| each.trim() == name),
+            None => fields
+                .iter()
+                .any(|field| field.name == name && field.default),
+        }
+    }
+
     /// Where the page starts, if the request named a cursor. `list` names the list, so a cursor
     /// of another list is refused.
     ///

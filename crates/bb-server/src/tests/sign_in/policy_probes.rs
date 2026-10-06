@@ -6,7 +6,7 @@
 use bb_app::access::{
     MakeStartingRoles, Permission, PolicyStore as _, StartingRole, make_starting_roles,
 };
-use bb_app::people::{AddGroupMember, DeleteGroup, RemoveGroupMember};
+use bb_app::people::{AddGroupMember, DeleteGroup, PeopleQuery, RemoveGroupMember};
 use bb_app::projects::MakeProject;
 use bb_app::roles::{
     DeleteRole, Given, ReasonView, RemoveAssignment, ResetRole, RolesQuery, SetFieldLevel,
@@ -16,7 +16,7 @@ use bb_core::ErrorCode;
 use bb_core::access::{AppliesTo, FieldLevel, PeopleLevel};
 use bb_core::event::DomainEvent;
 use bb_core::fields::Field;
-use bb_core::id::{AssignmentId, ProjectId, RoleId};
+use bb_core::id::{AssignmentId, ProjectId, RoleId, UserId};
 use bb_core::people_kinds::PeopleKind;
 use bb_core::sign_in::SecurityAction;
 use bb_testing::each_database;
@@ -454,6 +454,86 @@ async fn sec_08_the_rows_made_for_a_replacement_are_each_in_the_security_log() -
         for entry in &new {
             assert_eq!(entry.person, Some(org.admin.id));
         }
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn priv_12_the_cursor_of_a_page_of_people_holds_the_id_of_the_last_one_shown_and_no_name()
+-> Outcome {
+    each_database("priv_12_people_cursor_id_only", async |db| {
+        let rig = Rig::start(db, 10).await?;
+        let org = Org::start(&rig).await?;
+        let (bob, cleo) = (org.person().await?, org.person().await?);
+        let api = org.rig.api();
+        let page = |cursor: Option<String>| {
+            api.people(
+                Rig::info(),
+                PeopleQuery {
+                    session_token: org.admin.session.clone(),
+                    search: None,
+                    cursor,
+                    limit: 1,
+                    groups: false,
+                    roles: false,
+                },
+            )
+        };
+        let first = page(None).await?.into_value();
+        let cursor = first.next_cursor.ok_or("a next page")?;
+        // The ID of a person and nothing of their name; the page after it goes on from there.
+        let last: UserId = cursor.parse().map_err(|_| "a cursor that is an ID")?;
+        assert!([org.admin.id, bob.id, cleo.id].contains(&last));
+        let second = page(Some(cursor)).await?.into_value();
+        assert_eq!(second.items.len(), 1);
+        assert_ne!(second.items[0].person, first.items[0].person);
+        // An ID that is nobody's is no cursor.
+        let nobody = refused(page(Some("00000000-0000-7000-8000-000000000000".to_owned())).await);
+        assert_eq!(nobody, Some(ErrorCode::InvalidRequest));
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn perf_02_a_list_of_people_reads_groups_and_roles_only_when_they_are_asked_for() -> Outcome {
+    each_database("perf_02_people_wanted", async |db| {
+        let rig = Rig::start(db, 10).await?;
+        let org = Org::start(&rig).await?;
+        let acme = org.project(None, "ACME").await?.id;
+        let bob = org.person().await?;
+        let role = org.role("Reader", &[Permission::SeeProjects]).await?;
+        org.give(&bob, role.id, acme).await?;
+        let group = org.group("Backend").await?;
+        org.add_to_group(group, bob.id).await?;
+        let api = org.rig.api();
+        let ask = |groups, roles| {
+            api.people(
+                Rig::info(),
+                PeopleQuery {
+                    session_token: org.admin.session.clone(),
+                    search: Some("person".to_owned()),
+                    cursor: None,
+                    limit: 10,
+                    groups,
+                    roles,
+                },
+            )
+        };
+        // The administrator may see both, so nothing is missing for any other reason than that it
+        // was not asked for.
+        let plain = ask(false, false).await?.into_value();
+        assert!(
+            plain
+                .items
+                .iter()
+                .all(|line| line.groups.is_none() && line.roles.is_empty())
+        );
+        let wanted = ask(true, true).await?.into_value();
+        let line = wanted.items.first().ok_or("a person")?;
+        assert_eq!(line.groups.as_ref().map(Vec::len), Some(1));
+        assert_eq!(line.roles.len(), 1);
         Ok(())
     })
     .await
