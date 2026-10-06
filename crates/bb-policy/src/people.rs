@@ -15,6 +15,7 @@ use serde::Serialize;
 
 use crate::catalogue::Permission;
 use crate::evaluate::Evaluation;
+use crate::mask::Masked;
 
 /// How a person is shown to one viewer.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
@@ -42,6 +43,9 @@ pub enum PersonRef {
         label: String,
     },
 }
+
+/// A person holds no field of the catalogue: a list of them is masked as it is.
+impl Masked for PersonRef {}
 
 /// Where a person is shown: in an ordinary answer, or in a screen where the people who manage
 /// people or roles work (*Organization settings*, *Who has which role*, *Check access*).

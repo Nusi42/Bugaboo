@@ -21,7 +21,7 @@ use super::types::{
 use crate::auth::{AppError, AuthStore, Ctx, Done, by, change_failed, entity, internal};
 
 /// The place a level is set at.
-fn place_of(project: Option<ProjectId>) -> Place {
+pub(crate) fn place_of(project: Option<ProjectId>) -> Place {
     project.map_or(Place::Organization, Place::Project)
 }
 

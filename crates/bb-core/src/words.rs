@@ -126,6 +126,27 @@ macro_rules! words {
     };
 }
 
+/// Describes a words enum in the API description as one of its words, so a client gets a union
+/// type and the list of words is the one in the Rust enum (`words_in_api!(Field, "…")`).
+macro_rules! words_in_api {
+    ($name:ident, $description:literal) => {
+        #[cfg(feature = "openapi")]
+        impl utoipa::PartialSchema for $name {
+            fn schema() -> utoipa::openapi::RefOr<utoipa::openapi::schema::Schema> {
+                use utoipa::openapi::schema::{ObjectBuilder, Type};
+                ObjectBuilder::new()
+                    .schema_type(Type::String)
+                    .description(Some($description))
+                    .enum_values(Some(Self::ALL.iter().map(|word| word.code())))
+                    .into()
+            }
+        }
+
+        #[cfg(feature = "openapi")]
+        impl utoipa::ToSchema for $name {}
+    };
+}
+
 #[cfg(test)]
 mod tests {
     use std::collections::HashSet;

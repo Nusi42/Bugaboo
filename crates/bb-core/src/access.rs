@@ -43,6 +43,15 @@ words! {
     }
 }
 
+words_in_api!(
+    FieldLevel,
+    "What a role may do with a field: it is hidden, it can be seen, or it can be changed."
+);
+words_in_api!(
+    PeopleLevel,
+    "How people of one kind are shown: by name, by their role only, or hidden."
+);
+
 impl FieldLevel {
     /// The message that names the level (`field-level.<word>`).
     #[must_use]
@@ -78,6 +87,11 @@ words! {
         ProjectAndSubProjects => "project-and-sub-projects",
     }
 }
+
+words_in_api!(
+    AppliesTo,
+    "Where a role given to someone counts: the whole organization, only one project, or a project and its sub-projects."
+);
 
 /// A group of people (SEC-02). Groups are flat in M2: a group holds people, never groups.
 #[derive(Clone, Debug, PartialEq, Eq, Entity)]

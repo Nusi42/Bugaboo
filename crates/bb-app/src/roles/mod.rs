@@ -24,6 +24,7 @@ use serde_json::json;
 
 pub use assignments::{assign_role, assignments, remove_assignment};
 pub use check::*;
+pub(crate) use levels::place_of;
 pub use levels::{role_levels, set_field_level, set_people_level};
 pub use types::*;
 

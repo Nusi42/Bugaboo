@@ -8,7 +8,7 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
-use bb_app::access::{PolicyStore, RoleRecord};
+use bb_app::access::{PersonName, PolicyStore, RoleRecord};
 use bb_core::access::{AppliesTo, Assignment, FieldLevel, Group, GroupMember, PeopleLevel, Role};
 use bb_core::fields::Field;
 use bb_core::id::{AssignmentId, GroupId, IdError, ProjectId, RoleId, UserId};
@@ -24,9 +24,9 @@ use crate::auth::AuthStorage;
 use crate::db::{Row as DbRow, Transaction, to_micros};
 use crate::error::StoreError;
 use crate::schema::{
-    AssignmentRow, GroupMemberRow, GroupRow, LegacyAdministratorRow, ProjectFieldLevelRow,
-    ProjectPeopleLevelRow, ProjectRow, RoleFieldLevelRow, RolePeopleLevelRow, RolePermissionRow,
-    RoleRow, StartingRolesMadeRow,
+    AssignmentRow, GroupMemberRow, GroupRow, LegacyAdministratorRow, PersonRow,
+    ProjectFieldLevelRow, ProjectPeopleLevelRow, ProjectRow, RoleFieldLevelRow, RolePeopleLevelRow,
+    RolePermissionRow, RoleRow, StartingRolesMadeRow,
 };
 
 /// The lock that changes of roles and rows take on PostgreSQL, so two of them cannot both leave
@@ -613,6 +613,24 @@ impl PolicyStore for AuthStorage {
     async fn role(&self, id: RoleId) -> Result<Option<RoleRecord>, StoreError> {
         let mut transaction = self.database().begin_read().await?;
         Ok(roles_in(&mut transaction, Some(&[id])).await?.pop())
+    }
+
+    async fn people_names(&self) -> Result<Vec<PersonName>, StoreError> {
+        let mut select = Query::select();
+        select
+            .columns([PersonRow::Id, PersonRow::DisplayName])
+            .from(PersonRow::Table);
+        self.database()
+            .fetch_all(&select)
+            .await?
+            .iter()
+            .map(|row| {
+                Ok(PersonName {
+                    id: read_user(row, PersonRow::Id)?,
+                    display_name: row.get(PersonRow::DisplayName)?,
+                })
+            })
+            .collect()
     }
 
     async fn groups(&self) -> Result<Vec<Group>, StoreError> {

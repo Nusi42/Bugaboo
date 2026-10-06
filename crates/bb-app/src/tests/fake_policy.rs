@@ -11,7 +11,7 @@ use bb_policy::{FieldRule, Inputs, PeopleRule, Permission, Place, RoleData, Row,
 use jiff::Timestamp;
 
 use super::fake::{FakeError, FakeStore, State, Tx};
-use crate::access::{PolicyStore, RoleRecord};
+use crate::access::{PersonName, PolicyStore, RoleRecord};
 
 /// The projects from the top down to `project`; `None` when it does not exist.
 pub(super) fn chain_of(state: &State, project: ProjectId) -> Option<Vec<ProjectId>> {
@@ -178,6 +178,19 @@ impl PolicyStore for FakeStore {
                 .iter()
                 .find(|record| record.role.id == id)
                 .cloned()
+        }))
+    }
+
+    async fn people_names(&self) -> Result<Vec<PersonName>, FakeError> {
+        Ok(self.read(|state| {
+            state
+                .people
+                .iter()
+                .map(|(person, _)| PersonName {
+                    id: person.id,
+                    display_name: person.display_name.clone(),
+                })
+                .collect()
         }))
     }
 

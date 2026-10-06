@@ -8,14 +8,6 @@ permission = "decide-roles"
 reason = "Judged by the use cases of Who has which role and by the engine itself (kept above a No access, the preview of a move); its routes come with the Organization settings screens of WP-11 (M2-F60)."
 
 [[engine-only]]
-permission = "decide-what-roles-see"
-reason = "Judged by the use cases that set field and people levels; its routes come with the screens of WP-12 (M2-F60)."
-
-[[engine-only]]
-permission = "check-access"
-reason = "Judged by the use case Check access; its route comes with the screen of WP-12 (M2-F60)."
-
-[[engine-only]]
 permission = "manage-people"
 reason = "Decides who sees e-mail addresses and may correct names; the routes of People come with WP-11 (M2-F60)."
 

@@ -8,8 +8,10 @@
 //! what it asks ([`Ctx::require`]). A project that a person may not know about answers
 //! `resource.not_found`, exactly like one that does not exist.
 
+mod candidates;
 mod starting;
 mod store;
+mod visibility;
 
 use std::sync::Arc;
 
@@ -25,8 +27,13 @@ use bb_policy::{Evaluation, Narrowing, PeopleContext, Target, evaluate, resolve}
 pub use bb_policy::{
     Authorized, Masked, NOT_FOR_KEYS, Permission, PersonRef, Place, StartingRole, Tree, guards,
 };
+pub use candidates::{PeopleToCheckQuery, PersonPage, people_to_check};
 pub use starting::{MakeStartingRoles, make_starting_roles};
-pub use store::{PolicyStore, RoleRecord};
+pub use store::{PersonName, PolicyStore, RoleRecord};
+pub use visibility::{
+    FieldPermissions, FieldPermissionsQuery, LevelCell, LevelOrigin, LevelRow, LevelTable,
+    PeopleVisibility, PeopleVisibilityQuery, ROLES_MAX, field_permissions, people_visibility,
+};
 
 use serde::Serialize;
 

@@ -33,6 +33,8 @@ words! {
     }
 }
 
+words_in_api!(PeopleKind, "A kind of people information, by its key.");
+
 impl PeopleKind {
     /// The message that names the kind (`people-kind.<key>`).
     #[must_use]
