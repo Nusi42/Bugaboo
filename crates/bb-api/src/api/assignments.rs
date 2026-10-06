@@ -169,7 +169,7 @@ pub(crate) struct NewProjectRowBody {
 }
 
 /// Whom a body names. A person or group that is no ID is one that is not there.
-fn subject_of(who: &WhoBody) -> Result<Subject, ApiError> {
+pub(super) fn subject_of(who: &WhoBody) -> Result<Subject, ApiError> {
     match (who.person.as_deref(), who.group.as_deref()) {
         (Some(person), None) => parse::<UserId>(person).map(Subject::Person),
         (None, Some(group)) => parse::<GroupId>(group).map(Subject::Group),

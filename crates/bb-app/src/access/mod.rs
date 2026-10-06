@@ -9,6 +9,7 @@
 //! `resource.not_found`, exactly like one that does not exist.
 
 mod candidates;
+mod own_loss;
 mod starting;
 mod store;
 mod visibility;
@@ -28,6 +29,7 @@ pub use bb_policy::{
     Authorized, Masked, NOT_FOR_KEYS, Permission, PersonRef, Place, StartingRole, Tree, guards,
 };
 pub use candidates::{PeopleToCheckPage, PeopleToCheckQuery, people_to_check};
+pub use own_loss::{OwnChange, OwnLoss, OwnLossQuery, own_loss};
 pub use starting::{MakeStartingRoles, make_starting_roles};
 pub use store::{LevelRules, PolicyStore, RoleRecord};
 pub use visibility::{

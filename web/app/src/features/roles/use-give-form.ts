@@ -32,7 +32,7 @@ export interface GiveForm {
  * was chosen is left out for it.
  */
 export function useGiveForm(
-  give: (spec: RowSpec) => Promise<void>,
+  give: (spec: RowSpec) => Promise<boolean>,
   preset: Subject | undefined,
 ): GiveForm {
   const [kind, setKind] = useState<"person" | "group">(preset?.kind ?? "person");
@@ -51,11 +51,13 @@ export function useGiveForm(
       role: noAccess ? null : role,
       appliesTo: noAccess ? "project-and-sub-projects" : reach,
     })
-      .then(() => {
-        rememberChoice(who.kind, who.id);
-        setProblem(null);
-        setWho(null);
-        setRole(NOTHING);
+      .then((given) => {
+        if (given) {
+          rememberChoice(who.kind, who.id);
+          setProblem(null);
+          setWho(null);
+          setRole(NOTHING);
+        }
       })
       .catch((error: unknown) => {
         setProblem(messageOf(error));

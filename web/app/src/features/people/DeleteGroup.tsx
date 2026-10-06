@@ -2,6 +2,7 @@ import { t } from "@bugaboo/messages";
 import { Alert, ConfirmDialog } from "@bugaboo/ui";
 
 import { api } from "../../shared/api.ts";
+import { useAskFirst } from "../../shared/ask-first.tsx";
 import { messageOf } from "../../shared/errors.ts";
 import { refreshAccess } from "../../shared/access-cache.ts";
 import type { GroupLine } from "./groups.ts";
@@ -26,8 +27,10 @@ export function DeleteGroup({ group, members, onDeleted }: DeleteGroupProps) {
       onDeleted();
     },
   });
+  const { ask, dialog } = useAskFirst();
   return (
     <div className={styles.stack}>
+      {dialog}
       {remove.isError ? <Alert danger>{messageOf(remove.error)}</Alert> : null}
       <div className={styles.row}>
         <ConfirmDialog
@@ -39,7 +42,12 @@ export function DeleteGroup({ group, members, onDeleted }: DeleteGroupProps) {
           cancelLabel={t("common.cancel")}
           danger
           onConfirm={() => {
-            remove.mutate({ params: { path: { group_id: group.id } } });
+            // The group may be what gives the person their own way to manage roles.
+            void ask({ kind: "delete-group", group: group.id }).then((go) => {
+              if (go) {
+                remove.mutate({ params: { path: { group_id: group.id } } });
+              }
+            });
           }}
         />
       </div>

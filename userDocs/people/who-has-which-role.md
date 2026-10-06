@@ -34,4 +34,4 @@ People who decide who has which role *above* the project keep seeing its name he
 
 ## Taking a row away
 
-"Take away" happens at once and offers **Undo** for 10 seconds, which gives the row again. If the row is your own, a question comes first, because you may lose this page. Bugaboo refuses a change that would leave nobody who can manage roles for the whole organization, with a sentence that says why.
+"Take away" happens at once and offers **Undo** for 10 seconds, which gives the row again. A question comes first when taking the row away would take away your own way to manage roles or to decide who has which role: the row is yours, or it is the row of a group you are in. Bugaboo refuses a change that would leave nobody who can manage roles for the whole organization, with a sentence that says why.

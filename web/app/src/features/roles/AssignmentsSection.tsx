@@ -46,6 +46,7 @@ export function AssignmentsSection({ project, level = 2 }: AssignmentsSectionPro
         {changes.problem === null ? null : <Alert danger>{changes.problem}</Alert>}
         <AssignmentList project={id} onRemove={changes.remove} onChangeHere={here} />
       </Card>
+      {changes.dialog}
       <Card heading={t("assignments.give-title")}>
         <GiveRoleForm
           key={preset === undefined ? "none" : `${preset.kind}:${preset.id}`}

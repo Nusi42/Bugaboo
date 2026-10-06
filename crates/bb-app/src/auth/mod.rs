@@ -20,8 +20,9 @@ use std::pin::Pin;
 use bb_policy::Authorized;
 
 use crate::access::{
-    FieldPermissions, FieldPermissionsQuery, PeopleToCheckPage, PeopleToCheckQuery,
-    PeopleVisibility, PeopleVisibilityQuery, field_permissions, people_to_check, people_visibility,
+    FieldPermissions, FieldPermissionsQuery, OwnLoss, OwnLossQuery, PeopleToCheckPage,
+    PeopleToCheckQuery, PeopleVisibility, PeopleVisibilityQuery, field_permissions, own_loss,
+    people_to_check, people_visibility,
 };
 use crate::people::{
     AddGroupMember, AssignmentChoicesQuery, ChoicePage, DeleteGroup, GroupDetail, GroupList,
@@ -246,6 +247,8 @@ use_cases! {
     people_visibility(PeopleVisibilityQuery) -> Authorized<PeopleVisibility>;
     /// Lists the people *Check access* can choose from.
     people_to_check(PeopleToCheckQuery) -> Authorized<PeopleToCheckPage>;
+    /// Says what a change of who has which role would take away from the person who makes it.
+    own_loss(OwnLossQuery) -> Authorized<OwnLoss>;
     /// Makes a project.
     make_project(MakeProject) -> Authorized<ProjectView>;
     /// Lists the settings of the organization, of a project or of the person who asks.

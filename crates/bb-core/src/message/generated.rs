@@ -248,12 +248,6 @@ pub const ASSIGNMENTS_NO_ACCESS_HELP: MessageKey = MessageKey::new("assignments.
 /// The message `assignments.none`.
 pub const ASSIGNMENTS_NONE: MessageKey = MessageKey::new("assignments.none");
 
-/// The message `assignments.own-text`.
-pub const ASSIGNMENTS_OWN_TEXT: MessageKey = MessageKey::new("assignments.own-text");
-
-/// The message `assignments.own-title`.
-pub const ASSIGNMENTS_OWN_TITLE: MessageKey = MessageKey::new("assignments.own-title");
-
 /// The message `assignments.pick-group`.
 pub const ASSIGNMENTS_PICK_GROUP: MessageKey = MessageKey::new("assignments.pick-group");
 
@@ -1148,6 +1142,21 @@ pub const NAV_STATUS: MessageKey = MessageKey::new("nav.status");
 /// The message `nav.themes`.
 pub const NAV_THEMES: MessageKey = MessageKey::new("nav.themes");
 
+/// The message `own.ask-keep`.
+pub const OWN_ASK_KEEP: MessageKey = MessageKey::new("own.ask-keep");
+
+/// The message `own.ask-title`.
+pub const OWN_ASK_TITLE: MessageKey = MessageKey::new("own.ask-title");
+
+/// The message `own.ask-yes`.
+pub const OWN_ASK_YES: MessageKey = MessageKey::new("own.ask-yes");
+
+/// The message `own.lost-decide-roles`.
+pub const OWN_LOST_DECIDE_ROLES: MessageKey = MessageKey::new("own.lost-decide-roles");
+
+/// The message `own.lost-manage-roles`.
+pub const OWN_LOST_MANAGE_ROLES: MessageKey = MessageKey::new("own.lost-manage-roles");
+
 /// The message `page.not-found.home`.
 pub const PAGE_NOT_FOUND_HOME: MessageKey = MessageKey::new("page.not-found.home");
 
@@ -1529,15 +1538,6 @@ pub const ROLES_APPLIES_PROJECT: MessageKey = MessageKey::new("roles.applies.pro
 /// The message `roles.applies.project-and-sub-projects`.
 pub const ROLES_APPLIES_PROJECT_AND_SUB_PROJECTS: MessageKey =
     MessageKey::new("roles.applies.project-and-sub-projects");
-
-/// The message `roles.ask-first`.
-pub const ROLES_ASK_FIRST: MessageKey = MessageKey::new("roles.ask-first");
-
-/// The message `roles.ask-first-keep`.
-pub const ROLES_ASK_FIRST_KEEP: MessageKey = MessageKey::new("roles.ask-first-keep");
-
-/// The message `roles.ask-first-yes`.
-pub const ROLES_ASK_FIRST_YES: MessageKey = MessageKey::new("roles.ask-first-yes");
 
 /// The message `roles.back`.
 pub const ROLES_BACK: MessageKey = MessageKey::new("roles.back");
@@ -3463,6 +3463,15 @@ pub fn keys_rotated(secrets: i64) -> Message {
     )
 }
 
+/// The message `own.ask-text`.
+#[must_use]
+pub fn own_ask_text(lost: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("own.ask-text"),
+        vec![("lost", Value::Text(lost.to_string()))],
+    )
+}
+
 /// The message `passkeys.added`.
 #[must_use]
 pub fn passkeys_added(name: impl std::fmt::Display) -> Message {
@@ -4826,11 +4835,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "No access covers this project and its sub-projects. It wins over any role from above and over a role through a group on this project. A role given on a sub-project still counts there.",
     ),
     ("assignments.none", "Nobody has a role here yet."),
-    (
-        "assignments.own-text",
-        "This row gives you a role. Without it you may lose this page, and what you can do here. Bugaboo does not let you leave nobody who can manage roles.",
-    ),
-    ("assignments.own-title", "Take away your own role?"),
     ("assignments.pick-group", "Choose the group"),
     ("assignments.pick-list", "To choose from"),
     ("assignments.pick-more", "Show more"),
@@ -5675,6 +5679,24 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("nav.start-page", "Start page"),
     ("nav.status", "Server status"),
     ("nav.themes", "Themes"),
+    ("own.ask-keep", "Keep what I have"),
+    (
+        "own.ask-text",
+        "{lost} The organization always keeps somebody who can manage roles, but it may no longer be you.",
+    ),
+    (
+        "own.ask-title",
+        "This takes away your own way to manage roles",
+    ),
+    ("own.ask-yes", "Do it anyway"),
+    (
+        "own.lost-decide-roles",
+        "You could no longer decide who has which role.",
+    ),
+    (
+        "own.lost-manage-roles",
+        "You could no longer make, change or delete roles.",
+    ),
     ("page.not-found.home", "Go to the start page"),
     (
         "page.not-found.text",
@@ -5984,12 +6006,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "roles.applies.project-and-sub-projects",
         "This project and its sub-projects",
     ),
-    (
-        "roles.ask-first",
-        "This role lets people manage roles. If you have this role yourself, taking this away takes away your own way to manage roles. Bugaboo never leaves nobody who can manage roles, but you could lose it.",
-    ),
-    ("roles.ask-first-keep", "Keep it"),
-    ("roles.ask-first-yes", "Take it away"),
     ("roles.back", "All roles"),
     ("roles.copy", "Copy this role"),
     ("roles.copy-field", "Name of the copy"),

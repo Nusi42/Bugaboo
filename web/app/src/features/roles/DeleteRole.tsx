@@ -3,6 +3,7 @@ import { t } from "@bugaboo/messages";
 import { Alert, ConfirmDialog } from "@bugaboo/ui";
 import { useState } from "react";
 
+import { useAskFirst } from "../../shared/ask-first.tsx";
 import { codeOf, messageOf } from "../../shared/errors.ts";
 import { ReplacementField } from "./ReplacementField.tsx";
 import styles from "./Roles.module.css";
@@ -23,10 +24,12 @@ export interface DeleteRoleProps {
 export function DeleteRole({ id, name, used }: DeleteRoleProps) {
   const [replacement, setReplacement] = useState("");
   const remove = useDeleteRole();
+  const { ask, dialog } = useAskFirst();
   // The viewer may not see every place the role is used, so the server can still ask for one.
   const asks = isUsed(used) || codeOf(remove.error) === "role.in_use";
   return (
     <div className={styles.stack}>
+      {dialog}
       {remove.isError ? <Alert danger>{messageOf(remove.error)}</Alert> : null}
       <div className={styles.row}>
         <ConfirmDialog
@@ -42,11 +45,17 @@ export function DeleteRole({ id, name, used }: DeleteRoleProps) {
             setReplacement("");
           }}
           onConfirm={() => {
-            remove.mutate({
-              params: {
-                path: { role_id: id },
-                query: replacement === "" ? {} : { replacement },
-              },
+            // The role may be what gives the person their own way to manage roles.
+            const taking = replacement === "" ? null : replacement;
+            void ask({ kind: "delete-role", role: id, replacement: taking }).then((go) => {
+              if (go) {
+                remove.mutate({
+                  params: {
+                    path: { role_id: id },
+                    query: taking === null ? {} : { replacement: taking },
+                  },
+                });
+              }
             });
           }}
         >

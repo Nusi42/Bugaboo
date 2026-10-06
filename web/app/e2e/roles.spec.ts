@@ -82,6 +82,13 @@ test("sec_08 a role is made from a copy of a starting role, changed and kept", a
   await expect(page.getByText(t("save.saved"), { exact: true })).toBeVisible();
   await page.reload();
   await expect(permission(page, "permission.see-status")).toBeChecked();
+  // Ada does not hold this role: taking a permission away from it asks nothing.
+  await press(page, "permission.see-status");
+  await expect(permission(page, "permission.see-status")).not.toBeChecked();
+  await expect(page.getByRole("alertdialog")).toHaveCount(0);
+  await expect(page.getByText(t("save.saved"), { exact: true })).toBeVisible();
+  await press(page, "permission.see-status");
+  await expect(permission(page, "permission.see-status")).toBeChecked();
   // The switch for two-step sign-in sits on the role page.
   await press(page, "roles.two-step");
   await expect(page.getByRole("switch", { name: t("roles.two-step"), exact: true })).toBeChecked();
@@ -101,8 +108,10 @@ test("sec_08 taking away a permission that manages roles asks first", async ({ p
     .getByRole("link", { name: "Administrator", exact: true })
     .click();
   await press(page, "permission.manage-roles");
-  await expect(page.getByText(t("roles.ask-first"))).toBeVisible();
-  await page.getByRole("button", { name: t("roles.ask-first-keep"), exact: true }).click();
+  // Ada has the role herself, so taking this away takes away her own way to manage roles.
+  const dialog = page.getByRole("alertdialog");
+  await expect(dialog.getByText(t("own.lost-manage-roles"))).toBeVisible();
+  await dialog.getByRole("button", { name: t("own.ask-keep"), exact: true }).click();
   await expect(permission(page, "permission.manage-roles")).toBeChecked();
 });
 
@@ -163,8 +172,8 @@ test("sec_08 the last administrator cannot be taken away and says why", async ({
     .click();
   // The row is the person's own, so a question comes first.
   const dialog = page.getByRole("alertdialog");
-  await expect(dialog.getByText(t("assignments.own-text"))).toBeVisible();
-  await dialog.getByRole("button", { name: t("assignments.remove"), exact: true }).click();
+  await expect(dialog.getByText(t("own.lost-decide-roles"))).toBeVisible();
+  await dialog.getByRole("button", { name: t("own.ask-yes"), exact: true }).click();
   await expect(page.getByRole("alert")).toHaveText(t("error.access.would-lock-out"));
   await expect(rows.getByText(ada.name)).toBeVisible();
 });

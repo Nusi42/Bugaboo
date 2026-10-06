@@ -36,6 +36,7 @@ export function PermissionsCard({ role }: { readonly role: Schema<"RoleBody"> })
       />
       {catalogue.data === undefined ? null : (
         <RolePermissions
+          role={role.id}
           catalogue={catalogue.data.permissions}
           held={role.permissions}
           onChange={(permissions) => {

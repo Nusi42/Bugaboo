@@ -135,6 +135,7 @@ pub(crate) const ROUTES: &[(&str, Declared)] = &[
         Declared::Permission(Permission::ChangeProjectSettings),
     ),
     ("listMySettings", Declared::SignedIn),
+    ("checkOwnAccessChange", Declared::SignedIn),
     ("changeMySetting", Declared::SignedIn),
     ("resetMySetting", Declared::SignedIn),
     (

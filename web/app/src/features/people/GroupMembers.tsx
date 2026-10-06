@@ -59,6 +59,7 @@ export function GroupMembers({ group }: { readonly group: GroupLine }) {
   const changes = useMemberChanges(group);
   return (
     <>
+      {changes.dialog}
       <MemberList group={group} changes={changes} />
       {changes.problem === null ? null : <Alert danger>{changes.problem}</Alert>}
       <MemberPicker group={group} changes={changes} />

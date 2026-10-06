@@ -14,7 +14,7 @@ In the open group you can:
 - **Put people in**: search by name, and press "Put in" next to the person. The people you picked last come first when the search box is empty. People who are in already say so.
 - **Delete the group**.
 
-Taking a person out, and putting a person in, happen at once and say so with **Undo** for 10 seconds. A person who is put into a group gets every role of the group, so Bugaboo checks that you hold all of those roles yourself, as for giving the roles directly: if you do not, you are told so.
+Taking a person out, and putting a person in, happen at once and say so with **Undo** for 10 seconds. If taking yourself out of a group, or deleting a group you are in, would take away your own way to manage roles, Bugaboo asks first. A person who is put into a group gets every role of the group, so Bugaboo checks that you hold all of those roles yourself, as for giving the roles directly: if you do not, you are told so.
 
 ## Deleting a group
 

@@ -11,7 +11,7 @@ export interface GiveRoleFormProps {
   /** The project the row is for (an ID), or `null` for the whole organization. */
   readonly project: string | null;
   /** Gives the row: rejects with the error of the server. */
-  readonly give: (spec: RowSpec) => Promise<void>;
+  readonly give: (spec: RowSpec) => Promise<boolean>;
   /** Whom the form starts with, for *Change for this project* on a row that comes from above. */
   readonly preset?: Subject | undefined;
 }

@@ -1,16 +1,15 @@
 import type { Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
-import { Alert, Button, Checkbox } from "@bugaboo/ui";
-import { useState } from "react";
+import { Checkbox } from "@bugaboo/ui";
 
 import { permissionSentence, topicHeading } from "../../shared/access-words.ts";
+import { useAskFirst } from "../../shared/ask-first.tsx";
 import styles from "./Roles.module.css";
 import type { PermissionKey } from "./roles.ts";
 
-/** The permissions that let somebody manage roles: taking one away asks first. */
-const MANAGING: ReadonlySet<PermissionKey> = new Set(["manage-roles", "decide-roles"]);
-
 export interface RolePermissionsProps {
+  /** The ID of the role. */
+  readonly role: string;
   /** The catalogue, topic by topic. */
   readonly catalogue: readonly Schema<"PermissionBody">[];
   /** What the role allows now. */
@@ -39,41 +38,25 @@ function groupsOf(catalogue: readonly Schema<"PermissionBody">[]): readonly Topi
   return groups;
 }
 
-/** The question that comes before taking away a permission that manages roles. */
-function AskFirst({
-  onKeep,
-  onTakeAway,
-}: {
-  readonly onKeep: () => void;
-  readonly onTakeAway: () => void;
-}) {
-  return (
-    <Alert warning>
-      <p className={styles.text}>{t("roles.ask-first")}</p>
-      <div className={styles.row}>
-        <Button onPress={onKeep}>{t("roles.ask-first-keep")}</Button>
-        <Button danger onPress={onTakeAway}>
-          {t("roles.ask-first-yes")}
-        </Button>
-      </div>
-    </Alert>
-  );
-}
-
 /**
  * The permissions of a role grouped by topic, each a checkbox with its plain sentence (UX §5.2). A
  * permission that counts only for the whole organization says so. Ticking or unticking saves at once;
- * taking away a permission that manages roles asks first, because the person who does it may hold the
- * role themselves.
+ * taking one away asks first when it would take away the person's own way to manage roles, because
+ * they may hold the role themselves.
  */
-export function RolePermissions({ catalogue, held, onChange }: RolePermissionsProps) {
-  const [asking, setAsking] = useState<PermissionKey | null>(null);
+export function RolePermissions({ role, catalogue, held, onChange }: RolePermissionsProps) {
+  const { ask, dialog } = useAskFirst();
   const toggle = (permission: PermissionKey, on: boolean): void => {
-    if (!on && MANAGING.has(permission)) {
-      setAsking(permission);
+    if (on) {
+      onChange([...held, permission]);
       return;
     }
-    onChange(on ? [...held, permission] : held.filter((known) => known !== permission));
+    const permissions = held.filter((known) => known !== permission);
+    void ask({ kind: "change-role", role, permissions }).then((go) => {
+      if (go) {
+        onChange(permissions);
+      }
+    });
   };
   return (
     <div className={styles.stack}>
@@ -96,17 +79,7 @@ export function RolePermissions({ catalogue, held, onChange }: RolePermissionsPr
           ))}
         </fieldset>
       ))}
-      {asking === null ? null : (
-        <AskFirst
-          onKeep={() => {
-            setAsking(null);
-          }}
-          onTakeAway={() => {
-            onChange(held.filter((known) => known !== asking));
-            setAsking(null);
-          }}
-        />
-      )}
+      {dialog}
     </div>
   );
 }

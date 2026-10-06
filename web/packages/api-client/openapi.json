@@ -5879,6 +5879,94 @@
         "x-permission": "public"
       }
     },
+    "/api/v1/own-access/check-change": {
+      "post": {
+        "tags": ["roles"],
+        "summary": "Says what a change would take away from the person who is about to make it. A person who may\nnot make the change is told that it takes nothing. Nothing is changed.",
+        "operationId": "checkOwnAccessChange",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OwnChangeBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "What the change would take from the person.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OwnLossBody"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-permission": "signed-in"
+      }
+    },
     "/api/v1/people": {
       "get": {
         "tags": ["people"],
@@ -11427,6 +11515,134 @@
           "value": {
             "$ref": "#/components/schemas/ValueBody",
             "description": "The value. It must be of the type of the setting and one it accepts."
+          }
+        }
+      },
+      "OwnChangeBody": {
+        "oneOf": [
+          {
+            "type": "object",
+            "description": "Take a row of *Who has which role* away.",
+            "required": ["assignment", "kind"],
+            "properties": {
+              "assignment": {
+                "type": "string",
+                "description": "The ID of the row."
+              },
+              "kind": {
+                "type": "string",
+                "enum": ["remove-assignment"]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "description": "Put *No access* on a person or a group in a project.",
+            "required": ["who", "project", "kind"],
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": ["no-access"]
+              },
+              "project": {
+                "type": "string",
+                "description": "The ID of the project."
+              },
+              "who": {
+                "$ref": "#/components/schemas/WhoBody",
+                "description": "Whom."
+              }
+            }
+          },
+          {
+            "type": "object",
+            "description": "Take a person out of a group.",
+            "required": ["group", "person", "kind"],
+            "properties": {
+              "group": {
+                "type": "string",
+                "description": "The ID of the group."
+              },
+              "kind": {
+                "type": "string",
+                "enum": ["leave-group"]
+              },
+              "person": {
+                "type": "string",
+                "description": "The ID of the person."
+              }
+            }
+          },
+          {
+            "type": "object",
+            "description": "Delete a group.",
+            "required": ["group", "kind"],
+            "properties": {
+              "group": {
+                "type": "string",
+                "description": "The ID of the group."
+              },
+              "kind": {
+                "type": "string",
+                "enum": ["delete-group"]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "description": "Give a role exactly these permissions.",
+            "required": ["role", "permissions", "kind"],
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": ["change-role"]
+              },
+              "permissions": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Permission"
+                },
+                "description": "What it allows afterwards."
+              },
+              "role": {
+                "type": "string",
+                "description": "The ID of the role."
+              }
+            }
+          },
+          {
+            "type": "object",
+            "description": "Delete a role; everybody who has it gets the role that takes its place.",
+            "required": ["role", "kind"],
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": ["delete-role"]
+              },
+              "replacement": {
+                "type": ["string", "null"],
+                "description": "The ID of the role that takes its place, if somebody has the role."
+              },
+              "role": {
+                "type": "string",
+                "description": "The ID of the role."
+              }
+            }
+          }
+        ],
+        "description": "The change that is about to be made."
+      },
+      "OwnLossBody": {
+        "type": "object",
+        "description": "What the person would lose.",
+        "required": ["loses"],
+        "properties": {
+          "loses": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Permission"
+            },
+            "description": "The permissions that manage roles and who has which role, held now and not after the\nchange; empty when the change takes nothing from the person."
           }
         }
       },

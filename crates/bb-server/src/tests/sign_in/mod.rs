@@ -25,6 +25,7 @@ mod lists;
 // browser of these tests.
 #[path = "../matrix/mod.rs"]
 mod matrix;
+mod own_access_http;
 mod passkeys;
 mod people_http;
 mod permissions_http;

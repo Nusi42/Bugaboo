@@ -148,6 +148,12 @@ async fn groups_request(
                 None,
             )
         }
+        // Whoever may delete a group is told what it takes from them; the others are refused.
+        "checkOwnAccessChange" => (
+            "POST",
+            "/api/v1/own-access/check-change".into(),
+            Some(json!({"kind": "delete-group", "group": a_group(fixture).await?})),
+        ),
         "listMemberChoices" => (
             "GET",
             format!(

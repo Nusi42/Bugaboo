@@ -1,7 +1,8 @@
 import { t } from "@bugaboo/messages";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 
 import { api } from "../../shared/api.ts";
+import { useAskFirst } from "../../shared/ask-first.tsx";
 import { messageOf } from "../../shared/errors.ts";
 import { removeKeepingFocus } from "../../shared/focus.ts";
 import { undoStore } from "../../shared/optimistic-undo.ts";
@@ -17,6 +18,8 @@ export interface MemberChanges {
   readonly remove: (person: PersonLine) => void;
   /** The plain message when the server refused, else `null`. */
   readonly problem: string | null;
+  /** The question that comes before taking a person out of the group that gives them their own way to manage roles. */
+  readonly dialog: ReactNode;
 }
 
 /** Puts a person into a group (`true`) or takes them out (`false`). */
@@ -38,6 +41,7 @@ async function put(group: string, person: string, into: boolean): Promise<void> 
  */
 export function useMemberChanges(group: GroupLine): MemberChanges {
   const [problem, setProblem] = useState<string | null>(null);
+  const { ask, dialog } = useAskFirst();
   const change = (person: PersonLine, into: boolean): void => {
     setProblem(null);
     put(group.id, person.id, into)
@@ -66,10 +70,15 @@ export function useMemberChanges(group: GroupLine): MemberChanges {
       change(person, true);
     },
     remove: (person) => {
-      removeKeepingFocus(() => {
-        change(person, false);
+      void ask({ kind: "leave-group", group: group.id, person: person.id }).then((go) => {
+        if (go) {
+          removeKeepingFocus(() => {
+            change(person, false);
+          });
+        }
       });
     },
     problem,
+    dialog,
   };
 }

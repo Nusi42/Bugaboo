@@ -16,7 +16,7 @@ On the page of a role, "Copy this role" does the same from there.
 - **What this role allows**: the permissions are grouped by topic (Projects, People, Settings), each a box with a plain sentence. Tick or untick; a change is saved at once, with "Saving…" and "Saved" next to it. A permission that counts only for the whole organization says so: a role given in a project that holds it gives nothing for it.
 - **Two-step sign-in for everyone with this role**: everybody who has the role must set up a code app or a passkey. The page says how many people with the role have not done it yet.
 
-Taking away a permission that lets people manage roles asks first, because you may have the role yourself. Bugaboo never leaves nobody who can manage roles, but you could lose it.
+Bugaboo asks first when a change would take away **your own** way to manage roles, or to decide who has which role: taking a permission out of a role you have, changing it, or deleting it. It asks only then; the page says which of the two you would lose. Bugaboo never leaves nobody who can manage roles, but it could be nobody but others.
 
 You can only add a permission to a role that you hold yourself.
 

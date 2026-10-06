@@ -1,8 +1,7 @@
 import { t } from "@bugaboo/messages";
-import { Button, ConfirmDialog } from "@bugaboo/ui";
+import { Button } from "@bugaboo/ui";
 
 import { appliesToText, placeText, roleText } from "../../shared/access-words.ts";
-import { useMe } from "../../shared/use-me.ts";
 import type { RowLine } from "./assignments.ts";
 import styles from "./Roles.module.css";
 
@@ -30,29 +29,11 @@ function whatText(row: RowLine): string {
   return `${roleText(row.role)} · ${where}`;
 }
 
-/** The way to take a row away: a question first when the row is the person's own. */
+/** The way to take a row away; the page asks first when it would take the person's own way to manage roles. */
 function TakeAway({ row, onRemove }: Pick<AssignmentRowProps, "row" | "onRemove">) {
-  const me = useMe();
-  const name = t("assignments.remove-name", { who: row.who.name, what: roleText(row.role) });
-  if (row.who.kind === "person" && me !== undefined && row.who.id === me.id) {
-    return (
-      <ConfirmDialog
-        triggerLabel={t("assignments.remove")}
-        triggerName={name}
-        title={t("assignments.own-title")}
-        text={t("assignments.own-text")}
-        confirmLabel={t("assignments.remove")}
-        cancelLabel={t("common.cancel")}
-        danger
-        onConfirm={() => {
-          onRemove(row);
-        }}
-      />
-    );
-  }
   return (
     <Button
-      aria-label={name}
+      aria-label={t("assignments.remove-name", { who: row.who.name, what: roleText(row.role) })}
       onPress={() => {
         onRemove(row);
       }}

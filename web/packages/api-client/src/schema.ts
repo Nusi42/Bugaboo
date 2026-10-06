@@ -893,6 +893,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/own-access/check-change": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Says what a change would take away from the person who is about to make it. A person who may
+     *     not make the change is told that it takes nothing. Nothing is changed.
+     */
+    post: operations["checkOwnAccessChange"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/people": {
     parameters: {
       query?: never;
@@ -2258,6 +2278,60 @@ export interface components {
     NewValueBody: {
       /** @description The value. It must be of the type of the setting and one it accepts. */
       value: components["schemas"]["ValueBody"];
+    };
+    /** @description The change that is about to be made. */
+    OwnChangeBody:
+      | {
+          /** @description The ID of the row. */
+          assignment: string;
+          /** @enum {string} */
+          kind: "remove-assignment";
+        }
+      | {
+          /** @enum {string} */
+          kind: "no-access";
+          /** @description The ID of the project. */
+          project: string;
+          /** @description Whom. */
+          who: components["schemas"]["WhoBody"];
+        }
+      | {
+          /** @description The ID of the group. */
+          group: string;
+          /** @enum {string} */
+          kind: "leave-group";
+          /** @description The ID of the person. */
+          person: string;
+        }
+      | {
+          /** @description The ID of the group. */
+          group: string;
+          /** @enum {string} */
+          kind: "delete-group";
+        }
+      | {
+          /** @enum {string} */
+          kind: "change-role";
+          /** @description What it allows afterwards. */
+          permissions: components["schemas"]["Permission"][];
+          /** @description The ID of the role. */
+          role: string;
+        }
+      | {
+          /** @enum {string} */
+          kind: "delete-role";
+          /** @description The ID of the role that takes its place, if somebody has the role. */
+          replacement?: string | null;
+          /** @description The ID of the role. */
+          role: string;
+        };
+    /** @description What the person would lose. */
+    OwnLossBody: {
+      /**
+       * @description The permissions that manage roles and who has which role, held now and not after the
+       *     change; empty when the change takes nothing from the person.
+       */
+      loses: components["schemas"]["Permission"][];
     };
     /**
      * @description One page of a list. `T` is the view of an item for the API description; an answer holds the
@@ -7807,6 +7881,77 @@ export interface operations {
           [name: string]: unknown;
         };
         content?: never;
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  checkOwnAccessChange: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["OwnChangeBody"];
+      };
+    };
+    responses: {
+      /** @description What the change would take from the person. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["OwnLossBody"];
+        };
+      };
+      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
       };
       /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
       429: {

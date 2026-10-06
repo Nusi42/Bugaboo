@@ -50,6 +50,7 @@ mod auth_sign_in;
 mod check_access;
 mod field_permissions;
 mod groups;
+mod own_access;
 mod people;
 mod people_visibility;
 mod projects;
@@ -143,6 +144,7 @@ where
         .merge(people::routes())
         .merge(groups::routes())
         .merge(roles::routes())
+        .merge(own_access::routes())
         .merge(assignments::routes())
         .merge(field_permissions::routes())
         .merge(people_visibility::routes())

@@ -205,6 +205,7 @@ pub(super) const EXAMPLES: &[Example] = &[
     Example::route("listProjectSettings"),
     Example::route("changeProjectSetting"),
     Example::route("resetProjectSetting"),
+    Example::route("checkOwnAccessChange"),
     Example::with("listMySettings", &[Quirk::KeysActAsThePerson]),
     Example::with("changeMySetting", &[Quirk::KeysActAsThePerson]),
     Example::with("resetMySetting", &[Quirk::KeysActAsThePerson]),
