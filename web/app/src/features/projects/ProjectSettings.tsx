@@ -1,6 +1,7 @@
 import { t } from "@bugaboo/messages";
 import { Card, Link } from "@bugaboo/ui";
 import { useNavigate } from "@tanstack/react-router";
+import type { ReactNode } from "react";
 
 import { paths, projectAddress } from "../../shared/paths.ts";
 import { NotFoundPage } from "../shell/index.ts";
@@ -13,9 +14,12 @@ import type { OneProject } from "./use-projects.ts";
 export function ProjectSettings({
   project,
   address,
+  extra,
 }: {
   readonly project: OneProject;
   readonly address: string;
+  /** More cards at the end of the page. */
+  readonly extra?: ReactNode;
 }) {
   const navigate = useNavigate();
   const mayChange = project.permissions.includes("change-project-settings");
@@ -53,6 +57,7 @@ export function ProjectSettings({
           <MoveProject project={project} />
         </Card>
       ) : null}
+      {extra}
     </div>
   );
 }

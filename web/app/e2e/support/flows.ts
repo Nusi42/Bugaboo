@@ -84,6 +84,9 @@ export async function signOut(page: Page): Promise<void> {
 /** The topics of *Organization settings*; every other topic is in *My settings*. */
 const organizationTopics: ReadonlySet<string> = new Set([
   t("nav.invitations"),
+  t("nav.field-permissions"),
+  t("nav.people-visibility"),
+  t("nav.check-access"),
   t("nav.sign-in-rules"),
   t("nav.themes"),
   t("nav.projects"),

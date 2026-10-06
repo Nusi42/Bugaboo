@@ -627,6 +627,12 @@ export const messages = {
   "permission.manage-roles": "Make, change and delete roles",
   "permission.change-organization-settings": "Change organization settings",
   "permission.see-status": "See how the server is doing",
+  "starting-role.administrator": "Administrator",
+  "starting-role.project-lead": "Project lead",
+  "starting-role.team-member": "Team member",
+  "starting-role.contributor": "Contributor",
+  "starting-role.viewer": "Viewer",
+  "starting-role.guest": "Guest",
   "issue-field.title": "Title",
   "issue-field.description": "Description",
   "issue-field.status": "Status",
@@ -739,6 +745,98 @@ export const messages = {
   "projects.line-people": "In {project}, for {person}, {kind} goes from {before} to {after}.",
   "projects.line-lift":
     "{person} could take away the No access that applies to them in {project}. Take that No access away first, or move the project somewhere else.",
+  "nav.field-permissions": "Field permissions",
+  "nav.people-visibility": "Who sees people",
+  "nav.check-access": "Check access",
+  "access.field": "Field",
+  "access.kind": "Kind of people information",
+  "access.cell-label": "{subject} for {role}",
+  "access.origin-here": "Set for this project",
+  "access.origin-from": "From {project}",
+  "access.origin-role-own": "The role's own level",
+  "access.origin-unset": "Nothing set, so it is hidden",
+  "access.hidden-project": "a project you can't see",
+  "access.reset": "Reset",
+  "access.reset-label": "Reset {subject} for {role}",
+  "access.ceiling": "You can set a level only up to your own. Levels above it cannot be picked.",
+  "access.roles-cut": "There are more roles than fit in this table. The first ones are shown.",
+  "access.no-roles": "There is no role yet.",
+  "access.back-to-settings": "Back to the settings of the project",
+  "access.project-links-title": "What roles see here",
+  "access.project-links-intro":
+    "Which fields and which people each role sees in this project, and what a person can do here.",
+  "access.project-links-name": "Field permissions, who sees people and check access",
+  "access.role-chooser": "Show the levels of the role",
+  "field-permissions.intro":
+    "For each role, choose whether a field is hidden, can be seen or can be changed. Hidden means the field does not exist for that role: not in issues, searches, e-mails, maps or the assistant.",
+  "field-permissions.intro-project":
+    "These levels count in {project} and in its sub-projects, until one of them sets its own. Change a level that comes from higher up to set one for this project, and reset it to take that back.",
+  "field-permissions.project-title": "Field permissions in {project}",
+  "field-permissions.table-name": "Which level each role has for each field",
+  "people-visibility.intro":
+    "For each role and each kind of people information, choose whether people are shown by name, by their role only (a Team member) or not at all (Someone).",
+  "people-visibility.intro-project":
+    "These levels count in {project} and in its sub-projects, until one of them sets its own. Change a level that comes from higher up to set one for this project, and reset it to take that back.",
+  "people-visibility.project-title": "Who sees people in {project}",
+  "people-visibility.table-name": "How each role sees each kind of people information",
+  "people-visibility.preview-role": "See what this role sees",
+  "people-visibility.preview-heading": "What {role} sees",
+  "people-visibility.who-names": "Ana",
+  "people-visibility.who-role": "a {role}",
+  "people-visibility.example-assigned": "Assigned to {who}",
+  "people-visibility.example-comment": "Comment by {who}",
+  "people-visibility.example-editing": "{who} is editing the description",
+  "check-access.project-title": "Check access in {project}",
+  "check-access.intro":
+    "Choose a person and where to look. You read what they can do there, every field and how they see people, each with the reason.",
+  "check-access.person-search": "Search for a person",
+  "check-access.person-list": "People",
+  "check-access.person-more": "Show more people",
+  "check-access.person-nothing":
+    "No person found. People whose names you cannot see are not listed.",
+  "check-access.place-legend": "Where?",
+  "check-access.place-everywhere": "The whole organization",
+  "check-access.place-search": "Search for a project",
+  "check-access.place-list": "Projects",
+  "check-access.place-more": "Show more projects",
+  "check-access.place-nothing": "No project found. Try another word.",
+  "check-access.pick-a-person": "Pick a person to read what they can do.",
+  "check-access.result-heading": "What {person} can do in {place}",
+  "check-access.in-organization": "the whole organization",
+  "check-access.fields-heading": "Fields",
+  "check-access.people-heading": "How they see people",
+  "check-access.yes": "Yes.",
+  "check-access.no": "No.",
+  "check-access.reason.role-person-organization":
+    "{person} has the role {role} for the whole organization.",
+  "check-access.reason.role-person-project": "{person} has the role {role} in {project}.",
+  "check-access.reason.role-group-organization":
+    "{person} is in the group {group}, which has the role {role} for the whole organization.",
+  "check-access.reason.role-group-project":
+    "{person} is in the group {group}, which has the role {role} in {project}.",
+  "check-access.reason.inherited-project":
+    "{place} is inside {project}, so the role applies here too.",
+  "check-access.reason.inherited-organization":
+    "The role is given for the whole organization, so it applies here too.",
+  "check-access.reason.blocked-person":
+    "But {person} has No access in {project}, and that wins over the role.",
+  "check-access.reason.blocked-group":
+    "But {person} is in the group {group}, which has No access in {project}, and that wins over the role.",
+  "check-access.reason.kept":
+    "Deciding who has which role stays, because it comes from higher up. Nobody is locked out of managing roles.",
+  "check-access.reason.organization-only":
+    "The role {role} has this, but it counts only when the role is given for the whole organization.",
+  "check-access.reason.narrowed-by-key": "The access key does not keep this.",
+  "check-access.reason.outside-key": "The access key does not count in this project.",
+  "check-access.reason.none": "No role {person} has here gives this.",
+  "check-access.level.role-project": "The role {role} sets {subject} to {level} for {project}.",
+  "check-access.level.role-organization":
+    "The role {role} sets {subject} to {level} for the whole organization.",
+  "check-access.level.role-unset":
+    "The role {role} sets nothing for {subject}, so it counts as hidden.",
+  "check-access.level.highest": "The highest level counts.",
+  "check-access.level.no-role": "{person} has no role here, so nothing is shown.",
+  "check-access.level.capped": "The access key lowers it to Can see.",
 } as const;
 
 export type MessageKey = keyof typeof messages;
@@ -753,13 +851,62 @@ export interface MessageArguments {
   "access-keys.row.permissions": { count: number };
   "access-keys.row.prefix": { prefix: string | number };
   "access-keys.row.projects-some": { names: string | number };
+  "access.cell-label": { role: string | number; subject: string | number };
+  "access.origin-from": { project: string | number };
+  "access.reset-label": { role: string | number; subject: string | number };
   "backup.left": { count: number };
+  "check-access.level.no-role": { person: string | number };
+  "check-access.level.role-organization": {
+    level: string | number;
+    role: string | number;
+    subject: string | number;
+  };
+  "check-access.level.role-project": {
+    level: string | number;
+    project: string | number;
+    role: string | number;
+    subject: string | number;
+  };
+  "check-access.level.role-unset": { role: string | number; subject: string | number };
+  "check-access.project-title": { project: string | number };
+  "check-access.reason.blocked-group": {
+    group: string | number;
+    person: string | number;
+    project: string | number;
+  };
+  "check-access.reason.blocked-person": { person: string | number; project: string | number };
+  "check-access.reason.inherited-project": { place: string | number; project: string | number };
+  "check-access.reason.none": { person: string | number };
+  "check-access.reason.organization-only": { role: string | number };
+  "check-access.reason.role-group-organization": {
+    group: string | number;
+    person: string | number;
+    role: string | number;
+  };
+  "check-access.reason.role-group-project": {
+    group: string | number;
+    person: string | number;
+    project: string | number;
+    role: string | number;
+  };
+  "check-access.reason.role-person-organization": {
+    person: string | number;
+    role: string | number;
+  };
+  "check-access.reason.role-person-project": {
+    person: string | number;
+    project: string | number;
+    role: string | number;
+  };
+  "check-access.result-heading": { person: string | number; place: string | number };
   "data-folder.create-failed": { path: string | number; reason: string | number };
   "data-folder.not-a-data-folder": { path: string | number };
   "data-folder.open": { part: string | number; path: string | number };
   "data-folder.own-certificate": { flag: string | number; path: string | number };
   "data-folder.protect-failed": { path: string | number; reason: string | number };
   "data-folder.unknown": { part: string | number; path: string | number };
+  "field-permissions.intro-project": { project: string | number };
+  "field-permissions.project-title": { project: string | number };
   "first-run.step-of": { name: string | number; step: string | number; total: string | number };
   "frames.open-focus": { name: string | number };
   "frames.remove-name": { name: string | number };
@@ -776,6 +923,13 @@ export interface MessageArguments {
   "passkeys.last-used": { when: string | number };
   "passkeys.remove-name": { name: string | number };
   "passkeys.remove-title": { name: string | number };
+  "people-visibility.example-assigned": { who: string | number };
+  "people-visibility.example-comment": { who: string | number };
+  "people-visibility.example-editing": { who: string | number };
+  "people-visibility.intro-project": { project: string | number };
+  "people-visibility.preview-heading": { role: string | number };
+  "people-visibility.project-title": { project: string | number };
+  "people-visibility.who-role": { role: string | number };
   "projects.inside": { name: string | number };
   "projects.line-can-no-more": {
     person: string | number;
