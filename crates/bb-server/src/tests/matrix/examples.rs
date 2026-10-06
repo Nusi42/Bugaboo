@@ -22,10 +22,13 @@ use crate::sign_in_tests::rig::{OTHER_PASSWORD, PASSWORD, Rig};
 pub(super) struct Example {
     /// The operation ID of the route in the API description.
     pub(super) operation: &'static str,
-    /// The route answers a project that the actor cannot see with `resource.not_found`, also an
-    /// actor who knows it exists (they hold *Decide who has which role* there): it is about what
-    /// is inside the project.
+    /// The route answers a project that the actor cannot see with `resource.not_found` before it
+    /// looks at the permission, also an actor who knows it exists (they hold *Decide who has which
+    /// role* there): it is about what is inside the project.
     pub(super) hides_unseen: bool,
+    /// The route looks at the permission first, and then answers `resource.not_found` to somebody
+    /// who holds it but does not see the project: changing what one cannot see is not possible.
+    pub(super) needs_to_see_the_project: bool,
     /// The route lists what the actor may see: a person without the permission is not refused but
     /// gets what they see, which may be nothing (M2-F30). Only the routes named here may do that.
     pub(super) filters_what_is_seen: bool,
@@ -44,6 +47,7 @@ impl Example {
         Self {
             operation,
             hides_unseen: false,
+            needs_to_see_the_project: false,
             filters_what_is_seen: false,
             ends_the_session: false,
             names_a_missing_thing: false,
@@ -53,6 +57,11 @@ impl Example {
 
     const fn hides_unseen(mut self) -> Self {
         self.hides_unseen = true;
+        self
+    }
+
+    const fn needs_to_see_the_project(mut self) -> Self {
+        self.needs_to_see_the_project = true;
         self
     }
 
@@ -114,7 +123,7 @@ pub(super) const EXAMPLES: &[Example] = &[
     Example::route("listProjects").filters_what_is_seen(),
     Example::route("makeProject"),
     Example::route("getProject").hides_unseen(),
-    Example::route("changeProject"),
+    Example::route("changeProject").needs_to_see_the_project(),
     Example::route("moveProject").hides_unseen(),
     Example::route("previewProjectMove").hides_unseen(),
     Example::route("makeSubProject"),

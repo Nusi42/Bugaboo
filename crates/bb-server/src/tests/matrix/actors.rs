@@ -55,6 +55,11 @@ pub(super) enum Actor {
     /// A *Project lead* for the whole organization with *No access* on the target: they keep
     /// *Decide who has which role* there and see nothing (ADR-0025, decision 6).
     NoAccessUnderLead,
+    /// A person whose only role holds exactly this permission, for the whole organization (none:
+    /// a person with no permission, for the routes that need none). Every route with a permission
+    /// is run as the person with exactly that one, so a route cannot ask for more than it
+    /// declares.
+    Exactly(Option<Permission>),
     /// An *Administrator* who came with an access key that may only see (WP-09).
     KeySeeOnly,
     /// An *Administrator* who came with an access key for the sibling project (WP-09).
@@ -82,9 +87,24 @@ impl Actor {
     /// these two to [`actors`]. Their rows below are written already.
     pub(super) const WITH_A_KEY: [Self; 2] = [Self::KeySeeOnly, Self::KeyForAnotherProject];
 
+    /// The actor that holds exactly what a route declares.
+    pub(super) fn exactly(declared: &str) -> Self {
+        Self::Exactly(Permission::from_code(declared))
+    }
+
+    /// What tells the actors apart, also the ones that share a name in the record.
+    pub(super) fn key(self) -> String {
+        match self {
+            Self::Exactly(Some(permission)) => format!("exactly-{}", permission.code()),
+            Self::Exactly(None) => "exactly-nothing".to_owned(),
+            other => other.name(),
+        }
+    }
+
     /// The name in the record of what the matrix covered.
     pub(super) fn name(self) -> String {
         match self {
+            Self::Exactly(_) => "exactly-the-permission".to_owned(),
             Self::Nobody => "nobody".to_owned(),
             Self::NoRole => "no-role".to_owned(),
             Self::Role(role) => format!("role-{}", role.key()),
@@ -209,7 +229,13 @@ fn given_everywhere(role: StartingRole, at: Where) -> BTreeSet<Permission> {
 /// What the actor holds at the place.
 pub(super) fn standing(actor: Actor, at: Where) -> Standing {
     match actor {
-        Actor::Nobody | Actor::NoRole => Standing::nothing(),
+        Actor::Nobody | Actor::NoRole | Actor::Exactly(None) => Standing::nothing(),
+        // The one permission, for the whole organization: at a project it counts only when it
+        // counts in projects.
+        Actor::Exactly(Some(permission)) => match at {
+            Where::Target if ORGANIZATION_ONLY.contains(&permission) => Standing::nothing(),
+            _ => Standing::of(BTreeSet::from([permission])),
+        },
         Actor::Role(role) => Standing::of(given_everywhere(role, at)),
         // A role on a project counts in the project and below, and gives nothing for the whole
         // organization (organization permissions count only from a row for the whole organization).
@@ -252,6 +278,7 @@ pub(super) fn sees(actor: Actor, project: Project) -> bool {
             // A key for the sibling project sees the sibling project (and below).
             actor == Actor::KeyForAnotherProject && project == Project::Sibling
         }
+        Actor::Exactly(permission) => permission == Some(Permission::SeeProjects),
         Actor::Role(_) | Actor::LeadOnParent | Actor::KeySeeOnly => true,
         Actor::LeadOnSiblingOnly => project == Project::Sibling,
         Actor::NoAccessOnTarget | Actor::NoAccessUnderLead => project != Project::Target,

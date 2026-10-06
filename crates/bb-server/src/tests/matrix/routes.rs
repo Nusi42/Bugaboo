@@ -107,8 +107,15 @@ pub(super) fn expectation(actor: Actor, route: &Route, example: &Example) -> Exp
                 Where::Organization
             };
             let held = standing(actor, at);
-            if held.permissions.contains(&permission) {
-                Expect::Allowed
+            if at == Where::Target && example.hides_unseen && !held.sees() {
+                // What is inside a project is not told to a person who does not see it.
+                Expect::NotFound
+            } else if held.permissions.contains(&permission) {
+                if at == Where::Target && example.needs_to_see_the_project && !held.sees() {
+                    Expect::NotFound
+                } else {
+                    Expect::Allowed
+                }
             } else if at == Where::Target && (!held.knows || (example.hides_unseen && !held.sees()))
             {
                 Expect::NotFound
@@ -181,18 +188,31 @@ impl<'a> Fixture<'a> {
         let roles = starting_roles(&org).await?;
         let role = |role: StartingRole| roles[role.key()];
         let mut people = Vec::new();
-        for actor in actors() {
+        let mut everyone = actors();
+        everyone.extend(
+            Permission::ALL
+                .iter()
+                .map(|permission| Actor::Exactly(Some(*permission))),
+        );
+        everyone.push(Actor::Exactly(None));
+        for actor in everyone {
             if !actor.signed_in() {
                 continue;
             }
-            let email = format!("{}@example.test", actor.name());
+            let email = format!("{}@example.test", actor.key());
             let started = rig.person(&org.admin.session, &email).await?;
             let member = Member {
                 id: started.person.id,
                 session: started.session_token,
             };
             match actor {
-                Actor::Nobody | Actor::NoRole => {}
+                Actor::Nobody | Actor::NoRole | Actor::Exactly(None) => {}
+                Actor::Exactly(Some(permission)) => {
+                    let only = org
+                        .role(&format!("Exactly {}", permission.code()), &[permission])
+                        .await?;
+                    org.give_everywhere(&member, only.id).await?;
+                }
                 Actor::Role(starting) => {
                     org.give_everywhere(&member, role(starting)).await?;
                 }
@@ -321,10 +341,18 @@ fn check_content(actor: Actor, route: &Route, reply: &Reply) -> Result<(), Strin
 async fn run(rig: &Rig, actors: &[Actor]) -> Result<Record, Failure> {
     let fixture = Fixture::start(rig).await?;
     let routes = routes_of_the_description()?;
-    let mut record = Record::new(actors);
+    // Besides the actors of the list, each route is run by the person who holds exactly the
+    // permission it declares.
+    let mut named = actors.to_vec();
+    named.push(Actor::Exactly(None));
+    let mut record = Record::new(&named);
     let mut browsers = BTreeMap::new();
-    for actor in actors {
-        browsers.insert(actor.name(), fixture.browser(*actor).await?);
+    for actor in &named {
+        browsers.insert(actor.key(), fixture.browser(*actor).await?);
+    }
+    for permission in Permission::ALL {
+        let actor = Actor::Exactly(Some(*permission));
+        browsers.insert(actor.key(), fixture.browser(actor).await?);
     }
     for route in &routes {
         let example = EXAMPLES
@@ -336,9 +364,11 @@ async fn run(rig: &Rig, actors: &[Actor]) -> Result<Record, Failure> {
                     route.method, route.path, route.operation
                 )
             })?;
-        for actor in actors {
+        let mut route_actors = actors.to_vec();
+        route_actors.push(Actor::exactly(&route.declared));
+        for actor in &route_actors {
             let browser = browsers
-                .get_mut(&actor.name())
+                .get_mut(&actor.key())
                 .ok_or("no browser for the actor")?;
             let (method, address, body) = request(&fixture, example, *actor, browser).await?;
             if method != route.method {
@@ -373,7 +403,7 @@ async fn run(rig: &Rig, actors: &[Actor]) -> Result<Record, Failure> {
                 }
             }
             if example.ends_the_session && expected == Expect::Allowed && actor.signed_in() {
-                browsers.insert(actor.name(), fixture.browser(*actor).await?);
+                browsers.insert(actor.key(), fixture.browser(*actor).await?);
             }
             record.ran(route, *actor, expected);
         }
