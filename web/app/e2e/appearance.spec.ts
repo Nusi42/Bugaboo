@@ -84,6 +84,8 @@ test("thm_01 each of the four themes can be chosen, and the choice is remembered
     themes.map((theme: Theme) => async () => {
       await pick(page, theme);
       await expect(page.locator("html")).toHaveAttribute("data-look", theme.id);
+      // The choice is on the server before the page is loaded again.
+      await expect(page.getByRole("status").filter({ hasText: t("save.saved") })).toBeVisible();
       await page.reload();
       await expect(page.locator("html")).toHaveAttribute("data-look", theme.id);
     }),
