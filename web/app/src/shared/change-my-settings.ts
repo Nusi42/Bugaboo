@@ -40,6 +40,11 @@ export const saveProgress = {
   },
 };
 
+/** Tells the person that a change stays in this page only: the server has not got it. */
+export function reportNotSaved(): void {
+  report({ state: "not-saved", problem: null });
+}
+
 /** Sends one change: the value counts at once, and goes back when the server refuses. */
 function send(change: SettingChange): Promise<void> {
   const path = { params: { path: { key: change.key } } };

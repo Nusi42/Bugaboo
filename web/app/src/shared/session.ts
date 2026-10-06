@@ -74,4 +74,7 @@ export async function leaveSession(go: () => Promise<void>): Promise<void> {
   queryClient.removeQueries({ queryKey: meOptions().queryKey });
   await go();
   queryClient.clear();
+  // A change of the settings in the cache while the page was changing writes the copy for the
+  // first frame again: forget it once more, now that nothing can write it.
+  forgetPersonalChoices();
 }

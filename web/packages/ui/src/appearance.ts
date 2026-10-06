@@ -176,6 +176,15 @@ export function storageSource(getStore: () => ChoiceStore): AppearanceSource {
   };
 }
 
+/** Removes the choices this device kept (the ones of the pages before sign-in). */
+export function forgetStoredAppearance(): void {
+  try {
+    localStorage.removeItem(storageKey);
+  } catch {
+    // Nothing was kept that could be removed.
+  }
+}
+
 let source: AppearanceSource = storageSource(() => localStorage);
 
 /** WP-07 calls this with a source that keeps the choices with the person's other settings. */

@@ -1,5 +1,7 @@
 import {
   currentSource,
+  defaultAppearance,
+  forgetStoredAppearance,
   parseAppearance,
   setAppearanceSource,
   type Appearance,
@@ -8,12 +10,14 @@ import {
 
 import { settingKeys } from "@bugaboo/api-client";
 
-import { changeMySettings } from "./change-my-settings.ts";
+import { changeMySettings, reportNotSaved } from "./change-my-settings.ts";
+import { codeOf } from "./errors.ts";
 import {
   appearanceForShell,
   appearanceOf,
   changesForAppearance,
   currentMySettings,
+  mySettingsKey,
   regionOf,
   shortcutKeysOf,
   type MySettings,
@@ -22,9 +26,11 @@ import { queryClient } from "./query-client.ts";
 import { deviceRegion, setRegion } from "./region.ts";
 import {
   currentKeysSource,
+  forgetStoredKeys,
   setShortcutKeysSource,
   type ShortcutKeysSource,
 } from "./shortcuts-source.ts";
+import { type ShortcutOverrides } from "./shortcuts.ts";
 
 /**
  * The copy of the look that this browser keeps only for the first frame (M0-F05): before the
@@ -50,6 +56,22 @@ function writeFirstFrame(look: Appearance): void {
   }
 }
 
+/**
+ * Choices the person made while the server could not be reached, kept in this page only: never in
+ * the browser's storage, where the next person at this device could find them.
+ */
+const unsent: { look: Appearance | null; keys: ShortcutOverrides | null } = {
+  look: null,
+  keys: null,
+};
+const unsentWatchers = new Set<() => void>();
+
+function tellUnsentWatchers(): void {
+  for (const watcher of unsentWatchers) {
+    watcher();
+  }
+}
+
 /** Forgets what this browser kept of the person's choices: the copy for the first frame. */
 export function forgetPersonalChoices(): void {
   try {
@@ -57,6 +79,30 @@ export function forgetPersonalChoices(): void {
   } catch {
     // Nothing was kept that could be removed.
   }
+  unsent.look = null;
+  unsent.keys = null;
+}
+
+/**
+ * Removes the choices this device kept before the person's choices lived on the server (the look
+ * and the keys of the pages before sign-in): once somebody is signed in, nothing of them is left
+ * in the storage of the browser to be found by the next person.
+ */
+export function forgetDeviceChoices(): void {
+  forgetStoredAppearance();
+  forgetStoredKeys();
+}
+
+/**
+ * Whether somebody is signed in but the server did not give their settings (it failed, or does
+ * not answer): their changes then stay in this page, and the page says *Not saved yet*.
+ */
+function signedInWithoutSettings(): boolean {
+  if (currentMySettings() !== undefined) {
+    return false;
+  }
+  const state = queryClient.getQueryState(mySettingsKey());
+  return state?.status === "error" && codeOf(state.error) !== "auth.not_signed_in";
 }
 
 /**
@@ -101,25 +147,42 @@ function personalAppearance(device: AppearanceSource): AppearanceSource {
       if (settings !== undefined) {
         return ofSettings(settings);
       }
+      if (signedInWithoutSettings()) {
+        return unsent.look ?? defaultAppearance;
+      }
       const copy = readFirstFrame();
       return copy === null ? device.read() : ofCopy(copy);
     },
     write: (next) => {
       const settings = currentMySettings();
       if (settings === undefined) {
+        if (signedInWithoutSettings()) {
+          unsent.look = next;
+          reportNotSaved();
+          tellUnsentWatchers();
+          return;
+        }
         device.write(next);
         return;
       }
       void changeMySettings(changesForAppearance(appearanceForShell(appearanceOf(settings)), next));
     },
-    subscribe: (listener) => {
-      const stopCache = onMySettingsChange(listener);
-      const stopDevice = device.subscribe(listener);
-      return () => {
-        stopCache();
-        stopDevice();
-      };
-    },
+    subscribe: (listener) => subscribeToAll(device, listener),
+  };
+}
+
+/** Calls `listener` when the settings in the cache, the device's choice or an unsent one changes. */
+function subscribeToAll(
+  device: { readonly subscribe: (listener: () => void) => () => void },
+  listener: () => void,
+): () => void {
+  unsentWatchers.add(listener);
+  const stopCache = onMySettingsChange(listener);
+  const stopDevice = device.subscribe(listener);
+  return () => {
+    unsentWatchers.delete(listener);
+    stopCache();
+    stopDevice();
   };
 }
 
@@ -129,10 +192,19 @@ function personalKeys(device: ShortcutKeysSource): ShortcutKeysSource {
   return {
     read: () => {
       const settings = currentMySettings();
-      return settings === undefined ? device.read() : ofSettings(settings);
+      if (settings !== undefined) {
+        return ofSettings(settings);
+      }
+      return signedInWithoutSettings() ? (unsent.keys ?? {}) : device.read();
     },
     write: (next) => {
       if (currentMySettings() === undefined) {
+        if (signedInWithoutSettings()) {
+          unsent.keys = next;
+          reportNotSaved();
+          tellUnsentWatchers();
+          return;
+        }
         device.write(next);
         return;
       }
@@ -141,14 +213,7 @@ function personalKeys(device: ShortcutKeysSource): ShortcutKeysSource {
         { key: settingKeys.shortcutsKeys, value: empty ? null : JSON.stringify(next) },
       ]);
     },
-    subscribe: (listener) => {
-      const stopCache = onMySettingsChange(listener);
-      const stopDevice = device.subscribe(listener);
-      return () => {
-        stopCache();
-        stopDevice();
-      };
-    },
+    subscribe: (listener) => subscribeToAll(device, listener),
   };
 }
 
@@ -167,6 +232,7 @@ export function installPersonalSources(): void {
       return;
     }
     setRegion(regionOf(settings));
+    forgetDeviceChoices();
     writeFirstFrame(appearanceForShell(appearanceOf(settings)));
   });
 }

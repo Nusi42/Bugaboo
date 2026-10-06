@@ -131,6 +131,47 @@ test("cfg_04 after signing out nothing of the person's choices is left in the br
   await expect(page.locator("html")).toHaveAttribute("data-look", "daylight");
 });
 
+/** What this browser keeps in its storage, as `key=value` lines. */
+function storedText(page: Page): Promise<string> {
+  return page.evaluate(() => {
+    const lines: string[] = [];
+    for (const store of [localStorage, sessionStorage]) {
+      for (const key of Object.keys(store)) {
+        lines.push(`${key}=${store.getItem(key) ?? ""}`);
+      }
+    }
+    return lines.join(", ");
+  });
+}
+
+test("cfg_04 the storage of the browser holds nothing of the person while they are signed in or after", async ({
+  page,
+}) => {
+  await page.emulateMedia({ colorScheme: "light" });
+  // What the device kept before the choices lived on the server (the look and the keys of the
+  // pages before sign-in) is removed at sign-in.
+  await page.goto("/sign-in");
+  await page.evaluate(() => {
+    localStorage.setItem("bugaboo.appearance", JSON.stringify({ mode: "dark" }));
+    localStorage.setItem("bugaboo.shortcut-keys", JSON.stringify({ "go-home": ["g x"] }));
+  });
+  await signIn(page, ada);
+  await chooseMidnight(page);
+  await chooseTimeZone(page, "Pacific/Auckland");
+  await chooseKeys(page);
+  const whileSignedIn = await storedText(page);
+  expect(whileSignedIn).not.toContain("bugaboo.appearance");
+  expect(whileSignedIn).not.toContain("bugaboo.shortcut-keys");
+  expect(whileSignedIn).not.toContain("Pacific/Auckland");
+  await signOut(page);
+  // Nothing of the person is left in either storage.
+  const left = await storedText(page);
+  for (const word of ["midnight", "Pacific/Auckland", "go-home", "g i", ada.email, ada.name]) {
+    expect(left).not.toContain(word);
+  }
+  expect(left).not.toContain("first-frame");
+});
+
 test("cfg_06 an administrator locks the theme and a person sees Set by your organization", async ({
   page,
   browser,
@@ -217,15 +258,22 @@ test("cfg_06 the sign-in rules are drawn from the registry and saved at once", a
   await saved(page);
   await page.reload();
   await expect(page.getByLabel(idle, { exact: true })).toHaveValue("45");
-  // A number outside its bounds is refused with a plain sentence, and the old value stays.
-  await page.getByLabel(idle, { exact: true }).fill("1");
-  await page
-    .getByRole("button", { name: t("common.save") })
-    .first()
-    .click();
-  await expect(
-    page.getByRole("alert").filter({ hasText: t("error.request.invalid") }),
-  ).toBeVisible();
+  // A number outside its bounds, or none, is not sent: the box says what is allowed, and the old
+  // value stays.
+  const between = t("setting.ui.between", { least: 5, most: 1440 });
+  const tryTyping = async (wrong: string): Promise<void> => {
+    await page.getByLabel(idle, { exact: true }).fill(wrong);
+    await page
+      .getByRole("button", { name: t("common.save") })
+      .first()
+      .click();
+    await expect(page.getByLabel(idle, { exact: true })).toHaveAttribute("aria-invalid", "true");
+    await expect(page.getByText(between)).toHaveCount(2);
+  };
+  await tryTyping("1");
+  await tryTyping("many");
+  await page.reload();
+  await expect(page.getByLabel(idle, { exact: true })).toHaveValue("45");
   // The search finds a setting by what it says.
   await page.getByRole("searchbox", { name: t("setting.ui.search") }).fill("two-step");
   await expect(page.getByText(t("setting.security.two-step-required.help"))).toBeVisible();

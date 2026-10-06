@@ -7,6 +7,7 @@ export {
   applyInitialAppearance,
   currentSource,
   defaultAppearance,
+  forgetStoredAppearance,
   parseAppearance,
   setAppearanceSource,
   spacingChoices,
