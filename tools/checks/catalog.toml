@@ -483,10 +483,10 @@ status = "planned"
 id = "SEC-MATRIX"
 title = "Generated permission matrix passes for every entry point (UI API, search, MCP, assistant, e-mail, webhooks, exports)"
 rule = "ADR-0004"
-tool = "generated tests"
-when = ["ci"]
-files = ["crates/**"]
-status = "planned"
+tool = "generated tests (crates/bb-server/src/tests/matrix runs every route of the API description for every actor and writes tools/checks/sec-matrix-record.txt) + xtask (holds the record and the table of examples against the API description)"
+when = ["push", "ci"]
+files = ["crates/**", "tools/checks/sec-matrix-record.txt", "web/packages/api-client/openapi.json"]
+status = "active"
 
 [[check]]
 id = "SEC-HEADERS"

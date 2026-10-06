@@ -12,6 +12,10 @@ mod caching;
 mod http;
 mod invitations;
 mod lists;
+// The permission matrix (SEC-MATRIX, WP-10) lives in `tests/matrix` and uses the server and the
+// browser of these tests.
+#[path = "../matrix/mod.rs"]
+mod matrix;
 mod passkeys;
 mod permissions_http;
 mod policy;

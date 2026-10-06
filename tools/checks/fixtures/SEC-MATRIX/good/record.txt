@@ -1,0 +1,5 @@
+# A record the way the matrix writes it.
+actors nobody no-role role-administrator role-project-lead role-team-member role-contributor role-viewer role-guest lead-on-parent lead-on-sibling-only no-access-on-target
+route changeProject PATCH /api/v1/projects/{project} change-project-settings : nobody=not-signed-in no-role=allowed role-administrator=allowed role-project-lead=allowed role-team-member=allowed role-contributor=allowed role-viewer=allowed role-guest=allowed lead-on-parent=allowed lead-on-sibling-only=allowed no-access-on-target=allowed
+route getStatus GET /api/v1/status public : nobody=allowed no-role=allowed role-administrator=allowed role-project-lead=allowed role-team-member=allowed role-contributor=allowed role-viewer=allowed role-guest=allowed lead-on-parent=allowed lead-on-sibling-only=allowed no-access-on-target=allowed
+route listProjects GET /api/v1/projects see-projects : nobody=not-signed-in no-role=allowed role-administrator=allowed role-project-lead=allowed role-team-member=allowed role-contributor=allowed role-viewer=allowed role-guest=allowed lead-on-parent=allowed lead-on-sibling-only=allowed no-access-on-target=allowed

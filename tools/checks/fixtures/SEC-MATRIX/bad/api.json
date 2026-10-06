@@ -1,0 +1,22 @@
+{
+  "paths": {
+    "/api/v1/status": {
+      "get": {
+        "operationId": "getStatus",
+        "x-permission": "public"
+      }
+    },
+    "/api/v1/projects": {
+      "get": {
+        "operationId": "listProjects",
+        "x-permission": "see-projects"
+      }
+    },
+    "/api/v1/projects/{project}": {
+      "patch": {
+        "operationId": "changeProject",
+        "x-permission": "change-project-settings"
+      }
+    }
+  }
+}

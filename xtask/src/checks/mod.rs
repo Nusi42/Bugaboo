@@ -60,6 +60,7 @@ mod perf_bundle;
 mod plan_trace;
 mod sec_cookies;
 mod sec_headers;
+mod sec_matrix;
 mod sec_secrets;
 mod sty_contrast;
 mod sty_tokens;
@@ -157,6 +158,7 @@ pub(crate) fn registry() -> Vec<Box<dyn Check>> {
         Box::new(data_migrations::DataMigrations),
         Box::new(sec_secrets::SecSecrets),
         Box::new(sec_headers::SecHeaders),
+        Box::new(sec_matrix::SecMatrix),
         Box::new(sec_cookies::SecCookies),
         Box::new(data_logs::DataLogs),
         Box::new(dep_register::DepRegister),

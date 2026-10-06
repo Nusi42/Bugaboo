@@ -19,6 +19,10 @@ path = ".codegraph/.gitignore"
 reason = "Written by the CodeGraph tool; not part of Bugaboo."
 
 [[exempt]]
+path = "tools/checks/sec-matrix-record.txt"
+reason = "Written by the permission matrix test, which fails when the file differs from what ran; SEC-MATRIX holds it against the API description."
+
+[[exempt]]
 path = "tools/checks/suppressions.txt"
 reason = "Written by `cargo xtask suppressions` and compared with the code by META-SUPPRESS."
 
