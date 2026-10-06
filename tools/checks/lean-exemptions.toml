@@ -27,6 +27,24 @@ whole_value = true
 reason = "The permissions of one person are at most as many as the catalogue has (14 in M2): a list bounded by the code, not one that grows with data, and the browser needs all of them at once (M2-F20)."
 
 [[exempt]]
+route = "GET /api/v1/settings"
+property = "settings"
+whole_value = true
+reason = "The settings of one level are at most as many as the registry declares (ADR-0018): a list bounded by the code, not one that grows with data, and a form needs all of a topic at once; the same reason as the permissions of one person (M2-F20)."
+
+[[exempt]]
+route = "GET /api/v1/projects/{project}/settings"
+property = "settings"
+whole_value = true
+reason = "The settings of one level are at most as many as the registry declares (ADR-0018): a list bounded by the code, not one that grows with data, and a form needs all of a topic at once; the same reason as the permissions of one person (M2-F20)."
+
+[[exempt]]
+route = "GET /api/v1/me/settings"
+property = "settings"
+whole_value = true
+reason = "The settings of one level are at most as many as the registry declares (ADR-0018): a list bounded by the code, not one that grows with data, and a form needs all of a topic at once; the same reason as the permissions of one person (M2-F20)."
+
+[[exempt]]
 route = "GET /api/v1/projects/{project}"
 property = "trail"
 reason = "The way down to one project is as long as the tree is deep and at most 16 steps; the list has a hard cap and says when it was cut (M2-F25)."

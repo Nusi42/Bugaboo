@@ -58,6 +58,15 @@ export function storageKeysSource(getStore: () => KeysStore): ShortcutKeysSource
   };
 }
 
+/** Removes the keys this device kept (the ones of the pages before sign-in). */
+export function forgetStoredKeys(): void {
+  try {
+    localStorage.removeItem(storageKey);
+  } catch {
+    // Nothing was kept that could be removed.
+  }
+}
+
 let source: ShortcutKeysSource = storageKeysSource(() => localStorage);
 
 /** WP-07 calls this with a source that keeps the keys with the person's other settings. */

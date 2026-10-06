@@ -570,6 +570,44 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/me/settings": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** The settings of the person who asks, as they count for them: *My settings*. */
+    get: operations["listMySettings"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/me/settings/{key}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /** Changes a value of the person's own settings. */
+    put: operations["changeMySetting"];
+    post?: never;
+    /**
+     * *Reset to default* for the person: takes their own value away, so the value from above counts
+     *     again.
+     */
+    delete: operations["resetMySetting"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/openapi.json": {
     parameters: {
       query?: never;
@@ -679,6 +717,50 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/projects/{project}/settings": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * The settings of one project, as they count there (a sub-project takes what the project above
+     *     sets). Needs the permission *Change project settings* in the project.
+     */
+    get: operations["listProjectSettings"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/projects/{project}/settings/{key}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /**
+     * Changes the value of a setting on a project. Needs the permission *Change project settings*
+     *     in the project.
+     */
+    put: operations["changeProjectSetting"];
+    post?: never;
+    /**
+     * *Reset to default* for a project: takes its value away, so the project above (or the
+     *     organization) counts again. Needs the permission *Change project settings* in the project.
+     */
+    delete: operations["resetProjectSetting"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/projects/{project}/sub-projects": {
     parameters: {
       query?: never;
@@ -714,6 +796,71 @@ export interface paths {
     put?: never;
     post?: never;
     delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/settings": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** The settings of the whole organization. Needs the permission *Change organization settings*. */
+    get: operations["listOrganizationSettings"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/settings/{key}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /**
+     * Changes the organization's value of a setting. Needs the permission *Change organization
+     *     settings*.
+     */
+    put: operations["changeOrganizationSetting"];
+    post?: never;
+    /**
+     * *Reset to default* for the organization: takes its value away, so the standard value counts
+     *     again. Needs the permission *Change organization settings*.
+     */
+    delete: operations["resetOrganizationSetting"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/settings/{key}/lock": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /**
+     * Locks the organization's value of a setting, so nobody lower down can choose another. Needs
+     *     the permission *Change organization settings*.
+     */
+    put: operations["lockOrganizationSetting"];
+    post?: never;
+    /**
+     * Unlocks the organization's value of a setting. Needs the permission *Change organization
+     *     settings*.
+     */
+    delete: operations["unlockOrganizationSetting"];
     options?: never;
     head?: never;
     patch?: never;
@@ -841,6 +988,19 @@ export interface components {
       /** @description The codes. They are not stored in this form and cannot be shown again. */
       codes: string[];
     };
+    /** @description The smallest and the largest value of a whole-number setting. */
+    BoundsBody: {
+      /**
+       * Format: int64
+       * @description The smallest value.
+       */
+      least: number;
+      /**
+       * Format: int64
+       * @description The largest value.
+       */
+      most: number;
+    };
     /** @description The HTTPS certificate the server uses itself. */
     CertificateBody: {
       /** @description When it stops being valid. */
@@ -864,6 +1024,13 @@ export interface components {
        * @description The version the person looked at.
        */
       version: number;
+    };
+    /** @description One value of a setting that has a fixed list. */
+    ChoiceBody: {
+      /** @description The key of the message that names the choice. */
+      label_key: string;
+      /** @description The text that is stored and sent. */
+      value: string;
     };
     /** @description What the setup screen of the code app shows. */
     CodeAppBody: {
@@ -954,6 +1121,7 @@ export interface components {
       | "access.would_lock_out"
       | "access.too_much"
       | "assignment.conflict"
+      | "setting.locked"
       | "project.move_lifts_no_access"
       | "project.move_into_itself"
       | "project.too_deep"
@@ -981,6 +1149,11 @@ export interface components {
       /** @description The field. */
       field: components["schemas"]["WordBody"];
     };
+    /**
+     * @description What kind of text a text setting holds.
+     * @enum {string}
+     */
+    FormatBody: "free" | "choice" | "time_zone" | "page_address" | "shortcut_keys";
     /** @description An invitation as the administrator sees it. */
     InvitationBody: {
       /** @description When it was made. */
@@ -1035,12 +1208,35 @@ export interface components {
       /** @description `visible` or `hidden`. */
       shown: components["schemas"]["ProjectShown"];
     };
+    /**
+     * @description The type of a setting.
+     * @enum {string}
+     */
+    KindBody: "bool" | "integer" | "text";
+    /**
+     * @description Where a setting can be set.
+     * @enum {string}
+     */
+    LevelBody: "organization" | "project" | "person";
     /** @description Somebody who could take away a *No access* that applies to them after the move. */
     LiftBody: {
       /** @description The person, as the person who asks may see them. */
       person: components["schemas"]["PersonRef"];
       /** @description The project the *No access* is on. */
       project: components["schemas"]["ProjectRef"];
+    };
+    /** @description The size of a list a text setting holds (items separated by commas). */
+    ListLimitsBody: {
+      /**
+       * Format: int32
+       * @description The most characters of one item.
+       */
+      longest_item: number;
+      /**
+       * Format: int32
+       * @description The most items.
+       */
+      most_items: number;
     };
     /**
      * @description Why the chain of the security log does not verify.
@@ -1144,6 +1340,11 @@ export interface components {
        *     letter.
        */
       short_name: string;
+    };
+    /** @description A new value for a setting. */
+    NewValueBody: {
+      /** @description The value. It must be of the type of the setting and one it accepts. */
+      value: components["schemas"]["ValueBody"];
     };
     /**
      * @description One page of a list. `T` is the view of an item for the API description; an answer holds the
@@ -1454,6 +1655,15 @@ export interface components {
       /** @description The letters of its issue IDs and address. */
       short_name: string;
     };
+    /** @description A project a value comes from. */
+    ProjectRefBody: {
+      /** @description The ID of the project. */
+      id: string;
+      /** @description Its name. */
+      name: string;
+      /** @description Its short name. */
+      short_name: string;
+    };
     /**
      * @description Whether the owner may know the project.
      * @enum {string}
@@ -1570,6 +1780,45 @@ export interface components {
       /** @description There are more sessions than the list holds. */
       truncated: boolean;
     };
+    /** @description One setting: what the registry knows about it, and the value that counts. */
+    SettingBody: {
+      bounds?: components["schemas"]["BoundsBody"] | null;
+      /** @description For a setting with a fixed list: the values it can have. */
+      choices: components["schemas"]["ChoiceBody"][];
+      /** @description The standard value. */
+      default: components["schemas"]["ValueBody"];
+      /** @description For text: what kind of text. */
+      format: components["schemas"]["FormatBody"];
+      /** @description The key of the message that explains it in one line. */
+      help_key: string;
+      /** @description The key: the topic, a dot and the name, like `topic.name`. */
+      key: string;
+      /** @description What it holds. */
+      kind: components["schemas"]["KindBody"];
+      /** @description Where it can be set. */
+      levels: components["schemas"]["LevelBody"][];
+      list?: components["schemas"]["ListLimitsBody"] | null;
+      /** @description Whether administrators can lock it. */
+      lockable: boolean;
+      /**
+       * @description On the organization's level: whether the value is locked. Below it: whether the
+       *     organization's lock is in effect, so the value cannot be changed.
+       */
+      locked: boolean;
+      /** @description The key of the message that names the setting. */
+      name_key: string;
+      /** @description Whether this level has a value of its own, which *Reset to default* takes away. */
+      own: boolean;
+      /** @description Where it comes from. */
+      source: components["schemas"]["SourceBody"];
+      /** @description The value that counts here. */
+      value: components["schemas"]["ValueBody"];
+    };
+    /** @description The settings of a topic, in the order of the registry. */
+    SettingsBody: {
+      /** @description The settings. */
+      settings: components["schemas"]["SettingBody"][];
+    };
     /** @description The first administrator, with the setup code. */
     SetupBody: {
       /** @description The setup code the server printed. */
@@ -1609,6 +1858,17 @@ export interface components {
       person?: components["schemas"]["PersonBody"] | null;
       second_step?: components["schemas"]["SecondStepBody"] | null;
     };
+    /** @description Where the value that counts comes from. */
+    SourceBody: {
+      /** @description Which level. */
+      kind: components["schemas"]["SourceKindBody"];
+      project?: components["schemas"]["ProjectRefBody"] | null;
+    };
+    /**
+     * @description Where the value that counts comes from.
+     * @enum {string}
+     */
+    SourceKindBody: "default" | "organization" | "project" | "person";
     /** @description What a person has in one project. */
     StandingBody: {
       /** @description A *No access* holds the person back there. */
@@ -1645,6 +1905,8 @@ export interface components {
       /** @description There are more passkeys than the list holds. */
       truncated: boolean;
     };
+    /** @description What a setting holds: yes or no, a whole number, or text. */
+    ValueBody: boolean | number | string;
     /** @description Where a project would go. */
     WhereToBody: {
       /** @description The ID of the project it would go into; `null` for the top level. */
@@ -4322,6 +4584,284 @@ export interface operations {
       };
     };
   };
+  listMySettings: {
+    parameters: {
+      query?: {
+        /**
+         * @description Only the settings whose key starts with one of these texts, separated by commas, like
+         *     `region.` for a topic.
+         */
+        topic?: string;
+        /**
+         * @description The ID or the short name of the project the person works in: the values of the project (and of the
+         *     projects above it) then count for them.
+         */
+        project?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The settings a person can choose for themselves, with the values that count for them. */
+      200: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SettingsBody"];
+        };
+      };
+      /** @description Nothing changed since the `ETag` that `If-None-Match` named. No body. */
+      304: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  changeMySetting: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The key of the setting. */
+        key: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["NewValueBody"];
+      };
+    };
+    responses: {
+      /** @description The setting with its new value. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SettingBody"];
+        };
+      };
+      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description The organization locked this setting (setting.locked). */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  resetMySetting: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The key of the setting. */
+        key: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The setting as it is now. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SettingBody"];
+        };
+      };
+      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
   getOpenApi: {
     parameters: {
       query?: never;
@@ -4958,6 +5498,297 @@ export interface operations {
       };
     };
   };
+  listProjectSettings: {
+    parameters: {
+      query?: {
+        /**
+         * @description Only the settings whose key starts with one of these texts, separated by commas:
+         *     `security.` for a topic, or longer (`auth.access-key-`) for part of one, so
+         *     `security.,auth.access-key-` is the settings of one page. Left out, every setting of
+         *     the level.
+         */
+        topic?: string;
+      };
+      header?: never;
+      path: {
+        /** @description The ID or the short name of the project. */
+        project: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The settings that can be set on a project, with the values that count there. */
+      200: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SettingsBody"];
+        };
+      };
+      /** @description Nothing changed since the `ETag` that `If-None-Match` named. No body. */
+      304: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  changeProjectSetting: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID or the short name of the project. */
+        project: string;
+        /** @description The key of the setting. */
+        key: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["NewValueBody"];
+      };
+    };
+    responses: {
+      /** @description The setting with its new value. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SettingBody"];
+        };
+      };
+      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description The organization locked this setting (setting.locked). */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  resetProjectSetting: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID or the short name of the project. */
+        project: string;
+        /** @description The key of the setting. */
+        key: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The setting as it is now. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SettingBody"];
+        };
+      };
+      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
   makeSubProject: {
     parameters: {
       query?: never;
@@ -5090,6 +5921,448 @@ export interface operations {
           [name: string]: unknown;
         };
         content?: never;
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  listOrganizationSettings: {
+    parameters: {
+      query?: {
+        /**
+         * @description Only the settings whose key starts with one of these texts, separated by commas:
+         *     `security.` for a topic, or longer (`auth.access-key-`) for part of one, so
+         *     `security.,auth.access-key-` is the settings of one page. Left out, every setting of
+         *     the level.
+         */
+        topic?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The settings of the organization with their values. */
+      200: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SettingsBody"];
+        };
+      };
+      /** @description Nothing changed since the `ETag` that `If-None-Match` named. No body. */
+      304: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  changeOrganizationSetting: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The key of the setting. */
+        key: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["NewValueBody"];
+      };
+    };
+    responses: {
+      /** @description The setting with its new value. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SettingBody"];
+        };
+      };
+      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  resetOrganizationSetting: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The key of the setting. */
+        key: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The setting as it is now. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SettingBody"];
+        };
+      };
+      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  lockOrganizationSetting: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The key of the setting. */
+        key: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The setting, locked. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SettingBody"];
+        };
+      };
+      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  unlockOrganizationSetting: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The key of the setting. */
+        key: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The setting, unlocked. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SettingBody"];
+        };
+      };
+      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
       };
       /** @description Not signed in (auth.not_signed_in). */
       401: {

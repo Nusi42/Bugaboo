@@ -27,6 +27,7 @@ use crate::schema::Migration;
 mod m0001_initial;
 mod m0002_sign_in;
 mod m0003_policy;
+mod m0004_settings;
 mod m0005_projects;
 mod m0006_access_keys;
 
@@ -114,7 +115,11 @@ const ALL: &[Definition] = &[
         name: "policy",
         steps: m0003_policy::steps,
     },
-    // 4 is the number of the settings in layers (WP-07).
+    Definition {
+        version: 4,
+        name: "settings",
+        steps: m0004_settings::steps,
+    },
     Definition {
         version: 5,
         name: "projects",
@@ -369,8 +374,9 @@ mod tests {
             assert_eq!(applied[0].name.as_str(), "initial");
             assert_eq!(applied[1].name.as_str(), "sign_in");
             assert_eq!(applied[2].name.as_str(), "policy");
-            assert_eq!(applied[3].name.as_str(), "projects");
-            assert_eq!(applied[4].name.as_str(), "access_keys");
+            assert_eq!(applied[3].name.as_str(), "settings");
+            assert_eq!(applied[4].name.as_str(), "projects");
+            assert_eq!(applied[5].name.as_str(), "access_keys");
             for (record, definition) in applied.iter().zip(ALL) {
                 assert_eq!(record.name.as_str(), definition.name);
                 assert_eq!(record.applied_at, at(0));
@@ -506,7 +512,7 @@ mod tests {
             update
                 .table(Migration::Table)
                 .value(Migration::Version, 0_i64)
-                .and_where(Expr::col(Migration::Version).eq(3_i64));
+                .and_where(Expr::col(Migration::Version).eq(4_i64));
             database.execute(&update).await?;
             let error = database.migrate(at(1)).await.unwrap_err();
             assert!(

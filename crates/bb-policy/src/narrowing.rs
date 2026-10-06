@@ -87,8 +87,10 @@ impl Narrowing {
             }
     }
 
-    /// Whether the key can change anything: if not, every field is at most *Can see*.
-    fn may_change(&self) -> bool {
+    /// Whether the key can change anything: if not, every field is at most *Can see*, and a use
+    /// case that writes something of the owner's own (their settings) refuses the key.
+    #[must_use]
+    pub fn may_change(&self) -> bool {
         match &self.choice {
             Choice::Kinds(kinds) => kinds.contains(&Kind::Change) || kinds.contains(&Kind::Manage),
             Choice::Permissions(permissions) => permissions

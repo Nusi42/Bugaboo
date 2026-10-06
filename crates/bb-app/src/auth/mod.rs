@@ -36,6 +36,10 @@ use crate::roles::{
     change_role, check_access, delete_role, make_role, remove_assignment, reset_role, role_levels,
     roles, set_field_level, set_people_level,
 };
+use crate::settings::{
+    ChangeSetting, LockSetting, ResetSetting, SettingList, SettingView, SettingsQuery,
+    change_setting, lock_setting, reset_setting, settings,
+};
 
 #[cfg(test)]
 pub(crate) use access_keys::narrowing_of;
@@ -213,6 +217,14 @@ use_cases! {
     check_access(CheckAccessQuery) -> Authorized<AccessAnswer>;
     /// Makes a project.
     make_project(MakeProject) -> Authorized<ProjectView>;
+    /// Lists the settings of the organization, of a project or of the person who asks.
+    settings(SettingsQuery) -> Authorized<SettingList>;
+    /// Changes the value of a setting on one scope.
+    change_setting(ChangeSetting) -> Authorized<SettingView>;
+    /// Takes the value of a setting on one scope away (*Reset to default*).
+    reset_setting(ResetSetting) -> Authorized<SettingView>;
+    /// Locks or unlocks the organization's value of a setting.
+    lock_setting(LockSetting) -> Authorized<SettingView>;
     /// Changes the name or the short name of a project.
     change_project(ChangeProject) -> Authorized<ProjectView>;
     /// Moves a project, after the preview.

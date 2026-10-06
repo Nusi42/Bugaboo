@@ -8,13 +8,17 @@ import {
   invitationsRoute,
   mySettingsIndexRoute,
   organizationSettingsIndexRoute,
+  regionRoute,
   projectRoute,
   projectSettingsRoute,
   projectsRoute,
   securityRoute,
   sessionsRoute,
   shortcutsRoute,
+  signInRulesRoute,
+  startPageRoute,
   statusRoute,
+  themesRoute,
 } from "./app-pages.tsx";
 import { invitationRoute, signUpRoute } from "./guest-pages.tsx";
 import {
@@ -39,6 +43,8 @@ const routeTree = rootRoute.addChildren([
     mySettingsRoute.addChildren([
       mySettingsIndexRoute,
       appearanceRoute,
+      regionRoute,
+      startPageRoute,
       shortcutsRoute,
       securityRoute,
       sessionsRoute,
@@ -47,6 +53,8 @@ const routeTree = rootRoute.addChildren([
     organizationSettingsRoute.addChildren([
       organizationSettingsIndexRoute,
       invitationsRoute,
+      signInRulesRoute,
+      themesRoute,
       projectsRoute,
       statusRoute,
     ]),

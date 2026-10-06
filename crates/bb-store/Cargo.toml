@@ -30,7 +30,7 @@ tracing = { workspace = true }
 zeroize = { workspace = true }
 
 [dev-dependencies]
-bb-core = { path = "../bb-core", features = ["fake-ids"] }
+bb-core = { path = "../bb-core", features = ["fake-ids", "test-settings"] }
 bb-testing = { path = "../bb-testing" }
 proptest = { workspace = true }
 tempfile = { workspace = true }

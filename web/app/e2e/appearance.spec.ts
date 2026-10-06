@@ -1,7 +1,7 @@
 import { t } from "@bugaboo/messages";
 import { type Page } from "@playwright/test";
 
-import { ada, makeAdmin } from "./support/accounts.ts";
+import { ada, forgetChoices, makeAdmin } from "./support/accounts.ts";
 import {
   expectNoOverlap,
   expectNoSidewaysScroll,
@@ -19,6 +19,10 @@ test.use({
       await (await makeAdmin(server)).dispose();
     },
   },
+});
+
+test.beforeEach(async ({ server }) => {
+  await forgetChoices(server);
 });
 
 /** Signs in and opens *My settings › Appearance*. */
@@ -53,10 +57,23 @@ function headingSize(page: Page): Promise<number> {
   });
 }
 
-/** Chooses a theme the way a person does: with its radio button on the page. */
-async function pick(page: Page, label: string): Promise<void> {
-  const group = page.getByRole("group", { name: t("theme.legend"), exact: true });
-  await group.getByRole("radio", { name: label, exact: true }).check();
+/**
+ * Shows a theme the way a person does: *Always light* or *Always dark*, and the theme among the
+ * samples of the light or the dark themes.
+ */
+async function pick(page: Page, theme: Theme): Promise<void> {
+  const dark = theme.id === "dusk" || theme.id === "midnight";
+  await page
+    .getByRole("radio", {
+      name: t(dark ? "appearance.mode.dark" : "appearance.mode.light"),
+      exact: true,
+    })
+    .check();
+  const group = page.getByRole("group", {
+    name: t(dark ? "appearance.dark" : "appearance.light"),
+    exact: true,
+  });
+  await group.getByRole("radio", { name: theme.label, exact: true }).check();
 }
 
 test("thm_01 each of the four themes can be chosen, and the choice is remembered", async ({
@@ -65,8 +82,10 @@ test("thm_01 each of the four themes can be chosen, and the choice is remembered
   await openAppearance(page);
   await inOrder(
     themes.map((theme: Theme) => async () => {
-      await pick(page, theme.label);
+      await pick(page, theme);
       await expect(page.locator("html")).toHaveAttribute("data-look", theme.id);
+      // The choice is on the server before the page is loaded again.
+      await expect(page.getByRole("status").filter({ hasText: t("save.saved") })).toBeVisible();
       await page.reload();
       await expect(page.locator("html")).toHaveAttribute("data-look", theme.id);
     }),
@@ -122,6 +141,8 @@ test("thm_06 Larger text makes the text bigger and Compact makes the spacing sma
   await page.getByRole("radio", { name: t("appearance.spacing.compact"), exact: true }).check();
   await expect(page.locator("html")).toHaveAttribute("data-spacing", "compact");
   expect(await tokenValue(page, "--space-4")).not.toBe(gap);
+  // Both choices are on the server before the page is loaded again.
+  await expect(page.getByRole("status").filter({ hasText: t("save.saved") })).toBeVisible();
   await page.reload();
   await expect(page.locator("html")).toHaveAttribute("data-text", "larger");
   await expect(page.locator("html")).toHaveAttribute("data-spacing", "compact");
@@ -133,7 +154,7 @@ test("thm_06 more contrast gives stronger text and lines in every theme", async 
   await openAppearance(page);
   await inOrder(
     themes.map((theme: Theme) => async () => {
-      await pick(page, theme.label);
+      await pick(page, theme);
       await page.emulateMedia({ contrast: "no-preference" });
       const usual = await tokenValue(page, "--fg-muted");
       await page.emulateMedia({ contrast: "more" });
@@ -152,7 +173,7 @@ test("thm_01 every theme is free of accessibility problems with larger text and 
   await page.getByRole("radio", { name: t("appearance.spacing.compact"), exact: true }).check();
   await inOrder(
     themes.map((theme: Theme) => async () => {
-      await pick(page, theme.label);
+      await pick(page, theme);
       await expectNoViolations(page);
       await expectNoSidewaysScroll(page);
       await expectNoOverlap(page);

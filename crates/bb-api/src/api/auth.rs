@@ -330,6 +330,8 @@ macro_rules! problem_answers {
     };
 }
 
+pub(crate) use problem_answers;
+
 problem_answers! {
     /// The request is not valid.
     InvalidAnswer => ("400", "The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected)."),

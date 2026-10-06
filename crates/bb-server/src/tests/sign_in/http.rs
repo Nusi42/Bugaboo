@@ -523,6 +523,8 @@ async fn sec_12_every_route_that_changes_something_checks_the_token_except_signi
                     .replace("{session_id}", id)
                     .replace("{passkey_id}", id)
                     .replace("{invitation_id}", id)
+                    .replace("{project}", id)
+                    .replace("{key}", "some.key")
                     .replace("{access_key_id}", id);
                 let reply = browser
                     .send_as(

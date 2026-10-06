@@ -3322,6 +3322,360 @@
         "x-permission": "own-account"
       }
     },
+    "/api/v1/me/settings": {
+      "get": {
+        "tags": ["settings"],
+        "summary": "The settings of the person who asks, as they count for them: *My settings*.",
+        "operationId": "listMySettings",
+        "parameters": [
+          {
+            "name": "topic",
+            "in": "query",
+            "description": "Only the settings whose key starts with one of these texts, separated by commas, like\n`region.` for a topic.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "project",
+            "in": "query",
+            "description": "The ID or the short name of the project the person works in: the values of the project (and of the\nprojects above it) then count for them.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The settings a person can choose for themselves, with the values that count for them.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SettingsBody"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Nothing changed since the `ETag` that `If-None-Match` named. No body.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such thing (resource.not_found).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-never-stored": true,
+        "x-permission": "signed-in"
+      }
+    },
+    "/api/v1/me/settings/{key}": {
+      "put": {
+        "tags": ["settings"],
+        "summary": "Changes a value of the person's own settings.",
+        "operationId": "changeMySetting",
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "description": "The key of the setting.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewValueBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The setting with its new value.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SettingBody"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such thing (resource.not_found).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The organization locked this setting (setting.locked).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-permission": "signed-in"
+      },
+      "delete": {
+        "tags": ["settings"],
+        "summary": "*Reset to default* for the person: takes their own value away, so the value from above counts\nagain.",
+        "operationId": "resetMySetting",
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "description": "The key of the setting.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The setting as it is now.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SettingBody"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such thing (resource.not_found).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-permission": "signed-in"
+      }
+    },
     "/api/v1/openapi.json": {
       "get": {
         "tags": ["server"],
@@ -4164,6 +4518,388 @@
         "x-permission": "move-projects"
       }
     },
+    "/api/v1/projects/{project}/settings": {
+      "get": {
+        "tags": ["settings"],
+        "summary": "The settings of one project, as they count there (a sub-project takes what the project above\nsets). Needs the permission *Change project settings* in the project.",
+        "operationId": "listProjectSettings",
+        "parameters": [
+          {
+            "name": "project",
+            "in": "path",
+            "description": "The ID or the short name of the project.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "topic",
+            "in": "query",
+            "description": "Only the settings whose key starts with one of these texts, separated by commas:\n`security.` for a topic, or longer (`auth.access-key-`) for part of one, so\n`security.,auth.access-key-` is the settings of one page. Left out, every setting of\nthe level.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The settings that can be set on a project, with the values that count there.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SettingsBody"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Nothing changed since the `ETag` that `If-None-Match` named. No body.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such thing (resource.not_found).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-never-stored": true,
+        "x-permission": "change-project-settings"
+      }
+    },
+    "/api/v1/projects/{project}/settings/{key}": {
+      "put": {
+        "tags": ["settings"],
+        "summary": "Changes the value of a setting on a project. Needs the permission *Change project settings*\nin the project.",
+        "operationId": "changeProjectSetting",
+        "parameters": [
+          {
+            "name": "project",
+            "in": "path",
+            "description": "The ID or the short name of the project.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "path",
+            "description": "The key of the setting.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewValueBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The setting with its new value.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SettingBody"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such thing (resource.not_found).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The organization locked this setting (setting.locked).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-permission": "change-project-settings"
+      },
+      "delete": {
+        "tags": ["settings"],
+        "summary": "*Reset to default* for a project: takes its value away, so the project above (or the\norganization) counts again. Needs the permission *Change project settings* in the project.",
+        "operationId": "resetProjectSetting",
+        "parameters": [
+          {
+            "name": "project",
+            "in": "path",
+            "description": "The ID or the short name of the project.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "path",
+            "description": "The key of the setting.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The setting as it is now.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SettingBody"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such thing (resource.not_found).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-permission": "change-project-settings"
+      }
+    },
     "/api/v1/projects/{project}/sub-projects": {
       "post": {
         "tags": ["projects"],
@@ -4410,6 +5146,557 @@
         },
         "x-never-stored": true,
         "x-permission": "manage-roles"
+      }
+    },
+    "/api/v1/settings": {
+      "get": {
+        "tags": ["settings"],
+        "summary": "The settings of the whole organization. Needs the permission *Change organization settings*.",
+        "operationId": "listOrganizationSettings",
+        "parameters": [
+          {
+            "name": "topic",
+            "in": "query",
+            "description": "Only the settings whose key starts with one of these texts, separated by commas:\n`security.` for a topic, or longer (`auth.access-key-`) for part of one, so\n`security.,auth.access-key-` is the settings of one page. Left out, every setting of\nthe level.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The settings of the organization with their values.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SettingsBody"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Nothing changed since the `ETag` that `If-None-Match` named. No body.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-never-stored": true,
+        "x-permission": "change-organization-settings"
+      }
+    },
+    "/api/v1/settings/{key}": {
+      "put": {
+        "tags": ["settings"],
+        "summary": "Changes the organization's value of a setting. Needs the permission *Change organization\nsettings*.",
+        "operationId": "changeOrganizationSetting",
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "description": "The key of the setting.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewValueBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The setting with its new value.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SettingBody"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such thing (resource.not_found).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-permission": "change-organization-settings"
+      },
+      "delete": {
+        "tags": ["settings"],
+        "summary": "*Reset to default* for the organization: takes its value away, so the standard value counts\nagain. Needs the permission *Change organization settings*.",
+        "operationId": "resetOrganizationSetting",
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "description": "The key of the setting.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The setting as it is now.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SettingBody"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such thing (resource.not_found).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-permission": "change-organization-settings"
+      }
+    },
+    "/api/v1/settings/{key}/lock": {
+      "put": {
+        "tags": ["settings"],
+        "summary": "Locks the organization's value of a setting, so nobody lower down can choose another. Needs\nthe permission *Change organization settings*.",
+        "operationId": "lockOrganizationSetting",
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "description": "The key of the setting.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The setting, locked.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SettingBody"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such thing (resource.not_found).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-permission": "change-organization-settings"
+      },
+      "delete": {
+        "tags": ["settings"],
+        "summary": "Unlocks the organization's value of a setting. Needs the permission *Change organization\nsettings*.",
+        "operationId": "unlockOrganizationSetting",
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "description": "The key of the setting.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The setting, unlocked.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SettingBody"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such thing (resource.not_found).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-permission": "change-organization-settings"
       }
     },
     "/api/v1/status": {
@@ -4710,6 +5997,23 @@
           }
         }
       },
+      "BoundsBody": {
+        "type": "object",
+        "description": "The smallest and the largest value of a whole-number setting.",
+        "required": ["least", "most"],
+        "properties": {
+          "least": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The smallest value."
+          },
+          "most": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The largest value."
+          }
+        }
+      },
       "CertificateBody": {
         "type": "object",
         "description": "The HTTPS certificate the server uses itself.",
@@ -4753,6 +6057,21 @@
             "type": "integer",
             "format": "int64",
             "description": "The version the person looked at."
+          }
+        }
+      },
+      "ChoiceBody": {
+        "type": "object",
+        "description": "One value of a setting that has a fixed list.",
+        "required": ["value", "label_key"],
+        "properties": {
+          "label_key": {
+            "type": "string",
+            "description": "The key of the message that names the choice."
+          },
+          "value": {
+            "type": "string",
+            "description": "The text that is stored and sent."
           }
         }
       },
@@ -4902,6 +6221,7 @@
           "access.would_lock_out",
           "access.too_much",
           "assignment.conflict",
+          "setting.locked",
           "project.move_lifts_no_access",
           "project.move_into_itself",
           "project.too_deep",
@@ -4940,6 +6260,11 @@
             "description": "The field."
           }
         }
+      },
+      "FormatBody": {
+        "type": "string",
+        "description": "What kind of text a text setting holds.",
+        "enum": ["free", "choice", "time_zone", "page_address", "shortcut_keys"]
       },
       "InvitationBody": {
         "type": "object",
@@ -5036,6 +6361,16 @@
           }
         }
       },
+      "KindBody": {
+        "type": "string",
+        "description": "The type of a setting.",
+        "enum": ["bool", "integer", "text"]
+      },
+      "LevelBody": {
+        "type": "string",
+        "description": "Where a setting can be set.",
+        "enum": ["organization", "project", "person"]
+      },
       "LiftBody": {
         "type": "object",
         "description": "Somebody who could take away a *No access* that applies to them after the move.",
@@ -5048,6 +6383,25 @@
           "project": {
             "$ref": "#/components/schemas/ProjectRef",
             "description": "The project the *No access* is on."
+          }
+        }
+      },
+      "ListLimitsBody": {
+        "type": "object",
+        "description": "The size of a list a text setting holds (items separated by commas).",
+        "required": ["most_items", "longest_item"],
+        "properties": {
+          "longest_item": {
+            "type": "integer",
+            "format": "int32",
+            "description": "The most characters of one item.",
+            "minimum": 0
+          },
+          "most_items": {
+            "type": "integer",
+            "format": "int32",
+            "description": "The most items.",
+            "minimum": 0
           }
         }
       },
@@ -5228,6 +6582,17 @@
           "short_name": {
             "type": "string",
             "description": "The letters of its issue IDs and address: 2 to 10 capital letters or digits, starting with a\nletter."
+          }
+        }
+      },
+      "NewValueBody": {
+        "type": "object",
+        "description": "A new value for a setting.",
+        "required": ["value"],
+        "properties": {
+          "value": {
+            "$ref": "#/components/schemas/ValueBody",
+            "description": "The value. It must be of the type of the setting and one it accepts."
           }
         }
       },
@@ -5873,6 +7238,25 @@
           }
         }
       },
+      "ProjectRefBody": {
+        "type": "object",
+        "description": "A project a value comes from.",
+        "required": ["id", "short_name", "name"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The ID of the project."
+          },
+          "name": {
+            "type": "string",
+            "description": "Its name."
+          },
+          "short_name": {
+            "type": "string",
+            "description": "Its short name."
+          }
+        }
+      },
       "ProjectShown": {
         "type": "string",
         "description": "Whether the owner may know the project.",
@@ -6088,6 +7472,121 @@
           }
         }
       },
+      "SettingBody": {
+        "type": "object",
+        "description": "One setting: what the registry knows about it, and the value that counts.",
+        "required": [
+          "key",
+          "name_key",
+          "help_key",
+          "kind",
+          "format",
+          "choices",
+          "levels",
+          "lockable",
+          "default",
+          "value",
+          "source",
+          "own",
+          "locked"
+        ],
+        "properties": {
+          "bounds": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/BoundsBody",
+                "description": "For a whole number: the smallest and the largest value."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "choices": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChoiceBody"
+            },
+            "description": "For a setting with a fixed list: the values it can have."
+          },
+          "default": {
+            "$ref": "#/components/schemas/ValueBody",
+            "description": "The standard value."
+          },
+          "format": {
+            "$ref": "#/components/schemas/FormatBody",
+            "description": "For text: what kind of text."
+          },
+          "help_key": {
+            "type": "string",
+            "description": "The key of the message that explains it in one line."
+          },
+          "key": {
+            "type": "string",
+            "description": "The key: the topic, a dot and the name, like `topic.name`."
+          },
+          "kind": {
+            "$ref": "#/components/schemas/KindBody",
+            "description": "What it holds."
+          },
+          "levels": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LevelBody"
+            },
+            "description": "Where it can be set."
+          },
+          "list": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ListLimitsBody",
+                "description": "For a list in a text: its size."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "lockable": {
+            "type": "boolean",
+            "description": "Whether administrators can lock it."
+          },
+          "locked": {
+            "type": "boolean",
+            "description": "On the organization's level: whether the value is locked. Below it: whether the\norganization's lock is in effect, so the value cannot be changed."
+          },
+          "name_key": {
+            "type": "string",
+            "description": "The key of the message that names the setting."
+          },
+          "own": {
+            "type": "boolean",
+            "description": "Whether this level has a value of its own, which *Reset to default* takes away."
+          },
+          "source": {
+            "$ref": "#/components/schemas/SourceBody",
+            "description": "Where it comes from."
+          },
+          "value": {
+            "$ref": "#/components/schemas/ValueBody",
+            "description": "The value that counts here."
+          }
+        }
+      },
+      "SettingsBody": {
+        "type": "object",
+        "description": "The settings of a topic, in the order of the registry.",
+        "required": ["settings"],
+        "properties": {
+          "settings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SettingBody"
+            },
+            "description": "The settings."
+          }
+        }
+      },
       "SetupBody": {
         "type": "object",
         "description": "The first administrator, with the setup code.",
@@ -6191,6 +7690,33 @@
           }
         }
       },
+      "SourceBody": {
+        "type": "object",
+        "description": "Where the value that counts comes from.",
+        "required": ["kind"],
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/SourceKindBody",
+            "description": "Which level."
+          },
+          "project": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ProjectRefBody",
+                "description": "For a value from a project: which one. Missing when the person cannot see the project."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "SourceKindBody": {
+        "type": "string",
+        "description": "Where the value that counts comes from.",
+        "enum": ["default", "organization", "project", "person"]
+      },
       "StandingBody": {
         "type": "object",
         "description": "What a person has in one project.",
@@ -6250,6 +7776,24 @@
           }
         }
       },
+      "ValueBody": {
+        "oneOf": [
+          {
+            "type": "boolean",
+            "description": "Yes or no."
+          },
+          {
+            "type": "integer",
+            "format": "int64",
+            "description": "A whole number."
+          },
+          {
+            "type": "string",
+            "description": "Text, or one choice from a list written as text."
+          }
+        ],
+        "description": "What a setting holds: yes or no, a whole number, or text."
+      },
       "WhereToBody": {
         "type": "object",
         "description": "Where a project would go.",
@@ -6307,6 +7851,10 @@
     {
       "name": "admin",
       "description": "What only administrators see: the state of the server."
+    },
+    {
+      "name": "settings",
+      "description": "Settings in layers: the organization's, a project's and a person's own."
     }
   ]
 }

@@ -10,6 +10,7 @@ use bb_core::access_key::KeyChoice;
 use bb_core::fields::Field;
 use bb_core::id::{GroupId, ProjectId, RoleId, UserId};
 use bb_core::people_kinds::PeopleKind;
+use bb_core::settings::SettingValue;
 use serde_json::Value;
 use webauthn_authenticator_rs::prelude::{Url, WebauthnAuthenticator as _};
 use webauthn_authenticator_rs::softpasskey::SoftPasskey;
@@ -43,6 +44,10 @@ use crate::roles::{
     AssignRole, ChangeRole, DeleteRole, Given, MakeRole, RemoveAssignment, ResetRole,
     SetFieldLevel, SetPeopleLevel, Subject, assign_role, change_role, delete_role, make_role,
     remove_assignment, reset_role, set_field_level, set_people_level,
+};
+use crate::settings::{
+    ChangeSetting, LockSetting, ResetSetting, SettingsScope, change_setting, lock_setting,
+    reset_setting,
 };
 
 /// The events one call added.
@@ -946,6 +951,69 @@ pub(crate) async fn make_project_scenario(world: &World) -> Added {
                 parent: None,
                 short_name: "ACME".to_owned(),
                 name: "Acme".to_owned(),
+            },
+        ),
+    )
+    .await
+}
+
+/// A value of the person's own, for the scenarios that take one away.
+async fn a_person_value(world: &World) -> Result<(), String> {
+    change_setting(
+        &world.ctx(),
+        ChangeSetting {
+            session_token: token(world),
+            scope: SettingsScope::Person,
+            key: "appearance.mode".to_owned(),
+            value: SettingValue::Text("dark".to_owned()),
+        },
+    )
+    .await
+    .map(|_| ())
+    .map_err(text)
+}
+
+pub(crate) async fn change_setting_scenario(world: &World) -> Added {
+    measured(
+        &world.store,
+        change_setting(
+            &world.ctx(),
+            ChangeSetting {
+                session_token: token(world),
+                scope: SettingsScope::Organization,
+                key: "security.session-idle-minutes".to_owned(),
+                value: SettingValue::Integer(20),
+            },
+        ),
+    )
+    .await
+}
+
+pub(crate) async fn reset_setting_scenario(world: &World) -> Added {
+    a_person_value(world).await?;
+    measured(
+        &world.store,
+        reset_setting(
+            &world.ctx(),
+            ResetSetting {
+                session_token: token(world),
+                scope: SettingsScope::Person,
+                key: "appearance.mode".to_owned(),
+            },
+        ),
+    )
+    .await
+}
+
+pub(crate) async fn lock_setting_scenario(world: &World) -> Added {
+    measured(
+        &world.store,
+        lock_setting(
+            &world.ctx(),
+            LockSetting {
+                session_token: token(world),
+                key: "appearance.mode".to_owned(),
+                locked: true,
             },
         ),
     )

@@ -109,6 +109,14 @@ words! {
         PeopleLevelChanged => "people_level.changed",
         /// A project was made.
         ProjectMade => "project.made",
+        /// A setting that touches security was changed.
+        SettingChanged => "setting.changed",
+        /// A setting that touches security went back to its default.
+        SettingReset => "setting.reset",
+        /// An administrator locked a setting that touches security.
+        SettingLocked => "setting.locked",
+        /// An administrator unlocked a setting that touches security.
+        SettingUnlocked => "setting.unlocked",
         /// A person made an access key.
         AccessKeyMade => "access_key.made",
         /// A person deleted an access key.

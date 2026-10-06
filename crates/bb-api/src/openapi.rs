@@ -50,7 +50,8 @@ const ACCESS_KEY_SCHEME: &str = "accessKey";
     tags(
         (name = "server", description = "The server itself."),
         (name = "auth", description = "Signing in, sessions, second step, passkeys, invitations and setup."),
-        (name = "admin", description = "What only administrators see: the state of the server.")
+        (name = "admin", description = "What only administrators see: the state of the server."),
+        (name = "settings", description = "Settings in layers: the organization's, a project's and a person's own.")
     )
 )]
 struct ApiDoc;

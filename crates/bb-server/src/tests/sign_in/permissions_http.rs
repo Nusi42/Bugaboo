@@ -35,15 +35,17 @@ fn declared_routes() -> Result<Vec<(String, String, Permission)>, Failure> {
 
 /// An example request for a route: the address with its parts filled in, and a valid body. A route
 /// that is not here fails the test loudly, so a new route with a permission is never left out.
-fn example(method: &str, path: &str) -> Result<(String, Option<Value>), Failure> {
+fn example(method: &str, path: &str, project: &str) -> Result<(String, Option<Value>), Failure> {
     let some_id = "0b8e5e6e-3b1d-4c1a-9d3e-5a5a5a5a5a5a";
+    let in_project = |path: &str| path.replace("{project}", project);
     Ok(match (method, path) {
         (
             "GET",
             "/api/v1/auth/invitations"
             | "/api/v1/admin/status"
             | "/api/v1/auth/sign-up-policy"
-            | "/api/v1/projects",
+            | "/api/v1/projects"
+            | "/api/v1/settings",
         ) => (path.to_owned(), None),
         ("POST", "/api/v1/auth/invitations") => (
             path.to_owned(),
@@ -61,6 +63,24 @@ fn example(method: &str, path: &str) -> Result<(String, Option<Value>), Failure>
             path.to_owned(),
             Some(json!({"enabled": false, "domains": []})),
         ),
+        ("PUT", "/api/v1/settings/{key}") => (
+            path.replace("{key}", "security.session-idle-minutes"),
+            Some(json!({"value": 30})),
+        ),
+        ("DELETE", "/api/v1/settings/{key}") => {
+            (path.replace("{key}", "security.session-idle-minutes"), None)
+        }
+        ("PUT" | "DELETE", "/api/v1/settings/{key}/lock") => {
+            (path.replace("{key}", "appearance.mode"), None)
+        }
+        ("GET", "/api/v1/projects/{project}/settings") => (in_project(path), None),
+        ("PUT", "/api/v1/projects/{project}/settings/{key}") => (
+            in_project(path).replace("{key}", "test.project-note"),
+            Some(json!({"value": "short"})),
+        ),
+        ("DELETE", "/api/v1/projects/{project}/settings/{key}") => {
+            (in_project(path).replace("{key}", "test.project-note"), None)
+        }
         ("GET", "/api/v1/projects/{project}") => (path.replace("{project}", some_id), None),
         ("POST", "/api/v1/projects") => (path.to_owned(), Some(new_project())),
         ("POST", "/api/v1/projects/{project}/sub-projects") => {
@@ -115,9 +135,25 @@ async fn m1_f32_a_route_enforces_the_permission_it_declares() -> Outcome {
             .sign_in("ada@example.test", PASSWORD)
             .await?
             .session_token;
+        let project = rig
+            .api()
+            .make_project(
+                Rig::info(),
+                bb_app::projects::MakeProject {
+                    session_token: admin.clone(),
+                    parent: None,
+                    short_name: "ACME".to_owned(),
+                    name: "Acme".to_owned(),
+                },
+            )
+            .await?
+            .into_value()
+            .id
+            .to_string();
         for (number, (method, path, permission)) in routes.iter().enumerate() {
-            let (address, body) = example(method, path)?;
-            // A person without any role is refused.
+            let (address, body) = example(method, path, &project)?;
+            // A person without any role is refused; a project they may not see answers like one
+            // that does not exist.
             let mut nobody =
                 invited_person(&mut ada, &app, &format!("nobody{number}@example.test")).await?;
             let refused = nobody.send(method, &address, body.clone()).await?;

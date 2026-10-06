@@ -1,6 +1,7 @@
 import { useNavigate, useSearch } from "@tanstack/react-router";
 
-import { FramesPage, ShortcutsPage } from "../features/shell/index.ts";
+import { StartPage } from "../features/my-settings/index.ts";
+import { FramesPage, ShortcutsPage, useQuickResults } from "../features/shell/index.ts";
 import { paths } from "../shared/paths.ts";
 
 /** The frames page, with the address saying how an example is shown and which one. */
@@ -36,4 +37,16 @@ export function ShortcutsRoute() {
       }}
     />
   );
+}
+
+/** The start page, with the pages quick search knows to choose from (UX §4.13). */
+export function StartPageRoute() {
+  const { groups } = useQuickResults("");
+  const pages = groups.flatMap((group) =>
+    group.results.map((result) => ({
+      path: result.path,
+      title: result.hint === undefined ? result.title : `${result.title} (${result.hint})`,
+    })),
+  );
+  return <StartPage pages={pages} />;
 }

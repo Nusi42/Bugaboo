@@ -48,6 +48,7 @@ mod auth_sign_in;
 mod projects;
 mod projects_move;
 mod second_step_gap;
+mod settings;
 
 pub use admin::ProbeHandle;
 pub use auth::AuthHandle;
@@ -129,6 +130,7 @@ where
         .merge(access_keys::routes())
         .merge(second_step_gap::routes())
         .merge(admin::routes())
+        .merge(settings::routes())
         .merge(projects::routes())
 }
 

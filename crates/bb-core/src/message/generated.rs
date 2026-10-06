@@ -137,6 +137,9 @@ pub const APPEARANCE_DEVICE_HELP: MessageKey = MessageKey::new("appearance.devic
 /// The message `appearance.device-settings`.
 pub const APPEARANCE_DEVICE_SETTINGS: MessageKey = MessageKey::new("appearance.device-settings");
 
+/// The message `appearance.issue-view.panel`.
+pub const APPEARANCE_ISSUE_VIEW_PANEL: MessageKey = MessageKey::new("appearance.issue-view.panel");
+
 /// The message `appearance.larger-text`.
 pub const APPEARANCE_LARGER_TEXT: MessageKey = MessageKey::new("appearance.larger-text");
 
@@ -145,6 +148,12 @@ pub const APPEARANCE_LESS_MOTION: MessageKey = MessageKey::new("appearance.less-
 
 /// The message `appearance.light`.
 pub const APPEARANCE_LIGHT: MessageKey = MessageKey::new("appearance.light");
+
+/// The message `appearance.mode.dark`.
+pub const APPEARANCE_MODE_DARK: MessageKey = MessageKey::new("appearance.mode.dark");
+
+/// The message `appearance.mode.light`.
+pub const APPEARANCE_MODE_LIGHT: MessageKey = MessageKey::new("appearance.mode.light");
 
 /// The message `appearance.spacing.comfortable`.
 pub const APPEARANCE_SPACING_COMFORTABLE: MessageKey =
@@ -335,6 +344,12 @@ pub const COMMON_CONTINUE: MessageKey = MessageKey::new("common.continue");
 /// The message `common.loading`.
 pub const COMMON_LOADING: MessageKey = MessageKey::new("common.loading");
 
+/// The message `common.off`.
+pub const COMMON_OFF: MessageKey = MessageKey::new("common.off");
+
+/// The message `common.on`.
+pub const COMMON_ON: MessageKey = MessageKey::new("common.on");
+
 /// The message `common.save`.
 pub const COMMON_SAVE: MessageKey = MessageKey::new("common.save");
 
@@ -496,6 +511,9 @@ pub const ERROR_SERVER_INTERNAL: MessageKey = MessageKey::new("error.server.inte
 
 /// The message `error.server.unavailable`.
 pub const ERROR_SERVER_UNAVAILABLE: MessageKey = MessageKey::new("error.server.unavailable");
+
+/// The message `error.setting.locked`.
+pub const ERROR_SETTING_LOCKED: MessageKey = MessageKey::new("error.setting.locked");
 
 /// The message `field-level.can-change`.
 pub const FIELD_LEVEL_CAN_CHANGE: MessageKey = MessageKey::new("field-level.can-change");
@@ -757,6 +775,9 @@ pub const NAV_FRAMES: MessageKey = MessageKey::new("nav.frames");
 /// The message `nav.group.look`.
 pub const NAV_GROUP_LOOK: MessageKey = MessageKey::new("nav.group.look");
 
+/// The message `nav.group.look-org`.
+pub const NAV_GROUP_LOOK_ORG: MessageKey = MessageKey::new("nav.group.look-org");
+
 /// The message `nav.group.people`.
 pub const NAV_GROUP_PEOPLE: MessageKey = MessageKey::new("nav.group.people");
 
@@ -784,17 +805,29 @@ pub const NAV_ORGANIZATION_SETTINGS: MessageKey = MessageKey::new("nav.organizat
 /// The message `nav.projects`.
 pub const NAV_PROJECTS: MessageKey = MessageKey::new("nav.projects");
 
+/// The message `nav.region`.
+pub const NAV_REGION: MessageKey = MessageKey::new("nav.region");
+
 /// The message `nav.security`.
 pub const NAV_SECURITY: MessageKey = MessageKey::new("nav.security");
 
 /// The message `nav.sessions`.
 pub const NAV_SESSIONS: MessageKey = MessageKey::new("nav.sessions");
 
+/// The message `nav.sign-in-rules`.
+pub const NAV_SIGN_IN_RULES: MessageKey = MessageKey::new("nav.sign-in-rules");
+
 /// The message `nav.sign-out`.
 pub const NAV_SIGN_OUT: MessageKey = MessageKey::new("nav.sign-out");
 
+/// The message `nav.start-page`.
+pub const NAV_START_PAGE: MessageKey = MessageKey::new("nav.start-page");
+
 /// The message `nav.status`.
 pub const NAV_STATUS: MessageKey = MessageKey::new("nav.status");
+
+/// The message `nav.themes`.
+pub const NAV_THEMES: MessageKey = MessageKey::new("nav.themes");
 
 /// The message `page.not-found.home`.
 pub const PAGE_NOT_FOUND_HOME: MessageKey = MessageKey::new("page.not-found.home");
@@ -1357,37 +1390,225 @@ pub const SET_UP_SECOND_STEP_TITLE: MessageKey = MessageKey::new("set-up-second-
 /// The message `set-up-second-step.why`.
 pub const SET_UP_SECOND_STEP_WHY: MessageKey = MessageKey::new("set-up-second-step.why");
 
-/// The message `setting.appearance.theme.help`.
-pub const SETTING_APPEARANCE_THEME_HELP: MessageKey =
-    MessageKey::new("setting.appearance.theme.help");
+/// The message `setting.appearance.dark-theme.help`.
+pub const SETTING_APPEARANCE_DARK_THEME_HELP: MessageKey =
+    MessageKey::new("setting.appearance.dark-theme.help");
+
+/// The message `setting.appearance.issue-view.help`.
+pub const SETTING_APPEARANCE_ISSUE_VIEW_HELP: MessageKey =
+    MessageKey::new("setting.appearance.issue-view.help");
+
+/// The message `setting.appearance.issue-view.name`.
+pub const SETTING_APPEARANCE_ISSUE_VIEW_NAME: MessageKey =
+    MessageKey::new("setting.appearance.issue-view.name");
+
+/// The message `setting.appearance.larger-text.help`.
+pub const SETTING_APPEARANCE_LARGER_TEXT_HELP: MessageKey =
+    MessageKey::new("setting.appearance.larger-text.help");
+
+/// The message `setting.appearance.less-motion.help`.
+pub const SETTING_APPEARANCE_LESS_MOTION_HELP: MessageKey =
+    MessageKey::new("setting.appearance.less-motion.help");
+
+/// The message `setting.appearance.light-theme.help`.
+pub const SETTING_APPEARANCE_LIGHT_THEME_HELP: MessageKey =
+    MessageKey::new("setting.appearance.light-theme.help");
+
+/// The message `setting.appearance.mode.help`.
+pub const SETTING_APPEARANCE_MODE_HELP: MessageKey =
+    MessageKey::new("setting.appearance.mode.help");
+
+/// The message `setting.appearance.spacing.help`.
+pub const SETTING_APPEARANCE_SPACING_HELP: MessageKey =
+    MessageKey::new("setting.appearance.spacing.help");
 
 /// The message `setting.auth.access-key-default-days.help`.
 pub const SETTING_AUTH_ACCESS_KEY_DEFAULT_DAYS_HELP: MessageKey =
     MessageKey::new("setting.auth.access-key-default-days.help");
 
+/// The message `setting.auth.access-key-default-days.name`.
+pub const SETTING_AUTH_ACCESS_KEY_DEFAULT_DAYS_NAME: MessageKey =
+    MessageKey::new("setting.auth.access-key-default-days.name");
+
 /// The message `setting.auth.access-key-longest-days.help`.
 pub const SETTING_AUTH_ACCESS_KEY_LONGEST_DAYS_HELP: MessageKey =
     MessageKey::new("setting.auth.access-key-longest-days.help");
+
+/// The message `setting.auth.access-key-longest-days.name`.
+pub const SETTING_AUTH_ACCESS_KEY_LONGEST_DAYS_NAME: MessageKey =
+    MessageKey::new("setting.auth.access-key-longest-days.name");
 
 /// The message `setting.auth.sign-up-domains.help`.
 pub const SETTING_AUTH_SIGN_UP_DOMAINS_HELP: MessageKey =
     MessageKey::new("setting.auth.sign-up-domains.help");
 
+/// The message `setting.auth.sign-up-domains.name`.
+pub const SETTING_AUTH_SIGN_UP_DOMAINS_NAME: MessageKey =
+    MessageKey::new("setting.auth.sign-up-domains.name");
+
 /// The message `setting.auth.sign-up-enabled.help`.
 pub const SETTING_AUTH_SIGN_UP_ENABLED_HELP: MessageKey =
     MessageKey::new("setting.auth.sign-up-enabled.help");
+
+/// The message `setting.auth.sign-up-enabled.name`.
+pub const SETTING_AUTH_SIGN_UP_ENABLED_NAME: MessageKey =
+    MessageKey::new("setting.auth.sign-up-enabled.name");
+
+/// The message `setting.page.region-intro`.
+pub const SETTING_PAGE_REGION_INTRO: MessageKey = MessageKey::new("setting.page.region-intro");
+
+/// The message `setting.page.sign-in-rules-intro`.
+pub const SETTING_PAGE_SIGN_IN_RULES_INTRO: MessageKey =
+    MessageKey::new("setting.page.sign-in-rules-intro");
+
+/// The message `setting.page.start-page-intro`.
+pub const SETTING_PAGE_START_PAGE_INTRO: MessageKey =
+    MessageKey::new("setting.page.start-page-intro");
+
+/// The message `setting.page.themes-intro`.
+pub const SETTING_PAGE_THEMES_INTRO: MessageKey = MessageKey::new("setting.page.themes-intro");
+
+/// The message `setting.region.date-format.day-month-year`.
+pub const SETTING_REGION_DATE_FORMAT_DAY_MONTH_YEAR: MessageKey =
+    MessageKey::new("setting.region.date-format.day-month-year");
+
+/// The message `setting.region.date-format.help`.
+pub const SETTING_REGION_DATE_FORMAT_HELP: MessageKey =
+    MessageKey::new("setting.region.date-format.help");
+
+/// The message `setting.region.date-format.month-day-year`.
+pub const SETTING_REGION_DATE_FORMAT_MONTH_DAY_YEAR: MessageKey =
+    MessageKey::new("setting.region.date-format.month-day-year");
+
+/// The message `setting.region.date-format.name`.
+pub const SETTING_REGION_DATE_FORMAT_NAME: MessageKey =
+    MessageKey::new("setting.region.date-format.name");
+
+/// The message `setting.region.date-format.year-month-day`.
+pub const SETTING_REGION_DATE_FORMAT_YEAR_MONTH_DAY: MessageKey =
+    MessageKey::new("setting.region.date-format.year-month-day");
+
+/// The message `setting.region.first-day.help`.
+pub const SETTING_REGION_FIRST_DAY_HELP: MessageKey =
+    MessageKey::new("setting.region.first-day.help");
+
+/// The message `setting.region.first-day.monday`.
+pub const SETTING_REGION_FIRST_DAY_MONDAY: MessageKey =
+    MessageKey::new("setting.region.first-day.monday");
+
+/// The message `setting.region.first-day.name`.
+pub const SETTING_REGION_FIRST_DAY_NAME: MessageKey =
+    MessageKey::new("setting.region.first-day.name");
+
+/// The message `setting.region.first-day.saturday`.
+pub const SETTING_REGION_FIRST_DAY_SATURDAY: MessageKey =
+    MessageKey::new("setting.region.first-day.saturday");
+
+/// The message `setting.region.first-day.sunday`.
+pub const SETTING_REGION_FIRST_DAY_SUNDAY: MessageKey =
+    MessageKey::new("setting.region.first-day.sunday");
+
+/// The message `setting.region.number-format.comma`.
+pub const SETTING_REGION_NUMBER_FORMAT_COMMA: MessageKey =
+    MessageKey::new("setting.region.number-format.comma");
+
+/// The message `setting.region.number-format.help`.
+pub const SETTING_REGION_NUMBER_FORMAT_HELP: MessageKey =
+    MessageKey::new("setting.region.number-format.help");
+
+/// The message `setting.region.number-format.name`.
+pub const SETTING_REGION_NUMBER_FORMAT_NAME: MessageKey =
+    MessageKey::new("setting.region.number-format.name");
+
+/// The message `setting.region.number-format.point`.
+pub const SETTING_REGION_NUMBER_FORMAT_POINT: MessageKey =
+    MessageKey::new("setting.region.number-format.point");
+
+/// The message `setting.region.number-format.space`.
+pub const SETTING_REGION_NUMBER_FORMAT_SPACE: MessageKey =
+    MessageKey::new("setting.region.number-format.space");
+
+/// The message `setting.region.time-zone.help`.
+pub const SETTING_REGION_TIME_ZONE_HELP: MessageKey =
+    MessageKey::new("setting.region.time-zone.help");
+
+/// The message `setting.region.time-zone.name`.
+pub const SETTING_REGION_TIME_ZONE_NAME: MessageKey =
+    MessageKey::new("setting.region.time-zone.name");
 
 /// The message `setting.security.session-absolute-hours.help`.
 pub const SETTING_SECURITY_SESSION_ABSOLUTE_HOURS_HELP: MessageKey =
     MessageKey::new("setting.security.session-absolute-hours.help");
 
+/// The message `setting.security.session-absolute-hours.name`.
+pub const SETTING_SECURITY_SESSION_ABSOLUTE_HOURS_NAME: MessageKey =
+    MessageKey::new("setting.security.session-absolute-hours.name");
+
 /// The message `setting.security.session-idle-minutes.help`.
 pub const SETTING_SECURITY_SESSION_IDLE_MINUTES_HELP: MessageKey =
     MessageKey::new("setting.security.session-idle-minutes.help");
 
+/// The message `setting.security.session-idle-minutes.name`.
+pub const SETTING_SECURITY_SESSION_IDLE_MINUTES_NAME: MessageKey =
+    MessageKey::new("setting.security.session-idle-minutes.name");
+
 /// The message `setting.security.two-step-required.help`.
 pub const SETTING_SECURITY_TWO_STEP_REQUIRED_HELP: MessageKey =
     MessageKey::new("setting.security.two-step-required.help");
+
+/// The message `setting.security.two-step-required.name`.
+pub const SETTING_SECURITY_TWO_STEP_REQUIRED_NAME: MessageKey =
+    MessageKey::new("setting.security.two-step-required.name");
+
+/// The message `setting.shortcuts.keys.help`.
+pub const SETTING_SHORTCUTS_KEYS_HELP: MessageKey = MessageKey::new("setting.shortcuts.keys.help");
+
+/// The message `setting.shortcuts.keys.name`.
+pub const SETTING_SHORTCUTS_KEYS_NAME: MessageKey = MessageKey::new("setting.shortcuts.keys.name");
+
+/// The message `setting.start.page.help`.
+pub const SETTING_START_PAGE_HELP: MessageKey = MessageKey::new("setting.start.page.help");
+
+/// The message `setting.start.page.name`.
+pub const SETTING_START_PAGE_NAME: MessageKey = MessageKey::new("setting.start.page.name");
+
+/// The message `setting.ui.lock`.
+pub const SETTING_UI_LOCK: MessageKey = MessageKey::new("setting.ui.lock");
+
+/// The message `setting.ui.lock-help`.
+pub const SETTING_UI_LOCK_HELP: MessageKey = MessageKey::new("setting.ui.lock-help");
+
+/// The message `setting.ui.locked`.
+pub const SETTING_UI_LOCKED: MessageKey = MessageKey::new("setting.ui.locked");
+
+/// The message `setting.ui.locked-why`.
+pub const SETTING_UI_LOCKED_WHY: MessageKey = MessageKey::new("setting.ui.locked-why");
+
+/// The message `setting.ui.nothing`.
+pub const SETTING_UI_NOTHING: MessageKey = MessageKey::new("setting.ui.nothing");
+
+/// The message `setting.ui.reset`.
+pub const SETTING_UI_RESET: MessageKey = MessageKey::new("setting.ui.reset");
+
+/// The message `setting.ui.search`.
+pub const SETTING_UI_SEARCH: MessageKey = MessageKey::new("setting.ui.search");
+
+/// The message `setting.ui.source-default`.
+pub const SETTING_UI_SOURCE_DEFAULT: MessageKey = MessageKey::new("setting.ui.source-default");
+
+/// The message `setting.ui.source-hidden-project`.
+pub const SETTING_UI_SOURCE_HIDDEN_PROJECT: MessageKey =
+    MessageKey::new("setting.ui.source-hidden-project");
+
+/// The message `setting.ui.source-organization`.
+pub const SETTING_UI_SOURCE_ORGANIZATION: MessageKey =
+    MessageKey::new("setting.ui.source-organization");
+
+/// The message `setting.ui.source-person`.
+pub const SETTING_UI_SOURCE_PERSON: MessageKey = MessageKey::new("setting.ui.source-person");
+
+/// The message `setting.ui.whole-number`.
+pub const SETTING_UI_WHOLE_NUMBER: MessageKey = MessageKey::new("setting.ui.whole-number");
 
 /// The message `setup.answer-yes`.
 pub const SETUP_ANSWER_YES: MessageKey = MessageKey::new("setup.answer-yes");
@@ -3015,6 +3236,63 @@ pub fn sessions_started(when: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `setting.ui.between`.
+#[must_use]
+pub fn setting_ui_between(least: impl std::fmt::Display, most: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("setting.ui.between"),
+        vec![
+            ("least", Value::Text(least.to_string())),
+            ("most", Value::Text(most.to_string())),
+        ],
+    )
+}
+
+/// The message `setting.ui.device-zone`.
+#[must_use]
+pub fn setting_ui_device_zone(zone: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("setting.ui.device-zone"),
+        vec![("zone", Value::Text(zone.to_string()))],
+    )
+}
+
+/// The message `setting.ui.example-moment`.
+#[must_use]
+pub fn setting_ui_example_moment(moment: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("setting.ui.example-moment"),
+        vec![("moment", Value::Text(moment.to_string()))],
+    )
+}
+
+/// The message `setting.ui.example-number`.
+#[must_use]
+pub fn setting_ui_example_number(number: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("setting.ui.example-number"),
+        vec![("number", Value::Text(number.to_string()))],
+    )
+}
+
+/// The message `setting.ui.reset-name`.
+#[must_use]
+pub fn setting_ui_reset_name(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("setting.ui.reset-name"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `setting.ui.source-project`.
+#[must_use]
+pub fn setting_ui_source_project(project: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("setting.ui.source-project"),
+        vec![("project", Value::Text(project.to_string()))],
+    )
+}
+
 /// The message `setup.ask.replace`.
 #[must_use]
 pub fn setup_ask_replace(path: impl std::fmt::Display) -> Message {
@@ -3335,11 +3613,14 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "appearance.device-settings",
-        "Your device may already ask for less motion or more contrast. Bugaboo follows both. These choices stay on this device.",
+        "Your device may already ask for less motion or more contrast. Bugaboo follows both. Your choices are kept with you, so they follow you to every browser you sign in from.",
     ),
+    ("appearance.issue-view.panel", "Side panel"),
     ("appearance.larger-text", "Larger text"),
     ("appearance.less-motion", "Less motion"),
     ("appearance.light", "Theme when my device is light"),
+    ("appearance.mode.dark", "Always dark"),
+    ("appearance.mode.light", "Always light"),
     ("appearance.spacing.comfortable", "Comfortable"),
     ("appearance.spacing.compact", "Compact"),
     ("appearance.spacing.legend", "Spacing"),
@@ -3508,6 +3789,8 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("common.close", "Close"),
     ("common.continue", "Continue"),
     ("common.loading", "Loading…"),
+    ("common.off", "Off"),
+    ("common.on", "On"),
     ("common.save", "Save"),
     ("common.try-again", "Try again"),
     ("common.undo", "Undo"),
@@ -3748,6 +4031,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "error.server.unavailable",
         "Bugaboo is not available right now. Please try again in a moment.",
     ),
+    (
+        "error.setting.locked",
+        "An administrator locked this setting, so it can't be changed here.",
+    ),
     ("field-level.can-change", "Can change"),
     ("field-level.can-see", "Can see"),
     ("field-level.hidden", "Hidden"),
@@ -3941,6 +4228,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("nav.appearance", "Appearance"),
     ("nav.frames", "Page frames"),
     ("nav.group.look", "Look and feel"),
+    ("nav.group.look-org", "Look"),
     ("nav.group.people", "People"),
     ("nav.group.sign-in", "Sign-in"),
     ("nav.group.system", "System"),
@@ -3950,10 +4238,14 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("nav.my-settings", "My settings"),
     ("nav.organization-settings", "Organization settings"),
     ("nav.projects", "Projects"),
+    ("nav.region", "Region"),
     ("nav.security", "Sign-in & security"),
     ("nav.sessions", "Where you're signed in"),
+    ("nav.sign-in-rules", "Sign-in rules"),
     ("nav.sign-out", "Sign out"),
+    ("nav.start-page", "Start page"),
     ("nav.status", "Server status"),
+    ("nav.themes", "Themes"),
     ("page.not-found.home", "Go to the start page"),
     (
         "page.not-found.text",
@@ -4532,37 +4824,190 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "Your administrator asks you to sign in with a second step. It keeps your account safe even if somebody learns your password.",
     ),
     (
-        "setting.appearance.theme.help",
+        "setting.appearance.dark-theme.help",
+        "The theme Bugaboo shows when your device is dark. It counts when you choose Match my device.",
+    ),
+    (
+        "setting.appearance.issue-view.help",
+        "Where an issue opens: in the focus view, which gives it most of the page, or in a side panel next to the list.",
+    ),
+    ("setting.appearance.issue-view.name", "Open issues in"),
+    (
+        "setting.appearance.larger-text.help",
+        "Makes all text a step bigger.",
+    ),
+    (
+        "setting.appearance.less-motion.help",
+        "Fewer moving effects. Bugaboo also follows the setting of your device.",
+    ),
+    (
+        "setting.appearance.light-theme.help",
+        "The theme Bugaboo shows when your device is light. It counts when you choose Match my device.",
+    ),
+    (
+        "setting.appearance.mode.help",
         "The colors Bugaboo uses on your screen. Match my device follows the light or dark setting of your device.",
+    ),
+    (
+        "setting.appearance.spacing.help",
+        "How close together things are. Compact fits more on a page.",
     ),
     (
         "setting.auth.access-key-default-days.help",
         "How many days a new access key lives when the person picks no other date. Between 1 and 365 days.",
     ),
     (
+        "setting.auth.access-key-default-days.name",
+        "Access key lasts (days), when no date is picked",
+    ),
+    (
         "setting.auth.access-key-longest-days.help",
         "The most days an access key can live, whatever date the person picks. Between 1 and 365 days.",
+    ),
+    (
+        "setting.auth.access-key-longest-days.name",
+        "Longest an access key can last (days)",
     ),
     (
         "setting.auth.sign-up-domains.help",
         "The e-mail domains that may sign up on their own, as a list separated by commas, like example.com. Leave the list empty to let every address sign up while signing up is on, so write your domains in first.",
     ),
     (
+        "setting.auth.sign-up-domains.name",
+        "E-mail domains that may sign up",
+    ),
+    (
         "setting.auth.sign-up-enabled.help",
         "Let people make an account on their own, without an invitation. Bugaboo cannot check that an address belongs to the person until e-mail is available, so use this only on a network you trust.",
     ),
     (
+        "setting.auth.sign-up-enabled.name",
+        "Sign up without an invitation",
+    ),
+    (
+        "setting.page.region-intro",
+        "These choices are kept with you, so they follow you to every browser you sign in from.",
+    ),
+    (
+        "setting.page.sign-in-rules-intro",
+        "How long people stay signed in, and the rules for signing in. They apply to everybody.",
+    ),
+    (
+        "setting.page.start-page-intro",
+        "Choose the page Bugaboo opens after you sign in.",
+    ),
+    (
+        "setting.page.themes-intro",
+        "The organization's choice of look. People can choose their own, unless you lock a setting.",
+    ),
+    (
+        "setting.region.date-format.day-month-year",
+        "Day, month, year (31.12.2026)",
+    ),
+    ("setting.region.date-format.help", "How dates are written."),
+    (
+        "setting.region.date-format.month-day-year",
+        "Month, day, year (12/31/2026)",
+    ),
+    ("setting.region.date-format.name", "Date format"),
+    (
+        "setting.region.date-format.year-month-day",
+        "Year, month, day (2026-12-31)",
+    ),
+    (
+        "setting.region.first-day.help",
+        "The day a week starts on in calendars.",
+    ),
+    ("setting.region.first-day.monday", "Monday"),
+    ("setting.region.first-day.name", "First day of the week"),
+    ("setting.region.first-day.saturday", "Saturday"),
+    ("setting.region.first-day.sunday", "Sunday"),
+    ("setting.region.number-format.comma", "1.234,5"),
+    (
+        "setting.region.number-format.help",
+        "How big numbers and decimals are written.",
+    ),
+    ("setting.region.number-format.name", "Number format"),
+    ("setting.region.number-format.point", "1,234.5"),
+    ("setting.region.number-format.space", "1 234,5"),
+    (
+        "setting.region.time-zone.help",
+        "The time zone for the times you see. Match my device uses the time zone of your device.",
+    ),
+    ("setting.region.time-zone.name", "Time zone"),
+    (
         "setting.security.session-absolute-hours.help",
         "How many hours a sign-in can last at most, even when somebody keeps working. After that, people sign in again. Between 1 hour and 30 days (720 hours).",
+    ),
+    (
+        "setting.security.session-absolute-hours.name",
+        "Longest sign-in (hours)",
     ),
     (
         "setting.security.session-idle-minutes.help",
         "How many minutes without activity pass before people are signed out automatically. Between 5 minutes and 24 hours.",
     ),
     (
+        "setting.security.session-idle-minutes.name",
+        "Sign out after no activity (minutes)",
+    ),
+    (
         "setting.security.two-step-required.help",
         "Ask everyone to use two-step sign-in. People who have not set it up are asked to do so the next time they sign in.",
     ),
+    (
+        "setting.security.two-step-required.name",
+        "Two-step sign-in for everybody",
+    ),
+    (
+        "setting.shortcuts.keys.help",
+        "The keys you chose for keyboard shortcuts. A shortcut you did not change keeps its usual keys.",
+    ),
+    ("setting.shortcuts.keys.name", "Your own keys"),
+    (
+        "setting.start.page.help",
+        "The page Bugaboo opens after you sign in.",
+    ),
+    ("setting.start.page.name", "Start page"),
+    (
+        "setting.ui.between",
+        "A whole number between {least} and {most}.",
+    ),
+    ("setting.ui.device-zone", "Match my device ({zone})"),
+    (
+        "setting.ui.example-moment",
+        "Right now, a time looks like this: {moment}",
+    ),
+    (
+        "setting.ui.example-number",
+        "A number looks like this: {number}",
+    ),
+    ("setting.ui.lock", "Lock for everyone"),
+    (
+        "setting.ui.lock-help",
+        "While this is locked, nobody can choose their own value.",
+    ),
+    ("setting.ui.locked", "Set by your organization"),
+    (
+        "setting.ui.locked-why",
+        "An administrator chose this for everyone, so you can't change it here.",
+    ),
+    ("setting.ui.nothing", "No setting matches your search."),
+    ("setting.ui.reset", "Reset to default"),
+    ("setting.ui.reset-name", "Reset to default: {name}"),
+    ("setting.ui.search", "Search settings"),
+    ("setting.ui.source-default", "Bugaboo's standard value"),
+    (
+        "setting.ui.source-hidden-project",
+        "From a project you can't see",
+    ),
+    (
+        "setting.ui.source-organization",
+        "Your organization's choice",
+    ),
+    ("setting.ui.source-person", "Your own choice"),
+    ("setting.ui.source-project", "From {project}"),
+    ("setting.ui.whole-number", "Enter a whole number."),
     ("setup.answer-yes", "yes"),
     (
         "setup.ask.address",

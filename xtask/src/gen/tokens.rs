@@ -54,7 +54,16 @@ fn css(tokens: &TokenFile) -> String {
     theme_declarations(&mut out, dark, "  ");
     out.push_str("}\n");
     for theme in &tokens.themes {
-        let _ = write!(out, "\n:root[data-look=\"{}\"] {{\n", theme.name);
+        // The same colors for a sample of a theme next to the page's own (`data-preview-look`):
+        // *My settings* shows each theme as it looks before it is chosen.
+        let _ = write!(
+            out,
+            "
+:root[data-look=\"{0}\"],
+[data-preview-look=\"{0}\"] {{
+",
+            theme.name
+        );
         theme_declarations(&mut out, theme, "  ");
         out.push_str("}\n");
     }
@@ -103,7 +112,12 @@ fn more_contrast_blocks(out: &mut String, tokens: &TokenFile, light: &Theme, dar
     color_overrides(out, dark, "    ");
     out.push_str("  }\n");
     for theme in &tokens.themes {
-        let _ = writeln!(out, "  :root[data-look=\"{}\"] {{", theme.name);
+        let _ = writeln!(
+            out,
+            "  :root[data-look=\"{0}\"],
+  [data-preview-look=\"{0}\"] {{",
+            theme.name
+        );
         color_overrides(out, theme, "    ");
         out.push_str("  }\n");
     }
@@ -297,6 +311,7 @@ mod tests {
         let css = css(&TokenFile::load(&repo).unwrap());
         for theme in ["daylight", "paper", "dusk", "midnight"] {
             assert!(css.contains(&format!(":root[data-look=\"{theme}\"]")));
+            assert!(css.contains(&format!("[data-preview-look=\"{theme}\"]")));
         }
         assert!(css.contains("prefers-color-scheme: dark"));
     }

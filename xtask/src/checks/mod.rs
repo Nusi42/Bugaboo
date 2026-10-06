@@ -14,7 +14,7 @@ mod arch_lean;
 mod arch_map_sync;
 mod arch_no_unsafe;
 mod arch_person_ref;
-mod arch_settings;
+pub(crate) mod arch_settings;
 mod arch_sql_edge;
 mod arch_wasm;
 mod arch_web_api;
