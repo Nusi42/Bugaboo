@@ -1,0 +1,7 @@
+# Things that look a little like access keys and are none: the secret scan must pass them.
+short = "bb_k7q2x9mf_0123456789"
+other_start = "bx_k7q2x9mf_0123456789abcdefghjkmnpqrstvwxyz0123456789abcdefghjk"
+capitals = "BB_K7Q2X9MF_0123456789ABCDEFGHJKMNPQRSTVWXYZ0123456789ABCDEFGHJK"
+similar_letters = "bb_k7q2x9mf_oilu456789abcdefghjkmnpqrstvwxyz0123456789abcdefghjk"
+one_symbol_too_many = "bb_k7q2x9mf_0123456789abcdefghjkmnpqrstvwxyz0123456789abcdefghjk0"
+a_word = "bb_not_a_key"

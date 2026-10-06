@@ -77,3 +77,35 @@ export async function openSession(origin: string): Promise<ApiSession> {
     },
   };
 }
+
+/** A script with an access key: it sends the key and nothing else, no cookie and no token. */
+export interface KeyClient {
+  /** Asks for something with the key and returns the status and the code of an error, if any. */
+  readonly get: (path: string) => Promise<KeyAnswer>;
+  readonly dispose: () => Promise<void>;
+}
+
+/** What the server said to a script. */
+export interface KeyAnswer {
+  readonly status: number;
+  /** The code of the error (`auth.not_signed_in`), when the answer is one. */
+  readonly code: string | undefined;
+}
+
+/** A script that uses `key` against the server at `origin`. */
+export async function useKey(origin: string, key: string): Promise<KeyClient> {
+  const context = await request.newContext({
+    baseURL: origin,
+    ignoreHTTPSErrors: true,
+    extraHTTPHeaders: { authorization: `Bearer ${key}` },
+  });
+  return {
+    get: async (path) => {
+      const answer = await context.get(path);
+      const body: unknown = answer.ok() ? undefined : await answer.json();
+      const code = isJson(body) && typeof body["code"] === "string" ? body["code"] : undefined;
+      return { status: answer.status(), code };
+    },
+    dispose: () => context.dispose(),
+  };
+}

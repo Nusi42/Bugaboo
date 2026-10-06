@@ -69,6 +69,15 @@ pub(crate) const ROUTES: &[(&str, Declared)] = &[
     ("finishSignInWithCode", Declared::OwnAccount),
     ("startSecondStepWithPasskey", Declared::OwnAccount),
     ("finishSignInWithPasskey", Declared::OwnAccount),
+    ("listAccessKeys", Declared::OwnAccount),
+    ("makeAccessKey", Declared::OwnAccount),
+    ("deleteAccessKey", Declared::OwnAccount),
+    ("getAccessKeyRules", Declared::OwnAccount),
+    ("listProjectChoices", Declared::OwnAccount),
+    (
+        "getSecondStepGap",
+        Declared::Permission(Permission::ManageRoles),
+    ),
     (
         "listInvitations",
         Declared::Permission(Permission::ManageInvitations),

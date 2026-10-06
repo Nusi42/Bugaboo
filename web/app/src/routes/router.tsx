@@ -1,6 +1,7 @@
 import { createRouter } from "@tanstack/react-router";
 
 import {
+  accessKeysRoute,
   appearanceRoute,
   framesRoute,
   homeRoute,
@@ -22,12 +23,14 @@ import {
   mySettingsRoute,
   organizationSettingsRoute,
   rootRoute,
+  setUpRoute,
 } from "./layouts.tsx";
 import { setupRoute } from "./setup.tsx";
-import { secondStepRoute, signInRoute } from "./sign-in.tsx";
+import { secondStepRoute, setUpSecondStepRoute, signInRoute } from "./sign-in.tsx";
 
 const routeTree = rootRoute.addChildren([
   guestRoute.addChildren([setupRoute, signInRoute, secondStepRoute, signUpRoute, invitationRoute]),
+  setUpRoute.addChildren([setUpSecondStepRoute]),
   appRoute.addChildren([
     homeRoute,
     framesRoute,
@@ -39,6 +42,7 @@ const routeTree = rootRoute.addChildren([
       shortcutsRoute,
       securityRoute,
       sessionsRoute,
+      accessKeysRoute,
     ]),
     organizationSettingsRoute.addChildren([
       organizationSettingsIndexRoute,

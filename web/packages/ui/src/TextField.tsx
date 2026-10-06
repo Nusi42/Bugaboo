@@ -12,7 +12,7 @@ import styles from "./Field.module.css";
 import { cx } from "./cx.ts";
 
 /** Words of the HTML standard, not text for people. */
-const inputTypes = { text: "text", password: "password" } as const;
+const inputTypes = { text: "text", password: "password", date: "date" } as const;
 const inputModes = { text: "text", email: "email" } as const;
 
 /** The name of the slot of the help text, in the words of React Aria Components. */
@@ -33,6 +33,8 @@ export interface TextFieldProps {
   readonly email?: boolean;
   /** A password: the characters are hidden. */
   readonly password?: boolean;
+  /** A day: the browser offers its own calendar. `min` and `max` are days as `2027-03-01`. */
+  readonly date?: { readonly min: string; readonly max: string };
   /** More than one line (for lists). */
   readonly multiline?: boolean;
   readonly name?: string;
@@ -40,6 +42,14 @@ export interface TextFieldProps {
   readonly onChange: (value: string) => void;
   /** What a password manager or the browser may fill in: one of `autoComplete`. */
   readonly autoComplete?: AutoComplete;
+}
+
+/** The kind of input the browser draws: a day, hidden characters, or plain text. */
+function typeOf(password: boolean, day: boolean): (typeof inputTypes)[keyof typeof inputTypes] {
+  if (day) {
+    return inputTypes.date;
+  }
+  return password ? inputTypes.password : inputTypes.text;
 }
 
 /**
@@ -72,6 +82,7 @@ export function TextField({
   email = false,
   password = false,
   multiline = false,
+  date,
   name = "",
   value,
   onChange,
@@ -83,7 +94,7 @@ export function TextField({
       name={name}
       value={value}
       onChange={onChange}
-      type={password ? inputTypes.password : inputTypes.text}
+      type={typeOf(password, date !== undefined)}
       inputMode={email ? inputModes.email : inputModes.text}
       autoComplete={fill}
       // Only a problem is passed on: `isInvalid={false}` would switch off the checks of the field.
@@ -99,7 +110,10 @@ export function TextField({
       {multiline ? (
         <TextArea className={cx(styles.input, styles.multiline)} rows={4} />
       ) : (
-        <Input className={cx(styles.input)} />
+        <Input
+          className={cx(styles.input)}
+          {...(date === undefined ? {} : { min: date.min, max: date.max })}
+        />
       )}
       <FieldError className={cx(styles.error)}>{errorMessage}</FieldError>
     </AriaTextField>

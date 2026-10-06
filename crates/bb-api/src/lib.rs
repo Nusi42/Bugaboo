@@ -31,7 +31,8 @@ pub use errors::{ApiError, ApiJson};
 pub use failures::{DEFAULT_SIGN_IN_FAILURES_PER_MINUTE, FailureLimits, MAX_WAIT};
 pub use headers::{HSTS_MAX_AGE_SELF_SIGNED, HSTS_MAX_AGE_TRUSTED};
 pub use limits::{
-    DEFAULT_REQUESTS_PER_MINUTE, DEFAULT_SIGN_IN_ATTEMPTS_PER_MINUTE, Limits, LimitsConfig,
+    DEFAULT_ACCESS_KEY_REQUESTS_PER_MINUTE, DEFAULT_REQUESTS_PER_MINUTE,
+    DEFAULT_SIGN_IN_ATTEMPTS_PER_MINUTE, Limits, LimitsConfig,
 };
 pub use listener::{
     Accepted, ClientAddr, Connection, DEFAULT_MAX_CONNECTIONS, Incoming, ListenerOptions,

@@ -1,6 +1,6 @@
 //! Rate limits (SEC-14, architecture §7 "Limits and abuse").
 //!
-//! Three limits, all counted per minute, all kept in memory (a restart forgets them, which only
+//! Four limits, all counted per minute, all kept in memory (a restart forgets them, which only
 //! ever lets a client try again sooner than a minute):
 //!
 //! - every request to `/api` counts against its **client network**;
@@ -8,7 +8,12 @@
 //!   cap against floods ([`limit_sign_in`], put on the sign-in routes);
 //! - **failed** tries are limited per account, person and network in `crate::failures`
 //!   (`FailureLimits`): only failures count and a success clears them, so nobody can lock another
-//!   person out by merely trying their address (M1-F27).
+//!   person out by merely trying their address (M1-F27);
+//! - every request that comes with an **access key** counts against that key too
+//!   ([`limit_access_keys`]), besides the network, so one script that runs wild uses up its own
+//!   key and nobody else's (SEC-14). The key is counted by the hash of what was presented, so
+//!   only somebody who holds the key can use up its limit; guessing keys is limited by the failed
+//!   tries of the network in `bb-app`.
 //!
 //! Two sizes of "network" are used, each defined once. The sign-in cap and the failure keys use
 //! `bb_core::network::NetworkPrefix` (IPv4 `/24`, IPv6 `/48`: the shortened address the security
@@ -35,8 +40,8 @@ use axum::extract::{Request, State};
 use axum::middleware::Next;
 use axum::response::{IntoResponse as _, Response};
 use bb_core::ErrorCode;
-
 use bb_core::network::NetworkPrefix;
+use bb_core::security_log::Digest;
 
 use crate::errors::ApiError;
 use crate::failures::DEFAULT_SIGN_IN_FAILURES_PER_MINUTE;
@@ -62,6 +67,10 @@ pub const DEFAULT_REQUESTS_PER_MINUTE: u32 = 600;
 /// (`crate::failures`, [`DEFAULT_SIGN_IN_FAILURES_PER_MINUTE`]).
 pub const DEFAULT_SIGN_IN_ATTEMPTS_PER_MINUTE: u32 = 60;
 
+/// Requests that come with one access key, per minute, when nothing else is set. A script that
+/// needs more asks for fewer, bigger answers (`limit`, `fields`) or sets the limit higher.
+pub const DEFAULT_ACCESS_KEY_REQUESTS_PER_MINUTE: u32 = 300;
+
 /// The limits, from the start-up settings (OPS-10; they move to the settings registry later).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct LimitsConfig {
@@ -71,6 +80,8 @@ pub struct LimitsConfig {
     pub sign_in_attempts_per_minute: u32,
     /// Failed tries per account, person and client network and window.
     pub sign_in_failures_per_minute: u32,
+    /// Requests per minute that come with one access key.
+    pub access_key_requests_per_minute: u32,
 }
 
 impl Default for LimitsConfig {
@@ -79,6 +90,7 @@ impl Default for LimitsConfig {
             requests_per_minute: DEFAULT_REQUESTS_PER_MINUTE,
             sign_in_attempts_per_minute: DEFAULT_SIGN_IN_ATTEMPTS_PER_MINUTE,
             sign_in_failures_per_minute: DEFAULT_SIGN_IN_FAILURES_PER_MINUTE,
+            access_key_requests_per_minute: DEFAULT_ACCESS_KEY_REQUESTS_PER_MINUTE,
         }
     }
 }
@@ -193,6 +205,7 @@ fn make_room<K>(table: &mut Table<K>, now: Instant) {
 pub struct Limits {
     requests: Window<IpAddr>,
     sign_in_networks: Window<NetworkPrefix>,
+    access_keys: Window<Digest>,
 }
 
 impl Limits {
@@ -202,6 +215,12 @@ impl Limits {
         Arc::new(Self {
             requests: Window::new(config.requests_per_minute, Overflow::Share(OVERFLOW_CLIENT)),
             sign_in_networks: Window::new(config.sign_in_attempts_per_minute, Overflow::Refuse),
+            // Keys that do not fit in a full table share one counter: a flood of invented keys
+            // limits itself and not the keys that are counted already.
+            access_keys: Window::new(
+                config.access_key_requests_per_minute,
+                Overflow::Share(SHARED_KEY),
+            ),
         })
     }
 
@@ -215,6 +234,19 @@ impl Limits {
 
     fn check_request_at(&self, client: IpAddr, now: Instant) -> Result<(), ApiError> {
         self.requests.hit(network_of(client), now).map_err(too_many)
+    }
+
+    /// Counts one request that came with the access key `key` (the hash of the key, or
+    /// [`MALFORMED_KEY`] for something that starts like a key and is none).
+    ///
+    /// # Errors
+    /// `429` with `Retry-After` when the key is over its limit.
+    pub fn check_access_key(&self, key: Digest) -> Result<(), ApiError> {
+        self.check_access_key_at(key, Instant::now())
+    }
+
+    fn check_access_key_at(&self, key: Digest, now: Instant) -> Result<(), ApiError> {
+        self.access_keys.hit(key, now).map_err(too_many)
     }
 
     /// Counts one sign-in attempt of `client`.
@@ -251,6 +283,13 @@ fn network_of(address: IpAddr) -> IpAddr {
 /// The shared counter for clients that do not fit in a full table (an address no client has).
 const OVERFLOW_CLIENT: IpAddr = IpAddr::V6(std::net::Ipv6Addr::UNSPECIFIED);
 
+/// The counter that everything shares which starts like an access key and is none: it cannot
+/// use up the limit of a key that exists, because that has its own counter.
+pub(crate) const MALFORMED_KEY: Digest = Digest::new([0xFF; 32]);
+
+/// The counter that keys share when the table is full of counters that are still running.
+const SHARED_KEY: Digest = Digest::new([0x00; 32]);
+
 /// A request without a known client address (never the case behind the real listener) is
 /// counted with all others like it, so a wiring mistake limits instead of opening everything.
 const UNKNOWN_CLIENT: IpAddr = IpAddr::V4(Ipv4Addr::UNSPECIFIED);
@@ -274,6 +313,25 @@ pub(crate) async fn limit_requests(
     }
     if let Err(error) = limits.check_request(client_of(&request)) {
         return error.into_response();
+    }
+    next.run(request).await
+}
+
+/// The middleware of the whole API: counts a request that comes with an access key against the
+/// key (`Authorization: Bearer bb_…`). A request without one passes untouched.
+pub(crate) async fn limit_access_keys(
+    State(limits): State<Arc<Limits>>,
+    request: Request,
+    next: Next,
+) -> Response {
+    if let Some(key) = crate::api::presented_key(request.headers())
+        && crate::api::is_api(request.uri().path())
+    {
+        let counted =
+            bb_auth::AccessKeySecret::parse(key).map_or(MALFORMED_KEY, |secret| secret.hash());
+        if let Err(error) = limits.check_access_key(counted) {
+            return error.into_response();
+        }
     }
     next.run(request).await
 }
