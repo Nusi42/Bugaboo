@@ -1,0 +1,97 @@
+# Where the API answers without an `Authorized<T>` (ARCH-API-OUT, architecture section 7).
+# A handler may answer through `answer(...)` or `signed_in(...)`, which take any value, only when
+# its operation is named here with the reason: the steps of signing in and the caller's own
+# sign-in data, which hold nothing of anybody else. A function may build JSON itself only when it
+# is named here with its file. An entry that matches nothing fails, so the file shrinks as routes
+# move to `Authorized<T>`.
+
+[[exempt]]
+operation = "getAuthStatus"
+reason = "Public: tells the sign-in page whether setup is open and whether people may sign up. It holds nothing of anybody."
+
+[[exempt]]
+operation = "signIn"
+reason = "A step of signing in: the answer is about the caller only, and holds nothing until the password is right."
+
+[[exempt]]
+operation = "finishSignInWithCode"
+reason = "A step of signing in: the answer is about the caller who is finishing their own sign-in."
+
+[[exempt]]
+operation = "startSecondStepWithPasskey"
+reason = "A step of signing in: a challenge for the caller's own passkey."
+
+[[exempt]]
+operation = "finishSignInWithPasskey"
+reason = "A step of signing in: the answer is about the caller who is finishing their own sign-in."
+
+[[exempt]]
+operation = "startPasskeySignIn"
+reason = "A step of signing in: a challenge for whoever is signing in, before anybody is known."
+
+[[exempt]]
+operation = "signInWithPasskey"
+reason = "A step of signing in: the answer is about the caller who signs in."
+
+[[exempt]]
+operation = "completeSetup"
+reason = "The first sign-in of the first administrator, who holds the setup code: the answer is about the caller."
+
+[[exempt]]
+operation = "signUp"
+reason = "A sign-in of a person who signs themselves up: the answer is about the caller."
+
+[[exempt]]
+operation = "acceptInvitation"
+reason = "A sign-in of a person who accepts their own invitation: the answer is about the caller."
+
+[[exempt]]
+operation = "lookUpInvitation"
+reason = "The address an invitation was sent to, told to whoever holds its secret link: nothing of anybody else."
+
+[[exempt]]
+operation = "changePassword"
+reason = "The caller's own password: the answer is the caller's new session."
+
+[[exempt]]
+operation = "listSessions"
+reason = "The caller's own sessions only (own-account): nothing of anybody else."
+
+[[exempt]]
+operation = "getTwoStep"
+reason = "The caller's own second step (own-account): nothing of anybody else."
+
+[[exempt]]
+operation = "startCodeApp"
+reason = "The caller's own code app being set up (own-account): nothing of anybody else."
+
+[[exempt]]
+operation = "confirmCodeApp"
+reason = "The caller's own backup codes, shown once (own-account): nothing of anybody else."
+
+[[exempt]]
+operation = "renewBackupCodes"
+reason = "The caller's own backup codes, shown once (own-account): nothing of anybody else."
+
+[[exempt]]
+operation = "startAddPasskey"
+reason = "A challenge for the caller's own new passkey (own-account): nothing of anybody else."
+
+[[exempt]]
+operation = "addPasskey"
+reason = "The caller's own new passkey (own-account): nothing of anybody else."
+
+[[exempt]]
+function = "answer"
+file = "crates/bb-api/src/api/auth.rs"
+reason = "The wrapper itself: it is what the entries above answer through, and `answer_authorized` and the pages of `lean.rs` are built on it."
+
+[[exempt]]
+function = "get_status"
+file = "crates/bb-api/src/api.rs"
+reason = "The health answer: whether the server is up. It holds nothing of anybody."
+
+[[exempt]]
+function = "from_request"
+file = "crates/bb-api/src/errors.rs"
+reason = "Reads the body of a request (the extractor `ApiJson`): it answers nothing."

@@ -256,7 +256,7 @@ Example: *"Yes. Ana is in the group Backend, which has the role Team member in A
 
 ### Enforcement points
 
-- Every use case asks `bb-policy` first. Every result passes through `Authorized<T>`, which applies the field mask during serialization. Enforced by: ARCH-AUTHZ-ONLY, ARCH-API-OUT.
+- Every use case asks `bb-policy` first. Every result passes through `Authorized<T>`, which applies the field mask during serialization. The API answers a view only through `answer_authorized` or a page made by `Page::of_authorized`; the steps of signing in and the caller's own sign-in data, which hold nothing of anybody else, are the exceptions, each named with its reason in `tools/checks/api-out-exemptions.toml`. Enforced by: ARCH-AUTHZ-ONLY, ARCH-API-OUT (a handler that answers through `answer(…)` or `axum::Json` without an entry fails; an entry that nothing needs fails).
 - Every search gets the visibility predicate compiled into its SQL; the field catalogue given to the parser contains only readable fields (M5).
 - History, notifications, webhooks, exports, assistant context and live updates apply the **receiver's** mask and `PersonRef` (each in its milestone, with its SEC-MATRIX column).
 - **Tests:** a generated matrix (actors × routes, roles × fields × levels, roles × kinds × levels; the entry points of M2 are the API answers) runs on every build. Enforced by: SEC-MATRIX.

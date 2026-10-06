@@ -267,10 +267,10 @@ status = "active"
 id = "ARCH-API-OUT"
 title = "API and MCP handlers return only Authorized views, never domain or database types"
 rule = "ADR-0004"
-tool = "trait bound on responses + ast-grep"
+tool = "xtask (answer_authorized and Page::of_authorized take only an Authorized<T>; the check finds handlers that answer through the wrappers that take any value, or with axum::Json, unless tools/checks/api-out-exemptions.toml names them with a reason)"
 when = ["edit", "commit", "ci"]
-files = ["crates/bb-api/**", "crates/bb-mcp/**"]
-status = "planned"
+files = ["crates/bb-api/**", "crates/bb-mcp/**", "tools/checks/api-out-exemptions.toml"]
+status = "active"
 
 [[check]]
 id = "ARCH-HTTP-EDGE"
