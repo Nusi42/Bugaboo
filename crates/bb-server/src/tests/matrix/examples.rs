@@ -159,6 +159,32 @@ pub(super) const EXAMPLES: &[Example] = &[
     Example::with("makeSubProject", &[Quirk::NeedsToSeeTheProject]),
     Example::route("getStatus"),
     Example::route("listAccessKeys"),
+    Example::route("listPeople"),
+    Example::route("getPerson"),
+    Example::route("listGroups"),
+    Example::route("makeGroup"),
+    Example::route("getGroup"),
+    Example::route("renameGroup"),
+    Example::route("deleteGroup"),
+    Example::route("listGroupMembers"),
+    Example::route("addGroupMember"),
+    Example::route("removeGroupMember"),
+    Example::route("listMemberChoices"),
+    Example::route("listRoles"),
+    Example::route("makeRole"),
+    Example::route("getRole"),
+    Example::route("changeRole"),
+    Example::route("deleteRole"),
+    Example::route("copyRole"),
+    Example::with("resetRole", &[Quirk::AlsoAnswers("access.too_much")]),
+    Example::route("listPermissions"),
+    Example::route("listAssignments"),
+    Example::route("assignRole"),
+    Example::route("listProjectAssignments"),
+    Example::route("assignProjectRole"),
+    Example::route("removeAssignment"),
+    Example::route("listAssignmentChoices"),
+    Example::route("listProjectAssignmentChoices"),
     Example::with(
         "makeAccessKey",
         &[Quirk::AlsoAnswers("auth.wrong_credentials")],
@@ -200,7 +226,7 @@ fn unique_short_name(fixture: &Fixture<'_>) -> String {
 }
 
 /// A request: the method, the address and the body.
-type Request = (&'static str, String, Option<Value>);
+pub(super) type Request = (&'static str, String, Option<Value>);
 
 /// The routes of everybody and of whoever is signed in.
 fn open_request(operation: &str) -> Result<Option<Request>, Failure> {
@@ -500,6 +526,9 @@ pub(super) async fn request(
         return Ok(found);
     }
     if let Some(found) = project_request(fixture, operation)? {
+        return Ok(found);
+    }
+    if let Some(found) = super::examples_people::people_request(fixture, operation).await? {
         return Ok(found);
     }
     Err(format!("{operation} has a row in the table but no request").into())

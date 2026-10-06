@@ -7,6 +7,17 @@
 //! roles, so it is held to the same rule as giving a role: nobody puts somebody into a group that
 //! holds more than they hold themselves (ADR-0025, decision 6).
 
+mod group_page;
+mod list;
+mod used_by;
+
+pub use group_page::{GroupQuery, group};
+pub use list::{
+    AssignmentChoicesQuery, ChoiceKind, ChoicePage, ChoiceView, HeldRole, MemberChoicesQuery,
+    PeopleQuery, PersonDetail, PersonLine, PersonPage, PersonQuery, member_choices, people, person,
+};
+pub use used_by::{GroupDetail, GroupUsedBy, RoleUsedBy};
+
 use bb_core::ErrorCode;
 use bb_core::access::{Group, GroupMember};
 use bb_core::id::{GroupId, ProjectId, UserId};
@@ -87,6 +98,10 @@ pub struct GroupsQuery {
     pub session_token: String,
     /// The project the person chooses a group for, or `None` for *Organization settings*.
     pub place: Option<ProjectId>,
+    /// Where the page starts: the `next_cursor` of the page before.
+    pub cursor: Option<String>,
+    /// How many groups the page holds at most.
+    pub limit: u32,
 }
 
 /// List the people in a group.
@@ -95,6 +110,10 @@ pub struct GroupMembersQuery {
     pub session_token: String,
     /// The group.
     pub group: GroupId,
+    /// Where the page starts: the `next_cursor` of the page before.
+    pub cursor: Option<String>,
+    /// How many people the page holds at most.
+    pub limit: u32,
 }
 
 /// A group as it is shown.
@@ -120,8 +139,10 @@ impl From<&Group> for GroupView {
 /// The groups, by name.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct GroupList {
-    /// The groups.
+    /// The groups on this page.
     pub groups: Vec<GroupView>,
+    /// Where the next page starts; `None` on the last page.
+    pub next_cursor: Option<String>,
 }
 
 impl Masked for GroupList {}
@@ -140,8 +161,10 @@ pub struct MemberView {
 pub struct GroupMembers {
     /// The group.
     pub group: GroupView,
-    /// The people in it, in the order they were put there.
+    /// The people on this page, in the order they were put there.
     pub members: Vec<MemberView>,
+    /// Where the next page starts; `None` on the last page.
+    pub next_cursor: Option<String>,
 }
 
 impl Masked for GroupMembers {}
@@ -434,14 +457,14 @@ pub async fn remove_group_member<S: AuthStore>(
     Ok(Done)
 }
 
-/// The groups, by name.
+/// The groups, by name, a page at a time.
 ///
 /// In *Organization settings* the list takes *Manage groups*; on a project it takes *Decide who has
 /// which role* there, because that is where a person chooses a group to give a role to.
 ///
 /// # Errors
 /// `access.forbidden` without the permission, `resource.not_found` for a project the person may
-/// not know about.
+/// not know about, `request.invalid` for a cursor that is not one.
 pub async fn groups<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: GroupsQuery,
@@ -462,16 +485,23 @@ pub async fn groups<S: AuthStore>(
         .groups()
         .await
         .map_err(|error| internal::<S>(&error))?;
+    let page = bb_core::paging::window(groups.len(), input.cursor.as_deref(), input.limit)
+        .ok_or(ErrorCode::InvalidRequest)?;
     Ok(access.authorize(GroupList {
-        groups: groups.iter().map(GroupView::from).collect(),
+        groups: groups[page.start..page.end]
+            .iter()
+            .map(GroupView::from)
+            .collect(),
+        next_cursor: page.next,
     }))
 }
 
-/// The people in a group, each shown as the viewer may see them: people who manage groups see
-/// names (M2-Q3).
+/// The people in a group, a page at a time, each shown as the viewer may see them: people who
+/// manage groups see names (M2-Q3).
 ///
 /// # Errors
-/// `access.forbidden` without *Manage groups*, `resource.not_found` for an unknown group.
+/// `access.forbidden` without *Manage groups*, `resource.not_found` for an unknown group,
+/// `request.invalid` for a cursor that is not one.
 pub async fn group_members<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: GroupMembersQuery,
@@ -486,8 +516,10 @@ pub async fn group_members<S: AuthStore>(
         .group_members(group.id)
         .await
         .map_err(|error| internal::<S>(&error))?;
-    let mut members = Vec::with_capacity(rows.len());
-    for row in rows {
+    let page = bb_core::paging::window(rows.len(), input.cursor.as_deref(), input.limit)
+        .ok_or(ErrorCode::InvalidRequest)?;
+    let mut members = Vec::with_capacity(page.end - page.start);
+    for row in &rows[page.start..page.end] {
         members.push(MemberView {
             person: ctx
                 .person_ref(
@@ -503,5 +535,6 @@ pub async fn group_members<S: AuthStore>(
     Ok(access.authorize(GroupMembers {
         group: GroupView::from(&group),
         members,
+        next_cursor: page.next,
     }))
 }

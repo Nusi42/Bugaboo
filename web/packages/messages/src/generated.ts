@@ -739,6 +739,8 @@ export const messages = {
   "projects.line-people": "In {project}, for {person}, {kind} goes from {before} to {after}.",
   "projects.line-lift":
     "{person} could take away the No access that applies to them in {project}. Take that No access away first, or move the project somewhere else.",
+  "error.role.in-use":
+    "Somebody has this role. Choose the role that takes its place before you delete it.",
 } as const;
 
 export type MessageKey = keyof typeof messages;

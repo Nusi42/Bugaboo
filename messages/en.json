@@ -763,5 +763,6 @@
   "sample.error.person-missing": "A person of the plan has no account in the database.",
   "sample.error.log-not-anchored": "Nothing vouches for the end of the security log: its anchor file is missing.",
   "sample.error.layout": "The file tools/dev/sample.json is not usable: {reason}",
-  "sample.error.link-missing": "The answer to an invitation does not say where to open it."
+  "sample.error.link-missing": "The answer to an invitation does not say where to open it.",
+  "error.role.in-use": "Somebody has this role. Choose the role that takes its place before you delete it."
 }

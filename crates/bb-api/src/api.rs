@@ -39,14 +39,19 @@ use crate::logging::Scheme;
 use crate::openapi;
 use crate::web::decode_path;
 
+mod access_bodies;
 mod access_keys;
 mod admin;
+mod assignments;
 mod auth;
 mod auth_factors;
 mod auth_people;
 mod auth_sign_in;
+mod groups;
+mod people;
 mod projects;
 mod projects_move;
+mod roles;
 mod second_step_gap;
 mod settings;
 
@@ -132,6 +137,10 @@ where
         .merge(admin::routes())
         .merge(settings::routes())
         .merge(projects::routes())
+        .merge(people::routes())
+        .merge(groups::routes())
+        .merge(roles::routes())
+        .merge(assignments::routes())
 }
 
 /// Whether the address belongs to the API. Escapes are decoded first; an address with a

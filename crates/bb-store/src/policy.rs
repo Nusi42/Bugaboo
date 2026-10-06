@@ -260,6 +260,20 @@ fn assignments_of_group_select(group: GroupId) -> SelectStatement {
     select
 }
 
+/// The rows of a person: their own, not their groups'.
+fn assignments_of_person_select(person: UserId) -> SelectStatement {
+    let mut select = assignment_select();
+    select.and_where(Expr::col(AssignmentRow::Person).eq(id_bytes(person.to_bytes())));
+    select
+}
+
+/// The rows that give a role.
+fn assignments_of_role_select(role: RoleId) -> SelectStatement {
+    let mut select = assignment_select();
+    select.and_where(Expr::col(AssignmentRow::Role).eq(id_bytes(role.to_bytes())));
+    select
+}
+
 /// Everything the engine needs for `person` at `place`, in one snapshot.
 async fn inputs_in(
     transaction: &mut Transaction,
@@ -692,6 +706,45 @@ impl PolicyStore for AuthStorage {
             .collect()
     }
 
+    async fn assignments_of_person(&self, person: UserId) -> Result<Vec<Assignment>, StoreError> {
+        self.database()
+            .fetch_all(&assignments_of_person_select(person))
+            .await?
+            .iter()
+            .map(read_assignment)
+            .collect()
+    }
+
+    async fn assignments_of_role(&self, role: RoleId) -> Result<Vec<Assignment>, StoreError> {
+        self.database()
+            .fetch_all(&assignments_of_role_select(role))
+            .await?
+            .iter()
+            .map(read_assignment)
+            .collect()
+    }
+
+    async fn groups_of(&self, person: UserId) -> Result<Vec<Group>, StoreError> {
+        let mut member_of = Query::select();
+        member_of
+            .column(GroupMemberRow::Group)
+            .from(GroupMemberRow::Table)
+            .and_where(Expr::col(GroupMemberRow::Person).eq(id_bytes(person.to_bytes())));
+        let mut select = Query::select();
+        select
+            .columns([GroupRow::Id, GroupRow::Name])
+            .from(GroupRow::Table)
+            .and_where(Expr::col(GroupRow::Id).in_subquery(member_of))
+            .order_by(GroupRow::Name, Order::Asc)
+            .order_by(GroupRow::Id, Order::Asc);
+        self.database()
+            .fetch_all(&select)
+            .await?
+            .iter()
+            .map(read_group)
+            .collect()
+    }
+
     async fn assignment(&self, id: AssignmentId) -> Result<Option<Assignment>, StoreError> {
         let mut select = assignment_select();
         select.and_where(Expr::col(AssignmentRow::Id).eq(id_bytes(id.to_bytes())));
@@ -860,6 +913,18 @@ impl PolicyStore for AuthStorage {
     ) -> Result<Vec<Assignment>, StoreError> {
         transaction
             .fetch_all(&assignments_of_group_select(group))
+            .await?
+            .iter()
+            .map(read_assignment)
+            .collect()
+    }
+
+    async fn assignments_of_role_in(
+        transaction: &mut Transaction,
+        role: RoleId,
+    ) -> Result<Vec<Assignment>, StoreError> {
+        transaction
+            .fetch_all(&assignments_of_role_select(role))
             .await?
             .iter()
             .map(read_assignment)

@@ -162,6 +162,71 @@ pub(crate) const ROUTES: &[(&str, Declared)] = &[
         "moveProject",
         Declared::Permission(Permission::MoveProjects),
     ),
+    ("listPeople", Declared::Permission(Permission::ManagePeople)),
+    ("getPerson", Declared::Permission(Permission::ManagePeople)),
+    ("listGroups", Declared::Permission(Permission::ManageGroups)),
+    ("makeGroup", Declared::Permission(Permission::ManageGroups)),
+    ("getGroup", Declared::Permission(Permission::ManageGroups)),
+    (
+        "renameGroup",
+        Declared::Permission(Permission::ManageGroups),
+    ),
+    (
+        "deleteGroup",
+        Declared::Permission(Permission::ManageGroups),
+    ),
+    (
+        "listGroupMembers",
+        Declared::Permission(Permission::ManageGroups),
+    ),
+    (
+        "addGroupMember",
+        Declared::Permission(Permission::ManageGroups),
+    ),
+    (
+        "removeGroupMember",
+        Declared::Permission(Permission::ManageGroups),
+    ),
+    (
+        "listMemberChoices",
+        Declared::Permission(Permission::ManageGroups),
+    ),
+    ("listRoles", Declared::Permission(Permission::ManageRoles)),
+    ("makeRole", Declared::Permission(Permission::ManageRoles)),
+    ("getRole", Declared::Permission(Permission::ManageRoles)),
+    ("changeRole", Declared::Permission(Permission::ManageRoles)),
+    ("deleteRole", Declared::Permission(Permission::ManageRoles)),
+    ("copyRole", Declared::Permission(Permission::ManageRoles)),
+    ("resetRole", Declared::Permission(Permission::ManageRoles)),
+    (
+        "listPermissions",
+        Declared::Permission(Permission::ManageRoles),
+    ),
+    (
+        "listAssignments",
+        Declared::Permission(Permission::DecideRoles),
+    ),
+    ("assignRole", Declared::Permission(Permission::DecideRoles)),
+    (
+        "removeAssignment",
+        Declared::Permission(Permission::DecideRoles),
+    ),
+    (
+        "listAssignmentChoices",
+        Declared::Permission(Permission::DecideRoles),
+    ),
+    (
+        "listProjectAssignments",
+        Declared::Permission(Permission::DecideRoles),
+    ),
+    (
+        "assignProjectRole",
+        Declared::Permission(Permission::DecideRoles),
+    ),
+    (
+        "listProjectAssignmentChoices",
+        Declared::Permission(Permission::DecideRoles),
+    ),
 ];
 
 /// What the route with this operation ID needs, if it is declared.

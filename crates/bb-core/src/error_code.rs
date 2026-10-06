@@ -83,6 +83,8 @@ error_codes! {
     /// Somebody tried to add or give more than they hold in that place themselves (ADR-0025,
     /// decision 6).
     TooMuch => ("access.too_much", 403, message::ERROR_ACCESS_TOO_MUCH),
+    /// A role that somebody has cannot be deleted without choosing the role that takes its place.
+    RoleInUse => ("role.in_use", 409, message::ERROR_ROLE_IN_USE),
     /// A person or group would have a role and *No access* in the same project.
     AssignmentConflict => ("assignment.conflict", 409, message::ERROR_ASSIGNMENT_CONFLICT),
     /// An administrator locked the setting, so nobody lower down may change it (CFG-06).

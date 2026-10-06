@@ -59,6 +59,12 @@ pub trait PolicyStore: ChangeStore + 'static {
         fn assignments_on(project: Option<ProjectId>) -> Vec<Assignment>;
         /// The rows of a group, wherever they are.
         fn assignments_of_group(group: GroupId) -> Vec<Assignment>;
+        /// The rows of a person (their own, not their groups'), wherever they are.
+        fn assignments_of_person(person: UserId) -> Vec<Assignment>;
+        /// The rows that give a role, wherever they are.
+        fn assignments_of_role(role: RoleId) -> Vec<Assignment>;
+        /// The groups a person is in, by name.
+        fn groups_of(person: UserId) -> Vec<Group>;
         /// One row.
         fn assignment(id: AssignmentId) -> Option<Assignment>;
         /// One project.
@@ -89,6 +95,8 @@ pub trait PolicyStore: ChangeStore + 'static {
         fn assignments_on_in(project: Option<ProjectId>) -> Vec<Assignment>;
         /// The same as [`PolicyStore::assignments_of_group`], inside the change.
         fn assignments_of_group_in(group: GroupId) -> Vec<Assignment>;
+        /// The same as [`PolicyStore::assignments_of_role`], inside the change.
+        fn assignments_of_role_in(role: RoleId) -> Vec<Assignment>;
         /// The same as [`PolicyStore::role`], inside the change.
         fn role_in(id: RoleId) -> Option<RoleRecord>;
         /// Every project below this one, at any depth, in no particular order.

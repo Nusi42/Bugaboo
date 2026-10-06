@@ -66,6 +66,7 @@ impl From<Refusal> for AppError {
         Self::Refused(match refusal {
             Refusal::WouldLockOut => ErrorCode::WouldLockOut,
             Refusal::TooMuch => ErrorCode::TooMuch,
+            Refusal::InUse => ErrorCode::RoleInUse,
         })
     }
 }

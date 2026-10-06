@@ -25,7 +25,7 @@ fn place_of(project: Option<ProjectId>) -> Place {
 }
 
 /// Whether `new` and `old` are for the same person or group.
-fn same_subject(new: &Assignment, old: &Assignment) -> bool {
+pub(super) fn same_subject(new: &Assignment, old: &Assignment) -> bool {
     (new.person.is_some() && new.person == old.person)
         || (new.group.is_some() && new.group == old.group)
 }
@@ -275,11 +275,11 @@ pub async fn remove_assignment<S: AuthStore>(
 }
 
 /// *Who has which role* for a project (or the whole organization): the rows of the place first,
-/// then the rows from above that reach it. People are shown by name (M2-Q3).
+/// then the rows from above that reach it, a page at a time. People are shown by name (M2-Q3).
 ///
 /// # Errors
 /// `access.forbidden` without *Decide who has which role* there, `resource.not_found` for a
-/// project the person may not know about.
+/// project the person may not know about, `request.invalid` for a cursor that is not one.
 pub async fn assignments<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: AssignmentsQuery,
@@ -320,12 +320,17 @@ pub async fn assignments<S: AuthStore>(
                 .map_err(|error| internal::<S>(&error))?,
         );
     }
-    let mut views = Vec::with_capacity(rows.len());
-    for row in &rows {
+    let page = bb_core::paging::window(rows.len(), input.cursor.as_deref(), input.limit)
+        .ok_or(ErrorCode::InvalidRequest)?;
+    let mut views = Vec::with_capacity(page.end - page.start);
+    for row in &rows[page.start..page.end] {
         views.push(
             ctx.assignment_view(&actor, &access, row, input.project)
                 .await?,
         );
     }
-    Ok(access.authorize(AssignmentList { rows: views }))
+    Ok(access.authorize(AssignmentList {
+        rows: views,
+        next_cursor: page.next,
+    }))
 }

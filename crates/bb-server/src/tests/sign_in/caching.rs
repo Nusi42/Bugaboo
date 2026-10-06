@@ -94,15 +94,36 @@ async fn perf_03_every_get_answers_an_etag_and_304_on_a_match() -> Outcome {
             )
             .await?;
         assert_eq!(made.status, StatusCode::OK);
+        // A group and the person themselves, for the routes of people and groups.
+        let group = ada
+            .send("POST", "/api/v1/groups", Some(json!({"name": "Checkers"})))
+            .await?;
+        assert_eq!(group.status, StatusCode::OK);
+        let (group_id, project_id, person_id) = (
+            group.body["id"].as_str().ok_or("no group")?.to_owned(),
+            made.body["id"].as_str().ok_or("no project")?.to_owned(),
+            ada.send("GET", "/api/v1/auth/me", None).await?.body["id"]
+                .as_str()
+                .ok_or("no person")?
+                .to_owned(),
+        );
         let routes = get_routes()?;
         assert!(routes.len() >= 9, "{routes:?}");
         let (mut kept, mut never_stored) = (0, 0);
         for template in &routes {
             // A route with a part to fill in needs an example address here; fail loudly so a
             // new route is never left out of this test.
+            // The routes of *Who has which role* take the ID of a project, not a short name.
+            let project = if template.contains("assignment") {
+                &project_id
+            } else {
+                "EXAMPLE"
+            };
             let filled = template
                 .replace("{role_id}", &role.id.to_string())
-                .replace("{project}", "EXAMPLE");
+                .replace("{group_id}", &group_id)
+                .replace("{person_id}", &person_id)
+                .replace("{project}", project);
             let path = &filled;
             assert!(
                 !path.contains('{'),

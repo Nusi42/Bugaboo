@@ -58,12 +58,15 @@ pub struct ChangeRole {
     pub two_step: Option<bool>,
 }
 
-/// Delete a role, with the rows that give it.
+/// Delete a role. Where the role is in use, the rows that give it are given to `replacement`
+/// instead; without one, a role in use is not deleted.
 pub struct DeleteRole {
     /// The secret of the session of the request.
     pub session_token: String,
     /// The role.
     pub role: RoleId,
+    /// The role that takes the place of the deleted one in every row that gave it.
+    pub replacement: Option<RoleId>,
 }
 
 /// Give a starting role back the permissions and levels it had at the start (*Reset to the
@@ -132,6 +135,10 @@ pub struct RolesQuery {
     pub session_token: String,
     /// The project the person chooses a role for, or `None` for *Organization settings*.
     pub place: Option<ProjectId>,
+    /// Where the page starts: the `next_cursor` of the page before.
+    pub cursor: Option<String>,
+    /// How many roles the page holds at most.
+    pub limit: u32,
 }
 
 /// List the levels a role has set.
@@ -151,6 +158,10 @@ pub struct AssignmentsQuery {
     pub session_token: String,
     /// The project, or `None` for the whole organization.
     pub project: Option<ProjectId>,
+    /// Where the page starts: the `next_cursor` of the page before.
+    pub cursor: Option<String>,
+    /// How many rows the page holds at most.
+    pub limit: u32,
 }
 
 /// *Check access*: what a person can do in a project (or the whole organization), and why.
@@ -185,8 +196,10 @@ impl Masked for RoleView {}
 /// The roles, in the order of roles.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct RoleList {
-    /// The roles.
+    /// The roles on this page.
     pub roles: Vec<RoleView>,
+    /// Where the next page starts; `None` on the last page.
+    pub next_cursor: Option<String>,
 }
 
 impl Masked for RoleList {}
@@ -272,6 +285,8 @@ impl Masked for AssignmentView {}
 pub struct AssignmentList {
     /// The rows: those of the place first, then those that come from above.
     pub rows: Vec<AssignmentView>,
+    /// Where the next page starts; `None` on the last page.
+    pub next_cursor: Option<String>,
 }
 
 impl Masked for AssignmentList {}

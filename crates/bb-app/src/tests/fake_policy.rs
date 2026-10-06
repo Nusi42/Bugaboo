@@ -229,6 +229,46 @@ impl PolicyStore for FakeStore {
         }))
     }
 
+    async fn assignments_of_person(&self, person: UserId) -> Result<Vec<Assignment>, FakeError> {
+        Ok(self.read(|state| {
+            state
+                .assignments
+                .iter()
+                .filter(|row| row.person == Some(person))
+                .cloned()
+                .collect()
+        }))
+    }
+
+    async fn assignments_of_role(&self, role: RoleId) -> Result<Vec<Assignment>, FakeError> {
+        Ok(self.read(|state| {
+            state
+                .assignments
+                .iter()
+                .filter(|row| row.role == Some(role))
+                .cloned()
+                .collect()
+        }))
+    }
+
+    async fn groups_of(&self, person: UserId) -> Result<Vec<Group>, FakeError> {
+        Ok(self.read(|state| {
+            let mut groups: Vec<Group> = state
+                .groups
+                .iter()
+                .filter(|group| {
+                    state
+                        .members
+                        .iter()
+                        .any(|member| member.group == group.id && member.person == person)
+                })
+                .cloned()
+                .collect();
+            groups.sort_by(|a, b| a.name.cmp(&b.name).then(a.id.cmp(&b.id)));
+            groups
+        }))
+    }
+
     async fn assignment(&self, id: AssignmentId) -> Result<Option<Assignment>, FakeError> {
         Ok(self.read(|state| state.assignments.iter().find(|row| row.id == id).cloned()))
     }
@@ -325,6 +365,19 @@ impl PolicyStore for FakeStore {
             .assignments
             .iter()
             .filter(|row| row.group == Some(group))
+            .cloned()
+            .collect())
+    }
+
+    async fn assignments_of_role_in(
+        tx: &mut Tx,
+        role: RoleId,
+    ) -> Result<Vec<Assignment>, FakeError> {
+        Ok(tx
+            .state
+            .assignments
+            .iter()
+            .filter(|row| row.role == Some(role))
             .cloned()
             .collect())
     }

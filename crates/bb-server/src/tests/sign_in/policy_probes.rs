@@ -152,6 +152,8 @@ async fn sec_03_decide_roles_is_not_kept_from_a_row_at_the_same_depth_as_the_no_
                 RolesQuery {
                     session_token: org.admin.session.clone(),
                     place: None,
+                    cursor: None,
+                    limit: bb_core::paging::PAGE_SIZE_MAX,
                 },
             )
             .await?
@@ -526,7 +528,9 @@ async fn sec_08_two_requests_for_a_role_and_a_no_access_leave_only_one_row() -> 
                 bb_app::roles::AssignmentsQuery {
                     session_token: org.admin.session.clone(),
                     project: Some(acme),
-                },
+cursor: None,
+limit: bb_core::paging::PAGE_SIZE_MAX,
+},
             )
             .await?
             .into_value()
@@ -670,6 +674,8 @@ async fn sec_04_nobody_resets_a_role_to_levels_above_their_own() -> Outcome {
                     RolesQuery {
                         session_token: org.admin.session.clone(),
                         place: None,
+                        cursor: None,
+                        limit: bb_core::paging::PAGE_SIZE_MAX,
                     },
                 )
                 .await?

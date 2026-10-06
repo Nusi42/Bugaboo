@@ -506,6 +506,9 @@ pub const ERROR_REQUEST_WRONG_TOKEN: MessageKey = MessageKey::new("error.request
 /// The message `error.resource.not-found`.
 pub const ERROR_RESOURCE_NOT_FOUND: MessageKey = MessageKey::new("error.resource.not-found");
 
+/// The message `error.role.in-use`.
+pub const ERROR_ROLE_IN_USE: MessageKey = MessageKey::new("error.role.in-use");
+
 /// The message `error.server.internal`.
 pub const ERROR_SERVER_INTERNAL: MessageKey = MessageKey::new("error.server.internal");
 
@@ -4023,6 +4026,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "Your sign-in does not fit this page any more. Sign in again and then try again.",
     ),
     ("error.resource.not-found", "We could not find that."),
+    (
+        "error.role.in-use",
+        "Somebody has this role. Choose the role that takes its place before you delete it.",
+    ),
     (
         "error.server.internal",
         "Something went wrong on our side. Nothing you did caused this.",

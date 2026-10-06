@@ -41,9 +41,9 @@ use crate::projects::{
     move_project, preview_move,
 };
 use crate::roles::{
-    AssignRole, ChangeRole, DeleteRole, Given, MakeRole, RemoveAssignment, ResetRole,
-    SetFieldLevel, SetPeopleLevel, Subject, assign_role, change_role, delete_role, make_role,
-    remove_assignment, reset_role, set_field_level, set_people_level,
+    AssignRole, ChangeRole, CopyRole, DeleteRole, Given, MakeRole, RemoveAssignment, ResetRole,
+    SetFieldLevel, SetPeopleLevel, Subject, assign_role, change_role, copy_role, delete_role,
+    make_role, remove_assignment, reset_role, set_field_level, set_people_level,
 };
 use crate::settings::{
     ChangeSetting, LockSetting, ResetSetting, SettingsScope, change_setting, lock_setting,
@@ -816,6 +816,22 @@ pub(crate) async fn change_role_scenario(world: &World) -> Added {
     .await
 }
 
+pub(crate) async fn copy_role_scenario(world: &World) -> Added {
+    let role = a_role(world, "Own").await?;
+    measured(
+        &world.store,
+        copy_role(
+            &world.ctx(),
+            CopyRole {
+                session_token: token(world),
+                role,
+                name: "Copy of own".to_owned(),
+            },
+        ),
+    )
+    .await
+}
+
 pub(crate) async fn delete_role_scenario(world: &World) -> Added {
     let role = a_role(world, "Own").await?;
     measured(
@@ -825,6 +841,7 @@ pub(crate) async fn delete_role_scenario(world: &World) -> Added {
             DeleteRole {
                 session_token: token(world),
                 role,
+                replacement: None,
             },
         ),
     )

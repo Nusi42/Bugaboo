@@ -60,6 +60,7 @@ table! {
     "add_group_member" => s::add_group_member_scenario,
     "remove_group_member" => s::remove_group_member_scenario,
     "make_role" => s::make_role_scenario,
+    "copy_role" => s::copy_role_scenario,
     "change_role" => s::change_role_scenario,
     "delete_role" => s::delete_role_scenario,
     "reset_role" => s::reset_role_scenario,

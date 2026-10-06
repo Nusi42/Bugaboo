@@ -25,6 +25,8 @@ pub enum Refusal {
     WouldLockOut,
     /// It adds or gives more than the person holds at that place.
     TooMuch,
+    /// A role that is in use cannot be deleted without saying which role takes its place.
+    InUse,
 }
 
 /// A person or a group that holds a role for the whole organization.
