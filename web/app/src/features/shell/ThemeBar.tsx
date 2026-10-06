@@ -1,7 +1,7 @@
 import { t } from "@bugaboo/messages";
 import { ChoiceGroup, useAppearance } from "@bugaboo/ui";
 
-import { themeChoiceLabels } from "./theme-labels.ts";
+import { themeChoiceLabels } from "../../shared/theme-labels.ts";
 
 /** The choice of theme at the bottom of the pages before sign-in: it works before anybody signs in. */
 export function ThemeBar() {

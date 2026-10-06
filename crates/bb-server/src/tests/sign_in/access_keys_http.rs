@@ -273,6 +273,9 @@ async fn auth_07_an_expired_a_deleted_and_an_unknown_key_get_the_same_answer_ove
     .await
 }
 
+/// The routes of *My settings*, which keys may use.
+const MY_SETTINGS: [&str; 3] = ["listMySettings", "changeMySetting", "resetMySetting"];
+
 #[tokio::test]
 async fn auth_07_no_route_of_the_owners_sign_in_data_opens_for_a_key() -> Outcome {
     each_database("auth_07_sign_in_data_http", async |db| {
@@ -290,6 +293,12 @@ async fn auth_07_no_route_of_the_owners_sign_in_data_opens_for_a_key() -> Outcom
                     .as_str()
                     .ok_or("no x-permission")?;
                 if !matches!(declared, "own-account" | "signed-in") {
+                    continue;
+                }
+                // *My settings* are the person's choices, not their sign-in data: a key acts as
+                // the person, reads them, and writes them if it may change (tested in
+                // `settings_keys`).
+                if MY_SETTINGS.contains(&operation["operationId"].as_str().unwrap_or_default()) {
                     continue;
                 }
                 let path = template

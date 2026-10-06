@@ -456,8 +456,7 @@ async fn auth_03_the_organization_switch_asks_everybody() -> TestResult {
                 &event(&mut source, 6),
                 &SettingChange {
                     key,
-                    level: bb_core::settings::Level::Organization,
-                    scope: None,
+                    scope: bb_core::settings::Scope::Organization,
                     value: SettingValue::Bool(true),
                     locked: false,
                 },
@@ -487,8 +486,7 @@ async fn auth_07_the_life_of_a_key_has_a_default_and_a_longest_time_that_never_p
                 &event(&mut source, 6),
                 &SettingChange {
                     key,
-                    level: bb_core::settings::Level::Organization,
-                    scope: None,
+                    scope: bb_core::settings::Scope::Organization,
                     value: SettingValue::Integer(4000),
                     locked: false,
                 },

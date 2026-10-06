@@ -17,7 +17,7 @@ use bb_auth::{CsrfKey, Passkeys, PasswordHasher, RelyingParty};
 use bb_core::ErrorCode;
 use bb_core::event::{Actor, Channel, DomainEvent, EntityKind, EntityRef};
 use bb_core::id::{EntityId, EventId, UserId};
-use bb_core::settings::{Level, SettingValue};
+use bb_core::settings::SettingValue;
 use bb_store::{AuthStorage, Database, LogSeal, SettingChange};
 use bb_testing::{TestDatabase, TestResult};
 use jiff::Timestamp;
@@ -196,8 +196,7 @@ impl Rig {
                 &event,
                 &SettingChange {
                     key: key.to_owned(),
-                    level: Level::Organization,
-                    scope: None,
+                    scope: bb_core::settings::Scope::Organization,
                     value,
                     locked: false,
                 },

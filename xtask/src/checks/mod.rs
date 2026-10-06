@@ -17,7 +17,7 @@ mod arch_no_counters;
 mod arch_no_unsafe;
 mod arch_perms;
 mod arch_person_ref;
-mod arch_settings;
+pub(crate) mod arch_settings;
 mod arch_sql_edge;
 mod arch_wasm;
 mod arch_web_api;

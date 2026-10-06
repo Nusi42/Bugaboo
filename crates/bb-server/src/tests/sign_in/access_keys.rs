@@ -61,7 +61,7 @@ pub(super) async fn key_of(rig: &Rig, owner: &Member, choice: KeyChoice) -> Run<
 }
 
 /// A key of `owner`: the answer, or why it was refused.
-async fn make(
+pub(super) async fn make(
     rig: &Rig,
     owner: &Member,
     choice: KeyChoice,

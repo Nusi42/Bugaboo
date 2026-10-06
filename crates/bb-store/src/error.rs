@@ -59,15 +59,13 @@ pub enum SettingProblem {
     UnknownKey,
     /// The setting cannot be set on this level.
     LevelNotAllowed,
-    /// A project or person level value needs the project or person it is for; the organization
-    /// level takes none.
-    ScopeMismatch,
     /// The value has another type than the setting declares.
     WrongType,
     /// The setting cannot be locked.
     NotLockable,
-    /// A whole number outside the bounds the setting declares, or a list with more items, or
-    /// longer items, than it allows.
+    /// A whole number outside the bounds the setting declares, a list with more items, or longer
+    /// items, than it allows, or a text that is not one of the choices or not in the format the
+    /// setting declares.
     OutOfBounds,
 }
 

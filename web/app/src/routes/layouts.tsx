@@ -9,6 +9,7 @@ import {
   SettingsFrame,
 } from "../features/shell/index.ts";
 import { paths } from "../shared/paths.ts";
+import { loadMySettings } from "../shared/my-settings.ts";
 import { currentPerson, type Person } from "../shared/session.ts";
 import { OnlyWith } from "./OnlyWith.tsx";
 import { Root } from "./Root.tsx";
@@ -81,6 +82,8 @@ export const appRoute = createRoute({
     if (person.second_step_setup_required) {
       throw redirect({ to: paths.setUpSecondStep });
     }
+    // The person's own settings come before the first page, so the look is theirs from the start.
+    await loadMySettings();
     await joinProjects();
     return { person };
   },

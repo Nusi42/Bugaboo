@@ -14,7 +14,7 @@ use super::fake::{FakeError, FakeStore, State, Tx};
 use crate::access::{PolicyStore, RoleRecord};
 
 /// The projects from the top down to `project`; `None` when it does not exist.
-fn chain_of(state: &State, project: ProjectId) -> Option<Vec<ProjectId>> {
+pub(super) fn chain_of(state: &State, project: ProjectId) -> Option<Vec<ProjectId>> {
     let mut chain = vec![project];
     let mut current = state.projects.iter().find(|known| known.id == project)?;
     while let Some(parent) = current.parent {

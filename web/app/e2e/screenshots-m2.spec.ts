@@ -1,7 +1,7 @@
 import { t } from "@bugaboo/messages";
 import { type Page } from "@playwright/test";
 
-import { ada, makeAdmin } from "./support/accounts.ts";
+import { ada, forgetChoices, makeAdmin } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { screenshotFolder, shoot } from "./support/screenshots.ts";
@@ -64,6 +64,7 @@ async function phoneScreens(page: Page): Promise<void> {
 
 async function quickScreens(page: Page): Promise<void> {
   await page.goto("/");
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
   await page.keyboard.press("Control+k");
   await page.getByRole("searchbox", { name: t("search.label"), exact: true }).fill("a");
   await expect(page.getByRole("option").first()).toBeVisible();
@@ -90,6 +91,76 @@ async function frameScreens(page: Page): Promise<void> {
   await shot(page, "11-undo-phone");
 }
 
+/** The tallest a picture of one whole page may be. */
+const TALLEST_PAGE = 8000;
+
+/**
+ * Takes the whole page in both looks. The content of the app scrolls inside the shell, so a
+ * picture of the window shows only the first screenful: the window is made as tall as the
+ * longest scrolling area needs, then put back.
+ */
+async function wholePage(page: Page, name: string): Promise<void> {
+  const before = page.viewportSize() ?? sizes.phone;
+  const missing = await page.evaluate(() => {
+    let most = 0;
+    for (const element of document.querySelectorAll("*")) {
+      most = Math.max(most, element.scrollHeight - element.clientHeight);
+    }
+    return most;
+  });
+  await page.setViewportSize({
+    width: before.width,
+    height: Math.min(before.height + missing, TALLEST_PAGE),
+  });
+  await shot(page, name);
+  await page.setViewportSize(before);
+}
+
+/** Gives *Go home* the keys `g i`, so the list of keys has one of the person's own to show. */
+async function chooseGoHomeKeys(page: Page): Promise<void> {
+  await page.goto("/me/shortcuts");
+  await page.getByRole("button", { name: t("shortcut.go-home"), exact: true }).click();
+  const panel = page.getByRole("complementary", { name: t("shortcut.go-home"), exact: true });
+  await panel.getByRole("textbox", { name: t("shortcuts.new-keys"), exact: true }).click();
+  await page.keyboard.press("g");
+  await page.keyboard.press("i");
+  await panel.getByRole("button", { name: t("shortcuts.use") }).click();
+  await expect(panel.getByText(t("shortcuts.saved"))).toBeVisible();
+}
+
+/** The pages of *My settings* and the organization's settings that WP-07 added, at phone width. */
+async function settingsScreens(page: Page): Promise<void> {
+  await page.setViewportSize(sizes.phone);
+  await page.goto("/me/region");
+  await expect(page.getByRole("heading", { level: 1, name: t("nav.region") })).toBeVisible();
+  await wholePage(page, "20-region-phone");
+  await page.goto("/me/start-page");
+  await expect(page.getByRole("heading", { level: 1, name: t("nav.start-page") })).toBeVisible();
+  await wholePage(page, "21-start-page-phone");
+  await page.goto("/me/appearance");
+  await expect(page.getByRole("heading", { level: 1, name: t("appearance.title") })).toBeVisible();
+  await wholePage(page, "22-appearance-samples-phone");
+  await page.goto("/settings/sign-in-rules");
+  await expect(page.getByRole("heading", { level: 1, name: t("nav.sign-in-rules") })).toBeVisible();
+  await wholePage(page, "23-sign-in-rules-phone");
+  // The administrator locks the theme; the page of a person then says why it cannot be changed.
+  await page.goto("/settings/themes");
+  const row = page.getByRole("listitem").filter({
+    has: page.getByRole("group", { name: t("theme.legend"), exact: true }),
+  });
+  await row.getByText(t("setting.ui.lock"), { exact: true }).click();
+  await expect(row.getByRole("switch", { name: t("setting.ui.lock") })).toBeChecked();
+  await expect(page.getByRole("status").filter({ hasText: t("save.saved") })).toBeVisible();
+  await wholePage(page, "24-themes-lock-phone");
+  await page.goto("/me/appearance");
+  await expect(page.getByText(t("setting.ui.locked"), { exact: true }).first()).toBeVisible();
+  await wholePage(page, "25-appearance-locked-phone");
+  await chooseGoHomeKeys(page);
+  await page.goto("/me/shortcuts");
+  await expect(page.getByRole("heading", { level: 1, name: t("shortcut.title") })).toBeVisible();
+  await wholePage(page, "26-keyboard-shortcuts-kept-phone");
+}
+
 async function largerScreens(page: Page): Promise<void> {
   await page.setViewportSize(sizes.computer);
   await page.goto("/me/appearance");
@@ -108,11 +179,13 @@ async function largerScreens(page: Page): Promise<void> {
   await shot(page, "15-menu-tablet");
 }
 
-test("the screens of the app shell", async ({ page }) => {
+test("the screens of the app shell", async ({ page, server }) => {
   test.setTimeout(TAKING_ALL_MS);
+  await forgetChoices(server, ada, true);
   await signIn(page, ada);
   await phoneScreens(page);
   await quickScreens(page);
   await frameScreens(page);
+  await settingsScreens(page);
   await largerScreens(page);
 });

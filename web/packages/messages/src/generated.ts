@@ -46,8 +46,6 @@ export const messages = {
   "error.rate-limit.exceeded": "Too many tries. Please wait a little and try again.",
   "error.server.unavailable": "Bugaboo is not available right now. Please try again in a moment.",
   "error.server.internal": "Something went wrong on our side. Nothing you did caused this.",
-  "setting.appearance.theme.help":
-    "The colors Bugaboo uses on your screen. Match my device follows the light or dark setting of your device.",
   "setting.security.session-idle-minutes.help":
     "How many minutes without activity pass before people are signed out automatically. Between 5 minutes and 24 hours.",
   "setting.security.two-step-required.help":
@@ -62,6 +60,82 @@ export const messages = {
     "Let people make an account on their own, without an invitation. Bugaboo cannot check that an address belongs to the person until e-mail is available, so use this only on a network you trust.",
   "setting.auth.sign-up-domains.help":
     "The e-mail domains that may sign up on their own, as a list separated by commas, like example.com. Leave the list empty to let every address sign up while signing up is on, so write your domains in first.",
+  "setting.ui.search": "Search settings",
+  "setting.ui.nothing": "No setting matches your search.",
+  "setting.ui.reset": "Reset to default",
+  "setting.ui.reset-name": "Reset to default: {name}",
+  "setting.ui.locked": "Set by your organization",
+  "setting.ui.locked-why": "An administrator chose this for everyone, so you can't change it here.",
+  "setting.ui.lock": "Lock for everyone",
+  "setting.ui.lock-help": "While this is locked, nobody can choose their own value.",
+  "setting.ui.source-default": "Bugaboo's standard value",
+  "setting.ui.source-organization": "Your organization's choice",
+  "setting.ui.source-project": "From {project}",
+  "setting.ui.source-hidden-project": "From a project you can't see",
+  "setting.ui.source-person": "Your own choice",
+  "setting.ui.device-zone": "Match my device ({zone})",
+  "setting.ui.between": "A whole number between {least} and {most}.",
+  "setting.ui.whole-number": "Enter a whole number.",
+  "setting.ui.example-moment": "Right now, a time looks like this: {moment}",
+  "setting.ui.example-number": "A number looks like this: {number}",
+  "setting.page.region-intro":
+    "These choices are kept with you, so they follow you to every browser you sign in from.",
+  "setting.page.start-page-intro": "Choose the page Bugaboo opens after you sign in.",
+  "setting.page.sign-in-rules-intro":
+    "How long people stay signed in, and the rules for signing in. They apply to everybody.",
+  "setting.page.themes-intro":
+    "The organization's choice of look. People can choose their own, unless you lock a setting.",
+  "nav.region": "Region",
+  "nav.start-page": "Start page",
+  "nav.sign-in-rules": "Sign-in rules",
+  "nav.themes": "Themes",
+  "nav.group.look-org": "Look",
+  "setting.appearance.mode.help":
+    "The colors Bugaboo uses on your screen. Match my device follows the light or dark setting of your device.",
+  "setting.appearance.light-theme.help":
+    "The theme Bugaboo shows when your device is light. It counts when you choose Match my device.",
+  "setting.appearance.dark-theme.help":
+    "The theme Bugaboo shows when your device is dark. It counts when you choose Match my device.",
+  "setting.appearance.spacing.help": "How close together things are. Compact fits more on a page.",
+  "setting.appearance.larger-text.help": "Makes all text a step bigger.",
+  "setting.appearance.less-motion.help":
+    "Fewer moving effects. Bugaboo also follows the setting of your device.",
+  "setting.appearance.issue-view.name": "Open issues in",
+  "setting.appearance.issue-view.help":
+    "Where an issue opens: in the focus view, which gives it most of the page, or in a side panel next to the list.",
+  "appearance.mode.light": "Always light",
+  "appearance.mode.dark": "Always dark",
+  "appearance.issue-view.panel": "Side panel",
+  "setting.region.time-zone.name": "Time zone",
+  "setting.region.time-zone.help":
+    "The time zone for the times you see. Match my device uses the time zone of your device.",
+  "setting.region.date-format.name": "Date format",
+  "setting.region.date-format.help": "How dates are written.",
+  "setting.region.date-format.day-month-year": "Day, month, year (31.12.2026)",
+  "setting.region.date-format.month-day-year": "Month, day, year (12/31/2026)",
+  "setting.region.date-format.year-month-day": "Year, month, day (2026-12-31)",
+  "setting.region.number-format.name": "Number format",
+  "setting.region.number-format.help": "How big numbers and decimals are written.",
+  "setting.region.number-format.point": "1,234.5",
+  "setting.region.number-format.comma": "1.234,5",
+  "setting.region.number-format.space": "1 234,5",
+  "setting.region.first-day.name": "First day of the week",
+  "setting.region.first-day.help": "The day a week starts on in calendars.",
+  "setting.region.first-day.monday": "Monday",
+  "setting.region.first-day.sunday": "Sunday",
+  "setting.region.first-day.saturday": "Saturday",
+  "setting.start.page.name": "Start page",
+  "setting.start.page.help": "The page Bugaboo opens after you sign in.",
+  "setting.shortcuts.keys.name": "Your own keys",
+  "setting.shortcuts.keys.help":
+    "The keys you chose for keyboard shortcuts. A shortcut you did not change keeps its usual keys.",
+  "setting.security.session-idle-minutes.name": "Sign out after no activity (minutes)",
+  "setting.security.session-absolute-hours.name": "Longest sign-in (hours)",
+  "setting.security.two-step-required.name": "Two-step sign-in for everybody",
+  "setting.auth.sign-up-enabled.name": "Sign up without an invitation",
+  "setting.auth.sign-up-domains.name": "E-mail domains that may sign up",
+  "setting.auth.access-key-default-days.name": "Access key lasts (days), when no date is picked",
+  "setting.auth.access-key-longest-days.name": "Longest an access key can last (days)",
   "data-folder.create-failed": "The data folder {path} could not be prepared: {reason}",
   "data-folder.protect-failed":
     "The data folder {path} could not be made private to its owner: {reason}",
@@ -113,6 +187,8 @@ export const messages = {
   "common.try-again": "Try again",
   "common.continue": "Continue",
   "common.save": "Save",
+  "common.on": "On",
+  "common.off": "Off",
   "validation.required": "Please fill this in.",
   "validation.email": "Type an e-mail address like name@example.com.",
   "field.email": "E-mail address",
@@ -393,7 +469,7 @@ export const messages = {
   "appearance.larger-text": "Larger text",
   "appearance.less-motion": "Less motion",
   "appearance.device-settings":
-    "Your device may already ask for less motion or more contrast. Bugaboo follows both. These choices stay on this device.",
+    "Your device may already ask for less motion or more contrast. Bugaboo follows both. Your choices are kept with you, so they follow you to every browser you sign in from.",
   "shortcuts.intro": "Choose the keys you like. Open a shortcut to change its keys.",
   "shortcuts.search": "Search the shortcuts",
   "shortcuts.nothing": "No shortcut matches your search.",
@@ -455,6 +531,7 @@ export const messages = {
   "error.access.would-lock-out":
     "That would leave nobody who can manage roles and decide who has which role for the whole organization. Keep at least one person who can do both.",
   "error.access.too-much": "You can only add or give what you can do yourself in this place.",
+  "error.setting.locked": "An administrator locked this setting, so it can't be changed here.",
   "error.assignment.conflict":
     "This person or group already has a role here, so it cannot also have No access here, and the other way round. Take the other row away first.",
   "error.name.taken": "That name is already used. Choose another one.",
@@ -755,6 +832,12 @@ export interface MessageArguments {
   "sessions.last-seen": { when: string | number };
   "sessions.network": { network: string | number };
   "sessions.started": { when: string | number };
+  "setting.ui.between": { least: string | number; most: string | number };
+  "setting.ui.device-zone": { zone: string | number };
+  "setting.ui.example-moment": { moment: string | number };
+  "setting.ui.example-number": { number: string | number };
+  "setting.ui.reset-name": { name: string | number };
+  "setting.ui.source-project": { project: string | number };
   "setup.ask.replace": { path: string | number };
   "setup.database-url-password": { file: string | number; variable: string | number };
   "setup.exists": { path: string | number };

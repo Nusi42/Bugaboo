@@ -19,8 +19,8 @@ use bb_core::project::{Project, ProjectAlias};
 use bb_core::security_log::Digest;
 use bb_core::settings::{
     AUTH_ACCESS_KEY_DEFAULT_DAYS, AUTH_ACCESS_KEY_LONGEST_DAYS, AUTH_SIGN_UP_DOMAINS,
-    AUTH_SIGN_UP_ENABLED, SECURITY_SESSION_ABSOLUTE_HOURS, SECURITY_SESSION_IDLE_MINUTES,
-    SECURITY_TWO_STEP_REQUIRED, SettingValue,
+    AUTH_SIGN_UP_ENABLED, Integer, SECURITY_SESSION_ABSOLUTE_HOURS, SECURITY_SESSION_IDLE_MINUTES,
+    SECURITY_TWO_STEP_REQUIRED, Scope, Setting, SettingValue, Text,
 };
 use bb_core::sign_in::{
     Invitation, SessionStage, SetupCode, SignInSession, StoredPasskey, TwoStep,
@@ -77,7 +77,7 @@ pub(crate) struct State {
     pub(crate) invitations: Vec<Invitation>,
     pub(crate) access_keys: Vec<AccessKeyRecord>,
     pub(crate) setup_code: Option<SetupCode>,
-    pub(crate) settings: Vec<(String, SettingValue)>,
+    pub(crate) settings: Vec<super::fake_settings::FakeSetting>,
     pub(crate) starting_roles_made: bool,
     pub(crate) legacy_administrators: Vec<UserId>,
     pub(crate) roles: Vec<RoleRecord>,
@@ -360,46 +360,24 @@ impl AuthStore for FakeStore {
 
     async fn auth_settings(&self) -> Result<AuthSettings, FakeError> {
         Ok(self.read(|state| {
-            let setting = |key: &str| {
-                state
-                    .settings
-                    .iter()
-                    .find(|(name, _)| name == key)
-                    .map(|(_, value)| value.clone())
+            let layers = super::fake_settings::layers_of(state, None, None);
+            let number = |setting: &Setting<Integer>| {
+                setting.resolve(Some(&layers.resolve(setting.definition()).value))
+            };
+            let text = |setting: &Setting<Text>| {
+                setting.resolve(Some(&layers.resolve(setting.definition()).value))
             };
             AuthSettings {
-                session_idle_minutes: match setting(
-                    SECURITY_SESSION_IDLE_MINUTES.definition().key(),
-                ) {
-                    Some(SettingValue::Integer(value)) => value,
-                    _ => 30,
-                },
-                session_absolute_hours: match setting(
-                    SECURITY_SESSION_ABSOLUTE_HOURS.definition().key(),
-                ) {
-                    Some(SettingValue::Integer(value)) => value,
-                    _ => 24,
-                },
-                sign_up_enabled: matches!(
-                    setting(AUTH_SIGN_UP_ENABLED.definition().key()),
-                    Some(SettingValue::Bool(true))
-                ),
-                sign_up_domains: match setting(AUTH_SIGN_UP_DOMAINS.definition().key()) {
-                    Some(SettingValue::Text(text)) => text,
-                    _ => String::new(),
-                },
-                access_key_default_days: match setting(
-                    AUTH_ACCESS_KEY_DEFAULT_DAYS.definition().key(),
-                ) {
-                    Some(SettingValue::Integer(value)) => value,
-                    _ => 90,
-                },
-                access_key_longest_days: match setting(
-                    AUTH_ACCESS_KEY_LONGEST_DAYS.definition().key(),
-                ) {
-                    Some(SettingValue::Integer(value)) => value,
-                    _ => 365,
-                },
+                session_idle_minutes: number(&SECURITY_SESSION_IDLE_MINUTES).unwrap_or(30),
+                session_absolute_hours: number(&SECURITY_SESSION_ABSOLUTE_HOURS).unwrap_or(24),
+                sign_up_enabled: AUTH_SIGN_UP_ENABLED
+                    .resolve(Some(
+                        &layers.resolve(AUTH_SIGN_UP_ENABLED.definition()).value,
+                    ))
+                    .unwrap_or(false),
+                sign_up_domains: text(&AUTH_SIGN_UP_DOMAINS).unwrap_or_default(),
+                access_key_default_days: number(&AUTH_ACCESS_KEY_DEFAULT_DAYS).unwrap_or(90),
+                access_key_longest_days: number(&AUTH_ACCESS_KEY_LONGEST_DAYS).unwrap_or(365),
             }
         }))
     }
@@ -488,9 +466,10 @@ impl AuthStore for FakeStore {
 
     async fn second_step_required(&self, person: UserId) -> Result<bool, FakeError> {
         Ok(self.read(|state| {
-            let everybody = state.settings.iter().any(|(name, value)| {
-                name == SECURITY_TWO_STEP_REQUIRED.definition().key()
-                    && *value == SettingValue::Bool(true)
+            let everybody = state.settings.iter().any(|row| {
+                row.scope == Scope::Organization
+                    && row.key == SECURITY_TWO_STEP_REQUIRED.definition().key()
+                    && row.value == SettingValue::Bool(true)
             });
             let groups: Vec<_> = state
                 .members
@@ -891,8 +870,7 @@ impl AuthStore for FakeStore {
         value: &SettingValue,
         _at: Timestamp,
     ) -> Result<(), FakeError> {
-        tx.state.settings.retain(|(name, _)| name != key);
-        tx.state.settings.push((key.to_owned(), value.clone()));
+        super::fake_settings::put(&mut tx.state, Scope::Organization, key, value);
         Ok(())
     }
 }

@@ -48,7 +48,7 @@ reason = "The computer network a request came from or travels over. Not a Relati
 [[allow]]
 term = "screen"
 at = [
-  "messages/en.json#setting.appearance.theme.help",
+  "messages/en.json#setting.appearance.mode.help",
   "messages/en.json#second-step.passkey-help",
   "messages/en.json#passkeys.intro",
 ]

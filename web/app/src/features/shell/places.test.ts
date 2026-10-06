@@ -67,11 +67,15 @@ describe("ux_01 the screens that exist", () => {
     expect(trailTo("/nothing")).toEqual([]);
     expect(placeAt(paths.home)?.parent).toBeNull();
   });
+});
 
+describe("ux_01 the topics of a settings screen", () => {
   it("groups the topics of a settings screen by heading, only those that exist for the person", () => {
     const mine = topicGroups(paths.mySettings, []);
     expect(mine.flatMap((group) => group.topics.map((topic) => topic.path))).toEqual([
       paths.appearance,
+      paths.region,
+      paths.startPage,
       paths.shortcuts,
       paths.security,
       paths.sessions,
@@ -82,7 +86,7 @@ describe("ux_01 the screens that exist", () => {
       topicGroups(paths.organizationSettings, administrator).flatMap((group) =>
         group.topics.map((topic) => topic.path),
       ),
-    ).toEqual([paths.invitations, paths.status]);
+    ).toEqual([paths.invitations, paths.signInRules, paths.themes, paths.status]);
   });
 });
 

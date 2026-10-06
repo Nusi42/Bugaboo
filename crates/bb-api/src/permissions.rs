@@ -103,6 +103,41 @@ pub(crate) const ROUTES: &[(&str, Declared)] = &[
         Declared::Permission(Permission::SeeStatus),
     ),
     (
+        "listOrganizationSettings",
+        Declared::Permission(Permission::ChangeOrganizationSettings),
+    ),
+    (
+        "changeOrganizationSetting",
+        Declared::Permission(Permission::ChangeOrganizationSettings),
+    ),
+    (
+        "resetOrganizationSetting",
+        Declared::Permission(Permission::ChangeOrganizationSettings),
+    ),
+    (
+        "lockOrganizationSetting",
+        Declared::Permission(Permission::ChangeOrganizationSettings),
+    ),
+    (
+        "unlockOrganizationSetting",
+        Declared::Permission(Permission::ChangeOrganizationSettings),
+    ),
+    (
+        "listProjectSettings",
+        Declared::Permission(Permission::ChangeProjectSettings),
+    ),
+    (
+        "changeProjectSetting",
+        Declared::Permission(Permission::ChangeProjectSettings),
+    ),
+    (
+        "resetProjectSetting",
+        Declared::Permission(Permission::ChangeProjectSettings),
+    ),
+    ("listMySettings", Declared::SignedIn),
+    ("changeMySetting", Declared::SignedIn),
+    ("resetMySetting", Declared::SignedIn),
+    (
         "listProjects",
         Declared::Permission(Permission::SeeProjects),
     ),

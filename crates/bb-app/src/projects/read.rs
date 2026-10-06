@@ -19,7 +19,7 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// The project an address names: an ID, or a short name (also an old one). An address that is
     /// neither asks the store for a project that is not there, so every address, good or not,
     /// costs one question.
-    async fn find_project(&self, address: &str) -> Result<Option<Found>, AppError> {
+    pub(crate) async fn find_project(&self, address: &str) -> Result<Option<Found>, AppError> {
         let nowhere = ProjectId::from_parts(Timestamp::UNIX_EPOCH, [0; 10])
             .map_err(|error| AppError::Internal(error.to_string()))?;
         let by_name = if address.parse::<ProjectId>().is_ok() {

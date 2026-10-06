@@ -2,7 +2,7 @@ import { t } from "@bugaboo/messages";
 import { type Page } from "@playwright/test";
 
 import { shortcutDefinitions } from "../src/shared/shortcuts.ts";
-import { ada, makeAdmin } from "./support/accounts.ts";
+import { ada, forgetChoices, makeAdmin } from "./support/accounts.ts";
 import { expectGoodInEveryLook } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
@@ -13,6 +13,10 @@ test.use({
       await (await makeAdmin(server)).dispose();
     },
   },
+});
+
+test.beforeEach(async ({ server }) => {
+  await forgetChoices(server);
 });
 
 /** The list of all shortcuts, in the dialog that `?` opens. */

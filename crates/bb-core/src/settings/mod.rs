@@ -1,10 +1,11 @@
 //! The settings registry (ADR-0018): every setting is declared once, here in `bb-core`.
 //!
 //! A setting has a key, a type, a default, the levels it can be set on (organization, project,
-//! person), who may change it, the message that explains it, and whether administrators can lock
-//! it. The registry ([`ALL`]) lists them all; storage (WP-05), the API and the settings dialogs
-//! are built from that list, never from a second one. Code reads a setting only through its typed
-//! handle (`settings::APPEARANCE_THEME`), never by writing its key as text (ARCH-SETTINGS).
+//! person), who may change it, the message that names it and the one that explains it, and whether
+//! administrators can lock it. The registry ([`ALL`]) lists them all; storage, the API and the
+//! settings forms are built from that list, never from a second one. Code reads a setting only
+//! through its typed handle (`settings::APPEARANCE_MODE`), never by writing its key as text
+//! (ARCH-SETTINGS).
 
 use std::marker::PhantomData;
 
@@ -13,8 +14,12 @@ use serde::{Deserialize, Serialize};
 use crate::message::MessageKey;
 
 mod catalog;
+mod format;
+mod layers;
 
 pub use catalog::*;
+pub use format::{Choice, DEVICE, Format};
+pub use layers::{Layers, OrganizationValue, Resolved, Scope, Source};
 
 /// Where a setting can be set. A lower level overrides a higher one unless it is locked.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -49,6 +54,9 @@ impl Level {
 
 // The three fixed levels.
 impl crate::personal::NotPersonal for Level {}
+
+/// The topics whose settings change how people sign in or what keeps the organization safe.
+const SECURITY_TOPICS: [&str; 2] = ["security", "auth"];
 
 /// The least privileged group that may change a setting. Administrators can always change it.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -96,17 +104,26 @@ impl DefaultValue {
     }
 }
 
+/// The two messages of a setting: the one that names it and the one that explains it.
+#[derive(Clone, Copy)]
+pub(crate) struct Words {
+    pub(crate) name: MessageKey,
+    pub(crate) help: MessageKey,
+}
+
 /// The limits a setting can declare: the bounds of a whole number, the size of a list.
 #[derive(Clone, Copy)]
 pub(crate) struct Limits {
     pub(crate) bounds: Option<(i64, i64)>,
     pub(crate) list: Option<(usize, usize)>,
+    pub(crate) format: Format,
 }
 
 /// Everything the registry knows about one setting, whatever its type.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct SettingDefinition {
     key: &'static str,
+    name: MessageKey,
     default: DefaultValue,
     levels: &'static [Level],
     changed_by: ChangedBy,
@@ -114,6 +131,7 @@ pub struct SettingDefinition {
     lockable: bool,
     bounds: Option<(i64, i64)>,
     list: Option<(usize, usize)>,
+    format: Format,
 }
 
 impl SettingDefinition {
@@ -123,20 +141,68 @@ impl SettingDefinition {
         default: DefaultValue,
         levels: &'static [Level],
         changed_by: ChangedBy,
-        help: MessageKey,
         lockable: bool,
+        words: Words,
         limits: Limits,
     ) -> Self {
         Self {
             key,
+            name: words.name,
             default,
             levels,
             changed_by,
-            help,
+            help: words.help,
             lockable,
             bounds: limits.bounds,
             list: limits.list,
+            format: limits.format,
         }
+    }
+
+    /// The kind of text the setting holds, and the choices when it has a list.
+    #[must_use]
+    pub const fn format(&self) -> Format {
+        self.format
+    }
+
+    /// Whether `value` is one the setting accepts: the type, the bounds of a number, the limits of
+    /// a list and the format of a text. The levels and the lock are not part of the value.
+    #[must_use]
+    pub fn accepts(&self, value: &SettingValue) -> bool {
+        match (self.default, value) {
+            (DefaultValue::Bool(_), SettingValue::Bool(_)) => true,
+            (DefaultValue::Integer(_), SettingValue::Integer(value)) => self
+                .bounds
+                .is_none_or(|(least, most)| (least..=most).contains(value)),
+            (DefaultValue::Text(_), SettingValue::Text(value)) => {
+                self.list_fits(value) && self.format.accepts(value)
+            }
+            _ => false,
+        }
+    }
+
+    /// Whether `value` has the type the setting declares, whatever its content.
+    #[must_use]
+    pub fn has_type_of(&self, value: &SettingValue) -> bool {
+        matches!(
+            (self.default, value),
+            (DefaultValue::Bool(_), SettingValue::Bool(_))
+                | (DefaultValue::Integer(_), SettingValue::Integer(_))
+                | (DefaultValue::Text(_), SettingValue::Text(_))
+        )
+    }
+
+    /// Whether a change of this setting is a change of how people sign in or what keeps the
+    /// organization safe, so it also goes into the security log (CFG-06, SEC-15).
+    #[must_use]
+    pub fn touches_security(&self) -> bool {
+        SECURITY_TOPICS.contains(&self.topic())
+    }
+
+    /// The message that names the setting in the settings form.
+    #[must_use]
+    pub const fn name(&self) -> MessageKey {
+        self.name
     }
 
     /// For a text setting that holds a list separated by commas: the most items it may have and
@@ -391,13 +457,15 @@ macro_rules! settings {
         $(#[$doc:meta])*
         $name:ident: $kind:ident = {
             key: $key:literal,
+            name: $name_message:expr,
             default: $default:expr,
             levels: [$($level:ident),+ $(,)?],
             changed_by: $changed_by:ident,
             help: $help:expr,
             lockable: $lockable:literal
             $(, bounds: ($least:literal, $most:literal))?
-            $(, list: ($items:literal, $length:literal))? $(,)?
+            $(, list: ($items:literal, $length:literal))?
+            $(, format: $format:expr)? $(,)?
         }
     )+) => {
         $(
@@ -407,8 +475,11 @@ macro_rules! settings {
                 $kind::default_value($default),
                 &[$(Level::$level),+],
                 ChangedBy::$changed_by,
-                $help,
                 $lockable,
+                $crate::settings::Words {
+                    name: $name_message,
+                    help: $help,
+                },
                 $crate::settings::Limits {
                     // The last entry is the bounds when the setting declares them, else `None`.
                     bounds: {
@@ -418,6 +489,12 @@ macro_rules! settings {
                     // The same for the limits of a list.
                     list: {
                         let all: [Option<(usize, usize)>; _] = [None $(, Some(($items, $length)))?];
+                        all[all.len() - 1]
+                    },
+                    // The format of a text: free text unless the setting says otherwise.
+                    format: {
+                        let all: [$crate::settings::Format; _] =
+                            [$crate::settings::Format::Free $(, $format)?];
                         all[all.len() - 1]
                     },
                 },
@@ -430,20 +507,21 @@ macro_rules! settings {
 }
 pub(crate) use settings;
 
-/// One stored value of a setting, on one level (ADR-0018). The key must be one of the registry
-/// ([`find`]); `bb-store` is the only place that reads or writes these (ARCH-SETTINGS).
+/// One stored value of a setting for the whole organization or for one project (ADR-0018). The key
+/// must be one of the registry ([`find`]); `bb-store` is the only place that reads or writes these
+/// (ARCH-SETTINGS). A person's own values are [`StoredPersonSetting`].
 #[derive(Clone, Debug, PartialEq, Eq, crate::personal::Entity)]
 pub struct StoredSetting {
     /// The key of the setting, as declared in the registry.
     #[not_personal]
     pub key: crate::technical::TechnicalName,
-    /// The level the value is set on.
+    /// The level the value is set on: the organization or a project.
     #[not_personal]
     pub level: Level,
-    /// The project or person the value is for; `None` on the organization level.
+    /// The project the value is for; `None` on the organization level.
     #[not_personal]
     pub scope: Option<crate::id::EntityId>,
-    /// The value. On the person level it is that person's own choice, so it counts as their data.
+    /// The value. A free text of the organization could name a person, so it is marked.
     #[personal(category = "content", basis = "contract")]
     pub value: SettingValue,
     /// Whether the value is locked: lower levels cannot override it.
@@ -454,12 +532,39 @@ pub struct StoredSetting {
     pub updated_at: jiff::Timestamp,
 }
 
+/// One value of a setting that a person chose for themselves in *My settings* (CFG-04). It is the
+/// person's own data: it goes with them when they download their data and is gone when they are
+/// removed. The key must be one of the registry ([`find`]); `bb-store` is the only place that reads
+/// or writes these (ARCH-SETTINGS).
+#[derive(Clone, Debug, PartialEq, Eq, crate::personal::Entity)]
+pub struct StoredPersonSetting {
+    /// The person the value belongs to.
+    #[personal(category = "identity", basis = "contract")]
+    pub person: crate::id::UserId,
+    /// The key of the setting, as declared in the registry.
+    #[not_personal]
+    pub key: crate::technical::TechnicalName,
+    /// What the person chose: time zone, region, appearance, shortcut keys, start page.
+    #[personal(category = "content", basis = "contract")]
+    pub value: SettingValue,
+    /// When the person last changed it.
+    #[personal(category = "activity", basis = "contract")]
+    pub updated_at: jiff::Timestamp,
+}
+
+/// Every setting of the registry, and in tests the ones that only exist for them.
+pub fn registry() -> impl Iterator<Item = &'static SettingDefinition> {
+    #[cfg(any(test, feature = "test-settings"))]
+    let extra: &[&SettingDefinition] = for_tests::ALL;
+    #[cfg(not(any(test, feature = "test-settings")))]
+    let extra: &[&SettingDefinition] = &[];
+    ALL.iter().copied().chain(extra.iter().copied())
+}
+
 /// The registry entry for `key`, if there is one.
 #[must_use]
 pub fn find(key: &str) -> Option<&'static SettingDefinition> {
-    ALL.iter()
-        .copied()
-        .find(|definition| definition.key() == key)
+    registry().find(|definition| definition.key() == key)
 }
 
 #[cfg(test)]
@@ -487,8 +592,8 @@ mod tests {
         assert_eq!(items[0], "first.test");
         assert!(!cut.contains("aaaa"));
         // A setting without limits is left alone.
-        assert!(APPEARANCE_THEME.definition().list_fits(&"x,".repeat(1000)));
-        assert_eq!(APPEARANCE_THEME.definition().cap_list("a, b"), "a, b");
+        assert!(APPEARANCE_MODE.definition().list_fits(&"x,".repeat(1000)));
+        assert_eq!(APPEARANCE_MODE.definition().cap_list("a, b"), "a, b");
     }
 
     #[test]
@@ -511,14 +616,14 @@ mod tests {
         );
         // The defaults are inside their own bounds, and a setting without bounds is left alone.
         assert_eq!(idle.clamp(30), 30);
-        assert_eq!(APPEARANCE_THEME.definition().bounds(), None);
-        assert_eq!(APPEARANCE_THEME.definition().clamp(-99), -99);
+        assert_eq!(APPEARANCE_MODE.definition().bounds(), None);
+        assert_eq!(APPEARANCE_MODE.definition().clamp(-99), -99);
     }
 
     #[test]
     fn keys_are_unique_topic_dot_name_words() {
         let mut seen = HashSet::new();
-        for definition in ALL {
+        for definition in registry() {
             assert!(
                 seen.insert(definition.key()),
                 "{} is declared twice",
@@ -540,13 +645,15 @@ mod tests {
     }
 
     #[test]
-    fn every_setting_explains_itself_and_has_a_level() {
-        for definition in ALL {
-            assert!(
-                !Message::from(definition.help()).render().is_empty(),
-                "{}",
-                definition.key()
-            );
+    fn every_setting_has_a_name_explains_itself_and_has_a_level() {
+        for definition in registry() {
+            for message in [definition.help(), definition.name()] {
+                assert!(
+                    !Message::from(message).render().is_empty(),
+                    "{}",
+                    definition.key()
+                );
+            }
             assert!(!definition.levels().is_empty(), "{}", definition.key());
             assert!(
                 definition.levels().windows(2).all(|pair| pair[0] < pair[1]),
@@ -558,7 +665,7 @@ mod tests {
 
     #[test]
     fn a_lockable_setting_has_a_lower_level_to_lock() {
-        for definition in ALL.iter().filter(|definition| definition.lockable()) {
+        for definition in registry().filter(|definition| definition.lockable()) {
             assert!(
                 definition.levels().len() > 1 && definition.levels()[0] == Level::Organization,
                 "{}",
@@ -569,9 +676,74 @@ mod tests {
 
     #[test]
     fn the_default_has_the_declared_type() {
-        assert_eq!(APPEARANCE_THEME.default_value().as_deref(), Ok("device"));
+        assert_eq!(APPEARANCE_MODE.default_value().as_deref(), Ok("device"));
         assert_eq!(SECURITY_SESSION_IDLE_MINUTES.default_value(), Ok(30));
         assert_eq!(SECURITY_TWO_STEP_REQUIRED.default_value(), Ok(false));
+    }
+
+    #[test]
+    fn cfg_04_every_default_is_a_value_the_setting_accepts_and_every_choice_has_words() {
+        for definition in registry() {
+            assert!(
+                definition.accepts(&definition.default().to_value()),
+                "{} does not accept its own default",
+                definition.key()
+            );
+            for choice in definition.format().choices() {
+                assert!(
+                    !Message::from(choice.label()).render().is_empty(),
+                    "{}: {}",
+                    definition.key(),
+                    choice.value()
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn cfg_04_a_value_is_accepted_by_type_bounds_list_and_format() {
+        let text = |value: &str| SettingValue::Text(value.to_owned());
+        let mode = APPEARANCE_MODE.definition();
+        assert!(mode.accepts(&text("dark")));
+        assert!(!mode.accepts(&text("Dusk")));
+        assert!(!mode.accepts(&SettingValue::Bool(true)));
+        assert!(mode.has_type_of(&text("anything")));
+        assert!(!mode.has_type_of(&SettingValue::Integer(1)));
+        let idle = SECURITY_SESSION_IDLE_MINUTES.definition();
+        assert!(idle.accepts(&SettingValue::Integer(30)));
+        assert!(!idle.accepts(&SettingValue::Integer(4)));
+        assert!(!idle.accepts(&text("30")));
+        assert!(
+            SECURITY_TWO_STEP_REQUIRED
+                .definition()
+                .accepts(&SettingValue::Bool(false))
+        );
+        let domains = AUTH_SIGN_UP_DOMAINS.definition();
+        assert!(domains.accepts(&text("a.test,b.test")));
+        assert!(!domains.accepts(&text(&"x,".repeat(101))));
+        assert_eq!(mode.format().choices().len(), 3);
+    }
+
+    #[test]
+    fn cfg_06_only_settings_of_signing_in_and_safety_touch_security() {
+        assert!(SECURITY_TWO_STEP_REQUIRED.definition().touches_security());
+        assert!(
+            SECURITY_SESSION_IDLE_MINUTES
+                .definition()
+                .touches_security()
+        );
+        assert!(AUTH_SIGN_UP_ENABLED.definition().touches_security());
+        assert!(!APPEARANCE_MODE.definition().touches_security());
+        assert!(!SHORTCUTS_KEYS.definition().touches_security());
+    }
+
+    #[test]
+    fn cfg_04_the_test_settings_are_in_the_registry_only_for_tests_and_are_not_in_all() {
+        assert!(find("test.project-note").is_some());
+        assert!(
+            ALL.iter()
+                .all(|definition| !definition.key().starts_with("test."))
+        );
     }
 
     #[test]
@@ -590,10 +762,7 @@ mod tests {
 
     #[test]
     fn find_looks_a_key_up_in_the_registry() {
-        assert_eq!(
-            find("appearance.theme"),
-            Some(APPEARANCE_THEME.definition())
-        );
+        assert_eq!(find("appearance.mode"), Some(APPEARANCE_MODE.definition()));
         assert_eq!(find("appearance.nothing"), None);
     }
 
