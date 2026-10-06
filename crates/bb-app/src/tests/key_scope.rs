@@ -330,3 +330,26 @@ async fn auth_07_a_project_label_of_a_key_is_hidden_outside_the_key() -> Outcome
     }
     Ok(())
 }
+
+#[tokio::test]
+async fn auth_07_a_key_that_may_only_see_is_offered_no_place_to_move_a_project_into() -> Outcome {
+    let world = World::new().await?;
+    let tree = tree(&world).await?;
+    let see_only = key_for(&world, tree.web, KeyChoice::SeeOnly).await?;
+    let everything = key_for(&world, tree.web, KeyChoice::Everything).await?;
+    let ctx = world.ctx();
+    let movable = |token: &str| ProjectsQuery {
+        movable: Some(tree.api),
+        ..list(token, None, Some(""))
+    };
+    // The administrator, and a key for everything inside WEB, may move API into SUB; a key that
+    // may only see may move nothing, so no place is offered (the check of `Shown::allows`).
+    let owner = world.admin.session_token.clone();
+    let places = projects(&ctx, movable(&owner)).await?.into_value();
+    assert!(names(&places.items).contains(&"SUB"), "{places:?}");
+    let places = projects(&ctx, movable(&everything)).await?.into_value();
+    assert_eq!(names(&places.items), ["SUB"]);
+    let places = projects(&ctx, movable(&see_only)).await?.into_value();
+    assert!(places.items.is_empty(), "{places:?}");
+    Ok(())
+}
