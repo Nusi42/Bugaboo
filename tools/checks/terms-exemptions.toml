@@ -19,8 +19,14 @@ reason = "A web link that a person sends or opens (the glossary entry Invitation
 # The user docs: only the phrases named here, not the whole page.
 [[allow]]
 term = "link"
-at = ["userDocs/sign-in/sign-in.md"]
-phrases = ["copies the link", "the link works once"]
+at = ["userDocs/sign-in/sign-in.md", "userDocs/people/people.md"]
+phrases = [
+  "copies the link",
+  "the link works once",
+  "is a link that",
+  "send them the link",
+  "the link is shown only once",
+]
 reason = "The web link of an invitation (the glossary entry Invitation calls it a link)."
 
 [[allow]]
