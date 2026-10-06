@@ -121,6 +121,12 @@ impl Actor {
         self != Self::Nobody
     }
 
+    /// Whether the actor's key may change anything: only the key that may see, of the two, may
+    /// not (what a key does as the person in *My settings*).
+    pub(super) fn key_may_change(self) -> bool {
+        self != Self::KeySeeOnly
+    }
+
     /// Whether the actor comes with an access key, which never reaches the owner's own sign-in
     /// data (ADR-0025, decision 8).
     pub(super) fn has_a_key(self) -> bool {

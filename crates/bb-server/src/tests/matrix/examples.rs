@@ -43,6 +43,10 @@ pub(super) enum Quirk {
     /// refusal that the matrix does not expect fails, so a permitted actor cannot be refused for
     /// another reason without anybody noticing.
     AlsoAnswers(&'static str),
+    /// A route of *My settings*: the person's own choices, not their sign-in data, so an access
+    /// key acts as the person: it reads them, and changes them only if it may change anything
+    /// (WP-07, ADR-0025 decision 8).
+    KeysActAsThePerson,
 }
 
 /// One row of the table: a route and what is special about it.
@@ -163,6 +167,17 @@ pub(super) const EXAMPLES: &[Example] = &[
     Example::route("getAccessKeyRules"),
     Example::route("listProjectChoices"),
     Example::route("getSecondStepGap"),
+    Example::route("listOrganizationSettings"),
+    Example::route("changeOrganizationSetting"),
+    Example::route("resetOrganizationSetting"),
+    Example::route("lockOrganizationSetting"),
+    Example::route("unlockOrganizationSetting"),
+    Example::route("listProjectSettings"),
+    Example::route("changeProjectSetting"),
+    Example::route("resetProjectSetting"),
+    Example::with("listMySettings", &[Quirk::KeysActAsThePerson]),
+    Example::with("changeMySetting", &[Quirk::KeysActAsThePerson]),
+    Example::with("resetMySetting", &[Quirk::KeysActAsThePerson]),
 ];
 
 /// An ID that no invitation, session, passkey or access key has (the random kind: a time-ordered
@@ -230,7 +245,14 @@ fn open_request(operation: &str) -> Result<Option<Request>, Failure> {
             "/api/v1/auth/invitation/accept".into(),
             Some(json!({"secret": "not a secret", "display_name": "Bob", "password": PASSWORD})),
         ),
-        // Whoever is signed in.
+        // Whoever is signed in, and the choices a person makes for themselves.
+        "listMySettings" => ("GET", "/api/v1/me/settings".into(), None),
+        "changeMySetting" => (
+            "PUT",
+            "/api/v1/me/settings/appearance.mode".into(),
+            Some(json!({"value": "dark"})),
+        ),
+        "resetMySetting" => ("DELETE", "/api/v1/me/settings/appearance.mode".into(), None),
         "getMe" => ("GET", "/api/v1/auth/me".into(), None),
         "signOut" => ("POST", "/api/v1/auth/sign-out".into(), None),
         _ => return Ok(None),
@@ -373,6 +395,23 @@ async fn organization_request(
                 None,
             )
         }
+        "listOrganizationSettings" => ("GET", "/api/v1/settings".into(), None),
+        "changeOrganizationSetting" => (
+            "PUT",
+            "/api/v1/settings/security.session-idle-minutes".into(),
+            Some(json!({"value": 30})),
+        ),
+        "resetOrganizationSetting" => (
+            "DELETE",
+            "/api/v1/settings/security.session-idle-minutes".into(),
+            None,
+        ),
+        "lockOrganizationSetting" => ("PUT", "/api/v1/settings/appearance.mode/lock".into(), None),
+        "unlockOrganizationSetting" => (
+            "DELETE",
+            "/api/v1/settings/appearance.mode/lock".into(),
+            None,
+        ),
         "getSignUpPolicy" => ("GET", "/api/v1/auth/sign-up-policy".into(), None),
         "changeSignUpPolicy" => (
             "PUT",
@@ -401,6 +440,17 @@ fn project_request(fixture: &Fixture<'_>, operation: &str) -> Result<Option<Requ
             "POST",
             "/api/v1/projects".into(),
             Some(json!({"short_name": unique_short_name(fixture), "name": "Made by the matrix"})),
+        ),
+        "listProjectSettings" => ("GET", format!("/api/v1/projects/{target}/settings"), None),
+        "changeProjectSetting" => (
+            "PUT",
+            format!("/api/v1/projects/{target}/settings/test.project-note"),
+            Some(json!({"value": "short"})),
+        ),
+        "resetProjectSetting" => (
+            "DELETE",
+            format!("/api/v1/projects/{target}/settings/test.project-note"),
+            None,
         ),
         "getProject" => ("GET", format!("/api/v1/projects/{target}"), None),
         "changeProject" => (

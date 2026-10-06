@@ -95,6 +95,14 @@ pub(super) fn expectation(actor: Actor, route: &Route, example: &Example) -> Exp
     // A key never reaches its owner's own sign-in data (ADR-0025, decision 8); `signed-in` is about
     // the session of a browser: who is signed in, signing out.
     if actor.has_a_key() && matches!(route.declared.as_str(), "signed-in" | "own-account") {
+        if example.has(Quirk::KeysActAsThePerson) {
+            // The choices of the person: a key reads them and, if it may change, changes them.
+            return if route.method == "GET" || actor.key_may_change() {
+                Expect::Allowed
+            } else {
+                Expect::Forbidden
+            };
+        }
         return Expect::NotForKeys;
     }
     if !actor.signed_in() || example.has(Quirk::FinishesAHalfDoneSignIn) {
