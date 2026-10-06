@@ -55,10 +55,11 @@ pub(super) enum Actor {
     /// A *Project lead* for the whole organization with *No access* on the target: they keep
     /// *Decide who has which role* there and see nothing (ADR-0025, decision 6).
     NoAccessUnderLead,
-    /// A person whose only role holds exactly this permission, for the whole organization (none:
-    /// a person with no permission, for the routes that need none). Every route with a permission
-    /// is run as the person with exactly that one, so a route cannot ask for more than it
-    /// declares.
+    /// A person whose only role holds exactly this permission, for the whole organization, and,
+    /// for a permission that counts in projects, *See projects* too, which every route that names
+    /// a project needs before it says anything else (none: a person with no permission, for the
+    /// routes that need none). Every route with a permission is run as the person with exactly
+    /// that, so a route cannot ask for more than it declares.
     Exactly(Option<Permission>),
     /// An *Administrator* who came with an access key that may only see (WP-09).
     KeySeeOnly,
@@ -159,6 +160,17 @@ const KIND_SEE: [Permission; 3] = [
     Permission::SeeStatus,
 ];
 
+/// What the person of `Actor::Exactly` holds: the permission, and *See projects* beside it when
+/// the permission counts in projects (a route that names a project answers *not found* to a person
+/// who does not see it, before it looks at anything else).
+pub(super) fn held_exactly(permission: Permission) -> Vec<Permission> {
+    if ORGANIZATION_ONLY.contains(&permission) || permission == Permission::SeeProjects {
+        vec![permission]
+    } else {
+        vec![permission, Permission::SeeProjects]
+    }
+}
+
 /// The permissions of a starting role, from the table of architecture §7.
 fn role_permissions(role: StartingRole) -> BTreeSet<Permission> {
     use Permission::{
@@ -252,7 +264,7 @@ pub(super) fn standing(actor: Actor, at: Where) -> Standing {
         // counts in projects.
         Actor::Exactly(Some(permission)) => match at {
             Where::Target if ORGANIZATION_ONLY.contains(&permission) => Standing::nothing(),
-            _ => Standing::of(BTreeSet::from([permission])),
+            _ => Standing::of(held_exactly(permission).into_iter().collect()),
         },
         Actor::Role(role) => Standing::of(given_everywhere(role, at)),
         // A role on a project counts in the project and below, and gives nothing for the whole
@@ -294,7 +306,8 @@ pub(super) fn sees(actor: Actor, project: Project) -> bool {
             // A key for the sibling project sees the sibling project (and below).
             actor == Actor::KeyForAnotherProject && project == Project::Sibling
         }
-        Actor::Exactly(permission) => permission == Some(Permission::SeeProjects),
+        Actor::Exactly(permission) => permission
+            .is_some_and(|permission| held_exactly(permission).contains(&Permission::SeeProjects)),
         Actor::Role(_) | Actor::LeadOnParent | Actor::KeySeeOnly => true,
         Actor::LeadOnSiblingOnly => project == Project::Sibling,
         Actor::NoAccessOnTarget | Actor::NoAccessUnderLead => project != Project::Target,

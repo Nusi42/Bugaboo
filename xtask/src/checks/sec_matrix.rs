@@ -9,8 +9,9 @@
 //!
 //! - the record names the fixed list of actors (nobody; a person without a role; each starting
 //!   role; a role on the parent project; a role on a sibling project only; *No access* on the
-//!   project; the person who holds exactly the permission the route declares) and, as soon as the API description has access keys, the two actors with a key (*See
-//!   only*; a key for another project);
+//!   project, and under a lead; the person who holds exactly the permission the route declares)
+//!   and, as soon as the API description has access keys, the two actors with a key (*See only*;
+//!   a key for another project);
 //! - every route of the description has a line in the record with the permission it declares, and
 //!   was run by every actor of the record;
 //! - every route has a row in the table of example requests;
@@ -32,7 +33,7 @@ const EXAMPLES_PATH: &str = "crates/bb-server/src/tests/matrix/examples.rs";
 /// How a row of the table starts: a plain route, or one with quirks.
 const ROW_STARTS: [&str; 2] = ["Example::route(\"", "Example::with(\""];
 /// The actors every record has.
-const ACTORS: [&str; 12] = [
+const ACTORS: [&str; 13] = [
     "nobody",
     "no-role",
     "role-administrator",
@@ -44,6 +45,7 @@ const ACTORS: [&str; 12] = [
     "lead-on-parent",
     "lead-on-sibling-only",
     "no-access-on-target",
+    "no-access-under-lead",
     "exactly-the-permission",
 ];
 /// The actors with an access key, wanted once the description has a route that makes a key.
@@ -378,7 +380,7 @@ mod tests {
         )
     }
 
-    const EXAMPLES: &str = "Example::route(\"getStatus\"),\nExample::route(\"listProjects\").filters_what_is_seen(),\n";
+    const EXAMPLES: &str = "Example::route(\"getStatus\"),\nExample::with(\"listProjects\", &[Quirk::FiltersWhatIsSeen]),\n";
 
     fn messages(spec: &Value, record: Option<&str>, examples: &str) -> Vec<String> {
         evaluate(spec, record, examples)

@@ -38,6 +38,11 @@ pub(super) enum Quirk {
     /// The route finishes a sign-in that is half done (the second step): a session that is whole
     /// has nothing to finish, so it is told it is not signed in for this.
     FinishesAHalfDoneSignIn,
+    /// The route may answer with this other refusal (a `401` or `403` with this code) to a person
+    /// who is let in: the wrong password it asks for again, a code that is wrong. Any other
+    /// refusal that the matrix does not expect fails, so a permitted actor cannot be refused for
+    /// another reason without anybody noticing.
+    AlsoAnswers(&'static str),
 }
 
 /// One row of the table: a route and what is special about it.
@@ -65,6 +70,13 @@ impl Example {
     pub(super) fn has(&self, quirk: Quirk) -> bool {
         self.quirks.contains(&quirk)
     }
+
+    /// Whether the row says that the route may answer a person who is let in with this code.
+    pub(super) fn answers(&self, code: &str) -> bool {
+        self.quirks
+            .iter()
+            .any(|quirk| matches!(quirk, Quirk::AlsoAnswers(known) if *known == code))
+    }
 }
 
 /// Every route of the API description, in the order of the description.
@@ -78,10 +90,25 @@ pub(super) const EXAMPLES: &[Example] = &[
     Example::route("getMe"),
     Example::route("signInWithPasskey"),
     Example::route("startPasskeySignIn"),
-    Example::route("addPasskey"),
-    Example::route("startAddPasskey"),
-    Example::with("removePasskey", &[Quirk::NamesAMissingThing]),
-    Example::route("changePassword"),
+    Example::with(
+        "addPasskey",
+        &[Quirk::AlsoAnswers("auth.wrong_credentials")],
+    ),
+    Example::with(
+        "startAddPasskey",
+        &[Quirk::AlsoAnswers("auth.wrong_credentials")],
+    ),
+    Example::with(
+        "removePasskey",
+        &[
+            Quirk::NamesAMissingThing,
+            Quirk::AlsoAnswers("auth.wrong_credentials"),
+        ],
+    ),
+    Example::with(
+        "changePassword",
+        &[Quirk::AlsoAnswers("auth.wrong_credentials")],
+    ),
     Example::with("finishSignInWithCode", &[Quirk::FinishesAHalfDoneSignIn]),
     Example::with("finishSignInWithPasskey", &[Quirk::FinishesAHalfDoneSignIn]),
     Example::with(
@@ -91,18 +118,33 @@ pub(super) const EXAMPLES: &[Example] = &[
     Example::route("listSessions"),
     Example::with("signOutEverywhere", &[Quirk::EndsTheSession]),
     Example::with("endSession", &[Quirk::EndsTheSession]),
-    Example::route("completeSetup"),
-    Example::route("signIn"),
+    Example::with(
+        "completeSetup",
+        &[Quirk::AlsoAnswers("auth.wrong_setup_code")],
+    ),
+    Example::with("signIn", &[Quirk::AlsoAnswers("auth.wrong_credentials")]),
     Example::with("signOut", &[Quirk::EndsTheSession]),
-    Example::route("signUp"),
+    Example::with("signUp", &[Quirk::AlsoAnswers("auth.sign_up_refused")]),
     Example::route("getSignUpPolicy"),
     Example::route("changeSignUpPolicy"),
     Example::route("getAuthStatus"),
     Example::route("getTwoStep"),
-    Example::route("renewBackupCodes"),
-    Example::route("startCodeApp"),
-    Example::route("confirmCodeApp"),
-    Example::route("removeCodeApp"),
+    Example::with(
+        "renewBackupCodes",
+        &[Quirk::AlsoAnswers("auth.wrong_credentials")],
+    ),
+    Example::with(
+        "startCodeApp",
+        &[Quirk::AlsoAnswers("auth.wrong_credentials")],
+    ),
+    Example::with(
+        "confirmCodeApp",
+        &[Quirk::AlsoAnswers("auth.wrong_credentials")],
+    ),
+    Example::with(
+        "removeCodeApp",
+        &[Quirk::AlsoAnswers("auth.wrong_credentials")],
+    ),
     Example::route("getOpenApi"),
     Example::with("listProjects", &[Quirk::FiltersWhatIsSeen]),
     Example::route("makeProject"),
@@ -110,10 +152,13 @@ pub(super) const EXAMPLES: &[Example] = &[
     Example::with("changeProject", &[Quirk::NeedsToSeeTheProject]),
     Example::with("moveProject", &[Quirk::HidesUnseen]),
     Example::with("previewProjectMove", &[Quirk::HidesUnseen]),
-    Example::route("makeSubProject"),
+    Example::with("makeSubProject", &[Quirk::NeedsToSeeTheProject]),
     Example::route("getStatus"),
     Example::route("listAccessKeys"),
-    Example::route("makeAccessKey"),
+    Example::with(
+        "makeAccessKey",
+        &[Quirk::AlsoAnswers("auth.wrong_credentials")],
+    ),
     Example::with("deleteAccessKey", &[Quirk::NamesAMissingThing]),
     Example::route("getAccessKeyRules"),
     Example::route("listProjectChoices"),

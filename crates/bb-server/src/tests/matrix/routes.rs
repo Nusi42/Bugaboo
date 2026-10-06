@@ -30,7 +30,8 @@ use bb_testing::each_database;
 use serde_json::json;
 
 use super::actors::{
-    Actor, Project, Where, actors, everything_seen, short_name, standing, top_of_the_tree,
+    Actor, Project, Where, actors, everything_seen, held_exactly, short_name, standing,
+    top_of_the_tree,
 };
 use super::examples::{EXAMPLES, Example, Quirk, request};
 use super::record::Record;
@@ -133,6 +134,13 @@ pub(super) fn expectation(actor: Actor, route: &Route, example: &Example) -> Exp
         }
     }
 }
+
+/// The refusals the matrix knows how to expect.
+const KNOWN_REFUSALS: [&str; 3] = [
+    "auth.not_signed_in",
+    "access.forbidden",
+    "auth.access_key_not_allowed",
+];
 
 /// What a reply is, for the comparison.
 fn seen(reply: &Reply) -> Expect {
@@ -288,7 +296,10 @@ async fn hold(
         Actor::Nobody | Actor::NoRole | Actor::Exactly(None) => {}
         Actor::Exactly(Some(permission)) => {
             let only = org
-                .role(&format!("Exactly {}", permission.code()), &[permission])
+                .role(
+                    &format!("Exactly {}", permission.code()),
+                    &held_exactly(permission),
+                )
                 .await?;
             org.give_everywhere(member, only.id).await?;
         }
@@ -466,6 +477,13 @@ async fn run(rig: &Rig, actors: &[Actor]) -> Result<Record, Failure> {
             assert!(!reply.status.is_server_error(), "{}", place());
             let expected = expectation(*actor, route, example);
             let got = seen(&reply);
+            // A refusal that nothing expects is a failure, not an answer that was let in.
+            let refusal = matches!(
+                reply.status,
+                StatusCode::UNAUTHORIZED | StatusCode::FORBIDDEN
+            ) && !KNOWN_REFUSALS.contains(&reply.code())
+                && !example.answers(reply.code());
+            assert!(!refusal, "{}: an unexpected refusal", place());
             let fine = got == expected
                 || (expected == Expect::Allowed
                     && example.has(Quirk::NamesAMissingThing)
