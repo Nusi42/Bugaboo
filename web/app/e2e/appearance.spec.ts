@@ -141,6 +141,8 @@ test("thm_06 Larger text makes the text bigger and Compact makes the spacing sma
   await page.getByRole("radio", { name: t("appearance.spacing.compact"), exact: true }).check();
   await expect(page.locator("html")).toHaveAttribute("data-spacing", "compact");
   expect(await tokenValue(page, "--space-4")).not.toBe(gap);
+  // Both choices are on the server before the page is loaded again.
+  await expect(page.getByRole("status").filter({ hasText: t("save.saved") })).toBeVisible();
   await page.reload();
   await expect(page.locator("html")).toHaveAttribute("data-text", "larger");
   await expect(page.locator("html")).toHaveAttribute("data-spacing", "compact");

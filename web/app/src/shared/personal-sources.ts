@@ -94,12 +94,18 @@ export function forgetDeviceChoices(): void {
 }
 
 /**
- * Whether somebody is signed in but the server did not give their settings (it failed, or does
- * not answer): their changes then stay in this page, and the page says *Not saved yet*.
+ * Whether somebody is signed in but the app has no settings of theirs: the server failed to give
+ * them, or does not answer yet (the screen that asks for a second step comes before any settings
+ * can be read). The copy for the first frame says who is signed in: it is only there from the
+ * moment their settings were read until they sign out. Their changes then stay in this page, and
+ * the page says *Not saved yet*.
  */
 function signedInWithoutSettings(): boolean {
   if (currentMySettings() !== undefined) {
     return false;
+  }
+  if (readFirstFrame() !== null) {
+    return true;
   }
   const state = queryClient.getQueryState(mySettingsKey());
   return state?.status === "error" && codeOf(state.error) !== "auth.not_signed_in";
@@ -147,11 +153,11 @@ function personalAppearance(device: AppearanceSource): AppearanceSource {
       if (settings !== undefined) {
         return ofSettings(settings);
       }
-      if (signedInWithoutSettings()) {
-        return unsent.look ?? defaultAppearance;
-      }
       const copy = readFirstFrame();
-      return copy === null ? device.read() : ofCopy(copy);
+      if (copy !== null) {
+        return unsent.look ?? ofCopy(copy);
+      }
+      return signedInWithoutSettings() ? (unsent.look ?? defaultAppearance) : device.read();
     },
     write: (next) => {
       const settings = currentMySettings();
