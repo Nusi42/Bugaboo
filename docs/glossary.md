@@ -137,7 +137,7 @@ Rules:
 | **Where it counts**      | Where a role given to someone applies: *Whole organization*, *Only this project*, or *This project and its sub-projects* | global, subtree, recursive (in UI) |
 | **No access**            | Set on a project for a person or group: they see and can do nothing in this project and its sub-projects, whatever role they have from higher up or through a group there. A role given on a sub-project lower down still counts there | deny, denied (in UI) |
 | **Used by**              | On a group or a role: where it is given (*Used for the whole organization and in 4 projects you can see*). It counts only what the viewer may see | usage, references, dependents (in UI) |
-| **The role that takes its place** | When a role that somebody has is deleted: the role everybody with it gets instead, in the same place and with the same reach | reassign, migrate (in UI) |
+| **The role that takes its place** | When a role that somebody has is deleted: the role everybody with it gets instead, in the same place and with the same reach. In the API and the code: `replacement` | reassign, migrate (in UI) |
 | **Permission**           | One thing a role allows                                            | grant, capability (in UI)          |
 | **Hidden / Can see / Can change** | The three levels of field permissions                     | none / read / write (in UI)        |
 | **Check access**         | See what someone can do in a project, and why, in sentences (*"Ana is in the group Backend, which has the role Team member in ACME"*) | effective permissions |
