@@ -1,0 +1,25 @@
+{
+  "paths": {
+    "/api/v1/roles/{role_id}/second-step-gap": {
+      "get": {
+        "operationId": "getSecondStepGap",
+        "responses": {
+          "200": {
+            "description": "How many people with the role have no second step yet.",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SecondStepGapBody" } } }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "SecondStepGapBody": {
+        "type": "object",
+        "properties": {
+          "still_to_set_up": { "type": "integer", "description": "The people who hold the role and have no second step yet. Only people the person who asks may see are counted." }
+        }
+      }
+    }
+  }
+}

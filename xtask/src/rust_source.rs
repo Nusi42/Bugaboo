@@ -119,6 +119,21 @@ pub(crate) fn strip(text: &str) -> String {
     out
 }
 
+/// The code with every white space taken out (so a call that was split over lines reads as one),
+/// and the line (from 1) each remaining character stood on.
+pub(crate) fn squeezed(code: &str) -> (String, Vec<usize>) {
+    let mut text = String::new();
+    let mut lines = Vec::new();
+    for (index, line) in code.lines().enumerate() {
+        for character in line.chars().filter(|c| !c.is_whitespace()) {
+            text.push(character);
+            // One entry for each byte, so a byte position finds its line.
+            lines.extend(std::iter::repeat_n(index + 1, character.len_utf8()));
+        }
+    }
+    (text, lines)
+}
+
 /// How many `#` follow the `r` of a raw string that starts at `at`, if it is one.
 fn raw_string_hashes(chars: &[char], at: usize) -> Option<usize> {
     let hashes = chars[at + 1..].iter().take_while(|c| **c == '#').count();

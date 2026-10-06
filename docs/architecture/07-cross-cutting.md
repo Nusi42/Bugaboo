@@ -251,8 +251,8 @@ Example: *"Yes. Ana is in the group Backend, which has the role Team member in A
 
 ### No counts that leak (PRIV-13)
 
-- No answer holds a number that counts things which include something the viewer cannot see: lists page with `next_cursor` and never answer a total; *Used by* counts only what the viewer can see; the project tree shows no counts of sub-projects or members; a member list that is *Hidden* for the viewer is left out with its number. Enforced by: ARCH-NO-COUNTERS (a `total`, `count` or similar property needs an entry in `tools/checks/counter-exemptions.toml` that says why the number holds only what the viewer can see), and the tests `priv_13_no_project_answer_holds_a_count` and `priv_13_used_by_counts_only_what_the_viewer_may_see`.
-- No identifier counts up: people, groups, roles, projects, assignments and access keys have random IDs; *Former user* labels and access-key prefixes are random. Enforced by: ARCH-NO-COUNTERS.
+- No answer holds a number that counts things which include something the viewer cannot see: lists page with `next_cursor` and never answer a total; *Used by* counts only what the viewer can see; the project tree shows no counts of sub-projects or members; a member list that is *Hidden* for the viewer is left out with its number. Enforced by: ARCH-NO-COUNTERS (a `total`, `count` or similar property, or a whole number whose description says it counts, needs an entry in `tools/checks/counter-exemptions.toml` that says why the number holds only what the viewer can see; an entry that matches no property fails), and the tests `priv_13_no_project_answer_holds_a_count` and `priv_13_used_by_counts_only_what_the_viewer_may_see`.
+- No identifier counts up: people, groups, roles, projects, assignments and access keys have random IDs; *Former user* labels and access-key prefixes are random. Enforced by: ARCH-NO-COUNTERS (product code with a counting column or sequence, or a number made by adding one to a count, fails; only the folders named in the same file, the counting issue IDs of M3 and labels nobody sees, may).
 
 ### Enforcement points
 

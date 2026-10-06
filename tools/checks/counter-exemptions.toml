@@ -1,0 +1,35 @@
+# Numbers in answers that count only what the viewer may see, and the folders of code that may
+# count (ARCH-NO-COUNTERS, architecture section 7 "No counts that leak", ADR-0021).
+#
+# [[exempt]]: a route (`GET /api/v1/...`), the property of its answer and a reason that says why
+# the number holds only what the viewer may see. An entry that matches no property fails.
+#
+# [[counting]]: a folder or file whose code may make numbers that count up. Only the counting issue IDs of
+# a project (ADR-0021, M3) and labels that nobody sees belong here. An entry with nothing that counts fails.
+#
+# WP-09 adds the route `GET /api/v1/roles/{role_id}/second-step-gap` (M2-F47). When it is merged,
+# add:
+#
+# [[exempt]]
+# route = "GET /api/v1/roles/{role_id}/second-step-gap"
+# property = "still_to_set_up"
+# reason = "Counts only the people the viewer may see: whoever holds Manage roles sees names everywhere in Organization settings (M2-Q3, M2-F47)."
+
+[[exempt]]
+route = "GET /api/v1/admin/status"
+property = "entries"
+reason = "The log is the whole organization's and only people with See how the server is doing may ask: they may see all of it, so the number holds nothing they may not see."
+
+[[exempt]]
+route = "GET /api/v1/admin/status"
+property = "write_failures"
+reason = "A count of the server's own failed writes, shown only to people with See how the server is doing, who may see everything about the server."
+
+[[exempt]]
+route = "GET /api/v1/auth/two-step"
+property = "backup_codes_left"
+reason = "The caller's own backup codes: a person may see everything about their own sign-in data."
+
+[[counting]]
+folder = "crates/bb-sample/src/dump.rs"
+reason = "The labels of the dump of the sample organization (person#1) only let two dumps be compared; they are never shown to anybody and never stored (TEST-SAMPLE-DATA)."

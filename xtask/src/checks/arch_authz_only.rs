@@ -30,7 +30,7 @@
 //! `#[cfg(test)]` (but code after a test module does).
 
 use super::{Check, Context, Finding};
-use crate::rust_source::{Source, read_product_sources, strip, without_tests};
+use crate::rust_source::{Source, read_product_sources, squeezed, strip, without_tests};
 
 /// The only crate that makes `Authorized<T>`.
 const POLICY_FOLDER: &str = "crates/bb-policy/";
@@ -212,14 +212,7 @@ const USE_CASES_FOLDER: &str = "crates/bb-app/src/";
 /// The judgments about the actor that skip an access key's narrowing. The text is read with its
 /// white space gone, so a call that rustfmt split over lines is found too.
 fn unnarrowed_findings(path: &str, code: &str) -> Vec<Finding> {
-    let mut squeezed = String::new();
-    let mut lines = Vec::new();
-    for (index, line) in code.lines().enumerate() {
-        for character in line.chars().filter(|c| !c.is_whitespace()) {
-            squeezed.push(character);
-            lines.push(index + 1);
-        }
-    }
+    let (squeezed, lines) = squeezed(code);
     let mut findings = Vec::new();
     for (pattern, advice) in UNNARROWED {
         for (at, _) in squeezed.match_indices(pattern) {

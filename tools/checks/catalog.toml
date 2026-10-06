@@ -442,10 +442,14 @@ status = "active"
 id = "ARCH-NO-COUNTERS"
 title = "No public identifier or label counts up (IDs, former-user labels); no totals that include hidden items"
 rule = "ADR-0021, PRIV-13"
-tool = "ast-grep + OpenAPI review rules"
+tool = "xtask (finds counting columns, sequences and count-plus-one numbers in product code, and count properties in the answers of the generated API description, unless tools/checks/counter-exemptions.toml names them with a reason)"
 when = ["commit", "ci"]
-files = ["crates/**/*.rs"]
-status = "planned"
+files = [
+  "crates/**/*.rs",
+  "tools/checks/counter-exemptions.toml",
+  "web/packages/api-client/openapi.json",
+]
+status = "active"
 
 [[check]]
 id = "TEST-ISSUE-IDS"

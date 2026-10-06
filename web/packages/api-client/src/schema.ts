@@ -1241,7 +1241,7 @@ export interface components {
       started_at: string;
       /**
        * Format: int64
-       * @description How many seconds it has been running.
+       * @description How long it has been running, in seconds.
        */
       uptime_seconds: number;
       /** @description The version of the program. */
