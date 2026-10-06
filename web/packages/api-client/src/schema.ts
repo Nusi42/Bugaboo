@@ -9710,6 +9710,8 @@ export interface operations {
         cursor?: string;
         /** @description How many items a page holds at most (default 50, at most 100). */
         limit?: number;
+        /** @description Only the roles the person who asks may give: those whose permissions they all hold. */
+        giveable?: boolean;
       };
       header?: never;
       path?: never;

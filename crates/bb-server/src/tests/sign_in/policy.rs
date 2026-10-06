@@ -655,6 +655,7 @@ async fn priv_12_people_in_the_management_screens_are_shown_by_name_to_those_who
                     place: None,
                     cursor: None,
                     limit: bb_core::paging::PAGE_SIZE_MAX,
+                    giveable: false,
                 },
             )
             .await;

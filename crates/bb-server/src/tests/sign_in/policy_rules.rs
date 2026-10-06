@@ -33,6 +33,7 @@ async fn roles(org: &Org<'_>) -> Run<Vec<RoleView>> {
                 place: None,
                 cursor: None,
                 limit: bb_core::paging::PAGE_SIZE_MAX,
+                giveable: false,
             },
         )
         .await?

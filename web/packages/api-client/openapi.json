@@ -8324,6 +8324,15 @@
               "maximum": 100,
               "minimum": 1
             }
+          },
+          {
+            "name": "giveable",
+            "in": "query",
+            "description": "Only the roles the person who asks may give: those whose permissions they all hold.",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
           }
         ],
         "responses": {

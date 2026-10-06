@@ -443,11 +443,14 @@ pub async fn roles<S: AuthStore>(
                 .await?
         }
     };
-    let records = ctx
+    let mut records = ctx
         .store()
         .roles()
         .await
         .map_err(|error| internal::<S>(&error))?;
+    if input.giveable {
+        records.retain(|record| ensure_no_escalation(&access, &record.permissions).is_ok());
+    }
     let page = bb_core::paging::window(records.len(), input.cursor.as_deref(), input.limit)
         .ok_or(ErrorCode::InvalidRequest)?;
     Ok(access.authorize(RoleList {

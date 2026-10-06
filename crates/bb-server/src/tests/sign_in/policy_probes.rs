@@ -157,6 +157,7 @@ async fn sec_03_decide_roles_is_not_kept_from_a_row_at_the_same_depth_as_the_no_
                     place: None,
                     cursor: None,
                     limit: bb_core::paging::PAGE_SIZE_MAX,
+                    giveable: false,
                 },
             )
             .await?
@@ -788,6 +789,7 @@ async fn sec_04_nobody_resets_a_role_to_levels_above_their_own() -> Outcome {
                         place: None,
                         cursor: None,
                         limit: bb_core::paging::PAGE_SIZE_MAX,
+                        giveable: false,
                     },
                 )
                 .await?

@@ -525,6 +525,71 @@ async fn sec_02_the_choices_of_the_form_are_by_name_and_walk_page_by_page() -> O
     .await
 }
 
+/// The names in the `items` of a list.
+fn names_in(list: &serde_json::Value) -> Vec<&str> {
+    list["items"]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .filter_map(|item| item["name"].as_str())
+        .collect()
+}
+
+#[tokio::test]
+async fn sec_02_the_choices_of_roles_hold_only_the_roles_the_person_may_give() -> Outcome {
+    each_database("sec_02_http_role_choices", async |db| {
+        let mut org = start(db).await?;
+        let (mut cleo, cleo_id) = org.person("Cleo Coder", "cleo@example.test").await?;
+        let (mut dana, dana_id) = org.person("Dana Desk", "dana@example.test").await?;
+        let decider = org
+            .make(
+                "/api/v1/roles",
+                json!({"name": "Decider", "permissions": ["decide-roles", "see-projects"], "two_step": false}),
+            )
+            .await?;
+        let keeper = org
+            .make(
+                "/api/v1/roles",
+                json!({"name": "Keeper", "permissions": ["manage-roles", "see-projects"], "two_step": false}),
+            )
+            .await?;
+        org.make(
+            "/api/v1/assignments",
+            json!({"who": {"person": cleo_id}, "role": decider}),
+        )
+        .await?;
+        org.make(
+            "/api/v1/assignments",
+            json!({"who": {"person": dana_id}, "role": keeper}),
+        )
+        .await?;
+        // Ada holds everything: she may give every role. Cleo holds less, so she is offered less.
+        let all = org
+            .ada
+            .send("GET", "/api/v1/assignment-choices?kind=role", None)
+            .await?;
+        assert!(names_in(&all.body).contains(&"Administrator"));
+        let hers = cleo
+            .send("GET", "/api/v1/assignment-choices?kind=role", None)
+            .await?;
+        let names = names_in(&hers.body);
+        assert!(names.contains(&"Decider"), "{names:?}");
+        assert!(!names.contains(&"Administrator"), "{names:?}");
+        assert!(!names.contains(&"Project lead"), "{names:?}");
+        // The roles a person who manages roles may give a deleted role's holders: the same rule.
+        let everything = dana.send("GET", "/api/v1/roles", None).await?;
+        assert!(names_in(&everything.body).contains(&"Administrator"));
+        let giveable = dana
+            .send("GET", "/api/v1/roles?giveable=true", None)
+            .await?;
+        let names = names_in(&giveable.body);
+        assert!(names.contains(&"Keeper"), "{names:?}");
+        assert!(!names.contains(&"Administrator"), "{names:?}");
+        Ok(())
+    })
+    .await
+}
+
 #[tokio::test]
 async fn sec_03_the_rows_of_a_place_are_listed_a_page_at_a_time() -> Outcome {
     each_database("sec_03_http_rows_paging", async |db| {

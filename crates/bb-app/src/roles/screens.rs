@@ -4,6 +4,7 @@
 
 use bb_core::ErrorCode;
 use bb_core::id::RoleId;
+use bb_policy::guards::ensure_no_escalation;
 use bb_policy::{Authorized, Counts, Masked, Permission, Place, Topic};
 use serde::Serialize;
 
@@ -162,8 +163,10 @@ pub async fn assignment_choices<S: AuthStore>(
                 .roles()
                 .await
                 .map_err(|error| internal::<S>(&error))?;
+            // Only the roles the person may give here: they hold every permission of them.
             let named: Vec<ChoiceView> = records
                 .iter()
+                .filter(|record| ensure_no_escalation(&access, &record.permissions).is_ok())
                 .map(|record| RoleRef {
                     id: record.role.id,
                     name: record.role.name.clone(),

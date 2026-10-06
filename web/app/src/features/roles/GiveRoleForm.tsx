@@ -1,6 +1,7 @@
 import { t } from "@bugaboo/messages";
 import { Alert, Button, ChoiceGroup, Form, SelectField } from "@bugaboo/ui";
 
+import { useAllPages } from "../../shared/use-all-pages.ts";
 import { type Subject, choicesOf, useChoices } from "./assignments.ts";
 import { ChoicePicker } from "./ChoicePicker.tsx";
 import styles from "./Roles.module.css";
@@ -19,6 +20,8 @@ export interface GiveRoleFormProps {
 /** The roles to choose from, with *No access* last when the row is for a project. */
 function useRoleChoices(project: string | null) {
   const roles = useChoices("role", project, "");
+  // Every role the person may give, not the first page.
+  useAllPages(roles);
   return [
     { value: NOTHING, label: t("assignments.choose-role") },
     ...choicesOf(roles.data?.pages).map((role) => ({ value: role.id, label: role.name })),

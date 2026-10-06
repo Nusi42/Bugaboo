@@ -387,6 +387,7 @@ async fn starting_roles(org: &Org<'_>) -> Result<BTreeMap<String, RoleId>, Failu
                 place: None,
                 cursor: None,
                 limit: bb_core::paging::PAGE_SIZE_MAX,
+                giveable: false,
             },
         )
         .await

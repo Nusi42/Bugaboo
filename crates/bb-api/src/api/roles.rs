@@ -246,6 +246,14 @@ impl From<&PermissionCatalogue> for PermissionsBody {
     }
 }
 
+/// Which roles a list holds.
+#[derive(Deserialize, utoipa::IntoParams)]
+#[into_params(parameter_in = Query)]
+pub(crate) struct RolesFilter {
+    /// Only the roles the person who asks may give: those whose permissions they all hold.
+    giveable: Option<bool>,
+}
+
 /// The roles, in the order of roles, a page at a time. Needs the permission *Make, change and
 /// delete roles*.
 #[utoipa::path(
@@ -254,7 +262,7 @@ impl From<&PermissionCatalogue> for PermissionsBody {
     operation_id = "listRoles",
     tag = "roles",
     extensions(("x-never-stored" = json!(true))),
-    params(ListParams),
+    params(ListParams, RolesFilter),
     responses((status = 200, description = "The roles, in the order of roles.", body = Page<RoleItem>), NotSignedInAnswer, ForbiddenAnswer)
 )]
 async fn list_roles(
@@ -262,6 +270,7 @@ async fn list_roles(
     Info(info): Info,
     Session(session_token): Session,
     ApiQuery(params): ApiQuery<ListParams>,
+    ApiQuery(filter): ApiQuery<RolesFilter>,
 ) -> Result<Response, ApiError> {
     let position = params.position(ROLES_LIST);
     let cursor = match &position {
@@ -277,6 +286,7 @@ async fn list_roles(
                 place: None,
                 cursor,
                 limit: params.limit(),
+                giveable: filter.giveable.unwrap_or(false),
             },
         )
         .await

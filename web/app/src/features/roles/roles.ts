@@ -33,10 +33,13 @@ export function roleLinesOf(pages: readonly Schema<"Page_RoleItem">[] | undefine
   return (pages ?? []).flatMap((page) => page.items.flatMap((item) => roleLineOf(item) ?? []));
 }
 
-/** The roles, in the order of roles, a page at a time. */
-export function useRoles() {
+/**
+ * The roles, in the order of roles, a page at a time. With `giveable`, only the roles the person
+ * may give: they hold every permission of them.
+ */
+export function useRoles(giveable = false) {
   return useInfiniteQuery({
-    queryKey: [...rolesKey, "list"],
+    queryKey: [...rolesKey, "list", giveable],
     initialPageParam: null as string | null,
     queryFn: async ({ pageParam }: { readonly pageParam: string | null }) => {
       const { data } = await api.client.GET("/api/v1/roles", {
@@ -44,6 +47,7 @@ export function useRoles() {
           query: {
             fields: "id,name,starting,two_step",
             limit: PAGE_SIZE,
+            ...(giveable ? { giveable } : {}),
             ...(pageParam === null ? {} : { cursor: pageParam }),
           },
         },

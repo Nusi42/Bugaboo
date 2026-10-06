@@ -139,6 +139,8 @@ pub struct RolesQuery {
     pub cursor: Option<String>,
     /// How many roles the page holds at most.
     pub limit: u32,
+    /// Only the roles the person who asks may give: the ones whose permissions they all hold.
+    pub giveable: bool,
 }
 
 /// List the levels a role has set.

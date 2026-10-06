@@ -34,6 +34,7 @@ pub(super) async fn role(org: &Org<'_>, starting: StartingRole) -> Result<RoleId
                 place: None,
                 cursor: None,
                 limit: bb_core::paging::PAGE_SIZE_MAX,
+                giveable: false,
             },
         )
         .await
