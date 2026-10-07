@@ -66,6 +66,39 @@ export function ConfirmDialog(props: ConfirmDialogProps) {
   );
 }
 
+export interface AskDialogProps extends Omit<ConfirmDialogProps, "triggerLabel" | "triggerName"> {
+  /** Whether the question is showing. */
+  readonly isOpen: boolean;
+  /** Called with `false` when the question closes, whichever way. */
+  readonly onOpenChange: (open: boolean) => void;
+}
+
+/**
+ * The same question as [`ConfirmDialog`], opened by the program and not by a button: for a question
+ * that comes only when the server says a change takes something from the person. The focus moves
+ * into it and goes back to where it was when it closes.
+ */
+export function AskDialog({ isOpen, onOpenChange, ...question }: AskDialogProps) {
+  const full = useLayout() === "phone";
+  return (
+    <ModalOverlay
+      className={cx(styles.overlay, full && styles.full)}
+      isOpen={isOpen}
+      onOpenChange={onOpenChange}
+      isDismissable
+    >
+      <Modal className={cx(styles.modal, full && styles.full)}>
+        <Question
+          {...question}
+          close={() => {
+            onOpenChange(false);
+          }}
+        />
+      </Modal>
+    </ModalOverlay>
+  );
+}
+
 /** The inside of the dialog: the question, what to fill in, and the two answers. */
 function Question({
   title,
@@ -77,7 +110,7 @@ function Question({
   children,
   confirmDisabled = false,
   close,
-}: ConfirmDialogProps & { readonly close: () => void }) {
+}: Omit<ConfirmDialogProps, "triggerLabel" | "triggerName"> & { readonly close: () => void }) {
   return (
     <Dialog className={cx(styles.dialog)} role={dialogRole}>
       <Heading slot={titleSlot} className={cx(styles.title)}>
@@ -91,8 +124,10 @@ function Question({
           danger={danger}
           isDisabled={confirmDisabled}
           onPress={() => {
-            close();
+            // The answer first: closing tells whoever listens that the question went away, and
+            // that must not be taken for a "no".
             onConfirm();
+            close();
           }}
         >
           {confirmLabel}

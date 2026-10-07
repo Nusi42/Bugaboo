@@ -16,6 +16,7 @@ mod access_keys_http;
 mod access_keys_never;
 mod access_screens;
 mod access_screens_review;
+mod assignments_http;
 mod caching;
 mod http;
 mod invitations;
@@ -24,7 +25,9 @@ mod lists;
 // browser of these tests.
 #[path = "../matrix/mod.rs"]
 mod matrix;
+mod own_access_http;
 mod passkeys;
+mod people_http;
 mod permissions_http;
 mod policy;
 mod policy_probes;
@@ -35,6 +38,7 @@ mod projects_agree;
 mod projects_http;
 mod projects_review;
 mod rig;
+mod roles_http;
 mod second_step;
 mod second_step_by_role;
 mod secrets;

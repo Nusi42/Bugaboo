@@ -30,3 +30,28 @@ reason = "The caller's own backup codes: a person may see everything about their
 [[counting]]
 folder = "crates/bb-sample/src/dump.rs"
 reason = "The labels of the dump of the sample organization (person#1) only let two dumps be compared; they are never shown to anybody and never stored (TEST-SAMPLE-DATA)."
+
+[[exempt]]
+route = "GET /api/v1/groups/{group_id}"
+property = "projects"
+reason = "Counts only the projects the viewer can see: a row on a project the viewer may not know about is left out (PRIV-13, `Ctx::rows_seen_by`, test priv_13_used_by_counts_only_what_the_viewer_may_see)."
+
+[[exempt]]
+route = "GET /api/v1/groups/{group_id}"
+property = "members"
+reason = "The answer needs Manage groups, and whoever holds it sees every member of every group by name (M2-Q3), so the number holds nothing the viewer may not see."
+
+[[exempt]]
+route = "GET /api/v1/roles/{role_id}"
+property = "projects"
+reason = "Counts only the projects the viewer can see: a row on a project the viewer may not know about is left out (PRIV-13, `Ctx::rows_seen_by`, test priv_13_used_by_counts_only_what_the_viewer_may_see)."
+
+[[exempt]]
+route = "GET /api/v1/roles/{role_id}"
+property = "people"
+reason = "Counts only the people named by rows in the whole organization and in projects the viewer can see, and whoever holds Manage roles sees names there (M2-Q3, PRIV-13)."
+
+[[exempt]]
+route = "GET /api/v1/roles/{role_id}"
+property = "groups"
+reason = "Counts only the groups named by rows in the whole organization and in projects the viewer can see (PRIV-13)."

@@ -93,6 +93,72 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/assignment-choices": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * The people, groups or roles that the form of a row for the whole organization offers, by
+     *     name, a page at a time. Needs the permission *Decide who has which role* for the whole
+     *     organization. Names only, never e-mail addresses.
+     */
+    get: operations["listAssignmentChoices"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/assignments": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * The rows of *Who has which role* for the whole organization, a page at a time. Needs the
+     *     permission *Decide who has which role* for the whole organization.
+     */
+    get: operations["listAssignments"];
+    put?: never;
+    /**
+     * Gives a role to a person or a group for the whole organization. Needs the permission *Decide
+     *     who has which role* for the whole organization; nobody gives a role with more than they hold
+     *     themselves.
+     */
+    post: operations["assignRole"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/assignments/{assignment_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /**
+     * Takes a row of *Who has which role* away. Needs the permission *Decide who has which role*
+     *     where the row is; nothing that would leave nobody who can manage roles.
+     */
+    delete: operations["removeAssignment"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/auth/invitation/accept": {
     parameters: {
       query?: never;
@@ -656,6 +722,122 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/groups": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * The groups, by name, a page at a time. Needs the permission *Make, rename and delete groups
+     *     and change who is in them*.
+     */
+    get: operations["listGroups"];
+    put?: never;
+    /** Makes a group. Needs the permission *Make, rename and delete groups and change who is in them*. */
+    post: operations["makeGroup"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/groups/{group_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * One group, with what it is used for. Needs the permission *Make, rename and delete groups and
+     *     change who is in them*.
+     */
+    get: operations["getGroup"];
+    put?: never;
+    post?: never;
+    /**
+     * Deletes a group, with its members and the rows that give it a role. Needs the permission
+     *     *Make, rename and delete groups and change who is in them*, and, where the group has *No
+     *     access*, *Decide who has which role* there.
+     */
+    delete: operations["deleteGroup"];
+    options?: never;
+    head?: never;
+    /**
+     * Renames a group. Needs the permission *Make, rename and delete groups and change who is in
+     *     them*.
+     */
+    patch: operations["renameGroup"];
+    trace?: never;
+  };
+  "/api/v1/groups/{group_id}/member-choices": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * The people that can be put into a group, by name, a page at a time; those who are in it
+     *     already say so. Needs the permission *Make, rename and delete groups and change who is in
+     *     them*. Names only, never e-mail addresses.
+     */
+    get: operations["listMemberChoices"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/groups/{group_id}/members": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * The people in a group, a page at a time. Needs the permission *Make, rename and delete groups
+     *     and change who is in them*.
+     */
+    get: operations["listGroupMembers"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/groups/{group_id}/members/{person_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /**
+     * Puts a person into a group. Needs the permission *Make, rename and delete groups and change
+     *     who is in them*; nobody puts somebody into a group that has a role with more than they hold
+     *     themselves.
+     */
+    put: operations["addGroupMember"];
+    post?: never;
+    /**
+     * Takes a person out of a group. Needs the permission *Make, rename and delete groups and change
+     *     who is in them*, and, where the group has *No access*, *Decide who has which role* there.
+     */
+    delete: operations["removeGroupMember"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/me/settings": {
     parameters: {
       query?: never;
@@ -711,6 +893,46 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/own-access/check-change": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Says what a change would take away from the person who is about to make it. A person who may
+     *     not make the change is told that it takes nothing. Nothing is changed.
+     */
+    post: operations["checkOwnAccessChange"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/people": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * The people, by name, a page at a time. Needs the permission *See everybody's e-mail address
+     *     and correct their names*.
+     */
+    get: operations["listPeople"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/people-visibility": {
     parameters: {
       query?: never;
@@ -747,6 +969,46 @@ export interface paths {
      *     people information each role sees* in the place.
      */
     put: operations["changePeopleVisibility"];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/people/{person_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * One person with their e-mail address, groups and roles. Needs the permission *See everybody's
+     *     e-mail address and correct their names*.
+     */
+    get: operations["getPerson"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/permissions": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * The permissions of the catalogue, topic by topic: what the role page lists. Needs the
+     *     permission *Make, change and delete roles*.
+     */
+    get: operations["listPermissions"];
+    put?: never;
     post?: never;
     delete?: never;
     options?: never;
@@ -800,6 +1062,53 @@ export interface paths {
      *     where the project sits.
      */
     patch: operations["changeProject"];
+    trace?: never;
+  };
+  "/api/v1/projects/{project}/assignment-choices": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * The people, groups or roles that the form of a row on a project offers, by name, a page at a
+     *     time. Needs the permission *Decide who has which role* in the project. Names only, never
+     *     e-mail addresses.
+     */
+    get: operations["listProjectAssignmentChoices"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/projects/{project}/assignments": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * The rows of *Who has which role* for a project, those on the project first and then those
+     *     that come from above, a page at a time. Needs the permission *Decide who has which role* in
+     *     the project.
+     */
+    get: operations["listProjectAssignments"];
+    put?: never;
+    /**
+     * Gives a role, or *No access*, to a person or a group on a project. Needs the permission
+     *     *Decide who has which role* in the project; nobody gives a role with more than they hold
+     *     there themselves.
+     */
+    post: operations["assignProjectRole"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
     trace?: never;
   };
   "/api/v1/projects/{project}/move": {
@@ -904,6 +1213,100 @@ export interface paths {
      *     project it goes into.
      */
     post: operations["makeSubProject"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/roles": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * The roles, in the order of roles, a page at a time. Needs the permission *Make, change and
+     *     delete roles*.
+     */
+    get: operations["listRoles"];
+    put?: never;
+    /**
+     * Makes a role. Needs the permission *Make, change and delete roles*; nobody gives a role a
+     *     permission they do not hold themselves.
+     */
+    post: operations["makeRole"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/roles/{role_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * One role, with its permissions and what it is used for. Needs the permission *Make, change and
+     *     delete roles*.
+     */
+    get: operations["getRole"];
+    put?: never;
+    post?: never;
+    /**
+     * Deletes a role. A role that somebody has is deleted only with a `replacement`, which takes its
+     *     place in every row that gave it. Needs the permission *Make, change and delete roles*.
+     */
+    delete: operations["deleteRole"];
+    options?: never;
+    head?: never;
+    /**
+     * Changes a role: its name, its permissions, its two-step switch. Needs the permission *Make,
+     *     change and delete roles*; nobody adds a permission they do not hold themselves, and nothing
+     *     that would leave nobody who can manage roles.
+     */
+    patch: operations["changeRole"];
+    trace?: never;
+  };
+  "/api/v1/roles/{role_id}/copy": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Makes a role from a copy of another: its permissions, its two-step switch and its levels.
+     *     Needs the permission *Make, change and delete roles*; nobody copies a role that holds more
+     *     than they hold themselves.
+     */
+    post: operations["copyRole"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/roles/{role_id}/reset": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Gives a starting role back the permissions and levels it had at the start (*Reset to the
+     *     starting permissions*). Needs the permission *Make, change and delete roles*.
+     */
+    post: operations["resetRole"];
     delete?: never;
     options?: never;
     head?: never;
@@ -1108,6 +1511,28 @@ export interface components {
      * @enum {string}
      */
     AppliesTo: "organization" | "project" | "project-and-sub-projects";
+    /**
+     * @description Where a role given to somebody counts (*Where it counts*).
+     * @enum {string}
+     */
+    AppliesToBody: "organization" | "project" | "project-and-sub-projects";
+    /** @description A row of *Who has which role*: the fields that can be asked for. */
+    AssignmentItem: {
+      applies_to?: components["schemas"]["AppliesToBody"] | null;
+      /** @description When the row was made. */
+      given_at?: string | null;
+      group?: components["schemas"]["GroupRef"] | null;
+      /** @description The ID of the row. */
+      id?: string | null;
+      /**
+       * @description Whether the row comes from above the place that was asked for (a parent project, or the
+       *     whole organization).
+       */
+      inherited?: boolean | null;
+      person?: components["schemas"]["PersonRef"] | null;
+      place?: components["schemas"]["PlaceRef"] | null;
+      role?: components["schemas"]["RoleRef"] | null;
+    };
     /** @description What the app needs to know before anybody signs in. */
     AuthStatusBody: {
       /** @description Passkeys can be used: the public address of the server has a host name. */
@@ -1159,6 +1584,15 @@ export interface components {
        */
       version: number;
     };
+    /** @description What to change about a role: what is left out stays as it is. */
+    ChangeRoleBody: {
+      /** @description A new name. */
+      name?: string | null;
+      /** @description The permissions from now on. */
+      permissions?: components["schemas"]["Permission"][] | null;
+      /** @description The two-step switch from now on. */
+      two_step?: boolean | null;
+    };
     /** @description What a person can do in a place, and why. */
     CheckAccessBody: {
       /** @description Every field of the catalogue. */
@@ -1177,6 +1611,15 @@ export interface components {
       label_key: string;
       /** @description The text that is stored and sent. */
       value: string;
+    };
+    /** @description A person that can be put into a group: the fields that can be asked for. */
+    ChoiceItem: {
+      /** @description For the choices of a group's members: whether the person is in the group already. */
+      already_in?: boolean | null;
+      /** @description The ID of the person, group or role. */
+      id?: string | null;
+      /** @description What it is called. */
+      name?: string | null;
     };
     /** @description What the setup screen of the code app shows. */
     CodeAppBody: {
@@ -1199,6 +1642,16 @@ export interface components {
       /** @description The password. */
       password: string;
     };
+    /** @description A role to make from a copy of another. */
+    CopyRoleBody: {
+      /** @description What the copy is called. */
+      name: string;
+    };
+    /**
+     * @description Where a permission counts, as the API names it.
+     * @enum {string}
+     */
+    CountsBody: "organization" | "project";
     /** @description A new access key: the secret is shown only now. */
     CreatedAccessKeyBody: {
       /** @description The key as it will be listed. */
@@ -1264,8 +1717,10 @@ export interface components {
       | "auth.access_key_not_allowed"
       | "auth.not_signed_in"
       | "access.forbidden"
+      | "access.cannot_lift"
       | "access.would_lock_out"
       | "access.too_much"
+      | "role.in_use"
       | "assignment.conflict"
       | "setting.locked"
       | "project.move_lifts_no_access"
@@ -1326,12 +1781,61 @@ export interface components {
      * @enum {string}
      */
     FormatBody: "free" | "choice" | "time_zone" | "page_address" | "shortcut_keys";
+    /** @description A group after it was made or renamed. */
+    GroupBody: {
+      /** @description The ID of the group. */
+      id: string;
+      /** @description What it is called. */
+      name: string;
+    };
+    /** @description One group with what it is used for. */
+    GroupDetailBody: {
+      /** @description The group. */
+      group: components["schemas"]["GroupBody"];
+      /** @description What it is used for. */
+      used_by: components["schemas"]["GroupUsedByBody"];
+    };
+    /** @description A group in a list: the fields that can be asked for. */
+    GroupItem: {
+      /** @description The ID of the group. */
+      id?: string | null;
+      /** @description What it is called. */
+      name?: string | null;
+    };
+    /** @description A name for a group. */
+    GroupNameBody: {
+      /** @description What the group is called. */
+      name: string;
+    };
+    /** @description A group named in an answer. */
+    GroupRef: {
+      /** @description The ID of the group. */
+      id: string;
+      /** @description What it is called. */
+      name: string;
+    };
     /** @description A group named in a reason. */
     GroupRefBody: {
       /** @description The ID of the group. */
       id: string;
       /** @description What the group is called. */
       name: string;
+    };
+    /** @description What a group is used for, as far as the person who asks may see. */
+    GroupUsedByBody: {
+      /**
+       * Format: int64
+       * @description How many people are in the group. Whoever may ask sees all of them.
+       */
+      members: number;
+      /**
+       * Format: int64
+       * @description In how many projects the person who asks can see that the group has a role or *No
+       *     access*. Projects they cannot see are left out, so this number never tells of them.
+       */
+      projects: number;
+      /** @description Whether the group has a role for the whole organization. */
+      whole_organization: boolean;
     };
     /** @description An invitation as the administrator sees it. */
     InvitationBody: {
@@ -1677,6 +2181,12 @@ export interface components {
        */
       second_step_setup_required: boolean;
     };
+    /** @description A person in a group: the fields that can be asked for. */
+    MemberItem: {
+      /** @description When the person was put into the group. */
+      added_at?: string | null;
+      person?: components["schemas"]["PersonRef"] | null;
+    };
     /** @description Where a project goes, and the version of the preview that was looked at. */
     MoveBody: {
       /** @description The `preview` of the answer to the preview that was looked at. */
@@ -1717,6 +2227,13 @@ export interface components {
     NewFieldLevelBody: {
       level?: components["schemas"]["FieldLevel"] | null;
     };
+    /** @description A row for the whole organization to give: to a person or to a group, and the role. */
+    NewOrganizationRowBody: {
+      /** @description The ID of the role. */
+      role: string;
+      /** @description Whom the row is for. */
+      who: components["schemas"]["WhoBody"];
+    };
     /**
      * @description The level to set, or `null` to take away what the project set for the role, so the level
      *     from above counts again.
@@ -1734,10 +2251,88 @@ export interface components {
        */
       short_name: string;
     };
+    /**
+     * @description A row on a project to give: to a person or to a group, a role or *No access*, and where it
+     *     counts.
+     */
+    NewProjectRowBody: {
+      /**
+       * @description Where it counts: only the project, or the project and its sub-projects. *No access* always
+       *     covers the project and its sub-projects.
+       */
+      applies_to: components["schemas"]["AppliesToBody"];
+      /** @description The ID of the role; left out for *No access*. */
+      role?: string | null;
+      /** @description Whom the row is for. */
+      who: components["schemas"]["WhoBody"];
+    };
+    /** @description A role to make. */
+    NewRoleBody: {
+      /** @description What the role is called. */
+      name: string;
+      /** @description What it allows. */
+      permissions: components["schemas"]["Permission"][];
+      /** @description Whether everybody with it needs two-step sign-in. */
+      two_step: boolean;
+    };
     /** @description A new value for a setting. */
     NewValueBody: {
       /** @description The value. It must be of the type of the setting and one it accepts. */
       value: components["schemas"]["ValueBody"];
+    };
+    /** @description The change that is about to be made. */
+    OwnChangeBody:
+      | {
+          /** @description The ID of the row. */
+          assignment: string;
+          /** @enum {string} */
+          kind: "remove-assignment";
+        }
+      | {
+          /** @enum {string} */
+          kind: "no-access";
+          /** @description The ID of the project. */
+          project: string;
+          /** @description Whom. */
+          who: components["schemas"]["WhoBody"];
+        }
+      | {
+          /** @description The ID of the group. */
+          group: string;
+          /** @enum {string} */
+          kind: "leave-group";
+          /** @description The ID of the person. */
+          person: string;
+        }
+      | {
+          /** @description The ID of the group. */
+          group: string;
+          /** @enum {string} */
+          kind: "delete-group";
+        }
+      | {
+          /** @enum {string} */
+          kind: "change-role";
+          /** @description What it allows afterwards. */
+          permissions: components["schemas"]["Permission"][];
+          /** @description The ID of the role. */
+          role: string;
+        }
+      | {
+          /** @enum {string} */
+          kind: "delete-role";
+          /** @description The ID of the role that takes its place, if somebody has the role. */
+          replacement?: string | null;
+          /** @description The ID of the role. */
+          role: string;
+        };
+    /** @description What the person would lose. */
+    OwnLossBody: {
+      /**
+       * @description The permissions that manage roles and who has which role, held now and not after the
+       *     change; empty when the change takes nothing from the person.
+       */
+      loses: components["schemas"]["Permission"][];
     };
     /**
      * @description One page of a list. `T` is the view of an item for the API description; an answer holds the
@@ -1773,6 +2368,63 @@ export interface components {
      * @description One page of a list. `T` is the view of an item for the API description; an answer holds the
      *     items cut to the chosen fields ([`Page::of_authorized`]).
      */
+    Page_AssignmentItem: {
+      /** @description The items of this page. */
+      items: {
+        applies_to?: components["schemas"]["AppliesToBody"] | null;
+        /** @description When the row was made. */
+        given_at?: string | null;
+        group?: components["schemas"]["GroupRef"] | null;
+        /** @description The ID of the row. */
+        id?: string | null;
+        /**
+         * @description Whether the row comes from above the place that was asked for (a parent project, or the
+         *     whole organization).
+         */
+        inherited?: boolean | null;
+        person?: components["schemas"]["PersonRef"] | null;
+        place?: components["schemas"]["PlaceRef"] | null;
+        role?: components["schemas"]["RoleRef"] | null;
+      }[];
+      /** @description The cursor of the next page; `null` on the last page. */
+      next_cursor: string | null;
+    };
+    /**
+     * @description One page of a list. `T` is the view of an item for the API description; an answer holds the
+     *     items cut to the chosen fields ([`Page::of_authorized`]).
+     */
+    Page_ChoiceItem: {
+      /** @description The items of this page. */
+      items: {
+        /** @description For the choices of a group's members: whether the person is in the group already. */
+        already_in?: boolean | null;
+        /** @description The ID of the person, group or role. */
+        id?: string | null;
+        /** @description What it is called. */
+        name?: string | null;
+      }[];
+      /** @description The cursor of the next page; `null` on the last page. */
+      next_cursor: string | null;
+    };
+    /**
+     * @description One page of a list. `T` is the view of an item for the API description; an answer holds the
+     *     items cut to the chosen fields ([`Page::of_authorized`]).
+     */
+    Page_GroupItem: {
+      /** @description The items of this page. */
+      items: {
+        /** @description The ID of the group. */
+        id?: string | null;
+        /** @description What it is called. */
+        name?: string | null;
+      }[];
+      /** @description The cursor of the next page; `null` on the last page. */
+      next_cursor: string | null;
+    };
+    /**
+     * @description One page of a list. `T` is the view of an item for the API description; an answer holds the
+     *     items cut to the chosen fields ([`Page::of_authorized`]).
+     */
     Page_InvitationItem: {
       /** @description The items of this page. */
       items: {
@@ -1784,6 +2436,41 @@ export interface components {
         expires_at?: string | null;
         /** @description The ID of the invitation. */
         id?: string | null;
+      }[];
+      /** @description The cursor of the next page; `null` on the last page. */
+      next_cursor: string | null;
+    };
+    /**
+     * @description One page of a list. `T` is the view of an item for the API description; an answer holds the
+     *     items cut to the chosen fields ([`Page::of_authorized`]).
+     */
+    Page_MemberItem: {
+      /** @description The items of this page. */
+      items: {
+        /** @description When the person was put into the group. */
+        added_at?: string | null;
+        person?: components["schemas"]["PersonRef"] | null;
+      }[];
+      /** @description The cursor of the next page; `null` on the last page. */
+      next_cursor: string | null;
+    };
+    /**
+     * @description One page of a list. `T` is the view of an item for the API description; an answer holds the
+     *     items cut to the chosen fields ([`Page::of_authorized`]).
+     */
+    Page_PersonItem: {
+      /** @description The items of this page. */
+      items: {
+        /** @description The e-mail address. Only people who manage people see it. */
+        email?: string | null;
+        /** @description The groups the person is in. Left out when the viewer may not see groups. */
+        groups?: components["schemas"]["GroupRef"][] | null;
+        person?: components["schemas"]["PersonRef"] | null;
+        /**
+         * @description The roles the person has through rows of their own, in the places where the viewer
+         *     decides who has which role.
+         */
+        roles?: components["schemas"]["RoleAtRef"][] | null;
       }[];
       /** @description The cursor of the next page; `null` on the last page. */
       next_cursor: string | null;
@@ -1856,6 +2543,32 @@ export interface components {
         parent?: components["schemas"]["ProjectRef"] | null;
         /** @description The letters of its issue IDs and address. */
         short_name?: string | null;
+      }[];
+      /** @description The cursor of the next page; `null` on the last page. */
+      next_cursor: string | null;
+    };
+    /**
+     * @description One page of a list. `T` is the view of an item for the API description; an answer holds the
+     *     items cut to the chosen fields ([`Page::of_authorized`]).
+     */
+    Page_RoleItem: {
+      /** @description The items of this page. */
+      items: {
+        /** @description The ID of the role. */
+        id?: string | null;
+        /** @description What it is called. */
+        name?: string | null;
+        /** @description What it allows, in the order of the catalogue. */
+        permissions?: components["schemas"]["Permission"][] | null;
+        /**
+         * Format: int64
+         * @description The place in the order of roles.
+         */
+        position?: number | null;
+        /** @description The starting role it is a copy of (`administrator`, …); not there for a role of its own. */
+        starting?: string | null;
+        /** @description Whether everybody with it needs two-step sign-in. */
+        two_step?: boolean | null;
       }[];
       /** @description The cursor of the next page; `null` on the last page. */
       next_cursor: string | null;
@@ -1950,6 +2663,18 @@ export interface components {
       topic: components["schemas"]["Topic"];
     };
     /**
+     * @description One permission of the catalogue as the role page lists it. The sentence is the message
+     *     `permission.<key>` and the name of the topic `permission-topic.<topic>`.
+     */
+    PermissionBody: {
+      /** @description The key of the permission. */
+      key: components["schemas"]["Permission"];
+      /** @description Where it counts. */
+      scope: components["schemas"]["CountsBody"];
+      /** @description What it is about. */
+      topic: components["schemas"]["Topic"];
+    };
+    /**
      * @description One permission a key can be limited to, with the topic it is listed under. The sentence is the
      *     message `permission.<key>` and the name of the topic `permission-topic.<topic>`.
      */
@@ -1958,6 +2683,11 @@ export interface components {
       key: components["schemas"]["Permission"];
       /** @description What it is about. */
       topic: components["schemas"]["Topic"];
+    };
+    /** @description The permission catalogue, topic by topic. */
+    PermissionsBody: {
+      /** @description The permissions in the order of the catalogue. */
+      permissions: components["schemas"]["PermissionBody"][];
     };
     /** @description Who a person is, as the browser app shows them. */
     PersonBody: {
@@ -1974,6 +2704,29 @@ export interface components {
       person: components["schemas"]["PersonRef"];
       /** @description The projects where something changes for them. */
       projects: components["schemas"]["ProjectChangeBody"][];
+    };
+    /** @description One person with their groups and roles. */
+    PersonDetailBody: {
+      /** @description When the account was made. */
+      created_at: string;
+      /** @description The person, with their e-mail address, groups and roles. */
+      person: components["schemas"]["PersonItem"];
+    };
+    /**
+     * @description A person in a list, or on the page of one: the fields that can be asked for. An answer holds
+     *     only those that were asked for.
+     */
+    PersonItem: {
+      /** @description The e-mail address. Only people who manage people see it. */
+      email?: string | null;
+      /** @description The groups the person is in. Left out when the viewer may not see groups. */
+      groups?: components["schemas"]["GroupRef"][] | null;
+      person?: components["schemas"]["PersonRef"] | null;
+      /**
+       * @description The roles the person has through rows of their own, in the places where the viewer
+       *     decides who has which role.
+       */
+      roles?: components["schemas"]["RoleAtRef"][] | null;
     };
     /** @description How a person is shown to one viewer. */
     PersonRef:
@@ -2000,6 +2753,29 @@ export interface components {
           label: string;
           /** @enum {string} */
           shown: "former";
+        };
+    /**
+     * @description Where a row of *Who has which role* is: the whole organization, a project, or a project the
+     *     person cannot see (which is not named).
+     */
+    PlaceRef:
+      | {
+          /** @enum {string} */
+          kind: "organization";
+        }
+      | {
+          /** @description The ID of the project. */
+          id: string;
+          /** @enum {string} */
+          kind: "project";
+          /** @description What it is called. */
+          name: string;
+          /** @description The letters of its issue IDs and address. */
+          short_name: string;
+        }
+      | {
+          /** @enum {string} */
+          kind: "hidden";
         };
     /**
      * @description The body of an error answer, as plain data. The HTTP layer only sends it.
@@ -2202,6 +2978,69 @@ export interface components {
           /** @enum {string} */
           kind: "group";
         };
+    /**
+     * @description A role (or *No access*) that somebody has, and where: what a sentence like "Team member in
+     *     Website" needs.
+     */
+    RoleAtRef: {
+      /** @description Where it counts. */
+      applies_to: components["schemas"]["AppliesToBody"];
+      /** @description The ID of the row of *Who has which role*. */
+      id: string;
+      /** @description Where the row is. */
+      place: components["schemas"]["PlaceRef"];
+      role?: components["schemas"]["RoleRef"] | null;
+    };
+    /** @description A role as it is after it was made or changed. */
+    RoleBody: {
+      /** @description The ID of the role. */
+      id: string;
+      /** @description What it is called. */
+      name: string;
+      /** @description What it allows, in the order of the catalogue. */
+      permissions: components["schemas"]["Permission"][];
+      /**
+       * Format: int64
+       * @description The place in the order of roles.
+       */
+      position: number;
+      /** @description The starting role it is a copy of (`administrator`, …), `null` for a role of its own. */
+      starting?: string | null;
+      /** @description Whether everybody with it needs two-step sign-in. */
+      two_step: boolean;
+    };
+    /** @description One role with what it is used for. */
+    RoleDetailBody: {
+      /** @description The role. */
+      role: components["schemas"]["RoleBody"];
+      /** @description What it is used for. */
+      used_by: components["schemas"]["RoleUsedByBody"];
+    };
+    /** @description A role in a list: the fields that can be asked for. */
+    RoleItem: {
+      /** @description The ID of the role. */
+      id?: string | null;
+      /** @description What it is called. */
+      name?: string | null;
+      /** @description What it allows, in the order of the catalogue. */
+      permissions?: components["schemas"]["Permission"][] | null;
+      /**
+       * Format: int64
+       * @description The place in the order of roles.
+       */
+      position?: number | null;
+      /** @description The starting role it is a copy of (`administrator`, …); not there for a role of its own. */
+      starting?: string | null;
+      /** @description Whether everybody with it needs two-step sign-in. */
+      two_step?: boolean | null;
+    };
+    /** @description A role named in an answer. */
+    RoleRef: {
+      /** @description The ID of the role. */
+      id: string;
+      /** @description What it is called; empty when the role was deleted meanwhile. */
+      name: string;
+    };
     /** @description A role as a column of the table. */
     RoleRefBody: {
       /** @description The ID of the role. */
@@ -2232,6 +3071,28 @@ export interface components {
       role: components["schemas"]["RoleRefBody"];
       /** @description Where it was set. */
       set: components["schemas"]["LevelPlaceBody"];
+    };
+    /** @description What a role is used for, as far as the person who asks may see. */
+    RoleUsedByBody: {
+      /**
+       * Format: int64
+       * @description How many groups have the role, in the places the person who asks can see.
+       */
+      groups: number;
+      /**
+       * Format: int64
+       * @description How many people have the role through a row of their own, in the places the person who
+       *     asks can see.
+       */
+      people: number;
+      /**
+       * Format: int64
+       * @description In how many projects the person who asks can see that somebody has the role. Projects
+       *     they cannot see are left out, so this number never tells of them.
+       */
+      projects: number;
+      /** @description Whether somebody has the role for the whole organization. */
+      whole_organization: boolean;
     };
     /** @description Which ways there are to finish signing in. */
     SecondStepBody: {
@@ -2475,6 +3336,13 @@ export interface components {
     WhereToBody: {
       /** @description The ID of the project it would go into; `null` for the top level. */
       to?: string | null;
+    };
+    /** @description Whom a row is for: name a person or a group, not both. */
+    WhoBody: {
+      /** @description The ID of the group. */
+      group?: string | null;
+      /** @description The ID of the person. */
+      person?: string | null;
     };
     /**
      * @description A word of the vocabulary with the message that names it: a field, a kind of people information
@@ -2949,6 +3817,364 @@ export interface operations {
       };
       /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
       403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  listAssignmentChoices: {
+    parameters: {
+      query?: {
+        /** @description The fields each item holds, separated by commas. The answer schema names every field that can be asked for; when this is left out the route's own small default is used. */
+        fields?: string;
+        /** @description Where the page starts: the `next_cursor` of the page before. */
+        cursor?: string;
+        /** @description How many items a page holds at most (default 50, at most 100). */
+        limit?: number;
+        /** @description What to list: people (when left out), groups or roles. */
+        kind?: "person" | "group" | "role";
+        /** @description Words that every found name holds, without regard to capitals. */
+        search?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description What to choose from. */
+      200: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Page_ChoiceItem"];
+        };
+      };
+      /** @description Nothing changed since the `ETag` that `If-None-Match` named. No body. */
+      304: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  listAssignments: {
+    parameters: {
+      query?: {
+        /** @description The fields each item holds, separated by commas. The answer schema names every field that can be asked for; when this is left out the route's own small default is used. */
+        fields?: string;
+        /** @description Where the page starts: the `next_cursor` of the page before. */
+        cursor?: string;
+        /** @description How many items a page holds at most (default 50, at most 100). */
+        limit?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The rows for the whole organization. */
+      200: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Page_AssignmentItem"];
+        };
+      };
+      /** @description Nothing changed since the `ETag` that `If-None-Match` named. No body. */
+      304: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  assignRole: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["NewOrganizationRowBody"];
+      };
+    };
+    responses: {
+      /** @description The row. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AssignmentItem"];
+        };
+      };
+      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  removeAssignment: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the row. */
+        assignment_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The row is gone. */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
+      409: {
         headers: {
           [name: string]: unknown;
         };
@@ -5536,6 +6762,820 @@ export interface operations {
       };
     };
   };
+  listGroups: {
+    parameters: {
+      query?: {
+        /** @description The fields each item holds, separated by commas. The answer schema names every field that can be asked for; when this is left out the route's own small default is used. */
+        fields?: string;
+        /** @description Where the page starts: the `next_cursor` of the page before. */
+        cursor?: string;
+        /** @description How many items a page holds at most (default 50, at most 100). */
+        limit?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The groups, by name. */
+      200: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Page_GroupItem"];
+        };
+      };
+      /** @description Nothing changed since the `ETag` that `If-None-Match` named. No body. */
+      304: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  makeGroup: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["GroupNameBody"];
+      };
+    };
+    responses: {
+      /** @description The group. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["GroupBody"];
+        };
+      };
+      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  getGroup: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the group. */
+        group_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The group. */
+      200: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["GroupDetailBody"];
+        };
+      };
+      /** @description Nothing changed since the `ETag` that `If-None-Match` named. No body. */
+      304: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  deleteGroup: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the group. */
+        group_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The group is gone. */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  renameGroup: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the group. */
+        group_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["GroupNameBody"];
+      };
+    };
+    responses: {
+      /** @description The group as it is now. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["GroupBody"];
+        };
+      };
+      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  listMemberChoices: {
+    parameters: {
+      query?: {
+        /** @description The fields each item holds, separated by commas. The answer schema names every field that can be asked for; when this is left out the route's own small default is used. */
+        fields?: string;
+        /** @description Where the page starts: the `next_cursor` of the page before. */
+        cursor?: string;
+        /** @description How many items a page holds at most (default 50, at most 100). */
+        limit?: number;
+        /** @description Words that every found name holds, without regard to capitals. */
+        search?: string;
+      };
+      header?: never;
+      path: {
+        /** @description The ID of the group. */
+        group_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The people to choose from. */
+      200: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Page_ChoiceItem"];
+        };
+      };
+      /** @description Nothing changed since the `ETag` that `If-None-Match` named. No body. */
+      304: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  listGroupMembers: {
+    parameters: {
+      query?: {
+        /** @description The fields each item holds, separated by commas. The answer schema names every field that can be asked for; when this is left out the route's own small default is used. */
+        fields?: string;
+        /** @description Where the page starts: the `next_cursor` of the page before. */
+        cursor?: string;
+        /** @description How many items a page holds at most (default 50, at most 100). */
+        limit?: number;
+      };
+      header?: never;
+      path: {
+        /** @description The ID of the group. */
+        group_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The people in the group. */
+      200: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Page_MemberItem"];
+        };
+      };
+      /** @description Nothing changed since the `ETag` that `If-None-Match` named. No body. */
+      304: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  addGroupMember: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the group. */
+        group_id: string;
+        /** @description The ID of the person. */
+        person_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The person is in the group. */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  removeGroupMember: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the group. */
+        group_id: string;
+        /** @description The ID of the person. */
+        person_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The person is not in the group. */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
   listMySettings: {
     parameters: {
       query?: {
@@ -5874,6 +7914,167 @@ export interface operations {
       };
     };
   };
+  checkOwnAccessChange: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["OwnChangeBody"];
+      };
+    };
+    responses: {
+      /** @description What the change would take from the person. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["OwnLossBody"];
+        };
+      };
+      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  listPeople: {
+    parameters: {
+      query?: {
+        /** @description The fields each item holds, separated by commas. The answer schema names every field that can be asked for; when this is left out the route's own small default is used. */
+        fields?: string;
+        /** @description Where the page starts: the `next_cursor` of the page before. */
+        cursor?: string;
+        /** @description How many items a page holds at most (default 50, at most 100). */
+        limit?: number;
+        /**
+         * @description Words that every found person holds in their name or e-mail address, without regard to
+         *     capitals.
+         */
+        search?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The people, by name. */
+      200: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Page_PersonItem"];
+        };
+      };
+      /** @description Nothing changed since the `ETag` that `If-None-Match` named. No body. */
+      304: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
   getPeopleVisibility: {
     parameters: {
       query?: {
@@ -6027,6 +8228,174 @@ export interface operations {
       };
       /** @description There is no such thing (resource.not_found). */
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  getPerson: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the person. */
+        person_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The person. */
+      200: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PersonDetailBody"];
+        };
+      };
+      /** @description Nothing changed since the `ETag` that `If-None-Match` named. No body. */
+      304: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  listPermissions: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The permissions of the catalogue. */
+      200: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PermissionsBody"];
+        };
+      };
+      /** @description Nothing changed since the `ETag` that `If-None-Match` named. No body. */
+      304: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      403: {
         headers: {
           [name: string]: unknown;
         };
@@ -6361,6 +8730,305 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["ProjectBody"];
+        };
+      };
+      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  listProjectAssignmentChoices: {
+    parameters: {
+      query?: {
+        /** @description The fields each item holds, separated by commas. The answer schema names every field that can be asked for; when this is left out the route's own small default is used. */
+        fields?: string;
+        /** @description Where the page starts: the `next_cursor` of the page before. */
+        cursor?: string;
+        /** @description How many items a page holds at most (default 50, at most 100). */
+        limit?: number;
+        /** @description What to list: people (when left out), groups or roles. */
+        kind?: "person" | "group" | "role";
+        /** @description Words that every found name holds, without regard to capitals. */
+        search?: string;
+      };
+      header?: never;
+      path: {
+        /** @description The ID of the project. */
+        project: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description What to choose from. */
+      200: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Page_ChoiceItem"];
+        };
+      };
+      /** @description Nothing changed since the `ETag` that `If-None-Match` named. No body. */
+      304: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  listProjectAssignments: {
+    parameters: {
+      query?: {
+        /** @description The fields each item holds, separated by commas. The answer schema names every field that can be asked for; when this is left out the route's own small default is used. */
+        fields?: string;
+        /** @description Where the page starts: the `next_cursor` of the page before. */
+        cursor?: string;
+        /** @description How many items a page holds at most (default 50, at most 100). */
+        limit?: number;
+      };
+      header?: never;
+      path: {
+        /** @description The ID of the project. */
+        project: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The rows, those on the project first. */
+      200: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Page_AssignmentItem"];
+        };
+      };
+      /** @description Nothing changed since the `ETag` that `If-None-Match` named. No body. */
+      304: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  assignProjectRole: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the project. */
+        project: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["NewProjectRowBody"];
+      };
+    };
+    responses: {
+      /** @description The row. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AssignmentItem"];
         };
       };
       /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
@@ -6955,6 +9623,672 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["ProjectBody"];
+        };
+      };
+      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  listRoles: {
+    parameters: {
+      query?: {
+        /** @description The fields each item holds, separated by commas. The answer schema names every field that can be asked for; when this is left out the route's own small default is used. */
+        fields?: string;
+        /** @description Where the page starts: the `next_cursor` of the page before. */
+        cursor?: string;
+        /** @description How many items a page holds at most (default 50, at most 100). */
+        limit?: number;
+        /** @description Only the roles the person who asks may give: those whose permissions they all hold. */
+        giveable?: boolean;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The roles, in the order of roles. */
+      200: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Page_RoleItem"];
+        };
+      };
+      /** @description Nothing changed since the `ETag` that `If-None-Match` named. No body. */
+      304: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  makeRole: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["NewRoleBody"];
+      };
+    };
+    responses: {
+      /** @description The role. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RoleBody"];
+        };
+      };
+      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  getRole: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the role. */
+        role_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The role. */
+      200: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RoleDetailBody"];
+        };
+      };
+      /** @description Nothing changed since the `ETag` that `If-None-Match` named. No body. */
+      304: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  deleteRole: {
+    parameters: {
+      query?: {
+        /**
+         * @description The role that takes the place of the deleted one in every row that gave it. A role that
+         *     somebody has is not deleted without one.
+         */
+        replacement?: string;
+      };
+      header?: never;
+      path: {
+        /** @description The ID of the role. */
+        role_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The role is gone. */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  changeRole: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the role. */
+        role_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ChangeRoleBody"];
+      };
+    };
+    responses: {
+      /** @description The role as it is now. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RoleBody"];
+        };
+      };
+      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  copyRole: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the role to copy. */
+        role_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CopyRoleBody"];
+      };
+    };
+    responses: {
+      /** @description The new role. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RoleBody"];
+        };
+      };
+      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  resetRole: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the role. */
+        role_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The role as it is now. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RoleBody"];
         };
       };
       /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */

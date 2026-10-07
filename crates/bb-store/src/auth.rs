@@ -9,7 +9,8 @@
 use std::sync::Arc;
 
 use bb_app::auth::{
-    AccessKeyRecord, Account, AuthSettings, AuthStore, ProjectChoice, SecurityEvent, SessionRecord,
+    AccessKeyRecord, Account, AuthSettings, AuthStore, PeoplePosition, ProjectChoice,
+    SecurityEvent, SessionRecord,
 };
 use bb_app::ports::{BoxFuture, ChangeStore};
 use bb_core::event::DomainEvent;
@@ -27,7 +28,7 @@ use bb_core::sign_in::{
 };
 use bb_core::technical::TechnicalName;
 use jiff::Timestamp;
-use sea_query::{Cond, Expr, ExprTrait as _, Order, Query};
+use sea_query::{BinOper, Cond, Expr, ExprTrait as _, Func, Order, Query};
 use zeroize::Zeroizing;
 
 use crate::anchor::LogSeal;
@@ -196,6 +197,16 @@ fn read_invitation(row: &Row) -> Result<Invitation, StoreError> {
     })
 }
 
+/// The words of a search without the characters that `LIKE` takes for wildcards, so that a search
+/// for `50%` finds names with `50` in them and never every name.
+fn wildcards_removed(words: &str) -> String {
+    words
+        .trim()
+        .chars()
+        .filter(|character| !matches!(character, '%' | '_' | '\\'))
+        .collect()
+}
+
 fn person_bytes(person: UserId) -> Vec<u8> {
     person.to_bytes().to_vec()
 }
@@ -279,6 +290,56 @@ impl AuthStore for AuthStorage {
 
     async fn person(&self, id: UserId) -> Result<Option<Person>, StoreError> {
         self.person_by_id(id).await
+    }
+
+    async fn people_page(
+        &self,
+        search: Option<&str>,
+        by_email: bool,
+        after: Option<&PeoplePosition>,
+        limit: u64,
+    ) -> Result<Vec<Person>, StoreError> {
+        // Without regard to capitals, in the database itself, so the order and the position agree
+        // with each other whatever the database does with capitals and accents.
+        let name = || Func::lower(Expr::col(PersonRow::DisplayName));
+        let mut select = Query::select();
+        select
+            .columns(person_columns())
+            .from(PersonRow::Table)
+            .order_by_expr(name().into(), Order::Asc)
+            .order_by(PersonRow::Id, Order::Asc)
+            .limit(limit);
+        // Every word of the search is held by the name (or, if asked for, by the address).
+        let words = search.map(wildcards_removed).unwrap_or_default();
+        for word in words.split_whitespace() {
+            let pattern = format!("%{word}%");
+            let mut any = Cond::any().add(
+                Expr::expr(name()).binary(BinOper::Like, Func::lower(Expr::val(pattern.clone()))),
+            );
+            if by_email {
+                any = any.add(
+                    Expr::expr(Func::lower(Expr::col(PersonRow::Email)))
+                        .binary(BinOper::Like, Func::lower(Expr::val(pattern))),
+                );
+            }
+            select.cond_where(any);
+        }
+        if let Some(position) = after {
+            let last = || Func::lower(Expr::val(position.name.clone()));
+            select.cond_where(
+                Cond::any().add(Expr::expr(name()).gt(last())).add(
+                    Cond::all()
+                        .add(Expr::expr(name()).eq(last()))
+                        .add(Expr::col(PersonRow::Id).gt(person_bytes(position.id))),
+                ),
+            );
+        }
+        self.database
+            .fetch_all(&select)
+            .await?
+            .iter()
+            .map(read_person)
+            .collect()
     }
 
     async fn session_by_hash(&self, hash: &Digest) -> Result<Option<SessionRecord>, StoreError> {

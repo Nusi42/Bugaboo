@@ -204,6 +204,11 @@ impl<'a> Fixture<'a> {
             .ok_or_else(|| "the organization has no viewer role".into())
     }
 
+    /// The person who set the organization up.
+    pub(super) fn admin_id(&self) -> bb_core::id::UserId {
+        self.org.admin.id
+    }
+
     /// A number that no other call of the matrix had.
     pub(super) fn next_number(&self) -> u32 {
         let number = self.numbers.get() + 1;
@@ -380,6 +385,9 @@ async fn starting_roles(org: &Org<'_>) -> Result<BTreeMap<String, RoleId>, Failu
             RolesQuery {
                 session_token: org.admin.session.clone(),
                 place: None,
+                cursor: None,
+                limit: bb_core::paging::PAGE_SIZE_MAX,
+                giveable: false,
             },
         )
         .await

@@ -32,6 +32,9 @@ pub(super) async fn role(org: &Org<'_>, starting: StartingRole) -> Result<RoleId
             RolesQuery {
                 session_token: org.admin.session.clone(),
                 place: None,
+                cursor: None,
+                limit: bb_core::paging::PAGE_SIZE_MAX,
+                giveable: false,
             },
         )
         .await

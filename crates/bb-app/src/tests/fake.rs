@@ -31,7 +31,8 @@ use zeroize::Zeroizing;
 
 use crate::access::RoleRecord;
 use crate::auth::{
-    AccessKeyRecord, Account, AuthSettings, AuthStore, ProjectChoice, SecurityEvent, SessionRecord,
+    AccessKeyRecord, Account, AuthSettings, AuthStore, PeoplePosition, ProjectChoice,
+    SecurityEvent, SessionRecord,
 };
 use crate::ports::{BoxFuture, ChangeStore};
 
@@ -229,6 +230,51 @@ impl AuthStore for FakeStore {
                     person: person.clone(),
                     password_hash: hash.clone(),
                 })
+        }))
+    }
+
+    async fn people_page(
+        &self,
+        search: Option<&str>,
+        by_email: bool,
+        after: Option<&PeoplePosition>,
+        limit: u64,
+    ) -> Result<Vec<Person>, FakeError> {
+        let words: Vec<String> = search
+            .map(|words| {
+                words
+                    .chars()
+                    .filter(|character| !matches!(character, '%' | '_' | '\\'))
+                    .collect::<String>()
+                    .to_lowercase()
+                    .split_whitespace()
+                    .map(str::to_owned)
+                    .collect()
+            })
+            .unwrap_or_default();
+        let key = |name: &str, id: UserId| (name.to_lowercase(), id);
+        Ok(self.read(|state| {
+            let mut people: Vec<Person> = state
+                .people
+                .iter()
+                .map(|(person, _)| person.clone())
+                .filter(|person| {
+                    words.iter().all(|word| {
+                        person.display_name.to_lowercase().contains(word)
+                            || (by_email && person.email.to_lowercase().contains(word))
+                    })
+                })
+                .collect();
+            people.sort_by_key(|person| key(&person.display_name, person.id));
+            people
+                .into_iter()
+                .filter(|person| {
+                    after.is_none_or(|position| {
+                        key(&person.display_name, person.id) > key(&position.name, position.id)
+                    })
+                })
+                .take(usize::try_from(limit).unwrap_or(usize::MAX))
+                .collect()
         }))
     }
 

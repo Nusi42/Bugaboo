@@ -83,6 +83,23 @@ pub enum Counts {
     Project,
 }
 
+impl Counts {
+    /// The word of the place in the API (`organization`, `project`).
+    #[must_use]
+    pub const fn code(self) -> &'static str {
+        match self {
+            Self::Organization => "organization",
+            Self::Project => "project",
+        }
+    }
+}
+
+impl Serialize for Counts {
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        serializer.serialize_str(self.code())
+    }
+}
+
 /// What an access key's choice keeps (ADR-0025, decision 8).
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Kind {

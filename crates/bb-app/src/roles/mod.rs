@@ -7,7 +7,10 @@
 
 mod assignments;
 mod check;
+mod copy;
 mod levels;
+mod replace;
+mod screens;
 mod types;
 
 use std::collections::BTreeSet;
@@ -24,8 +27,13 @@ use serde_json::json;
 
 pub use assignments::{assign_role, assignments, remove_assignment};
 pub use check::*;
+pub use copy::{CopyRole, copy_role};
 pub(crate) use levels::place_of;
 pub use levels::{role_levels, set_field_level, set_people_level};
+pub use screens::{
+    PermissionCatalogue, PermissionView, PermissionsQuery, RoleDetail, RoleQuery,
+    assignment_choices, permissions, role,
+};
 pub use types::*;
 
 use crate::access::{RoleRecord, held_in};
@@ -231,11 +239,16 @@ pub async fn change_role<S: AuthStore>(
     Ok(access.authorize(view(&RoleRecord { role, permissions })))
 }
 
-/// Deletes a role, with the rows that give it and the levels it set.
+/// Deletes a role, with the levels it set. A role that somebody has is deleted only with a
+/// `replacement`: every row that gave it gives the replacement instead (nobody gives a role they
+/// do not hold themselves).
 ///
 /// # Errors
 /// `access.forbidden` without *Manage roles*, `resource.not_found` for an unknown role,
-/// `access.would_lock_out` when it would leave nobody who can manage roles.
+/// `request.invalid` when the replacement is the role itself, `role.in_use` for a role that
+/// somebody has, deleted without a replacement, `access.too_much` when the replacement holds more
+/// than the person who asks holds where it would be given, `access.would_lock_out` when it would
+/// leave nobody who can manage roles.
 pub async fn delete_role<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: DeleteRole,
@@ -244,25 +257,65 @@ pub async fn delete_role<S: AuthStore>(
     ctx.require(&actor, Permission::ManageRoles, Place::Organization)
         .await?;
     let id = ctx.role_or_missing(input.role).await?.role.id;
+    let replacement = match input.replacement {
+        Some(other) if other == id => return Err(ErrorCode::InvalidRequest.into()),
+        Some(other) => Some(ctx.role_or_missing(other).await?.role.id),
+        None => None,
+    };
     let event = ctx.event(
         by(actor.person.id),
         entity("role", id)?,
-        vec![changed("role")],
+        vec![
+            changed("role"),
+            set_to(
+                "replacement",
+                json!(replacement.map(|replacement| replacement.to_string())),
+            ),
+        ],
     )?;
-    ctx.store()
+    let (giver, now, mut ids) = (actor.person.id, ctx.now(), ctx.owned_ids());
+    let made = ctx
+        .store()
         .record_change(&event, move |transaction| {
             Box::pin(async move {
                 S::lock_policy(transaction).await?;
                 let before = S::organization_state_in(transaction).await?;
+                let rows = S::assignments_of_role_in(transaction, id).await?;
+                let mut made = Vec::new();
+                if !rows.is_empty() {
+                    // Judged on the rows that are stored now, after the lock.
+                    let Some(replacement) = replacement else {
+                        return Err(S::refused(Refusal::InUse));
+                    };
+                    made = replace::give_to_replacement::<S>(
+                        transaction,
+                        giver,
+                        &rows,
+                        replacement,
+                        now,
+                        &mut ids,
+                    )
+                    .await?;
+                }
                 if !S::delete_role(transaction, id).await? {
                     return Err(S::aborted());
                 }
                 let after = S::organization_state_in(transaction).await?;
-                ensure_a_manager_remains(&before, &after).map_err(S::refused)
+                ensure_a_manager_remains(&before, &after).map_err(S::refused)?;
+                Ok(made)
             })
         })
         .await
         .map_err(|error| stopped::<S>(&error, ErrorCode::NotFound, ErrorCode::NotFound))?;
+    // Every row that the replacement made is a permission change of its own (ADR-0025, decision 9).
+    for row in &made {
+        ctx.note(
+            SecurityAction::AssignmentMade,
+            Some(actor.person.id),
+            Some(entity("assignment", row.id)?),
+        )
+        .await;
+    }
     ctx.note(
         SecurityAction::RoleDeleted,
         Some(actor.person.id),
@@ -368,13 +421,13 @@ pub async fn reset_role<S: AuthStore>(
     Ok(access.authorize(view(&RoleRecord { role, permissions })))
 }
 
-/// The roles, in the order of roles. In *Organization settings* (`place` is `None`) it takes
-/// *Manage roles*; on a project it takes *Decide who has which role* there, because that is where
-/// a person chooses a role to give.
+/// The roles, in the order of roles, a page at a time. In *Organization settings* (`place` is
+/// `None`) it takes *Manage roles*; on a project it takes *Decide who has which role* there,
+/// because that is where a person chooses a role to give.
 ///
 /// # Errors
 /// `access.forbidden` without the permission, `resource.not_found` for a project the person may
-/// not know about.
+/// not know about, `request.invalid` for a cursor that is not one.
 pub async fn roles<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: RolesQuery,
@@ -390,12 +443,18 @@ pub async fn roles<S: AuthStore>(
                 .await?
         }
     };
-    let records = ctx
+    let mut records = ctx
         .store()
         .roles()
         .await
         .map_err(|error| internal::<S>(&error))?;
+    if input.giveable {
+        records.retain(|record| ensure_no_escalation(&access, &record.permissions).is_ok());
+    }
+    let page = bb_core::paging::window(records.len(), input.cursor.as_deref(), input.limit)
+        .ok_or(ErrorCode::InvalidRequest)?;
     Ok(access.authorize(RoleList {
-        roles: records.iter().map(view).collect(),
+        roles: records[page.start..page.end].iter().map(view).collect(),
+        next_cursor: page.next,
     }))
 }

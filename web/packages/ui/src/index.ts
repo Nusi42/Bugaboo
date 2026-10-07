@@ -25,7 +25,12 @@ export { Button, type ButtonProps } from "./Button.tsx";
 export { Card, type CardProps } from "./Card.tsx";
 export { Checkbox, type CheckboxProps } from "./Checkbox.tsx";
 export { ChoiceGroup, type Choice, type ChoiceGroupProps } from "./ChoiceGroup.tsx";
-export { ConfirmDialog, type ConfirmDialogProps } from "./ConfirmDialog.tsx";
+export {
+  AskDialog,
+  ConfirmDialog,
+  type AskDialogProps,
+  type ConfirmDialogProps,
+} from "./ConfirmDialog.tsx";
 export { CopyButton, type CopyButtonProps } from "./CopyButton.tsx";
 export { Form, type FormProps } from "./Form.tsx";
 export { Icon, type IconProps } from "./Icon.tsx";

@@ -94,24 +94,7 @@ export const organizationSettingsIndexRoute = createRoute({
   path: paths.organizationSettings,
 });
 
-const InvitationsScreen = lazyRouteComponent(
-  () => import("../features/admin/index.ts"),
-  "InvitationsPage",
-);
 const StatusScreen = lazyRouteComponent(() => import("../features/admin/index.ts"), "StatusPage");
-
-export const invitationsRoute = createRoute({
-  getParentRoute: () => organizationSettingsRoute,
-  path: paths.invitations,
-  component: function Invitations() {
-    return (
-      <OnlyWith path={paths.invitations}>
-        <InvitationsScreen />
-      </OnlyWith>
-    );
-  },
-});
-
 const ProjectsScreen = lazyRouteComponent(
   () => import("../features/projects/index.ts"),
   "ProjectsPage",

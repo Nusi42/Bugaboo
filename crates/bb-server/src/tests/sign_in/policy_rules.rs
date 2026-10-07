@@ -31,6 +31,9 @@ async fn roles(org: &Org<'_>) -> Run<Vec<RoleView>> {
             RolesQuery {
                 session_token: org.admin.session.clone(),
                 place: None,
+                cursor: None,
+                limit: bb_core::paging::PAGE_SIZE_MAX,
+                giveable: false,
             },
         )
         .await?
@@ -56,6 +59,8 @@ async fn rows_of_the_organization(org: &Org<'_>) -> Run<Vec<AssignmentView>> {
             AssignmentsQuery {
                 session_token: org.admin.session.clone(),
                 project: None,
+                cursor: None,
+                limit: bb_core::paging::PAGE_SIZE_MAX,
             },
         )
         .await?
@@ -196,6 +201,7 @@ async fn sec_08_starting_roles_are_made_once_and_can_be_changed_and_reset() -> O
                 DeleteRole {
                     session_token: org.admin.session.clone(),
                     role: guest.id,
+                    replacement: None,
                 },
             )
             .await?;
@@ -474,14 +480,24 @@ async fn sec_08_nobody_can_remove_the_last_way_to_manage_roles() -> Outcome {
             refused(change(&org, &org.admin, administrator.id, Some(weaker)).await),
             Some(ErrorCode::WouldLockOut)
         );
-        let delete = org.rig.api().delete_role(
-            Rig::info(),
-            DeleteRole {
-                session_token: org.admin.session.clone(),
-                role: administrator.id,
-            },
+        // A role that somebody has is first asked for the role that takes its place; with a
+        // replacement that does not manage roles, the deletion is what would lock the organization.
+        let viewer = role_named(&org, "Viewer").await?;
+        let delete = |replacement| {
+            org.rig.api().delete_role(
+                Rig::info(),
+                DeleteRole {
+                    session_token: org.admin.session.clone(),
+                    role: administrator.id,
+                    replacement,
+                },
+            )
+        };
+        assert_eq!(refused(delete(None).await), Some(ErrorCode::RoleInUse));
+        assert_eq!(
+            refused(delete(Some(viewer.id)).await),
+            Some(ErrorCode::WouldLockOut)
         );
-        assert_eq!(refused(delete.await), Some(ErrorCode::WouldLockOut));
         // A second administrator through a group: now Ada's row may go.
         let (bea, ops) = (org.person().await?, org.group("Operators").await?);
         org.add_to_group(ops, bea.id).await?;
@@ -831,6 +847,7 @@ async fn rows_and_levels(
             DeleteRole {
                 session_token: session,
                 role: made.id,
+                replacement: None,
             },
         )
     );

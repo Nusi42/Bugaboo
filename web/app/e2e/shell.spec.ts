@@ -191,8 +191,8 @@ test("ux_01 My settings lists its topics and nothing for administrators only", a
 
 test("ux_01 Organization settings lists the topics that exist, by heading", async ({ page }) => {
   await signIn(page, ada);
-  await openFromMenu(page, t("nav.invitations"));
-  await expect(page.getByRole("heading", { level: 1, name: t("invitations.title") })).toBeVisible();
+  await openFromMenu(page, t("nav.people"));
+  await expect(page.getByRole("heading", { level: 1, name: t("nav.people") })).toBeVisible();
   // A phone shows one screen at a time: the topics are on the page that Back goes to.
   await onThisLayout(page, {
     computer: async () => {},
@@ -202,7 +202,9 @@ test("ux_01 Organization settings lists the topics that exist, by heading", asyn
     },
   });
   await expect(topics(page, t("nav.organization-settings"))).toHaveText([
-    t("nav.invitations"),
+    t("nav.people"),
+    t("nav.groups"),
+    t("nav.roles"),
     t("nav.sign-in-rules"),
     t("nav.field-permissions"),
     t("nav.people-visibility"),
@@ -221,7 +223,7 @@ test("ux_01 an address of the settings that does not exist shows the page that i
 }) => {
   await signIn(page, cleo);
   // A person who may not invite people finds nothing at the address, like at one that is not there.
-  await page.goto("/settings/invitations");
+  await page.goto("/settings/people");
   await expect(
     page.getByRole("heading", { level: 1, name: t("page.not-found.title") }),
   ).toBeVisible();

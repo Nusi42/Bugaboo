@@ -25,7 +25,7 @@ async function setSwitch(policy: Locator, on: boolean): Promise<void> {
 /** The part of the invitations page where an administrator decides who may sign up alone. */
 async function openPolicy(page: Page): Promise<Locator> {
   await signIn(page, ada);
-  await openFromMenu(page, t("nav.invitations"));
+  await openFromMenu(page, t("nav.people"));
   return page.getByRole("region", { name: t("sign-up-policy.title") });
 }
 

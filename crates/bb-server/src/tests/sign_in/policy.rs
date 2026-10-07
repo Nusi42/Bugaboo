@@ -312,6 +312,8 @@ async fn sec_03_no_access_cannot_lock_out_the_people_who_decide_roles_above() ->
                 AssignmentsQuery {
                     session_token: lea.session.clone(),
                     project: Some(projects.web),
+                    cursor: None,
+                    limit: bb_core::paging::PAGE_SIZE_MAX,
                 },
             )
             .await?
@@ -366,6 +368,8 @@ async fn sec_03_a_role_taken_away_counts_from_the_next_request() -> super::rig::
                         AssignmentsQuery {
                             session_token: session,
                             project: Some(project),
+                            cursor: None,
+                            limit: bb_core::paging::PAGE_SIZE_MAX,
                         },
                     )
                     .await
@@ -614,6 +618,8 @@ async fn priv_12_people_in_the_management_screens_are_shown_by_name_to_those_who
                 GroupMembersQuery {
                     session_token: org.admin.session.clone(),
                     group: team,
+                    cursor: None,
+                    limit: bb_core::paging::PAGE_SIZE_MAX,
                 },
             )
             .await?
@@ -632,6 +638,8 @@ async fn priv_12_people_in_the_management_screens_are_shown_by_name_to_those_who
                 GroupMembersQuery {
                     session_token: bea.session.clone(),
                     group: team,
+                    cursor: None,
+                    limit: bb_core::paging::PAGE_SIZE_MAX,
                 },
             )
             .await;
@@ -645,6 +653,9 @@ async fn priv_12_people_in_the_management_screens_are_shown_by_name_to_those_who
                 RolesQuery {
                     session_token: bea.session.clone(),
                     place: None,
+                    cursor: None,
+                    limit: bb_core::paging::PAGE_SIZE_MAX,
+                    giveable: false,
                 },
             )
             .await;

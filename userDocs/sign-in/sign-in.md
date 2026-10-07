@@ -34,7 +34,7 @@ Your administrator can ask everybody, or everybody with a certain role, to use a
 
 ## Invitations and making your own account
 
-An administrator invites people on the page "Invitations". Bugaboo cannot send e-mail yet, so the administrator copies the link and sends it to the person. The link works once and runs out after 7 days. The person opens it, chooses a name and a password, and the account is made. An administrator can take back an invitation that is still open.
+An administrator invites people on the page "People" (in "Organization settings"), under "Invitations". Bugaboo cannot send e-mail yet, so the administrator copies the link and sends it to the person. The link works once and runs out after 7 days. The person opens it, chooses a name and a password, and the account is made. An administrator can take back an invitation that is still open.
 
 An administrator can also let people make their own account, from chosen e-mail domains. The page "Invitations" shows this setting. If you remove all domains, anybody who can reach Bugaboo can make an account. Bugaboo warns you and asks you to confirm.
 

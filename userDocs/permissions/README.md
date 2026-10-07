@@ -8,8 +8,8 @@ A **role** says what a person may do. Two more settings say what each role *sees
 
 ## Where to find them
 
-- **Organization settings › People**: the three pages for the whole organization. They show up when you may decide what roles see (*Field permissions* and *Who sees people*) or check access.
-- **Project settings** (`/p/WEB/settings`): a card, *What roles see here*, leads to the same three pages for one project. A project lead reaches them there, because a lead decides in their own projects only.
+- **Organization settings**, below the heading "People": the three pages for the whole organization. They show up when you may decide what roles see (*Field permissions* and *Who sees people*) or check access.
+- **Project settings** (`/p/WEB/settings`): the same three pages for one project are tabs next to *Name and place* and *Who has which role*. A project lead reaches them there, because a lead decides in their own projects only.
 
 ## The same rules everywhere
 

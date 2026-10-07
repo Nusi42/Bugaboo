@@ -1,29 +1,12 @@
 import type { MessageKey } from "@bugaboo/messages";
-import { iconName, type IconName } from "@bugaboo/ui";
+import { iconName } from "@bugaboo/ui";
 
 import { paths } from "../../shared/paths.ts";
-import type { PermissionKey, Permissions } from "../../shared/permissions.ts";
+import type { Permissions } from "../../shared/permissions.ts";
+import type { Path, Place } from "./place.ts";
+import { projectPlaces } from "./project-places.ts";
 
-type Path = (typeof paths)[keyof typeof paths];
-
-/**
- * One screen of the signed-in app, as the menus, the top bar and quick search know it. The list
- * below is the one place that says which screens exist, where they sit and what they are called
- * (SSOT): a screen that is not in it has no menu entry, and one that is has it everywhere.
- */
-export interface Place {
-  readonly path: Path;
-  readonly name: MessageKey;
-  readonly icon: IconName;
-  /** The screen this one belongs under: *Back* on a phone goes there. `null` for the start page. */
-  readonly parent: Path | null;
-  /** Only people who hold one of these permissions for the whole organization see it. */
-  readonly anyOf?: readonly PermissionKey[];
-  /** For a topic of a settings frame: the heading it is listed under in the left menu. */
-  readonly group?: MessageKey;
-  /** Whether menus and quick search list it. A screen reached only from another one is not. */
-  readonly listed: boolean;
-}
+export type { Place } from "./place.ts";
 
 export const places: readonly Place[] = [
   { path: paths.home, name: "nav.home", icon: iconName.home, parent: null, listed: true },
@@ -96,7 +79,11 @@ export const places: readonly Place[] = [
     icon: iconName.organization,
     parent: paths.home,
     anyOf: [
+      "manage-people",
       "manage-invitations",
+      "manage-groups",
+      "manage-roles",
+      "decide-roles",
       "see-status",
       "change-organization-settings",
       "make-projects",
@@ -106,13 +93,49 @@ export const places: readonly Place[] = [
     listed: true,
   },
   {
-    path: paths.invitations,
-    name: "nav.invitations",
-    icon: iconName.invitations,
+    path: paths.people,
+    name: "nav.people",
+    icon: iconName.people,
     parent: paths.organizationSettings,
-    anyOf: ["manage-invitations", "change-organization-settings"],
+    anyOf: ["manage-people", "manage-invitations", "change-organization-settings"],
     group: "nav.group.people",
     listed: true,
+  },
+  {
+    // A person's page is reached from the list of people.
+    path: paths.person,
+    name: "nav.people",
+    icon: iconName.people,
+    parent: paths.people,
+    anyOf: ["manage-people"],
+    listed: false,
+  },
+  {
+    path: paths.groups,
+    name: "nav.groups",
+    icon: iconName.groups,
+    parent: paths.organizationSettings,
+    anyOf: ["manage-groups"],
+    group: "nav.group.people",
+    listed: true,
+  },
+  {
+    path: paths.roles,
+    name: "nav.roles",
+    icon: iconName.roles,
+    parent: paths.organizationSettings,
+    anyOf: ["manage-roles", "decide-roles"],
+    group: "nav.group.people",
+    listed: true,
+  },
+  {
+    // A role's page is reached from the list of roles.
+    path: paths.role,
+    name: "nav.roles",
+    icon: iconName.roles,
+    parent: paths.roles,
+    anyOf: ["manage-roles"],
+    listed: false,
   },
   {
     path: paths.signInRules,
@@ -177,43 +200,7 @@ export const places: readonly Place[] = [
     group: "nav.group.system",
     listed: true,
   },
-  {
-    // The address of a project has a part to fill in: the screen is here so that it is known,
-    // the pages of the projects name themselves (`usePageTrail`).
-    path: paths.project,
-    name: "nav.projects",
-    icon: iconName.projects,
-    parent: paths.home,
-    listed: false,
-  },
-  {
-    path: paths.projectSettings,
-    name: "projects.settings-link",
-    icon: iconName.settings,
-    parent: paths.project,
-    listed: false,
-  },
-  {
-    path: paths.projectFields,
-    name: "nav.field-permissions",
-    icon: iconName["field-permissions"],
-    parent: paths.projectSettings,
-    listed: false,
-  },
-  {
-    path: paths.projectPeople,
-    name: "nav.people-visibility",
-    icon: iconName["people-visibility"],
-    parent: paths.projectSettings,
-    listed: false,
-  },
-  {
-    path: paths.projectCheckAccess,
-    name: "nav.check-access",
-    icon: iconName["check-access"],
-    parent: paths.projectSettings,
-    listed: false,
-  },
+  ...projectPlaces,
   {
     path: paths.frames,
     name: "nav.frames",

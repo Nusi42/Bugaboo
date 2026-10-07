@@ -30,13 +30,13 @@ test.describe.configure({ mode: "serial" });
 /** The page of invitations, opened by an administrator. */
 async function openInvitations(page: Page): Promise<void> {
   await signIn(page, ada);
-  await openFromMenu(page, t("nav.invitations"));
-  await expect(page.getByRole("heading", { level: 1, name: t("invitations.title") })).toBeVisible();
+  await openFromMenu(page, t("nav.people"));
+  await expect(page.getByRole("heading", { level: 1, name: t("nav.people") })).toBeVisible();
 }
 
 /** Makes an invitation for `email` on the page, and returns the link that is shown. */
 async function makeInvitation(page: Page, email: string): Promise<string> {
-  await page.getByLabel(t("field.email")).fill(email);
+  await page.getByLabel(t("field.email"), { exact: true }).fill(email);
   await page.getByRole("button", { name: t("invitations.create") }).click();
   await expect(page.getByText(t("invitations.created", { email }))).toBeVisible();
   const link = (await page.getByLabel(t("invitations.link")).textContent()) ?? "";
@@ -156,6 +156,6 @@ test("auth_06 people who are not administrators do not see invitations", async (
   await openMenu(page);
   await expect(page.getByRole("link", { name: t("nav.organization-settings") })).toHaveCount(0);
   // The screen is not shown to them at all, as if it did not exist (M2-F17).
-  await page.goto("/settings/invitations");
+  await page.goto("/settings/people");
   await expect(page.getByRole("heading", { name: t("page.not-found.title") })).toBeVisible();
 });

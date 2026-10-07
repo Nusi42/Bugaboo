@@ -8,7 +8,7 @@
 
 use axum::extract::State;
 use axum::response::Response;
-use bb_app::access::{PeopleToCheckQuery, PersonPage};
+use bb_app::access::{PeopleToCheckPage, PeopleToCheckQuery};
 use bb_app::roles::{
     AccessAnswer, CheckAccessQuery, LevelAnswer, LevelPlace, PermissionAnswer, ReasonRowView,
     ReasonView, ReasonWho, RoleSays,
@@ -405,7 +405,7 @@ async fn list_people_to_check(
             other => ApiError::from(other),
         })?;
     position?;
-    let list = page.map(|page: PersonPage| Listed {
+    let list = page.map(|page: PeopleToCheckPage| Listed {
         items: page.items,
         next: page.next_cursor,
     });

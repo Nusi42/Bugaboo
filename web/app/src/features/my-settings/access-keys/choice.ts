@@ -33,16 +33,6 @@ export function choiceHelp(choice: Choice): MessageKey {
   return helps[choice];
 }
 
-/** The sentence of a permission, as the catalogue says it (`permission.<key>`). */
-export function permissionSentence(permission: Schema<"Permission">): MessageKey {
-  return `permission.${permission}`;
-}
-
-/** The heading of a topic of the permissions (`permission-topic.<topic>`). */
-export function topicHeading(topic: Schema<"Topic">): MessageKey {
-  return `permission-topic.${topic}`;
-}
-
 /** The permissions of one topic. */
 export interface TopicGroup {
   readonly topic: Schema<"Topic">;

@@ -11,7 +11,7 @@ use bb_policy::{FieldRule, Inputs, PeopleRule, Permission, Place, RoleData, Row,
 use jiff::Timestamp;
 
 use super::fake::{FakeError, FakeStore, State, Tx};
-use crate::access::{LevelRules, PersonName, PolicyStore, RoleRecord};
+use crate::access::{LevelRules, PolicyStore, RoleRecord};
 
 /// The projects from the top down to `project`; `None` when it does not exist.
 pub(super) fn chain_of(state: &State, project: ProjectId) -> Option<Vec<ProjectId>> {
@@ -220,19 +220,6 @@ impl PolicyStore for FakeStore {
         }))
     }
 
-    async fn people_names(&self) -> Result<Vec<PersonName>, FakeError> {
-        Ok(self.read(|state| {
-            state
-                .people
-                .iter()
-                .map(|(person, _)| PersonName {
-                    id: person.id,
-                    display_name: person.display_name.clone(),
-                })
-                .collect()
-        }))
-    }
-
     async fn groups(&self) -> Result<Vec<Group>, FakeError> {
         Ok(self.read(|state| {
             let mut groups = state.groups.clone();
@@ -278,6 +265,46 @@ impl PolicyStore for FakeStore {
                 .filter(|row| row.group == Some(group))
                 .cloned()
                 .collect()
+        }))
+    }
+
+    async fn assignments_of_person(&self, person: UserId) -> Result<Vec<Assignment>, FakeError> {
+        Ok(self.read(|state| {
+            state
+                .assignments
+                .iter()
+                .filter(|row| row.person == Some(person))
+                .cloned()
+                .collect()
+        }))
+    }
+
+    async fn assignments_of_role(&self, role: RoleId) -> Result<Vec<Assignment>, FakeError> {
+        Ok(self.read(|state| {
+            state
+                .assignments
+                .iter()
+                .filter(|row| row.role == Some(role))
+                .cloned()
+                .collect()
+        }))
+    }
+
+    async fn groups_of(&self, person: UserId) -> Result<Vec<Group>, FakeError> {
+        Ok(self.read(|state| {
+            let mut groups: Vec<Group> = state
+                .groups
+                .iter()
+                .filter(|group| {
+                    state
+                        .members
+                        .iter()
+                        .any(|member| member.group == group.id && member.person == person)
+                })
+                .cloned()
+                .collect();
+            groups.sort_by(|a, b| a.name.cmp(&b.name).then(a.id.cmp(&b.id)));
+            groups
         }))
     }
 
@@ -377,6 +404,19 @@ impl PolicyStore for FakeStore {
             .assignments
             .iter()
             .filter(|row| row.group == Some(group))
+            .cloned()
+            .collect())
+    }
+
+    async fn assignments_of_role_in(
+        tx: &mut Tx,
+        role: RoleId,
+    ) -> Result<Vec<Assignment>, FakeError> {
+        Ok(tx
+            .state
+            .assignments
+            .iter()
+            .filter(|row| row.role == Some(role))
             .cloned()
             .collect())
     }

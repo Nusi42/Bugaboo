@@ -8,7 +8,7 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
-use bb_app::access::{LevelRules, PersonName, PolicyStore, RoleRecord};
+use bb_app::access::{LevelRules, PolicyStore, RoleRecord};
 use bb_core::access::{AppliesTo, Assignment, FieldLevel, Group, GroupMember, PeopleLevel, Role};
 use bb_core::fields::Field;
 use bb_core::id::{AssignmentId, GroupId, IdError, ProjectId, RoleId, UserId};
@@ -24,9 +24,9 @@ use crate::auth::AuthStorage;
 use crate::db::{Row as DbRow, Transaction, to_micros};
 use crate::error::StoreError;
 use crate::schema::{
-    AssignmentRow, GroupMemberRow, GroupRow, LegacyAdministratorRow, PersonRow,
-    ProjectFieldLevelRow, ProjectPeopleLevelRow, ProjectRow, RoleFieldLevelRow, RolePeopleLevelRow,
-    RolePermissionRow, RoleRow, StartingRolesMadeRow,
+    AssignmentRow, GroupMemberRow, GroupRow, LegacyAdministratorRow, ProjectFieldLevelRow,
+    ProjectPeopleLevelRow, ProjectRow, RoleFieldLevelRow, RolePeopleLevelRow, RolePermissionRow,
+    RoleRow, StartingRolesMadeRow,
 };
 
 /// The lock that changes of roles and rows take on PostgreSQL, so two of them cannot both leave
@@ -257,6 +257,20 @@ fn assignments_on_select(project: Option<ProjectId>) -> SelectStatement {
 fn assignments_of_group_select(group: GroupId) -> SelectStatement {
     let mut select = assignment_select();
     select.and_where(Expr::col(AssignmentRow::Group).eq(id_bytes(group.to_bytes())));
+    select
+}
+
+/// The rows of a person: their own, not their groups'.
+fn assignments_of_person_select(person: UserId) -> SelectStatement {
+    let mut select = assignment_select();
+    select.and_where(Expr::col(AssignmentRow::Person).eq(id_bytes(person.to_bytes())));
+    select
+}
+
+/// The rows that give a role.
+fn assignments_of_role_select(role: RoleId) -> SelectStatement {
+    let mut select = assignment_select();
+    select.and_where(Expr::col(AssignmentRow::Role).eq(id_bytes(role.to_bytes())));
     select
 }
 
@@ -643,24 +657,6 @@ impl PolicyStore for AuthStorage {
         }))
     }
 
-    async fn people_names(&self) -> Result<Vec<PersonName>, StoreError> {
-        let mut select = Query::select();
-        select
-            .columns([PersonRow::Id, PersonRow::DisplayName])
-            .from(PersonRow::Table);
-        self.database()
-            .fetch_all(&select)
-            .await?
-            .iter()
-            .map(|row| {
-                Ok(PersonName {
-                    id: read_user(row, PersonRow::Id)?,
-                    display_name: row.get(PersonRow::DisplayName)?,
-                })
-            })
-            .collect()
-    }
-
     async fn groups(&self) -> Result<Vec<Group>, StoreError> {
         let mut select = Query::select();
         select
@@ -735,6 +731,45 @@ impl PolicyStore for AuthStorage {
             .await?
             .iter()
             .map(read_assignment)
+            .collect()
+    }
+
+    async fn assignments_of_person(&self, person: UserId) -> Result<Vec<Assignment>, StoreError> {
+        self.database()
+            .fetch_all(&assignments_of_person_select(person))
+            .await?
+            .iter()
+            .map(read_assignment)
+            .collect()
+    }
+
+    async fn assignments_of_role(&self, role: RoleId) -> Result<Vec<Assignment>, StoreError> {
+        self.database()
+            .fetch_all(&assignments_of_role_select(role))
+            .await?
+            .iter()
+            .map(read_assignment)
+            .collect()
+    }
+
+    async fn groups_of(&self, person: UserId) -> Result<Vec<Group>, StoreError> {
+        let mut member_of = Query::select();
+        member_of
+            .column(GroupMemberRow::Group)
+            .from(GroupMemberRow::Table)
+            .and_where(Expr::col(GroupMemberRow::Person).eq(id_bytes(person.to_bytes())));
+        let mut select = Query::select();
+        select
+            .columns([GroupRow::Id, GroupRow::Name])
+            .from(GroupRow::Table)
+            .and_where(Expr::col(GroupRow::Id).in_subquery(member_of))
+            .order_by(GroupRow::Name, Order::Asc)
+            .order_by(GroupRow::Id, Order::Asc);
+        self.database()
+            .fetch_all(&select)
+            .await?
+            .iter()
+            .map(read_group)
             .collect()
     }
 
@@ -906,6 +941,18 @@ impl PolicyStore for AuthStorage {
     ) -> Result<Vec<Assignment>, StoreError> {
         transaction
             .fetch_all(&assignments_of_group_select(group))
+            .await?
+            .iter()
+            .map(read_assignment)
+            .collect()
+    }
+
+    async fn assignments_of_role_in(
+        transaction: &mut Transaction,
+        role: RoleId,
+    ) -> Result<Vec<Assignment>, StoreError> {
+        transaction
+            .fetch_all(&assignments_of_role_select(role))
             .await?
             .iter()
             .map(read_assignment)

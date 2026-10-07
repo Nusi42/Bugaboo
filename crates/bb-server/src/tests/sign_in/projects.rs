@@ -798,6 +798,8 @@ async fn take_no_access_away(org: &Org<'_>, project: ProjectId) -> Outcome {
             AssignmentsQuery {
                 session_token: org.admin.session.clone(),
                 project: Some(project),
+                cursor: None,
+                limit: bb_core::paging::PAGE_SIZE_MAX,
             },
         )
         .await?

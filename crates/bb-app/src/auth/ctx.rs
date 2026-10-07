@@ -237,6 +237,19 @@ impl IdSource for ClockIds<'_> {
     }
 }
 
+/// Makes IDs from a clock it owns and the secure random source.
+struct OwnedClockIds(Arc<dyn Clock + Send + Sync>);
+
+impl IdSource for OwnedClockIds {
+    fn now(&mut self) -> Timestamp {
+        self.0.now()
+    }
+
+    fn random(&mut self) -> [u8; 16] {
+        SystemIds.random()
+    }
+}
+
 /// A reserved try (see [`FailureLimit`]).
 #[derive(Clone)]
 pub(crate) struct Slot {
@@ -275,6 +288,12 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// Fresh IDs of any kind.
     pub(crate) fn ids(&self) -> impl IdSource + '_ {
         ClockIds(self.services.clock.as_ref())
+    }
+
+    /// Fresh IDs of any kind from a source that owns its clock, for a change that makes IDs
+    /// inside the transaction (its closure cannot borrow the context).
+    pub(crate) fn owned_ids(&self) -> impl IdSource + Send + 'static {
+        OwnedClockIds(Arc::clone(&self.services.clock))
     }
 
     /// The domain event of a change by `actor` to the record `entity`. Credentials never go in

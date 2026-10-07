@@ -6,17 +6,17 @@
 use bb_app::access::{
     MakeStartingRoles, Permission, PolicyStore as _, StartingRole, make_starting_roles,
 };
-use bb_app::people::{AddGroupMember, DeleteGroup, RemoveGroupMember};
+use bb_app::people::{AddGroupMember, DeleteGroup, PeopleQuery, RemoveGroupMember};
 use bb_app::projects::MakeProject;
 use bb_app::roles::{
-    Given, ReasonView, RemoveAssignment, ResetRole, RolesQuery, SetFieldLevel, SetPeopleLevel,
-    Subject,
+    DeleteRole, Given, ReasonView, RemoveAssignment, ResetRole, RolesQuery, SetFieldLevel,
+    SetPeopleLevel, Subject,
 };
 use bb_core::ErrorCode;
 use bb_core::access::{AppliesTo, FieldLevel, PeopleLevel};
 use bb_core::event::DomainEvent;
 use bb_core::fields::Field;
-use bb_core::id::{AssignmentId, ProjectId, RoleId};
+use bb_core::id::{AssignmentId, ProjectId, RoleId, UserId};
 use bb_core::people_kinds::PeopleKind;
 use bb_core::sign_in::SecurityAction;
 use bb_testing::each_database;
@@ -33,7 +33,10 @@ const LEAD: [Permission; 3] = [
 
 /// Refused because the person may not do it, or may not even know the project.
 fn not_allowed(code: Option<ErrorCode>) -> bool {
-    matches!(code, Some(ErrorCode::Forbidden | ErrorCode::NotFound))
+    matches!(
+        code,
+        Some(ErrorCode::Forbidden | ErrorCode::NotFound | ErrorCode::CannotLift)
+    )
 }
 
 async fn remove(
@@ -152,6 +155,9 @@ async fn sec_03_decide_roles_is_not_kept_from_a_row_at_the_same_depth_as_the_no_
                 RolesQuery {
                     session_token: org.admin.session.clone(),
                     place: None,
+                    cursor: None,
+                    limit: bb_core::paging::PAGE_SIZE_MAX,
+                    giveable: false,
                 },
             )
             .await?
@@ -344,6 +350,195 @@ async fn sec_02_manage_groups_does_not_lift_a_no_access_of_the_group() -> Outcom
     .await
 }
 
+#[tokio::test]
+async fn sec_02_a_group_with_a_no_access_the_person_cannot_see_is_refused_in_its_own_words()
+-> Outcome {
+    each_database("sec_02_group_no_access_hidden", async |db| {
+        let rig = Rig::start(db, 10).await?;
+        let org = Org::start(&rig).await?;
+        let acme = org.project(None, "ACME").await?.id;
+        let (kim, cleo) = (org.person().await?, org.person().await?);
+        // Kim manages groups and sees no project at all, so ACME is not hers to know about.
+        let keeper = org
+            .role("Group keeper", &[Permission::ManageGroups])
+            .await?;
+        org.give_everywhere(&kim, keeper.id).await?;
+        let blocked = org.group("Blocked").await?;
+        org.add_to_group(blocked, cleo.id).await?;
+        org.assign(
+            &org.admin,
+            Subject::Group(blocked),
+            Given::NoAccess,
+            Some(acme),
+            AppliesTo::ProjectAndSubProjects,
+        )
+        .await?;
+        let api = org.rig.api();
+        // The group is hers to see and change; what holds her back is said in its own words, and
+        // not as a group that does not exist.
+        let take_out = refused(
+            api.remove_group_member(
+                Rig::info(),
+                RemoveGroupMember {
+                    session_token: kim.session.clone(),
+                    group: blocked,
+                    person: cleo.id,
+                },
+            )
+            .await,
+        );
+        assert_eq!(take_out, Some(ErrorCode::CannotLift));
+        let delete = refused(
+            api.delete_group(
+                Rig::info(),
+                DeleteGroup {
+                    session_token: kim.session.clone(),
+                    group: blocked,
+                },
+            )
+            .await,
+        );
+        assert_eq!(delete, Some(ErrorCode::CannotLift));
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn sec_08_the_rows_made_for_a_replacement_are_each_in_the_security_log() -> Outcome {
+    each_database("sec_08_replacement_in_the_log", async |db| {
+        let rig = Rig::start(db, 10).await?;
+        let org = Org::start(&rig).await?;
+        let acme = org.project(None, "ACME").await?.id;
+        let (bob, cleo) = (org.person().await?, org.person().await?);
+        let used = org.role("Used", &[Permission::SeeProjects]).await?;
+        let other = org.role("Other", &[Permission::SeeProjects]).await?;
+        let old_bob = org.give(&bob, used.id, acme).await?;
+        let old_cleo = org.give(&cleo, used.id, acme).await?;
+        let before = rig.database.security_log_entries(0, 10_000).await?.len();
+        org.rig
+            .api()
+            .delete_role(
+                Rig::info(),
+                DeleteRole {
+                    session_token: org.admin.session.clone(),
+                    role: used.id,
+                    replacement: Some(other.id),
+                },
+            )
+            .await?;
+        // Every permission change is in the security log (ADR-0025, decision 9): a row for each
+        // person who had the role, then the deletion of the role itself.
+        let entries = rig.database.security_log_entries(0, 10_000).await?;
+        let new: Vec<_> = entries.iter().skip(before).collect();
+        let actions: Vec<&str> = new.iter().map(|entry| entry.action.as_str()).collect();
+        assert_eq!(
+            actions,
+            [
+                SecurityAction::AssignmentMade.code(),
+                SecurityAction::AssignmentMade.code(),
+                SecurityAction::RoleDeleted.code(),
+            ]
+        );
+        let made: Vec<_> = new[..2].iter().map(|entry| entry.subject.clone()).collect();
+        assert!(made.iter().all(Option::is_some) && made[0] != made[1]);
+        // They are new rows, not the old ones under another role.
+        for old in [old_bob.id, old_cleo.id] {
+            assert!(
+                !made
+                    .iter()
+                    .flatten()
+                    .any(|subject| format!("{subject:?}").contains(&old.to_string()))
+            );
+        }
+        for entry in &new {
+            assert_eq!(entry.person, Some(org.admin.id));
+        }
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn priv_12_the_cursor_of_a_page_of_people_holds_the_id_of_the_last_one_shown_and_no_name()
+-> Outcome {
+    each_database("priv_12_people_cursor_id_only", async |db| {
+        let rig = Rig::start(db, 10).await?;
+        let org = Org::start(&rig).await?;
+        let (bob, cleo) = (org.person().await?, org.person().await?);
+        let api = org.rig.api();
+        let page = |cursor: Option<String>| {
+            api.people(
+                Rig::info(),
+                PeopleQuery {
+                    session_token: org.admin.session.clone(),
+                    search: None,
+                    cursor,
+                    limit: 1,
+                    groups: false,
+                    roles: false,
+                },
+            )
+        };
+        let first = page(None).await?.into_value();
+        let cursor = first.next_cursor.ok_or("a next page")?;
+        // The ID of a person and nothing of their name; the page after it goes on from there.
+        let last: UserId = cursor.parse().map_err(|_| "a cursor that is an ID")?;
+        assert!([org.admin.id, bob.id, cleo.id].contains(&last));
+        let second = page(Some(cursor)).await?.into_value();
+        assert_eq!(second.items.len(), 1);
+        assert_ne!(second.items[0].person, first.items[0].person);
+        // An ID that is nobody's is no cursor.
+        let nobody = refused(page(Some("00000000-0000-7000-8000-000000000000".to_owned())).await);
+        assert_eq!(nobody, Some(ErrorCode::InvalidRequest));
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn perf_02_a_list_of_people_reads_groups_and_roles_only_when_they_are_asked_for() -> Outcome {
+    each_database("perf_02_people_wanted", async |db| {
+        let rig = Rig::start(db, 10).await?;
+        let org = Org::start(&rig).await?;
+        let acme = org.project(None, "ACME").await?.id;
+        let bob = org.person().await?;
+        let role = org.role("Reader", &[Permission::SeeProjects]).await?;
+        org.give(&bob, role.id, acme).await?;
+        let group = org.group("Backend").await?;
+        org.add_to_group(group, bob.id).await?;
+        let api = org.rig.api();
+        let ask = |groups, roles| {
+            api.people(
+                Rig::info(),
+                PeopleQuery {
+                    session_token: org.admin.session.clone(),
+                    search: Some("person".to_owned()),
+                    cursor: None,
+                    limit: 10,
+                    groups,
+                    roles,
+                },
+            )
+        };
+        // The administrator may see both, so nothing is missing for any other reason than that it
+        // was not asked for.
+        let plain = ask(false, false).await?.into_value();
+        assert!(
+            plain
+                .items
+                .iter()
+                .all(|line| line.groups.is_none() && line.roles.is_empty())
+        );
+        let wanted = ask(true, true).await?.into_value();
+        let line = wanted.items.first().ok_or("a person")?;
+        assert_eq!(line.groups.as_ref().map(Vec::len), Some(1));
+        assert_eq!(line.roles.len(), 1);
+        Ok(())
+    })
+    .await
+}
+
 /// The last event of the outbox.
 async fn last_event(rig: &Rig) -> Run<DomainEvent> {
     let consumer = bb_core::technical::TechnicalName::new("probe-reader")?;
@@ -526,7 +721,9 @@ async fn sec_08_two_requests_for_a_role_and_a_no_access_leave_only_one_row() -> 
                 bb_app::roles::AssignmentsQuery {
                     session_token: org.admin.session.clone(),
                     project: Some(acme),
-                },
+cursor: None,
+limit: bb_core::paging::PAGE_SIZE_MAX,
+},
             )
             .await?
             .into_value()
@@ -670,6 +867,9 @@ async fn sec_04_nobody_resets_a_role_to_levels_above_their_own() -> Outcome {
                     RolesQuery {
                         session_token: org.admin.session.clone(),
                         place: None,
+                        cursor: None,
+                        limit: bb_core::paging::PAGE_SIZE_MAX,
+                        giveable: false,
                     },
                 )
                 .await?

@@ -39,17 +39,23 @@ use crate::logging::Scheme;
 use crate::openapi;
 use crate::web::decode_path;
 
+mod access_bodies;
 mod access_keys;
 mod admin;
+mod assignments;
 mod auth;
 mod auth_factors;
 mod auth_people;
 mod auth_sign_in;
 mod check_access;
 mod field_permissions;
+mod groups;
+mod own_access;
+mod people;
 mod people_visibility;
 mod projects;
 mod projects_move;
+mod roles;
 mod second_step_gap;
 mod settings;
 
@@ -135,6 +141,11 @@ where
         .merge(admin::routes())
         .merge(settings::routes())
         .merge(projects::routes())
+        .merge(people::routes())
+        .merge(groups::routes())
+        .merge(roles::routes())
+        .merge(own_access::routes())
+        .merge(assignments::routes())
         .merge(field_permissions::routes())
         .merge(people_visibility::routes())
         .merge(check_access::routes())

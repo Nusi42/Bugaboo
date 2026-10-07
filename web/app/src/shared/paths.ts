@@ -20,7 +20,11 @@ export const paths = {
   sessions: "/me/sessions",
   accessKeys: "/me/access-keys",
   organizationSettings: "/settings",
-  invitations: "/settings/invitations",
+  people: "/settings/people",
+  person: "/settings/people/$person",
+  groups: "/settings/groups",
+  roles: "/settings/roles",
+  role: "/settings/roles/$role",
   signInRules: "/settings/sign-in-rules",
   themes: "/settings/themes",
   status: "/settings/status",
@@ -30,6 +34,7 @@ export const paths = {
   checkAccess: "/settings/check-access",
   project: "/p/$project",
   projectSettings: "/p/$project/settings",
+  projectRoles: "/p/$project/settings/roles",
   projectFields: "/p/$project/settings/fields",
   projectPeople: "/p/$project/settings/people",
   projectCheckAccess: "/p/$project/settings/check-access",
@@ -39,6 +44,26 @@ export const paths = {
 /** The address of a project: its short name, or an old one, in `/p/WEB`. */
 export function projectAddress(shortName: string): string {
   return paths.project.replace("$project", encodeURIComponent(shortName));
+}
+
+/** The address of the page of a person, `/settings/people/<ID>`. */
+export function personAddress(id: string): string {
+  return paths.person.replace("$person", encodeURIComponent(id));
+}
+
+/** The address of *Groups* with one group open, `/settings/groups?open=<ID>`. */
+export function groupAddress(id: string): string {
+  return `${paths.groups}?open=${encodeURIComponent(id)}`;
+}
+
+/** The address of the page of a role, `/settings/roles/<ID>`. */
+export function roleAddress(id: string): string {
+  return paths.role.replace("$role", encodeURIComponent(id));
+}
+
+/** The address of *Who has which role* in a project, `/p/WEB/settings/roles`. */
+export function projectRolesAddress(shortName: string): string {
+  return paths.projectRoles.replace("$project", encodeURIComponent(shortName));
 }
 
 /** The address of a page below the settings of a project, `/p/WEB/settings/fields`, with the short name filled in. */

@@ -20,13 +20,16 @@ use std::pin::Pin;
 use bb_policy::Authorized;
 
 use crate::access::{
-    FieldPermissions, FieldPermissionsQuery, PeopleToCheckQuery, PeopleVisibility,
-    PeopleVisibilityQuery, PersonPage, field_permissions, people_to_check, people_visibility,
+    FieldPermissions, FieldPermissionsQuery, OwnLoss, OwnLossQuery, PeopleToCheckPage,
+    PeopleToCheckQuery, PeopleVisibility, PeopleVisibilityQuery, field_permissions, own_loss,
+    people_to_check, people_visibility,
 };
 use crate::people::{
-    AddGroupMember, DeleteGroup, GroupList, GroupMembers, GroupMembersQuery, GroupView,
-    GroupsQuery, MakeGroup, RemoveGroupMember, RenameGroup, add_group_member, delete_group,
-    group_members, groups, make_group, remove_group_member, rename_group,
+    AddGroupMember, AssignmentChoicesQuery, ChoicePage, DeleteGroup, GroupDetail, GroupList,
+    GroupMembers, GroupMembersQuery, GroupQuery, GroupView, GroupsQuery, MakeGroup,
+    MemberChoicesQuery, PeopleQuery, PersonDetail, PersonPage, PersonQuery, RemoveGroupMember,
+    RenameGroup, add_group_member, delete_group, group, group_members, groups, make_group,
+    member_choices, people, person, remove_group_member, rename_group,
 };
 use crate::projects::{
     ChangeProject, MakeProject, MovePreview, MovePreviewQuery, MoveProject, ProjectDetail,
@@ -35,10 +38,11 @@ use crate::projects::{
 };
 use crate::roles::{
     AccessAnswer, AssignRole, AssignmentList, AssignmentView, AssignmentsQuery, ChangeRole,
-    CheckAccessQuery, DeleteRole, Levels, LevelsQuery, MakeRole, RemoveAssignment, ResetRole,
-    RoleList, RoleView, RolesQuery, SetFieldLevel, SetPeopleLevel, assign_role, assignments,
-    change_role, check_access, delete_role, make_role, remove_assignment, reset_role, role_levels,
-    roles, set_field_level, set_people_level,
+    CheckAccessQuery, CopyRole, DeleteRole, Levels, LevelsQuery, MakeRole, PermissionCatalogue,
+    PermissionsQuery, RemoveAssignment, ResetRole, RoleDetail, RoleList, RoleQuery, RoleView,
+    RolesQuery, SetFieldLevel, SetPeopleLevel, assign_role, assignment_choices, assignments,
+    change_role, check_access, copy_role, delete_role, make_role, permissions, remove_assignment,
+    reset_role, role, role_levels, roles, set_field_level, set_people_level,
 };
 use crate::settings::{
     ChangeSetting, LockSetting, ResetSetting, SettingList, SettingView, SettingsQuery,
@@ -67,7 +71,9 @@ pub use session::{
     authenticate, end_session, passkey_second_step, second_step, second_step_gap, sessions,
     sign_in, sign_out, sign_out_everywhere, status,
 };
-pub use store::{AccessKeyRecord, Account, AuthSettings, AuthStore, SecurityEvent, SessionRecord};
+pub use store::{
+    AccessKeyRecord, Account, AuthSettings, AuthStore, PeoplePosition, SecurityEvent, SessionRecord,
+};
 pub use types::*;
 
 /// A future that can move between threads, which is what an HTTP handler needs to wait for.
@@ -195,12 +201,28 @@ use_cases! {
     groups(GroupsQuery) -> Authorized<GroupList>;
     /// Lists the people in a group.
     group_members(GroupMembersQuery) -> Authorized<GroupMembers>;
+    /// Shows one group with what it is used for.
+    group(GroupQuery) -> Authorized<GroupDetail>;
+    /// Lists the people, with their groups and roles.
+    people(PeopleQuery) -> Authorized<PersonPage>;
+    /// Shows one person with their groups and roles.
+    person(PersonQuery) -> Authorized<PersonDetail>;
+    /// Lists the people that can be put into a group.
+    member_choices(MemberChoicesQuery) -> Authorized<ChoicePage>;
+    /// Lists the people, groups or roles a row of *Who has which role* can be made from.
+    assignment_choices(AssignmentChoicesQuery) -> Authorized<ChoicePage>;
     /// Makes a role.
     make_role(MakeRole) -> Authorized<RoleView>;
     /// Changes a role.
     change_role(ChangeRole) -> Authorized<RoleView>;
     /// Deletes a role.
     delete_role(DeleteRole) -> Done;
+    /// Makes a role from a copy of another.
+    copy_role(CopyRole) -> Authorized<RoleView>;
+    /// Shows one role with what it is used for.
+    role(RoleQuery) -> Authorized<RoleDetail>;
+    /// Lists the permissions of the catalogue.
+    permissions(PermissionsQuery) -> Authorized<PermissionCatalogue>;
     /// Gives a starting role its starting permissions back.
     reset_role(ResetRole) -> Authorized<RoleView>;
     /// Lists the roles.
@@ -224,7 +246,9 @@ use_cases! {
     /// Lists how every role sees every kind of people information.
     people_visibility(PeopleVisibilityQuery) -> Authorized<PeopleVisibility>;
     /// Lists the people *Check access* can choose from.
-    people_to_check(PeopleToCheckQuery) -> Authorized<PersonPage>;
+    people_to_check(PeopleToCheckQuery) -> Authorized<PeopleToCheckPage>;
+    /// Says what a change of who has which role would take away from the person who makes it.
+    own_loss(OwnLossQuery) -> Authorized<OwnLoss>;
     /// Makes a project.
     make_project(MakeProject) -> Authorized<ProjectView>;
     /// Lists the settings of the organization, of a project or of the person who asks.

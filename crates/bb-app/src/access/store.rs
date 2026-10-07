@@ -42,15 +42,6 @@ pub struct LevelRules {
     pub people: Vec<PeopleRule>,
 }
 
-/// A person as a name in a list to choose from: the ID and the name, never the e-mail address.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct PersonName {
-    /// The ID of the person.
-    pub id: UserId,
-    /// The name the person is called.
-    pub display_name: String,
-}
-
 /// What the policy engine and its management use cases need from storage.
 pub trait PolicyStore: ChangeStore + 'static {
     reads! {
@@ -69,9 +60,6 @@ pub trait PolicyStore: ChangeStore + 'static {
         fn roles() -> Vec<RoleRecord>;
         /// One role with its permissions.
         fn role(id: RoleId) -> Option<RoleRecord>;
-        /// Everybody who can sign in, with the name they are called, in no particular order: what
-        /// *Check access* chooses a person from (M2-F91).
-        fn people_names() -> Vec<PersonName>;
         /// Every group, by name.
         fn groups() -> Vec<Group>;
         /// One group.
@@ -83,6 +71,12 @@ pub trait PolicyStore: ChangeStore + 'static {
         fn assignments_on(project: Option<ProjectId>) -> Vec<Assignment>;
         /// The rows of a group, wherever they are.
         fn assignments_of_group(group: GroupId) -> Vec<Assignment>;
+        /// The rows of a person (their own, not their groups'), wherever they are.
+        fn assignments_of_person(person: UserId) -> Vec<Assignment>;
+        /// The rows that give a role, wherever they are.
+        fn assignments_of_role(role: RoleId) -> Vec<Assignment>;
+        /// The groups a person is in, by name.
+        fn groups_of(person: UserId) -> Vec<Group>;
         /// One row.
         fn assignment(id: AssignmentId) -> Option<Assignment>;
         /// One project.
@@ -116,6 +110,8 @@ pub trait PolicyStore: ChangeStore + 'static {
         fn assignments_on_in(project: Option<ProjectId>) -> Vec<Assignment>;
         /// The same as [`PolicyStore::assignments_of_group`], inside the change.
         fn assignments_of_group_in(group: GroupId) -> Vec<Assignment>;
+        /// The same as [`PolicyStore::assignments_of_role`], inside the change.
+        fn assignments_of_role_in(role: RoleId) -> Vec<Assignment>;
         /// The same as [`PolicyStore::role`], inside the change.
         fn role_in(id: RoleId) -> Option<RoleRecord>;
         /// Every project below this one, at any depth, in no particular order.

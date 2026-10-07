@@ -2,7 +2,7 @@
 
 *Check access* answers: what can this person do here, and why?
 
-1. Open *Organization settings › People › Check access*, or *Check access* in the project settings of a project.
+1. Open *Organization settings, below "People": Check access*, or *Check access* in the project settings of a project.
 2. On the organization's page, choose where to look: the whole organization or a project (search by name).
 3. Choose the person. The list holds the people whose names you may see; search by words in the name.
 

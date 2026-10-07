@@ -14,7 +14,7 @@ Under the table, the page shows what the chosen role sees, in three short lines,
 
 ## For the whole organization and for a project
 
-It works like [field permissions](field-permissions.md): the page in *Organization settings › People* sets the role's own levels; the page of a project (*Project settings › What roles see here › Who sees people*) sets levels for that project and the projects inside it, says where each level comes from, and has **Reset**.
+It works like [field permissions](field-permissions.md): the page in *Organization settings*, below "People", sets the role's own levels; the page of a project (*Project settings › Who sees people*) sets levels for that project and the projects inside it, says where each level comes from, and has **Reset**.
 
 ## Who always sees names
 

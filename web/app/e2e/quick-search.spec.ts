@@ -84,7 +84,7 @@ test("cfg_08 the search button opens it too, and a word with no match says so", 
 test("cfg_08 quick search lists only the pages the person may open", async ({ page }) => {
   await signIn(page, cleo);
   await page.keyboard.press("Control+k");
-  await box(page).fill(t("nav.invitations"));
+  await box(page).fill(t("nav.people"));
   await expect(dialog(page).getByText(t("search.nothing"))).toBeVisible();
   await box(page).fill(t("nav.appearance"));
   await expect(

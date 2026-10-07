@@ -8,7 +8,7 @@ export type PeopleLevelCode = Schema<"PeopleLevel">;
 /** A project as a name in a sentence, or *a project you can't see*. */
 export type ProjectLabel = Schema<"KeyProjectRef">;
 /** A role as a column of a table. */
-export type RoleRef = Schema<"RoleRefBody">;
+export type RoleColumn = Schema<"RoleRefBody">;
 /** Where the level of a cell was set. */
 export type Origin = Schema<"LevelOriginBody">;
 
@@ -33,7 +33,7 @@ export interface Row<Subject extends string, Level extends string> {
  */
 export interface LevelTable<Subject extends string, Level extends string> {
   readonly project?: ProjectLabel | null | undefined;
-  readonly roles: readonly RoleRef[];
+  readonly roles: readonly RoleColumn[];
   readonly truncated: boolean;
   /** The levels a cell can be set to, the lowest first. */
   readonly levels: readonly Level[];

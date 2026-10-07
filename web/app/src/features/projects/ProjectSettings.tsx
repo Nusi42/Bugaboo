@@ -1,35 +1,33 @@
 import { t } from "@bugaboo/messages";
 import { Card, Link } from "@bugaboo/ui";
 import { useNavigate } from "@tanstack/react-router";
-import type { ReactNode } from "react";
 
 import { paths, projectAddress } from "../../shared/paths.ts";
-import { NotFoundPage } from "../shell/index.ts";
 import { ChangeProjectForm } from "./ChangeProjectForm.tsx";
 import { MoveProject } from "./MoveProject.tsx";
+import { OtherTab } from "./OtherTab.tsx";
+import { ProjectTabs } from "./ProjectTabs.tsx";
 import styles from "./Projects.module.css";
 import type { OneProject } from "./use-projects.ts";
 
-/** The settings once the project is known: the name and short name, and *Move*. */
+/** The settings once the project is known: the name and short name, and *Move*, below the tabs. */
 export function ProjectSettings({
   project,
   address,
-  extra,
 }: {
   readonly project: OneProject;
   readonly address: string;
-  /** More cards at the end of the page. */
-  readonly extra?: ReactNode;
 }) {
   const navigate = useNavigate();
   const mayChange = project.permissions.includes("change-project-settings");
   const mayMove = project.may_move !== "nowhere";
   const { id, name, short_name: shortName } = project.project;
   if (!mayChange && !mayMove) {
-    return <NotFoundPage />;
+    return <OtherTab project={project} />;
   }
   return (
     <div className={styles.stack}>
+      <ProjectTabs project={project} />
       <Card heading={t("projects.settings-title", { name })} level={1}>
         <div className={styles.row}>
           <Link href={projectAddress(shortName)}>{t("projects.settings-back")}</Link>
@@ -57,7 +55,6 @@ export function ProjectSettings({
           <MoveProject project={project} />
         </Card>
       ) : null}
-      {extra}
     </div>
   );
 }

@@ -79,6 +79,15 @@ pub struct AccessKeyRecord {
     pub projects: Vec<ProjectId>,
 }
 
+/// Where a page of people ends: the name of the last one (as it is written) and their ID.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct PeoplePosition {
+    /// The name of the last person of the page.
+    pub name: String,
+    /// Their ID.
+    pub id: UserId,
+}
+
 /// The settings that sign-in depends on, as the registry resolves them.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct AuthSettings {
@@ -140,6 +149,15 @@ pub trait AuthStore: PolicyStore + ProjectStore + SettingsStore + 'static {
         fn account_by_email(email: &str) -> Option<Account>;
         /// The person with this ID.
         fn person(id: UserId) -> Option<Person>;
+        /// People by name (without regard to capitals, then by ID), after the position `after`
+        /// (the last one of the page before), at most `limit`. With `search`, only those whose
+        /// name holds the words, or, when `by_email` is set, whose address does too.
+        fn people_page(
+            search: Option<&str>,
+            by_email: bool,
+            after: Option<&PeoplePosition>,
+            limit: u64
+        ) -> Vec<Person>;
         /// The session with this secret hash and its person.
         fn session_by_hash(hash: &Digest) -> Option<SessionRecord>;
         /// The sessions of a person, newest first.

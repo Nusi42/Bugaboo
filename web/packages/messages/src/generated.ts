@@ -204,7 +204,6 @@ export const messages = {
   "nav.home": "Home",
   "nav.security": "Sign-in & security",
   "nav.sessions": "Where you're signed in",
-  "nav.invitations": "Invitations",
   "nav.status": "Server status",
   "nav.sign-out": "Sign out",
   "home.title": "Welcome, {name}",
@@ -530,6 +529,8 @@ export const messages = {
     "Bugaboo could not read the rights of these, so it cannot say whether other accounts can open them. Check them yourself:",
   "error.access.would-lock-out":
     "That would leave nobody who can manage roles and decide who has which role for the whole organization. Keep at least one person who can do both.",
+  "error.access.cannot-lift":
+    "This group has No access in a project that you cannot decide in. Taking people out of it, or deleting it, would lift that No access, so ask somebody who decides there.",
   "error.access.too-much": "You can only add or give what you can do yourself in this place.",
   "error.setting.locked": "An administrator locked this setting, so it can't be changed here.",
   "error.assignment.conflict":
@@ -745,6 +746,177 @@ export const messages = {
   "projects.line-people": "In {project}, for {person}, {kind} goes from {before} to {after}.",
   "projects.line-lift":
     "{person} could take away the No access that applies to them in {project}. Take that No access away first, or move the project somewhere else.",
+  "error.role.in-use":
+    "Somebody has this role. Choose the role that takes its place before you delete it.",
+  "nav.people": "People",
+  "nav.groups": "Groups",
+  "nav.roles": "Roles & permissions",
+  "people.intro":
+    "Everybody who has an account. Open a person to see the groups they are in and the roles they have.",
+  "people.list-ask":
+    "The list of everybody is for people who manage people. Ask an administrator if you need it.",
+  "people.search": "Search people by name or e-mail address",
+  "people.list": "People",
+  "people.nothing": "Nobody found. Try another word.",
+  "people.more": "Show more people",
+  "people.in-groups": "In the groups {groups}",
+  "people.no-groups": "In no group",
+  "person.email": "E-mail address",
+  "person.since": "Account made",
+  "person.back": "All people",
+  "person.groups": "Groups",
+  "person.groups-none": "{name} is in no group.",
+  "person.roles": "Roles",
+  "person.roles-none": "{name} has no role in the places you decide about.",
+  "person.roles-where":
+    "You see the roles in the whole organization and in the projects where you decide who has which role. Change them in Roles & permissions and in the settings of a project.",
+  "groups.intro":
+    "A group is a set of people. Give a role to a group, and everybody in it has that role.",
+  "groups.search": "Search groups",
+  "groups.none-yet": "There are no groups yet. Make the first one below.",
+  "groups.nothing": "No group found. Try another word.",
+  "groups.more": "Show more groups",
+  "groups.make-title": "Make a group",
+  "groups.make-intro": "A new group is empty. Put people into it afterwards.",
+  "groups.field-name": "Name of the group",
+  "groups.make": "Make the group",
+  "groups.made": "The group {name} is made. Open it in the list to put people into it.",
+  "groups.saved": "Saved.",
+  "groups.gone": "This group does not exist any more.",
+  "groups.members": "People in the group",
+  "groups.members-none": "Nobody is in this group yet.",
+  "groups.members-more": "Show more people",
+  "groups.remove": "Take out",
+  "groups.remove-name": "Take out {name} from the group",
+  "groups.removed": "{name} is out of the group {group}.",
+  "groups.add-title": "Put people into the group",
+  "groups.add-search": "Search people by name",
+  "groups.add-list": "People you can put into the group",
+  "groups.add": "Put in",
+  "groups.add-name": "Put in {name}",
+  "groups.in-already": "In the group",
+  "groups.add-nothing": "Nobody found. Try another word.",
+  "groups.add-more": "Show more people",
+  "groups.added": "{name} is in the group {group}.",
+  "groups.used": "Used {places}.",
+  "groups.used-whole": "for the whole organization",
+  "groups.used-projects":
+    "{count, plural, one {in # project you can see} other {in # projects you can see}}",
+  "groups.used-nothing": "Not used for the whole organization or in a project you can see.",
+  "groups.delete": "Delete the group",
+  "groups.delete-name": "Delete the group {name}",
+  "groups.delete-title": "Delete the group {name}?",
+  "groups.delete-text":
+    "This deletes the group and takes away every role and every No access it was given. {members, plural, one {The # person in it stays} other {The # people in it stay}} and keep the roles they have in other ways. This cannot be taken back.",
+  "roles.intro":
+    "A role is a set of permissions, given to people or groups. Open a role to change what it allows.",
+  "roles.list": "Roles",
+  "roles.more": "Show more roles",
+  "roles.own": "Role of your organization",
+  "roles.starting-badge": "Starting role",
+  "roles.two-step-badge": "Two-step sign-in",
+  "roles.make-title": "Make a role",
+  "roles.make-intro":
+    "Start from an empty role, or from a copy of the role that is closest to what you need. Then choose what it allows.",
+  "roles.field-name": "Name of the role",
+  "roles.start-from": "Start from",
+  "roles.start-empty": "An empty role",
+  "roles.start-copy": "A copy of {name}",
+  "roles.make": "Make the role",
+  "roles.saved": "Saved.",
+  "roles.back": "All roles",
+  "roles.permissions-title": "What this role allows",
+  "roles.permissions-intro": "Tick what people with this role may do. A change is saved at once.",
+  "roles.counts-organization": "Counts only when the role is given for the whole organization.",
+  "roles.two-step": "Two-step sign-in for everyone with this role",
+  "roles.two-step-help":
+    "People with this role must set up a code app or a passkey before they can do anything else.",
+  "roles.second-step-gap":
+    "{count, plural, one {# person with this role has not set up a second step yet.} other {# people with this role have not set up a second step yet.}}",
+  "roles.actions-title": "More about this role",
+  "roles.reset": "Reset to the starting permissions",
+  "roles.reset-help":
+    "This is a starting role. You can give it back the permissions it had at the start.",
+  "roles.reset-title": "Reset {name}?",
+  "roles.reset-text":
+    "The permissions and the two-step switch of {name} go back to what they were at the start. The name stays. What was changed since is lost.",
+  "roles.reset-done": "{name} has its starting permissions again.",
+  "roles.copy": "Copy this role",
+  "roles.copy-help": "Make a new role that starts with the permissions of this one.",
+  "roles.copy-field": "Name of the copy",
+  "roles.copy-of": "Copy of {name}",
+  "roles.delete": "Delete the role",
+  "roles.delete-name": "Delete the role {name}",
+  "roles.delete-title": "Delete the role {name}?",
+  "roles.delete-unused": "Nobody has this role. It is deleted at once and cannot come back.",
+  "roles.delete-used":
+    "Choose the role that takes its place: everybody who has this role gets the other one, in the same place and with the same reach. This cannot be taken back.",
+  "roles.replace-field": "Role that takes its place",
+  "roles.replace-help": "Rows that give this role give the role you choose instead.",
+  "roles.replace-choose": "Choose a role",
+  "roles.used":
+    "Used {places}: {people, plural, =0 {no people} one {# person} other {# people}} and {groups, plural, =0 {no groups} one {# group} other {# groups}} have it.",
+  "roles.used-by-nobody": "Used {places}. Nobody has it by name or through a group.",
+  "roles.badge-used": "{badge}. {used}",
+  "roles.used-whole": "for the whole organization",
+  "roles.used-projects":
+    "{count, plural, one {in # project you can see} other {in # projects you can see}}",
+  "roles.used-nothing": "Nobody has this role in a place you can see.",
+  "roles.place.organization": "the whole organization",
+  "roles.place.hidden": "a project you can't see",
+  "roles.held": "{role} in {place}",
+  "roles.no-access": "No access",
+  "roles.applies.organization": "Whole organization",
+  "roles.applies.project": "Only this project",
+  "roles.applies.project-and-sub-projects": "This project and its sub-projects",
+  "roles.from-project": "from {name}",
+  "roles.from-organization": "from the whole organization",
+  "roles.from-hidden": "from a project you can't see",
+  "roles.project-link": "Who has which role",
+  "assignments.title-organization": "Who has which role in the whole organization",
+  "assignments.title-project": "Who has which role in {name}",
+  "assignments.intro-organization":
+    "The people and groups with a role in the whole organization. A role given here counts in every project.",
+  "assignments.intro-project":
+    "The people and groups with a role here. A row that comes from a parent project says so; change it for this project by giving a row here. No access hides this project and its sub-projects, whatever role comes from above.",
+  "assignments.list": "Who has which role",
+  "assignments.none": "Nobody has a role here yet.",
+  "assignments.more": "Show more rows",
+  "assignments.who-group": "Group {name}",
+  "assignments.remove": "Take away",
+  "assignments.remove-name": "Take away {what} from {who}",
+  "assignments.removed": "Taken away: {what} for {who}.",
+  "assignments.change-here": "Change for this project",
+  "assignments.change-here-name": "Change for this project: {who}",
+  "assignments.give-title": "Give a role",
+  "assignments.give-to": "Give it to",
+  "assignments.kind-person": "A person",
+  "assignments.kind-group": "A group",
+  "assignments.pick-person": "Choose the person",
+  "assignments.pick-group": "Choose the group",
+  "assignments.search-people": "Search people by name",
+  "assignments.search-groups": "Search groups",
+  "assignments.pick-list": "To choose from",
+  "assignments.pick-nothing": "Nothing found. Try another word.",
+  "assignments.pick-more": "Show more",
+  "assignments.picked": "Chosen: {name}",
+  "assignments.role": "Role",
+  "assignments.choose-role": "Choose a role",
+  "assignments.where": "Where it counts",
+  "assignments.no-access-help":
+    "No access covers this project and its sub-projects. It wins over any role from above and over a role through a group on this project. A role given on a sub-project still counts there.",
+  "assignments.give": "Give the role",
+  "assignments.give-no-access": "Set No access",
+  "assignments.incomplete": "Choose whom to give it to, and which role.",
+  "own.ask-title": "This takes away your own way to manage roles",
+  "own.ask-text":
+    "{lost} The organization always keeps somebody who can manage roles, but it may no longer be you.",
+  "own.lost-manage-roles": "You could no longer make, change or delete roles.",
+  "own.lost-decide-roles": "You could no longer decide who has which role.",
+  "own.ask-yes": "Do it anyway",
+  "own.ask-keep": "Keep what I have",
+  "projects.tab-general": "Name and place",
+  "projects.tabs": "Settings of the project",
   "nav.field-permissions": "Field permissions",
   "nav.people-visibility": "Who sees people",
   "nav.check-access": "Check access",
@@ -760,11 +932,6 @@ export const messages = {
   "access.ceiling": "You can set a level only up to your own. Levels above it cannot be picked.",
   "access.roles-cut": "There are more roles than fit in this table. The first ones are shown.",
   "access.no-roles": "There is no role yet.",
-  "access.back-to-settings": "Back to the settings of the project",
-  "access.project-links-title": "What roles see here",
-  "access.project-links-intro":
-    "Which fields and which people each role sees in this project, and what a person can do here.",
-  "access.project-links-name": "Field permissions, who sees people and check access",
   "access.role-chooser": "Show the levels of the role",
   "field-permissions.intro":
     "For each role, choose whether a field is hidden, can be seen or can be changed. Hidden means the field does not exist for that role: not in issues, searches, e-mails, maps or the assistant.",
@@ -863,6 +1030,12 @@ export interface MessageArguments {
   "access.person-former-inside": { label: string | number };
   "access.person-role-inside": { role: string | number };
   "access.reset-label": { role: string | number; subject: string | number };
+  "assignments.change-here-name": { who: string | number };
+  "assignments.picked": { name: string | number };
+  "assignments.remove-name": { what: string | number; who: string | number };
+  "assignments.removed": { what: string | number; who: string | number };
+  "assignments.title-project": { name: string | number };
+  "assignments.who-group": { name: string | number };
   "backup.left": { count: number };
   "check-access.level.no-role": { person: string | number };
   "check-access.level.role-organization": { level: string | number; role: string | number };
@@ -915,6 +1088,16 @@ export interface MessageArguments {
   "frames.open-focus": { name: string | number };
   "frames.remove-name": { name: string | number };
   "frames.removed": { name: string | number };
+  "groups.add-name": { name: string | number };
+  "groups.added": { group: string | number; name: string | number };
+  "groups.delete-name": { name: string | number };
+  "groups.delete-text": { members: number };
+  "groups.delete-title": { name: string | number };
+  "groups.made": { name: string | number };
+  "groups.remove-name": { name: string | number };
+  "groups.removed": { group: string | number; name: string | number };
+  "groups.used": { places: string | number };
+  "groups.used-projects": { count: number };
   "home.title": { name: string | number };
   "invitation.intro": { email: string | number };
   "invitations.created": { email: string | number };
@@ -922,6 +1105,7 @@ export interface MessageArguments {
   "invitations.made": { when: string | number };
   "invitations.take-back-name": { email: string | number };
   "invitations.take-back-title": { email: string | number };
+  "own.ask-text": { lost: string | number };
   "passkeys.added": { name: string | number };
   "passkeys.added-on": { when: string | number };
   "passkeys.last-used": { when: string | number };
@@ -933,6 +1117,9 @@ export interface MessageArguments {
   "people-visibility.intro-project": { project: string | number };
   "people-visibility.preview-heading": { role: string | number };
   "people-visibility.project-title": { project: string | number };
+  "people.in-groups": { groups: string | number };
+  "person.groups-none": { name: string | number };
+  "person.roles-none": { name: string | number };
   "projects.inside": { name: string | number };
   "projects.line-can-no-more": {
     person: string | number;
@@ -981,6 +1168,20 @@ export interface MessageArguments {
   "projects.person-role": { role: string | number };
   "projects.settings-title": { name: string | number };
   "projects.toggle-name": { name: string | number };
+  "roles.badge-used": { badge: string | number; used: string | number };
+  "roles.copy-of": { name: string | number };
+  "roles.delete-name": { name: string | number };
+  "roles.delete-title": { name: string | number };
+  "roles.from-project": { name: string | number };
+  "roles.held": { place: string | number; role: string | number };
+  "roles.reset-done": { name: string | number };
+  "roles.reset-text": { name: string | number };
+  "roles.reset-title": { name: string | number };
+  "roles.second-step-gap": { count: number };
+  "roles.start-copy": { name: string | number };
+  "roles.used": { groups: number; people: number; places: string | number };
+  "roles.used-by-nobody": { places: string | number };
+  "roles.used-projects": { count: number };
   "security-log.broken": { reason: string | number; seq: string | number };
   "security-log.head": { hash: string | number; seq: string | number };
   "security-log.valid": { entries: number };

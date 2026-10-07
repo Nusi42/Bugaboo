@@ -1,6 +1,14 @@
 import { createRouter } from "@tanstack/react-router";
 
 import {
+  groupsRoute,
+  peopleRoute,
+  personRoute,
+  projectRolesRoute,
+  roleRoute,
+  rolesRoute,
+} from "./access-pages.tsx";
+import {
   checkAccessRoute,
   fieldPermissionsRoute,
   peopleVisibilityRoute,
@@ -13,7 +21,6 @@ import {
   appearanceRoute,
   framesRoute,
   homeRoute,
-  invitationsRoute,
   mySettingsIndexRoute,
   organizationSettingsIndexRoute,
   regionRoute,
@@ -47,6 +54,7 @@ const routeTree = rootRoute.addChildren([
     framesRoute,
     projectRoute,
     projectSettingsRoute,
+    projectRolesRoute,
     projectFieldsRoute,
     projectPeopleRoute,
     projectCheckAccessRoute,
@@ -62,7 +70,11 @@ const routeTree = rootRoute.addChildren([
     ]),
     organizationSettingsRoute.addChildren([
       organizationSettingsIndexRoute,
-      invitationsRoute,
+      peopleRoute,
+      personRoute,
+      groupsRoute,
+      rolesRoute,
+      roleRoute,
       fieldPermissionsRoute,
       peopleVisibilityRoute,
       checkAccessRoute,

@@ -92,8 +92,8 @@ test("ux_04 home, sign-in and security with the code app, and the sessions", asy
 
 test("ux_04 the invitations with the questions that open over them", async ({ page }) => {
   await signIn(page, ada);
-  await openFromMenu(page, t("nav.invitations"));
-  await page.getByLabel(t("field.email")).fill("new@example.test");
+  await openFromMenu(page, t("nav.people"));
+  await page.getByLabel(t("field.email"), { exact: true }).fill("new@example.test");
   await page.getByRole("button", { name: t("invitations.create") }).click();
   await expect(page.getByText(t("invitations.link-help"))).toBeVisible();
   await expectGoodInEveryLook(page);

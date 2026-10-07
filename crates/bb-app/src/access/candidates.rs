@@ -4,15 +4,16 @@
 //! *Someone* has no ID to be chosen by, so for such a checker the list is empty and says nothing
 //! about who is there.
 
-use bb_core::ErrorCode;
 use bb_core::access::PeopleLevel;
 use bb_core::id::{ProjectId, UserId};
 use bb_core::people_kinds::PeopleKind;
+use bb_core::person::Person;
 use bb_policy::{Authorized, Masked, PeopleContext, Permission, PersonRef};
 use serde::Serialize;
 
-use super::{PersonName, Place};
-use crate::auth::{AppError, AuthStore, Ctx, internal};
+use super::Place;
+use crate::auth::{AppError, AuthStore, Ctx, PeoplePosition, internal};
+use crate::people::write_cursor;
 use crate::roles::place_of;
 
 /// List the people to choose from for *Check access*.
@@ -31,23 +32,14 @@ pub struct PeopleToCheckQuery {
 
 /// One page of people, by name.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
-pub struct PersonPage {
+pub struct PeopleToCheckPage {
     /// The people, each shown as the person who asks may see them: by name.
     pub items: Vec<PersonRef>,
     /// The cursor of the next page, if there is one.
     pub next_cursor: Option<String>,
 }
 
-impl Masked for PersonPage {}
-
-fn write_cursor(last: &PersonName) -> String {
-    format!("{}\t{}", last.display_name.to_lowercase(), last.id)
-}
-
-fn read_cursor(text: &str) -> Result<(String, UserId), ()> {
-    let (name, id) = text.split_once('\t').ok_or(())?;
-    Ok((name.to_owned(), id.parse().map_err(|_| ())?))
-}
+impl Masked for PeopleToCheckPage {}
 
 impl<S: AuthStore> Ctx<'_, S> {
     /// Whether a person has a role that reaches the place (and so is a member there).
@@ -70,70 +62,49 @@ impl<S: AuthStore> Ctx<'_, S> {
 pub async fn people_to_check<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: PeopleToCheckQuery,
-) -> Result<Authorized<PersonPage>, AppError> {
+) -> Result<Authorized<PeopleToCheckPage>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
     let place: Place = place_of(input.place);
     let checker = ctx.require(&actor, Permission::CheckAccess, place).await?;
-    let after = input
-        .cursor
-        .as_deref()
-        .map(read_cursor)
-        .transpose()
-        .map_err(|()| AppError::Refused(ErrorCode::InvalidRequest))?;
+    let mut after = ctx.people_position(input.cursor.as_deref()).await?;
     let names_shown = checker.people_level(PeopleKind::ProjectMembers, PeopleContext::Management)
         == PeopleLevel::Names;
     if !names_shown {
-        return Ok(checker.authorize(PersonPage {
+        return Ok(checker.authorize(PeopleToCheckPage {
             items: Vec::new(),
             next_cursor: None,
         }));
     }
-    let words: Vec<String> = input
-        .search
-        .as_deref()
-        .map(|text| {
-            text.to_lowercase()
-                .split_whitespace()
-                .map(str::to_owned)
-                .collect()
-        })
-        .unwrap_or_default();
-    let mut candidates: Vec<PersonName> = ctx
-        .store()
-        .people_names()
-        .await
-        .map_err(|error| internal::<S>(&error))?
-        .into_iter()
-        .filter(|person| {
-            let name = person.display_name.to_lowercase();
-            words.iter().all(|word| name.contains(word))
-        })
-        .collect();
-    candidates.sort_by(|a, b| {
-        a.display_name
-            .to_lowercase()
-            .cmp(&b.display_name.to_lowercase())
-            .then(a.id.cmp(&b.id))
-    });
-    let limit = usize::try_from(bb_core::paging::page_size(Some(input.limit))).unwrap_or(1);
+    let limit = u64::from(bb_core::paging::page_size(Some(input.limit)));
+    let wanted = usize::try_from(limit).unwrap_or(usize::MAX);
     let manages = checker.manages_people();
-    let mut page: Vec<PersonName> = Vec::with_capacity(limit + 1);
-    for person in candidates.into_iter().filter(|person| {
-        after.as_ref().is_none_or(|(name, id)| {
-            (person.display_name.to_lowercase(), person.id) > (name.clone(), *id)
-        })
-    }) {
-        if page.len() > limit {
-            break;
+    let mut page: Vec<Person> = Vec::with_capacity(wanted.saturating_add(1));
+    // The store gives the people by name, a batch at a time; whoever does not manage people or
+    // roles keeps only the people who have a role that reaches the place, as *Project members* are
+    // shown (M2-Q3), so more batches are read until a page (and one more, to know whether there is
+    // a next one) is full.
+    'batches: loop {
+        let batch = ctx
+            .store()
+            .people_page(input.search.as_deref(), false, after.as_ref(), limit + 1)
+            .await
+            .map_err(|error| internal::<S>(&error))?;
+        let full = u64::try_from(batch.len()).is_ok_and(|count| count > limit);
+        for person in &batch {
+            if manages || ctx.has_a_role_at(person.id, place).await? {
+                page.push(person.clone());
+                if page.len() > wanted {
+                    break 'batches;
+                }
+            }
         }
-        // Whoever does not manage people or roles chooses among the people who have a role that
-        // reaches the place, as *Project members* are shown (M2-Q3).
-        if manages || ctx.has_a_role_at(person.id, place).await? {
-            page.push(person);
+        match batch.last() {
+            Some(last) if full => after = Some(position_of(last)),
+            _ => break,
         }
     }
-    let more = page.len() > limit;
-    page.truncate(limit);
+    let more = page.len() > wanted;
+    page.truncate(wanted);
     let next_cursor = more.then(|| page.last().map(write_cursor)).flatten();
     let mut items = Vec::with_capacity(page.len());
     for person in &page {
@@ -147,5 +118,13 @@ pub async fn people_to_check<S: AuthStore>(
             .await?,
         );
     }
-    Ok(checker.authorize(PersonPage { items, next_cursor }))
+    Ok(checker.authorize(PeopleToCheckPage { items, next_cursor }))
+}
+
+/// Where a page of people ends, for the store.
+fn position_of(person: &Person) -> PeoplePosition {
+    PeoplePosition {
+        name: person.display_name.clone(),
+        id: person.id,
+    }
 }

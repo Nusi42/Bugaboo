@@ -13,5 +13,6 @@
 
 mod actors;
 mod examples;
+mod examples_people;
 mod record;
 mod routes;

@@ -5,7 +5,7 @@ import { useState } from "react";
 import { api } from "../../shared/api.ts";
 import { messageOf } from "../../shared/errors.ts";
 import { EmailField } from "../../shared/fields.tsx";
-import styles from "./Admin.module.css";
+import styles from "./People.module.css";
 import { refreshInvitations } from "./invitations.ts";
 
 export interface CreatedLinkProps {
