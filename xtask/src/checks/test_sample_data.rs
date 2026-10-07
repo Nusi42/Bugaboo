@@ -16,7 +16,7 @@
 //! <run>/output.txt   what the program said; <run>/data/ the data folder it made
 //! ```
 //!
-//! The rules (people only; WP-13 adds projects, groups and roles):
+//! The rules:
 //!
 //! 1. every run made the same dump, so the organization is the same from the same seed and on
 //!    both databases;
@@ -24,7 +24,13 @@
 //!    inbox;
 //! 3. every name is a given name and a family name of the list written for Bugaboo
 //!    (`crates/bb-sample/data/names.toml`), so no real person is in it;
-//! 4. no password or code-app secret of `sign-in.txt` appears in any other file of a run.
+//! 4. no password, code-app secret or access key of `sign-in.txt` appears in any other file of a
+//!    run;
+//! 5. the dump has the eight groups and the four projects with their sub-projects of
+//!    architecture §11 (their names are written once, in `tools/dev/sample.json`);
+//! 6. every role of the mix of architecture §11 (2 Administrators, 4 Project leads, 30 Team
+//!    members, 8 Contributors, 4 Viewers, 2 Guests) is in the dump and held by that many people;
+//! 7. every project has a Project lead, its own or one from a project above it.
 
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -34,7 +40,7 @@ use serde::Deserialize;
 use serde_json::Value;
 
 use super::{Check, Context, Finding};
-use crate::dataset::Layout;
+use crate::dataset::{Layout, OrganizationNames};
 
 /// The list of names, written for Bugaboo. `bb-sample` reads the same file.
 pub(crate) const NAMES_FILE: &str = "crates/bb-sample/data/names.toml";
@@ -42,6 +48,17 @@ pub(crate) const NAMES_FILE: &str = "crates/bb-sample/data/names.toml";
 /// that makes the addresses: the check is an independent witness, and fails if the program ever
 /// leaves this domain.
 const EMAIL_DOMAIN: &str = "bugaboo.example";
+/// The mix of roles of the 50 people (architecture §11), by the key of the starting role. Written
+/// out here on purpose, apart from the program that makes the people: the check is an independent
+/// witness, and fails if the program ever leaves the mix.
+const ROLE_MIX: [(&str, u64); 6] = [
+    ("administrator", 2),
+    ("project-lead", 4),
+    ("team-member", 30),
+    ("contributor", 8),
+    ("viewer", 4),
+    ("guest", 2),
+];
 /// The step of `cargo xtask ci` that runs the real check.
 const CI_SOURCE: &str = "xtask/src/ci.rs";
 const CI_STEP: &str = r#"&["dataset", "sample", "--check"]"#;
@@ -132,7 +149,7 @@ impl Run {
 }
 
 /// What the text of a sign-in file says must stay inside it: lines of tab-separated columns
-/// (address, password, role, name, secret), `#` for comments. The secret of a code app is written
+/// (address, password, role, name, secret of the code app, access key), `#` for comments. The secret of a code app is written
 /// in base 32; a file that stores it as the 20 bytes it stands for leaks it as well, so those
 /// bytes are looked for too.
 fn needles_of(text: &str) -> Vec<Vec<u8>> {
@@ -145,6 +162,10 @@ fn needles_of(text: &str) -> Vec<Vec<u8>> {
         if let Some(secret) = columns.get(4).filter(|secret| !secret.is_empty()) {
             needles.push(secret.as_bytes().to_vec());
             needles.extend(base32_decode(secret).filter(|raw| !raw.is_empty()));
+        }
+        // The access key of the few people who have one.
+        if let Some(key) = columns.get(5).filter(|key| !key.is_empty()) {
+            needles.push(key.as_bytes().to_vec());
         }
     }
     needles
@@ -203,7 +224,11 @@ fn collect(
 
 /// What is wrong with the runs of one seed, in plain words; empty when the organization is the
 /// same every time and fictional through and through.
-pub(crate) fn problems(names: &NameList, runs: &[Run]) -> Vec<String> {
+pub(crate) fn problems(
+    names: &NameList,
+    organization: &OrganizationNames,
+    runs: &[Run],
+) -> Vec<String> {
     let mut problems = Vec::new();
     if runs.len() < 2 {
         problems.push("Fewer than two runs: nothing to compare the dumps with.".to_owned());
@@ -226,6 +251,7 @@ pub(crate) fn problems(names: &NameList, runs: &[Run]) -> Vec<String> {
     }
     for (label, dump) in &dumps {
         fictional(names, label, dump, &mut problems);
+        the_organization(organization, label, dump, &mut problems);
     }
     for run in runs {
         for (file, bytes) in &run.scanned {
@@ -272,6 +298,67 @@ fn fictional(names: &NameList, label: &str, dump: &Value, problems: &mut Vec<Str
         if !names.contains(name) {
             problems.push(format!(
                 "{label}: the name {name} is not a given name and a family name of {NAMES_FILE}. Only names from the list written for Bugaboo are used."
+            ));
+        }
+    }
+}
+
+/// Rules 5 to 7 for one dump.
+fn the_organization(
+    organization: &OrganizationNames,
+    label: &str,
+    dump: &Value,
+    problems: &mut Vec<String>,
+) {
+    let listed = |key: &str, member: &str| -> Vec<String> {
+        dump[key]
+            .as_array()
+            .map_or(&[][..], Vec::as_slice)
+            .iter()
+            .filter_map(|item| item[member].as_str().map(str::to_owned))
+            .collect()
+    };
+    let groups = listed("groups", "name");
+    for name in organization.groups.values() {
+        if !groups.contains(name) {
+            problems.push(format!(
+                "{label}: the group {name} is not in the dump. The sample has the groups of architecture §11."
+            ));
+        }
+    }
+    let roles = dump["roles"].as_array().map_or(&[][..], Vec::as_slice);
+    for (key, wanted) in ROLE_MIX {
+        let found = roles.iter().find(|role| role["starting"] == key);
+        match found.map(|role| role["held_by"].as_u64()) {
+            None => problems.push(format!(
+                "{label}: the starting role {key} is not in the dump. The sample has the mix of roles of architecture §11."
+            )),
+            Some(held) if held != Some(wanted) => problems.push(format!(
+                "{label}: the starting role {key} is held by {} people, not {wanted}. The sample has the mix of roles of architecture §11.",
+                held.map_or_else(|| "no".to_owned(), |held| held.to_string())
+            )),
+            Some(_) => {}
+        }
+    }
+    let projects = listed("projects", "short_name");
+    for project in &organization.projects {
+        let inside = project.sub_projects.iter().map(|sub| &sub.short_name);
+        for short_name in std::iter::once(&project.short_name).chain(inside) {
+            if !projects.contains(short_name) {
+                problems.push(format!(
+                    "{label}: the project {short_name} is not in the dump. The sample has the projects of architecture §11."
+                ));
+            }
+        }
+    }
+    for project in dump["projects"].as_array().map_or(&[][..], Vec::as_slice) {
+        let has_lead = project["leads"]
+            .as_array()
+            .is_some_and(|leads| !leads.is_empty());
+        if !has_lead {
+            problems.push(format!(
+                "{label}: the project {} has no Project lead. Every project of the sample has one.",
+                project["short_name"].as_str().unwrap_or("?")
             ));
         }
     }
@@ -325,6 +412,10 @@ mod tests {
         NameList::parse(text).unwrap()
     }
 
+    fn organization() -> OrganizationNames {
+        layout().organization
+    }
+
     /// The runs of one fixture: a folder with one sub-folder per run, as `bb-sample` leaves them.
     fn fixture(kind: &str, case: &str) -> Vec<Run> {
         let folder = Path::new(env!("CARGO_MANIFEST_DIR"))
@@ -343,13 +434,17 @@ mod tests {
     }
 
     fn found(case: &str) -> Vec<String> {
-        problems(&names(), &fixture("bad", case))
+        problems(&names(), &organization(), &fixture("bad", case))
     }
 
     #[test]
     fn good_example() {
         assert_eq!(
-            problems(&names(), &fixture("good", "the-same-everywhere")),
+            problems(
+                &names(),
+                &organization(),
+                &fixture("good", "the-same-everywhere")
+            ),
             Vec::<String>::new()
         );
     }
@@ -410,8 +505,66 @@ mod tests {
     }
 
     #[test]
+    fn bad_example_a_project_without_a_lead() {
+        let found = found("a-project-without-a-lead");
+        assert!(
+            found
+                .iter()
+                .any(|p| p.contains("the project WEB has no Project lead")),
+            "{found:?}"
+        );
+        // Every run says it, and nothing else is wrong.
+        assert_eq!(found.len(), 2, "{found:?}");
+    }
+
+    #[test]
+    fn bad_example_a_role_of_the_mix_is_missing_or_held_by_too_few() {
+        let found = found("a-role-of-the-mix-is-missing");
+        assert!(
+            found
+                .iter()
+                .any(|p| p.contains("the starting role guest is not in the dump")),
+            "{found:?}"
+        );
+        assert!(
+            found
+                .iter()
+                .any(|p| p.contains("contributor is held by 7 people, not 8")),
+            "{found:?}"
+        );
+    }
+
+    #[test]
+    fn bad_example_a_group_or_a_project_of_the_organization_is_missing() {
+        let found = found("a-group-is-missing");
+        assert!(
+            found
+                .iter()
+                .any(|p| p.contains("the group External is not in the dump")),
+            "{found:?}"
+        );
+        let found = self::found("a-project-is-missing");
+        assert!(
+            found
+                .iter()
+                .any(|p| p.contains("the project BLOG is not in the dump")),
+            "{found:?}"
+        );
+    }
+
+    #[test]
+    fn bad_example_an_access_key_outside_the_sign_in_file() {
+        let found = found("an-access-key-outside-the-sign-in-file");
+        assert_eq!(found.len(), 1, "{found:?}");
+        assert!(
+            found[0].contains("data/logs/security-head.log"),
+            "{found:?}"
+        );
+    }
+
+    #[test]
     fn bad_example_no_dump_to_compare_and_no_people() {
-        assert!(!problems(&names(), &[]).is_empty());
+        assert!(!problems(&names(), &organization(), &[]).is_empty());
         let empty = Run {
             label: "only".to_owned(),
             sign_in_file: layout().sign_in_file,
@@ -419,7 +572,7 @@ mod tests {
             needles: Vec::new(),
             scanned: Vec::new(),
         };
-        let found = problems(&names(), &[empty]);
+        let found = problems(&names(), &organization(), &[empty]);
         assert!(found.iter().any(|p| p.contains("Fewer than two runs")));
         assert!(found.iter().any(|p| p.contains("no people")));
     }
@@ -452,7 +605,7 @@ mod tests {
     }
 
     #[test]
-    fn the_needles_are_the_password_and_the_code_app_column_only() {
+    fn the_needles_are_the_password_the_code_app_and_the_access_key_columns_only() {
         let text = "# header\nana@bugaboo.example\tPW-ONE\tcontributor\tAna Moreno\nben@bugaboo.example\tPW-TWO\tteam_member\tBen Hale\tMZXW6YTBOI\n";
         let needles = needles_of(text);
         assert_eq!(
@@ -486,7 +639,7 @@ mod tests {
             needles: needles_of(sign_in),
             scanned: vec![("data/keys.bin".to_owned(), b"header foobar".to_vec())],
         };
-        let found = problems(&names(), &[leaking]);
+        let found = problems(&names(), &organization(), &[leaking]);
         assert!(
             found.iter().any(|p| p.contains("data/keys.bin holds")),
             "{found:?}"

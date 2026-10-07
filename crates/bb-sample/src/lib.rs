@@ -7,8 +7,8 @@
 //!
 //! - [`make`] makes the people: the first administrator with the setup code, everybody else as
 //!   that administrator by invitation. Every change has its event and its security log entry.
-//! - [`Later`] is the extension point for what comes after the people (groups, roles, projects,
-//!   assignments: M2 WP-13).
+//! - [`Later`] is the extension point for what comes after the people; [`Organization`] fills it
+//!   with the groups, roles, projects and assignments (M2 WP-13).
 //! - [`Sample::dump`] is the canonical dump that TEST-SAMPLE-DATA compares.
 //! - The passwords are random for every run and are written only to `sign-in.txt` ([`Output`]).
 
@@ -21,12 +21,14 @@ use tokio as _;
 
 mod clock;
 mod dump;
+mod dump_organization;
 mod error;
 mod folder;
 mod generate;
 mod layout;
 mod limits;
 mod names;
+mod organization;
 mod password;
 mod random;
 mod roster;
@@ -38,9 +40,12 @@ pub use dump::Dump;
 pub use error::{SampleError, Step};
 pub use folder::Output;
 pub use generate::{
-    DEFAULT_SEED, Later, MadePerson, NothingMore, Options, STEP_SECONDS, Sample, Target, World,
-    make,
+    DEFAULT_SEED, LATER_SECONDS, Later, MadePerson, NothingMore, Options, STEP_SECONDS, Sample,
+    Target, World, make,
 };
-pub use layout::Layout;
+pub use layout::{Layout, OrganizationNames, ProjectNames, SubProjectNames};
 pub use names::NameList;
-pub use roster::{EMAIL_DOMAIN, PEOPLE, ROLE_MIX, Role, SamplePerson, roster};
+pub use organization::Organization;
+pub use roster::{
+    ACCESS_KEYS, EMAIL_DOMAIN, PEOPLE, ROLE_MIX, Region, Role, SamplePerson, TIME_ZONES, roster,
+};

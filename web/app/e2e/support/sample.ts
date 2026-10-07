@@ -11,6 +11,8 @@ export interface SamplePerson extends Person {
   readonly role: string;
   /** The secret of the code app, for the people who have one. */
   readonly codeAppSecret: string | undefined;
+  /** The access key, for the few people who have one. */
+  readonly accessKey: string | undefined;
 }
 
 function sampleFolder(): string {
@@ -29,7 +31,8 @@ function requireSample(): void {
 /**
  * The people of the sample and their random passwords of this run, from the ignored file
  * `sign-in.txt`. One line per person: e-mail address, password, role, name and, for people with a
- * code app, its secret, separated by tabs; lines that start with `#` are comments.
+ * code app, its secret, and for the few with an access key, the key, separated by tabs (an empty
+ * column stays empty); lines that start with `#` are comments.
  */
 export function samplePeople(): readonly SamplePerson[] {
   requireSample();
@@ -38,7 +41,7 @@ export function samplePeople(): readonly SamplePerson[] {
     .map((line) => line.replace(/\r$/u, ""))
     .filter((line) => line.trim() !== "" && !line.startsWith("#"))
     .map((line) => {
-      const [email, password, role, name, secret] = line.split("\t");
+      const [email, password, role, name, secret, key] = line.split("\t");
       if (
         email === undefined ||
         password === undefined ||
@@ -47,7 +50,14 @@ export function samplePeople(): readonly SamplePerson[] {
       ) {
         throw new Error(`A line of ${layout.signInFile} does not have its four columns.`);
       }
-      return { name, email, password, role, codeAppSecret: secret === "" ? undefined : secret };
+      return {
+        name,
+        email,
+        password,
+        role,
+        codeAppSecret: secret === "" ? undefined : secret,
+        accessKey: key === "" ? undefined : key,
+      };
     });
 }
 

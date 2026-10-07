@@ -11,6 +11,180 @@
       "email": "ana.more@bugaboo.example"
     }
   ],
+  "groups": [
+    {
+      "name": "Backend",
+      "members": [
+        "ana.moreno@bugaboo.example"
+      ]
+    },
+    {
+      "name": "Docs",
+      "members": [
+        "ana.moreno@bugaboo.example"
+      ]
+    },
+    {
+      "name": "External",
+      "members": [
+        "ana.moreno@bugaboo.example"
+      ]
+    },
+    {
+      "name": "Frontend",
+      "members": [
+        "ana.moreno@bugaboo.example"
+      ]
+    },
+    {
+      "name": "Management",
+      "members": [
+        "ana.moreno@bugaboo.example"
+      ]
+    },
+    {
+      "name": "Mobile",
+      "members": [
+        "ana.moreno@bugaboo.example"
+      ]
+    },
+    {
+      "name": "QA",
+      "members": [
+        "ana.moreno@bugaboo.example"
+      ]
+    },
+    {
+      "name": "Support",
+      "members": [
+        "ana.moreno@bugaboo.example"
+      ]
+    }
+  ],
+  "roles": [
+    {
+      "name": "Administrator",
+      "starting": "administrator",
+      "two_step": false,
+      "permissions": [
+        "see-projects"
+      ],
+      "held_by": 2
+    },
+    {
+      "name": "Project lead",
+      "starting": "project-lead",
+      "two_step": false,
+      "permissions": [
+        "see-projects"
+      ],
+      "held_by": 4
+    },
+    {
+      "name": "Team member",
+      "starting": "team-member",
+      "two_step": false,
+      "permissions": [
+        "see-projects"
+      ],
+      "held_by": 30
+    },
+    {
+      "name": "Contributor",
+      "starting": "contributor",
+      "two_step": false,
+      "permissions": [
+        "see-projects"
+      ],
+      "held_by": 8
+    },
+    {
+      "name": "Viewer",
+      "starting": "viewer",
+      "two_step": false,
+      "permissions": [
+        "see-projects"
+      ],
+      "held_by": 4
+    },
+    {
+      "name": "Guest",
+      "starting": "guest",
+      "two_step": false,
+      "permissions": [
+        "see-projects"
+      ],
+      "held_by": 2
+    }
+  ],
+  "projects": [
+    {
+      "short_name": "AND",
+      "name": "Android",
+      "parent": "APP",
+      "leads": [
+        "ada.brandt@bugaboo.example"
+      ]
+    },
+    {
+      "short_name": "APP",
+      "name": "Mobile app",
+      "parent": null,
+      "leads": [
+        "ada.brandt@bugaboo.example"
+      ]
+    },
+    {
+      "short_name": "BLOG",
+      "name": "Blog",
+      "parent": "WEB",
+      "leads": [
+        "ada.brandt@bugaboo.example"
+      ]
+    },
+    {
+      "short_name": "DOC",
+      "name": "Handbook",
+      "parent": null,
+      "leads": [
+        "ada.brandt@bugaboo.example"
+      ]
+    },
+    {
+      "short_name": "IOS",
+      "name": "iOS",
+      "parent": "APP",
+      "leads": [
+        "ada.brandt@bugaboo.example"
+      ]
+    },
+    {
+      "short_name": "OPS",
+      "name": "Operations",
+      "parent": null,
+      "leads": [
+        "ada.brandt@bugaboo.example"
+      ]
+    },
+    {
+      "short_name": "SHOP",
+      "name": "Shop",
+      "parent": "WEB",
+      "leads": [
+        "ada.brandt@bugaboo.example"
+      ]
+    },
+    {
+      "short_name": "WEB",
+      "name": "Website",
+      "parent": null,
+      "leads": [
+        "ada.brandt@bugaboo.example"
+      ]
+    }
+  ],
+  "assignments": [],
+  "levels": [],
   "events": [
     {
       "time": "2027-01-15T07:43:40Z",

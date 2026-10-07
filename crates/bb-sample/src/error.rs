@@ -29,6 +29,22 @@ pub enum Step {
     CodeApp,
     /// Working out the dates.
     Dates,
+    /// Choosing the time zone and the formats of a person.
+    Region,
+    /// Making an access key.
+    AccessKey,
+    /// Making a group.
+    Group,
+    /// Putting a person into a group.
+    GroupMember,
+    /// Making a role.
+    Role,
+    /// Setting what a role sees.
+    Levels,
+    /// Making a project.
+    Project,
+    /// Giving a role or *No access*.
+    Assignment,
 }
 
 impl Step {
@@ -43,6 +59,14 @@ impl Step {
             Self::SigningOut => message::SAMPLE_STEP_SIGNING_OUT,
             Self::CodeApp => message::SAMPLE_STEP_CODE_APP,
             Self::Dates => message::SAMPLE_STEP_DATES,
+            Self::Region => message::SAMPLE_STEP_REGION,
+            Self::AccessKey => message::SAMPLE_STEP_ACCESS_KEY,
+            Self::Group => message::SAMPLE_STEP_GROUP,
+            Self::GroupMember => message::SAMPLE_STEP_GROUP_MEMBER,
+            Self::Role => message::SAMPLE_STEP_ROLE,
+            Self::Levels => message::SAMPLE_STEP_LEVELS,
+            Self::Project => message::SAMPLE_STEP_PROJECT,
+            Self::Assignment => message::SAMPLE_STEP_ASSIGNMENT,
         })
     }
 }
@@ -86,6 +110,10 @@ pub enum SampleError {
     PersonMissing,
     /// The answer to an invitation has no link in it.
     LinkMissing,
+    /// The answer to a new access key has no key in it.
+    KeyMissing,
+    /// A group, role or project that was just made is not in the database (its name).
+    NotMade(String),
     /// Nothing vouches for the end of the security log.
     LogNotAnchored,
     /// The security log of the finished sample does not verify.
@@ -127,6 +155,8 @@ impl SampleError {
             Self::SecretNotStored => plain(message::SAMPLE_ERROR_SECRET_NOT_STORED),
             Self::PersonMissing => plain(message::SAMPLE_ERROR_PERSON_MISSING),
             Self::LinkMissing => plain(message::SAMPLE_ERROR_LINK_MISSING),
+            Self::KeyMissing => plain(message::SAMPLE_ERROR_KEY_MISSING),
+            Self::NotMade(name) => message::sample_error_not_made(name),
             Self::LogNotAnchored => plain(message::SAMPLE_ERROR_LOG_NOT_ANCHORED),
             Self::LogBroken { seq, reason } => message::sample_error_log_broken(reason, seq),
             Self::Start(start) => message::sample_error_start(start),
@@ -188,6 +218,9 @@ mod tests {
             SampleError::SetupClosed,
             SampleError::SecretNotStored,
             SampleError::PersonMissing,
+            SampleError::LinkMissing,
+            SampleError::KeyMissing,
+            SampleError::NotMade("Backend".to_owned()),
             SampleError::LogNotAnchored,
             SampleError::LogBroken {
                 seq: 3,
