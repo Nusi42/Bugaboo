@@ -156,141 +156,166 @@ const GUEST_PROJECTS: [&str; 2] = ["WEB", "APP"];
 /// The projects where the Contributors who are not in a group have their role: two each.
 const CONTRIBUTOR_PROJECTS: [&str; 2] = ["APP", "OPS"];
 
-/// Works out the groups and the rows from the roster.
-pub(crate) fn plan(people: &[SamplePerson], names: &OrganizationNames) -> Plan {
-    // The people of a role in the order of the roster, except that the people the demos name come
-    // first (Ana is the first Contributor, Ben the first Team member, whatever the seed).
-    let of = |role: Role| -> Vec<usize> {
-        let mut found: Vec<usize> = people
+/// The plan while it is made: the rows so far and who is in which group.
+struct Builder<'a> {
+    people: &'a [SamplePerson],
+    rows: Vec<Row>,
+    members: BTreeMap<&'static str, Vec<usize>>,
+}
+
+impl Builder<'_> {
+    /// The people of a role in the order of the roster, except that the people the demos name come
+    /// first (Ana is the first Contributor, Ben the first Team member, whatever the seed).
+    fn of(&self, role: Role) -> Vec<usize> {
+        let mut found: Vec<usize> = self
+            .people
             .iter()
             .enumerate()
             .filter(|(_, person)| person.role == role)
             .map(|(at, _)| at)
             .collect();
-        found.sort_by_key(|at| !people[*at].is_fixed());
+        found.sort_by_key(|at| !self.people[*at].is_fixed());
         found
-    };
-    let direct = |holder: usize, role: StartingRole, project: Option<&str>| Row {
-        holder: Holder::Person(holder),
-        grant: Grant::Role(RoleKey::Starting(role)),
-        project: project.map(str::to_owned),
-        applies_to: if project.is_some() {
-            AppliesTo::ProjectAndSubProjects
-        } else {
-            AppliesTo::Organization
-        },
-    };
-    let mut rows: Vec<Row> = Vec::new();
-    let mut members: BTreeMap<&'static str, Vec<usize>> = BTreeMap::new();
-
-    // The second Administrator, and a Project lead for each of the projects, in order.
-    let administrators = of(Role::Administrator);
-    rows.extend(
-        administrators
-            .iter()
-            .skip(1)
-            .map(|at| direct(*at, StartingRole::Administrator, None)),
-    );
-    for (lead, project) in of(Role::ProjectLead).into_iter().zip(&names.projects) {
-        rows.push(direct(
-            lead,
-            StartingRole::ProjectLead,
-            Some(&project.short_name),
-        ));
     }
 
-    // Team members: most for the whole organization, the last two of every five only through the
-    // groups that give the role. All of them are in a group.
-    let giving: Vec<&GroupRule> = GROUPS
-        .iter()
-        .filter(|rule| rule.of == Role::TeamMember && rule.grants == TEAM_MEMBER)
-        .collect();
-    let teams: Vec<&GroupRule> = GROUPS
-        .iter()
-        .filter(|rule| rule.of == Role::TeamMember)
-        .collect();
-    let mut through_group = 0_usize;
-    for (at, person) in of(Role::TeamMember).into_iter().enumerate() {
-        let only_through_group = at % 5 >= 5 - TEAM_THROUGH_GROUP;
-        let giver = giving.get(through_group % giving.len().max(1));
-        if let (true, Some(giver)) = (only_through_group, giver) {
-            through_group += 1;
-            members.entry(giver.key).or_default().push(person);
-            continue;
-        }
-        rows.push(direct(person, StartingRole::TeamMember, None));
-        if let Some(rule) = teams.get(at % teams.len().max(1)) {
-            members.entry(rule.key).or_default().push(person);
-        }
-        // The person the demos name may not enter one sub-project, whatever else they hold.
-        if people[person].is_fixed() {
-            rows.push(Row {
-                holder: Holder::Person(person),
-                grant: Grant::NoAccess,
-                project: Some(NO_ACCESS_ON.to_owned()),
-                applies_to: AppliesTo::ProjectAndSubProjects,
-            });
-        }
-    }
-
-    // Contributors: the first ones (Ana is the first) in the group *External*, the others on a
-    // project each.
-    for (at, person) in of(Role::Contributor).into_iter().enumerate() {
-        if at < EXTERNAL_CONTRIBUTORS {
-            if let Some(rule) = GROUPS.iter().find(|rule| rule.of == Role::Contributor) {
-                members.entry(rule.key).or_default().push(person);
-            }
-        } else {
-            let project = CONTRIBUTOR_PROJECTS
-                .get((at - EXTERNAL_CONTRIBUTORS) / CONTRIBUTOR_PROJECTS.len())
-                .copied();
-            rows.push(direct(person, StartingRole::Contributor, project));
-        }
-    }
-
-    // Viewers: all of them through the group *Management*. Guests: a project each.
-    for person in of(Role::Viewer) {
-        if let Some(rule) = GROUPS.iter().find(|rule| rule.of == Role::Viewer) {
-            members.entry(rule.key).or_default().push(person);
-        }
-    }
-    for (person, project) in of(Role::Guest).into_iter().zip(GUEST_PROJECTS) {
-        rows.push(direct(person, StartingRole::Guest, Some(project)));
-    }
-
-    // The people with a code app also hold the role that needs two-step sign-in.
-    for at in people
-        .iter()
-        .enumerate()
-        .filter(|(_, person)| person.code_app)
-        .map(|(at, _)| at)
-    {
-        rows.push(Row {
-            holder: Holder::Person(at),
-            grant: Grant::Role(RoleKey::Custom(SECURITY_REVIEWER)),
-            project: Some(REVIEWED_PROJECT.to_owned()),
-            applies_to: AppliesTo::Project,
+    /// A row of a person who holds a starting role: for the whole organization, or on a project.
+    fn direct(&mut self, holder: usize, role: StartingRole, project: Option<&str>) {
+        self.rows.push(Row {
+            holder: Holder::Person(holder),
+            grant: Grant::Role(RoleKey::Starting(role)),
+            project: project.map(str::to_owned),
+            applies_to: if project.is_some() {
+                AppliesTo::ProjectAndSubProjects
+            } else {
+                AppliesTo::Organization
+            },
         });
     }
 
-    // What each group gives.
-    for rule in &GROUPS {
-        if rule.on.is_empty() {
-            rows.push(Row {
-                holder: Holder::Group(rule.key),
-                grant: Grant::Role(rule.grants),
-                project: None,
-                applies_to: AppliesTo::Organization,
-            });
-        }
-        rows.extend(rule.on.iter().map(|project| Row {
-            holder: Holder::Group(rule.key),
-            grant: Grant::Role(rule.grants),
-            project: Some((*project).to_owned()),
-            applies_to: AppliesTo::ProjectAndSubProjects,
-        }));
+    fn join(&mut self, group: &'static str, person: usize) {
+        self.members.entry(group).or_default().push(person);
     }
 
+    /// The second Administrator, and a Project lead for each of the projects, in order.
+    fn administrators_and_leads(&mut self, names: &OrganizationNames) {
+        for at in self.of(Role::Administrator).into_iter().skip(1) {
+            self.direct(at, StartingRole::Administrator, None);
+        }
+        for (lead, project) in self.of(Role::ProjectLead).into_iter().zip(&names.projects) {
+            self.direct(lead, StartingRole::ProjectLead, Some(&project.short_name));
+        }
+    }
+
+    /// Team members: most for the whole organization, the last two of every five only through the
+    /// groups that give the role. All of them are in a group.
+    fn team_members(&mut self) {
+        let giving: Vec<&GroupRule> = GROUPS
+            .iter()
+            .filter(|rule| rule.of == Role::TeamMember && rule.grants == TEAM_MEMBER)
+            .collect();
+        let teams: Vec<&GroupRule> = GROUPS
+            .iter()
+            .filter(|rule| rule.of == Role::TeamMember)
+            .collect();
+        let mut through_group = 0_usize;
+        for (at, person) in self.of(Role::TeamMember).into_iter().enumerate() {
+            let only_through_group = at % 5 >= 5 - TEAM_THROUGH_GROUP;
+            let giver = giving.get(through_group % giving.len().max(1));
+            if let (true, Some(giver)) = (only_through_group, giver) {
+                through_group += 1;
+                self.join(giver.key, person);
+                continue;
+            }
+            self.direct(person, StartingRole::TeamMember, None);
+            if let Some(rule) = teams.get(at % teams.len().max(1)) {
+                self.join(rule.key, person);
+            }
+            // The person the demos name may not enter one sub-project, whatever else they hold.
+            if self.people[person].is_fixed() {
+                self.rows.push(Row {
+                    holder: Holder::Person(person),
+                    grant: Grant::NoAccess,
+                    project: Some(NO_ACCESS_ON.to_owned()),
+                    applies_to: AppliesTo::ProjectAndSubProjects,
+                });
+            }
+        }
+    }
+
+    /// Contributors: the first ones (Ana is the first) in the group *External*, the others on a
+    /// project each. Viewers: all through the group *Management*. Guests: a project each.
+    fn the_others(&mut self) {
+        for (at, person) in self.of(Role::Contributor).into_iter().enumerate() {
+            if at < EXTERNAL_CONTRIBUTORS {
+                if let Some(rule) = GROUPS.iter().find(|rule| rule.of == Role::Contributor) {
+                    self.join(rule.key, person);
+                }
+            } else {
+                let project = CONTRIBUTOR_PROJECTS
+                    .get((at - EXTERNAL_CONTRIBUTORS) / CONTRIBUTOR_PROJECTS.len())
+                    .copied();
+                self.direct(person, StartingRole::Contributor, project);
+            }
+        }
+        for person in self.of(Role::Viewer) {
+            if let Some(rule) = GROUPS.iter().find(|rule| rule.of == Role::Viewer) {
+                self.join(rule.key, person);
+            }
+        }
+        for (person, project) in self.of(Role::Guest).into_iter().zip(GUEST_PROJECTS) {
+            self.direct(person, StartingRole::Guest, Some(project));
+        }
+    }
+
+    /// The people with a code app also hold the role that needs two-step sign-in, and each group
+    /// gives its role.
+    fn reviewers_and_groups(&mut self) {
+        for (at, _) in self
+            .people
+            .iter()
+            .enumerate()
+            .filter(|(_, person)| person.code_app)
+        {
+            self.rows.push(Row {
+                holder: Holder::Person(at),
+                grant: Grant::Role(RoleKey::Custom(SECURITY_REVIEWER)),
+                project: Some(REVIEWED_PROJECT.to_owned()),
+                applies_to: AppliesTo::Project,
+            });
+        }
+        for rule in &GROUPS {
+            if rule.on.is_empty() {
+                self.rows.push(Row {
+                    holder: Holder::Group(rule.key),
+                    grant: Grant::Role(rule.grants),
+                    project: None,
+                    applies_to: AppliesTo::Organization,
+                });
+            }
+            self.rows.extend(rule.on.iter().map(|project| Row {
+                holder: Holder::Group(rule.key),
+                grant: Grant::Role(rule.grants),
+                project: Some((*project).to_owned()),
+                applies_to: AppliesTo::ProjectAndSubProjects,
+            }));
+        }
+    }
+}
+
+/// Works out the groups and the rows from the roster.
+pub(crate) fn plan(people: &[SamplePerson], names: &OrganizationNames) -> Plan {
+    let mut builder = Builder {
+        people,
+        rows: Vec::new(),
+        members: BTreeMap::new(),
+    };
+    builder.administrators_and_leads(names);
+    builder.team_members();
+    builder.the_others();
+    builder.reviewers_and_groups();
+    let Builder {
+        rows, mut members, ..
+    } = builder;
     Plan {
         members: GROUPS
             .iter()

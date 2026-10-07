@@ -285,6 +285,120 @@ fn members<'a>(dump: &'a Value, key: &str) -> Result<&'a Vec<Value>, Failure> {
         .ok_or_else(|| format!("the dump has no {key}"))?)
 }
 
+/// The eight groups, each with members.
+fn the_eight_groups(dump: &Value) -> Result<(), Failure> {
+    let mut groups: BTreeMap<&str, usize> = BTreeMap::new();
+    for group in members(dump, "groups")? {
+        groups.insert(
+            text(group, &["name"])?,
+            group["members"].as_array().map_or(0, Vec::len),
+        );
+    }
+    assert_eq!(
+        groups.keys().copied().collect::<Vec<_>>(),
+        [
+            "Backend",
+            "Docs",
+            "External",
+            "Frontend",
+            "Management",
+            "Mobile",
+            "QA",
+            "Support"
+        ]
+    );
+    assert!(groups.values().all(|count| *count > 0), "{groups:?}");
+    Ok(())
+}
+
+/// The six starting roles with the mix of the roster, and the two custom roles.
+fn the_roles(dump: &Value) -> Result<(), Failure> {
+    let mut roles: BTreeMap<&str, (bool, u64)> = BTreeMap::new();
+    for role in members(dump, "roles")? {
+        roles.insert(
+            text(role, &["name"])?,
+            (
+                role["two_step"] == true,
+                role["held_by"].as_u64().unwrap_or(0),
+            ),
+        );
+    }
+    for (role, name) in [
+        (Role::Administrator, "Administrator"),
+        (Role::ProjectLead, "Project lead"),
+        (Role::TeamMember, "Team member"),
+        (Role::Contributor, "Contributor"),
+        (Role::Viewer, "Viewer"),
+        (Role::Guest, "Guest"),
+    ] {
+        let wanted = ROLE_MIX
+            .iter()
+            .find(|(known, _)| *known == role)
+            .map(|(_, count)| *count);
+        assert_eq!(
+            roles
+                .get(name)
+                .map(|(_, held)| usize::try_from(*held).unwrap_or(0)),
+            wanted,
+            "{name}"
+        );
+    }
+    assert_eq!(roles.get("Support agent"), Some(&(false, 3)));
+    assert_eq!(roles.get("Security reviewer"), Some(&(true, 5)));
+    Ok(())
+}
+
+/// Four projects with their sub-projects, a lead for each.
+fn the_projects(dump: &Value) -> Result<(), Failure> {
+    let projects = members(dump, "projects")?;
+    let mut shorts = Vec::new();
+    for project in projects {
+        shorts.push(text(project, &["short_name"])?);
+    }
+    assert_eq!(
+        shorts,
+        ["AND", "APP", "BLOG", "DOC", "IOS", "OPS", "SHOP", "WEB"]
+    );
+    for project in projects {
+        assert!(
+            project["leads"]
+                .as_array()
+                .is_some_and(|leads| !leads.is_empty()),
+            "{} has no lead",
+            project["short_name"]
+        );
+    }
+    Ok(())
+}
+
+/// One No access, on a sub-project, rows for the whole organization, on projects and through
+/// groups; Mobile app hides Cost center from Contributors, Website keeps the starting rules.
+fn the_rows_and_levels(dump: &Value) -> Result<(), Failure> {
+    let rows = members(dump, "assignments")?;
+    let no_access: Vec<&Value> = rows.iter().filter(|row| row["role"].is_null()).collect();
+    assert_eq!(no_access.len(), 1);
+    assert_eq!(no_access[0]["project"], "AND");
+    assert!(
+        rows.iter()
+            .any(|row| row["project"].is_null() && !row["role"].is_null())
+    );
+    assert!(
+        rows.iter()
+            .any(|row| row["who"] == "External" && row["project"] == "WEB")
+    );
+    let levels = members(dump, "levels")?;
+    let on = |project: &str, role: &str| {
+        levels
+            .iter()
+            .filter(|level| level["project"] == project && level["role"] == role)
+            .count()
+    };
+    assert_eq!(on("APP", "Contributor"), 1);
+    assert_eq!(on("APP", "Guest"), 2);
+    assert_eq!(on("WEB", "Contributor") + on("WEB", "Guest"), 0);
+    Ok(())
+}
+
 #[tokio::test]
 async fn the_sample_holds_the_groups_roles_and_projects_of_architecture_11() -> TestResult {
     each_database(
@@ -301,109 +415,10 @@ async fn the_sample_holds_the_groups_roles_and_projects_of_architecture_11() -> 
             let dump: Value = serde_json::from_str(&sample.dump().await?.to_json()?)?;
             sample.close().await;
 
-            // The eight groups, each with members.
-            let mut groups: BTreeMap<&str, usize> = BTreeMap::new();
-            for group in members(&dump, "groups")? {
-                groups.insert(
-                    text(group, &["name"])?,
-                    group["members"].as_array().map_or(0, Vec::len),
-                );
-            }
-            assert_eq!(
-                groups.keys().copied().collect::<Vec<_>>(),
-                [
-                    "Backend",
-                    "Docs",
-                    "External",
-                    "Frontend",
-                    "Management",
-                    "Mobile",
-                    "QA",
-                    "Support"
-                ]
-            );
-            assert!(groups.values().all(|count| *count > 0), "{groups:?}");
-
-            // The six starting roles with the mix of the roster, and the two custom roles.
-            let mut roles: BTreeMap<&str, (bool, u64)> = BTreeMap::new();
-            for role in members(&dump, "roles")? {
-                roles.insert(
-                    text(role, &["name"])?,
-                    (
-                        role["two_step"] == true,
-                        role["held_by"].as_u64().unwrap_or(0),
-                    ),
-                );
-            }
-            for (role, name) in [
-                (Role::Administrator, "Administrator"),
-                (Role::ProjectLead, "Project lead"),
-                (Role::TeamMember, "Team member"),
-                (Role::Contributor, "Contributor"),
-                (Role::Viewer, "Viewer"),
-                (Role::Guest, "Guest"),
-            ] {
-                let wanted = ROLE_MIX
-                    .iter()
-                    .find(|(known, _)| *known == role)
-                    .map(|(_, count)| *count);
-                assert_eq!(
-                    roles
-                        .get(name)
-                        .map(|(_, held)| usize::try_from(*held).unwrap_or(0)),
-                    wanted,
-                    "{name}"
-                );
-            }
-            assert_eq!(roles.get("Support agent"), Some(&(false, 3)));
-            assert_eq!(roles.get("Security reviewer"), Some(&(true, 5)));
-
-            // Four projects with their sub-projects, a lead for each.
-            let projects = members(&dump, "projects")?;
-            let mut shorts = Vec::new();
-            for project in projects {
-                shorts.push(text(project, &["short_name"])?);
-            }
-            assert_eq!(
-                shorts,
-                ["AND", "APP", "BLOG", "DOC", "IOS", "OPS", "SHOP", "WEB"]
-            );
-            for project in projects {
-                assert!(
-                    project["leads"]
-                        .as_array()
-                        .is_some_and(|leads| !leads.is_empty()),
-                    "{} has no lead",
-                    project["short_name"]
-                );
-            }
-
-            // One No access, on a sub-project, and rows for the whole organization, on projects
-            // and through groups.
-            let rows = members(&dump, "assignments")?;
-            let no_access: Vec<&Value> = rows.iter().filter(|row| row["role"].is_null()).collect();
-            assert_eq!(no_access.len(), 1);
-            assert_eq!(no_access[0]["project"], "AND");
-            assert!(
-                rows.iter()
-                    .any(|row| row["project"].is_null() && !row["role"].is_null())
-            );
-            assert!(
-                rows.iter()
-                    .any(|row| row["who"] == "External" && row["project"] == "WEB")
-            );
-
-            // Mobile app hides Cost center from Contributors; Website keeps the starting rules.
-            let levels = members(&dump, "levels")?;
-            let on = |project: &str, role: &str| {
-                levels
-                    .iter()
-                    .filter(|level| level["project"] == project && level["role"] == role)
-                    .count()
-            };
-            assert_eq!(on("APP", "Contributor"), 1);
-            assert_eq!(on("APP", "Guest"), 2);
-            assert_eq!(on("WEB", "Contributor") + on("WEB", "Guest"), 0);
+            the_eight_groups(&dump)?;
+            the_roles(&dump)?;
+            the_projects(&dump)?;
+            the_rows_and_levels(&dump)?;
             Ok(())
         },
     )

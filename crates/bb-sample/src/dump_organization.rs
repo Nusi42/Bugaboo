@@ -5,7 +5,7 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
-use bb_app::access::{PolicyStore as _, StartingRole};
+use bb_app::access::{PolicyStore as _, RoleRecord, StartingRole};
 use bb_app::projects::ProjectStore as _;
 use bb_core::access::{AppliesTo, Assignment, Group};
 use bb_core::fields::Field;
@@ -109,9 +109,31 @@ impl Names {
     }
 }
 
+/// What the dump reads from the store once, and the pieces are made from.
+struct Read {
+    projects: Vec<Project>,
+    roles: Vec<RoleRecord>,
+    groups: Vec<Group>,
+    /// Every row for the whole organization and on every project.
+    rows: Vec<Assignment>,
+    members_of: BTreeMap<GroupId, BTreeSet<UserId>>,
+    names: Names,
+}
+
 impl Sample {
     /// Reads the organization from the store, as the engine sees it.
     pub(crate) async fn organization(&self) -> Result<OrganizationDump, SampleError> {
+        let read = self.read_organization().await?;
+        Ok(OrganizationDump {
+            groups: dump_groups(&read),
+            roles: dump_roles(&read),
+            projects: dump_projects(&read),
+            assignments: dump_rows(&read),
+            levels: self.dump_levels(&read).await?,
+        })
+    }
+
+    async fn read_organization(&self) -> Result<Read, SampleError> {
         let storage = &self.storage;
         let projects: Vec<Project> = storage.project_tree().await?;
         let roles = storage.roles().await?;
@@ -135,14 +157,11 @@ impl Sample {
                 .map(|project| (project.id, project.short_name.as_str().to_owned()))
                 .collect(),
         };
-
         let mut rows: Vec<Assignment> = storage.assignments_on(None).await?;
         for project in &projects {
             rows.extend(storage.assignments_on(Some(project.id)).await?);
         }
-
-        let mut members_of: BTreeMap<GroupId, BTreeSet<UserId>> = BTreeMap::new();
-        let mut dump_groups = Vec::new();
+        let mut members_of = BTreeMap::new();
         for group in &groups {
             let members: BTreeSet<UserId> = storage
                 .group_members(group.id)
@@ -150,112 +169,29 @@ impl Sample {
                 .into_iter()
                 .map(|member| member.person)
                 .collect();
-            let mut addresses: Vec<String> =
-                members.iter().map(|person| names.person(*person)).collect();
-            addresses.sort();
-            dump_groups.push(DumpGroup {
-                name: group.name.clone(),
-                members: addresses,
-            });
             members_of.insert(group.id, members);
         }
-        dump_groups.sort_by(|a, b| a.name.cmp(&b.name));
+        Ok(Read {
+            projects,
+            roles,
+            groups,
+            rows,
+            members_of,
+            names,
+        })
+    }
 
-        let holders = |role: RoleId| -> BTreeSet<UserId> {
-            let mut held = BTreeSet::new();
-            for row in rows.iter().filter(|row| row.role == Some(role)) {
-                held.extend(row.person);
-                if let Some(members) = row.group.and_then(|group| members_of.get(&group)) {
-                    held.extend(members.iter().copied());
-                }
-            }
-            held
-        };
-        let mut dump_roles: Vec<(i64, DumpRole)> = roles
-            .iter()
-            .map(|record| {
-                (
-                    record.role.position,
-                    DumpRole {
-                        name: record.role.name.clone(),
-                        starting: record
-                            .role
-                            .starting
-                            .as_ref()
-                            .map(|key| key.as_str().to_owned()),
-                        two_step: record.role.two_step,
-                        permissions: record
-                            .permissions
-                            .iter()
-                            .map(|permission| permission.code().to_owned())
-                            .collect(),
-                        held_by: holders(record.role.id).len(),
-                    },
-                )
-            })
-            .collect();
-        dump_roles.sort_by_key(|(position, role)| (*position, role.name.clone()));
-
-        let lead = roles
-            .iter()
-            .find(|record| {
-                record.role.starting.as_ref().map(TechnicalName::as_str)
-                    == Some(StartingRole::ProjectLead.key())
-            })
-            .map(|record| record.role.id);
-        let parent_of: BTreeMap<ProjectId, Option<ProjectId>> = projects
-            .iter()
-            .map(|project| (project.id, project.parent))
-            .collect();
-        let mut dump_projects = Vec::new();
-        for project in &projects {
-            // The project and the ones above it: a row on a project above counts here when it
-            // reaches the sub-projects.
-            let mut leads = BTreeSet::new();
-            let mut at = Some(project.id);
-            while let Some(current) = at {
-                for row in rows.iter().filter(|row| row.project == Some(current)) {
-                    let reaches =
-                        current == project.id || row.applies_to == AppliesTo::ProjectAndSubProjects;
-                    if reaches && lead.is_some() && row.role == lead {
-                        leads.extend(row.person.map(|person| names.person(person)));
-                    }
-                }
-                at = parent_of.get(&current).copied().flatten();
-            }
-            dump_projects.push(DumpProject {
-                short_name: project.short_name.as_str().to_owned(),
-                name: project.name.clone(),
-                parent: names.project(project.parent),
-                leads: leads.into_iter().collect(),
-            });
-        }
-        dump_projects.sort_by(|a, b| a.short_name.cmp(&b.short_name));
-
-        let mut dump_rows: Vec<DumpAssignment> = rows
-            .iter()
-            .map(|row| DumpAssignment {
-                who: names.who(row),
-                role: names.role(row.role),
-                project: names.project(row.project),
-                applies_to: row.applies_to.code(),
-            })
-            .collect();
-        dump_rows.sort_by(|a, b| {
-            (&a.who, &a.role, &a.project, a.applies_to).cmp(&(
-                &b.who,
-                &b.role,
-                &b.project,
-                b.applies_to,
-            ))
-        });
-
+    /// The levels a project set for each role, and the own levels of a custom role (those of the
+    /// starting roles are the starting levels, written down in the docs).
+    async fn dump_levels(&self, read: &Read) -> Result<Vec<DumpLevel>, SampleError> {
+        let storage = &self.storage;
         let mut levels = Vec::new();
-        for record in &roles {
-            // The levels a project set for the role, and the own levels of a custom role (those
-            // of the starting roles are the starting levels, written down in the docs).
-            let mut places: Vec<Option<ProjectId>> =
-                projects.iter().map(|project| Some(project.id)).collect();
+        for record in &read.roles {
+            let mut places: Vec<Option<ProjectId>> = read
+                .projects
+                .iter()
+                .map(|project| Some(project.id))
+                .collect();
             if record.role.starting.is_none() {
                 places.push(None);
             }
@@ -263,7 +199,7 @@ impl Sample {
                 for (field, level) in storage.field_levels(record.role.id, place).await? {
                     levels.push(DumpLevel {
                         role: record.role.name.clone(),
-                        project: names.project(place),
+                        project: read.names.project(place),
                         about: "field",
                         subject: Field::code(field).to_owned(),
                         level: level.code(),
@@ -272,7 +208,7 @@ impl Sample {
                 for (kind, level) in storage.people_levels(record.role.id, place).await? {
                     levels.push(DumpLevel {
                         role: record.role.name.clone(),
-                        project: names.project(place),
+                        project: read.names.project(place),
                         about: "people",
                         subject: PeopleKind::code(kind).to_owned(),
                         level: level.code(),
@@ -284,13 +220,138 @@ impl Sample {
             (&a.role, &a.project, a.about, &a.subject)
                 .cmp(&(&b.role, &b.project, b.about, &b.subject))
         });
-
-        Ok(OrganizationDump {
-            groups: dump_groups,
-            roles: dump_roles.into_iter().map(|(_, role)| role).collect(),
-            projects: dump_projects,
-            assignments: dump_rows,
-            levels,
-        })
+        Ok(levels)
     }
+}
+
+fn dump_groups(read: &Read) -> Vec<DumpGroup> {
+    let mut groups: Vec<DumpGroup> = read
+        .groups
+        .iter()
+        .map(|group| {
+            let mut members: Vec<String> = read
+                .members_of
+                .get(&group.id)
+                .into_iter()
+                .flatten()
+                .map(|person| read.names.person(*person))
+                .collect();
+            members.sort();
+            DumpGroup {
+                name: group.name.clone(),
+                members,
+            }
+        })
+        .collect();
+    groups.sort_by(|a, b| a.name.cmp(&b.name));
+    groups
+}
+
+/// The people who hold a role, directly or through a group, anywhere.
+fn holders(read: &Read, role: RoleId) -> BTreeSet<UserId> {
+    let mut held = BTreeSet::new();
+    for row in read.rows.iter().filter(|row| row.role == Some(role)) {
+        held.extend(row.person);
+        if let Some(members) = row.group.and_then(|group| read.members_of.get(&group)) {
+            held.extend(members.iter().copied());
+        }
+    }
+    held
+}
+
+fn dump_roles(read: &Read) -> Vec<DumpRole> {
+    let mut roles: Vec<(i64, DumpRole)> = read
+        .roles
+        .iter()
+        .map(|record| {
+            (
+                record.role.position,
+                DumpRole {
+                    name: record.role.name.clone(),
+                    starting: record
+                        .role
+                        .starting
+                        .as_ref()
+                        .map(|key| key.as_str().to_owned()),
+                    two_step: record.role.two_step,
+                    permissions: record
+                        .permissions
+                        .iter()
+                        .map(|permission| permission.code().to_owned())
+                        .collect(),
+                    held_by: holders(read, record.role.id).len(),
+                },
+            )
+        })
+        .collect();
+    roles.sort_by_key(|(position, role)| (*position, role.name.clone()));
+    roles.into_iter().map(|(_, role)| role).collect()
+}
+
+/// The addresses of the Project leads who count in a project: their row is on the project, or on
+/// one above it and reaches the sub-projects.
+fn leads_of(read: &Read, project: &Project, lead: Option<RoleId>) -> Vec<String> {
+    let parent_of: BTreeMap<ProjectId, Option<ProjectId>> = read
+        .projects
+        .iter()
+        .map(|known| (known.id, known.parent))
+        .collect();
+    let mut leads = BTreeSet::new();
+    let mut at = Some(project.id);
+    while let Some(current) = at {
+        for row in read.rows.iter().filter(|row| row.project == Some(current)) {
+            let reaches =
+                current == project.id || row.applies_to == AppliesTo::ProjectAndSubProjects;
+            if reaches && lead.is_some() && row.role == lead {
+                leads.extend(row.person.map(|person| read.names.person(person)));
+            }
+        }
+        at = parent_of.get(&current).copied().flatten();
+    }
+    leads.into_iter().collect()
+}
+
+fn dump_projects(read: &Read) -> Vec<DumpProject> {
+    let lead = read
+        .roles
+        .iter()
+        .find(|record| {
+            record.role.starting.as_ref().map(TechnicalName::as_str)
+                == Some(StartingRole::ProjectLead.key())
+        })
+        .map(|record| record.role.id);
+    let mut projects: Vec<DumpProject> = read
+        .projects
+        .iter()
+        .map(|project| DumpProject {
+            short_name: project.short_name.as_str().to_owned(),
+            name: project.name.clone(),
+            parent: read.names.project(project.parent),
+            leads: leads_of(read, project, lead),
+        })
+        .collect();
+    projects.sort_by(|a, b| a.short_name.cmp(&b.short_name));
+    projects
+}
+
+fn dump_rows(read: &Read) -> Vec<DumpAssignment> {
+    let mut rows: Vec<DumpAssignment> = read
+        .rows
+        .iter()
+        .map(|row| DumpAssignment {
+            who: read.names.who(row),
+            role: read.names.role(row.role),
+            project: read.names.project(row.project),
+            applies_to: row.applies_to.code(),
+        })
+        .collect();
+    rows.sort_by(|a, b| {
+        (&a.who, &a.role, &a.project, a.applies_to).cmp(&(
+            &b.who,
+            &b.role,
+            &b.project,
+            b.applies_to,
+        ))
+    });
+    rows
 }
