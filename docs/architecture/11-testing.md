@@ -72,6 +72,16 @@ Enforced by: TEST-SAMPLE-DATA (`cargo xtask ci` runs it), ARCH-HTTP-EDGE (`bb-sa
 - **Configuration:** workflows for each issue type, field permissions (for example *Cost center* hidden from Contributors), *Who sees people* set for Guests, fields excluded from AI, saved searches, dashboards, two custom themes.
 - **States worth testing:** an edit lock held by someone, a pending conflict, a closed month, a person with a removal in progress.
 
+### The M2 exit demo on the sample
+
+`web/app/e2e/m2-exit-demo.spec.ts` runs it in `cargo xtask ci`, on a phone and a computer, with axe in the four themes at every step; with `BB_SCREENSHOT_DIR` set the same run takes the pictures of the review page (`M2/demo/<step>-<phone|computer>-<light|dark>.png`). By hand, with `cargo xtask dev --sample` (it prints where `sign-in.txt` is; sign in as Ada Brandt, the first line):
+
+1. *Organization settings › Roles & permissions*: make the role *Reviewer* from a copy of *Viewer* and tick *See how the server is doing*.
+2. *Website › Project settings › Field permissions*: for *Contributor* set *Cost center* to *Hidden*. *Mobile app* has it hidden already; *Shop* and *Blog* show it hidden "from Website".
+3. *Website › Project settings › Who sees people*: for *Guest* set *Assigned to* to *Hidden*; the preview now says *Someone*.
+4. *Website › Project settings › Check access*: pick Ana Moreno and read why she is a Contributor (through the group *External*) and that *Cost center* is hidden from her. Pick Ben Hale in *Android* to read that *No access* wins over his role.
+5. Sign out; sign in as the Guest of *Website* (see `dump.json`, the row with the role *Guest* on `WEB`) and as Ana: the tree shows *Website* with its sub-projects only, and the settings pages and *Mobile app* are not found.
+
 ### Large dataset
 
 `cargo xtask dataset large --issues 1000000` builds the same shape at the PERF scale (500 people, 500 projects) for benchmarks.

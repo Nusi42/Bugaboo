@@ -1243,6 +1243,15 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 <li><strong>Configuration:</strong> workflows for each issue type, field permissions (for example <em>Cost center</em> hidden from Contributors), <em>Who sees people</em> set for Guests, fields excluded from AI, saved searches, dashboards, two custom themes.</li>
 <li><strong>States worth testing:</strong> an edit lock held by someone, a pending conflict, a closed month, a person with a removal in progress.</li>
 </ul>
+<h4>The M2 exit demo on the sample</h4>
+<p><code>web/app/e2e/m2-exit-demo.spec.ts</code> runs it in <code>cargo xtask ci</code>, on a phone and a computer, with axe in the four themes at every step; with <code>BB_SCREENSHOT_DIR</code> set the same run takes the pictures of the review page (<code>M2/demo/&lt;step&gt;-&lt;phone|computer&gt;-&lt;light|dark&gt;.png</code>). By hand, with <code>cargo xtask dev --sample</code> (it prints where <code>sign-in.txt</code> is; sign in as Ada Brandt, the first line):</p>
+<ol>
+<li><em>Organization settings › Roles &amp; permissions</em>: make the role <em>Reviewer</em> from a copy of <em>Viewer</em> and tick <em>See how the server is doing</em>.</li>
+<li><em>Website › Project settings › Field permissions</em>: for <em>Contributor</em> set <em>Cost center</em> to <em>Hidden</em>. <em>Mobile app</em> has it hidden already; <em>Shop</em> and <em>Blog</em> show it hidden "from Website".</li>
+<li><em>Website › Project settings › Who sees people</em>: for <em>Guest</em> set <em>Assigned to</em> to <em>Hidden</em>; the preview now says <em>Someone</em>.</li>
+<li><em>Website › Project settings › Check access</em>: pick Ana Moreno and read why she is a Contributor (through the group <em>External</em>) and that <em>Cost center</em> is hidden from her. Pick Ben Hale in <em>Android</em> to read that <em>No access</em> wins over his role.</li>
+<li>Sign out; sign in as the Guest of <em>Website</em> (see <code>dump.json</code>, the row with the role <em>Guest</em> on <code>WEB</code>) and as Ana: the tree shows <em>Website</em> with its sub-projects only, and the settings pages and <em>Mobile app</em> are not found.</li>
+</ol>
 <h4>Large dataset</h4>
 <p><code>cargo xtask dataset large --issues 1000000</code> builds the same shape at the PERF scale (500 people, 500 projects) for benchmarks.</p>
 <h3 id="s11-4"><button class="sec" data-sec>§11.4</button>Ten people at the same time</h3>
