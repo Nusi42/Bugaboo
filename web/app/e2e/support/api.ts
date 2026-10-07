@@ -18,9 +18,14 @@ export interface ApiSession {
   readonly remove: (path: string) => Promise<Json>;
   /** Puts a new value in place of the old one. */
   readonly put: (path: string, data: unknown) => Promise<Json>;
+  /** The cookies of the session, to open a browser that is signed in as this person. */
+  readonly state: () => Promise<StorageState>;
   /** Signs out (so the session is not left in the list of places) and closes the session. */
   readonly dispose: () => Promise<void>;
 }
+
+/** What a browser needs to be signed in as somebody: their cookies. */
+export type StorageState = Awaited<ReturnType<APIRequestContext["storageState"]>>;
 
 function isJson(value: unknown): value is Json {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -70,6 +75,7 @@ export async function openSession(origin: string): Promise<ApiSession> {
       bodyOf(`DELETE ${path}`, await context.delete(path, { headers: await tokenOf(context) })),
     put: async (path, data) =>
       bodyOf(`PUT ${path}`, await context.put(path, { headers: await tokenOf(context), data })),
+    state: () => context.storageState(),
     dispose: async () => {
       // Nobody may be signed in any more, or the session would be listed forever.
       await context.post("/api/v1/auth/sign-out", { headers: await tokenOf(context) });

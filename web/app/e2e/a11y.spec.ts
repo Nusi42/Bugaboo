@@ -15,6 +15,7 @@ import {
   expectGoodInEveryLook,
   expectGoodInEveryTheme as expectGoodInEveryThemeOnPage,
 } from "./support/checks.ts";
+import { setOrganizationSwitch, TWO_STEP_REQUIRED } from "./support/organization.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { sendPassword, signIn } from "./support/flows.ts";
 
@@ -189,16 +190,13 @@ for (const visit of visits) {
   });
 }
 
-/** The setting that asks everybody in the organization for a second step. */
-const TWO_STEP_REQUIRED = "security.two-step-required";
-
 // The screen of somebody who has to set up a second step exists only while the organization asks
 // for one, so its visit switches that on and puts it back.
 test(`ux_04 ${paths.setUpSecondStep} has no accessibility problems in the four themes, also with more contrast`, async ({
   page,
   server,
 }) => {
-  server.setOrganizationSwitch(TWO_STEP_REQUIRED, true);
+  await setOrganizationSwitch(server, TWO_STEP_REQUIRED, true);
   try {
     await sendPassword(page, ada);
     await expect(page).toHaveURL(new RegExp(paths.setUpSecondStep, "u"));
@@ -207,6 +205,6 @@ test(`ux_04 ${paths.setUpSecondStep} has no accessibility problems in the four t
     await page.emulateMedia({ contrast: "more" });
     await expectGoodInEveryTheme(page, true);
   } finally {
-    server.setOrganizationSwitch(TWO_STEP_REQUIRED, false);
+    await setOrganizationSwitch(server, TWO_STEP_REQUIRED, false);
   }
 });
