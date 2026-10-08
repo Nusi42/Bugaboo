@@ -1,5 +1,5 @@
 /* Bugaboo shared components — base elements, buttons, chips, status pills, tags, people, fields.
-   Used by every design page and mockup. Requires tokens.css. */
+   Used by every design page and mockup. Requires theme.css. */
 html {
   box-sizing: border-box;
 }

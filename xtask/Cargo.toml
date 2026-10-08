@@ -18,6 +18,7 @@ ctrlc = { workspace = true }
 flate2 = "1.1.10"
 getrandom = { workspace = true }
 globset = { workspace = true }
+kdl = { workspace = true }
 pulldown-cmark = { version = "0.13.4", default-features = false, features = ["html"] }
 serde = { workspace = true }
 serde_json = { workspace = true, features = ["preserve_order"] }

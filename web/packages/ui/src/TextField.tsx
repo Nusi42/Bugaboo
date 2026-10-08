@@ -8,9 +8,9 @@ import {
 } from "react-aria-components";
 
 import { autoComplete, type AutoComplete } from "./autocomplete.ts";
-import styles from "./Field.module.css";
-import { cx } from "./cx.ts";
-import { fieldKind, type FieldKind } from "./props.ts";
+import { partOf } from "./parts.ts";
+import { fieldKind, fieldShape, type FieldKind } from "./props.ts";
+import { part } from "./tokens.ts";
 
 /** Words of the HTML standard, not text for people. */
 const inputTypes = { text: "text", password: "password", date: "date" } as const;
@@ -94,7 +94,7 @@ export function TextField({
 }: TextFieldProps) {
   return (
     <AriaTextField
-      className={cx(styles.field)}
+      {...partOf(part.field)}
       name={name}
       value={value}
       onChange={onChange}
@@ -105,21 +105,21 @@ export function TextField({
       {...(errorMessage === undefined ? {} : { isInvalid: true })}
       validate={(text) => problemOf(text, kind, requiredMessage, emailMessage)}
     >
-      <Label className={cx(styles.label)}>{label}</Label>
+      <Label {...partOf(part.fieldLabel)}>{label}</Label>
       {description === undefined ? null : (
-        <Text slot={descriptionSlot} className={cx(styles.description)}>
+        <Text slot={descriptionSlot} {...partOf(part.fieldDescription)}>
           {description}
         </Text>
       )}
       {kind === fieldKind.multiline ? (
-        <TextArea className={cx(styles.input, styles.multiline)} rows={4} />
+        <TextArea {...partOf(part.fieldInput, { variants: [fieldShape.multiline] })} rows={4} />
       ) : (
         <Input
-          className={cx(styles.input)}
+          {...partOf(part.fieldInput)}
           {...(date === undefined ? {} : { min: date.min, max: date.max })}
         />
       )}
-      <FieldError className={cx(styles.error)}>{errorMessage}</FieldError>
+      <FieldError {...partOf(part.fieldError)}>{errorMessage}</FieldError>
     </AriaTextField>
   );
 }

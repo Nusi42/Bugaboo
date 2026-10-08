@@ -31,7 +31,6 @@ when = ["edit", "commit", "ci"]
 files = [
   "web/**/*.{ts,tsx,js,mjs,json}",
   "tools/**/*.{js,mjs,json}",
-  "design/**/*.json",
   "messages/**/*.json",
   "*.{json,mjs,ts}",
   ".oxfmtrc.json",
@@ -88,11 +87,11 @@ status = "active"
 
 [[check]]
 id = "LINT-CSS"
-title = "CSS uses only token variables; no raw colors, sizes or !important"
-rule = "ADR-0010"
-tool = "stylelint (CSS Modules)"
+title = "Styles use only token variables; no raw colors, sizes or !important"
+rule = "ADR-0010, ADR-0026"
+tool = "stylelint (the compiled rules of design/theme.kdl, stricter; and the CSS Modules that are left)"
 when = ["edit", "commit", "ci"]
-files = ["web/**/*.css"]
+files = ["web/**/*.css", "design/theme.kdl", "stylelint*.mjs"]
 status = "active"
 
 [[check]]
@@ -204,20 +203,29 @@ status = "active"
 
 [[check]]
 id = "STY-TOKENS"
-title = "Only design tokens in code: no hex/rgb colors, no inline style attributes"
-rule = "ADR-0010"
-tool = "xtask (no color values and no inline styles in the TypeScript and CSS of the app; sizes in CSS are LINT-CSS)"
+title = "Only design tokens in code: no hex/rgb colors in the app or in a rule of the theme file"
+rule = "ADR-0010, ADR-0026"
+tool = "xtask (no color values in the TypeScript and CSS of the app, nor in the rules of design/theme.kdl; sizes are LINT-CSS, styles from code are THEME-ONLY)"
 when = ["edit", "commit", "ci"]
-files = ["web/**/*.{ts,tsx,css}"]
+files = ["web/**/*.{ts,tsx,css}", "design/theme.kdl"]
+status = "active"
+
+[[check]]
+id = "THEME-ONLY"
+title = "The look lives in design/theme.kdl only: no style=, no className, no CSS file but the generated one"
+rule = "ADR-0026, coding-standards §4"
+tool = "xtask (the TypeScript and CSS files of the app; the components that have not moved yet stand in tools/checks/theme-only-exemptions.toml, each with its follow-up)"
+when = ["edit", "commit", "ci"]
+files = ["web/**/*.{ts,tsx,css,scss,sass,less}", "tools/checks/theme-only-exemptions.toml"]
 status = "active"
 
 [[check]]
 id = "STY-CONTRAST"
 title = "Every text/background pair in the built-in themes passes WCAG AA"
 rule = "THM-03, UX-04"
-tool = "xtask (reads design/tokens.json)"
+tool = "xtask (reads design/theme.kdl: every theme, in the usual mode and with more contrast)"
 when = ["commit", "ci"]
-files = ["design/tokens.json"]
+files = ["design/theme.kdl"]
 status = "active"
 
 # ───────────── Architecture ─────────────
@@ -582,7 +590,7 @@ status = "planned"
 
 [[check]]
 id = "DOC-GENERATED"
-title = "Generated files are up to date (API client, token CSS, message types, docs HTML)"
+title = "Generated files are up to date (API client, style sheet, theme names, message types, docs HTML)"
 rule = "SSOT"
 tool = "xtask (regenerates the docs pages and compares)"
 when = ["push", "ci"]

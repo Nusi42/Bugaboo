@@ -1,0 +1,936 @@
+// Bugaboo theme: the one file for everything about how the app looks (ADR-0026).
+//
+// Read only by `cargo xtask gen theme`, which writes the one static style sheet
+// (web/packages/ui/src/theme.css), the TypeScript names (tokens.ts), the Rust theme
+// choices of the settings and the copy for the design pages. Neither the server nor the
+// browser reads this file.
+//
+// What is in here, in this order:
+//   1. themes and the choices that change token values (spacing, text size, motion),
+//   2. tokens: every value, with its variants for each mode on one line,
+//   3. contrast: the rules that every theme must keep (STY-CONTRAST),
+//   4. mixins, keyframes and part rules: the look of every component, using tokens only.
+//
+// Components carry no style values and no class names. They emit `data-part`, `data-state`
+// and `data-variant`, and React Aria's own `data-*` state attributes. THEME-ONLY checks it.
+
+// The two themes that "Match my device" starts with.
+defaults light="daylight" dark="dusk"
+
+// The built-in themes. `kind` decides the browser's own controls and scrollbars.
+themes {
+    theme "daylight" kind="light"
+    theme "paper" kind="light"
+    theme "dusk" kind="dark"
+    theme "midnight" kind="dark"
+}
+
+// Choices of a person that change token values without changing the theme. Each is an
+// attribute on <html>; a token names the variant as a property (`density` below has
+// `compact=`). `media` switches the variant on from the device setting too.
+variants {
+    variant "compact" attribute="data-spacing" value="compact"
+    variant "larger-text" attribute="data-text" value="larger"
+    variant "less-motion" attribute="data-motion" value="less" media="(prefers-reduced-motion: reduce)"
+}
+
+// Tokens. The first value (unnamed) is the same in every theme. A color has one value per
+// theme, `<theme>-more=` replaces it when the device asks for more contrast, `forced=`
+// replaces it while forced colors are on, and `<variant>=` is the value while that choice is on.
+tokens {
+    // Fonts
+    font "font" "Atkinson Hyperlegible Next" "system-ui" "-apple-system" "Segoe UI" "Roboto" "sans-serif"
+    font "mono" "Atkinson Hyperlegible Mono" "ui-monospace" "Cascadia Mono" "Consolas" "monospace"
+
+    // Corners
+    size "r-ctl" "6px"
+    size "r-card" "10px"
+
+    // Text sizes (times the text size choice)
+    size "fs-xs" "calc(12px * $text-scale)"
+    size "fs-sm" "calc(13px * $text-scale)"
+    size "fs-base" "calc(14px * $text-scale)"
+    size "fs-md" "calc(16px * $text-scale)"
+    size "fs-lg" "calc(20px * $text-scale)"
+    size "fs-xl" "calc(24px * $text-scale)"
+
+    // Spacing (times the spacing choice)
+    size "space-1" "calc(4px * $density)"
+    size "space-2" "calc(8px * $density)"
+    size "space-3" "calc(12px * $density)"
+    size "space-4" "calc(16px * $density)"
+    size "space-5" "calc(24px * $density)"
+    size "space-6" "calc(32px * $density)"
+
+    // Sizes
+    size "size-content" "640px"
+    size "size-page" "960px"
+    size "size-menu" "240px"
+    size "size-form" "440px"
+    size "size-qr" "200px"
+    size "size-code" "220px"
+    size "size-target" "44px"
+
+    // Focus ring
+    size "ring-width" "2px"
+    size "ring-offset" "2px"
+
+    // Where the layout changes
+    size "bp-tablet" "768px"
+    size "bp-computer" "1280px"
+    size "size-sidebar" "264px"
+    size "size-sidebar-narrow" "72px"
+    size "size-panel" "420px"
+    size "size-bar" "56px"
+    size "size-viewport" "100dvh"
+    size "size-dialog" "560px"
+    size "size-icon" "20px"
+    size "size-icon-small" "16px"
+    size "size-list" "300px"
+    size "size-reading" "75ch"
+
+    // Motion
+    duration "motion-fast" "120ms" less-motion="0ms"
+    duration "motion-base" "200ms" less-motion="0ms"
+
+    // The choices as numbers
+    number "density" 1 compact=0.75
+    number "text-scale" 1 larger-text=1.25
+
+    // Font weights
+    weight "weight-regular" 400
+    weight "weight-bold" 700
+
+    // Line heights
+    line-height "lh-tight" 1.2
+    line-height "lh-snug" 1.25
+    line-height "lh-body" 1.4
+    line-height "lh-text" 1.5
+    line-height "lh-loose" 1.6
+
+    // The width of a line: borders and dividers
+    border-width "border-width" "1px"
+
+    // Layers (z-index), from the lowest. The overlay is above everything that sticks to the page.
+    layer "z-raised" 1
+    layer "z-sticky" 5
+    layer "z-bar" 10
+    layer "z-panel" 20
+    layer "z-overlay" 30
+    layer "z-toast" 40
+
+    // Opacity. The scrim is the dimmed page behind a sheet; forced colors make it fainter.
+    opacity "opacity-faint" 0.5
+    opacity "opacity-disabled" 0.6
+    opacity "opacity-busy" 0.7
+    opacity "opacity-scrim" 0.8 forced=0.6
+
+    // Easing, for the animations
+    easing "ease-in" "ease-in"
+    easing "ease-out" "ease-out"
+    easing "ease-in-out" "ease-in-out"
+
+    // How much a pressed or hovered primary button brightens
+    number "hover-brightness" 1.12
+
+    // Colors
+    color "bg-canvas" daylight="#ffffff" paper="#fbf8f3" dusk="#1d2027" midnight="#000000"
+    color "bg-surface" daylight="#f6f7f9" paper="#f4efe7" dusk="#252932" midnight="#0c0d10"
+    color "bg-raised" daylight="#ffffff" paper="#fffdf9" dusk="#2d323c" midnight="#16181d"
+    color "bg-sunken" daylight="#eef0f3" paper="#ede6da" dusk="#191b21" midnight="#050506"
+    color "bg-hover" daylight="#eceef2" paper="#ede6db" dusk="#333945" midnight="#1e2127"
+    color "bg-selected" daylight="#ebe7fb" paper="#dce3eb" dusk="#3c375d" midnight="#242046"
+    color "border" daylight="#dfe3e9" paper="#e1d8ca" dusk="#3b414d" midnight="#272a31" daylight-more="#6d6f72" paper-more="#6e6a63" dusk-more="#999ca2" midnight-more="#828388" forced="ButtonText"
+    color "border-subtle" daylight="#eaedf1" paper="#eae3d7" dusk="#313641" midnight="#1a1c21" daylight-more="#8c8e91" paper-more="#8c8881" dusk-more="#797c84" midnight-more="#66676a"
+    color "fg" daylight="#16181d" paper="#2b2620" dusk="#e5e8ed" midnight="#f2f3f5"
+    color "fg-muted" daylight="#5a6170" paper="#6a6157" dusk="#a3aab7" midnight="#9ca3af" daylight-more="#464c57" paper-more="#4d4740" dusk-more="#cbcfd6" midnight-more="#b2b7c1"
+    color "fg-subtle" daylight="#636879" paper="#6b635a" dusk="#a0a6b1" midnight="#878d99" daylight-more="#484c58" paper-more="#4d4741" dusk-more="#cccfd5" midnight-more="#acb0b9"
+    color "accent" daylight="#5b3fd9" paper="#2f5d8a" dusk="#a495ff" midnight="#9483ff" daylight-more="#573cd0" paper-more="#2e5b87" dusk-more="#a697ff" midnight-more="#9b8cff" forced="Highlight"
+    color "accent-soft" daylight="#eeeafd" paper="#e4ecf4" dusk="#37325a" midnight="#221d47"
+    color "accent-fg" daylight="#4a2fc4" paper="#284f75" dusk="#c2b8ff" midnight="#b7abff" daylight-more="#492ec0" paper-more="#264a6e" dusk-more="#d0c8ff"
+    color "on-accent" daylight="#ffffff" paper="#ffffff" dusk="#1a1530" midnight="#0b0820" forced="HighlightText"
+    color "danger" daylight="#c62f2f" paper="#b23a2e" dusk="#ff8a80" midnight="#ff7a70" daylight-more="#912222" paper-more="#802a21" dusk-more="#ffbfb9" midnight-more="#ff928a"
+    color "danger-soft" daylight="#fdecec" paper="#f8e6e1" dusk="#4a2a2c" midnight="#3a1414"
+    color "warning" daylight="#aa4e09" paper="#925611" dusk="#f5b65b" midnight="#ffb547" daylight-more="#7c3907" paper-more="#693e0c" dusk-more="#f7c781"
+    color "warning-soft" daylight="#fef3e2" paper="#f6ead5" dusk="#47391f" midnight="#382810"
+    color "success" daylight="#1f784c" paper="#3f6e3a" dusk="#6fd39a" midnight="#5fd38f" daylight-more="#165637" paper-more="#2e502a" dusk-more="#96dfb5"
+    color "success-soft" daylight="#e6f4ec" paper="#e5eedf" dusk="#213d31" midnight="#0f2e1e"
+    color "st-ns" daylight="#5a6170" paper="#6a6157" dusk="#a3aab7" midnight="#9ca3af" daylight-more="#464c57" paper-more="#4d4740" dusk-more="#cbcfd6" midnight-more="#abb1bb"
+    color "st-ns-soft" daylight="#eef0f3" paper="#ece5da" dusk="#343944" midnight="#1a1c21"
+    color "st-ip" daylight="#1d5fd1" paper="#2f5d8a" dusk="#7fb0ff" midnight="#74a8ff" daylight-more="#16489f" paper-more="#264a6e" dusk-more="#b3d0ff" midnight-more="#82b1ff"
+    color "st-ip-soft" daylight="#e7effc" paper="#e4ecf4" dusk="#24365a" midnight="#10244a"
+    color "st-done" daylight="#1f784c" paper="#3f6e3a" dusk="#6fd39a" midnight="#5fd38f" daylight-more="#165637" paper-more="#2e502a" dusk-more="#96dfb5"
+    color "st-done-soft" daylight="#e6f4ec" paper="#e5eedf" dusk="#213d31" midnight="#0f2e1e"
+    color "cat1-bg" daylight="#fde7ef" paper="#f6e1e4" dusk="#4a2638" midnight="#3a1428"
+    color "cat1-fg" daylight="#a3195b" paper="#97304a" dusk="#ff9cc8" midnight="#ff92c2"
+    color "cat2-bg" daylight="#e3f1ff" paper="#e0eaf3" dusk="#213a5c" midnight="#10294a"
+    color "cat2-fg" daylight="#1556a8" paper="#2c5680" dusk="#8ec3ff" midnight="#86bdff"
+    color "cat3-bg" daylight="#e4f5ea" paper="#e3eddd" dusk="#1f4030" midnight="#0f3020"
+    color "cat3-fg" daylight="#1c6b3c" paper="#3d6534" dusk="#8fe0ae" midnight="#84dca6"
+    color "cat4-bg" daylight="#fff1dc" paper="#f5e6cf" dusk="#4a3519" midnight="#3a2608"
+    color "cat4-fg" daylight="#8a4b00" paper="#86501a" dusk="#ffc277" midnight="#ffbc6b"
+    color "cat5-bg" daylight="#efe9ff" paper="#ece3f1" dusk="#382d5e" midnight="#261c4f"
+    color "cat5-fg" daylight="#5532b8" paper="#674184" dusk="#c6b5ff" midnight="#bfaeff"
+    color "cat6-bg" daylight="#ddf5f3" paper="#dcede9" dusk="#173f3d" midnight="#0a302e"
+    color "cat6-fg" daylight="#0e6560" paper="#2d6559" dusk="#7dddd3" midnight="#72d8cd"
+
+    // The shadow of things that float
+    shadow "shadow" daylight="0 1px 2px 0 #16181d0f, 0 6px 20px 0 #16181d14" paper="0 1px 2px 0 #3c2d190f, 0 6px 20px 0 #3c2d1914" dusk="0 1px 2px 0 #0000004d, 0 8px 24px 0 #00000059" midnight="0 0 0 1px #272a31, 0 8px 24px 0 #00000099"
+}
+
+// Contrast rules (WCAG, THM-03, UX-04, THM-06). Every text color is checked on every
+// background in every theme, except the pairs that are never used, each with its reason.
+contrast min=4.5 {
+    text "fg" "fg-muted" "fg-subtle" "accent-fg" "on-accent" "danger" "warning" "success" "st-ns" "st-ip" "st-done" "cat1-fg" "cat2-fg" "cat3-fg" "cat4-fg" "cat5-fg" "cat6-fg"
+    backgrounds "bg-canvas" "bg-surface" "bg-raised" "bg-sunken" "bg-hover" "bg-selected" "accent" "accent-soft" "danger-soft" "warning-soft" "success-soft" "st-ns-soft" "st-ip-soft" "st-done-soft" "cat1-bg" "cat2-bg" "cat3-bg" "cat4-bg" "cat5-bg" "cat6-bg"
+    restricted "on-accent" on="accent" reason="On-accent text is only ever drawn on the accent fill."
+    restricted "cat1-fg" on="cat1-bg" reason="Category 1 text is only ever drawn on its own category 1 background."
+    restricted "cat2-fg" on="cat2-bg" reason="Category 2 text is only ever drawn on its own category 2 background."
+    restricted "cat3-fg" on="cat3-bg" reason="Category 3 text is only ever drawn on its own category 3 background."
+    restricted "cat4-fg" on="cat4-bg" reason="Category 4 text is only ever drawn on its own category 4 background."
+    restricted "cat5-fg" on="cat5-bg" reason="Category 5 text is only ever drawn on its own category 5 background."
+    restricted "cat6-fg" on="cat6-bg" reason="Category 6 text is only ever drawn on its own category 6 background."
+
+    exclude reason="The accent fill carries only on-accent text." {
+        text "fg" "fg-*" "accent-fg" "danger" "warning" "success" "st-ns" "st-ip" "st-done"
+        on "accent"
+    }
+    exclude reason="Hint text sits on plain surfaces, never on tinted backgrounds." {
+        text "fg-subtle"
+        on "accent-soft" "danger-soft" "warning-soft" "success-soft" "st-*-soft" "cat*-bg"
+    }
+    exclude reason="Accent text sits on plain surfaces or the accent tint, not on status or category tints." {
+        text "accent-fg"
+        on "danger-soft" "warning-soft" "success-soft" "st-*-soft" "cat*-bg"
+    }
+    exclude reason="Danger text sits on plain surfaces or the danger tint." {
+        text "danger"
+        on "accent-soft" "warning-soft" "success-soft" "st-*-soft" "cat*-bg"
+    }
+    exclude reason="Warning text sits on plain surfaces or the warning tint." {
+        text "warning"
+        on "accent-soft" "danger-soft" "success-soft" "st-*-soft" "cat*-bg"
+    }
+    exclude reason="Success text sits on plain surfaces or the success tint." {
+        text "success"
+        on "accent-soft" "danger-soft" "warning-soft" "st-*-soft" "cat*-bg"
+    }
+    exclude reason="Status text sits on plain surfaces or its own status tint." {
+        text "st-ns"
+        on "accent-soft" "danger-soft" "warning-soft" "success-soft" "st-ip-soft" "st-done-soft" "cat*-bg"
+    }
+    exclude reason="Status text sits on plain surfaces or its own status tint." {
+        text "st-ip"
+        on "accent-soft" "danger-soft" "warning-soft" "success-soft" "st-ns-soft" "st-done-soft" "cat*-bg"
+    }
+    exclude reason="Status text sits on plain surfaces or its own status tint." {
+        text "st-done"
+        on "accent-soft" "danger-soft" "warning-soft" "success-soft" "st-ns-soft" "st-ip-soft" "cat*-bg"
+    }
+
+    non-text "border" "border-subtle" reason="Borders and dividers are decorative lines, not text; they are not part of the text contrast rules."
+
+    // With the device setting for more contrast.
+    more min-text=7 min-line=3 reason="With the device setting for more contrast, the listed text colors reach 7:1 (WCAG AAA) on every background they are used on, and the listed lines reach 3:1 (WCAG 1.4.11) on the plain surfaces. The other text colors, the category colors, keep their AA ratio: they carry words, never meaning alone." {
+        text "fg" "fg-muted" "fg-subtle" "accent-fg" "danger" "warning" "success" "st-ns" "st-ip" "st-done" "on-accent"
+        lines "border" "border-subtle"
+        line-on "bg-canvas" "bg-surface" "bg-raised"
+    }
+}
+
+// Hovered and selected rows must stay visible.
+distinct min-against-surfaces=1.08 min-between-states=1.04 reason="Hovered and selected rows must stay visible: they differ from every surface by at least 1.08:1, and from each other by at least 1.04:1, in every theme." {
+    states "bg-hover" "bg-selected"
+    surfaces "bg-canvas" "bg-surface" "bg-raised"
+}
+
+
+// ───────────── Mixins ─────────────
+//
+// Lines that several rules share. `use "name"` puts them in the place of the line.
+
+// The ring around what has the focus: the one definition of how the focus looks.
+mixin "ring" {
+    outline "$ring-width solid $accent"
+    outline-offset "$ring-offset"
+}
+
+// ───────────── Animations ─────────────
+
+keyframes "fade" {
+    from {
+        opacity 0
+    }
+}
+
+keyframes "from-bottom" {
+    from {
+        transform "translateY(100%)"
+    }
+}
+
+keyframes "from-start" {
+    from {
+        transform "translateX(-100%)"
+    }
+}
+
+// ───────────── The page ─────────────
+//
+// `base` rules style elements of the page frame. Everything else is a `part`.
+
+// The page frame is at least as high as the window, so its footer sits at the bottom.
+base "html, body, #root" {
+    height "100%"
+}
+
+base "body" {
+    margin 0
+    background "$bg-canvas"
+    color "$fg"
+    font-family "$font"
+    font-size "$fs-md"
+}
+
+// The rule React Aria would add itself: pressing a control does not wait for a double tap.
+base "[data-react-aria-pressable]" {
+    touch-action "pan-x pan-y pinch-zoom"
+}
+
+base ":focus-visible" {
+    use "ring"
+}
+
+// ───────────── Muted text ─────────────
+
+// Text that is less important than its neighbours: a hint, an empty list.
+part "muted" {
+    margin 0
+    color "$fg-muted"
+    font-size "$fs-base"
+    line-height "$lh-body"
+}
+
+// ───────────── Button (packages/ui: Button, IconButton) ─────────────
+//
+// The variants come before the states, so that a hovered quiet button is hovered.
+
+part "button" {
+    display inline-flex
+    align-items center
+    justify-content center
+    gap "$space-2"
+    box-sizing border-box
+    min-height "$size-target"
+    padding 0 "$space-4"
+    border "$border-width solid $border"
+    border-radius "$r-ctl"
+    background "$bg-raised"
+    color "$fg"
+    font-family "$font"
+    font-size "$fs-md"
+    font-weight "$weight-bold"
+    line-height "$lh-tight"
+    text-align center
+    text-decoration none
+    cursor pointer
+}
+
+part "button[variant=wide]" {
+    width "100%"
+}
+
+// A button with only an icon: as wide as it is high.
+part "button[variant=square]" {
+    width "$size-target"
+    padding 0
+}
+
+part "icon-button.hit" {
+    display inline-flex
+    align-items center
+    justify-content center
+}
+
+part "button[variant=primary]" {
+    border-color "$accent"
+    background "$accent"
+    color "$on-accent"
+}
+
+part "button[variant=quiet]" {
+    border-color transparent
+    background transparent
+    color "$accent-fg"
+}
+
+part "button[variant=danger]" {
+    border-color "$danger"
+    color "$danger"
+}
+
+part "button[hovered]" {
+    background "$bg-hover"
+}
+
+part "button[pressed]" {
+    background "$bg-selected"
+}
+
+part "button[disabled]" {
+    opacity "$opacity-disabled"
+    cursor default
+    forced {
+        border-color GrayText
+    }
+}
+
+part "button[state=busy]" {
+    cursor progress
+    opacity "$opacity-busy"
+}
+
+part "button[focus-visible]" {
+    use "ring"
+}
+
+part "button[variant=primary][hovered]" "button[variant=primary][pressed]" {
+    background "$accent"
+    filter "brightness($hover-brightness)"
+}
+
+part "button[variant=danger][hovered]" "button[variant=danger][pressed]" {
+    background "$danger-soft"
+}
+
+// ───────────── Fields (TextField, SearchField, SelectField) ─────────────
+
+part "field" {
+    display flex
+    flex-direction column
+    gap "$space-1"
+    min-width 0
+}
+
+part "field.label" {
+    font-size "$fs-md"
+    font-weight "$weight-bold"
+    color "$fg"
+}
+
+part "field.description" {
+    font-size "$fs-base"
+    color "$fg-muted"
+    line-height "$lh-body"
+}
+
+part "field.input" {
+    box-sizing border-box
+    width "100%"
+    min-height "$size-target"
+    padding "$space-2 $space-3"
+    border "$border-width solid $border"
+    border-radius "$r-ctl"
+    background "$bg-raised"
+    color "$fg"
+    font-family "$font"
+    font-size "$fs-md"
+    line-height "$lh-body"
+}
+
+part "field.input[variant=multiline]" {
+    resize vertical
+}
+
+part "field.input[focused]" {
+    outline "$ring-width solid $accent"
+    outline-offset 0
+    border-color "$accent"
+}
+
+part "field.input[invalid]" {
+    border-color "$danger"
+}
+
+part "field.input[disabled]" {
+    opacity "$opacity-disabled"
+}
+
+part "field.error" {
+    font-size "$fs-base"
+    color "$danger"
+    line-height "$lh-body"
+}
+
+// ───────────── Alert ─────────────
+
+part "alert" {
+    box-sizing border-box
+    padding "$space-3 $space-4"
+    border "$border-width solid $border"
+    border-left-width "$space-1"
+    border-radius "$r-ctl"
+    background "$bg-surface"
+    color "$fg"
+    font-size "$fs-md"
+    line-height "$lh-text"
+    overflow-wrap anywhere
+}
+
+part "alert[variant=danger]" {
+    border-color "$danger"
+    background "$danger-soft"
+}
+
+part "alert[variant=success]" {
+    border-color "$success"
+    background "$success-soft"
+}
+
+part "alert[variant=warning]" {
+    border-color "$warning"
+    background "$warning-soft"
+}
+
+part "alert[variant=info]" {
+    border-color "$accent"
+    background "$accent-soft"
+}
+
+// ───────────── Link ─────────────
+
+part "link" {
+    color "$accent-fg"
+    font-weight "$weight-bold"
+    text-decoration underline
+    text-underline-offset "$space-1"
+    cursor pointer
+    forced {
+        color LinkText
+    }
+}
+
+part "link[hovered]" {
+    text-decoration-thickness "$ring-width"
+}
+
+part "link[focus-visible]" {
+    use "ring"
+}
+
+part "link[current]" {
+    color "$fg"
+    text-decoration none
+}
+
+// ───────────── Switch ─────────────
+
+part "switch" {
+    display flex
+    align-items center
+    gap "$space-3"
+    min-height "$size-target"
+    color "$fg"
+    font-size "$fs-md"
+    font-weight "$weight-bold"
+    cursor pointer
+}
+
+part "switch.track" {
+    flex none
+    box-sizing border-box
+    width "$size-target"
+    height "$space-5"
+    padding "$space-1"
+    border "$border-width solid $border"
+    border-radius "$r-card"
+    background "$bg-sunken"
+}
+
+part "switch.thumb" {
+    display block
+    width "$space-4"
+    height "$space-4"
+    border-radius "$r-card"
+    background "$fg-muted"
+    transform "translateX(0)"
+    forced {
+        background ButtonText
+    }
+}
+
+part "switch[selected] switch.track" {
+    border-color "$accent"
+    background "$accent"
+}
+
+part "switch[selected] switch.thumb" {
+    background "$on-accent"
+    transform "translateX($space-4)"
+}
+
+part "switch[focus-visible] switch.track" {
+    use "ring"
+}
+
+// ───────────── Checkbox ─────────────
+
+part "checkbox" {
+    display flex
+    align-items center
+    gap "$space-3"
+    min-height "$size-target"
+    color "$fg"
+    font-size "$fs-md"
+    cursor pointer
+}
+
+part "checkbox.box" {
+    position relative
+    flex none
+    box-sizing border-box
+    width "$space-5"
+    height "$space-5"
+    border "$border-width solid $border"
+    border-radius "$r-ctl"
+    background "$bg-raised"
+}
+
+part "checkbox[hovered] checkbox.box" {
+    background "$bg-hover"
+}
+
+part "checkbox[selected] checkbox.box" {
+    border-color "$accent"
+    background "$accent"
+}
+
+// The tick: two sides of a box, turned.
+part "checkbox[selected] checkbox.box::after" {
+    content "\"\""
+    position absolute
+    top "$space-1"
+    left "$space-2"
+    width "$space-1"
+    height "$space-3"
+    border solid "$on-accent"
+    border-width 0 "$ring-width" "$ring-width" 0
+    transform "rotate(45deg)"
+}
+
+part "checkbox[focus-visible] checkbox.box" {
+    use "ring"
+}
+
+part "checkbox[disabled]" {
+    opacity "$opacity-disabled"
+    cursor default
+}
+
+part "checkbox.label" {
+    min-width 0
+    overflow-wrap anywhere
+}
+
+// ───────────── ChoiceGroup ─────────────
+
+part "choice-group" {
+    margin 0
+    padding 0
+    border 0
+    min-width 0
+}
+
+part "choice-group.legend" {
+    padding 0
+    margin-bottom "$space-2"
+    font-size "$fs-md"
+    font-weight "$weight-bold"
+    color "$fg"
+}
+
+part "choice-group.choices" {
+    display flex
+    flex-wrap wrap
+    gap "$space-2"
+}
+
+part "choice-group.choice" {
+    position relative
+    display inline-flex
+}
+
+part "choice-group.input" {
+    position absolute
+    inset 0
+    margin 0
+    opacity 0
+    cursor pointer
+}
+
+part "choice-group.label" {
+    display inline-flex
+    align-items center
+    min-height "$size-target"
+    padding 0 "$space-4"
+    border "$border-width solid $border"
+    border-radius "$r-ctl"
+    background "$bg-raised"
+    color "$fg"
+    font-size "$fs-md"
+}
+
+// Forced colors drop background colors, so the chosen one needs an outline to be seen.
+part "choice-group.input:checked + choice-group.label" {
+    border-color "$accent"
+    background "$bg-selected"
+    color "$accent-fg"
+    font-weight "$weight-bold"
+    forced {
+        outline "$ring-width solid $accent"
+    }
+}
+
+part "choice-group.input:hover + choice-group.label" {
+    background "$bg-hover"
+}
+
+part "choice-group.input:focus-visible + choice-group.label" {
+    use "ring"
+}
+
+// ───────────── Overlay (sheets, menus, quick search) ─────────────
+//
+// The variant says where it opens from: center, bottom, start or top.
+
+part "overlay" {
+    position fixed
+    inset 0
+    z-index "$z-overlay"
+    display flex
+    overflow hidden
+}
+
+// The page behind stays in sight but dimmed, so a sheet is clearly a layer above it.
+part "overlay::before" {
+    content "\"\""
+    position absolute
+    inset 0
+    background "$bg-sunken"
+    opacity "$opacity-scrim"
+    forced {
+        background Canvas
+    }
+}
+
+part "overlay[variant=center]" {
+    align-items flex-start
+    justify-content center
+    padding "$space-6 $space-4"
+}
+
+part "overlay[variant=bottom]" {
+    align-items flex-end
+}
+
+part "overlay[variant=start]" {
+    justify-content flex-start
+}
+
+part "overlay[variant=top]" {
+    align-items flex-start
+}
+
+part "overlay.modal" {
+    position relative
+    box-sizing border-box
+    display flex
+    flex-direction column
+    min-width 0
+    border "$border-width solid $border"
+    background "$bg-raised"
+    color "$fg"
+    box-shadow "$shadow"
+}
+
+part "overlay.modal[variant=center]" {
+    width "100%"
+    max-width "$size-dialog"
+    max-height "100%"
+    border-radius "$r-card"
+}
+
+part "overlay.modal[variant=bottom]" {
+    width "100%"
+    max-height "85%"
+    border-radius "$r-card $r-card 0 0"
+}
+
+part "overlay.modal[variant=start]" {
+    width "$size-sidebar"
+    max-width "85%"
+    height "100%"
+    border-radius "0 $r-card $r-card 0"
+}
+
+part "overlay.modal[variant=top]" {
+    width "100%"
+    max-height "100%"
+    border-radius "0 0 $r-card $r-card"
+}
+
+part "overlay.dialog" {
+    display flex
+    flex 1
+    flex-direction column
+    min-height 0
+    overflow-y auto
+    outline none
+}
+
+part "overlay[entering]::before" {
+    animation "fade $motion-base $ease-out"
+}
+
+part "overlay[exiting]::before" {
+    animation "fade $motion-base $ease-in reverse"
+}
+
+part "overlay.modal[variant=bottom][entering]" {
+    animation "from-bottom $motion-base $ease-out"
+}
+
+part "overlay.modal[variant=bottom][exiting]" {
+    animation "from-bottom $motion-base $ease-in reverse"
+}
+
+part "overlay.modal[variant=start][entering]" {
+    animation "from-start $motion-base $ease-out"
+}
+
+part "overlay.modal[variant=start][exiting]" {
+    animation "from-start $motion-base $ease-in reverse"
+}
+
+part "overlay.modal[variant=center][entering]" "overlay.modal[variant=top][entering]" {
+    animation "fade $motion-fast $ease-out"
+}
+
+part "overlay.modal[variant=center][exiting]" "overlay.modal[variant=top][exiting]" {
+    animation "fade $motion-fast $ease-in reverse"
+}
+
+// ───────────── SearchPicker ─────────────
+//
+// Two looks, set on each part as its variant: `list` (plain rows that scroll) and `boxed` (every
+// choice a bordered box).
+
+part "picker" {
+    display flex
+    flex-direction column
+    gap "$space-3"
+    min-width 0
+    margin 0
+    padding 0
+    border 0
+}
+
+part "picker.legend[variant=list]" {
+    margin-block-end "$space-3"
+    padding 0
+    font-weight "$weight-bold"
+}
+
+part "picker.legend[variant=boxed]" {
+    padding 0
+    font-size "$fs-md"
+    font-weight "$weight-bold"
+    color "$fg"
+}
+
+part "picker.options[variant=list]" {
+    display flex
+    flex-direction column
+    gap "$space-1"
+    max-height "$size-list"
+    margin 0
+    // Room for the focus ring: a list that scrolls clips what is outside it.
+    padding "calc($ring-width + $ring-offset)"
+    list-style none
+    overflow-y auto
+}
+
+part "picker.options[variant=boxed]" {
+    display flex
+    flex-direction column
+    gap "$space-1"
+    margin 0
+    padding 0
+    list-style none
+}
+
+part "picker.option[variant=list]" {
+    display flex
+    align-items center
+    gap "$space-3"
+    min-height "$size-target"
+    padding 0 "$space-2"
+    border-radius "$r-ctl"
+    cursor pointer
+}
+
+part "picker.option[variant=list]:hover" {
+    background "$bg-hover"
+}
+
+part "picker.option[variant=list]:has(picker.input:focus-visible)" {
+    use "ring"
+}
+
+part "picker.option[variant=boxed]" {
+    display flex
+    align-items center
+    gap "$space-3"
+    min-height "$size-target"
+    padding "$space-1 $space-3"
+    border "$border-width solid $border-subtle"
+    border-radius "$r-ctl"
+    background "$bg-surface"
+    cursor pointer
+}
+
+part "picker.input[variant=boxed]" {
+    flex none
+}
+
+part "picker.row" {
+    display flex
+    flex-wrap wrap
+    align-items center
+    justify-content space-between
+    gap "$space-2 $space-3"
+    min-height "$size-target"
+    padding 0 "$space-2"
+    border-radius "$r-ctl"
+}
+
+part "picker.row:hover" {
+    background "$bg-hover"
+}
+
+part "picker.name[variant=list]" {
+    flex 1
+    min-width 0
+    overflow-wrap anywhere
+}
+
+part "picker.name[variant=boxed]" {
+    font-weight "$weight-bold"
+    color "$fg"
+    overflow-wrap anywhere
+}
+
+part "picker.hint" {
+    color "$fg-muted"
+    font-size "$fs-sm"
+}

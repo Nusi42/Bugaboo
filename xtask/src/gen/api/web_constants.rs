@@ -40,13 +40,20 @@ pub(super) fn setting_keys(sources: &[Source]) -> anyhow::Result<String> {
     let mut settings = Vec::new();
     let mut lists = ChoiceLists::new();
     let mut seen = false;
+    // The other files of the registry folder hold lists and constants the catalog names, like the
+    // themes that the theme generator writes (ADR-0026).
+    let others: Vec<&str> = sources
+        .iter()
+        .filter(|(path, _)| path.starts_with(REGISTRY_FOLDER) && !path.ends_with("/catalog.rs"))
+        .map(|(_, text)| text.as_str())
+        .collect();
     for (path, text) in sources
         .iter()
         .filter(|(path, _)| path.starts_with(REGISTRY_FOLDER) && path.ends_with("/catalog.rs"))
     {
         seen = true;
-        let (found, choices) =
-            read_registry(text).with_context(|| format!("{path} is not a settings registry"))?;
+        let (found, choices) = read_registry(text, &others)
+            .with_context(|| format!("{path} is not a settings registry"))?;
         settings.extend(found);
         lists.extend(choices);
     }
@@ -229,6 +236,35 @@ pub mod for_tests {
             ),
         );
         assert!(setting_keys(&[broken]).is_err());
+    }
+
+    #[test]
+    fn choices_and_defaults_may_stand_in_another_file_of_the_registry() {
+        let split = (
+            CATALOG_PATH.to_owned(),
+            "settings! {
+    LOOK: Text = {
+        key: \"appearance.look\",
+        default: DEFAULT_LOOK,
+        format: Format::Choices(LOOK_CHOICES),
+    }
+}
+"
+            .to_owned(),
+        );
+        let themes = (
+            format!("{REGISTRY_FOLDER}themes.rs"),
+            "pub(super) const LOOK_CHOICES: &[Choice] = &[Choice::new(\"day\", a), Choice::new(\"night\", b)];
+pub(super) const DEFAULT_LOOK: &str = \"day\";
+"
+                .to_owned(),
+        );
+        let text = setting_keys(&[split, themes]).unwrap();
+        assert!(
+            text.contains("appearanceLook: [\"day\", \"night\"],"),
+            "{text}"
+        );
+        assert!(text.contains("appearanceLook: \"day\","), "{text}");
     }
 
     #[test]

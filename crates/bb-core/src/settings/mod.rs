@@ -16,6 +16,7 @@ use crate::message::MessageKey;
 mod catalog;
 mod format;
 mod layers;
+mod themes;
 
 pub use catalog::*;
 pub use format::{Choice, DEVICE, Format};

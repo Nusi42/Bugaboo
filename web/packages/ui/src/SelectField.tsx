@@ -1,8 +1,9 @@
 import { useId, useRef } from "react";
 import { VisuallyHidden } from "react-aria-components";
 
-import styles from "./Field.module.css";
+import { partOf } from "./parts.ts";
 import selectStyles from "./SelectField.module.css";
+import { part } from "./tokens.ts";
 
 export interface SelectChoice<Value extends string> {
   readonly value: Value;
@@ -45,12 +46,12 @@ export function SelectField<Value extends string>({
   const select = useRef<HTMLSelectElement>(null);
   const helpId = `${id}-help`;
   return (
-    <div className={styles.field}>
-      <label className={styles.label} htmlFor={id}>
+    <div {...partOf(part.field)}>
+      <label {...partOf(part.fieldLabel)} htmlFor={id}>
         {hideLabel ? <VisuallyHidden>{label}</VisuallyHidden> : label}
       </label>
       {description === undefined ? null : (
-        <span id={helpId} className={styles.description}>
+        <span id={helpId} {...partOf(part.fieldDescription)}>
           {description}
         </span>
       )}

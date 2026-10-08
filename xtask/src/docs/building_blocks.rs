@@ -160,7 +160,7 @@ bugaboo/
 │   ├── bb-core/            domain types
 │   └── bb-api/             HTTP
 ├── xtask/                  runner
-├── design/tokens.json      tokens
+├── design/theme.kdl        the theme
 └── web/                    browser app
     ├── app/                the app
     └── packages/

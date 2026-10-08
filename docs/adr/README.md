@@ -13,7 +13,7 @@ Each file records one decision: context, decision, consequences, alternatives. N
 | [0007](0007-event-log.md) | Event log and outbox as the single source of change |
 | [0008](0008-api-first.md) | API first: OpenAPI from Rust, TypeScript client generated |
 | [0009](0009-frontend-stack.md) | Browser app: React 19, Vite, TanStack, React Aria |
-| [0010](0010-design-tokens.md) | Styling through design tokens only |
+| [0010](0010-design-tokens.md) | Styling through design tokens only (the styling part is replaced by 0026) |
 | [0011](0011-markdown.md) | One Markdown renderer for server and browser |
 | [0012](0012-sold-and-served.md) | One binary for sold and served |
 | [0013](0013-ai.md) | AI: one provider interface, one tool registry, no decisions about people |
@@ -29,6 +29,7 @@ Each file records one decision: context, decision, consequences, alternatives. N
 | [0023](0023-dev-ports-and-test-setup.md) | Development ports and test setup |
 | [0024](0024-master-repo-and-work-folders.md) | Master repository in a synced folder, work folders outside it |
 | [0025](0025-roles-groups-and-assignments.md) | Roles, groups and assignments on the project tree |
+| [0026](0026-one-theme-file.md) | One theme file for everything about how the app looks |
 
 ## Template
 

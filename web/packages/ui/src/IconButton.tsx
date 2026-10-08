@@ -1,10 +1,10 @@
 import { Button as AriaButton } from "react-aria-components";
 
-import styles from "./Button.module.css";
-import { cx } from "./cx.ts";
 import { Icon } from "./Icon.tsx";
 import type { IconName } from "./icons.ts";
-import iconStyles from "./IconButton.module.css";
+import { partOf } from "./parts.ts";
+import { buttonLook, buttonShape } from "./props.ts";
+import { part } from "./tokens.ts";
 
 export interface IconButtonProps {
   readonly icon: IconName;
@@ -19,12 +19,12 @@ export interface IconButtonProps {
 export function IconButton({ icon, label, onPress, isExpanded }: IconButtonProps) {
   return (
     <AriaButton
-      className={cx(styles.button, styles.quiet, iconStyles.square)}
+      {...partOf(part.button, { variants: [buttonLook.quiet, buttonShape.square] })}
       aria-label={label}
       {...(isExpanded === undefined ? {} : { "aria-expanded": isExpanded })}
       onPress={onPress}
     >
-      <span title={label} className={iconStyles.hit}>
+      <span title={label} {...partOf(part.iconButtonHit)}>
         <Icon name={icon} />
       </span>
     </AriaButton>

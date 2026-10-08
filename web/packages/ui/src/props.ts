@@ -22,6 +22,12 @@ export const buttonLook = {
 } as const;
 export type ButtonLook = (typeof buttonLook)[keyof typeof buttonLook];
 
+/** Besides its look, a button can fill the width of its container or be square (an icon). */
+export const buttonShape = { wide: "wide", square: "square" } as const;
+
+/** What a button is doing that the theme file styles: waiting for an answer. */
+export const buttonState = { busy: "busy" } as const;
+
 /** What a button does in a form: only reacts to a press, or sends the form. */
 export const buttonType = { button: "button", submit: "submit" } as const;
 export type ButtonType = (typeof buttonType)[keyof typeof buttonType];
@@ -43,6 +49,9 @@ export const fieldKind = {
   multiline: "multiline",
 } as const;
 export type FieldKind = (typeof fieldKind)[keyof typeof fieldKind];
+
+/** A text field that holds several lines looks like one box with room for them. */
+export const fieldShape = { multiline: "multiline" } as const;
 
 /** How big an icon is: for navigation, or for lists. */
 export const iconSize = { normal: "normal", small: "small" } as const;

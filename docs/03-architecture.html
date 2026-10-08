@@ -3,7 +3,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Mono:wght@400;600&family=Atkinson+Hyperlegible+Next:wght@400;500;600;700&display=swap">
-<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="theme.css">
 <link rel="stylesheet" href="components.css">
 <link rel="stylesheet" href="docpage.css">
 
@@ -175,13 +175,13 @@
 │   └── bb-server/          the `bugaboo` binary: CLI, setup wizard, service install, wiring
 ├── xtask/                  the single check/build runner (cargo xtask …)
 ├── tools/                  check catalogue, pinned tool versions, dev ports
-├── design/tokens.json      design tokens — source of all colors, fonts, sizes
+├── design/theme.kdl        the theme — source of all colors, fonts, sizes and component rules
 ├── messages/en.json        message catalog — source of all user-facing text
 ├── web/                    browser app (TypeScript)
 │   ├── app/                the React app: routes and feature folders
 │   └── packages/
 │       ├── api-client/     types generated from OpenAPI (never edited by hand) and the thin client on top
-│       ├── ui/             shared components on React Aria + generated token CSS; depends on api-client for the generated choices and defaults of the settings (the look of a person)
+│       ├── ui/             shared components on React Aria + the generated style sheet; depends on api-client for the generated choices and defaults of the settings (the look of a person)
 │       ├── wasm/           generated bindings to bb-wasm
 │       └── messages/       generated, typed message keys
 ├── docs/                   development docs (this)
@@ -307,14 +307,14 @@
 <ul>
 <li><strong>Server data</strong> lives only in the TanStack Query cache, fetched through the generated client, keyed by generated query keys.</li>
 <li><strong>Forms</strong> get their validation rules from the server's exported schema; the server still decides.</li>
-<li><strong>Components</strong> come from <code>@bugaboo/ui</code>, built on React Aria Components; styles use token variables only. The content security policy allows no inline styles, so React Aria's one injected style element is replaced by a rule in <code>global.css</code> (the element is declared in <code>index.html</code>).</li>
+<li><strong>Components</strong> come from <code>@bugaboo/ui</code>, built on React Aria Components; a component carries no style and no class name: it puts <code>data-part</code>, <code>data-variant</code> and <code>data-state</code> on its elements (<code>partOf</code>) and the rules of <code>design/theme.kdl</code> do the rest, compiled into one static style sheet (ADR-0026). The content security policy allows no inline styles, so React Aria's one injected style element is replaced by a <code>base</code> rule of the theme file (the element is declared in <code>index.html</code>).</li>
 <li><strong>Who is signed in</strong> is read once with <code>GET /api/v1/auth/me</code>; a <code>401</code> anywhere (a session that ended, a wrong CSRF token) takes the person to the sign-in page with the reason in the address, and the guest layout does not send a signed-in person away while a reason is shown.</li>
 <li><strong>The frame</strong> (<code>features/shell</code>) lays out three sizes from the <code>bp-*</code> tokens: a sidebar on a computer (1280 px and wider), a menu that slides in on a tablet, a bottom bar and one screen at a time on a phone. <code>places.ts</code> is the one list of the screens that exist (menus, the trail at the top, quick search and the topics of the settings frames read it), so nothing is shown that does not exist. Other features add to the shell through registries (<code>addSidebarSection</code> for the project tree, <code>addQuickSearchSource</code> for search results). Which item is open lives in the address (typed search parameters), so it can be shared and Back closes it.</li>
 <li><strong>Shortcuts</strong> are defined once in <code>shared/shortcuts.ts</code> (ID, default keys, words, where they work, the visible button that does the same). One engine handles sequences such as <code>g h</code> and stays silent while a text field has the focus; a person's own keys come from one source: the server when somebody is signed in (stored as one validated value), this browser before sign-in.</li>
 <li><strong>Instant changes</strong>: <code>useOptimisticMutation</code> shows a change in the query cache at once, goes back with a plain message when the server refuses, and reports <em>Saving…</em>, <em>Saved</em> or <em>Not saved yet</em>; skeletons appear only after 0.3 s; <em>Undo</em> is on offer for 10 seconds.</li>
 <li><strong>Appearance</strong> (the mode <em>Match my device</em>, <em>Always light</em> or <em>Always dark</em>, one light and one dark theme, spacing, text size, motion) is one <code>AppearanceSource</code>. The source is the person's settings on the server once the person is signed in (they follow the person to every browser and are gone from the browser after sign-out), and this device's choice before sign-in. The browser keeps one copy for the first frame, which sign-out removes. <em>Region</em> (time zone, date and number format, first day of the week) reads from the same answer, and <code>shared/format.ts</code> writes times and numbers by it.</li>
 <li><strong>One home for what several screens share (M2C):</strong> the choices and defaults of the settings and the page sizes of the lists are written by <code>cargo xtask gen api</code> from the Rust code (<code>setting-keys.generated.ts</code>, <code>paging.generated.ts</code> in <code>@bugaboo/api-client</code>) and read by the app, never typed again. Every list of pages goes through <code>shared/paged.ts</code> (<code>usePaged</code>, <code>linesFrom</code>, typed <code>fields</code>); the keys of the query cache are in <code>shared/query-keys.ts</code> and nowhere else; the pages of a project (path, name, tab, permission, title) are the table in <code>shared/project-pages.ts</code>; a person shown by name is picked by <code>namedPerson</code> and named by <code>shared/person.ts</code>; what the browser keeps is read and written only through <code>@bugaboo/ui</code> <code>storage.ts</code>, whose <code>storageKey</code> lists every key. A search box with choices is the <code>SearchPicker</code> of <code>@bugaboo/ui</code>; a page that waits for one answer is a <code>QueryGate</code> (<code>features/shell</code>). The components of <code>@bugaboo/ui</code> take one prop that names a look (<code>tone</code>, <code>look</code>, <code>from</code>, <code>kind</code>, <code>size</code>; the words are in <code>props.ts</code>), not a flag per look. The browser tests reach the API through the typed client (<code>e2e/support/api.ts</code>), open pages by <code>paths.ts</code>, and take their windows from <code>web/tooling/viewports.ts</code>.</li>
-<li><strong>Rules the checks keep:</strong> feature folders are reached only through their <code>index.ts</code> and shared code and packages never import features or the app (<code>ARCH-WEB-FEATURES</code>); all text comes from the catalog (<code>TXT-LITERAL</code>); no color is written out and no style is set from code (<code>STY-TOKENS</code>); every address in <code>paths.ts</code> is opened by the accessibility suite in the four themes on a computer and a phone (<code>TEST-A11Y</code>).</li>
+<li><strong>Rules the checks keep:</strong> feature folders are reached only through their <code>index.ts</code> and shared code and packages never import features or the app (<code>ARCH-WEB-FEATURES</code>); all text comes from the catalog (<code>TXT-LITERAL</code>); no color is written out (<code>STY-TOKENS</code>), no size or duration either (<code>LINT-CSS</code>), and no style, class name or CSS file of a component exists (<code>THEME-ONLY</code>); every address in <code>paths.ts</code> is opened by the accessibility suite in the four themes on a computer and a phone (<code>TEST-A11Y</code>).</li>
 <li><strong>Heavy features</strong> (timeline, relation map, document editor, workflow editor, theme editor, WebAssembly) are split into separate chunks and loaded when first opened.</li>
 </ul>
 
@@ -1128,7 +1128,7 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 <tr><td><code>FMT-MD</code></td><td>Markdown docs follow one style</td><td>coding-standards §2</td><td>rumdl</td><td>edit · commit · ci</td></tr>
 <tr><td><code>LINT-RUST</code></td><td>Clippy finds no warnings (selected pedantic lints on), for the Windows and the Linux code</td><td>coding-standards §3</td><td>cargo clippy -D warnings</td><td>push · ci</td></tr>
 <tr><td><code>LINT-TS</code></td><td>oxlint finds no problems, including type-aware rules (TypeScript 7)</td><td>coding-standards §4</td><td>oxlint + oxlint-tsgolint</td><td>edit · commit · ci</td></tr>
-<tr><td><code>LINT-CSS</code></td><td>CSS uses only token variables; no raw colors, sizes or !important</td><td>ADR-0010</td><td>stylelint (CSS Modules)</td><td>edit · commit · ci</td></tr>
+<tr><td><code>LINT-CSS</code></td><td>Styles use only token variables; no raw colors, sizes or !important</td><td>ADR-0010, ADR-0026</td><td>stylelint (the compiled rules of design/theme.kdl, stricter; and the CSS Modules that are left)</td><td>edit · commit · ci</td></tr>
 <tr><td><code>LINT-HTML</code></td><td>Hand-written HTML pages are valid and accessible</td><td>coding-standards §7</td><td>html-validate (recommended and a11y presets)</td><td>edit · commit · ci</td></tr>
 <tr><td><code>LINT-TYPES</code></td><td>TypeScript type check passes</td><td>coding-standards §4</td><td>tsc (TypeScript 7) --noEmit</td><td>push · ci</td></tr>
 <tr><td><code>LINT-SPELL</code></td><td>No spelling mistakes in code, UI text and docs</td><td>coding-standards §2</td><td>typos</td><td>commit · ci</td></tr>
@@ -1140,8 +1140,9 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 <tr><td><code>TXT-LITERAL</code></td><td>No hard-coded user-facing text in components</td><td>UX-07, coding-standards §4</td><td>oxlint (react/jsx-no-literals, one configuration with LINT-TS): JSX text and the string values of aria-*, title, alt and placeholder</td><td>edit · commit · ci</td></tr>
 <tr><td><code>TXT-CATALOG</code></td><td>Message catalog: no missing, unused or duplicate keys; placeholders match</td><td>UX-07</td><td>xtask (parses messages/en.json and code references)</td><td>edit · commit · ci</td></tr>
 <tr><td><code>TXT-TERMS</code></td><td>No words from the glossary's 'Don't say' column in UI text, user docs or API names</td><td>glossary.md</td><td>xtask (reads glossary tables)</td><td>edit · commit · ci</td></tr>
-<tr><td><code>STY-TOKENS</code></td><td>Only design tokens in code: no hex/rgb colors, no inline style attributes</td><td>ADR-0010</td><td>xtask (no color values and no inline styles in the TypeScript and CSS of the app; sizes in CSS are LINT-CSS)</td><td>edit · commit · ci</td></tr>
-<tr><td><code>STY-CONTRAST</code></td><td>Every text/background pair in the built-in themes passes WCAG AA</td><td>THM-03, UX-04</td><td>xtask (reads design/tokens.json)</td><td>commit · ci</td></tr>
+<tr><td><code>STY-TOKENS</code></td><td>Only design tokens in code: no hex/rgb colors in the app or in a rule of the theme file</td><td>ADR-0010, ADR-0026</td><td>xtask (no color values in the TypeScript and CSS of the app, nor in the rules of design/theme.kdl; sizes are LINT-CSS, styles from code are THEME-ONLY)</td><td>edit · commit · ci</td></tr>
+<tr><td><code>THEME-ONLY</code></td><td>The look lives in design/theme.kdl only: no style=, no className, no CSS file but the generated one</td><td>ADR-0026, coding-standards §4</td><td>xtask (the TypeScript and CSS files of the app; the components that have not moved yet stand in tools/checks/theme-only-exemptions.toml, each with its follow-up)</td><td>edit · commit · ci</td></tr>
+<tr><td><code>STY-CONTRAST</code></td><td>Every text/background pair in the built-in themes passes WCAG AA</td><td>THM-03, UX-04</td><td>xtask (reads design/theme.kdl: every theme, in the usual mode and with more contrast)</td><td>commit · ci</td></tr>
 <tr><td><code>ARCH-DEPS</code></td><td>Crates depend only on what the module map allows</td><td>architecture §4 (dependency rules), ADR-0001</td><td>xtask (cargo metadata vs allowed edges)</td><td>push · ci</td></tr>
 <tr><td><code>ARCH-PURE</code></td><td>bb-core, bb-searchlang and bb-markdown do no I/O (no tokio, sqlx, std::fs, std::net)</td><td>architecture §4, ADR-0005, ADR-0011</td><td>xtask (dependency bans) + ast-grep</td><td>edit · push · ci</td></tr>
 <tr><td><code>ARCH-WASM</code></td><td>The crates shared with the browser (bb-core, bb-searchlang, bb-markdown) still build for WebAssembly</td><td>ADR-0001, ADR-0005, ADR-0011</td><td>cargo check --target wasm32-unknown-unknown (minimal form: the size budget with wasm-opt, PERF-04, comes with bb-wasm)</td><td>push · ci</td></tr>
@@ -1178,7 +1179,7 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 <tr><td><code>DEP-LICENSES</code></td><td>Only licenses on the allow list ship</td><td>architecture §1 (licenses)</td><td>cargo-deny licenses + npm license check against the same list</td><td>push · ci</td></tr>
 <tr><td><code>DEP-UNUSED</code></td><td>No unused dependencies</td><td>coding-standards §2</td><td>cargo-machete + knip-style check for npm</td><td>ci</td></tr>
 <tr><td><code>DEP-SBOM</code></td><td>Release has CycloneDX and SPDX SBOMs and third-party notices</td><td>COMP-01, COMP-02</td><td>cargo-cyclonedx + @cyclonedx/cyclonedx-npm + cargo-about</td><td>release</td></tr>
-<tr><td><code>DOC-GENERATED</code></td><td>Generated files are up to date (API client, token CSS, message types, docs HTML)</td><td>SSOT</td><td>xtask (regenerates the docs pages and compares)</td><td>push · ci</td></tr>
+<tr><td><code>DOC-GENERATED</code></td><td>Generated files are up to date (API client, style sheet, theme names, message types, docs HTML)</td><td>SSOT</td><td>xtask (regenerates the docs pages and compares)</td><td>push · ci</td></tr>
 <tr><td><code>DOC-ADR-ENFORCED</code></td><td>Every decision record says how it is enforced (check IDs, or 'review' with a reason)</td><td>META, ADR template</td><td>xtask (parses docs/adr)</td><td>commit · ci</td></tr>
 <tr><td><code>PERF-BUNDLE</code></td><td>Initial JavaScript stays within its budget (Brotli)</td><td>PERF-04</td><td>xtask (reads the Vite manifest of the built app, adds up the JavaScript of the entry and what it imports at once, compresses each file with Brotli at the quality the server uses (tools/dev/compression.json) and fails above the budget in tools/checks/perf-bundle.toml; the WebAssembly part is not checked yet, M2-F03)</td><td>ci</td></tr>
 <tr><td><code>PERF-N1</code></td><td>List endpoints run a bounded number of queries</td><td>PERF-05</td><td>tests with a query counter</td><td>ci</td></tr>
@@ -1202,7 +1203,7 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 <tr><td><code>META-SUPPRESS</code></td><td>Every suppression (allow, expect, eslint/oxlint/stylelint-disable, @ts-ignore, ast-grep ignore, the allow marker of the secret scan, accepted advisories) has a reason that names an issue or a doc section; the total is compared with tools/checks/suppressions.txt and may only change together with that file</td><td>architecture §10</td><td>xtask (counts and compares with tools/checks/suppressions.txt)</td><td>commit · ci</td></tr>
 <tr><td><code>META-SPEED</code></td><td>Checks stay fast: every edit-time check under 3 s on one file and all commit-time checks under 10 s on a sample of files on a quiet PC; on a busy PC the budgets grow with a reference workload timed alongside, and the best of 3 attempts counts</td><td>architecture §10</td><td>xtask (times the checks itself)</td><td>ci</td></tr>
 </tbody></table></div>
-<p>80 checks, generated from <code>tools/checks/catalog.toml</code>.</p>
+<p>81 checks, generated from <code>tools/checks/catalog.toml</code>.</p>
 
 <!-- 11-testing.md -->
 <h2 id="s11"><button class="sec" data-sec>§11</button>Testing, sample data and local ports</h2>
@@ -1717,21 +1718,21 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 
 <!-- 0010-design-tokens.md -->
 <h3 id="adr-0010"><button class="sec" data-sec>§13.10</button>ADR-0010: Styling through design tokens only</h3>
-<p>Status: <strong>Accepted</strong> · 2026-10-04</p>
+<p>Status: <strong>Accepted</strong> · 2026-10-04 · the styling decisions (the token file, the generator, CSS Modules) are replaced by <a href="#adr-0026">ADR-0026</a>; the rest stands</p>
 <h4>Context</h4>
 <p>Four built-in themes, a theme editor, custom field looks and strict CSP, all without letting customization inject code.</p>
 <h4>Decision</h4>
 <ul>
-<li><code>design/tokens.json</code> (W3C Design Tokens format) is the <strong>only source</strong> of colors, fonts, sizes, radii and shadows, for all four themes.</li>
-<li><code>cargo xtask gen tokens</code> produces: CSS variables per theme, TypeScript token names, and the Rust validation used by the theme editor (allowed values, contrast checks).</li>
-<li>Components use <strong>CSS Modules</strong> with <code>var(--token)</code> only. The hooks reject raw colors, pixel sizes outside tokens and inline styles.</li>
+<li><del><code>design/tokens.json</code> (W3C Design Tokens format) is the <strong>only source</strong> of colors, fonts, sizes, radii and shadows, for all four themes.</del> <strong>Replaced by ADR-0026:</strong> <code>design/theme.kdl</code> is the only source of every value and every component rule.</li>
+<li><del><code>cargo xtask gen tokens</code> produces: CSS variables per theme, TypeScript token names, and the Rust validation used by the theme editor (allowed values, contrast checks).</del> <strong>Replaced by ADR-0026:</strong> <code>cargo xtask gen theme</code> writes the one style sheet, the TypeScript names and the Rust theme choices.</li>
+<li><del>Components use <strong>CSS Modules</strong> with <code>var(--token)</code> only. The hooks reject raw colors, pixel sizes outside tokens and inline styles.</del> <strong>Replaced by ADR-0026:</strong> components carry no class names and no styles; they emit <code>data-part</code>, <code>data-variant</code> and <code>data-state</code>, and the rules in the theme file use tokens only.</li>
 <li>Custom themes and field looks store <strong>token values or token names</strong>, never CSS.</li>
 <li>The choices of a person that are not a theme (<em>Compact</em> spacing, <em>Larger text</em>, <em>Less motion</em>) are <strong>variants</strong> in the token file: each switches token values through an attribute on the page (<code>data-spacing</code>, <code>data-text</code>, <code>data-motion</code>), and <em>Less motion</em> also follows the device. Sizes of spacing and text are written as the usual size times a factor token, so one choice scales everything. Where the layout changes (<code>bp-tablet</code>, <code>bp-computer</code>) is a token too, read by the app through the generated TypeScript.</li>
 <li>Every theme has stronger colors for <code>prefers-contrast: more</code> (<code>contrastMore</code>). STY-CONTRAST checks them at 7:1 for text and 3:1 for lines.</li>
 </ul>
 <h4>Consequences</h4>
 <ul>
-<li>The design pages in <code>docs/design/</code> use the generated CSS once the generator exists (today <code>tokens.css</code> is hand-written and becomes generated output).</li>
+<li>The design pages in <code>docs/design/</code> use the generated CSS (<code>theme.css</code>, the tokens without the component rules).</li>
 </ul>
 <h4>Alternatives considered</h4>
 <ul>
@@ -1739,7 +1740,7 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 <li><strong>CSS-in-JS at runtime:</strong> costs performance and needs CSP exceptions. Rejected.</li>
 </ul>
 <h4>Enforced by</h4>
-<p>STY-TOKENS, LINT-CSS, STY-CONTRAST (see <code>tools/checks/catalog.toml</code>).</p>
+<p>STY-TOKENS, LINT-CSS, STY-CONTRAST (see <code>tools/checks/catalog.toml</code>); for the styling decisions that ADR-0026 replaced, THEME-ONLY too.</p>
 
 <!-- 0011-markdown.md -->
 <h3 id="adr-0011"><button class="sec" data-sec>§13.11</button>ADR-0011: One Markdown renderer for server and browser</h3>
@@ -2256,6 +2257,77 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 </ul>
 <h4>Enforced by</h4>
 <p>ARCH-PERMS, ARCH-AUTHZ-ONLY, ARCH-API-OUT, ARCH-PERSON-REF, ARCH-NO-COUNTERS, ARCH-EVENTS, ARCH-SETTINGS, DATA-MARKS and SEC-MATRIX (see <code>tools/checks/catalog.toml</code>), backed by the named tests of WP-05, WP-08, WP-09, WP-11 and WP-12; the per-request cache by review.</p>
+
+<!-- 0026-one-theme-file.md -->
+<h3 id="adr-0026"><button class="sec" data-sec>§13.26</button>ADR-0026: One theme file for everything about how the app looks</h3>
+<p>Status: <strong>Accepted</strong> · 2026-10-08 · replaces the styling part of <a href="#adr-0010">ADR-0010</a></p>
+<h4>Context</h4>
+<p>Requirement (M2C): <strong>all UI theming lives in one theming file</strong>, the way the sister project the sister project keeps its complete look in <code>defaults/theme.kdl</code>. ADR-0010 made <code>design/tokens.json</code> the source of colors, fonts, sizes, radii and shadows, but let every component keep its own CSS Module. The audit of M2C (section D) found what that costs:</p>
+<ul>
+<li>55 CSS modules with 3,261 lines; values that have no token (<code>font-weight: 700</code> 57 times, line heights 38 times, about 50 <code>1px solid</code> borders, a z-index chosen per file, opacities, keyframes);</li>
+<li>the same rule copied into many modules (the focus ring 22 times, the muted text, <code>.stack</code>, <code>.row</code>), the skip link twice, and <code>forced-colors</code> handling in ten components;</li>
+<li>the theme list written in <code>tokens.json</code> and again in the settings registry in Rust, held together by a test (M2C-F64);</li>
+<li>theme names and the <code>data-look</code> attribute written by hand in TypeScript and in the browser tests.</li>
+</ul>
+<p>the sister project compiles its theme to CSS <strong>in the browser</strong> and injects it as a style element. Bugaboo cannot do that: the content security policy is <code>style-src 'self'</code> (SEC-11), so nothing may put a style on the page at run time.</p>
+<h4>Decision</h4>
+<ol>
+<li>
+<p><strong>One file, <code>design/theme.kdl</code></strong> (KDL, like the sister project; decision M2C-Q1). It holds everything: the themes, the choices that change token values, every token with its variants per mode, the contrast rules, the mixins, the keyframes and the rules of every component. Comments are allowed, and each token is one line. It replaces <code>design/tokens.json</code>. Only <code>cargo xtask gen theme</code> reads it (with the <code>kdl</code> crate, pinned like the sister project's); the server and the browser never parse KDL.</p>
+</li>
+<li>
+<p><strong>Values are tokens, with their variants per mode on the line of the token.</strong> A token has a kind (<code>color</code>, <code>font</code>, <code>size</code>, <code>number</code>, <code>duration</code>, <code>easing</code>, <code>shadow</code>, <code>weight</code>, <code>line-height</code>, <code>border-width</code>, <code>layer</code>, <code>opacity</code>) and, besides its value:</p>
+<ul>
+<li><code>&lt;theme&gt;=</code> for each of the four themes (colors and shadows), with <code>kind="light"</code> or <code>"dark"</code> on the theme;</li>
+<li><code>&lt;theme&gt;-more=</code> for a device that asks for more contrast (<code>prefers-contrast: more</code>);</li>
+<li><code>forced=</code> while forced colors are on (<code>forced-colors: active</code>);</li>
+<li><code>&lt;choice&gt;=</code> while a choice of the person is on: <code>compact</code> spacing, <code>larger-text</code>, <code>less-motion</code> (which the device can switch on too).</li>
+</ul>
+<p>Every token of ADR-0010 keeps its value; the file adds font weight, line height, border width, layers (z-index), opacity, easing, the brightness of a pressed primary button, and forced colors as a mode. The focus ring is two tokens (<code>ring-width</code>, <code>ring-offset</code>) and one mixin (<code>ring</code>) that every rule <code>use</code>s.</p>
+</li>
+<li>
+<p><strong>Rules are <code>part</code> rules that use tokens only.</strong> <code>part "button[variant=primary]:hover" { background "$accent" }</code> styles every element that says <code>data-part="button"</code> and <code>data-variant="primary"</code>. A value is a word, <code>0</code>, a percentage, or <code>$token</code> (written <code>var(--token)</code> in the output); a length, color, duration, weight, line height, layer or opacity written out is a finding of LINT-CSS and STY-TOKENS. <code>base</code> rules style the page frame (<code>html</code>, <code>body</code>); <code>mixin</code>, <code>keyframes</code> and <code>forced { … }</code>, <code>more-contrast { … }</code>, <code>media "…" { … }</code> blocks complete the language.</p>
+</li>
+<li>
+<p><strong>Components carry no style values and no class names.</strong> They emit <code>data-part</code>, <code>data-state</code> and <code>data-variant</code>, through <code>partOf(part.button, { variants: […], states: […] })</code> of <code>@bugaboo/ui</code>. The names of the parts and the words a part may have (<code>partWords</code>) are generated into <code>tokens.ts</code> from the rules, so a misspelled part or word is a type error. React Aria's own <code>data-*</code> state attributes (<code>data-hovered</code>, <code>data-pressed</code>, <code>data-selected</code>, <code>data-focus-visible</code>, <code>data-entering</code>, …) are allowed and used: a rule names them as <code>button[hovered]</code>.</p>
+</li>
+<li>
+<p><strong>The file is compiled at build time into one static style sheet</strong>, <code>web/packages/ui/src/theme.css</code> (committed, with a copy for the design pages at <code>docs/design/theme.css</code>). The content security policy stays <code>style-src 'self'</code>; no style element or attribute is made at run time. This is where Bugaboo differs from the sister project. Neither file is edited by hand: DOC-GENERATED compares them with the output of <code>cargo xtask gen theme</code>.</p>
+</li>
+<li>
+<p><strong>The list of themes is written once.</strong> The four built-in themes (Daylight, Paper, Dusk, Midnight) and the two that start are defined in the file. <code>gen theme</code> writes them to TypeScript (<code>tokens.ts</code>: <code>themeIds</code>, <code>lightThemeIds</code>, <code>darkThemeIds</code>, the defaults) and to Rust (<code>crates/bb-core/src/settings/themes.rs</code>: the choices of the settings <em>Light theme</em> and <em>Dark theme</em> and their defaults, which <code>catalog.rs</code> names). The reader of the settings registry follows those names, so the browser's generated choices and defaults come from the same file. There is no hand-kept list in <code>catalog.rs</code> and no test that holds two lists together (closes M2C-F64).</p>
+</li>
+<li>
+<p><strong>Custom themes, later, store token values only</strong>: names from the generated token list, values checked by the kind of the token. They never add a rule, a selector or CSS text. How the values reach the page without breaking the policy is decided when the theme editor is built.</p>
+</li>
+<li>
+<p><strong>Contrast is checked per theme and per mode</strong> (STY-CONTRAST), the way the sister project's <code>theme_contrast</code> does: every text color on every background in each theme, and with <code>&lt;theme&gt;-more=</code> the 7:1 and 3:1 rules of ADR-0010. The rules for it are the <code>contrast</code> and <code>distinct</code> lines of the same file.</p>
+</li>
+<li>
+<p><strong>One exception, for now: the design pages.</strong> <code>docs/design/components.css</code> and <code>docs/design/docpage.css</code> style the documents and mockups in <code>docs/</code>, not the app, and are still written by hand. They move into the theme file as generated doc parts in C-06 (M2C-F93); until then THEME-ONLY, which covers <code>web/</code>, does not look at them.</p>
+</li>
+<li>
+<p><strong>Moving is done in two steps.</strong> M2C C-01 builds the engine and moves the primitives of <code>packages/ui</code> (Button, IconButton, TextField, Alert, Overlay, Switch, Checkbox, Link, ChoiceGroup, SearchPicker and the field parts). The app features and the other components stand in <code>tools/checks/theme-only-exemptions.toml</code> until M2C C-06 moves them (M2C-F90); the file is then empty.</p>
+</li>
+</ol>
+<h4>Consequences</h4>
+<ul>
+<li>A change of look is a change in one file, and the generated sheet shows it in the diff. A rule exists once: the focus ring, the muted text, the field label.</li>
+<li>Writing a component needs no CSS file and no class name. A style that the person's choices (spacing, text size, motion, contrast) cannot reach cannot be written.</li>
+<li><code>cargo xtask gen theme</code> is part of the build of the browser app and of DOC-GENERATED. The generated sheet is committed, so the server's embedded app needs no extra build step.</li>
+<li>Specificity is that of attribute selectors, so the order in the file is the order in the sheet: a rule for a state is written after the rules for the variants it must win over. Enforced by: review (the order is seen in the diff of the file; the screenshots of the showcase show a change of look).</li>
+<li>Rules for forced colors move to tokens (<code>forced=</code>) where one system color serves everywhere; a part keeps a <code>forced { … }</code> block where its own colors differ (a disabled button, a link).</li>
+</ul>
+<h4>Alternatives considered</h4>
+<ul>
+<li><strong>Keep JSON (<code>design/theme.json</code>):</strong> no new dependency, but no comments, long, and the variants of a value would not sit on one line. The maintainer chose KDL.</li>
+<li><strong>the sister project's way, compiling in the browser:</strong> needs a style element or <code>adoptedStyleSheets</code> from a string, which <code>style-src 'self'</code> forbids. Rejected.</li>
+<li><strong>Keep CSS Modules next to the token file:</strong> the situation of the audit. Rejected.</li>
+<li><strong>A hand-written style sheet with the same data attributes:</strong> the values and the rules would again be in two places that no tool joins, and the theme list could not be generated from it.</li>
+<li><strong>Tailwind CSS and CSS-in-JS at run time:</strong> rejected in ADR-0010 and still.</li>
+</ul>
+<h4>Enforced by</h4>
+<p>THEME-ONLY (no <code>style=</code>, no <code>className</code>, no CSS file but the generated one), STY-TOKENS (no color written out), LINT-CSS (the compiled rules use token variables only), STY-CONTRAST (every theme and mode), DOC-GENERATED (the sheet, the names and the theme choices are the output of the file).</p>
 
 
   </main>

@@ -2,12 +2,12 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Mono:wght@400;600&family=Atkinson+Hyperlegible+Next:wght@400;500;600;700&display=swap">
-<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="theme.css">
 <link rel="stylesheet" href="components.css">
 <link rel="stylesheet" href="docpage.css">
 <style>
 /* Layout: sticky header + contents rail (wide) / collapsible contents (phone) + one reading column.
-   Mini-screens are framed demos built from the shared components; all colors come from tokens.css. */
+   Mini-screens are framed demos built from the shared components; all colors come from theme.css. */
 
 /* reading type */
 .target{border-left:3px solid var(--accent);padding:4px 0 4px 14px;margin:20px 0;max-width:70ch}
@@ -1120,7 +1120,7 @@ sort by priority, highest first</div>
     <h2 id="s7"><button type="button" class="sec" data-sec>§7</button>Visual design</h2>
 
     <h3 id="s7-1"><button type="button" class="sec" data-sec>§7.1</button>Design tokens <span class="ids">THM, SSOT</span></h3>
-    <p>Code uses only named tokens, never raw colors or sizes; the hooks enforce this. The tokens live in one file (<code>docs/design/tokens.css</code> today, generated from the token source later), and this page reads its colors from that same file. Tokens have three levels:</p>
+    <p>Code uses only named tokens, never raw colors or sizes; the hooks enforce this. The tokens live in one file (<code>docs/design/theme.css</code>, generated from <code>design/theme.kdl</code>), and this page reads its colors from that same file. Tokens have three levels:</p>
     <ol>
       <li><b>Base palettes:</b> grey 0–1000, highlight color, red, orange, yellow, green, teal, blue, violet, pink; fonts, sizes, corner radii, shadows.</li>
       <li><b>Meaning tokens</b> (what the theme editor mostly changes):
@@ -1280,7 +1280,7 @@ sort by priority, highest first</div>
 <script src="docpage.js"></script>
 <script>
 "use strict";
-/* ---------- theme samples and table, read live from tokens.css (single source) ---------- */
+/* ---------- theme samples and table, read live from theme.css (single source) ---------- */
 function themeRule(name) {
   for (const sheet of document.styleSheets) {
     let rules;
@@ -1305,7 +1305,7 @@ function paintThemes() {
     ["fg.default", "--fg"], ["fg.muted", "--fg-muted"], ["accent.solid", "--accent"], ["status.inProgress", "--st-ip"], ["relation.blocks", "--warning"], ["relation.causes", "--danger"]];
   const looks = ["daylight", "paper", "dusk", "midnight"].map(themeRule);
   const tb = document.querySelector("#theme-table tbody");
-  if (looks.some(x => !x)) { tb.innerHTML = '<tr><td colspan="5">Values are in docs/design/tokens.css.</td></tr>'; return; }
+  if (looks.some(x => !x)) { tb.innerHTML = '<tr><td colspan="5">Values are in docs/design/theme.css.</td></tr>'; return; }
   tb.innerHTML = rows.map(([name, v]) => "<tr><td><code>" + name + "</code></td>" +
     looks.map(st => { const c = st.getPropertyValue(v).trim(); return '<td><span class="swatch"><i style="background:' + c + '"></i>' + c.toUpperCase() + "</span></td>"; }).join("") + "</tr>").join("");
 }

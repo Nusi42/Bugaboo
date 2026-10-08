@@ -1,5 +1,5 @@
 /* Bugaboo document pages — header, contents, section numbers, reading type, tables.
-   Shared by every design document (UX design, architecture, …). Requires tokens.css and components.css. */
+   Shared by every design document (UX design, architecture, …). Requires theme.css and components.css. */
 html {
   scroll-padding-top: 72px;
 }

@@ -57,7 +57,7 @@ impl Kind {
         match self {
             Self::Rust => &["rs"],
             Self::Web => &["ts", "tsx"],
-            Self::WebAndStyles => &["ts", "tsx", "css"],
+            Self::WebAndStyles => &["ts", "tsx", "css", "scss", "sass", "less"],
         }
     }
 

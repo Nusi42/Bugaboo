@@ -1,7 +1,7 @@
 import { CheckboxButton, CheckboxField } from "react-aria-components";
 
-import styles from "./Checkbox.module.css";
-import { cx } from "./cx.ts";
+import { partOf } from "./parts.ts";
+import { part } from "./tokens.ts";
 
 export interface CheckboxProps {
   /** What ticking it means, as a sentence or a name, already in the person's language. */
@@ -15,9 +15,9 @@ export interface CheckboxProps {
 export function Checkbox({ label, isSelected, onChange, isDisabled = false }: CheckboxProps) {
   return (
     <CheckboxField isSelected={isSelected} onChange={onChange} isDisabled={isDisabled}>
-      <CheckboxButton className={cx(styles.checkbox)}>
-        <span className={styles.box} />
-        <span className={styles.label}>{label}</span>
+      <CheckboxButton {...partOf(part.checkbox)}>
+        <span {...partOf(part.checkboxBox)} />
+        <span {...partOf(part.checkboxLabel)}>{label}</span>
       </CheckboxButton>
     </CheckboxField>
   );

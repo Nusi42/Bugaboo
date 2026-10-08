@@ -1,9 +1,16 @@
 import type { ReactNode } from "react";
 import { Button as AriaButton } from "react-aria-components";
 
-import styles from "./Button.module.css";
-import { cx } from "./cx.ts";
-import { buttonLook, buttonType, type ButtonLook, type ButtonType } from "./props.ts";
+import { partOf } from "./parts.ts";
+import {
+  buttonLook,
+  buttonShape,
+  buttonState,
+  buttonType,
+  type ButtonLook,
+  type ButtonType,
+} from "./props.ts";
+import { part } from "./tokens.ts";
 
 /** A word of the ARIA standard, not text for people. */
 const currentItem = "true";
@@ -52,7 +59,10 @@ export function Button({
       type={type === buttonType.submit && !isPending ? buttonType.submit : buttonType.button}
       aria-busy={isPending}
       {...(current ? { "aria-current": currentItem } : {})}
-      className={cx(styles.button, look !== buttonLook.plain && styles[look], wide && styles.wide)}
+      {...partOf(part.button, {
+        variants: [look !== buttonLook.plain && look, wide && buttonShape.wide],
+        states: [isPending && buttonState.busy],
+      })}
     >
       {children}
     </AriaButton>

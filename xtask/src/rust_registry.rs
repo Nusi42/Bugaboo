@@ -2,10 +2,21 @@
 //! reader of the `settings! { … }` declarations and of the lists of choices they name. ARCH-SETTINGS
 //! (which keys exist) and the generator of the browser constants (keys, choices, defaults) both ask
 //! here, so the registry has one parser (coding-standards §1).
+//!
+//! The lists of choices and the constants that a default names may stand in another file of the
+//! registry folder: the theme generator writes the themes there (ADR-0026).
 
 use std::collections::BTreeMap;
 
 use anyhow::Context as _;
+
+/// The default of a declaration: written out, or the name of a constant.
+#[derive(Debug, PartialEq, Eq)]
+enum Default {
+    /// Already written the way TypeScript writes it.
+    Literal(String),
+    Constant(String),
+}
 
 /// What one `settings! { … }` declaration says that the tools need.
 #[derive(Debug, PartialEq, Eq)]
@@ -17,8 +28,44 @@ pub(crate) struct SettingDecl {
     pub(crate) choices: Option<String>,
 }
 
+/// A declaration before its default is looked up.
+struct Declared {
+    key: String,
+    default: Default,
+    choices: Option<String>,
+}
+
 /// The lists of choices by the name of the constant that holds them.
 pub(crate) type ChoiceLists = BTreeMap<String, Vec<String>>;
+
+/// The lists of choices and the constants with a plain value (as TypeScript writes the value) that
+/// the files of the registry hold.
+#[derive(Default)]
+struct Shared {
+    lists: ChoiceLists,
+    constants: BTreeMap<String, String>,
+}
+
+impl Shared {
+    fn add(&mut self, item: &syn::ItemConst) {
+        if let Some(values) = choice_values(item) {
+            self.lists.insert(item.ident.to_string(), values);
+        } else if let Some((_, typescript)) = literal(&item.expr) {
+            self.constants.insert(item.ident.to_string(), typescript);
+        }
+    }
+
+    /// The constants of a file that declares no settings itself (the generated theme choices).
+    fn add_file(&mut self, text: &str) -> anyhow::Result<()> {
+        let file = syn::parse_file(text).context("a file of the registry is not Rust")?;
+        for item in &file.items {
+            if let syn::Item::Const(item) = item {
+                self.add(item);
+            }
+        }
+        Ok(())
+    }
+}
 
 /// One `name: expression` line inside the braces of a declaration.
 struct Field {
@@ -39,7 +86,7 @@ impl syn::parse::Parse for Field {
 
 /// The declarations of a `settings! { … }` body: `NAME: Type = { field: value, … }`, one after the
 /// other.
-struct Declarations(Vec<SettingDecl>);
+struct Declarations(Vec<Declared>);
 
 impl syn::parse::Parse for Declarations {
     fn parse(input: syn::parse::ParseStream<'_>) -> syn::Result<Self> {
@@ -63,29 +110,44 @@ impl syn::parse::Parse for Declarations {
 fn declaration<'a>(
     name: &syn::Ident,
     fields: impl Iterator<Item = &'a Field>,
-) -> syn::Result<SettingDecl> {
+) -> syn::Result<Declared> {
     let mut key = None;
     let mut default = None;
     let mut choices = None;
     for field in fields {
         match field.name.to_string().as_str() {
             "key" => key = literal(&field.value).map(|(text, _)| text),
-            "default" => default = literal(&field.value).map(|(_, typescript)| typescript),
+            "default" => default = default_of(&field.value),
             "format" => choices = choices_of(&field.value)?,
             _ => {}
         }
     }
     match (key, default) {
-        (Some(key), Some(default)) => Ok(SettingDecl {
+        (Some(key), Some(default)) => Ok(Declared {
             key,
             default,
             choices,
         }),
         _ => Err(syn::Error::new(
             name.span(),
-            format!("the setting {name} has no `key` or no `default` that is a plain value"),
+            format!(
+                "the setting {name} has no `key` or no `default` that is a plain value or the name of a constant"
+            ),
         )),
     }
+}
+
+/// A default that is a literal, or the name of a constant that holds one.
+fn default_of(expr: &syn::Expr) -> Option<Default> {
+    if let Some((_, typescript)) = literal(expr) {
+        return Some(Default::Literal(typescript));
+    }
+    let syn::Expr::Path(path) = expr else {
+        return None;
+    };
+    path.path
+        .get_ident()
+        .map(|name| Default::Constant(name.to_string()))
 }
 
 /// A literal as its text and as TypeScript writes it: `"device"`, `false`, `90`.
@@ -162,20 +224,16 @@ fn is_settings(item: &syn::ItemMacro) -> bool {
 }
 
 /// Every declaration of the items, with whether it stands in a module (the settings that exist
-/// only for tests do), and the lists of choices.
+/// only for tests do), and the lists of choices and constants.
 fn walk(
     items: &[syn::Item],
     nested: bool,
-    found: &mut Vec<(SettingDecl, bool)>,
-    lists: &mut ChoiceLists,
+    found: &mut Vec<(Declared, bool)>,
+    shared: &mut Shared,
 ) -> anyhow::Result<()> {
     for item in items {
         match item {
-            syn::Item::Const(item) => {
-                if let Some(values) = choice_values(item) {
-                    lists.insert(item.ident.to_string(), values);
-                }
-            }
+            syn::Item::Const(item) => shared.add(item),
             syn::Item::Macro(item) if is_settings(item) => {
                 let declarations: Declarations =
                     item.mac.parse_body().context("a `settings! { … }` body")?;
@@ -183,7 +241,7 @@ fn walk(
             }
             syn::Item::Mod(module) => {
                 if let Some((_, inner)) = &module.content {
-                    walk(inner, true, found, lists)?;
+                    walk(inner, true, found, shared)?;
                 }
             }
             _ => {}
@@ -192,28 +250,48 @@ fn walk(
     Ok(())
 }
 
-fn read_all(text: &str) -> anyhow::Result<(Vec<(SettingDecl, bool)>, ChoiceLists)> {
+fn read_all(text: &str) -> anyhow::Result<(Vec<(Declared, bool)>, Shared)> {
     let file = syn::parse_file(text).context("the registry is not Rust")?;
     let mut found = Vec::new();
-    let mut lists = BTreeMap::new();
-    walk(&file.items, false, &mut found, &mut lists)?;
-    Ok((found, lists))
+    let mut shared = Shared::default();
+    walk(&file.items, false, &mut found, &mut shared)?;
+    Ok((found, shared))
 }
 
 /// The settings of the registry in the order of the file, and the lists of choices by name. The
-/// settings that exist only for tests (`pub mod for_tests`) are left out.
+/// settings that exist only for tests (`pub mod for_tests`) are left out. `others` are the other
+/// files of the registry folder: the lists of choices and the constants they hold (like the
+/// starting theme) count as if they stood in the catalog.
 ///
 /// # Errors
-/// The text is not Rust, a declaration has no `key` or no plain `default`, or a format of choices
-/// does not name its list.
-pub(crate) fn read_registry(text: &str) -> anyhow::Result<(Vec<SettingDecl>, ChoiceLists)> {
-    let (found, lists) = read_all(text)?;
-    let settings = found
-        .into_iter()
-        .filter(|(_, nested)| !nested)
-        .map(|(decl, _)| decl)
-        .collect();
-    Ok((settings, lists))
+/// A text is not Rust, a declaration has no `key` or no plain `default`, a default names a
+/// constant that is nowhere, or a format of choices does not name its list.
+pub(crate) fn read_registry(
+    text: &str,
+    others: &[&str],
+) -> anyhow::Result<(Vec<SettingDecl>, ChoiceLists)> {
+    let (found, mut shared) = read_all(text)?;
+    for other in others {
+        shared.add_file(other)?;
+    }
+    let mut settings = Vec::new();
+    for (decl, _) in found.into_iter().filter(|(_, nested)| !nested) {
+        let default = match decl.default {
+            Default::Literal(typescript) => typescript,
+            Default::Constant(name) => shared.constants.get(&name).cloned().with_context(|| {
+                format!(
+                    "the default of `{}` names the constant `{name}`, which has no plain value in the registry folder",
+                    decl.key
+                )
+            })?,
+        };
+        settings.push(SettingDecl {
+            key: decl.key,
+            default,
+            choices: decl.choices,
+        });
+    }
+    Ok((settings, shared.lists))
 }
 
 /// The keys of every setting in the text, also those that exist only for tests.
@@ -256,15 +334,44 @@ pub mod for_tests {
 }
 "#;
 
+    /// A setting whose choices and default stand in another file, like the generated themes.
+    const SPLIT: &str = r#"
+settings! {
+    LOOK: Text = {
+        key: "appearance.look",
+        default: DEFAULT_LOOK,
+        format: Format::Choices(LOOK_CHOICES),
+    }
+}
+"#;
+
+    const OTHER: &str = r#"
+pub(super) const LOOK_CHOICES: &[Choice] = &[Choice::new("day", a), Choice::new("night", b)];
+pub(super) const DEFAULT_LOOK: &str = "day";
+"#;
+
     #[test]
     fn good_example_keys_defaults_and_choices_are_read() {
-        let (settings, lists) = read_registry(REGISTRY).unwrap();
+        let (settings, lists) = read_registry(REGISTRY, &[]).unwrap();
         let keys: Vec<&str> = settings.iter().map(|s| s.key.as_str()).collect();
         assert_eq!(keys, ["appearance.mode", "web.size"]);
         assert_eq!(settings[0].default, "\"device\"");
         assert_eq!(settings[0].choices.as_deref(), Some("MODE_CHOICES"));
         assert_eq!(settings[1].default, "90");
         assert_eq!(lists["MODE_CHOICES"], ["device", "light"]);
+    }
+
+    #[test]
+    fn good_example_choices_and_a_default_from_another_file_are_read() {
+        let (settings, lists) = read_registry(SPLIT, &[OTHER]).unwrap();
+        assert_eq!(settings[0].default, "\"day\"");
+        assert_eq!(settings[0].choices.as_deref(), Some("LOOK_CHOICES"));
+        assert_eq!(lists["LOOK_CHOICES"], ["day", "night"]);
+    }
+
+    #[test]
+    fn bad_example_a_default_that_names_no_constant_fails() {
+        assert!(read_registry(SPLIT, &[]).is_err());
     }
 
     #[test]
@@ -278,16 +385,16 @@ pub mod for_tests {
     #[test]
     fn bad_example_a_declaration_without_a_plain_default_or_a_text_that_is_no_rust_fails() {
         let no_default = "settings! { A: Text = { key: \"a.b\", } }";
-        assert!(read_registry(no_default).is_err());
+        assert!(read_registry(no_default, &[]).is_err());
         assert!(declared_keys(no_default).is_err());
-        assert!(read_registry("settings! {").is_err());
-        assert!(read_registry("fn nothing() {}").unwrap().0.is_empty());
+        assert!(read_registry("settings! {", &[]).is_err());
+        assert!(read_registry("fn nothing() {}", &[]).unwrap().0.is_empty());
     }
 
     #[test]
     fn bad_example_a_format_of_choices_that_names_no_single_list_fails() {
         let broken = REGISTRY.replace("Format::Choices(MODE_CHOICES)", "Format::Choices(A, B)");
-        assert!(read_registry(&broken).is_err());
+        assert!(read_registry(&broken, &[]).is_err());
         assert!(declared_keys(&broken).is_err());
     }
 }

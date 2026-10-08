@@ -92,5 +92,14 @@ export {
   type DeviceThemes,
   type ThemeChoice,
 } from "./theme.ts";
-export { darkThemeIds, lightThemeIds, themeIds, type ColorToken, type ThemeId } from "./tokens.ts";
+export { partOf, type PartAttributes, type PartChoices } from "./parts.ts";
+export {
+  darkThemeIds,
+  lightThemeIds,
+  part,
+  themeIds,
+  type ColorToken,
+  type PartName,
+  type ThemeId,
+} from "./tokens.ts";
 export { useAppearance, type AppearanceState } from "./useAppearance.ts";

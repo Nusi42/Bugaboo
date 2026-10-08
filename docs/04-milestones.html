@@ -3,7 +3,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Mono:wght@400;600&family=Atkinson+Hyperlegible+Next:wght@400;500;600;700&display=swap">
-<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="theme.css">
 <link rel="stylesheet" href="components.css">
 <link rel="stylesheet" href="docpage.css">
 
@@ -124,7 +124,7 @@
 <li>First checks active: FMT-<em>, LINT-RUST, LINT-TS, LINT-TYPES, LINT-CSS, LINT-SPELL, LINT-CI, GIT-</em>, SEC-SECRETS, ARCH-DEPS, ARCH-NO-UNSAFE, ARCH-MAP-SYNC, DEV-PORTS, DEP-REGISTER, DEP-LICENSES, DOC-GENERATED, DOC-ADR-ENFORCED and all META checks, each with its bad and good example</li>
 <li>lefthook, Claude Code hooks (<code>.claude/settings.json</code>) and <code>CLAUDE.md</code> with the agent rules</li>
 <li>Browser app skeleton: Vite 8, React 19, TypeScript 7, oxlint + tsgolint, oxfmt, Vitest, Playwright, all on the ports from <code>tools/dev/ports.json</code></li>
-<li><code>design/tokens.json</code> with the four themes; <code>cargo xtask gen tokens</code> generates CSS and TS (the design pages switch to the generated CSS); <code>messages/en.json</code> with typed keys</li>
+<li><code>design/tokens.json</code> with the four themes; <code>cargo xtask gen tokens</code> generates CSS and TS (the design pages switch to the generated CSS); since M2C both are <code>design/theme.kdl</code> and <code>cargo xtask gen theme</code> (ADR-0026); <code>messages/en.json</code> with typed keys</li>
 <li>The docs-to-HTML builder moves into <code>cargo xtask docs</code></li>
 <li><code>bugaboo</code> binary serving the embedded app ("Hello" screen with the theme picker) and <code>/health</code></li>
 </ul>

@@ -1,11 +1,12 @@
 //! STY-CONTRAST: every text and background pair of the four built-in themes passes WCAG AA.
 //!
 //! Every text color is checked on every background color. The few combinations that are never
-//! used are written down, with the reason, in `design/tokens.json` (`$extensions.bugaboo.contrast`)
-//! (THM-03, UX-04).
+//! used are written down, with the reason, in `design/theme.kdl` (the `contrast` line) (THM-03,
+//! UX-04). The check runs for every theme and for every mode that changes colors: the usual one,
+//! and the one for a device that asks for more contrast (THM-06).
 
 use super::{Check, Context, Finding};
-use crate::generate::token_file::{TOKENS_PATH, TokenFile};
+use crate::generate::theme_file::{THEME_PATH, ThemeFile};
 
 pub(crate) struct StyContrast;
 
@@ -15,24 +16,35 @@ impl Check for StyContrast {
     }
 
     fn run(&self, context: &Context<'_>) -> anyhow::Result<Vec<Finding>> {
-        Ok(evaluate(&TokenFile::load(context.repo)?))
+        Ok(evaluate(&ThemeFile::load(context.repo)?))
     }
 }
 
-fn evaluate(tokens: &TokenFile) -> Vec<Finding> {
+/// The value of a color token in a theme.
+fn color<'a>(file: &'a ThemeFile, name: &str, theme: &str) -> Option<&'a str> {
+    file.token(name)?.in_theme(theme)
+}
+
+/// The same, with the colors that more contrast replaces.
+fn color_with_more_contrast<'a>(file: &'a ThemeFile, name: &str, theme: &str) -> Option<&'a str> {
+    file.token(name)?.in_theme_with_more_contrast(theme)
+}
+
+fn evaluate(file: &ThemeFile) -> Vec<Finding> {
     let mut findings = Vec::new();
-    let spec = &tokens.contrast;
-    for theme in &tokens.themes {
+    let spec = &file.contrast;
+    for theme in &file.themes {
         for (text_name, background_name) in spec.pairs(&theme.name) {
-            let (Some(text), Some(background)) =
-                (theme.color(text_name), theme.color(background_name))
-            else {
+            let (Some(text), Some(background)) = (
+                color(file, text_name, &theme.name),
+                color(file, background_name, &theme.name),
+            ) else {
                 continue;
             };
             let ratio = contrast_ratio(text, background);
             if ratio < spec.min {
                 findings.push(Finding::at(
-                    TOKENS_PATH,
+                    THEME_PATH,
                     format!(
                         "Theme {}: `{text_name}` on `{background_name}` has contrast {ratio:.2}:1; it needs {:.1}:1. Change one of the two colors, or record why this pair is never used.",
                         theme.name, spec.min
@@ -41,37 +53,37 @@ fn evaluate(tokens: &TokenFile) -> Vec<Finding> {
             }
         }
     }
-    findings.extend(more_contrast_findings(tokens));
-    findings.extend(distinct_findings(tokens));
+    findings.extend(more_contrast_findings(file));
+    findings.extend(distinct_findings(file));
     findings
 }
 
 /// For people whose device asks for more contrast (THM-06): the listed text reaches the higher
 /// ratio on its backgrounds and the listed lines are visible on the plain surfaces, with the
-/// colors the theme's `contrastMore` puts in place.
-fn more_contrast_findings(tokens: &TokenFile) -> Vec<Finding> {
-    let more = &tokens.contrast.more;
+/// colors that the `<theme>-more=` values of the tokens put in place.
+fn more_contrast_findings(file: &ThemeFile) -> Vec<Finding> {
+    let more = &file.contrast.more;
     let mut findings = Vec::new();
-    for theme in &tokens.themes {
+    for theme in &file.themes {
         let mut check = |first: &str, second: &str, min: f64, what: &str| {
             let (Some(a), Some(b)) = (
-                theme.color_with_more_contrast(first),
-                theme.color_with_more_contrast(second),
+                color_with_more_contrast(file, first, &theme.name),
+                color_with_more_contrast(file, second, &theme.name),
             ) else {
                 return;
             };
             let ratio = contrast_ratio(a, b);
             if ratio < min {
                 findings.push(Finding::at(
-                    TOKENS_PATH,
+                    THEME_PATH,
                     format!(
-                        "Theme {} with more contrast: {what} `{first}` on `{second}` has contrast {ratio:.2}:1; it needs {min:.1}:1. Change it in `contrastMore` of the theme.",
-                        theme.name
+                        "Theme {} with more contrast: {what} `{first}` on `{second}` has contrast {ratio:.2}:1; it needs {min:.1}:1. Change its `{}-more=` value.",
+                        theme.name, theme.name
                     ),
                 ));
             }
         };
-        for (text, background) in tokens.contrast.pairs(&theme.name) {
+        for (text, background) in file.contrast.pairs(&theme.name) {
             if more.text.iter().any(|name| name == text) {
                 check(text, background, more.min_text, "text");
             }
@@ -86,18 +98,21 @@ fn more_contrast_findings(tokens: &TokenFile) -> Vec<Finding> {
 }
 
 /// Hovered and selected backgrounds must stay visible against the surfaces and each other.
-fn distinct_findings(tokens: &TokenFile) -> Vec<Finding> {
-    let spec = &tokens.distinct;
+fn distinct_findings(file: &ThemeFile) -> Vec<Finding> {
+    let spec = &file.distinct;
     let mut findings = Vec::new();
-    for theme in &tokens.themes {
+    for theme in &file.themes {
         let mut check = |first: &str, second: &str, min: f64| {
-            let (Some(a), Some(b)) = (theme.color(first), theme.color(second)) else {
+            let (Some(a), Some(b)) = (
+                color(file, first, &theme.name),
+                color(file, second, &theme.name),
+            ) else {
                 return;
             };
             let ratio = contrast_ratio(a, b);
             if ratio < min {
                 findings.push(Finding::at(
-                    TOKENS_PATH,
+                    THEME_PATH,
                     format!(
                         "Theme {}: `{first}` and `{second}` differ by only {ratio:.3}:1; they need {min:.2}:1 so the state stays visible.",
                         theme.name
@@ -141,6 +156,38 @@ mod tests {
     use super::*;
     use crate::repo::Repo;
 
+    fn text() -> String {
+        crate::source::read_text(&Repo::discover().unwrap(), THEME_PATH).unwrap()
+    }
+
+    /// The theme file with one value of a color token replaced: `key` is `dusk` or `dusk-more`.
+    fn with_value(token: &str, key: &str, value: &str) -> ThemeFile {
+        let text = text();
+        let start = text
+            .find(&format!("color \"{token}\""))
+            .expect("the token is in the file");
+        let line_end = text[start..].find('\n').map_or(text.len(), |at| start + at);
+        let line = &text[start..line_end];
+        let marker = format!(" {key}=\"");
+        let value_at = line.find(&marker).expect("the token has this mode") + marker.len();
+        let value_end = line[value_at..].find('"').expect("the value ends") + value_at;
+        let changed = format!(
+            "{}{}{}{}",
+            &text[..start + value_at],
+            value,
+            &line[value_end..],
+            &text[line_end..]
+        );
+        ThemeFile::parse(&changed).unwrap()
+    }
+
+    fn messages(findings: &[Finding]) -> Vec<String> {
+        findings
+            .iter()
+            .map(|finding| finding.message.clone())
+            .collect()
+    }
+
     #[test]
     fn known_ratios() {
         assert!((contrast_ratio("#000000", "#FFFFFF") - 21.0).abs() < 0.01);
@@ -149,16 +196,15 @@ mod tests {
 
     #[test]
     fn good_example() {
-        let tokens = TokenFile::load(&Repo::discover().unwrap()).unwrap();
-        let findings = evaluate(&tokens);
-        let messages: Vec<&str> = findings.iter().map(|f| f.message.as_str()).collect();
-        assert!(findings.is_empty(), "{messages:#?}");
+        let file = ThemeFile::load(&Repo::discover().unwrap()).unwrap();
+        let findings = evaluate(&file);
+        assert!(findings.is_empty(), "{:#?}", messages(&findings));
     }
 
     #[test]
     fn every_text_color_is_checked_on_every_neutral_surface() {
-        let tokens = TokenFile::load(&Repo::discover().unwrap()).unwrap();
-        let pairs = tokens.contrast.pairs("daylight");
+        let file = ThemeFile::load(&Repo::discover().unwrap()).unwrap();
+        let pairs = file.contrast.pairs("daylight");
         for text in ["fg", "fg-muted", "fg-subtle", "warning", "accent-fg"] {
             for surface in ["bg-canvas", "bg-hover", "bg-selected", "bg-sunken"] {
                 assert!(pairs.contains(&(text, surface)), "{text} on {surface}");
@@ -168,43 +214,40 @@ mod tests {
 
     #[test]
     fn a_color_without_a_classification_is_rejected() {
-        let repo = Repo::discover().unwrap();
-        let text = std::fs::read_to_string(repo.path(TOKENS_PATH)).unwrap();
-        let mut value: serde_json::Value = serde_json::from_str(&text).unwrap();
-        let non_text = &mut value["$extensions"]["bugaboo"]["contrast"]["nonText"];
-        *non_text = serde_json::json!([{ "colors": ["border"], "reason": "decorative" }]);
-        let error = TokenFile::parse(&value.to_string()).err().unwrap();
+        let text = text();
+        let start = text.find("    non-text").expect("the rule is in the file");
+        let end = text[start..]
+            .find("reason=")
+            .map(|at| start + at)
+            .expect("it has a reason");
+        let bad = format!("{}    non-text \"border\" {}", &text[..start], &text[end..]);
+        let error = ThemeFile::parse(&bad).err().unwrap();
         assert!(format!("{error:#}").contains("border-subtle"), "{error:#}");
     }
 
     #[test]
     fn a_hover_color_that_vanishes_into_a_surface_is_rejected() {
-        let repo = Repo::discover().unwrap();
-        let text = std::fs::read_to_string(repo.path(TOKENS_PATH)).unwrap();
-        let mut value: serde_json::Value = serde_json::from_str(&text).unwrap();
         // Dusk hover one step away from the raised surface, as in the rejected retune.
-        value["themes"]["dusk"]["color"]["bg-hover"]["$value"] = "#2D323D".into();
-        let findings = evaluate(&TokenFile::parse(&value.to_string()).unwrap());
+        let findings = evaluate(&with_value("bg-hover", "dusk", "#2d323d"));
         assert!(
             findings
                 .iter()
                 .any(|f| f.message.contains("bg-hover") && f.message.contains("bg-raised")),
             "{:?}",
-            findings
-                .iter()
-                .map(|f| f.message.clone())
-                .collect::<Vec<_>>()
+            messages(&findings)
         );
     }
 
     #[test]
     fn hover_and_selected_that_look_the_same_are_rejected() {
-        let repo = Repo::discover().unwrap();
-        let text = std::fs::read_to_string(repo.path(TOKENS_PATH)).unwrap();
-        let mut value: serde_json::Value = serde_json::from_str(&text).unwrap();
-        let same = value["themes"]["daylight"]["color"]["bg-hover"]["$value"].clone();
-        value["themes"]["daylight"]["color"]["bg-selected"]["$value"] = same;
-        let findings = evaluate(&TokenFile::parse(&value.to_string()).unwrap());
+        let file = ThemeFile::load(&Repo::discover().unwrap()).unwrap();
+        let hover = file
+            .token("bg-hover")
+            .unwrap()
+            .in_theme("daylight")
+            .unwrap()
+            .to_owned();
+        let findings = evaluate(&with_value("bg-selected", "daylight", &hover));
         assert!(
             findings
                 .iter()
@@ -214,73 +257,47 @@ mod tests {
 
     #[test]
     fn weak_text_with_more_contrast_is_rejected() {
-        let repo = Repo::discover().unwrap();
-        let text = std::fs::read_to_string(repo.path(TOKENS_PATH)).unwrap();
-        let mut value: serde_json::Value = serde_json::from_str(&text).unwrap();
         // The stronger muted text of Daylight put back to a color that only reaches AA.
-        value["themes"]["daylight"]["contrastMore"]["color"]["fg-muted"]["$value"] =
-            "#5A6170".into();
-        let findings = evaluate(&TokenFile::parse(&value.to_string()).unwrap());
+        let findings = evaluate(&with_value("fg-muted", "daylight-more", "#5a6170"));
         assert!(
             findings
                 .iter()
                 .any(|f| f.message.contains("with more contrast")
                     && f.message.contains("`fg-muted`")),
             "{:?}",
-            findings
-                .iter()
-                .map(|f| f.message.clone())
-                .collect::<Vec<_>>()
+            messages(&findings)
         );
     }
 
     #[test]
     fn a_weak_accent_fill_with_more_contrast_is_rejected() {
-        let repo = Repo::discover().unwrap();
-        let text = std::fs::read_to_string(repo.path(TOKENS_PATH)).unwrap();
-        let mut value: serde_json::Value = serde_json::from_str(&text).unwrap();
         // The accent fill of Daylight put back to the usual one: white text on it reaches only AA.
-        value["themes"]["daylight"]["contrastMore"]["color"]["accent"]["$value"] = "#5B3FD9".into();
-        let findings = evaluate(&TokenFile::parse(&value.to_string()).unwrap());
+        let findings = evaluate(&with_value("accent", "daylight-more", "#5b3fd9"));
         assert!(
             findings
                 .iter()
                 .any(|f| f.message.contains("`on-accent`") && f.message.contains("`accent`")),
             "{:?}",
-            findings
-                .iter()
-                .map(|f| f.message.clone())
-                .collect::<Vec<_>>()
+            messages(&findings)
         );
     }
 
     #[test]
     fn faint_lines_with_more_contrast_are_rejected() {
-        let repo = Repo::discover().unwrap();
-        let text = std::fs::read_to_string(repo.path(TOKENS_PATH)).unwrap();
-        let mut value: serde_json::Value = serde_json::from_str(&text).unwrap();
-        value["themes"]["dusk"]["contrastMore"]["color"]["border"]["$value"] = "#3B414D".into();
-        let findings = evaluate(&TokenFile::parse(&value.to_string()).unwrap());
+        let findings = evaluate(&with_value("border", "dusk-more", "#3b414d"));
         assert!(
             findings
                 .iter()
                 .any(|f| f.message.contains("line `border`") && f.message.contains("Theme dusk")),
             "{:?}",
-            findings
-                .iter()
-                .map(|f| f.message.clone())
-                .collect::<Vec<_>>()
+            messages(&findings)
         );
     }
 
     #[test]
     fn bad_example() {
-        let repo = Repo::discover().unwrap();
-        let text = std::fs::read_to_string(repo.path(TOKENS_PATH)).unwrap();
         // Light grey text on the white page in Daylight.
-        let bad = text.replacen("\"#16181D\"", "\"#CCCCCC\"", 1);
-        assert_ne!(bad, text);
-        let findings = evaluate(&TokenFile::parse(&bad).unwrap());
+        let findings = evaluate(&with_value("fg", "daylight", "#cccccc"));
         assert!(
             findings
                 .iter()
