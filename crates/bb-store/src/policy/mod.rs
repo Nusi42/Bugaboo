@@ -152,9 +152,11 @@ impl PolicyStore for AuthStorage {
                 None => return Ok(None),
             },
         };
-        let levels = if roles.is_empty() {
+        let rules = if roles.is_empty() {
             LevelRules::default()
         } else {
+            // The query narrows to the roles and the chain; what applies at the place is decided
+            // once, by `LevelRules::at`, here as in the test double.
             loading::rules_of(
                 &mut transaction,
                 Which::At {
@@ -163,11 +165,9 @@ impl PolicyStore for AuthStorage {
                 },
             )
             .await?
+            .at(&roles.iter().copied().collect(), &chain)
         };
-        Ok(Some(PlaceLevels {
-            chain,
-            rules: levels,
-        }))
+        Ok(Some(PlaceLevels { chain, rules }))
     }
 
     async fn groups(&self) -> Result<Vec<Group>, StoreError> {
