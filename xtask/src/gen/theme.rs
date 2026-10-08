@@ -657,7 +657,7 @@ mod tests {
     fn a_part_rule_is_compiled_with_its_mixins_and_media() {
         let text =
             std::fs::read_to_string(Repo::discover().unwrap().path("design/theme.kdl")).unwrap();
-        let extra = "\nmixin \"m\" {\n  color \"$fg\"\n}\npart \"zz[variant=a]:hover\" \"zz:busy\" {\n  use \"m\"\n  margin 0\n  forced {\n    color \"CanvasText\"\n  }\n}\n";
+        let extra = "\nmixin \"m\" {\n  color \"$fg\"\n}\npart \"zz[variant=a]:hover\" \"zz[state=busy]\" {\n  use \"m\"\n  margin 0\n  forced {\n    color \"CanvasText\"\n  }\n}\n";
         let file = ThemeFile::parse(&format!("{text}{extra}")).unwrap();
         let parts = parts_css(&file).unwrap();
         assert!(parts.contains("[data-part=\"zz\"][data-variant~=\"a\"]:hover,\n[data-part=\"zz\"][data-state~=\"busy\"] {\n  color: var(--fg);\n  margin: 0;\n}"), "{parts}");

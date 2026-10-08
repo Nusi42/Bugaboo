@@ -385,7 +385,7 @@ part "button[disabled]" {
     }
 }
 
-part "button:busy" {
+part "button[state=busy]" {
     cursor progress
     opacity "$opacity-busy"
 }

@@ -9,7 +9,8 @@
 //! - `[key]` and `[key=value]`: the attribute `data-key`, which is how React Aria Components mark
 //!   `hovered`, `pressed`, `selected`, `focus-visible`, `entering` and the like;
 //! - `:hover`, `:focus-visible` and the other pseudo-classes of [`PSEUDO_CLASSES`];
-//! - `:word`, any other word: a state of the part (`[data-state~="word"]`);
+//! - any other `:word` is refused, so that a typo of a pseudo-class is an error and not a new state
+//!   that nothing ever sets: a state is written `[state=word]`;
 //! - `:has(…)` and `:not(…)`, which hold a selector in this same way;
 //! - `::before`, `::after`, `::placeholder`: the pseudo-elements of [`PSEUDO_ELEMENTS`].
 //!
@@ -19,8 +20,11 @@ use std::fmt::Write as _;
 
 use anyhow::{Context as _, bail};
 
-/// The pseudo-classes of CSS that a rule may name. Any other `:word` is a state of the part.
-pub(crate) const PSEUDO_CLASSES: [&str; 14] = [
+/// The pseudo-classes of CSS that a rule may name.
+pub(crate) const PSEUDO_CLASSES: [&str; 17] = [
+    "visited",
+    "invalid",
+    "read-only",
     "hover",
     "focus",
     "focus-visible",
@@ -55,7 +59,6 @@ enum Modifier {
     Attribute { key: String, value: Option<String> },
     Pseudo(String),
     PseudoWithSelector(String, Vec<Piece>),
-    State(String),
     Element(String),
 }
 
@@ -111,7 +114,6 @@ fn gather_words(pieces: &[Piece], found: &mut Vec<Words>) {
                     key,
                     value: Some(value),
                 } if key == "state" => words.states.push(value.clone()),
-                Modifier::State(name) => words.states.push(name.clone()),
                 Modifier::PseudoWithSelector(_, inner) => gather_words(inner, found),
                 _ => {}
             }
@@ -167,17 +169,19 @@ fn parse(selector: &str) -> anyhow::Result<Vec<Piece>> {
 fn split_words(selector: &str) -> anyhow::Result<Vec<String>> {
     let mut words = Vec::new();
     let mut current = String::new();
-    let mut depth = 0_i32;
+    let mut closers: Vec<char> = Vec::new();
     for c in selector.chars() {
         match c {
-            '(' | '[' => depth += 1,
-            ')' | ']' => depth -= 1,
+            '(' => closers.push(')'),
+            '[' => closers.push(']'),
+            ')' | ']' => {
+                if closers.pop() != Some(c) {
+                    bail!("a bracket `{c}` does not close the bracket that is open");
+                }
+            }
             _ => {}
         }
-        if depth < 0 {
-            bail!("a bracket is closed that was never opened");
-        }
-        if c.is_whitespace() && depth == 0 {
+        if c.is_whitespace() && closers.is_empty() {
             if !current.is_empty() {
                 words.push(std::mem::take(&mut current));
             }
@@ -185,7 +189,7 @@ fn split_words(selector: &str) -> anyhow::Result<Vec<String>> {
             current.push(c);
         }
     }
-    if depth != 0 {
+    if !closers.is_empty() {
         bail!("a bracket is never closed");
     }
     if !current.is_empty() {
@@ -288,15 +292,15 @@ fn modifier(text: &str) -> anyhow::Result<(Modifier, &str)> {
             rest,
         ));
     }
-    let modifier = if PSEUDO_CLASSES.contains(&name) {
-        if WITH_SELECTOR.contains(&name) {
-            bail!("`:{name}` needs a selector in brackets");
-        }
-        Modifier::Pseudo(name.to_owned())
-    } else {
-        Modifier::State(name.to_owned())
-    };
-    Ok((modifier, tail))
+    if !PSEUDO_CLASSES.contains(&name) {
+        bail!(
+            "`:{name}` is not a pseudo-class of CSS that rules may use; a state is `[state={name}]`"
+        );
+    }
+    if WITH_SELECTOR.contains(&name) {
+        bail!("`:{name}` needs a selector in brackets");
+    }
+    Ok((Modifier::Pseudo(name.to_owned()), tail))
 }
 
 fn render(pieces: &[Piece]) -> String {
@@ -334,7 +338,6 @@ fn render_modifier(modifier: &Modifier) -> String {
         },
         Modifier::Pseudo(name) => format!(":{name}"),
         Modifier::PseudoWithSelector(name, inner) => format!(":{name}({})", render(inner)),
-        Modifier::State(name) => format!("[data-state~=\"{name}\"]"),
         Modifier::Element(name) => format!("::{name}"),
     }
 }
@@ -390,7 +393,7 @@ mod tests {
             "[data-part=\"button\"][data-variant~=\"primary\"][data-hovered]"
         );
         assert_eq!(
-            compile("button:busy").unwrap(),
+            compile("button[state=busy]").unwrap(),
             "[data-part=\"button\"][data-state~=\"busy\"]"
         );
         assert_eq!(
@@ -431,6 +434,11 @@ mod tests {
             "button[Variant=x]",
             "button::marker",
             "button:has",
+            "button:busy",
+            "button:hovr",
+            "button[hovered)",
+            "button(:hover]",
+            "button:has(a]",
             "button:nth-child(2)",
             "button >",
             "> button",
