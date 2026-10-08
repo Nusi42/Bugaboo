@@ -271,10 +271,21 @@ mod tests {
     use axum::body::Body;
     use axum::http::{Request, StatusCode, header};
     use axum::routing::{get, post};
+    use bb_dev_words::accounts::PUBLIC_URL;
     use tower::ServiceExt as _;
 
     use super::*;
     use crate::errors::ApiJson;
+
+    /// The host and port of the public address.
+    fn authority() -> &'static str {
+        PUBLIC_URL.strip_prefix("https://").unwrap()
+    }
+
+    /// The public address with another scheme.
+    fn with_scheme(scheme: &str) -> String {
+        format!("{scheme}://{}", authority())
+    }
 
     fn change(origin: Option<&str>, fetch_site: Option<&str>, method: &str) -> Request<Body> {
         change_with(origin, fetch_site, method, "https")
@@ -289,7 +300,7 @@ mod tests {
         let mut request = Request::builder()
             .method(method)
             .uri("/api/v1/echo")
-            .header(header::HOST, "bugaboo.test:47200")
+            .header(header::HOST, authority())
             .header(header::CONTENT_TYPE, "application/json");
         if let Some(origin) = origin {
             request = request.header(header::ORIGIN, origin);
@@ -304,12 +315,12 @@ mod tests {
 
     #[tokio::test]
     async fn sec_06_changes_must_come_from_the_servers_own_origin() {
-        let own = Some("https://bugaboo.test:47200");
+        let own = Some(PUBLIC_URL);
         let allowed = [
             change(own, None, "POST"),
             change(own, Some("cross-site"), "POST"),
             change(None, Some("same-origin"), "DELETE"),
-            change(Some("HTTPS://BUGABOO.TEST:47200"), None, "POST"),
+            change(Some(&PUBLIC_URL.to_uppercase()), None, "POST"),
         ];
         for request in allowed {
             let method = request.method().clone();
@@ -319,7 +330,11 @@ mod tests {
         let refused = [
             change(Some("https://evil.test"), None, "POST"),
             change(Some("https://evil.test"), Some("same-origin"), "POST"),
-            change(Some("https://bugaboo.test"), None, "POST"),
+            change(
+                PUBLIC_URL.rsplit_once(':').map(|(host, _)| host),
+                None,
+                "POST",
+            ),
             change(Some("null"), None, "PUT"),
             change(None, Some("cross-site"), "POST"),
             change(None, Some("same-site"), "PATCH"),
@@ -336,13 +351,13 @@ mod tests {
     #[tokio::test]
     async fn sec_06_the_scheme_must_match_too() {
         // An http origin against an https server, and the other way round, is another origin.
-        let http_origin = change(Some("http://bugaboo.test:47200"), None, "POST");
+        let http_origin = change(Some(&with_scheme("http")), None, "POST");
         let response = app().oneshot(http_origin).await.unwrap();
         assert_eq!(response.status(), StatusCode::FORBIDDEN);
-        let secure_origin = change_with(Some("https://bugaboo.test:47200"), None, "POST", "http");
+        let secure_origin = change_with(Some(PUBLIC_URL), None, "POST", "http");
         let response = app().oneshot(secure_origin).await.unwrap();
         assert_eq!(response.status(), StatusCode::FORBIDDEN);
-        let plain = change_with(Some("http://bugaboo.test:47200"), None, "POST", "http");
+        let plain = change_with(Some(&with_scheme("http")), None, "POST", "http");
         let response = app().oneshot(plain).await.unwrap();
         assert_ne!(response.status(), StatusCode::FORBIDDEN);
     }
@@ -352,8 +367,8 @@ mod tests {
         // HTTP/2 and absolute-form requests have no Host header; the address holds the authority.
         let mut request = Request::builder()
             .method("POST")
-            .uri("https://bugaboo.test:47200/api/v1/echo")
-            .header(header::ORIGIN, "https://bugaboo.test:47200")
+            .uri(format!("{PUBLIC_URL}/api/v1/echo"))
+            .header(header::ORIGIN, PUBLIC_URL)
             .header(header::CONTENT_TYPE, "application/json")
             .body(Body::from("{}"))
             .unwrap();
@@ -364,7 +379,7 @@ mod tests {
 
         let mut other = Request::builder()
             .method("POST")
-            .uri("https://bugaboo.test:47200/api/v1/echo")
+            .uri(format!("{PUBLIC_URL}/api/v1/echo"))
             .header(header::ORIGIN, "https://evil.test")
             .body(Body::from("{}"))
             .unwrap();

@@ -9,6 +9,7 @@ use bb_api_words as _;
 use bb_app as _;
 use bb_auth as _;
 use bb_core as _;
+use bb_dev_words as _;
 use bb_policy as _;
 use brotli as _;
 use getrandom as _;

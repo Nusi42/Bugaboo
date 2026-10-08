@@ -24,6 +24,7 @@ zeroize = { workspace = true }
 
 [dev-dependencies]
 bb-core = { path = "../bb-core", features = ["fake-ids"] }
+bb-dev-words = { path = "../bb-dev-words" }
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
 webauthn-authenticator-rs = { workspace = true }
 

@@ -527,13 +527,14 @@ mod origin_tests {
 mod tests {
     use base64ct::{Base64UrlUnpadded, Encoding as _};
     use bb_core::id::SequentialIds;
+    use bb_dev_words::accounts::PUBLIC_URL;
     use webauthn_authenticator_rs::prelude::WebauthnAuthenticator as _;
     use webauthn_authenticator_rs::softpasskey::SoftPasskey;
 
     use super::*;
 
     fn party() -> RelyingParty {
-        RelyingParty::from_public_url("https://bugaboo.test:47200", "Bugaboo").unwrap()
+        RelyingParty::from_public_url(PUBLIC_URL, "Bugaboo").unwrap()
     }
 
     fn now() -> Timestamp {
@@ -550,7 +551,7 @@ mod tests {
     }
 
     fn origin() -> Url {
-        Url::parse("https://bugaboo.test:47200").unwrap()
+        Url::parse(PUBLIC_URL).unwrap()
     }
 
     fn register(passkeys: &Passkeys, device: &mut SoftPasskey, person: UserId) -> StoredCredential {
@@ -576,8 +577,9 @@ mod tests {
 
     #[test]
     fn auth_02_the_relying_party_is_a_host_name_with_a_web_address() {
-        assert_eq!(party().id(), "bugaboo.test");
-        assert_eq!(party().origin(), "https://bugaboo.test:47200/");
+        let public = Url::parse(PUBLIC_URL).unwrap();
+        assert_eq!(party().id(), public.host_str().unwrap());
+        assert_eq!(party().origin(), format!("{PUBLIC_URL}/"));
         for bad in [
             "",
             "not a url",
