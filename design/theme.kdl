@@ -403,10 +403,7 @@ mixin "list-reset" {
 
 // Words and details under each other, which break anywhere when they are long.
 mixin "column-wrap" {
-    display flex
-    flex-direction column
-    gap "$space-1"
-    min-width 0
+    use "column-tight"
     overflow-wrap anywhere
 }
 
@@ -434,6 +431,23 @@ mixin "note-box" {
     gap "$space-1"
     margin 0
     padding "$space-3"
+}
+
+// Lines under each other with a little room between them.
+mixin "column-tight" {
+    display flex
+    flex-direction column
+    gap "$space-1"
+    min-width 0
+}
+
+// Sentences or details under each other, in the line height of body text.
+mixin "quiet-column" {
+    display flex
+    flex-direction column
+    gap "$space-2"
+    margin 0
+    line-height "$lh-body"
 }
 
 // ───────────── Animations ─────────────
@@ -586,10 +600,7 @@ part "button[variant=danger][hovered]" "button[variant=danger][pressed]" {
 // ───────────── Fields (TextField, SearchField, SelectField) ─────────────
 
 part "field" {
-    display flex
-    flex-direction column
-    gap "$space-1"
-    min-width 0
+    use "column-tight"
 }
 
 part "field.label" {
@@ -1442,12 +1453,8 @@ part "sign-in.links" {
 // ───────────── Admin (the status page) ─────────────
 
 part "admin.detail" {
-    display flex
-    flex-direction column
-    gap "$space-2"
-    margin 0
+    use "quiet-column"
     font-size "$fs-md"
-    line-height "$lh-body"
 }
 
 // ───────────── Account ─────────────
@@ -1564,11 +1571,8 @@ part "access.matrix-row:last-child access.matrix-cell" {
 }
 
 part "access.cell" {
-    display flex
-    flex-direction column
+    use "column-tight"
     align-items flex-start
-    gap "$space-1"
-    min-width 0
 }
 
 part "access.cell > field" {
@@ -1715,12 +1719,8 @@ part "projects.preview" {
 }
 
 part "projects.sentences" {
-    display flex
-    flex-direction column
-    gap "$space-2"
-    margin 0
+    use "quiet-column"
     padding-inline-start "$space-5"
-    line-height "$lh-body"
 }
 
 part "projects.alert-line" {
@@ -2241,14 +2241,11 @@ part "bottom-bar.tab" {
 }
 
 part "bottom-bar.item" {
-    display flex
+    use "column-tight"
     flex 1
-    flex-direction column
     align-items center
     justify-content center
-    gap "$space-1"
     box-sizing border-box
-    min-width 0
     min-height "$size-bar"
     padding "$space-2"
     use "bare-button"
@@ -2650,11 +2647,8 @@ part "shortcut-help.change[focus-visible]" {
 }
 
 part "shortcut-list.what" {
-    display flex
+    use "column-tight"
     flex 1
-    flex-direction column
-    gap "$space-1"
-    min-width 0
 }
 
 part "shortcut-list.name" {
