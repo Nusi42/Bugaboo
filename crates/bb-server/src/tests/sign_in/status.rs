@@ -33,7 +33,7 @@ pub(super) fn app_with_probe_and_limits(
     certificate: Option<Arc<ServedCertificate>>,
     limits: LimitsConfig,
 ) -> axum::Router {
-    let mut options = options(rig, limits, true);
+    let mut options = options(rig, limits);
     // These tests change the log or its anchor file from outside and look again at once, so the
     // page keeps no answer.
     options.probe = ProbeHandle::new(Arc::new(
@@ -334,7 +334,7 @@ async fn sec_15_the_status_page_warns_when_the_anchor_is_ahead() -> TestResult {
         );
 
         // The page says so, with the reason the person can act on.
-        let mut options = options(&rig, LimitsConfig::default(), true);
+        let mut options = options(&rig, LimitsConfig::default());
         options.probe = ProbeHandle::new(Arc::new(probe));
         let app = router(options);
         let mut ada = Browser::new(&app, &called());
@@ -375,7 +375,7 @@ async fn sec_16_the_status_page_shows_what_of_the_data_folder_is_too_open() -> T
     each_database("sec_16_status_data_folder", async |db| {
         let rig = Rig::start(db).await?;
         let data = crate::data_folder::DataFolder::prepare(&rig.folder.path().join("data"))?;
-        let mut options = options(&rig, LimitsConfig::default(), true);
+        let mut options = options(&rig, LimitsConfig::default());
         options.probe = ProbeHandle::new(Arc::new(
             Probe::new(
                 rig.database.clone(),
@@ -433,7 +433,7 @@ async fn sec_16_the_status_page_says_unknown_when_the_data_folder_cannot_be_look
         );
         let rights = probe.snapshot().await.data_folder;
         assert_eq!(rights, bb_app::status::DataFolderRights::unknown());
-        let mut options = options(&rig, LimitsConfig::default(), true);
+        let mut options = options(&rig, LimitsConfig::default());
         options.probe = ProbeHandle::new(Arc::new(probe));
         let app = router(options);
         let mut ada = Browser::signed_in(&app, &rig).await?;

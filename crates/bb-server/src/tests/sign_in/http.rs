@@ -82,14 +82,11 @@ pub(super) struct Browser {
     headers: Vec<(&'static str, String)>,
 }
 
-pub(super) fn options(rig: &Rig, limits: LimitsConfig, auth: bool) -> Options {
+/// The options of a router that signs people in with the services of `rig`.
+pub(super) fn options(rig: &Rig, limits: LimitsConfig) -> Options {
     Options {
         limits,
-        auth: if auth {
-            AuthHandle::new(rig.services.clone())
-        } else {
-            AuthHandle::none()
-        },
+        auth: AuthHandle::new(rig.services.clone()),
         ..Options::for_tests()
     }
 }
@@ -423,7 +420,7 @@ pub(super) async fn rig_and_app_with(
     tries: Tries,
 ) -> Result<(Rig, Router), Failure> {
     let rig = Rig::start_with(db, tries).await?;
-    let app = router(options(&rig, LimitsConfig::default(), true));
+    let app = router(options(&rig, LimitsConfig::default()));
     Ok((rig, app))
 }
 
@@ -691,7 +688,6 @@ async fn sec_14_one_network_is_limited_in_its_tries_whatever_the_account() -> Te
                 sign_in_attempts_per_minute: 4,
                 ..LimitsConfig::default()
             },
-            true,
         ));
         let mut browser = Browser::new(&app, &called());
         let mut statuses = Vec::new();
@@ -735,9 +731,8 @@ async fn sec_14_one_network_is_limited_in_its_tries_whatever_the_account() -> Te
 #[tokio::test]
 async fn auth_01_without_a_database_the_sign_in_routes_say_so_and_nothing_else_breaks() -> TestResult
 {
-    each_database("auth_01_http_unavailable", async |db| {
-        let rig = Rig::start(db).await?;
-        let app = router(options(&rig, LimitsConfig::default(), false));
+    each_database("auth_01_http_unavailable", async |_db| {
+        let app = router(Options::for_tests());
         let mut browser = Browser::new(&app, &called());
         let reply = browser.send("GET", "/api/v1/auth/status", None).await?;
         assert_eq!(reply.status, StatusCode::SERVICE_UNAVAILABLE);
