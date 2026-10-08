@@ -94,9 +94,18 @@ fn is_follow_up(word: &str) -> bool {
     let (Some(milestone), Some(number), None) = (parts.next(), parts.next(), parts.next()) else {
         return false;
     };
-    let milestone_ok = milestone.len() >= 2
-        && milestone.starts_with(['M', 'V'])
-        && milestone[1..].chars().all(|c| c.is_ascii_digit());
+    // `M2`, or `M2C` for a step between two milestones.
+    let digits = milestone.trim_start_matches(['M', 'V']);
+    let milestone_ok = milestone.starts_with(['M', 'V'])
+        && digits
+            .trim_end_matches(|c: char| c.is_ascii_uppercase())
+            .parse::<u32>()
+            .is_ok()
+        && digits.len()
+            - digits
+                .trim_end_matches(|c: char| c.is_ascii_uppercase())
+                .len()
+            <= 1;
     let number_ok = number.len() >= 2
         && number.starts_with('F')
         && number[1..].chars().all(|c| c.is_ascii_digit());
@@ -144,7 +153,7 @@ mod tests {
 
     #[test]
     fn a_follow_up_is_a_milestone_and_a_number() {
-        for good in ["see M1-F44.", "V2-F10 tracks it", "(M2-F60)"] {
+        for good in ["see M1-F44.", "V2-F10 tracks it", "(M2-F60)", "M2C-F40"] {
             assert!(names_a_follow_up(good), "{good}");
         }
         for bad in ["", "M1", "F44", "M1-44", "ADR-0021", "nothing"] {

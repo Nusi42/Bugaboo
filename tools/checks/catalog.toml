@@ -144,10 +144,10 @@ status = "active"
 id = "LINT-DRY"
 title = "No copy-pasted code blocks above the duplication threshold"
 rule = "coding-standards §1 (DRY)"
-tool = "jscpd (Rust and TypeScript)"
+tool = "jscpd (Rust and TypeScript; .jscpd.json, tools/checks/dry-exemptions.toml)"
 when = ["ci"]
 files = ["crates/**/*.rs", "web/**/*.{ts,tsx}"]
-status = "planned"
+status = "active"
 
 [[check]]
 id = "LINT-HYGIENE"

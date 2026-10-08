@@ -51,6 +51,12 @@ fn link_directory(target: &Path, link: &Path) {
 }
 
 impl Repo {
+    /// The repository (or fixture) whose folder is `root`.
+    #[cfg(test)]
+    pub(crate) fn at(root: PathBuf) -> Self {
+        Self { root, view: None }
+    }
+
     /// The repository containing this xtask crate.
     pub(crate) fn discover() -> anyhow::Result<Self> {
         let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));

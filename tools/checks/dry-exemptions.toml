@@ -1,0 +1,22 @@
+# Copies of code that stand for now (LINT-DRY, coding-standards section 1). Each entry names the two
+# files that hold the same block and a reason that names the follow-up that removes the copy. An
+# entry that no copy needs any more fails, so the file shrinks as the copies go.
+
+[[exempt]]
+files = [
+  "web/app/src/features/access/Pickers.tsx",
+  "web/app/src/features/projects/ProjectPicker.tsx",
+]
+reason = "Both lists to choose from, with their search box and options, become the one SearchPicker of packages/ui (M2C-F40, package C-05)."
+
+[[exempt]]
+files = ["web/app/src/features/my-settings/ThemePicker.tsx", "web/packages/ui/src/ChoiceGroup.tsx"]
+reason = "The theme picker is the choice group of packages/ui once the components move onto the theme file (M2C-F40, packages C-05 and C-06)."
+
+[[exempt]]
+files = ["web/app/e2e/access.spec.ts", "web/app/e2e/screenshots-access.spec.ts"]
+reason = "The steps of choosing where to look and whom to check move into one helper of the end-to-end support (M2C-F40, package C-05: one check, one shot)."
+
+[[exempt]]
+files = ["web/app/e2e/my-settings.spec.ts", "web/app/e2e/screenshots-m2.spec.ts"]
+reason = "The steps of opening My settings move into one helper of the end-to-end support (M2C-F40, package C-05: one check, one shot)."

@@ -1,0 +1,9 @@
+{
+  "minTokens": 100,
+  "minLines": 10,
+  "ignorePattern": ["use [^;]*;", "import [^;]*;"],
+  "ignore": ["**/node_modules/**", "**/target/**", "**/dist/**"],
+  "gitignore": false,
+  "reporters": ["json"],
+  "silent": true
+}
