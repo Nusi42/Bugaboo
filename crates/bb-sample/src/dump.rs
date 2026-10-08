@@ -11,7 +11,7 @@ use std::collections::BTreeSet;
 use bb_app::access::{PolicyStore as _, StartingRole};
 use bb_app::auth::{AccountStore as _, SecondStepStore as _};
 use bb_core::event::{Actor, DomainEvent, EntityRef};
-use bb_core::id::UserId;
+use bb_core::id::{EntityId, UserId};
 use bb_core::technical::TechnicalName;
 use serde::Serialize;
 
@@ -218,22 +218,9 @@ impl Sample {
     }
 }
 
-/// The bytes of an ID written the way IDs are written (8-4-4-4-12 hexadecimal digits).
+/// The bytes of an ID written the way IDs are written (any kind of ID, so any UUID version).
 fn id_bytes(text: &str) -> Option<[u8; 16]> {
-    let digits: String = text.chars().filter(|c| *c != '-').collect();
-    let well_formed = text.len() == 36
-        && text
-            .char_indices()
-            .all(|(at, c)| matches!(at, 8 | 13 | 18 | 23) == (c == '-'))
-        && digits.chars().all(|c| c.is_ascii_hexdigit());
-    if !well_formed {
-        return None;
-    }
-    let mut bytes = [0_u8; 16];
-    for (byte, pair) in bytes.iter_mut().zip(digits.as_bytes().chunks(2)) {
-        *byte = u8::from_str_radix(std::str::from_utf8(pair).ok()?, 16).ok()?;
-    }
-    Some(bytes)
+    text.parse::<EntityId>().ok().map(EntityId::to_bytes)
 }
 
 /// A value of a change, with an ID in it (the role of a person, say) replaced by its label, as

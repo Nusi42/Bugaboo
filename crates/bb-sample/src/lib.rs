@@ -25,7 +25,6 @@ mod dump_organization;
 mod error;
 mod folder;
 mod generate;
-mod limits;
 mod names;
 mod organization;
 mod password;
@@ -46,5 +45,5 @@ pub use generate::{
 pub use names::NameList;
 pub use organization::Organization;
 pub use roster::{
-    ACCESS_KEYS, EMAIL_DOMAIN, PEOPLE, ROLE_MIX, Region, Role, SamplePerson, TIME_ZONES, roster,
+    ACCESS_KEYS, EMAIL_DOMAIN, PEOPLE, ROLE_MIX, Region, SamplePerson, TIME_ZONES, roster,
 };

@@ -83,6 +83,8 @@ flowchart TB
   store -. tests only .-> testing
   server -. tests only .-> words
   testing --> devwords
+  app -. tests only .-> devwords
+  server -. tests only .-> devwords
   sample --> app & store & core & policy & auth & devwords
 ```
 
@@ -152,7 +154,7 @@ The words of the API description that more than one program needs, written once:
 
 ### bb-dev-words
 
-The words that the developer tools, the tests and `xtask` share, written once: the databases Bugaboo runs on (`DatabaseKind`: `sqlite`, `postgres`) and the variables that tell the test harness what to do (`BB_TEST_DATABASES`, `BB_TEST_POSTGRES_URL`, `BB_DB_PARITY_FILE`), and the schema of `tools/dev/sample.json` (`sample::Layout`), which says where the sample organization is made and what its files, groups, projects and roles are called. It does no work and no input or output, and depends on `serde` and `serde_json` only, so `bb-testing`, `bb-sample` and `xtask` can import it without pulling in the store or the use cases.
+The words that the developer tools, the tests and `xtask` share, written once: the databases Bugaboo runs on (`DatabaseKind`: `sqlite`, `postgres`) and the variables that tell the test harness what to do (`BB_TEST_DATABASES`, `BB_TEST_POSTGRES_URL`, `BB_DB_PARITY_FILE`), the passwords and the address of the sign-in tests (`accounts`), and the schema of `tools/dev/sample.json` (`sample::Layout`), which says where the sample organization is made and what its files, groups, projects and roles are called. It does no work and no input or output, and depends on `serde` and `serde_json` only, so `bb-testing`, `bb-sample`, `xtask` and the tests of `bb-app` and `bb-server` can import it without pulling in the store or the use cases.
 
 ### bb-ai and bb-mcp
 

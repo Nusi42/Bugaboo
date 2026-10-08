@@ -211,6 +211,7 @@ fn sddl_access(sddl: &str) -> Access {
 
 #[cfg(test)]
 mod tests {
+    use super::super::ADMINISTRATORS_SID;
     use super::*;
 
     fn data(folder: &Path) -> DataFolder {
@@ -219,8 +220,10 @@ mod tests {
 
     #[test]
     fn sec_16_the_access_list_of_a_folder_is_open_when_it_gives_something_to_everybody() {
-        let private = "C:\\data\nD:PAI(A;OICI;FA;;;S-1-5-21-1-2-3-1001)(A;OICI;FA;;;SY)(A;OICI;FA;;;S-1-5-32-544)";
-        assert_eq!(sddl_access(private), Access::Private);
+        let private = format!(
+            "C:\\data\nD:PAI(A;OICI;FA;;;S-1-5-21-1-2-3-1001)(A;OICI;FA;;;SY)(A;OICI;FA;;;{ADMINISTRATORS_SID})"
+        );
+        assert_eq!(sddl_access(&private), Access::Private);
         for who in [
             "WD",
             "BU",

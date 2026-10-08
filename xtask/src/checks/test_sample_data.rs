@@ -625,7 +625,7 @@ mod tests {
 
     #[test]
     fn the_needles_are_the_password_the_code_app_and_the_access_key_columns_only() {
-        let text = "# header\nana@bugaboo.example\tPW-ONE\tcontributor\tAna Moreno\nben@bugaboo.example\tPW-TWO\tteam_member\tBen Hale\tMZXW6YTBOI\ncleo@bugaboo.example\tPW-THREE\tteam_member\tCleo Coder\t\tbb_k7q2x9mf_cpnqj\n";
+        let text = "# header\nana@bugaboo.example\tPW-ONE\tcontributor\tAna Moreno\nben@bugaboo.example\tPW-TWO\tteam-member\tBen Hale\tMZXW6YTBOI\ncleo@bugaboo.example\tPW-THREE\tteam-member\tCleo Coder\t\tbb_k7q2x9mf_cpnqj\n";
         let needles = needles_of(text);
         assert_eq!(
             needles,

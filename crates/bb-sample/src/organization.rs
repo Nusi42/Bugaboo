@@ -28,7 +28,7 @@ use bb_core::project::ShortName;
 
 use crate::error::{SampleError, Step};
 use crate::generate::{Later, World};
-use crate::roster::{Role, SamplePerson};
+use crate::roster::SamplePerson;
 use bb_dev_words::sample::{Layout, OrganizationNames};
 
 /// A role the plan gives: one of the six starting roles, or a custom role of the sample (by the
@@ -77,7 +77,7 @@ struct GroupRule {
     /// The key of the group in `sample.json`.
     key: &'static str,
     /// The people of this role (in the roster) are its members.
-    of: Role,
+    of: StartingRole,
     /// The role it gives.
     grants: RoleKey,
     /// The projects it gives it on (and in their sub-projects); none means the whole organization.
@@ -90,49 +90,49 @@ const TEAM_MEMBER: RoleKey = RoleKey::Starting(StartingRole::TeamMember);
 const GROUPS: [GroupRule; 8] = [
     GroupRule {
         key: "backend",
-        of: Role::TeamMember,
+        of: StartingRole::TeamMember,
         grants: TEAM_MEMBER,
         on: &["WEB", "OPS"],
     },
     GroupRule {
         key: "frontend",
-        of: Role::TeamMember,
+        of: StartingRole::TeamMember,
         grants: TEAM_MEMBER,
         on: &["WEB"],
     },
     GroupRule {
         key: "mobile",
-        of: Role::TeamMember,
+        of: StartingRole::TeamMember,
         grants: TEAM_MEMBER,
         on: &["APP"],
     },
     GroupRule {
         key: "qa",
-        of: Role::TeamMember,
+        of: StartingRole::TeamMember,
         grants: TEAM_MEMBER,
         on: &["APP", "WEB"],
     },
     GroupRule {
         key: "support",
-        of: Role::TeamMember,
+        of: StartingRole::TeamMember,
         grants: RoleKey::Custom(SUPPORT_AGENT),
         on: &["OPS"],
     },
     GroupRule {
         key: "docs",
-        of: Role::TeamMember,
+        of: StartingRole::TeamMember,
         grants: TEAM_MEMBER,
         on: &["DOC"],
     },
     GroupRule {
         key: "management",
-        of: Role::Viewer,
+        of: StartingRole::Viewer,
         grants: RoleKey::Starting(StartingRole::Viewer),
         on: &[],
     },
     GroupRule {
         key: "external",
-        of: Role::Contributor,
+        of: StartingRole::Contributor,
         grants: RoleKey::Starting(StartingRole::Contributor),
         on: &["WEB"],
     },
@@ -166,7 +166,7 @@ struct Builder<'a> {
 impl Builder<'_> {
     /// The people of a role in the order of the roster, except that the people the demos name come
     /// first (Ana is the first Contributor, Ben the first Team member, whatever the seed).
-    fn of(&self, role: Role) -> Vec<usize> {
+    fn of(&self, role: StartingRole) -> Vec<usize> {
         let mut found: Vec<usize> = self
             .people
             .iter()
@@ -198,10 +198,14 @@ impl Builder<'_> {
 
     /// The second Administrator, and a Project lead for each of the projects, in order.
     fn administrators_and_leads(&mut self, names: &OrganizationNames) {
-        for at in self.of(Role::Administrator).into_iter().skip(1) {
+        for at in self.of(StartingRole::Administrator).into_iter().skip(1) {
             self.direct(at, StartingRole::Administrator, None);
         }
-        for (lead, project) in self.of(Role::ProjectLead).into_iter().zip(&names.projects) {
+        for (lead, project) in self
+            .of(StartingRole::ProjectLead)
+            .into_iter()
+            .zip(&names.projects)
+        {
             self.direct(lead, StartingRole::ProjectLead, Some(&project.short_name));
         }
     }
@@ -211,14 +215,14 @@ impl Builder<'_> {
     fn team_members(&mut self) {
         let giving: Vec<&GroupRule> = GROUPS
             .iter()
-            .filter(|rule| rule.of == Role::TeamMember && rule.grants == TEAM_MEMBER)
+            .filter(|rule| rule.of == StartingRole::TeamMember && rule.grants == TEAM_MEMBER)
             .collect();
         let teams: Vec<&GroupRule> = GROUPS
             .iter()
-            .filter(|rule| rule.of == Role::TeamMember)
+            .filter(|rule| rule.of == StartingRole::TeamMember)
             .collect();
         let mut through_group = 0_usize;
-        for (at, person) in self.of(Role::TeamMember).into_iter().enumerate() {
+        for (at, person) in self.of(StartingRole::TeamMember).into_iter().enumerate() {
             let only_through_group = at % 5 >= 5 - TEAM_THROUGH_GROUP;
             let giver = giving.get(through_group % giving.len().max(1));
             if let (true, Some(giver)) = (only_through_group, giver) {
@@ -245,9 +249,12 @@ impl Builder<'_> {
     /// Contributors: the first ones (Ana is the first) in the group *External*, the others on a
     /// project each. Viewers: all through the group *Management*. Guests: a project each.
     fn the_others(&mut self) {
-        for (at, person) in self.of(Role::Contributor).into_iter().enumerate() {
+        for (at, person) in self.of(StartingRole::Contributor).into_iter().enumerate() {
             if at < EXTERNAL_CONTRIBUTORS {
-                if let Some(rule) = GROUPS.iter().find(|rule| rule.of == Role::Contributor) {
+                if let Some(rule) = GROUPS
+                    .iter()
+                    .find(|rule| rule.of == StartingRole::Contributor)
+                {
                     self.join(rule.key, person);
                 }
             } else {
@@ -257,12 +264,12 @@ impl Builder<'_> {
                 self.direct(person, StartingRole::Contributor, project);
             }
         }
-        for person in self.of(Role::Viewer) {
-            if let Some(rule) = GROUPS.iter().find(|rule| rule.of == Role::Viewer) {
+        for person in self.of(StartingRole::Viewer) {
+            if let Some(rule) = GROUPS.iter().find(|rule| rule.of == StartingRole::Viewer) {
                 self.join(rule.key, person);
             }
         }
-        for (person, project) in self.of(Role::Guest).into_iter().zip(GUEST_PROJECTS) {
+        for (person, project) in self.of(StartingRole::Guest).into_iter().zip(GUEST_PROJECTS) {
             self.direct(person, StartingRole::Guest, Some(project));
         }
     }
@@ -734,7 +741,7 @@ mod tests {
             .members
             .iter()
             .flat_map(|(_, members)| members)
-            .filter(|at| people[**at].role == Role::TeamMember)
+            .filter(|at| people[**at].role == StartingRole::TeamMember)
             .filter(|at| {
                 !plan
                     .rows

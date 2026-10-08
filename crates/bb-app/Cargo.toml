@@ -24,6 +24,7 @@ zeroize = { workspace = true }
 
 [dev-dependencies]
 base64ct = { workspace = true }
+bb-dev-words = { path = "../bb-dev-words" }
 # Predictable IDs for the property tests (`SequentialIds`).
 bb-core = { path = "../bb-core", features = ["fake-ids"] }
 # Makes `Authorized::into_value` for the tests of this crate (ARCH-AUTHZ-ONLY).

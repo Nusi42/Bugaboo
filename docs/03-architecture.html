@@ -226,6 +226,8 @@
   store -. tests only .-&gt; testing
   server -. tests only .-&gt; words
   testing --&gt; devwords
+  app -. tests only .-&gt; devwords
+  server -. tests only .-&gt; devwords
   sample --&gt; app &amp; store &amp; core &amp; policy &amp; auth &amp; devwords</pre>
 <h4>Dependency rules (checked by <code>cargo xtask check only ARCH-DEPS</code>)</h4>
 <ol>
@@ -273,7 +275,7 @@
 <h4>bb-api-words</h4>
 <p>The words of the API description that more than one program needs, written once: the marks <code>bb-api</code> puts on a route (<code>x-permission</code>, <code>x-never-stored</code>, <code>x-secret</code>), the three words for a route that needs no permission of the catalogue (<code>public</code>, <code>signed-in</code>, <code>own-account</code>), and the actor and answer names of the permission matrix (SEC-MATRIX). It has no dependencies and does no work, so <code>bb-api</code> (writes the words), the server tests (read them) and <code>xtask</code> (its checks read the generated description) can import it. The table that says which route gets which mark is <code>bb-api</code>'s <code>permissions::ROUTES</code>.</p>
 <h4>bb-dev-words</h4>
-<p>The words that the developer tools, the tests and <code>xtask</code> share, written once: the databases Bugaboo runs on (<code>DatabaseKind</code>: <code>sqlite</code>, <code>postgres</code>) and the variables that tell the test harness what to do (<code>BB_TEST_DATABASES</code>, <code>BB_TEST_POSTGRES_URL</code>, <code>BB_DB_PARITY_FILE</code>), and the schema of <code>tools/dev/sample.json</code> (<code>sample::Layout</code>), which says where the sample organization is made and what its files, groups, projects and roles are called. It does no work and no input or output, and depends on <code>serde</code> and <code>serde_json</code> only, so <code>bb-testing</code>, <code>bb-sample</code> and <code>xtask</code> can import it without pulling in the store or the use cases.</p>
+<p>The words that the developer tools, the tests and <code>xtask</code> share, written once: the databases Bugaboo runs on (<code>DatabaseKind</code>: <code>sqlite</code>, <code>postgres</code>) and the variables that tell the test harness what to do (<code>BB_TEST_DATABASES</code>, <code>BB_TEST_POSTGRES_URL</code>, <code>BB_DB_PARITY_FILE</code>), the passwords and the address of the sign-in tests (<code>accounts</code>), and the schema of <code>tools/dev/sample.json</code> (<code>sample::Layout</code>), which says where the sample organization is made and what its files, groups, projects and roles are called. It does no work and no input or output, and depends on <code>serde</code> and <code>serde_json</code> only, so <code>bb-testing</code>, <code>bb-sample</code>, <code>xtask</code> and the tests of <code>bb-app</code> and <code>bb-server</code> can import it without pulling in the store or the use cases.</p>
 <h4>bb-ai and bb-mcp</h4>
 <p>One <strong>tool registry</strong> (search issues, get issue, create, change status, comment, log time, …). Each tool maps to a <code>bb-app</code> use case, so permissions and validation are identical. <code>bb-mcp</code> exposes the registry to outside AI apps; the assistant uses the same registry but returns <strong>proposals</strong> for writes instead of running them.</p>
 <h4>bb-sample</h4>

@@ -11,18 +11,13 @@ use jiff::Timestamp;
 use super::fake::FakeStore;
 use crate::access::{MakeStartingRoles, make_starting_roles};
 use crate::auth::{
-    AcceptInvitation, AppError, AuthServices, CompleteSetup, CreateInvitation, Ctx, FailureLimit,
-    IssueSetupCode, RequestInfo, Started, accept_invitation, complete_setup, create_invitation,
+    AcceptInvitation, AppError, AuthServices, CompleteSetup, CreateInvitation, Ctx, IssueSetupCode,
+    NoFailureLimit, RequestInfo, Started, accept_invitation, complete_setup, create_invitation,
     issue_setup_code,
 };
 use crate::context::Clock;
 
-/// The public address the passkeys of the tests belong to.
-pub(crate) const PUBLIC_URL: &str = "https://bugaboo.test:47200";
-/// A password that is not on the list of breached ones and has enough characters.
-pub(crate) const PASSWORD: &str = "Tr4mpoline-Quiet-Harbor-81";
-/// Another one, for changing it.
-pub(crate) const OTHER_PASSWORD: &str = "Violet-Lantern-Marsh-5520";
+pub(crate) use bb_dev_words::accounts::{OTHER_PASSWORD, PASSWORD, PUBLIC_URL};
 /// The start of the clock of the tests: 2027-01-15 08:00:00 UTC.
 const START: i64 = 1_800_000_000;
 
@@ -40,25 +35,6 @@ impl Clock for TestClock {
     fn now(&self) -> Timestamp {
         Timestamp::from_second(self.0.load(Ordering::SeqCst)).unwrap_or_default()
     }
-}
-
-/// A limit that never limits: these tests are about what a use case records, not about tries.
-struct NoLimit;
-
-impl FailureLimit for NoLimit {
-    fn reserve(&self, _key: &str) -> Result<bool, u64> {
-        Ok(false)
-    }
-
-    fn release(&self, _key: &str) {}
-
-    fn clear(&self, _key: &str) {}
-
-    fn tally(&self, _key: &str) -> u32 {
-        0
-    }
-
-    fn forget(&self, _key: &str) {}
 }
 
 /// The server, the store behind it, and the administrator who set it up.
@@ -88,7 +64,7 @@ impl World {
             PasswordHasher::new().map_err(text)?,
             Some(Passkeys::new(&party).map_err(text)?),
             CsrfKey::from_bytes(zeroize::Zeroizing::new([7; CSRF_KEY_LENGTH])),
-            Arc::new(NoLimit),
+            Arc::new(NoFailureLimit),
             "Bugaboo".to_owned(),
         );
         Ok(Self {

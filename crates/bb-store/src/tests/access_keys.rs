@@ -14,7 +14,7 @@ use bb_core::id::{AssignmentId, GroupId, IdSource, RoleId};
 use bb_core::person::Person;
 use bb_core::settings::{AUTH_ACCESS_KEY_LONGEST_DAYS, SECURITY_TWO_STEP_REQUIRED, SettingValue};
 use bb_core::sign_in::{StoredPasskey, TwoStep};
-use bb_testing::{TestDatabase, TestResult, each_database};
+use bb_testing::{Failure, TestDatabase, TestResult, each_database};
 
 use super::*;
 use crate::anchor::LogSeal;
@@ -258,8 +258,6 @@ async fn auth_07_the_list_pages_newest_first_and_the_last_use_is_kept_to_the_min
     })
     .await
 }
-
-type Failure = Box<dyn std::error::Error + Send + Sync>;
 
 /// Ada has the strict role (it has the switch for two-step sign-in) herself, Bob has the relaxed
 /// one, and Carol is in a group that has the strict one.

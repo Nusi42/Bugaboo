@@ -6,6 +6,7 @@
 //! or through a group. The same goes for the settings of each person (time zone and region) and
 //! for the few people who have an access key.
 
+use bb_app::access::StartingRole;
 use bb_core::access_key::KeyChoice;
 use bb_core::settings::{
     DEVICE, REGION_DATE_FORMAT, REGION_FIRST_DAY, REGION_NUMBER_FORMAT, SettingDefinition,
@@ -19,46 +20,14 @@ use crate::random::SeededRandom;
 /// sample person can never reach a real inbox (TEST-SAMPLE-DATA).
 pub const EMAIL_DOMAIN: &str = "bugaboo.example";
 
-/// A role of the starting roles, as the sample records it (a technical word, not text for people).
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Role {
-    /// Looks after the whole organization.
-    Administrator,
-    /// Manages projects and who has which role in them.
-    ProjectLead,
-    /// Changes issues.
-    TeamMember,
-    /// Creates issues and changes their own.
-    Contributor,
-    /// Only looks.
-    Viewer,
-    /// Sees only what they reported.
-    Guest,
-}
-
-impl Role {
-    /// The word the dump and the sign-in file use for the role.
-    #[must_use]
-    pub const fn code(self) -> &'static str {
-        match self {
-            Self::Administrator => "administrator",
-            Self::ProjectLead => "project_lead",
-            Self::TeamMember => "team_member",
-            Self::Contributor => "contributor",
-            Self::Viewer => "viewer",
-            Self::Guest => "guest",
-        }
-    }
-}
-
 /// The mix of roles of the 50 people (architecture §11).
-pub const ROLE_MIX: [(Role, usize); 6] = [
-    (Role::Administrator, 2),
-    (Role::ProjectLead, 4),
-    (Role::TeamMember, 30),
-    (Role::Contributor, 8),
-    (Role::Viewer, 4),
-    (Role::Guest, 2),
+pub const ROLE_MIX: [(StartingRole, usize); 6] = [
+    (StartingRole::Administrator, 2),
+    (StartingRole::ProjectLead, 4),
+    (StartingRole::TeamMember, 30),
+    (StartingRole::Contributor, 8),
+    (StartingRole::Viewer, 4),
+    (StartingRole::Guest, 2),
 ];
 
 /// How many people the sample has.
@@ -66,23 +35,26 @@ pub const PEOPLE: usize = 50;
 
 /// The people the demos name, the same whatever the seed: the administrator who runs the demo (the
 /// first person, made with the setup code), Ana (the person whose access is checked) and Ben.
-const FIXED: [(&str, &str, Role); 3] = [
-    ("Ada", "Brandt", Role::Administrator),
-    ("Ana", "Moreno", Role::Contributor),
-    ("Ben", "Hale", Role::TeamMember),
+const FIXED: [(&str, &str, StartingRole); 3] = [
+    ("Ada", "Brandt", StartingRole::Administrator),
+    ("Ana", "Moreno", StartingRole::Contributor),
+    ("Ben", "Hale", StartingRole::TeamMember),
 ];
 
 /// Who gets a code app for the tests of the second step, by role: a few people, never the people
 /// the demos name.
-const CODE_APPS: [(Role, usize); 4] = [
-    (Role::ProjectLead, 1),
-    (Role::TeamMember, 2),
-    (Role::Contributor, 1),
-    (Role::Viewer, 1),
+const CODE_APPS: [(StartingRole, usize); 4] = [
+    (StartingRole::ProjectLead, 1),
+    (StartingRole::TeamMember, 2),
+    (StartingRole::Contributor, 1),
+    (StartingRole::Viewer, 1),
 ];
 
 /// Who gets an access key, by role: a few people, never the people the demos name.
-const KEY_HOLDERS: [(Role, usize); 2] = [(Role::ProjectLead, 1), (Role::TeamMember, 2)];
+const KEY_HOLDERS: [(StartingRole, usize); 2] = [
+    (StartingRole::ProjectLead, 1),
+    (StartingRole::TeamMember, 2),
+];
 
 /// The access keys of the sample: what each is called and what it may do. Keys are given to the
 /// people of [`KEY_HOLDERS`] in this order.
@@ -128,7 +100,7 @@ pub struct SamplePerson {
     /// The e-mail address, under [`EMAIL_DOMAIN`].
     pub email: String,
     /// The role the person gets once roles exist.
-    pub role: Role,
+    pub role: StartingRole,
     /// Whether the person gets a code app.
     pub code_app: bool,
     /// Which of the [`ACCESS_KEYS`] the person gets, if any.
@@ -139,7 +111,7 @@ pub struct SamplePerson {
 }
 
 impl SamplePerson {
-    fn new(first: &str, last: &str, role: Role, fixed: bool) -> Self {
+    fn new(first: &str, last: &str, role: StartingRole, fixed: bool) -> Self {
         Self {
             name: format!("{first} {last}"),
             email: format!(
@@ -174,7 +146,7 @@ impl SamplePerson {
 /// Fails when the list of names is too short for 50 different people.
 pub fn roster(seed: u64, names: &NameList) -> Result<Vec<SamplePerson>, SampleError> {
     let mut random = SeededRandom::new(seed);
-    let mut roles: Vec<Role> = ROLE_MIX
+    let mut roles: Vec<StartingRole> = ROLE_MIX
         .iter()
         .flat_map(|(role, count)| std::iter::repeat_n(*role, *count))
         .collect();
@@ -286,11 +258,11 @@ mod tests {
         for seed in [1, 42, 9_999] {
             let people = roster(seed, &names()).unwrap();
             assert_eq!(people[0].name, "Ada Brandt");
-            assert_eq!(people[0].role, Role::Administrator);
+            assert_eq!(people[0].role, StartingRole::Administrator);
             let find = |name: &str| people.iter().find(|person| person.name == name).unwrap();
-            assert_eq!(find("Ana Moreno").role, Role::Contributor);
+            assert_eq!(find("Ana Moreno").role, StartingRole::Contributor);
             assert_eq!(find("Ana Moreno").email, "ana.moreno@bugaboo.example");
-            assert_eq!(find("Ben Hale").role, Role::TeamMember);
+            assert_eq!(find("Ben Hale").role, StartingRole::TeamMember);
             assert!(!find("Ana Moreno").code_app && !people[0].code_app);
         }
     }
@@ -326,7 +298,7 @@ mod tests {
     #[test]
     fn three_people_have_an_access_key_and_never_the_people_the_demos_name() {
         let people = roster(42, &names()).unwrap();
-        let mut keys: Vec<(usize, Role)> = people
+        let mut keys: Vec<(usize, StartingRole)> = people
             .iter()
             .filter_map(|person| person.access_key.map(|at| (at, person.role)))
             .collect();

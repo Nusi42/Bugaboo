@@ -16,8 +16,8 @@ use std::sync::Arc;
 use bb_app::access::{Authorized, MakeStartingRoles, Masked, make_starting_roles};
 use bb_app::auth::{
     AcceptInvitation, AuthApi, AuthServices, CompleteSetup, ConfirmCodeApp, CreateInvitation,
-    CreatedInvitation, IssueSetupCode, MakeAccessKey, RequestInfo, SecondStepStore as _, SignOut,
-    StartCodeApp, Started, issue_setup_code, make_access_key,
+    CreatedInvitation, IssueSetupCode, MakeAccessKey, NoFailureLimit, RequestInfo,
+    SecondStepStore as _, SignOut, StartCodeApp, Started, issue_setup_code, make_access_key,
 };
 use bb_app::context::Clock as _;
 use bb_app::settings::{ChangeSetting, SettingsScope, change_setting};
@@ -36,7 +36,6 @@ use jiff::Timestamp;
 
 use crate::clock::SampleClock;
 use crate::error::{SampleError, Step};
-use crate::limits::Unlimited;
 use crate::names::NameList;
 use crate::password::random_password;
 use crate::roster::{ACCESS_KEYS, SamplePerson, roster};
@@ -254,7 +253,7 @@ pub async fn make<L: Later>(
         // Passkeys come later (AUTH-08, PRIV-04 and the sample of M3 on).
         None,
         csrf,
-        Arc::new(Unlimited),
+        Arc::new(NoFailureLimit),
         Message::from(message::APP_NAME).render(),
     );
     let api: &dyn AuthApi = &services;

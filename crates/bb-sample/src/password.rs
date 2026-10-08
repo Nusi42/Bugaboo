@@ -3,11 +3,10 @@
 //! the sample must not have one. They are written to the ignored file `sign-in.txt` of the run and
 //! nowhere else.
 
+use bb_core::text::crockford_symbol;
+
 use crate::error::SampleError;
 
-/// Digits and capital letters without I, L, O and U (the alphabet of Crockford's base 32), so
-/// nothing is mistaken for something else when a person reads a password from the file.
-const ALPHABET: &[u8; 32] = b"0123456789ABCDEFGHJKMNPQRSTVWXYZ";
 /// Characters in a group, and groups in a password: 4 × 5 letters is 100 bits of randomness.
 const GROUP: usize = 5;
 const GROUPS: usize = 4;
@@ -25,8 +24,7 @@ pub(crate) fn random_password() -> Result<String, SampleError> {
         if at > 0 && at % GROUP == 0 {
             password.push('-');
         }
-        // 32 letters and a byte with 8 bits: the low 5 bits are uniform.
-        password.push(char::from(ALPHABET[usize::from(byte & 0b1_1111)]));
+        password.push(crockford_symbol(*byte));
     }
     Ok(password)
 }
@@ -34,6 +32,7 @@ pub(crate) fn random_password() -> Result<String, SampleError> {
 #[cfg(test)]
 mod tests {
     use bb_auth::check_policy;
+    use bb_core::text::CROCKFORD;
 
     use super::*;
 
@@ -45,7 +44,7 @@ mod tests {
         assert!(
             first
                 .chars()
-                .all(|c| c == '-' || ALPHABET.contains(&u8::try_from(c).unwrap()))
+                .all(|c| c == '-' || CROCKFORD.contains(&u8::try_from(c).unwrap()))
         );
         assert!(check_policy(&first).is_ok());
         assert_ne!(first, random_password().unwrap(), "never the same twice");

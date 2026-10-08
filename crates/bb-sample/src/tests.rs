@@ -5,8 +5,10 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::Path;
 
+use bb_app::access::StartingRole;
 use bb_app::projects::ProjectStore as _;
 use bb_app::roles::{CheckAccessQuery, check_access};
+use bb_core::message::Message;
 use bb_core::sign_in::SecurityAction;
 use bb_testing::{Failure, TestResult, each_database};
 use jiff::Timestamp;
@@ -14,7 +16,7 @@ use serde_json::Value;
 
 use crate::{
     ACCESS_KEYS, DEFAULT_SEED, EMAIL_DOMAIN, LATER_SECONDS, Later, NameList, Options, Organization,
-    PEOPLE, ROLE_MIX, Role, STEP_SECONDS, Sample, SampleError, Step, Target, World, make,
+    PEOPLE, ROLE_MIX, STEP_SECONDS, Sample, SampleError, Step, Target, World, make,
 };
 
 /// 2027-01-15 08:00:00 UTC: one start moment for every test, so the dates are always the same.
@@ -321,14 +323,9 @@ fn the_roles(dump: &Value) -> Result<(), Failure> {
             ),
         );
     }
-    for (role, name) in [
-        (Role::Administrator, "Administrator"),
-        (Role::ProjectLead, "Project lead"),
-        (Role::TeamMember, "Team member"),
-        (Role::Contributor, "Contributor"),
-        (Role::Viewer, "Viewer"),
-        (Role::Guest, "Guest"),
-    ] {
+    for role in StartingRole::ALL.iter().copied() {
+        let name = Message::from(role.name()).render();
+        let name = name.as_str();
         let wanted = ROLE_MIX
             .iter()
             .find(|(known, _)| *known == role)

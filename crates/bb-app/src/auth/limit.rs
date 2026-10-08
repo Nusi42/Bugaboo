@@ -37,6 +37,27 @@ pub trait FailureLimit: Send + Sync {
     fn forget(&self, key: &str);
 }
 
+/// A [`FailureLimit`] that lets every try through, for the places that have no failed tries and no
+/// attacker: the tests of the use cases and the sample organization.
+#[derive(Clone, Copy, Debug, Default)]
+pub struct NoFailureLimit;
+
+impl FailureLimit for NoFailureLimit {
+    fn reserve(&self, _key: &str) -> Result<bool, u64> {
+        Ok(false)
+    }
+
+    fn release(&self, _key: &str) {}
+
+    fn clear(&self, _key: &str) {}
+
+    fn tally(&self, _key: &str) -> u32 {
+        0
+    }
+
+    fn forget(&self, _key: &str) {}
+}
+
 /// A reserved try (see [`FailureLimit`]).
 #[derive(Clone)]
 pub(crate) struct Slot {
