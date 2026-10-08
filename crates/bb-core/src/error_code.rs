@@ -13,18 +13,20 @@ use std::collections::BTreeMap;
 
 use serde::Serialize;
 
-use crate::message::{self, Message, MessageKey};
+use crate::message::{Message, MessageKey};
 
-/// Declares the codes. One line per code: variant, text, HTTP status, message. The word, its
-/// lists and its serde form come from [`words!`]; the status and the message are added here.
+/// Declares the codes. One line per code: variant, text, HTTP status. The word, its lists, its
+/// serde form and its message (`error.<area>.<name>`, with `-` for `_`) come from [`words!`]; the
+/// status is added here.
 macro_rules! error_codes {
-    ($($(#[$doc:meta])* $variant:ident => ($code:literal, $status:literal, $message:path)),+ $(,)?) => {
+    ($($(#[$doc:meta])* $variant:ident => ($code:literal, $status:literal)),+ $(,)?) => {
         words! {
             /// Something that can go wrong, as the API reports it. The word is the stable text of
             /// the code, like `auth.wrong_credentials`.
             pub enum ErrorCode {
                 $($(#[$doc])* $variant => $code),+
             }
+            messages message = "error.";
         }
 
         impl ErrorCode {
@@ -33,94 +35,88 @@ macro_rules! error_codes {
             pub const fn status(self) -> u16 {
                 match self { $(Self::$variant => $status),+ }
             }
-
-            /// The message a person reads.
-            #[must_use]
-            pub const fn message(self) -> MessageKey {
-                match self { $(Self::$variant => $message),+ }
-            }
         }
     };
 }
 
 error_codes! {
     /// The e-mail address or the password is wrong. Never says which one.
-    WrongCredentials => ("auth.wrong_credentials", 401, message::ERROR_AUTH_WRONG_CREDENTIALS),
+    WrongCredentials => ("auth.wrong_credentials", 401),
     /// The code of the second step (code app or backup code) is wrong or was used already.
-    WrongSecondStepCode => ("auth.wrong_second_step_code", 401, message::ERROR_AUTH_WRONG_SECOND_STEP_CODE),
+    WrongSecondStepCode => ("auth.wrong_second_step_code", 401),
     /// The setup code of the first start is wrong.
-    WrongSetupCode => ("auth.wrong_setup_code", 401, message::ERROR_AUTH_WRONG_SETUP_CODE),
+    WrongSetupCode => ("auth.wrong_setup_code", 401),
     /// The new password is shorter than 12 characters.
-    PasswordTooShort => ("auth.password_too_short", 400, message::ERROR_AUTH_PASSWORD_TOO_SHORT),
+    PasswordTooShort => ("auth.password_too_short", 400),
     /// The new password is in the list of passwords that are tried first.
-    PasswordBreached => ("auth.password_breached", 400, message::ERROR_AUTH_PASSWORD_BREACHED),
+    PasswordBreached => ("auth.password_breached", 400),
     /// The invitation link does not work: unknown, used, taken back or expired. Never says which.
-    InvitationInvalid => ("auth.invitation_invalid", 400, message::ERROR_AUTH_INVITATION_INVALID),
+    InvitationInvalid => ("auth.invitation_invalid", 400),
     /// Signing up on one's own is not possible here. Never says why.
-    SignUpRefused => ("auth.sign_up_refused", 403, message::ERROR_AUTH_SIGN_UP_REFUSED),
+    SignUpRefused => ("auth.sign_up_refused", 403),
     /// A passkey or a passkey ceremony did not check out.
-    PasskeyRejected => ("auth.passkey_rejected", 400, message::ERROR_AUTH_PASSKEY_REJECTED),
+    PasskeyRejected => ("auth.passkey_rejected", 400),
     /// The person must set up a second step before anything else (a role of theirs, or the
     /// organization, asks for two-step sign-in and they have none yet).
-    SecondStepRequired => ("auth.second_step_required", 403, message::ERROR_AUTH_SECOND_STEP_REQUIRED),
+    SecondStepRequired => ("auth.second_step_required", 403),
     /// An access key was used where no key may go: the owner's own sign-in data.
-    AccessKeyNotAllowed => ("auth.access_key_not_allowed", 403, message::ERROR_AUTH_ACCESS_KEY_NOT_ALLOWED),
+    AccessKeyNotAllowed => ("auth.access_key_not_allowed", 403),
     /// The request needs a signed-in person.
-    NotSignedIn => ("auth.not_signed_in", 401, message::ERROR_AUTH_NOT_SIGNED_IN),
+    NotSignedIn => ("auth.not_signed_in", 401),
     /// The person can see the thing but may not do this to it.
-    Forbidden => ("access.forbidden", 403, message::ERROR_ACCESS_FORBIDDEN),
+    Forbidden => ("access.forbidden", 403),
     /// The group has a *No access* in a project the person may not decide in (or know about), and
     /// taking people out of it or deleting it would lift that *No access* (ADR-0025, decision 6).
-    CannotLift => ("access.cannot_lift", 403, message::ERROR_ACCESS_CANNOT_LIFT),
+    CannotLift => ("access.cannot_lift", 403),
     /// The change would leave nobody who can manage roles and decide who has which role for the
     /// whole organization (ADR-0025, decision 6).
-    WouldLockOut => ("access.would_lock_out", 409, message::ERROR_ACCESS_WOULD_LOCK_OUT),
+    WouldLockOut => ("access.would_lock_out", 409),
     /// Somebody tried to add or give more than they hold in that place themselves (ADR-0025,
     /// decision 6).
-    TooMuch => ("access.too_much", 403, message::ERROR_ACCESS_TOO_MUCH),
+    TooMuch => ("access.too_much", 403),
     /// A role that somebody has cannot be deleted without choosing the role that takes its place.
-    RoleInUse => ("role.in_use", 409, message::ERROR_ROLE_IN_USE),
+    RoleInUse => ("role.in_use", 409),
     /// A person or group would have a role and *No access* in the same project.
-    AssignmentConflict => ("assignment.conflict", 409, message::ERROR_ASSIGNMENT_CONFLICT),
+    AssignmentConflict => ("assignment.conflict", 409),
     /// An administrator locked the setting, so nobody lower down may change it (CFG-06).
-    SettingLocked => ("setting.locked", 409, message::ERROR_SETTING_LOCKED),
+    SettingLocked => ("setting.locked", 409),
     /// A move would let somebody take away a *No access* that applies to them (WP-08, M2-F23).
-    MoveLiftsNoAccess => ("project.move_lifts_no_access", 409, message::ERROR_PROJECT_MOVE_LIFTS_NO_ACCESS),
+    MoveLiftsNoAccess => ("project.move_lifts_no_access", 409),
     /// A project cannot go inside itself or one of its own sub-projects.
-    MoveIntoItself => ("project.move_into_itself", 409, message::ERROR_PROJECT_MOVE_INTO_ITSELF),
+    MoveIntoItself => ("project.move_into_itself", 409),
     /// A project would be nested deeper than a tree of projects may go.
-    ProjectTooDeep => ("project.too_deep", 409, message::ERROR_PROJECT_TOO_DEEP),
+    ProjectTooDeep => ("project.too_deep", 409),
     /// The projects, or who has which role, changed since the move was previewed.
-    MovePreviewChanged => ("project.preview_changed", 409, message::ERROR_PROJECT_PREVIEW_CHANGED),
+    MovePreviewChanged => ("project.preview_changed", 409),
     /// A name of a group, role or project is used already.
-    NameTaken => ("name.taken", 409, message::ERROR_NAME_TAKEN),
+    NameTaken => ("name.taken", 409),
     /// There is no such thing, or the person may not know about it.
-    NotFound => ("resource.not_found", 404, message::ERROR_RESOURCE_NOT_FOUND),
+    NotFound => ("resource.not_found", 404),
     /// The request is not valid.
-    InvalidRequest => ("request.invalid", 400, message::ERROR_REQUEST_INVALID),
+    InvalidRequest => ("request.invalid", 400),
     /// A list was asked for a field that does not exist, or that the person may not read. Both
     /// look the same, so the answer never tells which fields are hidden (SEC-06, PERF-02).
-    UnknownField => ("request.unknown_field", 400, message::ERROR_REQUEST_UNKNOWN_FIELD),
+    UnknownField => ("request.unknown_field", 400),
     /// The cursor of a list page was changed or is not one of ours (PERF-02).
-    BadCursor => ("request.bad_cursor", 400, message::ERROR_REQUEST_BAD_CURSOR),
+    BadCursor => ("request.bad_cursor", 400),
     /// A change request that does not come from one of Bugaboo's own pages.
-    WrongOrigin => ("request.wrong_origin", 403, message::ERROR_REQUEST_WRONG_ORIGIN),
+    WrongOrigin => ("request.wrong_origin", 403),
     /// A change request without the right token of the session (CSRF).
-    WrongToken => ("request.wrong_token", 403, message::ERROR_REQUEST_WRONG_TOKEN),
+    WrongToken => ("request.wrong_token", 403),
     /// The address exists but does not do that (wrong HTTP method).
-    MethodNotAllowed => ("request.method_not_allowed", 405, message::ERROR_REQUEST_METHOD_NOT_ALLOWED),
+    MethodNotAllowed => ("request.method_not_allowed", 405),
     /// The request took too long to arrive.
-    TimedOut => ("request.timed_out", 408, message::ERROR_REQUEST_TIMED_OUT),
+    TimedOut => ("request.timed_out", 408),
     /// The request is bigger than allowed.
-    TooLarge => ("request.too_large", 413, message::ERROR_REQUEST_TOO_LARGE),
+    TooLarge => ("request.too_large", 413),
     /// Someone else changed the thing since the person loaded it (ADR-0019).
-    VersionChanged => ("edit.version_changed", 409, message::ERROR_EDIT_VERSION_CHANGED),
+    VersionChanged => ("edit.version_changed", 409),
     /// Too many requests in a short time (SEC-14).
-    TooManyRequests => ("rate_limit.exceeded", 429, message::ERROR_RATE_LIMIT_EXCEEDED),
+    TooManyRequests => ("rate_limit.exceeded", 429),
     /// The server cannot answer right now.
-    Unavailable => ("server.unavailable", 503, message::ERROR_SERVER_UNAVAILABLE),
+    Unavailable => ("server.unavailable", 503),
     /// The server failed; the person did nothing wrong.
-    Internal => ("server.internal", 500, message::ERROR_SERVER_INTERNAL),
+    Internal => ("server.internal", 500),
 }
 
 words_in_api!(

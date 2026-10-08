@@ -4774,6 +4774,7 @@ version = "0.0.0"
 dependencies = [
  "anyhow",
  "bb-api-words",
+ "bb-core",
  "bb-dev-words",
  "bb-policy",
  "brotli",

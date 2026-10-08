@@ -1,10 +1,11 @@
 //! ARCH-ERRORS: every error code has a message in the catalog, and the API does not make up its
 //! own error texts (architecture §7, UX §9).
 //!
-//! The codes are one table in `crates/bb-core/src/error_code.rs`: a line per code with its text,
-//! its HTTP status and the constant of its message. This check reads that table and the catalog:
-//! codes and messages are unique, shaped right, and the message exists and has no placeholder (an
-//! error may never carry a name or a number that the person is not allowed to see). It also finds
+//! The codes are the enum `ErrorCode` in `crates/bb-core/src/error_code.rs`: a line per code with
+//! its text and its HTTP status; its message is `error.<area>.<name>` (the text with `-` for `_`),
+//! made from the text. This check reads the enum itself and the catalog: codes and messages are
+//! unique, shaped right, and the message exists and has no placeholder (an error may never carry
+//! a name or a number that the person is not allowed to see). It also finds
 //! error answers built from a text instead of an `ErrorCode`, in the code of the HTTP crates: a
 //! tuple `(StatusCode::X, …)` (also across lines) with a text, `format!`, `to_string()` or JSON
 //! written in the code, or a bare error status turned into an answer. Last, it reads the generated
@@ -16,16 +17,18 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use anyhow::Context as _;
+use bb_core::ErrorCode;
+use serde_json::Value;
 
+use super::api_spec;
 use super::{Check, Context, Finding};
 use crate::generate::api::SPEC_PATH;
 use crate::generate::icu::placeholders;
 use crate::generate::messages::{SOURCE_LOCALE_PATH, parse_pairs};
-use crate::generate::messages_rust::constant_name;
 use crate::rust_source::without_tests;
 use crate::source::{Kind, Source};
 
-/// The table of codes.
+/// Where the codes are declared; only shown in messages.
 const TABLE_PATH: &str = "crates/bb-core/src/error_code.rs";
 
 /// The code that speaks HTTP; error answers there must come from an `ErrorCode`.
@@ -46,9 +49,6 @@ const EXTRACTORS: [(&str, &str); 4] = [
     ("Form", "ApiForm"),
 ];
 
-/// The messages of error codes start with this word.
-const KEY_PREFIX: &str = "error.";
-
 pub(crate) struct ArchErrors;
 
 impl Check for ArchErrors {
@@ -61,37 +61,41 @@ impl Check for ArchErrors {
         let catalog = std::fs::read_to_string(context.repo.path(SOURCE_LOCALE_PATH))
             .with_context(|| format!("could not read {SOURCE_LOCALE_PATH}"))?;
         let messages = parse_pairs(&catalog)?;
-        let spec = std::fs::read_to_string(context.repo.path(SPEC_PATH)).ok();
-        Ok(evaluate(&sources, &messages, spec.as_deref()))
+        let spec = api_spec::load(context.repo)?;
+        Ok(evaluate(&table(), &sources, &messages, &spec))
     }
 }
 
-/// One line of the table.
+/// One code of the enum.
 struct Entry {
     variant: String,
     code: String,
     status: u16,
-    constant: String,
+    /// The key of its message.
+    key: String,
 }
 
-fn evaluate(sources: &[Source], messages: &[(String, String)], spec: Option<&str>) -> Vec<Finding> {
-    let mut findings = Vec::new();
-    match sources.iter().find(|(path, _)| path == TABLE_PATH) {
-        None => findings.push(Finding::at(
-            TABLE_PATH,
-            "The table of error codes is missing.",
-        )),
-        Some((_, text)) => match read_table(text) {
-            Ok(table) => {
-                findings.extend(check_table(&table, messages));
-                findings.extend(check_spec(spec, &table));
-            }
-            Err(problem) => findings.push(Finding::at(
-                TABLE_PATH,
-                format!("The table of error codes {problem}."),
-            )),
-        },
-    }
+/// The codes, as the enum declares them.
+fn table() -> Vec<Entry> {
+    ErrorCode::ALL
+        .iter()
+        .map(|code| Entry {
+            variant: format!("{code:?}"),
+            code: code.code().to_owned(),
+            status: code.status(),
+            key: code.message().as_str().to_owned(),
+        })
+        .collect()
+}
+
+fn evaluate(
+    table: &[Entry],
+    sources: &[Source],
+    messages: &[(String, String)],
+    spec: &Value,
+) -> Vec<Finding> {
+    let mut findings = check_table(table, messages);
+    findings.extend(check_spec(spec, table));
     for (path, text) in sources {
         if HTTP_CODE.iter().any(|folder| path.starts_with(folder)) {
             findings.extend(check_answers(path, &without_tests(text)));
@@ -103,78 +107,17 @@ fn evaluate(sources: &[Source], messages: &[(String, String)], spec: Option<&str
     findings
 }
 
-/// One line of the macro `error_codes! { Variant => ("code", 401, message::CONSTANT), … }`.
-struct Row(Entry);
-
-impl syn::parse::Parse for Row {
-    fn parse(input: syn::parse::ParseStream<'_>) -> syn::Result<Self> {
-        syn::Attribute::parse_outer(input)?;
-        let variant: syn::Ident = input.parse()?;
-        input.parse::<syn::Token![=>]>()?;
-        let inner;
-        syn::parenthesized!(inner in input);
-        let code: syn::LitStr = inner.parse()?;
-        inner.parse::<syn::Token![,]>()?;
-        let status: syn::LitInt = inner.parse()?;
-        inner.parse::<syn::Token![,]>()?;
-        let message: syn::Path = inner.parse()?;
-        let constant = message
-            .segments
-            .last()
-            .map(|segment| segment.ident.to_string())
-            .unwrap_or_default();
-        Ok(Self(Entry {
-            variant: variant.to_string(),
-            code: code.value(),
-            status: status.base10_parse()?,
-            constant,
-        }))
-    }
-}
-
-/// The table, read as Rust. A table that cannot be read is an error, not an empty table.
-fn read_table(text: &str) -> Result<Vec<Entry>, String> {
-    let file = syn::parse_file(text).map_err(|error| format!("is not valid Rust: {error}"))?;
-    let mut entries = Vec::new();
-    let mut found = false;
-    for item in &file.items {
-        let syn::Item::Macro(item) = item else {
-            continue;
-        };
-        if item
-            .mac
-            .path
-            .segments
-            .last()
-            .is_none_or(|s| s.ident != "error_codes")
-        {
-            continue;
-        }
-        found = true;
-        let rows = item
-            .mac
-            .parse_body_with(syn::punctuated::Punctuated::<Row, syn::Token![,]>::parse_terminated)
-            .map_err(|error| format!("has a line that is not `Name => (\"code\", status, message::CONSTANT)`: {error}"))?;
-        entries.extend(rows.into_iter().map(|row| row.0));
-    }
-    if found {
-        Ok(entries)
-    } else {
-        Err("has no `error_codes! { … }` table".to_owned())
-    }
-}
-
 fn check_table(table: &[Entry], messages: &[(String, String)]) -> Vec<Finding> {
     let mut findings = Vec::new();
     if table.is_empty() {
-        findings.push(Finding::at(TABLE_PATH, "No error codes found; each line must look like `Name => (\"area.name\", 400, message::CONSTANT)`."));
+        findings.push(Finding::at(TABLE_PATH, "No error codes found."));
     }
-    let by_constant: BTreeMap<String, &(String, String)> = messages
+    let by_key: BTreeMap<&str, &str> = messages
         .iter()
-        .map(|pair| (constant_name(&pair.0), pair))
+        .map(|(key, text)| (key.as_str(), text.as_str()))
         .collect();
     let mut codes = BTreeSet::new();
-    let mut constants = BTreeSet::new();
+    let mut keys = BTreeSet::new();
     for entry in table {
         let place = format!("{TABLE_PATH}: {}", entry.variant);
         if !codes.insert(entry.code.as_str()) {
@@ -198,26 +141,32 @@ fn check_table(table: &[Entry], messages: &[(String, String)]) -> Vec<Finding> {
                 format!("{} is not an error status; use 400 to 599.", entry.status),
             ));
         }
-        if !constants.insert(entry.constant.as_str()) {
+        if !keys.insert(entry.key.as_str()) {
             findings.push(Finding::at(
                 &place,
                 format!(
                     "`{}` is the message of two codes; each code needs its own.",
-                    entry.constant
+                    entry.key
                 ),
             ));
         }
-        match by_constant.get(&entry.constant) {
+        match by_key.get(entry.key.as_str()) {
             None => findings.push(Finding::at(
                 &place,
-                format!("`{}` is not a message without placeholders in {SOURCE_LOCALE_PATH}; add the message and run `cargo xtask gen messages`.", entry.constant),
+                format!(
+                    "The message `{}` of the code `{}` is not in {SOURCE_LOCALE_PATH}; add it and run `cargo xtask gen messages`.",
+                    entry.key, entry.code
+                ),
             )),
-            Some((key, text)) => {
-                if !key.starts_with(KEY_PREFIX) {
-                    findings.push(Finding::at(&place, format!("The message `{key}` must start with `{KEY_PREFIX}`.")));
-                }
+            Some(text) => {
                 if placeholders(text).is_ok_and(|found| !found.is_empty()) {
-                    findings.push(Finding::at(&place, format!("The message `{key}` has a placeholder; an error message must not carry a value that may be hidden.")));
+                    findings.push(Finding::at(
+                        &place,
+                        format!(
+                            "The message `{}` has a placeholder; an error message must not carry a value that may be hidden.",
+                            entry.key
+                        ),
+                    ));
                 }
             }
         }
@@ -389,24 +338,12 @@ fn check_extractors(path: &str, code: &str) -> Vec<Finding> {
 }
 
 /// The generated API description agrees with the table and documents the standard answers.
-fn check_spec(spec: Option<&str>, table: &[Entry]) -> Vec<Finding> {
-    let Some(text) = spec else {
-        return vec![Finding::at(
-            SPEC_PATH,
-            "The API description is missing; run `cargo xtask gen api`.",
-        )];
-    };
-    let Ok(document) = serde_json::from_str::<serde_json::Value>(text) else {
-        return vec![Finding::at(
-            SPEC_PATH,
-            "The API description is not valid JSON.",
-        )];
-    };
+fn check_spec(spec: &Value, table: &[Entry]) -> Vec<Finding> {
     let mut findings = Vec::new();
-    let listed: BTreeSet<&str> = document
+    let listed: BTreeSet<&str> = spec
         .pointer("/components/schemas/ErrorCode/enum")
-        .and_then(serde_json::Value::as_array)
-        .map(|codes| codes.iter().filter_map(serde_json::Value::as_str).collect())
+        .and_then(Value::as_array)
+        .map(|codes| codes.iter().filter_map(Value::as_str).collect())
         .unwrap_or_default();
     let known: BTreeSet<&str> = table.iter().map(|entry| entry.code.as_str()).collect();
     if listed != known {
@@ -415,30 +352,25 @@ fn check_spec(spec: Option<&str>, table: &[Entry]) -> Vec<Finding> {
             "The `ErrorCode` schema of the API description does not list exactly the codes of the table; run `cargo xtask gen api`.",
         ));
     }
-    if document.pointer("/components/schemas/Problem").is_none() {
+    if spec.pointer("/components/schemas/Problem").is_none() {
         findings.push(Finding::at(
             SPEC_PATH,
             "The API description has no `Problem` schema.",
         ));
     }
-    let paths = document
-        .get("paths")
-        .and_then(serde_json::Value::as_object)
-        .into_iter()
-        .flatten();
-    for (path, item) in paths {
-        for (method, operation) in item.as_object().into_iter().flatten() {
-            for status in STANDARD_STATUSES {
-                let content = operation.pointer(&format!("/responses/{status}/content"));
-                if content
-                    .and_then(|content| content.get("application/problem+json"))
-                    .is_none()
-                {
-                    findings.push(Finding::at(
-                        format!("{} {path}", method.to_uppercase()),
-                        format!("The route does not document the {status} answer as application/problem+json."),
-                    ));
-                }
+    for operation in api_spec::operations(spec).into_iter().flatten() {
+        for status in STANDARD_STATUSES {
+            let content = operation
+                .body
+                .pointer(&format!("/responses/{status}/content"));
+            if content
+                .and_then(|content| content.get("application/problem+json"))
+                .is_none()
+            {
+                findings.push(Finding::at(
+                    operation.place(),
+                    format!("The route does not document the {status} answer as application/problem+json."),
+                ));
             }
         }
     }
@@ -449,7 +381,31 @@ fn check_spec(spec: Option<&str>, table: &[Entry]) -> Vec<Finding> {
 mod tests {
     use super::*;
 
-    const TABLE: &str = "error_codes! {\n    /// Wrong.\n    WrongCredentials => (\"auth.wrong_credentials\", 401, message::ERROR_AUTH_WRONG),\n    /// Gone.\n    NotFound => (\"resource.not_found\", 404, message::ERROR_RESOURCE_NOT_FOUND),\n}\n";
+    fn entry(variant: &str, code: &str, status: u16, key: &str) -> Entry {
+        Entry {
+            variant: variant.to_owned(),
+            code: code.to_owned(),
+            status,
+            key: key.to_owned(),
+        }
+    }
+
+    fn good_table() -> Vec<Entry> {
+        vec![
+            entry(
+                "WrongCredentials",
+                "auth.wrong_credentials",
+                401,
+                "error.auth.wrong",
+            ),
+            entry(
+                "NotFound",
+                "resource.not_found",
+                404,
+                "error.resource.not-found",
+            ),
+        ]
+    }
 
     fn messages(pairs: &[(&str, &str)]) -> Vec<(String, String)> {
         pairs
@@ -458,25 +414,28 @@ mod tests {
             .collect()
     }
 
-    /// A description that agrees with `TABLE`.
+    /// A description that agrees with `good_table`.
     const GOOD_SPEC: &str = r#"{"components":{"schemas":{"Problem":{},"ErrorCode":{"enum":["auth.wrong_credentials","resource.not_found"]}}},
         "paths":{"/api/v1/x":{"get":{"responses":{
             "429":{"content":{"application/problem+json":{}}},
             "500":{"content":{"application/problem+json":{}}},
             "503":{"content":{"application/problem+json":{}}}}}}}}"#;
 
-    fn run_with_spec(table: &str, pairs: &[(&str, &str)], api: &str, spec: &str) -> Vec<String> {
-        let sources = vec![
-            (TABLE_PATH.to_owned(), table.to_owned()),
-            ("crates/bb-api/src/router.rs".to_owned(), api.to_owned()),
-        ];
-        evaluate(&sources, &messages(pairs), Some(spec))
+    fn run_with_spec(
+        table: &[Entry],
+        pairs: &[(&str, &str)],
+        api: &str,
+        spec: &str,
+    ) -> Vec<String> {
+        let sources = vec![("crates/bb-api/src/router.rs".to_owned(), api.to_owned())];
+        let spec = api_spec::parse(spec).unwrap();
+        evaluate(table, &sources, &messages(pairs), &spec)
             .into_iter()
             .map(|f| f.message)
             .collect()
     }
 
-    fn run(table: &str, pairs: &[(&str, &str)], api: &str) -> Vec<String> {
+    fn run(table: &[Entry], pairs: &[(&str, &str)], api: &str) -> Vec<String> {
         run_with_spec(table, pairs, api, GOOD_SPEC)
     }
 
@@ -489,7 +448,7 @@ mod tests {
     fn good_example() {
         assert!(
             run(
-                TABLE,
+                &good_table(),
                 &GOOD_MESSAGES,
                 "let a = (StatusCode::OK, \"fine\");\nlet b = problem(ErrorCode::NotFound);\n"
             )
@@ -499,15 +458,14 @@ mod tests {
 
     #[test]
     fn bad_example() {
-        let table = r#"error_codes! {
-    A => ("auth.x", 401, message::ERROR_A),
-    B => ("auth.x", 200, message::ERROR_A),
-    C => ("Auth", 404, message::ERROR_MISSING),
-    D => ("x.y", 404, message::ERROR_D),
-}
-"#;
+        let table = vec![
+            entry("A", "auth.x", 401, "error.a"),
+            entry("B", "auth.x", 200, "error.a"),
+            entry("C", "Auth", 404, "error.missing"),
+            entry("D", "x.y", 404, "error.d"),
+        ];
         let found = run(
-            table,
+            &table,
             &[("error.a", "No."), ("error.d", "Hello {name}")],
             "return (StatusCode::NOT_FOUND, \"Not found\");\n",
         )
@@ -516,7 +474,7 @@ mod tests {
         assert!(found.contains("not an error status"), "{found}");
         assert!(found.contains("is not a code"), "{found}");
         assert!(found.contains("message of two codes"), "{found}");
-        assert!(found.contains("ERROR_MISSING"), "{found}");
+        assert!(found.contains("`error.missing`"), "{found}");
         assert!(found.contains("has a placeholder"), "{found}");
         assert!(found.contains("text written in the code"), "{found}");
     }
@@ -531,7 +489,7 @@ mod tests {
             "(StatusCode::BAD_REQUEST, Json(json!({\"error\": x})))",
             "StatusCode::NOT_FOUND.into_response()",
         ] {
-            let found = run(TABLE, &GOOD_MESSAGES, bad);
+            let found = run(&good_table(), &GOOD_MESSAGES, bad);
             assert_eq!(found.len(), 1, "{bad}: {found:?}");
         }
         for good in [
@@ -541,7 +499,7 @@ mod tests {
             "(StatusCode::NO_CONTENT, format!(\"{x}\"))",
             "(StatusCode::FOUND, [(LOCATION, \"/\")])",
         ] {
-            let found = run(TABLE, &GOOD_MESSAGES, good);
+            let found = run(&good_table(), &GOOD_MESSAGES, good);
             assert!(found.is_empty(), "{good}: {found:?}");
         }
     }
@@ -549,11 +507,9 @@ mod tests {
     #[test]
     fn handlers_must_use_the_wrapped_extractors() {
         let run = |code: &str| {
-            let sources = vec![
-                (TABLE_PATH.to_owned(), TABLE.to_owned()),
-                ("crates/bb-api/src/api.rs".to_owned(), code.to_owned()),
-            ];
-            evaluate(&sources, &messages(&GOOD_MESSAGES), Some(GOOD_SPEC)).len()
+            let sources = vec![("crates/bb-api/src/api.rs".to_owned(), code.to_owned())];
+            let spec = api_spec::parse(GOOD_SPEC).unwrap();
+            evaluate(&good_table(), &sources, &messages(&GOOD_MESSAGES), &spec).len()
         };
         for bad in [
             "async fn a(Json(body): Json<Input>) {}",
@@ -580,54 +536,33 @@ mod tests {
             "\"503\":{\"content\":{\"application/problem+json\":{}}}",
             "\"503\":{}",
         );
-        let found = run_with_spec(TABLE, &GOOD_MESSAGES, "", &missing_answer).join("\n");
+        let found = run_with_spec(&good_table(), &GOOD_MESSAGES, "", &missing_answer).join("\n");
         assert!(
             found.contains("does not document the 503 answer"),
             "{found}"
         );
 
         let other_codes = GOOD_SPEC.replace("auth.wrong_credentials", "auth.other");
-        let found = run_with_spec(TABLE, &GOOD_MESSAGES, "", &other_codes).join("\n");
+        let found = run_with_spec(&good_table(), &GOOD_MESSAGES, "", &other_codes).join("\n");
         assert!(found.contains("does not list exactly the codes"), "{found}");
-
-        let sources = vec![(TABLE_PATH.to_owned(), TABLE.to_owned())];
-        let none = evaluate(&sources, &messages(&GOOD_MESSAGES), None);
-        assert!(none.iter().any(|f| f.message.contains("is missing")));
     }
 
     #[test]
-    fn a_missing_or_unreadable_table_is_an_error_not_an_empty_table() {
-        let none = run(
-            "fn unrelated() {}
-",
-            &GOOD_MESSAGES,
-            "",
-        )
-        .join(
-            "
-",
+    fn a_code_whose_message_is_not_in_the_catalog_is_found() {
+        let found = run(&good_table(), &GOOD_MESSAGES[..1], "").join("\n");
+        assert!(
+            found.contains("The message `error.resource.not-found`"),
+            "{found}"
         );
-        assert!(none.contains("has no `error_codes!"), "{none}");
-        let broken = run(
-            "error_codes! { A => (\"x.y\" 401, m::A) }
-",
-            &GOOD_MESSAGES,
-            "",
-        )
-        .join(
-            "
-",
-        );
-        assert!(broken.contains("has a line that is not"), "{broken}");
     }
 
     #[test]
-    fn the_error_table_of_this_repository_passes() {
+    fn the_error_codes_of_this_repository_pass() {
         let repo = crate::repo::Repo::discover().unwrap();
         let sources = crate::source::read_sources(&repo, None, Kind::Rust).unwrap();
         let text = std::fs::read_to_string(repo.path(SOURCE_LOCALE_PATH)).unwrap();
-        let spec = std::fs::read_to_string(repo.path(SPEC_PATH)).ok();
-        let found = evaluate(&sources, &parse_pairs(&text).unwrap(), spec.as_deref());
+        let spec = api_spec::load(&repo).unwrap();
+        let found = evaluate(&table(), &sources, &parse_pairs(&text).unwrap(), &spec);
         assert!(
             found.is_empty(),
             "{:?}",

@@ -2,8 +2,7 @@
 //! explained (SEC-01, ADR-0004, ADR-0025 decision 1, architecture §7 *The permission catalogue*).
 //!
 //! Read from the generated API description (`x-permission` on every operation), the catalogue in
-//! `bb-policy` (one line per permission, read from the source of the enum) and the message
-//! catalog:
+//! `bb-policy` (the enum `Permission` itself) and the message catalog:
 //!
 //! - every operation has `x-permission`, and its value is a key of the catalogue or one of
 //!   `public`, `signed-in`, `own-account`;
@@ -13,7 +12,8 @@
 //!   without a route of its own yet). An entry for a permission that a route asks, or for one the
 //!   catalogue does not have, fails, so the file cannot go stale;
 //! - every permission has its sentence (`permission.<key>`) and its topic has its name
-//!   (`permission-topic.<topic>`) in the message catalog.
+//!   (`permission-topic.<topic>`) in the message catalog; both keys are made from the words by the
+//!   enums, so the check holds the made keys against the catalog.
 
 use std::collections::BTreeSet;
 
@@ -23,13 +23,13 @@ use serde_json::Value;
 
 use bb_api_words::marks::PERMISSION as MARK;
 use bb_api_words::needs::WITHOUT_CATALOGUE as WORDS;
+use bb_policy::Permission;
 
 use super::api_spec;
 use super::exemptions::{self, names_a_follow_up};
 use super::{Check, Context, Finding};
-use crate::source::normalize;
 
-/// Where the permissions are declared.
+/// Where the permissions are declared; only shown in messages.
 const CATALOGUE_PATH: &str = "crates/bb-policy/src/catalogue.rs";
 /// The message catalog.
 const MESSAGES_PATH: &str = "messages/en.json";
@@ -49,8 +49,6 @@ impl Check for ArchPerms {
                 .with_context(|| format!("could not read {path}{hint}"))
         };
         let spec = api_spec::load(context.repo)?;
-        let source = normalize(&read(CATALOGUE_PATH, "")?);
-        let catalogue = read_catalogue(&source);
         let messages: Value = serde_json::from_str(&read(MESSAGES_PATH, "")?)
             .with_context(|| format!("{MESSAGES_PATH} is not valid JSON"))?;
         let message_keys: BTreeSet<String> = messages
@@ -58,14 +56,12 @@ impl Check for ArchPerms {
             .map(|object| object.keys().cloned().collect())
             .unwrap_or_default();
         let exemptions: Exemptions = exemptions::load(context.repo, EXEMPTIONS_PATH)?;
-        let mut findings = reading_findings(&source, &catalogue);
-        findings.extend(evaluate(
+        Ok(evaluate(
             &spec,
-            &catalogue,
+            &catalogue(),
             &message_keys,
             &exemptions.engine_only,
-        ));
-        Ok(findings)
+        ))
     }
 }
 
@@ -93,70 +89,26 @@ impl exemptions::Exemption for EngineOnly {
     }
 }
 
-/// One permission as the catalogue declares it: its key and the name of its topic.
+/// One permission as the catalogue declares it: its key and the two messages that explain it.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(super) struct Declared {
     pub(super) key: String,
-    pub(super) topic: String,
+    /// The sentence on the role page, and the name of the topic it is listed under.
+    pub(super) messages: [String; 2],
 }
 
-/// The permissions declared in the source of the enum: one line `Variant => ("key", Topic, …)`
-/// each. Comment lines do not count.
-pub(super) fn read_catalogue(source: &str) -> Vec<Declared> {
-    source
-        .lines()
-        .filter(|line| !line.trim_start().starts_with("//"))
-        .filter_map(|line| {
-            let rest = line.split_once("=> (\"")?.1;
-            let (key, rest) = rest.split_once('"')?;
-            let topic = rest.strip_prefix(',')?.split(',').next()?.trim();
-            (!key.is_empty() && !topic.is_empty()).then(|| Declared {
-                key: key.to_owned(),
-                topic: topic.to_owned(),
-            })
+/// The permissions, as the enum declares them.
+fn catalogue() -> Vec<Declared> {
+    Permission::ALL
+        .iter()
+        .map(|permission| Declared {
+            key: permission.code().to_owned(),
+            messages: [
+                permission.sentence().as_str().to_owned(),
+                permission.topic().name().as_str().to_owned(),
+            ],
         })
         .collect()
-}
-
-/// How many variants the source of the enum declares: the lines that start with a name and `=>`
-/// (the line of a variant whose declaration is broken over lines starts so too, and has no key on
-/// it).
-fn variant_lines(source: &str) -> usize {
-    source
-        .lines()
-        .map(str::trim_start)
-        .filter(|line| !line.starts_with("//"))
-        .filter(|line| {
-            let name: String = line
-                .chars()
-                .take_while(|c| c.is_alphanumeric() || *c == '_')
-                .collect();
-            name.chars().next().is_some_and(char::is_uppercase)
-                && line[name.len()..].trim_start().starts_with("=>")
-        })
-        .count()
-}
-
-/// A variant that the check could not read is a permission it would not hold to the rules: the
-/// number of variants must be the number of permissions it read.
-fn reading_findings(source: &str, catalogue: &[Declared]) -> Vec<Finding> {
-    let variants = variant_lines(source);
-    if variants == catalogue.len() {
-        return Vec::new();
-    }
-    vec![Finding::at(
-        CATALOGUE_PATH,
-        format!(
-            "The enum declares {variants} permissions but the check read {}: write each as one \
-             line `Variant => (\"key\", Topic, …)`, so none is left out of the rules.",
-            catalogue.len()
-        ),
-    )]
-}
-
-/// The name of a topic as the message catalog spells it (`Projects` is `projects`).
-fn topic_message(topic: &str) -> String {
-    format!("permission-topic.{}", topic.to_lowercase())
 }
 
 fn evaluate(
@@ -169,8 +121,7 @@ fn evaluate(
     if catalogue.is_empty() {
         findings.push(Finding::at(
             CATALOGUE_PATH,
-            "No permission was found in the catalogue: the check reads one line \
-             `Variant => (\"key\", Topic, …)` for each.",
+            "No permission was found in the catalogue.",
         ));
     }
     let known: BTreeSet<&str> = catalogue
@@ -188,7 +139,7 @@ fn evaluate(
             None => findings.push(Finding::at(
                 place,
                 format!(
-                    "The route declares no permission. Add it to the table of routes in                      `bb-api` (`permissions.rs`): a key of the catalogue, or one of {}.",
+                    "The route declares no permission. Add it to the table of routes in `bb-api` (`permissions.rs`): a key of the catalogue, or one of {}.",
                     WORDS.join(", ")
                 ),
             )),
@@ -220,11 +171,8 @@ fn evaluate(
                 ),
             ));
         }
-        for message in [
-            format!("permission.{}", declared.key),
-            topic_message(&declared.topic),
-        ] {
-            if !messages.contains(&message) {
+        for message in &declared.messages {
+            if !messages.contains(message) {
                 findings.push(Finding::at(
                     format!("{CATALOGUE_PATH}: {}", declared.key),
                     format!("The message `{message}` is missing in {MESSAGES_PATH}: every permission is explained on the role page."),
@@ -277,13 +225,21 @@ mod tests {
 
     use super::*;
 
-    fn catalogue() -> Vec<Declared> {
-        read_catalogue(
-            "/// A comment about `X => (\"nope\", Projects, a)`.\n\
-             SeeProjects => (\"see-projects\", Projects, Project, See, message::A),\n\
-             ManageRoles => (\"manage-roles\", People, Organization, Manage, message::B),\n\
-             ($variant:ident => ($key:literal, $topic:ident)),\n",
-        )
+    fn declared(key: &str, topic: &str) -> Declared {
+        Declared {
+            key: key.to_owned(),
+            messages: [
+                format!("permission.{key}"),
+                format!("permission-topic.{topic}"),
+            ],
+        }
+    }
+
+    fn two_permissions() -> Vec<Declared> {
+        vec![
+            declared("see-projects", "projects"),
+            declared("manage-roles", "people"),
+        ]
     }
 
     fn messages() -> BTreeSet<String> {
@@ -306,7 +262,7 @@ mod tests {
     }
 
     fn found(spec: &Value, exemptions: &[EngineOnly]) -> Vec<String> {
-        evaluate(spec, &catalogue(), &messages(), exemptions)
+        evaluate(spec, &two_permissions(), &messages(), exemptions)
             .into_iter()
             .map(|finding| finding.message)
             .collect()
@@ -322,31 +278,13 @@ mod tests {
     }
 
     #[test]
-    fn the_catalogue_is_read_from_the_lines_of_the_enum_and_not_from_comments_or_the_macro() {
-        let keys: Vec<(String, String)> = catalogue()
-            .into_iter()
-            .map(|declared| (declared.key, declared.topic))
-            .collect();
-        assert_eq!(
-            keys,
-            [
-                ("see-projects".to_owned(), "Projects".to_owned()),
-                ("manage-roles".to_owned(), "People".to_owned())
-            ]
-        );
-    }
-
-    #[test]
-    fn bad_example_a_permission_declared_over_several_lines_is_not_read_and_says_so() {
-        let one_line = "A => (\"a\", Projects, Project, See, message::A),\nB => (\"b\", People, Organization, Manage, message::B),\n";
-        let broken = "A => (\"a\", Projects, Project, See, message::A),\nB =>\n    (\"b\", People, Organization, Manage, message::B),\n";
-        assert!(reading_findings(one_line, &read_catalogue(one_line)).is_empty());
-        let found = reading_findings(broken, &read_catalogue(broken));
-        assert_eq!(found.len(), 1);
-        assert!(found[0].message.contains("declares 2 permissions"));
-        // The macro pattern and the comments are no variants.
-        let pattern = "$($variant:ident => ($key:literal),+)\n// C => (\"c\", X, Y, Z, m)\n";
-        assert_eq!(variant_lines(pattern), 0);
+    fn the_catalogue_is_the_enum_with_the_messages_it_makes_from_the_words() {
+        let all = catalogue();
+        assert_eq!(all.len(), Permission::ALL.len());
+        let first = &all[0];
+        assert_eq!(first.key, Permission::ALL[0].code());
+        assert_eq!(first.messages[0], format!("permission.{}", first.key));
+        assert!(first.messages[1].starts_with("permission-topic."));
     }
 
     #[test]
@@ -433,7 +371,7 @@ mod tests {
         let mut messages = messages();
         messages.remove("permission.manage-roles");
         messages.remove("permission-topic.projects");
-        let found: Vec<String> = evaluate(&asks_both, &catalogue(), &messages, &[])
+        let found: Vec<String> = evaluate(&asks_both, &two_permissions(), &messages, &[])
             .into_iter()
             .map(|finding| finding.message)
             .collect();
@@ -455,5 +393,18 @@ mod tests {
         assert_eq!(found(&json!({}), &[]).len(), 1);
         let none = evaluate(&json!({"paths": {}}), &[], &messages(), &[]);
         assert_eq!(none.len(), 1);
+    }
+
+    #[test]
+    fn the_permissions_of_this_repository_have_their_messages() {
+        let repo = crate::repo::Repo::discover().unwrap();
+        let text = std::fs::read_to_string(repo.path(MESSAGES_PATH)).unwrap();
+        let object: Value = serde_json::from_str(&text).unwrap();
+        let keys: BTreeSet<String> = object.as_object().unwrap().keys().cloned().collect();
+        for permission in catalogue() {
+            for message in &permission.messages {
+                assert!(keys.contains(message), "{message}");
+            }
+        }
     }
 }

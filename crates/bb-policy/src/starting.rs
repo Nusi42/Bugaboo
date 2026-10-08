@@ -9,7 +9,6 @@
 
 use bb_core::access::{FieldLevel, PeopleLevel};
 use bb_core::fields::Field;
-use bb_core::message::{self, MessageKey};
 use bb_core::people_kinds::PeopleKind;
 use bb_core::words;
 
@@ -33,6 +32,7 @@ words! {
         /// Sees only what they reported, and sees people by role only.
         Guest => "guest",
     }
+    messages name = "starting-role.";
 }
 
 const C: FieldLevel = FieldLevel::CanChange;
@@ -93,19 +93,6 @@ impl StartingRole {
     #[must_use]
     pub const fn index(self) -> usize {
         self as usize
-    }
-
-    /// The name of the role when it is made (`starting-role.<key>`).
-    #[must_use]
-    pub const fn name(self) -> MessageKey {
-        match self {
-            Self::Administrator => message::STARTING_ROLE_ADMINISTRATOR,
-            Self::ProjectLead => message::STARTING_ROLE_PROJECT_LEAD,
-            Self::TeamMember => message::STARTING_ROLE_TEAM_MEMBER,
-            Self::Contributor => message::STARTING_ROLE_CONTRIBUTOR,
-            Self::Viewer => message::STARTING_ROLE_VIEWER,
-            Self::Guest => message::STARTING_ROLE_GUEST,
-        }
     }
 
     /// The permissions of the role.

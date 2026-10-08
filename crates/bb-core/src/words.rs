@@ -3,8 +3,7 @@
 //! The word of each variant is written next to it, once: `Identity => "identity"`. The code that
 //! reads a word (`from_code`), writes it (`code`), lists all variants (`ALL`) and the serde form
 //! come from that one line. `#[derive(Entity)]` looks words up through `from_code_const`, and
-//! `cargo xtask` reads the same lines from the source, so no second rule connects a word to its
-//! variant.
+//! the tools read the enums themselves, so no second rule connects a word to its variant.
 //!
 //! The macros are exported (`bb_core::words!`, `bb_core::words_in_api!`), so every crate that has
 //! a vocabulary of fixed words declares it the same way instead of writing the same code again
@@ -62,9 +61,33 @@ pub const fn same_text(a: &str, b: &str) -> bool {
     true
 }
 
-/// Declares an enum with its words.
+/// Declares an enum with its words. A trailing `messages name = "prefix."` also gives the enum a
+/// function `name` that returns the message of each word, `prefix.word` ([`crate::derived_key!`]),
+/// so the key is not written a second time next to the word.
 #[macro_export]
 macro_rules! words {
+    (
+        $(#[$meta:meta])*
+        $vis:vis enum $name:ident {
+            $($(#[$variant_meta:meta])* $variant:ident => $word:literal),+ $(,)?
+        }
+        messages $method:ident = $prefix:literal $(;)?
+    ) => {
+        $crate::words! {
+            $(#[$meta])*
+            $vis enum $name {
+                $($(#[$variant_meta])* $variant => $word),+
+            }
+        }
+
+        impl $name {
+            /// The message that belongs to this word.
+            #[must_use]
+            $vis const fn $method(self) -> $crate::message::MessageKey {
+                match self { $(Self::$variant => $crate::derived_key!($prefix, $word)),+ }
+            }
+        }
+    };
     (
         $(#[$meta:meta])*
         $vis:vis enum $name:ident {

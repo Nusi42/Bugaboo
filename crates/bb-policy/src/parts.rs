@@ -2,7 +2,6 @@
 //! what an access key's choice keeps of it (ADR-0025, decisions 1 and 8). The catalogue
 //! (`catalogue.rs`) gives each permission its values.
 
-use bb_core::message::{self, MessageKey};
 use bb_core::{words, words_in_api};
 
 words! {
@@ -15,21 +14,10 @@ words! {
         /// Organization settings and the state of the server.
         Settings => "settings",
     }
+    messages name = "permission-topic.";
 }
 
 words_in_api!(Topic, "What a group of permissions is about.");
-
-impl Topic {
-    /// The message that names the topic (`permission-topic.<topic>`).
-    #[must_use]
-    pub const fn name(self) -> MessageKey {
-        match self {
-            Self::Projects => message::PERMISSION_TOPIC_PROJECTS,
-            Self::People => message::PERMISSION_TOPIC_PEOPLE,
-            Self::Settings => message::PERMISSION_TOPIC_SETTINGS,
-        }
-    }
-}
 
 words! {
     /// Where a permission counts (ADR-0025, decision 1).
