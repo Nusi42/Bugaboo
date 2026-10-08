@@ -29,7 +29,13 @@ pub fn page_len(asked: Option<u32>) -> usize {
 /// there is a next page.
 #[must_use]
 pub fn read_len(len: usize) -> u64 {
-    u64::try_from(len).map_or(u64::MAX, |len| len.saturating_add(1))
+    u64::try_from(read_count(len)).unwrap_or(u64::MAX)
+}
+
+/// [`read_len`] as a count of items, for a list that is cut in memory.
+#[must_use]
+pub fn read_count(len: usize) -> usize {
+    len.saturating_add(1)
 }
 
 /// A page cut from what a read of [`read_len`] items found.

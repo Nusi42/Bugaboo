@@ -3,7 +3,7 @@
 
 use bb_core::ErrorCode;
 use bb_core::id::ProjectId;
-use bb_core::paging::{Cut, page_len};
+use bb_core::paging::{Cut, page_len, read_count};
 use bb_core::project::ShortName;
 use bb_policy::{Authorized, Permission, Place};
 use jiff::Timestamp;
@@ -208,7 +208,7 @@ pub async fn projects<S: AuthStore>(
                 (project.name.to_lowercase(), project.id) > (name.clone(), *id)
             })
         })
-        .take(limit + 1)
+        .take(read_count(limit))
         .map(|project| shown.item(project))
         .collect();
     let page = Cut::of(items, limit);

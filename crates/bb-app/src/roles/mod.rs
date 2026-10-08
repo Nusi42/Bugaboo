@@ -328,9 +328,7 @@ pub async fn delete_role<S: AuthStore>(
             })
         })
         .await
-        .map_err(|error| {
-            change_failed::<S>(&error, Stops::new(ErrorCode::NotFound, ErrorCode::NotFound))
-        })?;
+        .map_err(|error| change_failed::<S>(&error, Stops::both(ErrorCode::NotFound)))?;
     // Every row that the replacement made is a permission change of its own (ADR-0025, decision 9).
     for row in &made {
         ctx.note(
@@ -433,9 +431,7 @@ pub async fn reset_role<S: AuthStore>(
             })
         })
         .await
-        .map_err(|error| {
-            change_failed::<S>(&error, Stops::new(ErrorCode::NotFound, ErrorCode::NotFound))
-        })?;
+        .map_err(|error| change_failed::<S>(&error, Stops::both(ErrorCode::NotFound)))?;
     ctx.note(
         SecurityAction::RoleReset,
         Some(actor.person.id),

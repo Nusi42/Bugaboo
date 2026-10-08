@@ -229,9 +229,7 @@ pub async fn remove_assignment<S: AuthStore>(
             })
         })
         .await
-        .map_err(|error| {
-            change_failed::<S>(&error, Stops::new(ErrorCode::NotFound, ErrorCode::NotFound))
-        })?;
+        .map_err(|error| change_failed::<S>(&error, Stops::both(ErrorCode::NotFound)))?;
     ctx.note(
         SecurityAction::AssignmentRemoved,
         Some(actor.person.id),

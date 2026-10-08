@@ -303,9 +303,7 @@ pub async fn delete_group<S: AuthStore>(
             })
         })
         .await
-        .map_err(|error| {
-            change_failed::<S>(&error, Stops::new(ErrorCode::NotFound, ErrorCode::NotFound))
-        })?;
+        .map_err(|error| change_failed::<S>(&error, Stops::both(ErrorCode::NotFound)))?;
     ctx.note(
         SecurityAction::GroupDeleted,
         Some(actor.person.id),
@@ -413,9 +411,7 @@ pub async fn remove_group_member<S: AuthStore>(
             })
         })
         .await
-        .map_err(|error| {
-            change_failed::<S>(&error, Stops::new(ErrorCode::NotFound, ErrorCode::NotFound))
-        })?;
+        .map_err(|error| change_failed::<S>(&error, Stops::both(ErrorCode::NotFound)))?;
     ctx.note(
         SecurityAction::GroupMemberRemoved,
         Some(actor.person.id),
