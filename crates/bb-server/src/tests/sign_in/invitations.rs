@@ -73,7 +73,7 @@ async fn action_count(rig: &Rig, action: SecurityAction) -> Result<usize, bb_sto
 #[tokio::test]
 async fn auth_06_an_administrator_invites_and_the_link_works_once() -> TestResult {
     each_database("auth_06_invite", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let admin = rig.admin("ada@example.test").await?;
         let created = rig
             .api()
@@ -158,7 +158,7 @@ async fn auth_06_an_administrator_invites_and_the_link_works_once() -> TestResul
 #[tokio::test]
 async fn auth_06_only_administrators_manage_invitations() -> TestResult {
     each_database("auth_06_admin_only", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let admin = rig.admin("ada@example.test").await?;
         let bob = rig.person(&admin.session_token, "bob@example.test").await?;
         let session = bob.session_token.as_str();
@@ -240,7 +240,7 @@ async fn auth_06_only_administrators_manage_invitations() -> TestResult {
 #[tokio::test]
 async fn auth_06_an_invitation_runs_out_after_seven_days() -> TestResult {
     each_database("auth_06_expiry", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let admin = rig.admin("ada@example.test").await?;
         let early = invite(&rig, &admin.session_token, "bob@example.test").await?;
         let late = invite(&rig, &admin.session_token, "eve@example.test").await?;
@@ -282,7 +282,7 @@ async fn auth_06_an_invitation_runs_out_after_seven_days() -> TestResult {
 #[tokio::test]
 async fn auth_06_two_people_with_the_same_link_make_one_account() -> TestResult {
     each_database("auth_06_race", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let admin = rig.admin("ada@example.test").await?;
         let secret = invite(&rig, &admin.session_token, "bob@example.test").await?;
         let (first, second) = tokio::join!(
@@ -356,7 +356,7 @@ async fn change_policy(
 async fn auth_06_signing_up_is_off_by_default_and_only_administrators_change_the_rule() -> TestResult
 {
     each_database("auth_06_sign_up_rule", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let admin = rig.admin("ada@example.test").await?;
         assert!(
             !rig.api()
@@ -418,7 +418,7 @@ async fn auth_06_signing_up_is_off_by_default_and_only_administrators_change_the
 #[tokio::test]
 async fn auth_06_signing_up_follows_the_rule_of_the_administrator() -> TestResult {
     each_database("auth_06_sign_up_follows_rule", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let admin = rig.admin("ada@example.test").await?;
         rig.person(&admin.session_token, "bob@example.test").await?;
         let session = admin.session_token.as_str();
@@ -502,7 +502,7 @@ async fn page(
 #[tokio::test]
 async fn perf_02_invitations_are_listed_page_by_page_without_a_hidden_cap() -> TestResult {
     each_database("perf_02_invitation_pages", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let admin = rig.admin("ada@example.test").await?;
         let session = admin.session_token.as_str();
         let mut made = Vec::new();

@@ -302,24 +302,16 @@ mod api {
             .set("token", Some(Duration::from_mins(1)))
             .unwrap();
         let session = session.to_str().unwrap();
-        for attribute in [
-            "__Host-bb_session=token",
-            "Path=/",
-            "Secure",
-            "HttpOnly",
-            "SameSite=Lax",
-        ] {
+        // That every name starts with `__Host-` is SEC-COOKIES' rule, checked there only.
+        let named = format!("{}=token", Cookie::Session.name());
+        for attribute in [&named, "Path=/", "Secure", "HttpOnly", "SameSite=Lax"] {
             assert!(session.contains(attribute), "{session}");
         }
         assert!(!session.contains("Domain"), "{session}");
         let csrf = Cookie::Csrf.set("token", None).unwrap();
         let csrf = csrf.to_str().unwrap();
-        for attribute in [
-            "__Host-bb_csrf=token",
-            "Path=/",
-            "Secure",
-            "SameSite=Strict",
-        ] {
+        let named = format!("{}=token", Cookie::Csrf.name());
+        for attribute in [&named, "Path=/", "Secure", "SameSite=Strict"] {
             assert!(csrf.contains(attribute), "{csrf}");
         }
         assert!(!csrf.contains("HttpOnly"), "{csrf}");

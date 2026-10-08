@@ -60,19 +60,94 @@ pub(super) struct Rig {
     pub(super) folder: tempfile::TempDir,
 }
 
+/// How many failed password tries per account and minute a rig allows before it makes the person
+/// wait (SEC-14): a test that is not about the limit takes the default, one that runs into the
+/// limit takes `Few`, one that must never run into it takes `Unreached`.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(super) enum Tries {
+    /// What the server ships with.
+    Default,
+    /// More than the default, for a test that fails to sign in many times on purpose.
+    Roomy,
+    /// A few, so the test reaches the limit quickly.
+    Few,
+    /// So many that the limit is never reached.
+    Unreached,
+    /// This many, for a test of one exact number.
+    Exactly(u32),
+}
+
+impl Tries {
+    const fn per_minute(self) -> u32 {
+        match self {
+            Self::Default => bb_api::DEFAULT_SIGN_IN_FAILURES_PER_MINUTE,
+            Self::Roomy => 50,
+            Self::Few => 3,
+            Self::Unreached => 100_000,
+            Self::Exactly(tries) => tries,
+        }
+    }
+}
+
+/// Whether the server has passkeys (a server reached by an IP address has none).
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum PasskeySupport {
+    Available,
+    Missing,
+}
+
+/// Whether the first start (the starting roles and the setup code) was made.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum FirstStart {
+    Made,
+    Left,
+}
+
+/// What a rig is made of.
+#[derive(Clone, Copy)]
+struct Shape {
+    tries: Tries,
+    passkeys: PasskeySupport,
+    first_start: FirstStart,
+}
+
+impl Shape {
+    const NEW: Self = Self {
+        tries: Tries::Default,
+        passkeys: PasskeySupport::Available,
+        first_start: FirstStart::Made,
+    };
+}
+
 impl Rig {
-    /// A server with `failures` failed tries allowed per account and minute.
-    pub(super) async fn start(db: &TestDatabase, failures: u32) -> Result<Self, Failure> {
-        Self::start_with(db, failures, true).await
+    /// A server with the default number of failed tries allowed.
+    pub(super) async fn start(db: &TestDatabase) -> Result<Self, Failure> {
+        Self::start_new(db, Shape::NEW).await
     }
 
-    /// The same, with or without passkeys (a server reached by an IP address has none).
-    pub(super) async fn start_with(
-        db: &TestDatabase,
-        failures: u32,
-        passkeys: bool,
-    ) -> Result<Self, Failure> {
-        let rig = Self::build(db, failures, passkeys, true).await?;
+    /// A server that allows `tries` failed tries per account and minute.
+    pub(super) async fn start_with(db: &TestDatabase, tries: Tries) -> Result<Self, Failure> {
+        Self::start_new(
+            db,
+            Shape {
+                tries,
+                ..Shape::NEW
+            },
+        )
+        .await
+    }
+
+    /// A server without passkeys.
+    pub(super) async fn start_without_passkeys(db: &TestDatabase) -> Result<Self, Failure> {
+        let shape = Shape {
+            passkeys: PasskeySupport::Missing,
+            ..Shape::NEW
+        };
+        Self::start_new(db, shape).await
+    }
+
+    async fn start_new(db: &TestDatabase, shape: Shape) -> Result<Self, Failure> {
+        let rig = Self::build(db, shape).await?;
         if rig.setup_code.is_empty() {
             return Err("no setup code on a new database".into());
         }
@@ -81,21 +156,20 @@ impl Rig {
 
     /// A server on a database that somebody set up already (an upgraded one): no setup code.
     pub(super) async fn start_upgraded(db: &TestDatabase) -> Result<Self, Failure> {
-        Self::build(db, 10, true, true).await
+        Self::build(db, Shape::NEW).await
     }
 
     /// A server on a new database that has not had its first start: no starting roles, no setup
     /// code. The test makes the first start itself (two servers starting together).
     pub(super) async fn start_unstarted(db: &TestDatabase) -> Result<Self, Failure> {
-        Self::build(db, 10, true, false).await
+        let shape = Shape {
+            first_start: FirstStart::Left,
+            ..Shape::NEW
+        };
+        Self::build(db, shape).await
     }
 
-    async fn build(
-        db: &TestDatabase,
-        failures: u32,
-        passkeys: bool,
-        first_start: bool,
-    ) -> Result<Self, Failure> {
+    async fn build(db: &TestDatabase, shape: Shape) -> Result<Self, Failure> {
         let database = Database::connect(db.url()).await?;
         database.migrate(Timestamp::from_second(START)?).await?;
         let folder = tempfile::tempdir()?;
@@ -110,17 +184,16 @@ impl Rig {
             storage.clone(),
             clock.clone(),
             PasswordHasher::new()?,
-            if passkeys {
-                Some(Passkeys::new(&party)?)
-            } else {
-                None
+            match shape.passkeys {
+                PasskeySupport::Available => Some(Passkeys::new(&party)?),
+                PasskeySupport::Missing => None,
             },
             csrf,
-            FailureLimits::new(failures),
+            FailureLimits::new(shape.tries.per_minute()),
             "Bugaboo".to_owned(),
         ));
         // The first start, as the wiring does it: the starting roles first, then the setup code.
-        let code = if first_start {
+        let code = if shape.first_start == FirstStart::Made {
             make_starting_roles(&services.ctx(RequestInfo::default()), MakeStartingRoles)
                 .await
                 .map_err(|error| error.to_string())?;

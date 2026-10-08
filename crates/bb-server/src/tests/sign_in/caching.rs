@@ -59,7 +59,7 @@ pub(super) async fn invited_person(
 #[tokio::test]
 async fn perf_03_every_get_answers_an_etag_and_304_on_a_match() -> TestResult {
     each_database("perf_03_http_etags", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let app = app_with_probe(&rig, None);
         let mut ada = Browser::new(&app, &called());
         ada.send("POST", "/api/v1/auth/setup", Some(setup_body(&rig)))
@@ -171,7 +171,7 @@ async fn perf_03_every_get_answers_an_etag_and_304_on_a_match() -> TestResult {
 #[tokio::test]
 async fn perf_03_a_read_asked_about_again_is_not_modified_when_nothing_changed() -> TestResult {
     each_database("perf_03_http_not_modified", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let app = app_with_probe(&rig, None);
         let mut ada = Browser::new(&app, &called());
         ada.send("POST", "/api/v1/auth/setup", Some(setup_body(&rig)))
@@ -204,7 +204,7 @@ async fn perf_03_a_read_asked_about_again_is_not_modified_when_nothing_changed()
 #[tokio::test]
 async fn perf_03_answers_with_personal_data_are_never_stored_for_anybody() -> TestResult {
     each_database("perf_03_http_personal_data", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let app = app_with_probe(&rig, None);
         let mut ada = Browser::new(&app, &called());
         ada.send("POST", "/api/v1/auth/setup", Some(setup_body(&rig)))
@@ -235,7 +235,7 @@ async fn perf_03_answers_with_personal_data_are_never_stored_for_anybody() -> Te
 #[tokio::test]
 async fn perf_03_answers_with_a_secret_are_not_stored_or_compressed() -> TestResult {
     each_database("perf_03_http_secret_answers", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let app = app_with_probe(&rig, None);
         let mut ada = Browser::new(&app, &called());
         // The browser accepts every kind of compression it knows.
@@ -306,7 +306,7 @@ async fn perf_03_answers_with_a_secret_are_not_stored_or_compressed() -> TestRes
 #[tokio::test]
 async fn sec_12_signing_out_clears_what_the_browser_cached() -> TestResult {
     each_database("sec_12_http_clear_cache", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let app = app_with_probe(&rig, None);
         let mut ada = Browser::new(&app, &called());
         let signed_in = ada
@@ -341,7 +341,7 @@ async fn sec_12_signing_out_clears_what_the_browser_cached() -> TestResult {
 #[tokio::test]
 async fn sec_12_ending_the_own_session_is_signing_out_but_ending_another_is_not() -> TestResult {
     each_database("sec_12_http_end_own_session", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let app = app_with_probe(&rig, None);
         let mut laptop = Browser::new(&app, &called());
         laptop

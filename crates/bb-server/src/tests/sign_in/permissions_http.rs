@@ -16,7 +16,7 @@ use super::status::app_with_probe;
 async fn sec_01_who_is_signed_in_answers_the_permissions_for_the_whole_organization() -> TestResult
 {
     each_database("sec_01_me_permissions", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let app = app_with_probe(&rig, None);
         let mut ada = Browser::new(&app, &called());
         ada.send("POST", "/api/v1/auth/setup", Some(setup_body(&rig)))

@@ -111,7 +111,7 @@ async fn bobs_device(rig: &Rig, admin_session: &str) -> Result<(SoftPasskey, Vec
 #[tokio::test]
 async fn auth_02_a_passkey_is_added_listed_and_removed_with_the_password() -> TestResult {
     each_database("auth_02_manage_passkeys", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let admin = rig.admin("ada@example.test").await?;
         let session = admin.session_token.as_str();
         let mut laptop = SoftPasskey::new(true);
@@ -188,7 +188,7 @@ async fn auth_02_a_passkey_is_added_listed_and_removed_with_the_password() -> Te
 #[tokio::test]
 async fn auth_02_a_passkey_finishes_signing_in_after_the_password() -> TestResult {
     each_database("auth_02_passkey_second_step", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let admin = rig.admin("ada@example.test").await?;
         let mut laptop = SoftPasskey::new(true);
         add(&rig, &admin.session_token, &mut laptop, "Laptop").await?;
@@ -281,7 +281,7 @@ async fn auth_02_a_passkey_finishes_signing_in_after_the_password() -> TestResul
 #[tokio::test]
 async fn auth_02_a_passkey_signs_in_on_its_own() -> TestResult {
     each_database("auth_02_passkey_alone", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let admin = rig.admin("ada@example.test").await?;
         let person = admin.person.id;
         let mut laptop = SoftPasskey::new(true);
@@ -372,7 +372,7 @@ async fn auth_02_a_passkey_signs_in_on_its_own() -> TestResult {
 #[tokio::test]
 async fn auth_02_without_a_host_name_in_the_public_address_passkeys_are_off() -> TestResult {
     each_database("auth_02_passkeys_off", async |db| {
-        let rig = Rig::start_with(db, 10, false).await?;
+        let rig = Rig::start_without_passkeys(db).await?;
         let status = rig.api().status(Rig::info(), StatusQuery).await?;
         assert!(!status.passkeys_available);
         let options = rig
@@ -400,7 +400,7 @@ async fn auth_02_without_a_host_name_in_the_public_address_passkeys_are_off() ->
 #[tokio::test]
 async fn sec_12_a_stolen_session_cannot_add_a_passkey_without_the_password() -> TestResult {
     each_database("sec_12_passkey_needs_password", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let admin = rig.admin("ada@example.test").await?;
         let stolen = admin.session_token.clone();
         let options = |password: &str| {

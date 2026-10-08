@@ -60,7 +60,7 @@ async fn remove(
 #[tokio::test]
 async fn sec_02_nobody_gives_a_role_with_sub_projects_they_do_not_hold_there() -> TestResult {
     each_database("sec_02_sub_projects", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let org = Org::start(&rig).await?;
         let acme = org.project(None, "ACME").await?.id;
         let web = org.project(Some(acme), "WEB").await?.id;
@@ -122,7 +122,7 @@ async fn sec_02_nobody_gives_a_role_with_sub_projects_they_do_not_hold_there() -
 async fn sec_03_decide_roles_is_not_kept_from_a_row_at_the_same_depth_as_the_no_access()
 -> TestResult {
     each_database("sec_03_same_depth", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let org = Org::start(&rig).await?;
         let acme = org.project(None, "ACME").await?.id;
         let bob = org.person().await?;
@@ -217,7 +217,7 @@ async fn setter(org: &Org<'_>) -> Run<RoleId> {
 #[tokio::test]
 async fn sec_04_nobody_raises_a_level_by_taking_an_override_away() -> TestResult {
     each_database("sec_04_remove_override", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let org = Org::start(&rig).await?;
         let acme = org.project(None, "ACME").await?.id;
         let web = org.project(Some(acme), "WEB").await?.id;
@@ -294,7 +294,7 @@ async fn sec_04_nobody_raises_a_level_by_taking_an_override_away() -> TestResult
 #[tokio::test]
 async fn sec_02_manage_groups_does_not_lift_a_no_access_of_the_group() -> TestResult {
     each_database("sec_02_group_no_access", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let org = Org::start(&rig).await?;
         let acme = org.project(None, "ACME").await?.id;
         let (kim, cleo) = (org.person().await?, org.person().await?);
@@ -354,7 +354,7 @@ async fn sec_02_manage_groups_does_not_lift_a_no_access_of_the_group() -> TestRe
 async fn sec_02_a_group_with_a_no_access_the_person_cannot_see_is_refused_in_its_own_words()
 -> TestResult {
     each_database("sec_02_group_no_access_hidden", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let org = Org::start(&rig).await?;
         let acme = org.project(None, "ACME").await?.id;
         let (kim, cleo) = (org.person().await?, org.person().await?);
@@ -407,7 +407,7 @@ async fn sec_02_a_group_with_a_no_access_the_person_cannot_see_is_refused_in_its
 #[tokio::test]
 async fn sec_08_the_rows_made_for_a_replacement_are_each_in_the_security_log() -> TestResult {
     each_database("sec_08_replacement_in_the_log", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let org = Org::start(&rig).await?;
         let acme = org.project(None, "ACME").await?.id;
         let (bob, cleo) = (org.person().await?, org.person().await?);
@@ -463,7 +463,7 @@ async fn sec_08_the_rows_made_for_a_replacement_are_each_in_the_security_log() -
 async fn priv_12_the_cursor_of_a_page_of_people_holds_the_id_of_the_last_one_shown_and_no_name()
 -> TestResult {
     each_database("priv_12_people_cursor_id_only", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let org = Org::start(&rig).await?;
         let (bob, cleo) = (org.person().await?, org.person().await?);
         let api = org.rig.api();
@@ -500,7 +500,7 @@ async fn priv_12_the_cursor_of_a_page_of_people_holds_the_id_of_the_last_one_sho
 async fn perf_02_a_list_of_people_reads_groups_and_roles_only_when_they_are_asked_for() -> TestResult
 {
     each_database("perf_02_people_wanted", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let org = Org::start(&rig).await?;
         let acme = org.project(None, "ACME").await?.id;
         let bob = org.person().await?;
@@ -554,7 +554,7 @@ async fn last_event(rig: &Rig) -> Run<DomainEvent> {
 #[tokio::test]
 async fn adr_0007_events_of_levels_and_removed_rows_say_what_was_there_before() -> TestResult {
     each_database("adr_0007_before_values", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let org = Org::start(&rig).await?;
         let acme = org.project(None, "ACME").await?.id;
         let bob = org.person().await?;
@@ -630,7 +630,7 @@ async fn adr_0007_events_of_levels_and_removed_rows_say_what_was_there_before() 
 async fn sec_03_check_access_in_a_project_lists_what_counts_there_and_the_rows_that_reach_it()
 -> TestResult {
     each_database("sec_03_check_in_project", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let org = Org::start(&rig).await?;
         let acme = org.project(None, "ACME").await?.id;
         let web = org.project(Some(acme), "WEB").await?.id;
@@ -685,7 +685,7 @@ async fn sec_03_check_access_in_a_project_lists_what_counts_there_and_the_rows_t
 #[tokio::test]
 async fn sec_08_two_requests_for_a_role_and_a_no_access_leave_only_one_row() -> TestResult {
     each_database("sec_08_conflict_race", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let org = Org::start(&rig).await?;
         let acme = org.project(None, "ACME").await?.id;
         let bob = org.person().await?;
@@ -769,7 +769,7 @@ async fn sec_08_two_servers_starting_together_make_the_starting_roles_once() -> 
 #[tokio::test]
 async fn sec_04_nobody_sets_a_people_level_above_their_own() -> TestResult {
     each_database("sec_04_people_level_too_much", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let org = Org::start(&rig).await?;
         let acme = org.project(None, "ACME").await?.id;
         let bob = org.person().await?;
@@ -849,7 +849,7 @@ async fn sec_04_nobody_resets_a_role_to_levels_above_their_own() -> TestResult {
         (false, "sec_04_reset_kinds_first"),
     ] {
         each_database(name, async |db| {
-            let rig = Rig::start(db, 10).await?;
+            let rig = Rig::start(db).await?;
             let org = Org::start(&rig).await?;
             let kim = org.person().await?;
             // Kim manages roles and holds every permission of the Viewer role, but sees nothing.
@@ -914,7 +914,7 @@ async fn sec_04_nobody_resets_a_role_to_levels_above_their_own() -> TestResult {
 #[tokio::test]
 async fn sec_02_only_rows_that_can_exist_are_made() -> TestResult {
     each_database("sec_02_valid_rows", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let org = Org::start(&rig).await?;
         let acme = org.project(None, "ACME").await?.id;
         let bob = org.person().await?;
@@ -990,7 +990,7 @@ const SECTION_LEAD: [Permission; 3] = [
 #[tokio::test]
 async fn sec_02_a_role_with_sub_projects_needs_a_row_that_reaches_sub_projects() -> TestResult {
     each_database("sec_02_future_sub_projects", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let org = Org::start(&rig).await?;
         let acme = org.project(None, "ACME").await?.id;
         let (bob, cleo) = (org.person().await?, org.person().await?);
@@ -1061,7 +1061,7 @@ async fn sec_02_a_role_with_sub_projects_needs_a_row_that_reaches_sub_projects()
 async fn sec_02_a_group_with_a_role_for_sub_projects_is_not_joined_by_a_lead_of_one_project()
 -> TestResult {
     each_database("sec_02_group_future_sub_projects", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let org = Org::start(&rig).await?;
         let acme = org.project(None, "ACME").await?.id;
         let (kim, bea) = (org.person().await?, org.person().await?);

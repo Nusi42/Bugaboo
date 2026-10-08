@@ -19,7 +19,7 @@ use super::status::app_with_probe;
 async fn sec_03_a_level_from_a_project_the_lead_cannot_see_is_not_named_in_the_tables() -> TestResult
 {
     each_database("sec_03_hidden_origin", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let org = Org::start(&rig).await?;
         let app = app_with_probe(&rig, None);
         let acme = org.project(None, "ACME").await?.id;
@@ -73,7 +73,7 @@ async fn sec_03_a_level_from_a_project_the_lead_cannot_see_is_not_named_in_the_t
 async fn sec_04_a_project_without_a_setting_shows_the_role_own_level_and_yours_is_the_persons_own()
 -> TestResult {
     each_database("sec_04_role_own_and_yours", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let org = Org::start(&rig).await?;
         let app = app_with_probe(&rig, None);
         let acme = org.project(None, "ACME").await?.id;
@@ -136,7 +136,7 @@ async fn sec_04_a_project_without_a_setting_shows_the_role_own_level_and_yours_i
 async fn sec_04_a_level_set_on_a_project_never_gives_more_than_the_person_holds_in_its_sub_projects()
 -> TestResult {
     each_database("sec_04_levels_reach_below", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let org = Org::start(&rig).await?;
         let app = app_with_probe(&rig, None);
         let acme = org.project(None, "ACME").await?.id;
@@ -209,7 +209,7 @@ async fn sec_04_a_level_set_on_a_project_never_gives_more_than_the_person_holds_
 async fn sec_03_a_checker_without_a_management_permission_chooses_only_people_with_a_role_there()
 -> TestResult {
     each_database("sec_03_picker_roles_only", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let org = Org::start(&rig).await?;
         let app = app_with_probe(&rig, None);
         let acme = org.project(None, "ACME").await?.id;

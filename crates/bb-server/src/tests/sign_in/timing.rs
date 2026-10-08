@@ -10,7 +10,7 @@ use std::time::{Duration, Instant};
 
 use bb_testing::{TestResult, each_database};
 
-use super::rig::{PASSWORD, Rig};
+use super::rig::{PASSWORD, Rig, Tries};
 
 /// How many tries of each kind. Odd, so the middle is one measurement.
 const TRIES: usize = 15;
@@ -24,7 +24,7 @@ fn middle(mut times: Vec<Duration>) -> Duration {
 async fn auth_01_an_unknown_account_takes_as_long_as_a_wrong_password() -> TestResult {
     each_database("auth_01_timing", async |db| {
         // No limit gets in the way of the measurement.
-        let rig = Rig::start(db, 100_000).await?;
+        let rig = Rig::start_with(db, Tries::Unreached).await?;
         rig.admin("ada@example.test").await?;
         // A first round warms up the thread pool and the memory of the hashing.
         for _ in 0..3 {

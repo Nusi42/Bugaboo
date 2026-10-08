@@ -12,7 +12,7 @@ use bb_core::id::UserId;
 use bb_core::sign_in::SecurityAction;
 use bb_testing::{Failure, TestResult, each_database};
 
-use super::rig::{PASSWORD, Rig, refused};
+use super::rig::{PASSWORD, Rig, Tries, refused};
 
 /// What the code app of the person shows right now.
 async fn code_now(rig: &Rig, person: UserId) -> Result<String, Failure> {
@@ -75,7 +75,7 @@ async fn action_count(rig: &Rig, action: SecurityAction) -> Result<usize, bb_sto
 async fn auth_03_the_code_app_is_set_up_with_a_qr_picture_and_asked_for_once_confirmed()
 -> TestResult {
     each_database("auth_03_set_up", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let admin = rig.admin("ada@example.test").await?;
         let person = admin.person.id;
         let setup = rig
@@ -170,7 +170,7 @@ async fn auth_03_the_code_app_is_set_up_with_a_qr_picture_and_asked_for_once_con
 #[tokio::test]
 async fn auth_03_signing_in_with_a_code_opens_a_new_session_and_a_code_works_once() -> TestResult {
     each_database("auth_03_code", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let admin = rig.admin("ada@example.test").await?;
         let person = admin.person.id;
         set_up(&rig, person, &admin.session_token).await?;
@@ -239,7 +239,7 @@ async fn auth_03_signing_in_with_a_code_opens_a_new_session_and_a_code_works_onc
 #[tokio::test]
 async fn auth_03_a_backup_code_works_once_and_new_ones_replace_the_old() -> TestResult {
     each_database("auth_03_backup_codes", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let admin = rig.admin("ada@example.test").await?;
         let person = admin.person.id;
         let codes = set_up(&rig, person, &admin.session_token).await?;
@@ -306,7 +306,7 @@ async fn pending_session(rig: &Rig) -> Result<String, Failure> {
 #[tokio::test]
 async fn auth_03_the_code_app_is_switched_off_with_the_password() -> TestResult {
     each_database("auth_03_switch_off", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let admin = rig.admin("ada@example.test").await?;
         let person = admin.person.id;
         set_up(&rig, person, &admin.session_token).await?;
@@ -358,7 +358,7 @@ async fn auth_03_the_code_app_is_switched_off_with_the_password() -> TestResult 
 #[tokio::test]
 async fn sec_14_wrong_second_step_codes_are_limited_per_person() -> TestResult {
     each_database("sec_14_second_step_limit", async |db| {
-        let rig = Rig::start(db, 3).await?;
+        let rig = Rig::start_with(db, Tries::Few).await?;
         let admin = rig.admin("ada@example.test").await?;
         let person = admin.person.id;
         set_up(&rig, person, &admin.session_token).await?;
@@ -381,7 +381,7 @@ async fn sec_14_wrong_second_step_codes_are_limited_per_person() -> TestResult {
 async fn sec_14_parallel_wrong_codes_at_one_half_finished_sign_in_get_no_more_than_the_allowance()
 -> TestResult {
     each_database("sec_14_parallel_second_step", async |db| {
-        let rig = Rig::start(db, 3).await?;
+        let rig = Rig::start_with(db, Tries::Few).await?;
         let admin = rig.admin("ada@example.test").await?;
         set_up(&rig, admin.person.id, &admin.session_token).await?;
         rig.clock.advance(30);
@@ -419,7 +419,7 @@ async fn sec_14_parallel_wrong_codes_at_one_half_finished_sign_in_get_no_more_th
 async fn sec_14_parallel_wrong_passwords_before_a_sensitive_change_get_no_more_than_the_allowance()
 -> TestResult {
     each_database("sec_14_parallel_password_again", async |db| {
-        let rig = Rig::start(db, 3).await?;
+        let rig = Rig::start_with(db, Tries::Few).await?;
         let admin = rig.admin("ada@example.test").await?;
         let mut tasks = Vec::new();
         for _ in 0..20 {
@@ -454,7 +454,7 @@ async fn sec_14_parallel_wrong_passwords_before_a_sensitive_change_get_no_more_t
 async fn sec_14_ten_wrong_codes_end_the_half_finished_sign_in_and_are_written_down() -> TestResult {
     each_database("sec_14_second_step_given_up", async |db| {
         // The window allows many tries here, so only the count of wrong codes ends the sign-in.
-        let rig = Rig::start(db, 1000).await?;
+        let rig = Rig::start_with(db, Tries::Unreached).await?;
         let admin = rig.admin("ada@example.test").await?;
         set_up(&rig, admin.person.id, &admin.session_token).await?;
         rig.clock.advance(30);
@@ -509,7 +509,7 @@ async fn confirm_with(
 #[tokio::test]
 async fn sec_12_a_stolen_session_cannot_add_a_code_app_without_the_password() -> TestResult {
     each_database("sec_12_code_app_needs_password", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let admin = rig.admin("ada@example.test").await?;
         let person = admin.person.id;
         let stolen = admin.session_token.clone();
@@ -580,7 +580,7 @@ fn is_internal<T>(result: &Result<T, AppError>) -> bool {
 #[tokio::test]
 async fn sec_14_a_failure_of_the_server_does_not_use_up_the_tries_of_a_person() -> TestResult {
     each_database("sec_14_internal_gives_the_try_back", async |db| {
-        let rig = Rig::start(db, 3).await?;
+        let rig = Rig::start_with(db, Tries::Few).await?;
         let admin = rig.admin("ada@example.test").await?;
         let person = admin.person.id;
         set_up(&rig, person, &admin.session_token).await?;
@@ -639,7 +639,7 @@ async fn sec_14_a_failure_of_the_server_does_not_use_up_the_tries_of_a_person() 
 async fn sec_14_a_failure_of_the_server_does_not_use_up_the_tries_at_sign_in_and_before_a_change()
 -> TestResult {
     each_database("sec_14_internal_sign_in_and_password_again", async |db| {
-        let rig = Rig::start(db, 3).await?;
+        let rig = Rig::start_with(db, Tries::Few).await?;
         let admin = rig.admin("ada@example.test").await?;
         // The passwords cannot be read: signing in and typing the password again both fail.
         let results = broken(&rig, "password_login", async {
@@ -702,7 +702,7 @@ async fn sec_14_only_a_finished_second_step_clears_the_wrong_codes_of_a_person()
     each_database(
         "sec_14_person_key_only_cleared_by_second_step",
         async |db| {
-            let rig = Rig::start(db, 3).await?;
+            let rig = Rig::start_with(db, Tries::Few).await?;
             let admin = rig.admin("ada@example.test").await?;
             let person = admin.person.id;
             set_up(&rig, person, &admin.session_token).await?;

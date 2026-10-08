@@ -11,7 +11,7 @@ use bb_core::network::NetworkPrefix;
 use bb_core::sign_in::SecurityAction;
 use bb_testing::{TestResult, each_database};
 
-use super::rig::{OTHER_PASSWORD, PASSWORD, Rig, refused};
+use super::rig::{OTHER_PASSWORD, PASSWORD, Rig, Tries, refused};
 
 const FIREFOX: &str =
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:130.0) Gecko/20100101 Firefox/130.0";
@@ -31,7 +31,7 @@ async fn signed_in(rig: &Rig, token: &str) -> bool {
 #[tokio::test]
 async fn sec_12_signing_out_ends_that_session_and_only_that_one() -> TestResult {
     each_database("sec_12_sign_out", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let first = rig.admin("ada@example.test").await?;
         let second = rig.sign_in("ada@example.test", PASSWORD).await?;
         rig.api()
@@ -64,7 +64,7 @@ async fn sec_12_signing_out_ends_that_session_and_only_that_one() -> TestResult 
 #[tokio::test]
 async fn sec_12_people_list_their_sessions_and_end_any_of_them() -> TestResult {
     each_database("sec_12_session_list", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let admin = rig.admin("ada@example.test").await?;
         let bob = rig.person(&admin.session_token, "bob@example.test").await?;
         let from_firefox = RequestInfo {
@@ -144,7 +144,7 @@ async fn sec_12_people_list_their_sessions_and_end_any_of_them() -> TestResult {
 #[tokio::test]
 async fn sec_12_signing_out_everywhere_ends_every_session_of_the_person() -> TestResult {
     each_database("sec_12_sign_out_everywhere", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let admin = rig.admin("ada@example.test").await?;
         let bob = rig.person(&admin.session_token, "bob@example.test").await?;
         let second = rig.sign_in("ada@example.test", PASSWORD).await?;
@@ -179,7 +179,7 @@ async fn sec_12_signing_out_everywhere_ends_every_session_of_the_person() -> Tes
 #[tokio::test]
 async fn sec_12_a_session_ends_after_it_was_idle_too_long_and_use_keeps_it_alive() -> TestResult {
     each_database("sec_12_idle_timeout", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let kept = rig.admin("ada@example.test").await?;
         let left = rig.sign_in("ada@example.test", PASSWORD).await?;
         // The default idle time is 30 minutes. Twenty minutes, used each time, is no pause.
@@ -199,7 +199,7 @@ async fn sec_12_a_session_ends_after_it_was_idle_too_long_and_use_keeps_it_alive
 #[tokio::test]
 async fn sec_12_a_session_ends_after_the_absolute_time_however_busy_the_person_is() -> TestResult {
     each_database("sec_12_absolute_timeout", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let started = rig.admin("ada@example.test").await?;
         // The default is 24 hours. Used every 20 minutes, the session lives until then.
         for _ in 0..71 {
@@ -218,7 +218,7 @@ async fn sec_12_a_session_ends_after_the_absolute_time_however_busy_the_person_i
 #[tokio::test]
 async fn sec_12_every_session_has_its_own_secret_and_its_own_csrf_token() -> TestResult {
     each_database("sec_12_tokens", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let first = rig.admin("ada@example.test").await?;
         let second = rig.sign_in("ada@example.test", PASSWORD).await?;
         assert_ne!(first.session_token, second.session_token);
@@ -242,7 +242,7 @@ async fn sec_12_every_session_has_its_own_secret_and_its_own_csrf_token() -> Tes
 #[tokio::test]
 async fn sec_12_changing_the_password_ends_other_sessions_and_gives_a_new_secret() -> TestResult {
     each_database("sec_12_change_password", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let first = rig.admin("ada@example.test").await?;
         let other = rig.sign_in("ada@example.test", PASSWORD).await?;
         let change = |current: &str, new: &str| {
@@ -295,7 +295,7 @@ async fn sec_12_changing_the_password_ends_other_sessions_and_gives_a_new_secret
 #[tokio::test]
 async fn perf_02_the_list_of_sessions_has_a_cap_and_says_when_it_cut() -> TestResult {
     each_database("perf_02_sessions_cap", async |db| {
-        let rig = Rig::start(db, 1000).await?;
+        let rig = Rig::start_with(db, Tries::Unreached).await?;
         let first = rig.admin("ada@example.test").await?;
         let list = |token: &str| {
             rig.api().sessions(

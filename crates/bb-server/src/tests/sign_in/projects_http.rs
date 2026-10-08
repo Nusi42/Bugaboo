@@ -31,7 +31,7 @@ fn short_names(list: &Value) -> Vec<&str> {
 
 /// An organization with its administrator signed in, and the router that serves it.
 async fn administrator(db: &bb_testing::TestDatabase) -> Result<(Browser, axum::Router), Failure> {
-    let (rig, app) = rig_and_app(db, 10).await?;
+    let (rig, app) = rig_and_app(db).await?;
     let mut ada = Browser::new(&app, &called());
     ada.send("POST", "/api/v1/auth/setup", Some(setup_body(&rig)))
         .await?;
@@ -208,7 +208,7 @@ async fn prj_01_a_person_without_a_role_sees_no_project_and_is_told_nothing() ->
 #[tokio::test]
 async fn prj_03_a_move_is_previewed_and_done_over_http() -> TestResult {
     each_database("prj_03_http", async |db| {
-        let (rig, app) = rig_and_app(db, 10).await?;
+        let (rig, app) = rig_and_app(db).await?;
         let mut ada = Browser::new(&app, &called());
         ada.send("POST", "/api/v1/auth/setup", Some(setup_body(&rig)))
             .await?;

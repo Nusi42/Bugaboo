@@ -7,6 +7,7 @@ use std::time::Duration;
 
 use axum::body::Bytes;
 use axum::http::{HeaderMap, Request, StatusCode};
+use bb_api::cookies::CSRF_HEADER;
 use bb_api::tls::{TlsSource, server_config};
 use bb_api::{AuthHandle, HSTS_MAX_AGE_SELF_SIGNED, Incoming, ListenerOptions, Options, serve};
 use bb_testing::{Failure, TestResult, each_database};
@@ -19,6 +20,7 @@ use tokio::net::{TcpListener, TcpStream};
 use tokio::sync::oneshot;
 use tokio_rustls::TlsConnector;
 
+use super::http::{CSRF, SESSION};
 use super::rig::{PASSWORD, Rig};
 
 /// A browser on one HTTP/2 connection.
@@ -83,13 +85,13 @@ impl Client {
             request = request.header(
                 "cookie",
                 format!(
-                    "__Host-bb_session={session}; __Host-bb_csrf={}",
+                    "{SESSION}={session}; {CSRF}={}",
                     self.token.clone().unwrap_or_default()
                 ),
             );
         }
         if let Some(token) = token.map(str::to_owned).or_else(|| self.token.clone()) {
-            request = request.header("x-csrf-token", token);
+            request = request.header(CSRF_HEADER, token);
         }
         let payload = match &body {
             Some(value) => {
@@ -128,10 +130,10 @@ impl Client {
             let pair = text.split(';').next().unwrap_or_default();
             let cleared = text.contains("Max-Age=0");
             match pair.split_once('=') {
-                Some(("__Host-bb_session", value)) => {
+                Some((SESSION, value)) => {
                     self.session = (!cleared).then(|| value.to_owned());
                 }
-                Some(("__Host-bb_csrf", value)) => {
+                Some((CSRF, value)) => {
                     self.token = (!cleared).then(|| value.to_owned());
                 }
                 _ => {}
@@ -217,13 +219,13 @@ async fn first_start(client: &mut Client, rig: &Rig, own: &str) -> TestResult {
         .filter_map(|value| value.to_str().ok().map(str::to_owned))
         .collect();
     assert!(cookies.iter().any(|cookie| {
-        cookie.starts_with("__Host-bb_session=")
+        cookie.starts_with(&format!("{SESSION}="))
             && cookie.contains("HttpOnly")
             && cookie.contains("Secure")
     }));
     assert!(
         cookies.iter().any(|cookie| {
-            cookie.starts_with("__Host-bb_csrf=") && !cookie.contains("HttpOnly")
+            cookie.starts_with(&format!("{CSRF}=")) && !cookie.contains("HttpOnly")
         })
     );
     let me = client
@@ -265,7 +267,7 @@ async fn changes_need_origin_and_token(client: &mut Client, own: &str) -> TestRe
 #[tokio::test(flavor = "multi_thread")]
 async fn sec_12_over_tls_and_http2_a_person_sets_up_signs_out_and_signs_in_again() -> TestResult {
     each_database("sec_12_tls_http2_sign_in", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let running = start(&rig).await?;
         let certificate = running.folder.path().join("self-signed-cert.pem");
         let mut client = Client::connect(running.address, &certificate).await?;

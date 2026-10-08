@@ -13,7 +13,7 @@ use bb_testing::{TestResult, each_database};
 
 use super::access_keys::{made, probe};
 use super::policy_rig::{Org, Run};
-use super::rig::{Rig, refused};
+use super::rig::{Rig, Tries, refused};
 use super::second_step_by_role::{role_with, set_up_a_code_app, switch};
 
 const REQUIRED: Option<ErrorCode> = Some(ErrorCode::SecondStepRequired);
@@ -44,7 +44,7 @@ async fn switch_with(rig: &Rig, credential: &str, role: RoleId) -> Result<(), Ap
 async fn auth_03_a_key_made_before_the_switch_is_refused_until_its_owner_sets_up_a_second_step()
 -> TestResult {
     each_database("auth_03_key_follows_two_step", async |db| {
-        let rig = Rig::start(db, 50).await?;
+        let rig = Rig::start_with(db, Tries::Roomy).await?;
         let org = Org::start(&rig).await?;
         let role = checker(&org, false).await?;
         let bob = org.person().await?;
@@ -80,7 +80,7 @@ async fn auth_03_a_key_made_before_the_switch_is_refused_until_its_owner_sets_up
 #[tokio::test]
 async fn auth_03_a_key_cannot_switch_off_the_requirement_of_its_owner() -> TestResult {
     each_database("auth_03_key_cannot_free_its_owner", async |db| {
-        let rig = Rig::start(db, 50).await?;
+        let rig = Rig::start_with(db, Tries::Roomy).await?;
         let org = Org::start(&rig).await?;
         let role = checker(&org, false).await?;
         org.give_everywhere(&org.admin, role).await?;

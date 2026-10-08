@@ -52,7 +52,7 @@ async fn list_places(
 #[tokio::test]
 async fn prj_02_leaving_a_project_out_names_no_hidden_project() -> TestResult {
     each_database("prj_02_outside_hidden", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let org = Org::start(&rig).await?;
         let admin = org.admin.clone();
         let acme = make(&org, &admin, None, "ACME").await?;
@@ -76,7 +76,7 @@ async fn prj_02_leaving_a_project_out_names_no_hidden_project() -> TestResult {
 #[tokio::test]
 async fn prj_01_projects_are_nested_to_the_limit_and_no_further() -> TestResult {
     each_database("prj_01_depth_limit", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let org = Org::start(&rig).await?;
         let admin = org.admin.clone();
         let mut chain: Vec<ProjectId> = Vec::new();
@@ -122,7 +122,7 @@ async fn prj_01_projects_are_nested_to_the_limit_and_no_further() -> TestResult 
 #[tokio::test]
 async fn prj_03_moving_needs_move_at_the_old_parent_also_with_move_at_the_new_one() -> TestResult {
     each_database("prj_03_old_parent_needs_move", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let org = Org::start(&rig).await?;
         let admin = org.admin.clone();
         let acme = make(&org, &admin, None, "ACME").await?;
@@ -151,7 +151,7 @@ async fn prj_03_moving_needs_move_at_the_old_parent_also_with_move_at_the_new_on
 async fn prj_03_a_visible_project_under_a_hidden_parent_is_forbidden_to_move_not_missing()
 -> TestResult {
     each_database("prj_03_hidden_parent_move", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let org = Org::start(&rig).await?;
         let admin = org.admin.clone();
         let acme = make(&org, &admin, None, "ACME").await?;
@@ -181,7 +181,7 @@ async fn prj_03_a_visible_project_under_a_hidden_parent_is_forbidden_to_move_not
 #[tokio::test]
 async fn prj_03_a_project_says_whether_the_person_may_move_it() -> TestResult {
     each_database("prj_03_may_move_flag", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let org = Org::start(&rig).await?;
         let admin = org.admin.clone();
         let acme = make(&org, &admin, None, "ACME").await?;
@@ -225,7 +225,7 @@ async fn prj_03_a_project_says_whether_the_person_may_move_it() -> TestResult {
 #[tokio::test]
 async fn prj_03_moving_to_the_top_level_needs_make_projects_as_well() -> TestResult {
     each_database("prj_03_top_level_needs_make", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let org = Org::start(&rig).await?;
         let admin = org.admin.clone();
         let web = make(&org, &admin, None, "WEB").await?;
@@ -259,7 +259,7 @@ async fn prj_03_moving_to_the_top_level_needs_make_projects_as_well() -> TestRes
 async fn prj_03_the_places_a_project_can_go_leave_out_where_it_is_and_where_the_person_may_not_move()
 -> TestResult {
     each_database("prj_03_movable_places", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let org = Org::start(&rig).await?;
         let admin = org.admin.clone();
         let acme = make(&org, &admin, None, "ACME").await?;

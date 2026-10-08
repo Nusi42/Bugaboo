@@ -9,7 +9,7 @@ use super::http::{Browser, called, rig_and_app, setup_body};
 #[tokio::test]
 async fn perf_02_a_list_judges_who_asks_before_it_judges_the_query() -> TestResult {
     each_database("perf_02_http_list_order", async |db| {
-        let (rig, app) = rig_and_app(db, 10).await?;
+        let (rig, app) = rig_and_app(db).await?;
         let mut ada = Browser::new(&app, &called());
         ada.send("POST", "/api/v1/auth/setup", Some(setup_body(&rig)))
             .await?;

@@ -149,7 +149,7 @@ async fn scenario(org: &Org<'_>) -> Result<Vec<Member>, Failure> {
 async fn prj_02_the_list_the_preview_and_a_request_decide_alike_for_every_person_and_project()
 -> TestResult {
     each_database("prj_02_engines_agree", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let org = Org::start(&rig).await?;
         let people = scenario(&org).await?;
         let projects = rig.storage.project_tree().await?;

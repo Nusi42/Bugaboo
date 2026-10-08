@@ -5,12 +5,9 @@ use axum::http::StatusCode;
 use bb_testing::{TestResult, each_database};
 use serde_json::json;
 
-use super::http::{Browser, called, setup_body, sign_in_body, totp};
+use super::http::{Browser, CSRF, SESSION, called, setup_body, sign_in_body, totp};
 use super::rig::{PASSWORD, Rig};
 use super::status::app_with_probe;
-
-const SESSION: &str = "__Host-bb_session";
-const CSRF: &str = "__Host-bb_csrf";
 
 /// The answer clears both cookies and tells the browser to forget what it cached.
 fn assert_cleared(reply: &super::http::Reply, what: &str) {
@@ -40,7 +37,7 @@ fn assert_untouched(reply: &super::http::Reply, what: &str) {
 #[tokio::test]
 async fn m2_f06_a_session_that_ran_out_is_answered_with_the_cookies_cleared() -> TestResult {
     each_database("m2_f06_session_ran_out", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let app = app_with_probe(&rig, None);
         let mut ada = Browser::new(&app, &called());
         ada.send("POST", "/api/v1/auth/setup", Some(setup_body(&rig)))
@@ -64,7 +61,7 @@ async fn m2_f06_a_session_that_ran_out_is_answered_with_the_cookies_cleared() ->
 #[tokio::test]
 async fn m2_f06_a_cookie_that_opens_no_session_is_cleared_too() -> TestResult {
     each_database("m2_f06_cookie_opens_nothing", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let app = app_with_probe(&rig, None);
         // A secret that looks like one and belongs to no session (ended, or never was).
         let mut stale = Browser::new(&app, &called());
@@ -99,7 +96,7 @@ async fn m2_f06_a_cookie_that_opens_no_session_is_cleared_too() -> TestResult {
 #[tokio::test]
 async fn m2_f06_a_session_that_waits_for_its_second_step_is_not_cleared() -> TestResult {
     each_database("m2_f06_pending_is_kept", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let app = app_with_probe(&rig, None);
         let mut ada = Browser::new(&app, &called());
         ada.send("POST", "/api/v1/auth/setup", Some(setup_body(&rig)))

@@ -18,7 +18,7 @@ pub(super) struct Organization {
 
 /// A new organization with its administrator Ada.
 pub(super) async fn start(db: &bb_testing::TestDatabase) -> Result<Organization, Failure> {
-    let (rig, app) = rig_and_app(db, 10).await?;
+    let (rig, app) = rig_and_app(db).await?;
     let mut ada = Browser::new(&app, &called());
     ada.send("POST", "/api/v1/auth/setup", Some(setup_body(&rig)))
         .await?;

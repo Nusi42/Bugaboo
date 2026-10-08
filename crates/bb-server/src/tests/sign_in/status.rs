@@ -57,7 +57,7 @@ pub(super) fn app_with_probe_and_limits(
 #[tokio::test]
 async fn ops_08_only_administrators_see_the_status_of_the_server() -> TestResult {
     each_database("ops_08_status_access", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let app = app_with_probe(&rig, None);
         let used = called();
 
@@ -112,7 +112,7 @@ async fn ops_08_only_administrators_see_the_status_of_the_server() -> TestResult
 #[tokio::test]
 async fn ops_08_the_status_shows_the_result_of_checking_the_security_log() -> TestResult {
     each_database("ops_08_status_security_log", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let app = app_with_probe(&rig, None);
         let mut ada = Browser::new(&app, &called());
         ada.send("POST", "/api/v1/auth/setup", Some(setup_body(&rig)))
@@ -140,7 +140,7 @@ async fn ops_08_the_status_shows_the_result_of_checking_the_security_log() -> Te
 #[tokio::test]
 async fn ops_08_the_status_shows_the_end_of_the_certificate_it_serves_now() -> TestResult {
     each_database("ops_08_status_certificate", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let folder = tempfile::tempdir()?;
         let served = Arc::new(bb_api::tls::serve_certificate(
             &bb_api::tls::TlsSource::SelfSigned {
@@ -177,7 +177,7 @@ async fn ops_08_the_status_shows_the_end_of_the_certificate_it_serves_now() -> T
 #[tokio::test]
 async fn ops_08_ready_means_the_database_answers() -> TestResult {
     each_database("ops_08_ready_database", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let app = app_with_probe(&rig, None);
         let ready = || async {
             let request = Request::get("/health/ready").body(Body::empty())?;
@@ -234,7 +234,7 @@ fn log_of(state: &LogState) -> Result<(u64, i64), Failure> {
 async fn ops_08_the_status_page_follows_the_log_and_reuses_its_answer_until_something_is_written()
 -> TestResult {
     each_database("ops_08_status_incremental", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let kept = probe_of(
             &rig,
             LogChecking {
@@ -292,7 +292,7 @@ async fn ops_08_the_status_page_follows_the_log_and_reuses_its_answer_until_some
 #[tokio::test]
 async fn sec_15_the_status_page_warns_when_a_log_entry_could_not_be_written() -> TestResult {
     each_database("sec_15_status_failed_write", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let app = app_with_probe(&rig, None);
         let mut ada = Browser::new(&app, &called());
         ada.send("POST", "/api/v1/auth/setup", Some(setup_body(&rig)))
@@ -329,7 +329,7 @@ async fn sec_15_the_status_page_warns_when_a_log_entry_could_not_be_written() ->
 #[tokio::test]
 async fn sec_15_the_status_page_warns_when_the_anchor_is_ahead() -> TestResult {
     each_database("sec_15_status_anchor_ahead", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         rig.admin("ada@example.test").await?;
         rig.sign_in("ada@example.test", PASSWORD).await?;
 
@@ -398,7 +398,7 @@ fn open_up(folder: &std::path::Path) -> Result<(), Failure> {
 #[tokio::test]
 async fn sec_16_the_status_page_shows_what_of_the_data_folder_is_too_open() -> TestResult {
     each_database("sec_16_status_data_folder", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let data = crate::data_folder::DataFolder::prepare(&rig.folder.path().join("data"))?;
         let mut options = options(&rig, LimitsConfig::default(), true);
         options.probe = ProbeHandle::new(Arc::new(
@@ -448,7 +448,7 @@ async fn sec_16_the_status_page_shows_what_of_the_data_folder_is_too_open() -> T
 async fn sec_16_the_status_page_says_unknown_when_the_data_folder_cannot_be_looked_at() -> TestResult
 {
     each_database("sec_16_status_unknown", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         // The folder is not there to look at: the page must not say that all is well.
         let probe = Probe::new(
             rig.database.clone(),

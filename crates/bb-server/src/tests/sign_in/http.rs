@@ -11,6 +11,7 @@ use axum::body::Body;
 use axum::extract::ConnectInfo;
 use axum::http::{HeaderMap, Method, Request, StatusCode, header};
 use base64ct::{Base64UrlUnpadded, Encoding as _};
+use bb_api::cookies::{CSRF_HEADER, Cookie};
 use bb_api::openapi::operations;
 use bb_api::permissions::{Answer, Declared};
 use bb_api::{AuthHandle, ClientAddr, LimitsConfig, Options, router};
@@ -23,13 +24,14 @@ use tower::ServiceExt as _;
 use webauthn_authenticator_rs::prelude::{Url, WebauthnAuthenticator as _};
 use webauthn_authenticator_rs::softpasskey::SoftPasskey;
 
-use super::rig::{OTHER_PASSWORD, PASSWORD, PUBLIC_URL, Rig};
+use super::rig::{OTHER_PASSWORD, PASSWORD, PUBLIC_URL, Rig, Tries};
 
 /// The third number of the next browser's address (a network is the first three numbers).
 static NEXT_HOST: AtomicU8 = AtomicU8::new(1);
 
-const SESSION: &str = "__Host-bb_session";
-const CSRF: &str = "__Host-bb_csrf";
+/// The names of the cookies of a session, from the one cookie table of `bb-api`.
+pub(super) const SESSION: &str = Cookie::Session.name();
+pub(super) const CSRF: &str = Cookie::Csrf.name();
 
 /// What the server answered.
 pub(super) struct Reply {
@@ -182,11 +184,11 @@ impl Browser {
         match token {
             Token::FromCookie => {
                 if let Some(value) = self.jar.get(CSRF) {
-                    request = request.header("x-csrf-token", value);
+                    request = request.header(CSRF_HEADER, value);
                 }
             }
             Token::Nothing => {}
-            Token::Is(value) => request = request.header("x-csrf-token", value),
+            Token::Is(value) => request = request.header(CSRF_HEADER, value),
         }
         self.finish(request, method, path, body).await
     }
@@ -349,11 +351,17 @@ pub(super) fn setup_body(rig: &Rig) -> Value {
     })
 }
 
-pub(super) async fn rig_and_app(
+/// A rig with the default number of tries and its router.
+pub(super) async fn rig_and_app(db: &TestDatabase) -> Result<(Rig, Router), Failure> {
+    rig_and_app_with(db, Tries::Default).await
+}
+
+/// A rig that allows `tries` failed tries, and its router.
+pub(super) async fn rig_and_app_with(
     db: &TestDatabase,
-    failures: u32,
+    tries: Tries,
 ) -> Result<(Rig, Router), Failure> {
-    let rig = Rig::start(db, failures).await?;
+    let rig = Rig::start_with(db, tries).await?;
     let app = router(options(&rig, LimitsConfig::default(), true));
     Ok((rig, app))
 }
@@ -369,7 +377,7 @@ pub(super) fn sign_in_body(email: &str, password: &str) -> Value {
 #[tokio::test]
 async fn sec_12_signing_in_sets_the_session_cookie_and_the_csrf_cookie() -> TestResult {
     each_database("sec_12_http_cookies", async |db| {
-        let (rig, app) = rig_and_app(db, 10).await?;
+        let (rig, app) = rig_and_app(db).await?;
         let mut browser = Browser::new(&app, &called());
         let reply = browser
             .send("POST", "/api/v1/auth/setup", Some(setup_body(&rig)))
@@ -427,7 +435,7 @@ async fn sec_12_signing_in_sets_the_session_cookie_and_the_csrf_cookie() -> Test
 #[tokio::test]
 async fn sec_12_a_change_needs_the_token_of_its_own_session() -> TestResult {
     each_database("sec_12_http_csrf", async |db| {
-        let (rig, app) = rig_and_app(db, 10).await?;
+        let (rig, app) = rig_and_app(db).await?;
         let mut browser = Browser::new(&app, &called());
         browser
             .send("POST", "/api/v1/auth/setup", Some(setup_body(&rig)))
@@ -504,7 +512,7 @@ async fn sec_12_a_change_needs_the_token_of_its_own_session() -> TestResult {
 async fn sec_12_every_route_that_changes_something_checks_the_token_except_signing_in_and_up()
 -> TestResult {
     each_database("sec_12_http_every_route", async |db| {
-        let (rig, app) = rig_and_app(db, 10).await?;
+        let (rig, app) = rig_and_app(db).await?;
         let mut browser = Browser::new(&app, &called());
         browser
             .send("POST", "/api/v1/auth/setup", Some(setup_body(&rig)))
@@ -540,7 +548,7 @@ async fn sec_12_every_route_that_changes_something_checks_the_token_except_signi
 async fn sec_14_failed_sign_ins_are_turned_away_with_a_wait_and_the_answers_look_alike()
 -> TestResult {
     each_database("sec_14_http_limit", async |db| {
-        let (rig, app) = rig_and_app(db, 3).await?;
+        let (rig, app) = rig_and_app_with(db, Tries::Few).await?;
         let mut browser = Browser::new(&app, &called());
         browser
             .send("POST", "/api/v1/auth/setup", Some(setup_body(&rig)))
@@ -600,7 +608,7 @@ async fn sec_14_failed_sign_ins_are_turned_away_with_a_wait_and_the_answers_look
 #[tokio::test]
 async fn sec_14_failures_of_one_network_are_limited_whatever_the_account() -> TestResult {
     each_database("sec_14_http_network_failures", async |db| {
-        let (rig, app) = rig_and_app(db, 3).await?;
+        let (rig, app) = rig_and_app_with(db, Tries::Few).await?;
         Browser::new(&app, &called())
             .send("POST", "/api/v1/auth/setup", Some(setup_body(&rig)))
             .await?;
@@ -657,7 +665,7 @@ async fn sec_14_failures_of_one_network_are_limited_whatever_the_account() -> Te
 #[tokio::test]
 async fn sec_14_one_network_is_limited_in_its_tries_whatever_the_account() -> TestResult {
     each_database("sec_14_http_network_limit", async |db| {
-        let rig = Rig::start(db, 100).await?;
+        let rig = Rig::start_with(db, Tries::Unreached).await?;
         let app = router(options(
             &rig,
             LimitsConfig {
@@ -710,7 +718,7 @@ async fn sec_14_one_network_is_limited_in_its_tries_whatever_the_account() -> Te
 async fn auth_01_without_a_database_the_sign_in_routes_say_so_and_nothing_else_breaks() -> TestResult
 {
     each_database("auth_01_http_unavailable", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let app = router(options(&rig, LimitsConfig::default(), false));
         let mut browser = Browser::new(&app, &called());
         let reply = browser.send("GET", "/api/v1/auth/status", None).await?;
@@ -1237,7 +1245,7 @@ fn the_walk_over_the_routes_of_the_description_sees_every_method_including_patch
 #[tokio::test]
 async fn auth_01_every_route_of_signing_in_works_over_http() -> TestResult {
     each_database("auth_01_http_every_route", async |db| {
-        let (rig, app) = rig_and_app(db, 10).await?;
+        let (rig, app) = rig_and_app(db).await?;
         let used = called();
         let ada = Browser::new(&app, &used);
         let mut tour = Tour {
@@ -1260,7 +1268,7 @@ async fn auth_01_every_route_of_signing_in_works_over_http() -> TestResult {
 #[tokio::test]
 async fn perf_02_the_invitation_list_takes_fields_cursor_and_limit_over_http() -> TestResult {
     each_database("perf_02_http_invitation_list", async |db| {
-        let (rig, app) = rig_and_app(db, 10).await?;
+        let (rig, app) = rig_and_app(db).await?;
         let mut ada = Browser::new(&app, &called());
         ada.send("POST", "/api/v1/auth/setup", Some(setup_body(&rig)))
             .await?;
@@ -1340,7 +1348,7 @@ async fn perf_02_the_invitation_list_takes_fields_cursor_and_limit_over_http() -
 async fn sec_12_a_password_alone_shows_nothing_about_the_person_until_the_second_step_is_done()
 -> TestResult {
     each_database("sec_12_http_hidden_person", async |db| {
-        let (rig, app) = rig_and_app(db, 10).await?;
+        let (rig, app) = rig_and_app(db).await?;
         let used = called();
         let mut ada = Browser::new(&app, &used);
         ada.send("POST", "/api/v1/auth/setup", Some(setup_body(&rig)))
@@ -1392,7 +1400,7 @@ async fn sec_12_a_password_alone_shows_nothing_about_the_person_until_the_second
 #[tokio::test]
 async fn perf_02_the_lists_with_a_hard_cap_say_whether_they_were_cut() -> TestResult {
     each_database("perf_02_http_capped_lists", async |db| {
-        let (rig, app) = rig_and_app(db, 10).await?;
+        let (rig, app) = rig_and_app(db).await?;
         let mut ada = Browser::new(&app, &called());
         ada.send("POST", "/api/v1/auth/setup", Some(setup_body(&rig)))
             .await?;

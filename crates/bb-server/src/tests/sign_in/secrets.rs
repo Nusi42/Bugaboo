@@ -55,7 +55,7 @@ impl<'a> Counter<'a> {
 #[tokio::test]
 async fn adr_0007_accounts_sessions_and_invitations_append_one_event_per_change() -> TestResult {
     each_database("adr_0007_sign_in_events", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let mut count = Counter::start(&rig).await?;
         let admin = rig.admin("ada@example.test").await?;
         count.one_more("setup").await?;
@@ -114,7 +114,7 @@ async fn adr_0007_accounts_sessions_and_invitations_append_one_event_per_change(
 #[tokio::test]
 async fn adr_0007_the_code_app_appends_one_event_per_change() -> TestResult {
     each_database("adr_0007_code_app_events", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let admin = rig.admin("ada@example.test").await?;
         let session = admin.session_token.clone();
         let mut count = Counter::start(&rig).await?;
@@ -157,7 +157,7 @@ async fn adr_0007_the_code_app_appends_one_event_per_change() -> TestResult {
 #[tokio::test]
 async fn sec_16_no_secret_is_written_to_an_event_or_to_the_security_log() -> TestResult {
     each_database("sec_16_no_secret_in_events", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let admin = rig.admin("ada@example.test").await?;
         let session = admin.session_token.clone();
         let setup = rig
@@ -246,7 +246,7 @@ async fn sec_16_no_secret_is_written_to_an_event_or_to_the_security_log() -> Tes
 #[tokio::test]
 async fn sec_15_the_security_log_of_signing_in_verifies_and_names_what_happened() -> TestResult {
     each_database("sec_15_sign_in_log", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         rig.admin("ada@example.test").await?;
         let _ = rig.sign_in("ada@example.test", "Wrong-Password-1").await;
         let _ = rig.sign_in("nobody@example.test", PASSWORD).await;
@@ -289,7 +289,7 @@ async fn sec_15_the_security_log_of_signing_in_verifies_and_names_what_happened(
 #[tokio::test]
 async fn adr_0007_events_about_a_fixed_thing_name_the_same_record() -> TestResult {
     each_database("adr_0007_fixed_entity", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let admin = rig.admin("ada@example.test").await?;
         for enabled in [true, false] {
             let change = ChangeSignUpPolicy {

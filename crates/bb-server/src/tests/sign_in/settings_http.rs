@@ -22,7 +22,7 @@ fn setting<'a>(list: &'a Value, key: &str) -> Result<&'a Value, Failure> {
 async fn cfg_04_my_settings_over_http_say_what_each_setting_is_and_where_its_value_comes_from()
 -> TestResult {
     each_database("cfg_04_http_my_settings", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let app = app_with_probe(&rig, None);
         let mut nobody = Browser::new(&app, &called());
         // Not signed in: nothing, and no secret of the answer is stored.
@@ -132,7 +132,7 @@ async fn cfg_04_my_settings_over_http_say_what_each_setting_is_and_where_its_val
 async fn cfg_06_an_administrator_locks_a_setting_and_a_person_is_told_why_over_http() -> TestResult
 {
     each_database("cfg_06_http_lock", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let app = app_with_probe(&rig, None);
         let mut ada = Browser::new(&app, &called());
         ada.send("POST", "/api/v1/auth/setup", Some(setup_body(&rig)))
@@ -228,7 +228,7 @@ async fn cfg_06_an_administrator_locks_a_setting_and_a_person_is_told_why_over_h
 #[tokio::test]
 async fn cfg_06_a_project_the_person_cannot_see_is_not_found_over_http() -> TestResult {
     each_database("cfg_06_http_project", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let app = app_with_probe(&rig, None);
         let mut ada = Browser::new(&app, &called());
         ada.send("POST", "/api/v1/auth/setup", Some(setup_body(&rig)))

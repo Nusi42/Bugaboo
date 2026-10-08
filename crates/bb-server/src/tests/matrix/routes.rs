@@ -39,7 +39,7 @@ use super::examples::{EXAMPLES, Example, Quirk, request};
 use super::record::Record;
 use crate::sign_in_tests::http::{Browser, Reply, called};
 use crate::sign_in_tests::policy_rig::{Member, Org};
-use crate::sign_in_tests::rig::{PASSWORD, Rig};
+use crate::sign_in_tests::rig::{PASSWORD, Rig, Tries};
 use crate::sign_in_tests::status::app_with_probe;
 
 /// What the server must answer.
@@ -496,7 +496,7 @@ async fn run(rig: &Rig, actors: &[Actor]) -> Result<Record, Failure> {
 #[tokio::test]
 async fn sec_01_every_route_answers_every_actor_as_the_permission_table_says() -> TestResult {
     each_database("sec_matrix_every_route_every_actor", async |db| {
-        let rig = Rig::start(db, 1000).await?;
+        let rig = Rig::start_with(db, Tries::Unreached).await?;
         let record = run(&rig, &actors()).await?;
         record.matches_the_repository()?;
         Ok(())
