@@ -22,10 +22,8 @@ use crate::rust_source::{Source, read_product_sources, without_tests};
 
 /// The only place settings are declared.
 const REGISTRY_FOLDER: &str = "crates/bb-core/src/settings/";
-/// The file of the registry, which the browser client's list of keys is made from.
+/// The file of the registry, which the browser client's keys, choices and defaults are made from.
 pub(crate) const CATALOG_PATH: &str = "crates/bb-core/src/settings/catalog.rs";
-/// Where the settings that exist only for tests start in the catalog.
-pub(crate) const TEST_SETTINGS_MARK: &str = "pub mod for_tests";
 /// Where the migrations are: they name the keys of their time as text, on purpose.
 const MIGRATIONS_FOLDER: &str = "crates/bb-store/src/migrations/";
 

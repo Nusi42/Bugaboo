@@ -9,13 +9,17 @@
 //!   in the client package, run with Node) into `web/packages/api-client/src/schema.ts`;
 //! - the cookie table (`crates/bb-api/src/cookies.rs`) is read as Rust source, like the
 //!   personal-data marks, and written as the browser client's constants
-//!   (`src/protocol.ts`) and as the user docs page "Cookies we use" (`userDocs/cookies.md`).
+//!   (`src/protocol.ts`) and as the user docs page "Cookies we use" (`userDocs/cookies.md`);
+//! - the settings registry (`crates/bb-core/src/settings/catalog.rs`) is read as Rust source and
+//!   written as the keys, the choices and the defaults of the settings
+//!   (`src/setting-keys.generated.ts`);
+//! - the page sizes (`crates/bb-core/src/paging.rs`) are read as Rust source and written as the
+//!   browser client's `src/paging.generated.ts`.
 //!
 //! TypeScript and JSON go through the formatter (`oxfmt`), so the generated files already look
 //! the way FMT-TS wants them.
 
 use std::collections::BTreeMap;
-use std::fmt::Write as _;
 use std::io::Write as _;
 use std::path::Path;
 use std::process::{Command, Stdio};
@@ -26,10 +30,11 @@ use super::messages::{SOURCE_LOCALE_PATH, parse_pairs};
 use super::messages_rust::constant_name;
 use super::privacy::table;
 use super::{Generated, write_all};
-use crate::checks::arch_settings::{CATALOG_PATH, TEST_SETTINGS_MARK, declared_keys};
 use crate::repo::Repo;
 use crate::rust_source::{Source, read_product_sources};
 use crate::tools;
+
+mod web_constants;
 
 /// The OpenAPI document, relative to the repository root.
 pub(crate) const SPEC_PATH: &str = "web/packages/api-client/openapi.json";
@@ -37,9 +42,12 @@ pub(crate) const SPEC_PATH: &str = "web/packages/api-client/openapi.json";
 pub(crate) const SCHEMA_PATH: &str = "web/packages/api-client/src/schema.ts";
 /// Names the browser client needs from the server code.
 pub(crate) const PROTOCOL_PATH: &str = "web/packages/api-client/src/protocol.ts";
-/// The keys of the settings of the registry, for the browser app (ARCH-SETTINGS: the browser names
-/// a setting through these constants and never by writing its key).
+/// The keys, choices and defaults of the settings of the registry, for the browser app
+/// (ARCH-SETTINGS: the browser names a setting through these constants and never by writing its
+/// key; the choices and defaults are never written a second time).
 pub(crate) const SETTING_KEYS_PATH: &str = "web/packages/api-client/src/setting-keys.generated.ts";
+/// The page sizes of the lists, for the browser app.
+pub(crate) const PAGING_PATH: &str = "web/packages/api-client/src/paging.generated.ts";
 /// The user docs page.
 pub(crate) const COOKIES_PAGE: &str = "userDocs/cookies.md";
 
@@ -55,6 +63,7 @@ pub(crate) fn output_paths() -> Vec<&'static str> {
         SCHEMA_PATH,
         PROTOCOL_PATH,
         SETTING_KEYS_PATH,
+        PAGING_PATH,
         COOKIES_PAGE,
     ]
 }
@@ -84,7 +93,15 @@ pub(crate) fn generate(repo: &Repo) -> anyhow::Result<Vec<Generated>> {
         ),
         Generated::new(
             SETTING_KEYS_PATH,
-            format_with_oxfmt(repo, SETTING_KEYS_PATH, &setting_keys(&sources)?)?,
+            format_with_oxfmt(
+                repo,
+                SETTING_KEYS_PATH,
+                &web_constants::setting_keys(&sources)?,
+            )?,
+        ),
+        Generated::new(
+            PAGING_PATH,
+            format_with_oxfmt(repo, PAGING_PATH, &web_constants::paging(&sources)?)?,
         ),
         Generated::new(COOKIES_PAGE, cookies_page(&cookies.cookies, &purposes)?),
     ])
@@ -280,52 +297,6 @@ export const CSRF_HEADER = \"{}\";
     ))
 }
 
-/// `appearance.less-motion` as `appearanceLessMotion`.
-fn camel_case(key: &str) -> String {
-    let mut name = String::new();
-    let mut up = false;
-    for c in key.chars() {
-        if c == '.' || c == '-' {
-            up = true;
-        } else if up {
-            name.extend(c.to_uppercase());
-            up = false;
-        } else {
-            name.push(c);
-        }
-    }
-    name
-}
-
-/// The keys of the registry as constants for the browser client. The settings that exist only for
-/// tests are left out.
-fn setting_keys(sources: &[Source]) -> anyhow::Result<String> {
-    let Some((_, text)) = sources.iter().find(|(path, _)| path == CATALOG_PATH) else {
-        bail!("{CATALOG_PATH} is missing");
-    };
-    let registry = text.split(TEST_SETTINGS_MARK).next().unwrap_or(text);
-    let keys = declared_keys(registry);
-    if keys.is_empty() {
-        bail!("{CATALOG_PATH} declares no setting");
-    }
-    let mut out = format!(
-        "{TS_HEADER}/** The key of every setting of the registry (ADR-0018), by the name the app uses for it. */
-export const settingKeys = {{
-"
-    );
-    for key in &keys {
-        let _ = writeln!(out, "  {}: \"{key}\",", camel_case(key));
-    }
-    out.push_str(
-        "} as const;
-
-/** The key of a setting of the registry. */
-export type SettingKey = (typeof settingKeys)[keyof typeof settingKeys];
-",
-    );
-    Ok(out)
-}
-
 fn cookies_page(
     cookies: &[CookieDef],
     purposes: &BTreeMap<String, String>,
@@ -376,32 +347,6 @@ fn cookies_page(
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn the_keys_of_the_registry_become_names_for_the_browser() {
-        assert_eq!(camel_case("appearance.less-motion"), "appearanceLessMotion");
-        assert_eq!(camel_case("start.page"), "startPage");
-        let catalog = (
-            CATALOG_PATH.to_owned(),
-            "settings! {
-    A: Text = {
-        key: \"appearance.mode\",
-    }
-}
-pub mod for_tests {
-    key: \"test.note\",
-}
-"
-            .to_owned(),
-        );
-        let text = setting_keys(&[catalog]).unwrap();
-        assert!(
-            text.contains("appearanceMode: \"appearance.mode\","),
-            "{text}"
-        );
-        assert!(!text.contains("test.note"), "{text}");
-        assert!(setting_keys(&[]).is_err());
-    }
 
     const TABLE: &str = "pub const CSRF_HEADER: &str = \"x-csrf-token\";
 cookies! {\n    /// One.\n    Session => (\"__Host-bb_session\", true, Lax, message::COOKIE_SESSION_PURPOSE),\n    Csrf => (\"__Host-bb_csrf\", false, Strict, message::COOKIE_CSRF_PURPOSE),\n}\n";
