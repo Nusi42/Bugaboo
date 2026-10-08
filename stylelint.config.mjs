@@ -1,12 +1,14 @@
 import stylelint from "stylelint";
 
-// CSS Modules use design tokens only (ADR-0010, coding-standards section 4).
-// Lengths and colors come from `var(--token)`; the only literal sizes allowed are 0 and a 1px border.
+// The CSS Modules that have not moved onto design/theme.kdl yet use design tokens only (ADR-0010,
+// coding-standards section 4): lengths and colors come from `var(--token)`; the only literal sizes
+// allowed are 0 and a 1px border. THEME-ONLY removes the modules (M2C-F90); the rules of the theme
+// file are read with the stricter `stylelint.theme.config.mjs` (ADR-0026).
 
 const lengthUnits =
   "px|rem|em|ex|ch|cap|lh|rlh|vw|vh|vmin|vmax|svw|svh|lvw|lvh|dvw|dvh|pt|pc|cm|mm|in|Q";
 // A number with a length unit that is not part of a longer word or a variable name.
-const anyLength = String.raw`/(?<![\w.#-])-?\d*\.?\d+(?:${lengthUnits})\b/i`;
+export const anyLength = String.raw`/(?<![\w.#-])-?\d*\.?\d+(?:${lengthUnits})\b/i`;
 // The same, except exactly 1px, which borders and outlines may use.
 const lengthExceptHairline = String.raw`/(?<![\w.#-])(?!1px\b)-?\d*\.?\d+(?:${lengthUnits})\b/i`;
 
@@ -55,8 +57,8 @@ systemColorsPlugin.messages = messages;
 
 /** @type {import("stylelint").Config} */
 export default {
-  // The generated token sheet is the one place that holds raw values (gen tokens, ADR-0010).
-  ignoreFiles: ["web/packages/ui/src/tokens.css"],
+  // The generated style sheet is the one place that holds raw values (gen theme, ADR-0026).
+  ignoreFiles: ["web/packages/ui/src/theme.css"],
   plugins: [systemColorsPlugin],
   rules: {
     [ruleName]: true,

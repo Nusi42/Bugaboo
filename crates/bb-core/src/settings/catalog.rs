@@ -1,5 +1,8 @@
 //! The settings of Bugaboo. Add a setting here and nowhere else (ADR-0018).
 
+use super::themes::{
+    DARK_THEME_CHOICES, DEFAULT_DARK_THEME, DEFAULT_LIGHT_THEME, LIGHT_THEME_CHOICES,
+};
 use super::{
     Bool, ChangedBy, Choice, Format, Integer, Level, Setting, SettingDefinition, Text, settings,
 };
@@ -10,16 +13,6 @@ const MODE_CHOICES: &[Choice] = &[
     Choice::new("device", message::THEME_DEVICE),
     Choice::new("light", message::APPEARANCE_MODE_LIGHT),
     Choice::new("dark", message::APPEARANCE_MODE_DARK),
-];
-
-const LIGHT_THEME_CHOICES: &[Choice] = &[
-    Choice::new("daylight", message::THEME_DAYLIGHT),
-    Choice::new("paper", message::THEME_PAPER),
-];
-
-const DARK_THEME_CHOICES: &[Choice] = &[
-    Choice::new("dusk", message::THEME_DUSK),
-    Choice::new("midnight", message::THEME_MIDNIGHT),
 ];
 
 const SPACING_CHOICES: &[Choice] = &[
@@ -80,7 +73,7 @@ settings! {
     APPEARANCE_LIGHT_THEME: Text = {
         key: "appearance.light-theme",
         name: message::APPEARANCE_LIGHT,
-        default: "daylight",
+        default: DEFAULT_LIGHT_THEME,
         levels: [Organization, Person],
         changed_by: EachPerson,
         help: message::SETTING_APPEARANCE_LIGHT_THEME_HELP,
@@ -93,7 +86,7 @@ settings! {
     APPEARANCE_DARK_THEME: Text = {
         key: "appearance.dark-theme",
         name: message::APPEARANCE_DARK,
-        default: "dusk",
+        default: DEFAULT_DARK_THEME,
         levels: [Organization, Person],
         changed_by: EachPerson,
         help: message::SETTING_APPEARANCE_DARK_THEME_HELP,

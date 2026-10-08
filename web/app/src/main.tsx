@@ -4,14 +4,15 @@ import { RouterProvider } from "@tanstack/react-router";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 
-import "@bugaboo/ui/tokens.css";
-
 import { installPersonalSources } from "./shared/personal-sources.ts";
 import { paths } from "./shared/paths.ts";
 import { onSecondStepRequired, onSessionLost, queryClient } from "./shared/query-client.ts";
 import { forgetPerson, leaveSession } from "./shared/session.ts";
 import { router } from "./routes/router.tsx";
-import "./global.css";
+
+// The one style sheet, made from design/theme.kdl. It comes last, as the rules of the page frame
+// always did: they win over a rule of a feature that has the same weight.
+import "@bugaboo/ui/theme.css";
 
 // The person's own choices come from the server once they are signed in; until then the page is
 // drawn with the copy kept for the first frame, or the device's look.

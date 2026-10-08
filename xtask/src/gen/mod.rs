@@ -6,12 +6,14 @@
 pub(crate) mod api;
 pub(crate) mod contrast_spec;
 pub(crate) mod icu;
+pub(crate) mod kdl_reader;
 pub(crate) mod messages;
 pub(crate) mod messages_rust;
 pub(crate) mod privacy;
 pub(crate) mod roles;
-pub(crate) mod token_file;
-pub(crate) mod tokens;
+pub(crate) mod theme;
+pub(crate) mod theme_file;
+pub(crate) mod theme_selector;
 
 use anyhow::Context as _;
 
@@ -58,10 +60,10 @@ pub(crate) const GENERATORS: [Generator; 6] = [
         generate: docs::generate,
     },
     Generator {
-        name: "tokens",
-        help: "CSS variables and TypeScript names from design/tokens.json.",
-        paths: tokens::output_paths,
-        generate: |repo, _| tokens::outputs(repo),
+        name: "theme",
+        help: "The style sheet, the TypeScript names and the Rust theme choices from design/theme.kdl.",
+        paths: theme::output_paths,
+        generate: |repo, _| theme::outputs(repo),
     },
     Generator {
         name: "messages",

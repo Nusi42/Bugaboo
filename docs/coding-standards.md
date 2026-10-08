@@ -111,8 +111,13 @@ there. LINT-DRY (§7) catches copied blocks automatically; the rest is review.
 - Formatted by **oxfmt**; linted by **oxlint** with type-aware **tsgolint** rules; type-checked by `tsc` (TypeScript 7).
 - **No hard-coded user-facing text:** JSX text, `aria-*`, `title`, `alt` and `placeholder`
   values must come from the message catalog. Enforced by: TXT-LITERAL.
-- **No hard-coded styles:** no hex/rgb colors, pixel magic numbers or inline `style=` for
-  theming. Only design tokens. Enforced by: STY-TOKENS.
+- **No hard-coded styles:** no hex/rgb colors, pixel magic numbers, durations, weights, line
+  heights, layers or opacities. Only design tokens. Enforced by: STY-TOKENS, LINT-CSS.
+- **All theming lives in `design/theme.kdl`** (ADR-0026): values are tokens, rules are `part`
+  rules that use tokens only. Components carry no style values and no class names: no `style=`,
+  no `className`, no CSS file but the one that `cargo xtask gen theme` writes. A component emits
+  `data-part`, `data-variant` and `data-state` (`partOf`), plus React Aria's own `data-*`
+  attributes. Enforced by: THEME-ONLY.
 - No `dangerouslySetInnerHTML`, `eval`, `new Function`, or inline event-handler strings
   (these would break the CSP).
 

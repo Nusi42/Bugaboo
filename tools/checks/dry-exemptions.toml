@@ -5,11 +5,6 @@
 # shrinks as the copies go.
 
 [[exempt]]
-files = ["web/app/src/features/my-settings/ThemePicker.tsx", "web/packages/ui/src/ChoiceGroup.tsx"]
-block = "232596524820650"
-reason = "The theme picker is the choice group of packages/ui once the components move onto the theme file (M2C-F40, packages C-05 and C-06)."
-
-[[exempt]]
 files = ["web/app/e2e/my-settings.spec.ts", "web/app/e2e/screenshots-m2.spec.ts"]
 block = "198680221961460"
 reason = "The steps that give Go home the keys g i (chooseKeys, chooseGoHomeKeys) are in both specs; they become one helper of the end-to-end support (M2C-F40, package C-06)."

@@ -54,6 +54,7 @@ getrandom = "0.4.3"
 globset = "0.4.20"
 hmac = "0.13.0"
 jiff = { version = "0.2.37", default-features = false, features = ["serde", "std"] }
+kdl = { version = "=6.7.1", default-features = false, features = ["span"] }
 mime_guess = "2.0.5"
 proc-macro2 = "1.0.107"
 proptest = "1.11.0"

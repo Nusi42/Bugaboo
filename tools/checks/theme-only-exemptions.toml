@@ -1,0 +1,90 @@
+# Components that have not moved onto design/theme.kdl yet (THEME-ONLY, ADR-0026).
+#
+# Each entry is a file, a folder (the path ends with `/`), or the start of a file name
+# (`web/packages/ui/src/Card.` covers `Card.tsx` and `Card.module.css`). Its reason names the
+# follow-up that moves it. An entry that covers no file that breaks the rule fails, so the list
+# shrinks as the components move and is empty when package C-06 is done.
+
+[[exempt]]
+path = "web/app/src/features/access/"
+reason = "The access feature still has CSS Modules and class names; package C-06 moves it onto part rules (M2C-F90)."
+
+[[exempt]]
+path = "web/app/src/features/account/"
+reason = "The account feature still has CSS Modules and class names; package C-06 moves it onto part rules (M2C-F90)."
+
+[[exempt]]
+path = "web/app/src/features/admin/"
+reason = "The admin feature still has CSS Modules and class names; package C-06 moves it onto part rules (M2C-F90)."
+
+[[exempt]]
+path = "web/app/src/features/home/"
+reason = "The home feature still has CSS Modules and class names; package C-06 moves it onto part rules (M2C-F90)."
+
+[[exempt]]
+path = "web/app/src/features/my-settings/"
+reason = "The my-settings feature still has CSS Modules and class names; package C-06 moves it onto part rules (M2C-F90)."
+
+[[exempt]]
+path = "web/app/src/features/people/"
+reason = "The people feature still has CSS Modules and class names; package C-06 moves it onto part rules (M2C-F90)."
+
+[[exempt]]
+path = "web/app/src/features/projects/"
+reason = "The projects feature still has CSS Modules and class names; package C-06 moves it onto part rules (M2C-F90)."
+
+[[exempt]]
+path = "web/app/src/features/roles/"
+reason = "The roles feature still has CSS Modules and class names; package C-06 moves it onto part rules (M2C-F90)."
+
+[[exempt]]
+path = "web/app/src/features/settings/"
+reason = "The settings feature still has CSS Modules and class names; package C-06 moves it onto part rules (M2C-F90)."
+
+[[exempt]]
+path = "web/app/src/features/setup/"
+reason = "The setup feature still has CSS Modules and class names; package C-06 moves it onto part rules (M2C-F90)."
+
+[[exempt]]
+path = "web/app/src/features/shell/"
+reason = "The shell feature still has CSS Modules and class names; package C-06 moves it onto part rules (M2C-F90)."
+
+[[exempt]]
+path = "web/app/src/features/sign-in/"
+reason = "The sign-in feature still has CSS Modules and class names; package C-06 moves it onto part rules (M2C-F90)."
+
+[[exempt]]
+path = "web/packages/ui/src/Card."
+reason = "Card of packages/ui still has a CSS Module and class names; it moves onto part rules in package C-06 (M2C-F90)."
+
+[[exempt]]
+path = "web/packages/ui/src/ConfirmDialog."
+reason = "ConfirmDialog of packages/ui still has a CSS Module and class names; it moves onto part rules in package C-06 (M2C-F90)."
+
+[[exempt]]
+path = "web/packages/ui/src/Form."
+reason = "Form of packages/ui still has a CSS Module and class names; it moves onto part rules in package C-06 (M2C-F90)."
+
+[[exempt]]
+path = "web/packages/ui/src/Icon."
+reason = "Icon of packages/ui still has a CSS Module and class names; it moves onto part rules in package C-06 (M2C-F90)."
+
+[[exempt]]
+path = "web/packages/ui/src/OrDivider."
+reason = "OrDivider of packages/ui still has a CSS Module and class names; it moves onto part rules in package C-06 (M2C-F90)."
+
+[[exempt]]
+path = "web/packages/ui/src/SaveStatus."
+reason = "SaveStatus of packages/ui still has a CSS Module and class names; it moves onto part rules in package C-06 (M2C-F90)."
+
+[[exempt]]
+path = "web/packages/ui/src/SearchField."
+reason = "SearchField of packages/ui still has a CSS Module and class names; it moves onto part rules in package C-06 (M2C-F90)."
+
+[[exempt]]
+path = "web/packages/ui/src/SelectField."
+reason = "SelectField of packages/ui still has a CSS Module and class names; it moves onto part rules in package C-06 (M2C-F90)."
+
+[[exempt]]
+path = "web/packages/ui/src/Skeleton."
+reason = "Skeleton of packages/ui still has a CSS Module and class names; it moves onto part rules in package C-06 (M2C-F90)."

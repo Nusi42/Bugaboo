@@ -1,11 +1,12 @@
-//! The contrast rules of `design/tokens.json`: which text colors must be readable on which
+//! The contrast rules of `design/theme.kdl`: which text colors must be readable on which
 //! backgrounds (WCAG AA, THM-03, UX-04).
 //!
 //! Every text color is checked on every background, except the restricted and excluded
-//! combinations. Each of those is written down with its reason in the token file.
+//! combinations. Each of those is written down with its reason in the theme file.
 
-use anyhow::{Context as _, bail};
-use serde_json::{Map, Value};
+use anyhow::bail;
+
+use super::kdl_reader::Node;
 
 /// A text color that is only drawn on some backgrounds.
 pub(crate) struct Restricted {
@@ -33,19 +34,13 @@ pub(crate) struct DistinctSpec {
 }
 
 impl DistinctSpec {
-    pub(crate) fn parse(spec: &Value) -> anyhow::Result<Self> {
-        let spec = spec.as_object().context("`distinct` must be an object")?;
-        reason(spec)?;
-        let number = |key: &str| {
-            spec.get(key)
-                .and_then(Value::as_f64)
-                .with_context(|| format!("`{key}` must be a number"))
-        };
+    pub(crate) fn parse(node: Node<'_>) -> anyhow::Result<Self> {
+        reason(node)?;
         Ok(Self {
-            states: names(spec, "states")?,
-            surfaces: names(spec, "surfaces")?,
-            min_against_surfaces: number("minAgainstSurfaces")?,
-            min_between_states: number("minBetweenStates")?,
+            states: node.words("states")?,
+            surfaces: node.words("surfaces")?,
+            min_against_surfaces: node.number_prop("min-against-surfaces")?,
+            min_between_states: node.number_prop("min-between-states")?,
         })
     }
 }
@@ -62,20 +57,14 @@ pub(crate) struct MoreSpec {
 }
 
 impl MoreSpec {
-    fn parse(spec: &Value) -> anyhow::Result<Self> {
-        let spec = spec.as_object().context("`more` must be an object")?;
-        reason(spec)?;
-        let number = |key: &str| {
-            spec.get(key)
-                .and_then(Value::as_f64)
-                .with_context(|| format!("`{key}` must be a number"))
-        };
+    fn parse(node: Node<'_>) -> anyhow::Result<Self> {
+        reason(node)?;
         Ok(Self {
-            min_text: number("minText")?,
-            min_line: number("minLine")?,
-            text: names(spec, "text")?,
-            lines: names(spec, "lines")?,
-            line_on: names(spec, "lineOn")?,
+            min_text: node.number_prop("min-text")?,
+            min_line: node.number_prop("min-line")?,
+            text: node.words("text")?,
+            lines: node.words("lines")?,
+            line_on: node.words("line-on")?,
         })
     }
 }
@@ -158,45 +147,50 @@ impl ContrastSpec {
         Ok(())
     }
 
-    pub(crate) fn parse(spec: &Value) -> anyhow::Result<Self> {
-        let spec = spec.as_object().context("`contrast` must be an object")?;
+    pub(crate) fn parse(node: Node<'_>) -> anyhow::Result<Self> {
         let mut restricted = Vec::new();
-        for entry in list(spec, "restricted")? {
-            let entry = entry.as_object().context("`restricted` holds objects")?;
-            reason(entry)?;
-            restricted.push(Restricted {
-                text: text(entry, "text")?,
-                on: names(entry, "on")?,
-            });
-        }
         let mut exclusions = Vec::new();
-        for entry in list(spec, "exclusions")? {
-            let entry = entry.as_object().context("`exclusions` holds objects")?;
-            reason(entry)?;
-            exclusions.push(Exclusion {
-                text: names(entry, "text")?,
-                on: names(entry, "on")?,
-                themes: if entry.contains_key("themes") {
-                    names(entry, "themes")?
-                } else {
-                    Vec::new()
-                },
-            });
-        }
         let mut non_text = Vec::new();
-        for entry in list(spec, "nonText")? {
-            let entry = entry.as_object().context("`nonText` holds objects")?;
-            reason(entry)?;
-            non_text.extend(names(entry, "colors")?);
+        let mut more = None;
+        for child in node.children() {
+            match child.name() {
+                "text" | "backgrounds" => {}
+                "restricted" => {
+                    reason(child)?;
+                    restricted.push(Restricted {
+                        text: child.only_arg()?,
+                        on: child
+                            .required_prop("on")
+                            .map(|on| on.split_whitespace().map(str::to_owned).collect())?,
+                    });
+                }
+                "exclude" => {
+                    reason(child)?;
+                    exclusions.push(Exclusion {
+                        text: child.words("text")?,
+                        on: child.words("on")?,
+                        themes: child
+                            .children()
+                            .iter()
+                            .find(|inner| inner.name() == "themes")
+                            .map(Node::args)
+                            .transpose()?
+                            .unwrap_or_default(),
+                    });
+                }
+                "non-text" => {
+                    reason(child)?;
+                    non_text.extend(child.args()?);
+                }
+                "more" => more = Some(MoreSpec::parse(child)?),
+                other => bail!("line {}: unknown contrast rule `{other}`", child.line()),
+            }
         }
         Ok(Self {
-            min: spec
-                .get("min")
-                .and_then(Value::as_f64)
-                .context("`min` of the contrast rules must be a number")?,
-            more: MoreSpec::parse(spec.get("more").context("`more` is missing")?)?,
-            text: names(spec, "text")?,
-            backgrounds: names(spec, "backgrounds")?,
+            min: node.number_prop("min")?,
+            more: more.ok_or_else(|| node.problem("needs a `more` rule"))?,
+            text: node.words("text")?,
+            backgrounds: node.words("backgrounds")?,
             restricted,
             exclusions,
             non_text,
@@ -204,33 +198,12 @@ impl ContrastSpec {
     }
 }
 
-fn list<'a>(map: &'a Map<String, Value>, key: &str) -> anyhow::Result<&'a Vec<Value>> {
-    map.get(key)
-        .and_then(Value::as_array)
-        .with_context(|| format!("`{key}` must be a list"))
-}
-
-fn text(map: &Map<String, Value>, key: &str) -> anyhow::Result<String> {
-    map.get(key)
-        .and_then(Value::as_str)
-        .map(str::to_owned)
-        .with_context(|| format!("`{key}` must be text"))
-}
-
-fn names(map: &Map<String, Value>, key: &str) -> anyhow::Result<Vec<String>> {
-    list(map, key)?
-        .iter()
-        .map(|item| {
-            item.as_str()
-                .map(str::to_owned)
-                .with_context(|| format!("`{key}` must hold text"))
-        })
-        .collect()
-}
-
-fn reason(entry: &Map<String, Value>) -> anyhow::Result<()> {
-    if text(entry, "reason")?.trim().is_empty() {
-        bail!("every contrast restriction and exclusion needs a reason");
+fn reason(node: Node<'_>) -> anyhow::Result<()> {
+    if node.required_prop("reason")?.trim().is_empty() {
+        bail!(
+            "line {}: every contrast restriction and exclusion needs a reason",
+            node.line()
+        );
     }
     Ok(())
 }

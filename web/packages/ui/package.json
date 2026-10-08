@@ -5,7 +5,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./icons": "./src/icons.ts",
-    "./tokens.css": "./src/tokens.css"
+    "./theme.css": "./src/theme.css"
   },
   "dependencies": {
     "@bugaboo/api-client": "*",

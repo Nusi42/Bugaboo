@@ -1,34 +1,23 @@
-//! STY-TOKENS: styles come from design tokens only (ADR-0010, coding-standards §4).
+//! STY-TOKENS: colors come from design tokens only (ADR-0010, ADR-0026, coding-standards §4).
 //!
-//! In the TypeScript and CSS of the browser app there are no color values written out (`#5b3fd9`,
-//! `rgb(…)`, `hsl(…)` and the like) and no inline styles (`style={…}`, `element.style.x = …`,
-//! `setAttribute("style", …)`). Colors, sizes, fonts and radii are `var(--token)`; the theme and
-//! the choices of the person (spacing, text size) reach every component through the tokens, which
-//! an inline value would bypass. Stylelint (LINT-CSS) checks sizes in CSS Modules; this check also
-//! covers the TypeScript and the colors everywhere. The generated token files are the one place
-//! that holds raw values.
+//! In `design/theme.kdl` a color value is written once, in the `color` token that names it; no rule
+//! of a component holds one (`#5b3fd9`, `rgb(…)`, `hsl(…)` and the like). In the TypeScript and
+//! the remaining CSS of the browser app there are none written out either. A rule uses
+//! `$accent`, `$fg`, … so that the theme and the choices of the person (spacing, text size) reach
+//! every component. Styles from code (`style=`) are THEME-ONLY's, sizes and fonts in the rules are
+//! LINT-CSS's. The generated files are the one place outside the theme file that holds raw values.
 
-use super::web_source::code_of;
+use super::web_source::{code_of, is_app_source};
 use super::{Check, Context, Finding};
 use crate::docs::text::has_extension;
+use crate::generate::all_paths;
+use crate::generate::theme_file::{Item, THEME_PATH, ThemeFile};
 use crate::source::{Kind, Source};
-
-/// The generated files that hold the raw values, and the tests and tooling that are not the app.
-const EXEMPT: [&str; 5] = [
-    "web/packages/ui/src/tokens.css",
-    "web/packages/ui/src/tokens.ts",
-    "/e2e/",
-    "web/tooling/",
-    ".test.",
-];
 
 /// Functions that write a color value.
 const COLOR_FUNCTIONS: [&str; 9] = [
     "rgb", "rgba", "hsl", "hsla", "hwb", "lab", "lch", "oklab", "oklch",
 ];
-
-/// Ways to put a style on an element from code.
-const INLINE: [&str; 3] = [" style=", ".style.", "setAttribute(\"style\""];
 
 pub(crate) struct StyTokens;
 
@@ -39,16 +28,55 @@ impl Check for StyTokens {
 
     fn run(&self, context: &Context<'_>) -> anyhow::Result<Vec<Finding>> {
         let sources = context.sources(self.id(), Kind::WebAndStyles)?;
-        Ok(evaluate(&sources))
+        let mut findings = evaluate(&sources);
+        findings.extend(theme_findings(&ThemeFile::load(context.repo)?));
+        Ok(findings)
     }
 }
 
 fn evaluate(sources: &[Source]) -> Vec<Finding> {
+    let generated = all_paths();
     sources
         .iter()
-        .filter(|(path, _)| !EXEMPT.iter().any(|part| path.contains(part)))
+        .filter(|(path, _)| is_app_source(path) && !generated.contains(&path.as_str()))
         .flat_map(|(path, text)| scan(path, text))
         .collect()
+}
+
+/// The colors written out in the rules, the mixins and the keyframes of the theme file.
+fn theme_findings(file: &ThemeFile) -> Vec<Finding> {
+    let mut findings = Vec::new();
+    let in_rules = file.rules.iter().map(|rule| &rule.items);
+    let in_mixins = file.mixins.iter().map(|mixin| &mixin.items);
+    for items in in_rules.chain(in_mixins) {
+        check_items(items, &mut findings);
+    }
+    for keyframes in &file.keyframes {
+        for (_, declarations) in &keyframes.frames {
+            for declaration in declarations {
+                check_value(&declaration.value, declaration.line, &mut findings);
+            }
+        }
+    }
+    findings
+}
+
+fn check_items(items: &[Item], findings: &mut Vec<Finding>) {
+    for item in items {
+        match item {
+            Item::Declaration(declaration) => {
+                check_value(&declaration.value, declaration.line, findings);
+            }
+            Item::Media { items, .. } => check_items(items, findings),
+            Item::Use { .. } => {}
+        }
+    }
+}
+
+fn check_value(value: &str, line: usize, findings: &mut Vec<Finding>) {
+    if let Some(problem) = problem_in(value, true) {
+        findings.push(Finding::at(format!("{THEME_PATH}:{line}"), problem));
+    }
 }
 
 fn scan(path: &str, text: &str) -> Vec<Finding> {
@@ -72,24 +100,16 @@ fn css_code(line: &str) -> &str {
     line.split("/*").next().unwrap_or(line)
 }
 
-fn problem_in(code: &str, css: bool) -> Option<String> {
+fn problem_in(code: &str, in_rule: bool) -> Option<String> {
+    let how = if in_rule {
+        "Define it as a `color` token in design/theme.kdl and write `$name` here."
+    } else {
+        "Use a token: `var(--accent)`, `var(--fg)`, … (design/theme.kdl)."
+    };
     if let Some(color) = hex_color(code) {
-        return Some(format!(
-            "`{color}` is a color written out. Use a token: `var(--accent)`, `var(--fg)`, … (design/tokens.json)."
-        ));
+        return Some(format!("`{color}` is a color written out. {how}"));
     }
-    if let Some(function) = color_function(code) {
-        return Some(format!(
-            "`{function}(` writes a color out. Use a token: `var(--accent)`, `var(--fg)`, … (design/tokens.json)."
-        ));
-    }
-    if !css && let Some(way) = INLINE.iter().find(|way| code.contains(**way)) {
-        return Some(format!(
-            "`{}` puts a style on an element from code. Use a CSS Module with tokens; a style the choices of the person cannot reach is a bug.",
-            way.trim()
-        ));
-    }
-    None
+    color_function(code).map(|function| format!("`{function}(` writes a color out. {how}"))
 }
 
 /// A `#rgb`, `#rgba`, `#rrggbb` or `#rrggbbaa` color in the code.
@@ -128,6 +148,16 @@ mod tests {
             .collect()
     }
 
+    fn in_theme(rule: &str) -> Vec<String> {
+        let repo = crate::repo::Repo::discover().unwrap();
+        let text = crate::source::read_text(&repo, THEME_PATH).unwrap();
+        let file = ThemeFile::parse(&format!("{text}\n{rule}\n")).unwrap();
+        theme_findings(&file)
+            .into_iter()
+            .map(|finding| finding.message)
+            .collect()
+    }
+
     #[test]
     fn bad_example() {
         for (path, bad) in [
@@ -136,18 +166,13 @@ mod tests {
             ("web/app/src/a.css", "  color: #5b3fd9;"),
             ("web/app/src/a.css", "  background: rgba(0, 0, 0, 0.5);"),
             ("web/app/src/a.ts", "const c = `oklch(0.5 0.1 200)`;"),
-            (
-                "web/app/src/a.tsx",
-                "return <p style={{ margin: 4 }}>x</p>;",
-            ),
-            ("web/app/src/a.ts", "element.style.color = \"x\";"),
-            (
-                "web/app/src/a.ts",
-                "element.setAttribute(\"style\", \"x\");",
-            ),
         ] {
             assert!(!run(path, bad).is_empty(), "{path}: {bad}");
         }
+        assert!(!in_theme("part \"zz\" {\n  color \"#5b3fd9\"\n}").is_empty());
+        assert!(!in_theme("part \"zz\" {\n  background \"rgb(0 0 0 / 0.5)\"\n}").is_empty());
+        assert!(!in_theme("mixin \"zz\" {\n  color \"#fff\"\n}").is_empty());
+        assert!(!in_theme("part \"zz\" {\n  forced {\n    color \"#fff\"\n  }\n}").is_empty());
     }
 
     #[test]
@@ -159,22 +184,33 @@ mod tests {
             ("web/app/src/a.ts", "const anchor = \"#content\";"),
             ("web/app/src/a.ts", "// the old color was #5b3fd9"),
             ("web/app/src/a.css", "/* not #5b3fd9 any more */"),
-            (
-                "web/app/src/a.tsx",
-                "return <p className={styles.text}>x</p>;",
-            ),
             ("web/app/src/a.ts", "const label = transform(value);"),
             ("web/app/src/a.ts", "const hsl = 3;"),
         ] {
             let found = run(path, good);
             assert!(found.is_empty(), "{path}: {good}: {found:?}");
         }
+        assert!(
+            in_theme("part \"zz\" {\n  color \"$fg\"\n  outline \"$ring-width solid $accent\"\n}")
+                .is_empty()
+        );
     }
 
     #[test]
-    fn the_generated_tokens_and_the_tests_are_not_checked() {
+    fn the_theme_file_of_the_repository_holds_no_color_in_a_rule() {
+        let repo = crate::repo::Repo::discover().unwrap();
+        let file = ThemeFile::load(&repo).unwrap();
+        let found: Vec<String> = theme_findings(&file)
+            .into_iter()
+            .map(|finding| finding.message)
+            .collect();
+        assert!(found.is_empty(), "{found:?}");
+    }
+
+    #[test]
+    fn the_generated_sheet_and_the_tests_are_not_checked() {
         let bad = "  --accent: #5b3fd9;";
-        assert!(run("web/packages/ui/src/tokens.css", bad).is_empty());
+        assert!(run("web/packages/ui/src/theme.css", bad).is_empty());
         assert!(run("web/app/e2e/a.spec.ts", "const c = \"#ffffff\";").is_empty());
         assert!(!run("web/packages/ui/src/other.css", bad).is_empty());
     }

@@ -1,6 +1,7 @@
 import { useId } from "react";
 
-import styles from "./ChoiceGroup.module.css";
+import { partOf } from "./parts.ts";
+import { part } from "./tokens.ts";
 
 /** Words of the HTML standard, not text for people. */
 const radio = "radio";
@@ -28,13 +29,13 @@ export function ChoiceGroup<Value extends string>({
 }: ChoiceGroupProps<Value>) {
   const group = useId();
   return (
-    <fieldset className={styles.group}>
-      <legend className={styles.legend}>{legend}</legend>
-      <div className={styles.choices}>
+    <fieldset {...partOf(part.choiceGroup)}>
+      <legend {...partOf(part.choiceGroupLegend)}>{legend}</legend>
+      <div {...partOf(part.choiceGroupChoices)}>
         {choices.map((choice) => (
-          <label key={choice.value} className={styles.choice}>
+          <label key={choice.value} {...partOf(part.choiceGroupChoice)}>
             <input
-              className={styles.input}
+              {...partOf(part.choiceGroupInput)}
               type={radio}
               name={group}
               value={choice.value}
@@ -43,7 +44,7 @@ export function ChoiceGroup<Value extends string>({
                 onChange(choice.value);
               }}
             />
-            <span className={styles.label}>{choice.label}</span>
+            <span {...partOf(part.choiceGroupLabel)}>{choice.label}</span>
           </label>
         ))}
       </div>

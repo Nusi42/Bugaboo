@@ -2,18 +2,12 @@ import { createContext, useContext, type ReactNode } from "react";
 
 import { Alert } from "./Alert.tsx";
 import { Button } from "./Button.tsx";
+import { partOf } from "./parts.ts";
 import { alertTone, buttonLook, pickerLook, type PickerLook } from "./props.ts";
 import { SearchField } from "./SearchField.tsx";
-import styles from "./SearchPicker.module.css";
+import { part } from "./tokens.ts";
 
 const LookContext = createContext<PickerLook>(pickerLook.list);
-
-/** The classes of the choices of a look. */
-function classesOf(look: PickerLook) {
-  return look === pickerLook.boxed
-    ? { option: styles.optionBoxed, name: styles.optionNameBoxed }
-    : { option: styles.option, name: styles.optionName };
-}
 
 export interface PickerMore {
   /** The text of the button, like *Show more people*. */
@@ -62,16 +56,15 @@ export function SearchPicker({
   more,
   children,
 }: SearchPickerProps) {
-  const boxed = look === pickerLook.boxed;
   return (
-    <fieldset className={styles.picker}>
-      <legend className={boxed ? styles.legendBoxed : styles.legend}>{legend}</legend>
+    <fieldset {...partOf(part.picker)}>
+      <legend {...partOf(part.pickerLegend, { variants: [look] })}>{legend}</legend>
       <SearchField label={searchLabel} clearLabel={clearLabel} value={query} onChange={onQuery} />
-      <ul className={boxed ? styles.optionsBoxed : styles.options} aria-label={listLabel}>
+      <ul {...partOf(part.pickerOptions, { variants: [look] })} aria-label={listLabel}>
         <LookContext value={look}>{children}</LookContext>
       </ul>
       {failed === undefined ? null : <Alert tone={alertTone.danger}>{failed}</Alert>}
-      {nothing === undefined ? null : <p className={styles.muted}>{nothing}</p>}
+      {nothing === undefined ? null : <p {...partOf(part.muted)}>{nothing}</p>}
       {more === undefined ? null : (
         <Button look={buttonLook.quiet} isPending={more.pending} onPress={more.press}>
           {more.label}
@@ -93,12 +86,18 @@ export interface PickerOptionProps {
 
 /** One choice of a list of which exactly one is picked. */
 export function PickerOption({ group, checked, label, hint, onPick }: PickerOptionProps) {
-  const classes = classesOf(useContext(LookContext));
+  const look = useContext(LookContext);
   return (
     <li>
-      <label className={classes.option}>
-        <input type="radio" name={group} checked={checked} onChange={onPick} />
-        <span className={classes.name}>{label}</span>
+      <label {...partOf(part.pickerOption, { variants: [look] })}>
+        <input
+          type="radio"
+          name={group}
+          checked={checked}
+          onChange={onPick}
+          {...partOf(part.pickerInput, { variants: [look === pickerLook.boxed && look] })}
+        />
+        <span {...partOf(part.pickerName, { variants: [look] })}>{label}</span>
         {hint === undefined ? null : <PickerHint>{hint}</PickerHint>}
       </label>
     </li>
@@ -114,8 +113,8 @@ export interface PickerRowProps {
 /** One row of a list of which each can be acted on. */
 export function PickerRow({ label, children }: PickerRowProps) {
   return (
-    <li className={styles.row}>
-      <span className={styles.optionName}>{label}</span>
+    <li {...partOf(part.pickerRow)}>
+      <span {...partOf(part.pickerName, { variants: [pickerLook.list] })}>{label}</span>
       {children}
     </li>
   );
@@ -123,5 +122,5 @@ export function PickerRow({ label, children }: PickerRowProps) {
 
 /** A short word next to a choice that tells it from others. */
 export function PickerHint({ children }: { readonly children: ReactNode }) {
-  return <span className={styles.optionHint}>{children}</span>;
+  return <span {...partOf(part.pickerHint)}>{children}</span>;
 }

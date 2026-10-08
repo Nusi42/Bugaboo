@@ -1,8 +1,8 @@
 import type { ReactNode } from "react";
 
-import styles from "./Alert.module.css";
-import { cx } from "./cx.ts";
+import { partOf } from "./parts.ts";
 import { alertTone, type AlertTone } from "./props.ts";
+import { part } from "./tokens.ts";
 
 /** Words of the ARIA standard, not text for people. */
 const roles = { alert: "alert", status: "status" } as const;
@@ -23,7 +23,7 @@ export interface AlertProps {
 export function Alert({ children, tone = alertTone.info }: AlertProps) {
   return (
     <div
-      className={cx(styles.alert, styles[tone])}
+      {...partOf(part.alert, { variants: [tone] })}
       role={tone === alertTone.danger ? roles.alert : roles.status}
     >
       {children}

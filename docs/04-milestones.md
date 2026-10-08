@@ -118,7 +118,7 @@ You comment on the page. The lead fixes what you ask for, updates the page, and 
 - First checks active: FMT-*, LINT-RUST, LINT-TS, LINT-TYPES, LINT-CSS, LINT-SPELL, LINT-CI, GIT-*, SEC-SECRETS, ARCH-DEPS, ARCH-NO-UNSAFE, ARCH-MAP-SYNC, DEV-PORTS, DEP-REGISTER, DEP-LICENSES, DOC-GENERATED, DOC-ADR-ENFORCED and all META checks, each with its bad and good example
 - lefthook, Claude Code hooks (`.claude/settings.json`) and `CLAUDE.md` with the agent rules
 - Browser app skeleton: Vite 8, React 19, TypeScript 7, oxlint + tsgolint, oxfmt, Vitest, Playwright, all on the ports from `tools/dev/ports.json`
-- `design/tokens.json` with the four themes; `cargo xtask gen tokens` generates CSS and TS (the design pages switch to the generated CSS); `messages/en.json` with typed keys
+- `design/tokens.json` with the four themes; `cargo xtask gen tokens` generates CSS and TS (the design pages switch to the generated CSS); since M2C both are `design/theme.kdl` and `cargo xtask gen theme` (ADR-0026); `messages/en.json` with typed keys
 - The docs-to-HTML builder moves into `cargo xtask docs`
 - `bugaboo` binary serving the embedded app ("Hello" screen with the theme picker) and `/health`
 
