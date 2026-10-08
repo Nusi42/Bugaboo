@@ -231,6 +231,7 @@
 <li>Only <code>bb-policy</code> can create <code>Authorized&lt;T&gt;</code>. Its constructor is private to the crate.</li>
 <li>Only <code>bb-api</code> and <code>bb-mcp</code> speak HTTP. Only <code>bb-server</code> wires adapters to ports, and from M2 WP-06 on also the developer program <code>bb-sample</code> (<code>cargo xtask check only ARCH-HTTP-EDGE</code>).</li>
 <li>The browser app talks to the server only through <code>@bugaboo/api-client</code> (<code>cargo xtask check only ARCH-WEB-API</code>), and has no hand-written types for what the server sends (<code>LINT-API-TYPES</code>).</li>
+<li>A crate may name itself as a dev-dependency to switch on its own <code>testing</code> feature for its integration tests (<code>bb-api</code> does, for <code>Options::for_tests</code>); that is no edge between two crates (<code>cargo xtask check only ARCH-DEPS</code>).</li>
 </ol>
 <h3 id="s4-3"><button class="sec" data-sec>§4.3</button>The core modules</h3>
 <h4>bb-core</h4>
