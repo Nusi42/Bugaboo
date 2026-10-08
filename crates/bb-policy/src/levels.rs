@@ -185,7 +185,7 @@ pub struct RoleLevel<L> {
 }
 
 /// The depth of a project of the chain, from 1; `None` for another project.
-fn chain_depth(chain: &[ProjectId], project: ProjectId) -> Option<usize> {
+pub(crate) fn chain_depth(chain: &[ProjectId], project: ProjectId) -> Option<usize> {
     chain
         .iter()
         .position(|step| *step == project)

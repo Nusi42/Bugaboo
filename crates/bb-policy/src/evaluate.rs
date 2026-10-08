@@ -25,7 +25,7 @@ use bb_core::id::{AssignmentId, GroupId, ProjectId, RoleId, UserId};
 use bb_core::people_kinds::PeopleKind;
 
 use crate::catalogue::{Counts, Permission};
-use crate::levels::{LevelRules, LevelSubject, Levels};
+use crate::levels::{LevelRules, LevelSubject, Levels, chain_depth};
 
 /// Where something is decided: for the whole organization, or in a project.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -297,21 +297,30 @@ pub fn evaluate(inputs: &Inputs) -> Evaluation {
     }
 }
 
+/// Whether a row on `project` (`None` for the whole organization) that counts `applies_to` reaches
+/// the place whose projects from the top down are `chain` (step 2): a row for the whole
+/// organization, a row on the place itself, and a row on a parent that says *and its
+/// sub-projects*. The one answer to "which rows count here", also for the screen that lists them.
+#[must_use]
+pub fn row_reaches(project: Option<ProjectId>, applies_to: AppliesTo, chain: &[ProjectId]) -> bool {
+    match project {
+        None => true,
+        Some(project) => chain_depth(chain, project).is_some_and(|depth| {
+            depth == chain.len() || applies_to == AppliesTo::ProjectAndSubProjects
+        }),
+    }
+}
+
 /// The row with its rank, when it applies at the place of `inputs` (step 2).
 fn applicable(inputs: &Inputs, row: &Row) -> Option<(Rank, RowTrace)> {
-    let depth = match row.project {
-        None => 0,
-        Some(project) => inputs.chain.iter().position(|step| *step == project)? + 1,
-    };
-    let place_depth = inputs.chain.len();
-    let reaches = match row.project {
-        None => true,
-        Some(_) if depth == place_depth => true,
-        Some(_) => row.applies_to == AppliesTo::ProjectAndSubProjects,
-    };
-    if !reaches {
+    if !row_reaches(row.project, row.applies_to, &inputs.chain) {
         return None;
     }
+    let depth = row
+        .project
+        .and_then(|project| chain_depth(&inputs.chain, project))
+        .unwrap_or(0);
+    let place_depth = inputs.chain.len();
     let rank = Rank {
         depth,
         personal: row.who == Who::Person,

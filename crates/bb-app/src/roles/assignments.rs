@@ -8,7 +8,7 @@ use bb_core::id::{AssignmentId, ProjectId};
 use bb_core::people_kinds::PeopleKind;
 use bb_core::sign_in::SecurityAction;
 use bb_policy::guards::ensure_a_manager_remains;
-use bb_policy::{Authorized, PeopleContext, Permission, Place};
+use bb_policy::{Authorized, PeopleContext, Permission, Place, row_reaches};
 use serde_json::json;
 
 use super::types::{
@@ -267,7 +267,7 @@ pub async fn assignments<S: AuthStore>(
             .project_chain(project)
             .await
             .map_err(|error| internal::<S>(&error))?
-            .unwrap_or_default();
+            .ok_or(AppError::Refused(ErrorCode::NotFound))?;
         for parent in chain.iter().rev().skip(1) {
             let above = ctx
                 .store()
@@ -277,7 +277,7 @@ pub async fn assignments<S: AuthStore>(
             rows.extend(
                 above
                     .into_iter()
-                    .filter(|row| row.applies_to == AppliesTo::ProjectAndSubProjects),
+                    .filter(|row| row_reaches(row.project, row.applies_to, &chain)),
             );
         }
         rows.extend(

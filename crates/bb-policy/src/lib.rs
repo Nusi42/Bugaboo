@@ -25,6 +25,7 @@ mod tree;
 pub use catalogue::{Counts, Kind, NOT_FOR_KEYS, Permission, Topic};
 pub use evaluate::{
     Evaluation, HeldRole, Inputs, Place, RoleData, Row, RowStatus, RowTrace, Who, evaluate,
+    row_reaches,
 };
 pub use explain::{AccessReport, LevelDecision, PermissionDecision, Reason, ReasonRow};
 pub use levels::{

@@ -21,39 +21,18 @@ pub use catalog::*;
 pub use format::{Choice, DEVICE, Format};
 pub use layers::{Layers, OrganizationValue, Resolved, Scope, Source};
 
-/// Where a setting can be set. A lower level overrides a higher one unless it is locked.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub enum Level {
-    /// For the whole Bugaboo server.
-    Organization,
-    /// For one project and its sub-projects.
-    Project,
-    /// For one person (*My settings*).
-    Person,
-}
-
-impl Level {
-    /// The word used when a level is stored.
-    #[must_use]
-    pub const fn code(self) -> &'static str {
-        match self {
-            Self::Organization => "organization",
-            Self::Project => "project",
-            Self::Person => "person",
-        }
-    }
-
-    /// The level stored under `code`.
-    #[must_use]
-    pub fn from_code(code: &str) -> Option<Self> {
-        [Self::Organization, Self::Project, Self::Person]
-            .into_iter()
-            .find(|level| level.code() == code)
+words! {
+    /// Where a setting can be set. A lower level overrides a higher one unless it is locked. The
+    /// word is how a level is stored.
+    pub enum Level {
+        /// For the whole Bugaboo server.
+        Organization => "organization",
+        /// For one project and its sub-projects.
+        Project => "project",
+        /// For one person (*My settings*).
+        Person => "person",
     }
 }
-
-// The three fixed levels.
-impl crate::personal::NotPersonal for Level {}
 
 /// The topics whose settings change how people sign in or what keeps the organization safe.
 const SECURITY_TOPICS: [&str; 2] = ["security", "auth"];

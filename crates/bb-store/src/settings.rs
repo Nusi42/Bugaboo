@@ -16,7 +16,7 @@ use bb_app::settings::SettingsStore;
 use bb_core::event::DomainEvent;
 use bb_core::id::{EntityId, ProjectId, UserId};
 use bb_core::settings::{
-    Layers, Level, OrganizationValue, Scope, Setting, SettingKind, SettingValue,
+    Integer, Layers, Level, OrganizationValue, Scope, Setting, SettingKind, SettingValue, Text,
 };
 use bb_core::technical::TechnicalName;
 use jiff::Timestamp;
@@ -497,6 +497,23 @@ pub(crate) fn resolved<T: SettingKind>(
     setting
         .resolve(Some(&layers.resolve(setting.definition()).value))
         .map_err(|_| StoreError::Corrupt("a setting default"))
+}
+
+/// A whole-number setting in `layers`, cut to its bounds: a value that was stored before the
+/// bounds, or by hand, is cut to them.
+pub(crate) fn resolved_in_bounds(
+    setting: &Setting<Integer>,
+    layers: &Layers,
+) -> Result<i64, StoreError> {
+    Ok(setting.definition().clamp(resolved(setting, layers)?))
+}
+
+/// A list setting in `layers`, cut to the limits of the setting.
+pub(crate) fn resolved_list(
+    setting: &Setting<Text>,
+    layers: &Layers,
+) -> Result<String, StoreError> {
+    Ok(setting.definition().cap_list(&resolved(setting, layers)?))
 }
 
 impl SettingsStore for AuthStorage {

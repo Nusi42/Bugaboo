@@ -31,7 +31,9 @@ use crate::db::{Database, Transaction};
 use crate::error::StoreError;
 use crate::keys::KeyRing;
 use crate::security_log::NewSecurityLogEntry;
-use crate::settings::{Scopes, put_organization_setting, resolved};
+use crate::settings::{
+    Scopes, put_organization_setting, resolved, resolved_in_bounds, resolved_list,
+};
 
 /// The sign-in storage: the database, the keys that protect secrets in it, and the seal of the
 /// security log.
@@ -120,24 +122,15 @@ impl AuthStore for AuthStorage {
     async fn auth_settings(&self) -> Result<AuthSettings, StoreError> {
         // One snapshot of the organization's values: every request that needs a session asks.
         let layers = self.database.setting_layers(&Scopes::default()).await?;
+        // Whole numbers and the list are cut to their bounds: a value that was stored before the
+        // bounds, or by hand, never reaches a use case.
         Ok(AuthSettings {
-            // A value that was stored before the bounds, or by hand, is cut to them.
-            session_idle_minutes: SECURITY_SESSION_IDLE_MINUTES
-                .definition()
-                .clamp(resolved(&SECURITY_SESSION_IDLE_MINUTES, &layers)?),
-            session_absolute_hours: SECURITY_SESSION_ABSOLUTE_HOURS
-                .definition()
-                .clamp(resolved(&SECURITY_SESSION_ABSOLUTE_HOURS, &layers)?),
+            session_idle_minutes: resolved_in_bounds(&SECURITY_SESSION_IDLE_MINUTES, &layers)?,
+            session_absolute_hours: resolved_in_bounds(&SECURITY_SESSION_ABSOLUTE_HOURS, &layers)?,
             sign_up_enabled: resolved(&AUTH_SIGN_UP_ENABLED, &layers)?,
-            sign_up_domains: AUTH_SIGN_UP_DOMAINS
-                .definition()
-                .cap_list(&resolved(&AUTH_SIGN_UP_DOMAINS, &layers)?),
-            access_key_default_days: AUTH_ACCESS_KEY_DEFAULT_DAYS
-                .definition()
-                .clamp(resolved(&AUTH_ACCESS_KEY_DEFAULT_DAYS, &layers)?),
-            access_key_longest_days: AUTH_ACCESS_KEY_LONGEST_DAYS
-                .definition()
-                .clamp(resolved(&AUTH_ACCESS_KEY_LONGEST_DAYS, &layers)?),
+            sign_up_domains: resolved_list(&AUTH_SIGN_UP_DOMAINS, &layers)?,
+            access_key_default_days: resolved_in_bounds(&AUTH_ACCESS_KEY_DEFAULT_DAYS, &layers)?,
+            access_key_longest_days: resolved_in_bounds(&AUTH_ACCESS_KEY_LONGEST_DAYS, &layers)?,
         })
     }
 

@@ -4,8 +4,8 @@
 //! A system use case makes editable copies from it once, at the first start (never a migration);
 //! after that the definition is read only by *Reset to the starting permissions*. The permissions,
 //! field levels, *Who sees people* levels and the order are the tables of architecture §7
-//! (*Starting roles*); the tests below repeat those tables, so a change of one without the other
-//! fails.
+//! (*Starting roles*); the tests below read those tables from the architecture page, so a change of
+//! one without the other fails.
 
 use bb_core::access::{FieldLevel, PeopleLevel};
 use bb_core::fields::Field;
