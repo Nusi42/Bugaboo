@@ -111,7 +111,7 @@ impl Actor {
             Self::Exactly(_) => words::EXACTLY_THE_PERMISSION.to_owned(),
             Self::Nobody => words::NOBODY.to_owned(),
             Self::NoRole => words::NO_ROLE.to_owned(),
-            Self::Role(role) => words::role_actor(role.key()),
+            Self::Role(role) => words::role_actor(role.code()),
             Self::LeadOnParent => words::LEAD_ON_PARENT.to_owned(),
             Self::LeadOnSiblingOnly => words::LEAD_ON_SIBLING_ONLY.to_owned(),
             Self::NoAccessOnTarget => words::NO_ACCESS_ON_TARGET.to_owned(),
@@ -362,9 +362,9 @@ mod tests {
 
     #[test]
     fn the_table_of_the_matrix_is_the_table_of_the_starting_roles() {
-        for role in StartingRole::ALL {
+        for role in StartingRole::ALL.iter().copied() {
             let in_the_code: BTreeSet<Permission> = role.permissions().into_iter().collect();
-            assert_eq!(role_permissions(role), in_the_code, "{}", role.key());
+            assert_eq!(role_permissions(role), in_the_code, "{}", role.code());
         }
     }
 
@@ -385,7 +385,9 @@ mod tests {
             .chain([Actor::Exactly(None)])
             .map(Actor::name)
             .collect();
-        let roles = StartingRole::ALL.map(|role| words::role_actor(role.key()));
+        let roles = StartingRole::ALL
+            .iter()
+            .map(|role| words::role_actor(role.code()));
         let expected: BTreeSet<String> = words::FIXED_ACTORS
             .iter()
             .chain(&words::KEY_ACTORS)

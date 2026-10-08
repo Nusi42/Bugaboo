@@ -8,7 +8,11 @@
 mod access_keys;
 mod account;
 mod ctx;
+mod error;
+mod events;
 mod invitations;
+mod limit;
+mod request_session;
 mod second_factor;
 mod session;
 mod store;
@@ -42,7 +46,7 @@ use crate::roles::{
     PermissionsQuery, RemoveAssignment, ResetRole, RoleDetail, RoleList, RoleQuery, RoleView,
     RolesQuery, SetFieldLevel, SetPeopleLevel, assign_role, assignment_choices, assignments,
     change_role, check_access, copy_role, delete_role, make_role, permissions, remove_assignment,
-    reset_role, role, role_levels, roles, set_field_level, set_people_level,
+    reset_role, role, role_levels, roles, set_level,
 };
 use crate::settings::{
     ChangeSetting, LockSetting, ResetSetting, SettingList, SettingView, SettingsQuery,
@@ -56,12 +60,15 @@ pub use access_keys::{
     require_session, see_server_status,
 };
 pub use account::{accept_invitation, change_password, complete_setup, issue_setup_code, sign_up};
-pub use ctx::{AppError, AuthServices, Ctx, FailureLimit, NETWORK_KEY_PREFIX, RequestInfo};
-pub(crate) use ctx::{by, change_failed, changed, entity, fixed_entity, internal, set_to};
+pub use ctx::{AuthServices, Ctx, RequestInfo};
+pub use error::AppError;
+pub(crate) use error::{Stops, change_failed, if_there, internal};
+pub(crate) use events::{by, changed, entity, fixed_entity, set_to};
 pub use invitations::{
     change_sign_up_policy, create_invitation, invitation_lookup, invitations, revoke_invitation,
     sign_up_policy,
 };
+pub use limit::{FailureLimit, NETWORK_KEY_PREFIX};
 pub use second_factor::{
     BACKUP_CODE_COUNT, MAX_PASSKEYS, add_passkey, confirm_code_app, passkey_registration_options,
     passkey_second_step_options, passkey_sign_in, passkey_sign_in_options, remove_code_app,
@@ -72,7 +79,9 @@ pub use session::{
     sign_in, sign_out, sign_out_everywhere, status,
 };
 pub use store::{
-    AccessKeyRecord, Account, AuthSettings, AuthStore, PeoplePosition, SecurityEvent, SessionRecord,
+    AccessKeyRecord, AccessKeyStore, Account, AccountStore, AuthSettings, AuthStore,
+    InvitationStore, PeoplePosition, SearchIn, SecondStepStore, SecurityEvent, SessionRecord,
+    SessionStore,
 };
 pub use types::*;
 
@@ -82,10 +91,12 @@ pub type Answer<'a, T> = Pin<Box<dyn Future<Output = Result<T, AppError>> + Send
 /// Declares [`AuthApi`] and implements it for [`AuthServices`]: one line per use case, the
 /// name of the function above, its input and its output.
 macro_rules! use_cases {
-    ($($(#[$meta:meta])* $name:ident($input:ty) -> $output:ty;)+) => {
-        /// Every use case of [`AuthApi`] by name, with the name of its input type: what tests read to
-        /// make sure none is left out (a use case whose input ends in `Query` only reads).
-        pub const USE_CASES: &[(&str, &str)] = &[$((stringify!($name), stringify!($input))),+];
+    ($($(#[$meta:meta])* $name:ident($input:ty) -> $output:ty $(= $via:ident)?;)+) => {
+        /// Every use case of [`AuthApi`] by the name of the function that does it, with the name
+        /// of its input type: what tests read to make sure none is left out (a use case whose
+        /// input ends in `Query` only reads). Two requests may share one function (`= via`).
+        pub const USE_CASES: &[(&str, &str)] =
+            &[$((function_name!($name $($via)?), stringify!($input))),+];
 
         /// Every use case the HTTP layer calls, with the store behind it erased.
         pub trait AuthApi: Send + Sync {
@@ -104,9 +115,29 @@ macro_rules! use_cases {
 
             $(fn $name(&self, request: RequestInfo, input: $input) -> Answer<'_, $output>
             {
-                Box::pin(async move { $name(&self.ctx(request), input).await })
+                Box::pin(async move { function!($name $($via)?)(&self.ctx(request), input).await })
             })+
         }
+    };
+}
+
+/// The name of the function that does a use case: its own name, or the one it shares.
+macro_rules! function_name {
+    ($name:ident) => {
+        stringify!($name)
+    };
+    ($name:ident $via:ident) => {
+        stringify!($via)
+    };
+}
+
+/// The function that does a use case, as a path to call.
+macro_rules! function {
+    ($name:ident) => {
+        $name
+    };
+    ($name:ident $via:ident) => {
+        $via
     };
 }
 
@@ -234,9 +265,9 @@ use_cases! {
     /// Lists *Who has which role* for a place.
     assignments(AssignmentsQuery) -> Authorized<AssignmentList>;
     /// Sets or takes away the level of a field for a role.
-    set_field_level(SetFieldLevel) -> Done;
+    set_field_level(SetFieldLevel) -> Done = set_level;
     /// Sets or takes away how a role sees a kind of people information.
-    set_people_level(SetPeopleLevel) -> Done;
+    set_people_level(SetPeopleLevel) -> Done = set_level;
     /// Lists the levels a role has set in a place.
     role_levels(LevelsQuery) -> Authorized<Levels>;
     /// Checks what a person can do in a place, and why.

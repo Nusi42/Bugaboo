@@ -17,7 +17,7 @@ use std::collections::BTreeSet;
 
 use bb_core::ErrorCode;
 use bb_core::access::Role;
-use bb_core::event::FieldChange;
+use bb_core::event::{FieldChange, RecordKind};
 use bb_core::id::RoleId;
 use bb_core::sign_in::SecurityAction;
 use bb_core::technical::TechnicalName;
@@ -28,8 +28,7 @@ use serde_json::json;
 pub use assignments::{assign_role, assignments, remove_assignment};
 pub use check::*;
 pub use copy::{CopyRole, copy_role};
-pub(crate) use levels::place_of;
-pub use levels::{role_levels, set_field_level, set_people_level};
+pub use levels::{role_levels, set_level};
 pub use screens::{
     PermissionCatalogue, PermissionView, PermissionsQuery, RoleDetail, RoleQuery,
     assignment_choices, permissions, role,
@@ -37,8 +36,10 @@ pub use screens::{
 pub use types::*;
 
 use crate::access::{RoleRecord, held_in};
-use crate::auth::{AppError, AuthStore, Ctx, Done, by, changed, entity, internal, set_to};
-use crate::people::{clean_name, stopped};
+use crate::auth::{
+    AppError, AuthStore, Ctx, Done, Stops, by, change_failed, changed, entity, internal, set_to,
+};
+use crate::input::clean_name;
 
 /// The keys of the permissions in a set: what an event and a view say.
 fn keys(permissions: &BTreeSet<Permission>) -> Vec<&'static str> {
@@ -71,6 +72,17 @@ impl<S: AuthStore> Ctx<'_, S> {
             .await
             .map_err(|error| internal::<S>(&error))?
             .ok_or(AppError::Refused(ErrorCode::NotFound))
+    }
+}
+
+impl<S: AuthStore> Ctx<'_, S> {
+    /// The role as a name in a sentence, or `resource.not_found` for a role that is gone (a row
+    /// that names a role the store does not have was read between two changes).
+    pub(crate) async fn role_ref(&self, id: RoleId) -> Result<RoleRef, AppError> {
+        Ok(RoleRef {
+            id,
+            name: self.role_or_missing(id).await?.role.name,
+        })
     }
 }
 
@@ -115,7 +127,7 @@ pub async fn make_role<S: AuthStore>(
     };
     let event = ctx.event(
         by(actor.person.id),
-        entity("role", role.id)?,
+        entity(RecordKind::Role, role.id),
         vec![
             set_to("name", json!(role.name)),
             set_to("permissions", json!(keys(&permissions))),
@@ -138,11 +150,16 @@ pub async fn make_role<S: AuthStore>(
             })
         })
         .await
-        .map_err(|error| stopped::<S>(&error, ErrorCode::NotFound, ErrorCode::NameTaken))?;
+        .map_err(|error| {
+            change_failed::<S>(
+                &error,
+                Stops::new(ErrorCode::NotFound, ErrorCode::NameTaken),
+            )
+        })?;
     ctx.note(
         SecurityAction::RoleMade,
         Some(actor.person.id),
-        Some(entity("role", role.id)?),
+        Some(entity(RecordKind::Role, role.id)),
     )
     .await;
     Ok(access.authorize(view(&RoleRecord { role, permissions })))
@@ -176,7 +193,7 @@ pub async fn change_role<S: AuthStore>(
     let id = before.role.id;
     let event = ctx.event(
         by(actor.person.id),
-        entity("role", id)?,
+        entity(RecordKind::Role, id),
         vec![
             FieldChange {
                 field: "name".to_owned(),
@@ -226,11 +243,16 @@ pub async fn change_role<S: AuthStore>(
             })
         })
         .await
-        .map_err(|error| stopped::<S>(&error, ErrorCode::NotFound, ErrorCode::NameTaken))?;
+        .map_err(|error| {
+            change_failed::<S>(
+                &error,
+                Stops::new(ErrorCode::NotFound, ErrorCode::NameTaken),
+            )
+        })?;
     ctx.note(
         SecurityAction::RoleChanged,
         Some(actor.person.id),
-        Some(entity("role", id)?),
+        Some(entity(RecordKind::Role, id)),
     )
     .await;
     let mut role = before.role;
@@ -264,7 +286,7 @@ pub async fn delete_role<S: AuthStore>(
     };
     let event = ctx.event(
         by(actor.person.id),
-        entity("role", id)?,
+        entity(RecordKind::Role, id),
         vec![
             changed("role"),
             set_to(
@@ -306,20 +328,20 @@ pub async fn delete_role<S: AuthStore>(
             })
         })
         .await
-        .map_err(|error| stopped::<S>(&error, ErrorCode::NotFound, ErrorCode::NotFound))?;
+        .map_err(|error| change_failed::<S>(&error, Stops::both(ErrorCode::NotFound)))?;
     // Every row that the replacement made is a permission change of its own (ADR-0025, decision 9).
     for row in &made {
         ctx.note(
             SecurityAction::AssignmentMade,
             Some(actor.person.id),
-            Some(entity("assignment", row.id)?),
+            Some(entity(RecordKind::Assignment, row.id)),
         )
         .await;
     }
     ctx.note(
         SecurityAction::RoleDeleted,
         Some(actor.person.id),
-        Some(entity("role", id)?),
+        Some(entity(RecordKind::Role, id)),
     )
     .await;
     Ok(Done)
@@ -347,7 +369,7 @@ pub async fn reset_role<S: AuthStore>(
         .starting
         .as_ref()
         .map(TechnicalName::as_str)
-        .and_then(StartingRole::from_key)
+        .and_then(StartingRole::from_code)
         .ok_or(ErrorCode::InvalidRequest)?;
     let permissions: BTreeSet<Permission> = starting.permissions().into_iter().collect();
     let fields: Vec<_> = bb_core::fields::Field::ALL
@@ -361,7 +383,7 @@ pub async fn reset_role<S: AuthStore>(
     let id = before.role.id;
     let event = ctx.event(
         by(actor.person.id),
-        entity("role", id)?,
+        entity(RecordKind::Role, id),
         vec![FieldChange {
             field: "permissions".to_owned(),
             before: Some(json!(keys(&before.permissions))),
@@ -409,11 +431,11 @@ pub async fn reset_role<S: AuthStore>(
             })
         })
         .await
-        .map_err(|error| stopped::<S>(&error, ErrorCode::NotFound, ErrorCode::NotFound))?;
+        .map_err(|error| change_failed::<S>(&error, Stops::both(ErrorCode::NotFound)))?;
     ctx.note(
         SecurityAction::RoleReset,
         Some(actor.person.id),
-        Some(entity("role", id)?),
+        Some(entity(RecordKind::Role, id)),
     )
     .await;
     let mut role = before.role;

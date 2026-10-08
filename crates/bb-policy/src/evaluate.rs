@@ -25,6 +25,7 @@ use bb_core::id::{AssignmentId, GroupId, ProjectId, RoleId, UserId};
 use bb_core::people_kinds::PeopleKind;
 
 use crate::catalogue::{Counts, Permission};
+use crate::levels::{LevelRules, LevelSubject, Levels, chain_depth};
 
 /// Where something is decided: for the whole organization, or in a project.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -33,6 +34,14 @@ pub enum Place {
     Organization,
     /// One project and, through its parents, everything above it.
     Project(ProjectId),
+}
+
+impl From<Option<ProjectId>> for Place {
+    /// The place of a record that sits in a project, or at the top for `None` (a row of *Who has
+    /// which role*, the parent of a project, the project of a query).
+    fn from(project: Option<ProjectId>) -> Self {
+        project.map_or(Self::Organization, Self::Project)
+    }
 }
 
 impl Place {
@@ -85,32 +94,6 @@ pub struct RoleData {
     pub two_step: bool,
 }
 
-/// The level of a field for a role: in a project (`Some`) or the role's own (`None`).
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub struct FieldRule {
-    /// The project, or `None` for the role's own level.
-    pub project: Option<ProjectId>,
-    /// The role.
-    pub role: RoleId,
-    /// The field.
-    pub field: Field,
-    /// The level.
-    pub level: FieldLevel,
-}
-
-/// How a role sees people of a kind: in a project (`Some`) or the role's own (`None`).
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub struct PeopleRule {
-    /// The project, or `None` for the role's own level.
-    pub project: Option<ProjectId>,
-    /// The role.
-    pub role: RoleId,
-    /// The kind of people information.
-    pub kind: PeopleKind,
-    /// The level.
-    pub level: PeopleLevel,
-}
-
 /// Everything the engine needs to decide for one person at one place; the store loads it with one
 /// call.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -126,10 +109,9 @@ pub struct Inputs {
     pub rows: Vec<Row>,
     /// The roles the rows (and the level rules) name.
     pub roles: Vec<RoleData>,
-    /// The field levels of those roles for the organization and for the projects of the chain.
-    pub field_rules: Vec<FieldRule>,
-    /// The people levels of those roles for the organization and for the projects of the chain.
-    pub people_rules: Vec<PeopleRule>,
+    /// The field levels and the people levels of those roles for the organization and for the
+    /// projects of the chain.
+    pub rules: LevelRules,
 }
 
 /// The rank of a row (step 3): the depth first, then the person above a group.
@@ -181,28 +163,6 @@ pub struct HeldRole {
     pub position: i64,
 }
 
-/// Where the level of a field or of a kind came from, for one role.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum LevelSource {
-    /// Set for a project (the place itself or the nearest parent that set one).
-    Project(ProjectId),
-    /// The role's own level, for the whole organization.
-    RoleOwn,
-    /// Nothing is set: the level is the closed one (default deny).
-    Unset,
-}
-
-/// What one role says about one field or kind of people information.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub struct RoleLevel<L> {
-    /// The role.
-    pub role: RoleId,
-    /// Its level.
-    pub level: L,
-    /// Where it was set.
-    pub source: LevelSource,
-}
-
 /// The result: what a person may do at a place, and how they see fields and people.
 ///
 /// Only [`evaluate`] makes one (and [`Evaluation::none`] for nobody), so everything built from an
@@ -216,10 +176,8 @@ pub struct Evaluation {
     /// *Decide who has which role* that came only from a row that a *No access* below it removed.
     pub(crate) kept_decide_roles: bool,
     pub(crate) roles: Vec<HeldRole>,
-    pub(crate) fields: BTreeMap<Field, FieldLevel>,
-    pub(crate) people: BTreeMap<PeopleKind, PeopleLevel>,
-    pub(crate) field_sources: BTreeMap<Field, Vec<RoleLevel<FieldLevel>>>,
-    pub(crate) people_sources: BTreeMap<PeopleKind, Vec<RoleLevel<PeopleLevel>>>,
+    pub(crate) fields: Levels<Field>,
+    pub(crate) people: Levels<PeopleKind>,
     pub(crate) trace: Vec<RowTrace>,
     /// The permissions of every role the rows name, for *Check access*.
     pub(crate) all_role_permissions: BTreeMap<RoleId, BTreeSet<Permission>>,
@@ -315,8 +273,8 @@ pub fn evaluate(inputs: &Inputs) -> Evaluation {
         .iter()
         .map(|role| (role.id, role.permissions.clone()))
         .collect();
-    let (fields, field_sources) = field_mask(inputs, &held);
-    let (people, people_sources) = people_levels(inputs, &held);
+    let fields = Levels::of_roles(&inputs.chain, inputs.rules.of(), &held);
+    let people = Levels::of_roles(&inputs.chain, inputs.rules.of(), &held);
     Evaluation {
         person: Some(inputs.person),
         place: inputs.place,
@@ -333,29 +291,36 @@ pub fn evaluate(inputs: &Inputs) -> Evaluation {
             .collect(),
         fields,
         people,
-        field_sources,
-        people_sources,
         trace: traced.into_iter().map(|(_, trace)| trace).collect(),
         all_role_permissions,
         narrowing: None,
     }
 }
 
+/// Whether a row on `project` (`None` for the whole organization) that counts `applies_to` reaches
+/// the place whose projects from the top down are `chain` (step 2): a row for the whole
+/// organization, a row on the place itself, and a row on a parent that says *and its
+/// sub-projects*. The one answer to "which rows count here", also for the screen that lists them.
+#[must_use]
+pub fn row_reaches(project: Option<ProjectId>, applies_to: AppliesTo, chain: &[ProjectId]) -> bool {
+    match project {
+        None => true,
+        Some(project) => chain_depth(chain, project).is_some_and(|depth| {
+            depth == chain.len() || applies_to == AppliesTo::ProjectAndSubProjects
+        }),
+    }
+}
+
 /// The row with its rank, when it applies at the place of `inputs` (step 2).
 fn applicable(inputs: &Inputs, row: &Row) -> Option<(Rank, RowTrace)> {
-    let depth = match row.project {
-        None => 0,
-        Some(project) => inputs.chain.iter().position(|step| *step == project)? + 1,
-    };
-    let place_depth = inputs.chain.len();
-    let reaches = match row.project {
-        None => true,
-        Some(_) if depth == place_depth => true,
-        Some(_) => row.applies_to == AppliesTo::ProjectAndSubProjects,
-    };
-    if !reaches {
+    if !row_reaches(row.project, row.applies_to, &inputs.chain) {
         return None;
     }
+    let depth = row
+        .project
+        .and_then(|project| chain_depth(&inputs.chain, project))
+        .unwrap_or(0);
+    let place_depth = inputs.chain.len();
     let rank = Rank {
         depth,
         personal: row.who == Who::Person,
@@ -380,101 +345,6 @@ pub(crate) const fn counts_here(permission: Permission, place: Place) -> bool {
     }
 }
 
-/// The depth of a project of the chain, from 1; `None` for another project.
-fn chain_depth(chain: &[ProjectId], project: ProjectId) -> Option<usize> {
-    chain
-        .iter()
-        .position(|step| *step == project)
-        .map(|at| at + 1)
-}
-
-/// The nearest rule of a role: the project of the chain closest to the place that has one, else
-/// the role's own. The one walk of steps 7 and 8, also read
-/// by the tables of what roles see.
-#[must_use]
-pub fn nearest_rule<R: Copy>(
-    chain: &[ProjectId],
-    rules: impl Iterator<Item = (Option<ProjectId>, R)>,
-) -> Option<(LevelSource, R)> {
-    let mut best: Option<(usize, LevelSource, R)> = None;
-    for (project, rule) in rules {
-        let (depth, source) = match project {
-            None => (0, LevelSource::RoleOwn),
-            Some(project) => match chain_depth(chain, project) {
-                Some(depth) => (depth, LevelSource::Project(project)),
-                None => continue,
-            },
-        };
-        if best.as_ref().is_none_or(|(deepest, _, _)| depth > *deepest) {
-            best = Some((depth, source, rule));
-        }
-    }
-    best.map(|(_, source, rule)| (source, rule))
-}
-
-type FieldSources = BTreeMap<Field, Vec<RoleLevel<FieldLevel>>>;
-type PeopleSources = BTreeMap<PeopleKind, Vec<RoleLevel<PeopleLevel>>>;
-
-/// Step 7: for each field, the level each remaining role sets on the nearest project of the
-/// chain, else its own; the mask is the highest of them.
-fn field_mask(inputs: &Inputs, held: &[&RoleData]) -> (BTreeMap<Field, FieldLevel>, FieldSources) {
-    let mut levels = BTreeMap::new();
-    let mut sources: FieldSources = BTreeMap::new();
-    for field in Field::ALL.iter().copied() {
-        let mut highest = FieldLevel::Hidden;
-        let mut per_role = Vec::new();
-        for role in held {
-            let rules = inputs
-                .field_rules
-                .iter()
-                .filter(|rule| rule.role == role.id && rule.field == field)
-                .map(|rule| (rule.project, rule.level));
-            let (source, level) = nearest_rule(&inputs.chain, rules)
-                .unwrap_or((LevelSource::Unset, FieldLevel::Hidden));
-            highest = highest.max(level);
-            per_role.push(RoleLevel {
-                role: role.id,
-                level,
-                source,
-            });
-        }
-        levels.insert(field, highest);
-        sources.insert(field, per_role);
-    }
-    (levels, sources)
-}
-
-/// Step 8: the same for *Who sees people*; the most open level of the remaining roles counts.
-fn people_levels(
-    inputs: &Inputs,
-    held: &[&RoleData],
-) -> (BTreeMap<PeopleKind, PeopleLevel>, PeopleSources) {
-    let mut levels = BTreeMap::new();
-    let mut sources: PeopleSources = BTreeMap::new();
-    for kind in PeopleKind::ALL.iter().copied() {
-        let mut highest = PeopleLevel::Hidden;
-        let mut per_role = Vec::new();
-        for role in held {
-            let rules = inputs
-                .people_rules
-                .iter()
-                .filter(|rule| rule.role == role.id && rule.kind == kind)
-                .map(|rule| (rule.project, rule.level));
-            let (source, level) = nearest_rule(&inputs.chain, rules)
-                .unwrap_or((LevelSource::Unset, PeopleLevel::Hidden));
-            highest = highest.max(level);
-            per_role.push(RoleLevel {
-                role: role.id,
-                level,
-                source,
-            });
-        }
-        levels.insert(kind, highest);
-        sources.insert(kind, per_role);
-    }
-    (levels, sources)
-}
-
 impl Evaluation {
     /// What a person may do who holds nothing at the organization: no permission, every field
     /// and every kind of people information closed (default deny). For a session that may only
@@ -487,8 +357,7 @@ impl Evaluation {
             chain: Vec::new(),
             rows: Vec::new(),
             roles: Vec::new(),
-            field_rules: Vec::new(),
-            people_rules: Vec::new(),
+            rules: LevelRules::default(),
         })
     }
 
@@ -557,23 +426,23 @@ impl Evaluation {
         self.roles.first().map(|role| role.name.as_str())
     }
 
-    /// The level of a field (the highest of the roles; at most *Can see* for an access key that
-    /// may only see).
+    /// The level of a field or of a kind of people information: the highest of the roles that
+    /// count (at most *Can see* for an access key that may only see, for fields).
     #[must_use]
-    pub fn field_level(&self, field: Field) -> FieldLevel {
-        self.fields
-            .get(&field)
-            .copied()
-            .unwrap_or(FieldLevel::Hidden)
+    pub fn level<K: LevelSubject>(&self, subject: K) -> K::Level {
+        K::levels_in(self).level(subject)
     }
 
-    /// The raw level for a kind of people information (the most open of the roles).
+    /// The level of a field (see [`Self::level`]).
+    #[must_use]
+    pub fn field_level(&self, field: Field) -> FieldLevel {
+        self.level(field)
+    }
+
+    /// The raw level for a kind of people information (see [`Self::level`]).
     #[must_use]
     pub fn kind_level(&self, kind: PeopleKind) -> PeopleLevel {
-        self.people
-            .get(&kind)
-            .copied()
-            .unwrap_or(PeopleLevel::Hidden)
+        self.level(kind)
     }
 
     /// The rows of the evaluation with what was made of each, strongest first.

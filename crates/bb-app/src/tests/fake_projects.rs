@@ -3,10 +3,9 @@
 
 use bb_core::id::{ProjectId, UserId};
 use bb_core::project::{Project, ProjectAlias, ShortName};
-use bb_policy::Policy;
+use bb_policy::{LevelRules, Policy, RoleData};
 
 use super::fake::{FakeError, FakeStore, State, Tx};
-use super::fake_policy::role_data;
 use crate::projects::{Found, ProjectStore};
 
 /// The projects, in the order of their IDs.
@@ -16,9 +15,10 @@ fn tree_of(state: &State) -> Vec<Project> {
     projects
 }
 
-/// Everything the engine reads for `person`, or for everybody when `None`.
-fn policy_of(state: &State, person: Option<UserId>) -> Policy {
-    let groups: Vec<_> = state
+/// Everything the engine reads for `person`, or for everybody when `None` (only everybody's policy
+/// holds the levels of the roles).
+pub(super) fn policy_of(state: &State, person: Option<UserId>) -> Policy {
+    let members: Vec<_> = state
         .members
         .iter()
         .filter(|member| person.is_none_or(|person| member.person == person))
@@ -32,7 +32,7 @@ fn policy_of(state: &State, person: Option<UserId>) -> Policy {
                 row.person == Some(person)
                     || row
                         .group
-                        .is_some_and(|group| groups.iter().any(|member| member.group == group))
+                        .is_some_and(|group| members.iter().any(|member| member.group == group))
             })
         })
         .cloned()
@@ -42,40 +42,16 @@ fn policy_of(state: &State, person: Option<UserId>) -> Policy {
         .roles
         .iter()
         .filter(|record| person.is_none() || named.contains(&record.role.id))
-        .map(role_data)
+        .map(RoleData::from)
         .collect();
-    let with_levels = person.is_none();
     Policy {
         assignments,
-        members: groups,
+        members,
         roles,
-        field_rules: if with_levels {
-            state
-                .field_levels
-                .iter()
-                .map(|(role, project, field, level)| bb_policy::FieldRule {
-                    project: *project,
-                    role: *role,
-                    field: *field,
-                    level: *level,
-                })
-                .collect()
+        rules: if person.is_none() {
+            state.rules.clone()
         } else {
-            Vec::new()
-        },
-        people_rules: if with_levels {
-            state
-                .people_levels
-                .iter()
-                .map(|(role, project, kind, level)| bb_policy::PeopleRule {
-                    project: *project,
-                    role: *role,
-                    kind: *kind,
-                    level: *level,
-                })
-                .collect()
-        } else {
-            Vec::new()
+            LevelRules::default()
         },
     }
 }
@@ -129,15 +105,6 @@ impl ProjectStore for FakeStore {
 
     async fn policy_in(tx: &mut Tx) -> Result<Policy, FakeError> {
         Ok(policy_of(&tx.state, None))
-    }
-
-    async fn project_in(tx: &mut Tx, id: ProjectId) -> Result<Option<Project>, FakeError> {
-        Ok(tx
-            .state
-            .projects
-            .iter()
-            .find(|project| project.id == id)
-            .cloned())
     }
 
     async fn short_name_owner_in(

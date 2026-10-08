@@ -3,11 +3,15 @@
 
 use bb_auth::{ChallengeId, HumanCode, Purpose, TotpSecret};
 use bb_core::ErrorCode;
+use bb_core::event::RecordKind;
 use bb_core::id::PasskeyId;
 use bb_core::sign_in::{SecurityAction, SessionStage, StoredPasskey, TwoStep};
+use bb_core::text::LABEL_MAX;
 use serde_json::json;
 
-use super::ctx::{AppError, Ctx, by, change_failed, changed, entity, internal, set_to};
+use super::ctx::Ctx;
+use super::error::{AppError, Stops, change_failed, internal};
+use super::events::{by, changed, entity, set_to};
 use super::store::AuthStore;
 use super::types::{
     AddPasskey, BackupCodes, CodeAppSetup, ConfirmCodeApp, Done, MAX_PASSKEYS_LISTED,
@@ -15,13 +19,12 @@ use super::types::{
     PasskeySignInQuery, PasskeyView, RemoveCodeApp, RemovePasskey, RenewBackupCodes, StartCodeApp,
     Started, TwoStepQuery, TwoStepStatus,
 };
+use crate::input::clean_text;
 
 /// How many backup codes a person gets.
 pub const BACKUP_CODE_COUNT: usize = 10;
 /// How many passkeys one person can have.
 pub const MAX_PASSKEYS: usize = 20;
-/// The longest name of a passkey, in characters.
-const MAX_LABEL_CHARS: usize = 64;
 
 fn view(passkey: &StoredPasskey) -> PasskeyView {
     PasskeyView {
@@ -142,15 +145,24 @@ pub async fn passkey_sign_in<S: AuthStore>(
 ) -> Result<Started, AppError> {
     let rejected = || AppError::Refused(ErrorCode::PasskeyRejected);
     let outcome = async {
-        let id = ChallengeId::parse(&input.challenge_id).ok_or(bb_auth::AuthError::Challenge)?;
-        let named = ctx.passkeys()?.identify(&input.credential)?;
+        let id = ChallengeId::parse(&input.challenge_id).ok_or_else(rejected)?;
+        let named = ctx
+            .passkeys()?
+            .identify(&input.credential)
+            .map_err(challenge_failed)?;
         Ok::<_, AppError>((id, named))
     }
     .await;
-    let Ok((challenge, named)) = outcome else {
-        ctx.note(SecurityAction::PasskeySignInFailed, None, None)
-            .await;
-        return Err(rejected());
+    let (challenge, named) = match outcome {
+        Ok(found) => found,
+        // Only what does not check out is written down and answered alike; a failure of the
+        // server is not turned into a rejection.
+        Err(AppError::Refused(ErrorCode::PasskeyRejected)) => {
+            ctx.note(SecurityAction::PasskeySignInFailed, None, None)
+                .await;
+            return Err(rejected());
+        }
+        Err(error) => return Err(error),
     };
     let (stored, credentials) = ctx.credentials(named.person).await?;
     let check =
@@ -183,7 +195,7 @@ pub async fn passkey_sign_in<S: AuthStore>(
         .await?;
     let event = ctx.event(
         by(person.id),
-        entity("session", new.session.id)?,
+        entity(RecordKind::Session, new.session.id),
         vec![set_to("stage", json!(SessionStage::Active.code()))],
     )?;
     let (store, session, now) = (ctx.store(), new.session.clone(), ctx.now());
@@ -200,11 +212,11 @@ pub async fn passkey_sign_in<S: AuthStore>(
             })
         })
         .await
-        .map_err(|error| change_failed::<S>(&error, None))?;
+        .map_err(|error| change_failed::<S>(&error, Stops::NONE))?;
     ctx.note(
         SecurityAction::PasskeySignInSucceeded,
         Some(person.id),
-        Some(entity("session", new.session.id)?),
+        Some(entity(RecordKind::Session, new.session.id)),
     )
     .await;
     ctx.started(&new, &person, &settings, None)
@@ -245,7 +257,7 @@ pub async fn start_code_app<S: AuthStore>(
     };
     let event = ctx.event(
         by(person.id),
-        entity("person", person.id)?,
+        entity(RecordKind::Person, person.id),
         vec![changed("two_step")],
     )?;
     let store = ctx.store();
@@ -254,7 +266,7 @@ pub async fn start_code_app<S: AuthStore>(
             Box::pin(async move { S::upsert_two_step(transaction, &step).await })
         })
         .await
-        .map_err(|error| change_failed::<S>(&error, None))?;
+        .map_err(|error| change_failed::<S>(&error, Stops::NONE))?;
     let enrolment = secret.enrolment(&ctx.services.product_name, &person.email)?;
     Ok(CodeAppSetup {
         otpauth_url: (*enrolment.otpauth_url).clone(),
@@ -313,7 +325,7 @@ pub async fn confirm_code_app<S: AuthStore>(
     let (shown, hashes) = ctx.unless_internal(&slot, new_backup_codes())?;
     let event = ctx.event(
         by(person),
-        entity("person", person)?,
+        entity(RecordKind::Person, person),
         vec![changed("two_step")],
     )?;
     let store = ctx.store();
@@ -328,7 +340,7 @@ pub async fn confirm_code_app<S: AuthStore>(
             })
         })
         .await
-        .map_err(|error| change_failed::<S>(&error, Some(ErrorCode::WrongSecondStepCode)));
+        .map_err(|error| change_failed::<S>(&error, Stops::both(ErrorCode::WrongSecondStepCode)));
     ctx.unless_internal(&slot, written)?;
     ctx.slot_succeeded(slot);
     ctx.note(SecurityAction::TwoStepEnabled, Some(person), None)
@@ -349,7 +361,7 @@ pub async fn remove_code_app<S: AuthStore>(
     let person = record.person.id;
     let event = ctx.event(
         by(person),
-        entity("person", person)?,
+        entity(RecordKind::Person, person),
         vec![changed("two_step")],
     )?;
     let store = ctx.store();
@@ -358,7 +370,7 @@ pub async fn remove_code_app<S: AuthStore>(
             Box::pin(async move { S::delete_two_step(transaction, person).await })
         })
         .await
-        .map_err(|error| change_failed::<S>(&error, None))?;
+        .map_err(|error| change_failed::<S>(&error, Stops::NONE))?;
     ctx.store()
         .delete_totp_secret(person)
         .await
@@ -391,7 +403,7 @@ pub async fn renew_backup_codes<S: AuthStore>(
     let (shown, hashes) = new_backup_codes()?;
     let event = ctx.event(
         by(person),
-        entity("person", person)?,
+        entity(RecordKind::Person, person),
         vec![changed("backup_codes")],
     )?;
     let store = ctx.store();
@@ -400,7 +412,7 @@ pub async fn renew_backup_codes<S: AuthStore>(
             Box::pin(async move { S::replace_backup_codes(transaction, person, &hashes).await })
         })
         .await
-        .map_err(|error| change_failed::<S>(&error, None))?;
+        .map_err(|error| change_failed::<S>(&error, Stops::NONE))?;
     ctx.note(SecurityAction::BackupCodesRenewed, Some(person), None)
         .await;
     Ok(BackupCodes(shown))
@@ -446,13 +458,7 @@ pub async fn add_passkey<S: AuthStore>(
     let record = ctx.active_to_set_up(&input.session_token).await?;
     ctx.confirm_password(&record.person, input.password).await?;
     let person = record.person.id;
-    let label = input.label.trim().to_owned();
-    if label.is_empty()
-        || label.chars().count() > MAX_LABEL_CHARS
-        || label.chars().any(char::is_control)
-    {
-        return Err(ErrorCode::InvalidRequest.into());
-    }
+    let label = clean_text(&input.label, LABEL_MAX)?;
     let (existing, _) = ctx.credentials(person).await?;
     if existing.len() >= MAX_PASSKEYS {
         return Err(ErrorCode::InvalidRequest.into());
@@ -474,7 +480,7 @@ pub async fn add_passkey<S: AuthStore>(
     };
     let event = ctx.event(
         by(person),
-        entity("passkey", passkey.id)?,
+        entity(RecordKind::Passkey, passkey.id),
         vec![changed("passkey")],
     )?;
     let (store, stored) = (ctx.store(), passkey.clone());
@@ -483,11 +489,11 @@ pub async fn add_passkey<S: AuthStore>(
             Box::pin(async move { S::insert_passkey(transaction, &stored).await })
         })
         .await
-        .map_err(|error| change_failed::<S>(&error, Some(ErrorCode::PasskeyRejected)))?;
+        .map_err(|error| change_failed::<S>(&error, Stops::both(ErrorCode::PasskeyRejected)))?;
     ctx.note(
         SecurityAction::PasskeyAdded,
         Some(person),
-        Some(entity("passkey", passkey.id)?),
+        Some(entity(RecordKind::Passkey, passkey.id)),
     )
     .await;
     Ok(view(&passkey))
@@ -506,7 +512,11 @@ pub async fn remove_passkey<S: AuthStore>(
     ctx.confirm_password(&record.person, input.password).await?;
     let person = record.person.id;
     let id = input.passkey_id;
-    let event = ctx.event(by(person), entity("passkey", id)?, vec![changed("passkey")])?;
+    let event = ctx.event(
+        by(person),
+        entity(RecordKind::Passkey, id),
+        vec![changed("passkey")],
+    )?;
     let store = ctx.store();
     store
         .record_change(&event, move |transaction| {
@@ -519,11 +529,11 @@ pub async fn remove_passkey<S: AuthStore>(
             })
         })
         .await
-        .map_err(|error| change_failed::<S>(&error, Some(ErrorCode::NotFound)))?;
+        .map_err(|error| change_failed::<S>(&error, Stops::both(ErrorCode::NotFound)))?;
     ctx.note(
         SecurityAction::PasskeyRemoved,
         Some(person),
-        Some(entity("passkey", id)?),
+        Some(entity(RecordKind::Passkey, id)),
     )
     .await;
     Ok(Done)

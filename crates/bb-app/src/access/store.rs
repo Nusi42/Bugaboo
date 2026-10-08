@@ -15,11 +15,11 @@ use bb_core::id::{AssignmentId, GroupId, ProjectId, RoleId, UserId};
 use bb_core::people_kinds::PeopleKind;
 use bb_core::project::{Project, ShortName};
 use bb_policy::guards::OrganizationState;
-use bb_policy::{FieldRule, Inputs, PeopleRule, Permission, Place};
+use bb_policy::{Inputs, LevelRules, LevelSubject, Permission, Place, RoleData};
 use jiff::Timestamp;
 
 use crate::ports::ChangeStore;
-use crate::store_macros::{reads, writes};
+use crate::store_macros::{queries, reads, writes};
 
 /// A role with its permissions, as stored.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -30,69 +30,86 @@ pub struct RoleRecord {
     pub permissions: BTreeSet<Permission>,
 }
 
+impl From<RoleRecord> for RoleData {
+    fn from(record: RoleRecord) -> Self {
+        Self {
+            id: record.role.id,
+            name: record.role.name,
+            position: record.role.position,
+            permissions: record.permissions,
+            two_step: record.role.two_step,
+        }
+    }
+}
+
+impl From<&RoleRecord> for RoleData {
+    fn from(record: &RoleRecord) -> Self {
+        record.clone().into()
+    }
+}
+
 /// The levels roles have set, for the organization and for the projects from the top down to a
 /// place: what the tables of what roles see are made from, with one read.
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct LevelRules {
+pub struct PlaceLevels {
     /// The projects from the top down to the place; empty for the organization.
     pub chain: Vec<ProjectId>,
-    /// The field levels.
-    pub fields: Vec<FieldRule>,
-    /// The levels of the kinds of people information.
-    pub people: Vec<PeopleRule>,
+    /// The levels of the roles asked about, their own and those set for the projects of the chain.
+    pub rules: LevelRules,
 }
 
 /// What the policy engine and its management use cases need from storage.
 pub trait PolicyStore: ChangeStore + 'static {
-    reads! {
+    queries! {
         /// Everything the engine needs for `person` at `place`: their rows and their groups' rows
         /// for the organization and for the project and its parents, the roles those rows name
-        /// and the levels of those roles. `None` when the project does not exist.
-        fn policy_inputs(person: UserId, place: Place) -> Option<Inputs>;
+        /// and the levels of those roles. `None` when the project does not exist. Inside a
+        /// change, a rule that depends on what a person may do (no escalation) is judged on what
+        /// is stored now, after the lock.
+        fn policy_inputs(person: UserId, place: Place) -> Option<Inputs> = policy_inputs_in;
         /// The rows for the whole organization that give a role, with the roles and the members
         /// of groups: what the last-administrator rule needs.
-        fn organization_state() -> OrganizationState;
-        /// Whether the starting roles were made (they are made once).
-        fn starting_roles_made() -> bool;
+        fn organization_state() -> OrganizationState = organization_state_in;
+        /// Whether the starting roles were made (they are made once; two servers that start
+        /// together must not both make them).
+        fn starting_roles_made() -> bool = starting_roles_made_in;
+        /// One role with its permissions.
+        fn role(id: RoleId) -> Option<RoleRecord> = role_in;
+        /// The rows on a project (`Some`) or for the whole organization (`None`), in the order
+        /// they were made.
+        fn assignments_on(project: Option<ProjectId>) -> Vec<Assignment> = assignments_on_in;
+        /// The rows of a group, wherever they are.
+        fn assignments_of_group(group: GroupId) -> Vec<Assignment> = assignments_of_group_in;
+        /// The rows that give a role, wherever they are.
+        fn assignments_of_role(role: RoleId) -> Vec<Assignment> = assignments_of_role_in;
+        /// One project.
+        fn project(id: ProjectId) -> Option<Project> = project_in;
+    }
+
+    reads! {
         /// The people who were administrators in M1 and have not got the role yet.
         fn legacy_administrators() -> Vec<UserId>;
         /// Every role with its permissions, in the order of roles.
         fn roles() -> Vec<RoleRecord>;
-        /// One role with its permissions.
-        fn role(id: RoleId) -> Option<RoleRecord>;
         /// Every group, by name.
         fn groups() -> Vec<Group>;
         /// One group.
         fn group(id: GroupId) -> Option<Group>;
         /// The people in a group, in the order they were put there.
         fn group_members(group: GroupId) -> Vec<GroupMember>;
-        /// The rows on a project (`Some`) or for the whole organization (`None`), in the order
-        /// they were made.
-        fn assignments_on(project: Option<ProjectId>) -> Vec<Assignment>;
-        /// The rows of a group, wherever they are.
-        fn assignments_of_group(group: GroupId) -> Vec<Assignment>;
         /// The rows of a person (their own, not their groups'), wherever they are.
         fn assignments_of_person(person: UserId) -> Vec<Assignment>;
-        /// The rows that give a role, wherever they are.
-        fn assignments_of_role(role: RoleId) -> Vec<Assignment>;
         /// The groups a person is in, by name.
         fn groups_of(person: UserId) -> Vec<Group>;
         /// One row.
         fn assignment(id: AssignmentId) -> Option<Assignment>;
-        /// One project.
-        fn project(id: ProjectId) -> Option<Project>;
         /// The projects from the top down to this one; `None` when it does not exist.
         fn project_chain(id: ProjectId) -> Option<Vec<ProjectId>>;
         /// The project with this short name.
         fn project_by_short_name(name: &ShortName) -> Option<Project>;
         /// Every level the roles have set, their own and those for the projects from the top down
         /// to `project`; `None` when the project does not exist.
-        fn level_rules(roles: Vec<RoleId>, project: Option<ProjectId>) -> Option<LevelRules>;
-        /// The levels a role has set for the fields of the catalogue: in a project (`Some`) or its
-        /// own (`None`).
-        fn field_levels(role: RoleId, project: Option<ProjectId>) -> Vec<(Field, FieldLevel)>;
-        /// The levels a role has set for the kinds of people information.
-        fn people_levels(role: RoleId, project: Option<ProjectId>) -> Vec<(PeopleKind, PeopleLevel)>;
+        fn level_rules(roles: Vec<RoleId>, project: Option<ProjectId>) -> Option<PlaceLevels>;
     }
 
     writes! {
@@ -100,25 +117,6 @@ pub trait PolicyStore: ChangeStore + 'static {
         /// changes that each leave one administrator cannot leave none. A no-op where the
         /// database has one writer anyway.
         fn lock_policy() -> ();
-        /// The same as [`PolicyStore::organization_state`], inside the change, so it sees what
-        /// the change wrote.
-        fn organization_state_in() -> OrganizationState;
-        /// The same as [`PolicyStore::policy_inputs`], inside the change: a rule that depends on
-        /// what a person may do (no escalation) is judged on what is stored now, after the lock.
-        fn policy_inputs_in(person: UserId, place: Place) -> Option<Inputs>;
-        /// The same as [`PolicyStore::assignments_on`], inside the change.
-        fn assignments_on_in(project: Option<ProjectId>) -> Vec<Assignment>;
-        /// The same as [`PolicyStore::assignments_of_group`], inside the change.
-        fn assignments_of_group_in(group: GroupId) -> Vec<Assignment>;
-        /// The same as [`PolicyStore::assignments_of_role`], inside the change.
-        fn assignments_of_role_in(role: RoleId) -> Vec<Assignment>;
-        /// The same as [`PolicyStore::role`], inside the change.
-        fn role_in(id: RoleId) -> Option<RoleRecord>;
-        /// Every project below this one, at any depth, in no particular order.
-        fn sub_projects_in(project: ProjectId) -> Vec<ProjectId>;
-        /// The same as [`PolicyStore::starting_roles_made`], inside the change, so two servers
-        /// that start together do not both make the starting roles.
-        fn starting_roles_made_in() -> bool;
         /// Marks the starting roles as made.
         fn mark_starting_roles_made(at: Timestamp) -> ();
         /// Forgets a person of the list of M1 administrators.
@@ -156,22 +154,25 @@ pub trait PolicyStore: ChangeStore + 'static {
         fn insert_assignment(assignment: &Assignment) -> ();
         /// Removes a row.
         fn delete_assignment(id: AssignmentId) -> bool;
-        /// Sets (`Some`) or takes away (`None`) the level of a field for a role, in a project or
-        /// the role's own.
-        fn put_field_level(
-            role: RoleId,
-            project: Option<ProjectId>,
-            field: Field,
-            level: Option<FieldLevel>
-        ) -> ();
-        /// The same for a kind of people information.
-        fn put_people_level(
-            role: RoleId,
-            project: Option<ProjectId>,
-            kind: PeopleKind,
-            level: Option<PeopleLevel>
-        ) -> ();
         /// Adds a project.
         fn insert_project(project: &Project) -> ();
     }
+
+    /// The levels a role has set for the subjects of one kind (the fields of the catalogue, or
+    /// the kinds of people information): in a project (`Some`) or its own (`None`).
+    fn levels<K: LevelSubject>(
+        &self,
+        role: RoleId,
+        project: Option<ProjectId>,
+    ) -> impl Future<Output = Result<Vec<(K, K::Level)>, Self::Error>> + Send;
+
+    /// Sets (`Some`) or takes away (`None`) the level of a subject for a role, in a project or
+    /// the role's own.
+    fn put_level<K: LevelSubject>(
+        transaction: &mut Self::Transaction,
+        role: RoleId,
+        project: Option<ProjectId>,
+        subject: K,
+        level: Option<K::Level>,
+    ) -> impl Future<Output = Result<(), Self::Error>> + Send;
 }

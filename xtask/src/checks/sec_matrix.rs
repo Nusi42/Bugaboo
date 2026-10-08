@@ -38,7 +38,9 @@ const KEY_ROUTE: &str = "makeAccessKey";
 
 /// The actors every record has: the fixed ones and one for each starting role.
 fn every_actor() -> Vec<String> {
-    let roles = StartingRole::ALL.map(|role| words::role_actor(role.key()));
+    let roles = StartingRole::ALL
+        .iter()
+        .map(|role| words::role_actor(role.code()));
     words::FIXED_ACTORS
         .iter()
         .map(|actor| (*actor).to_owned())

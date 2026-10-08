@@ -1,8 +1,9 @@
 //! *Make a project* (PRJ-01): at the top level, or inside another project.
 
 use bb_core::ErrorCode;
+use bb_core::event::RecordKind;
 use bb_core::id::ProjectId;
-use bb_core::project::{DEPTH_MAX, Project, ShortName};
+use bb_core::project::{Project, ShortName};
 use bb_core::sign_in::SecurityAction;
 use bb_policy::{Authorized, Permission, Place, Tree};
 use serde_json::json;
@@ -10,7 +11,7 @@ use serde_json::json;
 use super::Why;
 use super::types::{MakeProject, ProjectView};
 use crate::auth::{AppError, AuthStore, Ctx, by, entity, internal, set_to};
-use crate::people::clean_name;
+use crate::input::clean_name;
 
 /// Makes a project. Top level takes *Make projects*; a sub-project takes *Make sub-projects* in
 /// its parent.
@@ -65,7 +66,7 @@ pub async fn make_project<S: AuthStore>(
     };
     let event = ctx.event(
         by(actor.person.id),
-        entity("project", project.id)?,
+        entity(RecordKind::Project, project.id),
         vec![
             set_to("short_name", json!(project.short_name.as_str())),
             set_to("name", json!(project.name)),
@@ -86,14 +87,15 @@ pub async fn make_project<S: AuthStore>(
                 S::lock_policy(transaction).await?;
                 // A project goes no deeper than the tree may: judged on the tree as it is now.
                 if let Some(parent) = stored.parent {
-                    let projects = S::project_tree_in(transaction).await?;
-                    let tree = Tree::new(projects.iter().map(|known| (known.id, known.parent)));
-                    match tree.chain(parent) {
-                        Some(chain) if chain.len() >= DEPTH_MAX => {
-                            return Err(stopped.stop::<S>(ErrorCode::ProjectTooDeep));
-                        }
-                        Some(_) => {}
-                        None => return Err(stopped.stop::<S>(ErrorCode::NotFound)),
+                    let tree = Tree::of(&S::project_tree_in(transaction).await?);
+                    if !tree.contains(parent) {
+                        return Err(stopped.stop::<S>(ErrorCode::NotFound));
+                    }
+                    if tree
+                        .moved(stored.id, Some(parent))
+                        .too_deep_below(stored.id)
+                    {
+                        return Err(stopped.stop::<S>(ErrorCode::ProjectTooDeep));
                     }
                 }
                 // Judged again on what is stored now: two people who make a project with the
@@ -112,7 +114,7 @@ pub async fn make_project<S: AuthStore>(
     ctx.note(
         SecurityAction::ProjectMade,
         Some(actor.person.id),
-        Some(entity("project", project.id)?),
+        Some(entity(RecordKind::Project, project.id)),
     )
     .await;
     Ok(access.authorize(ProjectView {

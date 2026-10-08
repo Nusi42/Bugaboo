@@ -18,7 +18,7 @@ use bb_app::people::{AddGroupMember, MakeGroup, add_group_member, make_group};
 use bb_app::projects::{MakeProject, make_project};
 use bb_app::roles::{
     AssignRole, CopyRole, Given, MakeRole, SetFieldLevel, SetPeopleLevel, Subject, assign_role,
-    copy_role, make_role, set_field_level, set_people_level,
+    copy_role, make_role, set_level,
 };
 use bb_core::access::{AppliesTo, FieldLevel, PeopleLevel};
 use bb_core::fields::Field;
@@ -491,7 +491,7 @@ impl Making<'_, '_> {
         .await?;
         let guest = self.starting_role(StartingRole::Guest).await?;
         for kind in [PeopleKind::Authors, PeopleKind::Mentions] {
-            set_people_level(
+            set_level(
                 &self.world.services.ctx(self.world.request()),
                 SetPeopleLevel {
                     session_token: self.next(),
@@ -514,7 +514,7 @@ impl Making<'_, '_> {
         field: Field,
         level: FieldLevel,
     ) -> Result<(), SampleError> {
-        set_field_level(
+        set_level(
             &self.world.services.ctx(self.world.request()),
             SetFieldLevel {
                 session_token: self.next(),
@@ -602,10 +602,10 @@ impl Making<'_, '_> {
                     .starting
                     .as_ref()
                     .map(bb_core::technical::TechnicalName::as_str)
-                    == Some(role.key())
+                    == Some(role.code())
             })
             .map(|record| record.role.id)
-            .ok_or_else(|| SampleError::NotMade(role.key().to_owned()))
+            .ok_or_else(|| SampleError::NotMade(role.code().to_owned()))
     }
 
     async fn named_role(&self, name: &str) -> Result<RoleId, SampleError> {

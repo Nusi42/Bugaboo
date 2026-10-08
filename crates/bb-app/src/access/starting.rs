@@ -8,7 +8,7 @@
 //! to do, so it can be stopped half way and run again.
 
 use bb_core::access::{AppliesTo, Assignment, Role};
-use bb_core::event::Actor;
+use bb_core::event::{Actor, RecordKind};
 use bb_core::id::{AssignmentId, RoleId};
 use bb_core::message::Message;
 use bb_core::sign_in::SecurityAction;
@@ -17,7 +17,7 @@ use bb_policy::StartingRole;
 use serde_json::json;
 
 use crate::auth::{
-    AppError, AuthStore, Ctx, change_failed, changed, entity, fixed_entity, internal, set_to,
+    AppError, AuthStore, Ctx, Stops, change_failed, changed, entity, fixed_entity, internal, set_to,
 };
 
 /// Makes the starting roles if they were not made yet, and gives the people who were
@@ -38,7 +38,7 @@ pub(crate) struct NewRole {
 impl<S: AuthStore> Ctx<'_, S> {
     /// The copy of a starting role as it is made at the start.
     pub(crate) fn new_starting_role(&self, starting: StartingRole) -> Result<NewRole, AppError> {
-        let key = TechnicalName::new(starting.key())
+        let key = TechnicalName::new(starting.code())
             .map_err(|error| AppError::Internal(error.to_string()))?;
         let id = RoleId::generate(&mut self.ids())
             .map_err(|error| AppError::Internal(error.to_string()))?;
@@ -101,13 +101,13 @@ pub async fn make_starting_roles<S: AuthStore>(
         .map_err(|error| internal::<S>(&error))?;
     if !made {
         let roles = StartingRole::ALL
-            .into_iter()
-            .map(|starting| ctx.new_starting_role(starting))
+            .iter()
+            .map(|starting| ctx.new_starting_role(*starting))
             .collect::<Result<Vec<_>, _>>()?;
         let names: Vec<serde_json::Value> = roles.iter().map(|new| json!(new.role.name)).collect();
         let event = ctx.event(
             Actor::System,
-            fixed_entity("starting_roles", "made")?,
+            fixed_entity(RecordKind::StartingRoles, "made")?,
             vec![set_to("roles", serde_json::Value::Array(names))],
         )?;
         let now = ctx.now();
@@ -140,12 +140,12 @@ pub async fn make_starting_roles<S: AuthStore>(
                 ctx.note(
                     SecurityAction::StartingRolesMade,
                     None,
-                    Some(fixed_entity("starting_roles", "made")?),
+                    Some(fixed_entity(RecordKind::StartingRoles, "made")?),
                 )
                 .await;
             }
             Err(error) if S::is_aborted(&error) => {}
-            Err(error) => return Err(change_failed::<S>(&error, None)),
+            Err(error) => return Err(change_failed::<S>(&error, Stops::NONE)),
         }
     }
     give_the_old_administrators_their_role(ctx).await
@@ -163,13 +163,17 @@ async fn role_of<S: AuthStore>(
         .await
         .map_err(|error| internal::<S>(&error))?;
     if let Some(found) = roles.iter().find(|record| {
-        record.role.starting.as_ref().map(TechnicalName::as_str) == Some(starting.key())
+        record.role.starting.as_ref().map(TechnicalName::as_str) == Some(starting.code())
     }) {
         return Ok(found.role.id);
     }
     let new = ctx.new_starting_role(starting)?;
     let id = new.role.id;
-    let event = ctx.event(Actor::System, entity("role", id)?, vec![changed("role")])?;
+    let event = ctx.event(
+        Actor::System,
+        entity(RecordKind::Role, id),
+        vec![changed("role")],
+    )?;
     ctx.store()
         .record_change(&event, move |transaction| {
             Box::pin(async move {
@@ -185,9 +189,13 @@ async fn role_of<S: AuthStore>(
             })
         })
         .await
-        .map_err(|error| change_failed::<S>(&error, None))?;
-    ctx.note(SecurityAction::RoleMade, None, Some(entity("role", id)?))
-        .await;
+        .map_err(|error| change_failed::<S>(&error, Stops::NONE))?;
+    ctx.note(
+        SecurityAction::RoleMade,
+        None,
+        Some(entity(RecordKind::Role, id)),
+    )
+    .await;
     Ok(id)
 }
 
@@ -219,7 +227,7 @@ async fn give_the_old_administrators_their_role<S: AuthStore>(
         let id = assignment.id;
         let event = ctx.event(
             Actor::System,
-            entity("assignment", id)?,
+            entity(RecordKind::Assignment, id),
             vec![
                 set_to("role", json!(administrator.to_string())),
                 set_to("applies_to", json!(AppliesTo::Organization.code())),
@@ -241,11 +249,11 @@ async fn give_the_old_administrators_their_role<S: AuthStore>(
                 })
             })
             .await
-            .map_err(|error| change_failed::<S>(&error, None))?;
+            .map_err(|error| change_failed::<S>(&error, Stops::NONE))?;
         ctx.note(
             SecurityAction::AssignmentMade,
             None,
-            Some(entity("assignment", id)?),
+            Some(entity(RecordKind::Assignment, id)),
         )
         .await;
     }

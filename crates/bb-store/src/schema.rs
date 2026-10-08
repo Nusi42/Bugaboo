@@ -9,7 +9,7 @@
 //! All whole numbers are `BIGINT` and all moments are microseconds since 1970 in a `BIGINT`, so
 //! both databases hand back the same Rust types. IDs are 16-byte blobs. JSON is stored as text.
 
-use sea_query::Iden;
+use sea_query::{Iden, IdenStatic};
 
 #[derive(Clone, Copy, Iden)]
 pub(crate) enum Event {
@@ -281,7 +281,7 @@ pub(crate) enum AssignmentRow {
     GivenAt,
 }
 
-#[derive(Clone, Copy, Iden)]
+#[derive(Clone, Copy, IdenStatic)]
 pub(crate) enum RoleFieldLevelRow {
     #[iden = "role_field_level"]
     Table,
@@ -290,7 +290,7 @@ pub(crate) enum RoleFieldLevelRow {
     Level,
 }
 
-#[derive(Clone, Copy, Iden)]
+#[derive(Clone, Copy, IdenStatic)]
 pub(crate) enum ProjectFieldLevelRow {
     #[iden = "project_field_level"]
     Table,
@@ -300,7 +300,7 @@ pub(crate) enum ProjectFieldLevelRow {
     Level,
 }
 
-#[derive(Clone, Copy, Iden)]
+#[derive(Clone, Copy, IdenStatic)]
 pub(crate) enum RolePeopleLevelRow {
     #[iden = "role_people_level"]
     Table,
@@ -309,7 +309,7 @@ pub(crate) enum RolePeopleLevelRow {
     Level,
 }
 
-#[derive(Clone, Copy, Iden)]
+#[derive(Clone, Copy, IdenStatic)]
 pub(crate) enum ProjectPeopleLevelRow {
     #[iden = "project_people_level"]
     Table,

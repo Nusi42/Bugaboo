@@ -15,8 +15,8 @@ use std::sync::Arc;
 
 use bb_app::access::{Authorized, MakeStartingRoles, Masked, make_starting_roles};
 use bb_app::auth::{
-    AcceptInvitation, AuthApi, AuthServices, AuthStore as _, CompleteSetup, ConfirmCodeApp,
-    CreateInvitation, CreatedInvitation, IssueSetupCode, MakeAccessKey, RequestInfo, SignOut,
+    AcceptInvitation, AuthApi, AuthServices, CompleteSetup, ConfirmCodeApp, CreateInvitation,
+    CreatedInvitation, IssueSetupCode, MakeAccessKey, RequestInfo, SecondStepStore as _, SignOut,
     StartCodeApp, Started, issue_setup_code, make_access_key,
 };
 use bb_app::context::Clock as _;

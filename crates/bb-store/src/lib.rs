@@ -18,6 +18,7 @@ mod jobs;
 mod keys;
 mod layout;
 mod migrations;
+mod paging;
 mod policy;
 mod projects;
 mod schema;

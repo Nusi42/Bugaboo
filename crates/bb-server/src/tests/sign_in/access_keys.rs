@@ -202,7 +202,7 @@ async fn auth_07_a_key_is_shown_once_and_only_its_hash_is_stored() -> TestResult
         assert!(!format!("{listed:?}").contains(&key[12..]));
         // What is stored is the hash of the secret, found by it, and not the key itself.
         let secret = AccessKeySecret::parse(&key).ok_or("not a key")?;
-        let stored = bb_app::auth::AuthStore::access_key_by_hash(&rig.storage, &secret.hash())
+        let stored = bb_app::auth::AccessKeyStore::access_key_by_hash(&rig.storage, &secret.hash())
             .await?
             .ok_or("the hash finds no key")?;
         assert_eq!(stored.key.id, created.key.id);

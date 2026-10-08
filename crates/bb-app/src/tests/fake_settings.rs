@@ -5,10 +5,10 @@ use std::collections::BTreeMap;
 
 use bb_core::id::{ProjectId, UserId};
 use bb_core::settings::{Layers, OrganizationValue, Scope, SettingValue, find};
+use bb_policy::Tree;
 use jiff::Timestamp;
 
 use super::fake::{FakeError, FakeStore, State, Tx};
-use super::fake_policy::chain_of;
 use crate::settings::SettingsStore;
 
 /// One stored value.
@@ -40,7 +40,9 @@ pub(crate) fn layers_of(
         }
     }
     if let Some(project) = project {
-        let mut chain = chain_of(state, project).unwrap_or_else(|| vec![project]);
+        let mut chain = Tree::of(&state.projects)
+            .chain(project)
+            .unwrap_or_else(|| vec![project]);
         chain.reverse();
         for id in chain {
             let values: BTreeMap<String, SettingValue> = state

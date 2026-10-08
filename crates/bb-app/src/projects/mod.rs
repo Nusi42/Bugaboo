@@ -25,8 +25,10 @@ mod types;
 use std::sync::{Arc, Mutex};
 
 use bb_core::ErrorCode;
+use bb_core::id::ProjectId;
+use bb_policy::Tree;
 
-use crate::auth::{AppError, AuthStore, internal};
+use crate::auth::{AppError, AuthStore, Stops, change_failed};
 
 pub use change::change_project;
 pub use make::make_project;
@@ -34,6 +36,23 @@ pub use moving::{move_project, preview_move};
 pub use read::{project, projects};
 pub use store::{Found, ProjectStore};
 pub use types::*;
+
+/// Every project below `project`, at any depth, as the tree is stored now (inside a change, after
+/// the policy lock).
+///
+/// # Errors
+/// The error of the store.
+pub(crate) async fn sub_projects_in<S: AuthStore>(
+    transaction: &mut S::Transaction,
+    project: ProjectId,
+) -> Result<Vec<ProjectId>, S::Error> {
+    let projects = S::project_tree_in(transaction).await?;
+    Ok(Tree::of(&projects)
+        .subtree(project)
+        .into_iter()
+        .filter(|inside| *inside != project)
+        .collect())
+}
 
 /// Why a change stopped itself, for a change that can stop for more than one reason: the change
 /// can only return the store's one "aborted" error, so it says the reason here first.
@@ -55,18 +74,10 @@ impl Why {
     /// did not say), `otherwise` for a key used twice, the rule of the policy engine that stopped
     /// it, or an internal failure for anything else.
     pub(crate) fn answer<S: AuthStore>(&self, error: &S::Error, otherwise: ErrorCode) -> AppError {
-        if S::is_aborted(error) {
-            let said = *self
-                .0
-                .lock()
-                .unwrap_or_else(std::sync::PoisonError::into_inner);
-            AppError::Refused(said.unwrap_or(otherwise))
-        } else if S::is_duplicate(error) {
-            AppError::Refused(otherwise)
-        } else if let Some(refusal) = S::as_refusal(error) {
-            refusal.into()
-        } else {
-            internal::<S>(error)
-        }
+        let said = *self
+            .0
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        change_failed::<S>(error, Stops::new(said.unwrap_or(otherwise), otherwise))
     }
 }

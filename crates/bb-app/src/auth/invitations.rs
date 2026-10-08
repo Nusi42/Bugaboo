@@ -1,25 +1,28 @@
 //! Invitations and the rule for signing up (AUTH-06): what administrators do. People who use an
 //! invitation or sign up are in `account.rs`.
 
-use bb_auth::{EmailAddress, Purpose, SecretToken};
+use bb_auth::{EmailAddress, Purpose, SecretToken, listed_domains};
 use bb_core::ErrorCode;
+use bb_core::event::RecordKind;
 use bb_core::id::InvitationId;
+use bb_core::paging::{Cut, page_len, read_len, read_time_cursor, write_time_cursor};
 use bb_core::settings::{AUTH_SIGN_UP_DOMAINS, AUTH_SIGN_UP_ENABLED, SettingValue};
 use bb_core::sign_in::{Invitation, SecurityAction};
 use bb_policy::{Authorized, Permission, Place};
 use jiff::Timestamp;
 use serde_json::json;
 
-use super::ctx::{
-    AppError, Ctx, INVITATION_SECONDS, by, change_failed, changed, entity, fixed_entity, internal,
-    set_to,
-};
+use super::ctx::Ctx;
+use super::error::{AppError, Stops, change_failed, internal};
+use super::events::{by, changed, entity, fixed_entity, set_to};
+use super::request_session::INVITATION_SECONDS;
 use super::store::AuthStore;
 use super::types::{
     ChangeSignUpPolicy, CreateInvitation, CreatedInvitation, Done, InvitationLookup,
     InvitationLookupQuery, InvitationPage, InvitationView, InvitationsQuery, RevokeInvitation,
     SignUpPolicy, SignUpPolicyQuery,
 };
+use crate::input::cursor_or_invalid;
 
 fn view(invitation: &Invitation) -> InvitationView {
     InvitationView {
@@ -68,7 +71,7 @@ pub async fn create_invitation<S: AuthStore>(
     };
     let event = ctx.event(
         by(actor.person.id),
-        entity("invitation", invitation.id)?,
+        entity(RecordKind::Invitation, invitation.id),
         vec![set_to("email", json!(invitation.email))],
     )?;
     let (store, stored) = (ctx.store(), invitation.clone());
@@ -77,11 +80,11 @@ pub async fn create_invitation<S: AuthStore>(
             Box::pin(async move { S::insert_invitation(transaction, &stored).await })
         })
         .await
-        .map_err(|error| change_failed::<S>(&error, None))?;
+        .map_err(|error| change_failed::<S>(&error, Stops::NONE))?;
     ctx.note(
         SecurityAction::InvitationCreated,
         Some(actor.person.id),
-        Some(entity("invitation", invitation.id)?),
+        Some(entity(RecordKind::Invitation, invitation.id)),
     )
     .await;
     Ok(access.authorize(CreatedInvitation {
@@ -104,7 +107,7 @@ pub async fn revoke_invitation<S: AuthStore>(
     let id = input.invitation_id;
     let event = ctx.event(
         by(actor.person.id),
-        entity("invitation", id)?,
+        entity(RecordKind::Invitation, id),
         vec![changed("invitation")],
     )?;
     let store = ctx.store();
@@ -119,25 +122,14 @@ pub async fn revoke_invitation<S: AuthStore>(
             })
         })
         .await
-        .map_err(|error| change_failed::<S>(&error, Some(ErrorCode::NotFound)))?;
+        .map_err(|error| change_failed::<S>(&error, Stops::both(ErrorCode::NotFound)))?;
     ctx.note(
         SecurityAction::InvitationRevoked,
         Some(actor.person.id),
-        Some(entity("invitation", id)?),
+        Some(entity(RecordKind::Invitation, id)),
     )
     .await;
     Ok(Done)
-}
-
-/// Where a page ends, as text: the time the last invitation was made (microseconds) and its ID.
-fn write_cursor(last: &Invitation) -> String {
-    format!("{}.{}", last.created_at.as_microsecond(), last.id)
-}
-
-fn read_cursor(text: &str) -> Result<(Timestamp, InvitationId), ()> {
-    let (micros, id) = text.split_once('.').ok_or(())?;
-    let created = Timestamp::from_microsecond(micros.parse().map_err(|_| ())?).map_err(|_| ())?;
-    Ok((created, id.parse().map_err(|_| ())?))
 }
 
 /// The open invitations, one page at a time (newest first).
@@ -152,24 +144,18 @@ pub async fn invitations<S: AuthStore>(
     let access = ctx
         .require(&actor, Permission::ManageInvitations, Place::Organization)
         .await?;
-    let limit = u64::from(bb_core::paging::page_size(Some(input.limit)));
-    let after = input
-        .cursor
-        .as_deref()
-        .map(read_cursor)
-        .transpose()
-        .map_err(|()| AppError::Refused(ErrorCode::InvalidRequest))?;
-    // One more than the page, to know whether there is a next one.
-    let mut found = ctx
-        .store()
-        .open_invitations(ctx.now(), after, limit + 1)
-        .await
-        .map_err(|error| internal::<S>(&error))?;
-    let more = u64::try_from(found.len()).is_ok_and(|count| count > limit);
-    found.truncate(usize::try_from(limit).unwrap_or(usize::MAX));
-    let next_cursor = more.then(|| found.last().map(write_cursor)).flatten();
+    let len = page_len(Some(input.limit));
+    let after = cursor_or_invalid(input.cursor.as_deref(), read_time_cursor)?;
+    let page = Cut::of(
+        ctx.store()
+            .open_invitations(ctx.now(), after, read_len(len))
+            .await
+            .map_err(|error| internal::<S>(&error))?,
+        len,
+    );
+    let next_cursor = page.next_cursor(|last| write_time_cursor(last.created_at, last.id));
     Ok(access.authorize(InvitationPage {
-        items: found.iter().map(view).collect(),
+        items: page.items.iter().map(view).collect(),
         next_cursor,
     }))
 }
@@ -196,13 +182,6 @@ pub async fn invitation_lookup<S: AuthStore>(
         .ok_or_else(invalid)
 }
 
-fn domains_of(list: &str) -> Vec<String> {
-    list.split(',')
-        .map(|item| item.trim().trim_start_matches('@').to_lowercase())
-        .filter(|item| !item.is_empty())
-        .collect()
-}
-
 /// Who may sign up on their own.
 ///
 /// # Errors
@@ -222,7 +201,7 @@ pub async fn sign_up_policy<S: AuthStore>(
     let settings = ctx.settings().await?;
     Ok(access.authorize(SignUpPolicy {
         enabled: settings.sign_up_enabled,
-        domains: domains_of(&settings.sign_up_domains),
+        domains: listed_domains(&settings.sign_up_domains).collect(),
     }))
 }
 
@@ -249,7 +228,7 @@ pub async fn change_sign_up_policy<S: AuthStore>(
         .policy
         .domains
         .iter()
-        .flat_map(|item| domains_of(item))
+        .flat_map(|item| listed_domains(item))
     {
         let plain = domain.contains('.')
             && !domain.starts_with('.')
@@ -276,7 +255,7 @@ pub async fn change_sign_up_policy<S: AuthStore>(
     }
     let event = ctx.event(
         by(actor.person.id),
-        fixed_entity("setting", "auth.sign-up-policy")?,
+        fixed_entity(RecordKind::Setting, "auth.sign-up-policy")?,
         vec![
             set_to("auth_sign_up_enabled", json!(policy.enabled)),
             set_to("auth_sign_up_domains", json!(list)),
@@ -303,7 +282,7 @@ pub async fn change_sign_up_policy<S: AuthStore>(
             })
         })
         .await
-        .map_err(|error| change_failed::<S>(&error, None))?;
+        .map_err(|error| change_failed::<S>(&error, Stops::NONE))?;
     ctx.note(
         SecurityAction::SignUpPolicyChanged,
         Some(actor.person.id),

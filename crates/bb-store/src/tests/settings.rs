@@ -93,7 +93,7 @@ async fn make_person(
     let id = person.id;
     changed(storage, source, move |tx| {
         Box::pin(async move {
-            <AuthStorage as bb_app::auth::AuthStore>::insert_person(tx, &person, "hash", at(1))
+            <AuthStorage as bb_app::auth::AccountStore>::insert_person(tx, &person, "hash", at(1))
                 .await
         })
     })

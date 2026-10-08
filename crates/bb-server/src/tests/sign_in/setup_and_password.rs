@@ -1,9 +1,10 @@
 //! The setup code of the first start (AUTH-09) and signing in with a password (AUTH-01, SEC-14).
 
 use bb_app::access::Permission;
+use bb_app::auth::{AccountStore as _, InvitationStore as _};
 use bb_app::auth::{
-    AppError, AuthApi as _, AuthStore as _, AuthenticateQuery, CompleteSetup, IssueSetupCode,
-    RequestInfo, SignIn, StatusQuery, issue_setup_code,
+    AppError, AuthApi as _, AuthenticateQuery, CompleteSetup, IssueSetupCode, RequestInfo, SignIn,
+    StatusQuery, issue_setup_code,
 };
 use bb_core::ErrorCode;
 use bb_core::sign_in::SecurityAction;
@@ -271,7 +272,7 @@ async fn auth_01_a_hash_made_with_other_parameters_is_renewed_at_the_next_sign_i
         let (store, stored) = (&rig.storage, weak.clone());
         bb_app::ports::ChangeStore::record_change(store, &event, move |transaction| {
             Box::pin(async move {
-                <bb_store::AuthStorage as bb_app::auth::AuthStore>::set_password(
+                <bb_store::AuthStorage as bb_app::auth::AccountStore>::set_password(
                     transaction,
                     person,
                     &stored,

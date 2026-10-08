@@ -41,7 +41,7 @@ pub(super) async fn role(org: &Org<'_>, starting: StartingRole) -> Result<RoleId
         .into_value();
     list.roles
         .into_iter()
-        .find(|role| role.starting.as_deref() == Some(starting.key()))
+        .find(|role| role.starting.as_deref() == Some(starting.code()))
         .map(|role| role.id)
         .ok_or_else(|| "the starting role is missing".into())
 }

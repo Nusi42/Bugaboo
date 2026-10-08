@@ -2,7 +2,6 @@
 //! (OPS-08, M1-F19, M1-F20). Only the server knows the database, the certificate and the
 //! security log together, so this is where they meet.
 
-use std::fmt::Write as _;
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
@@ -203,12 +202,10 @@ pub(crate) fn log_state(result: &Result<Verification, bb_store::StoreError>) -> 
         }) => LogState::Valid {
             entries: *entries,
             head: head.as_ref().map(|(seq, hash)| {
-                let mut text = String::new();
-                for byte in &hash.as_bytes()[..HEAD_HASH_BYTES] {
-                    // Writing to a String cannot fail.
-                    let _ = write!(text, "{byte:02x}");
-                }
-                (*seq, text)
+                (
+                    *seq,
+                    bb_core::hex::encode(&hash.as_bytes()[..HEAD_HASH_BYTES]),
+                )
             }),
             anchored: *anchored,
         },

@@ -335,13 +335,9 @@ mod tests {
         // If this fails after an upgrade of sea-query or an edit of migration 1, databases that
         // applied it would refuse to start. Add a new migration instead of changing an old one.
         let checksum = ALL[0].checksum().unwrap();
-        let mut hex = String::new();
-        for byte in checksum.as_bytes() {
-            use std::fmt::Write as _;
-            write!(hex, "{byte:02x}").unwrap();
-        }
         assert_eq!(
-            hex, "955f17699da59d0dbebd0aa84f15d41babff5bf3493ba3e72e422dfaf8d53de5",
+            bb_core::hex::encode(checksum.as_bytes()),
+            "955f17699da59d0dbebd0aa84f15d41babff5bf3493ba3e72e422dfaf8d53de5",
             "the checksum of migration 1 changed"
         );
     }
@@ -351,13 +347,9 @@ mod tests {
         // Migration 2 names the column that migration 3 takes away through `Retired`; its text
         // is the one databases applied before.
         let checksum = ALL[1].checksum().unwrap();
-        let mut hex = String::new();
-        for byte in checksum.as_bytes() {
-            use std::fmt::Write as _;
-            write!(hex, "{byte:02x}").unwrap();
-        }
         assert_eq!(
-            hex, "2f79f1fcf6ccadf282c92d37e1803b440c1759d098887112f96b5cbc24d2f30e",
+            bb_core::hex::encode(checksum.as_bytes()),
+            "2f79f1fcf6ccadf282c92d37e1803b440c1759d098887112f96b5cbc24d2f30e",
             "the checksum of migration 2 changed"
         );
     }

@@ -22,11 +22,11 @@ mod store;
 use std::sync::Arc;
 
 use bb_core::ErrorCode;
-use bb_core::event::{EntityRef, FieldChange};
+use bb_core::event::{EntityRef, FieldChange, RecordKind};
 use bb_core::id::ProjectId;
 use bb_core::settings::{
     ChangedBy, Layers, Level, OrganizationValue, Scope, SettingDefinition, SettingValue, Source,
-    find, registry,
+    find, list_items, registry,
 };
 use bb_core::sign_in::SecurityAction;
 use bb_policy::{Authorized, Evaluation, Permission, Place};
@@ -35,7 +35,7 @@ use serde_json::{Value, json};
 pub use store::SettingsStore;
 
 use crate::access::{Actor, ProjectLabel};
-use crate::auth::{AppError, AuthStore, Ctx, by, change_failed, fixed_entity, internal};
+use crate::auth::{AppError, AuthStore, Ctx, Stops, by, change_failed, fixed_entity, internal};
 
 /// Where the settings of a request are: the organization, a project, or the person who asks.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -414,9 +414,7 @@ pub async fn settings<S: AuthStore>(
     for definition in registry().filter(|definition| {
         definition.levels().contains(&scope.level())
             && input.topic.as_deref().is_none_or(|topic| {
-                topic
-                    .split(',')
-                    .any(|start| !start.is_empty() && definition.key().starts_with(start))
+                list_items(topic).any(|start| definition.key().starts_with(start))
             })
     }) {
         settings.push(ctx.view_of(&actor, scope, definition, &layers).await?);
@@ -446,7 +444,7 @@ pub async fn change_setting<S: AuthStore>(
     if scope != Scope::Organization && layers.resolve(definition).locked {
         return Err(ErrorCode::SettingLocked.into());
     }
-    let entity = fixed_entity("setting", &record_of(scope, definition.key()))?;
+    let entity = fixed_entity(RecordKind::Setting, &record_of(scope, definition.key()))?;
     let event = ctx.event(
         by(actor.person.id),
         entity.clone(),
@@ -464,7 +462,7 @@ pub async fn change_setting<S: AuthStore>(
             })
         })
         .await
-        .map_err(|error| change_failed::<S>(&error, Some(ErrorCode::SettingLocked)))?;
+        .map_err(|error| change_failed::<S>(&error, Stops::both(ErrorCode::SettingLocked)))?;
     ctx.note_security(&actor, definition, SecurityAction::SettingChanged, entity)
         .await;
     let view = ctx.view_after(&actor, scope, definition).await?;
@@ -493,7 +491,7 @@ pub async fn reset_setting<S: AuthStore>(
     }
     let keeps_the_lock = scope == Scope::Organization && view.locked;
     let standard = definition.default().to_value();
-    let entity = fixed_entity("setting", &record_of(scope, definition.key()))?;
+    let entity = fixed_entity(RecordKind::Setting, &record_of(scope, definition.key()))?;
     let event = ctx.event(
         by(actor.person.id),
         entity.clone(),
@@ -517,7 +515,7 @@ pub async fn reset_setting<S: AuthStore>(
             })
         })
         .await
-        .map_err(|error| change_failed::<S>(&error, None))?;
+        .map_err(|error| change_failed::<S>(&error, Stops::NONE))?;
     ctx.note_security(&actor, definition, SecurityAction::SettingReset, entity)
         .await;
     let view = ctx.view_after(&actor, scope, definition).await?;
@@ -554,7 +552,10 @@ pub async fn lock_setting<S: AuthStore>(
             .await?;
         return Ok(evaluation.authorize(view));
     }
-    let entity = fixed_entity("setting", &record_of(Scope::Organization, definition.key()))?;
+    let entity = fixed_entity(
+        RecordKind::Setting,
+        &record_of(Scope::Organization, definition.key()),
+    )?;
     let event = ctx.event(
         by(actor.person.id),
         entity.clone(),
@@ -570,7 +571,7 @@ pub async fn lock_setting<S: AuthStore>(
             Box::pin(async move { S::put_setting_lock(transaction, store_key, locked, now).await })
         })
         .await
-        .map_err(|error| change_failed::<S>(&error, None))?;
+        .map_err(|error| change_failed::<S>(&error, Stops::NONE))?;
     let action = if locked {
         SecurityAction::SettingLocked
     } else {

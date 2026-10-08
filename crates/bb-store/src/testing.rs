@@ -5,7 +5,7 @@ use bb_core::id::UserId;
 use jiff::Timestamp;
 use sea_query::{Expr, IntoIden as _, Query};
 
-use crate::db::{Database, to_micros};
+use crate::db::{Database, StoredId, to_micros};
 use crate::error::StoreError;
 use crate::schema::{PasswordLogin, PersonRow, Retired};
 
@@ -46,7 +46,7 @@ impl Database {
                     Retired::Administrator.into_iden(),
                 ])
                 .values([
-                    Expr::val(person.id.to_bytes().to_vec()),
+                    Expr::val(person.id.stored()),
                     Expr::val(person.display_name),
                     Expr::val(person.email),
                     Expr::val(to_micros(now)),
@@ -63,7 +63,7 @@ impl Database {
                     PasswordLogin::ChangedAt,
                 ])
                 .values([
-                    Expr::val(person.id.to_bytes().to_vec()),
+                    Expr::val(person.id.stored()),
                     Expr::val(person.password_hash),
                     Expr::val(to_micros(now)),
                 ])

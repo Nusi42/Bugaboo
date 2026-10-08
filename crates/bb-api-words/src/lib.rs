@@ -45,7 +45,7 @@ pub mod sec_matrix {
     /// A person without a role.
     pub const NO_ROLE: &str = "no-role";
     /// Each starting role is an actor named `role-` and the key of the role
-    /// (`bb_policy::StartingRole::key`); [`role_actor`] makes the name.
+    /// (`bb_policy::StartingRole::code`); [`role_actor`] makes the name.
     const ROLE_PREFIX: &str = "role-";
     /// A role on the parent project.
     pub const LEAD_ON_PARENT: &str = "lead-on-parent";

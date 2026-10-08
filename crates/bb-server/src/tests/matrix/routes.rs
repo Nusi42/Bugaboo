@@ -165,7 +165,7 @@ impl<'a> Fixture<'a> {
     /// A role of the organization, for the routes that name one.
     pub(super) fn a_role(&self) -> Result<RoleId, Failure> {
         self.roles
-            .get(StartingRole::Viewer.key())
+            .get(StartingRole::Viewer.code())
             .copied()
             .ok_or_else(|| "the organization has no viewer role".into())
     }
@@ -269,7 +269,7 @@ async fn hold(
     roles: &BTreeMap<String, RoleId>,
 ) -> Result<Option<String>, Failure> {
     let [parent, target, sibling] = *places;
-    let role = |role: StartingRole| roles[role.key()];
+    let role = |role: StartingRole| roles[role.code()];
     match actor {
         Actor::Nobody | Actor::NoRole | Actor::Exactly(None) => {}
         Actor::Exactly(Some(permission)) => {

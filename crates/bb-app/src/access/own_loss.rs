@@ -125,13 +125,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             .await
             .map_err(|error| internal::<S>(&error))?
             .ok_or(AppError::Refused(ErrorCode::NotFound))?;
-        Ok(RoleData {
-            id: record.role.id,
-            name: record.role.name,
-            position: record.role.position,
-            permissions: record.permissions,
-            two_step: record.role.two_step,
-        })
+        Ok(record.into())
     }
 
     /// The places to look at and the edit, for a change; the person must be allowed to make it.
@@ -149,7 +143,7 @@ impl<S: AuthStore> Ctx<'_, S> {
                     .await
                     .map_err(|error| internal::<S>(&error))?
                     .ok_or(AppError::Refused(ErrorCode::NotFound))?;
-                let place = row.project.map_or(Place::Organization, Place::Project);
+                let place = Place::from(row.project);
                 let access = self.require(actor, Permission::DecideRoles, place).await?;
                 Ok((row.project, Edit::DropRow(*id), (*access).clone()))
             }

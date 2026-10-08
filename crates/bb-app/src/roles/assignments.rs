@@ -3,26 +3,22 @@
 
 use bb_core::ErrorCode;
 use bb_core::access::{AppliesTo, Assignment};
-use bb_core::event::FieldChange;
+use bb_core::event::{FieldChange, RecordKind};
 use bb_core::id::{AssignmentId, ProjectId};
 use bb_core::people_kinds::PeopleKind;
 use bb_core::sign_in::SecurityAction;
-use bb_policy::guards::ensure_a_manager_remains;
-use bb_policy::{Authorized, PeopleContext, Permission, Place};
+use bb_policy::guards::{Holder, ensure_a_manager_remains};
+use bb_policy::{Authorized, PeopleContext, Permission, Place, row_reaches};
 use serde_json::json;
 
 use super::types::{
-    AssignRole, AssignmentList, AssignmentView, AssignmentsQuery, Given, RemoveAssignment, RoleRef,
-    Subject, WhoView,
+    AssignRole, AssignmentList, AssignmentView, AssignmentsQuery, Given, RemoveAssignment, Subject,
+    WhoView,
 };
 use crate::access::{Actor, ensure_may_give_in};
-use crate::auth::{AppError, AuthStore, Ctx, Done, by, entity, internal, set_to};
-use crate::people::{GroupView, stopped};
-
-/// The place a row is given at.
-fn place_of(project: Option<ProjectId>) -> Place {
-    project.map_or(Place::Organization, Place::Project)
-}
+use crate::auth::{
+    AppError, AuthStore, Ctx, Done, Stops, by, change_failed, entity, internal, set_to,
+};
 
 /// Whether `new` and `old` are for the same person or group.
 pub(super) fn same_subject(new: &Assignment, old: &Assignment) -> bool {
@@ -40,8 +36,10 @@ impl<S: AuthStore> Ctx<'_, S> {
         row: &Assignment,
         place: Option<ProjectId>,
     ) -> Result<AssignmentView, AppError> {
-        let who = match (row.person, row.group) {
-            (Some(person), _) => WhoView::Person {
+        let holder =
+            Holder::try_from(row).map_err(|error| AppError::Internal(error.to_string()))?;
+        let who = match holder {
+            Holder::Person(person) => WhoView::Person {
                 person: self
                     .person_ref(
                         viewer,
@@ -51,41 +49,15 @@ impl<S: AuthStore> Ctx<'_, S> {
                     )
                     .await?,
             },
-            (None, Some(group)) => {
-                let found = self
-                    .store()
-                    .group(group)
-                    .await
-                    .map_err(|error| internal::<S>(&error))?;
-                WhoView::Group {
-                    group: found.as_ref().map_or_else(
-                        || GroupView {
-                            id: group,
-                            name: String::new(),
-                        },
-                        GroupView::from,
-                    ),
-                }
-            }
-            (None, None) => return Err(AppError::Internal("a row for nobody".into())),
+            Holder::Group(group) => WhoView::Group {
+                group: self.group_view(group).await?,
+            },
         };
         let role = match row.role {
-            Some(id) => Some(RoleRef {
-                id,
-                name: self
-                    .store()
-                    .role(id)
-                    .await
-                    .map_err(|error| internal::<S>(&error))?
-                    .map(|record| record.role.name)
-                    .unwrap_or_default(),
-            }),
+            Some(id) => Some(self.role_ref(id).await?),
             None => None,
         };
-        let project = match row.project {
-            Some(project) => Some(self.project_label(actor, project).await?),
-            None => None,
-        };
+        let project = self.place_label(actor, row.project).await?;
         Ok(AssignmentView {
             id: row.id,
             who,
@@ -112,7 +84,7 @@ pub async fn assign_role<S: AuthStore>(
     input: AssignRole,
 ) -> Result<Authorized<AssignmentView>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
-    let place = place_of(input.project);
+    let place = Place::from(input.project);
     // Rows for the whole organization give a role and count everywhere; *No access* is set on a
     // project and always covers it and its sub-projects.
     let valid = matches!(
@@ -165,7 +137,7 @@ pub async fn assign_role<S: AuthStore>(
     };
     let event = ctx.event(
         by(actor.person.id),
-        entity("assignment", row.id)?,
+        entity(RecordKind::Assignment, row.id),
         vec![
             set_to("role", json!(row.role.map(|role| role.to_string()))),
             set_to("applies_to", json!(row.applies_to.code())),
@@ -194,17 +166,11 @@ pub async fn assign_role<S: AuthStore>(
             })
         })
         .await
-        .map_err(|error| {
-            stopped::<S>(
-                &error,
-                ErrorCode::AssignmentConflict,
-                ErrorCode::AssignmentConflict,
-            )
-        })?;
+        .map_err(|error| change_failed::<S>(&error, Stops::both(ErrorCode::AssignmentConflict)))?;
     ctx.note(
         SecurityAction::AssignmentMade,
         Some(actor.person.id),
-        Some(entity("assignment", row.id)?),
+        Some(entity(RecordKind::Assignment, row.id)),
     )
     .await;
     let view = ctx
@@ -232,13 +198,13 @@ pub async fn remove_assignment<S: AuthStore>(
         .ok_or(AppError::Refused(ErrorCode::NotFound))?;
     // A person who decides who has which role in a project can take away a *No access* there even
     // when it hides the project from them (ADR-0025, decision 6).
-    ctx.require(&actor, Permission::DecideRoles, place_of(row.project))
+    ctx.require(&actor, Permission::DecideRoles, Place::from(row.project))
         .await?;
     let id = row.id;
     // The row that is taken away, so the history can say whom it was for and what it gave.
     let event = ctx.event(
         by(actor.person.id),
-        entity("assignment", id)?,
+        entity(RecordKind::Assignment, id),
         vec![FieldChange {
             field: "assignment".to_owned(),
             before: Some(json!({
@@ -264,11 +230,11 @@ pub async fn remove_assignment<S: AuthStore>(
             })
         })
         .await
-        .map_err(|error| stopped::<S>(&error, ErrorCode::NotFound, ErrorCode::NotFound))?;
+        .map_err(|error| change_failed::<S>(&error, Stops::both(ErrorCode::NotFound)))?;
     ctx.note(
         SecurityAction::AssignmentRemoved,
         Some(actor.person.id),
-        Some(entity("assignment", id)?),
+        Some(entity(RecordKind::Assignment, id)),
     )
     .await;
     Ok(Done)
@@ -286,7 +252,7 @@ pub async fn assignments<S: AuthStore>(
 ) -> Result<Authorized<AssignmentList>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
     let access = ctx
-        .require(&actor, Permission::DecideRoles, place_of(input.project))
+        .require(&actor, Permission::DecideRoles, Place::from(input.project))
         .await?;
     let mut rows = ctx
         .store()
@@ -300,7 +266,7 @@ pub async fn assignments<S: AuthStore>(
             .project_chain(project)
             .await
             .map_err(|error| internal::<S>(&error))?
-            .unwrap_or_default();
+            .ok_or(AppError::Refused(ErrorCode::NotFound))?;
         for parent in chain.iter().rev().skip(1) {
             let above = ctx
                 .store()
@@ -310,7 +276,7 @@ pub async fn assignments<S: AuthStore>(
             rows.extend(
                 above
                     .into_iter()
-                    .filter(|row| row.applies_to == AppliesTo::ProjectAndSubProjects),
+                    .filter(|row| row_reaches(row.project, row.applies_to, &chain)),
             );
         }
         rows.extend(

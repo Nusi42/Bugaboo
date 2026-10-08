@@ -18,6 +18,7 @@ use bb_api::{
 };
 
 use bb_core::message::{self, Message};
+use bb_core::settings::list_items;
 
 /// Every start-up setting, once. The environment variable of `port` is `BUGABOO_PORT`.
 const KEYS: [&str; 17] = [
@@ -311,11 +312,7 @@ fn scalar(value: &toml::Value) -> Option<String> {
 }
 
 fn list(text: &str) -> Vec<String> {
-    text.split(',')
-        .map(str::trim)
-        .filter(|item| !item.is_empty())
-        .map(str::to_owned)
-        .collect()
+    list_items(text).map(str::to_owned).collect()
 }
 
 fn settings_from(

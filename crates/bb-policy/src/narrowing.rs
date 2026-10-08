@@ -7,6 +7,7 @@
 //! owner whatever scope list it was given.
 
 use std::collections::BTreeSet;
+use std::sync::Arc;
 
 use bb_core::access::FieldLevel;
 use bb_core::id::ProjectId;
@@ -112,6 +113,17 @@ impl Narrowing {
 }
 
 impl Evaluation {
+    /// The evaluation as the actor has it: narrowed to the access key they came with, if any. The
+    /// one place that decides whether to narrow (ADR-0025, decision 8, M2-F27). It takes and gives
+    /// a shared evaluation, so that without a key nothing is copied.
+    #[must_use]
+    pub fn narrowed_by(self: Arc<Self>, key: Option<&Narrowing>) -> Arc<Self> {
+        match key {
+            Some(key) => Arc::new(self.narrowed(key)),
+            None => self,
+        }
+    }
+
     /// The evaluation narrowed to an access key: a subset of what the owner may do here, and no
     /// field above *Can see* for a key that may only see.
     #[must_use]
@@ -131,16 +143,10 @@ impl Evaluation {
         narrowed.permissions = kept;
         if outside_projects {
             // A key outside its projects is not here at all: nothing is shown either.
-            for level in narrowed.fields.values_mut() {
-                *level = FieldLevel::Hidden;
-            }
-            for level in narrowed.people.values_mut() {
-                *level = bb_core::access::PeopleLevel::Hidden;
-            }
+            narrowed.fields.close();
+            narrowed.people.close();
         } else if !key.may_change() {
-            for level in narrowed.fields.values_mut() {
-                *level = (*level).min(FieldLevel::CanSee);
-            }
+            narrowed.fields.cap(FieldLevel::CanSee);
         }
         narrowed.narrowing = Some(Narrowed {
             removed,

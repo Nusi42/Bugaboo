@@ -153,7 +153,7 @@ async fn prj_02_the_list_the_preview_and_a_request_decide_alike_for_every_person
         let org = Org::start(&rig).await?;
         let people = scenario(&org).await?;
         let projects = rig.storage.project_tree().await?;
-        let tree = Tree::new(projects.iter().map(|project| (project.id, project.parent)));
+        let tree = Tree::of(&projects);
         let policy = rig.storage.policy_all().await?;
         let mut compared = 0;
         for person in &people {

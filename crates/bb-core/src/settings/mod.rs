@@ -21,39 +21,18 @@ pub use catalog::*;
 pub use format::{Choice, DEVICE, Format};
 pub use layers::{Layers, OrganizationValue, Resolved, Scope, Source};
 
-/// Where a setting can be set. A lower level overrides a higher one unless it is locked.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub enum Level {
-    /// For the whole Bugaboo server.
-    Organization,
-    /// For one project and its sub-projects.
-    Project,
-    /// For one person (*My settings*).
-    Person,
-}
-
-impl Level {
-    /// The word used when a level is stored.
-    #[must_use]
-    pub const fn code(self) -> &'static str {
-        match self {
-            Self::Organization => "organization",
-            Self::Project => "project",
-            Self::Person => "person",
-        }
-    }
-
-    /// The level stored under `code`.
-    #[must_use]
-    pub fn from_code(code: &str) -> Option<Self> {
-        [Self::Organization, Self::Project, Self::Person]
-            .into_iter()
-            .find(|level| level.code() == code)
+words! {
+    /// Where a setting can be set. A lower level overrides a higher one unless it is locked. The
+    /// word is how a level is stored.
+    pub enum Level {
+        /// For the whole Bugaboo server.
+        Organization => "organization",
+        /// For one project and its sub-projects.
+        Project => "project",
+        /// For one person (*My settings*).
+        Person => "person",
     }
 }
-
-// The three fixed levels.
-impl crate::personal::NotPersonal for Level {}
 
 /// The topics whose settings change how people sign in or what keeps the organization safe.
 const SECURITY_TOPICS: [&str; 2] = ["security", "auth"];
@@ -213,20 +192,13 @@ impl SettingDefinition {
         self.list
     }
 
-    fn items(value: &str) -> impl Iterator<Item = &str> {
-        value
-            .split(',')
-            .map(str::trim)
-            .filter(|item| !item.is_empty())
-    }
-
     /// Whether `value` (a list separated by commas) is within the limits of the setting, if it
     /// has any.
     #[must_use]
     pub fn list_fits(&self, value: &str) -> bool {
         self.list.is_none_or(|(most_items, longest)| {
-            Self::items(value).count() <= most_items
-                && Self::items(value).all(|item| item.chars().count() <= longest)
+            list_items(value).count() <= most_items
+                && list_items(value).all(|item| item.chars().count() <= longest)
         })
     }
 
@@ -237,7 +209,7 @@ impl SettingDefinition {
         let Some((most_items, longest)) = self.list else {
             return value.to_owned();
         };
-        Self::items(value)
+        list_items(value)
             .filter(|item| item.chars().count() <= longest)
             .take(most_items)
             .collect::<Vec<_>>()
@@ -550,6 +522,16 @@ pub struct StoredPersonSetting {
     /// When the person last changed it.
     #[personal(category = "activity", basis = "contract")]
     pub updated_at: jiff::Timestamp,
+}
+
+/// The items of a list written as text with commas between the items: spaces around an item are
+/// dropped, and so are empty items. The one reading of a comma list (the limits of a list
+/// setting, the approved domains, the topics of a settings query).
+pub fn list_items(value: &str) -> impl Iterator<Item = &str> {
+    value
+        .split(',')
+        .map(str::trim)
+        .filter(|item| !item.is_empty())
 }
 
 /// Every setting of the registry, and in tests the ones that only exist for them.

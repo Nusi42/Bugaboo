@@ -21,6 +21,7 @@ pub use used_by::{GroupDetail, GroupUsedBy, RoleUsedBy};
 
 use bb_core::ErrorCode;
 use bb_core::access::{Group, GroupMember};
+use bb_core::event::RecordKind;
 use bb_core::id::{GroupId, ProjectId, UserId};
 use bb_core::people_kinds::PeopleKind;
 use bb_core::sign_in::SecurityAction;
@@ -32,20 +33,9 @@ use serde_json::json;
 
 use crate::access::{ensure_may_give_in, ensure_may_lift_in};
 use crate::auth::{
-    AppError, AuthStore, Ctx, Done, by, change_failed, changed, entity, internal, set_to,
+    AppError, AuthStore, Ctx, Done, Stops, by, change_failed, changed, entity, internal, set_to,
 };
-
-/// The longest name of a group, in characters.
-const NAME_MAX: usize = 100;
-
-/// A name as it is kept: trimmed, not empty, not too long, no control characters.
-pub(crate) fn clean_name(name: &str) -> Result<String, AppError> {
-    let name = name.trim();
-    if name.is_empty() || name.chars().count() > NAME_MAX || name.chars().any(char::is_control) {
-        return Err(ErrorCode::InvalidRequest.into());
-    }
-    Ok(name.to_owned())
-}
+use crate::input::clean_name;
 
 /// Make a group.
 pub struct MakeGroup {
@@ -179,6 +169,12 @@ impl<S: AuthStore> Ctx<'_, S> {
             .map_err(|error| internal::<S>(&error))?
             .ok_or(AppError::Refused(ErrorCode::NotFound))
     }
+
+    /// The group as a name in a sentence, or `resource.not_found` for a group that is gone (a row
+    /// that names a group the store does not have was read between two changes).
+    pub(crate) async fn group_view(&self, id: GroupId) -> Result<GroupView, AppError> {
+        Ok(GroupView::from(&self.group_or_missing(id).await?))
+    }
 }
 
 /// Makes a group.
@@ -202,7 +198,7 @@ pub async fn make_group<S: AuthStore>(
     };
     let event = ctx.event(
         by(actor.person.id),
-        entity("group", group.id)?,
+        entity(RecordKind::Group, group.id),
         vec![set_to("name", json!(group.name))],
     )?;
     let stored = group.clone();
@@ -211,11 +207,11 @@ pub async fn make_group<S: AuthStore>(
             Box::pin(async move { S::insert_group(transaction, &stored).await })
         })
         .await
-        .map_err(|error| change_failed::<S>(&error, Some(ErrorCode::NameTaken)))?;
+        .map_err(|error| change_failed::<S>(&error, Stops::both(ErrorCode::NameTaken)))?;
     ctx.note(
         SecurityAction::GroupMade,
         Some(actor.person.id),
-        Some(entity("group", group.id)?),
+        Some(entity(RecordKind::Group, group.id)),
     )
     .await;
     Ok(access.authorize(GroupView::from(&group)))
@@ -239,7 +235,7 @@ pub async fn rename_group<S: AuthStore>(
     let id = before.id;
     let event = ctx.event(
         by(actor.person.id),
-        entity("group", id)?,
+        entity(RecordKind::Group, id),
         vec![bb_core::event::FieldChange {
             field: "name".to_owned(),
             before: Some(json!(before.name)),
@@ -258,11 +254,16 @@ pub async fn rename_group<S: AuthStore>(
             })
         })
         .await
-        .map_err(|error| stopped::<S>(&error, ErrorCode::NotFound, ErrorCode::NameTaken))?;
+        .map_err(|error| {
+            change_failed::<S>(
+                &error,
+                Stops::new(ErrorCode::NotFound, ErrorCode::NameTaken),
+            )
+        })?;
     ctx.note(
         SecurityAction::GroupRenamed,
         Some(actor.person.id),
-        Some(entity("group", id)?),
+        Some(entity(RecordKind::Group, id)),
     )
     .await;
     Ok(access.authorize(GroupView { id, name }))
@@ -283,7 +284,7 @@ pub async fn delete_group<S: AuthStore>(
     let id = ctx.group_or_missing(input.group).await?.id;
     let event = ctx.event(
         by(actor.person.id),
-        entity("group", id)?,
+        entity(RecordKind::Group, id),
         vec![changed("group")],
     )?;
     let by_person = actor.person.id;
@@ -302,33 +303,14 @@ pub async fn delete_group<S: AuthStore>(
             })
         })
         .await
-        .map_err(|error| stopped::<S>(&error, ErrorCode::NotFound, ErrorCode::NotFound))?;
+        .map_err(|error| change_failed::<S>(&error, Stops::both(ErrorCode::NotFound)))?;
     ctx.note(
         SecurityAction::GroupDeleted,
         Some(actor.person.id),
-        Some(entity("group", id)?),
+        Some(entity(RecordKind::Group, id)),
     )
     .await;
     Ok(Done)
-}
-
-/// What a change that stopped itself says: the rule of the policy engine that refused it, that the
-/// record it meant is gone, or that its name is taken.
-pub(crate) fn stopped<S: AuthStore>(
-    error: &S::Error,
-    aborted: ErrorCode,
-    duplicate: ErrorCode,
-) -> AppError {
-    if let Some(refusal) = S::as_refusal(error) {
-        return refusal.into();
-    }
-    if S::is_aborted(error) {
-        return AppError::Refused(aborted);
-    }
-    if S::is_duplicate(error) {
-        return AppError::Refused(duplicate);
-    }
-    internal::<S>(error)
 }
 
 /// Puts a person into a group.
@@ -361,7 +343,7 @@ pub async fn add_group_member<S: AuthStore>(
     };
     let event = ctx.event(
         by(actor.person.id),
-        entity("group", group.id)?,
+        entity(RecordKind::Group, group.id),
         vec![changed("member")],
     )?;
     let giver = actor.person.id;
@@ -378,11 +360,16 @@ pub async fn add_group_member<S: AuthStore>(
             })
         })
         .await
-        .map_err(|error| stopped::<S>(&error, ErrorCode::NotFound, ErrorCode::InvalidRequest))?;
+        .map_err(|error| {
+            change_failed::<S>(
+                &error,
+                Stops::new(ErrorCode::NotFound, ErrorCode::InvalidRequest),
+            )
+        })?;
     ctx.note(
         SecurityAction::GroupMemberAdded,
         Some(actor.person.id),
-        Some(entity("group", group.id)?),
+        Some(entity(RecordKind::Group, group.id)),
     )
     .await;
     Ok(Done)
@@ -405,7 +392,7 @@ pub async fn remove_group_member<S: AuthStore>(
     let person = input.person;
     let event = ctx.event(
         by(actor.person.id),
-        entity("group", group)?,
+        entity(RecordKind::Group, group),
         vec![changed("member")],
     )?;
     let by_person = actor.person.id;
@@ -424,11 +411,11 @@ pub async fn remove_group_member<S: AuthStore>(
             })
         })
         .await
-        .map_err(|error| stopped::<S>(&error, ErrorCode::NotFound, ErrorCode::NotFound))?;
+        .map_err(|error| change_failed::<S>(&error, Stops::both(ErrorCode::NotFound)))?;
     ctx.note(
         SecurityAction::GroupMemberRemoved,
         Some(actor.person.id),
-        Some(entity("group", group)?),
+        Some(entity(RecordKind::Group, group)),
     )
     .await;
     Ok(Done)

@@ -8,11 +8,11 @@
 use bb_core::ErrorCode;
 use bb_core::access::{AppliesTo, FieldLevel, PeopleLevel};
 use bb_core::fields::Field;
-use bb_core::id::{AssignmentId, ProjectId, RoleId};
+use bb_core::id::{AssignmentId, ProjectId};
 use bb_core::people_kinds::PeopleKind;
 use bb_policy::{
-    AccessReport, Authorized, LevelDecision, LevelSource, Masked, PeopleContext, Permission,
-    PersonRef, Place, Reason, ReasonRow, Who,
+    AccessReport, Authorized, LevelDecision, LevelSource, LevelSubject, Masked, PeopleContext,
+    Permission, PersonRef, Place, Reason, ReasonRow, Who,
 };
 use serde::Serialize;
 
@@ -161,28 +161,6 @@ pub struct AccessAnswer {
 impl Masked for AccessAnswer {}
 
 impl<S: AuthStore> Ctx<'_, S> {
-    async fn role_ref(&self, id: RoleId) -> Result<RoleRef, AppError> {
-        let name = self
-            .store()
-            .role(id)
-            .await
-            .map_err(|error| internal::<S>(&error))?
-            .map(|record| record.role.name)
-            .unwrap_or_default();
-        Ok(RoleRef { id, name })
-    }
-
-    async fn project_of_reason(
-        &self,
-        checker: &Actor,
-        project: Option<ProjectId>,
-    ) -> Result<Option<ProjectLabel>, AppError> {
-        match project {
-            Some(project) => Ok(Some(self.project_label(checker, project).await?)),
-            None => Ok(None),
-        }
-    }
-
     async fn reason_row(
         &self,
         checker: &Actor,
@@ -191,25 +169,13 @@ impl<S: AuthStore> Ctx<'_, S> {
         let who = match row.who {
             Who::Person => ReasonWho::Person,
             Who::Group(id) => ReasonWho::Group {
-                group: self
-                    .store()
-                    .group(id)
-                    .await
-                    .map_err(|error| internal::<S>(&error))?
-                    .as_ref()
-                    .map_or_else(
-                        || GroupView {
-                            id,
-                            name: String::new(),
-                        },
-                        GroupView::from,
-                    ),
+                group: self.group_view(id).await?,
             },
         };
         Ok(ReasonRowView {
             assignment: row.assignment,
             who,
-            project: self.project_of_reason(checker, row.project).await?,
+            project: self.place_label(checker, row.project).await?,
             applies_to: row.applies_to,
             inherited: row.inherited,
         })
@@ -251,24 +217,43 @@ impl<S: AuthStore> Ctx<'_, S> {
         })
     }
 
-    async fn level_answer<K: Copy, L: Copy>(
+    /// Where a level was set, as the person who asks may name it. `named` keeps the projects
+    /// already named for this answer, so a table that names one project often asks once.
+    pub(crate) async fn level_place(
+        &self,
+        actor: &Actor,
+        source: LevelSource,
+        named: &mut Vec<(ProjectId, ProjectLabel)>,
+    ) -> Result<LevelPlace, AppError> {
+        Ok(match source {
+            LevelSource::Project(project) => {
+                let known = named.iter().find(|(known, _)| *known == project);
+                let label = if let Some((_, label)) = known {
+                    label.clone()
+                } else {
+                    let label = self.project_label(actor, project).await?;
+                    named.push((project, label.clone()));
+                    label
+                };
+                LevelPlace::Project { project: label }
+            }
+            LevelSource::RoleOwn => LevelPlace::RoleOwn,
+            LevelSource::Unset => LevelPlace::Unset,
+        })
+    }
+
+    async fn level_answer<K: LevelSubject>(
         &self,
         checker: &Actor,
-        decision: &LevelDecision<K, L>,
-    ) -> Result<LevelAnswer<K, L>, AppError> {
+        decision: &LevelDecision<K>,
+        named: &mut Vec<(ProjectId, ProjectLabel)>,
+    ) -> Result<LevelAnswer<K, K::Level>, AppError> {
         let mut roles = Vec::with_capacity(decision.roles.len());
         for says in &decision.roles {
-            let set = match says.source {
-                LevelSource::Project(project) => LevelPlace::Project {
-                    project: self.project_label(checker, project).await?,
-                },
-                LevelSource::RoleOwn => LevelPlace::RoleOwn,
-                LevelSource::Unset => LevelPlace::Unset,
-            };
             roles.push(RoleSays {
                 role: self.role_ref(says.role).await?,
                 level: says.level,
-                set,
+                set: self.level_place(checker, says.source, named).await?,
             });
         }
         Ok(LevelAnswer {
@@ -297,21 +282,18 @@ impl<S: AuthStore> Ctx<'_, S> {
                 reasons,
             });
         }
+        let mut named = Vec::new();
         let mut fields = Vec::with_capacity(report.fields.len());
         for decision in &report.fields {
-            fields.push(self.level_answer(checker, decision).await?);
+            fields.push(self.level_answer(checker, decision, &mut named).await?);
         }
         let mut kinds = Vec::with_capacity(report.kinds.len());
         for decision in &report.kinds {
-            kinds.push(self.level_answer(checker, decision).await?);
+            kinds.push(self.level_answer(checker, decision, &mut named).await?);
         }
-        let place = match report.place {
-            Place::Organization => None,
-            Place::Project(project) => Some(self.project_label(checker, project).await?),
-        };
         Ok(AccessAnswer {
             person,
-            place,
+            place: self.place_label(checker, report.place).await?,
             permissions,
             fields,
             kinds,
@@ -331,7 +313,7 @@ pub async fn check_access<S: AuthStore>(
     input: CheckAccessQuery,
 ) -> Result<Authorized<AccessAnswer>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
-    let place = input.place.map_or(Place::Organization, Place::Project);
+    let place = Place::from(input.place);
     let checker = ctx.require(&actor, Permission::CheckAccess, place).await?;
     ctx.store()
         .person(input.person)

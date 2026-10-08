@@ -12,6 +12,7 @@ use std::collections::BTreeMap;
 use bb_core::ErrorCode;
 use bb_core::access::{AppliesTo, Assignment};
 use bb_core::id::{AssignmentId, GroupId, RoleId, UserId};
+use bb_core::paging::{Cut, page_len, read_len};
 use bb_core::people_kinds::PeopleKind;
 use bb_core::person::Person;
 use bb_policy::{
@@ -22,7 +23,7 @@ use serde::Serialize;
 
 use super::GroupView;
 use crate::access::{Actor, ProjectLabel};
-use crate::auth::{AppError, AuthStore, Ctx, PeoplePosition, internal};
+use crate::auth::{AppError, AuthStore, Ctx, PeoplePosition, SearchIn, if_there, internal};
 use crate::roles::RoleRef;
 
 /// List the people, a page at a time.
@@ -221,38 +222,24 @@ impl<S: AuthStore> Ctx<'_, S> {
         actor: &Actor,
         rows: &[Assignment],
     ) -> Result<Vec<HeldRole>, AppError> {
-        let mut names: BTreeMap<RoleId, String> = BTreeMap::new();
+        let mut roles: BTreeMap<RoleId, RoleRef> = BTreeMap::new();
         let mut held = Vec::new();
         for row in rows {
-            let place = row.project.map_or(Place::Organization, Place::Project);
-            let may = match self.evaluation_of(actor, place).await {
-                Ok(evaluation) => evaluation.allows(Permission::DecideRoles),
-                Err(_) => false,
-            };
+            let place = Place::from(row.project);
+            let may = if_there(self.evaluation_of(actor, place).await)?
+                .is_some_and(|evaluation| evaluation.allows(Permission::DecideRoles));
             if !may {
                 continue;
             }
-            let project = match row.project {
-                Some(project) => Some(self.project_label(actor, project).await?),
-                None => None,
-            };
+            let project = self.place_label(actor, row.project).await?;
             let role = match row.role {
-                Some(id) => {
-                    let name = if let Some(known) = names.get(&id) {
-                        known.clone()
-                    } else {
-                        let found = self
-                            .store()
-                            .role(id)
-                            .await
-                            .map_err(|error| internal::<S>(&error))?
-                            .map(|record| record.role.name)
-                            .unwrap_or_default();
-                        names.insert(id, found.clone());
-                        found
-                    };
-                    Some(RoleRef { id, name })
-                }
+                Some(id) => Some(if let Some(known) = roles.get(&id) {
+                    known.clone()
+                } else {
+                    let named = self.role_ref(id).await?;
+                    roles.insert(id, named.clone());
+                    named
+                }),
                 None => None,
             };
             held.push(HeldRole {
@@ -320,19 +307,23 @@ pub async fn people<S: AuthStore>(
     let access = ctx
         .require(&actor, Permission::ManagePeople, Place::Organization)
         .await?;
-    let limit = u64::from(bb_core::paging::page_size(Some(input.limit)));
+    let len = page_len(Some(input.limit));
     let after = ctx.people_position(input.cursor.as_deref()).await?;
-    // One more than the page, to know whether there is a next one.
-    let mut found = ctx
-        .store()
-        .people_page(input.search.as_deref(), true, after.as_ref(), limit + 1)
-        .await
-        .map_err(|error| internal::<S>(&error))?;
-    let more = u64::try_from(found.len()).is_ok_and(|count| count > limit);
-    found.truncate(usize::try_from(limit).unwrap_or(usize::MAX));
-    let next_cursor = more.then(|| found.last().map(write_cursor)).flatten();
-    let mut items = Vec::with_capacity(found.len());
-    for person in &found {
+    let page = Cut::of(
+        ctx.store()
+            .people_page(
+                input.search.as_deref(),
+                SearchIn::NamesAndAddresses,
+                after.as_ref(),
+                read_len(len),
+            )
+            .await
+            .map_err(|error| internal::<S>(&error))?,
+        len,
+    );
+    let next_cursor = page.next_cursor(write_cursor);
+    let mut items = Vec::with_capacity(page.items.len());
+    for person in &page.items {
         let wanted = Wanted {
             groups: input.groups,
             roles: input.roles,
@@ -436,25 +427,26 @@ impl<S: AuthStore> Ctx<'_, S> {
         limit: u32,
         already_in: impl Fn(&Person) -> Option<bool> + Send,
     ) -> Result<ChoicePage, AppError> {
-        let limit = u64::from(bb_core::paging::page_size(Some(limit)));
+        let len = page_len(Some(limit));
         let after = self.people_position(cursor).await?;
-        let mut found = self
-            .store()
-            .people_page(search, false, after.as_ref(), limit + 1)
-            .await
-            .map_err(|error| internal::<S>(&error))?;
-        let more = u64::try_from(found.len()).is_ok_and(|count| count > limit);
-        found.truncate(usize::try_from(limit).unwrap_or(usize::MAX));
+        let page = Cut::of(
+            self.store()
+                .people_page(search, SearchIn::Names, after.as_ref(), read_len(len))
+                .await
+                .map_err(|error| internal::<S>(&error))?,
+            len,
+        );
         let mut shown = Vec::new();
         let mut items = Vec::new();
-        for person in &found {
+        for person in &page.items {
             if let Some(choice) = person_choice(viewer, person, already_in(person)) {
                 shown.push(person);
                 items.push(choice);
             }
         }
         // The cursor names the last person who is in the page, not the last one that was looked at.
-        let next_cursor = more
+        let next_cursor = page
+            .more
             .then(|| shown.last().map(|last| write_cursor(last)))
             .flatten();
         Ok(ChoicePage { items, next_cursor })

@@ -37,6 +37,19 @@ pub trait ChangeStore: Send + Sync {
         + Send
         + 'a,
     ) -> impl Future<Output = Result<T, Self::Error>> + Send + 'a;
+
+    /// Runs `read` in one snapshot: everything it reads belongs together, and nothing is written.
+    /// This is how a read that is also needed inside a change (`queries!` in the ports) is
+    /// written once: the change runs it on its own transaction, a plain read runs it here.
+    ///
+    /// # Errors
+    /// Returns the error of `read`, or the error of the database.
+    fn read_snapshot<'a, T: Send + 'a>(
+        &'a self,
+        read: impl for<'t> FnOnce(&'t mut Self::Transaction) -> BoxFuture<'t, Result<T, Self::Error>>
+        + Send
+        + 'a,
+    ) -> impl Future<Output = Result<T, Self::Error>> + Send + 'a;
 }
 
 /// The file in which a server without a console saves the setup code of the first start

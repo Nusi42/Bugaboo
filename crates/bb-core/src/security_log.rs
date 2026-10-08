@@ -45,10 +45,7 @@ impl Digest {
 
 impl fmt::Debug for Digest {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
-        for byte in &self.0[..4] {
-            write!(formatter, "{byte:02x}")?;
-        }
-        formatter.write_str("..")
+        write!(formatter, "{}..", crate::hex::encode(&self.0[..4]))
     }
 }
 

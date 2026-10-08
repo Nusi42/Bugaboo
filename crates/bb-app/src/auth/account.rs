@@ -6,23 +6,21 @@ use bb_auth::{
     domain_is_listed, same_digest,
 };
 use bb_core::ErrorCode;
-use bb_core::event::Actor;
+use bb_core::event::{Actor, RecordKind};
 use bb_core::id::UserId;
 use bb_core::person::Person;
 use bb_core::sign_in::{SecurityAction, SessionStage, SetupCode};
 use serde_json::json;
 use zeroize::Zeroizing;
 
-use super::ctx::{
-    AppError, Ctx, by, change_failed, changed, entity, fixed_entity, internal, set_to,
-};
+use super::ctx::Ctx;
+use super::error::{AppError, Stops, change_failed, internal};
+use super::events::{by, changed, entity, fixed_entity, set_to};
 use super::store::AuthStore;
 use super::types::{
     AcceptInvitation, ChangePassword, CompleteSetup, IssueSetupCode, SignUp, Started,
 };
-
-/// The longest display name, in characters.
-const DISPLAY_NAME_MAX: usize = 100;
+use crate::input::clean_name;
 
 /// The password as a new password: the rules of AUTH-01, as the error a person can read.
 pub(crate) fn check_new_password(password: &str) -> Result<(), AppError> {
@@ -33,18 +31,6 @@ pub(crate) fn check_new_password(password: &str) -> Result<(), AppError> {
             PasswordProblem::TooLong => ErrorCode::InvalidRequest,
         })
     })
-}
-
-/// The name as it is kept: trimmed, not empty, not too long, no control characters.
-pub(crate) fn clean_display_name(name: &str) -> Result<String, AppError> {
-    let name = name.trim();
-    if name.is_empty()
-        || name.chars().count() > DISPLAY_NAME_MAX
-        || name.chars().any(char::is_control)
-    {
-        return Err(ErrorCode::InvalidRequest.into());
-    }
-    Ok(name.to_owned())
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
@@ -90,7 +76,7 @@ pub async fn issue_setup_code<S: AuthStore>(
     });
     let event = ctx.event(
         Actor::System,
-        fixed_entity("setup_code", "first-start")?,
+        fixed_entity(RecordKind::SetupCode, "first-start")?,
         vec![changed("setup_code")],
     )?;
     let store = ctx.store();
@@ -104,7 +90,7 @@ pub async fn issue_setup_code<S: AuthStore>(
             })
         })
         .await
-        .map_err(|error| change_failed::<S>(&error, None))?;
+        .map_err(|error| change_failed::<S>(&error, Stops::NONE))?;
     Ok(code)
 }
 
@@ -152,7 +138,7 @@ pub async fn complete_setup<S: AuthStore>(
     // The code is right: whatever is wrong with the rest is no guess at the code.
     ctx.slot_succeeded(slot);
     let email = EmailAddress::parse(&input.email).ok_or(ErrorCode::InvalidRequest)?;
-    let display_name = clean_display_name(&input.display_name)?;
+    let display_name = clean_name(&input.display_name)?;
     check_new_password(&input.password)?;
     let hash = ctx
         .services
@@ -171,7 +157,7 @@ pub async fn complete_setup<S: AuthStore>(
     let (assignment_id, administrator) = (assignment.id, assignment.role);
     let event = ctx.event(
         by(person.id),
-        entity("person", person.id)?,
+        entity(RecordKind::Person, person.id),
         vec![
             changed("account"),
             set_to("role", json!(administrator.map(|role| role.to_string()))),
@@ -195,7 +181,7 @@ pub async fn complete_setup<S: AuthStore>(
             })
         })
         .await
-        .map_err(|error| change_failed::<S>(&error, Some(ErrorCode::WrongSetupCode)))?;
+        .map_err(|error| change_failed::<S>(&error, Stops::both(ErrorCode::WrongSetupCode)))?;
     // The code is dead from here on: the file that holds it goes now, not at the next start. The
     // start-up clean-up stays as a safety net for a file that cannot be removed now.
     if let Some(file) = &ctx.services.setup_code_file
@@ -206,13 +192,13 @@ pub async fn complete_setup<S: AuthStore>(
     ctx.note(
         SecurityAction::SetupCompleted,
         Some(person.id),
-        Some(entity("person", person.id)?),
+        Some(entity(RecordKind::Person, person.id)),
     )
     .await;
     ctx.note(
         SecurityAction::AssignmentMade,
         Some(person.id),
-        Some(entity("assignment", assignment_id)?),
+        Some(entity(RecordKind::Assignment, assignment_id)),
     )
     .await;
     ctx.started(&new, &person, &settings, None)
@@ -234,7 +220,7 @@ pub async fn sign_up<S: AuthStore>(ctx: &Ctx<'_, S>, input: SignUp) -> Result<St
         ctx.note(SecurityAction::SignUpRefused, None, None).await;
         return Err(refused());
     }
-    let display_name = clean_display_name(&input.display_name)?;
+    let display_name = clean_name(&input.display_name)?;
     check_new_password(&input.password)?;
     let hash = ctx
         .services
@@ -248,7 +234,7 @@ pub async fn sign_up<S: AuthStore>(ctx: &Ctx<'_, S>, input: SignUp) -> Result<St
     let new = ctx.new_session(person.id, SessionStage::Active)?;
     let event = ctx.event(
         by(person.id),
-        entity("person", person.id)?,
+        entity(RecordKind::Person, person.id),
         vec![changed("account")],
     )?;
     let (store, stored_person, session, now) =
@@ -265,7 +251,7 @@ pub async fn sign_up<S: AuthStore>(ctx: &Ctx<'_, S>, input: SignUp) -> Result<St
         })
         .await;
     if let Err(error) = result {
-        let error = change_failed::<S>(&error, Some(ErrorCode::SignUpRefused));
+        let error = change_failed::<S>(&error, Stops::both(ErrorCode::SignUpRefused));
         if matches!(error, AppError::Refused(_)) {
             ctx.note(SecurityAction::SignUpRefused, None, None).await;
         }
@@ -274,7 +260,7 @@ pub async fn sign_up<S: AuthStore>(ctx: &Ctx<'_, S>, input: SignUp) -> Result<St
     ctx.note(
         SecurityAction::SignUpAccepted,
         Some(person.id),
-        Some(entity("person", person.id)?),
+        Some(entity(RecordKind::Person, person.id)),
     )
     .await;
     ctx.started(&new, &person, &settings, None)
@@ -308,7 +294,7 @@ pub async fn accept_invitation<S: AuthStore>(
         return Err(invalid());
     };
     let email = EmailAddress::parse(&invitation.email).ok_or_else(invalid)?;
-    let display_name = clean_display_name(&input.display_name)?;
+    let display_name = clean_name(&input.display_name)?;
     check_new_password(&input.password)?;
     let hash = ctx
         .services
@@ -323,7 +309,7 @@ pub async fn accept_invitation<S: AuthStore>(
     let settings = ctx.settings().await?;
     let event = ctx.event(
         by(person.id),
-        entity("person", person.id)?,
+        entity(RecordKind::Person, person.id),
         vec![changed("account")],
     )?;
     let (store, stored_person, session, invitation_id) = (
@@ -347,7 +333,7 @@ pub async fn accept_invitation<S: AuthStore>(
         })
         .await;
     if let Err(error) = result {
-        let error = change_failed::<S>(&error, Some(ErrorCode::InvitationInvalid));
+        let error = change_failed::<S>(&error, Stops::both(ErrorCode::InvitationInvalid));
         if matches!(error, AppError::Refused(_)) {
             ctx.note(SecurityAction::InvitationRefused, None, None)
                 .await;
@@ -357,7 +343,7 @@ pub async fn accept_invitation<S: AuthStore>(
     ctx.note(
         SecurityAction::InvitationAccepted,
         Some(person.id),
-        Some(entity("invitation", invitation.id)?),
+        Some(entity(RecordKind::Invitation, invitation.id)),
     )
     .await;
     ctx.started(&new, &person, &settings, None)
@@ -386,7 +372,7 @@ pub async fn change_password<S: AuthStore>(
     let settings = ctx.settings().await?;
     let event = ctx.event(
         by(person.id),
-        entity("person", person.id)?,
+        entity(RecordKind::Person, person.id),
         vec![changed("password")],
     )?;
     let (store, session, person_id, now) = (ctx.store(), new.session.clone(), person.id, ctx.now());
@@ -399,7 +385,7 @@ pub async fn change_password<S: AuthStore>(
             })
         })
         .await
-        .map_err(|error| change_failed::<S>(&error, None))?;
+        .map_err(|error| change_failed::<S>(&error, Stops::NONE))?;
     ctx.note(SecurityAction::PasswordChanged, Some(person.id), None)
         .await;
     ctx.started(&new, &person, &settings, None)

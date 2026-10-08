@@ -6,9 +6,14 @@
 //! This is the only file that may wrap query text in `AssertSqlSafe`, and the only one that
 //! names the sqlx query functions (ARCH-SQL-EDGE).
 
+use std::future::Future;
 use std::str::FromStr as _;
 use std::time::Duration;
 
+use bb_core::id::{
+    AccessKeyId, AssignmentId, EntityId, EventId, GroupId, IdError, InvitationId, JobId, PasskeyId,
+    ProjectId, RoleId, SessionId, UserId,
+};
 use jiff::Timestamp;
 use sea_query::{
     DeleteStatement, Iden, InsertStatement, PostgresQueryBuilder, SchemaStatementBuilder,
@@ -233,23 +238,7 @@ impl Database {
         &self,
         statement: impl Into<Statement<'a>>,
     ) -> Result<u64, StoreError> {
-        let statement = statement.into();
-        match &self.pool {
-            Pool::Sqlite(pool) => {
-                let (sql, values) = statement.build(Dialect::Sqlite);
-                Ok(sqlx::query_with(AssertSqlSafe(sql), values)
-                    .execute(pool)
-                    .await?
-                    .rows_affected())
-            }
-            Pool::Postgres(pool) => {
-                let (sql, values) = statement.build(Dialect::Postgres);
-                Ok(sqlx::query_with(AssertSqlSafe(sql), values)
-                    .execute(pool)
-                    .await?
-                    .rows_affected())
-            }
-        }
+        Connection::Pool(&self.pool).execute(statement.into()).await
     }
 
     /// Reads all rows of a query.
@@ -257,23 +246,9 @@ impl Database {
         &self,
         statement: impl Into<Statement<'a>>,
     ) -> Result<Vec<Row>, StoreError> {
-        let statement = statement.into();
-        match &self.pool {
-            Pool::Sqlite(pool) => {
-                let (sql, values) = statement.build(Dialect::Sqlite);
-                let rows = sqlx::query_with(AssertSqlSafe(sql), values)
-                    .fetch_all(pool)
-                    .await?;
-                Ok(rows.into_iter().map(Row::Sqlite).collect())
-            }
-            Pool::Postgres(pool) => {
-                let (sql, values) = statement.build(Dialect::Postgres);
-                let rows = sqlx::query_with(AssertSqlSafe(sql), values)
-                    .fetch_all(pool)
-                    .await?;
-                Ok(rows.into_iter().map(Row::Postgres).collect())
-            }
-        }
+        Connection::Pool(&self.pool)
+            .fetch_all(statement.into())
+            .await
     }
 
     /// Reads the first row of a query, if there is one.
@@ -282,6 +257,98 @@ impl Database {
         statement: impl Into<Statement<'a>>,
     ) -> Result<Option<Row>, StoreError> {
         Ok(self.fetch_all(statement).await?.into_iter().next())
+    }
+}
+
+/// Something that runs the statements of a read: the pool (one statement, no snapshot) or a
+/// transaction (a snapshot, or a change that is open). A read is written once over this, so there
+/// is no pool version and no transaction version of it.
+pub(crate) trait Reader: Send {
+    /// Reads all rows of a query.
+    fn fetch_all(
+        &mut self,
+        select: &SelectStatement,
+    ) -> impl Future<Output = Result<Vec<Row>, StoreError>> + Send;
+
+    /// Reads the first row of a query, if there is one.
+    fn fetch_optional(
+        &mut self,
+        select: &SelectStatement,
+    ) -> impl Future<Output = Result<Option<Row>, StoreError>> + Send {
+        async move { Ok(self.fetch_all(select).await?.into_iter().next()) }
+    }
+}
+
+impl Reader for &Database {
+    fn fetch_all(
+        &mut self,
+        select: &SelectStatement,
+    ) -> impl Future<Output = Result<Vec<Row>, StoreError>> + Send {
+        Database::fetch_all(self, select)
+    }
+}
+
+impl Reader for Transaction {
+    fn fetch_all(
+        &mut self,
+        select: &SelectStatement,
+    ) -> impl Future<Output = Result<Vec<Row>, StoreError>> + Send {
+        Self::fetch_all(self, select)
+    }
+}
+
+/// Where a statement runs: on the pool, or inside a transaction. The two ways to run a
+/// statement are written once, here, for both databases.
+enum Connection<'c> {
+    Pool(&'c Pool),
+    Transaction(&'c mut TxInner),
+}
+
+impl Connection<'_> {
+    /// Runs a statement and tells how many rows it changed.
+    async fn execute(self, statement: Statement<'_>) -> Result<u64, StoreError> {
+        macro_rules! run {
+            ($dialect:expr, $executor:expr) => {{
+                let (sql, values) = statement.build($dialect);
+                Ok(sqlx::query_with(AssertSqlSafe(sql), values)
+                    .execute($executor)
+                    .await?
+                    .rows_affected())
+            }};
+        }
+        match self {
+            Self::Pool(Pool::Sqlite(pool)) => run!(Dialect::Sqlite, pool),
+            Self::Pool(Pool::Postgres(pool)) => run!(Dialect::Postgres, pool),
+            Self::Transaction(TxInner::Sqlite(transaction)) => {
+                run!(Dialect::Sqlite, &mut **transaction)
+            }
+            Self::Transaction(TxInner::Postgres(transaction)) => {
+                run!(Dialect::Postgres, &mut **transaction)
+            }
+        }
+    }
+
+    /// Runs a statement and reads all rows it answers (also a statement with `RETURNING`).
+    async fn fetch_all(self, statement: Statement<'_>) -> Result<Vec<Row>, StoreError> {
+        macro_rules! run {
+            ($dialect:expr, $executor:expr, $row:path) => {{
+                let (sql, values) = statement.build($dialect);
+                let rows = sqlx::query_with(AssertSqlSafe(sql), values)
+                    .fetch_all($executor)
+                    .await?;
+                Ok(rows.into_iter().map($row).collect())
+            }};
+        }
+        match self {
+            Self::Pool(Pool::Sqlite(pool)) => run!(Dialect::Sqlite, pool, Row::Sqlite),
+            Self::Pool(Pool::Postgres(pool)) => run!(Dialect::Postgres, pool, Row::Postgres),
+            Self::Transaction(TxInner::Sqlite(transaction)) => {
+                run!(Dialect::Sqlite, &mut **transaction, Row::Sqlite)
+            }
+            Self::Transaction(TxInner::Postgres(transaction)) => {
+                run!(Dialect::Postgres, &mut **transaction, Row::Postgres)
+            }
+        }
     }
 }
 
@@ -319,23 +386,9 @@ impl Transaction {
         &mut self,
         statement: impl Into<Statement<'a>>,
     ) -> Result<u64, StoreError> {
-        let statement = statement.into();
-        match &mut self.inner {
-            TxInner::Sqlite(transaction) => {
-                let (sql, values) = statement.build(Dialect::Sqlite);
-                Ok(sqlx::query_with(AssertSqlSafe(sql), values)
-                    .execute(&mut **transaction)
-                    .await?
-                    .rows_affected())
-            }
-            TxInner::Postgres(transaction) => {
-                let (sql, values) = statement.build(Dialect::Postgres);
-                Ok(sqlx::query_with(AssertSqlSafe(sql), values)
-                    .execute(&mut **transaction)
-                    .await?
-                    .rows_affected())
-            }
-        }
+        Connection::Transaction(&mut self.inner)
+            .execute(statement.into())
+            .await
     }
 
     /// Reads all rows of a query inside the transaction (also statements with `RETURNING`).
@@ -343,23 +396,9 @@ impl Transaction {
         &mut self,
         statement: impl Into<Statement<'a>>,
     ) -> Result<Vec<Row>, StoreError> {
-        let statement = statement.into();
-        match &mut self.inner {
-            TxInner::Sqlite(transaction) => {
-                let (sql, values) = statement.build(Dialect::Sqlite);
-                let rows = sqlx::query_with(AssertSqlSafe(sql), values)
-                    .fetch_all(&mut **transaction)
-                    .await?;
-                Ok(rows.into_iter().map(Row::Sqlite).collect())
-            }
-            TxInner::Postgres(transaction) => {
-                let (sql, values) = statement.build(Dialect::Postgres);
-                let rows = sqlx::query_with(AssertSqlSafe(sql), values)
-                    .fetch_all(&mut **transaction)
-                    .await?;
-                Ok(rows.into_iter().map(Row::Postgres).collect())
-            }
-        }
+        Connection::Transaction(&mut self.inner)
+            .fetch_all(statement.into())
+            .await
     }
 
     /// Reads the first row of a query inside the transaction, if there is one.
@@ -473,18 +512,18 @@ impl Row {
     }
 
     /// An ID stored as 16 bytes.
-    pub(crate) fn id_bytes(&self, column: impl Iden + Copy) -> Result<[u8; 16], StoreError> {
+    pub(crate) fn id<T: StoredId>(&self, column: impl Iden + Copy) -> Result<T, StoreError> {
         let bytes: Vec<u8> = self.get(column)?;
-        <[u8; 16]>::try_from(bytes).map_err(|_| StoreError::Corrupt("an ID"))
+        T::read(bytes)
     }
 
     /// An ID that may be missing.
-    pub(crate) fn optional_id_bytes(
+    pub(crate) fn optional_id<T: StoredId>(
         &self,
         column: impl Iden + Copy,
-    ) -> Result<Option<[u8; 16]>, StoreError> {
+    ) -> Result<Option<T>, StoreError> {
         self.get::<Option<Vec<u8>>>(column)?
-            .map(|bytes| <[u8; 16]>::try_from(bytes).map_err(|_| StoreError::Corrupt("an ID")))
+            .map(T::read)
             .transpose()
     }
 
@@ -503,6 +542,63 @@ impl Row {
             .transpose()
     }
 }
+
+/// An ID as the database holds it: 16 bytes. Writing and reading go through here, so no module
+/// has its own copy of the conversion or its own wording for "this row cannot be read".
+pub(crate) trait StoredId: Copy {
+    /// What the ID is, for the report of a stored value that is not one.
+    const WHAT: &'static str;
+
+    /// The ID with these bytes, if they are one.
+    fn from_stored(bytes: [u8; 16]) -> Result<Self, IdError>;
+
+    /// The 16 bytes of the ID.
+    fn to_stored(self) -> [u8; 16];
+
+    /// The bytes as a value to bind to a query.
+    fn stored(self) -> Vec<u8> {
+        self.to_stored().to_vec()
+    }
+
+    /// The ID stored in `bytes`, or the report that the row is corrupt.
+    fn read(bytes: Vec<u8>) -> Result<Self, StoreError> {
+        <[u8; 16]>::try_from(bytes)
+            .ok()
+            .and_then(|bytes| Self::from_stored(bytes).ok())
+            .ok_or(StoreError::Corrupt(Self::WHAT))
+    }
+}
+
+macro_rules! stored_ids {
+    ($($ty:ident => $what:literal),+ $(,)?) => {
+        $(impl StoredId for $ty {
+            const WHAT: &'static str = $what;
+
+            fn from_stored(bytes: [u8; 16]) -> Result<Self, IdError> {
+                Self::from_bytes(bytes)
+            }
+
+            fn to_stored(self) -> [u8; 16] {
+                self.to_bytes()
+            }
+        })+
+    };
+}
+
+stored_ids!(
+    AccessKeyId => "an access key ID",
+    AssignmentId => "an assignment ID",
+    EntityId => "a record ID",
+    EventId => "an event ID",
+    GroupId => "a group ID",
+    InvitationId => "an invitation ID",
+    JobId => "a job ID",
+    PasskeyId => "a passkey ID",
+    ProjectId => "a project ID",
+    RoleId => "a role ID",
+    SessionId => "a session ID",
+    UserId => "a person ID",
+);
 
 /// A moment as it is stored: microseconds since 1970 (UTC), the same whole number in both databases.
 pub(crate) fn to_micros(time: Timestamp) -> i64 {

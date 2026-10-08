@@ -19,7 +19,7 @@ use super::fake::FakeStore;
 use super::world::{OTHER_PASSWORD, PASSWORD, PUBLIC_URL, World};
 use crate::access::{MakeStartingRoles, Permission, make_starting_roles};
 use crate::auth::{
-    AddPasskey, AuthStore as _, ChangePassword, ChangeSignUpPolicy, CompleteSetup, ConfirmCodeApp,
+    AddPasskey, ChangePassword, ChangeSignUpPolicy, CompleteSetup, ConfirmCodeApp,
     CreateInvitation, DeleteAccessKey, EndSession, IssueSetupCode, MakeAccessKey,
     PasskeyRegistrationQuery, PasskeySecondStep, PasskeySecondStepQuery, PasskeySignIn,
     PasskeySignInQuery, RemoveCodeApp, RemovePasskey, RenewBackupCodes, RevokeInvitation,
@@ -31,7 +31,7 @@ use crate::auth::{
     revoke_invitation, second_step, sessions, sign_in, sign_out, sign_out_everywhere, sign_up,
     start_code_app,
 };
-use crate::auth::{delete_access_key, make_access_key};
+use crate::auth::{SecondStepStore as _, delete_access_key, make_access_key};
 use crate::people::{
     AddGroupMember, DeleteGroup, MakeGroup, RemoveGroupMember, RenameGroup, add_group_member,
     delete_group, make_group, remove_group_member, rename_group,
@@ -43,7 +43,7 @@ use crate::projects::{
 use crate::roles::{
     AssignRole, ChangeRole, CopyRole, DeleteRole, Given, MakeRole, RemoveAssignment, ResetRole,
     SetFieldLevel, SetPeopleLevel, Subject, assign_role, change_role, copy_role, delete_role,
-    make_role, remove_assignment, reset_role, set_field_level, set_people_level,
+    make_role, remove_assignment, reset_role, set_level,
 };
 use crate::settings::{
     ChangeSetting, LockSetting, ResetSetting, SettingsScope, change_setting, lock_setting,
@@ -926,7 +926,7 @@ pub(crate) async fn set_field_level_scenario(world: &World) -> Added {
     let role = a_role(world, "Own").await?;
     measured(
         &world.store,
-        set_field_level(
+        set_level(
             &world.ctx(),
             SetFieldLevel {
                 session_token: token(world),
@@ -944,7 +944,7 @@ pub(crate) async fn set_people_level_scenario(world: &World) -> Added {
     let role = a_role(world, "Own").await?;
     measured(
         &world.store,
-        set_people_level(
+        set_level(
             &world.ctx(),
             SetPeopleLevel {
                 session_token: token(world),

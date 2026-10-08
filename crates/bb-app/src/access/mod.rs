@@ -31,7 +31,7 @@ pub use bb_policy::{
 pub use candidates::{PeopleToCheckPage, PeopleToCheckQuery, people_to_check};
 pub use own_loss::{OwnChange, OwnLoss, OwnLossQuery, own_loss};
 pub use starting::{MakeStartingRoles, make_starting_roles};
-pub use store::{LevelRules, PolicyStore, RoleRecord};
+pub use store::{PlaceLevels, PolicyStore, RoleRecord};
 pub use visibility::{
     FieldPermissions, FieldPermissionsQuery, LevelCell, LevelOrigin, LevelRow, LevelTable,
     PeopleVisibility, PeopleVisibilityQuery, ROLES_MAX, field_permissions, people_visibility,
@@ -39,7 +39,8 @@ pub use visibility::{
 
 use serde::Serialize;
 
-use crate::auth::{AppError, AuthStore, Ctx, internal};
+use crate::auth::{AppError, AuthStore, Ctx, if_there, internal};
+use crate::projects::sub_projects_in;
 
 /// Who asks: the signed-in person behind a session, or the owner of the access key a script
 /// came with.
@@ -127,10 +128,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         place: Place,
     ) -> Result<Arc<Evaluation>, AppError> {
         let owners = self.evaluate(actor.person.id, place).await?;
-        Ok(match &actor.key {
-            Some(key) => Arc::new(owners.narrowed(&key.narrowing)),
-            None => owners,
-        })
+        Ok(owners.narrowed_by(actor.key_scope()))
     }
 
     /// What `person` may do at `place`, from the policy engine. The result is kept for the rest
@@ -225,10 +223,8 @@ impl<S: AuthStore> Ctx<'_, S> {
             return Ok(PersonRef::Someone);
         };
         // The role label is the person's own role at the place the viewer looks at.
-        let role = match self.evaluate(person, viewer.place()).await {
-            Ok(theirs) => theirs.first_role_name().map(str::to_owned),
-            Err(_) => None,
-        };
+        let role = if_there(self.evaluate(person, viewer.place()).await)?
+            .and_then(|theirs| theirs.first_role_name().map(str::to_owned));
         Ok(resolve(
             viewer,
             kind,
@@ -242,13 +238,27 @@ impl<S: AuthStore> Ctx<'_, S> {
         ))
     }
 
+    /// The place as the actor may name it: the project's label, or `None` for the whole
+    /// organization.
+    pub(crate) async fn place_label(
+        &self,
+        actor: &Actor,
+        place: impl Into<Place>,
+    ) -> Result<Option<ProjectLabel>, AppError> {
+        match place.into() {
+            Place::Organization => Ok(None),
+            Place::Project(project) => self.project_label(actor, project).await.map(Some),
+        }
+    }
+
     /// The project as the actor may name it.
     pub(crate) async fn project_label(
         &self,
         actor: &Actor,
         project: ProjectId,
     ) -> Result<ProjectLabel, AppError> {
-        let Ok(evaluation) = self.evaluation_of(actor, Place::Project(project)).await else {
+        let Some(evaluation) = if_there(self.evaluation_of(actor, Place::Project(project)).await)?
+        else {
             return Ok(ProjectLabel::Hidden);
         };
         if !evaluation.knows_project() {
@@ -268,7 +278,25 @@ impl<S: AuthStore> Ctx<'_, S> {
 }
 
 /// What `person` holds at `place`, read inside a change after the policy lock: what a rule of the
-/// change is judged on, not what was stored when the request began.
+/// change is judged on, not what was stored when the request began. `None` when the place is gone.
+///
+/// # Errors
+/// The error of the store.
+async fn held_if_there_in<S: AuthStore>(
+    transaction: &mut S::Transaction,
+    person: UserId,
+    place: Place,
+) -> Result<Option<Evaluation>, S::Error> {
+    Ok(S::policy_inputs_in(transaction, person, place)
+        .await?
+        .map(|inputs| evaluate(&inputs)))
+}
+
+/// [`held_if_there_in`], for a rule that holds nobody to a place that is gone.
+///
+/// It evaluates the person without any access key, so every caller must be a use case that needs
+/// a permission in [`NOT_FOR_KEYS`] (a key never reaches it); the test
+/// `what_the_change_rules_judge_without_the_key_needs_a_permission_keys_never_hold` lists them.
 ///
 /// # Errors
 /// [`Refusal::TooMuch`] (as the error of the store) when the place is gone, or the error of the
@@ -278,10 +306,9 @@ pub(crate) async fn held_in<S: AuthStore>(
     person: UserId,
     place: Place,
 ) -> Result<Evaluation, S::Error> {
-    match S::policy_inputs_in(transaction, person, place).await? {
-        Some(inputs) => Ok(evaluate(&inputs)),
-        None => Err(S::refused(Refusal::TooMuch)),
-    }
+    held_if_there_in::<S>(transaction, person, place)
+        .await?
+        .ok_or_else(|| S::refused(Refusal::TooMuch))
 }
 
 /// Whether `giver` may give this row: they hold every permission of its role at the place it is
@@ -293,7 +320,8 @@ pub(crate) async fn held_in<S: AuthStore>(
 /// lead of everything below it. A row of *No access* gives nothing.
 ///
 /// It runs inside the change, after the policy lock, so it judges what is stored now and not
-/// what was stored when the request began.
+/// what was stored when the request began. It evaluates the giver without any access key, so every
+/// caller must be a use case that needs a permission in [`NOT_FOR_KEYS`] (see [`held_in`]).
 ///
 /// # Errors
 /// [`Refusal::TooMuch`] (as the error of the store) when they hold less than the role somewhere
@@ -309,11 +337,11 @@ pub(crate) async fn ensure_may_give_in<S: AuthStore>(
     let Some(record) = S::role_in(transaction, role).await? else {
         return Ok(());
     };
-    let mut places = vec![row.project.map_or(Place::Organization, Place::Project)];
+    let mut places = vec![Place::from(row.project)];
     let reaches_below = row.applies_to == AppliesTo::ProjectAndSubProjects;
     if let (Some(project), true) = (row.project, reaches_below) {
         places.extend(
-            S::sub_projects_in(transaction, project)
+            sub_projects_in::<S>(transaction, project)
                 .await?
                 .into_iter()
                 .map(Place::Project),
@@ -352,10 +380,9 @@ pub(crate) async fn ensure_may_lift_in<S: AuthStore>(
         let (None, Some(project)) = (row.role, row.project) else {
             continue;
         };
-        let may = match S::policy_inputs_in(transaction, actor, Place::Project(project)).await? {
-            Some(inputs) => evaluate(&inputs).allows(Permission::DecideRoles),
-            None => false,
-        };
+        let may = held_if_there_in::<S>(transaction, actor, Place::Project(project))
+            .await?
+            .is_some_and(|held| held.allows(Permission::DecideRoles));
         if !may {
             return Err(S::refused(Refusal::CannotLift));
         }

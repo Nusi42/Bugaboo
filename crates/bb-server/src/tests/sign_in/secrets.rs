@@ -1,12 +1,12 @@
 //! What signing in writes down: an event for every change (ADR-0007), the security log with
 //! its chain (SEC-15), and no secret anywhere but where it belongs (SEC-16).
 
+use bb_app::auth::{AccountStore as _, SecondStepStore as _};
 use std::fmt::Write as _;
 
 use bb_app::auth::{
-    AuthStore as _, ChangePassword, ChangeSignUpPolicy, ConfirmCodeApp, CreateInvitation,
-    RemoveCodeApp, RenewBackupCodes, RevokeInvitation, SessionsQuery, SignOut, SignUpPolicy,
-    StartCodeApp,
+    ChangePassword, ChangeSignUpPolicy, ConfirmCodeApp, CreateInvitation, RemoveCodeApp,
+    RenewBackupCodes, RevokeInvitation, SessionsQuery, SignOut, SignUpPolicy, StartCodeApp,
 };
 use bb_app::context::Clock as _;
 use bb_auth::TotpSecret;

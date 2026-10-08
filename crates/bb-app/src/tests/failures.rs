@@ -5,12 +5,18 @@
 use std::io::Write;
 use std::sync::{Arc, Mutex};
 
+use bb_core::ErrorCode;
+use bb_core::id::{GroupId, ProjectId, RoleId};
+use bb_core::people_kinds::PeopleKind;
 use bb_core::sign_in::SecurityAction;
-use bb_policy::{Permission, Place};
+use bb_policy::{PeopleContext, Permission, Place};
+use jiff::Timestamp;
 use tracing_subscriber::fmt::MakeWriter;
 
 use super::world::{Outcome, PASSWORD, World};
+use crate::access::ProjectLabel;
 use crate::auth::{AppError, CreateInvitation, SignIn, create_invitation, sign_in};
+use crate::projects::{MakeProject, make_project};
 use crate::roles::{
     AssignRole, Given, MakeRole, RemoveAssignment, Subject, assign_role, make_role,
     remove_assignment,
@@ -263,5 +269,92 @@ async fn auth_07_a_key_whose_public_prefix_is_taken_is_made_again_once() -> Outc
     super::fake::clash_the_next_key_prefix();
     let again = make_access_key(&world.ctx(), ask_for("Again")).await;
     assert!(again.is_ok(), "a second key is stored after one clash");
+    Ok(())
+}
+
+/// A store that breaks while a request asks who may do what is a failure of the server. Only a
+/// project that is not there, or that the person may not know about, is an answer (hidden, no
+/// role label, not allowed): the places where a read used to turn any failure into such an answer.
+#[tokio::test]
+async fn sec_03_a_store_that_breaks_while_asking_who_may_do_what_is_not_taken_for_an_answer()
+-> Outcome {
+    let world = World::new().await?;
+    let token = world.admin.session_token.clone();
+    let made = make_project(
+        &world.ctx(),
+        MakeProject {
+            session_token: token.clone(),
+            parent: None,
+            short_name: "ACME".to_owned(),
+            name: "Acme".to_owned(),
+        },
+    )
+    .await?
+    .into_value();
+    let ctx = world.ctx();
+    let actor = ctx.actor(&token).await?;
+    let viewer = ctx.evaluation_of(&actor, Place::Organization).await?;
+    let ada = world.admin.person.id;
+    // A project that does not exist is hidden, has no role label and may not be made in: facts.
+    let nowhere =
+        ProjectId::from_parts(Timestamp::UNIX_EPOCH, [0; 10]).map_err(|e| e.to_string())?;
+    let ctx = world.ctx();
+    assert_eq!(
+        ctx.project_label(&actor, nowhere).await?,
+        ProjectLabel::Hidden
+    );
+    assert!(!ctx.may_make_projects_beside(&actor, Some(nowhere)).await?);
+    assert!(matches!(
+        ctx.project_label(&actor, made.id).await?,
+        ProjectLabel::Visible { .. }
+    ));
+
+    // The store breaks. A new request cannot find out, and says so.
+    world.store.fail_policy_reads(true);
+    let ctx = world.ctx();
+    assert!(matches!(
+        ctx.project_label(&actor, made.id).await,
+        Err(AppError::Internal(_))
+    ));
+    assert!(matches!(
+        ctx.may_make_projects_beside(&actor, Some(made.id)).await,
+        Err(AppError::Internal(_))
+    ));
+    assert!(matches!(
+        ctx.person_ref(
+            &viewer,
+            PeopleKind::ProjectMembers,
+            PeopleContext::Management,
+            ada,
+        )
+        .await,
+        Err(AppError::Internal(_))
+    ));
+    // Working again, the same questions have their answers.
+    world.store.fail_policy_reads(false);
+    let ctx = world.ctx();
+    assert!(matches!(
+        ctx.project_label(&actor, made.id).await?,
+        ProjectLabel::Visible { .. }
+    ));
+    Ok(())
+}
+
+/// A row that names a role or a group the store does not have is told as not found, not shown with
+/// a blank name.
+#[tokio::test]
+async fn sec_03_a_role_or_group_that_is_gone_is_not_found_not_a_blank_name() -> Outcome {
+    let world = World::new().await?;
+    let ctx = world.ctx();
+    let role = RoleId::from_parts(Timestamp::UNIX_EPOCH, [0; 10]).map_err(|e| e.to_string())?;
+    let group = GroupId::from_parts(Timestamp::UNIX_EPOCH, [0; 10]).map_err(|e| e.to_string())?;
+    assert_eq!(
+        ctx.role_ref(role).await.err(),
+        Some(AppError::Refused(ErrorCode::NotFound))
+    );
+    assert_eq!(
+        ctx.group_view(group).await.err(),
+        Some(AppError::Refused(ErrorCode::NotFound))
+    );
     Ok(())
 }

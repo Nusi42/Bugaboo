@@ -20,15 +20,18 @@ use std::collections::BTreeSet;
 
 use bb_auth::{AccessKeySecret, same_digest};
 use bb_core::ErrorCode;
-use bb_core::access_key::{AccessKey, KeyChoice, MOST_KEYS, MOST_PROJECTS, NAME_MAX};
-use bb_core::event::DomainEvent;
+use bb_core::access_key::{AccessKey, KeyChoice, MOST_KEYS, MOST_PROJECTS};
+use bb_core::event::{DomainEvent, RecordKind};
 use bb_core::id::{AccessKeyId, ProjectId, UserId};
+use bb_core::paging::{Cut, page_len, read_len, read_time_cursor, write_time_cursor};
 use bb_core::sign_in::{SecurityAction, SessionStage};
 use bb_policy::{Authorized, Choice, Narrowing, Permission, Place};
 use jiff::Timestamp;
 use serde_json::json;
 
-use super::ctx::{AppError, Ctx, by, change_failed, entity, internal, set_to};
+use super::ctx::Ctx;
+use super::error::{AppError, Stops, change_failed, internal};
+use super::events::{by, entity, set_to};
 use super::store::{AccessKeyRecord, AuthStore};
 use super::types::{
     AccessKeyPage, AccessKeyRules, AccessKeyRulesQuery, AccessKeyView, AccessKeysQuery,
@@ -36,6 +39,7 @@ use super::types::{
     RequireSessionQuery, SeeServerStatusQuery,
 };
 use crate::access::{Actor, KeyInUse};
+use crate::input::{clean_name, cursor_or_invalid};
 
 /// The purpose under which guessing keys is counted per network (`Ctx::reserve_network`).
 const GUESSING: &str = "access-key";
@@ -127,7 +131,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         // A key follows its owner's two-step requirement: a person who has to set up a second
         // step cannot get around it with a key (ADR-0025, decision 8; M2-F46).
         if self.must_set_up_second_step(owner.id).await? {
-            let subject = entity("access_key", record.key.id).ok();
+            let subject = Some(entity(RecordKind::AccessKey, record.key.id));
             self.note(SecurityAction::AccessKeyRefused, Some(owner.id), subject)
                 .await;
             return Err(AppError::Refused(ErrorCode::SecondStepRequired));
@@ -160,7 +164,7 @@ impl<S: AuthStore> Ctx<'_, S> {
                 let subject = actor
                     .key
                     .as_ref()
-                    .and_then(|key| entity("access_key", key.id).ok());
+                    .map(|key| entity(RecordKind::AccessKey, key.id));
                 self.note(
                     SecurityAction::AccessKeyRefused,
                     Some(actor.person.id),
@@ -196,15 +200,6 @@ impl<S: AuthStore> Ctx<'_, S> {
             expired: record.key.expires_at <= self.now(),
         })
     }
-}
-
-/// The name as it is kept: trimmed, not empty, not too long, no control characters.
-fn clean_name(name: &str) -> Result<String, AppError> {
-    let name = name.trim();
-    if name.is_empty() || name.chars().count() > NAME_MAX || name.chars().any(char::is_control) {
-        return Err(ErrorCode::InvalidRequest.into());
-    }
-    Ok(name.to_owned())
 }
 
 /// When a key made now stops working: the date the person picked, or the default number of days;
@@ -264,7 +259,7 @@ fn a_try_at_the_key<S: AuthStore>(
     stored.key.secret_hash = secret.hash();
     let event = ctx.event(
         by(stored.key.owner),
-        entity("access_key", stored.key.id)?,
+        entity(RecordKind::AccessKey, stored.key.id),
         vec![
             set_to("name", json!(stored.key.name)),
             set_to("choice", json!(stored.key.choice.code())),
@@ -361,13 +356,13 @@ pub async fn make_access_key<S: AuthStore>(
         match result {
             Ok(()) => break (secret, stored),
             Err(error) if S::is_duplicate(&error) && !clashed => clashed = true,
-            Err(error) => return Err(change_failed::<S>(&error, None)),
+            Err(error) => return Err(change_failed::<S>(&error, Stops::NONE)),
         }
     };
     ctx.note(
         SecurityAction::AccessKeyMade,
         Some(owner),
-        Some(entity("access_key", stored.key.id)?),
+        Some(entity(RecordKind::AccessKey, stored.key.id)),
     )
     .await;
     let access = ctx.evaluate(owner, Place::Organization).await?;
@@ -390,8 +385,8 @@ pub async fn delete_access_key<S: AuthStore>(
     let (owner, id) = (record.person.id, input.id);
     let event = ctx.event(
         by(owner),
-        entity("access_key", id)?,
-        vec![super::ctx::changed("access_key")],
+        entity(RecordKind::AccessKey, id),
+        vec![super::events::changed("access_key")],
     )?;
     ctx.store()
         .record_change(&event, move |transaction| {
@@ -404,25 +399,14 @@ pub async fn delete_access_key<S: AuthStore>(
             })
         })
         .await
-        .map_err(|error| change_failed::<S>(&error, Some(ErrorCode::NotFound)))?;
+        .map_err(|error| change_failed::<S>(&error, Stops::both(ErrorCode::NotFound)))?;
     ctx.note(
         SecurityAction::AccessKeyDeleted,
         Some(owner),
-        Some(entity("access_key", id)?),
+        Some(entity(RecordKind::AccessKey, id)),
     )
     .await;
     Ok(Done)
-}
-
-/// Where a page ends, as text: the time the last key was made (microseconds) and its ID.
-fn write_cursor(last: &AccessKeyRecord) -> String {
-    format!("{}.{}", last.key.created_at.as_microsecond(), last.key.id)
-}
-
-fn read_cursor(text: &str) -> Result<(Timestamp, AccessKeyId), ()> {
-    let (micros, id) = text.split_once('.').ok_or(())?;
-    let created = Timestamp::from_microsecond(micros.parse().map_err(|_| ())?).map_err(|_| ())?;
-    Ok((created, id.parse().map_err(|_| ())?))
 }
 
 /// The access keys of the person, one page at a time (newest first).
@@ -435,22 +419,17 @@ pub async fn access_keys<S: AuthStore>(
 ) -> Result<Authorized<AccessKeyPage>, AppError> {
     let record = ctx.active(&input.session_token).await?;
     let owner: UserId = record.person.id;
-    let limit = u64::from(bb_core::paging::page_size(Some(input.limit)));
-    let after = input
-        .cursor
-        .as_deref()
-        .map(read_cursor)
-        .transpose()
-        .map_err(|()| AppError::Refused(ErrorCode::InvalidRequest))?;
-    // One more than the page, to know whether there is a next one.
-    let mut found = ctx
-        .store()
-        .access_keys_of(owner, after, limit + 1)
-        .await
-        .map_err(|error| internal::<S>(&error))?;
-    let more = u64::try_from(found.len()).is_ok_and(|count| count > limit);
-    found.truncate(usize::try_from(limit).unwrap_or(usize::MAX));
-    let next_cursor = more.then(|| found.last().map(write_cursor)).flatten();
+    let len = page_len(Some(input.limit));
+    let after = cursor_or_invalid(input.cursor.as_deref(), read_time_cursor)?;
+    let page = Cut::of(
+        ctx.store()
+            .access_keys_of(owner, after, read_len(len))
+            .await
+            .map_err(|error| internal::<S>(&error))?,
+        len,
+    );
+    let next_cursor = page.next_cursor(|last| write_time_cursor(last.key.created_at, last.key.id));
+    let found = page.items;
     let actor = Actor {
         person: record.person,
         key: None,
@@ -492,6 +471,10 @@ pub async fn access_key_rules<S: AuthStore>(
 /// How many projects are looked at to fill one page of the projects to choose from: a person who
 /// sees few of many projects gets a short page and a cursor, not a slow answer.
 const SCANNED_AT_MOST: u64 = 500;
+
+/// How many projects the store is asked for at a time while a page is filled (the most a page of
+/// any list holds).
+const READ_AT_A_TIME: u64 = bb_core::paging::PAGE_SIZE_MAX as u64;
 
 /// Where a page of the projects to choose from starts: after a short name (a project the person
 /// was shown, or the start) and past a number of projects, always a multiple of
@@ -564,14 +547,17 @@ pub async fn project_choices<S: AuthStore>(
         key: None,
     };
     let (mut items, mut looked_at, mut more) = (Vec::new(), 0_u64, false);
-    // One more than the page, to know whether there is a next one.
     'scan: while looked_at < SCANNED_AT_MOST {
         let batch = ctx
             .store()
-            .projects_after(start.after.as_deref(), start.skip + looked_at, 100)
+            .projects_after(
+                start.after.as_deref(),
+                start.skip + looked_at,
+                READ_AT_A_TIME,
+            )
             .await
             .map_err(|error| internal::<S>(&error))?;
-        let full = batch.len() == 100;
+        let full = u64::try_from(batch.len()).is_ok_and(|count| count == READ_AT_A_TIME);
         for project in batch {
             let access = ctx
                 .evaluation_of(&actor, Place::Project(project.id))

@@ -12,6 +12,7 @@ use bb_auth::{
     looks_like_access_key,
 };
 use bb_core::ErrorCode;
+use bb_core::event::RecordKind;
 use bb_core::id::UserId;
 use bb_core::sign_in::{SecurityAction, SessionStage};
 use bb_policy::{Authorized, Evaluation, Permission, Place};
@@ -19,8 +20,11 @@ use jiff::Timestamp;
 use serde_json::json;
 use zeroize::Zeroizing;
 
-use super::ctx::{AppError, Ctx, by, change_failed, changed, entity, internal, person_key, set_to};
-use super::store::AuthStore;
+use super::ctx::Ctx;
+use super::error::{AppError, Stops, change_failed, internal};
+use super::events::{by, changed, entity, set_to};
+use super::limit::person_key;
+use super::store::{Account, AuthStore};
 use super::types::{
     AuthStatus, AuthenticateQuery, Authenticated, Done, EndSession, MAX_SESSIONS_LISTED,
     PasskeySecondStep, PersonView, SecondStep, SecondStepGap, SecondStepGapQuery,
@@ -138,10 +142,47 @@ pub(crate) async fn purge<S: AuthStore>(
         transaction,
         before(now, settings.session_idle_minutes.saturating_mul(60)),
         before(now, settings.session_absolute_hours.saturating_mul(3600)),
-        before(now, super::ctx::PENDING_SECONDS),
+        before(now, super::request_session::PENDING_SECONDS),
     )
     .await
     .map(|_| ())
+}
+
+impl<S: AuthStore> Ctx<'_, S> {
+    /// The account of an address and whether the password is its own. An address that is no
+    /// address and a password that can never be one are answered like a wrong password, after
+    /// the same work.
+    async fn check_credentials(
+        &self,
+        email: &str,
+        password: &Zeroizing<String>,
+    ) -> Result<(Option<Account>, Verdict), AppError> {
+        let account = match EmailAddress::parse(email) {
+            Some(address) => self
+                .store()
+                .account_by_email(address.as_str())
+                .await
+                .map_err(|error| internal::<S>(&error))?,
+            None => None,
+        };
+        // Text that can never be a password is refused before any work is done; this tells
+        // nothing about the account.
+        let verdict = if password.chars().count() > MAX_LENGTH {
+            Verdict {
+                matches: false,
+                needs_rehash: false,
+            }
+        } else {
+            let stored = account
+                .as_ref()
+                .and_then(|account| account.password_hash.clone());
+            self.services
+                .hasher
+                .verify(password.clone(), stored)
+                .await?
+        };
+        Ok((account, verdict))
+    }
 }
 
 /// Signs in with e-mail address and password. When the person has a second step, the session
@@ -167,31 +208,7 @@ pub async fn sign_in<S: AuthStore>(ctx: &Ctx<'_, S>, input: SignIn) -> Result<St
     );
     let slot = ctx.reserve(key)?;
     let password = Zeroizing::new(password);
-    let checked = async {
-        let account = match EmailAddress::parse(&email) {
-            Some(address) => ctx
-                .store()
-                .account_by_email(address.as_str())
-                .await
-                .map_err(|error| internal::<S>(&error))?,
-            None => None,
-        };
-        // Text that can never be a password is refused before any work is done; this tells
-        // nothing about the account.
-        let verdict = if password.chars().count() > MAX_LENGTH {
-            Verdict {
-                matches: false,
-                needs_rehash: false,
-            }
-        } else {
-            let stored = account
-                .as_ref()
-                .and_then(|account| account.password_hash.clone());
-            ctx.services.hasher.verify(password.clone(), stored).await?
-        };
-        Ok::<_, AppError>((account, verdict))
-    }
-    .await;
+    let checked = ctx.check_credentials(&email, &password).await;
     let (account, verdict) = ctx.unless_internal(&slot, checked)?;
     let Some(account) = account.filter(|_| verdict.matches) else {
         ctx.slot_failed(slot, None).await;
@@ -219,7 +236,11 @@ pub async fn sign_in<S: AuthStore>(ctx: &Ctx<'_, S>, input: SignIn) -> Result<St
     if old.is_some() {
         changes.push(changed("previous_session"));
     }
-    let event = ctx.event(by(person.id), entity("session", new.session.id)?, changes)?;
+    let event = ctx.event(
+        by(person.id),
+        entity(RecordKind::Session, new.session.id),
+        changes,
+    )?;
     let (store, session, person_id, now) = (ctx.store(), new.session.clone(), person.id, ctx.now());
     let purge_settings = settings.clone();
     store
@@ -236,7 +257,7 @@ pub async fn sign_in<S: AuthStore>(ctx: &Ctx<'_, S>, input: SignIn) -> Result<St
             })
         })
         .await
-        .map_err(|error| change_failed::<S>(&error, None))?;
+        .map_err(|error| change_failed::<S>(&error, Stops::NONE))?;
     let action = if methods.is_some() {
         SecurityAction::SignInSecondStepNeeded
     } else {
@@ -245,7 +266,7 @@ pub async fn sign_in<S: AuthStore>(ctx: &Ctx<'_, S>, input: SignIn) -> Result<St
     ctx.note(
         action,
         Some(person.id),
-        Some(entity("session", new.session.id)?),
+        Some(entity(RecordKind::Session, new.session.id)),
     )
     .await;
     ctx.started(&new, &person, &settings, methods)
@@ -322,7 +343,7 @@ pub async fn second_step<S: AuthStore>(
     let settings = ctx.settings().await?;
     let event = ctx.event(
         by(person.id),
-        entity("session", new.session.id)?,
+        entity(RecordKind::Session, new.session.id),
         vec![set_to("stage", json!(SessionStage::Active.code()))],
     )?;
     let (store, session, pending_id) = (ctx.store(), new.session.clone(), pending.session.id);
@@ -348,7 +369,7 @@ pub async fn second_step<S: AuthStore>(
         })
         .await;
     if let Err(error) = result {
-        let error = change_failed::<S>(&error, Some(ErrorCode::WrongSecondStepCode));
+        let error = change_failed::<S>(&error, Stops::both(ErrorCode::WrongSecondStepCode));
         if matches!(error, AppError::Refused(_)) {
             ctx.second_step_failed(slot, &pending, SecurityAction::SecondStepFailed)
                 .await?;
@@ -365,7 +386,7 @@ pub async fn second_step<S: AuthStore>(
     ctx.note(
         SecurityAction::SecondStepSucceeded,
         Some(person.id),
-        Some(entity("session", new.session.id)?),
+        Some(entity(RecordKind::Session, new.session.id)),
     )
     .await;
     ctx.started(&new, &person, &settings, None)
@@ -424,7 +445,7 @@ pub async fn passkey_second_step<S: AuthStore>(
     let settings = ctx.settings().await?;
     let event = ctx.event(
         by(person.id),
-        entity("session", new.session.id)?,
+        entity(RecordKind::Session, new.session.id),
         vec![set_to("stage", json!(SessionStage::Active.code()))],
     )?;
     let (store, session, pending_id, now) = (
@@ -442,13 +463,13 @@ pub async fn passkey_second_step<S: AuthStore>(
             })
         })
         .await
-        .map_err(|error| change_failed::<S>(&error, None));
+        .map_err(|error| change_failed::<S>(&error, Stops::NONE));
     ctx.unless_internal(&slot, changed_session)?;
     ctx.second_step_done(slot, &pending);
     ctx.note(
         SecurityAction::SecondStepSucceeded,
         Some(person.id),
-        Some(entity("session", new.session.id)?),
+        Some(entity(RecordKind::Session, new.session.id)),
     )
     .await;
     ctx.started(&new, &person, &settings, None)
@@ -476,18 +497,22 @@ pub async fn sign_out<S: AuthStore>(ctx: &Ctx<'_, S>, input: SignOut) -> Result<
         return Ok(Done);
     };
     let (person, id) = (record.person.id, record.session.id);
-    let event = ctx.event(by(person), entity("session", id)?, vec![changed("session")])?;
+    let event = ctx.event(
+        by(person),
+        entity(RecordKind::Session, id),
+        vec![changed("session")],
+    )?;
     let store = ctx.store();
     store
         .record_change(&event, move |transaction| {
             Box::pin(async move { S::delete_session(transaction, id).await.map(|_| ()) })
         })
         .await
-        .map_err(|error| change_failed::<S>(&error, None))?;
+        .map_err(|error| change_failed::<S>(&error, Stops::NONE))?;
     ctx.note(
         SecurityAction::SessionEnded,
         Some(person),
-        Some(entity("session", id)?),
+        Some(entity(RecordKind::Session, id)),
     )
     .await;
     Ok(Done)
@@ -508,7 +533,7 @@ pub async fn sign_out_everywhere<S: AuthStore>(
     let person = record.person.id;
     let event = ctx.event(
         by(person),
-        entity("person", person)?,
+        entity(RecordKind::Person, person),
         vec![changed("sessions")],
     )?;
     let store = ctx.store();
@@ -520,14 +545,14 @@ pub async fn sign_out_everywhere<S: AuthStore>(
             })
         })
         .await
-        .map_err(|error| change_failed::<S>(&error, None))?;
+        .map_err(|error| change_failed::<S>(&error, Stops::NONE))?;
     ctx.note(SecurityAction::SessionsEndedAll, Some(person), None)
         .await;
     for key in keys {
         ctx.note(
             SecurityAction::AccessKeyDeleted,
             Some(person),
-            Some(entity("access_key", key)?),
+            Some(entity(RecordKind::AccessKey, key)),
         )
         .await;
     }
@@ -556,18 +581,22 @@ pub async fn end_session<S: AuthStore>(
     if !owned {
         return Err(ErrorCode::NotFound.into());
     }
-    let event = ctx.event(by(person), entity("session", id)?, vec![changed("session")])?;
+    let event = ctx.event(
+        by(person),
+        entity(RecordKind::Session, id),
+        vec![changed("session")],
+    )?;
     let store = ctx.store();
     store
         .record_change(&event, move |transaction| {
             Box::pin(async move { S::delete_session(transaction, id).await.map(|_| ()) })
         })
         .await
-        .map_err(|error| change_failed::<S>(&error, None))?;
+        .map_err(|error| change_failed::<S>(&error, Stops::NONE))?;
     ctx.note(
         SecurityAction::SessionEnded,
         Some(person),
-        Some(entity("session", id)?),
+        Some(entity(RecordKind::Session, id)),
     )
     .await;
     Ok(SessionEnded {

@@ -3,6 +3,7 @@
 
 use bb_core::ErrorCode;
 use bb_core::id::ProjectId;
+use bb_core::paging::{Cut, page_len, read_count};
 use bb_core::project::ShortName;
 use bb_policy::{Authorized, Permission, Place};
 use jiff::Timestamp;
@@ -13,7 +14,7 @@ use super::types::{
     MoveRight, ProjectDetail, ProjectItem, ProjectPage, ProjectQuery, ProjectView, ProjectsQuery,
 };
 use crate::access::Actor;
-use crate::auth::{AppError, AuthStore, Ctx, internal};
+use crate::auth::{AppError, AuthStore, Ctx, if_there, internal};
 
 impl<S: AuthStore> Ctx<'_, S> {
     /// The project an address names: an ID, or a short name (also an old one). An address that is
@@ -59,10 +60,8 @@ impl<S: AuthStore> Ctx<'_, S> {
                 (Permission::MakeSubProjects, Place::Project(parent))
             });
         // A parent that is gone holds nobody back from nothing: it is not one they may make in.
-        Ok(self
-            .evaluation_of(actor, place)
-            .await
-            .is_ok_and(|held| held.allows(permission)))
+        Ok(if_there(self.evaluation_of(actor, place).await)?
+            .is_some_and(|held| held.allows(permission)))
     }
 }
 
@@ -90,7 +89,9 @@ pub async fn project<S: AuthStore>(
     };
     let (trail, truncated) = shown.trail(&found.project);
     let project = found.project;
-    let old_parent = ctx.evaluation_of(&actor, place_of(project.parent)).await?;
+    let old_parent = ctx
+        .evaluation_of(&actor, Place::from(project.parent))
+        .await?;
     let organization = ctx.evaluation_of(&actor, Place::Organization).await?;
     let may_move = if !old_parent.allows(Permission::MoveProjects) {
         MoveRight::Nowhere
@@ -117,11 +118,6 @@ pub async fn project<S: AuthStore>(
             version: project.version,
         },
     }))
-}
-
-/// The place where a project with this parent sits: the organization for the top level.
-fn place_of(parent: Option<ProjectId>) -> Place {
-    parent.map_or(Place::Organization, Place::Project)
 }
 
 /// Where a page ends, as text: the name the list is sorted by and the ID of the last project.
@@ -204,20 +200,20 @@ pub async fn projects<S: AuthStore>(
         .map(read_cursor)
         .transpose()
         .map_err(|()| AppError::Refused(ErrorCode::InvalidRequest))?;
-    let limit = usize::try_from(bb_core::paging::page_size(Some(input.limit))).unwrap_or(1);
-    let mut items: Vec<ProjectItem> = candidates
+    let limit = page_len(Some(input.limit));
+    let items: Vec<ProjectItem> = candidates
         .into_iter()
         .filter(|project| {
             after.as_ref().is_none_or(|(name, id)| {
                 (project.name.to_lowercase(), project.id) > (name.clone(), *id)
             })
         })
-        .take(limit + 1)
+        .take(read_count(limit))
         .map(|project| shown.item(project))
         .collect();
-    let more = items.len() > limit;
-    items.truncate(limit);
-    let next_cursor = more.then(|| items.last().map(write_cursor)).flatten();
+    let page = Cut::of(items, limit);
+    let next_cursor = page.next_cursor(write_cursor);
+    let items = page.items;
     Ok(access.authorize(ProjectPage { items, next_cursor }))
 }
 

@@ -1,5 +1,6 @@
 //! One complete server without a socket, for the tests of the sign-in flows.
 
+use bb_app::auth::AccountStore as _;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicI64, Ordering};
 
@@ -7,9 +8,8 @@ use bb_api::FailureLimits;
 use bb_app::access::Permission;
 use bb_app::access::{MakeStartingRoles, PolicyStore as _, make_starting_roles};
 use bb_app::auth::{
-    AcceptInvitation, AppError, AuthApi, AuthServices, AuthStore as _, AuthenticateQuery,
-    CompleteSetup, CreateInvitation, IssueSetupCode, RequestInfo, SignIn, Started,
-    issue_setup_code,
+    AcceptInvitation, AppError, AuthApi, AuthServices, AuthenticateQuery, CompleteSetup,
+    CreateInvitation, IssueSetupCode, RequestInfo, SignIn, Started, issue_setup_code,
 };
 use bb_app::context::Clock;
 use bb_app::context::SystemIds;
