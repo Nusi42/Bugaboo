@@ -95,7 +95,7 @@ enum Command {
     List,
     /// Install the pinned external tools into `.tools/` (tools/dev/tools.toml).
     Setup,
-    /// Write files that are generated from a single source .
+    /// Write files that are generated from a single source.
     Gen {
         /// What to generate.
         #[arg(value_parser = generate::possible_values())]
