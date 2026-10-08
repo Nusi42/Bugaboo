@@ -164,6 +164,7 @@ pub(crate) struct Keyframes {
     pub(crate) name: String,
     /// `from`, `to` or a percentage, with its lines.
     pub(crate) frames: Vec<(String, Vec<Declaration>)>,
+    pub(crate) line: usize,
 }
 
 pub(crate) struct ThemeFile {
@@ -767,6 +768,7 @@ fn keyframes(node: Node<'_>) -> anyhow::Result<Keyframes> {
     Ok(Keyframes {
         name: node.only_arg()?,
         frames,
+        line: node.line(),
     })
 }
 

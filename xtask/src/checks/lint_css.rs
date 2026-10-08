@@ -13,7 +13,7 @@ use super::node_tool::{in_batches, run, unix_findings};
 use super::{Check, Context, Finding};
 use crate::docs::text::has_extension;
 use crate::generate::all_paths;
-use crate::generate::theme::parts_css;
+use crate::generate::theme::parts_css_with_lines;
 use crate::generate::theme_file::{THEME_PATH, ThemeFile};
 
 /// The rules for the CSS Modules that still stand.
@@ -74,22 +74,38 @@ fn lint_batch(root: &Path, files: &[String], config: &str) -> anyhow::Result<Vec
 }
 
 /// The rules of the theme file, compiled, read by stylelint. A problem is named by the line of the
-/// compiled text; the rule is easy to find in the theme file by its selector.
+/// theme file that the rule comes from (not by the temporary file, whatever way stylelint writes
+/// its path), and the message says which line of the compiled text it is.
 fn lint_theme(root: &Path, file: &ThemeFile, name: &str) -> anyhow::Result<Vec<Finding>> {
+    let (css, from) = parts_css_with_lines(file)?;
     let folder = root.join(WORK_FOLDER);
     std::fs::create_dir_all(&folder)?;
-    std::fs::write(folder.join(name), parts_css(file)?)?;
+    std::fs::write(folder.join(name), css)?;
     let compiled = format!("{WORK_FOLDER}/{name}");
     let findings = lint(root, std::slice::from_ref(&compiled), THEME_CONFIG)?;
     Ok(findings
         .into_iter()
-        .map(|finding| Finding {
-            location: finding
-                .location
-                .map(|place| place.replace(&compiled, &format!("{THEME_PATH} (compiled rules)"))),
-            message: finding.message,
-        })
+        .map(|finding| point_at_theme_file(finding, &from))
         .collect())
+}
+
+/// A finding about the compiled text, as one about the rule of the theme file. The place is
+/// `path:line`; the path may be absolute and hold a drive letter, so only what follows the last
+/// colon is the line.
+fn point_at_theme_file(finding: Finding, from: &[usize]) -> Finding {
+    let compiled_line = finding
+        .location
+        .as_deref()
+        .and_then(|place| place.rsplit(':').next())
+        .and_then(|row| row.parse::<usize>().ok());
+    let Some(row) = compiled_line else {
+        return finding;
+    };
+    let rule_line = from.get(row.saturating_sub(1)).copied().unwrap_or(1);
+    Finding::at(
+        format!("{THEME_PATH}:{rule_line}"),
+        format!("{} (line {row} of the compiled rules)", finding.message),
+    )
 }
 
 #[cfg(test)]
@@ -148,6 +164,33 @@ mod tests {
     #[test]
     fn good_example() {
         assert!(findings("good/good.module.css").is_empty());
+    }
+
+    #[test]
+    fn a_finding_points_at_the_rule_of_the_theme_file() {
+        let repo = Repo::discover().unwrap();
+        let before = crate::source::read_text(&repo, THEME_PATH)
+            .unwrap()
+            .lines()
+            .count();
+        let found = theme_findings("place", "part \"zz\" {\n  margin \"12px\"\n}");
+        let place = found[0].location.clone().unwrap_or_default();
+        let line: usize = place
+            .strip_prefix("design/theme.kdl:")
+            .and_then(|row| row.parse().ok())
+            .unwrap_or(0);
+        assert!(line > before, "{place}");
+    }
+
+    #[test]
+    fn a_path_with_a_drive_letter_is_no_problem() {
+        let finding = Finding::at(
+            "C:/Users/x/target/lint-css/theme-rules.css:3",
+            "Disallowed value",
+        );
+        let moved = point_at_theme_file(finding, &[9, 9, 14]);
+        assert_eq!(moved.location.as_deref(), Some("design/theme.kdl:14"));
+        assert!(moved.message.contains("line 3 of the compiled rules"));
     }
 
     #[test]

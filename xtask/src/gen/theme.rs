@@ -271,15 +271,29 @@ fn title_case(name: &str) -> String {
 
 /// The keyframes and the rules of the file, as CSS: the same text the token variables come before.
 pub(crate) fn parts_css(file: &ThemeFile) -> anyhow::Result<String> {
+    Ok(parts_css_with_lines(file)?.0)
+}
+
+/// The same, and for each line of it (counted from 0) the line of the theme file that the rule
+/// comes from, so that a finding about the CSS can point at the file that is edited.
+pub(crate) fn parts_css_with_lines(file: &ThemeFile) -> anyhow::Result<(String, Vec<usize>)> {
     let mut blocks = Vec::new();
     for keyframes in &file.keyframes {
-        blocks.push(keyframes_css(keyframes));
+        blocks.push((keyframes_css(keyframes), keyframes.line));
     }
     for rule in &file.rules {
-        blocks
-            .push(rule_css(file, rule).with_context(|| format!("the rule at line {}", rule.line))?);
+        let css =
+            rule_css(file, rule).with_context(|| format!("the rule at line {}", rule.line))?;
+        blocks.push((css, rule.line));
     }
-    Ok(blocks.join("\n"))
+    let mut lines = Vec::new();
+    for (index, (css, from)) in blocks.iter().enumerate() {
+        // A block ends with a line break; a blank line separates it from the next one.
+        let count = css.lines().count() + usize::from(index + 1 < blocks.len());
+        lines.extend(std::iter::repeat_n(*from, count));
+    }
+    let text: Vec<&str> = blocks.iter().map(|(css, _)| css.as_str()).collect();
+    Ok((text.join("\n"), lines))
 }
 
 fn keyframes_css(keyframes: &Keyframes) -> String {
@@ -586,6 +600,13 @@ mod tests {
             assert!(css.contains(&format!("[data-preview-look=\"{theme}\"]")));
         }
         assert!(css.contains("prefers-color-scheme: dark"));
+    }
+
+    #[test]
+    fn every_line_of_the_compiled_rules_knows_its_line_in_the_theme_file() {
+        let (css, from) = parts_css_with_lines(&file()).unwrap();
+        assert_eq!(from.len(), css.lines().count());
+        assert!(from.iter().all(|line| *line > 0));
     }
 
     #[test]
