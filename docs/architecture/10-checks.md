@@ -18,7 +18,7 @@ flowchart LR
 ```
 
 - **One catalogue, one runner.** Each check has an ID (for example `ARCH-AUTHZ-ONLY`), a plain title, the rule it enforces, the tool, when it runs and which files trigger it. People, agents and CI all run the same code.
-- **Small and fast.** A check runs only when its files change. Edit-time checks take under 3 seconds per file and commit-time checks under 10 seconds, so nobody is tempted to skip them.
+- **Small and fast.** A check runs only when its files change. Edit-time checks take under 3 seconds per file and commit-time checks under 10 seconds on a quiet PC, so nobody is tempted to skip them.
 - **Explains itself.** A failing check prints one sentence: what's wrong, which rule, and where it's written down.
 
 ## Groups of checks
@@ -48,7 +48,7 @@ Adding a rule should be easy, and forgetting part of it impossible. The **META**
 5. **Every rule is traceable** (`META-RULE-TRACE`): each "must" in the coding standards, decision records and these chapters names its check ID or says *review* with a reason.
 6. **Callers agree** (`META-WIRING`): lefthook, the Claude Code hooks and CI call only xtask, with the same lists.
 7. **Suppressions are visible** (`META-SUPPRESS`): every `allow`, `oxlint-disable`, ast-grep ignore or "not affected" vulnerability statement needs a reason and an issue ID, and the total can't grow unnoticed. The file types searched are listed in `xtask/src/checks/meta_suppress.rs`.
-8. **Checks stay fast** (`META-SPEED`).
+8. **Checks stay fast** (`META-SPEED`). The 3 and 10 seconds hold on a quiet PC. Several builds often run at once, and wall-clock time alone would then fail a fast check, so the check times a fixed *reference workload* (a few small processes plus some file and CPU work, like a typical check) right before, during and right after each measurement. The budget is a multiple of that reference: the quiet-PC budget times how much longer the reference took than on a quiet PC (the *load factor*, never below 1 and never above 20). Each timing is taken up to 3 times and the best attempt counts, which drops one-off spikes. A check that is slow by itself is slow in every attempt and still fails. The failure names the measured time, the allowed time, the reference time and the load factor, so a human can tell real slowness from load. The numbers (budgets, quiet reference, attempts, ceiling) are defined once, in `xtask/src/checks/meta_speed.rs`.
 
 ## Adding a rule
 

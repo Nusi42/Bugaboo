@@ -790,7 +790,7 @@ status = "active"
 
 [[check]]
 id = "META-SPEED"
-title = "Checks stay fast: every edit-time check under 3 s on one file and all commit-time checks under 10 s on a sample of files, measured when this check runs"
+title = "Checks stay fast: every edit-time check under 3 s on one file and all commit-time checks under 10 s on a sample of files on a quiet PC; on a busy PC the budgets grow with a reference workload timed alongside, and the best of 3 attempts counts"
 rule = "architecture §10"
 tool = "xtask (times the checks itself)"
 when = ["ci"]
