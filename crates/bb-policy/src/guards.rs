@@ -16,6 +16,7 @@ use bb_core::id::{GroupId, RoleId, UserId};
 
 use crate::catalogue::{Counts, Permission};
 use crate::evaluate::{Evaluation, Place, RoleData};
+use crate::tree::Policy;
 
 /// Why a change was refused.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -51,6 +52,52 @@ pub struct OrganizationState {
     pub rows: Vec<(Holder, RoleId)>,
     /// Who is in which group.
     pub members: Vec<(GroupId, UserId)>,
+}
+
+impl OrganizationState {
+    /// The state of an organization as the policy has it: the rows on the whole organization that
+    /// give a role (a row for nobody holds nothing), the roles those name, and the members of the
+    /// groups that hold one. The one definition, whether the policy came from the store or from a
+    /// test double.
+    #[must_use]
+    pub fn of(policy: &Policy) -> Self {
+        let rows: Vec<(Holder, RoleId)> = policy
+            .assignments
+            .iter()
+            .filter(|row| row.project.is_none())
+            .filter_map(|row| {
+                let role = row.role?;
+                let holder = match (row.person, row.group) {
+                    (Some(person), _) => Holder::Person(person),
+                    (None, Some(group)) => Holder::Group(group),
+                    (None, None) => return None,
+                };
+                Some((holder, role))
+            })
+            .collect();
+        let groups: BTreeSet<GroupId> = rows
+            .iter()
+            .filter_map(|(holder, _)| match holder {
+                Holder::Group(group) => Some(*group),
+                Holder::Person(_) => None,
+            })
+            .collect();
+        Self {
+            roles: policy
+                .roles
+                .iter()
+                .filter(|role| rows.iter().any(|(_, named)| *named == role.id))
+                .cloned()
+                .collect(),
+            members: policy
+                .members
+                .iter()
+                .filter(|member| groups.contains(&member.group))
+                .map(|member| (member.group, member.person))
+                .collect(),
+            rows,
+        }
+    }
 }
 
 /// The people who hold both *Manage roles* and *Decide who has which role* for the whole

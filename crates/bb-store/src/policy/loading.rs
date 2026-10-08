@@ -6,10 +6,11 @@
 //! organization and on the projects of the chain), so a request does not read the whole
 //! organization.
 
+use bb_core::access::{Assignment, GroupMember};
 use bb_core::id::{GroupId, ProjectId, RoleId, UserId};
-use bb_policy::guards::{Holder, OrganizationState};
+use bb_policy::guards::OrganizationState;
 use bb_policy::{Inputs, LevelRules, Place, Policy, RoleData};
-use sea_query::{Expr, ExprTrait as _, Query};
+use sea_query::{Expr, ExprTrait as _};
 
 use super::assignments::{assignment_select, assignments_of};
 use super::groups::{member_select, read_member};
@@ -32,12 +33,15 @@ pub(crate) enum Wanted<'a> {
     /// What one person's decision at a place needs: their rows on the organization and on the
     /// projects of the chain, the roles those name and the levels of those roles.
     PersonAt(UserId, &'a [ProjectId]),
+    /// What the last-administrator rule needs: the rows on the whole organization that give a
+    /// role, the roles those name and the members of the groups that hold them.
+    Organization,
 }
 
 impl Wanted<'_> {
     const fn person(self) -> Option<UserId> {
         match self {
-            Self::Everybody => None,
+            Self::Everybody | Self::Organization => None,
             Self::Person(person) | Self::PersonAt(person, _) => Some(person),
         }
     }
@@ -48,33 +52,10 @@ pub(crate) async fn load_policy(
     reader: &mut impl Reader,
     wanted: Wanted<'_>,
 ) -> Result<Policy, StoreError> {
-    let mut select = member_select();
-    if let Some(person) = wanted.person() {
-        select.and_where(Expr::col(GroupMemberRow::Person).eq(person.stored()));
-    }
-    let members = reader
-        .fetch_all(&select)
-        .await?
-        .iter()
-        .map(read_member)
-        .collect::<Result<Vec<_>, _>>()?;
-    let mut select = assignment_select();
-    if let Some(person) = wanted.person() {
-        let groups: Vec<GroupId> = members.iter().map(|member| member.group).collect();
-        let mut whose = Expr::col(AssignmentRow::Person).eq(person.stored());
-        if !groups.is_empty() {
-            whose = whose.or(Expr::col(AssignmentRow::Group).is_in(in_list(&groups)));
-        }
-        select.and_where(whose);
-    }
-    if let Wanted::PersonAt(_, chain) = wanted {
-        let mut here = Expr::col(AssignmentRow::Project).is_null();
-        if !chain.is_empty() {
-            here = here.or(Expr::col(AssignmentRow::Project).is_in(in_list(chain)));
-        }
-        select.and_where(here);
-    }
-    let assignments = assignments_of(reader, &select).await?;
+    let (members, assignments) = match wanted {
+        Wanted::Organization => organization_rows(reader).await?,
+        _ => rows_wanted(reader, wanted).await?,
+    };
     let mut named: Vec<RoleId> = assignments.iter().filter_map(|row| row.role).collect();
     named.sort();
     named.dedup();
@@ -106,6 +87,65 @@ pub(crate) async fn load_policy(
         roles,
         rules: levels,
     })
+}
+
+/// The memberships and rows of one person or of everybody, as asked for.
+async fn rows_wanted(
+    reader: &mut impl Reader,
+    wanted: Wanted<'_>,
+) -> Result<(Vec<GroupMember>, Vec<Assignment>), StoreError> {
+    let mut select = member_select();
+    if let Some(person) = wanted.person() {
+        select.and_where(Expr::col(GroupMemberRow::Person).eq(person.stored()));
+    }
+    let members = reader
+        .fetch_all(&select)
+        .await?
+        .iter()
+        .map(read_member)
+        .collect::<Result<Vec<_>, _>>()?;
+    let mut select = assignment_select();
+    if let Some(person) = wanted.person() {
+        let groups: Vec<GroupId> = members.iter().map(|member| member.group).collect();
+        let mut whose = Expr::col(AssignmentRow::Person).eq(person.stored());
+        if !groups.is_empty() {
+            whose = whose.or(Expr::col(AssignmentRow::Group).is_in(in_list(&groups)));
+        }
+        select.and_where(whose);
+    }
+    if let Wanted::PersonAt(_, chain) = wanted {
+        let mut here = Expr::col(AssignmentRow::Project).is_null();
+        if !chain.is_empty() {
+            here = here.or(Expr::col(AssignmentRow::Project).is_in(in_list(chain)));
+        }
+        select.and_where(here);
+    }
+    let assignments = assignments_of(reader, &select).await?;
+    Ok((members, assignments))
+}
+
+/// The rows on the whole organization that give a role, and the members of the groups that hold
+/// them.
+async fn organization_rows(
+    reader: &mut impl Reader,
+) -> Result<(Vec<GroupMember>, Vec<Assignment>), StoreError> {
+    let mut select = assignment_select();
+    select
+        .and_where(Expr::col(AssignmentRow::Project).is_null())
+        .and_where(Expr::col(AssignmentRow::Role).is_not_null());
+    let assignments = assignments_of(reader, &select).await?;
+    let mut groups: Vec<GroupId> = assignments.iter().filter_map(|row| row.group).collect();
+    groups.sort();
+    groups.dedup();
+    let mut members = Vec::new();
+    if !groups.is_empty() {
+        let mut select = member_select();
+        select.and_where(Expr::col(GroupMemberRow::Group).is_in(in_list(&groups)));
+        for row in reader.fetch_all(&select).await? {
+            members.push(read_member(&row)?);
+        }
+    }
+    Ok((members, assignments))
 }
 
 /// The levels of both kinds that roles have set.
@@ -142,51 +182,6 @@ pub(crate) async fn inputs_in(
 pub(crate) async fn organization_state_in(
     transaction: &mut Transaction,
 ) -> Result<OrganizationState, StoreError> {
-    let mut select = assignment_select();
-    select
-        .and_where(Expr::col(AssignmentRow::Project).is_null())
-        .and_where(Expr::col(AssignmentRow::Role).is_not_null());
-    let assignments = assignments_of(transaction, &select).await?;
-    let mut rows = Vec::new();
-    let mut groups = Vec::new();
-    for assignment in &assignments {
-        let Some(role) = assignment.role else {
-            continue;
-        };
-        match (assignment.person, assignment.group) {
-            (Some(person), _) => rows.push((Holder::Person(person), role)),
-            (None, Some(group)) => {
-                rows.push((Holder::Group(group), role));
-                groups.push(group);
-            }
-            (None, None) => return Err(StoreError::Corrupt("a row for nobody")),
-        }
-    }
-    groups.sort();
-    groups.dedup();
-    let mut members = Vec::new();
-    if !groups.is_empty() {
-        let mut select = Query::select();
-        select
-            .columns([GroupMemberRow::Group, GroupMemberRow::Person])
-            .from(GroupMemberRow::Table)
-            .and_where(Expr::col(GroupMemberRow::Group).is_in(in_list(&groups)));
-        for row in transaction.fetch_all(&select).await? {
-            members.push((
-                row.id::<GroupId>(GroupMemberRow::Group)?,
-                row.id::<UserId>(GroupMemberRow::Person)?,
-            ));
-        }
-    }
-    let role_ids: Vec<RoleId> = rows.iter().map(|(_, role)| *role).collect();
-    let roles = if role_ids.is_empty() {
-        Vec::new()
-    } else {
-        roles_in(transaction, Some(&role_ids)).await?
-    };
-    Ok(OrganizationState {
-        roles: roles.into_iter().map(RoleData::from).collect(),
-        rows,
-        members,
-    })
+    let policy = load_policy(transaction, Wanted::Organization).await?;
+    Ok(OrganizationState::of(&policy))
 }

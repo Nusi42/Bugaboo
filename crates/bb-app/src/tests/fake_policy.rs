@@ -6,8 +6,8 @@ use bb_core::fields::Field;
 use bb_core::id::{AssignmentId, GroupId, ProjectId, RoleId, UserId};
 use bb_core::people_kinds::PeopleKind;
 use bb_core::project::{Project, ShortName};
-use bb_policy::guards::{Holder, OrganizationState};
-use bb_policy::{Inputs, LevelRule, LevelRules, LevelSubject, Permission, Place, RoleData, Tree};
+use bb_policy::guards::OrganizationState;
+use bb_policy::{Inputs, LevelRule, LevelRules, LevelSubject, Permission, Place, Tree};
 use jiff::Timestamp;
 
 use super::fake::{FakeError, FakeStore, State, Tx};
@@ -25,34 +25,7 @@ fn inputs_of(state: &State, person: UserId, place: Place) -> Option<Inputs> {
 }
 
 fn organization_state_of(state: &State) -> OrganizationState {
-    let rows: Vec<(Holder, RoleId)> = state
-        .assignments
-        .iter()
-        .filter(|row| row.project.is_none())
-        .filter_map(|row| {
-            let role = row.role?;
-            let holder = match (row.person, row.group) {
-                (Some(person), _) => Holder::Person(person),
-                (None, Some(group)) => Holder::Group(group),
-                (None, None) => return None,
-            };
-            Some((holder, role))
-        })
-        .collect();
-    OrganizationState {
-        roles: state
-            .roles
-            .iter()
-            .filter(|record| rows.iter().any(|(_, role)| *role == record.role.id))
-            .map(RoleData::from)
-            .collect(),
-        rows,
-        members: state
-            .members
-            .iter()
-            .map(|member| (member.group, member.person))
-            .collect(),
-    }
+    OrganizationState::of(&policy_of(state, None))
 }
 
 impl PolicyStore for FakeStore {
