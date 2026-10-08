@@ -8,7 +8,8 @@ use bb_core::fields::Field;
 use bb_core::id::{AssignmentId, GroupId, ProjectId, RoleId, SequentialIds, UserId};
 use bb_core::people_kinds::PeopleKind;
 use bb_policy::{
-    FieldRule, Lift, PeopleRule, Permission, Place, Policy, RoleData, Tree, preview_move,
+    FieldRule, Lift, MoveRefusal, MoveRequest, PeopleRule, Permission, Place, Policy, RoleData,
+    Tree, check_move, preview_move,
 };
 use jiff::Timestamp;
 use proptest::prelude::*;
@@ -492,4 +493,113 @@ proptest! {
         prop_assert_eq!(named, expected);
         prop_assert_eq!(preview.lifts, lifts);
     }
+}
+
+/// The refusal (or `Ok`) for `person` moving `project` into `to`, in the world as it is.
+fn may_move(
+    world: &World,
+    person: UserId,
+    project: ProjectId,
+    to: Option<ProjectId>,
+) -> Result<(), MoveRefusal> {
+    check_move(
+        &world.policy,
+        &world.tree(),
+        &MoveRequest {
+            person,
+            key: None,
+            project,
+            to,
+        },
+    )
+}
+
+const MOVER: [Permission; 3] = [
+    Permission::SeeProjects,
+    Permission::MoveProjects,
+    Permission::MakeProjects,
+];
+
+#[test]
+fn prj_03_a_move_is_asked_for_by_one_set_of_rules_and_each_refusal_has_its_word() {
+    let mut world = World::new();
+    let (bob, cleo) = (world.person(), world.person());
+    let (acme, other) = (world.project(None), world.project(None));
+    let web = world.project(Some(acme));
+    let api = world.project(Some(web));
+    let mover = world.role("Mover", &MOVER);
+    let viewer = world.role("Viewer", &VIEW);
+    // Bob may see and move everywhere; Cleo only sees ACME and what is inside it.
+    world.row(Ok(bob), Some(mover), None, AppliesTo::Organization);
+    world.row(
+        Ok(cleo),
+        Some(viewer),
+        Some(acme),
+        AppliesTo::ProjectAndSubProjects,
+    );
+
+    assert_eq!(may_move(&world, bob, web, Some(other)), Ok(()));
+    assert_eq!(may_move(&world, bob, web, None), Ok(()), "to the top level");
+    assert_eq!(
+        may_move(&world, bob, web, Some(api)),
+        Err(MoveRefusal::IntoItself),
+        "inside what is inside it"
+    );
+    assert_eq!(
+        may_move(&world, bob, web, Some(web)),
+        Err(MoveRefusal::IntoItself)
+    );
+    assert_eq!(
+        may_move(&world, bob, web, Some(acme)),
+        Err(MoveRefusal::SameParent)
+    );
+    assert_eq!(
+        may_move(&world, bob, acme, None),
+        Err(MoveRefusal::SameParent),
+        "already at the top level"
+    );
+    // Cleo sees the project but may not move anything there; a project she does not see, and a
+    // parent she does not see, are not there for her.
+    assert_eq!(
+        may_move(&world, cleo, web, Some(acme)),
+        Err(MoveRefusal::Forbidden),
+        "she sees both places but may move nothing there"
+    );
+    assert_eq!(
+        may_move(&world, cleo, other, Some(acme)),
+        Err(MoveRefusal::NotFound)
+    );
+    assert_eq!(
+        may_move(&world, cleo, web, Some(other)),
+        Err(MoveRefusal::NotFound),
+        "a new parent she may not know about"
+    );
+    assert_eq!(
+        may_move(
+            &world,
+            bob,
+            web,
+            Some(ProjectId::generate(&mut world.ids.clone()).unwrap())
+        ),
+        Err(MoveRefusal::NotFound),
+        "a parent that does not exist"
+    );
+}
+
+#[test]
+fn prj_03_a_project_cannot_be_moved_deeper_than_a_tree_may_go() {
+    let mut world = World::new();
+    let bob = world.person();
+    let mover = world.role("Mover", &MOVER);
+    world.row(Ok(bob), Some(mover), None, AppliesTo::Organization);
+    // A chain as deep as a tree may be, and a project that would make it one deeper.
+    let mut top = world.project(None);
+    for _ in 1..bb_core::project::DEPTH_MAX {
+        top = world.project(Some(top));
+    }
+    let loose = world.project(None);
+    assert_eq!(
+        may_move(&world, bob, loose, Some(top)),
+        Err(MoveRefusal::TooDeep)
+    );
 }

@@ -3,7 +3,7 @@
 use bb_core::ErrorCode;
 use bb_core::event::RecordKind;
 use bb_core::id::ProjectId;
-use bb_core::project::{DEPTH_MAX, Project, ShortName};
+use bb_core::project::{Project, ShortName};
 use bb_core::sign_in::SecurityAction;
 use bb_policy::{Authorized, Permission, Place, Tree};
 use serde_json::json;
@@ -87,14 +87,15 @@ pub async fn make_project<S: AuthStore>(
                 S::lock_policy(transaction).await?;
                 // A project goes no deeper than the tree may: judged on the tree as it is now.
                 if let Some(parent) = stored.parent {
-                    let projects = S::project_tree_in(transaction).await?;
-                    let tree = Tree::new(projects.iter().map(|known| (known.id, known.parent)));
-                    match tree.chain(parent) {
-                        Some(chain) if chain.len() >= DEPTH_MAX => {
-                            return Err(stopped.stop::<S>(ErrorCode::ProjectTooDeep));
-                        }
-                        Some(_) => {}
-                        None => return Err(stopped.stop::<S>(ErrorCode::NotFound)),
+                    let tree = Tree::of(&S::project_tree_in(transaction).await?);
+                    if !tree.contains(parent) {
+                        return Err(stopped.stop::<S>(ErrorCode::NotFound));
+                    }
+                    if tree
+                        .moved(stored.id, Some(parent))
+                        .too_deep_below(stored.id)
+                    {
+                        return Err(stopped.stop::<S>(ErrorCode::ProjectTooDeep));
                     }
                 }
                 // Judged again on what is stored now: two people who make a project with the

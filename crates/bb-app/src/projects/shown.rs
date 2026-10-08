@@ -10,7 +10,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use bb_core::id::{ProjectId, UserId};
-use bb_core::project::{DEPTH_MAX, Project};
+use bb_core::project::Project;
 use bb_policy::{Narrowing, Permission, Place, Policy, Tree};
 
 use super::types::{ProjectItem, ProjectRef, TRAIL_MAX};
@@ -45,7 +45,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             .policy_of(person)
             .await
             .map_err(|error| internal::<S>(&error))?;
-        let tree = Tree::new(projects.iter().map(|project| (project.id, project.parent)));
+        let tree = Tree::of(&projects);
         Ok(Shown {
             visible: policy.visible_as(person, actor.key_scope(), &tree),
             person,
@@ -94,7 +94,7 @@ impl Shown {
 
     /// The project as a name in a sentence, if the person sees it.
     pub(crate) fn reference(&self, project: ProjectId) -> Option<ProjectRef> {
-        self.get(project).map(reference_of)
+        self.get(project).map(ProjectRef::from)
     }
 
     /// The parent of the project, when the person sees the parent too.
@@ -124,17 +124,7 @@ impl Shown {
     /// Whether `project` is `outside` or inside it, at any depth (also through projects the person
     /// does not see: the tree is the stored one).
     pub(crate) fn is_inside(&self, project: &Project, outside: ProjectId) -> bool {
-        let mut current = Some(project.id);
-        for _ in 0..DEPTH_MAX {
-            let Some(id) = current else {
-                return false;
-            };
-            if id == outside {
-                return true;
-            }
-            current = self.projects.get(&id).and_then(|known| known.parent);
-        }
-        false
+        self.tree.is_within(project.id, outside)
     }
 
     /// The projects above `project` that the person sees, from the top down, stopping at the
@@ -151,7 +141,7 @@ impl Shown {
             let Some(found) = self.get(parent) else {
                 break;
             };
-            trail.push(reference_of(found));
+            trail.push(ProjectRef::from(found));
             current = self.shown_parent(found);
         }
         trail.reverse();
@@ -169,13 +159,5 @@ impl Shown {
                 .shown_parent(project)
                 .and_then(|parent| self.reference(parent)),
         }
-    }
-}
-
-fn reference_of(project: &Project) -> ProjectRef {
-    ProjectRef {
-        id: project.id,
-        short_name: project.short_name.clone(),
-        name: project.name.clone(),
     }
 }

@@ -32,7 +32,9 @@ pub use levels::{
     RoleLevel, level_of_role, nearest_rule,
 };
 pub use mask::{Authorized, FieldMask, Masked, drop_hidden, mask_member};
-pub use moves::{Access, Change, Lift, Preview, preview_move};
+pub use moves::{
+    Access, Change, Lift, MoveRefusal, MoveRequest, Preview, check_move, preview_move,
+};
 pub use narrowing::{Choice, Narrowing};
 pub use people::{
     FormerUser, PeopleContext, PersonRef, Target, former_user_label, resolve, taken_in,

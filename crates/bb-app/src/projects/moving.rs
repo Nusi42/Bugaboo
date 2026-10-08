@@ -25,8 +25,8 @@ use bb_core::people_kinds::PeopleKind;
 use bb_core::project::Project;
 use bb_core::sign_in::SecurityAction;
 use bb_policy::{
-    Access, Authorized, Change, Evaluation, PeopleContext, Permission, Place, Policy, Preview,
-    Tree, preview_move as difference,
+    Access, Authorized, Change, Evaluation, MoveRefusal, MoveRequest, PeopleContext, Place, Policy,
+    Preview, Tree, check_move, preview_move as difference,
 };
 use serde_json::json;
 
@@ -38,14 +38,6 @@ use super::types::{
 };
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, by, entity, internal};
-
-fn reference(project: &Project) -> ProjectRef {
-    ProjectRef {
-        id: project.id,
-        short_name: project.short_name.clone(),
-        name: project.name.clone(),
-    }
-}
 
 /// The version of a preview: it names the project, both parents and what the move would change,
 /// so it is another one as soon as one of them changes. A digest, not a secret: the server makes
@@ -72,6 +64,25 @@ fn version_of(
     bb_core::hex::encode(&bb_auth::stable_id("move-preview", &text))
 }
 
+/// A move that may be asked for, with what it is judged on.
+struct Checked {
+    project: Project,
+    viewer: Arc<Evaluation>,
+    projects: Vec<Project>,
+    policy: Policy,
+}
+
+/// What a refused move says.
+const fn code_of(refusal: MoveRefusal) -> ErrorCode {
+    match refusal {
+        MoveRefusal::NotFound => ErrorCode::NotFound,
+        MoveRefusal::Forbidden => ErrorCode::Forbidden,
+        MoveRefusal::IntoItself => ErrorCode::MoveIntoItself,
+        MoveRefusal::SameParent => ErrorCode::InvalidRequest,
+        MoveRefusal::TooDeep => ErrorCode::ProjectTooDeep,
+    }
+}
+
 /// What a move would do, from the tree and the policy as they are.
 struct Judged {
     tree: Tree,
@@ -85,7 +96,7 @@ fn judge(
     project: &Project,
     to: Option<ProjectId>,
 ) -> Judged {
-    let tree = Tree::new(projects.iter().map(|known| (known.id, known.parent)));
+    let tree = Tree::of(projects);
     let preview = difference(policy, &tree, project.id, to);
     let by_id: BTreeMap<ProjectId, Project> = projects
         .iter()
@@ -99,61 +110,48 @@ fn judge(
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
-    /// What a person has to be allowed before a move is even looked at: they see the project, they
-    /// may move in the new parent and in the old one, and it does not go inside itself. A project
-    /// the person may not see, and a parent they may not know about, answer like ones that do
-    /// not exist.
-    async fn check_move(
+    /// What a person has to be allowed before a move is even looked at (the one set of rules of
+    /// [`check_move`], the same that the move itself is held to inside its change): they see the
+    /// project, they may move in the new parent and in the old one, and it does not go inside
+    /// itself. A project the person may not see, and a parent they may not know about, answer like
+    /// ones that do not exist. Gives the project, the way the person sees it, and what the
+    /// preview and the move are judged on.
+    async fn checked_move(
         &self,
         actor: &Actor,
         project: ProjectId,
         to: Option<ProjectId>,
-    ) -> Result<(Project, Arc<Evaluation>), AppError> {
-        let not_found = || AppError::Refused(ErrorCode::NotFound);
-        let found = self
-            .store()
-            .project(project)
-            .await
-            .map_err(|error| internal::<S>(&error))?
-            .ok_or_else(not_found)?;
+    ) -> Result<Checked, AppError> {
         let viewer = self.evaluation_of(actor, Place::Project(project)).await?;
-        if !viewer.sees_project() {
-            return Err(not_found());
-        }
-        // The new parent: one the person may not know about answers like one that is not there.
-        self.require(actor, Permission::MoveProjects, Place::from(to))
-            .await?;
-        if to.is_none() {
-            // The top level is the organization: a project that goes there is made there.
-            let whole = self.evaluation_of(actor, Place::Organization).await?;
-            if !whole.allows(Permission::MakeProjects) {
-                return Err(ErrorCode::Forbidden.into());
-            }
-        }
-        // The old parent: a person who sees the project but not what holds it is told they may not,
-        // as for a parent they see; nothing says the parent is hidden.
-        let old = self.evaluation_of(actor, Place::from(found.parent)).await?;
-        if !old.allows(Permission::MoveProjects) {
-            return Err(ErrorCode::Forbidden.into());
-        }
         let projects = self
             .store()
             .project_tree()
             .await
             .map_err(|error| internal::<S>(&error))?;
-        let tree = Tree::new(projects.iter().map(|known| (known.id, known.parent)));
-        if let Some(target) = to
-            && tree.chain(target).ok_or_else(not_found)?.contains(&project)
-        {
-            return Err(ErrorCode::MoveIntoItself.into());
-        }
-        if found.parent == to {
-            return Err(ErrorCode::InvalidRequest.into());
-        }
-        if tree.moved(project, to).too_deep_below(project) {
-            return Err(ErrorCode::ProjectTooDeep.into());
-        }
-        Ok((found, viewer))
+        let policy = self
+            .store()
+            .policy_all()
+            .await
+            .map_err(|error| internal::<S>(&error))?;
+        let asked = MoveRequest {
+            person: actor.person.id,
+            key: actor.key_scope(),
+            project,
+            to,
+        };
+        check_move(&policy, &Tree::of(&projects), &asked)
+            .map_err(|refusal| AppError::Refused(code_of(refusal)))?;
+        let found = projects
+            .iter()
+            .find(|known| known.id == project)
+            .cloned()
+            .ok_or(AppError::Refused(ErrorCode::NotFound))?;
+        Ok(Checked {
+            project: found,
+            viewer,
+            projects,
+            policy,
+        })
     }
 
     /// The preview as the person who asks may read it: people as they may see them, and only
@@ -179,7 +177,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         };
         let shown_ref = |id: ProjectId| {
             seen.contains(&id)
-                .then(|| projects.get(&id).map(reference))
+                .then(|| projects.get(&id).map(ProjectRef::from))
                 .flatten()
         };
         let mut people: Vec<PersonChange> = Vec::new();
@@ -236,7 +234,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             }
         }
         Ok(MovePreview {
-            project: reference(project),
+            project: ProjectRef::from(project),
             to: to.and_then(|target| shown_ref(target.id)),
             preview: judged.version.clone(),
             blocked: !judged.preview.lifts.is_empty(),
@@ -320,17 +318,12 @@ pub async fn preview_move<S: AuthStore>(
     input: MovePreviewQuery,
 ) -> Result<Authorized<MovePreview>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
-    let (project, viewer) = ctx.check_move(&actor, input.project, input.to).await?;
-    let projects = ctx
-        .store()
-        .project_tree()
-        .await
-        .map_err(|error| internal::<S>(&error))?;
-    let policy = ctx
-        .store()
-        .policy_all()
-        .await
-        .map_err(|error| internal::<S>(&error))?;
+    let Checked {
+        project,
+        viewer,
+        projects,
+        policy,
+    } = ctx.checked_move(&actor, input.project, input.to).await?;
     let target = input
         .to
         .and_then(|id| projects.iter().find(|known| known.id == id));
@@ -353,7 +346,9 @@ pub async fn move_project<S: AuthStore>(
     input: MoveProject,
 ) -> Result<Authorized<ProjectView>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
-    let (project, viewer) = ctx.check_move(&actor, input.project, input.to).await?;
+    let Checked {
+        project, viewer, ..
+    } = ctx.checked_move(&actor, input.project, input.to).await?;
     let shown_parent = match input.to {
         Some(to) => ctx
             .evaluation_of(&actor, Place::Project(to))
@@ -388,31 +383,14 @@ pub async fn move_project<S: AuthStore>(
                 let projects = S::project_tree_in(transaction).await?;
                 let policy = S::policy_in(transaction).await?;
                 let judged = judge(&policy, &projects, &now, to);
-                let held =
-                    |place: Place| policy.evaluate_as(person, key.as_ref(), &judged.tree, place);
-                if !held(Place::Project(id)).is_some_and(|held| held.sees_project()) {
-                    return Err(stopped.stop::<S>(ErrorCode::NotFound));
-                }
-                for place in [Place::from(now.parent), Place::from(to)] {
-                    if !held(place).is_some_and(|held| held.allows(Permission::MoveProjects)) {
-                        return Err(stopped.stop::<S>(ErrorCode::Forbidden));
-                    }
-                }
-                if to.is_none()
-                    && !held(Place::Organization)
-                        .is_some_and(|held| held.allows(Permission::MakeProjects))
-                {
-                    return Err(stopped.stop::<S>(ErrorCode::Forbidden));
-                }
-                if to.is_some_and(|target| judged.tree.is_within(target, id)) {
-                    return Err(stopped.stop::<S>(ErrorCode::MoveIntoItself));
-                }
-                if now.parent == to {
-                    return Err(stopped.stop::<S>(ErrorCode::InvalidRequest));
-                }
-                if judged.tree.moved(id, to).too_deep_below(id) {
-                    return Err(stopped.stop::<S>(ErrorCode::ProjectTooDeep));
-                }
+                let asked = MoveRequest {
+                    person,
+                    key: key.as_ref(),
+                    project: id,
+                    to,
+                };
+                check_move(&policy, &judged.tree, &asked)
+                    .map_err(|refusal| stopped.stop::<S>(code_of(refusal)))?;
                 // The rule of M2-F23: a move lifts no *No access*. It comes before the look at
                 // the preview, so no preview, stale or made up, gets around it.
                 if !judged.preview.lifts.is_empty() {

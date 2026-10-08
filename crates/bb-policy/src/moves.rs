@@ -26,7 +26,99 @@ use bb_core::people_kinds::PeopleKind;
 
 use crate::catalogue::Permission;
 use crate::evaluate::{Evaluation, Place};
+use crate::narrowing::Narrowing;
 use crate::tree::{Policy, Tree};
+
+/// Why a move is refused before it is previewed or done.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum MoveRefusal {
+    /// The project, or the new parent, is one the person may not know about (or there is none).
+    /// The two answer alike.
+    NotFound,
+    /// The person knows the places but may not move there or from there.
+    Forbidden,
+    /// The new parent is the project itself or something inside it.
+    IntoItself,
+    /// The project is inside that parent already.
+    SameParent,
+    /// The project, with what is inside it, would go deeper than a tree may.
+    TooDeep,
+}
+
+/// A move being asked for by a person (or by the access key they came with).
+#[derive(Clone, Copy, Debug)]
+pub struct MoveRequest<'a> {
+    /// The person who asks.
+    pub person: UserId,
+    /// The access key they came with, if any: what they may do is narrowed to it.
+    pub key: Option<&'a Narrowing>,
+    /// The project to move.
+    pub project: ProjectId,
+    /// The new parent (the top level for `None`).
+    pub to: Option<ProjectId>,
+}
+
+/// Whether the person may ask for this move at all: the one set of rules the preview and the move
+/// both stand on, judged on the tree and on who has which role as they are given. They see the
+/// project; they may move projects in the new and in the old parent (a move to or from the top
+/// level takes the permission for the whole organization, and to the top level also *Make
+/// projects*); the project does not go inside itself, nor where it is already, nor deeper than a
+/// tree may go.
+///
+/// # Errors
+/// What is refused, as a [`MoveRefusal`]. A project or a parent the person may not know about is
+/// refused like one that does not exist.
+pub fn check_move(
+    policy: &Policy,
+    tree: &Tree,
+    request: &MoveRequest<'_>,
+) -> Result<(), MoveRefusal> {
+    let MoveRequest {
+        person,
+        key,
+        project,
+        to,
+    } = *request;
+    let held = |place: Place| policy.evaluate_as(person, key, tree, place);
+    if !held(Place::Project(project)).is_some_and(|here| here.sees_project()) {
+        return Err(MoveRefusal::NotFound);
+    }
+    // The new parent: one the person may not know about answers like one that is not there.
+    let new_place = Place::from(to);
+    let new_parent = held(new_place).ok_or(MoveRefusal::NotFound)?;
+    if !new_parent.allows(Permission::MoveProjects) {
+        return Err(
+            if matches!(new_place, Place::Project(_)) && !new_parent.knows_project() {
+                MoveRefusal::NotFound
+            } else {
+                MoveRefusal::Forbidden
+            },
+        );
+    }
+    // The top level is the organization: a project that goes there is made there.
+    if to.is_none()
+        && !held(Place::Organization).is_some_and(|whole| whole.allows(Permission::MakeProjects))
+    {
+        return Err(MoveRefusal::Forbidden);
+    }
+    // The old parent: a person who sees the project but not what holds it is told they may not,
+    // as for a parent they see; nothing says the parent is hidden.
+    let old_parent = tree.parent(project).ok_or(MoveRefusal::NotFound)?;
+    let old = held(Place::from(old_parent)).ok_or(MoveRefusal::NotFound)?;
+    if !old.allows(Permission::MoveProjects) {
+        return Err(MoveRefusal::Forbidden);
+    }
+    if to.is_some_and(|target| tree.is_within(target, project)) {
+        return Err(MoveRefusal::IntoItself);
+    }
+    if old_parent == to {
+        return Err(MoveRefusal::SameParent);
+    }
+    if tree.moved(project, to).too_deep_below(project) {
+        return Err(MoveRefusal::TooDeep);
+    }
+    Ok(())
+}
 
 /// What a person has at one project, as far as a move can change it.
 #[derive(Clone, Debug, PartialEq, Eq)]

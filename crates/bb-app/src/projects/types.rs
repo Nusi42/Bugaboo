@@ -12,7 +12,7 @@ use bb_core::access::{FieldLevel, PeopleLevel};
 use bb_core::fields::Field;
 use bb_core::id::ProjectId;
 use bb_core::people_kinds::PeopleKind;
-use bb_core::project::ShortName;
+use bb_core::project::{Project, ShortName};
 use bb_policy::{Masked, Permission, PersonRef};
 use serde::Serialize;
 
@@ -109,6 +109,16 @@ pub struct ProjectRef {
 }
 
 impl Masked for ProjectRef {}
+
+impl From<&Project> for ProjectRef {
+    fn from(project: &Project) -> Self {
+        Self {
+            id: project.id,
+            short_name: project.short_name.clone(),
+            name: project.name.clone(),
+        }
+    }
+}
 
 /// A project as it is shown after it was made, changed or moved.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
