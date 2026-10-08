@@ -351,7 +351,7 @@ fn restrict(path: &Path) -> Result<(), String> {
 
 /// The well-known SID of the group of administrators of the computer (fixed, while the name of
 /// the group changes with the language).
-#[cfg(windows)]
+#[cfg(any(windows, test))]
 pub(crate) const ADMINISTRATORS_SID: &str = "S-1-5-32-544";
 
 /// Windows: the same for one file, which the account that runs Bugaboo may change and the
