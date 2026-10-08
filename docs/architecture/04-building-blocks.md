@@ -20,6 +20,7 @@ bugaboo/
 │   ├── bb-notify/          in-app, e-mail and webhook delivery
 │   ├── bb-jobs/            background job runner and schedules
 │   ├── bb-api/             HTTP: routes, OpenAPI, security headers, rate limits, static app
+│   ├── bb-api-words/       the words of the API description that code, tests and checks share (no dependencies)
 │   ├── bb-wasm/            WebAssembly bindings for searchlang, markdown, validation
 │   ├── bb-testing/         test harness: runs one test body on SQLite and PostgreSQL (dev dependency only)
 │   ├── bb-sample/          sample-organization generator, developer tool (not shipped before OPS-12)
@@ -45,6 +46,7 @@ bugaboo/
 flowchart TB
   server["bb-server<br/>binary, wiring"]
   api["bb-api<br/>HTTP + OpenAPI"]
+  words["bb-api-words<br/>shared API words"]
   mcp["bb-mcp"]
   app["bb-app<br/>use cases + ports"]
   policy["bb-policy"]
@@ -63,7 +65,7 @@ flowchart TB
   sample["bb-sample<br/>sample organization"]
 
   server --> api & jobs & store & files & ai & notify & auth & app & core
-  api --> app & auth & mcp & core & policy
+  api --> app & auth & mcp & core & policy & words
   mcp --> app & ai
   jobs --> app
   app --> policy & core & search & md & auth
@@ -77,6 +79,7 @@ flowchart TB
   store --> search & policy & core
   wasm --> search & md
   store -. tests only .-> testing
+  server -. tests only .-> words
   sample --> app & store & core & policy & auth
 ```
 
@@ -138,6 +141,10 @@ Test-support crate, used only as a **dev dependency** (`[dev-dependencies]`) and
 ### bb-api
 
 axum router; extractors that turn a session cookie, access key or OAuth token into an **actor**; CSRF and origin checks; security headers and CSP; rate limits (`limits`); the one cookie module (`cookies`); `?fields=` projections; cursor pagination; ETags; problem+json errors (`errors`: `ApiError`, `ApiJson`); OpenAPI generation from the handlers' `#[utoipa::path]` descriptions (`openapi`, served at `/api/v1/openapi.json`, printed by `bugaboo openapi`, written to `web/packages/api-client/openapi.json` by `cargo xtask gen api`); the embedded static app.
+
+### bb-api-words
+
+The words of the API description that more than one program needs, written once: the marks `bb-api` puts on a route (`x-permission`, `x-never-stored`, `x-secret`), the three words for a route that needs no permission of the catalogue (`public`, `signed-in`, `own-account`), and the actor and answer names of the permission matrix (SEC-MATRIX). It has no dependencies and does no work, so `bb-api` (writes the words), the server tests (read them) and `xtask` (its checks read the generated description) can import it. The table that says which route gets which mark is `bb-api`'s `permissions::ROUTES`.
 
 ### bb-ai and bb-mcp
 
