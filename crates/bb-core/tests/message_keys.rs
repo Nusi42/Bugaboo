@@ -3,6 +3,7 @@
 //! the catalog the moment it is written.
 
 // Dependencies of the library that this test does not use itself (`unused_crate_dependencies`).
+use bb_core as _;
 use bb_macros as _;
 use jiff as _;
 use serde as _;
