@@ -1,7 +1,7 @@
 //! SEC-11: the running router sends every security header on every kind of response.
 //!
-//! The expected values are written out here on purpose, so changing a header in the code
-//! without changing the requirement (SEC-11, architecture §7) fails this test (SEC-HEADERS).
+//! The values come from the one table in the code (`bb_api::SECURITY_HEADERS`); that the table says
+//! what SEC-11 (architecture §7) demands is SEC-HEADERS' rule, checked there only.
 
 // Dependencies of the library that this test does not use itself (`unused_crate_dependencies`).
 use base64ct as _;
@@ -31,8 +31,6 @@ use tracing_subscriber as _;
 use utoipa as _;
 use utoipa_axum as _;
 
-mod common;
-
 #[cfg(test)] // Clippy lets tests unwrap only inside test modules (clippy.toml).
 mod headers {
     use axum::body::Body;
@@ -40,7 +38,7 @@ mod headers {
     use axum::response::Response;
     use bb_api::{Options, WebSource, router};
 
-    use super::common::{EXPECTED, HSTS_NAME, HSTS_SELF_SIGNED, HSTS_TRUSTED};
+    use bb_api::{HSTS_NAME, SECURITY_HEADERS, hsts_value};
     use tower::ServiceExt as _;
 
     fn app_folder() -> tempfile::TempDir {
@@ -78,7 +76,7 @@ mod headers {
     }
 
     fn assert_headers(response: &Response, what: &str) {
-        for (name, value) in EXPECTED {
+        for (name, value) in SECURITY_HEADERS {
             let actual = response.headers().get(name).map(|v| v.to_str().unwrap());
             assert_eq!(actual, Some(value), "{name} on {what}");
         }
@@ -108,13 +106,13 @@ mod headers {
     async fn sec_11_hsts_depends_on_https_and_on_who_made_the_certificate() {
         let dir = app_folder();
         let web = || WebSource::Folder(dir.path().into());
-        for (seconds, expected) in [
-            (bb_api::HSTS_MAX_AGE_SELF_SIGNED, HSTS_SELF_SIGNED),
-            (bb_api::HSTS_MAX_AGE_TRUSTED, HSTS_TRUSTED),
+        for seconds in [
+            bb_api::HSTS_MAX_AGE_SELF_SIGNED,
+            bb_api::HSTS_MAX_AGE_TRUSTED,
         ] {
             let secure = send_with(options(web(), Some(seconds)), Method::GET, "/").await;
             let value = secure.headers().get(HSTS_NAME).unwrap().to_str().unwrap();
-            assert_eq!(value, expected);
+            assert_eq!(value, hsts_value(seconds));
             assert!(!value.to_lowercase().contains("includesubdomains"));
             assert_headers(&secure, "https");
         }

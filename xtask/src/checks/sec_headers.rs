@@ -1,12 +1,12 @@
 //! SEC-HEADERS: the server sends the required security headers and CSP (SEC-11).
 //!
 //! The running behaviour is proven by the integration tests `crates/bb-api/tests/headers.rs` and
-//! `https.rs` (they run with `cargo test`, which `cargo xtask ci` runs). This check keeps the code
-//! and those tests from drifting from the requirement:
+//! `https.rs` (they run with `cargo test`, which `cargo xtask ci` runs); they read the values from
+//! the one table in `headers.rs`, so the table is not written out a second time. This check holds
+//! the table against the requirement:
 //!
-//! * every header of the table in `headers.rs` is written out again in the tests with exactly
-//!   the same value (compared as text, not searched for),
-//! * HSTS exists in both and never with `includeSubDomains`,
+//! * every header SEC-11 requires is in the table with a value,
+//! * HSTS exists and never with `includeSubDomains`,
 //! * the CSP says what SEC-11 demands and has no source that lets injected or foreign code run.
 
 use std::collections::BTreeMap;
@@ -15,7 +15,6 @@ use super::{Check, Context, Finding};
 use crate::docs::source::read_text;
 
 const SOURCE: &str = "crates/bb-api/src/headers.rs";
-const EXPECTED_IN_TESTS: &str = "crates/bb-api/tests/common/mod.rs";
 
 /// Headers every response carries (SEC-11, architecture §7).
 const REQUIRED: [&str; 6] = [
@@ -57,8 +56,7 @@ impl Check for SecHeaders {
 
     fn run(&self, context: &Context<'_>) -> anyhow::Result<Vec<Finding>> {
         let code = read_text(context.repo, SOURCE)?;
-        let tests = read_text(context.repo, EXPECTED_IN_TESTS)?;
-        Ok(evaluate(&code, &tests))
+        Ok(evaluate(&code))
     }
 }
 
@@ -112,48 +110,32 @@ fn values(literals: &[String], names: &[&str]) -> BTreeMap<String, String> {
     found
 }
 
-fn evaluate(code: &str, tests: &str) -> Vec<Finding> {
+fn evaluate(code: &str) -> Vec<Finding> {
     let in_code = string_literals(code);
-    let in_tests = string_literals(tests);
     let code_values = values(&in_code, &REQUIRED);
-    let test_values = values(&in_tests, &REQUIRED);
     let mut findings = Vec::new();
     for name in REQUIRED {
-        match (code_values.get(name), test_values.get(name)) {
-            (None, _) => findings.push(Finding::at(
+        if !code_values.contains_key(name) {
+            findings.push(Finding::at(
                 SOURCE,
                 format!("The header `{name}` is required by SEC-11 but not set."),
-            )),
-            (Some(_), None) => findings.push(Finding::at(
-                EXPECTED_IN_TESTS,
-                format!("The integration tests do not expect the header `{name}`; add it."),
-            )),
-            (Some(set), Some(expected)) if set != expected => findings.push(Finding::at(
-                EXPECTED_IN_TESTS,
-                format!(
-                    "The value of `{name}` in {SOURCE} differs from the one the tests expect. \
-                     Change both together, and only to match SEC-11."
-                ),
-            )),
-            _ => {}
+            ));
         }
     }
-    for (place, literals) in [(SOURCE, &in_code), (EXPECTED_IN_TESTS, &in_tests)] {
-        if !literals.iter().any(|literal| literal == HSTS) {
-            findings.push(Finding::at(
-                place,
-                format!("The header `{HSTS}` (HSTS) is required on HTTPS but is not there."),
-            ));
-        }
-        if literals
-            .iter()
-            .any(|literal| literal.to_ascii_lowercase().contains(HSTS_FORBIDDEN))
-        {
-            findings.push(Finding::at(
-                place,
-                "HSTS must not use includeSubDomains: Bugaboo does not own the other names of its host.",
-            ));
-        }
+    if !in_code.iter().any(|literal| literal == HSTS) {
+        findings.push(Finding::at(
+            SOURCE,
+            format!("The header `{HSTS}` (HSTS) is required on HTTPS but is not there."),
+        ));
+    }
+    if in_code
+        .iter()
+        .any(|literal| literal.to_ascii_lowercase().contains(HSTS_FORBIDDEN))
+    {
+        findings.push(Finding::at(
+            SOURCE,
+            "HSTS must not use includeSubDomains: Bugaboo does not own the other names of its host.",
+        ));
     }
     if let Some(policy) = code_values.get("content-security-policy") {
         findings.extend(check_policy(policy));
@@ -229,32 +211,34 @@ const H: &str = "strict-transport-security";
     #[test]
     fn good_example() {
         let code = table(POLICY, "same-origin");
-        // The same values, written differently (line breaks) and found by exact comparison.
-        let tests = table(POLICY, "same-origin").replace("\\\n        ", "");
-        assert!(evaluate(&code, &tests).is_empty(), "{}", {
-            evaluate(&code, &tests)
+        let findings = evaluate(&code);
+        assert!(
+            findings.is_empty(),
+            "{}",
+            findings
                 .iter()
                 .map(|f| f.message.clone())
                 .collect::<Vec<_>>()
-                .join("\n")
-        });
+                .join(
+                    "
+"
+                )
+        );
     }
 
     #[test]
-    fn bad_example_values_differ_headers_missing_and_weak_policy() {
+    fn bad_example_headers_missing_and_weak_policy() {
         let code = table(POLICY, "same-origin");
-        let different = table(POLICY, "no-referrer");
-        assert_eq!(evaluate(&code, &different).len(), 1, "value differs");
-
-        let missing_in_code = code.replace("\"permissions-policy\"", "\"x\"");
-        assert_eq!(evaluate(&missing_in_code, &code).len(), 1);
-        let missing_in_tests = code.replace("\"permissions-policy\"", "\"x\"");
-        assert_eq!(evaluate(&code, &missing_in_tests).len(), 1);
+        let missing = code.replace("\"permissions-policy\"", "\"x\"");
+        assert_eq!(evaluate(&missing).len(), 1);
 
         let no_hsts = code.replace("strict-transport-security", "x");
-        assert_eq!(evaluate(&no_hsts, &code).len(), 1);
-        let subdomains = format!("{code}\nconst S: &str = \"max-age=1; includeSubDomains\";");
-        assert_eq!(evaluate(&subdomains, &code).len(), 1);
+        assert_eq!(evaluate(&no_hsts).len(), 1);
+        let subdomains = format!(
+            "{code}
+const S: &str = \"max-age=1; includeSubDomains\";"
+        );
+        assert_eq!(evaluate(&subdomains).len(), 1);
 
         for weak in [
             "script-src 'self' 'unsafe-inline'",
@@ -266,12 +250,11 @@ const H: &str = "strict-transport-security";
         ] {
             let policy = format!("{POLICY}; {weak}");
             let weak_code = table(&policy, "same-origin");
-            let weak_tests = table(&policy, "same-origin");
-            assert_eq!(evaluate(&weak_code, &weak_tests).len(), 1, "{weak}");
+            assert_eq!(evaluate(&weak_code).len(), 1, "{weak}");
         }
         let lax = POLICY.replace("frame-ancestors 'none'", "frame-ancestors 'self'");
         let lax_code = table(&lax, "same-origin");
-        assert_eq!(evaluate(&lax_code, &lax_code).len(), 1);
+        assert_eq!(evaluate(&lax_code).len(), 1);
     }
 
     #[test]

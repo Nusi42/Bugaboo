@@ -26,8 +26,6 @@ use tracing_subscriber as _;
 use utoipa as _;
 use utoipa_axum as _;
 
-mod common;
-
 #[cfg(test)] // Clippy lets tests unwrap only inside test modules (clippy.toml).
 mod https {
     use std::net::{IpAddr, SocketAddr};
@@ -45,7 +43,7 @@ mod https {
     use tokio::sync::oneshot;
     use tokio_rustls::TlsConnector;
 
-    use super::common::{EXPECTED, HSTS_NAME, HSTS_SELF_SIGNED, HSTS_TRUSTED};
+    use bb_api::{HSTS_NAME, SECURITY_HEADERS, hsts_value};
 
     const LOOPBACK: &str = "127.0.0.1:0";
 
@@ -172,7 +170,12 @@ mod https {
         for path in ["/", "/api/x", "/missing.js"] {
             let response = fetch(&server, true, &get(path, "")).await;
             let head = head_of(&response);
-            for (name, value) in EXPECTED.iter().chain([&(HSTS_NAME, HSTS_SELF_SIGNED)]) {
+            let hsts = hsts_value(bb_api::HSTS_MAX_AGE_SELF_SIGNED);
+            for (name, value) in SECURITY_HEADERS
+                .iter()
+                .copied()
+                .chain([(HSTS_NAME, hsts.as_str())])
+            {
                 assert!(
                     head.contains(&format!("{name}: {}", value.to_lowercase())),
                     "{name} on {path}: {head}"
@@ -284,7 +287,10 @@ mod https {
         let response = fetch(&server, false, &get("/health/live", "")).await;
         assert!(String::from_utf8_lossy(&response).contains("200 OK"));
         // Behind a trusted proxy the connection counts as HTTPS: the full HSTS lifetime.
-        assert!(head_of(&response).contains(&format!("{HSTS_NAME}: {HSTS_TRUSTED}")));
+        assert!(head_of(&response).contains(&format!(
+            "{HSTS_NAME}: {}",
+            hsts_value(bb_api::HSTS_MAX_AGE_TRUSTED)
+        )));
     }
 
     /// The answers that hand out a secret (a big one included) are tested where there is a

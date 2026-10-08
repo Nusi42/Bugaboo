@@ -82,7 +82,7 @@ mod api {
     }
 
     #[tokio::test]
-    async fn adr_0008_the_served_spec_is_the_one_in_the_code_and_the_one_on_disk() {
+    async fn adr_0008_the_served_spec_is_the_one_in_the_code() {
         let app = router(options(LimitsConfig::default(), &[]));
         let response = app
             .oneshot(request(
@@ -100,42 +100,20 @@ mod api {
             .unwrap();
         let served: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
         let in_code: serde_json::Value = serde_json::from_str(openapi::json()).unwrap();
+        // That the file on disk is the same is DOC-GENERATED's rule, checked there only.
         assert_eq!(served, in_code);
-
-        // The file is formatted by the project's formatter, so it is compared as data.
-        let on_disk = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-            .join("../../web/packages/api-client/openapi.json");
-        let on_disk: serde_json::Value =
-            serde_json::from_str(&std::fs::read_to_string(&on_disk).unwrap()).unwrap();
-        assert_eq!(
-            on_disk, served,
-            "web/packages/api-client/openapi.json is out of date; run `cargo xtask gen api`"
-        );
     }
 
     #[tokio::test]
-    async fn adr_0008_the_spec_describes_the_error_body_and_every_route_the_standard_errors() {
+    async fn adr_0008_the_spec_describes_the_error_body() {
         let spec: serde_json::Value = serde_json::from_str(openapi::json()).unwrap();
         assert_eq!(spec["openapi"], "3.1.0");
         let problem = &spec["components"]["schemas"]["Problem"];
         for field in ["type", "title", "status", "code", "message_key", "params"] {
             assert!(problem["properties"][field].is_object(), "{field}");
         }
-        let codes = spec["components"]["schemas"]["ErrorCode"]["enum"]
-            .as_array()
-            .unwrap();
-        assert!(codes.iter().any(|code| code == "rate_limit.exceeded"));
-        for (path, item) in spec["paths"].as_object().unwrap() {
-            for (method, operation) in item.as_object().unwrap() {
-                for status in ["429", "500", "503"] {
-                    let content = &operation["responses"][status]["content"];
-                    assert!(
-                        content["application/problem+json"].is_object(),
-                        "{method} {path} {status}"
-                    );
-                }
-            }
-        }
+        // The codes of `ErrorCode` and the standard answers (429, 500, 503) of every route are
+        // ARCH-ERRORS' rules, checked there only.
     }
 
     #[tokio::test]

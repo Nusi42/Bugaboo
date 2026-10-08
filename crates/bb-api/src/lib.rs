@@ -29,7 +29,9 @@ mod web;
 pub use api::{AuthHandle, BODY_LIMIT_BYTES, ProbeHandle, TIME_LIMIT, VERSION_PATH};
 pub use errors::{ApiError, ApiJson};
 pub use failures::{DEFAULT_SIGN_IN_FAILURES_PER_MINUTE, FailureLimits, MAX_WAIT};
-pub use headers::{HSTS_MAX_AGE_SELF_SIGNED, HSTS_MAX_AGE_TRUSTED};
+pub use headers::{
+    HSTS_MAX_AGE_SELF_SIGNED, HSTS_MAX_AGE_TRUSTED, HSTS_NAME, SECURITY_HEADERS, hsts_value,
+};
 pub use limits::{
     DEFAULT_ACCESS_KEY_REQUESTS_PER_MINUTE, DEFAULT_REQUESTS_PER_MINUTE,
     DEFAULT_SIGN_IN_ATTEMPTS_PER_MINUTE, Limits, LimitsConfig,
