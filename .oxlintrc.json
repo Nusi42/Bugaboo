@@ -134,11 +134,12 @@
     // placeholder ...): all words come from the message catalog (coding-standards section 4).
     // Only the input type values listed here are not text.
     "react/jsx-no-literals": ["error", { "noStrings": true, "allowedStrings": ["radio"] }],
-    // Inline styles are not allowed; styles come from CSS Modules with design tokens (ADR-0010).
+    // Inline styles are not allowed; styles are rules of design/theme.kdl (ADR-0026). THEME-ONLY
+    // forbids every other way to style from code.
     "react/forbid-dom-props": ["error", { "forbid": ["style"] }],
     // Two narrow exceptions to the categories above (see docs/third-party and WP-02):
     // the modern JSX transform (tsconfig "jsx": "react-jsx") needs no React in scope, and
-    // style sheets are imported only for their effect (design tokens, global styles).
+    // the one style sheet (generated from design/theme.kdl) is imported only for its effect.
     "react/react-in-jsx-scope": "off",
     "import/no-unassigned-import": ["error", { "allow": ["**/*.css"] }]
   }
