@@ -22,6 +22,7 @@
 use std::collections::BTreeSet;
 
 use anyhow::Context as _;
+use bb_api_words::marks::NEVER_STORED;
 use serde::Deserialize;
 use serde_json::Value;
 
@@ -41,8 +42,6 @@ const ETAG_HEADER: &str = "etag";
 const NOT_MODIFIED: &str = "304";
 /// The query parameter that asks for related objects inside the items.
 const INCLUDE_PARAMETER: &str = "include";
-/// The mark of a route whose answer is never stored (the server sets `no-store`, no `ETag`).
-const NEVER_STORED_MARK: &str = "x-never-stored";
 /// A schema whose name ends like this is a reference to a thing, not the thing itself.
 const REFERENCE_SUFFIX: &str = "Ref";
 
@@ -318,7 +317,7 @@ fn evaluate(spec: &Value, exemptions: &[Exemption]) -> Vec<Finding> {
             continue;
         };
         let place = format!("GET {path}");
-        if operation.get(NEVER_STORED_MARK) != Some(&Value::Bool(true)) {
+        if operation.get(NEVER_STORED) != Some(&Value::Bool(true)) {
             findings.extend(etag_findings(spec, operation, &place));
         }
         let Some(schema) = answer_schema(spec, operation) else {

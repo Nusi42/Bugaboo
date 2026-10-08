@@ -11,7 +11,7 @@ use std::collections::BTreeMap;
 use std::fmt::Write as _;
 
 use bb_api::openapi::Operation;
-use bb_api_words::matrix;
+use bb_api_words::sec_matrix as words;
 
 use super::actors::Actor;
 use super::routes::Expect;
@@ -77,7 +77,7 @@ impl Record {
     /// # Errors
     /// The file is missing, or differs from what ran.
     pub(super) fn matches_the_repository(&self) -> Result<(), Failure> {
-        let file = matrix::RECORD_PATH;
+        let file = words::RECORD_PATH;
         let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
             .join(REPOSITORY_ROOT)
             .join(file);
@@ -117,11 +117,11 @@ impl Record {
 /// How an answer is written in the record.
 const fn word(expected: Expect) -> &'static str {
     match expected {
-        Expect::Allowed => matrix::ALLOWED,
-        Expect::NotSignedIn => matrix::NOT_SIGNED_IN,
-        Expect::Forbidden => matrix::FORBIDDEN,
-        Expect::NotFound => matrix::NOT_FOUND,
-        Expect::NotForKeys => matrix::NOT_FOR_KEYS,
+        Expect::Allowed => words::ALLOWED,
+        Expect::NotSignedIn => words::NOT_SIGNED_IN,
+        Expect::Forbidden => words::FORBIDDEN,
+        Expect::NotFound => words::NOT_FOUND,
+        Expect::NotForKeys => words::NOT_FOR_KEYS,
     }
 }
 

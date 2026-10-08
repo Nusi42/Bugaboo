@@ -16,7 +16,7 @@
 use std::collections::BTreeSet;
 
 use bb_api::permissions::Declared;
-use bb_api_words::matrix;
+use bb_api_words::sec_matrix as words;
 use bb_app::access::{Permission, StartingRole};
 
 /// The projects of the matrix.
@@ -108,16 +108,16 @@ impl Actor {
     /// The name in the record of what the matrix covered.
     pub(super) fn name(self) -> String {
         match self {
-            Self::Exactly(_) => matrix::EXACTLY_THE_PERMISSION.to_owned(),
-            Self::Nobody => matrix::NOBODY.to_owned(),
-            Self::NoRole => matrix::NO_ROLE.to_owned(),
-            Self::Role(role) => format!("{}{}", matrix::ROLE_PREFIX, role.key()),
-            Self::LeadOnParent => matrix::LEAD_ON_PARENT.to_owned(),
-            Self::LeadOnSiblingOnly => matrix::LEAD_ON_SIBLING_ONLY.to_owned(),
-            Self::NoAccessOnTarget => matrix::NO_ACCESS_ON_TARGET.to_owned(),
-            Self::NoAccessUnderLead => matrix::NO_ACCESS_UNDER_LEAD.to_owned(),
-            Self::KeySeeOnly => matrix::KEY_SEE_ONLY.to_owned(),
-            Self::KeyForAnotherProject => matrix::KEY_FOR_ANOTHER_PROJECT.to_owned(),
+            Self::Exactly(_) => words::EXACTLY_THE_PERMISSION.to_owned(),
+            Self::Nobody => words::NOBODY.to_owned(),
+            Self::NoRole => words::NO_ROLE.to_owned(),
+            Self::Role(role) => words::role_actor(role.key()),
+            Self::LeadOnParent => words::LEAD_ON_PARENT.to_owned(),
+            Self::LeadOnSiblingOnly => words::LEAD_ON_SIBLING_ONLY.to_owned(),
+            Self::NoAccessOnTarget => words::NO_ACCESS_ON_TARGET.to_owned(),
+            Self::NoAccessUnderLead => words::NO_ACCESS_UNDER_LEAD.to_owned(),
+            Self::KeySeeOnly => words::KEY_SEE_ONLY.to_owned(),
+            Self::KeyForAnotherProject => words::KEY_FOR_ANOTHER_PROJECT.to_owned(),
         }
     }
 
@@ -385,12 +385,14 @@ mod tests {
             .chain([Actor::Exactly(None)])
             .map(Actor::name)
             .collect();
-        let words: BTreeSet<String> = matrix::ACTORS
+        let roles = StartingRole::ALL.map(|role| words::role_actor(role.key()));
+        let expected: BTreeSet<String> = words::FIXED_ACTORS
             .iter()
-            .chain(&matrix::KEY_ACTORS)
+            .chain(&words::KEY_ACTORS)
             .map(|name| (*name).to_owned())
+            .chain(roles)
             .collect();
-        assert_eq!(names, words);
+        assert_eq!(names, expected);
     }
 
     #[test]

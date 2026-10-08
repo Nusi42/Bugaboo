@@ -1,6 +1,8 @@
 //! The words of the API description that more than one program needs, each written once: the marks
 //! that `bb-api` puts on a route, the three words for a route that needs no permission of the
 //! catalogue, and the names of the actors and answers of the permission matrix (SEC-MATRIX).
+//! `sec_matrix::RECORD_PATH` is the exception that is no word of the API: the path of the record in
+//! the repository.
 //!
 //! The crate has no dependencies and does no work, so `bb-api` (which writes the words), the server
 //! tests (which read them) and `xtask` (whose checks read the generated description) can all
@@ -32,25 +34,18 @@ pub mod needs {
 }
 
 /// The names the permission matrix (SEC-MATRIX) writes into its record.
-pub mod matrix {
-    /// The record of what the matrix covered, from the root of the repository.
+pub mod sec_matrix {
+    /// The record of what the matrix covered. A path in the repository (from its root), not a word of
+    /// the API.
     pub const RECORD_PATH: &str = "tools/checks/sec-matrix-record.txt";
 
     /// Nobody is signed in.
     pub const NOBODY: &str = "nobody";
     /// A person without a role.
     pub const NO_ROLE: &str = "no-role";
-    /// Each starting role is an actor named `role-` and the key of the role.
-    pub const ROLE_PREFIX: &str = "role-";
-    /// The actors that hold one starting role, in the order of the starting roles.
-    pub const ROLES: [&str; 6] = [
-        "role-administrator",
-        "role-project-lead",
-        "role-team-member",
-        "role-contributor",
-        "role-viewer",
-        "role-guest",
-    ];
+    /// Each starting role is an actor named `role-` and the key of the role
+    /// (`bb_policy::StartingRole::key`); [`role_actor`] makes the name.
+    const ROLE_PREFIX: &str = "role-";
     /// A role on the parent project.
     pub const LEAD_ON_PARENT: &str = "lead-on-parent";
     /// A role on a sibling project only.
@@ -66,16 +61,16 @@ pub mod matrix {
     /// The access key for another project.
     pub const KEY_FOR_ANOTHER_PROJECT: &str = "key-for-another-project";
 
-    /// The actors every record has.
-    pub const ACTORS: [&str; 13] = [
+    /// The actor that holds the starting role with this key.
+    #[must_use]
+    pub fn role_actor(key: &str) -> String {
+        format!("{ROLE_PREFIX}{key}")
+    }
+
+    /// The actors every record has besides the ones that hold a starting role.
+    pub const FIXED_ACTORS: [&str; 7] = [
         NOBODY,
         NO_ROLE,
-        ROLES[0],
-        ROLES[1],
-        ROLES[2],
-        ROLES[3],
-        ROLES[4],
-        ROLES[5],
         LEAD_ON_PARENT,
         LEAD_ON_SIBLING_ONLY,
         NO_ACCESS_ON_TARGET,
@@ -107,23 +102,21 @@ mod tests {
 
     #[test]
     fn every_name_of_the_matrix_is_there_once() {
-        let actors: BTreeSet<&str> = matrix::ACTORS
+        let actors: BTreeSet<&str> = sec_matrix::FIXED_ACTORS
             .iter()
-            .chain(&matrix::KEY_ACTORS)
+            .chain(&sec_matrix::KEY_ACTORS)
             .copied()
             .collect();
         assert_eq!(
             actors.len(),
-            matrix::ACTORS.len() + matrix::KEY_ACTORS.len()
+            sec_matrix::FIXED_ACTORS.len() + sec_matrix::KEY_ACTORS.len()
         );
-        let answers: BTreeSet<&str> = matrix::ANSWERS.iter().copied().collect();
-        assert_eq!(answers.len(), matrix::ANSWERS.len());
+        let answers: BTreeSet<&str> = sec_matrix::ANSWERS.iter().copied().collect();
+        assert_eq!(answers.len(), sec_matrix::ANSWERS.len());
     }
 
     #[test]
-    fn the_role_actors_are_the_prefix_and_a_key() {
-        for name in matrix::ROLES {
-            assert!(name.starts_with(matrix::ROLE_PREFIX), "{name}");
-        }
+    fn a_role_actor_is_the_prefix_and_the_key() {
+        assert_eq!(sec_matrix::role_actor("guest"), "role-guest");
     }
 }

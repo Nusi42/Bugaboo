@@ -4763,6 +4763,8 @@ name = "xtask"
 version = "0.0.0"
 dependencies = [
  "anyhow",
+ "bb-api-words",
+ "bb-policy",
  "brotli",
  "clap",
  "ctrlc",
