@@ -9,6 +9,13 @@ export const defaultDarkTheme: ThemeId = "dusk";
 export const lightThemeIds = ["daylight", "paper"] as const;
 export const darkThemeIds = ["dusk", "midnight"] as const;
 
+/** The attributes of the page frame (<html>): the theme on the page, the mode the design pages force, and a sample of a theme. */
+export const pageAttributes = {
+  look: "data-look",
+  mode: "data-theme",
+  previewLook: "data-preview-look",
+} as const;
+
 /** Where the layout changes, in pixels (the `bp-*` tokens). */
 export const breakpoints = {
   tablet: 768,

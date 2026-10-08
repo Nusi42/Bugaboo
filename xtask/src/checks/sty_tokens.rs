@@ -46,12 +46,12 @@ fn evaluate(sources: &[Source]) -> Vec<Finding> {
 /// The colors written out in the rules, the mixins and the keyframes of the theme file.
 fn theme_findings(file: &ThemeFile) -> Vec<Finding> {
     let mut findings = Vec::new();
-    let in_rules = file.rules.iter().map(|rule| &rule.items);
+    let in_rules = file.every_rule().map(|rule| &rule.items);
     let in_mixins = file.mixins.iter().map(|mixin| &mixin.items);
     for items in in_rules.chain(in_mixins) {
         check_items(items, &mut findings);
     }
-    for keyframes in &file.keyframes {
+    for keyframes in file.every_keyframes() {
         for (_, declarations) in &keyframes.frames {
             for declaration in declarations {
                 check_value(&declaration.value, declaration.line, &mut findings);

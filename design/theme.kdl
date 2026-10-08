@@ -17,6 +17,12 @@
 // The two themes that "Match my device" starts with.
 defaults light="daylight" dark="dusk"
 
+// The attributes of the page frame (<html>): `look` carries the theme on the page, `mode` is the
+// light or dark mode that the design pages force, `preview` marks a sample of a theme inside the
+// page. Written once: the style sheets, the TypeScript (`pageAttributes`) and the browser tests
+// read the names from here.
+frame look="data-look" mode="data-theme" preview="data-preview-look"
+
 // The built-in themes. `kind` decides the browser's own controls and scrollbars.
 themes {
     theme "daylight" kind="light"
@@ -3132,4 +3138,902 @@ part "shortcuts-page.keys" {
     flex-wrap wrap
     align-items center
     gap "$space-2"
+}
+
+
+// ───────────── The design pages (docs/design) ─────────────
+//
+// `docs/design/components.css` and `docs/design/docpage.css` style the documents and mockups in
+// `docs/`, not the app. They are written here as `rule`s with plain CSS selectors (the pages use
+// class names and elements) and use tokens only. Their own tokens are named `doc-…` and are written
+// to `docs/design/theme.css` only: `doc-space-N` is a length of N pixels on the scale of the pages.
+// With less motion (the device setting, or the person's choice) the motion tokens are 0, so the one
+// animation of the pages stops without a rule of its own.
+
+docs "components" description="Bugaboo shared components: base elements, buttons, chips, status pills, tags, people and fields. Used by every design page and mockup; needs theme.css." {
+    tokens {
+        line-height "doc-lh-page" "1.45"
+        number "doc-brightness-down" 0.97
+        number "doc-brightness-up" 1.08
+        number "doc-stroke-width" 2
+        opacity "doc-opacity-pulse" 0.35
+        size "doc-font-11" "11px"
+        size "doc-r-pill" "999px"
+        size "doc-r-small" "4px"
+        size "doc-space-1" "1px"
+        size "doc-space-10" "10px"
+        size "doc-space-110" "110px"
+        size "doc-space-130" "130px"
+        size "doc-space-18" "18px"
+        size "doc-space-2" "2px"
+        size "doc-space-20" "20px"
+        size "doc-space-22" "22px"
+        size "doc-space-5" "5px"
+        size "doc-space-6" "6px"
+        size "doc-space-7" "7px"
+        size "doc-space-9" "9px"
+        weight "doc-weight-medium" 500
+        weight "doc-weight-semibold" 600
+    }
+
+    rule "html" {
+        box-sizing border-box
+    }
+
+    rule "*" "*::before" "*::after" {
+        box-sizing inherit
+    }
+
+    rule "body" {
+        margin 0
+        background "$bg-canvas"
+        color "$fg"
+        font-family "$font"
+        font-size "$fs-base"
+        line-height "$doc-lh-page"
+        -webkit-font-smoothing antialiased
+    }
+
+    rule "button" "input" "select" "textarea" {
+        font-family "$font"
+        font-size inherit
+        font-weight inherit
+        font-style inherit
+        color inherit
+    }
+
+    rule "button" {
+        cursor pointer
+    }
+
+    rule ":focus-visible" {
+        use "ring"
+    }
+
+    rule ".ico" {
+        width "$space-4"
+        height "$space-4"
+        flex none
+        fill none
+        stroke currentColor
+        stroke-width "$doc-stroke-width"
+        stroke-linecap round
+        stroke-linejoin round
+    }
+
+    rule ".ico.lg" {
+        width "$doc-space-20"
+        height "$doc-space-20"
+    }
+
+    rule ".mono" {
+        font-family "$mono"
+        font-variant-numeric tabular-nums
+    }
+
+    rule ".num" {
+        font-variant-numeric tabular-nums
+    }
+
+    rule ".muted" {
+        color "$fg-muted"
+    }
+
+    rule ".sr" {
+        position absolute
+        width "$doc-space-1"
+        height "$doc-space-1"
+        overflow hidden
+        clip-path "inset(50%)"
+        white-space nowrap
+    }
+
+    rule ".subtle" {
+        color "$fg-subtle"
+    }
+
+    rule "kbd" {
+        font-family "$mono"
+        font-size "$doc-font-11"
+        padding "$doc-space-1 $doc-space-5"
+        border "$border-width solid $border"
+        border-bottom-width "$doc-space-2"
+        border-radius "$doc-r-small"
+        color "$fg-muted"
+        background "$bg-surface"
+    }
+
+    rule ".dot-live" {
+        width "$space-2"
+        height "$space-2"
+        border-radius "50%"
+        background "$accent"
+        animation "doc-pulse calc($motion-base * 8) infinite"
+    }
+
+    keyframes "doc-pulse" {
+        "50%" {
+            opacity "$doc-opacity-pulse"
+        }
+    }
+
+    rule ".btn" {
+        display inline-flex
+        align-items center
+        gap "$doc-space-6"
+        padding "$doc-space-7 $space-3"
+        border-radius "$r-ctl"
+        border "$border-width solid $border"
+        background "$bg-raised"
+        color "$fg"
+        font-weight "$doc-weight-medium"
+        white-space nowrap
+    }
+
+    rule ".btn:hover" {
+        background "$bg-hover"
+    }
+
+    rule ".btn.primary" {
+        background "$accent"
+        border-color "$accent"
+        color "$on-accent"
+    }
+
+    rule ".btn.primary:hover" {
+        filter "brightness($doc-brightness-up)"
+    }
+
+    rule ".btn.ghost" {
+        border-color transparent
+        background transparent
+    }
+
+    rule ".btn.ghost:hover" {
+        background "$bg-hover"
+    }
+
+    rule ".btn.sm" {
+        padding "$space-1 $doc-space-9"
+        font-size "$fs-sm"
+    }
+
+    rule ".btn.danger" {
+        color "$danger"
+    }
+
+    rule ".seg" {
+        display inline-flex
+        border "$border-width solid $border"
+        border-radius "$r-ctl"
+        overflow hidden
+        background "$bg-surface"
+    }
+
+    rule ".seg button" {
+        border 0
+        background none
+        padding "$doc-space-6 $space-3"
+        display flex
+        align-items center
+        gap "$doc-space-6"
+        color "$fg-muted"
+    }
+
+    rule ".seg button[aria-pressed=\"true\"]" {
+        background "$bg-raised"
+        color "$fg"
+        font-weight "$doc-weight-semibold"
+        box-shadow "inset 0 calc($doc-space-2 * -1) 0 $accent"
+    }
+
+    rule ".chips" {
+        display flex
+        flex-wrap wrap
+        gap "$doc-space-6"
+        flex 1
+        min-width 0
+    }
+
+    rule ".chip" {
+        display inline-flex
+        align-items center
+        gap "$space-1"
+        padding "$space-1 $space-1 $space-1 $doc-space-10"
+        border-radius "$doc-r-pill"
+        border "$border-width solid $border"
+        background "$bg-surface"
+        font-size "$fs-sm"
+    }
+
+    rule ".chip > button" {
+        border 0
+        background none
+        padding 0
+        display inline-flex
+        align-items center
+        gap "$space-1"
+    }
+
+    rule ".chip .x" {
+        width "$doc-space-22"
+        height "$doc-space-22"
+        border-radius "50%"
+        justify-content center
+        color "$fg-muted"
+    }
+
+    rule ".chip .x:hover" {
+        background "$bg-hover"
+        color "$fg"
+    }
+
+    rule ".chip b" {
+        font-weight "$doc-weight-semibold"
+    }
+
+    rule ".chip.raw" {
+        font-family "$mono"
+        background "$bg-sunken"
+        border-style dashed
+    }
+
+    rule ".chip.add" {
+        padding "$space-1 $doc-space-10"
+        border-style dashed
+        color "$fg-muted"
+        background transparent
+    }
+
+    rule ".key" {
+        font-family "$mono"
+        font-size "$fs-sm"
+        color "$fg-muted"
+        white-space nowrap
+    }
+
+    rule ".pill" {
+        display inline-flex
+        align-items center
+        gap "$doc-space-6"
+        padding "$doc-space-2 $doc-space-9"
+        border-radius "$doc-r-pill"
+        font-size "$fs-sm"
+        font-weight "$doc-weight-semibold"
+        border 0
+        white-space nowrap
+    }
+
+    rule ".pill::before" {
+        content "\"\""
+        width "$doc-space-7"
+        height "$doc-space-7"
+        border-radius "50%"
+        background currentColor
+    }
+
+    rule ".st-ns" {
+        background "$st-ns-soft"
+        color "$st-ns"
+    }
+
+    rule ".st-ip" {
+        background "$st-ip-soft"
+        color "$st-ip"
+    }
+
+    rule ".st-done" {
+        background "$st-done-soft"
+        color "$st-done"
+    }
+
+    rule "button.pill:hover" {
+        filter "brightness($doc-brightness-down)"
+        box-shadow "0 0 0 $border-width currentColor"
+    }
+
+    rule ".prio" {
+        display inline-flex
+        align-items center
+        gap "$doc-space-5"
+        white-space nowrap
+    }
+
+    rule ".prio.Critical" {
+        color "$danger"
+        font-weight "$doc-weight-semibold"
+    }
+
+    rule ".prio.High" {
+        color "$warning"
+        font-weight "$doc-weight-semibold"
+    }
+
+    rule ".prio.Medium" {
+        color "$fg-muted"
+    }
+
+    rule ".prio.Low" {
+        color "$fg-subtle"
+    }
+
+    rule ".tag" {
+        display inline-block
+        padding "$doc-space-1 $space-2"
+        border-radius "$doc-r-pill"
+        font-size "$fs-xs"
+        font-weight "$doc-weight-semibold"
+        margin-right "$space-1"
+    }
+
+    rule ".c1" {
+        background "$cat1-bg"
+        color "$cat1-fg"
+    }
+
+    rule ".c2" {
+        background "$cat2-bg"
+        color "$cat2-fg"
+    }
+
+    rule ".c3" {
+        background "$cat3-bg"
+        color "$cat3-fg"
+    }
+
+    rule ".c4" {
+        background "$cat4-bg"
+        color "$cat4-fg"
+    }
+
+    rule ".c5" {
+        background "$cat5-bg"
+        color "$cat5-fg"
+    }
+
+    rule ".c6" {
+        background "$cat6-bg"
+        color "$cat6-fg"
+    }
+
+    rule ".who" {
+        display inline-flex
+        align-items center
+        gap "$doc-space-6"
+        white-space nowrap
+    }
+
+    rule ".av" {
+        width "$doc-space-22"
+        height "$doc-space-22"
+        border-radius "50%"
+        display inline-grid
+        place-items center
+        font-size "$doc-font-11"
+        font-weight "$weight-bold"
+        flex none
+    }
+
+    rule ".type" {
+        display inline-flex
+        align-items center
+        gap "$doc-space-6"
+    }
+
+    rule ".type.bug" {
+        color "$danger"
+    }
+
+    rule ".type.task" {
+        color "$st-ip"
+    }
+
+    rule ".type.feature" {
+        color "$success"
+    }
+
+    rule ".type.goal" {
+        color "$accent-fg"
+    }
+
+    rule ".cb" {
+        width "$doc-space-18"
+        height "$doc-space-18"
+        accent-color "$accent"
+    }
+
+    rule ".fields" {
+        display grid
+        grid-template-columns "$doc-space-130 minmax(0, 1fr)"
+        gap "$doc-space-2 $doc-space-10"
+        align-items center
+    }
+
+    rule ".fields dt" {
+        color "$fg-muted"
+        font-size "$fs-sm"
+        padding "$doc-space-6 0"
+    }
+
+    rule ".fields dd" {
+        margin 0
+        min-width 0
+    }
+
+    rule ".tabs" {
+        display flex
+        gap "$space-1"
+        border-bottom "$border-width solid $border"
+        margin-bottom "$doc-space-10"
+        overflow-x auto
+    }
+
+    rule ".tabs button" {
+        border 0
+        background none
+        padding "$doc-space-6 $doc-space-10"
+        color "$fg-muted"
+        border-bottom "$doc-space-2 solid transparent"
+        white-space nowrap
+    }
+
+    rule ".tabs button[aria-selected=\"true\"]" {
+        color "$fg"
+        border-bottom-color "$accent"
+        font-weight "$doc-weight-semibold"
+    }
+
+    rule ".field" {
+        display flex
+        flex-direction column
+        gap "$doc-space-5"
+    }
+
+    rule ".field label" {
+        font-weight "$doc-weight-semibold"
+        font-size "$fs-sm"
+    }
+
+    rule ".field .req" {
+        font-weight "$weight-regular"
+        color "$fg-muted"
+    }
+
+    rule ".field input" ".field select" ".field textarea" {
+        padding "$doc-space-9 $space-3"
+        border "$border-width solid $border"
+        border-radius "$r-ctl"
+        background "$bg-canvas"
+    }
+
+    rule ".field textarea" {
+        min-height "$doc-space-110"
+        resize vertical
+        line-height "$lh-text"
+    }
+}
+
+docs "docpage" description="Bugaboo document pages: header, contents, section numbers, reading type and tables. Shared by every design document; needs theme.css and components.css." {
+    tokens {
+        layer "doc-z-copied" 50
+        line-height "doc-lh-code" "1.55"
+        line-height "doc-lh-reading" "1.65"
+        line-height "doc-lh-title" "1.15"
+        line-height "doc-lh-toc" "1.35"
+        size "doc-bp-narrow" "1023px"
+        size "doc-bp-phone" "600px"
+        size "doc-font-12" "12px"
+        size "doc-font-12-5" "12.5px"
+        size "doc-font-18" "18px"
+        size "doc-font-21" "21px"
+        size "doc-font-28" "28px"
+        size "doc-font-34" "34px"
+        size "doc-font-inline-code" "0.92em"
+        size "doc-measure-body" "70ch"
+        size "doc-measure-lede" "68ch"
+        size "doc-measure-note" "72ch"
+        size "doc-menu-height" "60vh"
+        size "doc-popup-width" "calc(100vw - 32px)"
+        size "doc-safe-top" "env(safe-area-inset-top, 0px)"
+        size "doc-space-1260" "1260px"
+        size "doc-space-14" "14px"
+        size "doc-space-230" "230px"
+        size "doc-space-28" "28px"
+        size "doc-space-3" "3px"
+        size "doc-space-30" "30px"
+        size "doc-space-36" "36px"
+        size "doc-space-44" "44px"
+        size "doc-space-56" "56px"
+        size "doc-space-64" "64px"
+        size "doc-space-72" "72px"
+        size "doc-space-96" "96px"
+        size "doc-toc-height" "calc(100vh - 80px)"
+        size "doc-tracking-mid" "0.05em"
+        size "doc-tracking-tight" "-0.01em"
+        size "doc-tracking-wide" "0.07em"
+    }
+
+    rule "html" {
+        scroll-padding-top "$doc-space-72"
+    }
+
+    rule "a" {
+        color "$accent-fg"
+    }
+
+    rule ".top" {
+        position sticky
+        top "$doc-safe-top"
+        z-index "$z-panel"
+        background "$bg-canvas"
+        border-bottom "$border-width solid $border"
+    }
+
+    rule ".top-in" {
+        max-width "$doc-space-1260"
+        margin 0 auto
+        padding "$doc-space-10 $space-4"
+        display flex
+        align-items center
+        gap "$space-3"
+        flex-wrap wrap
+    }
+
+    rule ".brand" {
+        display flex
+        align-items center
+        gap "$space-2"
+        font-weight "$weight-bold"
+        font-size "$fs-md"
+    }
+
+    rule ".brand svg" {
+        width "$space-5"
+        height "$space-5"
+    }
+
+    rule ".brand small" {
+        font-weight "$doc-weight-medium"
+        color "$fg-muted"
+        font-size "$fs-sm"
+    }
+
+    rule ".look-pick" {
+        margin-left auto
+        display flex
+        align-items center
+        gap "$doc-space-6"
+        font-size "$fs-sm"
+        color "$fg-muted"
+    }
+
+    rule ".look-pick select" {
+        padding "$doc-space-6 $space-2"
+        border "$border-width solid $border"
+        border-radius "$r-ctl"
+        background "$bg-raised"
+    }
+
+    rule ".layout" {
+        max-width "$doc-space-1260"
+        margin 0 auto
+        padding "0 $space-4"
+        display grid
+        grid-template-columns "$doc-space-230 minmax(0, 1fr)"
+        gap "$doc-space-44"
+    }
+
+    rule ".toc" {
+        position sticky
+        top "$doc-space-64"
+        align-self start
+        max-height "$doc-toc-height"
+        overflow auto
+        padding "$doc-space-28 0 $space-5"
+        font-size "$fs-sm"
+    }
+
+    rule ".toc-h" {
+        font-size "$fs-xs"
+        text-transform uppercase
+        letter-spacing "$doc-tracking-wide"
+        color "$fg-subtle"
+        font-weight "$weight-bold"
+        padding "0 $space-2 $doc-space-6"
+    }
+
+    rule ".toc a" {
+        display flex
+        gap "$doc-space-6"
+        padding "$space-1 $space-2"
+        border-radius "$r-ctl"
+        color "$fg-muted"
+        text-decoration none
+        line-height "$doc-lh-toc"
+    }
+
+    rule ".toc a:hover" {
+        background "$bg-hover"
+        color "$fg"
+    }
+
+    rule ".toc a.on" {
+        color "$accent-fg"
+        background "$bg-selected"
+        font-weight "$doc-weight-semibold"
+    }
+
+    rule ".toc a .n" {
+        font-family "$mono"
+        font-size "$doc-font-11"
+        min-width "$doc-space-30"
+        color "$fg-subtle"
+    }
+
+    rule ".toc a.l3" {
+        padding-left "$doc-space-18"
+    }
+
+    rule ".toc-phone" {
+        display none
+        margin "$space-4 0 0"
+        border "$border-width solid $border"
+        border-radius "$r-card"
+        background "$bg-surface"
+    }
+
+    rule ".toc-phone summary" {
+        padding "$space-3 $doc-space-14"
+        font-weight "$weight-bold"
+        cursor pointer
+    }
+
+    rule ".toc-phone nav" {
+        padding "0 $doc-space-6 $doc-space-10"
+        max-height "$doc-menu-height"
+        overflow auto
+    }
+
+    rule ".doc" {
+        padding "$doc-space-28 0 $doc-space-96"
+        min-width 0
+    }
+
+    rule ".layout" {
+        media "(max-width: $doc-bp-narrow)" {
+            grid-template-columns "minmax(0, 1fr)"
+        }
+    }
+
+    rule ".toc" {
+        media "(max-width: $doc-bp-narrow)" {
+            display none
+        }
+    }
+
+    rule ".toc-phone" {
+        media "(max-width: $doc-bp-narrow)" {
+            display block
+        }
+    }
+
+    rule ".doc h1" {
+        font-size "$doc-font-34"
+        line-height "$doc-lh-title"
+        margin "$space-1 0 $space-2"
+        text-wrap balance
+        letter-spacing "$doc-tracking-tight"
+    }
+
+    rule ".doc h2" {
+        font-size "$fs-xl"
+        margin "$doc-space-56 0 $space-3"
+        padding-top "$doc-space-20"
+        border-top "$border-width solid $border"
+        text-wrap balance
+    }
+
+    rule ".doc h3" {
+        font-size "$doc-font-18"
+        margin "$doc-space-36 0 $space-2"
+        text-wrap balance
+    }
+
+    rule ".doc h4" {
+        font-size "$fs-md"
+        margin "$doc-space-22 0 $doc-space-6"
+    }
+
+    rule ".doc p" ".doc li" {
+        line-height "$doc-lh-reading"
+        max-width "$doc-measure-body"
+    }
+
+    rule ".doc ul" ".doc ol" {
+        padding-left "$doc-space-22"
+    }
+
+    rule ".doc li" {
+        margin "$space-1 0"
+    }
+
+    rule ".doc code" {
+        font-family "$mono"
+        font-size "$doc-font-inline-code"
+        background "$bg-sunken"
+        padding "$doc-space-1 $doc-space-5"
+        border-radius "$doc-r-small"
+    }
+
+    rule ".lede" {
+        font-size "$fs-md"
+        color "$fg-muted"
+        max-width "$doc-measure-lede"
+    }
+
+    rule ".status-line" {
+        font-size "$fs-sm"
+        color "$fg-muted"
+        display flex
+        gap "$space-2"
+        flex-wrap wrap
+        align-items center
+    }
+
+    rule ".sec" {
+        font-family "$mono"
+        font-size "$doc-font-12"
+        font-weight "$doc-weight-semibold"
+        color "$accent-fg"
+        background "$accent-soft"
+        padding "$doc-space-2 $space-2"
+        border-radius "$doc-r-pill"
+        text-decoration none
+        vertical-align "$space-1"
+        margin-right "$space-2"
+        border 0
+        cursor pointer
+        white-space nowrap
+    }
+
+    rule ".sec:hover" {
+        box-shadow "0 0 0 $border-width $accent"
+    }
+
+    rule ".ids" {
+        font-family "$mono"
+        font-size "$doc-font-11"
+        color "$fg-subtle"
+        font-weight "$weight-regular"
+        margin-left "$doc-space-6"
+        vertical-align "$doc-space-3"
+    }
+
+    rule ".note" {
+        border "$border-width solid $border"
+        background "$bg-surface"
+        border-radius "$r-card"
+        padding "$doc-space-14 $space-4"
+        margin "$doc-space-18 0"
+        max-width "$doc-measure-note"
+    }
+
+    rule ".note.feedback" {
+        border-color "$accent"
+        background "$accent-soft"
+    }
+
+    rule ".note b:first-child" {
+        display block
+        margin-bottom "$space-1"
+    }
+
+    rule ".tbl-wrap" {
+        overflow-x auto
+        margin "$doc-space-14 0"
+        border "$border-width solid $border"
+        border-radius "$r-card"
+    }
+
+    rule ".dtable" {
+        border-collapse collapse
+        width "100%"
+        font-size "$fs-sm"
+    }
+
+    rule ".dtable th" ".dtable td" {
+        padding "$doc-space-9 $space-3"
+        border-bottom "$border-width solid $border-subtle"
+        text-align left
+        vertical-align top
+    }
+
+    rule ".dtable th" {
+        background "$bg-surface"
+        font-size "$fs-xs"
+        text-transform uppercase
+        letter-spacing "$doc-tracking-mid"
+        color "$fg-muted"
+    }
+
+    rule ".dtable tr:last-child td" {
+        border-bottom 0
+    }
+
+    rule ".copied" {
+        position fixed
+        left "50%"
+        bottom "$space-5"
+        transform "translateX(-50%)"
+        z-index "$doc-z-copied"
+        background "$fg"
+        color "$bg-canvas"
+        border-radius "$r-card"
+        padding "$doc-space-10 $doc-space-14"
+        font-size "$fs-sm"
+        box-shadow "$shadow"
+        max-width "$doc-popup-width"
+    }
+
+    rule ".doc h1" {
+        media "(max-width: $doc-bp-phone)" {
+            font-size "$doc-font-28"
+        }
+    }
+
+    rule ".doc h2" {
+        media "(max-width: $doc-bp-phone)" {
+            font-size "$doc-font-21"
+            margin-top "$doc-space-44"
+        }
+    }
+
+    rule ".doc pre" {
+        background "$bg-sunken"
+        border "$border-width solid $border-subtle"
+        border-radius "$r-card"
+        padding "$space-3 $doc-space-14"
+        overflow-x auto
+        font-family "$mono"
+        font-size "$doc-font-12-5"
+        line-height "$doc-lh-code"
+    }
+
+    rule ".doc pre code" {
+        background none
+        padding 0
+    }
+
+    rule ".doc pre.mermaid" {
+        background "$bg-raised"
+        text-align center
+        font-family "$font"
+    }
+
+    rule ".doc blockquote" {
+        margin "$doc-space-14 0"
+        padding "$doc-space-6 $doc-space-14"
+        border-left "$doc-space-3 solid $accent"
+        color "$fg-muted"
+    }
 }

@@ -524,3 +524,65 @@
     --on-accent: HighlightText;
   }
 }
+
+/* The tokens of the design pages (the `docs` blocks). */
+:root {
+  --doc-lh-page: 1.45;
+  --doc-brightness-down: 0.97;
+  --doc-brightness-up: 1.08;
+  --doc-stroke-width: 2;
+  --doc-opacity-pulse: 0.35;
+  --doc-font-11: 11px;
+  --doc-r-pill: 999px;
+  --doc-r-small: 4px;
+  --doc-space-1: 1px;
+  --doc-space-10: 10px;
+  --doc-space-110: 110px;
+  --doc-space-130: 130px;
+  --doc-space-18: 18px;
+  --doc-space-2: 2px;
+  --doc-space-20: 20px;
+  --doc-space-22: 22px;
+  --doc-space-5: 5px;
+  --doc-space-6: 6px;
+  --doc-space-7: 7px;
+  --doc-space-9: 9px;
+  --doc-weight-medium: 500;
+  --doc-weight-semibold: 600;
+  --doc-z-copied: 50;
+  --doc-lh-code: 1.55;
+  --doc-lh-reading: 1.65;
+  --doc-lh-title: 1.15;
+  --doc-lh-toc: 1.35;
+  --doc-bp-narrow: 1023px;
+  --doc-bp-phone: 600px;
+  --doc-font-12: 12px;
+  --doc-font-12-5: 12.5px;
+  --doc-font-18: 18px;
+  --doc-font-21: 21px;
+  --doc-font-28: 28px;
+  --doc-font-34: 34px;
+  --doc-font-inline-code: 0.92em;
+  --doc-measure-body: 70ch;
+  --doc-measure-lede: 68ch;
+  --doc-measure-note: 72ch;
+  --doc-menu-height: 60vh;
+  --doc-popup-width: calc(100vw - 32px);
+  --doc-safe-top: env(safe-area-inset-top, 0px);
+  --doc-space-1260: 1260px;
+  --doc-space-14: 14px;
+  --doc-space-230: 230px;
+  --doc-space-28: 28px;
+  --doc-space-3: 3px;
+  --doc-space-30: 30px;
+  --doc-space-36: 36px;
+  --doc-space-44: 44px;
+  --doc-space-56: 56px;
+  --doc-space-64: 64px;
+  --doc-space-72: 72px;
+  --doc-space-96: 96px;
+  --doc-toc-height: calc(100vh - 80px);
+  --doc-tracking-mid: 0.05em;
+  --doc-tracking-tight: -0.01em;
+  --doc-tracking-wide: 0.07em;
+}

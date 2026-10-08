@@ -11,7 +11,7 @@ use std::path::Path;
 
 use super::node_tool::{in_batches, run, unix_findings};
 use super::{Check, Context, Finding};
-use crate::generate::theme::parts_css_with_lines;
+use crate::generate::theme::{doc_css_with_lines, parts_css_with_lines};
 use crate::generate::theme_file::{THEME_PATH, ThemeFile};
 
 /// The rules for the compiled rules of the theme file.
@@ -65,7 +65,25 @@ fn lint_batch(root: &Path, files: &[String], config: &str) -> anyhow::Result<Vec
 /// theme file that the rule comes from (not by the temporary file, whatever way stylelint writes
 /// its path), and the message says which line of the compiled text it is.
 fn lint_theme(root: &Path, file: &ThemeFile, name: &str) -> anyhow::Result<Vec<Finding>> {
-    let (css, from) = parts_css_with_lines(file)?;
+    let mut findings = lint_compiled(root, parts_css_with_lines(file)?, name)?;
+    // Each sheet of the design pages is read on its own: its selectors are plain CSS, and the same
+    // element selector may stand in both.
+    for sheet in &file.docs {
+        let compiled = doc_css_with_lines(file, sheet)?;
+        findings.extend(lint_compiled(
+            root,
+            compiled,
+            &format!("doc-{}-{name}", sheet.name),
+        )?);
+    }
+    Ok(findings)
+}
+
+fn lint_compiled(
+    root: &Path,
+    (css, from): (String, Vec<usize>),
+    name: &str,
+) -> anyhow::Result<Vec<Finding>> {
     let folder = root.join(WORK_FOLDER);
     std::fs::create_dir_all(&folder)?;
     std::fs::write(folder.join(name), css)?;
@@ -210,6 +228,32 @@ mod tests {
     fn good_example_in_the_theme_file() {
         let good = "part \"zz\" {\n  margin 0\n  padding \"$space-2 $space-3\"\n  border \"$border-width solid $border\"\n  font-weight \"$weight-bold\"\n  line-height \"$lh-body\"\n  z-index \"$z-overlay\"\n  opacity 0\n  animation \"fade $motion-base $ease-out\"\n  font-family \"$font\"\n  forced {\n    color CanvasText\n  }\n}";
         let found = theme_findings("good", good);
+        assert!(found.is_empty(), "{}", messages(&found));
+    }
+
+    /// The theme file of the repository with a rule added to its `components` sheet.
+    fn doc_findings(name: &str, rule: &str) -> Vec<Finding> {
+        let repo = Repo::discover().unwrap();
+        let text = crate::source::read_text(&repo, THEME_PATH).unwrap();
+        let wanted = "    rule \"html\" {";
+        assert!(text.contains(wanted));
+        let text = text.replacen(wanted, &format!("{rule}\n\n{wanted}"), 1);
+        let file = ThemeFile::parse(&text).unwrap();
+        lint_theme(repo.root(), &file, &format!("test-{name}.css")).unwrap()
+    }
+
+    #[test]
+    fn bad_example_in_a_sheet_of_the_design_pages() {
+        let bad = "    rule \".zz\" {\n        margin \"12px\"\n        color \"red\"\n    }";
+        let messages = messages(&doc_findings("doc-bad", bad));
+        assert!(messages.contains("\"12px\""), "{messages}");
+        assert!(messages.contains("color-named"), "{messages}");
+    }
+
+    #[test]
+    fn good_example_in_a_sheet_of_the_design_pages() {
+        let good = "    rule \".zz\" \"a.zz:hover\" {\n        margin \"$space-2 0\"\n        color \"$fg\"\n    }";
+        let found = doc_findings("doc-good", good);
         assert!(found.is_empty(), "{}", messages(&found));
     }
 
