@@ -1,9 +1,8 @@
 import { t } from "@bugaboo/messages";
 import { PickerOption, SearchPicker } from "@bugaboo/ui";
-import { useId, useState } from "react";
 
 import { pageSize } from "../../shared/paged.ts";
-import { pickerStatus } from "../../shared/picker-status.ts";
+import { pickerStatus, usePickerFrame } from "../../shared/picker-status.ts";
 import { linesOf, useProjectList } from "./use-projects.ts";
 
 export interface ProjectPickerProps {
@@ -21,18 +20,15 @@ export interface ProjectPickerProps {
  * searching. The server leaves out the places the person may not move it to; it decides again.
  */
 export function ProjectPicker({ moving, top, value, onChange }: ProjectPickerProps) {
-  const [query, setQuery] = useState("");
-  const group = useId();
-  const found = useProjectList({ search: query.trim(), movable: moving }, pageSize.short);
+  const { words, group, frame } = usePickerFrame();
+  const found = useProjectList({ search: words, movable: moving }, pageSize.short);
   const projects = linesOf(found.data?.pages);
   return (
     <SearchPicker
       legend={t("projects.picker-legend")}
       searchLabel={t("projects.picker-search")}
-      clearLabel={t("search.clear")}
       listLabel={t("projects.picker-list")}
-      query={query}
-      onQuery={setQuery}
+      {...frame}
       {...pickerStatus(found, projects.length, {
         nothing: t("projects.picker-nothing"),
         more: t("projects.picker-more"),

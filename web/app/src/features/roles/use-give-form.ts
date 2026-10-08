@@ -5,6 +5,7 @@ import { messageOf } from "../../shared/errors.ts";
 import { rememberChoice } from "../../shared/recent-choices.ts";
 import type { Choice, Subject } from "./assignments.ts";
 import type { RowSpec } from "./use-row-changes.ts";
+import { type SubjectKind } from "../../shared/person.ts";
 
 /** The word that stands for *No access* among the roles. */
 export const NO_ACCESS = "no-access";
@@ -13,8 +14,8 @@ export const NOTHING = "";
 
 /** What the form of *Give a role* keeps and does. */
 export interface GiveForm {
-  readonly kind: "person" | "group";
-  readonly setKind: (kind: "person" | "group") => void;
+  readonly kind: SubjectKind;
+  readonly setKind: (kind: SubjectKind) => void;
   readonly who: Subject | null;
   readonly pick: (choice: Choice) => void;
   readonly role: string;
@@ -35,7 +36,7 @@ export function useGiveForm(
   give: (spec: RowSpec) => Promise<boolean>,
   preset: Subject | undefined,
 ): GiveForm {
-  const [kind, setKind] = useState<"person" | "group">(preset?.kind ?? "person");
+  const [kind, setKind] = useState<SubjectKind>(preset?.kind ?? "person");
   const [who, setWho] = useState<Subject | null>(preset ?? null);
   const [role, setRole] = useState(NOTHING);
   const [reach, setReach] = useState<RowSpec["appliesTo"]>("project-and-sub-projects");

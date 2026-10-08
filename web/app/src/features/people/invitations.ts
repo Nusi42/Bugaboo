@@ -1,14 +1,17 @@
 import type { Schema } from "@bugaboo/api-client";
 
 import { api } from "../../shared/api.ts";
-import { fieldList, type FieldNames, pageSize, usePaged } from "../../shared/paged.ts";
+import { fieldList, pageSize, usePaged } from "../../shared/paged.ts";
 import { queryClient } from "../../shared/query-client.ts";
 import { queryKeys } from "../../shared/query-keys.ts";
 
 /** The fields the list shows: the address, and when the invitation was made and runs out. */
-const SHOWN_FIELDS = fieldList(["id", "email", "created_at", "expires_at"] satisfies FieldNames<
-  Schema<"InvitationItem">
->);
+const SHOWN_FIELDS = fieldList<Schema<"InvitationItem">>([
+  "id",
+  "email",
+  "created_at",
+  "expires_at",
+]);
 
 /** The open invitations, a page at a time: *Show more* asks for the next page. */
 export function useOpenInvitations() {

@@ -1,8 +1,9 @@
-import { ApiError, settingDefaults, settingKeys } from "@bugaboo/api-client";
+import { settingDefaults, settingKeys } from "@bugaboo/api-client";
 
 import { mySettingsOptions, type MySettings } from "./my-settings.ts";
 import { queryClient } from "./query-client.ts";
 import { textOf } from "./setting-values.ts";
+import { isNoAnswer } from "./errors.ts";
 
 /**
  * Whether an address is a page of this app: one slash at the start, so never another website
@@ -24,7 +25,7 @@ export async function loadStartPage(): Promise<string> {
   try {
     return startPageOf(await queryClient.query(mySettingsOptions()));
   } catch (error) {
-    if (!(error instanceof ApiError)) {
+    if (!isNoAnswer(error)) {
       throw error;
     }
     return settingDefaults.startPage;

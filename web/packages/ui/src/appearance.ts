@@ -51,11 +51,11 @@ export const defaultAppearance: Appearance = {
 };
 
 function isLight(value: unknown): value is LightThemeId {
-  return lightThemeIds.some((id) => id === value);
+  return settingChoices.appearanceLightTheme.some((id) => id === value);
 }
 
 function isDark(value: unknown): value is DarkThemeId {
-  return darkThemeIds.some((id) => id === value);
+  return settingChoices.appearanceDarkTheme.some((id) => id === value);
 }
 
 function isSpacing(value: unknown): value is SpacingChoice {

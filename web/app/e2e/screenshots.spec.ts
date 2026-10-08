@@ -79,7 +79,7 @@ async function secondPlace(browser: Browser, server: Instance, backupCode: strin
 
 /** Lets people sign up on their own, from the browser of the signed-in administrator. */
 async function switchSignUpOn(page: Page, server: Instance): Promise<void> {
-  await setSignUpPolicy(await apiOf(page, server), { enabled: true, domains: ["example.test"] });
+  await setSignUpPolicy(apiOf(page, server), { enabled: true, domains: ["example.test"] });
 }
 
 /** The pages of an administrator: sessions, invitations (and the link), status. Returns the link. */

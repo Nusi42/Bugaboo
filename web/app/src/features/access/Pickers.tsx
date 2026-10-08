@@ -1,8 +1,7 @@
 import { t } from "@bugaboo/messages";
 import { PickerOption, pickerLook, SearchPicker } from "@bugaboo/ui";
-import { useId, useState } from "react";
 
-import { pickerStatus } from "../../shared/picker-status.ts";
+import { pickerStatus, usePickerFrame } from "../../shared/picker-status.ts";
 import { peopleOf, placesOf, usePeopleToCheck, useProjectsToChoose } from "./use-check.ts";
 
 export interface PersonPickerProps {
@@ -18,19 +17,16 @@ export interface PersonPickerProps {
  * names are listed; somebody who may not see names is offered nobody.
  */
 export function PersonPicker({ project, value, onChange }: PersonPickerProps) {
-  const [query, setQuery] = useState("");
-  const group = useId();
-  const found = usePeopleToCheck(project, query.trim());
+  const { words, group, frame } = usePickerFrame();
+  const found = usePeopleToCheck(project, words);
   const people = peopleOf(found.data?.pages);
   return (
     <SearchPicker
       look={pickerLook.boxed}
       legend={t("check-access.person-list")}
       searchLabel={t("check-access.person-search")}
-      clearLabel={t("search.clear")}
       listLabel={t("check-access.person-list")}
-      query={query}
-      onQuery={setQuery}
+      {...frame}
       {...pickerStatus(found, people.length, {
         nothing: t("check-access.person-nothing"),
         more: t("check-access.person-more"),
@@ -59,19 +55,16 @@ export interface PlacePickerProps {
 
 /** Where to look: the whole organization, or one of the projects the person sees, found by words. */
 export function PlacePicker({ value, onChange }: PlacePickerProps) {
-  const [query, setQuery] = useState("");
-  const group = useId();
-  const found = useProjectsToChoose(query.trim());
+  const { words, group, frame } = usePickerFrame();
+  const found = useProjectsToChoose(words);
   const places = placesOf(found.data?.pages);
   return (
     <SearchPicker
       look={pickerLook.boxed}
       legend={t("check-access.place-legend")}
       searchLabel={t("check-access.place-search")}
-      clearLabel={t("search.clear")}
       listLabel={t("check-access.place-list")}
-      query={query}
-      onQuery={setQuery}
+      {...frame}
       {...pickerStatus(found, places.length, {
         nothing: t("check-access.place-nothing"),
         more: t("check-access.place-more"),

@@ -2,13 +2,13 @@ import type { Schema } from "@bugaboo/api-client";
 
 import type { WhereItCounts, RowPlace } from "../../shared/access-words.ts";
 import { api } from "../../shared/api.ts";
-import { fieldList, type FieldNames, linesFrom, pageSize, usePaged } from "../../shared/paged.ts";
-import { namedPerson } from "../../shared/person.ts";
+import { fieldList, linesFrom, pageSize, usePaged } from "../../shared/paged.ts";
+import { namedPerson, type SubjectKind } from "../../shared/person.ts";
 import { queryKeys } from "../../shared/query-keys.ts";
 
 /** Whom a row is for. */
 export interface Subject {
-  readonly kind: "person" | "group";
+  readonly kind: SubjectKind;
   readonly id: string;
   readonly name: string;
 }
@@ -76,7 +76,7 @@ export function useAssignments(project: string | null) {
 }
 
 /** What a form of *Who has which role* chooses from. */
-export type ChoiceKind = "person" | "group" | "role";
+export type ChoiceKind = SubjectKind | "role";
 
 /** One thing to choose: a person, a group or a role. */
 export interface Choice {
@@ -100,7 +100,7 @@ export function useChoices(kind: ChoiceKind, project: string | null, search: str
     read: (after) => {
       const query = {
         kind,
-        fields: fieldList(["id", "name"] satisfies FieldNames<Schema<"ChoiceItem">>),
+        fields: fieldList<Schema<"ChoiceItem">>(["id", "name"]),
         limit: kind === "role" ? pageSize.largest : pageSize.short,
         ...(search === "" ? {} : { search }),
         ...after,

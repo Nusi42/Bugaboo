@@ -2,10 +2,9 @@ import { createContext, useContext, type ReactNode } from "react";
 
 import { Alert } from "./Alert.tsx";
 import { Button } from "./Button.tsx";
-import { alertTone, pickerLook, type PickerLook } from "./props.ts";
+import { alertTone, buttonLook, pickerLook, type PickerLook } from "./props.ts";
 import { SearchField } from "./SearchField.tsx";
 import styles from "./SearchPicker.module.css";
-import { buttonLook } from "./props.ts";
 
 const LookContext = createContext<PickerLook>(pickerLook.list);
 

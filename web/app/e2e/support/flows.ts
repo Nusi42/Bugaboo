@@ -150,7 +150,7 @@ export async function anotherBrowser(browser: Browser, server: Instance): Promis
 }
 
 /** The API session of a browser that is signed in: it talks with the cookies of that browser. */
-export function apiOf(page: Page, server: Instance): Promise<ApiSession> {
+export function apiOf(page: Page, server: Instance): ApiSession {
   return sessionOver(page.context().request, server.url);
 }
 

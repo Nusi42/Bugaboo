@@ -2,7 +2,7 @@ import { type Schema, dataOf } from "@bugaboo/api-client";
 import { useQuery } from "@tanstack/react-query";
 
 import { api } from "../../shared/api.ts";
-import { fieldList, type FieldNames, linesFrom, pageSize, usePaged } from "../../shared/paged.ts";
+import { fieldList, linesFrom, pageSize, usePaged } from "../../shared/paged.ts";
 import { namedPerson, type NamedPerson } from "../../shared/person.ts";
 import { queryKeys } from "../../shared/query-keys.ts";
 
@@ -10,12 +10,7 @@ import { queryKeys } from "../../shared/query-keys.ts";
 export type ListItem = Schema<"PersonItem">;
 
 /** The fields the list and the page of a person need. */
-const SHOWN_FIELDS = fieldList([
-  "person",
-  "email",
-  "groups",
-  "roles",
-] satisfies FieldNames<ListItem>);
+const SHOWN_FIELDS = fieldList<ListItem>(["person", "email", "groups", "roles"]);
 
 /** A person that has what a line of the list needs (the fields can be missing in an answer). */
 export interface PersonLine extends NamedPerson {

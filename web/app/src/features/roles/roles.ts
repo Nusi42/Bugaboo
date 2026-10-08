@@ -2,7 +2,7 @@ import { type Schema, dataOf } from "@bugaboo/api-client";
 import { useQuery } from "@tanstack/react-query";
 
 import { api } from "../../shared/api.ts";
-import { fieldList, type FieldNames, linesFrom, pageSize, usePaged } from "../../shared/paged.ts";
+import { fieldList, linesFrom, pageSize, usePaged } from "../../shared/paged.ts";
 import { queryKeys } from "../../shared/query-keys.ts";
 
 /** A role that has what a line of a list needs (the fields can be missing in an answer). */
@@ -42,9 +42,7 @@ export function useRoles(wanted: RolesWanted = "all") {
       api.client.GET("/api/v1/roles", {
         params: {
           query: {
-            fields: fieldList(["id", "name", "starting", "two_step"] satisfies FieldNames<
-              Schema<"RoleItem">
-            >),
+            fields: fieldList<Schema<"RoleItem">>(["id", "name", "starting", "two_step"]),
             limit: pageSize.largest,
             ...(wanted === "giveable" ? { giveable: true } : {}),
             ...after,

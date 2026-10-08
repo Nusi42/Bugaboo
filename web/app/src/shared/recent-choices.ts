@@ -1,16 +1,14 @@
 import { readStoredJson, storageKey, writeStored } from "@bugaboo/ui";
+import { type SubjectKind } from "./person.ts";
 
 /** Remembers in this browser what the person picked last, so a picker can offer it first (UX §6). */
 /** How many choices of each kind are remembered. */
 const REMEMBERED = 8;
 
-/** What a picker picks from. */
-export type ChoiceKind = "person" | "group";
-
 /** The IDs picked last, the latest first. Only IDs are kept: no name is stored in the browser. */
-function read(): Readonly<Record<ChoiceKind, readonly string[]>> {
+function read(): Readonly<Record<SubjectKind, readonly string[]>> {
   const stored = readStoredJson(storageKey.recentChoices);
-  const pick = (kind: ChoiceKind): readonly string[] => {
+  const pick = (kind: SubjectKind): readonly string[] => {
     const ids: unknown =
       typeof stored === "object" && stored !== null ? Reflect.get(stored, kind) : [];
     return Array.isArray(ids) ? ids.filter((id): id is string => typeof id === "string") : [];
@@ -19,7 +17,7 @@ function read(): Readonly<Record<ChoiceKind, readonly string[]>> {
 }
 
 /** Remembers a pick: it goes to the front. */
-export function rememberChoice(kind: ChoiceKind, id: string): void {
+export function rememberChoice(kind: SubjectKind, id: string): void {
   const now = read();
   const next = {
     ...now,
@@ -30,7 +28,7 @@ export function rememberChoice(kind: ChoiceKind, id: string): void {
 
 /** The items with what the person picked last in front, and the rest in the order they came. */
 export function recentFirst<Item extends { readonly id: string }>(
-  kind: ChoiceKind,
+  kind: SubjectKind,
   items: readonly Item[],
 ): readonly Item[] {
   const recent = read()[kind];

@@ -1,10 +1,11 @@
-import { ApiError, type Schema } from "@bugaboo/api-client";
+import { type Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 import { AskDialog, buttonLook } from "@bugaboo/ui";
 import { useCallback, useState, type ReactNode } from "react";
 
 import { api } from "./api.ts";
 import type { PermissionKey } from "./permissions.ts";
+import { isNoAnswer } from "./errors.ts";
 
 /** A change that is about to be made, as the server describes it. */
 export type OwnChange = Schema<"OwnChangeBody">;
@@ -24,7 +25,7 @@ async function whatItTakes(change: OwnChange): Promise<readonly PermissionKey[]>
     const { data } = await api.client.POST("/api/v1/own-access/check-change", { body });
     return data?.loses ?? [];
   } catch (error) {
-    if (!(error instanceof ApiError)) {
+    if (!isNoAnswer(error)) {
       throw error;
     }
     // The change itself reports its own failure, so a question that could not be asked is no reason to hold it back.

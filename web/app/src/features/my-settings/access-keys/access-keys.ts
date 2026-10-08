@@ -1,14 +1,14 @@
 import type { Schema } from "@bugaboo/api-client";
 
 import { api } from "../../../shared/api.ts";
-import { fieldList, type FieldNames, pageSize } from "../../../shared/paged.ts";
+import { fieldList, pageSize } from "../../../shared/paged.ts";
 import { queryClient } from "../../../shared/query-client.ts";
 
 /** An access key as the list shows it. */
 export type AccessKey = Schema<"AccessKeyItem">;
 
 /** The fields the list asks for: the fields it shows, and no more (PERF-02). */
-const LISTED_FIELDS = fieldList([
+const LISTED_FIELDS = fieldList<AccessKey>([
   "id",
   "name",
   "prefix",
@@ -18,7 +18,7 @@ const LISTED_FIELDS = fieldList([
   "expires_at",
   "last_used_at",
   "expired",
-] satisfies FieldNames<AccessKey>);
+]);
 
 /** The access keys of the person, newest first. */
 export function keysOptions() {

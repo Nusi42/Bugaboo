@@ -3,7 +3,6 @@ import {
   CSRF_COOKIE,
   createApi,
   isProblem,
-  readCookie,
   type Api,
   type paths,
 } from "@bugaboo/api-client";
@@ -28,12 +27,7 @@ export interface ApiSession {
 export type StorageState = Awaited<ReturnType<APIRequestContext["storageState"]>>;
 
 /** Sends what the client made through the session, and gives back what the server said. */
-async function send(
-  context: APIRequestContext,
-  asked: Request,
-  origin: string,
-  onCookie: (setCookie: string) => void,
-): Promise<Response> {
+async function send(context: APIRequestContext, asked: Request, origin: string): Promise<Response> {
   const body = await asked.text();
   const answer = await context.fetch(asked.url, {
     method: asked.method,
@@ -46,9 +40,6 @@ async function send(
   const headers = new Headers();
   for (const header of answer.headersArray()) {
     headers.append(header.name, header.value);
-    if (header.name.toLowerCase() === "set-cookie") {
-      onCookie(header.value);
-    }
   }
   const empty = answer.status() === 204 || answer.status() === 304;
   return new Response(empty ? null : await answer.text(), { status: answer.status(), headers });
@@ -65,25 +56,26 @@ export async function openSession(origin: string): Promise<ApiSession> {
   );
 }
 
-/**
- * The session of a context that exists already, like the one of a browser that is signed in: the
- * token that browser holds is the one the client sends from then on.
- */
-export async function sessionOver(context: APIRequestContext, origin: string): Promise<ApiSession> {
+/** The token of the context right now, from its cookie jar: a browser can sign in at any time. */
+async function tokenOf(context: APIRequestContext): Promise<string | undefined> {
   const { cookies } = await context.storageState();
-  let token: string | undefined;
   for (const cookie of cookies) {
     if (cookie.name === CSRF_COOKIE) {
-      token = cookie.value;
+      return cookie.value;
     }
   }
+  return undefined;
+}
+
+/**
+ * The session of a context that exists already, like the one of a browser that is signed in: the
+ * token is read from its cookie jar at every request, so it is the one that browser holds.
+ */
+export function sessionOver(context: APIRequestContext, origin: string): ApiSession {
   const { client } = createApi({
     baseUrl: origin,
-    fetch: (asked) =>
-      send(context, asked, origin, (setCookie) => {
-        token = readCookie(CSRF_COOKIE, setCookie) ?? token;
-      }),
-    csrfToken: () => token,
+    fetch: (asked) => send(context, asked, origin),
+    csrfToken: () => tokenOf(context),
   });
   return {
     client,

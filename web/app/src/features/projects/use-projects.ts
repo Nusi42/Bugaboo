@@ -2,7 +2,7 @@ import { type Schema, dataOf } from "@bugaboo/api-client";
 import { keepPreviousData, skipToken, useMutation, useQuery } from "@tanstack/react-query";
 
 import { api } from "../../shared/api.ts";
-import { fieldList, type FieldNames, linesFrom, pageSize, usePaged } from "../../shared/paged.ts";
+import { fieldList, linesFrom, pageSize, usePaged } from "../../shared/paged.ts";
 import { queryClient } from "../../shared/query-client.ts";
 import { queryKeys } from "../../shared/query-keys.ts";
 
@@ -16,13 +16,7 @@ export type Near = Schema<"ProjectRef">;
 export type Preview = Schema<"MovePreviewBody">;
 
 /** The fields of a project in a list that the screens need. */
-const LIST_FIELDS = fieldList([
-  "id",
-  "short_name",
-  "name",
-  "has_sub_projects",
-  "parent",
-] satisfies FieldNames<ListItem>);
+const LIST_FIELDS = fieldList<ListItem>(["id", "short_name", "name", "has_sub_projects", "parent"]);
 
 /** What narrows a list of projects. */
 export interface ProjectFilter {

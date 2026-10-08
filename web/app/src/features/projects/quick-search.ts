@@ -1,7 +1,7 @@
 import { t } from "@bugaboo/messages";
 
 import { api } from "../../shared/api.ts";
-import { fieldList, type FieldNames } from "../../shared/paged.ts";
+import { fieldList } from "../../shared/paged.ts";
 import { projectAddress } from "../../shared/paths.ts";
 import type { QuickResult, QuickSearchSource } from "../shell/index.ts";
 import { lineOf, type ListItem } from "./use-projects.ts";
@@ -22,7 +22,7 @@ export const projectsSource: QuickSearchSource = {
       params: {
         query: {
           search: query,
-          fields: fieldList(["id", "short_name", "name"] satisfies FieldNames<ListItem>),
+          fields: fieldList<ListItem>(["id", "short_name", "name"]),
           limit: RESULTS,
         },
       },

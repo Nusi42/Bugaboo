@@ -19,6 +19,9 @@ export function namedPerson(person: Person | null | undefined): NamedPerson | un
   return person?.shown === "name" ? { id: person.id, name: person.name } : undefined;
 }
 
+/** Whom a row of *Who has which role* or a pick is for: a person, or a group of people. */
+export type SubjectKind = "person" | "group";
+
 /** Where in a sentence a person is named: a role reads differently at the start and in the middle. */
 export type Position = "start" | "inside";
 

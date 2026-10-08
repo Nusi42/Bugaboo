@@ -1,4 +1,6 @@
+import { t } from "@bugaboo/messages";
 import type { SearchPickerProps } from "@bugaboo/ui";
+import { useId, useState } from "react";
 
 import { messageOf } from "./errors.ts";
 
@@ -40,4 +42,20 @@ export function pickerStatus(
         }
       : undefined,
   };
+}
+
+/**
+ * What every picker keeps: the words typed, the name that ties its radio buttons together, and
+ * what the search box of `SearchPicker` needs (the words, the way to change them, the name of the
+ * button that empties the box). `words` is what to search for.
+ */
+export function usePickerFrame() {
+  const [query, setQuery] = useState("");
+  const group = useId();
+  const frame: Pick<SearchPickerProps, "query" | "onQuery" | "clearLabel"> = {
+    query,
+    onQuery: setQuery,
+    clearLabel: t("search.clear"),
+  };
+  return { words: query.trim(), group, frame };
 }

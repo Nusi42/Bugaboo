@@ -1,5 +1,6 @@
 import { ApiError, messageKeyOf, type ErrorCode } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
+import { CancelledError } from "@tanstack/react-query";
 
 /** The code of an error answer of the server, if the error is one. */
 export function codeOf(error: unknown): ErrorCode | undefined {
@@ -38,3 +39,12 @@ const lostReasons: Readonly<Partial<Record<ErrorCode, SessionLostReason>>> = {
 
 /** Why the person is taken to the sign-in page: the sign-in ended, or does not fit the page. */
 export type SessionLostReason = "session-ended" | "wrong-token" | "signed-out";
+
+/**
+ * Whether an error is a request that did not give an answer: the server refused or was not there
+ * (`ApiError`), or the question was cancelled before it was answered. Anything else is a fault in
+ * the program, and is not for a handler that carries on without the answer to hide.
+ */
+export function isNoAnswer(error: unknown): boolean {
+  return error instanceof ApiError || error instanceof CancelledError;
+}

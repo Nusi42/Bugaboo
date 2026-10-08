@@ -2,7 +2,7 @@ import { type Schema, dataOf } from "@bugaboo/api-client";
 import { keepPreviousData, skipToken, useQuery } from "@tanstack/react-query";
 
 import { api } from "../../shared/api.ts";
-import { fieldList, type FieldNames, linesFrom, pageSize, usePaged } from "../../shared/paged.ts";
+import { fieldList, linesFrom, pageSize, usePaged } from "../../shared/paged.ts";
 import { queryKeys } from "../../shared/query-keys.ts";
 import { namedPerson, type NamedPerson } from "../../shared/person.ts";
 
@@ -47,9 +47,7 @@ export function useProjectsToChoose(search: string) {
           params: {
             query: {
               search,
-              fields: fieldList(["id", "short_name", "name"] satisfies FieldNames<
-                Schema<"ProjectItem">
-              >),
+              fields: fieldList<Schema<"ProjectItem">>(["id", "short_name", "name"]),
               limit: pageSize.short,
               ...after,
             },

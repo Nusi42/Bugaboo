@@ -31,13 +31,13 @@ export interface After {
  * The names of fields of one item of a list, as the schema of the answer names them: a field that
  * does not exist cannot be listed.
  */
-export type FieldNames<Item> = readonly (keyof Item & string)[];
+export type FieldNames<Item> = readonly Extract<keyof Item, string>[];
 
 /**
  * The `fields` of a request for a list: the fields of one item that the screen shows and no more
- * (PERF-02). Check the names with `satisfies FieldNames<Item>` where the list is written.
+ * (PERF-02). The names are checked against the item: `fieldList<Item>(["id", "name"])`.
  */
-export function fieldList(names: readonly string[]): string {
+export function fieldList<Item extends object>(names: FieldNames<Item>): string {
   return names.join(",");
 }
 

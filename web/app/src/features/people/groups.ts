@@ -2,7 +2,7 @@ import { type Schema, dataOf } from "@bugaboo/api-client";
 import { useQuery } from "@tanstack/react-query";
 
 import { api } from "../../shared/api.ts";
-import { fieldList, type FieldNames, linesFrom, pageSize, usePaged } from "../../shared/paged.ts";
+import { fieldList, linesFrom, pageSize, usePaged } from "../../shared/paged.ts";
 import { namedPerson, type NamedPerson } from "../../shared/person.ts";
 import { queryKeys } from "../../shared/query-keys.ts";
 
@@ -36,7 +36,7 @@ export function useGroups() {
       api.client.GET("/api/v1/groups", {
         params: {
           query: {
-            fields: fieldList(["id", "name"] satisfies FieldNames<Schema<"GroupItem">>),
+            fields: fieldList<Schema<"GroupItem">>(["id", "name"]),
             limit: pageSize.largest,
             ...after,
           },
@@ -67,7 +67,7 @@ export function useMembers(group: string) {
         params: {
           path: { group_id: group },
           query: {
-            fields: fieldList(["person"] satisfies FieldNames<Schema<"MemberItem">>),
+            fields: fieldList<Schema<"MemberItem">>(["person"]),
             limit: pageSize.usual,
             ...after,
           },
@@ -85,9 +85,7 @@ export function useMemberChoices(group: string, search: string) {
         params: {
           path: { group_id: group },
           query: {
-            fields: fieldList(["id", "name", "already_in"] satisfies FieldNames<
-              Schema<"ChoiceItem">
-            >),
+            fields: fieldList<Schema<"ChoiceItem">>(["id", "name", "already_in"]),
             limit: pageSize.short,
             ...(search === "" ? {} : { search }),
             ...after,

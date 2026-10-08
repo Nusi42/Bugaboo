@@ -45,7 +45,7 @@ export const queryKeys = {
   },
   invitations: {
     all: ["invitations"],
-    one: (secret: string) => ["invitation", secret],
+    one: (secret: string) => ["invitations", "one", secret],
   },
   checkAccess: {
     people: (project: string | undefined, search: string) => [
