@@ -39,11 +39,6 @@ use super::types::{
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, by, entity, internal};
 
-/// The place where a project with this parent sits: the organization for the top level.
-fn place_of(parent: Option<ProjectId>) -> Place {
-    parent.map_or(Place::Organization, Place::Project)
-}
-
 fn reference(project: &Project) -> ProjectRef {
     ProjectRef {
         id: project.id,
@@ -126,7 +121,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             return Err(not_found());
         }
         // The new parent: one the person may not know about answers like one that is not there.
-        self.require(actor, Permission::MoveProjects, place_of(to))
+        self.require(actor, Permission::MoveProjects, Place::from(to))
             .await?;
         if to.is_none() {
             // The top level is the organization: a project that goes there is made there.
@@ -137,7 +132,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         }
         // The old parent: a person who sees the project but not what holds it is told they may not,
         // as for a parent they see; nothing says the parent is hidden.
-        let old = self.evaluation_of(actor, place_of(found.parent)).await?;
+        let old = self.evaluation_of(actor, Place::from(found.parent)).await?;
         if !old.allows(Permission::MoveProjects) {
             return Err(ErrorCode::Forbidden.into());
         }
@@ -398,7 +393,7 @@ pub async fn move_project<S: AuthStore>(
                 if !held(Place::Project(id)).is_some_and(|held| held.sees_project()) {
                     return Err(stopped.stop::<S>(ErrorCode::NotFound));
                 }
-                for place in [place_of(now.parent), place_of(to)] {
+                for place in [Place::from(now.parent), Place::from(to)] {
                     if !held(place).is_some_and(|held| held.allows(Permission::MoveProjects)) {
                         return Err(stopped.stop::<S>(ErrorCode::Forbidden));
                     }

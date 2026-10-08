@@ -19,11 +19,6 @@ use crate::access::{Actor, ensure_may_give_in};
 use crate::auth::{AppError, AuthStore, Ctx, Done, by, entity, internal, set_to};
 use crate::people::{GroupView, stopped};
 
-/// The place a row is given at.
-fn place_of(project: Option<ProjectId>) -> Place {
-    project.map_or(Place::Organization, Place::Project)
-}
-
 /// Whether `new` and `old` are for the same person or group.
 pub(super) fn same_subject(new: &Assignment, old: &Assignment) -> bool {
     (new.person.is_some() && new.person == old.person)
@@ -82,10 +77,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             }),
             None => None,
         };
-        let project = match row.project {
-            Some(project) => Some(self.project_label(actor, project).await?),
-            None => None,
-        };
+        let project = self.place_label(actor, row.project).await?;
         Ok(AssignmentView {
             id: row.id,
             who,
@@ -112,7 +104,7 @@ pub async fn assign_role<S: AuthStore>(
     input: AssignRole,
 ) -> Result<Authorized<AssignmentView>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
-    let place = place_of(input.project);
+    let place = Place::from(input.project);
     // Rows for the whole organization give a role and count everywhere; *No access* is set on a
     // project and always covers it and its sub-projects.
     let valid = matches!(
@@ -232,7 +224,7 @@ pub async fn remove_assignment<S: AuthStore>(
         .ok_or(AppError::Refused(ErrorCode::NotFound))?;
     // A person who decides who has which role in a project can take away a *No access* there even
     // when it hides the project from them (ADR-0025, decision 6).
-    ctx.require(&actor, Permission::DecideRoles, place_of(row.project))
+    ctx.require(&actor, Permission::DecideRoles, Place::from(row.project))
         .await?;
     let id = row.id;
     // The row that is taken away, so the history can say whom it was for and what it gave.
@@ -286,7 +278,7 @@ pub async fn assignments<S: AuthStore>(
 ) -> Result<Authorized<AssignmentList>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
     let access = ctx
-        .require(&actor, Permission::DecideRoles, place_of(input.project))
+        .require(&actor, Permission::DecideRoles, Place::from(input.project))
         .await?;
     let mut rows = ctx
         .store()

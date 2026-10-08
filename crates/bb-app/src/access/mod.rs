@@ -242,6 +242,19 @@ impl<S: AuthStore> Ctx<'_, S> {
         ))
     }
 
+    /// The place as the actor may name it: the project's label, or `None` for the whole
+    /// organization.
+    pub(crate) async fn place_label(
+        &self,
+        actor: &Actor,
+        place: impl Into<Place>,
+    ) -> Result<Option<ProjectLabel>, AppError> {
+        match place.into() {
+            Place::Organization => Ok(None),
+            Place::Project(project) => self.project_label(actor, project).await.map(Some),
+        }
+    }
+
     /// The project as the actor may name it.
     pub(crate) async fn project_label(
         &self,
@@ -309,7 +322,7 @@ pub(crate) async fn ensure_may_give_in<S: AuthStore>(
     let Some(record) = S::role_in(transaction, role).await? else {
         return Ok(());
     };
-    let mut places = vec![row.project.map_or(Place::Organization, Place::Project)];
+    let mut places = vec![Place::from(row.project)];
     let reaches_below = row.applies_to == AppliesTo::ProjectAndSubProjects;
     if let (Some(project), true) = (row.project, reaches_below) {
         places.extend(

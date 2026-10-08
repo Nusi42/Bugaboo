@@ -224,7 +224,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         let mut names: BTreeMap<RoleId, String> = BTreeMap::new();
         let mut held = Vec::new();
         for row in rows {
-            let place = row.project.map_or(Place::Organization, Place::Project);
+            let place = Place::from(row.project);
             let may = match self.evaluation_of(actor, place).await {
                 Ok(evaluation) => evaluation.allows(Permission::DecideRoles),
                 Err(_) => false,
@@ -232,10 +232,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             if !may {
                 continue;
             }
-            let project = match row.project {
-                Some(project) => Some(self.project_label(actor, project).await?),
-                None => None,
-            };
+            let project = self.place_label(actor, row.project).await?;
             let role = match row.role {
                 Some(id) => {
                     let name = if let Some(known) = names.get(&id) {

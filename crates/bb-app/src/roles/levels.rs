@@ -22,11 +22,6 @@ use super::types::{
 use crate::access::held_in;
 use crate::auth::{AppError, AuthStore, Ctx, Done, by, change_failed, entity, internal};
 
-/// The place a level is set at.
-pub(crate) fn place_of(project: Option<ProjectId>) -> Place {
-    project.map_or(Place::Organization, Place::Project)
-}
-
 impl<S: AuthStore> Ctx<'_, S> {
     /// The places a role's level is looked up in when the project's own setting is not there: the
     /// parents, nearest first, and last the role's own level (`None`).
@@ -116,7 +111,7 @@ pub async fn set_field_level<S: AuthStore>(
         .require(
             &actor,
             Permission::DecideWhatRolesSee,
-            place_of(input.project),
+            Place::from(input.project),
         )
         .await?;
     let role = ctx.role_or_missing(input.role).await?.role.id;
@@ -197,7 +192,7 @@ pub async fn set_people_level<S: AuthStore>(
         .require(
             &actor,
             Permission::DecideWhatRolesSee,
-            place_of(input.project),
+            Place::from(input.project),
         )
         .await?;
     let role = ctx.role_or_missing(input.role).await?.role.id;
@@ -277,7 +272,7 @@ pub async fn role_levels<S: AuthStore>(
         .require(
             &actor,
             Permission::DecideWhatRolesSee,
-            place_of(input.project),
+            Place::from(input.project),
         )
         .await?;
     let role = ctx.role_or_missing(input.role).await?.role.id;

@@ -90,7 +90,9 @@ pub async fn project<S: AuthStore>(
     };
     let (trail, truncated) = shown.trail(&found.project);
     let project = found.project;
-    let old_parent = ctx.evaluation_of(&actor, place_of(project.parent)).await?;
+    let old_parent = ctx
+        .evaluation_of(&actor, Place::from(project.parent))
+        .await?;
     let organization = ctx.evaluation_of(&actor, Place::Organization).await?;
     let may_move = if !old_parent.allows(Permission::MoveProjects) {
         MoveRight::Nowhere
@@ -117,11 +119,6 @@ pub async fn project<S: AuthStore>(
             version: project.version,
         },
     }))
-}
-
-/// The place where a project with this parent sits: the organization for the top level.
-fn place_of(parent: Option<ProjectId>) -> Place {
-    parent.map_or(Place::Organization, Place::Project)
 }
 
 /// Where a page ends, as text: the name the list is sorted by and the ID of the last project.

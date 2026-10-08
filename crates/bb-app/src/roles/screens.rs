@@ -126,7 +126,7 @@ pub async fn assignment_choices<S: AuthStore>(
     input: AssignmentChoicesQuery,
 ) -> Result<Authorized<ChoicePage>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
-    let place = input.project.map_or(Place::Organization, Place::Project);
+    let place = Place::from(input.project);
     let access = ctx.require(&actor, Permission::DecideRoles, place).await?;
     let page = match input.kind {
         ChoiceKind::Person => {

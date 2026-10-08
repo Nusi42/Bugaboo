@@ -8,7 +8,7 @@
 use bb_core::ErrorCode;
 use bb_core::access::{AppliesTo, FieldLevel, PeopleLevel};
 use bb_core::fields::Field;
-use bb_core::id::{AssignmentId, ProjectId, RoleId};
+use bb_core::id::{AssignmentId, RoleId};
 use bb_core::people_kinds::PeopleKind;
 use bb_policy::{
     AccessReport, Authorized, LevelDecision, LevelSource, Masked, PeopleContext, Permission,
@@ -172,17 +172,6 @@ impl<S: AuthStore> Ctx<'_, S> {
         Ok(RoleRef { id, name })
     }
 
-    async fn project_of_reason(
-        &self,
-        checker: &Actor,
-        project: Option<ProjectId>,
-    ) -> Result<Option<ProjectLabel>, AppError> {
-        match project {
-            Some(project) => Ok(Some(self.project_label(checker, project).await?)),
-            None => Ok(None),
-        }
-    }
-
     async fn reason_row(
         &self,
         checker: &Actor,
@@ -209,7 +198,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         Ok(ReasonRowView {
             assignment: row.assignment,
             who,
-            project: self.project_of_reason(checker, row.project).await?,
+            project: self.place_label(checker, row.project).await?,
             applies_to: row.applies_to,
             inherited: row.inherited,
         })
@@ -305,13 +294,9 @@ impl<S: AuthStore> Ctx<'_, S> {
         for decision in &report.kinds {
             kinds.push(self.level_answer(checker, decision).await?);
         }
-        let place = match report.place {
-            Place::Organization => None,
-            Place::Project(project) => Some(self.project_label(checker, project).await?),
-        };
         Ok(AccessAnswer {
             person,
-            place,
+            place: self.place_label(checker, report.place).await?,
             permissions,
             fields,
             kinds,
@@ -331,7 +316,7 @@ pub async fn check_access<S: AuthStore>(
     input: CheckAccessQuery,
 ) -> Result<Authorized<AccessAnswer>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
-    let place = input.place.map_or(Place::Organization, Place::Project);
+    let place = Place::from(input.place);
     let checker = ctx.require(&actor, Permission::CheckAccess, place).await?;
     ctx.store()
         .person(input.person)

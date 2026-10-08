@@ -12,12 +12,12 @@ use bb_core::access::{FieldLevel, PeopleLevel};
 use bb_core::fields::Field;
 use bb_core::id::{ProjectId, RoleId};
 use bb_core::people_kinds::PeopleKind;
-use bb_policy::{Authorized, LevelSource, Masked, Permission, nearest_rule};
+use bb_policy::{Authorized, LevelSource, Masked, Permission, Place, nearest_rule};
 use serde::Serialize;
 
 use super::{Actor, LevelRules, ProjectLabel, RoleRecord};
 use crate::auth::{AppError, AuthStore, Ctx, internal};
-use crate::roles::{RoleRef, place_of};
+use crate::roles::RoleRef;
 
 /// The most roles a table holds, the columns of the matrix. More roles than this are cut off and
 /// the answer says so (`truncated`).
@@ -200,12 +200,8 @@ impl<S: AuthStore> Ctx<'_, S> {
                 cells,
             });
         }
-        let place = match project {
-            Some(project) => Some(self.project_label(actor, project).await?),
-            None => None,
-        };
         Ok(LevelTable {
-            place,
+            place: self.place_label(actor, project).await?,
             roles: roles
                 .iter()
                 .map(|record| RoleRef {
@@ -248,7 +244,7 @@ pub async fn field_permissions<S: AuthStore>(
         .require(
             &actor,
             Permission::DecideWhatRolesSee,
-            place_of(input.project),
+            Place::from(input.project),
         )
         .await?;
     let (roles, truncated) = ctx.columns().await?;
@@ -293,7 +289,7 @@ pub async fn people_visibility<S: AuthStore>(
         .require(
             &actor,
             Permission::DecideWhatRolesSee,
-            place_of(input.project),
+            Place::from(input.project),
         )
         .await?;
     let (roles, truncated) = ctx.columns().await?;

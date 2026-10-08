@@ -35,6 +35,14 @@ pub enum Place {
     Project(ProjectId),
 }
 
+impl From<Option<ProjectId>> for Place {
+    /// The place of a record that sits in a project, or at the top for `None` (a row of *Who has
+    /// which role*, the parent of a project, the project of a query).
+    fn from(project: Option<ProjectId>) -> Self {
+        project.map_or(Self::Organization, Self::Project)
+    }
+}
+
 impl Place {
     /// The project, if the place is one.
     #[must_use]

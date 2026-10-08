@@ -149,7 +149,7 @@ impl<S: AuthStore> Ctx<'_, S> {
                     .await
                     .map_err(|error| internal::<S>(&error))?
                     .ok_or(AppError::Refused(ErrorCode::NotFound))?;
-                let place = row.project.map_or(Place::Organization, Place::Project);
+                let place = Place::from(row.project);
                 let access = self.require(actor, Permission::DecideRoles, place).await?;
                 Ok((row.project, Edit::DropRow(*id), (*access).clone()))
             }
