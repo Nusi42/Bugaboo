@@ -89,13 +89,12 @@ pub async fn set_level<S: AuthStore, R: LevelRequest>(
 ) -> Result<Done, AppError> {
     let input = request.into_change();
     let actor = ctx.actor(&input.session_token).await?;
-    let access = ctx
-        .require(
-            &actor,
-            Permission::DecideWhatRolesSee,
-            Place::from(input.project),
-        )
-        .await?;
+    ctx.require(
+        &actor,
+        Permission::DecideWhatRolesSee,
+        Place::from(input.project),
+    )
+    .await?;
     let role = ctx.role_or_missing(input.role).await?.role.id;
     if input.project.is_none() && input.level.is_none() {
         return Err(ErrorCode::InvalidRequest.into());
@@ -108,9 +107,6 @@ pub async fn set_level<S: AuthStore, R: LevelRequest>(
         ),
         (None, None) => None,
     };
-    if level_then.is_some_and(|level| level > access.level(input.subject)) {
-        return Err(ErrorCode::TooMuch.into());
-    }
     let (project, subject, level) = (input.project, input.subject, input.level);
     let editor = actor.person.id;
     // What was there before, so the history can tell what a change did.
@@ -130,11 +126,20 @@ pub async fn set_level<S: AuthStore, R: LevelRequest>(
                 // The version of a move preview is made from these levels: a move waits for a
                 // change of them, or the change for the move.
                 S::lock_policy(transaction).await?;
-                // A level set on a project reaches what is inside it: nobody gives there more than
-                // they hold there, judged now, after the lock.
-                if let (Some(project), Some(wanted)) = (project, level_then) {
-                    for below in sub_projects_in::<S>(transaction, project).await? {
-                        let held = held_in::<S>(transaction, editor, Place::Project(below)).await?;
+                // Nobody gives more than they hold, judged now, after the lock: in the place itself
+                // and, for a level set on a project, in what is inside it.
+                if let Some(wanted) = level_then {
+                    let mut places = vec![Place::from(project)];
+                    if let Some(project) = project {
+                        places.extend(
+                            sub_projects_in::<S>(transaction, project)
+                                .await?
+                                .into_iter()
+                                .map(Place::Project),
+                        );
+                    }
+                    for place in places {
+                        let held = held_in::<S>(transaction, editor, place).await?;
                         if held.level(subject) < wanted {
                             return Err(S::refused(Refusal::TooMuch));
                         }
