@@ -39,7 +39,7 @@ function Rows({ rows, label, openKey, onOpen }: RowsProps) {
   return (
     <ul {...partOf(part.list, { variants: ["snug"] })} aria-label={label}>
       {rows.map((row) => (
-        <li key={row.key} {...partOf(part.listEditorRow)}>
+        <li key={row.key} {...partOf(part.item, { variants: ["spread", "slim"] })}>
           <Button
             {...partOf(part.listEditorOpen, { states: [row.key === openKey && "open"] })}
             aria-expanded={row.key === openKey}

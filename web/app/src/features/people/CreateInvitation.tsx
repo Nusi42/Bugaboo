@@ -20,7 +20,7 @@ function CreatedLink({ email, linkPath }: CreatedLinkProps) {
     <div {...partOf(part.stack)}>
       <Alert tone={alertTone.success}>{t("invitations.created", { email })}</Alert>
       <p {...partOf(part.muted)}>{t("invitations.link-help")}</p>
-      <code {...partOf(part.peopleLink)} aria-label={t("invitations.link")}>
+      <code {...partOf(part.keyBox, { variants: ["small"] })} aria-label={t("invitations.link")}>
         {link}
       </code>
       <div {...partOf(part.row)}>

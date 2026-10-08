@@ -27,7 +27,7 @@ export function ShortcutList({ overrides, action, show }: ShortcutListProps) {
       {shortcutDefinitions
         .filter((definition) => show?.(definition.id) ?? true)
         .map((definition) => (
-          <li key={definition.id} {...partOf(part.shortcutListRow)}>
+          <li key={definition.id} {...partOf(part.item, { variants: ["spread"] })}>
             <span {...partOf(part.shortcutListWhat)}>
               <span {...partOf(part.shortcutListName)}>{t(definition.message)}</span>
               <span {...partOf(part.hint)}>
