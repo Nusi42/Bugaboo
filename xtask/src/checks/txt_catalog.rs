@@ -6,7 +6,8 @@
 //! under `web/` or `crates/`, or when Rust code names its constant or function
 //! (`SERVER_NOT_FOUND`, `server_port_busy`); a `t("…")` call with an unknown key is missing. The
 //! messages that the words of the enums make (an error code, a permission and its topic, a starting
-//! role, a kind of people information, a field) count as used, and each has to be in the catalog.
+//! role, a kind of people information, a field) count as used. That each of them is in the catalog
+//! is the build's job: a made key that is not there does not compile (`bb-core`, `derived_key!`).
 
 use std::collections::{BTreeMap, HashSet};
 

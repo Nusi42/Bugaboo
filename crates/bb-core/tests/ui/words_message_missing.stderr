@@ -1,0 +1,38 @@
+error[E0080]: evaluation panicked: a message made from a word is not in messages/en.json; add it and run `cargo xtask gen messages`
+  --> tests/ui/words_message_missing.rs:3:1
+   |
+ 3 | / words! {
+ 4 | |     /// A word whose message is not in the catalog.
+ 5 | |     pub enum Colour {
+ 6 | |         /// Red.
+...  |
+ 9 | |     messages name = "no-such-prefix.";
+10 | | }
+   | |_^ evaluation of `Colour::name::KEY` failed inside this call
+   |
+note: inside `MessageKey::__derived`
+  --> $RUST/core/src/panic.rs
+   |
+   = note: the failure occurred here
+   |
+  ::: src/message/mod.rs
+   |
+   | /         assert!(
+   | |             in_catalog(key),
+   | |             "a message made from a word is not in messages/en.json; add it and run `cargo xtask gen messages`"
+   | |         );
+   | |_________- in this macro invocation
+
+note: erroneous constant encountered
+  --> tests/ui/words_message_missing.rs:3:1
+   |
+ 3 | / words! {
+ 4 | |     /// A word whose message is not in the catalog.
+ 5 | |     pub enum Colour {
+ 6 | |         /// Red.
+...  |
+ 9 | |     messages name = "no-such-prefix.";
+10 | | }
+   | |_^
+   |
+   = note: this note originates in the macro `$crate::derived_key` which comes from the expansion of the macro `words` (in Nightly builds, run with -Z macro-backtrace for more info)

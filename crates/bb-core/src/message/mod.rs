@@ -3,7 +3,9 @@
 //! `cargo xtask gen messages` writes `generated.rs` from the catalog: one constant per message
 //! without placeholders and one function per message with placeholders, with the placeholders as
 //! typed arguments. Code never writes a message key as text, so a key that does not exist does
-//! not compile (TXT-CATALOG finds keys that nothing uses).
+//! not compile (TXT-CATALOG finds keys that nothing uses). The same holds for the message that a
+//! word makes (`words!` with `messages`, [`derived_key!`](crate::derived_key)): the key is looked up
+//! in the catalog when the program is built, and one that is not there stops the build.
 
 use jiff::Timestamp;
 
@@ -22,11 +24,15 @@ impl MessageKey {
         Self(key)
     }
 
-    /// The key that [`derived_key!`](crate::derived_key) made from a word. TXT-CATALOG and the
-    /// checks of the tables hold every such key against the catalog, so no key is made up.
+    /// The key that [`derived_key!`](crate::derived_key) made from a word. It has to be in the
+    /// catalog: in a `const` (which the macro makes) a key that is not there stops the build.
     #[doc(hidden)]
     #[must_use]
     pub const fn __derived(key: &'static str) -> Self {
+        assert!(
+            in_catalog(key),
+            "a message made from a word is not in messages/en.json; add it and run `cargo xtask gen messages`"
+        );
         Self(key)
     }
 
@@ -54,6 +60,48 @@ impl serde::Serialize for MessageKey {
 impl std::fmt::Display for MessageKey {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         formatter.write_str(self.0)
+    }
+}
+
+/// Whether `key` is a key of the catalog (which is sorted by key, so the search halves the list).
+const fn in_catalog(key: &str) -> bool {
+    let (mut low, mut high) = (0, CATALOG.len());
+    while low < high {
+        let middle = low + (high - low) / 2;
+        match compare(CATALOG[middle].0.as_bytes(), key.as_bytes()) {
+            Order::Less => low = middle + 1,
+            Order::Greater => high = middle,
+            Order::Equal => return true,
+        }
+    }
+    false
+}
+
+/// How two texts are ordered, byte by byte, as `str` orders them (`Ord` is not `const` yet).
+enum Order {
+    Less,
+    Equal,
+    Greater,
+}
+
+const fn compare(a: &[u8], b: &[u8]) -> Order {
+    let mut at = 0;
+    while at < a.len() && at < b.len() {
+        if a[at] != b[at] {
+            return if a[at] < b[at] {
+                Order::Less
+            } else {
+                Order::Greater
+            };
+        }
+        at += 1;
+    }
+    if a.len() == b.len() {
+        Order::Equal
+    } else if a.len() < b.len() {
+        Order::Less
+    } else {
+        Order::Greater
     }
 }
 
@@ -91,14 +139,16 @@ pub const fn key_text(bytes: &'static [u8]) -> &'static str {
 /// The key of the message that belongs to a word: `derived_key!("error.", "auth.wrong_credentials")`
 /// is `error.auth.wrong-credentials`. It is made when the program is built, from the word that is
 /// written once next to the variant, so no table pairs a word with a key by hand. The key has to be
-/// in the catalog: ARCH-ERRORS, ARCH-PERMS and TXT-CATALOG find one that is not.
+/// in the catalog: when it is not, the program does not compile (`tests/message_keys.rs`).
 #[macro_export]
 macro_rules! derived_key {
     ($prefix:literal, $word:literal) => {{
         const LENGTH: usize = $prefix.len() + $word.len();
         const BYTES: [u8; LENGTH] = $crate::message::derive_key::<LENGTH>($prefix, $word);
         const TEXT: &str = $crate::message::key_text(&BYTES);
-        $crate::message::MessageKey::__derived(TEXT)
+        // A constant, so the catalog is asked when the program is built.
+        const KEY: $crate::message::MessageKey = $crate::message::MessageKey::__derived(TEXT);
+        KEY
     }};
 }
 
