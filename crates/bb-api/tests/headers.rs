@@ -53,12 +53,7 @@ mod headers {
         Options {
             web,
             hsts_max_age,
-            header_timeout: std::time::Duration::from_secs(30),
-            data_folder: std::env::temp_dir(),
-            trusted_proxies: vec![],
-            limits: bb_api::LimitsConfig::default(),
-            auth: bb_api::AuthHandle::none(),
-            probe: bb_api::ProbeHandle::none(),
+            ..Options::for_tests()
         }
     }
 

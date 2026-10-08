@@ -6,6 +6,11 @@ edition.workspace = true
 rust-version.workspace = true
 publish.workspace = true
 
+[features]
+# `Options::for_tests`, the options of a router without a browser app or a database. Only
+# `[dev-dependencies]` switch it on.
+testing = []
+
 [dependencies]
 axum = { workspace = true, features = ["http1", "http2", "json", "matched-path", "query", "tokio"] }
 base64ct = { workspace = true }
@@ -32,6 +37,7 @@ utoipa = { workspace = true }
 utoipa-axum = { workspace = true }
 
 [dev-dependencies]
+bb-api = { path = ".", features = ["testing"] }
 bb-core = { path = "../bb-core", features = ["fake-ids"] }
 h2 = { workspace = true }
 brotli = { workspace = true }

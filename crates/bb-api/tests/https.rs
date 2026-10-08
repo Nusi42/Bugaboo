@@ -102,10 +102,7 @@ mod https {
             },
             header_timeout: Duration::from_secs(1),
             data_folder: tls_folder.path().to_path_buf(),
-            trusted_proxies: vec![],
-            limits: bb_api::LimitsConfig::default(),
-            auth: bb_api::AuthHandle::none(),
-            probe: bb_api::ProbeHandle::none(),
+            ..Options::for_tests()
         };
         let (stop, stopped) = oneshot::channel::<()>();
         tokio::spawn(serve(incoming, options, async move {

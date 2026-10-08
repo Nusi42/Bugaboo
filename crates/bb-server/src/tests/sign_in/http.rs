@@ -5,7 +5,6 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::net::SocketAddr;
 use std::sync::atomic::{AtomicU8, Ordering};
 use std::sync::{Arc, Mutex};
-use std::time::Duration;
 
 use axum::Router;
 use axum::body::Body;
@@ -14,7 +13,7 @@ use axum::http::{HeaderMap, Method, Request, StatusCode, header};
 use base64ct::{Base64UrlUnpadded, Encoding as _};
 use bb_api::openapi::operations;
 use bb_api::permissions::{Answer, Declared};
-use bb_api::{AuthHandle, ClientAddr, LimitsConfig, Options, ProbeHandle, WebSource, router};
+use bb_api::{AuthHandle, ClientAddr, LimitsConfig, Options, router};
 use bb_app::auth::AuthStore as _;
 use bb_app::context::Clock as _;
 use bb_auth::TotpSecret;
@@ -83,18 +82,13 @@ pub(super) struct Browser {
 
 pub(super) fn options(rig: &Rig, limits: LimitsConfig, auth: bool) -> Options {
     Options {
-        web: WebSource::Folder("no/such/folder".into()),
-        hsts_max_age: None,
-        header_timeout: Duration::from_secs(30),
-        data_folder: std::env::temp_dir(),
-        trusted_proxies: vec![],
         limits,
         auth: if auth {
             AuthHandle::new(rig.services.clone())
         } else {
             AuthHandle::none()
         },
-        probe: ProbeHandle::none(),
+        ..Options::for_tests()
     }
 }
 

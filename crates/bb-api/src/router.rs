@@ -77,6 +77,26 @@ pub struct Options {
     pub probe: ProbeHandle,
 }
 
+#[cfg(feature = "testing")]
+impl Options {
+    /// Options for a router in a test: no browser app, plain HTTP, no trusted proxy, the default
+    /// limits and no database behind the sign-in routes. A test changes what it needs with
+    /// `Options { web, ..Options::for_tests() }`.
+    #[must_use]
+    pub fn for_tests() -> Self {
+        Self {
+            web: WebSource::Folder("no/such/folder".into()),
+            hsts_max_age: None,
+            header_timeout: Duration::from_secs(30),
+            data_folder: std::env::temp_dir(),
+            trusted_proxies: vec![],
+            limits: LimitsConfig::default(),
+            auth: AuthHandle::none(),
+            probe: ProbeHandle::none(),
+        }
+    }
+}
+
 #[derive(Clone)]
 struct AppState {
     web: Arc<WebSource>,

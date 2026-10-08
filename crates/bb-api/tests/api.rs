@@ -38,19 +38,14 @@ mod api {
     use axum::http::{Request, StatusCode, header};
     use axum::response::Response;
     use bb_api::cookies::Cookie;
-    use bb_api::{ClientAddr, LimitsConfig, Options, WebSource, openapi, router};
+    use bb_api::{ClientAddr, LimitsConfig, Options, openapi, router};
     use tower::ServiceExt as _;
 
     fn options(limits: LimitsConfig, proxies: &[&str]) -> Options {
         Options {
-            web: WebSource::Folder("no/such/folder".into()),
-            hsts_max_age: None,
-            header_timeout: Duration::from_secs(30),
-            data_folder: std::env::temp_dir(),
             trusted_proxies: proxies.iter().map(|p| p.parse().unwrap()).collect(),
             limits,
-            auth: bb_api::AuthHandle::none(),
-            probe: bb_api::ProbeHandle::none(),
+            ..Options::for_tests()
         }
     }
 

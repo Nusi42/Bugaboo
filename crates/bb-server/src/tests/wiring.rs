@@ -2,12 +2,11 @@
 //! setup code of the first start is made (AUTH-09, SEC-16, M1-F19, M1-F24).
 
 use std::path::Path;
-use std::time::Duration;
 
 use axum::Router;
 use axum::body::Body;
 use axum::http::{Request, StatusCode, header};
-use bb_api::{LimitsConfig, Options, WebSource, router};
+use bb_api::{Options, router};
 use bb_testing::{Failure, TestResult, each_database};
 use serde_json::{Value, json};
 use tower::ServiceExt as _;
@@ -34,14 +33,10 @@ fn settings(data: &Path, database: Option<&str>) -> Result<Settings, Failure> {
 
 fn app(wired: Wired, data: &Path) -> Router {
     router(Options {
-        web: WebSource::Folder("no/such/folder".into()),
-        hsts_max_age: None,
-        header_timeout: Duration::from_secs(30),
         data_folder: data.to_path_buf(),
-        trusted_proxies: vec![],
-        limits: LimitsConfig::default(),
         auth: wired.auth,
         probe: wired.probe,
+        ..Options::for_tests()
     })
 }
 

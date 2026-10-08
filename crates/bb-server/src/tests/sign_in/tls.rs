@@ -8,10 +8,7 @@ use std::time::Duration;
 use axum::body::Bytes;
 use axum::http::{HeaderMap, Request, StatusCode};
 use bb_api::tls::{TlsSource, server_config};
-use bb_api::{
-    AuthHandle, HSTS_MAX_AGE_SELF_SIGNED, Incoming, LimitsConfig, ListenerOptions, Options,
-    ProbeHandle, WebSource, serve,
-};
+use bb_api::{AuthHandle, HSTS_MAX_AGE_SELF_SIGNED, Incoming, ListenerOptions, Options, serve};
 use bb_testing::{Failure, TestResult, each_database};
 use h2::client::SendRequest;
 use rustls::pki_types::pem::PemObject as _;
@@ -169,14 +166,11 @@ async fn start(rig: &Rig) -> Result<Running, Failure> {
         },
     );
     let options = Options {
-        web: WebSource::Folder("no/such/folder".into()),
         hsts_max_age: Some(HSTS_MAX_AGE_SELF_SIGNED),
         header_timeout: Duration::from_secs(5),
         data_folder: folder.path().to_path_buf(),
-        trusted_proxies: vec![],
-        limits: LimitsConfig::default(),
         auth: AuthHandle::new(rig.services.clone()),
-        probe: ProbeHandle::none(),
+        ..Options::for_tests()
     };
     let (stop, stopped) = oneshot::channel::<()>();
     let server = tokio::spawn(serve(incoming, options, async move {
