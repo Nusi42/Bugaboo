@@ -1,9 +1,10 @@
+import { settingKeys } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 import { type Page } from "@playwright/test";
 
 import { ada, cleo, makeAdmin, makePerson } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
-import { setOrganizationSwitch, TWO_STEP_REQUIRED } from "./support/organization.ts";
+import { setOrganizationSwitch } from "./support/organization.ts";
 import { sendPassword, signIn, signOut } from "./support/flows.ts";
 import { screenshotFolder, shoot } from "./support/screenshots.ts";
 
@@ -24,16 +25,16 @@ test.use({
       const admin = await makeAdmin(server);
       await (await makePerson(server, admin, cleo)).dispose();
       // Two keys that were made earlier, so the list has something to show.
-      await admin.post("/api/v1/access-keys", {
-        password: ada.password,
-        name: "Nightly report",
-        choice: "see-only",
+      await admin.client.POST("/api/v1/access-keys", {
+        body: { password: ada.password, name: "Nightly report", choice: "see-only" },
       });
-      await admin.post("/api/v1/access-keys", {
-        password: ada.password,
-        name: "Status board",
-        choice: "permissions",
-        permissions: ["see-status", "check-access"],
+      await admin.client.POST("/api/v1/access-keys", {
+        body: {
+          password: ada.password,
+          name: "Status board",
+          choice: "permissions",
+          permissions: ["see-status", "check-access"],
+        },
       });
       await admin.dispose();
     },
@@ -72,11 +73,11 @@ test("the screens of access keys and of the second step", async ({ page, server 
   await signOut(page);
 
   // A person whose organization asks for two-step sign-in sees only this screen.
-  await setOrganizationSwitch(server, TWO_STEP_REQUIRED, true);
+  await setOrganizationSwitch(server, settingKeys.securityTwoStepRequired, true);
   await sendPassword(page, cleo);
   await expect(
     page.getByRole("heading", { level: 1, name: t("set-up-second-step.title") }),
   ).toBeVisible();
   await shot(page, "43-set-up-second-step");
-  await setOrganizationSwitch(server, TWO_STEP_REQUIRED, false);
+  await setOrganizationSwitch(server, settingKeys.securityTwoStepRequired, false);
 });

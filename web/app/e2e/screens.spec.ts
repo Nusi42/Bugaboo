@@ -6,6 +6,7 @@ import { expectGoodInEveryLook } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { openFromMenu, sendPassword, signIn } from "./support/flows.ts";
 import { codeApp } from "./support/totp.ts";
+import { setSignUpPolicy } from "./support/organization.ts";
 
 /** The link of an invitation that nobody has used. */
 let openLink = "";
@@ -18,7 +19,7 @@ test.use({
       await addCodeApp(session, bob.password);
       await (await makePerson(server, admin, cleo)).dispose();
       openLink = await invite(admin, "guest@example.test");
-      await admin.put("/api/v1/auth/sign-up-policy", { enabled: true, domains: ["example.test"] });
+      await setSignUpPolicy(admin, { enabled: true, domains: ["example.test"] });
       await admin.dispose();
       await session.dispose();
     },

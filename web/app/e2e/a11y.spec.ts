@@ -1,3 +1,4 @@
+import { dataOf, settingKeys } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 import { type Page } from "@playwright/test";
 
@@ -8,12 +9,13 @@ import {
   roleAddress,
   addressInProject,
 } from "../src/shared/paths.ts";
-import { ada, addCodeApp, bob, invite, makeAdmin, makePerson } from "./support/accounts.ts";
+import { ada, addCodeApp, bob, invite, makeAdmin, makePerson, ownId } from "./support/accounts.ts";
 import {
   expectGoodInEveryLook,
   expectGoodInEveryTheme as expectGoodInEveryThemeOnPage,
 } from "./support/checks.ts";
-import { setOrganizationSwitch, TWO_STEP_REQUIRED } from "./support/organization.ts";
+import { setOrganizationSwitch, setSignUpPolicy } from "./support/organization.ts";
+import { makeProject } from "./support/projects.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { sendPassword, signIn } from "./support/flows.ts";
 
@@ -34,25 +36,19 @@ test.use({
     run: async (server) => {
       const admin = await makeAdmin(server);
       const session = await makePerson(server, admin, bob);
-      somebody = idOf(await session.get("/api/v1/auth/me"));
-      someRole = idOf(await admin.get("/api/v1/roles?limit=1"), "items");
+      somebody = await ownId(session);
+      someRole =
+        dataOf(await admin.client.GET("/api/v1/roles", { params: { query: { limit: 1 } } }))
+          .items[0]?.id ?? "";
       await addCodeApp(session, bob.password);
       invitationLink = await invite(admin, "guest@example.test");
-      await admin.post("/api/v1/projects", { short_name: "WEB", name: "Website" });
-      await admin.put("/api/v1/auth/sign-up-policy", { enabled: true, domains: ["example.test"] });
+      await makeProject(admin, "WEB", "Website");
+      await setSignUpPolicy(admin, { enabled: true, domains: ["example.test"] });
       await admin.dispose();
       await session.dispose();
     },
   },
 });
-
-/** The ID in an answer, or in the first item of its list `items`. */
-function idOf(body: Readonly<Record<string, unknown>>, list?: string): string {
-  const found: unknown = list === undefined ? body : Reflect.get(body, list);
-  const first: unknown = Array.isArray(found) ? found[0] : found;
-  const id: unknown = typeof first === "object" && first !== null ? Reflect.get(first, "id") : "";
-  return typeof id === "string" ? id : "";
-}
 
 /** How a person gets to an address, and whether the theme is chosen on the page or put on it. */
 interface Visit {
@@ -194,7 +190,7 @@ test(`ux_04 ${paths.setUpSecondStep} has no accessibility problems in the four t
   page,
   server,
 }) => {
-  await setOrganizationSwitch(server, TWO_STEP_REQUIRED, true);
+  await setOrganizationSwitch(server, settingKeys.securityTwoStepRequired, true);
   try {
     await sendPassword(page, ada);
     await expect(page).toHaveURL(new RegExp(paths.setUpSecondStep, "u"));
@@ -203,6 +199,6 @@ test(`ux_04 ${paths.setUpSecondStep} has no accessibility problems in the four t
     await page.emulateMedia({ contrast: "more" });
     await expectGoodInEveryTheme(page, true);
   } finally {
-    await setOrganizationSwitch(server, TWO_STEP_REQUIRED, false);
+    await setOrganizationSwitch(server, settingKeys.securityTwoStepRequired, false);
   }
 });

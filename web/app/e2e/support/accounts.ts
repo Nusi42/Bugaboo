@@ -1,3 +1,5 @@
+import { dataOf, type Schema } from "@bugaboo/api-client";
+
 import { type ApiSession, openSession } from "./api.ts";
 import { type CodeApp, codeApp } from "./totp.ts";
 import { type Instance } from "./server.ts";
@@ -32,14 +34,31 @@ export const cleo: Person = {
 /** Makes the first administrator through the API, with the setup code the server saved. */
 export async function makeAdmin(server: Instance, person: Person = ada): Promise<ApiSession> {
   const session = await openSession(server.url);
-  await session.post("/api/v1/auth/setup", {
-    code: server.setupCode(),
-    display_name: person.name,
-    email: person.email,
-    password: person.password,
+  await session.client.POST("/api/v1/auth/setup", {
+    body: {
+      code: server.setupCode(),
+      display_name: person.name,
+      email: person.email,
+      password: person.password,
+    },
   });
   return session;
 }
+
+/** Signs the person in with their password, through the API (a person who has no second step). */
+export async function signInThroughApi(server: Instance, person: Person): Promise<ApiSession> {
+  const session = await openSession(server.url);
+  await session.client.POST("/api/v1/auth/sign-in", {
+    body: { email: person.email, password: person.password },
+  });
+  return session;
+}
+
+/** The levels at which a person's or an organization's settings are kept, by the routes that serve them. */
+const settingsRoutes = {
+  person: { list: "/api/v1/me/settings", one: "/api/v1/me/settings/{key}" },
+  organization: { list: "/api/v1/settings", one: "/api/v1/settings/{key}" },
+} as const;
 
 /**
  * Takes away every value the person chose in *My settings* (and, when asked, for an administrator,
@@ -51,34 +70,23 @@ export async function forgetChoices(
   person: Person = ada,
   organization = false,
 ): Promise<void> {
-  const session = await openSession(server.url);
-  await session.post("/api/v1/auth/sign-in", { email: person.email, password: person.password });
+  const session = await signInThroughApi(server, person);
   await inOrder(
-    (organization ? ["me/settings", "settings"] : ["me/settings"]).map((level) => async () => {
-      const found = await session.get(`/api/v1/${level}`);
-      const settings: readonly unknown[] = Array.isArray(found["settings"])
-        ? found["settings"]
-        : [];
+    (organization
+      ? [settingsRoutes.person, settingsRoutes.organization]
+      : [settingsRoutes.person]
+    ).map((level) => async () => {
+      const found: Schema<"SettingsBody"> = dataOf(await session.client.GET(level.list));
       await inOrder(
-        settings
-          .flatMap((setting) => ownKey(setting))
-          .map((key) => async () => {
-            await session.remove(`/api/v1/${level}/${key}`);
+        found.settings
+          .filter((setting) => setting.own)
+          .map((setting) => async () => {
+            await session.client.DELETE(level.one, { params: { path: { key: setting.key } } });
           }),
       );
     }),
   );
   await session.dispose();
-}
-
-/** The key of a setting that has a value of its own at this level, as a list of one, or nothing. */
-function ownKey(setting: unknown): readonly string[] {
-  if (typeof setting !== "object" || setting === null) {
-    return [];
-  }
-  const own: unknown = Reflect.get(setting, "own");
-  const key: unknown = Reflect.get(setting, "key");
-  return own === true && typeof key === "string" ? [key] : [];
 }
 
 /** The secret in an invitation link: the part after the hash sign. */
@@ -88,8 +96,8 @@ function secretOf(link: string): string {
 
 /** Makes an invitation as `admin` and returns its link path (the page and the secret). */
 export async function invite(admin: ApiSession, email: string): Promise<string> {
-  const made = await admin.post("/api/v1/auth/invitations", { email });
-  return String(made["link_path"]);
+  const made = dataOf(await admin.client.POST("/api/v1/auth/invitations", { body: { email } }));
+  return made.link_path;
 }
 
 /** Makes an account for `person` with an invitation from `admin`, and signs the person in. */
@@ -100,19 +108,16 @@ export async function makePerson(
 ): Promise<ApiSession> {
   const link = await invite(admin, person.email);
   const session = await openSession(server.url);
-  await session.post("/api/v1/auth/invitation/accept", {
-    secret: secretOf(link),
-    display_name: person.name,
-    password: person.password,
+  await session.client.POST("/api/v1/auth/invitation/accept", {
+    body: { secret: secretOf(link), display_name: person.name, password: person.password },
   });
   return session;
 }
 
 /** Signs the person out of every browser, so a test starts with no place to be listed. */
 export async function endEverySession(server: Instance, person: Person): Promise<void> {
-  const session = await openSession(server.url);
-  await session.post("/api/v1/auth/sign-in", { email: person.email, password: person.password });
-  await session.remove("/api/v1/auth/sessions");
+  const session = await signInThroughApi(server, person);
+  await session.client.DELETE("/api/v1/auth/sessions");
 }
 
 /** A code app and the backup codes that came with setting it up. */
@@ -123,12 +128,19 @@ export interface TwoStep {
 
 /** Sets up the code app for the person behind `session`, as the security page would. */
 export async function addCodeApp(session: ApiSession, password: string): Promise<TwoStep> {
-  const started = await session.post("/api/v1/auth/two-step/code-app", { password });
-  const app = codeApp(String(started["secret"]));
-  const confirmed = await session.post("/api/v1/auth/two-step/code-app/confirm", {
-    code: await app.next(),
-    password,
-  });
-  const codes = confirmed["codes"];
-  return { app, backupCodes: Array.isArray(codes) ? codes.map(String) : [] };
+  const started = dataOf(
+    await session.client.POST("/api/v1/auth/two-step/code-app", { body: { password } }),
+  );
+  const app = codeApp(started.secret);
+  const confirmed = dataOf(
+    await session.client.POST("/api/v1/auth/two-step/code-app/confirm", {
+      body: { code: await app.next(), password },
+    }),
+  );
+  return { app, backupCodes: confirmed.codes };
+}
+
+/** The ID of the person behind a session. */
+export async function ownId(session: ApiSession): Promise<string> {
+  return dataOf(await session.client.GET("/api/v1/auth/me")).id;
 }

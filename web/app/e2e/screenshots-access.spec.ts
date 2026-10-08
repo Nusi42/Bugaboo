@@ -13,6 +13,8 @@ import {
   projectIdOf,
   roleId,
   roleName,
+  setFieldLevel,
+  setPeopleLevel,
   signedInAdmin,
 } from "./support/access.ts";
 import { expect, test } from "./support/fixtures.ts";
@@ -95,11 +97,9 @@ test("what roles see at phone width", async ({ page, server }) => {
   // The screens as the demo leaves them: Cost center hidden from Contributors in Acme Corporation,
   // and Guests see neither who is assigned nor who wrote a comment.
   await forgetFieldLevel(admin, web, contributor, "cost-center");
-  await admin.put(`/api/v1/field-permissions/${contributor}/cost-center?project=${acme}`, {
-    level: "hidden",
-  });
-  await admin.put(`/api/v1/people-visibility/${guest}/assigned-to`, { level: "hidden" });
-  await admin.put(`/api/v1/people-visibility/${guest}/authors`, { level: "hidden" });
+  await setFieldLevel(admin, { role: contributor, field: "cost-center", project: acme }, "hidden");
+  await setPeopleLevel(admin, { role: guest, kind: "assigned-to" }, "hidden");
+  await setPeopleLevel(admin, { role: guest, kind: "authors" }, "hidden");
   await admin.dispose();
   await page.setViewportSize(PHONE);
   await signIn(page, ada);

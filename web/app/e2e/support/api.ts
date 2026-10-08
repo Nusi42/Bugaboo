@@ -1,23 +1,23 @@
-import { CSRF_COOKIE, CSRF_HEADER } from "@bugaboo/api-client";
-import { type APIRequestContext, type APIResponse, request } from "@playwright/test";
-
-/** An answer of the server, as the tests read it. */
-export type Json = Record<string, unknown>;
+import {
+  ApiError,
+  CSRF_COOKIE,
+  createApi,
+  isProblem,
+  readCookie,
+  type Api,
+  type paths,
+} from "@bugaboo/api-client";
+import { type APIRequestContext, request } from "@playwright/test";
 
 /**
  * A person at the other end of the API, for getting the tests to a state quickly: it keeps the
- * cookies of its sign-in and sends the token with every change, like the app does. What the tests
- * are about is still done through the screens.
+ * cookies of its sign-in and talks through the client of the app, so the paths and the bodies are
+ * typed by the API description, the token is sent the way the app sends it and a refusal is an
+ * `ApiError`. What the tests are about is still done through the screens.
  */
 export interface ApiSession {
-  /** Asks for something and returns the answer. */
-  readonly get: (path: string) => Promise<Json>;
-  /** Changes something and returns the answer (an empty object when there is none). */
-  readonly post: (path: string, data?: unknown) => Promise<Json>;
-  /** Takes something away. */
-  readonly remove: (path: string) => Promise<Json>;
-  /** Puts a new value in place of the old one. */
-  readonly put: (path: string, data: unknown) => Promise<Json>;
+  /** The client of the app, over the cookies of this session. */
+  readonly client: Readonly<Api["client"]>;
   /** The cookies of the session, to open a browser that is signed in as this person. */
   readonly state: () => Promise<StorageState>;
   /** Signs out (so the session is not left in the list of places) and closes the session. */
@@ -27,67 +27,80 @@ export interface ApiSession {
 /** What a browser needs to be signed in as somebody: their cookies. */
 export type StorageState = Awaited<ReturnType<APIRequestContext["storageState"]>>;
 
-function isJson(value: unknown): value is Json {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-/** The body of an answer that is a success, or an error that says what was asked and answered. */
-async function bodyOf(what: string, answer: APIResponse): Promise<Json> {
-  if (!answer.ok()) {
-    throw new Error(`${what}: ${String(answer.status())} ${await answer.text()}`);
+/** Sends what the client made through the session, and gives back what the server said. */
+async function send(
+  context: APIRequestContext,
+  asked: Request,
+  onCookie: (setCookie: string) => void,
+): Promise<Response> {
+  const body = await asked.text();
+  const answer = await context.fetch(asked.url, {
+    method: asked.method,
+    headers: Object.fromEntries(asked.headers),
+    ...(body === "" ? {} : { data: body }),
+    maxRedirects: 0,
+  });
+  // Every header one by one: a few cookies are a few headers of the same name.
+  const headers = new Headers();
+  for (const header of answer.headersArray()) {
+    headers.append(header.name, header.value);
+    if (header.name.toLowerCase() === "set-cookie") {
+      onCookie(header.value);
+    }
   }
-  if (answer.status() === 204) {
-    return {};
-  }
-  const body: unknown = await answer.json();
-  if (!isJson(body)) {
-    throw new Error(`${what}: the answer is not an object`);
-  }
-  return body;
-}
-
-/** The token of the session, in the header the server wants it in. */
-async function tokenOf(context: APIRequestContext): Promise<Record<string, string>> {
-  const { cookies } = await context.storageState();
-  const csrf = cookies.find(({ name }: { readonly name: string }) => name === CSRF_COOKIE)?.value;
-  return csrf === undefined ? {} : { [CSRF_HEADER]: csrf };
+  const empty = answer.status() === 204 || answer.status() === 304;
+  return new Response(empty ? null : await answer.text(), { status: answer.status(), headers });
 }
 
 /** A session of nobody yet, for the server at `origin`. */
 export async function openSession(origin: string): Promise<ApiSession> {
-  const context = await request.newContext({
-    baseURL: origin,
-    ignoreHTTPSErrors: true,
-    // The server only takes changes that come from its own pages.
-    extraHTTPHeaders: { origin },
+  return sessionOver(
+    await request.newContext({
+      baseURL: origin,
+      ignoreHTTPSErrors: true,
+      // The server only takes changes that come from its own pages.
+      extraHTTPHeaders: { origin },
+    }),
+    origin,
+  );
+}
+
+/** The session of a context that exists already, like the one of a browser that is signed in. */
+export function sessionOver(context: APIRequestContext, origin: string): ApiSession {
+  let token: string | undefined;
+  const { client } = createApi({
+    baseUrl: origin,
+    fetch: (asked) =>
+      send(context, asked, (setCookie) => {
+        token = readCookie(CSRF_COOKIE, setCookie) ?? token;
+      }),
+    csrfToken: () => token,
   });
   return {
-    get: async (path) => bodyOf(`GET ${path}`, await context.get(path)),
-    post: async (path, data) =>
-      bodyOf(
-        `POST ${path}`,
-        await context.post(path, {
-          headers: await tokenOf(context),
-          ...(data === undefined ? {} : { data }),
-        }),
-      ),
-    remove: async (path) =>
-      bodyOf(`DELETE ${path}`, await context.delete(path, { headers: await tokenOf(context) })),
-    put: async (path, data) =>
-      bodyOf(`PUT ${path}`, await context.put(path, { headers: await tokenOf(context), data })),
+    client,
     state: () => context.storageState(),
     dispose: async () => {
-      // Nobody may be signed in any more, or the session would be listed forever.
-      await context.post("/api/v1/auth/sign-out", { headers: await tokenOf(context) });
+      // Nobody may be signed in any more, or the session would be listed forever. A session that
+      // never signed in is refused, which is as good.
+      await client.POST("/api/v1/auth/sign-out").catch((error: unknown) => {
+        if (!(error instanceof ApiError)) {
+          throw error;
+        }
+      });
       await context.dispose();
     },
   };
 }
 
+/** The routes that can be asked for without saying anything about which thing is meant. */
+type PlainRoute = {
+  [Path in keyof paths]: paths[Path] extends { readonly get: unknown } ? Path : never;
+}[keyof paths];
+
 /** A script with an access key: it sends the key and nothing else, no cookie and no token. */
 export interface KeyClient {
   /** Asks for something with the key and returns the status and the code of an error, if any. */
-  readonly get: (path: string) => Promise<KeyAnswer>;
+  readonly get: (path: PlainRoute) => Promise<KeyAnswer>;
   readonly dispose: () => Promise<void>;
 }
 
@@ -109,8 +122,8 @@ export async function useKey(origin: string, key: string): Promise<KeyClient> {
     get: async (path) => {
       const answer = await context.get(path);
       const body: unknown = answer.ok() ? undefined : await answer.json();
-      const code = isJson(body) && typeof body["code"] === "string" ? body["code"] : undefined;
-      return { status: answer.status(), code };
+      const problem = isProblem(body) ? body : undefined;
+      return { status: answer.status(), code: problem?.code };
     },
     dispose: () => context.dispose(),
   };

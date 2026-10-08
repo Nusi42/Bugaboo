@@ -1,14 +1,11 @@
+import { settingKeys } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 import { type Page } from "@playwright/test";
 
 import { bob, cleo, makeAdmin, makePerson } from "./support/accounts.ts";
 import { expectGoodInEveryTheme } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
-import {
-  pressTwoStepSwitch,
-  setOrganizationSwitch,
-  TWO_STEP_REQUIRED,
-} from "./support/organization.ts";
+import { pressTwoStepSwitch, setOrganizationSwitch } from "./support/organization.ts";
 import { expectHome, sendPassword, setUpCodeApp, signIn, signOut } from "./support/flows.ts";
 
 test.use({
@@ -69,14 +66,14 @@ test("auth_03 a person who is signed in is taken to set up a second step the mom
   await signOut(page);
   await sendPassword(page, bob);
   await expect(page).toHaveURL(/\/sign-in\/second-step/u);
-  await setOrganizationSwitch(server, TWO_STEP_REQUIRED, false);
+  await setOrganizationSwitch(server, settingKeys.securityTwoStepRequired, false);
 });
 
 test("auth_03 a person who signs in with only a password and has to set up a second step can do only that", async ({
   page,
   server,
 }) => {
-  await setOrganizationSwitch(server, TWO_STEP_REQUIRED, true);
+  await setOrganizationSwitch(server, settingKeys.securityTwoStepRequired, true);
   await sendPassword(page, cleo);
   await expectSetUpScreen(page);
   // A person who cannot set it up now can leave, and finds the same screen when coming back.
@@ -89,6 +86,6 @@ test("auth_03 a person who signs in with only a password and has to set up a sec
   await setUpCodeApp(page, cleo.password, false);
   await page.getByRole("button", { name: t("set-up-second-step.continue") }).click();
   await expectHome(page, cleo);
-  await setOrganizationSwitch(server, TWO_STEP_REQUIRED, false);
+  await setOrganizationSwitch(server, settingKeys.securityTwoStepRequired, false);
   await signOut(page);
 });

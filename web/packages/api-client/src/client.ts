@@ -85,4 +85,4 @@ export function createApi<Paths extends object = paths>(options: Readonly<Client
   return { client, query: createQueryClient(client) };
 }
 
-export type Api = ReturnType<typeof createApi>;
+export type Api = ReturnType<typeof createApi<paths>>;

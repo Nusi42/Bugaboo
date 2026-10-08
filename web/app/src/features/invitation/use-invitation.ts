@@ -1,7 +1,8 @@
+import { dataOf } from "@bugaboo/api-client";
 import { useQuery } from "@tanstack/react-query";
 
 import { api } from "../../shared/api.ts";
-import { dataOf } from "../../shared/paged.ts";
+
 import { queryKeys } from "../../shared/query-keys.ts";
 
 /** Asks the server which address an invitation is for, which also shows whether it still works. */

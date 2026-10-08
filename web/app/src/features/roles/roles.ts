@@ -1,15 +1,8 @@
-import type { Schema } from "@bugaboo/api-client";
+import { type Schema, dataOf } from "@bugaboo/api-client";
 import { useQuery } from "@tanstack/react-query";
 
 import { api } from "../../shared/api.ts";
-import {
-  dataOf,
-  fieldList,
-  type FieldNames,
-  linesFrom,
-  pageSize,
-  usePaged,
-} from "../../shared/paged.ts";
+import { fieldList, type FieldNames, linesFrom, pageSize, usePaged } from "../../shared/paged.ts";
 import { queryKeys } from "../../shared/query-keys.ts";
 
 /** A role that has what a line of a list needs (the fields can be missing in an answer). */

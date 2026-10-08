@@ -14,6 +14,7 @@ import {
   projectIdOf,
   roleId,
   roleName,
+  setPeopleLevel,
   signedInAdmin,
 } from "./support/access.ts";
 import { expectGoodInEveryLook } from "./support/checks.ts";
@@ -141,7 +142,7 @@ test("priv_12 hiding who is assigned from Guests shows them Someone, and the scr
   const admin = await signedInAdmin(server);
   const guest = await roleId(admin, roleName.guest);
   // Where the last run left it: Guests see the role of who is assigned.
-  await admin.put(`/api/v1/people-visibility/${guest}/assigned-to`, { level: "role-only" });
+  await setPeopleLevel(admin, { role: guest, kind: "assigned-to" }, "role-only");
   await admin.dispose();
   await signIn(page, ada);
   await open(page, paths.peopleVisibility, t("nav.people-visibility"));

@@ -12,8 +12,9 @@
     {
       // The browser's Request and Response (their headers are changed through methods) cannot be
       // made readonly, and openapi-fetch hands its middleware one mutable request. Only the API
-      // client handles them; every other parameter type is still checked.
-      "files": ["web/packages/api-client/**"],
+      // client handles them, and the tests' session that hands the client's requests to Playwright;
+      // every other parameter type is still checked.
+      "files": ["web/packages/api-client/**", "web/app/e2e/support/api.ts"],
       "rules": {
         "typescript/prefer-readonly-parameter-types": [
           "error",
@@ -24,7 +25,8 @@
                 "from": "package",
                 "package": "openapi-fetch",
                 "name": ["MiddlewareCallbackParams"]
-              }
+              },
+              { "from": "package", "package": "playwright-core", "name": ["APIRequestContext"] }
             ]
           }
         ]

@@ -1,4 +1,4 @@
-import { ApiError, pageSizeDefault, pageSizeMax } from "@bugaboo/api-client";
+import { dataOf, pageSizeDefault, pageSizeMax, type Answer } from "@bugaboo/api-client";
 import { useInfiniteQuery, type keepPreviousData, type QueryKey } from "@tanstack/react-query";
 import { useEffect } from "react";
 
@@ -25,23 +25,6 @@ interface CursorPage {
 /** The part of a request for a list that says which page is wanted: nothing for the first. */
 export interface After {
   readonly cursor?: string;
-}
-
-/** What the client gives back: the answer, or nothing (for an answer without a body). */
-interface Answer<Data> {
-  readonly data?: Data | undefined;
-}
-
-/**
- * The body of an answer. A request that fails rejects before this (the client raises an
- * {@link ApiError}); an answer without a body is none the screens can use, so it is treated as no
- * answer at all.
- */
-export function dataOf<Data>(answer: Answer<Data>): Data {
-  if (answer.data === undefined) {
-    throw new ApiError(0, undefined);
-  }
-  return answer.data;
 }
 
 /**

@@ -1,9 +1,11 @@
 import { t } from "@bugaboo/messages";
 
-import { ada, cleo, makeAdmin, makePerson } from "./support/accounts.ts";
+import { ada, cleo, makeAdmin, makePerson, ownId } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { inOrder } from "./support/sequence.ts";
+import { dataOf } from "@bugaboo/api-client";
+import { giveRoleById } from "./support/access.ts";
 
 // The roles the form of *Give a role* offers (SEC-02, WP-11 review): every one of them, however
 // many there are, and only those the person may give.
@@ -17,28 +19,26 @@ test.use({
     run: async (server) => {
       const admin = await makeAdmin(server);
       const lead = await makePerson(server, admin, cleo);
-      const cleoId = String((await lead.get("/api/v1/auth/me"))["id"]);
+      const cleoId = await ownId(lead);
       await lead.dispose();
       // One after the other, so that the last one is the last in the order of roles.
       await inOrder(
         Array.from({ length: MANY }, (_unused, index) => async () => {
-          await admin.post("/api/v1/roles", {
-            name: `Role ${String(index + 1).padStart(3, "0")}`,
-            permissions: [],
-            two_step: false,
+          await admin.client.POST("/api/v1/roles", {
+            body: {
+              name: `Role ${String(index + 1).padStart(3, "0")}`,
+              permissions: [],
+              two_step: false,
+            },
           });
         }),
       );
-      const decider = String(
-        (
-          await admin.post("/api/v1/roles", {
-            name: "Decider",
-            permissions: ["decide-roles", "see-projects"],
-            two_step: false,
-          })
-        )["id"],
-      );
-      await admin.post("/api/v1/assignments", { who: { person: cleoId }, role: decider });
+      const decider = dataOf(
+        await admin.client.POST("/api/v1/roles", {
+          body: { name: "Decider", permissions: ["decide-roles", "see-projects"], two_step: false },
+        }),
+      ).id;
+      await giveRoleById(admin, cleoId, decider);
       await admin.dispose();
     },
   },

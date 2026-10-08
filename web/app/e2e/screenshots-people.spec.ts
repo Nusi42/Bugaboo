@@ -7,11 +7,19 @@ import {
   personAddress,
   roleAddress,
 } from "../src/shared/paths.ts";
-import { ada, bob, cleo, makeAdmin, makePerson } from "./support/accounts.ts";
+import { ada, bob, cleo, makeAdmin, makePerson, ownId } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { makeProject } from "./support/projects.ts";
 import { screenshotFolder, shoot } from "./support/screenshots.ts";
+import {
+  addToGroup,
+  giveGroupRole,
+  giveRole,
+  makeGroup,
+  roleIds,
+  roleName,
+} from "./support/access.ts";
 
 // The pages of People, groups and roles for the maintainer's review (M2 WP-11), at phone width, in a
 // light and a dark look. They are only taken when `BB_SCREENSHOT_DIR` names the folder:
@@ -30,31 +38,18 @@ test.use({
     run: async (server) => {
       const admin = await makeAdmin(server);
       const bobSession = await makePerson(server, admin, bob);
-      bobId = String((await bobSession.get("/api/v1/auth/me"))["id"]);
+      bobId = await ownId(bobSession);
       await bobSession.dispose();
       await (await makePerson(server, admin, cleo)).dispose();
       const acme = await makeProject(admin, "ACME", "Acme");
       await makeProject(admin, "WEB", "Website", acme);
-      groupId = String((await admin.post("/api/v1/groups", { name: "Backend" }))["id"]);
-      await admin.post("/api/v1/groups", { name: "Design" });
-      await admin.put(`/api/v1/groups/${groupId}/members/${bobId}`, {});
-      const listed = (await admin.get("/api/v1/roles"))["items"];
-      const byName = new Map<string, string>();
-      for (const item of Array.isArray(listed) ? listed : []) {
-        byName.set(String(Reflect.get(item, "name")), String(Reflect.get(item, "id")));
-      }
-      roleId = byName.get("Team member") ?? "";
+      groupId = await makeGroup(admin, "Backend");
+      await makeGroup(admin, "Design");
+      await addToGroup(admin, groupId, bobId);
+      roleId = (await roleIds(admin)).get(roleName.teamMember) ?? "";
       // The group has Team member on Acme and its sub-projects; on Website it has No access.
-      await admin.post(`/api/v1/projects/${acme}/assignments`, {
-        who: { group: groupId },
-        role: roleId,
-        applies_to: "project-and-sub-projects",
-      });
-      await admin.post(`/api/v1/projects/${acme}/assignments`, {
-        who: { person: bobId },
-        role: byName.get("Viewer"),
-        applies_to: "project",
-      });
+      await giveGroupRole(admin, groupId, roleName.teamMember, "ACME");
+      await giveRole(admin, bobId, roleName.viewer, "ACME", "project");
       await admin.dispose();
     },
   },

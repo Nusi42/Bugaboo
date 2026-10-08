@@ -1,15 +1,8 @@
-import type { Schema } from "@bugaboo/api-client";
+import { type Schema, dataOf } from "@bugaboo/api-client";
 import { keepPreviousData, skipToken, useMutation, useQuery } from "@tanstack/react-query";
 
 import { api } from "../../shared/api.ts";
-import {
-  dataOf,
-  fieldList,
-  type FieldNames,
-  linesFrom,
-  pageSize,
-  usePaged,
-} from "../../shared/paged.ts";
+import { fieldList, type FieldNames, linesFrom, pageSize, usePaged } from "../../shared/paged.ts";
 import { queryClient } from "../../shared/query-client.ts";
 import { queryKeys } from "../../shared/query-keys.ts";
 

@@ -1,15 +1,12 @@
+import { type SettingKey } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 import { type Browser, expect } from "@playwright/test";
 
 import { paths } from "../../src/shared/paths.ts";
-import { ada, makePerson, type Person } from "./accounts.ts";
-import { giveRole, ownId, roleName, signedInAdmin } from "./access.ts";
-import { type ApiSession, openSession } from "./api.ts";
+import { ada, addCodeApp, makePerson, ownId, type Person, signInThroughApi } from "./accounts.ts";
+import { giveRole, roleName, signedInAdmin } from "./access.ts";
+import { type ApiSession } from "./api.ts";
 import { type Instance } from "./server.ts";
-import { codeApp } from "./totp.ts";
-
-/** The setting of the organization that asks everybody for a second step at sign-in. */
-export const TWO_STEP_REQUIRED = "security.two-step-required";
 
 /**
  * Somebody who keeps the switch: an Administrator with a code app, so that the organization
@@ -33,18 +30,12 @@ async function keeperOf(server: Instance): Promise<ApiSession> {
   const admin = await signedInAdmin(server);
   const made = await makePerson(server, admin, keeper);
   await giveRole(admin, await ownId(made), roleName.administrator, null);
-  const started = await made.post("/api/v1/auth/two-step/code-app", { password: keeper.password });
-  const app = codeApp(String(started["secret"]));
-  await made.post("/api/v1/auth/two-step/code-app/confirm", {
-    code: await app.next(),
-    password: keeper.password,
-  });
+  const { app } = await addCodeApp(made, keeper.password);
   await made.dispose();
   await admin.dispose();
 
-  const session = await openSession(server.url);
-  await session.post("/api/v1/auth/sign-in", { email: keeper.email, password: keeper.password });
-  await session.post("/api/v1/auth/second-step", { code: await app.next() });
+  const session = await signInThroughApi(server, keeper);
+  await session.client.POST("/api/v1/auth/second-step", { body: { code: await app.next() } });
   sessions.set(server, session);
   return session;
 }
@@ -57,13 +48,14 @@ async function keeperOf(server: Instance): Promise<ApiSession> {
  */
 export async function setOrganizationSwitch(
   server: Instance,
-  key: string,
+  key: SettingKey,
   on: boolean,
 ): Promise<void> {
   const keepers = await keeperOf(server);
+  const path = { params: { path: { key } } };
   await (on
-    ? keepers.put(`/api/v1/settings/${key}`, { value: true })
-    : keepers.remove(`/api/v1/settings/${key}`));
+    ? keepers.client.PUT("/api/v1/settings/{key}", { ...path, body: { value: true } })
+    : keepers.client.DELETE("/api/v1/settings/{key}", path));
 }
 
 /**
@@ -92,4 +84,14 @@ export async function pressTwoStepSwitch(
   await (on ? expect(field).toBeChecked() : expect(field).not.toBeChecked());
   await expect(page.getByText(t("save.saved"), { exact: true })).toBeVisible();
   await context.close();
+}
+
+/** Sets who may sign up on their own, through the API. */
+export async function setSignUpPolicy(
+  admin: ApiSession,
+  policy: { readonly enabled: boolean; readonly domains: readonly string[] },
+): Promise<void> {
+  await admin.client.PUT("/api/v1/auth/sign-up-policy", {
+    body: { enabled: policy.enabled, domains: [...policy.domains] },
+  });
 }

@@ -2,12 +2,13 @@ import { t } from "@bugaboo/messages";
 import { type Locator, type Page } from "@playwright/test";
 
 import { addressInProject, paths, roleAddress } from "../src/shared/paths.ts";
-import { ada, bob, cleo, makeAdmin, makePerson } from "./support/accounts.ts";
+import { ada, bob, cleo, makeAdmin, makePerson, ownId } from "./support/accounts.ts";
 import { expectGoodInEveryLook } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { openFromMenu, signIn } from "./support/flows.ts";
 import { twoStepOf } from "./support/roles.ts";
 import { makeProject } from "./support/projects.ts";
+import { addToGroup, giveRole, makeGroup, roleIds, roleName } from "./support/access.ts";
 
 // Roles & permissions and Who has which role (SEC-02, SEC-03, SEC-08, WP-11): a role is made from a
 // copy and changed, a group gets it on a project, the row comes down to a sub-project and is changed
@@ -21,27 +22,17 @@ test.use({
     run: async (server) => {
       const admin = await makeAdmin(server);
       const bobSession = await makePerson(server, admin, bob);
-      const bobId = String((await bobSession.get("/api/v1/auth/me"))["id"]);
+      const bobId = await ownId(bobSession);
       await bobSession.dispose();
       const lead = await makePerson(server, admin, cleo);
-      const cleoId = String((await lead.get("/api/v1/auth/me"))["id"]);
+      const cleoId = await ownId(lead);
       await lead.dispose();
       const acme = await makeProject(admin, "ACME", "Acme");
       await makeProject(admin, "WEB", "Website", acme);
       await makeProject(admin, "LAB", "Lab");
-      const group = String((await admin.post("/api/v1/groups", { name: "Backend" }))["id"]);
-      await admin.put(`/api/v1/groups/${group}/members/${bobId}`, {});
-      const listed = (await admin.get("/api/v1/roles"))["items"];
-      const found = new Map<string, string>();
-      for (const item of Array.isArray(listed) ? listed : []) {
-        found.set(String(Reflect.get(item, "name")), String(Reflect.get(item, "id")));
-      }
-      roles = found;
-      await admin.post(`/api/v1/projects/${acme}/assignments`, {
-        who: { person: cleoId },
-        role: found.get("Project lead"),
-        applies_to: "project-and-sub-projects",
-      });
+      await addToGroup(admin, await makeGroup(admin, "Backend"), bobId);
+      roles = await roleIds(admin);
+      await giveRole(admin, cleoId, roleName.projectLead, "ACME");
       await admin.dispose();
     },
   },
