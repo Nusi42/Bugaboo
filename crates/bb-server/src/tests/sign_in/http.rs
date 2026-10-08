@@ -110,6 +110,66 @@ impl Browser {
         }
     }
 
+    /// A browser that made the first administrator (Ada) with the setup code of `rig` and is signed
+    /// in as her.
+    pub(super) async fn signed_in(app: &Router, rig: &Rig) -> Result<Self, Failure> {
+        let mut browser = Self::new(app, &called());
+        browser.set_up(rig).await?;
+        Ok(browser)
+    }
+
+    /// Makes the first administrator (Ada) with the setup code of `rig`; this browser is signed in
+    /// as her, and the answer is returned.
+    pub(super) async fn set_up(&mut self, rig: &Rig) -> Result<Reply, Failure> {
+        self.send(
+            "POST",
+            "/api/v1/auth/setup",
+            Some(setup_body(&rig.setup_code)),
+        )
+        .await
+    }
+
+    /// Signs in with e-mail address and password, as the sign-in page does; the answer is returned.
+    pub(super) async fn sign_in(&mut self, email: &str, password: &str) -> Result<Reply, Failure> {
+        self.send(
+            "POST",
+            "/api/v1/auth/sign-in",
+            Some(sign_in_body(email, password)),
+        )
+        .await
+    }
+
+    /// Invites the person with this address and name (this browser's person must be allowed to),
+    /// and returns the browser of the person who accepted: signed in, not an administrator.
+    pub(super) async fn invite(
+        &mut self,
+        email: &str,
+        display_name: &str,
+    ) -> Result<Self, Failure> {
+        let invitation = self
+            .send(
+                "POST",
+                "/api/v1/auth/invitations",
+                Some(json!({ "email": email })),
+            )
+            .await?;
+        let secret = invitation.body["link_path"]
+            .as_str()
+            .and_then(|path| path.split_once('#'))
+            .map(|(_, secret)| secret.to_owned())
+            .ok_or("no link")?;
+        let mut person = Self::new(&self.app, &self.called);
+        let accepted = person
+            .send(
+                "POST",
+                "/api/v1/auth/invitation/accept",
+                Some(json!({"secret": secret, "display_name": display_name, "password": PASSWORD})),
+            )
+            .await?;
+        assert_eq!(accepted.status, StatusCode::OK, "{}", accepted.body);
+        Ok(person)
+    }
+
     /// From now on every request carries this header (`If-None-Match`, `Accept-Encoding`).
     pub(super) fn set_header(&mut self, name: &'static str, value: &str) {
         self.headers.retain(|(known, _)| *known != name);
@@ -342,9 +402,10 @@ fn assert_cache_rules(method: &str, path: &str, reply: &Reply) {
     }
 }
 
-pub(super) fn setup_body(rig: &Rig) -> Value {
+/// The body that makes the first administrator with this setup code.
+pub(crate) fn setup_body(code: &str) -> Value {
     json!({
-        "code": rig.setup_code,
+        "code": code,
         "display_name": "Ada Admin",
         "email": "ada@example.test",
         "password": PASSWORD,
@@ -379,9 +440,7 @@ async fn sec_12_signing_in_sets_the_session_cookie_and_the_csrf_cookie() -> Test
     each_database("sec_12_http_cookies", async |db| {
         let (rig, app) = rig_and_app(db).await?;
         let mut browser = Browser::new(&app, &called());
-        let reply = browser
-            .send("POST", "/api/v1/auth/setup", Some(setup_body(&rig)))
-            .await?;
+        let reply = browser.set_up(&rig).await?;
         assert_eq!(reply.status, StatusCode::OK);
         assert_eq!(reply.body["person"]["email"], "ada@example.test");
         assert!(
@@ -412,13 +471,7 @@ async fn sec_12_signing_in_sets_the_session_cookie_and_the_csrf_cookie() -> Test
         assert_eq!(browser.jar[SESSION].len(), 43);
         // Both cookies come again with the next sign-in, new.
         let mut second = Browser::new(&app, &called());
-        let again = second
-            .send(
-                "POST",
-                "/api/v1/auth/sign-in",
-                Some(sign_in_body("ADA@example.test", PASSWORD)),
-            )
-            .await?;
+        let again = second.sign_in("ADA@example.test", PASSWORD).await?;
         assert_eq!(again.status, StatusCode::OK);
         assert_ne!(second.jar[SESSION], browser.jar[SESSION]);
         assert_ne!(second.jar[CSRF], browser.jar[CSRF]);
@@ -436,18 +489,9 @@ async fn sec_12_signing_in_sets_the_session_cookie_and_the_csrf_cookie() -> Test
 async fn sec_12_a_change_needs_the_token_of_its_own_session() -> TestResult {
     each_database("sec_12_http_csrf", async |db| {
         let (rig, app) = rig_and_app(db).await?;
-        let mut browser = Browser::new(&app, &called());
-        browser
-            .send("POST", "/api/v1/auth/setup", Some(setup_body(&rig)))
-            .await?;
+        let mut browser = Browser::signed_in(&app, &rig).await?;
         let mut other = Browser::new(&app, &called());
-        other
-            .send(
-                "POST",
-                "/api/v1/auth/sign-in",
-                Some(sign_in_body("ada@example.test", PASSWORD)),
-            )
-            .await?;
+        other.sign_in("ada@example.test", PASSWORD).await?;
         let others_token = other.jar[CSRF].clone();
         let own_token = browser.jar[CSRF].clone();
         let origin = "http://bugaboo.test";
@@ -513,10 +557,7 @@ async fn sec_12_every_route_that_changes_something_checks_the_token_except_signi
 -> TestResult {
     each_database("sec_12_http_every_route", async |db| {
         let (rig, app) = rig_and_app(db).await?;
-        let mut browser = Browser::new(&app, &called());
-        browser
-            .send("POST", "/api/v1/auth/setup", Some(setup_body(&rig)))
-            .await?;
+        let mut browser = Browser::signed_in(&app, &rig).await?;
         let mut checked = 0;
         for operation in operations().iter().filter(|operation| operation.changes()) {
             let reply = browser
@@ -549,10 +590,7 @@ async fn sec_14_failed_sign_ins_are_turned_away_with_a_wait_and_the_answers_look
 -> TestResult {
     each_database("sec_14_http_limit", async |db| {
         let (rig, app) = rig_and_app_with(db, Tries::Few).await?;
-        let mut browser = Browser::new(&app, &called());
-        browser
-            .send("POST", "/api/v1/auth/setup", Some(setup_body(&rig)))
-            .await?;
+        let _browser = Browser::signed_in(&app, &rig).await?;
         // Every try comes from another network, so only the account is limited here.
         let fresh = || Browser::new(&app, &called());
         let wrong = fresh()
@@ -609,9 +647,7 @@ async fn sec_14_failed_sign_ins_are_turned_away_with_a_wait_and_the_answers_look
 async fn sec_14_failures_of_one_network_are_limited_whatever_the_account() -> TestResult {
     each_database("sec_14_http_network_failures", async |db| {
         let (rig, app) = rig_and_app_with(db, Tries::Few).await?;
-        Browser::new(&app, &called())
-            .send("POST", "/api/v1/auth/setup", Some(setup_body(&rig)))
-            .await?;
+        Browser::new(&app, &called()).set_up(&rig).await?;
         let mut guesser = Browser::new(&app, &called());
         // Three wrong tries at three different accounts use up the network.
         for number in 0..3 {
@@ -628,33 +664,15 @@ async fn sec_14_failures_of_one_network_are_limited_whatever_the_account() -> Te
             assert_eq!(reply.status, StatusCode::UNAUTHORIZED);
         }
         // Now even a right password from this network waits ...
-        let reply = guesser
-            .send(
-                "POST",
-                "/api/v1/auth/sign-in",
-                Some(sign_in_body("ada@example.test", PASSWORD)),
-            )
-            .await?;
+        let reply = guesser.sign_in("ada@example.test", PASSWORD).await?;
         assert_eq!(reply.status, StatusCode::TOO_MANY_REQUESTS);
         // ... and another network is not affected.
         let mut other = Browser::new(&app, &called());
-        let reply = other
-            .send(
-                "POST",
-                "/api/v1/auth/sign-in",
-                Some(sign_in_body("ada@example.test", PASSWORD)),
-            )
-            .await?;
+        let reply = other.sign_in("ada@example.test", PASSWORD).await?;
         assert_eq!(reply.status, StatusCode::OK);
         // Many successes from one network never count: they give their try back.
         for _ in 0..5 {
-            let reply = other
-                .send(
-                    "POST",
-                    "/api/v1/auth/sign-in",
-                    Some(sign_in_body("ada@example.test", PASSWORD)),
-                )
-                .await?;
+            let reply = other.sign_in("ada@example.test", PASSWORD).await?;
             assert_eq!(reply.status, StatusCode::OK);
         }
         Ok(())
@@ -790,7 +808,7 @@ async fn first_start(tour: &mut Tour) -> TestResult {
             "POST",
             "/api/v1/auth/setup",
             &format!("{api}/setup"),
-            Some(setup_body(rig)),
+            Some(setup_body(&rig.setup_code)),
         )
         .await?;
     assert!(ok(&reply));
@@ -1269,9 +1287,7 @@ async fn auth_01_every_route_of_signing_in_works_over_http() -> TestResult {
 async fn perf_02_the_invitation_list_takes_fields_cursor_and_limit_over_http() -> TestResult {
     each_database("perf_02_http_invitation_list", async |db| {
         let (rig, app) = rig_and_app(db).await?;
-        let mut ada = Browser::new(&app, &called());
-        ada.send("POST", "/api/v1/auth/setup", Some(setup_body(&rig)))
-            .await?;
+        let mut ada = Browser::signed_in(&app, &rig).await?;
         for number in 0..3 {
             let reply = ada
                 .send(
@@ -1351,8 +1367,7 @@ async fn sec_12_a_password_alone_shows_nothing_about_the_person_until_the_second
         let (rig, app) = rig_and_app(db).await?;
         let used = called();
         let mut ada = Browser::new(&app, &used);
-        ada.send("POST", "/api/v1/auth/setup", Some(setup_body(&rig)))
-            .await?;
+        ada.set_up(&rig).await?;
         ada.send(
             "POST",
             "/api/v1/auth/two-step/code-app",
@@ -1369,13 +1384,7 @@ async fn sec_12_a_password_alone_shows_nothing_about_the_person_until_the_second
         assert!(ok(&confirmed));
         rig.clock.advance(30);
         let mut laptop = Browser::new(&app, &used);
-        let password_only = laptop
-            .send(
-                "POST",
-                "/api/v1/auth/sign-in",
-                Some(sign_in_body("ada@example.test", PASSWORD)),
-            )
-            .await?;
+        let password_only = laptop.sign_in("ada@example.test", PASSWORD).await?;
         assert_eq!(password_only.status, StatusCode::OK);
         assert_eq!(password_only.body["person"], Value::Null);
         assert!(password_only.body["second_step"].is_object());
@@ -1401,9 +1410,7 @@ async fn sec_12_a_password_alone_shows_nothing_about_the_person_until_the_second
 async fn perf_02_the_lists_with_a_hard_cap_say_whether_they_were_cut() -> TestResult {
     each_database("perf_02_http_capped_lists", async |db| {
         let (rig, app) = rig_and_app(db).await?;
-        let mut ada = Browser::new(&app, &called());
-        ada.send("POST", "/api/v1/auth/setup", Some(setup_body(&rig)))
-            .await?;
+        let mut ada = Browser::signed_in(&app, &rig).await?;
         let sessions = ada.send("GET", "/api/v1/auth/sessions", None).await?;
         assert_eq!(sessions.body["truncated"], false);
         let two_step = ada.send("GET", "/api/v1/auth/two-step", None).await?;

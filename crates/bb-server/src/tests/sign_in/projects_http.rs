@@ -5,8 +5,7 @@ use axum::http::StatusCode;
 use bb_testing::{Failure, TestResult, each_database};
 use serde_json::{Value, json};
 
-use super::caching::invited_person;
-use super::http::{Browser, called, rig_and_app, setup_body};
+use super::http::{Browser, called, rig_and_app};
 
 const PROJECTS: &str = "/api/v1/projects";
 
@@ -32,9 +31,7 @@ fn short_names(list: &Value) -> Vec<&str> {
 /// An organization with its administrator signed in, and the router that serves it.
 async fn administrator(db: &bb_testing::TestDatabase) -> Result<(Browser, axum::Router), Failure> {
     let (rig, app) = rig_and_app(db).await?;
-    let mut ada = Browser::new(&app, &called());
-    ada.send("POST", "/api/v1/auth/setup", Some(setup_body(&rig)))
-        .await?;
+    let ada = Browser::signed_in(&app, &rig).await?;
     Ok((ada, app))
 }
 
@@ -175,7 +172,7 @@ async fn prj_01_a_project_is_shown_by_its_address_and_changed_over_http() -> Tes
 async fn prj_01_a_person_without_a_role_sees_no_project_and_is_told_nothing() -> TestResult {
     each_database("prj_01_http_hidden", async |db| {
         let (mut ada, app) = administrator(db).await?;
-        let mut bob = invited_person(&mut ada, &app, "bob@example.test").await?;
+        let mut bob = ada.invite("bob@example.test", "Bob").await?;
         make(&mut ada, None, "ACME", "Acme").await?;
         // The list is empty and says nothing more; a project is not found, exactly like one that
         // does not exist; he may make nothing.
@@ -209,9 +206,7 @@ async fn prj_01_a_person_without_a_role_sees_no_project_and_is_told_nothing() ->
 async fn prj_03_a_move_is_previewed_and_done_over_http() -> TestResult {
     each_database("prj_03_http", async |db| {
         let (rig, app) = rig_and_app(db).await?;
-        let mut ada = Browser::new(&app, &called());
-        ada.send("POST", "/api/v1/auth/setup", Some(setup_body(&rig)))
-            .await?;
+        let mut ada = Browser::signed_in(&app, &rig).await?;
         let project =
             |short_name: &'static str| json!({"short_name": short_name, "name": short_name});
         let acme = id_of(

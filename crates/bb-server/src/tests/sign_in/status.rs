@@ -13,7 +13,7 @@ use bb_testing::{Failure, TestResult, each_database};
 use serde_json::json;
 use tower::ServiceExt as _;
 
-use super::http::{Browser, called, options, setup_body};
+use super::http::{Browser, called, options};
 use super::rig::{PASSWORD, Rig};
 use crate::probe::{LogChecking, Probe};
 
@@ -69,27 +69,8 @@ async fn ops_08_only_administrators_see_the_status_of_the_server() -> TestResult
 
         // A person who is not an administrator: forbidden.
         let mut ada = Browser::new(&app, &used);
-        ada.send("POST", "/api/v1/auth/setup", Some(setup_body(&rig)))
-            .await?;
-        let invitation = ada
-            .send(
-                "POST",
-                "/api/v1/auth/invitations",
-                Some(json!({"email": "bob@example.test"})),
-            )
-            .await?;
-        let secret = invitation.body["link_path"]
-            .as_str()
-            .and_then(|path| path.split_once('#'))
-            .map(|(_, secret)| secret.to_owned())
-            .ok_or("no link")?;
-        let mut bob = Browser::new(&app, &used);
-        bob.send(
-            "POST",
-            "/api/v1/auth/invitation/accept",
-            Some(json!({"secret": secret, "display_name": "Bob", "password": PASSWORD})),
-        )
-        .await?;
+        ada.set_up(&rig).await?;
+        let mut bob = ada.invite("bob@example.test", "Bob").await?;
         let reply = bob.send("GET", STATUS, None).await?;
         assert_eq!(reply.status, StatusCode::FORBIDDEN);
         assert_eq!(reply.code(), "access.forbidden");
@@ -114,9 +95,7 @@ async fn ops_08_the_status_shows_the_result_of_checking_the_security_log() -> Te
     each_database("ops_08_status_security_log", async |db| {
         let rig = Rig::start(db).await?;
         let app = app_with_probe(&rig, None);
-        let mut ada = Browser::new(&app, &called());
-        ada.send("POST", "/api/v1/auth/setup", Some(setup_body(&rig)))
-            .await?;
+        let mut ada = Browser::signed_in(&app, &rig).await?;
 
         // Setting up wrote entries, and the anchor file vouches for the end of the log.
         let reply = ada.send("GET", STATUS, None).await?;
@@ -149,9 +128,7 @@ async fn ops_08_the_status_shows_the_end_of_the_certificate_it_serves_now() -> T
             },
         )?);
         let app = app_with_probe(&rig, Some(Arc::clone(&served)));
-        let mut ada = Browser::new(&app, &called());
-        ada.send("POST", "/api/v1/auth/setup", Some(setup_body(&rig)))
-            .await?;
+        let mut ada = Browser::signed_in(&app, &rig).await?;
         let ends = async |ada: &mut Browser| -> Result<jiff::Timestamp, Failure> {
             let reply = ada.send("GET", STATUS, None).await?;
             Ok(reply.body["certificate"]["expires_at"]
@@ -294,9 +271,7 @@ async fn sec_15_the_status_page_warns_when_a_log_entry_could_not_be_written() ->
     each_database("sec_15_status_failed_write", async |db| {
         let rig = Rig::start(db).await?;
         let app = app_with_probe(&rig, None);
-        let mut ada = Browser::new(&app, &called());
-        ada.send("POST", "/api/v1/auth/setup", Some(setup_body(&rig)))
-            .await?;
+        let mut ada = Browser::signed_in(&app, &rig).await?;
         let reply = ada.send("GET", STATUS, None).await?;
         assert_eq!(reply.body["security_log"]["write_failures"], 0);
 
@@ -416,9 +391,7 @@ async fn sec_16_the_status_page_shows_what_of_the_data_folder_is_too_open() -> T
             }),
         ));
         let app = router(options);
-        let mut ada = Browser::new(&app, &called());
-        ada.send("POST", "/api/v1/auth/setup", Some(setup_body(&rig)))
-            .await?;
+        let mut ada = Browser::signed_in(&app, &rig).await?;
 
         // A folder that Bugaboo made: nothing is too open.
         let reply = ada.send("GET", STATUS, None).await?;
@@ -463,9 +436,7 @@ async fn sec_16_the_status_page_says_unknown_when_the_data_folder_cannot_be_look
         let mut options = options(&rig, LimitsConfig::default(), true);
         options.probe = ProbeHandle::new(Arc::new(probe));
         let app = router(options);
-        let mut ada = Browser::new(&app, &called());
-        ada.send("POST", "/api/v1/auth/setup", Some(setup_body(&rig)))
-            .await?;
+        let mut ada = Browser::signed_in(&app, &rig).await?;
         let reply = ada.send("GET", STATUS, None).await?;
         for part in ["folder", "database", "files", "backups", "setup_code_file"] {
             assert_eq!(reply.body["data_folder_open"][part], "unknown", "{part}");

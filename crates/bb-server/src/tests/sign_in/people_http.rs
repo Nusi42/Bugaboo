@@ -2,27 +2,22 @@
 //! page of a person show, who is refused, and making, renaming, filling and deleting groups.
 //! The helpers at the top are used by the other files of *Organization settings* too.
 
-use axum::Router;
 use axum::http::StatusCode;
 use bb_testing::{Failure, TestResult, each_database};
 use serde_json::{Value, json};
 
-use super::http::{Browser, Reply, called, rig_and_app, setup_body};
-use super::rig::PASSWORD;
+use super::http::{Browser, Reply, rig_and_app};
 
-/// What a test body of this family gets: the server, the router and the administrator, signed in.
+/// What a test body of this family gets: the administrator, signed in.
 pub(super) struct Organization {
-    pub(super) app: Router,
     pub(super) ada: Browser,
 }
 
 /// A new organization with its administrator Ada.
 pub(super) async fn start(db: &bb_testing::TestDatabase) -> Result<Organization, Failure> {
     let (rig, app) = rig_and_app(db).await?;
-    let mut ada = Browser::new(&app, &called());
-    ada.send("POST", "/api/v1/auth/setup", Some(setup_body(&rig)))
-        .await?;
-    Ok(Organization { app, ada })
+    let ada = Browser::signed_in(&app, &rig).await?;
+    Ok(Organization { ada })
 }
 
 /// The ID in an answer.
@@ -51,28 +46,7 @@ impl Organization {
         name: &str,
         email: &str,
     ) -> Result<(Browser, String), Failure> {
-        let invitation = self
-            .ada
-            .send(
-                "POST",
-                "/api/v1/auth/invitations",
-                Some(json!({ "email": email })),
-            )
-            .await?;
-        let secret = invitation.body["link_path"]
-            .as_str()
-            .and_then(|path| path.split_once('#'))
-            .map(|(_, secret)| secret.to_owned())
-            .ok_or("no link")?;
-        let mut person = Browser::new(&self.app, &called());
-        let accepted = person
-            .send(
-                "POST",
-                "/api/v1/auth/invitation/accept",
-                Some(json!({"secret": secret, "display_name": name, "password": PASSWORD})),
-            )
-            .await?;
-        assert_eq!(accepted.status, StatusCode::OK, "{}", accepted.body);
+        let mut person = self.ada.invite(email, name).await?;
         let me = person.send("GET", "/api/v1/auth/me", None).await?;
         let id = me.body["id"].as_str().ok_or("no id")?.to_owned();
         Ok((person, id))

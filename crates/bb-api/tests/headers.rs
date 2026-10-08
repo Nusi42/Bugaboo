@@ -77,24 +77,41 @@ mod headers {
         }
     }
 
-    #[tokio::test]
-    async fn sec_11_headers_on_a_page_an_asset_an_api_error_and_a_404() {
-        let dir = app_folder();
-        let cases = [
-            ("/", StatusCode::OK),
-            ("/assets/app-1a2b.js", StatusCode::OK),
-            ("/api/anything", StatusCode::NOT_FOUND),
-            ("/missing.js", StatusCode::NOT_FOUND),
-        ];
-        for (path, status) in cases {
-            let response = send(WebSource::Folder(dir.path().into()), Method::GET, path).await;
-            assert_eq!(response.status(), status, "{path}");
-            assert_headers(&response, path);
-        }
-        let post = send(WebSource::Folder(dir.path().into()), Method::POST, "/api/x").await;
+    /// Every kind of response with the method and address that cause it, and its status.
+    const KINDS: [(Method, &str, StatusCode); 18] = [
+        (Method::GET, "/", StatusCode::OK),
+        (Method::GET, "/some/page", StatusCode::OK),
+        (Method::GET, "/assets/app-1a2b.js", StatusCode::OK),
+        (Method::GET, "/health/live", StatusCode::OK),
+        (Method::GET, "/missing.js", StatusCode::NOT_FOUND),
+        (Method::GET, "/assets/missing.js", StatusCode::NOT_FOUND),
+        (Method::GET, "/api/anything", StatusCode::NOT_FOUND),
+        (Method::GET, "/health/other", StatusCode::NOT_FOUND),
+        (Method::POST, "/", StatusCode::METHOD_NOT_ALLOWED),
+        (Method::POST, "/some/page", StatusCode::METHOD_NOT_ALLOWED),
+        (Method::POST, "/health/live", StatusCode::METHOD_NOT_ALLOWED),
         // A change without an origin is refused before the address is looked at; the headers stay.
-        assert_eq!(post.status(), StatusCode::FORBIDDEN);
-        assert_headers(&post, "POST /api/x");
+        (Method::POST, "/api/x", StatusCode::FORBIDDEN),
+        (Method::HEAD, "/", StatusCode::OK),
+        (Method::HEAD, "/assets/app-1a2b.js", StatusCode::OK),
+        (Method::HEAD, "/health/live", StatusCode::OK),
+        (Method::HEAD, "/missing.js", StatusCode::NOT_FOUND),
+        (Method::HEAD, "/api/anything", StatusCode::NOT_FOUND),
+        (Method::HEAD, "/health/other", StatusCode::NOT_FOUND),
+    ];
+
+    #[tokio::test]
+    async fn sec_11_every_kind_of_response_carries_the_security_headers() {
+        let dir = app_folder();
+        for (method, path, status) in KINDS {
+            let web = WebSource::Folder(dir.path().into());
+            let response = send(web, method.clone(), path).await;
+            assert_eq!(response.status(), status, "{method} {path}");
+            assert_headers(&response, &format!("{method} {path}"));
+        }
+        let without_app = send(WebSource::Folder("no/such/folder".into()), Method::GET, "/").await;
+        assert_eq!(without_app.status(), StatusCode::NOT_FOUND);
+        assert_headers(&without_app, "/ without app");
     }
 
     #[tokio::test]
@@ -139,52 +156,5 @@ mod headers {
         .await;
         let id = |response: &Response| response.headers().get("x-request-id").unwrap().clone();
         assert_ne!(id(&first), id(&second));
-    }
-
-    #[tokio::test]
-    async fn sec_11_headers_on_success_responses() {
-        let dir = app_folder();
-        for path in ["/health/live", "/", "/some/page", "/assets/app-1a2b.js"] {
-            let response = send(WebSource::Folder(dir.path().into()), Method::GET, path).await;
-            assert_eq!(response.status(), StatusCode::OK, "{path}");
-            assert_headers(&response, path);
-        }
-    }
-
-    #[tokio::test]
-    async fn sec_11_headers_on_not_found() {
-        let dir = app_folder();
-        for path in [
-            "/missing.js",
-            "/assets/missing.js",
-            "/api/x",
-            "/health/other",
-        ] {
-            let response = send(WebSource::Folder(dir.path().into()), Method::GET, path).await;
-            assert_eq!(response.status(), StatusCode::NOT_FOUND, "{path}");
-            assert_headers(&response, path);
-        }
-        let without_app = send(WebSource::Folder("no/such/folder".into()), Method::GET, "/").await;
-        assert_eq!(without_app.status(), StatusCode::NOT_FOUND);
-        assert_headers(&without_app, "/ without app");
-    }
-
-    #[tokio::test]
-    async fn sec_11_headers_on_method_not_allowed() {
-        let dir = app_folder();
-        for path in ["/health/live", "/", "/some/page"] {
-            let response = send(WebSource::Folder(dir.path().into()), Method::POST, path).await;
-            assert_eq!(response.status(), StatusCode::METHOD_NOT_ALLOWED, "{path}");
-            assert_headers(&response, path);
-        }
-    }
-
-    #[tokio::test]
-    async fn sec_11_headers_on_head_requests() {
-        let dir = app_folder();
-        for path in ["/health/live", "/", "/assets/app-1a2b.js", "/missing.js"] {
-            let response = send(WebSource::Folder(dir.path().into()), Method::HEAD, path).await;
-            assert_headers(&response, path);
-        }
     }
 }

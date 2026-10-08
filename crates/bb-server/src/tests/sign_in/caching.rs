@@ -3,17 +3,16 @@
 //! The rules for every single request (what may be kept, what never is) are also checked on all
 //! requests of all tests that use a `Browser` (`http::assert_cache_rules`).
 
-use axum::Router;
 use axum::body::Body;
 use axum::http::{Method, Request, StatusCode};
 use bb_api::openapi::operations;
 use bb_app::access::Permission;
 use bb_app::roles::MakeRole;
-use bb_testing::{Failure, TestResult, each_database};
+use bb_testing::{TestResult, each_database};
 use serde_json::json;
 use tower::ServiceExt as _;
 
-use super::http::{Browser, called, never_stored_reads, setup_body, totp};
+use super::http::{Browser, called, never_stored_reads, totp};
 use super::rig::{PASSWORD, Rig};
 use super::status::app_with_probe;
 
@@ -26,44 +25,12 @@ fn get_routes() -> Vec<String> {
         .collect()
 }
 
-/// A second person (not an administrator): invited by `ada`, signed in.
-pub(super) async fn invited_person(
-    ada: &mut Browser,
-    app: &Router,
-    email: &str,
-) -> Result<Browser, Failure> {
-    let invitation = ada
-        .send(
-            "POST",
-            "/api/v1/auth/invitations",
-            Some(json!({ "email": email })),
-        )
-        .await?;
-    let secret = invitation.body["link_path"]
-        .as_str()
-        .and_then(|path| path.split_once('#'))
-        .map(|(_, secret)| secret.to_owned())
-        .ok_or("no link")?;
-    let mut person = Browser::new(app, &called());
-    let accepted = person
-        .send(
-            "POST",
-            "/api/v1/auth/invitation/accept",
-            Some(json!({"secret": secret, "display_name": "Bob", "password": PASSWORD})),
-        )
-        .await?;
-    assert_eq!(accepted.status, StatusCode::OK);
-    Ok(person)
-}
-
 #[tokio::test]
 async fn perf_03_every_get_answers_an_etag_and_304_on_a_match() -> TestResult {
     each_database("perf_03_http_etags", async |db| {
         let rig = Rig::start(db).await?;
         let app = app_with_probe(&rig, None);
-        let mut ada = Browser::new(&app, &called());
-        ada.send("POST", "/api/v1/auth/setup", Some(setup_body(&rig)))
-            .await?;
+        let mut ada = Browser::signed_in(&app, &rig).await?;
 
         // A role and a project for the routes that name one.
         let admin = rig
@@ -173,9 +140,7 @@ async fn perf_03_a_read_asked_about_again_is_not_modified_when_nothing_changed()
     each_database("perf_03_http_not_modified", async |db| {
         let rig = Rig::start(db).await?;
         let app = app_with_probe(&rig, None);
-        let mut ada = Browser::new(&app, &called());
-        ada.send("POST", "/api/v1/auth/setup", Some(setup_body(&rig)))
-            .await?;
+        let mut ada = Browser::signed_in(&app, &rig).await?;
         let path = "/api/v1/auth/sign-up-policy";
         let first = ada.send("GET", path, None).await?;
         let tag = first.header("etag").to_owned();
@@ -206,10 +171,8 @@ async fn perf_03_answers_with_personal_data_are_never_stored_for_anybody() -> Te
     each_database("perf_03_http_personal_data", async |db| {
         let rig = Rig::start(db).await?;
         let app = app_with_probe(&rig, None);
-        let mut ada = Browser::new(&app, &called());
-        ada.send("POST", "/api/v1/auth/setup", Some(setup_body(&rig)))
-            .await?;
-        let mut bob = invited_person(&mut ada, &app, "bob@example.test").await?;
+        let mut ada = Browser::signed_in(&app, &rig).await?;
+        let mut bob = ada.invite("bob@example.test", "Bob").await?;
         for person in [&mut ada, &mut bob] {
             for path in [
                 "/api/v1/auth/me",
@@ -242,8 +205,7 @@ async fn perf_03_answers_with_a_secret_are_not_stored_or_compressed() -> TestRes
         ada.set_header("accept-encoding", "br, gzip, deflate, zstd");
 
         let secret_answers = [
-            ada.send("POST", "/api/v1/auth/setup", Some(setup_body(&rig)))
-                .await?,
+            ada.set_up(&rig).await?,
             ada.send(
                 "POST",
                 "/api/v1/auth/invitations",
@@ -309,9 +271,7 @@ async fn sec_12_signing_out_clears_what_the_browser_cached() -> TestResult {
         let rig = Rig::start(db).await?;
         let app = app_with_probe(&rig, None);
         let mut ada = Browser::new(&app, &called());
-        let signed_in = ada
-            .send("POST", "/api/v1/auth/setup", Some(setup_body(&rig)))
-            .await?;
+        let signed_in = ada.set_up(&rig).await?;
         // Signing in does not clear anything.
         assert_eq!(signed_in.header("clear-site-data"), "");
 
@@ -343,10 +303,7 @@ async fn sec_12_ending_the_own_session_is_signing_out_but_ending_another_is_not(
     each_database("sec_12_http_end_own_session", async |db| {
         let rig = Rig::start(db).await?;
         let app = app_with_probe(&rig, None);
-        let mut laptop = Browser::new(&app, &called());
-        laptop
-            .send("POST", "/api/v1/auth/setup", Some(setup_body(&rig)))
-            .await?;
+        let mut laptop = Browser::signed_in(&app, &rig).await?;
         let mut phone = Browser::new(&app, &called());
         phone
             .send(

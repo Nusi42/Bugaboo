@@ -5,7 +5,7 @@ use axum::http::StatusCode;
 use bb_testing::{TestResult, each_database};
 use serde_json::json;
 
-use super::http::{Browser, CSRF, SESSION, called, setup_body, sign_in_body, totp};
+use super::http::{Browser, CSRF, SESSION, called, totp};
 use super::rig::{PASSWORD, Rig};
 use super::status::app_with_probe;
 
@@ -39,9 +39,7 @@ async fn m2_f06_a_session_that_ran_out_is_answered_with_the_cookies_cleared() ->
     each_database("m2_f06_session_ran_out", async |db| {
         let rig = Rig::start(db).await?;
         let app = app_with_probe(&rig, None);
-        let mut ada = Browser::new(&app, &called());
-        ada.send("POST", "/api/v1/auth/setup", Some(setup_body(&rig)))
-            .await?;
+        let mut ada = Browser::signed_in(&app, &rig).await?;
         assert_eq!(
             ada.send("GET", "/api/v1/auth/me", None).await?.status,
             StatusCode::OK
@@ -74,17 +72,9 @@ async fn m2_f06_a_cookie_that_opens_no_session_is_cleared_too() -> TestResult {
         let reply = garbage.send("GET", "/api/v1/auth/me", None).await?;
         assert_cleared(&reply, "a cookie that is no secret");
         // A session that ended by signing out elsewhere is the same.
-        let mut ada = Browser::new(&app, &called());
-        ada.send("POST", "/api/v1/auth/setup", Some(setup_body(&rig)))
-            .await?;
+        let mut ada = Browser::signed_in(&app, &rig).await?;
         let mut other = Browser::new(&app, &called());
-        other
-            .send(
-                "POST",
-                "/api/v1/auth/sign-in",
-                Some(sign_in_body("ada@example.test", PASSWORD)),
-            )
-            .await?;
+        other.sign_in("ada@example.test", PASSWORD).await?;
         ada.send("DELETE", "/api/v1/auth/sessions", None).await?;
         let reply = other.send("GET", "/api/v1/auth/me", None).await?;
         assert_cleared(&reply, "a session that was ended from another device");
@@ -98,9 +88,7 @@ async fn m2_f06_a_session_that_waits_for_its_second_step_is_not_cleared() -> Tes
     each_database("m2_f06_pending_is_kept", async |db| {
         let rig = Rig::start(db).await?;
         let app = app_with_probe(&rig, None);
-        let mut ada = Browser::new(&app, &called());
-        ada.send("POST", "/api/v1/auth/setup", Some(setup_body(&rig)))
-            .await?;
+        let mut ada = Browser::signed_in(&app, &rig).await?;
         ada.send(
             "POST",
             "/api/v1/auth/two-step/code-app",
@@ -115,13 +103,7 @@ async fn m2_f06_a_session_that_waits_for_its_second_step_is_not_cleared() -> Tes
         .await?;
         rig.clock.advance(30);
         let mut laptop = Browser::new(&app, &called());
-        laptop
-            .send(
-                "POST",
-                "/api/v1/auth/sign-in",
-                Some(sign_in_body("ada@example.test", PASSWORD)),
-            )
-            .await?;
+        laptop.sign_in("ada@example.test", PASSWORD).await?;
         // The password step is not a session yet: asking who is signed in is turned away, and
         // the cookie is kept, or the person could never finish signing in.
         let asked = laptop.send("GET", "/api/v1/auth/me", None).await?;

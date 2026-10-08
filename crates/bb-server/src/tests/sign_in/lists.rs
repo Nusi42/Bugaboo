@@ -3,17 +3,14 @@
 use axum::http::StatusCode;
 use bb_testing::{TestResult, each_database};
 
-use super::caching::invited_person;
-use super::http::{Browser, called, rig_and_app, setup_body};
+use super::http::{Browser, called, rig_and_app};
 
 #[tokio::test]
 async fn perf_02_a_list_judges_who_asks_before_it_judges_the_query() -> TestResult {
     each_database("perf_02_http_list_order", async |db| {
         let (rig, app) = rig_and_app(db).await?;
-        let mut ada = Browser::new(&app, &called());
-        ada.send("POST", "/api/v1/auth/setup", Some(setup_body(&rig)))
-            .await?;
-        let mut bob = invited_person(&mut ada, &app, "bob@example.test").await?;
+        let mut ada = Browser::signed_in(&app, &rig).await?;
+        let mut bob = ada.invite("bob@example.test", "Bob").await?;
         let mut stranger = Browser::new(&app, &called());
         let list = "/api/v1/auth/invitations";
 

@@ -8,12 +8,13 @@ use axum::body::Body;
 use axum::http::{Request, StatusCode, header};
 use bb_api::{Options, router};
 use bb_testing::{Failure, TestResult, each_database};
-use serde_json::{Value, json};
+use serde_json::Value;
 use tower::ServiceExt as _;
 
 use super::{Serving, Wired, wire};
 use crate::config::{Settings, Sources, resolve};
 use crate::data_folder::DataFolder;
+use crate::sign_in_tests::http::setup_body;
 
 fn settings(data: &Path, database: Option<&str>) -> Result<Settings, Failure> {
     let mut cli = vec![
@@ -60,15 +61,6 @@ async fn call(
         status,
         serde_json::from_slice(&bytes).unwrap_or(Value::Null),
     ))
-}
-
-fn setup_body(code: &str) -> Value {
-    json!({
-        "code": code,
-        "display_name": "Ada Admin",
-        "email": "ada@example.test",
-        "password": "Tr4mpoline-Quiet-Harbor-81",
-    })
 }
 
 #[tokio::test]

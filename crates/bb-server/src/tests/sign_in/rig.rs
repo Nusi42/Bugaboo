@@ -25,7 +25,7 @@ use jiff::Timestamp;
 /// The public address the passkeys of the tests belong to.
 pub(super) const PUBLIC_URL: &str = "https://bugaboo.test:47200";
 /// A password that is not on the list of breached ones and has enough characters.
-pub(super) const PASSWORD: &str = "Tr4mpoline-Quiet-Harbor-81";
+pub(crate) const PASSWORD: &str = "Tr4mpoline-Quiet-Harbor-81";
 /// Another one, for changing it.
 pub(super) const OTHER_PASSWORD: &str = "Violet-Lantern-Marsh-5520";
 /// The start of the clock of the tests: 2027-01-15 08:00:00 UTC.

@@ -6,8 +6,7 @@ use axum::http::StatusCode;
 use bb_testing::{Failure, TestResult, each_database};
 use serde_json::{Value, json};
 
-use super::caching::invited_person;
-use super::http::{Browser, called, setup_body};
+use super::http::{Browser, called};
 use super::rig::Rig;
 use super::status::app_with_probe;
 
@@ -30,9 +29,7 @@ async fn cfg_04_my_settings_over_http_say_what_each_setting_is_and_where_its_val
         assert_eq!(refused.status, StatusCode::UNAUTHORIZED);
         assert_eq!(refused.code(), "auth.not_signed_in");
 
-        let mut ada = Browser::new(&app, &called());
-        ada.send("POST", "/api/v1/auth/setup", Some(setup_body(&rig)))
-            .await?;
+        let mut ada = Browser::signed_in(&app, &rig).await?;
         // The settings of a topic, with what a form needs to draw them.
         let list = ada
             .send("GET", "/api/v1/me/settings?topic=appearance.", None)
@@ -134,10 +131,8 @@ async fn cfg_06_an_administrator_locks_a_setting_and_a_person_is_told_why_over_h
     each_database("cfg_06_http_lock", async |db| {
         let rig = Rig::start(db).await?;
         let app = app_with_probe(&rig, None);
-        let mut ada = Browser::new(&app, &called());
-        ada.send("POST", "/api/v1/auth/setup", Some(setup_body(&rig)))
-            .await?;
-        let mut bob = invited_person(&mut ada, &app, "bob@example.test").await?;
+        let mut ada = Browser::signed_in(&app, &rig).await?;
+        let mut bob = ada.invite("bob@example.test", "Bob").await?;
 
         // A person without the permission neither lists nor changes the organization's settings.
         let listed = bob.send("GET", "/api/v1/settings", None).await?;
@@ -230,10 +225,8 @@ async fn cfg_06_a_project_the_person_cannot_see_is_not_found_over_http() -> Test
     each_database("cfg_06_http_project", async |db| {
         let rig = Rig::start(db).await?;
         let app = app_with_probe(&rig, None);
-        let mut ada = Browser::new(&app, &called());
-        ada.send("POST", "/api/v1/auth/setup", Some(setup_body(&rig)))
-            .await?;
-        let mut bob = invited_person(&mut ada, &app, "bob@example.test").await?;
+        let mut ada = Browser::signed_in(&app, &rig).await?;
+        let mut bob = ada.invite("bob@example.test", "Bob").await?;
         let admin = rig
             .sign_in("ada@example.test", super::rig::PASSWORD)
             .await?
