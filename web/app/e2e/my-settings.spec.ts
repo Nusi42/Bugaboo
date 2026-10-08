@@ -6,6 +6,7 @@ import { expectGoodInEveryLook, expectLook } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
 import {
   addressEndingAt,
+  chooseGoHomeKeys,
   anotherBrowser,
   keepOnDevice,
   sendPassword,
@@ -75,18 +76,6 @@ async function chooseTimeZone(page: Page, zone: string): Promise<void> {
   await saved(page);
 }
 
-/** Gives *Go home* the keys `g i` on *Keyboard shortcuts*. */
-async function chooseKeys(page: Page): Promise<void> {
-  await page.goto(paths.shortcuts);
-  await page.getByRole("button", { name: t("shortcut.go-home"), exact: true }).click();
-  const panel = page.getByRole("complementary", { name: t("shortcut.go-home"), exact: true });
-  await panel.getByRole("textbox", { name: t("shortcuts.new-keys"), exact: true }).click();
-  await page.keyboard.press("g");
-  await page.keyboard.press("i");
-  await panel.getByRole("button", { name: t("shortcuts.use") }).click();
-  await expect(panel.getByText(t("shortcuts.saved"))).toBeVisible();
-}
-
 test("cfg_04 what a person chooses in My settings follows them to another browser", async ({
   page,
   browser,
@@ -99,7 +88,7 @@ test("cfg_04 what a person chooses in My settings follows them to another browse
   await setSwitch(page, t("appearance.larger-text"), true);
   await saved(page);
   await chooseTimeZone(page, "Pacific/Auckland");
-  await chooseKeys(page);
+  await chooseGoHomeKeys(page);
   await page.keyboard.press("Escape");
 
   // A second browser of the same person: nothing was set there, and it looks the same.
@@ -160,7 +149,7 @@ test("cfg_04 the storage of the browser holds nothing of the person while they a
   await signIn(page, ada);
   await chooseMidnight(page);
   await chooseTimeZone(page, "Pacific/Auckland");
-  await chooseKeys(page);
+  await chooseGoHomeKeys(page);
   const whileSignedIn = await storedText(page);
   expect(whileSignedIn).toContain(storageKey.firstFrame);
   expect(whileSignedIn).not.toContain(storageKey.appearance);

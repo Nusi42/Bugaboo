@@ -3,8 +3,3 @@
 # and a reason that names the follow-up that removes the copy. An entry covers that block and no
 # other one the two files may come to share. An entry that no copy needs any more fails, so the file
 # shrinks as the copies go.
-
-[[exempt]]
-files = ["web/app/e2e/my-settings.spec.ts", "web/app/e2e/screenshots-m2.spec.ts"]
-block = "198680221961460"
-reason = "The steps that give Go home the keys g i (chooseKeys, chooseGoHomeKeys) are in both specs; they become one helper of the end-to-end support (M2C-F40, package C-06)."

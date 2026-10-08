@@ -3,7 +3,7 @@ import { type Page } from "@playwright/test";
 
 import { ada, forgetChoices, makeAdmin } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
-import { signIn } from "./support/flows.ts";
+import { chooseGoHomeKeys, signIn } from "./support/flows.ts";
 import { screenshotFolder, shot, shotWhole } from "./support/screenshots.ts";
 import { paths } from "../src/shared/paths.ts";
 import { viewports } from "../../tooling/viewports.ts";
@@ -76,18 +76,6 @@ async function frameScreens(page: Page): Promise<void> {
     .click();
   await expect(page.getByRole("button", { name: t("common.undo") })).toBeVisible();
   await shot(page, "11-undo-phone", MILESTONE);
-}
-
-/** Gives *Go home* the keys `g i`, so the list of keys has one of the person's own to show. */
-async function chooseGoHomeKeys(page: Page): Promise<void> {
-  await page.goto(paths.shortcuts);
-  await page.getByRole("button", { name: t("shortcut.go-home"), exact: true }).click();
-  const panel = page.getByRole("complementary", { name: t("shortcut.go-home"), exact: true });
-  await panel.getByRole("textbox", { name: t("shortcuts.new-keys"), exact: true }).click();
-  await page.keyboard.press("g");
-  await page.keyboard.press("i");
-  await panel.getByRole("button", { name: t("shortcuts.use") }).click();
-  await expect(panel.getByText(t("shortcuts.saved"))).toBeVisible();
 }
 
 /** The pages of *My settings* and the organization's settings that WP-07 added, at phone width. */
