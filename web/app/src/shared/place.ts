@@ -1,8 +1,8 @@
 import type { MessageKey } from "@bugaboo/messages";
-import type { IconName } from "@bugaboo/ui";
+import type { IconName } from "@bugaboo/ui/icons";
 
-import type { Path } from "../../shared/paths.ts";
-import type { PermissionKey } from "../../shared/permissions.ts";
+import type { Path } from "./paths.ts";
+import type { PermissionKey } from "./permissions.ts";
 
 /**
  * One screen of the signed-in app, as the menus, the top bar and quick search know it. The list

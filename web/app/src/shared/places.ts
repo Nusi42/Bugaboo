@@ -1,9 +1,8 @@
 import type { MessageKey } from "@bugaboo/messages";
-import { iconName } from "@bugaboo/ui";
+import { iconName } from "@bugaboo/ui/icons";
 
-import { paths } from "../../shared/paths.ts";
-import type { Permissions } from "../../shared/permissions.ts";
-import type { Path } from "../../shared/paths.ts";
+import { paths, type Path } from "./paths.ts";
+import type { Permissions } from "./permissions.ts";
 import type { Place } from "./place.ts";
 import { projectPlaces } from "./project-places.ts";
 

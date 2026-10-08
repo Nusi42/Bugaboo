@@ -5,7 +5,7 @@ import { paths } from "../../shared/paths.ts";
 import styles from "./MoreSheet.module.css";
 import { NavButton, NavLink } from "./NavItem.tsx";
 import { closeOverlay, openOverlay, useOverlay } from "./overlay-state.ts";
-import { placeAt } from "./places.ts";
+import { placeAt } from "../../shared/places.ts";
 import { useSidebarSections } from "./sidebar-sections.ts";
 
 export interface MoreSheetProps {

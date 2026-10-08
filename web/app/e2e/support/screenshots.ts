@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { expect, type Page } from "@playwright/test";
 
 import { inOrder } from "./sequence.ts";
+import { settingDefaults } from "@bugaboo/api-client";
 
 /** The folder the screenshots go to, from `BB_SCREENSHOT_DIR`; `undefined` when none are wanted. */
 export const screenshotFolder = process.env["BB_SCREENSHOT_DIR"];
@@ -12,7 +13,10 @@ export const screenshotFolder = process.env["BB_SCREENSHOT_DIR"];
 const looks = ["light", "dark"] as const;
 
 /** The theme "Match my device" shows for each look, with the standard settings (the app's `data-look`). */
-const themeOf = { light: "daylight", dark: "dusk" } as const;
+const themeOf = {
+  light: settingDefaults.appearanceLightTheme,
+  dark: settingDefaults.appearanceDarkTheme,
+} as const;
 
 /** The look the device does not ask for: asking for it first makes the app notice the change. */
 const otherThan = { light: "dark", dark: "light" } as const;

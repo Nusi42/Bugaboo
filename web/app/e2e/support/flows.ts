@@ -7,6 +7,7 @@ import { type Instance } from "./server.ts";
 import { type CodeApp, codeApp } from "./totp.ts";
 import { paths } from "../../src/shared/paths.ts";
 import { type ApiSession, sessionOver } from "./api.ts";
+import { places } from "../../src/shared/places.ts";
 
 /** Types the e-mail address and the password into the sign-in form that is open, and sends them. */
 export async function fillSignIn(
@@ -108,19 +109,12 @@ export async function signOut(page: Page): Promise<void> {
   await expect(page.getByRole("heading", { level: 1, name: t("sign-in.title") })).toBeVisible();
 }
 
-/** The topics of *Organization settings*; every other topic is in *My settings*. */
-const organizationTopics: ReadonlySet<string> = new Set([
-  t("nav.people"),
-  t("nav.groups"),
-  t("nav.roles"),
-  t("nav.field-permissions"),
-  t("nav.people-visibility"),
-  t("nav.check-access"),
-  t("nav.sign-in-rules"),
-  t("nav.themes"),
-  t("nav.projects"),
-  t("nav.status"),
-]);
+/** The topics of *Organization settings*, by the name people read; every other topic is in *My settings*. */
+const organizationTopics: ReadonlySet<string> = new Set(
+  places
+    .filter((place) => place.parent === paths.organizationSettings)
+    .map((place) => t(place.name)),
+);
 
 /**
  * Opens a topic of *My settings* or *Organization settings* the way a person does: the menu (a
@@ -236,4 +230,29 @@ export function addressEndingAt(address: string): RegExp {
 /** The address bar holds this address, and may go on (a page below it, or a query). */
 export function addressWith(address: string): RegExp {
   return new RegExp(literally(address), "u");
+}
+
+/** What this browser keeps in its storage, as `key=value` lines. */
+export function storedText(page: Page): Promise<string> {
+  return page.evaluate(() => {
+    const lines: string[] = [];
+    for (const store of [localStorage, sessionStorage]) {
+      for (const key of Object.keys(store)) {
+        lines.push(`${key}=${store.getItem(key) ?? ""}`);
+      }
+    }
+    return lines.join(", ");
+  });
+}
+
+/** Puts what the device kept before the choices lived on the server into its storage. */
+export async function keepOnDevice(
+  page: Page,
+  entries: readonly (readonly [string, string])[],
+): Promise<void> {
+  await page.evaluate((kept: readonly (readonly [string, string])[]) => {
+    for (const [key, value] of kept) {
+      localStorage.setItem(key, value);
+    }
+  }, entries);
 }

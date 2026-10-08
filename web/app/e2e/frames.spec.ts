@@ -19,7 +19,7 @@ test.use({
 /** Opens the frames page, which holds the empty frames the later screens open in. */
 async function openFrames(page: Page, search = ""): Promise<void> {
   await signIn(page, ada);
-  await page.goto(`/frames${search}`);
+  await page.goto(`${paths.frames}${search}`);
   await expect(page.getByRole("heading", { level: 1, name: t("frames.title") })).toBeVisible();
 }
 

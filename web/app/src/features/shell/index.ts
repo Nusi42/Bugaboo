@@ -9,7 +9,7 @@ export {
   type QuickSearchAsker,
   type QuickSearchSource,
 } from "./quick-search-sources.ts";
-export { mayOpen } from "./places.ts";
+export { mayOpen } from "../../shared/places.ts";
 export { useQuickResults } from "./use-quick-results.ts";
 export { SettingsFrame } from "./SettingsFrame.tsx";
 export { NavLink, type NavLinkProps } from "./NavItem.tsx";

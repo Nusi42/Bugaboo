@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { paths } from "../../shared/paths.ts";
 import type { Permissions } from "../../shared/permissions.ts";
-import { mayOpen, placeAt, places, placesFor, topicGroups, trailTo } from "./places.ts";
+import { mayOpen, placeAt, places, placesFor, topicGroups, trailTo } from "../../shared/places.ts";
 import { pagesSource } from "./quick-search-pages.ts";
 
 /**

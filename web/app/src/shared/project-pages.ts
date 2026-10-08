@@ -1,6 +1,6 @@
 import type { MessageKey } from "@bugaboo/messages";
 import { t } from "@bugaboo/messages";
-import { iconName, type IconName } from "@bugaboo/ui";
+import { iconName, type IconName } from "@bugaboo/ui/icons";
 
 import { addressInProject, paths, type Path } from "./paths.ts";
 import type { Schema } from "@bugaboo/api-client";

@@ -1,4 +1,4 @@
-import { projectPages, settingsTabs } from "../../shared/project-pages.ts";
+import { projectPages, settingsTabs } from "./project-pages.ts";
 import type { Place } from "./place.ts";
 
 /** The pages of a project: they name themselves (`usePageTrail`), so they are here only to be known. */

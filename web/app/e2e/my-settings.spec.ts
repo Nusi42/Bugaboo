@@ -4,8 +4,17 @@ import { type Locator, type Page } from "@playwright/test";
 import { ada, bob, forgetChoices, makeAdmin, makePerson } from "./support/accounts.ts";
 import { expectGoodInEveryLook } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
-import { addressEndingAt, anotherBrowser, sendPassword, signIn, signOut } from "./support/flows.ts";
+import {
+  addressEndingAt,
+  anotherBrowser,
+  keepOnDevice,
+  sendPassword,
+  signIn,
+  signOut,
+  storedText,
+} from "./support/flows.ts";
 import { paths } from "../src/shared/paths.ts";
+import { storageKey } from "../../packages/ui/src/storage.ts";
 
 // *My settings* (CFG-04, THM-02) and the settings of the organization (CFG-06) with a real server:
 // what a person chooses is kept on the server, follows them to another browser, is gone from the
@@ -119,9 +128,10 @@ test("cfg_04 after signing out nothing of the person's choices is left in the br
   await page.emulateMedia({ colorScheme: "light" });
   await signIn(page, ada);
   await chooseMidnight(page);
+  // The copy for the first frame is kept while the person is signed in: the check below can see it.
+  expect(await storedText(page)).toContain(storageKey.firstFrame);
   await signOut(page);
-  const kept = await page.evaluate(() => Object.keys(localStorage).join(","));
-  expect(kept).not.toContain("first-frame");
+  expect(await storedText(page)).not.toContain(storageKey.firstFrame);
   // The sign-in page is the device's: light on a light device.
   await expect(page.locator("html")).toHaveAttribute("data-look", "daylight");
   // The next person gets their own look, not the last person's.
@@ -132,19 +142,6 @@ test("cfg_04 after signing out nothing of the person's choices is left in the br
   await expect(page.locator("html")).toHaveAttribute("data-look", "daylight");
 });
 
-/** What this browser keeps in its storage, as `key=value` lines. */
-function storedText(page: Page): Promise<string> {
-  return page.evaluate(() => {
-    const lines: string[] = [];
-    for (const store of [localStorage, sessionStorage]) {
-      for (const key of Object.keys(store)) {
-        lines.push(`${key}=${store.getItem(key) ?? ""}`);
-      }
-    }
-    return lines.join(", ");
-  });
-}
-
 test("cfg_04 the storage of the browser holds nothing of the person while they are signed in or after", async ({
   page,
 }) => {
@@ -152,17 +149,22 @@ test("cfg_04 the storage of the browser holds nothing of the person while they a
   // What the device kept before the choices lived on the server (the look and the keys of the
   // pages before sign-in) is removed at sign-in.
   await page.goto(paths.signIn);
-  await page.evaluate(() => {
-    localStorage.setItem("bugaboo.appearance", JSON.stringify({ mode: "dark" }));
-    localStorage.setItem("bugaboo.shortcut-keys", JSON.stringify({ "go-home": ["g x"] }));
-  });
+  await keepOnDevice(page, [
+    [storageKey.appearance, JSON.stringify({ mode: "dark" })],
+    [storageKey.shortcutKeys, JSON.stringify({ "go-home": ["g x"] })],
+  ]);
+  // The check below can see what the device kept.
+  const before = await storedText(page);
+  expect(before).toContain(storageKey.appearance);
+  expect(before).toContain(storageKey.shortcutKeys);
   await signIn(page, ada);
   await chooseMidnight(page);
   await chooseTimeZone(page, "Pacific/Auckland");
   await chooseKeys(page);
   const whileSignedIn = await storedText(page);
-  expect(whileSignedIn).not.toContain("bugaboo.appearance");
-  expect(whileSignedIn).not.toContain("bugaboo.shortcut-keys");
+  expect(whileSignedIn).toContain(storageKey.firstFrame);
+  expect(whileSignedIn).not.toContain(storageKey.appearance);
+  expect(whileSignedIn).not.toContain(storageKey.shortcutKeys);
   expect(whileSignedIn).not.toContain("Pacific/Auckland");
   await signOut(page);
   // Nothing of the person is left in either storage.
@@ -170,7 +172,7 @@ test("cfg_04 the storage of the browser holds nothing of the person while they a
   for (const word of ["midnight", "Pacific/Auckland", "go-home", "g i", ada.email, ada.name]) {
     expect(left).not.toContain(word);
   }
-  expect(left).not.toContain("first-frame");
+  expect(left).not.toContain(storageKey.firstFrame);
 });
 
 test("cfg_06 an administrator locks the theme and a person sees Set by your organization", async ({

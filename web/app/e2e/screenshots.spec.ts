@@ -91,7 +91,7 @@ async function theAdministratorsPages(page: Page): Promise<string> {
   ).toHaveCount(2);
   await shoot(page, "11-where-signed-in");
   await openFromMenu(page, t("nav.people"));
-  await page.getByLabel(t("field.email")).fill("new.colleague@example.test");
+  await page.getByLabel(t("field.email"), { exact: true }).fill("new.colleague@example.test");
   await page.getByRole("button", { name: t("invitations.create") }).click();
   await expect(page.getByText(t("invitations.link-help"))).toBeVisible();
   await shoot(page, "12-invitations");

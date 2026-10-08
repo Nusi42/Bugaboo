@@ -6,7 +6,7 @@ import { Link } from "react-aria-components";
 import { paths } from "../../shared/paths.ts";
 import { openOverlay } from "./overlay-state.ts";
 import { pageTrails, type TrailStep } from "./page-trail.ts";
-import { placeAt, trailTo } from "./places.ts";
+import { placeAt, trailTo } from "../../shared/places.ts";
 import { useRegistry } from "./registry.ts";
 import styles from "./TopBar.module.css";
 
