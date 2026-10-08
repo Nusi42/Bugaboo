@@ -38,10 +38,13 @@ pub trait FailureLimit: Send + Sync {
 }
 
 /// A [`FailureLimit`] that lets every try through, for the places that have no failed tries and no
-/// attacker: the tests of the use cases and the sample organization.
+/// attacker: the tests of the use cases and the sample organization. Only there: the feature
+/// `testing` (or a test of this crate) makes it, so a server build cannot hold one.
+#[cfg(any(test, feature = "testing"))]
 #[derive(Clone, Copy, Debug, Default)]
 pub struct NoFailureLimit;
 
+#[cfg(any(test, feature = "testing"))]
 impl FailureLimit for NoFailureLimit {
     fn reserve(&self, _key: &str) -> Result<bool, u64> {
         Ok(false)

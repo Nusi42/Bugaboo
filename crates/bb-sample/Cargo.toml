@@ -11,7 +11,8 @@ name = "bb-sample"
 path = "src/main.rs"
 
 [dependencies]
-bb-app = { path = "../bb-app" }
+# The sample organization is made by one process without an attacker: no limit on failed tries.
+bb-app = { path = "../bb-app", features = ["testing"] }
 bb-auth = { path = "../bb-auth" }
 bb-core = { path = "../bb-core" }
 bb-dev-words = { path = "../bb-dev-words" }

@@ -68,7 +68,9 @@ pub use invitations::{
     change_sign_up_policy, create_invitation, invitation_lookup, invitations, revoke_invitation,
     sign_up_policy,
 };
-pub use limit::{FailureLimit, NETWORK_KEY_PREFIX, NoFailureLimit};
+#[cfg(any(test, feature = "testing"))]
+pub use limit::NoFailureLimit;
+pub use limit::{FailureLimit, NETWORK_KEY_PREFIX};
 pub use second_factor::{
     BACKUP_CODE_COUNT, MAX_PASSKEYS, add_passkey, confirm_code_app, passkey_registration_options,
     passkey_second_step_options, passkey_sign_in, passkey_sign_in_options, remove_code_app,
