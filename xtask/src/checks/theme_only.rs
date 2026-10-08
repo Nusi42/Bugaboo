@@ -16,24 +16,16 @@
 //!   `.sass`, `.less`), and no
 //!   `import`, `import()` or `require` of one, with or without `?inline` or `?raw` after the name.
 //!
-//! The components that have not been moved yet stand in `tools/checks/theme-only-exemptions.toml`,
-//! each with the follow-up that moves it. An entry whose files no longer break the rule fails, so
-//! the list shrinks to nothing as the components move.
+//! Nothing is exempt: the components moved onto the theme file in package C-06 (M2C-F90).
 
 use std::path::Path;
 
-use serde::Deserialize;
-
-use super::exemptions::{self, Used};
 use super::web_source::{code_of, is_app_source};
 use super::{Check, Context, Finding};
 use crate::docs::text::has_extension;
 use crate::generate::all_paths;
 use crate::generate::theme::STYLE_SHEET;
 use crate::source::{Kind, Source};
-
-/// The components that still use classes or CSS, each with the follow-up that moves it.
-const EXEMPTIONS_PATH: &str = "tools/checks/theme-only-exemptions.toml";
 
 /// Ways to put a style on an element, or a style sheet on the page, from code: the text to find
 /// and what it is.
@@ -66,97 +58,16 @@ impl Check for ThemeOnly {
 
     fn run(&self, context: &Context<'_>) -> anyhow::Result<Vec<Finding>> {
         let sources = context.sources(self.id(), Kind::WebAndStyles)?;
-        let exemptions: Exemptions = exemptions::load(context.repo, EXEMPTIONS_PATH)?;
-        Ok(evaluate(&sources, &exemptions.exempt))
+        Ok(evaluate(&sources))
     }
 }
-
-/// The file of components that stand for now.
-#[derive(Deserialize)]
-struct Exemptions {
-    #[serde(default)]
-    exempt: Vec<Exempt>,
-}
-
-/// A file, or every file below a folder (the path ends with `/`), or every file whose name starts
-/// with the path (`web/packages/ui/src/Card.` is `Card.tsx` and `Card.module.css`).
-#[derive(Deserialize)]
-struct Exempt {
-    path: String,
-    reason: String,
-}
-
-impl exemptions::Exemption for Exempt {
-    fn name(&self) -> String {
-        self.path.clone()
-    }
-
-    fn reason(&self) -> &str {
-        &self.reason
-    }
-
-    fn unused(&self) -> String {
-        "covers no file that breaks the rule any more. Remove it.".to_owned()
-    }
-}
-
-fn evaluate(sources: &[Source], exemptions: &[Exempt]) -> Vec<Finding> {
+fn evaluate(sources: &[Source]) -> Vec<Finding> {
     let generated = all_paths();
-    let mut used = Used::default();
-    let mut findings = Vec::new();
-    for (path, text) in sources
+    sources
         .iter()
         .filter(|(path, _)| is_app_source(path) && !generated.contains(&path.as_str()))
-    {
-        let found = scan(path, text);
-        if found.is_empty() {
-            continue;
-        }
-        let covering: Vec<usize> = exemptions
-            .iter()
-            .enumerate()
-            .filter(|(_, exempt)| path.starts_with(&exempt.path))
-            .map(|(index, _)| index)
-            .collect();
-        if covering.is_empty() {
-            findings.extend(found);
-        }
-        for index in covering {
-            used.mark(index);
-        }
-    }
-    findings.extend(shape_findings(exemptions));
-    findings.extend(exemptions::judge(EXEMPTIONS_PATH, exemptions, &used));
-    findings.extend(exemptions::follow_up_findings(EXEMPTIONS_PATH, exemptions));
-    findings
-}
-
-/// An exemption covers one feature folder (`web/app/src/features/people/`) or one component by
-/// the start of its file name (`web/packages/ui/src/Card.`), never `web/` or a folder with many
-/// features in it, which would hide every new file.
-fn shape_findings(exemptions: &[Exempt]) -> Vec<Finding> {
-    exemptions
-        .iter()
-        .filter(|exempt| !is_one_component(&exempt.path))
-        .map(|exempt| {
-            Finding::at(
-                EXEMPTIONS_PATH,
-                format!(
-                    "The entry `{}` covers more than one feature or component. Name one feature folder (…/features/<name>/) or one file or file name start (…/Card.).",
-                    exempt.path
-                ),
-            )
-        })
+        .flat_map(|(path, text)| scan(path, text))
         .collect()
-}
-
-fn is_one_component(path: &str) -> bool {
-    let parts: Vec<&str> = path.split('/').collect();
-    match parts.as_slice() {
-        [.., "features", name, ""] => !name.is_empty(),
-        [.., last] => path.starts_with("web/") && parts.len() >= 3 && last.contains('.'),
-        [] => false,
-    }
 }
 
 /// What breaks the rule in one file.
@@ -280,7 +191,7 @@ mod tests {
 
     fn run(path: &str, text: &str) -> Vec<String> {
         let sources = [(path.to_owned(), text.to_owned())];
-        evaluate(&sources, &[])
+        evaluate(&sources)
             .into_iter()
             .map(|finding| finding.message)
             .collect()
@@ -334,29 +245,6 @@ mod tests {
         ] {
             let found = run("web/app/src/a.ts", good);
             assert!(found.is_empty(), "{good}: {found:?}");
-        }
-    }
-
-    #[test]
-    fn an_exemption_must_name_one_feature_or_one_component() {
-        let exempt = |path: &str| Exempt {
-            path: path.to_owned(),
-            reason: "Moves with its feature (M2C-F90), package C-06.".to_owned(),
-        };
-        for bad in [
-            "web/",
-            "web/app/",
-            "web/app/src/features/",
-            "web/packages/ui/src/",
-        ] {
-            assert_eq!(shape_findings(&[exempt(bad)]).len(), 1, "{bad}");
-        }
-        for good in [
-            "web/app/src/features/people/",
-            "web/packages/ui/src/Card.",
-            "web/packages/ui/src/Card.tsx",
-        ] {
-            assert!(shape_findings(&[exempt(good)]).is_empty(), "{good}");
         }
     }
 
@@ -418,59 +306,5 @@ mod tests {
     #[test]
     fn the_generated_sheet_is_the_one_css_file() {
         assert!(run(STYLE_SHEET, "body { color: red; }").is_empty());
-    }
-
-    #[test]
-    fn an_exemption_covers_a_folder_or_a_name_and_a_stale_one_fails() {
-        let sources = [
-            (
-                "web/app/src/features/shell/Shell.module.css".to_owned(),
-                ".a {}".to_owned(),
-            ),
-            (
-                "web/packages/ui/src/Card.tsx".to_owned(),
-                "<div className={x} />".to_owned(),
-            ),
-        ];
-        let exempt = |path: &str| Exempt {
-            path: path.to_owned(),
-            reason: "Moves with the shell (M2C-F90), package C-06.".to_owned(),
-        };
-        let covering = [
-            exempt("web/app/src/features/shell/"),
-            exempt("web/packages/ui/src/Card."),
-        ];
-        assert!(evaluate(&sources, &covering).is_empty());
-        let stale = [
-            exempt("web/app/src/features/shell/"),
-            exempt("web/packages/ui/src/Card."),
-            exempt("web/app/src/features/gone/"),
-        ];
-        let messages: Vec<String> = evaluate(&sources, &stale)
-            .into_iter()
-            .map(|finding| finding.message)
-            .collect();
-        assert_eq!(messages.len(), 1, "{messages:?}");
-        assert!(messages[0].contains("features/gone/"), "{messages:?}");
-    }
-
-    #[test]
-    fn an_exemption_without_a_follow_up_fails() {
-        let exempt = Exempt {
-            path: "web/app/src/features/shell/".to_owned(),
-            reason: "Moves later, when somebody has time for it.".to_owned(),
-        };
-        let sources = [(
-            "web/app/src/features/shell/Shell.module.css".to_owned(),
-            ".a {}".to_owned(),
-        )];
-        let messages: Vec<String> = evaluate(&sources, &[exempt])
-            .into_iter()
-            .map(|finding| finding.message)
-            .collect();
-        assert!(
-            messages.iter().any(|message| message.contains("follow-up")),
-            "{messages:?}"
-        );
     }
 }

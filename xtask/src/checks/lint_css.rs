@@ -4,22 +4,18 @@
 //! writes after the variables) and stylelint reads that: no color, size, duration or weight written
 //! out, no `!important`, fonts from tokens, system colors only under `forced`, and the rules of
 //! correctness (no unknown property, no repeated selector). The token values themselves are
-//! checked when the file is read. The CSS Modules that have not been moved onto the theme file yet
-//! (THEME-ONLY) are read by stylelint as before, with the older rules of `stylelint.config.mjs`.
+//! checked when the file is read. There is no other style file to read: THEME-ONLY keeps CSS out of
+//! `web/`.
 
 use std::path::Path;
 
 use super::node_tool::{in_batches, run, unix_findings};
 use super::{Check, Context, Finding};
-use crate::docs::text::has_extension;
-use crate::generate::all_paths;
 use crate::generate::theme::parts_css_with_lines;
 use crate::generate::theme_file::{THEME_PATH, ThemeFile};
 
-/// The rules for the CSS Modules that still stand.
-const MODULES_CONFIG: &str = "stylelint.config.mjs";
-/// The rules for the compiled rules of the theme file: the same, and stricter.
-const THEME_CONFIG: &str = "stylelint.theme.config.mjs";
+/// The rules for the compiled rules of the theme file.
+const CONFIG: &str = "stylelint.config.mjs";
 /// Where the compiled rules are written for stylelint to read, below the repository.
 const WORK_FOLDER: &str = "target/lint-css";
 const COMPILED_FILE: &str = "theme-rules.css";
@@ -33,22 +29,14 @@ impl Check for LintCss {
 
     fn run(&self, context: &Context<'_>) -> anyhow::Result<Vec<Finding>> {
         let selected = context.selected(self.id())?;
-        let generated = all_paths();
-        let modules: Vec<String> = selected
-            .iter()
-            .filter(|file| has_extension(file, "css") && !generated.contains(&file.as_str()))
-            .cloned()
-            .collect();
-        let root = context.repo.root();
-        let mut findings = lint(root, &modules, MODULES_CONFIG)?;
         let theme_changed = selected
             .iter()
             .any(|file| file == THEME_PATH || file.starts_with("stylelint."));
-        if theme_changed {
-            let file = ThemeFile::load(context.repo)?;
-            findings.extend(lint_theme(root, &file, COMPILED_FILE)?);
+        if !theme_changed {
+            return Ok(Vec::new());
         }
-        Ok(findings)
+        let file = ThemeFile::load(context.repo)?;
+        lint_theme(context.repo.root(), &file, COMPILED_FILE)
     }
 }
 
@@ -82,7 +70,7 @@ fn lint_theme(root: &Path, file: &ThemeFile, name: &str) -> anyhow::Result<Vec<F
     std::fs::create_dir_all(&folder)?;
     std::fs::write(folder.join(name), css)?;
     let compiled = format!("{WORK_FOLDER}/{name}");
-    let findings = lint(root, std::slice::from_ref(&compiled), THEME_CONFIG)?;
+    let findings = lint(root, std::slice::from_ref(&compiled), CONFIG)?;
     Ok(findings
         .into_iter()
         .map(|finding| point_at_theme_file(finding, &from))
@@ -118,7 +106,7 @@ mod tests {
         lint(
             repo.root(),
             &[format!("tools/checks/fixtures/LINT-CSS/{file}")],
-            MODULES_CONFIG,
+            CONFIG,
         )
         .unwrap()
     }
@@ -141,7 +129,7 @@ mod tests {
 
     #[test]
     fn bad_example() {
-        let messages = messages(&findings("bad/bad.module.css"));
+        let messages = messages(&findings("bad/bad.css"));
         for rule in [
             "color-no-hex",
             "function-disallowed-list",
@@ -163,7 +151,7 @@ mod tests {
 
     #[test]
     fn good_example() {
-        assert!(findings("good/good.module.css").is_empty());
+        assert!(findings("good/good.css").is_empty());
     }
 
     #[test]

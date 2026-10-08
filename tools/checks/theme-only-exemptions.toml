@@ -1,6 +1,0 @@
-# Components that have not moved onto design/theme.kdl yet (THEME-ONLY, ADR-0026).
-#
-# Each entry is a file, a folder (the path ends with `/`), or the start of a file name
-# (`web/packages/ui/src/Card.` covers `Card.tsx` and `Card.module.css`). Its reason names the
-# follow-up that moves it. An entry that covers no file that breaks the rule fails, so the list
-# shrinks as the components move and is empty when package C-06 is done.

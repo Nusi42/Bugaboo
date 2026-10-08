@@ -1,5 +1,4 @@
 export { autoComplete, type AutoComplete } from "./autocomplete.ts";
-export { cx } from "./cx.ts";
 export { Alert, type AlertProps } from "./Alert.tsx";
 export {
   applyAppearance,
