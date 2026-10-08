@@ -28,7 +28,7 @@ use serde_json::Value;
 use super::api_spec::{self, resolve};
 use super::exemptions::{self, Used};
 use super::{Check, Context, Finding};
-use crate::rust_source::{squeezed, strip, without_tests};
+use crate::rust_source::{squeezed, strip, strip_comments, without_tests};
 use crate::source::{Kind, Source};
 
 /// Where the exceptions are written down, each with its reason.
@@ -283,7 +283,7 @@ fn evaluate_code(sources: &[Source], counting: &[Counting]) -> Vec<Finding> {
         let code = strip(&without_tests(text));
         // The words of SQL are written in strings, which `strip` blanks: read them from the text
         // with the comments and tests taken away only.
-        let sql = without_tests(text);
+        let sql = strip_comments(&without_tests(text));
         let (squeezed, lines) = squeezed(&code);
         let mut hits: Vec<(usize, &str)> = Vec::new();
         for pattern in CODE_COUNTERS {
@@ -292,9 +292,6 @@ fn evaluate_code(sources: &[Source], counting: &[Counting]) -> Vec<Finding> {
             }
         }
         for (index, line) in sql.lines().enumerate() {
-            if line.trim_start().starts_with("//") {
-                continue;
-            }
             let upper = line.to_uppercase();
             for pattern in SQL_COUNTERS {
                 if upper.contains(pattern) {
@@ -477,6 +474,8 @@ mod tests {
             "fn v(version: i64) -> i64 { version + 1 }\n",
             "fn n(seq: i64) -> i64 { seq + 1 }\n",
             "// count + 1 and AUTOINCREMENT in a comment\n",
+            "/* AUTOINCREMENT in a block\n   comment, and BIGSERIAL on its second line */\n",
+            "fn f() {} // AUTOINCREMENT after code\n",
             "const T: &str = \"count + 1\";\n",
             "fn label(random: [u8; 4]) -> String { String::new() }\n",
             "#[cfg(test)]\nmod tests {\n    fn t(count: u32) -> u32 { count + 1 }\n}\n",
