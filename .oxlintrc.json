@@ -47,6 +47,13 @@
       "rules": { "max-lines": "off" }
     },
     {
+      // `cargo xtask gen theme` writes the names of the tokens, the parts and the words of each
+      // part into this one file, longer with every component. Nobody edits it, and a file over
+      // about 400 lines needs a reason (coding-standards section 2): this is it.
+      "files": ["web/packages/ui/src/tokens.ts"],
+      "rules": { "max-lines": "off" }
+    },
+    {
       // The app, the shared components and the messages never talk to the server themselves:
       // only @bugaboo/api-client does (ADR-0008). ARCH-WEB-API checks the same in xtask.
       "files": ["web/app/src/**", "web/packages/ui/**", "web/packages/messages/**"],

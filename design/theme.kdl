@@ -1248,3 +1248,37 @@ part "sign-in.links" {
     justify-content space-between
     gap "$space-2 $space-4"
 }
+
+// ───────────── Admin (the status page) ─────────────
+
+part "admin.facts" {
+    display grid
+    grid-template-columns "minmax(0, 1fr)"
+    gap "$space-3"
+    margin 0
+}
+
+part "admin.fact" {
+    display flex
+    flex-direction column
+    gap "$space-1"
+    min-width 0
+    padding-bottom "$space-3"
+    border-bottom "$border-width solid $border-subtle"
+    overflow-wrap anywhere
+}
+
+part "admin.term" {
+    color "$fg-muted"
+    font-size "$fs-base"
+    font-weight "$weight-bold"
+}
+
+part "admin.detail" {
+    display flex
+    flex-direction column
+    gap "$space-2"
+    margin 0
+    font-size "$fs-md"
+    line-height "$lh-body"
+}

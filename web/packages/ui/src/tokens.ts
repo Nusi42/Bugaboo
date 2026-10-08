@@ -233,6 +233,10 @@ export const part = {
   setupProgress: "setup.progress",
   signInReasons: "sign-in.reasons",
   signInLinks: "sign-in.links",
+  adminFacts: "admin.facts",
+  adminFact: "admin.fact",
+  adminTerm: "admin.term",
+  adminDetail: "admin.detail",
 } as const;
 export type PartName = (typeof part)[keyof typeof part];
 
@@ -296,4 +300,8 @@ export const partWords = {
   "setup.progress": { variant: [], state: [] },
   "sign-in.reasons": { variant: [], state: [] },
   "sign-in.links": { variant: [], state: [] },
+  "admin.facts": { variant: [], state: [] },
+  "admin.fact": { variant: [], state: [] },
+  "admin.term": { variant: [], state: [] },
+  "admin.detail": { variant: [], state: [] },
 } as const;
