@@ -4,7 +4,8 @@
 //!   parts. It is compiled at build time, so the page keeps `style-src 'self'`;
 //! - the TypeScript names of the themes, tokens and parts;
 //! - the theme choices of the settings registry in Rust;
-//! - the copy of the style sheet that the design pages use.
+//! - the copy of the style sheet that the design pages use, and the two sheets of the design
+//!   pages themselves (`components.css` and `docpage.css`, from the `docs` blocks).
 
 use std::fmt::Write as _;
 
@@ -12,8 +13,8 @@ use anyhow::{Context as _, bail};
 
 use super::Generated;
 use super::theme_file::{
-    Declaration, Item, Keyframes, Rule, RuleKind, ThemeFile, Token, TokenKind, Variant, references,
-    substitute,
+    DOC_SHEETS, Declaration, DocSheet, Item, Keyframes, Rule, RuleKind, ThemeFile, Token,
+    TokenKind, Variant, references, substitute,
 };
 use super::theme_selector;
 use crate::repo::Repo;
@@ -23,6 +24,8 @@ pub(crate) const STYLE_SHEET: &str = "web/packages/ui/src/theme.css";
 /// The design pages' copy: the themes and the tokens, without the rules of the components (the
 /// pages have their own, `components.css`).
 const DOCS_SHEET: &str = "docs/design/theme.css";
+/// The names of the page frame for the scripts of the design pages (they cannot import `tokens.ts`).
+const FRAME_SCRIPT: &str = "docs/design/frame.js";
 const TS_OUTPUT: &str = "web/packages/ui/src/tokens.ts";
 const RUST_OUTPUT: &str = "crates/bb-core/src/settings/themes.rs";
 
@@ -32,23 +35,43 @@ const GENERATED_BY: &str =
 /// The paths [`outputs`] writes.
 pub(crate) fn output_paths() -> Vec<&'static str> {
     let mut paths = vec![STYLE_SHEET, DOCS_SHEET];
+    paths.extend(DOC_SHEETS.iter().map(|(_, path)| *path));
+    paths.push(FRAME_SCRIPT);
     paths.push(TS_OUTPUT);
     paths.push(RUST_OUTPUT);
     paths
 }
 
 /// The generated files, from `design/theme.kdl` on disk.
+///
+/// The style sheets go through the formatter (`oxfmt`), like the TypeScript of the API client, so
+/// that they look the way FMT-CSS wants them whatever the rules of the file look like.
 pub(crate) fn outputs(repo: &Repo) -> anyhow::Result<Vec<Generated>> {
-    generate(&ThemeFile::load(repo)?)
+    let mut generated = generate(&ThemeFile::load(repo)?)?;
+    for output in &mut generated {
+        if crate::docs::text::has_extension(output.path, "css")
+            || crate::docs::text::has_extension(output.path, "js")
+        {
+            output.content = super::api::format_with_oxfmt(repo, output.path, &output.content)?;
+        }
+    }
+    Ok(generated)
 }
 
 pub(crate) fn generate(file: &ThemeFile) -> anyhow::Result<Vec<Generated>> {
-    Ok(vec![
+    let mut generated = vec![
         Generated::new(STYLE_SHEET, css(file)?),
-        Generated::new(DOCS_SHEET, tokens_only_css(file)),
+        Generated::new(DOCS_SHEET, docs_theme_css(file)),
+        Generated::new(FRAME_SCRIPT, frame_script(file)),
         Generated::new(TS_OUTPUT, typescript(file)?),
         Generated::new(RUST_OUTPUT, rust(file)),
-    ])
+    ];
+    for (name, path) in DOC_SHEETS {
+        if let Some(sheet) = file.docs.iter().find(|sheet| sheet.name == name) {
+            generated.push(Generated::new(path, doc_sheet_css(file, sheet)?));
+        }
+    }
+    Ok(generated)
 }
 
 /// The whole style sheet.
@@ -71,6 +94,31 @@ fn tokens_only_css(file: &ThemeFile) -> String {
     out
 }
 
+/// The design pages' copy of the tokens: the themes, and the tokens of the pages themselves.
+fn docs_theme_css(file: &ThemeFile) -> String {
+    let mut out = tokens_only_css(file);
+    let doc_tokens: Vec<&Token> = file.docs.iter().flat_map(|sheet| &sheet.tokens).collect();
+    if !doc_tokens.is_empty() {
+        out.push_str("\n/* The tokens of the design pages (the `docs` blocks). */\n:root {\n");
+        for token in doc_tokens {
+            if let Some(value) = &token.same {
+                let _ = writeln!(out, "  --{}: {};", token.name, substitute(value));
+            }
+        }
+        out.push_str("}\n");
+    }
+    out
+}
+
+/// One sheet of the design pages: the notice, then the keyframes and the rules.
+fn doc_sheet_css(file: &ThemeFile, sheet: &DocSheet) -> anyhow::Result<String> {
+    let (css, _) = doc_css_with_lines(file, sheet)?;
+    Ok(format!(
+        "/* {GENERATED_BY}\n   {} */\n{css}",
+        sheet.description
+    ))
+}
+
 fn token_css(file: &ThemeFile) -> String {
     let light = file.default_light.as_str();
     let dark = file.default_dark.as_str();
@@ -83,10 +131,10 @@ fn token_css(file: &ThemeFile) -> String {
     theme_declarations(&mut out, file, light, "  ", false);
     out.push_str("}\n\n");
     out.push_str("@media (prefers-color-scheme: dark) {\n");
-    out.push_str("  :root:not([data-theme=\"light\"]) {\n");
+    let _ = writeln!(out, "  {} {{", not_light(file));
     theme_declarations(&mut out, file, dark, "    ", false);
     out.push_str("  }\n}\n\n");
-    out.push_str(":root[data-theme=\"dark\"] {\n");
+    let _ = writeln!(out, "{} {{", forced_dark(file));
     theme_declarations(&mut out, file, dark, "  ", false);
     out.push_str("}\n");
     for theme in &file.themes {
@@ -94,8 +142,9 @@ fn token_css(file: &ThemeFile) -> String {
         // *My settings* shows each theme as it looks before it is chosen.
         let _ = write!(
             out,
-            "\n:root[data-look=\"{0}\"],\n[data-preview-look=\"{0}\"] {{\n",
-            theme.name
+            "\n{},\n{} {{\n",
+            look_selector(file, &theme.name),
+            preview_selector(file, &theme.name)
         );
         theme_declarations(&mut out, file, &theme.name, "  ", false);
         out.push_str("}\n");
@@ -179,24 +228,51 @@ fn more_contrast_blocks(out: &mut String, file: &ThemeFile) {
     out.push_str("\n@media (prefers-contrast: more) {\n  :root {\n");
     theme_declarations(out, file, light, "    ", true);
     out.push_str("  }\n}\n");
-    out.push_str(
-        "\n@media (prefers-contrast: more) and (prefers-color-scheme: dark) {\n  :root:not([data-theme=\"light\"]) {\n",
+    let _ = write!(
+        out,
+        "\n@media (prefers-contrast: more) and (prefers-color-scheme: dark) {{\n  {} {{\n",
+        not_light(file)
     );
     theme_declarations(out, file, dark, "    ", true);
     out.push_str("  }\n}\n");
-    out.push_str("\n@media (prefers-contrast: more) {\n  :root[data-theme=\"dark\"] {\n");
+    let _ = write!(
+        out,
+        "\n@media (prefers-contrast: more) {{\n  {} {{\n",
+        forced_dark(file)
+    );
     theme_declarations(out, file, dark, "    ", true);
     out.push_str("  }\n");
     for theme in &file.themes {
         let _ = writeln!(
             out,
-            "  :root[data-look=\"{0}\"],\n  [data-preview-look=\"{0}\"] {{",
-            theme.name
+            "  {},\n  {} {{",
+            look_selector(file, &theme.name),
+            preview_selector(file, &theme.name)
         );
         theme_declarations(out, file, &theme.name, "    ", true);
         out.push_str("  }\n");
     }
     out.push_str("}\n");
+}
+
+/// The page that has not been told to be light (the device decides).
+fn not_light(file: &ThemeFile) -> String {
+    format!(":root:not([{}=\"light\"])", file.frame.mode)
+}
+
+/// The page that has been told to be dark.
+fn forced_dark(file: &ThemeFile) -> String {
+    format!(":root[{}=\"dark\"]", file.frame.mode)
+}
+
+/// The page that shows one theme.
+fn look_selector(file: &ThemeFile, theme: &str) -> String {
+    format!(":root[{}=\"{theme}\"]", file.frame.look)
+}
+
+/// A sample of one theme inside the page.
+fn preview_selector(file: &ThemeFile, theme: &str) -> String {
+    format!("[{}=\"{theme}\"]", file.frame.preview)
 }
 
 /// The values for forced colors, where the device replaces the colors of the page by its own.
@@ -211,14 +287,10 @@ fn forced_block(out: &mut String, file: &ThemeFile) {
     }
     // The same selectors as every block that sets the colors of a theme, and after them, so that
     // the forced values win over each of them (`:root[data-look]` weighs more than `:root`).
-    let mut selectors = vec![
-        ":root".to_owned(),
-        ":root:not([data-theme=\"light\"])".to_owned(),
-        ":root[data-theme=\"dark\"]".to_owned(),
-    ];
+    let mut selectors = vec![":root".to_owned(), not_light(file), forced_dark(file)];
     for theme in &file.themes {
-        selectors.push(format!(":root[data-look=\"{}\"]", theme.name));
-        selectors.push(format!("[data-preview-look=\"{}\"]", theme.name));
+        selectors.push(look_selector(file, &theme.name));
+        selectors.push(preview_selector(file, &theme.name));
     }
     let _ = write!(out, "\n@media {} {{\n", super::theme_file::FORCED_QUERY);
     let _ = writeln!(out, "  {} {{", selectors.join(",\n  "));
@@ -247,10 +319,11 @@ fn css_header(file: &ThemeFile) -> String {
         .collect();
     format!(
         "/* {GENERATED_BY}
-   {count} built-in themes: {names}. Pages set <html data-look=\"…\">;
+   {count} built-in themes: {names}. Pages set <html {look}=\"…\">;
    without it, \"Match my device\" falls back to {light} (light) / {dark} (dark).
    Load fonts separately: {fonts}. */
 ",
+        look = file.frame.look,
         count = names.len(),
         names = names.join(", "),
         light = title_case(&file.default_light),
@@ -277,11 +350,27 @@ pub(crate) fn parts_css(file: &ThemeFile) -> anyhow::Result<String> {
 /// The same, and for each line of it (counted from 0) the line of the theme file that the rule
 /// comes from, so that a finding about the CSS can point at the file that is edited.
 pub(crate) fn parts_css_with_lines(file: &ThemeFile) -> anyhow::Result<(String, Vec<usize>)> {
+    css_with_lines(file, &file.keyframes, &file.rules)
+}
+
+/// The same for one sheet of the design pages.
+pub(crate) fn doc_css_with_lines(
+    file: &ThemeFile,
+    sheet: &DocSheet,
+) -> anyhow::Result<(String, Vec<usize>)> {
+    css_with_lines(file, &sheet.keyframes, &sheet.rules)
+}
+
+fn css_with_lines(
+    file: &ThemeFile,
+    keyframes: &[Keyframes],
+    rules: &[Rule],
+) -> anyhow::Result<(String, Vec<usize>)> {
     let mut blocks = Vec::new();
-    for keyframes in &file.keyframes {
+    for keyframes in keyframes {
         blocks.push((keyframes_css(keyframes), keyframes.line));
     }
-    for rule in &file.rules {
+    for rule in rules {
         let css =
             rule_css(file, rule).with_context(|| format!("the rule at line {}", rule.line))?;
         blocks.push((css, rule.line));
@@ -320,6 +409,9 @@ fn rule_css(file: &ThemeFile, rule: &Rule) -> anyhow::Result<String> {
         .iter()
         .map(|selector| match rule.kind {
             RuleKind::Part => theme_selector::compile(selector),
+            RuleKind::Doc => {
+                theme_selector::check_doc(selector).map(|()| selector.trim().to_owned())
+            }
             RuleKind::Base => theme_selector::check_base(selector).map(|()| {
                 // The formatter puts each selector of a list on a line of its own.
                 selector.split(',').map(str::trim).collect::<Vec<_>>().join(
@@ -448,6 +540,14 @@ fn camel(name: &str) -> String {
     out
 }
 
+/// `bugabooFrame` for the scripts of the design pages: the attributes of `<html>`.
+fn frame_script(file: &ThemeFile) -> String {
+    format!(
+        "// {GENERATED_BY}\n// The attributes of the page frame (<html>) that the scripts of the design pages use.\nglobalThis.bugabooFrame = {{\n  look: \"{}\",\n  mode: \"{}\",\n  previewLook: \"{}\",\n}};\n",
+        file.frame.look, file.frame.mode, file.frame.preview
+    )
+}
+
 fn typescript(file: &ThemeFile) -> anyhow::Result<String> {
     let mut out = format!("// {GENERATED_BY}\n");
     let _ = write!(
@@ -473,6 +573,11 @@ fn typescript(file: &ThemeFile) -> anyhow::Result<String> {
         "\nexport const lightThemeIds = [{}] as const;\nexport const darkThemeIds = [{}] as const;\n",
         ids_of_kind("light"),
         ids_of_kind("dark")
+    );
+    let _ = write!(
+        out,
+        "\n/** The attributes of the page frame (<html>): the theme on the page, the mode the design pages force, and a sample of a theme. */\nexport const pageAttributes = {{\n  look: \"{}\",\n  mode: \"{}\",\n  previewLook: \"{}\",\n}} as const;\n",
+        file.frame.look, file.frame.mode, file.frame.preview
     );
     out.push_str("\n/** Where the layout changes, in pixels (the `bp-*` tokens). */\nexport const breakpoints = {\n");
     for token in &file.tokens {
@@ -596,8 +701,8 @@ mod tests {
     fn css_has_every_theme_and_the_device_fallback() {
         let css = css(&file()).unwrap();
         for theme in ["daylight", "paper", "dusk", "midnight"] {
-            assert!(css.contains(&format!(":root[data-look=\"{theme}\"]")));
-            assert!(css.contains(&format!("[data-preview-look=\"{theme}\"]")));
+            assert!(css.contains(&look_selector(&file(), theme)));
+            assert!(css.contains(&preview_selector(&file(), theme)));
         }
         assert!(css.contains("prefers-color-scheme: dark"));
     }
@@ -616,13 +721,11 @@ mod tests {
         let forced = &css[forced_at..];
         // Every selector that sets the colors of a theme is in the forced block, which comes after
         // all of them: at the same weight the later rule wins.
-        let mut wanted = vec![
-            ":root:not([data-theme=\"light\"])".to_owned(),
-            ":root[data-theme=\"dark\"]".to_owned(),
-        ];
+        let file = file();
+        let mut wanted = vec![not_light(&file), forced_dark(&file)];
         for theme in ["daylight", "paper", "dusk", "midnight"] {
-            wanted.push(format!(":root[data-look=\"{theme}\"]"));
-            wanted.push(format!("[data-preview-look=\"{theme}\"]"));
+            wanted.push(look_selector(&file, theme));
+            wanted.push(preview_selector(&file, theme));
         }
         for selector in wanted {
             assert!(css[..forced_at].contains(&selector), "{selector}");
@@ -651,6 +754,8 @@ mod tests {
     fn typescript_has_the_breakpoints_the_choices_and_the_parts() {
         let ts = typescript(&file()).unwrap();
         for expected in [
+            "look: \"data-look\",",
+            "previewLook: \"data-preview-look\",",
             "tablet: 768,",
             "computer: 1280,",
             "lightThemeIds = [\"daylight\", \"paper\"]",
@@ -660,6 +765,31 @@ mod tests {
         ] {
             assert!(ts.contains(expected), "{expected}");
         }
+    }
+
+    #[test]
+    fn the_design_pages_get_their_two_sheets_and_their_tokens() {
+        let outputs = generate(&file()).unwrap();
+        let sheet = |path: &str| {
+            outputs
+                .iter()
+                .find(|output| output.path == path)
+                .map(|output| output.content.clone())
+                .unwrap()
+        };
+        let components = sheet("docs/design/components.css");
+        // A plain selector stays as it is; a value is a token.
+        assert!(components.contains(".btn.primary:hover {"), "{components}");
+        assert!(components.contains("padding: var(--doc-space-7) var(--space-3);"));
+        let docpage = sheet("docs/design/docpage.css");
+        assert!(
+            docpage.contains("@media (max-width: 1023px) {"),
+            "{docpage}"
+        );
+        // The tokens of the pages are in the copy of the pages, and not in the app's sheet.
+        let tokens = sheet("docs/design/theme.css");
+        assert!(tokens.contains("--doc-space-7: 7px;"));
+        assert!(!sheet(STYLE_SHEET).contains("--doc-"));
     }
 
     #[test]

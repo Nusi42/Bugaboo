@@ -1,16 +1,15 @@
-import { Card } from "@bugaboo/ui";
+import { Card, partOf, part } from "@bugaboo/ui";
 
 import { projectPages } from "../../shared/project-pages.ts";
 import { ProjectFacts } from "./ProjectFacts.tsx";
 import { ProjectGate } from "./ProjectGate.tsx";
-import styles from "./Projects.module.css";
 import { SubProjects } from "./SubProjects.tsx";
 import type { OneProject } from "./use-projects.ts";
 
 /** The page itself, once the project is known. */
 function Overview({ project }: { readonly project: OneProject }) {
   return (
-    <div className={styles.stack}>
+    <div {...partOf(part.stack)}>
       <Card heading={project.project.name} level={1}>
         <ProjectFacts project={project} />
       </Card>

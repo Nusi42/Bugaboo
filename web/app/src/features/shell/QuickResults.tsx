@@ -1,10 +1,9 @@
 import { t } from "@bugaboo/messages";
-import { cx } from "@bugaboo/ui";
+import { partOf, part } from "@bugaboo/ui";
 import { useRouter } from "@tanstack/react-router";
 import { Header, ListBox, ListBoxItem, ListBoxSection, Text } from "react-aria-components";
 
 import { closeOverlay } from "./overlay-state.ts";
-import styles from "./QuickSearch.module.css";
 import { resultKey, type Collected } from "./quick-search-collect.ts";
 
 /** The words of React Aria Components for the slots of an item, not text for people. */
@@ -31,23 +30,23 @@ export function QuickResults({ found }: QuickResultsProps) {
   return (
     <ListBox
       aria-label={t("search.results")}
-      className={cx(styles.results)}
-      renderEmptyState={() => <p className={styles.empty}>{t("search.nothing")}</p>}
+      {...partOf(part.quickSearchResults)}
+      renderEmptyState={() => <p {...partOf(part.quickSearchEmpty)}>{t("search.nothing")}</p>}
       onAction={open}
     >
       {groups.map((group) => (
-        <ListBoxSection key={group.id} className={cx(styles.group)}>
-          <Header className={styles.heading}>{group.heading}</Header>
+        <ListBoxSection key={group.id} {...partOf(part.column)}>
+          <Header {...partOf(part.quickSearchHeading)}>{group.heading}</Header>
           {group.results.map((result) => (
             <ListBoxItem
               key={resultKey(group, result)}
               id={resultKey(group, result)}
               textValue={result.title}
-              className={cx(styles.item)}
+              {...partOf(part.quickSearchItem)}
             >
-              <span className={styles.title}>{result.title}</span>
+              <span {...partOf(part.quickSearchTitle)}>{result.title}</span>
               {result.hint === undefined ? null : (
-                <Text slot={descriptionSlot} className={styles.hint}>
+                <Text slot={descriptionSlot} {...partOf(part.hint)}>
                   {result.hint}
                 </Text>
               )}

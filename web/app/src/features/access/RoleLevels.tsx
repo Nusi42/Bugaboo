@@ -1,4 +1,5 @@
-import styles from "./Access.module.css";
+import { partOf, part } from "@bugaboo/ui";
+
 import { CellControl } from "./CellControl.tsx";
 import type { LevelsViewProps } from "./LevelsMatrix.tsx";
 
@@ -25,11 +26,11 @@ export function RoleLevels<Subject extends string, Level extends string>({
   const inProject = table.project !== undefined && table.project !== null;
   const roleName = table.roles.find((known) => known.id === role)?.name ?? "";
   return (
-    <ul className={styles.list} aria-label={tableName}>
+    <ul {...partOf(part.list)} aria-label={tableName}>
       {table.rows.map((row) => {
         const cell = row.cells.find((known) => known.role === role);
         return cell === undefined ? null : (
-          <li key={row.subject} className={styles.listItem}>
+          <li key={row.subject} {...partOf(part.box)}>
             <CellControl
               label={subjectName(row.subject)}
               subjectName={subjectName(row.subject)}

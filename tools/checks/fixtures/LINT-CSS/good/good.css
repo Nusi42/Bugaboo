@@ -1,19 +1,19 @@
 .box {
   color: var(--fg);
   background: var(--bg-canvas);
-  border: 1px solid var(--border);
+  border: var(--border-width) solid var(--border);
   margin: 0;
   padding: var(--space-3);
 }
 
 .more {
   margin: calc(var(--space-2) * -1);
-  border-top-width: 1px;
+  border-top-width: var(--border-width);
   font-family: var(--font);
 }
 
 .picked {
-  border-top: 1px solid var(--border);
+  border-top: var(--border-width) solid var(--border);
 }
 
 @media (forced-colors: active) {

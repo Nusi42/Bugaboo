@@ -1,10 +1,10 @@
 import { t } from "@bugaboo/messages";
+import { partOf, part } from "@bugaboo/ui";
 
 import { QueryGate } from "../shell/index.ts";
 import { DeleteGroup } from "./DeleteGroup.tsx";
 import { GroupMembers } from "./GroupMembers.tsx";
 import { useGroup } from "./groups.ts";
-import styles from "./People.module.css";
 import { RenameGroup } from "./RenameGroup.tsx";
 import { groupUsedText } from "./used-by-text.ts";
 
@@ -34,12 +34,12 @@ export function GroupEditor({ id, onDeleted }: GroupEditorProps) {
     <QueryGate
       error={found.error}
       data={shown}
-      notFound={<p className={styles.muted}>{t("groups.gone")}</p>}
+      notFound={<p {...partOf(part.muted)}>{t("groups.gone")}</p>}
     >
       {(editor) => (
-        <div className={styles.stack}>
+        <div {...partOf(part.stack)}>
           <RenameGroup key={renameKey(editor.group)} group={editor.group} />
-          <p className={styles.muted}>{groupUsedText(editor.used)}</p>
+          <p {...partOf(part.muted)}>{groupUsedText(editor.used)}</p>
           <GroupMembers group={editor.group} />
           <DeleteGroup group={editor.group} members={editor.used.members} onDeleted={onDeleted} />
         </div>

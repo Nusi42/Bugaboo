@@ -1,8 +1,7 @@
 import { t } from "@bugaboo/messages";
-import { IconButton, iconName, Overlay, overlayEdge } from "@bugaboo/ui";
+import { IconButton, iconName, Overlay, overlayEdge, partOf, part } from "@bugaboo/ui";
 
 import { paths } from "../../shared/paths.ts";
-import styles from "./MoreSheet.module.css";
 import { NavButton, NavLink } from "./NavItem.tsx";
 import { closeOverlay, openOverlay, useOverlay } from "./overlay-state.ts";
 import { placeAt } from "../../shared/places.ts";
@@ -46,21 +45,21 @@ export function MoreSheet({ organizationSettings, name, onSignOut, signingOut }:
   const sections = useSidebarSections();
   return (
     <Overlay {...overlay} label={t("shell.more")} from={overlayEdge.bottom}>
-      <div className={styles.sheet}>
-        <div className={styles.head}>
-          <h2 className={styles.title}>{t("shell.more")}</h2>
+      <div {...partOf(part.shellSheet)}>
+        <div {...partOf(part.shellSheetHead)}>
+          <h2 {...partOf(part.shellTitle)}>{t("shell.more")}</h2>
           <IconButton icon={iconName.close} label={t("common.close")} onPress={closeOverlay} />
         </div>
         {name === undefined ? null : (
-          <p className={styles.who}>{t("shell.signed-in-as", { name })}</p>
+          <p {...partOf(part.moreSheetWho)}>{t("shell.signed-in-as", { name })}</p>
         )}
         {sections.map((section) => (
-          <section key={section.heading} className={styles.section} aria-label={t(section.heading)}>
-            <h3 className={styles.sectionHeading}>{t(section.heading)}</h3>
+          <section key={section.heading} {...partOf(part.column)} aria-label={t(section.heading)}>
+            <h3 {...partOf(part.shellSectionHeading)}>{t(section.heading)}</h3>
             {section.render({ narrow: false, onNavigate: closeOverlay })}
           </section>
         ))}
-        <ul className={styles.list}>
+        <ul {...partOf(part.list, { variants: ["tight"] })}>
           <Places organizationSettings={organizationSettings} />
           <li>
             <NavButton

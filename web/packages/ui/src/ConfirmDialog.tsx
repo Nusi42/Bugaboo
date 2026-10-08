@@ -2,10 +2,10 @@ import { useState, type ReactNode } from "react";
 import { Dialog, DialogTrigger, Heading, Modal, ModalOverlay } from "react-aria-components";
 
 import { Button } from "./Button.tsx";
-import styles from "./ConfirmDialog.module.css";
-import { cx } from "./cx.ts";
 import { useLayout } from "./layout.ts";
+import { partOf } from "./parts.ts";
 import { buttonLook, type ButtonLook } from "./props.ts";
+import { part } from "./tokens.ts";
 
 /** Words of React Aria Components and of the ARIA standard, not text for people. */
 const dialogRole = "alertdialog";
@@ -53,8 +53,8 @@ export function ConfirmDialog(props: ConfirmDialogProps) {
       <Button {...(triggerName === undefined ? {} : { "aria-label": triggerName })}>
         {triggerLabel}
       </Button>
-      <ModalOverlay className={cx(styles.overlay, full && styles.full)} isDismissable>
-        <Modal className={cx(styles.modal, full && styles.full)}>
+      <ModalOverlay {...partOf(part.confirm, { variants: [full && "full"] })} isDismissable>
+        <Modal {...partOf(part.confirmModal, { variants: [full && "full"] })}>
           <Question
             {...props}
             close={() => {
@@ -83,12 +83,12 @@ export function AskDialog({ isOpen, onOpenChange, ...question }: AskDialogProps)
   const full = useLayout() === "phone";
   return (
     <ModalOverlay
-      className={cx(styles.overlay, full && styles.full)}
+      {...partOf(part.confirm, { variants: [full && "full"] })}
       isOpen={isOpen}
       onOpenChange={onOpenChange}
       isDismissable
     >
-      <Modal className={cx(styles.modal, full && styles.full)}>
+      <Modal {...partOf(part.confirmModal, { variants: [full && "full"] })}>
         <Question
           {...question}
           close={() => {
@@ -113,13 +113,13 @@ function Question({
   close,
 }: Omit<ConfirmDialogProps, "triggerLabel" | "triggerName"> & { readonly close: () => void }) {
   return (
-    <Dialog className={cx(styles.dialog)} role={dialogRole}>
-      <Heading slot={titleSlot} className={cx(styles.title)}>
+    <Dialog {...partOf(part.confirmDialog)} role={dialogRole}>
+      <Heading slot={titleSlot} {...partOf(part.confirmTitle)}>
         {title}
       </Heading>
-      <p className={styles.text}>{text}</p>
+      <p {...partOf(part.text)}>{text}</p>
       {children}
-      <div className={styles.actions}>
+      <div {...partOf(part.confirmActions)}>
         <Button onPress={close}>{cancelLabel}</Button>
         <Button
           look={confirmLook}

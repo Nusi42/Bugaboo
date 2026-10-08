@@ -1,9 +1,8 @@
 import { t } from "@bugaboo/messages";
-import { Button } from "@bugaboo/ui";
+import { Button, partOf, part } from "@bugaboo/ui";
 
 import { appliesToText, placeText, roleText } from "../../shared/access-words.ts";
 import type { RowLine } from "./assignments.ts";
-import styles from "./Roles.module.css";
 
 export interface AssignmentRowProps {
   readonly row: RowLine;
@@ -56,12 +55,14 @@ export function AssignmentRow({ row, onRemove, onChangeHere }: AssignmentRowProp
   const who =
     row.who.kind === "group" ? t("assignments.who-group", { name: row.who.name }) : row.who.name;
   return (
-    <li className={styles.item}>
-      <span className={styles.itemText}>
-        <span className={styles.itemTitle}>{who}</span>
-        <span className={row.role === null ? styles.noAccess : styles.muted}>{whatText(row)}</span>
+    <li {...partOf(part.item)}>
+      <span {...partOf(part.itemText)}>
+        <span {...partOf(part.itemTitle)}>{who}</span>
+        <span {...partOf(row.role === null ? part.rolesNoAccess : part.muted)}>
+          {whatText(row)}
+        </span>
         {row.place.kind === "hidden" && !row.inherited ? (
-          <span className={styles.muted}>{placeText(row.place)}</span>
+          <span {...partOf(part.muted)}>{placeText(row.place)}</span>
         ) : null}
       </span>
       {row.inherited ? (

@@ -1,11 +1,10 @@
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, CopyButton, Form, SubmitButton } from "@bugaboo/ui";
+import { Alert, alertTone, CopyButton, Form, SubmitButton, partOf, part } from "@bugaboo/ui";
 import { useState } from "react";
 
 import { api } from "../../shared/api.ts";
 import { messageOf } from "../../shared/errors.ts";
 import { EmailField } from "../../shared/fields.tsx";
-import styles from "./People.module.css";
 import { refreshInvitations } from "./invitations.ts";
 
 export interface CreatedLinkProps {
@@ -18,13 +17,13 @@ export interface CreatedLinkProps {
 function CreatedLink({ email, linkPath }: CreatedLinkProps) {
   const link = `${window.location.origin}${linkPath}`;
   return (
-    <div className={styles.stack}>
+    <div {...partOf(part.stack)}>
       <Alert tone={alertTone.success}>{t("invitations.created", { email })}</Alert>
-      <p className={styles.muted}>{t("invitations.link-help")}</p>
-      <code className={styles.link} aria-label={t("invitations.link")}>
+      <p {...partOf(part.muted)}>{t("invitations.link-help")}</p>
+      <code {...partOf(part.keyBox, { variants: ["small"] })} aria-label={t("invitations.link")}>
         {link}
       </code>
-      <div className={styles.row}>
+      <div {...partOf(part.row)}>
         <CopyButton
           text={link}
           label={t("invitations.copy")}
@@ -53,7 +52,7 @@ export function CreateInvitation() {
       >
         <EmailField value={email} onChange={setEmail} />
         {create.isError ? <Alert tone={alertTone.danger}>{messageOf(create.error)}</Alert> : null}
-        <div className={styles.row}>
+        <div {...partOf(part.row)}>
           <SubmitButton isPending={create.isPending}>{t("invitations.create")}</SubmitButton>
         </div>
       </Form>

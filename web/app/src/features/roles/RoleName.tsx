@@ -1,11 +1,10 @@
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, Form, SubmitButton, TextField } from "@bugaboo/ui";
+import { Alert, alertTone, Form, SubmitButton, TextField, partOf, part } from "@bugaboo/ui";
 import { useState } from "react";
 
 import { refreshAccess } from "../../shared/query-keys.ts";
 import { api } from "../../shared/api.ts";
 import { messageOf } from "../../shared/errors.ts";
-import styles from "./Roles.module.css";
 
 export interface RoleNameProps {
   readonly id: string;
@@ -32,7 +31,7 @@ export function RoleName({ id, name }: RoleNameProps) {
       />
       {rename.isError ? <Alert tone={alertTone.danger}>{messageOf(rename.error)}</Alert> : null}
       {rename.isSuccess ? <Alert tone={alertTone.success}>{t("roles.saved")}</Alert> : null}
-      <div className={styles.row}>
+      <div {...partOf(part.row)}>
         <SubmitButton isPending={rename.isPending}>{t("common.save")}</SubmitButton>
       </div>
     </Form>

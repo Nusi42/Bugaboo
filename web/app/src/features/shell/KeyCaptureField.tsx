@@ -1,9 +1,9 @@
 import { t } from "@bugaboo/messages";
 import { useEffect, useId, useLayoutEffect, useRef } from "react";
+import { partOf, part } from "@bugaboo/ui";
 
 import { chordOf, sequenceMs } from "../../shared/shortcuts-engine.ts";
 import { describeKeys } from "./key-words.ts";
-import styles from "./KeyCaptureField.module.css";
 
 export interface KeyCaptureFieldProps {
   /** The keys recorded so far, written as in the registry; empty before the first key. */
@@ -49,19 +49,19 @@ export function KeyCaptureField({ value, onChange }: KeyCaptureFieldProps) {
     };
   }, []);
   return (
-    <div className={styles.field}>
-      <label htmlFor={inputId} className={styles.label}>
+    <div {...partOf(part.column)}>
+      <label htmlFor={inputId} {...partOf(part.keyCaptureFieldLabel)}>
         {t("shortcuts.new-keys")}
       </label>
       <input
         ref={box}
         id={inputId}
-        className={styles.box}
+        {...partOf(part.keyCaptureFieldBox)}
         readOnly
         aria-describedby={helpId}
         value={value === "" ? "" : describeKeys(value)}
       />
-      <p id={helpId} className={styles.help}>
+      <p id={helpId} {...partOf(part.muted)}>
         {t("shortcuts.new-keys-help")}
       </p>
     </div>

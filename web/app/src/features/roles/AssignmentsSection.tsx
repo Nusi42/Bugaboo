@@ -1,11 +1,10 @@
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, Card } from "@bugaboo/ui";
+import { Alert, alertTone, Card, partOf, part } from "@bugaboo/ui";
 import { useEffect, useRef, useState } from "react";
 
 import { AssignmentList } from "./AssignmentList.tsx";
 import type { Subject } from "./assignments.ts";
 import { GiveRoleForm } from "./GiveRoleForm.tsx";
-import styles from "./Roles.module.css";
 import { useRowChanges } from "./use-row-changes.ts";
 
 export interface AssignmentsSectionProps {
@@ -48,7 +47,7 @@ export function AssignmentsSection({ project, level = 2 }: AssignmentsSectionPro
         }
         level={level}
       >
-        <p className={styles.text}>
+        <p {...partOf(part.text)}>
           {t(project === null ? "assignments.intro-organization" : "assignments.intro-project")}
         </p>
         {changes.problem === null ? null : <Alert tone={alertTone.danger}>{changes.problem}</Alert>}

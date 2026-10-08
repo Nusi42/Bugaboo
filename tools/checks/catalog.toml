@@ -89,9 +89,9 @@ status = "active"
 id = "LINT-CSS"
 title = "Styles use only token variables; no raw colors, sizes or !important"
 rule = "ADR-0010, ADR-0026"
-tool = "stylelint (the compiled rules of design/theme.kdl, stricter; and the CSS Modules that are left)"
+tool = "stylelint (the compiled rules of design/theme.kdl)"
 when = ["edit", "commit", "ci"]
-files = ["web/**/*.css", "design/theme.kdl", "stylelint*.mjs"]
+files = ["design/theme.kdl", "stylelint*.mjs"]
 status = "active"
 
 [[check]]
@@ -212,11 +212,11 @@ status = "active"
 
 [[check]]
 id = "THEME-ONLY"
-title = "The look lives in design/theme.kdl only: no style=, no className, no CSS file but the generated one"
+title = "The look lives in design/theme.kdl only: no style=, no className, no CSS file but the generated one (also in the pages of docs/)"
 rule = "ADR-0026, coding-standards §4"
-tool = "xtask (the TypeScript and CSS files of the app; the components that have not moved yet stand in tools/checks/theme-only-exemptions.toml, each with its follow-up)"
+tool = "xtask (the TypeScript and CSS files of the app, and no style element or attribute in the pages of docs/; nothing is exempt)"
 when = ["edit", "commit", "ci"]
-files = ["web/**/*.{ts,tsx,css,scss,sass,less}", "tools/checks/theme-only-exemptions.toml"]
+files = ["web/**/*.{ts,tsx,css,scss,sass,less}", "docs/**/*.html"]
 status = "active"
 
 [[check]]

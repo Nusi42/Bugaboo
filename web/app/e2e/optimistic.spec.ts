@@ -5,6 +5,8 @@ import { ada, endEverySession, makeAdmin } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { type Instance } from "./support/server.ts";
 import { anotherBrowser, openFromMenu, signIn } from "./support/flows.ts";
+import { partOn } from "./support/styles.ts";
+import { part } from "../../packages/ui/src/tokens.ts";
 import { paths } from "../src/shared/paths.ts";
 
 test.use({
@@ -124,12 +126,13 @@ test("ux_06 grey shapes stand in for a slow list, and the list says it is busy",
   const region = page.getByRole("list", { name: t("sessions.list") }).locator("..");
   await expect(region).toHaveAttribute("aria-busy", "true");
   // Nothing grey in the first 0.3 s, so a quick answer never flashes.
-  await expect(region.locator("[class*='_skeleton_']")).toHaveCount(0);
-  await expect(region.locator("[class*='_skeleton_']")).toHaveCount(1, { timeout: 3000 });
+  const shapes = partOn(region, part.skeletonLine);
+  await expect(shapes).toHaveCount(0);
+  await expect(shapes.first()).toBeVisible({ timeout: 3000 });
   slow.resolve();
   await expect(places(page)).toHaveCount(2);
   await expect(region).toHaveAttribute("aria-busy", "false");
-  await expect(region.locator("[class*='_skeleton_']")).toHaveCount(0);
+  await expect(shapes).toHaveCount(0);
   await other.context().close();
 });
 

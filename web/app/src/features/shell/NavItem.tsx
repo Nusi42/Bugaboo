@@ -1,8 +1,6 @@
-import { cx, Icon, type IconName } from "@bugaboo/ui";
+import { Icon, type IconName, partOf, part } from "@bugaboo/ui";
 import type { ReactNode } from "react";
 import { Button, Link, Tooltip, TooltipTrigger, VisuallyHidden } from "react-aria-components";
-
-import styles from "./NavItem.module.css";
 
 /** Words of the ARIA standard and of React Aria Components, not text for people. */
 const currentPage = "page";
@@ -24,7 +22,7 @@ function Content({ icon, label, narrow, hint }: ItemProps & { readonly hint?: Re
       {narrow === true ? (
         <VisuallyHidden>{label}</VisuallyHidden>
       ) : (
-        <span className={styles.label}>{label}</span>
+        <span {...partOf(part.navItemLabel)}>{label}</span>
       )}
       {narrow === true ? null : hint}
     </>
@@ -50,7 +48,7 @@ function WithTooltip({
   return (
     <TooltipTrigger delay={0} closeDelay={0}>
       {children}
-      <Tooltip placement={tooltipSide.end} className={cx(styles.tooltip)}>
+      <Tooltip placement={tooltipSide.end} {...partOf(part.navItemTooltip)}>
         {label}
       </Tooltip>
     </TooltipTrigger>
@@ -77,7 +75,7 @@ export function NavLink({
   return (
     <WithTooltip narrow={narrow} label={label}>
       <Link
-        className={cx(styles.item)}
+        {...partOf(part.navItem)}
         href={href}
         {...(current ? { "aria-current": currentPage } : {})}
         {...(onNavigate === undefined ? {} : { onPress: onNavigate })}
@@ -110,7 +108,7 @@ export function NavButton({
   return (
     <WithTooltip narrow={narrow} label={label}>
       <Button
-        className={cx(styles.item)}
+        {...partOf(part.navItem, { states: [isPending && "busy"] })}
         onPress={onPress}
         {...(isExpanded === undefined ? {} : { "aria-expanded": isExpanded })}
         aria-busy={isPending}

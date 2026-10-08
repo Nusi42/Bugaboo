@@ -1,11 +1,10 @@
 import { t } from "@bugaboo/messages";
-import { iconName } from "@bugaboo/ui";
+import { iconName, partOf, part } from "@bugaboo/ui";
 
 import { paths } from "../../shared/paths.ts";
 import { NavButton } from "./NavItem.tsx";
 import { openOverlay } from "./overlay-state.ts";
 import { PlaceLink, type PlaceLinkProps } from "./PlaceLink.tsx";
-import styles from "./Sidebar.module.css";
 import { toggleSidebar } from "./sidebar-state.ts";
 
 export interface BottomProps extends Pick<PlaceLinkProps, "narrow" | "onNavigate"> {
@@ -18,7 +17,7 @@ export interface BottomProps extends Pick<PlaceLinkProps, "narrow" | "onNavigate
 /** *My settings*, *Organization settings*, the list of shortcuts and the button to narrow the bar. */
 export function Bottom({ narrow, inDrawer, organizationSettings, onNavigate }: BottomProps) {
   return (
-    <ul className={styles.bottom}>
+    <ul {...partOf(part.sidebarBottom)}>
       <PlaceLink path={paths.mySettings} narrow={narrow} onNavigate={onNavigate} />
       {organizationSettings ? (
         <PlaceLink path={paths.organizationSettings} narrow={narrow} onNavigate={onNavigate} />
@@ -58,9 +57,9 @@ export interface PersonProps {
 /** Who is signed in, and the way to sign out. */
 export function Person({ narrow, name, onSignOut, signingOut }: PersonProps) {
   return (
-    <div className={styles.person}>
+    <div {...partOf(part.sidebarPerson)}>
       {name === undefined || narrow ? null : (
-        <span className={styles.who}>{t("shell.signed-in-as", { name })}</span>
+        <span {...partOf(part.sidebarWho)}>{t("shell.signed-in-as", { name })}</span>
       )}
       <NavButton
         icon={iconName["sign-out"]}

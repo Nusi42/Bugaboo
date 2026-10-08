@@ -1,9 +1,8 @@
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone } from "@bugaboo/ui";
+import { Alert, alertTone, partOf, part } from "@bugaboo/ui";
 import { useState } from "react";
 
 import { messageOf } from "../../shared/errors.ts";
-import styles from "./Access.module.css";
 import { CheckAnswer } from "./CheckAnswer.tsx";
 import { PersonPicker, PlacePicker } from "./Pickers.tsx";
 import { useCheckAccess } from "./use-check.ts";
@@ -23,11 +22,11 @@ export function CheckAccessView({ project }: CheckAccessViewProps) {
   const where = project ?? place ?? undefined;
   const answer = useCheckAccess(person, where);
   return (
-    <div className={styles.stack}>
+    <div {...partOf(part.stack)}>
       {project === undefined ? <PlacePicker value={place} onChange={setPlace} /> : null}
       <PersonPicker project={where} value={person} onChange={setPerson} />
       {person === undefined ? (
-        <p className={styles.muted}>{t("check-access.pick-a-person")}</p>
+        <p {...partOf(part.muted)}>{t("check-access.pick-a-person")}</p>
       ) : null}
       {answer.isError ? <Alert tone={alertTone.danger}>{messageOf(answer.error)}</Alert> : null}
       {answer.data === undefined ? null : <CheckAnswer answer={answer.data} />}

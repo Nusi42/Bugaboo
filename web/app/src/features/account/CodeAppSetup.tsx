@@ -1,11 +1,19 @@
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, autoComplete, Form, SubmitButton, TextField } from "@bugaboo/ui";
+import {
+  Alert,
+  alertTone,
+  autoComplete,
+  Form,
+  SubmitButton,
+  TextField,
+  partOf,
+  part,
+} from "@bugaboo/ui";
 import type { Schema } from "@bugaboo/api-client";
 import { useState } from "react";
 
 import { api } from "../../shared/api.ts";
 import { messageOf } from "../../shared/errors.ts";
-import styles from "./Account.module.css";
 import { ConfirmPasswordField } from "./ConfirmPasswordField.tsx";
 import { refreshTwoStep } from "./two-step.ts";
 
@@ -27,10 +35,10 @@ function Scan({ setup, password, onSwitchedOn }: ScanProps) {
         confirm.mutate({ body: { code: code.trim(), password } });
       }}
     >
-      <p className={styles.text}>{t("code-app.scan")}</p>
-      <img className={styles.qr} alt={t("code-app.qr-alt")} src={picture} />
-      <p className={styles.muted}>{t("code-app.key-label")}</p>
-      <code className={styles.key}>{setup.secret}</code>
+      <p {...partOf(part.text)}>{t("code-app.scan")}</p>
+      <img {...partOf(part.accountQr)} alt={t("code-app.qr-alt")} src={picture} />
+      <p {...partOf(part.muted)}>{t("code-app.key-label")}</p>
+      <code {...partOf(part.keyBox)}>{setup.secret}</code>
       <TextField
         label={t("code-app.confirm-code")}
         description={t("code-app.confirm-help")}

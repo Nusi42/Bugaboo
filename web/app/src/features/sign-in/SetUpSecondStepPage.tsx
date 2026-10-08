@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, Button, buttonLook, Card } from "@bugaboo/ui";
+import { Alert, alertTone, Button, buttonLook, Card, partOf, part } from "@bugaboo/ui";
 import { useNavigate } from "@tanstack/react-router";
 
 import { messageOf } from "../../shared/errors.ts";
@@ -8,7 +8,6 @@ import { forgetPerson } from "../../shared/session.ts";
 import { usePageTitle } from "../../shared/use-page.ts";
 import { useSignOut } from "../../shared/use-sign-out.ts";
 import { CodeAppSection, PasskeysSection, useHasSecondStep } from "../account/index.ts";
-import styles from "./SignIn.module.css";
 
 /**
  * *Set up your second step*: what a person sees, and all they can do, when their role or the
@@ -21,10 +20,10 @@ export function SetUpSecondStepPage() {
   const navigate = useNavigate();
   const out = useSignOut();
   return (
-    <div className={styles.stack}>
+    <div {...partOf(part.stack)}>
       <Card heading={t("set-up-second-step.title")} level={1}>
-        <p className={styles.text}>{t("set-up-second-step.why")}</p>
-        <p className={styles.text}>{t("set-up-second-step.how")}</p>
+        <p {...partOf(part.text)}>{t("set-up-second-step.why")}</p>
+        <p {...partOf(part.text)}>{t("set-up-second-step.how")}</p>
         {ready ? (
           <>
             <Alert tone={alertTone.success}>{t("set-up-second-step.ready")}</Alert>

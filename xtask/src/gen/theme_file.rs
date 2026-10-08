@@ -145,6 +145,9 @@ pub(crate) enum RuleKind {
     Base,
     /// `part "button[variant=primary]:hover"`: an element that says which part it is.
     Part,
+    /// `rule ".btn.primary"` inside `docs`: a selector of the design pages and mockups, written
+    /// as CSS (the pages are documents, not the app).
+    Doc,
 }
 
 pub(crate) struct Rule {
@@ -167,15 +170,48 @@ pub(crate) struct Keyframes {
     pub(crate) line: usize,
 }
 
+/// The names of the attributes that the page frame (`<html>`) carries: written once, here, and
+/// used by the style sheets, the TypeScript and the end-to-end tests (M2C-F91).
+pub(crate) struct Frame {
+    /// The theme on the page (`data-look`).
+    pub(crate) look: String,
+    /// The light or dark mode that the design pages force (`data-theme`).
+    pub(crate) mode: String,
+    /// A sample of a theme next to the page's own (`data-preview-look`).
+    pub(crate) preview: String,
+}
+
+/// The style sheet of the design pages that one `docs` block makes: its own tokens, the rules (CSS
+/// selectors) and the keyframes.
+pub(crate) struct DocSheet {
+    /// The name of the sheet: `components` or `docpage`.
+    pub(crate) name: String,
+    /// What the sheet is for, in the notice at its top.
+    pub(crate) description: String,
+    pub(crate) tokens: Vec<Token>,
+    pub(crate) rules: Vec<Rule>,
+    pub(crate) keyframes: Vec<Keyframes>,
+}
+
+/// The sheets of the design pages and the files they are written to.
+pub(crate) const DOC_SHEETS: [(&str, &str); 4] = [
+    ("components", "docs/design/components.css"),
+    ("docpage", "docs/design/docpage.css"),
+    ("ux-design", "docs/design/ux-design.css"),
+    ("mockup", "docs/design/mockup.css"),
+];
+
 pub(crate) struct ThemeFile {
     pub(crate) themes: Vec<Theme>,
     pub(crate) default_light: String,
     pub(crate) default_dark: String,
+    pub(crate) frame: Frame,
     pub(crate) variants: Vec<Variant>,
     pub(crate) tokens: Vec<Token>,
     pub(crate) mixins: Vec<Mixin>,
     pub(crate) keyframes: Vec<Keyframes>,
     pub(crate) rules: Vec<Rule>,
+    pub(crate) docs: Vec<DocSheet>,
     pub(crate) contrast: ContrastSpec,
     pub(crate) distinct: DistinctSpec,
 }
@@ -212,7 +248,24 @@ impl ThemeFile {
     }
 
     pub(crate) fn token(&self, name: &str) -> Option<&Token> {
-        self.tokens.iter().find(|token| token.name == name)
+        self.tokens
+            .iter()
+            .chain(self.docs.iter().flat_map(|sheet| &sheet.tokens))
+            .find(|token| token.name == name)
+    }
+
+    /// The rules of the app and of the design pages, for a check that reads every value.
+    pub(crate) fn every_rule(&self) -> impl Iterator<Item = &Rule> {
+        self.rules
+            .iter()
+            .chain(self.docs.iter().flat_map(|sheet| &sheet.rules))
+    }
+
+    /// The keyframes of the app and of the design pages.
+    pub(crate) fn every_keyframes(&self) -> impl Iterator<Item = &Keyframes> {
+        self.keyframes
+            .iter()
+            .chain(self.docs.iter().flat_map(|sheet| &sheet.keyframes))
     }
 
     /// The colors, in file order.
@@ -281,11 +334,13 @@ impl ThemeFile {
 struct Builder {
     themes: Vec<Theme>,
     defaults: Option<(String, String)>,
+    frame: Option<Frame>,
     variants: Vec<Variant>,
     tokens: Vec<Token>,
     mixins: Vec<Mixin>,
     keyframes: Vec<Keyframes>,
     rules: Vec<Rule>,
+    docs: Vec<DocSheet>,
     contrast: Option<ContrastSpec>,
     distinct: Option<DistinctSpec>,
 }
@@ -295,6 +350,13 @@ impl Builder {
         match node.name() {
             "defaults" => {
                 self.defaults = Some((node.required_prop("light")?, node.required_prop("dark")?));
+            }
+            "frame" => {
+                self.frame = Some(Frame {
+                    look: node.required_prop("look")?,
+                    mode: node.required_prop("mode")?,
+                    preview: node.required_prop("preview")?,
+                });
             }
             "themes" => {
                 for child in node.children() {
@@ -344,11 +406,85 @@ impl Builder {
                 }
                 self.keyframes.push(frames);
             }
+            "docs" => {
+                let sheet = self.doc_sheet(node)?;
+                self.docs.push(sheet);
+            }
             "base" => self.rules.push(rule(node, RuleKind::Base)?),
             "part" => self.rules.push(rule(node, RuleKind::Part)?),
             other => bail!("line {}: unknown line `{other}`", node.line()),
         }
         Ok(())
+    }
+
+    /// `docs "components" description="…" { tokens { … } rule "…" { … } keyframes "…" { … } }`.
+    fn doc_sheet(&self, node: Node<'_>) -> anyhow::Result<DocSheet> {
+        let name = node.only_arg()?;
+        if !DOC_SHEETS.iter().any(|(known, _)| *known == name) {
+            return Err(node.problem(format!(
+                "`{name}` is not a sheet of the design pages; use one of {}",
+                DOC_SHEETS.map(|(known, _)| known).join(", ")
+            )));
+        }
+        if self.docs.iter().any(|sheet| sheet.name == name) {
+            return Err(node.problem(format!("the sheet `{name}` is defined twice")));
+        }
+        let mut sheet = DocSheet {
+            name,
+            description: node.required_prop("description")?,
+            tokens: Vec::new(),
+            rules: Vec::new(),
+            keyframes: Vec::new(),
+        };
+        for child in node.children() {
+            match child.name() {
+                "tokens" => {
+                    for line in child.children() {
+                        let token = self.doc_token(&sheet, line)?;
+                        sheet.tokens.push(token);
+                    }
+                }
+                "rule" => sheet.rules.push(rule(child, RuleKind::Doc)?),
+                "keyframes" => {
+                    let frames = keyframes(child)?;
+                    if sheet
+                        .keyframes
+                        .iter()
+                        .any(|known| known.name == frames.name)
+                    {
+                        return Err(child.problem(format!(
+                            "the keyframes `{}` are defined twice",
+                            frames.name
+                        )));
+                    }
+                    sheet.keyframes.push(frames);
+                }
+                other => bail!("line {}: unknown line `{other}` in `docs`", child.line()),
+            }
+        }
+        Ok(sheet)
+    }
+
+    /// A token of the design pages: the same in every theme, named `doc-…`.
+    fn doc_token(&self, sheet: &DocSheet, node: Node<'_>) -> anyhow::Result<Token> {
+        let token = self.token(node)?;
+        if !token.name.starts_with("doc-") {
+            return Err(node.problem("a token of the design pages is named `doc-…`"));
+        }
+        if token.same.is_none() || token.forced.is_some() || !token.variants.is_empty() {
+            return Err(
+                node.problem("a token of the design pages has one value, the same everywhere")
+            );
+        }
+        if self
+            .docs
+            .iter()
+            .chain(std::iter::once(sheet))
+            .any(|other| other.tokens.iter().any(|known| known.name == token.name))
+        {
+            return Err(node.problem(format!("`{}` is defined twice", token.name)));
+        }
+        Ok(token)
     }
 
     fn token(&self, node: Node<'_>) -> anyhow::Result<Token> {
@@ -482,11 +618,13 @@ impl Builder {
             themes: self.themes,
             default_light,
             default_dark,
+            frame: self.frame.context("`frame` is missing")?,
             variants: self.variants,
             tokens: self.tokens,
             mixins: self.mixins,
             keyframes: self.keyframes,
             rules: self.rules,
+            docs: self.docs,
             contrast: self.contrast.context("`contrast` is missing")?,
             distinct: self.distinct.context("`distinct` is missing")?,
         };
@@ -544,7 +682,11 @@ impl ThemeFile {
     /// Every `$token` and every `use` names something that is defined.
     fn validate_references(&self) -> anyhow::Result<()> {
         let mut known: BTreeSet<&str> = BTreeSet::new();
-        for token in &self.tokens {
+        let every_token = self
+            .tokens
+            .iter()
+            .chain(self.docs.iter().flat_map(|sheet| &sheet.tokens));
+        for token in every_token.clone() {
             known.insert(&token.name);
         }
         let unknown_in = |value: &str, line: usize| -> anyhow::Result<()> {
@@ -555,7 +697,7 @@ impl ThemeFile {
             }
             Ok(())
         };
-        for token in &self.tokens {
+        for token in every_token {
             for value in token
                 .same
                 .iter()
@@ -571,8 +713,7 @@ impl ThemeFile {
             .map(|mixin| mixin.name.as_str())
             .collect();
         let all_items = self
-            .rules
-            .iter()
+            .every_rule()
             .map(|rule| &rule.items)
             .chain(self.mixins.iter().map(|mixin| &mixin.items));
         for items in all_items {
@@ -804,6 +945,25 @@ mod tests {
         ThemeFile::parse(&format!("{text}\n{extra}\n"))
             .err()
             .map(|error| format!("{error:#}"))
+    }
+
+    #[test]
+    fn bad_example_a_token_of_the_design_pages_must_be_named_doc() {
+        let repo = Repo::discover().unwrap();
+        let text = crate::source::read_text(&repo, THEME_PATH).unwrap();
+        let renamed = text.replacen("\"doc-lh-page\"", "\"lh-page\"", 1);
+        let error = ThemeFile::parse(&renamed)
+            .err()
+            .map(|error| format!("{error:#}"));
+        assert!(error.is_some_and(|text| text.contains("doc-")));
+    }
+
+    #[test]
+    fn bad_example_a_sheet_of_the_design_pages_has_a_known_name() {
+        let problem = problem_with("docs \"other\" description=\"x\" {\n}");
+        assert!(problem.is_some_and(|text| text.contains("not a sheet")));
+        let twice = problem_with("docs \"components\" description=\"x\" {\n}");
+        assert!(twice.is_some_and(|text| text.contains("twice")));
     }
 
     #[test]

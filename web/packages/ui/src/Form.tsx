@@ -1,8 +1,8 @@
 import type { ReactNode } from "react";
 import { Form as AriaForm } from "react-aria-components";
 
-import styles from "./Form.module.css";
-import { cx } from "./cx.ts";
+import { partOf } from "./parts.ts";
+import { part } from "./tokens.ts";
 
 export interface FormProps {
   /** Called when the form is sent and every field is valid. */
@@ -14,7 +14,7 @@ export interface FormProps {
 export function Form({ onSubmit, children }: FormProps) {
   return (
     <AriaForm
-      className={cx(styles.form)}
+      {...partOf(part.stack)}
       onSubmit={(event) => {
         event.preventDefault();
         onSubmit();

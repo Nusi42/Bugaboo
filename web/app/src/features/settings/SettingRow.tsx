@@ -1,10 +1,9 @@
 import { t } from "@bugaboo/messages";
-import { Button, buttonLook, Switch } from "@bugaboo/ui";
+import { Button, buttonLook, Switch, partOf, part } from "@bugaboo/ui";
 import { type ReactNode } from "react";
 
 import { type Setting, type SettingValue } from "../../shared/my-settings.ts";
 import { SettingControl } from "./SettingControl.tsx";
-import styles from "./Settings.module.css";
 import { sourceInWords, wordsOf } from "./texts.ts";
 
 /** What a row can do with its setting. */
@@ -43,11 +42,11 @@ function valueInWords(setting: Setting): string {
 /** A setting an administrator locked: read only, with the reason (principle 10). */
 function Locked({ setting }: { readonly setting: Setting }) {
   return (
-    <p className={styles.locked}>
-      <span className={styles.lockedTitle}>{wordsOf(setting.name_key)}</span>
-      <span className={styles.lockedValue}>{valueInWords(setting)}</span>
+    <p {...partOf(part.settingsLocked)}>
+      <span {...partOf(part.strong)}>{wordsOf(setting.name_key)}</span>
+      <span {...partOf(part.settingsLockedValue)}>{valueInWords(setting)}</span>
       <strong>{t("setting.ui.locked")}</strong>
-      <span className={styles.help}>{t("setting.ui.locked-why")}</span>
+      <span {...partOf(part.muted)}>{t("setting.ui.locked-why")}</span>
     </p>
   );
 }
@@ -64,15 +63,15 @@ export function SettingRow({ setting, actions, control }: SettingRowProps) {
     actions.onChange(setting.key, value);
   };
   return (
-    <li className={styles.row}>
+    <li {...partOf(part.box)}>
       {lockedBelow ? (
         <Locked setting={setting} />
       ) : (
         (control?.(setting, change) ?? <SettingControl setting={setting} onChange={change} />)
       )}
-      <p className={styles.help}>{wordsOf(setting.help_key)}</p>
-      <p className={styles.source}>{sourceInWords(setting)}</p>
-      <div className={styles.actions}>
+      <p {...partOf(part.muted)}>{wordsOf(setting.help_key)}</p>
+      <p {...partOf(part.settingsSource)}>{sourceInWords(setting)}</p>
+      <div {...partOf(part.row)}>
         {setting.own && !lockedBelow ? (
           <Button
             look={buttonLook.quiet}
@@ -93,7 +92,7 @@ export function SettingRow({ setting, actions, control }: SettingRowProps) {
                 actions.onLock?.(setting.key, locked);
               }}
             />
-            <p className={styles.help}>{t("setting.ui.lock-help")}</p>
+            <p {...partOf(part.muted)}>{t("setting.ui.lock-help")}</p>
           </div>
         ) : null}
       </div>

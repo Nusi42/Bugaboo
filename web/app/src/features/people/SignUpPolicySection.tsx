@@ -11,6 +11,8 @@ import {
   SubmitButton,
   Switch,
   TextField,
+  partOf,
+  part,
 } from "@bugaboo/ui";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
@@ -19,7 +21,6 @@ import { api } from "../../shared/api.ts";
 import { messageOf } from "../../shared/errors.ts";
 import { queryClient } from "../../shared/query-client.ts";
 import { statusOptions } from "../../shared/session.ts";
-import styles from "./People.module.css";
 
 /** The domains as the administrator typed them: one per line, or separated by commas or spaces. */
 function domainsOf(text: string): string[] {
@@ -56,7 +57,7 @@ function PolicyForm({ policy }: { readonly policy: Schema<"SignUpPolicyBody"> })
       {everybody ? <Alert tone={alertTone.warning}>{t("sign-up-policy.warning")}</Alert> : null}
       {save.isError ? <Alert tone={alertTone.danger}>{messageOf(save.error)}</Alert> : null}
       {save.isSuccess ? <Alert tone={alertTone.success}>{t("sign-up-policy.saved")}</Alert> : null}
-      <div className={styles.row}>
+      <div {...partOf(part.row)}>
         {everybody ? (
           <ConfirmDialog
             triggerLabel={t("common.save")}
@@ -80,7 +81,7 @@ export function SignUpPolicySection() {
   const policy = useQuery(api.query.queryOptions("get", "/api/v1/auth/sign-up-policy"));
   return (
     <Card heading={t("sign-up-policy.title")}>
-      <p className={styles.text}>{t("sign-up-policy.intro")}</p>
+      <p {...partOf(part.text)}>{t("sign-up-policy.intro")}</p>
       {policy.isError ? <Alert tone={alertTone.danger}>{messageOf(policy.error)}</Alert> : null}
       {policy.data === undefined ? null : <PolicyForm policy={policy.data} />}
     </Card>

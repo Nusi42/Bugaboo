@@ -1,9 +1,9 @@
 import { t } from "@bugaboo/messages";
+import { partOf, part } from "@bugaboo/ui";
 
 import { usePageTitle } from "../../shared/use-page.ts";
 import { NotFoundPage, QueryGate } from "../shell/index.ts";
 import { lineOf, usePerson } from "./people.ts";
-import styles from "./People.module.css";
 import { usePersonTrail } from "./person-trail.ts";
 import { Facts, Groups, Roles } from "./PersonSections.tsx";
 
@@ -24,7 +24,7 @@ export function PersonPage({ id }: { readonly id: string }) {
   return (
     <QueryGate error={found.error} data={shown} notFound={<NotFoundPage />}>
       {(person) => (
-        <div className={styles.stack}>
+        <div {...partOf(part.stack)}>
           <Facts line={person.line} since={person.since} />
           <Groups line={person.line} />
           <Roles line={person.line} />

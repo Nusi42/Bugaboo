@@ -1,5 +1,6 @@
 import { t } from "@bugaboo/messages";
 import type { ReactNode } from "react";
+import { partOf, part } from "@bugaboo/ui";
 
 import {
   definitionOf,
@@ -9,7 +10,6 @@ import {
   type ShortcutOverrides,
 } from "../../shared/shortcuts.ts";
 import { Keys } from "./Keys.tsx";
-import styles from "./ShortcutList.module.css";
 
 export interface ShortcutListProps {
   /** The keys the person chose instead of the defaults. */
@@ -23,14 +23,14 @@ export interface ShortcutListProps {
 /** Every shortcut of the registry with its keys and where it works (UX §6.2). */
 export function ShortcutList({ overrides, action, show }: ShortcutListProps) {
   return (
-    <ul className={styles.list} aria-label={t("shortcut.title")}>
+    <ul {...partOf(part.list, { variants: ["snug"] })} aria-label={t("shortcut.title")}>
       {shortcutDefinitions
         .filter((definition) => show?.(definition.id) ?? true)
         .map((definition) => (
-          <li key={definition.id} className={styles.row}>
-            <span className={styles.what}>
-              <span className={styles.name}>{t(definition.message)}</span>
-              <span className={styles.where}>
+          <li key={definition.id} {...partOf(part.item, { variants: ["spread"] })}>
+            <span {...partOf(part.shortcutListWhat)}>
+              <span {...partOf(part.shortcutListName)}>{t(definition.message)}</span>
+              <span {...partOf(part.hint)}>
                 {t(
                   definitionOf(definition.id).where === "lists"
                     ? "shortcut.in-lists"
@@ -38,10 +38,10 @@ export function ShortcutList({ overrides, action, show }: ShortcutListProps) {
                 )}
               </span>
             </span>
-            <span className={styles.keys}>
+            <span {...partOf(part.shortcutListKeys)}>
               {keysOf(definition.id, overrides).map((keys, index) => (
-                <span key={keys} className={styles.alternative}>
-                  {index === 0 ? null : <span className={styles.or}>{t("shortcut.or")}</span>}
+                <span key={keys} {...partOf(part.shortcutListAlternative)}>
+                  {index === 0 ? null : <span {...partOf(part.hint)}>{t("shortcut.or")}</span>}
                   <Keys sequence={keys} />
                 </span>
               ))}

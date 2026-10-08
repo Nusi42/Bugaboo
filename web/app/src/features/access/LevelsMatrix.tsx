@@ -1,6 +1,6 @@
 import { t } from "@bugaboo/messages";
+import { partOf, part } from "@bugaboo/ui";
 
-import styles from "./Access.module.css";
 import { CellControl } from "./CellControl.tsx";
 import type { Change, LevelTable, Row } from "./levels.ts";
 
@@ -39,12 +39,14 @@ function MatrixRow<Subject extends string, Level extends string>({
   const inProject = table.project !== undefined && table.project !== null;
   const subject = subjectName(row.subject);
   return (
-    <tr>
-      <th scope={rowHeader}>{subject}</th>
+    <tr {...partOf(part.accessMatrixRow)}>
+      <th scope={rowHeader} {...partOf(part.accessMatrixCell, { variants: ["row"] })}>
+        {subject}
+      </th>
       {row.cells.map((cell) => {
         const roleName = table.roles.find((known) => known.id === cell.role)?.name ?? "";
         return (
-          <td key={cell.role}>
+          <td key={cell.role} {...partOf(part.accessMatrixCell)}>
             <CellControl
               label={t("access.cell-label", { subject, role: roleName })}
               subjectName={subject}
@@ -78,13 +80,19 @@ export function LevelsMatrix<Subject extends string, Level extends string>({
   ...rest
 }: LevelsViewProps<Subject, Level>) {
   return (
-    <section className={styles.scroll} aria-label={tableName}>
-      <table className={styles.matrix}>
+    <section {...partOf(part.accessScroll)} aria-label={tableName}>
+      <table {...partOf(part.accessMatrix)}>
         <thead>
-          <tr>
-            <th scope={column}>{subjectHeading}</th>
+          <tr {...partOf(part.accessMatrixRow)}>
+            <th scope={column} {...partOf(part.accessMatrixCell, { variants: ["head"] })}>
+              {subjectHeading}
+            </th>
             {table.roles.map((role) => (
-              <th key={role.id} scope={column}>
+              <th
+                key={role.id}
+                scope={column}
+                {...partOf(part.accessMatrixCell, { variants: ["head"] })}
+              >
                 {role.name}
               </th>
             ))}

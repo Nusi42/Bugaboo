@@ -1,6 +1,6 @@
 import { useId, type ReactNode } from "react";
-
-import styles from "./Card.module.css";
+import { partOf } from "./parts.ts";
+import { part } from "./tokens.ts";
 
 export interface CardProps {
   /** The name of the card, shown as its heading and used as its name for screen readers. */
@@ -15,11 +15,11 @@ export function Card({ heading, level = 2, children }: CardProps) {
   const headingId = useId();
   const Heading = level === 1 ? "h1" : "h2";
   return (
-    <section className={styles.card} aria-labelledby={headingId}>
-      <Heading id={headingId} className={styles.heading} tabIndex={-1}>
+    <section {...partOf(part.card)} aria-labelledby={headingId}>
+      <Heading id={headingId} {...partOf(part.cardHeading)} tabIndex={-1}>
         {heading}
       </Heading>
-      <div className={styles.body}>{children}</div>
+      <div {...partOf(part.stack)}>{children}</div>
     </section>
   );
 }

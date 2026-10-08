@@ -1,10 +1,17 @@
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, type SaveState, SaveStatus, SearchField } from "@bugaboo/ui";
+import {
+  Alert,
+  alertTone,
+  type SaveState,
+  SaveStatus,
+  SearchField,
+  partOf,
+  part,
+} from "@bugaboo/ui";
 import { useState } from "react";
 
 import { type Setting } from "../../shared/my-settings.ts";
 import { SettingRow, type ControlRenderer, type SettingActions } from "./SettingRow.tsx";
-import styles from "./Settings.module.css";
 import { wordsOf } from "./texts.ts";
 
 export interface SettingsFormProps {
@@ -54,7 +61,7 @@ export function SettingsForm({
   const [query, setQuery] = useState("");
   const shown = settings.filter((setting) => isDrawn(setting, controls) && matches(setting, query));
   return (
-    <div className={styles.stack}>
+    <div {...partOf(part.stack)}>
       {searchable ? (
         <SearchField
           label={t("setting.ui.search")}
@@ -73,9 +80,9 @@ export function SettingsForm({
       />
       {problem === null ? null : <Alert tone={alertTone.danger}>{problem}</Alert>}
       {shown.length === 0 ? (
-        <p className={styles.help}>{t("setting.ui.nothing")}</p>
+        <p {...partOf(part.muted)}>{t("setting.ui.nothing")}</p>
       ) : (
-        <ul className={styles.list}>
+        <ul {...partOf(part.list, { variants: ["loose"] })}>
           {shown.map((setting) => (
             <SettingRow
               key={setting.key}

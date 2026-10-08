@@ -1,20 +1,17 @@
 import stylelint from "stylelint";
 
-// The CSS Modules that have not moved onto design/theme.kdl yet use design tokens only (ADR-0010,
-// coding-standards section 4): lengths and colors come from `var(--token)`; the only literal sizes
-// allowed are 0 and a 1px border. THEME-ONLY removes the modules (M2C-F90); the rules of the theme
-// file are read with the stricter `stylelint.theme.config.mjs` (ADR-0026).
+// The rules of design/theme.kdl, compiled, are read with these rules (LINT-CSS, ADR-0026, coding-
+// standards section 4). A rule holds no value of its own: not a length (not even a 1px line, which
+// is the token `border-width`), not a color, a duration, a weight, a line height, a layer or an
+// opacity. A zero, and an opacity of 0 or 1, say what they say without a token.
 
 const lengthUnits =
   "px|rem|em|ex|ch|cap|lh|rlh|vw|vh|vmin|vmax|svw|svh|lvw|lvh|dvw|dvh|pt|pc|cm|mm|in|Q";
 // A number with a length unit that is not part of a longer word or a variable name.
-export const anyLength = String.raw`/(?<![\w.#-])-?\d*\.?\d+(?:${lengthUnits})\b/i`;
-// The same, except exactly 1px, which borders and outlines may use.
-const lengthExceptHairline = String.raw`/(?<![\w.#-])(?!1px\b)-?\d*\.?\d+(?:${lengthUnits})\b/i`;
-
-// The only properties that may use a literal 1px: the border and outline line widths (also the
-// per-side border shorthands).
-const hairlineProperties = String.raw`(?:border|outline|border(?:-[a-z]+)*-width|outline-width|border-(?:top|right|bottom|left|block|inline)(?:-(?:start|end))?)`;
+const anyLength = String.raw`/(?<![\w.#-])-?\d*\.?\d+(?:${lengthUnits})\b/i`;
+const anyNumber = String.raw`/^-?\d*\.?\d+$/`;
+const anyTime = String.raw`/(?<![\w.#-])-?\d*\.?\d+(?:ms|s)\b/i`;
+const anyOpacity = String.raw`/^(?!(?:0|1)$)-?\d*\.?\d+$/`;
 
 // System colors (Highlight, CanvasText ...) are real colors chosen by the person's device. They are
 // allowed only inside @media (forced-colors: active), where tokens no longer apply.
@@ -57,8 +54,6 @@ systemColorsPlugin.messages = messages;
 
 /** @type {import("stylelint").Config} */
 export default {
-  // The generated style sheet is the one place that holds raw values (gen theme, ADR-0026).
-  ignoreFiles: ["web/packages/ui/src/theme.css"],
   plugins: [systemColorsPlugin],
   rules: {
     [ruleName]: true,
@@ -77,14 +72,17 @@ export default {
       "oklch",
       "color",
     ],
-    // Sizes: tokens only. Borders and outlines may be exactly 1px.
+    // Sizes, weights, line heights, layers, opacities and times: tokens only.
     "declaration-property-value-disallowed-list": {
-      [`/^(?!${hairlineProperties}$)/`]: [anyLength],
-      [`/^${hairlineProperties}$/`]: [lengthExceptHairline],
+      "/.+/": [anyLength],
+      "/^(?:line-height|font-weight|z-index)$/": [anyNumber],
+      "/^opacity$/": [anyOpacity],
+      "/^(?:transition|animation)/": [anyTime],
     },
-    // Fonts: tokens only, and no `font` shorthand that could hide a literal family or size.
+    // Fonts: tokens only (a control may take the family of its parent, which comes from a token),
+    // and no `font` shorthand that could hide a literal family or size.
     "declaration-property-value-allowed-list": {
-      "font-family": [String.raw`/^var\(--[\w-]+\)$/`],
+      "font-family": [String.raw`/^(?:var\(--[\w-]+\)|inherit)$/`],
     },
     "property-disallowed-list": ["font"],
     "declaration-no-important": true,
@@ -97,13 +95,11 @@ export default {
     "no-duplicate-selectors": true,
     "no-descending-specificity": true,
     "property-no-unknown": true,
-    "selector-pseudo-class-no-unknown": [true, { ignorePseudoClasses: ["global", "local"] }],
+    "selector-pseudo-class-no-unknown": true,
     "selector-pseudo-element-no-unknown": true,
     "selector-type-no-unknown": true,
     "unit-no-unknown": true,
     "function-no-unknown": true,
     "at-rule-no-unknown": true,
-    // CSS Modules: class names are camelCase so they read as `styles.className`.
-    "selector-class-pattern": ["^[a-z][a-zA-Z0-9]*$", { resolveNestedSelectors: true }],
   },
 };

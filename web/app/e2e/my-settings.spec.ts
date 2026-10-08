@@ -2,10 +2,11 @@ import { t } from "@bugaboo/messages";
 import { type Locator, type Page } from "@playwright/test";
 
 import { ada, bob, forgetChoices, makeAdmin, makePerson } from "./support/accounts.ts";
-import { expectGoodInEveryLook } from "./support/checks.ts";
+import { expectGoodInEveryLook, expectLook } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
 import {
   addressEndingAt,
+  chooseGoHomeKeys,
   anotherBrowser,
   keepOnDevice,
   sendPassword,
@@ -15,6 +16,7 @@ import {
 } from "./support/flows.ts";
 import { paths } from "../src/shared/paths.ts";
 import { storageKey } from "../../packages/ui/src/storage.ts";
+import { variants } from "../../packages/ui/src/tokens.ts";
 
 // *My settings* (CFG-04, THM-02) and the settings of the organization (CFG-06) with a real server:
 // what a person chooses is kept on the server, follows them to another browser, is gone from the
@@ -62,7 +64,7 @@ async function chooseMidnight(page: Page): Promise<void> {
   await choose(page.getByRole("radio", { name: t("appearance.mode.dark"), exact: true }));
   const group = page.getByRole("group", { name: t("appearance.dark"), exact: true });
   await choose(group.getByRole("radio", { name: t("theme.midnight"), exact: true }));
-  await expect(page.locator("html")).toHaveAttribute("data-look", "midnight");
+  await expectLook(page, "midnight");
   await saved(page);
 }
 
@@ -73,18 +75,6 @@ async function chooseTimeZone(page: Page, zone: string): Promise<void> {
     .getByRole("combobox", { name: t("setting.region.time-zone.name"), exact: true })
     .selectOption(zone);
   await saved(page);
-}
-
-/** Gives *Go home* the keys `g i` on *Keyboard shortcuts*. */
-async function chooseKeys(page: Page): Promise<void> {
-  await page.goto(paths.shortcuts);
-  await page.getByRole("button", { name: t("shortcut.go-home"), exact: true }).click();
-  const panel = page.getByRole("complementary", { name: t("shortcut.go-home"), exact: true });
-  await panel.getByRole("textbox", { name: t("shortcuts.new-keys"), exact: true }).click();
-  await page.keyboard.press("g");
-  await page.keyboard.press("i");
-  await panel.getByRole("button", { name: t("shortcuts.use") }).click();
-  await expect(panel.getByText(t("shortcuts.saved"))).toBeVisible();
 }
 
 test("cfg_04 what a person chooses in My settings follows them to another browser", async ({
@@ -99,16 +89,22 @@ test("cfg_04 what a person chooses in My settings follows them to another browse
   await setSwitch(page, t("appearance.larger-text"), true);
   await saved(page);
   await chooseTimeZone(page, "Pacific/Auckland");
-  await chooseKeys(page);
+  await chooseGoHomeKeys(page);
   await page.keyboard.press("Escape");
 
   // A second browser of the same person: nothing was set there, and it looks the same.
   const other = await anotherBrowser(browser, server);
   await other.emulateMedia({ colorScheme: "light" });
   await signIn(other, ada);
-  await expect(other.locator("html")).toHaveAttribute("data-look", "midnight");
-  await expect(other.locator("html")).toHaveAttribute("data-motion", "less");
-  await expect(other.locator("html")).toHaveAttribute("data-text", "larger");
+  await expectLook(other, "midnight");
+  await expect(other.locator("html")).toHaveAttribute(
+    variants["less-motion"].attribute,
+    variants["less-motion"].value,
+  );
+  await expect(other.locator("html")).toHaveAttribute(
+    variants["larger-text"].attribute,
+    variants["larger-text"].value,
+  );
   await other.goto(paths.region);
   await expect(other.getByLabel(t("setting.region.time-zone.name"), { exact: true })).toHaveValue(
     "Pacific/Auckland",
@@ -133,13 +129,13 @@ test("cfg_04 after signing out nothing of the person's choices is left in the br
   await signOut(page);
   expect(await storedText(page)).not.toContain(storageKey.firstFrame);
   // The sign-in page is the device's: light on a light device.
-  await expect(page.locator("html")).toHaveAttribute("data-look", "daylight");
+  await expectLook(page, "daylight");
   // The next person gets their own look, not the last person's.
   await sendPassword(page, bob);
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
-  await expect(page.locator("html")).toHaveAttribute("data-look", "daylight");
+  await expectLook(page, "daylight");
   await page.reload();
-  await expect(page.locator("html")).toHaveAttribute("data-look", "daylight");
+  await expectLook(page, "daylight");
 });
 
 test("cfg_04 the storage of the browser holds nothing of the person while they are signed in or after", async ({
@@ -160,7 +156,7 @@ test("cfg_04 the storage of the browser holds nothing of the person while they a
   await signIn(page, ada);
   await chooseMidnight(page);
   await chooseTimeZone(page, "Pacific/Auckland");
-  await chooseKeys(page);
+  await chooseGoHomeKeys(page);
   const whileSignedIn = await storedText(page);
   expect(whileSignedIn).toContain(storageKey.firstFrame);
   expect(whileSignedIn).not.toContain(storageKey.appearance);
@@ -197,7 +193,7 @@ test("cfg_06 an administrator locks the theme and a person sees Set by your orga
   await signIn(person, bob);
   await person.goto(paths.appearance);
   // The organization's theme counts, the choice is read only and the page says why.
-  await expect(person.locator("html")).toHaveAttribute("data-look", "dusk");
+  await expectLook(person, "dusk");
   await expect(person.getByText(t("setting.ui.locked"), { exact: true }).first()).toBeVisible();
   await expect(person.getByText(t("setting.ui.locked-why")).first()).toBeVisible();
   await expect(
@@ -211,7 +207,7 @@ test("cfg_06 an administrator locks the theme and a person sees Set by your orga
   await saved(page);
   await person.reload();
   await choose(person.getByRole("radio", { name: t("appearance.mode.light"), exact: true }));
-  await expect(person.locator("html")).toHaveAttribute("data-look", "daylight");
+  await expectLook(person, "daylight");
   await person.close();
 });
 

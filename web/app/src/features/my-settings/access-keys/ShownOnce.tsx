@@ -1,7 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, Button, buttonLook, Card, CopyButton } from "@bugaboo/ui";
-
-import styles from "./AccessKeys.module.css";
+import { Alert, alertTone, Button, buttonLook, Card, CopyButton, partOf, part } from "@bugaboo/ui";
 
 export interface ShownOnceProps {
   /** The whole key. Bugaboo cannot show it again. */
@@ -14,11 +12,11 @@ export interface ShownOnceProps {
 export function ShownOnce({ secret, onDone }: ShownOnceProps) {
   return (
     <Card heading={t("access-keys.shown-title")}>
-      <div className={styles.stack}>
+      <div {...partOf(part.stack)}>
         <Alert tone={alertTone.warning}>{t("access-keys.shown-once")}</Alert>
-        <p className={styles.muted}>{t("access-keys.key-label")}</p>
-        <code className={styles.key}>{secret}</code>
-        <div className={styles.row}>
+        <p {...partOf(part.muted)}>{t("access-keys.key-label")}</p>
+        <code {...partOf(part.keyBox)}>{secret}</code>
+        <div {...partOf(part.row, { variants: ["stretch"] })}>
           <CopyButton
             text={secret}
             label={t("access-keys.copy")}

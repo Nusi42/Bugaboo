@@ -1,7 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, Button, buttonLook, CopyButton } from "@bugaboo/ui";
-
-import styles from "./Account.module.css";
+import { Alert, alertTone, Button, buttonLook, CopyButton, partOf, part } from "@bugaboo/ui";
 
 export interface BackupCodesProps {
   /** The codes, in the form that is shown to the person. */
@@ -13,14 +11,14 @@ export interface BackupCodesProps {
 /** Backup codes, shown once: the server keeps only a hash of each. */
 export function BackupCodes({ codes, onSaved }: BackupCodesProps) {
   return (
-    <div className={styles.stack}>
+    <div {...partOf(part.stack)}>
       <Alert tone={alertTone.warning}>{t("backup.shown-once")}</Alert>
-      <ul className={styles.codes} aria-label={t("backup.list")}>
+      <ul {...partOf(part.accountCodes)} aria-label={t("backup.list")}>
         {codes.map((code) => (
           <li key={code}>{code}</li>
         ))}
       </ul>
-      <div className={styles.row}>
+      <div {...partOf(part.row, { variants: ["stretch"] })}>
         <CopyButton
           text={codes.join("\n")}
           label={t("backup.copy")}

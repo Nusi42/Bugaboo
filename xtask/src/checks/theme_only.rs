@@ -16,24 +16,22 @@
 //!   `.sass`, `.less`), and no
 //!   `import`, `import()` or `require` of one, with or without `?inline` or `?raw` after the name.
 //!
-//! The components that have not been moved yet stand in `tools/checks/theme-only-exemptions.toml`,
-//! each with the follow-up that moves it. An entry whose files no longer break the rule fails, so
-//! the list shrinks to nothing as the components move.
+//! The pages of the documents and the mockups (`docs/**/*.html`) follow the same rule: no
+//! `<style>` element and no `style` attribute in the markup, because their look is written in the
+//! `docs` blocks of the theme file and generated (M2C-F93). A `style` attribute that the page's own
+//! script builds from a value it computes (a position, a color read from the page) is a style
+//! of the run time, not of the markup, and stays.
+//!
+//! Nothing is exempt: the components moved onto the theme file in package C-06 (M2C-F90).
 
 use std::path::Path;
 
-use serde::Deserialize;
-
-use super::exemptions::{self, Used};
 use super::web_source::{code_of, is_app_source};
 use super::{Check, Context, Finding};
 use crate::docs::text::has_extension;
 use crate::generate::all_paths;
 use crate::generate::theme::STYLE_SHEET;
-use crate::source::{Kind, Source};
-
-/// The components that still use classes or CSS, each with the follow-up that moves it.
-const EXEMPTIONS_PATH: &str = "tools/checks/theme-only-exemptions.toml";
+use crate::source::{Kind, Source, contains_word};
 
 /// Ways to put a style on an element, or a style sheet on the page, from code: the text to find
 /// and what it is.
@@ -66,97 +64,65 @@ impl Check for ThemeOnly {
 
     fn run(&self, context: &Context<'_>) -> anyhow::Result<Vec<Finding>> {
         let sources = context.sources(self.id(), Kind::WebAndStyles)?;
-        let exemptions: Exemptions = exemptions::load(context.repo, EXEMPTIONS_PATH)?;
-        Ok(evaluate(&sources, &exemptions.exempt))
+        let pages = context.sources(self.id(), Kind::DocPages)?;
+        let mut findings = evaluate(&sources);
+        findings.extend(pages.iter().flat_map(|(path, text)| scan_page(path, text)));
+        Ok(findings)
     }
 }
-
-/// The file of components that stand for now.
-#[derive(Deserialize)]
-struct Exemptions {
-    #[serde(default)]
-    exempt: Vec<Exempt>,
-}
-
-/// A file, or every file below a folder (the path ends with `/`), or every file whose name starts
-/// with the path (`web/packages/ui/src/Card.` is `Card.tsx` and `Card.module.css`).
-#[derive(Deserialize)]
-struct Exempt {
-    path: String,
-    reason: String,
-}
-
-impl exemptions::Exemption for Exempt {
-    fn name(&self) -> String {
-        self.path.clone()
-    }
-
-    fn reason(&self) -> &str {
-        &self.reason
-    }
-
-    fn unused(&self) -> String {
-        "covers no file that breaks the rule any more. Remove it.".to_owned()
-    }
-}
-
-fn evaluate(sources: &[Source], exemptions: &[Exempt]) -> Vec<Finding> {
+fn evaluate(sources: &[Source]) -> Vec<Finding> {
     let generated = all_paths();
-    let mut used = Used::default();
-    let mut findings = Vec::new();
-    for (path, text) in sources
+    sources
         .iter()
         .filter(|(path, _)| is_app_source(path) && !generated.contains(&path.as_str()))
-    {
-        let found = scan(path, text);
-        if found.is_empty() {
-            continue;
-        }
-        let covering: Vec<usize> = exemptions
-            .iter()
-            .enumerate()
-            .filter(|(_, exempt)| path.starts_with(&exempt.path))
-            .map(|(index, _)| index)
-            .collect();
-        if covering.is_empty() {
-            findings.extend(found);
-        }
-        for index in covering {
-            used.mark(index);
-        }
-    }
-    findings.extend(shape_findings(exemptions));
-    findings.extend(exemptions::judge(EXEMPTIONS_PATH, exemptions, &used));
-    findings.extend(exemptions::follow_up_findings(EXEMPTIONS_PATH, exemptions));
-    findings
-}
-
-/// An exemption covers one feature folder (`web/app/src/features/people/`) or one component by
-/// the start of its file name (`web/packages/ui/src/Card.`), never `web/` or a folder with many
-/// features in it, which would hide every new file.
-fn shape_findings(exemptions: &[Exempt]) -> Vec<Finding> {
-    exemptions
-        .iter()
-        .filter(|exempt| !is_one_component(&exempt.path))
-        .map(|exempt| {
-            Finding::at(
-                EXEMPTIONS_PATH,
-                format!(
-                    "The entry `{}` covers more than one feature or component. Name one feature folder (…/features/<name>/) or one file or file name start (…/Card.).",
-                    exempt.path
-                ),
-            )
-        })
+        .flat_map(|(path, text)| scan(path, text))
         .collect()
 }
 
-fn is_one_component(path: &str) -> bool {
-    let parts: Vec<&str> = path.split('/').collect();
-    match parts.as_slice() {
-        [.., "features", name, ""] => !name.is_empty(),
-        [.., last] => path.starts_with("web/") && parts.len() >= 3 && last.contains('.'),
-        [] => false,
+/// What breaks the rule in a page of the documents: a `<style>` element, or a `style` attribute
+/// whose value is not built by the script of the page.
+fn scan_page(path: &str, text: &str) -> Vec<Finding> {
+    let mut findings = Vec::new();
+    let mut line = 1;
+    let mut rest = text;
+    while let Some(at) = rest.find('<') {
+        line += rest[..at].matches('\n').count();
+        rest = &rest[at..];
+        let end = rest.find('>').unwrap_or(rest.len());
+        let tag = &rest[..end];
+        let name: String = tag[1..]
+            .chars()
+            .take_while(char::is_ascii_alphanumeric)
+            .collect();
+        if name.eq_ignore_ascii_case("style") {
+            findings.push(Finding::at(
+                format!("{path}:{line}"),
+                "A <style> element. Write the rules in a `docs` block of design/theme.kdl; `cargo xtask gen theme` writes the sheet (M2C-F93).",
+            ));
+        } else if !name.is_empty() && has_markup_style(tag) {
+            findings.push(Finding::at(
+                format!("{path}:{line}"),
+                "A `style` attribute in the markup. Use a class of the page's sheet, written in a `docs` block of design/theme.kdl (M2C-F93).",
+            ));
+        }
+        line += tag.matches('\n').count();
+        rest = &rest[end.min(rest.len())..];
+        rest = rest.strip_prefix('>').unwrap_or(rest);
     }
+    findings
+}
+
+/// Whether the tag has a `style="…"` attribute that the markup alone fixes: its value has no part
+/// that a script puts in (`${…}` of a template, or a string joined with `+`).
+fn has_markup_style(tag: &str) -> bool {
+    tag.match_indices(" style=").any(|(at, _)| {
+        let value = &tag[at + " style=".len()..];
+        let Some(quote) = value.chars().next().filter(|c| matches!(c, '"' | '\'')) else {
+            return true;
+        };
+        let inner = value[1..].split(quote).next().unwrap_or("");
+        !(["${", "' +", "+ '"].iter().any(|made| inner.contains(made)))
+    })
 }
 
 /// What breaks the rule in one file.
@@ -207,16 +173,6 @@ fn problem_in(code: &str) -> Option<String> {
         ));
     }
     None
-}
-
-/// Whether `word` stands in the code as a whole word.
-fn contains_word(code: &str, word: &str) -> bool {
-    code.match_indices(word).any(|(at, _)| {
-        let before = code[..at].chars().next_back();
-        let after = code[at + word.len()..].chars().next();
-        let part_of_name = |c: char| c.is_alphanumeric() || c == '_';
-        !before.is_some_and(part_of_name) && !after.is_some_and(part_of_name)
-    })
 }
 
 /// `setAttribute("style", …)`, `setAttribute('class', …)` and `createElement("style")`, written
@@ -280,7 +236,7 @@ mod tests {
 
     fn run(path: &str, text: &str) -> Vec<String> {
         let sources = [(path.to_owned(), text.to_owned())];
-        evaluate(&sources, &[])
+        evaluate(&sources)
             .into_iter()
             .map(|finding| finding.message)
             .collect()
@@ -334,29 +290,6 @@ mod tests {
         ] {
             let found = run("web/app/src/a.ts", good);
             assert!(found.is_empty(), "{good}: {found:?}");
-        }
-    }
-
-    #[test]
-    fn an_exemption_must_name_one_feature_or_one_component() {
-        let exempt = |path: &str| Exempt {
-            path: path.to_owned(),
-            reason: "Moves with its feature (M2C-F90), package C-06.".to_owned(),
-        };
-        for bad in [
-            "web/",
-            "web/app/",
-            "web/app/src/features/",
-            "web/packages/ui/src/",
-        ] {
-            assert_eq!(shape_findings(&[exempt(bad)]).len(), 1, "{bad}");
-        }
-        for good in [
-            "web/app/src/features/people/",
-            "web/packages/ui/src/Card.",
-            "web/packages/ui/src/Card.tsx",
-        ] {
-            assert!(shape_findings(&[exempt(good)]).is_empty(), "{good}");
         }
     }
 
@@ -420,57 +353,36 @@ mod tests {
         assert!(run(STYLE_SHEET, "body { color: red; }").is_empty());
     }
 
-    #[test]
-    fn an_exemption_covers_a_folder_or_a_name_and_a_stale_one_fails() {
-        let sources = [
-            (
-                "web/app/src/features/shell/Shell.module.css".to_owned(),
-                ".a {}".to_owned(),
-            ),
-            (
-                "web/packages/ui/src/Card.tsx".to_owned(),
-                "<div className={x} />".to_owned(),
-            ),
-        ];
-        let exempt = |path: &str| Exempt {
-            path: path.to_owned(),
-            reason: "Moves with the shell (M2C-F90), package C-06.".to_owned(),
-        };
-        let covering = [
-            exempt("web/app/src/features/shell/"),
-            exempt("web/packages/ui/src/Card."),
-        ];
-        assert!(evaluate(&sources, &covering).is_empty());
-        let stale = [
-            exempt("web/app/src/features/shell/"),
-            exempt("web/packages/ui/src/Card."),
-            exempt("web/app/src/features/gone/"),
-        ];
-        let messages: Vec<String> = evaluate(&sources, &stale)
-            .into_iter()
-            .map(|finding| finding.message)
-            .collect();
-        assert_eq!(messages.len(), 1, "{messages:?}");
-        assert!(messages[0].contains("features/gone/"), "{messages:?}");
+    fn page_findings(text: &str) -> usize {
+        scan_page("docs/page.html", text).len()
     }
 
     #[test]
-    fn an_exemption_without_a_follow_up_fails() {
-        let exempt = Exempt {
-            path: "web/app/src/features/shell/".to_owned(),
-            reason: "Moves later, when somebody has time for it.".to_owned(),
-        };
-        let sources = [(
-            "web/app/src/features/shell/Shell.module.css".to_owned(),
-            ".a {}".to_owned(),
-        )];
-        let messages: Vec<String> = evaluate(&sources, &[exempt])
-            .into_iter()
-            .map(|finding| finding.message)
-            .collect();
-        assert!(
-            messages.iter().any(|message| message.contains("follow-up")),
-            "{messages:?}"
-        );
+    fn bad_example_a_page_of_the_documents_with_a_style_element_or_attribute() {
+        for bad in [
+            "<style>.a { color: red }</style>",
+            "<style media=\"print\">.a {}</style>",
+            "<p style=\"margin:0\">x</p>",
+            "<td style=\"text-align: center\">x</td>",
+            "<svg><circle style=\"fill:var(--accent)\"/></svg>",
+            "<div class=\"a\"
+   style=\"width:90px\">x</div>",
+        ] {
+            assert!(page_findings(bad) > 0, "{bad}");
+        }
+    }
+
+    #[test]
+    fn good_example_a_page_of_the_documents_with_classes_and_computed_styles() {
+        for good in [
+            "<p class=\"muted\">x</p>",
+            "<p>THEME-ONLY says no <code>style=</code> and no <code>&lt;style&gt;</code>.</p>",
+            "<link rel=\"stylesheet\" href=\"ux-design.css\">",
+            "<script>const bar = `<div style=\"left:${at}%\"></div>`;</script>",
+            "<script>const swatch = '<i style=\"background:' + c + '\"></i>';</script>",
+            "<script>if (a < b && c > d) { go(); }</script>",
+        ] {
+            assert_eq!(page_findings(good), 0, "{good}");
+        }
     }
 }

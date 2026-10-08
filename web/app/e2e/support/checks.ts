@@ -2,6 +2,7 @@ import { AxeBuilder } from "@axe-core/playwright";
 import { t } from "@bugaboo/messages";
 import { expect, type Page } from "@playwright/test";
 
+import { pageAttributes } from "../../../packages/ui/src/tokens.ts";
 import { inOrder } from "./sequence.ts";
 import { type SettingChoice, settingChoices } from "@bugaboo/api-client";
 
@@ -17,6 +18,11 @@ export const themes: readonly Theme[] = [
   ...settingChoices.appearanceDarkTheme,
 ].map((id) => ({ id, label: t(`theme.${id}`) }));
 
+/** The page shows this theme: the `look` attribute of the page frame (`pageAttributes`). */
+export async function expectLook(page: Page, look: string): Promise<void> {
+  await expect(page.locator("html")).toHaveAttribute(pageAttributes.look, look);
+}
+
 /**
  * Picks a theme with the choice at the bottom of the pages before sign-in, as a person would. The
  * signed-in app keeps the choice in *My settings*, so there the theme is put on the page directly.
@@ -28,7 +34,7 @@ export async function chooseTheme(page: Page, theme: Theme): Promise<void> {
   } else {
     await putOnTheme(page, theme);
   }
-  await expect(page.locator("html")).toHaveAttribute("data-look", theme.id);
+  await expectLook(page, theme.id);
 }
 
 /**

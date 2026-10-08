@@ -1,8 +1,7 @@
 import type { Schema } from "@bugaboo/api-client";
 import { t, type MessageKey } from "@bugaboo/messages";
-import { Alert, alertTone } from "@bugaboo/ui";
+import { Alert, alertTone, partOf, part } from "@bugaboo/ui";
 
-import styles from "./Admin.module.css";
 import { hasWriteFailures, isUnanchored } from "./status.ts";
 
 type SecurityLog = Schema<"SecurityLogBody">;
@@ -37,7 +36,7 @@ function Result({ log }: { readonly log: SecurityLog }) {
     return <Alert tone={alertTone.danger}>{t("security-log.unreadable")}</Alert>;
   }
   return (
-    <div className={styles.detail}>
+    <div {...partOf(part.adminDetail)}>
       <span>{t("security-log.valid", { entries: log.entries ?? 0 })}</span>
       {log.head_seq === null || log.head_seq === undefined ? null : (
         <span>{t("security-log.head", { seq: log.head_seq, hash: log.head_hash ?? "" })}</span>
@@ -56,7 +55,7 @@ function Result({ log }: { readonly log: SecurityLog }) {
  */
 export function LogStatus({ log }: { readonly log: SecurityLog }) {
   return (
-    <div className={styles.detail}>
+    <div {...partOf(part.adminDetail)}>
       <Result log={log} />
       {hasWriteFailures(log) ? (
         <Alert tone={alertTone.warning}>

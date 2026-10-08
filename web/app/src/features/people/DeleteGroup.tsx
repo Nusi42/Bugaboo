@@ -1,12 +1,11 @@
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, buttonLook, ConfirmDialog } from "@bugaboo/ui";
+import { Alert, alertTone, buttonLook, ConfirmDialog, partOf, part } from "@bugaboo/ui";
 
 import { api } from "../../shared/api.ts";
 import { useAskFirst } from "../../shared/ask-first.tsx";
 import { messageOf } from "../../shared/errors.ts";
 import { refreshAccess } from "../../shared/query-keys.ts";
 import type { GroupLine } from "./groups.ts";
-import styles from "./People.module.css";
 
 export interface DeleteGroupProps {
   readonly group: GroupLine;
@@ -29,10 +28,10 @@ export function DeleteGroup({ group, members, onDeleted }: DeleteGroupProps) {
   });
   const { ask, dialog } = useAskFirst();
   return (
-    <div className={styles.stack}>
+    <div {...partOf(part.stack)}>
       {dialog}
       {remove.isError ? <Alert tone={alertTone.danger}>{messageOf(remove.error)}</Alert> : null}
-      <div className={styles.row}>
+      <div {...partOf(part.row)}>
         <ConfirmDialog
           triggerLabel={t("groups.delete")}
           triggerName={t("groups.delete-name", { name: group.name })}

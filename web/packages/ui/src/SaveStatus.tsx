@@ -1,4 +1,5 @@
-import styles from "./SaveStatus.module.css";
+import { partOf } from "./parts.ts";
+import { part } from "./tokens.ts";
 
 /** The three states a change can be in, and nothing before the first change (UX §6). */
 export type SaveState = "idle" | "saving" | "saved" | "not-saved";
@@ -18,7 +19,10 @@ export interface SaveStatusProps {
  */
 export function SaveStatus({ state, labels }: SaveStatusProps) {
   return (
-    <span className={styles.status} role={politeStatus} data-state={state}>
+    <span
+      {...partOf(part.saveStatus, { states: [state === "not-saved" && state] })}
+      role={politeStatus}
+    >
       {state === "idle" ? null : labels[state]}
     </span>
   );

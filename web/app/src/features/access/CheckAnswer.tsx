@@ -1,9 +1,8 @@
 import { isMessageKey, locale, t } from "@bugaboo/messages";
-import { Button, buttonLook, Card } from "@bugaboo/ui";
+import { Button, buttonLook, Card, partOf, part } from "@bugaboo/ui";
 import { useState } from "react";
 
 import { personName } from "../../shared/person.ts";
-import styles from "./Access.module.css";
 import { levelSentences, reasonSentences } from "./check-sentences.ts";
 import { groupLevels, type LevelEntry } from "./group-levels.ts";
 import { projectText } from "./origin-text.ts";
@@ -47,10 +46,14 @@ function PermissionLine({ answer, permission }: PermissionLineProps) {
     reasonSentences(answer.person, answer.project, reason),
   );
   return (
-    <li className={styles.answer}>
-      <p className={styles.answerName}>{t(`permission.${permission.permission}`)}</p>
-      <p className={styles.reasons}>
-        <strong className={permission.allowed ? styles.verdictYes : styles.verdictNo}>
+    <li {...partOf(part.accessAnswer)}>
+      <p {...partOf(part.accessSubheading)}>{t(`permission.${permission.permission}`)}</p>
+      <p {...partOf(part.accessReasons)}>
+        <strong
+          {...partOf(part.accessAnswerVerdict, {
+            variants: [permission.allowed ? "yes" : "no"],
+          })}
+        >
           {permission.allowed ? t("check-access.yes") : t("check-access.no")}
         </strong>
         {sentences.join(" ")}
@@ -70,9 +73,9 @@ function Permissions({
   return (
     <Card heading={heading}>
       {byTopic(answer.permissions).map(([topic, permissions]) => (
-        <section key={topic} className={styles.stack}>
-          <h3 className={styles.topic}>{t(`permission-topic.${topic}`)}</h3>
-          <ul className={styles.answers}>
+        <section key={topic} {...partOf(part.stack)}>
+          <h3 {...partOf(part.accessTopic)}>{t(`permission-topic.${topic}`)}</h3>
+          <ul {...partOf(part.list)}>
             {permissions.map((permission) => (
               <PermissionLine key={permission.permission} answer={answer} permission={permission} />
             ))}
@@ -119,7 +122,7 @@ function LevelSection({ answer, heading, entries, levelName, words }: LevelSecti
   const groups = groupLevels(told);
   return (
     <Card heading={heading}>
-      <div className={styles.row}>
+      <div {...partOf(part.row)}>
         <Button
           look={buttonLook.quiet}
           onPress={() => {
@@ -129,30 +132,30 @@ function LevelSection({ answer, heading, entries, levelName, words }: LevelSecti
           {every ? t("check-access.group-the-same") : words.every}
         </Button>
       </div>
-      <ul className={styles.answers}>
+      <ul {...partOf(part.list)}>
         {every
           ? told.map((entry) => (
-              <li key={entry.name} className={styles.answer}>
-                <div className={styles.answerHead}>
-                  <p className={styles.answerName}>{entry.name}</p>
-                  <span className={styles.verdict}>{levelName(entry.level)}</span>
+              <li key={entry.name} {...partOf(part.accessAnswer)}>
+                <div {...partOf(part.accessAnswerHead)}>
+                  <p {...partOf(part.accessSubheading)}>{entry.name}</p>
+                  <span {...partOf(part.strong)}>{levelName(entry.level)}</span>
                 </div>
-                <p className={styles.reasons}>{entry.sentences.join(" ")}</p>
+                <p {...partOf(part.accessReasons)}>{entry.sentences.join(" ")}</p>
               </li>
             ))
           : groups.map((group, at) => (
-              <li key={group.names.join()} className={styles.answer}>
-                <div className={styles.answerHead}>
-                  <p className={styles.answerName}>
+              <li key={group.names.join()} {...partOf(part.accessAnswer)}>
+                <div {...partOf(part.accessAnswerHead)}>
+                  <p {...partOf(part.accessSubheading)}>
                     {groups.length === 1
                       ? words.all
                       : at === 0
                         ? words.allOther
                         : listOf(group.names)}
                   </p>
-                  <span className={styles.verdict}>{levelName(group.level)}</span>
+                  <span {...partOf(part.strong)}>{levelName(group.level)}</span>
                 </div>
-                <p className={styles.reasons}>{group.sentences.join(" ")}</p>
+                <p {...partOf(part.accessReasons)}>{group.sentences.join(" ")}</p>
               </li>
             ))}
       </ul>

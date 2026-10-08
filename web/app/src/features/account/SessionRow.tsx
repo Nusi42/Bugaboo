@@ -1,9 +1,8 @@
 import type { Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
-import { Button } from "@bugaboo/ui";
+import { Button, partOf, part } from "@bugaboo/ui";
 
 import { formatDateTime } from "../../shared/format.ts";
-import styles from "./Account.module.css";
 
 type Session = Schema<"SessionBody">;
 
@@ -26,20 +25,18 @@ export interface SessionRowProps {
 export function SessionRow({ session, onEnd }: SessionRowProps) {
   const device = deviceOf(session);
   return (
-    <li className={styles.item}>
-      <span className={styles.itemText}>
-        <span className={styles.itemTitle}>{device}</span>
-        {session.current ? <span className={styles.muted}>{t("sessions.this")}</span> : null}
-        <span className={styles.muted}>
+    <li {...partOf(part.item)}>
+      <span {...partOf(part.itemText)}>
+        <span {...partOf(part.itemTitle)}>{device}</span>
+        {session.current ? <span {...partOf(part.muted)}>{t("sessions.this")}</span> : null}
+        <span {...partOf(part.muted)}>
           {t("sessions.started", { when: formatDateTime(session.started_at) })}
         </span>
-        <span className={styles.muted}>
+        <span {...partOf(part.muted)}>
           {t("sessions.last-seen", { when: formatDateTime(session.last_seen_at) })}
         </span>
         {session.network === null || session.network === undefined ? null : (
-          <span className={styles.muted}>
-            {t("sessions.network", { network: session.network })}
-          </span>
+          <span {...partOf(part.muted)}>{t("sessions.network", { network: session.network })}</span>
         )}
       </span>
       {session.current ? null : (

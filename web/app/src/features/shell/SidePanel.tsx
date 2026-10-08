@@ -1,8 +1,7 @@
 import { t } from "@bugaboo/messages";
-import { cx, IconButton, iconName } from "@bugaboo/ui";
+import { IconButton, iconName, partOf, part } from "@bugaboo/ui";
 import type { ReactNode } from "react";
 
-import styles from "./SidePanel.module.css";
 import { useEscape } from "./use-escape.ts";
 import { useTakeFocus } from "./use-take-focus.ts";
 
@@ -22,14 +21,14 @@ export function SidePanel({ title, onClose, children }: SidePanelProps) {
   const heading = useTakeFocus<HTMLHeadingElement>();
   const panel = useEscape<HTMLElement>(onClose);
   return (
-    <aside ref={panel} className={cx(styles.panel)} aria-label={title}>
-      <div className={styles.head}>
-        <h2 ref={heading} tabIndex={-1} className={styles.title}>
+    <aside ref={panel} {...partOf(part.sidePanel)} aria-label={title}>
+      <div {...partOf(part.sidePanelHead)}>
+        <h2 ref={heading} tabIndex={-1} {...partOf(part.sidePanelTitle)}>
           {title}
         </h2>
         <IconButton icon={iconName.close} label={t("panel.close")} onPress={onClose} />
       </div>
-      <div className={styles.body}>{children}</div>
+      <div {...partOf(part.stack)}>{children}</div>
     </aside>
   );
 }

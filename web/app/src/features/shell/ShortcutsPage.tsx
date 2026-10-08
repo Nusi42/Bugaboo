@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Card } from "@bugaboo/ui";
+import { Card, partOf, part } from "@bugaboo/ui";
 
 import { keysOf, shortcutDefinitions, type ShortcutId } from "../../shared/shortcuts.ts";
 import { usePageTitle } from "../../shared/use-page.ts";
@@ -7,7 +7,6 @@ import { useShortcutOverrides } from "../../shared/use-shortcuts.ts";
 import { Keys } from "./Keys.tsx";
 import { ListEditor, type ListRow } from "./ListEditor.tsx";
 import { ShortcutEditor } from "./ShortcutEditor.tsx";
-import styles from "./ShortcutsPage.module.css";
 
 export interface ShortcutsPageProps {
   /** The shortcut that is open in the side panel, from the address. */
@@ -28,7 +27,7 @@ export function ShortcutsPage({ edit, onEdit, onClose }: ShortcutsPageProps) {
     key: definition.id,
     name: t(definition.message),
     details: (
-      <span className={styles.keys}>
+      <span {...partOf(part.shortcutsPageKeys)}>
         {keysOf(definition.id, overrides).map((sequence) => (
           <Keys key={sequence} sequence={sequence} />
         ))}
@@ -38,7 +37,7 @@ export function ShortcutsPage({ edit, onEdit, onClose }: ShortcutsPageProps) {
   }));
   return (
     <Card heading={t("shortcut.title")} level={1}>
-      <p className={styles.intro}>{t("shortcuts.intro")}</p>
+      <p {...partOf(part.shortcutsPageIntro)}>{t("shortcuts.intro")}</p>
       <ListEditor
         rows={rows}
         searchLabel={t("shortcuts.search")}

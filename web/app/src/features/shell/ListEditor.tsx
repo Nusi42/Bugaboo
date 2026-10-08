@@ -1,9 +1,8 @@
 import { t } from "@bugaboo/messages";
-import { cx, SearchField, useLayout } from "@bugaboo/ui";
+import { SearchField, useLayout, partOf, part } from "@bugaboo/ui";
 import { useState, type ReactNode } from "react";
 import { Button } from "react-aria-components";
 
-import styles from "./ListEditor.module.css";
 import { SidePanel } from "./SidePanel.tsx";
 
 /** One row of the list. */
@@ -38,11 +37,11 @@ interface RowsProps extends Pick<ListEditorProps, "rows" | "openKey" | "onOpen">
 /** The rows: the name of an item opens it, and the rest of the row follows. */
 function Rows({ rows, label, openKey, onOpen }: RowsProps) {
   return (
-    <ul className={styles.rows} aria-label={label}>
+    <ul {...partOf(part.list, { variants: ["snug"] })} aria-label={label}>
       {rows.map((row) => (
-        <li key={row.key} className={styles.row}>
+        <li key={row.key} {...partOf(part.item, { variants: ["spread", "slim"] })}>
           <Button
-            className={cx(styles.open)}
+            {...partOf(part.listEditorOpen, { states: [row.key === openKey && "open"] })}
             aria-expanded={row.key === openKey}
             onPress={() => {
               onOpen(row.key);
@@ -77,15 +76,15 @@ export function ListEditor({
   // list stays in the page, hidden, so the focus can go back to the row that was opened.
   const alone = useLayout() === "phone" && open !== undefined;
   return (
-    <div className={styles.frame}>
-      <div className={styles.list} hidden={alone}>
+    <div {...partOf(part.listEditor)}>
+      <div {...partOf(part.listEditorList, { states: [alone && "hidden"] })} hidden={alone}>
         <SearchField
           label={searchLabel}
           clearLabel={t("search.clear")}
           value={query}
           onChange={setQuery}
         />
-        {shown.length === 0 ? <p className={styles.nothing}>{nothing}</p> : null}
+        {shown.length === 0 ? <p {...partOf(part.listEditorNothing)}>{nothing}</p> : null}
         <Rows rows={shown} label={searchLabel} openKey={openKey} onOpen={onOpen} />
       </div>
       {open === undefined ? null : (

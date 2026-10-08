@@ -8,12 +8,13 @@ import {
   Form,
   SubmitButton,
   TextField,
+  partOf,
+  part,
 } from "@bugaboo/ui";
 import { useState } from "react";
 
 import { api } from "../../shared/api.ts";
 import { isPasswordProblem, messageOf } from "../../shared/errors.ts";
-import styles from "./Account.module.css";
 
 /** What came of the last try: a problem that is not a weak password, or the good news. */
 function Outcome({ problem, done }: { readonly problem: string | null; readonly done: boolean }) {
@@ -66,7 +67,7 @@ export function PasswordSection() {
           problem={change.isError && !tooWeak ? messageOf(change.error) : null}
           done={change.isSuccess}
         />
-        <div className={styles.row}>
+        <div {...partOf(part.row, { variants: ["stretch"] })}>
           <SubmitButton isPending={change.isPending}>{t("security.password.submit")}</SubmitButton>
         </div>
       </Form>

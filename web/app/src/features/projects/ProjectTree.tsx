@@ -1,12 +1,21 @@
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, Button, buttonLook, cx, Icon, iconName, iconSize } from "@bugaboo/ui";
+import {
+  Alert,
+  alertTone,
+  Button,
+  buttonLook,
+  Icon,
+  iconName,
+  iconSize,
+  partOf,
+  part,
+} from "@bugaboo/ui";
 import { useLocation } from "@tanstack/react-router";
 import { Button as TreeButton, Link } from "react-aria-components";
 
 import { messageOf } from "../../shared/errors.ts";
 import { projectAddress } from "../../shared/paths.ts";
 import { NavLink } from "../shell/index.ts";
-import styles from "./ProjectTree.module.css";
 import { toggleOpened, useOpened } from "./tree-state.ts";
 import { linesOf, useProjectList, type ProjectLine } from "./use-projects.ts";
 
@@ -30,11 +39,11 @@ function Node({ project, pathname, onNavigate }: NodeProps) {
   const opened = useOpened(project.id);
   const current = isOpen(project, pathname);
   return (
-    <li className={styles.node}>
-      <div className={styles.row}>
+    <li {...partOf(part.column)}>
+      <div {...partOf(part.projectTreeRow)}>
         {project.hasSubProjects ? (
           <TreeButton
-            className={cx(styles.toggle)}
+            {...partOf(part.projectTreeToggle, { states: [opened && "open"] })}
             aria-expanded={opened}
             aria-label={t("projects.toggle-name", { name: project.name })}
             onPress={() => {
@@ -44,16 +53,16 @@ function Node({ project, pathname, onNavigate }: NodeProps) {
             <Icon name={iconName.next} size={iconSize.small} />
           </TreeButton>
         ) : (
-          <span className={styles.spacer} aria-hidden />
+          <span {...partOf(part.projectTreeSpacer)} aria-hidden />
         )}
         <Link
-          className={cx(styles.link)}
+          {...partOf(part.projectTreeLink)}
           href={projectAddress(project.shortName)}
           {...(current ? { "aria-current": currentPage } : {})}
           {...(onNavigate === undefined ? {} : { onPress: onNavigate })}
         >
-          <span className={styles.name}>{project.name}</span>
-          <span className={styles.short}>{project.shortName}</span>
+          <span {...partOf(part.wrap)}>{project.name}</span>
+          <span {...partOf(part.projectTreeShort)}>{project.shortName}</span>
         </Link>
       </div>
       {opened ? <Branch inside={project.id} pathname={pathname} onNavigate={onNavigate} /> : null}
@@ -76,14 +85,14 @@ function Branch({ inside, pathname, onNavigate }: BranchProps) {
     return <Alert tone={alertTone.danger}>{messageOf(list.error)}</Alert>;
   }
   if (list.isPending) {
-    return <p className={styles.note}>{t("common.loading")}</p>;
+    return <p {...partOf(part.projectTreeNote)}>{t("common.loading")}</p>;
   }
   if (projects.length === 0 && inside === undefined) {
-    return <p className={styles.note}>{t("projects.tree-empty")}</p>;
+    return <p {...partOf(part.projectTreeNote)}>{t("projects.tree-empty")}</p>;
   }
   return (
     <>
-      <ul className={inside === undefined ? styles.top : styles.inside}>
+      <ul {...partOf(part.list, { variants: ["tight", inside !== undefined && "inset"] })}>
         {projects.map((project) => (
           <Node key={project.id} project={project} pathname={pathname} onNavigate={onNavigate} />
         ))}
@@ -108,7 +117,7 @@ function Narrow({ pathname, onNavigate }: Omit<BranchProps, "inside">) {
   const list = useProjectList({});
   const projects = linesOf(list.data?.pages);
   return (
-    <ul className={styles.narrow}>
+    <ul {...partOf(part.list, { variants: ["tight"] })}>
       {projects.map((project) => (
         <li key={project.id}>
           <NavLink

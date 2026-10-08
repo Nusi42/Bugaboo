@@ -1,5 +1,4 @@
 export { autoComplete, type AutoComplete } from "./autocomplete.ts";
-export { cx } from "./cx.ts";
 export { Alert, type AlertProps } from "./Alert.tsx";
 export {
   applyAppearance,
@@ -96,6 +95,7 @@ export { partOf, type PartAttributes, type PartChoices } from "./parts.ts";
 export {
   darkThemeIds,
   lightThemeIds,
+  pageAttributes,
   part,
   themeIds,
   type ColorToken,

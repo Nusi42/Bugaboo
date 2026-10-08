@@ -1,10 +1,9 @@
 import { t } from "@bugaboo/messages";
-import { type Page } from "@playwright/test";
 import { themeIds } from "../../packages/ui/src/tokens.ts";
 
-import { ada, makeAdmin } from "./support/accounts.ts";
+import { makeAdmin } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
-import { openFromMenu, signIn } from "./support/flows.ts";
+import { openRoleWithTickedBox } from "./support/roles.ts";
 
 // Forced colors (ADR-0026): the values of the tokens that say `forced=` reach every theme, also
 // when the page has its own look (`data-look` weighs more than `:root`). A ticked checkbox draws
@@ -24,18 +23,6 @@ interface Found {
   readonly accent: string;
   readonly boxes: readonly string[];
   readonly highlight: string;
-}
-
-/** The page of a role with a ticked checkbox: a copy of a starting role. */
-async function openRoleWithTickedBox(page: Page): Promise<void> {
-  await signIn(page, ada);
-  await openFromMenu(page, t("nav.roles"));
-  await page.getByLabel(t("roles.field-name"), { exact: true }).fill("Reviewer");
-  await page.getByLabel(t("roles.start-from"), { exact: true }).selectOption({
-    label: t("roles.start-copy", { name: "Viewer" }),
-  });
-  await page.getByRole("button", { name: t("roles.make"), exact: true }).click();
-  await expect(page.getByRole("heading", { level: 1, name: "Reviewer" })).toBeVisible();
 }
 
 test("thm_20 under forced colors a ticked checkbox has the border of Highlight in every look", async ({

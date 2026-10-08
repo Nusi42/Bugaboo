@@ -1,7 +1,7 @@
-import { cx } from "./cx.ts";
-import styles from "./Icon.module.css";
 import { glyphs, type IconName } from "./icons.ts";
+import { partOf } from "./parts.ts";
 import { iconSize, type IconSize } from "./props.ts";
+import { part } from "./tokens.ts";
 
 export interface IconProps {
   readonly name: IconName;
@@ -15,5 +15,5 @@ export interface IconProps {
  */
 export function Icon({ name, size = iconSize.normal }: IconProps) {
   const Glyph = glyphs[name];
-  return <Glyph className={cx(styles.icon, size === iconSize.small && styles.small)} />;
+  return <Glyph {...partOf(part.icon, { variants: [size === iconSize.small && "small"] })} />;
 }

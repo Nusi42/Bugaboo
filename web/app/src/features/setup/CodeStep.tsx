@@ -1,7 +1,15 @@
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, autoComplete, Card, Form, SubmitButton, TextField } from "@bugaboo/ui";
-
-import styles from "./Setup.module.css";
+import {
+  Alert,
+  alertTone,
+  autoComplete,
+  Card,
+  Form,
+  SubmitButton,
+  TextField,
+  partOf,
+  part,
+} from "@bugaboo/ui";
 
 export interface CodeStepProps {
   readonly code: string;
@@ -15,8 +23,8 @@ export interface CodeStepProps {
 export function CodeStep({ code, onChange, problem, onNext }: CodeStepProps) {
   return (
     <Card heading={t("first-run.title")} level={1}>
-      <p className={styles.text}>{t("first-run.code.intro")}</p>
-      <p className={styles.text}>{t("first-run.code.where")}</p>
+      <p {...partOf(part.text)}>{t("first-run.code.intro")}</p>
+      <p {...partOf(part.text)}>{t("first-run.code.where")}</p>
       <Form onSubmit={onNext}>
         <TextField
           label={t("first-run.code.label")}

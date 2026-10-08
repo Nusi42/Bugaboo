@@ -1,9 +1,7 @@
-import { cx } from "@bugaboo/ui";
-
-import styles from "./ThemePreview.module.css";
+import { pageAttributes, partOf, part } from "@bugaboo/ui";
 
 export interface ThemePreviewProps {
-  /** The theme to show, by its ID on the page (`data-preview-look`). */
+  /** The theme to show, by its ID on the page (the `previewLook` attribute of the page frame). */
   readonly theme: string;
 }
 
@@ -13,11 +11,11 @@ export interface ThemePreviewProps {
  */
 export function ThemePreview({ theme }: ThemePreviewProps) {
   return (
-    <span className={cx(styles.sample)} data-preview-look={theme} aria-hidden>
-      <span className={styles.bar} />
-      <span className={styles.card}>
-        <span className={styles.line} />
-        <span className={cx(styles.line, styles.short)} />
+    <span {...partOf(part.themePreview)} {...{ [pageAttributes.previewLook]: theme }} aria-hidden>
+      <span {...partOf(part.themePreviewBar)} />
+      <span {...partOf(part.themePreviewCard)}>
+        <span {...partOf(part.themePreviewLine)} />
+        <span {...partOf(part.themePreviewLine, { variants: ["short"] })} />
       </span>
     </span>
   );

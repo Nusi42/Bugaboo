@@ -146,7 +146,7 @@ fn pipe(program: &Path, args: &[&str], cwd: &Path, input: &str) -> anyhow::Resul
     String::from_utf8(out.stdout).context("tool output is not UTF-8 text")
 }
 
-fn format_with_oxfmt(repo: &Repo, path: &str, text: &str) -> anyhow::Result<String> {
+pub(crate) fn format_with_oxfmt(repo: &Repo, path: &str, text: &str) -> anyhow::Result<String> {
     let formatter = tools::find("oxfmt").map_err(|finding| anyhow::anyhow!(finding.message))?;
     pipe(
         &formatter,

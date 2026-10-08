@@ -1,11 +1,10 @@
 import { t } from "@bugaboo/messages";
 import type { Schema } from "@bugaboo/api-client";
-import { Alert, alertTone } from "@bugaboo/ui";
+import { Alert, alertTone, partOf, part } from "@bugaboo/ui";
 
 import { api } from "../../shared/api.ts";
 import { messageOf } from "../../shared/errors.ts";
 import { formatDateTime } from "../../shared/format.ts";
-import styles from "./Account.module.css";
 import { RemoveWithPassword } from "./RemoveWithPassword.tsx";
 import { refreshTwoStep } from "./two-step.ts";
 
@@ -26,13 +25,13 @@ function PasskeyRow({ passkey, onRemoved }: PasskeyRowProps) {
   });
   const used = passkey.last_used_at;
   return (
-    <li className={styles.item}>
-      <span className={styles.itemText}>
-        <span className={styles.itemTitle}>{passkey.label}</span>
-        <span className={styles.muted}>
+    <li {...partOf(part.item)}>
+      <span {...partOf(part.itemText)}>
+        <span {...partOf(part.itemTitle)}>{passkey.label}</span>
+        <span {...partOf(part.muted)}>
           {t("passkeys.added-on", { when: formatDateTime(passkey.created_at) })}
         </span>
-        <span className={styles.muted}>
+        <span {...partOf(part.muted)}>
           {used === null || used === undefined
             ? t("passkeys.never-used")
             : t("passkeys.last-used", { when: formatDateTime(used) })}
@@ -66,10 +65,10 @@ export interface PasskeyListProps {
 /** The passkeys of the person, or a sentence that there are none yet. */
 export function PasskeyList({ passkeys, onRemoved }: PasskeyListProps) {
   if (passkeys.length === 0) {
-    return <p className={styles.muted}>{t("passkeys.none")}</p>;
+    return <p {...partOf(part.muted)}>{t("passkeys.none")}</p>;
   }
   return (
-    <ul className={styles.list} aria-label={t("passkeys.list")}>
+    <ul {...partOf(part.list)} aria-label={t("passkeys.list")}>
       {passkeys.map((passkey) => (
         <PasskeyRow key={passkey.id} passkey={passkey} onRemoved={onRemoved} />
       ))}

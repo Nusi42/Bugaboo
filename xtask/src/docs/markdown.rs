@@ -128,6 +128,13 @@ pub(crate) fn render(md: &str, links: &Links, mut heading: impl FnMut(u8) -> Hea
     out
 }
 
+/// The alignments of a table column that Markdown knows, and the classes of the page's sheet.
+const ALIGNMENTS: [(&str, &str); 3] = [
+    ("left", "align-left"),
+    ("center", "align-center"),
+    ("right", "align-right"),
+];
+
 /// Renders each table on its own, inside the page's table wrapper.
 fn wrap_tables(events: Vec<Event<'_>>) -> Vec<Event<'_>> {
     let mut wrapped = Vec::with_capacity(events.len());
@@ -143,6 +150,13 @@ fn wrap_tables(events: Vec<Event<'_>>) -> Vec<Event<'_>> {
             let mut html = String::new();
             html::push_html(&mut html, inner.into_iter());
             let html = html.replacen("<table>", "<table class=\"dtable\">", 1);
+            // The alignment of a column is a class of the sheet, not a style of the cell.
+            let html = ALIGNMENTS.iter().fold(html, |html, (side, class)| {
+                html.replace(
+                    &format!(" style=\"text-align: {side}\""),
+                    &format!(" class=\"{class}\""),
+                )
+            });
             wrapped.push(Event::Html(
                 format!("<div class=\"tbl-wrap\">{html}</div>\n").into(),
             ));

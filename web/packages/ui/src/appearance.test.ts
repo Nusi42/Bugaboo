@@ -9,6 +9,7 @@ import {
   type Appearance,
 } from "./appearance.ts";
 import type { KeyStore } from "./storage.ts";
+import { variants } from "./tokens.ts";
 
 const blocked = (): never => {
   throw new DOMException("blocked", "SecurityError");
@@ -97,9 +98,9 @@ describe("thm_06 spacing, text size and motion", () => {
       page,
     );
     expect(Object.fromEntries(attributes)).toEqual({
-      "data-spacing": "compact",
-      "data-text": "larger",
-      "data-motion": "less",
+      [variants.compact.attribute]: variants.compact.value,
+      [variants["larger-text"].attribute]: variants["larger-text"].value,
+      [variants["less-motion"].attribute]: variants["less-motion"].value,
     });
     applyChoices(defaultAppearance, page);
     expect(attributes.size).toBe(0);

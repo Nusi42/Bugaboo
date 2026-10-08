@@ -1,9 +1,8 @@
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone } from "@bugaboo/ui";
+import { Alert, alertTone, partOf, part } from "@bugaboo/ui";
 
 import { api } from "../../shared/api.ts";
 import { messageOf } from "../../shared/errors.ts";
-import styles from "./Account.module.css";
 import { RemoveWithPassword } from "./RemoveWithPassword.tsx";
 import { refreshTwoStep } from "./two-step.ts";
 
@@ -22,9 +21,9 @@ export function SwitchOff({ onSwitchedOff }: SwitchOffProps) {
   });
   return (
     <>
-      <p className={styles.text}>{t("code-app.on")}</p>
+      <p {...partOf(part.text)}>{t("code-app.on")}</p>
       {remove.isError ? <Alert tone={alertTone.danger}>{messageOf(remove.error)}</Alert> : null}
-      <div className={styles.row}>
+      <div {...partOf(part.row, { variants: ["stretch"] })}>
         <RemoveWithPassword
           triggerLabel={t("code-app.turn-off")}
           title={t("code-app.turn-off-title")}

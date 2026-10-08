@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { t } from "@bugaboo/messages";
 import { type Browser, type BrowserContext, expect, type Page } from "@playwright/test";
 
-import { pickTheme, type Theme } from "./checks.ts";
+import { pickTheme, type Theme, expectLook } from "./checks.ts";
 import { type Instance } from "./server.ts";
 import { type ShowcaseIds, type Who } from "./showcase-sample.ts";
 import { screenshotFolder, shotWholeAs } from "./screenshots.ts";
@@ -97,7 +97,7 @@ export async function showTheme(page: Page, theme: Theme, appearance: string): P
   await page.goto(appearance);
   await expect(page.getByRole("heading", { level: 1, name: t("appearance.title") })).toBeVisible();
   await pickTheme(page, theme);
-  await expect(page.locator("html")).toHaveAttribute("data-look", theme.id);
+  await expectLook(page, theme.id);
   await expect(page.getByRole("status").filter({ hasText: t("save.saved") })).toBeVisible();
 }
 

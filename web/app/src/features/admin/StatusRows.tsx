@@ -1,10 +1,9 @@
 import type { Schema } from "@bugaboo/api-client";
 import { t, type MessageKey } from "@bugaboo/messages";
-import { Alert, alertTone } from "@bugaboo/ui";
+import { Alert, alertTone, partOf, part } from "@bugaboo/ui";
 import type { ReactNode } from "react";
 
 import { daysUntil, formatDate, formatDateTime, splitUptime } from "../../shared/format.ts";
-import styles from "./Admin.module.css";
 import { LogStatus } from "./LogStatus.tsx";
 import { CERTIFICATE_WARNING_DAYS, openParts, serverNow, unknownParts } from "./status.ts";
 
@@ -19,9 +18,9 @@ const databaseKinds: Readonly<Record<State["database"]["kind"], MessageKey>> = {
 /** One line of the status: what it is, and what it says. */
 function Fact({ term, children }: { readonly term: string; readonly children: ReactNode }) {
   return (
-    <div className={styles.fact}>
-      <dt className={styles.term}>{term}</dt>
-      <dd className={styles.detail}>{children}</dd>
+    <div {...partOf(part.fact)}>
+      <dt {...partOf(part.term)}>{term}</dt>
+      <dd {...partOf(part.adminDetail)}>{children}</dd>
     </div>
   );
 }
@@ -45,9 +44,9 @@ function Parts({
   return (
     <>
       <Alert tone={alertTone.warning}>{heading}</Alert>
-      <ul className={styles.list}>
-        {parts.map((part) => (
-          <li key={part}>{t(partNames[part])}</li>
+      <ul {...partOf(part.list)}>
+        {parts.map((piece) => (
+          <li key={piece}>{t(partNames[piece])}</li>
         ))}
       </ul>
     </>
@@ -95,11 +94,11 @@ function Certificate({ certificate, nowMs }: CertificateProps) {
 /** The facts of the server: version, running time, database, certificate and security log. */
 export function StatusRows({ state }: { readonly state: State }) {
   return (
-    <dl className={styles.facts}>
+    <dl {...partOf(part.facts)}>
       <Fact term={t("status.version")}>{state.version}</Fact>
       <Fact term={t("status.running")}>
         <span>{t("status.uptime", splitUptime(state.uptime_seconds))}</span>
-        <span className={styles.muted}>
+        <span {...partOf(part.muted)}>
           {t("status.started", { when: formatDateTime(state.started_at) })}
         </span>
       </Fact>

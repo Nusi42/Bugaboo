@@ -1,10 +1,9 @@
 import type { Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, Card, SaveStatus } from "@bugaboo/ui";
+import { Alert, alertTone, Card, SaveStatus, partOf, part } from "@bugaboo/ui";
 
 import { RolePermissions } from "./RolePermissions.tsx";
 import { useCatalogue } from "./roles.ts";
-import styles from "./Roles.module.css";
 import { RoleSwitch } from "./RoleSwitch.tsx";
 import { useRoleEdits } from "./use-role-edits.ts";
 
@@ -17,7 +16,7 @@ export function PermissionsCard({ role }: { readonly role: Schema<"RoleBody"> })
   const edits = useRoleEdits(role.id);
   return (
     <Card heading={t("roles.permissions-title")}>
-      <p className={styles.text}>{t("roles.permissions-intro")}</p>
+      <p {...partOf(part.text)}>{t("roles.permissions-intro")}</p>
       <SaveStatus
         state={edits.saveState}
         labels={{

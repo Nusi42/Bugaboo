@@ -1,12 +1,11 @@
 import { t } from "@bugaboo/messages";
-import { Button, cx, Icon, iconName, iconSize } from "@bugaboo/ui";
+import { Button, Icon, iconName, iconSize, partOf, part } from "@bugaboo/ui";
 
 import { focusRestored } from "../../shared/focus.ts";
 import { undoStore, type UndoOffer } from "../../shared/optimistic-undo.ts";
 import { useUndoOffers } from "../../shared/use-optimistic.ts";
 import { useShortcuts } from "../../shared/use-shortcuts.ts";
 import { CONTENT_ID } from "./content-id.ts";
-import styles from "./UndoHost.module.css";
 import { useHold } from "./use-hold.ts";
 
 /** Words of the ARIA standard, not text for people. */
@@ -30,8 +29,8 @@ function Offer({ offer }: { readonly offer: UndoOffer }) {
     },
   );
   return (
-    <div ref={box} className={styles.offer}>
-      <span className={styles.message}>{offer.message}</span>
+    <div ref={box} {...partOf(part.undoHostOffer)}>
+      <span {...partOf(part.wrap)}>{offer.message}</span>
       <Button
         onPress={() => {
           takeBack(offer);
@@ -64,7 +63,7 @@ export function UndoHost({ aboveBar = false }: { readonly aboveBar?: boolean }) 
         },
   );
   return (
-    <div className={cx(styles.host, aboveBar && styles.aboveBar)} role={politeStatus}>
+    <div {...partOf(part.undoHost, { variants: [aboveBar && "above-bar"] })} role={politeStatus}>
       {offers.map((offer) => (
         <Offer key={offer.id} offer={offer} />
       ))}

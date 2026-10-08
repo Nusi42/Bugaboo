@@ -1,7 +1,6 @@
 import { t } from "@bugaboo/messages";
-import { useAppearance, useLayout } from "@bugaboo/ui";
+import { useAppearance, useLayout, partOf, part } from "@bugaboo/ui";
 
-import styles from "./AppLayout.module.css";
 import { CONTENT_HREF } from "./content-id.ts";
 import { ShellColumn } from "./ShellColumn.tsx";
 import { ShellOverlays } from "./ShellOverlays.tsx";
@@ -21,8 +20,8 @@ export function AppLayout() {
   useAppearance();
   const computer = layout === "computer";
   return (
-    <div className={styles.shell} data-layout={layout}>
-      <a className={styles.skip} href={CONTENT_HREF}>
+    <div {...partOf(part.appLayout, { variants: [layout === "phone" && "phone"] })}>
+      <a {...partOf(part.skip)} href={CONTENT_HREF}>
         {t("shell.skip")}
       </a>
       {computer ? <Sidebar narrow={narrow} locked={locked} {...person} /> : null}

@@ -1,10 +1,9 @@
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, Form, SubmitButton } from "@bugaboo/ui";
+import { Alert, alertTone, Form, SubmitButton, partOf, part } from "@bugaboo/ui";
 import { useState } from "react";
 
 import { messageOf } from "../../shared/errors.ts";
 import { ProjectNameField, ShortNameField } from "./ProjectFields.tsx";
-import styles from "./Projects.module.css";
 import { useChangeProject, type OneProject } from "./use-projects.ts";
 
 export interface ChangeProjectFormProps {
@@ -50,11 +49,11 @@ export function ChangeProjectForm({ project, onSaved }: ChangeProjectFormProps) 
       {mayChangeShortName ? (
         <ShortNameField value={shortName} onChange={setShortName} changing />
       ) : (
-        <p className={styles.muted}>{t("projects.short-name-fixed")}</p>
+        <p {...partOf(part.muted)}>{t("projects.short-name-fixed")}</p>
       )}
       {change.isError ? <Alert tone={alertTone.danger}>{messageOf(change.error)}</Alert> : null}
       {saved ? <Alert tone={alertTone.success}>{t("projects.saved")}</Alert> : null}
-      <div className={styles.row}>
+      <div {...partOf(part.row)}>
         <SubmitButton isPending={change.isPending}>{t("common.save")}</SubmitButton>
       </div>
     </Form>

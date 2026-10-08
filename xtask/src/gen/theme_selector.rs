@@ -371,6 +371,19 @@ pub(crate) fn check_base(selector: &str) -> anyhow::Result<()> {
     Ok(())
 }
 
+/// A selector of a `rule` of the design pages: any CSS selector, except what could end the rule
+/// and start another.
+pub(crate) fn check_doc(selector: &str) -> anyhow::Result<()> {
+    if selector.trim().is_empty()
+        || ["{", "}", ";", "/*", "*/", "<"]
+            .iter()
+            .any(|bad| selector.contains(bad))
+    {
+        bail!("selector \"{selector}\" is empty or holds a character that is not allowed");
+    }
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

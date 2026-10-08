@@ -1,6 +1,6 @@
 import { useId } from "react";
+import { partOf, part } from "@bugaboo/ui";
 
-import styles from "./ThemePicker.module.css";
 import { ThemePreview } from "./ThemePreview.tsx";
 
 /** Words of the HTML standard, not text for people. */
@@ -25,13 +25,13 @@ export interface ThemePickerProps {
 export function ThemePicker({ legend, choices, value, onChange }: ThemePickerProps) {
   const group = useId();
   return (
-    <fieldset className={styles.group}>
-      <legend className={styles.legend}>{legend}</legend>
-      <div className={styles.choices}>
+    <fieldset {...partOf(part.choiceGroup)}>
+      <legend {...partOf(part.choiceGroupLegend)}>{legend}</legend>
+      <div {...partOf(part.row, { variants: ["stretch"] })}>
         {choices.map((choice) => (
-          <label key={choice.value} className={styles.choice}>
+          <label key={choice.value} {...partOf(part.choiceGroupChoice)}>
             <input
-              className={styles.input}
+              {...partOf(part.choiceGroupInput)}
               type={radio}
               name={group}
               value={choice.value}
@@ -40,9 +40,9 @@ export function ThemePicker({ legend, choices, value, onChange }: ThemePickerPro
                 onChange(choice.value);
               }}
             />
-            <span className={styles.tile}>
+            <span {...partOf(part.themePickerTile)}>
               <ThemePreview theme={choice.value} />
-              <span className={styles.name}>{choice.label}</span>
+              <span {...partOf(part.themePickerName)}>{choice.label}</span>
             </span>
           </label>
         ))}

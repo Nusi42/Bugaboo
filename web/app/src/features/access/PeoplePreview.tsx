@@ -1,8 +1,7 @@
 import { t } from "@bugaboo/messages";
-import { Card } from "@bugaboo/ui";
+import { Card, partOf, part } from "@bugaboo/ui";
 
 import { roleName, someoneName, type Position } from "../../shared/person.ts";
-import styles from "./Access.module.css";
 import type { LevelTable, PeopleKindKey, PeopleLevelCode } from "./levels.ts";
 
 /** What a person looks like to somebody who sees people at this level: *Ana*, *a Team member*, *Someone*. */
@@ -43,14 +42,14 @@ export function PeoplePreview({ table, role }: PeoplePreviewProps) {
   const editing = levelOf(table, role, "editing");
   return (
     <Card heading={t("people-visibility.preview-heading", { role: name })}>
-      <ul className={styles.previewLines}>
-        <li className={styles.previewLine}>
+      <ul {...partOf(part.list, { variants: ["tight"] })}>
+        <li {...partOf(part.accessPreviewLine)}>
           {t("people-visibility.example-assigned", { who: who(assigned, "inside") })}
         </li>
-        <li className={styles.previewLine}>
+        <li {...partOf(part.accessPreviewLine)}>
           {t("people-visibility.example-comment", { who: who(authors, "inside") })}
         </li>
-        <li className={styles.previewLine}>
+        <li {...partOf(part.accessPreviewLine)}>
           {t("people-visibility.example-editing", { who: who(editing, "start") })}
         </li>
       </ul>

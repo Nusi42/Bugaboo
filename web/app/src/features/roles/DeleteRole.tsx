@@ -1,12 +1,11 @@
 import type { Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, buttonLook, ConfirmDialog } from "@bugaboo/ui";
+import { Alert, alertTone, buttonLook, ConfirmDialog, partOf, part } from "@bugaboo/ui";
 import { useState } from "react";
 
 import { useAskFirst } from "../../shared/ask-first.tsx";
 import { codeOf, messageOf } from "../../shared/errors.ts";
 import { ReplacementField } from "./ReplacementField.tsx";
-import styles from "./Roles.module.css";
 import { useDeleteRole } from "./use-delete-role.ts";
 import { isUsed, roleUsedText } from "./used-by-text.ts";
 
@@ -28,10 +27,10 @@ export function DeleteRole({ id, name, used }: DeleteRoleProps) {
   // The viewer may not see every place the role is used, so the server can still ask for one.
   const asks = isUsed(used) || codeOf(remove.error) === "role.in_use";
   return (
-    <div className={styles.stack}>
+    <div {...partOf(part.stack)}>
       {dialog}
       {remove.isError ? <Alert tone={alertTone.danger}>{messageOf(remove.error)}</Alert> : null}
-      <div className={styles.row}>
+      <div {...partOf(part.row)}>
         <ConfirmDialog
           triggerLabel={t("roles.delete")}
           triggerName={t("roles.delete-name", { name })}

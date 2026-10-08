@@ -1,10 +1,9 @@
 import type { Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
-import { Checkbox } from "@bugaboo/ui";
+import { Checkbox, partOf, part } from "@bugaboo/ui";
 
 import { permissionSentence, topicHeading } from "../../shared/access-words.ts";
 import { useAskFirst } from "../../shared/ask-first.tsx";
-import styles from "./Roles.module.css";
 import type { PermissionKey } from "../../shared/permissions.ts";
 
 export interface RolePermissionsProps {
@@ -59,12 +58,12 @@ export function RolePermissions({ role, catalogue, held, onChange }: RolePermiss
     });
   };
   return (
-    <div className={styles.stack}>
+    <div {...partOf(part.stack)}>
       {groupsOf(catalogue).map((group) => (
-        <fieldset key={group.topic} className={styles.topic}>
-          <legend className={styles.legend}>{t(topicHeading(group.topic))}</legend>
+        <fieldset key={group.topic} {...partOf(part.rolesTopic)}>
+          <legend {...partOf(part.rolesLegend)}>{t(topicHeading(group.topic))}</legend>
           {group.permissions.map((permission) => (
-            <div key={permission.key} className={styles.permission}>
+            <div key={permission.key} {...partOf(part.column)}>
               <Checkbox
                 label={t(permissionSentence(permission.key))}
                 isSelected={held.includes(permission.key)}
@@ -73,7 +72,7 @@ export function RolePermissions({ role, catalogue, held, onChange }: RolePermiss
                 }}
               />
               {permission.scope === "organization" ? (
-                <span className={styles.note}>{t("roles.counts-organization")}</span>
+                <span {...partOf(part.rolesNote)}>{t("roles.counts-organization")}</span>
               ) : null}
             </div>
           ))}

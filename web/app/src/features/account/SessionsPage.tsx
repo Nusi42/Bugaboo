@@ -1,9 +1,8 @@
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, Card, SaveStatus, Skeleton } from "@bugaboo/ui";
+import { Alert, alertTone, Card, SaveStatus, Skeleton, partOf, part } from "@bugaboo/ui";
 
 import { messageOf } from "../../shared/errors.ts";
 import { usePageTitle } from "../../shared/use-page.ts";
-import styles from "./Account.module.css";
 import { SessionRow } from "./SessionRow.tsx";
 import { SignOutEverywhere } from "./SignOutEverywhere.tsx";
 import { useEndSession } from "./use-end-session.ts";
@@ -16,10 +15,10 @@ export function SessionsPage() {
   const end = useEndSession();
   return (
     <Card heading={t("sessions.title")} level={1}>
-      <p className={styles.text}>{t("sessions.intro")}</p>
+      <p {...partOf(part.text)}>{t("sessions.intro")}</p>
       {sessions.isError ? <Alert tone={alertTone.danger}>{messageOf(sessions.error)}</Alert> : null}
       <div aria-busy={sessions.isPending}>
-        <ul className={styles.list} aria-label={t("sessions.list")}>
+        <ul {...partOf(part.list)} aria-label={t("sessions.list")}>
           {sessions.data?.sessions.map((session) => (
             <SessionRow
               key={session.id}

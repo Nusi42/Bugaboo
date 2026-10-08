@@ -1,10 +1,9 @@
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, Button } from "@bugaboo/ui";
+import { Alert, alertTone, Button, partOf, part } from "@bugaboo/ui";
 
 import { messageOf } from "../../shared/errors.ts";
 import { membersOf, useMembers, type GroupLine } from "./groups.ts";
 import { MemberPicker } from "./MemberPicker.tsx";
-import styles from "./People.module.css";
 import { useMemberChanges, type MemberChanges } from "./use-member-changes.ts";
 
 interface ListProps {
@@ -17,15 +16,15 @@ function MemberList({ group, changes }: ListProps) {
   const members = useMembers(group.id);
   const people = membersOf(members.data?.pages);
   return (
-    <div className={styles.stack}>
+    <div {...partOf(part.stack)}>
       {members.isError ? <Alert tone={alertTone.danger}>{messageOf(members.error)}</Alert> : null}
       {members.isSuccess && people.length === 0 ? (
-        <p className={styles.muted}>{t("groups.members-none")}</p>
+        <p {...partOf(part.muted)}>{t("groups.members-none")}</p>
       ) : (
-        <ul className={styles.list} aria-label={t("groups.members")}>
+        <ul {...partOf(part.list)} aria-label={t("groups.members")}>
           {people.map((person) => (
-            <li key={person.id} className={styles.item}>
-              <span className={styles.itemTitle}>{person.name}</span>
+            <li key={person.id} {...partOf(part.item)}>
+              <span {...partOf(part.itemTitle)}>{person.name}</span>
               <Button
                 aria-label={t("groups.remove-name", { name: person.name })}
                 onPress={() => {
@@ -39,7 +38,7 @@ function MemberList({ group, changes }: ListProps) {
         </ul>
       )}
       {members.hasNextPage ? (
-        <div className={styles.row}>
+        <div {...partOf(part.row)}>
           <Button
             isPending={members.isFetchingNextPage}
             onPress={() => {
