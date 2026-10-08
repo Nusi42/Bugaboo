@@ -31,9 +31,11 @@ pub mod needs {
     pub const WITHOUT_CATALOGUE: [&str; 3] = [PUBLIC, SIGNED_IN, OWN_ACCOUNT];
 }
 
-/// The names the permission matrix (SEC-MATRIX) writes into its record
-/// (`tools/checks/sec-matrix-record.txt`).
+/// The names the permission matrix (SEC-MATRIX) writes into its record.
 pub mod matrix {
+    /// The record of what the matrix covered, from the root of the repository.
+    pub const RECORD_PATH: &str = "tools/checks/sec-matrix-record.txt";
+
     /// Nobody is signed in.
     pub const NOBODY: &str = "nobody";
     /// A person without a role.

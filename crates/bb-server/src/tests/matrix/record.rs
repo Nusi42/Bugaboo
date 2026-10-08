@@ -16,8 +16,8 @@ use bb_api_words::matrix;
 use super::actors::Actor;
 use super::routes::Expect;
 
-/// The file, from the folder of this crate.
-const FILE: &str = "../../tools/checks/sec-matrix-record.txt";
+/// The root of the repository, from the folder of this crate.
+const REPOSITORY_ROOT: &str = "../..";
 /// Set to `write` to write the file instead of comparing with it.
 const WRITE_VARIABLE: &str = "BB_SEC_MATRIX_RECORD";
 
@@ -77,14 +77,17 @@ impl Record {
     /// # Errors
     /// The file is missing, or differs from what ran.
     pub(super) fn matches_the_repository(&self) -> Result<(), Failure> {
-        let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join(FILE);
+        let file = matrix::RECORD_PATH;
+        let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join(REPOSITORY_ROOT)
+            .join(file);
         let text = self.text();
         if std::env::var(WRITE_VARIABLE).as_deref() == Ok("write") {
             std::fs::write(&path, &text)?;
             return Ok(());
         }
         let stored = std::fs::read_to_string(&path)
-            .map_err(|error| format!("could not read the record {FILE}: {error}"))?
+            .map_err(|error| format!("could not read the record {file}: {error}"))?
             .replace("\r\n", "\n");
         if stored == text {
             return Ok(());
@@ -104,7 +107,7 @@ impl Record {
             },
         );
         Err(format!(
-            "the record {FILE} differs from what the matrix ran ({place}). Write it again with \
+            "the record {file} differs from what the matrix ran ({place}). Write it again with \
              {WRITE_VARIABLE}=write."
         )
         .into())
