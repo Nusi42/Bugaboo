@@ -298,6 +298,7 @@ mod tests {
     use bb_core::access::{AppliesTo, FieldLevel};
     use bb_core::fields::Field;
     use bb_core::id::{AssignmentId, ProjectId, RoleId, SequentialIds, UserId};
+    use bb_core::paging::read_count;
     use bb_policy::{
         Evaluation, FieldRule, Inputs, LevelRules, Place, RoleData, Row as PolicyRow, Who, evaluate,
     };
@@ -390,7 +391,11 @@ mod tests {
         let after = params.position(LIST)?;
         let limit = params.limit() as usize;
         let start = after.map_or(0, |position| position.parse::<usize>().unwrap_or(0) + 1);
-        let mut page: Vec<Row> = rows().into_iter().skip(start).take(limit + 1).collect();
+        let mut page: Vec<Row> = rows()
+            .into_iter()
+            .skip(start)
+            .take(read_count(limit))
+            .collect();
         let more = page.len() > limit;
         let end = (start + limit - 1).to_string();
         page.truncate(limit);
