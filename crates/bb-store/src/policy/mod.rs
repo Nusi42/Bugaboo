@@ -152,7 +152,7 @@ impl PolicyStore for AuthStorage {
                 None => return Ok(None),
             },
         };
-        let rules = if roles.is_empty() {
+        let levels = if roles.is_empty() {
             LevelRules::default()
         } else {
             // The query narrows to the roles and the chain; what applies at the place is decided
@@ -167,7 +167,10 @@ impl PolicyStore for AuthStorage {
             .await?
             .at(&roles.iter().copied().collect(), &chain)
         };
-        Ok(Some(PlaceLevels { chain, rules }))
+        Ok(Some(PlaceLevels {
+            chain,
+            rules: levels,
+        }))
     }
 
     async fn groups(&self) -> Result<Vec<Group>, StoreError> {
