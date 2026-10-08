@@ -9,7 +9,8 @@ use kdl::{KdlDocument, KdlNode, KdlValue};
 
 /// A parsed document and its text, so that a node can say which line it is on.
 pub(crate) struct Document {
-    text: String,
+    /// Where each line of the text starts (a byte), so that a line is found without counting.
+    line_starts: Vec<usize>,
     parsed: KdlDocument,
 }
 
@@ -18,15 +19,18 @@ impl Document {
         let parsed: KdlDocument = text
             .parse()
             .map_err(|error: kdl::KdlError| parse_problem(text, &error))?;
+        let line_starts = std::iter::once(0)
+            .chain(text.match_indices('\n').map(|(at, _)| at + 1))
+            .collect();
         Ok(Self {
-            text: text.to_owned(),
+            line_starts,
             parsed,
         })
     }
 
     /// The nodes of the top level, in file order.
     pub(crate) fn nodes(&self) -> Vec<Node<'_>> {
-        nodes_of(&self.parsed, &self.text)
+        nodes_of(&self.parsed, &self.line_starts)
     }
 }
 
@@ -64,11 +68,11 @@ fn parse_problem(text: &str, error: &kdl::KdlError) -> anyhow::Error {
     }
 }
 
-fn nodes_of<'a>(document: &'a KdlDocument, text: &'a str) -> Vec<Node<'a>> {
+fn nodes_of<'a>(document: &'a KdlDocument, line_starts: &'a [usize]) -> Vec<Node<'a>> {
     document
         .nodes()
         .iter()
-        .map(|raw| Node { raw, text })
+        .map(|raw| Node { raw, line_starts })
         .collect()
 }
 
@@ -76,7 +80,7 @@ fn nodes_of<'a>(document: &'a KdlDocument, text: &'a str) -> Vec<Node<'a>> {
 #[derive(Clone, Copy)]
 pub(crate) struct Node<'a> {
     raw: &'a KdlNode,
-    text: &'a str,
+    line_starts: &'a [usize],
 }
 
 /// The text of a value that is a word or a number; `None` for `#true`, `#null` and the like.
@@ -97,11 +101,8 @@ impl<'a> Node<'a> {
 
     /// The line the node starts on, counted from 1.
     pub(crate) fn line(&self) -> usize {
-        let offset = self.raw.span().offset().min(self.text.len());
-        self.text
-            .get(..offset)
-            .map_or(0, |before| before.matches('\n').count())
-            + 1
+        let offset = self.raw.span().offset();
+        self.line_starts.partition_point(|start| *start <= offset)
     }
 
     /// A problem at this node, as an error.
@@ -170,7 +171,7 @@ impl<'a> Node<'a> {
     pub(crate) fn children(&self) -> Vec<Node<'a>> {
         self.raw
             .children()
-            .map(|document| nodes_of(document, self.text))
+            .map(|document| nodes_of(document, self.line_starts))
             .unwrap_or_default()
     }
 
