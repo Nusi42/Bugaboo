@@ -3,7 +3,6 @@
 //! its own that nobody can reset to a starting role.
 
 use bb_core::ErrorCode;
-use bb_core::access::Role;
 use bb_core::event::RecordKind;
 use bb_core::fields::Field;
 use bb_core::id::RoleId;
@@ -57,23 +56,7 @@ pub async fn copy_role<S: AuthStore>(
         .levels::<PeopleKind>(source.role.id, None)
         .await
         .map_err(|error| internal::<S>(&error))?;
-    let position = ctx
-        .store()
-        .roles()
-        .await
-        .map_err(|error| internal::<S>(&error))?
-        .iter()
-        .map(|record| record.role.position)
-        .max()
-        .map_or(0, |last| last.saturating_add(1));
-    let role = Role {
-        id: RoleId::generate(&mut ctx.ids())
-            .map_err(|error| AppError::Internal(error.to_string()))?,
-        name,
-        starting: None,
-        position,
-        two_step: source.role.two_step,
-    };
+    let role = ctx.new_role(name, source.role.two_step).await?;
     let event = ctx.event(
         by(actor.person.id),
         entity(RecordKind::Role, role.id),

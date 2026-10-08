@@ -20,14 +20,15 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
-use anyhow::Context as _;
 use bb_api_words::sec_matrix::{self as words, RECORD_PATH};
 use bb_api_words::{marks, needs};
 use bb_policy::StartingRole;
 use serde_json::Value;
 
+use super::api_spec;
 use super::{Check, Context, Finding};
 use crate::generate::api::SPEC_PATH;
+use crate::source::read_text;
 
 /// The table of example requests.
 const EXAMPLES_PATH: &str = "crates/bb-server/src/tests/matrix/examples.rs";
@@ -56,13 +57,8 @@ impl Check for SecMatrix {
     }
 
     fn run(&self, context: &Context<'_>) -> anyhow::Result<Vec<Finding>> {
-        let read = |path: &str| {
-            std::fs::read_to_string(context.repo.path(path))
-                .map(|text| text.replace("\r\n", "\n"))
-                .with_context(|| format!("could not read {path}"))
-        };
-        let spec: Value = serde_json::from_str(&read(SPEC_PATH)?)
-            .with_context(|| format!("{SPEC_PATH} is not valid JSON"))?;
+        let read = |path: &str| read_text(context.repo, path);
+        let spec = api_spec::load(context.repo)?;
         let record = read(RECORD_PATH).ok();
         let examples = read(EXAMPLES_PATH)?;
         Ok(evaluate(&spec, record.as_deref(), &examples))
@@ -78,31 +74,21 @@ struct Route {
 }
 
 fn routes(spec: &Value) -> Vec<Route> {
-    let mut routes = Vec::new();
-    for (path, item) in spec
-        .get("paths")
-        .and_then(Value::as_object)
+    api_spec::operations(spec)
         .into_iter()
         .flatten()
-    {
-        for (method, operation) in item.as_object().into_iter().flatten() {
-            let text = |key: &str| {
-                operation
-                    .get(key)
-                    .and_then(Value::as_str)
-                    .map(str::to_owned)
-            };
-            if let Some(operation_id) = text("operationId") {
-                routes.push(Route {
-                    operation: operation_id,
-                    method: method.to_uppercase(),
-                    path: path.clone(),
-                    declared: text(marks::PERMISSION).unwrap_or_default(),
-                });
-            }
-        }
-    }
-    routes
+        .filter_map(|operation| {
+            Some(Route {
+                operation: operation.text("operationId")?.to_owned(),
+                method: operation.method.clone(),
+                path: operation.path.to_owned(),
+                declared: operation
+                    .text(marks::PERMISSION)
+                    .unwrap_or_default()
+                    .to_owned(),
+            })
+        })
+        .collect()
 }
 
 /// A line of the record: the route as it was run and what each actor was answered.
@@ -263,8 +249,10 @@ fn evaluate(spec: &Value, record: Option<&str>, examples: &str) -> Vec<Finding> 
     let Some(record) = record else {
         return vec![Finding::at(
             RECORD_PATH,
-            "The record of the matrix is missing. Run the matrix and write it: \
-             `BB_SEC_MATRIX_RECORD=write cargo xtask db run -- cargo test -p bb-server sec_01_every_route`.",
+            format!(
+                "The record of the matrix is missing. Run the matrix and write it: `{}`.",
+                words::write_command()
+            ),
         )];
     };
     let (actors, lines) = parse(record);
@@ -396,7 +384,7 @@ mod tests {
             .join("../tools/checks/fixtures/SEC-MATRIX")
             .join(kind)
             .join(name);
-        std::fs::read_to_string(path).unwrap().replace("\r\n", "\n")
+        crate::source::normalize(&std::fs::read_to_string(path).unwrap())
     }
 
     #[test]

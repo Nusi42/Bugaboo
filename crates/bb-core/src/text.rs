@@ -1,12 +1,23 @@
 //! The rule for the short texts people type: names of people, groups, roles, projects and access
 //! keys, and the labels of passkeys. Defined once, so every use case that takes such a text keeps
-//! it the same way.
+//! it the same way. Also the alphabet of the codes that people read out (Crockford's base 32).
 
 /// The longest name of a person, group, role, project or access key, in characters.
 pub const NAME_MAX: usize = 100;
 
 /// The longest label of a passkey, in characters.
 pub const LABEL_MAX: usize = 64;
+
+/// The 32 symbols of Crockford's base 32 in capitals: digits and letters without `I`, `L`, `O` and
+/// `U`, so nothing is mistaken for something else when a person reads a code out.
+pub const CROCKFORD: &[u8; 32] = b"0123456789ABCDEFGHJKMNPQRSTVWXYZ";
+
+/// The symbol of [`CROCKFORD`] for the lowest five bits of `byte`. A random byte gives every
+/// symbol the same chance, because 256 is a multiple of 32.
+#[must_use]
+pub const fn crockford_symbol(byte: u8) -> char {
+    CROCKFORD[(byte & 0b1_1111) as usize] as char
+}
 
 /// The text as it is kept: trimmed, not empty, at most `longest` characters and without control
 /// characters. `None` for a text that breaks one of these.
@@ -39,5 +50,15 @@ mod tests {
         assert_eq!(clean("two\nlines", NAME_MAX), None);
         assert_eq!(clean("tab\tinside", LABEL_MAX), None);
         assert_eq!(clean(&"a".repeat(LABEL_MAX + 1), LABEL_MAX), None);
+    }
+
+    #[test]
+    fn the_symbols_are_the_32_of_crockford_and_every_byte_has_one() {
+        assert_eq!(CROCKFORD.len(), 32);
+        assert!(CROCKFORD.iter().all(|symbol| !b"ILOU".contains(symbol)));
+        assert_eq!(crockford_symbol(0), '0');
+        assert_eq!(crockford_symbol(31), 'Z');
+        assert_eq!(crockford_symbol(32), '0');
+        assert_eq!(crockford_symbol(255), 'Z');
     }
 }

@@ -21,6 +21,7 @@ bugaboo/
 │   ├── bb-jobs/            background job runner and schedules
 │   ├── bb-api/             HTTP: routes, OpenAPI, security headers, rate limits, static app
 │   ├── bb-api-words/       the words of the API description that code, tests and checks share (no dependencies)
+│   ├── bb-dev-words/       the words the developer tools, the tests and xtask share: databases, test variables, the sample layout
 │   ├── bb-wasm/            WebAssembly bindings for searchlang, markdown, validation
 │   ├── bb-testing/         test harness: runs one test body on SQLite and PostgreSQL (dev dependency only)
 │   ├── bb-sample/          sample-organization generator, developer tool (not shipped before OPS-12)
@@ -47,6 +48,7 @@ flowchart TB
   server["bb-server<br/>binary, wiring"]
   api["bb-api<br/>HTTP + OpenAPI"]
   words["bb-api-words<br/>shared API words"]
+  devwords["bb-dev-words<br/>shared developer words"]
   mcp["bb-mcp"]
   app["bb-app<br/>use cases + ports"]
   policy["bb-policy"]
@@ -80,7 +82,13 @@ flowchart TB
   wasm --> search & md
   store -. tests only .-> testing
   server -. tests only .-> words
-  sample --> app & store & core & policy & auth
+  testing --> devwords
+  devwords --> core
+  api -. tests only .-> devwords
+  auth -. tests only .-> devwords
+  app -. tests only .-> devwords
+  server -. tests only .-> devwords
+  sample --> app & store & core & policy & auth & devwords
 ```
 
 ### Dependency rules (checked by `cargo xtask check only ARCH-DEPS`)
@@ -137,7 +145,7 @@ sqlx connection pools, migrations (defined once with the query builder, run on b
 
 ### bb-testing
 
-Test-support crate, used only as a **dev dependency** (`[dev-dependencies]`) and never shipped (ARCH-DEPS fails on any other kind of dependency on it). `each_database` runs one async test body against every database named in `BB_TEST_DATABASES` (`sqlite`, `postgres`; default `sqlite`), each with a brand-new empty database that is removed afterwards (also when the test panics), hands the body a typed pool (`Pool::Sqlite` or `Pool::Postgres`), and records what ran for ARCH-DB-PARITY. It depends on no other Bugaboo crate. How it is wired to `cargo xtask db` and `cargo xtask ci` is in [testing](11-testing.md#database-tests).
+Test-support crate, used only as a **dev dependency** (`[dev-dependencies]`) and never shipped (ARCH-DEPS fails on any other kind of dependency on it). `each_database` runs one async test body against every database named in `BB_TEST_DATABASES` (`sqlite`, `postgres`; default `sqlite`), each with a brand-new empty database that is removed afterwards (also when the test panics), hands the body a typed pool (`Pool::Sqlite` or `Pool::Postgres`), and records what ran for ARCH-DB-PARITY. It depends on `bb-dev-words` only, which names the databases and the variables. How it is wired to `cargo xtask db` and `cargo xtask ci` is in [testing](11-testing.md#database-tests).
 
 ### bb-api
 
@@ -145,7 +153,11 @@ axum router; extractors that turn a session cookie, access key or OAuth token in
 
 ### bb-api-words
 
-The words of the API description that more than one program needs, written once: the marks `bb-api` puts on a route (`x-permission`, `x-never-stored`, `x-secret`), the three words for a route that needs no permission of the catalogue (`public`, `signed-in`, `own-account`), and the actor and answer names of the permission matrix (SEC-MATRIX). It has no dependencies and does no work, so `bb-api` (writes the words), the server tests (read them) and `xtask` (its checks read the generated description) can import it. The table that says which route gets which mark is `bb-api`'s `permissions::ROUTES`.
+The words of the API description that more than one program needs, written once: the marks `bb-api` puts on a route (`x-permission`, `x-never-stored`, `x-secret`), the words of a paged list (`fields`, `cursor`, `limit`, `include`, `items`, `next_cursor`, `truncated`), the three words for a route that needs no permission of the catalogue (`public`, `signed-in`, `own-account`), and the actor and answer names of the permission matrix (SEC-MATRIX). It has no dependencies and does no work, so `bb-api` (writes the words), the server tests (read them) and `xtask` (its checks read the generated description) can import it. The table that says which route gets which mark is `bb-api`'s `permissions::ROUTES`.
+
+### bb-dev-words
+
+The words that the developer tools, the tests and `xtask` share, written once: the databases Bugaboo runs on (`DatabaseKind`: `sqlite`, `postgres`) and the variables that tell the test harness what to do (`BB_TEST_DATABASES`, `BB_TEST_POSTGRES_URL`, `BB_DB_PARITY_FILE`), the passwords and the address of the sign-in tests (`accounts`), and the schema of `tools/dev/sample.json` (`sample::Layout`), which says where the sample organization is made and what its files, groups, projects and roles are called. It does no work and no input or output, and depends on `serde` and `serde_json` only, so `bb-testing`, `bb-sample`, `xtask` and the tests of `bb-app` and `bb-server` can import it without pulling in the store or the use cases.
 
 ### bb-ai and bb-mcp
 
@@ -153,9 +165,9 @@ One **tool registry** (search issues, get issue, create, change status, comment,
 
 ### bb-sample
 
-The sample-organization generator (architecture §11): a library and a small program that `cargo xtask dataset sample` runs as a process, so `xtask` does not link the store or the use cases (it imports only `bb-api-words` and `bb-policy`, for the names its checks hold the code against). It makes the organization through the same use cases the API calls, deterministic from a seed, on SQLite and PostgreSQL. It is a developer tool: not linked into `bugaboo` until *Try it out* (OPS-12), and never shipped before then.
+The sample-organization generator (architecture §11): a library and a small program that `cargo xtask dataset sample` runs as a process, so `xtask` does not link the store or the use cases (it imports only `bb-api-words`, `bb-dev-words` and `bb-policy`, for the names its checks hold the code against). It makes the organization through the same use cases the API calls, deterministic from a seed, on SQLite and PostgreSQL. It is a developer tool: not linked into `bugaboo` until *Try it out* (OPS-12), and never shipped before then.
 
-- **May depend on:** `bb-app`, `bb-store`, `bb-core`, `bb-policy`, `bb-auth` (and `bb-testing` as a dev dependency only). Nothing depends on it except, from OPS-12 on, `bb-server`.
+- **May depend on:** `bb-app`, `bb-store`, `bb-core`, `bb-policy`, `bb-auth`, `bb-dev-words` (and `bb-testing` as a dev dependency only). Nothing depends on it except, from OPS-12 on, `bb-server`.
 - **It wires an adapter:** like `bb-server`, it builds the store and hands it to the use cases, so dependency rule 4 names it as the second crate that may wire adapters to ports; ARCH-HTTP-EDGE's list of wiring crates (`bb-server`, `bb-sample`) is in `xtask/src/checks/arch_http_edge.rs`.
 - **In the layout and the diagram:** ARCH-MAP-SYNC and ARCH-DEPS read the repository layout and the module map above, which list the crate and its edges.
 

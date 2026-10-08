@@ -2,8 +2,8 @@
 
 use std::fmt::Write as _;
 
+use super::Generated;
 use super::token_file::{BaseToken, BaseValue, ShadowLayer, Theme, TokenFile, Variant};
-use super::{Generated, write_all};
 use crate::repo::Repo;
 
 const TS_HEADER: &str =
@@ -21,9 +21,9 @@ pub(crate) fn output_paths() -> Vec<&'static str> {
     paths
 }
 
-pub(crate) fn run(repo: &Repo) -> anyhow::Result<Vec<String>> {
-    let tokens = TokenFile::load(repo)?;
-    write_all(repo, &generate(&tokens))
+/// The token files, from `design/tokens.json` on disk.
+pub(crate) fn outputs(repo: &Repo) -> anyhow::Result<Vec<Generated>> {
+    Ok(generate(&TokenFile::load(repo)?))
 }
 
 pub(crate) fn generate(tokens: &TokenFile) -> Vec<Generated> {

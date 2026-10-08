@@ -15,7 +15,8 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use super::{Check, Context, Finding};
 use crate::generate::privacy::{self, Mark, Model};
-use crate::rust_source::read_product_sources;
+use crate::rust_source::strip_comments;
+use crate::source::Kind;
 
 pub(crate) struct DataMarks;
 
@@ -25,7 +26,7 @@ impl Check for DataMarks {
     }
 
     fn run(&self, context: &Context<'_>) -> anyhow::Result<Vec<Finding>> {
-        let sources = read_product_sources(context.repo)?;
+        let sources = context.sources(self.id(), Kind::Rust)?;
         let model = privacy::read_model(&sources)?;
         let mut findings = evaluate(&model);
         findings.extend(evaluate_tables(&model, &sources));
@@ -99,7 +100,8 @@ fn listed_tables(schema: &str) -> Vec<ListedTable> {
 /// The enums of the schema that stand for a table (they have a `Table` variant) with their other
 /// variants, which are its columns.
 fn table_enums(schema: &str) -> Vec<(String, Vec<String>)> {
-    let before_macro = schema.split("macro_rules!").next().unwrap_or(schema);
+    let schema = strip_comments(schema);
+    let before_macro = schema.split("macro_rules!").next().unwrap_or(&schema);
     let mut enums = Vec::new();
     let mut current: Option<(String, Vec<String>, bool)> = None;
     for line in before_macro.lines() {
@@ -119,7 +121,6 @@ fn table_enums(schema: &str) -> Vec<(String, Vec<String>)> {
             }
         } else if let Some((_, columns, is_table)) = current.as_mut()
             && !line.starts_with('#')
-            && !line.starts_with("//")
             && let Some(variant) = line.strip_suffix(',')
         {
             if variant == "Table" {
@@ -151,7 +152,7 @@ fn created_tables(text: &str) -> Vec<String> {
     tables
 }
 
-fn evaluate_tables(model: &Model, sources: &[crate::rust_source::Source]) -> Vec<Finding> {
+fn evaluate_tables(model: &Model, sources: &[crate::source::Source]) -> Vec<Finding> {
     let Some((_, schema)) = sources.iter().find(|(path, _)| path == SCHEMA_PATH) else {
         return Vec::new();
     };
@@ -339,7 +340,7 @@ fn join(words: &BTreeSet<&str>) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::rust_source::Source;
+    use crate::source::Source;
 
     const VOCABULARY: &str = "words! { pub enum Category { Identity => \"identity\", EmployeeTime => \"employee_time\" } }
 words! { pub enum Basis { Contract => \"contract\", LegalObligation => \"legal_obligation\" } }
@@ -465,7 +466,7 @@ words! { pub enum Basis { Contract => \"contract\", LegalObligation => \"legal_o
     #[test]
     fn the_entities_of_this_repository_pass() {
         let repo = crate::repo::Repo::discover().unwrap();
-        let sources = read_product_sources(&repo).unwrap();
+        let sources = crate::source::read_sources(&repo, None, Kind::Rust).unwrap();
         let model = privacy::read_model(&sources).unwrap();
         let mut findings = evaluate(&model);
         findings.extend(evaluate_tables(&model, &sources));

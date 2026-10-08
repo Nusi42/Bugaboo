@@ -7,9 +7,9 @@
 //! (`"{email}"`). IDs, counts, codes and shortened networks are what logs may hold. Test-only
 //! items (`#[cfg(test)]` and the item after it) and files in `tests/` are not checked.
 
-use std::path::Path;
-
 use super::{Check, Context, Finding};
+use crate::rust_source::{balanced, strip_comments, without_tests};
+use crate::source::{Kind, is_word_char, word_positions};
 
 /// Names (lower case) that must not appear in a log statement.
 const PERSONAL: [&str; 35] = [
@@ -62,9 +62,6 @@ const MACROS: [&str; 10] = [
     "debug_span",
     "warn_span",
 ];
-/// The attribute of test-only items; the item that follows it is not scanned.
-const TEST_MARKER: &str = "#[cfg(test)]";
-
 pub(crate) struct DataLogs;
 
 impl Check for DataLogs {
@@ -74,199 +71,11 @@ impl Check for DataLogs {
 
     fn run(&self, context: &Context<'_>) -> anyhow::Result<Vec<Finding>> {
         let mut findings = Vec::new();
-        for file in context.repo.all_files()? {
-            let rust = Path::new(&file)
-                .extension()
-                .is_some_and(|extension| extension.eq_ignore_ascii_case("rs"));
-            let product = file.starts_with("crates/") && rust && !file.contains("/tests/");
-            if product {
-                let text = std::fs::read_to_string(context.repo.path(&file))?;
-                findings.extend(scan(&file, &text));
-            }
+        for (file, text) in context.sources(self.id(), Kind::Rust)? {
+            findings.extend(scan(&file, &text));
         }
         Ok(findings)
     }
-}
-
-/// The text as the scan reads it: comments, char literals and test-only items (`#[cfg(test)]`
-/// and the one item that follows) are blanked out, line breaks stay so line numbers are right.
-/// Strings stay (captured names are checked); raw strings become ordinary strings.
-fn code_of(text: &str) -> String {
-    let chars: Vec<char> = text.chars().collect();
-    let mut out = String::with_capacity(text.len());
-    let mut index = 0;
-    let blank = |out: &mut String, from: usize, to: usize| {
-        for &c in &chars[from..to] {
-            out.push(if c == '\n' { '\n' } else { ' ' });
-        }
-    };
-    while index < chars.len() {
-        let c = chars[index];
-        let next = chars.get(index + 1).copied();
-        if c == '/' && next == Some('/') {
-            let end = chars[index..]
-                .iter()
-                .position(|c| *c == '\n')
-                .map_or(chars.len(), |at| index + at);
-            blank(&mut out, index, end);
-            index = end;
-        } else if c == '/' && next == Some('*') {
-            let end = block_comment_end(&chars, index);
-            blank(&mut out, index, end);
-            index = end;
-        } else if starts_with(&chars, index, TEST_MARKER) {
-            let end = item_end(&chars, index + TEST_MARKER.chars().count());
-            blank(&mut out, index, end);
-            index = end;
-        } else if let Some((end, content)) = raw_string(&chars, index) {
-            out.push('"');
-            out.extend(
-                content
-                    .iter()
-                    .map(|c| if matches!(c, '"' | '\\') { ' ' } else { *c }),
-            );
-            out.push('"');
-            index = end;
-        } else if c == '"' {
-            let end = string_end(&chars, index);
-            out.extend(&chars[index..end]);
-            index = end;
-        } else if let Some(end) = char_literal_end(&chars, index) {
-            blank(&mut out, index, end);
-            index = end;
-        } else {
-            out.push(c);
-            index += 1;
-        }
-    }
-    out
-}
-
-fn starts_with(chars: &[char], at: usize, pattern: &str) -> bool {
-    pattern
-        .chars()
-        .enumerate()
-        .all(|(offset, c)| chars.get(at + offset) == Some(&c))
-}
-
-/// The position after `/* … */` (comments nest in Rust).
-fn block_comment_end(chars: &[char], start: usize) -> usize {
-    let mut depth = 0_usize;
-    let mut index = start;
-    while index < chars.len() {
-        if starts_with(chars, index, "/*") {
-            depth += 1;
-            index += 2;
-        } else if starts_with(chars, index, "*/") {
-            depth -= 1;
-            index += 2;
-            if depth == 0 {
-                return index;
-            }
-        } else {
-            index += 1;
-        }
-    }
-    chars.len()
-}
-
-/// The position after the string that starts at `start` (a `"`).
-fn string_end(chars: &[char], start: usize) -> usize {
-    let mut index = start + 1;
-    while let Some(&c) = chars.get(index) {
-        index += if c == '\\' { 2 } else { 1 };
-        if c == '"' {
-            return index;
-        }
-    }
-    chars.len()
-}
-
-/// `r"…"`, `r#"…"#`, `br"…"`: the position after it and its content.
-fn raw_string(chars: &[char], start: usize) -> Option<(usize, &[char])> {
-    if start > 0 && is_ident_char(chars[start - 1]) {
-        return None;
-    }
-    let mut index = start;
-    if chars.get(index) == Some(&'b') {
-        index += 1;
-    }
-    if chars.get(index) != Some(&'r') {
-        return None;
-    }
-    index += 1;
-    let hashes = chars[index..].iter().take_while(|c| **c == '#').count();
-    index += hashes;
-    if chars.get(index) != Some(&'"') {
-        return None;
-    }
-    let content_start = index + 1;
-    let closing: Vec<char> = std::iter::once('"')
-        .chain(std::iter::repeat_n('#', hashes))
-        .collect();
-    let end = (content_start..chars.len()).find(|at| chars[*at..].starts_with(&closing))?;
-    Some((end + closing.len(), &chars[content_start..end]))
-}
-
-/// The position after a char literal (`'x'`, `'\n'`, `'"'`); `None` for a lifetime (`'a`).
-fn char_literal_end(chars: &[char], start: usize) -> Option<usize> {
-    if chars[start] != '\'' || (start > 0 && is_ident_char(chars[start - 1])) {
-        return None;
-    }
-    if chars.get(start + 1) == Some(&'\\') {
-        let close = chars[start + 2..].iter().position(|c| *c == '\'')?;
-        return Some(start + 2 + close + 1);
-    }
-    (chars.get(start + 2) == Some(&'\'')).then_some(start + 3)
-}
-
-/// The end of the item that starts at `start`: after its `;` or its closing `}`.
-fn item_end(chars: &[char], start: usize) -> usize {
-    let mut index = start;
-    let mut round = 0_usize;
-    while let Some(&c) = chars.get(index) {
-        match c {
-            '"' => {
-                index = string_end(chars, index);
-                continue;
-            }
-            '(' | '[' => round += 1,
-            ')' | ']' => round = round.saturating_sub(1),
-            ';' if round == 0 => return index + 1,
-            '{' if round == 0 => return brace_end(chars, index),
-            _ => {}
-        }
-        index += 1;
-    }
-    chars.len()
-}
-
-/// The position after the `}` that closes the `{` at `start`.
-fn brace_end(chars: &[char], start: usize) -> usize {
-    let mut depth = 0_usize;
-    let mut index = start;
-    while let Some(&c) = chars.get(index) {
-        match c {
-            '"' => {
-                index = string_end(chars, index);
-                continue;
-            }
-            '{' => depth += 1,
-            '}' => {
-                depth -= 1;
-                if depth == 0 {
-                    return index + 1;
-                }
-            }
-            _ => {}
-        }
-        index += 1;
-    }
-    chars.len()
-}
-
-fn is_ident_char(c: char) -> bool {
-    c.is_alphanumeric() || c == '_'
 }
 
 /// Every `name!(…)` log call: the byte position of the macro name and the text between its
@@ -274,54 +83,21 @@ fn is_ident_char(c: char) -> bool {
 fn log_calls(code: &str) -> Vec<(usize, &str)> {
     let mut calls = Vec::new();
     for name in MACROS {
-        let needle = format!("{name}!");
-        for (at, _) in code.match_indices(&needle) {
-            if code[..at].chars().next_back().is_some_and(is_ident_char) {
-                continue;
-            }
-            let rest = &code[at + needle.len()..];
-            let Some(open) = rest.chars().next().filter(|c| matches!(c, '(' | '[' | '{')) else {
+        for at in word_positions(code, name) {
+            let rest = &code[at + name.len()..];
+            let Some(open) = rest
+                .strip_prefix('!')
+                .and_then(|after| after.chars().next())
+                .filter(|c| matches!(c, '(' | '[' | '{'))
+            else {
                 continue;
             };
             if let Some(body) = balanced(&rest[1..], open) {
-                calls.push((at, body));
+                calls.push((at, &body[1..body.len() - 1]));
             }
         }
     }
     calls
-}
-
-/// The text up to the bracket that closes `open`, skipping strings.
-fn balanced(text: &str, open: char) -> Option<&str> {
-    let close = match open {
-        '(' => ')',
-        '[' => ']',
-        _ => '}',
-    };
-    let mut depth = 1_usize;
-    let mut in_string = false;
-    let mut escaped = false;
-    for (at, c) in text.char_indices() {
-        if in_string {
-            if escaped {
-                escaped = false;
-            } else if c == '\\' {
-                escaped = true;
-            } else if c == '"' {
-                in_string = false;
-            }
-        } else if c == '"' {
-            in_string = true;
-        } else if c == open {
-            depth += 1;
-        } else if c == close {
-            depth -= 1;
-            if depth == 0 {
-                return Some(&text[..at]);
-            }
-        }
-    }
-    None
 }
 
 fn personal(word: &str) -> Option<&'static str> {
@@ -352,7 +128,7 @@ fn personal_names(body: &str) -> Vec<&'static str> {
             }
             continue;
         }
-        if is_ident_char(c) {
+        if is_word_char(c) {
             word.push(c);
             continue;
         }
@@ -374,7 +150,7 @@ fn captured(literal: &str) -> Vec<&'static str> {
                 .split(':')
                 .next()
                 .unwrap_or_default()
-                .split(|c: char| !is_ident_char(c))
+                .split(|c: char| !is_word_char(c))
                 .filter_map(personal)
                 .collect::<Vec<_>>()
         })
@@ -382,7 +158,8 @@ fn captured(literal: &str) -> Vec<&'static str> {
 }
 
 fn scan(file: &str, text: &str) -> Vec<Finding> {
-    let code = code_of(text);
+    // Strings stay (captured names are checked); comments and test-only items are gone.
+    let code = strip_comments(&without_tests(text));
     let mut findings = Vec::new();
     for (at, body) in log_calls(&code) {
         let line = code[..at].matches('\n').count() + 1;

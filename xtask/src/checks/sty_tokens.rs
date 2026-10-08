@@ -8,10 +8,10 @@
 //! covers the TypeScript and the colors everywhere. The generated token files are the one place
 //! that holds raw values.
 
-use super::web_source::{WebSource, code_of};
+use super::web_source::code_of;
 use super::{Check, Context, Finding};
-use crate::docs::source::read_text;
 use crate::docs::text::has_extension;
+use crate::source::{Kind, Source};
 
 /// The generated files that hold the raw values, and the tests and tooling that are not the app.
 const EXEMPT: [&str; 5] = [
@@ -30,9 +30,6 @@ const COLOR_FUNCTIONS: [&str; 9] = [
 /// Ways to put a style on an element from code.
 const INLINE: [&str; 3] = [" style=", ".style.", "setAttribute(\"style\""];
 
-/// The folders that are never product sources.
-const SKIPPED: [&str; 3] = ["node_modules", "dist", "fixtures"];
-
 pub(crate) struct StyTokens;
 
 impl Check for StyTokens {
@@ -41,24 +38,12 @@ impl Check for StyTokens {
     }
 
     fn run(&self, context: &Context<'_>) -> anyhow::Result<Vec<Finding>> {
-        let repo = context.repo;
-        let mut sources: Vec<WebSource> = Vec::new();
-        for file in repo.all_files()? {
-            let wanted = file.starts_with("web/")
-                && ["ts", "tsx", "css"]
-                    .iter()
-                    .any(|ending| has_extension(&file, ending))
-                && !file.split('/').any(|part| SKIPPED.contains(&part));
-            if wanted {
-                let text = read_text(repo, &file)?;
-                sources.push((file, text));
-            }
-        }
+        let sources = context.sources(self.id(), Kind::WebAndStyles)?;
         Ok(evaluate(&sources))
     }
 }
 
-fn evaluate(sources: &[WebSource]) -> Vec<Finding> {
+fn evaluate(sources: &[Source]) -> Vec<Finding> {
     sources
         .iter()
         .filter(|(path, _)| !EXEMPT.iter().any(|part| path.contains(part)))

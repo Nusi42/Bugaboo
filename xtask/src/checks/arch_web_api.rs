@@ -8,8 +8,9 @@
 //! (`api.client.GET("/api/v1/status")`), which the compiler checks against the OpenAPI document. The Playwright tests (`e2e/`) drive a
 //! real browser and the tooling folder reads files; neither is part of the app.
 
-use super::web_source::{WebSource, code_of, read_web_sources};
+use super::web_source::code_of;
 use super::{Check, Context, Finding};
+use crate::source::{Kind, Source};
 
 /// The one place that may talk to the server.
 const CLIENT_PACKAGE: &str = "web/packages/api-client/";
@@ -39,11 +40,11 @@ impl Check for ArchWebApi {
     }
 
     fn run(&self, context: &Context<'_>) -> anyhow::Result<Vec<Finding>> {
-        Ok(evaluate(&read_web_sources(context.repo)?))
+        Ok(evaluate(&context.sources(self.id(), Kind::Web)?))
     }
 }
 
-fn evaluate(sources: &[WebSource]) -> Vec<Finding> {
+fn evaluate(sources: &[Source]) -> Vec<Finding> {
     sources
         .iter()
         .filter(|(path, _)| {

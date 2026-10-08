@@ -4,6 +4,7 @@
 //! [`Check`] here, and add a failing and a passing example (`bad_example` / `good_example` tests
 //! or `tools/checks/fixtures/<ID>/`).
 
+mod api_spec;
 mod arch_api_out;
 mod arch_authz_only;
 pub(crate) mod arch_db_parity;
@@ -31,6 +32,7 @@ mod dep_register;
 mod dev_ports;
 mod doc_adr_enforced;
 mod doc_generated;
+mod exemptions;
 mod fmt_css;
 mod fmt_md;
 mod fmt_rust;
@@ -41,6 +43,7 @@ mod git_files;
 mod lint_api_types;
 mod lint_ci;
 mod lint_css;
+mod lint_dry;
 mod lint_html;
 mod lint_links;
 mod lint_rust;
@@ -71,8 +74,11 @@ mod txt_literal;
 mod txt_terms;
 mod web_source;
 
-use crate::catalog::Catalog;
+use anyhow::Context as _;
+
+use crate::catalog::{CATALOG_PATH, Catalog, Entry};
 use crate::repo::Repo;
+use crate::source::{self, Kind, Source, read_sources};
 
 /// One problem a check found.
 pub(crate) struct Finding {
@@ -117,6 +123,34 @@ impl Context<'_> {
         wanted.retain(|file| self.repo.path(file).is_file());
         Ok(Some(wanted))
     }
+
+    /// The same, as if the whole repository were checked: for the checks that one changed file can
+    /// break in another.
+    pub(crate) fn everything(&self) -> Self {
+        Self {
+            repo: self.repo,
+            catalog: self.catalog,
+            files: None,
+        }
+    }
+
+    /// The catalogue entry of the check that is running.
+    fn entry(&self, id: &str) -> anyhow::Result<&Entry> {
+        self.catalog
+            .get(id)
+            .with_context(|| format!("{id} is not in {CATALOG_PATH}"))
+    }
+
+    /// The files a tool runs on: what the check's `files` globs cover among the triggering files,
+    /// or among all files when the whole repository is checked.
+    pub(crate) fn selected(&self, id: &str) -> anyhow::Result<Vec<String>> {
+        source::selected(self.repo, self.entry(id)?, self.files)
+    }
+
+    /// The code of `kind` that the check's `files` globs cover, always from the whole repository.
+    pub(crate) fn sources(&self, id: &str, kind: Kind) -> anyhow::Result<Vec<Source>> {
+        read_sources(self.repo, Some(self.entry(id)?), kind)
+    }
 }
 
 /// A check from the catalogue. An empty list of findings means it passed.
@@ -137,6 +171,7 @@ pub(crate) fn registry() -> Vec<Box<dyn Check>> {
         Box::new(lint_spell::LintSpell),
         Box::new(lint_links::LintLinks),
         Box::new(lint_ci::LintCi),
+        Box::new(lint_dry::LintDry),
         Box::new(arch_deps::ArchDeps),
         Box::new(arch_no_unsafe::ArchNoUnsafe),
         Box::new(arch_errors::ArchErrors),

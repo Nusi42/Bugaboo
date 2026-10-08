@@ -11,6 +11,7 @@
 //! tells which fields exist behind a mask. The policy engine (`Authorized<T>`, M2 WP-05) plugs in
 //! by passing only the fields the person may read.
 
+use bb_api_words::paging::{CURSOR, FIELDS, ITEMS, LIMIT, NEXT_CURSOR};
 use bb_core::ErrorCode;
 use bb_core::paging::{PAGE_SIZE_DEFAULT, PAGE_SIZE_MAX};
 use bb_policy::{Authorized, Masked, mask_member};
@@ -79,17 +80,17 @@ impl IntoParams for ListParams {
         };
         vec![
             parameter(
-                "fields",
+                FIELDS,
                 "The fields each item holds, separated by commas. The answer schema names every field that can be asked for; when this is left out the route's own small default is used.".to_owned(),
                 text.clone(),
             ),
             parameter(
-                "cursor",
-                "Where the page starts: the `next_cursor` of the page before.".to_owned(),
+                CURSOR,
+                format!("Where the page starts: the `{NEXT_CURSOR}` of the page before."),
                 text,
             ),
             parameter(
-                "limit",
+                LIMIT,
                 format!(
                     "How many items a page holds at most (default {PAGE_SIZE_DEFAULT}, at most {PAGE_SIZE_MAX})."
                 ),
@@ -228,7 +229,7 @@ impl Page<Value> {
         let masked = views
             .masked_value()
             .map_err(|error| ApiError::internal(&error))?;
-        let Some(Value::Array(items)) = masked.get("items") else {
+        let Some(Value::Array(items)) = masked.get(ITEMS) else {
             return Err(ApiError::internal(&"the views are not a list"));
         };
         let next = masked.get("next").and_then(Value::as_str);
@@ -254,7 +255,7 @@ pub(crate) struct Listed<V> {
 
 impl<V: Masked> Masked for Listed<V> {
     fn mask(value: &mut Value, mask: &bb_policy::FieldMask) {
-        mask_member::<Vec<V>>(value, "items", mask);
+        mask_member::<Vec<V>>(value, ITEMS, mask);
     }
 
     fn hidden_properties(mask: &bb_policy::FieldMask) -> Vec<&'static str> {

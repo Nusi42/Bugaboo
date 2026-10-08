@@ -10,15 +10,18 @@ use bb_testing::{Failure, TestResult};
 use jiff::Timestamp;
 
 use super::*;
-use crate::config::{Sources, resolve};
+use crate::config::{SettingName, Sources, resolve};
 use crate::wiring::{Serving, wire};
 
 /// An installation with a built-in database and a security log with two entries.
 async fn installation(root: &Path) -> Result<(StoreArgs, DataFolder), Failure> {
     let data = DataFolder::prepare(&root.join("data"))?;
     let given = [
-        ("port", "47200".to_owned()),
-        ("data_dir", data.root().to_string_lossy().into_owned()),
+        (SettingName::Port, "47200".to_owned()),
+        (
+            SettingName::DataDir,
+            data.root().to_string_lossy().into_owned(),
+        ),
     ];
     let settings = resolve(&Sources {
         file: None,

@@ -30,42 +30,20 @@ use std::path::Path;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{SystemTime, UNIX_EPOCH};
 
+pub use bb_dev_words::database::DatabaseKind;
+use bb_dev_words::database::{
+    PARITY_RECORD_VARIABLE, TEST_DATABASES_VARIABLE, TEST_POSTGRES_URL_VARIABLE,
+    parse as parse_database,
+};
 use sqlx::postgres::PgPoolOptions;
 use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};
 use sqlx::{AssertSqlSafe, Connection as _, Executor as _, PgConnection, PgPool, SqlitePool};
-
-/// Names the databases to run on, comma separated.
-const DATABASES_VARIABLE: &str = "BB_TEST_DATABASES";
-/// The URL of the throwaway PostgreSQL (its maintenance database).
-const POSTGRES_URL_VARIABLE: &str = "BB_TEST_POSTGRES_URL";
-/// The file that records which test ran on which database.
-const RECORD_VARIABLE: &str = "BB_DB_PARITY_FILE";
 
 /// The error of a test body or a test helper: any error, so `?` works on all of them.
 pub type Failure = Box<dyn Error + Send + Sync>;
 
 /// What a test body returns.
 pub type TestResult = Result<(), Failure>;
-
-/// The databases Bugaboo supports.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum DatabaseKind {
-    /// SQLite in a temporary file.
-    Sqlite,
-    /// PostgreSQL, a fresh database in the throwaway cluster.
-    Postgres,
-}
-
-impl DatabaseKind {
-    /// The name used in `BB_TEST_DATABASES` and in the parity record.
-    #[must_use]
-    pub const fn name(self) -> &'static str {
-        match self {
-            Self::Sqlite => "sqlite",
-            Self::Postgres => "postgres",
-        }
-    }
-}
 
 /// The typed connection pool of a test database. Queries are written once (sea-query, ADR-0003)
 /// and run on whichever pool the database has.
@@ -145,13 +123,13 @@ pub async fn each_database<F>(test_name: &str, body: F) -> TestResult
 where
     F: AsyncFn(&TestDatabase) -> TestResult,
 {
-    let selected = selected(std::env::var(DATABASES_VARIABLE).ok().as_deref())?;
+    let selected = selected(std::env::var(TEST_DATABASES_VARIABLE).ok().as_deref())?;
     for kind in selected {
         match kind {
             DatabaseKind::Sqlite => run_sqlite(test_name, &body).await?,
             DatabaseKind::Postgres => run_postgres(test_name, &body).await?,
         }
-        if let Ok(path) = std::env::var(RECORD_VARIABLE) {
+        if let Ok(path) = std::env::var(PARITY_RECORD_VARIABLE) {
             record_to(Path::new(&path), kind, test_name)?;
         }
     }
@@ -169,23 +147,17 @@ fn selected(value: Option<&str>) -> Result<Vec<DatabaseKind>, String> {
         .map(str::trim)
         .filter(|name| !name.is_empty())
     {
-        let kind = match name {
-            "sqlite" => DatabaseKind::Sqlite,
-            "postgres" => DatabaseKind::Postgres,
-            other => {
-                return Err(format!(
-                    "{DATABASES_VARIABLE} names the unknown database `{other}`. Use `sqlite`, \
-                     `postgres` or both separated by a comma."
-                ));
-            }
-        };
+        let kind = parse_database(name).map_err(|unknown| {
+            format!("{TEST_DATABASES_VARIABLE} names the unknown database: {unknown}.")
+        })?;
         if !kinds.contains(&kind) {
             kinds.push(kind);
         }
     }
     if kinds.is_empty() {
         return Err(format!(
-            "{DATABASES_VARIABLE} is empty. Use `sqlite`, `postgres` or both separated by a comma."
+            "{TEST_DATABASES_VARIABLE} is empty. Use {} or both separated by a comma.",
+            DatabaseKind::names(", ")
         ));
     }
     Ok(kinds)
@@ -266,9 +238,9 @@ async fn run_postgres<F>(test_name: &str, body: &F) -> TestResult
 where
     F: AsyncFn(&TestDatabase) -> TestResult,
 {
-    let admin_url = std::env::var(POSTGRES_URL_VARIABLE).map_err(|_| {
+    let admin_url = std::env::var(TEST_POSTGRES_URL_VARIABLE).map_err(|_| {
         format!(
-            "{POSTGRES_URL_VARIABLE} is not set, but {DATABASES_VARIABLE} asks for postgres. Run \
+            "{TEST_POSTGRES_URL_VARIABLE} is not set, but {TEST_DATABASES_VARIABLE} asks for postgres. Run \
              the tests with `cargo xtask db run -- cargo test` (or `cargo xtask ci`)."
         )
     })?;
@@ -310,7 +282,7 @@ where
 }
 
 fn with_context(test_name: &str, kind: DatabaseKind, error: &(dyn Error + Send + Sync)) -> Failure {
-    format!("{test_name} failed on {}: {error}", kind.name()).into()
+    format!("{test_name} failed on {}: {error}", kind.code()).into()
 }
 
 /// A database name that cannot clash with another test run, even in parallel processes. All
@@ -361,7 +333,7 @@ fn sqlite_url(path: &Path) -> String {
 fn record_to(path: &Path, kind: DatabaseKind, test_name: &str) -> TestResult {
     let line = format!(
         "{} {}\n",
-        kind.name(),
+        kind.code(),
         test_name.replace(char::is_whitespace, "_")
     );
     // One write call per line keeps lines whole when test programs run side by side.

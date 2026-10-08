@@ -303,7 +303,7 @@ fn shutdown_signal() -> anyhow::Result<impl Future<Output = ()> + Send + 'static
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::config::{self, Sources};
+    use crate::config::{self, SettingName, Sources};
 
     #[cfg(unix)]
     #[test]
@@ -347,9 +347,9 @@ mod tests {
             .port();
         let data = folder.join("data");
         let given = [
-            ("port", port.to_string()),
-            ("tls_mode", "off".to_owned()),
-            ("data_dir", data.to_string_lossy().into_owned()),
+            (SettingName::Port, port.to_string()),
+            (SettingName::TlsMode, "off".to_owned()),
+            (SettingName::DataDir, data.to_string_lossy().into_owned()),
         ];
         let settings = config::resolve(&Sources {
             file: None,
@@ -398,7 +398,7 @@ mod tests {
             let sources = args
                 .iter()
                 .map(|pair| pair.split_once('=').unwrap())
-                .map(|(k, v)| (k, v.to_owned()))
+                .map(|(k, v)| (SettingName::from_code(k).unwrap(), v.to_owned()))
                 .collect::<Vec<_>>();
             config::resolve(&Sources {
                 file: None,

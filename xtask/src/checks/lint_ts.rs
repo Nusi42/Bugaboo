@@ -2,14 +2,8 @@
 
 use std::path::Path;
 
-use super::node_tool::{Selection, in_batches, run, unix_findings};
+use super::node_tool::{in_batches, run, unix_findings};
 use super::{Check, Context, Finding};
-
-const SELECTION: Selection = Selection {
-    folders: &[".", "web", "docs/design"],
-    files: &[],
-    endings: &[".ts", ".tsx", ".js", ".mjs"],
-};
 
 pub(crate) struct LintTs;
 
@@ -19,7 +13,7 @@ impl Check for LintTs {
     }
 
     fn run(&self, context: &Context<'_>) -> anyhow::Result<Vec<Finding>> {
-        lint(context.repo.root(), &SELECTION.pick(context))
+        lint(context.repo.root(), &context.selected(self.id())?)
     }
 }
 

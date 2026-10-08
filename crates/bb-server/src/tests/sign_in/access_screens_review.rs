@@ -215,12 +215,7 @@ async fn sec_03_a_checker_without_a_management_permission_chooses_only_people_wi
         let app = app_with_probe(&rig, None);
         let acme = org.project(None, "ACME").await?.id;
         let web = org.project(Some(acme), "WEB").await?.id;
-        let checker = org
-            .role(
-                "Checker",
-                &[Permission::SeeProjects, Permission::CheckAccess],
-            )
-            .await?;
+        let checker = org.checker().await?;
         let looker = org.role("Looker", &[Permission::SeeProjects]).await?;
         let mut ada = Browser::signed_in_as(&app, ADA_EMAIL).await?;
         // Project members are shown by name to the Checker, so only the rule of the list is at work.

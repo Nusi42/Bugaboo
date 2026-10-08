@@ -10,9 +10,9 @@ use std::fmt::Write as _;
 use anyhow::{Context as _, bail};
 use syn::{Attribute, Expr, Fields, Item, Lit, Meta};
 
-use super::{Generated, write_all};
+use super::Generated;
 use crate::repo::Repo;
-use crate::rust_source::{Source, read_product_sources};
+use crate::source::{Kind, Source, read_sources};
 
 /// The generated page, relative to the repository root.
 pub(crate) const OUTPUT: &str = "docs/privacy/personal-data.md";
@@ -68,12 +68,8 @@ pub(crate) struct Model {
     pub(crate) vocabulary: Vocabulary,
 }
 
-pub(crate) fn run(repo: &Repo) -> anyhow::Result<Vec<String>> {
-    write_all(repo, &generate(repo)?)
-}
-
 pub(crate) fn generate(repo: &Repo) -> anyhow::Result<Vec<Generated>> {
-    let sources = read_product_sources(repo)?;
+    let sources = read_sources(repo, None, Kind::Rust)?;
     let model = read_model(&sources)?;
     require_vocabulary(&model)?;
     Ok(vec![Generated::new(OUTPUT, render(&model))])
@@ -531,7 +527,7 @@ words! { pub enum Basis {
         for output in generate(&repo).unwrap() {
             let on_disk = std::fs::read_to_string(repo.path(output.path)).unwrap();
             assert_eq!(
-                on_disk.replace("\r\n", "\n"),
+                crate::source::normalize(&on_disk),
                 output.content,
                 "{} is stale; run `cargo xtask gen privacy`",
                 output.path

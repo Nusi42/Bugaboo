@@ -1,35 +1,5 @@
-//! Reading the TypeScript sources of the browser app for the checks that look at code
-//! (ARCH-WEB-API, LINT-API-TYPES, SEC-COOKIES).
-
-use std::path::Path;
-
-use anyhow::Context as _;
-
-use crate::repo::Repo;
-
-/// One TypeScript file: its repository-relative path and its text.
-pub(super) type WebSource = (String, String);
-
-/// The folders whose files are never product sources.
-const SKIPPED: [&str; 3] = ["node_modules", "dist", "fixtures"];
-
-/// Every `.ts` and `.tsx` file below `web/`.
-pub(super) fn read_web_sources(repo: &Repo) -> anyhow::Result<Vec<WebSource>> {
-    let mut sources = Vec::new();
-    for file in repo.all_files()? {
-        let is_source = file.starts_with("web/")
-            && Path::new(&file)
-                .extension()
-                .is_some_and(|ext| ext == "ts" || ext == "tsx")
-            && !file.split('/').any(|part| SKIPPED.contains(&part));
-        if is_source {
-            let text = std::fs::read_to_string(repo.path(&file))
-                .with_context(|| format!("could not read {file}"))?;
-            sources.push((file, text.replace("\r\n", "\n")));
-        }
-    }
-    Ok(sources)
-}
+//! Reading a line of TypeScript as code, for the checks that look at the browser app
+//! (ARCH-WEB-API, LINT-API-TYPES, SEC-COOKIES, STY-TOKENS). The files come from `crate::source`.
 
 /// The code of a line: without a trailing `//` comment, and empty for comment lines.
 pub(super) fn code_of(line: &str) -> &str {

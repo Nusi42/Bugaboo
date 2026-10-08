@@ -25,8 +25,6 @@ mod dump_organization;
 mod error;
 mod folder;
 mod generate;
-mod layout;
-mod limits;
 mod names;
 mod organization;
 mod password;
@@ -35,6 +33,7 @@ mod roster;
 #[cfg(test)]
 mod tests;
 
+pub use bb_dev_words::sample::{Layout, OrganizationNames, ProjectNames, SubProjectNames};
 pub use clock::SampleClock;
 pub use dump::Dump;
 pub use error::{SampleError, Step};
@@ -43,9 +42,8 @@ pub use generate::{
     DEFAULT_SEED, LATER_SECONDS, Later, MadePerson, NothingMore, Options, STEP_SECONDS, Sample,
     Target, World, make,
 };
-pub use layout::{Layout, OrganizationNames, ProjectNames, SubProjectNames};
 pub use names::NameList;
 pub use organization::Organization;
 pub use roster::{
-    ACCESS_KEYS, EMAIL_DOMAIN, PEOPLE, ROLE_MIX, Region, Role, SamplePerson, TIME_ZONES, roster,
+    ACCESS_KEYS, EMAIL_DOMAIN, PEOPLE, ROLE_MIX, Region, SamplePerson, TIME_ZONES, roster,
 };

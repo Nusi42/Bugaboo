@@ -22,12 +22,7 @@ use bb_store::{AuthStorage, Database, LogSeal, SettingChange};
 use bb_testing::{Failure, TestDatabase};
 use jiff::Timestamp;
 
-/// The public address the passkeys of the tests belong to.
-pub(super) const PUBLIC_URL: &str = "https://bugaboo.test:47200";
-/// A password that is not on the list of breached ones and has enough characters.
-pub(crate) const PASSWORD: &str = "Tr4mpoline-Quiet-Harbor-81";
-/// Another one, for changing it.
-pub(super) const OTHER_PASSWORD: &str = "Violet-Lantern-Marsh-5520";
+pub(crate) use bb_dev_words::accounts::{OTHER_PASSWORD, PASSWORD, PUBLIC_URL};
 /// The start of the clock of the tests: 2027-01-15 08:00:00 UTC.
 const START: i64 = 1_800_000_000;
 

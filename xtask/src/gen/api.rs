@@ -26,12 +26,12 @@ use std::process::{Command, Stdio};
 
 use anyhow::{Context as _, bail};
 
-use super::messages::{SOURCE_LOCALE_PATH, parse_pairs};
+use super::Generated;
+use super::messages::{SOURCE_LOCALE_PATH, source_pairs};
 use super::messages_rust::constant_name;
 use super::privacy::table;
-use super::{Generated, write_all};
 use crate::repo::Repo;
-use crate::rust_source::{Source, read_product_sources};
+use crate::source::{Kind, Source, read_sources};
 use crate::tools;
 
 mod web_constants;
@@ -68,17 +68,11 @@ pub(crate) fn output_paths() -> Vec<&'static str> {
     ]
 }
 
-pub(crate) fn run(repo: &Repo) -> anyhow::Result<Vec<String>> {
-    write_all(repo, &generate(repo)?)
-}
-
 pub(crate) fn generate(repo: &Repo) -> anyhow::Result<Vec<Generated>> {
     let spec = openapi_text(repo)?;
-    let sources = read_product_sources(repo)?;
+    let sources = read_sources(repo, None, Kind::Rust)?;
     let cookies = read_cookies(&sources)?;
-    let catalog = std::fs::read_to_string(repo.path(SOURCE_LOCALE_PATH))
-        .with_context(|| format!("could not read {SOURCE_LOCALE_PATH}"))?;
-    let purposes = purposes(&parse_pairs(&catalog)?);
+    let purposes = purposes(&source_pairs(repo)?);
     let types = openapi_types(repo, &spec)?;
     let protocol = protocol(&cookies)?;
     Ok(vec![

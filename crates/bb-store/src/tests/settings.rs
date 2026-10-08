@@ -1,22 +1,18 @@
 //! Setting values on both databases: the layers (CFG-06), the person's own values (CFG-04), the
 //! lock, *Reset to default*, and what the registry refuses (ADR-0018).
 
-use std::sync::Arc;
-
 use bb_app::ports::{BoxFuture, ChangeStore};
 use bb_core::event::{Actor, Channel, DomainEvent, EntityKind, EntityRef, FieldChange};
 use bb_core::id::{EventId, IdSource, ProjectId, UserId};
-use bb_core::person::Person;
 use bb_core::project::{Project, ShortName};
 use bb_core::settings::{
     APPEARANCE_MODE, SECURITY_SESSION_IDLE_MINUTES, SECURITY_TWO_STEP_REQUIRED, Source,
     for_tests::{TEST_PROJECT_LIMIT, TEST_PROJECT_NOTE, TEST_SWITCH},
 };
-use bb_testing::{TestDatabase, TestResult, each_database};
+use bb_testing::{TestResult, each_database};
 
 use super::*;
-use crate::anchor::LogSeal;
-use crate::test_support::{at, ids, open};
+use crate::test_support::{at, fixture, ids, person};
 
 /// The event of a settings change: about the setting `key`, made by the system.
 fn event(source: &mut impl IdSource, key: &str) -> DomainEvent {
@@ -52,23 +48,6 @@ fn text(value: &str) -> SettingValue {
     SettingValue::Text(value.to_owned())
 }
 
-struct Fixture {
-    storage: AuthStorage,
-    _folder: tempfile::TempDir,
-}
-
-async fn fixture(db: &TestDatabase) -> Result<Fixture, Box<dyn std::error::Error + Send + Sync>> {
-    let database = open(db).await?;
-    let folder = tempfile::tempdir()?;
-    std::fs::create_dir_all(folder.path().join("logs"))?;
-    let keys = Arc::new(database.open_keys(&folder.path().join("keys")).await?);
-    let seal = LogSeal::new(&keys, folder.path().join("logs").join("head.log"));
-    Ok(Fixture {
-        storage: AuthStorage::new(database, keys, seal),
-        _folder: folder,
-    })
-}
-
 /// Runs `write` as a change with its event, the way a use case does.
 async fn changed<T: Send>(
     storage: &AuthStorage,
@@ -84,12 +63,7 @@ async fn make_person(
     source: &mut impl IdSource,
     email: &str,
 ) -> Result<UserId, StoreError> {
-    let person = Person {
-        id: UserId::generate(source),
-        display_name: "Test Person".to_owned(),
-        email: email.to_owned(),
-        created_at: at(0),
-    };
+    let person = person(source, email);
     let id = person.id;
     changed(storage, source, move |tx| {
         Box::pin(async move {

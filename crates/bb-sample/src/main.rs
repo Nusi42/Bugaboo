@@ -8,8 +8,9 @@ use std::path::PathBuf;
 use std::process::ExitCode;
 
 use bb_core::message::{self, Message, MessageKey};
+use bb_dev_words::database::{DatabaseKind, parse as parse_database};
 use bb_sample::{DEFAULT_SEED, Layout, Options, Organization, Output, SampleError, Target, make};
-use clap::{CommandFactory as _, FromArgMatches as _, Parser, ValueEnum};
+use clap::{CommandFactory as _, FromArgMatches as _, Parser};
 use jiff::Timestamp;
 
 // The library uses these; Cargo gives every dependency to the program too
@@ -27,15 +28,6 @@ fn text(key: MessageKey) -> String {
     Message::from(key).render()
 }
 
-/// Where the sample is kept.
-#[derive(Clone, Copy, Debug, ValueEnum)]
-enum DatabaseChoice {
-    #[value(name = "sqlite")]
-    Sqlite,
-    #[value(name = "postgres")]
-    Postgres,
-}
-
 #[derive(Parser)]
 #[command(name = "bb-sample", about = text(message::CLI_ABOUT_SAMPLE))]
 struct Args {
@@ -44,8 +36,8 @@ struct Args {
     #[arg(long, help = text(message::CLI_HELP_SAMPLE_START))]
     start: i64,
     // Its help names the environment variable of the layout, so it is set in `arguments`.
-    #[arg(long, value_enum, default_value = "sqlite")]
-    database: DatabaseChoice,
+    #[arg(long, default_value_t = DatabaseKind::Sqlite, value_parser = parse_database)]
+    database: DatabaseKind,
     #[arg(long, help = text(message::CLI_HELP_SAMPLE_OUT))]
     out: PathBuf,
 }
@@ -55,8 +47,8 @@ async fn run(args: &Args, layout: &Layout) -> Result<String, SampleError> {
     let output = Output::prepare(&args.out, layout)?;
     output.mark(args.seed, args.start)?;
     let target = match args.database {
-        DatabaseChoice::Sqlite => Target::BuiltIn,
-        DatabaseChoice::Postgres => Target::Address(
+        DatabaseKind::Sqlite => Target::BuiltIn,
+        DatabaseKind::Postgres => Target::Address(
             std::env::var(&layout.database_url_variable)
                 .map_err(|_| SampleError::DatabaseUrl(layout.database_url_variable.clone()))?,
         ),

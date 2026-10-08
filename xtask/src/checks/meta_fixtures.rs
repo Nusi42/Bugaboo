@@ -10,8 +10,9 @@ use std::path::Path;
 
 use super::{Check, Context, Finding};
 use crate::catalog::Entry;
-use crate::docs::source::{read_text, sorted_files};
+use crate::docs::source::sorted_files;
 use crate::docs::text::has_extension;
+use crate::source::read_text;
 
 const CHECKS_FOLDER: &str = "xtask/src/checks";
 const FIXTURES_FOLDER: &str = "tools/checks/fixtures";

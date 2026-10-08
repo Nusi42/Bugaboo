@@ -11,6 +11,7 @@ use std::collections::BTreeSet;
 use bb_core::access::PeopleLevel;
 use bb_core::id::{IdSource, UserId};
 use bb_core::people_kinds::PeopleKind;
+use bb_core::text::crockford_symbol;
 use serde::Serialize;
 
 use crate::catalogue::Permission;
@@ -158,8 +159,6 @@ pub fn resolve(
     }
 }
 
-/// The 32 characters of Crockford Base32: no `I`, `L`, `O` or `U`, so a code is easy to read out.
-const CROCKFORD: &[u8; 32] = b"0123456789ABCDEFGHJKMNPQRSTVWXYZ";
 /// The length of a label when there is room: four characters, 32^4 = over a million labels.
 const LABEL_LENGTH: usize = 4;
 /// The longest label.
@@ -184,8 +183,7 @@ pub fn former_user_label(
             let label: String = random
                 .iter()
                 .take(length)
-                // 256 is a multiple of 32, so the lowest five bits are uniform.
-                .map(|byte| char::from(CROCKFORD[usize::from(byte & 0x1F)]))
+                .map(|byte| crockford_symbol(*byte))
                 .collect();
             if !taken(&label) {
                 return Some(label);

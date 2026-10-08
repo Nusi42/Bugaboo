@@ -4,8 +4,6 @@
 //!
 //! The list is declared here once; the policy engine, the API description and the screens read it.
 
-use crate::message::{self, MessageKey};
-
 words! {
     /// One place where a person can be shown.
     pub enum PeopleKind {
@@ -31,28 +29,10 @@ words! {
         /// Member lists of a project (M2-Q3).
         ProjectMembers => "project-members",
     }
+    messages name = "people-kind.";
 }
 
 words_in_api!(PeopleKind, "A kind of people information, by its key.");
-
-impl PeopleKind {
-    /// The message that names the kind (`people-kind.<key>`).
-    #[must_use]
-    pub const fn name(self) -> MessageKey {
-        match self {
-            Self::AssignedTo => message::PEOPLE_KIND_ASSIGNED_TO,
-            Self::ReportedBy => message::PEOPLE_KIND_REPORTED_BY,
-            Self::LastChangedBy => message::PEOPLE_KIND_LAST_CHANGED_BY,
-            Self::Authors => message::PEOPLE_KIND_AUTHORS,
-            Self::Editing => message::PEOPLE_KIND_EDITING,
-            Self::Followers => message::PEOPLE_KIND_FOLLOWERS,
-            Self::TimeEntries => message::PEOPLE_KIND_TIME_ENTRIES,
-            Self::Mentions => message::PEOPLE_KIND_MENTIONS,
-            Self::Pictures => message::PEOPLE_KIND_PICTURES,
-            Self::ProjectMembers => message::PEOPLE_KIND_PROJECT_MEMBERS,
-        }
-    }
-}
 
 #[cfg(test)]
 mod tests {
@@ -65,7 +45,7 @@ mod tests {
             let key = kind.name();
             assert_eq!(key.as_str(), format!("people-kind.{}", kind.code()));
             assert!(seen.insert(key));
-            assert!(!message::Message::from(key).render().is_empty());
+            assert!(!crate::message::Message::from(key).render().is_empty());
         }
         assert_eq!(PeopleKind::ALL.len(), 10);
     }

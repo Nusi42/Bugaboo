@@ -9,6 +9,7 @@ pub(crate) mod icu;
 pub(crate) mod messages;
 pub(crate) mod messages_rust;
 pub(crate) mod privacy;
+pub(crate) mod roles;
 pub(crate) mod token_file;
 pub(crate) mod tokens;
 
@@ -31,28 +32,96 @@ impl Generated {
     }
 }
 
-/// Every generated file in the repository: the docs pages, the token files and the message types.
-/// DOC-GENERATED compares all of them with the disk, so a generator is added here.
-pub(crate) fn all(repo: &Repo, catalog: &Catalog) -> anyhow::Result<Vec<Generated>> {
-    let mut files = docs::generate(repo, catalog)?;
-    files.extend(tokens::generate(&token_file::TokenFile::load(repo)?));
-    let catalog_text = std::fs::read_to_string(repo.path(messages::SOURCE_LOCALE_PATH))
-        .with_context(|| format!("could not read {}", messages::SOURCE_LOCALE_PATH))?;
-    files.extend(messages::generate(repo, &catalog_text)?);
-    files.extend(privacy::generate(repo)?);
-    files.extend(api::generate(repo)?);
-    Ok(files)
+/// One generator: the files it writes, and how it makes them.
+pub(crate) struct Generator {
+    /// The name that `cargo xtask gen <name>` takes.
+    pub(crate) name: &'static str,
+    /// What it does, in one line.
+    pub(crate) help: &'static str,
+    /// The paths it writes, without producing them. META-COVERAGE counts these as generated.
+    pub(crate) paths: fn() -> Vec<&'static str>,
+    /// The files, as they should be.
+    pub(crate) generate: fn(&Repo, &Catalog) -> anyhow::Result<Vec<Generated>>,
 }
 
-/// The paths of everything [`all`] produces, without producing it. META-COVERAGE counts these as
-/// generated.
+/// The name of the generator that builds the HTML pages (`cargo xtask docs` is its short form).
+pub(crate) const DOCS: &str = "docs";
+
+/// Every generator, once. A generated file in the repository is written by one of these;
+/// DOC-GENERATED compares all of them with the disk, `cargo xtask gen <name>` writes one, and
+/// META-COVERAGE counts their paths as generated.
+pub(crate) const GENERATORS: [Generator; 6] = [
+    Generator {
+        name: DOCS,
+        help: "The commentable HTML pages from the Markdown sources and the check catalogue.",
+        paths: docs::generated_paths,
+        generate: docs::generate,
+    },
+    Generator {
+        name: "tokens",
+        help: "CSS variables and TypeScript names from design/tokens.json.",
+        paths: tokens::output_paths,
+        generate: |repo, _| tokens::outputs(repo),
+    },
+    Generator {
+        name: "messages",
+        help: "Typed message keys from messages/en.json.",
+        paths: messages::output_paths,
+        generate: |repo, _| messages::outputs(repo),
+    },
+    Generator {
+        name: "privacy",
+        help: "The personal-data page docs/privacy/personal-data.md from the marks in the code.",
+        paths: || vec![privacy::OUTPUT],
+        generate: |repo, _| privacy::generate(repo),
+    },
+    Generator {
+        name: "roles",
+        help: "The tables of permissions and starting roles in architecture section 7, from bb-policy.",
+        paths: || vec![roles::PAGE],
+        generate: |repo, _| roles::generate(repo),
+    },
+    Generator {
+        name: "api",
+        help: "The API description, the browser client's types and the cookie list, from bb-api.",
+        paths: api::output_paths,
+        generate: |repo, _| api::generate(repo),
+    },
+];
+
+/// The names of the generators with their help, for the command line.
+pub(crate) fn possible_values() -> clap::builder::PossibleValuesParser {
+    clap::builder::PossibleValuesParser::new(
+        GENERATORS.iter().map(|generator| {
+            clap::builder::PossibleValue::new(generator.name).help(generator.help)
+        }),
+    )
+}
+
+/// The generator called `name`.
+pub(crate) fn named(name: &str) -> anyhow::Result<&'static Generator> {
+    GENERATORS
+        .iter()
+        .find(|generator| generator.name == name)
+        .with_context(|| format!("there is no generator called `{name}`"))
+}
+
+/// The paths of everything the generators produce, without producing it.
 pub(crate) fn all_paths() -> Vec<&'static str> {
-    let mut paths = docs::generated_paths();
-    paths.extend(tokens::output_paths());
-    paths.extend(messages::output_paths());
-    paths.push(privacy::OUTPUT);
-    paths.extend(api::output_paths());
-    paths
+    GENERATORS
+        .iter()
+        .flat_map(|generator| (generator.paths)())
+        .collect()
+}
+
+/// Writes the files of the generator called `name`; returns the paths that changed.
+pub(crate) fn write_named(
+    repo: &Repo,
+    catalog: &Catalog,
+    name: &str,
+) -> anyhow::Result<Vec<String>> {
+    let generator = named(name)?;
+    write_all(repo, &(generator.generate)(repo, catalog)?)
 }
 
 /// Writes the files (only when they changed) and returns the paths that were written.

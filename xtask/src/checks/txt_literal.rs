@@ -8,14 +8,8 @@
 
 use std::path::Path;
 
-use super::node_tool::{Selection, in_batches, run, unix_findings};
+use super::node_tool::{in_batches, run, unix_findings};
 use super::{Check, Context, Finding};
-
-const SELECTION: Selection = Selection {
-    folders: &["web"],
-    files: &[],
-    endings: &[".tsx"],
-};
 
 /// What oxlint prints after the message for this rule.
 const RULE: &str = "react(jsx-no-literals)";
@@ -28,7 +22,7 @@ impl Check for TxtLiteral {
     }
 
     fn run(&self, context: &Context<'_>) -> anyhow::Result<Vec<Finding>> {
-        literals(context.repo.root(), &SELECTION.pick(context))
+        literals(context.repo.root(), &context.selected(self.id())?)
     }
 }
 

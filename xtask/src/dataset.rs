@@ -6,14 +6,14 @@
 //! The program never reads the clock: this file hands it the start moment (now; a fixed moment
 //! for `--check`, so the runs are comparable).
 
-use std::collections::BTreeMap;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use anyhow::{Context as _, bail};
-use serde::Deserialize;
+use bb_dev_words::database::DatabaseKind;
+use bb_dev_words::sample::Layout;
 
 use crate::checks::test_sample_data::{self, NAMES_FILE, NameList, Run};
 use crate::db;
@@ -38,67 +38,12 @@ const CHECK_RUNS: [(&str, DatabaseKind); 4] = [
     ("postgres-2", DatabaseKind::Postgres),
 ];
 
-/// `tools/dev/sample.json`: where the sample is made and what its files are called.
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub(crate) struct Layout {
-    /// Where the sample is made on SQLite when `--out` is not given.
-    out: String,
-    /// The same on PostgreSQL.
-    out_postgres: String,
-    /// Where `cargo xtask dev --sample` keeps its sample.
-    dev_out: String,
-    /// Where `--check` makes its runs, one folder each.
-    check_out: String,
-    /// The data folder inside an output folder.
-    data_folder: String,
-    /// The file with the passwords: the only file that may hold a secret.
-    pub(crate) sign_in_file: String,
-    /// The canonical dump.
-    pub(crate) dump_file: String,
-    /// The environment variable that holds the address of the PostgreSQL database of the program.
-    database_url_variable: String,
-    /// What the groups and projects of the organization are called: the names TEST-SAMPLE-DATA
-    /// expects to find in the dump.
-    pub(crate) organization: OrganizationNames,
-}
-
-/// The names of the organization in `tools/dev/sample.json`.
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub(crate) struct OrganizationNames {
-    /// The groups: key, name.
-    pub(crate) groups: BTreeMap<String, String>,
-    /// The projects of the top level.
-    pub(crate) projects: Vec<ProjectNames>,
-}
-
-/// A project of the sample organization.
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub(crate) struct ProjectNames {
-    /// The letters of its address.
-    pub(crate) short_name: String,
-    /// The projects inside it.
-    pub(crate) sub_projects: Vec<SubProjectNames>,
-}
-
-/// A sub-project of the sample organization.
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub(crate) struct SubProjectNames {
-    /// The letters of its address.
-    pub(crate) short_name: String,
-}
-
-impl Layout {
-    /// Reads the layout of the repository at `root`.
-    pub(crate) fn load(root: &Path) -> anyhow::Result<Self> {
-        let path = root.join(LAYOUT_FILE);
-        let text = fs::read_to_string(&path)
-            .with_context(|| format!("could not read {}", path.display()))?;
-        serde_json::from_str(&text).with_context(|| format!("{LAYOUT_FILE} is not valid"))
-    }
+/// Reads `tools/dev/sample.json` of the repository at `root`.
+pub(crate) fn load_layout(root: &Path) -> anyhow::Result<Layout> {
+    let path = root.join(LAYOUT_FILE);
+    let text =
+        fs::read_to_string(&path).with_context(|| format!("could not read {}", path.display()))?;
+    Layout::parse(&text).with_context(|| format!("{LAYOUT_FILE} is not valid"))
 }
 
 /// The folder `relative` (written with `/` in the layout) inside `root`, with the separator of
@@ -107,24 +52,6 @@ fn in_folder(root: &Path, relative: &str) -> PathBuf {
     relative
         .split('/')
         .fold(root.to_path_buf(), |folder, part| folder.join(part))
-}
-
-/// Which database the sample is made on.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(crate) enum DatabaseKind {
-    /// The built-in database: a file in the data folder.
-    Sqlite,
-    /// The throwaway PostgreSQL (`cargo xtask db`).
-    Postgres,
-}
-
-impl DatabaseKind {
-    const fn name(self) -> &'static str {
-        match self {
-            Self::Sqlite => "sqlite",
-            Self::Postgres => "postgres",
-        }
-    }
 }
 
 /// What `cargo xtask dataset sample` was asked to do.
@@ -143,7 +70,7 @@ pub(crate) fn run(repo: &Repo, request: &Request) -> anyhow::Result<bool> {
     if request.check {
         return check(repo, &program, request.seed);
     }
-    let layout = Layout::load(repo.root())?;
+    let layout = load_layout(repo.root())?;
     let out = match (&request.out, request.database) {
         (Some(out), _) => std::path::absolute(out)
             .with_context(|| format!("{} is not a usable folder", out.display()))?,
@@ -203,7 +130,7 @@ pub(crate) fn make_for_dev(root: &Path) -> anyhow::Result<Option<PathBuf>> {
     let Some(program) = build_program(root)? else {
         return Ok(None);
     };
-    let layout = Layout::load(root)?;
+    let layout = load_layout(root)?;
     let out = in_folder(root, &layout.dev_out);
     let status = program_command(
         &program,
@@ -260,7 +187,7 @@ fn program_command(
         .arg("--start")
         .arg(arguments.start.to_string())
         .arg("--database")
-        .arg(arguments.database.name())
+        .arg(arguments.database.code())
         .arg("--out")
         .arg(arguments.out);
     if let Some(url) = url {
@@ -273,7 +200,7 @@ fn program_command(
 /// against each other and against the rules of TEST-SAMPLE-DATA.
 fn check(repo: &Repo, program: &Path, seed: Option<u64>) -> anyhow::Result<bool> {
     let root = repo.root();
-    let layout = Layout::load(root)?;
+    let layout = load_layout(root)?;
     let folder = in_folder(root, &layout.check_out);
     if folder.exists() {
         fs::remove_dir_all(&folder)
@@ -346,19 +273,7 @@ mod tests {
     use super::*;
 
     fn real_layout() -> Layout {
-        Layout::load(Path::new(env!("CARGO_MANIFEST_DIR")).parent().unwrap()).unwrap()
-    }
-
-    #[test]
-    fn the_program_pins_the_names_of_the_databases_xtask_passes() {
-        let program = include_str!("../../crates/bb-sample/src/main.rs");
-        for kind in [DatabaseKind::Sqlite, DatabaseKind::Postgres] {
-            assert!(
-                program.contains(&format!("#[value(name = \"{}\")]", kind.name())),
-                "bb-sample does not pin the database name {}",
-                kind.name()
-            );
-        }
+        load_layout(Path::new(env!("CARGO_MANIFEST_DIR")).parent().unwrap()).unwrap()
     }
 
     #[test]
@@ -388,7 +303,7 @@ mod tests {
     #[test]
     fn the_real_layout_file_is_usable() {
         let root = Path::new(env!("CARGO_MANIFEST_DIR")).parent().unwrap();
-        let layout = Layout::load(root).unwrap();
+        let layout = load_layout(root).unwrap();
         for folder in [
             &layout.out,
             &layout.out_postgres,

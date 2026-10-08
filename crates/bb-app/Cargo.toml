@@ -10,6 +10,9 @@ publish.workspace = true
 # Lets a test look at what a use case answered (`Authorized::into_value`). Only `[dev-dependencies]`
 # switch it on (ARCH-AUTHZ-ONLY).
 peek = ["bb-policy/peek"]
+# `NoFailureLimit`, a failure limit that lets every try through. Only the tests of this crate and
+# the sample generator (a developer tool, not shipped) switch it on.
+testing = []
 
 [dependencies]
 bb-auth = { path = "../bb-auth" }
@@ -24,6 +27,7 @@ zeroize = { workspace = true }
 
 [dev-dependencies]
 base64ct = { workspace = true }
+bb-dev-words = { path = "../bb-dev-words" }
 # Predictable IDs for the property tests (`SequentialIds`).
 bb-core = { path = "../bb-core", features = ["fake-ids"] }
 # Makes `Authorized::into_value` for the tests of this crate (ARCH-AUTHZ-ONLY).

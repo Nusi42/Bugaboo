@@ -4,12 +4,11 @@
 //! A system use case makes editable copies from it once, at the first start (never a migration);
 //! after that the definition is read only by *Reset to the starting permissions*. The permissions,
 //! field levels, *Who sees people* levels and the order are the tables of architecture §7
-//! (*Starting roles*); the tests below read those tables from the architecture page, so a change of
-//! one without the other fails.
+//! (*Starting roles*) and are written into the page from this code by `cargo xtask gen roles`
+//! (DOC-GENERATED fails when the page differs), so there is no second copy to keep in step.
 
 use bb_core::access::{FieldLevel, PeopleLevel};
 use bb_core::fields::Field;
-use bb_core::message::{self, MessageKey};
 use bb_core::people_kinds::PeopleKind;
 use bb_core::words;
 
@@ -33,6 +32,7 @@ words! {
         /// Sees only what they reported, and sees people by role only.
         Guest => "guest",
     }
+    messages name = "starting-role.";
 }
 
 const C: FieldLevel = FieldLevel::CanChange;
@@ -54,58 +54,46 @@ const PROJECT_LEAD: [Permission; 7] = [
     Permission::CheckAccess,
 ];
 
-/// Field levels per field, in the order of the roles of [`StartingRole::ALL`].
-const FIELD_LEVELS: [(Field, [FieldLevel; 6]); 16] = [
-    (Field::Title, [C, C, C, C, S, C]),
-    (Field::Description, [C, C, C, C, S, C]),
-    (Field::Status, [C, C, C, S, S, S]),
-    (Field::Priority, [C, C, C, S, S, S]),
-    (Field::AssignedTo, [C, C, C, S, S, S]),
-    (Field::ReportedBy, [C, C, S, S, S, S]),
-    (Field::DueDate, [C, C, C, S, S, H]),
-    (Field::Labels, [C, C, C, S, S, S]),
-    (Field::Tags, [C, C, C, C, S, S]),
-    (Field::PlannedForRelease, [C, C, C, S, S, S]),
-    (Field::FoundInRelease, [C, C, C, C, S, C]),
-    (Field::EstimatedTime, [C, C, C, S, S, H]),
-    (Field::TimeLeft, [C, C, C, S, S, H]),
-    (Field::TimeSpent, [C, C, C, S, S, H]),
-    (Field::Activity, [C, C, C, S, S, H]),
-    (Field::CostCenter, [C, C, S, S, S, H]),
-];
+/// Field levels of a field, in the order of the roles of [`StartingRole::ALL`]. A `match` with no
+/// catch-all arm: a field without a row does not compile, so no field falls back to hidden.
+const fn field_levels(field: Field) -> [FieldLevel; 6] {
+    match field {
+        Field::Title | Field::Description | Field::FoundInRelease => [C, C, C, C, S, C],
+        Field::Status
+        | Field::Priority
+        | Field::AssignedTo
+        | Field::Labels
+        | Field::PlannedForRelease => [C, C, C, S, S, S],
+        Field::ReportedBy => [C, C, S, S, S, S],
+        Field::DueDate
+        | Field::EstimatedTime
+        | Field::TimeLeft
+        | Field::TimeSpent
+        | Field::Activity => [C, C, C, S, S, H],
+        Field::Tags => [C, C, C, C, S, S],
+        Field::CostCenter => [C, C, S, S, S, H],
+    }
+}
 
-/// *Who sees people* levels per kind, in the order of the roles of [`StartingRole::ALL`].
-const PEOPLE_LEVELS: [(PeopleKind, [PeopleLevel; 6]); 10] = [
-    (PeopleKind::AssignedTo, [N, N, N, N, N, R]),
-    (PeopleKind::ReportedBy, [N, N, N, N, N, O]),
-    (PeopleKind::LastChangedBy, [N, N, N, N, N, R]),
-    (PeopleKind::Authors, [N, N, N, N, N, R]),
-    (PeopleKind::Editing, [N, N, N, N, N, O]),
-    (PeopleKind::Followers, [N, N, N, R, R, O]),
-    (PeopleKind::TimeEntries, [N, N, N, O, O, O]),
-    (PeopleKind::Mentions, [N, N, N, N, N, R]),
-    (PeopleKind::Pictures, [N, N, N, N, N, O]),
-    (PeopleKind::ProjectMembers, [N, N, N, R, R, O]),
-];
+/// *Who sees people* levels of a kind, in the order of the roles of [`StartingRole::ALL`]. A
+/// `match` with no catch-all arm, like [`field_levels`].
+const fn people_levels(kind: PeopleKind) -> [PeopleLevel; 6] {
+    match kind {
+        PeopleKind::AssignedTo
+        | PeopleKind::LastChangedBy
+        | PeopleKind::Authors
+        | PeopleKind::Mentions => [N, N, N, N, N, R],
+        PeopleKind::ReportedBy | PeopleKind::Editing | PeopleKind::Pictures => [N, N, N, N, N, O],
+        PeopleKind::Followers | PeopleKind::ProjectMembers => [N, N, N, R, R, O],
+        PeopleKind::TimeEntries => [N, N, N, O, O, O],
+    }
+}
 
 impl StartingRole {
     /// The place of the role in the starting order, counting from 0.
     #[must_use]
     pub const fn index(self) -> usize {
         self as usize
-    }
-
-    /// The name of the role when it is made (`starting-role.<key>`).
-    #[must_use]
-    pub const fn name(self) -> MessageKey {
-        match self {
-            Self::Administrator => message::STARTING_ROLE_ADMINISTRATOR,
-            Self::ProjectLead => message::STARTING_ROLE_PROJECT_LEAD,
-            Self::TeamMember => message::STARTING_ROLE_TEAM_MEMBER,
-            Self::Contributor => message::STARTING_ROLE_CONTRIBUTOR,
-            Self::Viewer => message::STARTING_ROLE_VIEWER,
-            Self::Guest => message::STARTING_ROLE_GUEST,
-        }
     }
 
     /// The permissions of the role.
@@ -123,19 +111,13 @@ impl StartingRole {
     /// The level of a field for the role.
     #[must_use]
     pub fn field_level(self, field: Field) -> FieldLevel {
-        FIELD_LEVELS
-            .iter()
-            .find(|(candidate, _)| *candidate == field)
-            .map_or(FieldLevel::Hidden, |(_, levels)| levels[self.index()])
+        field_levels(field)[self.index()]
     }
 
     /// How the role sees people of a kind.
     #[must_use]
     pub fn people_level(self, kind: PeopleKind) -> PeopleLevel {
-        PEOPLE_LEVELS
-            .iter()
-            .find(|(candidate, _)| *candidate == kind)
-            .map_or(PeopleLevel::Hidden, |(_, levels)| levels[self.index()])
+        people_levels(kind)[self.index()]
     }
 
     /// Whether everybody with the role needs two-step sign-in at the start: off for all.
@@ -150,118 +132,6 @@ mod tests {
     use std::collections::HashSet;
 
     use super::*;
-
-    /// The tables of "Starting roles" in architecture §7 are the only other place that holds the
-    /// starting values: the tests read them from the page, so no third copy exists. Rows are in
-    /// the order of the catalogues ([`Permission::ALL`], [`Field::ALL`], [`PeopleKind::ALL`]),
-    /// the columns in the starting order.
-    const ARCHITECTURE: &str = include_str!("../../../docs/architecture/07-cross-cutting.md");
-
-    /// The cells of the data rows (without the label) of the `at`th table of the section.
-    fn table(at: usize) -> Vec<Vec<String>> {
-        let section = ARCHITECTURE
-            .split("### Starting roles")
-            .nth(1)
-            .and_then(|rest| rest.split("### The field catalogue").next())
-            .unwrap();
-        let mut tables: Vec<Vec<Vec<String>>> = Vec::new();
-        let mut inside = false;
-        for line in section.lines() {
-            if !line.starts_with('|') {
-                inside = false;
-                continue;
-            }
-            if !inside {
-                tables.push(Vec::new());
-                inside = true;
-            }
-            let cells: Vec<String> = line
-                .trim_matches('|')
-                .split('|')
-                .skip(1)
-                .map(|cell| cell.trim().to_owned())
-                .collect();
-            if let Some(rows) = tables.last_mut()
-                && !cells.iter().all(|cell| cell.starts_with(['-', ':']))
-            {
-                rows.push(cells);
-            }
-        }
-        let mut rows = tables.swap_remove(at);
-        rows.remove(0);
-        rows
-    }
-
-    /// What `letter` says: a level of a field.
-    fn level(letter: &str) -> FieldLevel {
-        match letter {
-            "C" => FieldLevel::CanChange,
-            "S" => FieldLevel::CanSee,
-            _ => FieldLevel::Hidden,
-        }
-    }
-
-    /// What `letter` says: how people of a kind are seen.
-    fn people(letter: &str) -> PeopleLevel {
-        match letter {
-            "N" => PeopleLevel::Names,
-            "R" => PeopleLevel::RoleOnly,
-            _ => PeopleLevel::Hidden,
-        }
-    }
-
-    #[test]
-    fn m2_q5_the_permissions_are_the_table_of_architecture_7() {
-        let rows = table(0);
-        // One row per permission, then the switch for two-step sign-in.
-        assert_eq!(
-            rows.len(),
-            Permission::ALL.len() + 1,
-            "a row per permission"
-        );
-        for (permission, ticks) in Permission::ALL.iter().zip(&rows) {
-            for (role, tick) in StartingRole::ALL.iter().zip(ticks) {
-                assert_eq!(
-                    role.permissions().contains(permission),
-                    tick == "✓",
-                    "{permission} for {role}"
-                );
-            }
-        }
-        for (role, cell) in StartingRole::ALL.iter().zip(&rows[Permission::ALL.len()]) {
-            assert_eq!(role.two_step(), cell != "off", "two-step for {role}");
-        }
-    }
-
-    #[test]
-    fn m2_q5_the_field_levels_are_the_table_of_architecture_7() {
-        let rows = table(1);
-        assert_eq!(rows.len(), Field::ALL.len());
-        for (field, letters) in Field::ALL.iter().zip(&rows) {
-            for (role, letter) in StartingRole::ALL.iter().zip(letters) {
-                assert_eq!(
-                    role.field_level(*field),
-                    level(letter),
-                    "{field} for {role}"
-                );
-            }
-        }
-    }
-
-    #[test]
-    fn m2_q5_the_people_levels_are_the_table_of_architecture_7() {
-        let rows = table(2);
-        assert_eq!(rows.len(), PeopleKind::ALL.len());
-        for (kind, letters) in PeopleKind::ALL.iter().zip(&rows) {
-            for (role, letter) in StartingRole::ALL.iter().zip(letters) {
-                assert_eq!(
-                    role.people_level(*kind),
-                    people(letter),
-                    "{kind} for {role}"
-                );
-            }
-        }
-    }
 
     #[test]
     fn the_roles_come_in_the_starting_order_with_their_own_keys_and_names() {

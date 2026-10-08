@@ -4,26 +4,29 @@
 //! Code shows text only through `t("key")` (browser) or the generated constants and functions of
 //! `bb-core` (Rust). A key counts as used when its exact text appears as a string in non-test code
 //! under `web/` or `crates/`, or when Rust code names its constant or function
-//! (`SERVER_NOT_FOUND`, `server_port_busy`); a `t("…")` call with an unknown key is missing.
+//! (`SERVER_NOT_FOUND`, `server_port_busy`); a `t("…")` call with an unknown key is missing. The
+//! messages that the words of the enums make (an error code, a permission and its topic, a starting
+//! role, a kind of people information, a field) count as used. That each of them is in the catalog
+//! is the build's job: a made key that is not there does not compile (`bb-core`, `derived_key!`).
 
 use std::collections::{BTreeMap, HashSet};
-use std::fs;
 
-use super::node_tool::Selection;
+use bb_core::ErrorCode;
+use bb_core::access::{FieldLevel, PeopleLevel};
+use bb_core::fields::Field;
+use bb_core::message::MessageKey;
+use bb_core::people_kinds::PeopleKind;
+use bb_policy::{Permission, StartingRole, Topic};
+
 use super::{Check, Context, Finding};
+use crate::docs::text::has_extension;
 use crate::generate::icu::{Placeholders, placeholders};
 use crate::generate::messages::{SOURCE_LOCALE_PATH, parse_pairs};
 use crate::generate::messages_rust::{constant_name, function_name};
-use crate::rust_source::without_tests;
+use crate::rust_source::{strip_comments, without_tests};
+use crate::source::read_text;
 
-const MESSAGES_FOLDER: &str = "messages";
-
-/// Code that may use keys.
-const CODE: Selection = Selection {
-    folders: &["web", "crates"],
-    files: &[],
-    endings: &[".ts", ".tsx", ".rs"],
-};
+const MESSAGES_FOLDER: &str = "messages/";
 
 /// Test files check behavior; their strings must not keep a key alive.
 const TEST_MARKERS: [&str; 6] = [
@@ -49,40 +52,75 @@ impl Check for TxtCatalog {
     }
 
     fn run(&self, context: &Context<'_>) -> anyhow::Result<Vec<Finding>> {
-        let root = context.repo.root();
+        // Whatever changed, the whole repository is read: one unused key depends on all code.
         let mut locales = Vec::new();
-        for entry in fs::read_dir(root.join(MESSAGES_FOLDER))? {
-            let path = entry?.path();
-            if path
-                .extension()
-                .is_some_and(|extension| extension == "json")
-            {
-                let name = format!(
-                    "{MESSAGES_FOLDER}/{}",
-                    path.file_name()
-                        .map(|n| n.to_string_lossy())
-                        .unwrap_or_default()
-                );
-                locales.push((name, fs::read_to_string(&path)?));
+        let mut sources = Vec::new();
+        for path in context.everything().selected(self.id())? {
+            let text = read_text(context.repo, &path)?;
+            if path.starts_with(MESSAGES_FOLDER) {
+                if has_extension(&path, "json") {
+                    locales.push((path, text));
+                }
+            } else {
+                sources.push(Source { path, text });
             }
         }
-        locales.sort_by(|a, b| a.0.cmp(&b.0));
-        // Whatever changed, the whole repository is read: one unused key depends on all code.
-        let mut sources = Vec::new();
-        let everything = Context {
-            repo: context.repo,
-            catalog: context.catalog,
-            files: None,
-        };
-        for path in CODE.pick(&everything) {
-            let text = fs::read_to_string(root.join(&path))?;
-            sources.push(Source { path, text });
-        }
-        Ok(evaluate(&locales, &sources))
+        Ok(evaluate(&locales, &sources, &made_keys()))
     }
 }
 
-fn evaluate(locales: &[(String, String)], sources: &[Source]) -> Vec<Finding> {
+/// A message that the word of an enum makes, and the word.
+struct Made {
+    key: MessageKey,
+    word: String,
+}
+
+/// Every message that the words of the enums make (`derived_key!` in `bb-core`): the code
+/// does not write these keys, so the check finds them here.
+fn made_keys() -> Vec<Made> {
+    fn made(kind: &str, word: &str, key: MessageKey) -> Made {
+        Made {
+            key,
+            word: format!("{kind} `{word}`"),
+        }
+    }
+    let mut keys = Vec::new();
+    for code in ErrorCode::ALL {
+        keys.push(made("the error code", code.code(), code.message()));
+    }
+    for permission in Permission::ALL {
+        keys.push(made(
+            "the permission",
+            permission.code(),
+            permission.sentence(),
+        ));
+    }
+    for topic in Topic::ALL {
+        keys.push(made("the topic", topic.code(), topic.name()));
+    }
+    for role in StartingRole::ALL {
+        keys.push(made("the starting role", role.code(), role.name()));
+    }
+    for kind in PeopleKind::ALL {
+        keys.push(made(
+            "the kind of people information",
+            kind.code(),
+            kind.name(),
+        ));
+    }
+    for field in Field::ALL {
+        keys.push(made("the field", field.code(), field.name()));
+    }
+    for level in FieldLevel::ALL {
+        keys.push(made("the field level", level.code(), level.name()));
+    }
+    for level in PeopleLevel::ALL {
+        keys.push(made("the people level", level.code(), level.name()));
+    }
+    keys
+}
+
+fn evaluate(locales: &[(String, String)], sources: &[Source], made: &[Made]) -> Vec<Finding> {
     let mut findings = Vec::new();
     let mut catalogs: Vec<(&str, BTreeMap<String, Placeholders>)> = Vec::new();
     for (path, text) in locales {
@@ -109,7 +147,7 @@ fn evaluate(locales: &[(String, String)], sources: &[Source]) -> Vec<Finding> {
             compare_with_source(path, other, source, &mut findings);
         }
     }
-    check_usage(source, sources, &mut findings);
+    check_usage(source, sources, made, &mut findings);
     findings
 }
 
@@ -199,9 +237,24 @@ fn compare_with_source(
 fn check_usage(
     source: &BTreeMap<String, Placeholders>,
     sources: &[Source],
+    made: &[Made],
     findings: &mut Vec<Finding>,
 ) {
     let mut used: HashSet<&str> = HashSet::new();
+    for made in made {
+        match source.get_key_value(made.key.as_str()) {
+            Some((key, _)) => {
+                used.insert(key.as_str());
+            }
+            None => findings.push(Finding::at(
+                SOURCE_LOCALE_PATH,
+                format!(
+                    "`{}` is the message of {} but is not in the catalog; add it.",
+                    made.key, made.word
+                ),
+            )),
+        }
+    }
     for file in sources {
         let is_test = TEST_MARKERS.iter().any(|marker| file.path.contains(marker));
         let text = if is_rust(&file.path) {
@@ -271,11 +324,7 @@ fn called_keys(code: &str) -> Vec<String> {
 /// The Rust code that ships: without the unit tests at the end of the file and without comment
 /// lines, so a key that only a test or a comment mentions still counts as unused.
 fn product_code(text: &str) -> String {
-    without_tests(text)
-        .lines()
-        .filter(|line| !line.trim_start().starts_with("//"))
-        .collect::<Vec<_>>()
-        .join("\n")
+    strip_comments(&without_tests(text))
 }
 
 /// The words of Rust code: everything made of letters, digits and underscores.
@@ -353,7 +402,7 @@ mod tests {
             "web/app/src/A.tsx",
             r#"const k = "a.count"; t("a.title"); t("a.count", { n: 2 });"#,
         )];
-        assert!(evaluate(&locales, &code).is_empty());
+        assert!(evaluate(&locales, &code, &[]).is_empty());
     }
 
     #[test]
@@ -371,7 +420,7 @@ mod tests {
             "web/app/src/A.tsx",
             r#"t("a.count"); t("a.missing"); t("a.title");"#,
         )];
-        let text = messages(&evaluate(&locales, &code));
+        let text = messages(&evaluate(&locales, &code, &[]));
         assert!(text.contains("is never closed"), "{text}");
         assert!(text.contains("`a.unused` is never used"), "{text}");
         assert!(text.contains("`Bad Key` is not a valid key"), "{text}");
@@ -384,14 +433,14 @@ mod tests {
     fn duplicate_keys_fail() {
         let locales = [locale(r#"{"a.b": "x", "a.b": "y"}"#)];
         let code = [source("web/a.ts", r#"t("a.b")"#)];
-        assert!(messages(&evaluate(&locales, &code)).contains("appears twice"));
+        assert!(messages(&evaluate(&locales, &code, &[])).contains("appears twice"));
     }
 
     #[test]
     fn strings_in_tests_do_not_count_as_use() {
         let locales = [locale(r#"{"a.b": "x"}"#)];
         let code = [source("web/a.test.ts", r#"expect(t("a.b"))"#)];
-        assert!(messages(&evaluate(&locales, &code)).contains("never used"));
+        assert!(messages(&evaluate(&locales, &code, &[])).contains("never used"));
     }
 
     #[test]
@@ -409,7 +458,7 @@ mod tests {
                 "pub const A_LONELY: MessageKey = MessageKey::new(\"a.lonely\");",
             ),
         ];
-        let text = messages(&evaluate(&locales, &code));
+        let text = messages(&evaluate(&locales, &code, &[]));
         assert!(!text.contains("`a.not-found`"), "{text}");
         assert!(!text.contains("`a.port`"), "{text}");
         assert!(text.contains("`a.lonely` is never used"), "{text}");
@@ -424,7 +473,7 @@ mod tests {
             "crates/bb-api/src/a.rs",
             "// A_IN_COMMENT\nlet a = message::A_REAL;\n#[cfg(test)]\nmod tests { fn t() { message::A_IN_TEST; } }\n",
         )];
-        let text = messages(&evaluate(&locales, &code));
+        let text = messages(&evaluate(&locales, &code, &[]));
         assert!(text.contains("`a.in-test` is never used"), "{text}");
         assert!(text.contains("`a.in-comment` is never used"), "{text}");
         assert!(!text.contains("`a.real`"), "{text}");
@@ -437,5 +486,35 @@ mod tests {
         assert!(!valid_key("title"));
         assert!(!valid_key("Issue.title"));
         assert!(!valid_key("issue..title"));
+    }
+
+    #[test]
+    fn a_message_that_a_word_makes_counts_as_used_and_must_be_in_the_catalog() {
+        let made = [Made {
+            key: ErrorCode::NotFound.message(),
+            word: "the error code `resource.not_found`".to_owned(),
+        }];
+        let present = [locale(r#"{"error.resource.not-found": "Not here."}"#)];
+        assert!(evaluate(&present, &[], &made).is_empty());
+        let absent = [locale(r#"{"a.other": "x"}"#)];
+        let text = messages(&evaluate(&absent, &[], &made));
+        assert!(
+            text.contains("`error.resource.not-found` is the message of the error code"),
+            "{text}"
+        );
+    }
+
+    #[test]
+    fn every_word_of_this_repository_has_its_message() {
+        let repo = crate::repo::Repo::discover().unwrap();
+        let text = read_text(&repo, SOURCE_LOCALE_PATH).unwrap();
+        let locales = [locale(&text)];
+        let found = messages(
+            &evaluate(&locales, &[], &made_keys())
+                .into_iter()
+                .filter(|finding| finding.message.contains("is the message of"))
+                .collect::<Vec<_>>(),
+        );
+        assert!(found.is_empty(), "{found}");
     }
 }

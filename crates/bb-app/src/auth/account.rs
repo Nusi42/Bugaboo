@@ -7,7 +7,7 @@ use bb_auth::{
 };
 use bb_core::ErrorCode;
 use bb_core::event::{Actor, RecordKind};
-use bb_core::id::UserId;
+use bb_core::id::{SessionId, UserId};
 use bb_core::person::Person;
 use bb_core::sign_in::{SecurityAction, SessionStage, SetupCode};
 use serde_json::json;
@@ -16,6 +16,7 @@ use zeroize::Zeroizing;
 use super::ctx::Ctx;
 use super::error::{AppError, Stops, change_failed, internal};
 use super::events::{by, changed, entity, fixed_entity, set_to};
+use super::request_session::NewSession;
 use super::store::AuthStore;
 use super::types::{
     AcceptInvitation, ChangePassword, CompleteSetup, IssueSetupCode, SignUp, Started,
@@ -33,7 +34,42 @@ pub(crate) fn check_new_password(password: &str) -> Result<(), AppError> {
     })
 }
 
+/// An account as it is made before anything is stored: the same for the first administrator, for
+/// signing up and for accepting an invitation.
+struct NewAccount {
+    person: Person,
+    /// The hash of the password.
+    hash: String,
+    /// The session the person had before, which ends when the account is made.
+    old: Option<SessionId>,
+    /// The session the person is signed in with.
+    new: NewSession,
+}
+
 impl<S: AuthStore> Ctx<'_, S> {
+    /// The person, the password hash and the sessions of a new account. The name and the password
+    /// are checked first.
+    async fn new_account(
+        &self,
+        email: &EmailAddress,
+        display_name: &str,
+        password: String,
+        previous_session: Option<&str>,
+    ) -> Result<NewAccount, AppError> {
+        let display_name = clean_name(display_name)?;
+        check_new_password(&password)?;
+        let hash = self.services.hasher.hash(Zeroizing::new(password)).await?;
+        let person = self.new_person(display_name, email);
+        let old = self.previous_session(previous_session).await?;
+        let new = self.new_session(person.id, SessionStage::Active)?;
+        Ok(NewAccount {
+            person,
+            hash,
+            old,
+            new,
+        })
+    }
+
     /// A new person (not stored yet).
     fn new_person(&self, display_name: String, email: &EmailAddress) -> Person {
         Person {
@@ -138,18 +174,19 @@ pub async fn complete_setup<S: AuthStore>(
     // The code is right: whatever is wrong with the rest is no guess at the code.
     ctx.slot_succeeded(slot);
     let email = EmailAddress::parse(&input.email).ok_or(ErrorCode::InvalidRequest)?;
-    let display_name = clean_name(&input.display_name)?;
-    check_new_password(&input.password)?;
-    let hash = ctx
-        .services
-        .hasher
-        .hash(Zeroizing::new(input.password))
+    let NewAccount {
+        person,
+        hash,
+        old,
+        new,
+    } = ctx
+        .new_account(
+            &email,
+            &input.display_name,
+            input.password,
+            input.previous_session.as_deref(),
+        )
         .await?;
-    let person = ctx.new_person(display_name, &email);
-    let old = ctx
-        .previous_session(input.previous_session.as_deref())
-        .await?;
-    let new = ctx.new_session(person.id, SessionStage::Active)?;
     let settings = ctx.settings().await?;
     // The starting roles exist from here on (made once); the person gets the Administrator role for
     // the whole organization in the same change as the account (ADR-0025, decision 5).
@@ -220,18 +257,19 @@ pub async fn sign_up<S: AuthStore>(ctx: &Ctx<'_, S>, input: SignUp) -> Result<St
         ctx.note(SecurityAction::SignUpRefused, None, None).await;
         return Err(refused());
     }
-    let display_name = clean_name(&input.display_name)?;
-    check_new_password(&input.password)?;
-    let hash = ctx
-        .services
-        .hasher
-        .hash(Zeroizing::new(input.password))
+    let NewAccount {
+        person,
+        hash,
+        old,
+        new,
+    } = ctx
+        .new_account(
+            &email,
+            &input.display_name,
+            input.password,
+            input.previous_session.as_deref(),
+        )
         .await?;
-    let person = ctx.new_person(display_name, &email);
-    let old = ctx
-        .previous_session(input.previous_session.as_deref())
-        .await?;
-    let new = ctx.new_session(person.id, SessionStage::Active)?;
     let event = ctx.event(
         by(person.id),
         entity(RecordKind::Person, person.id),
@@ -294,18 +332,19 @@ pub async fn accept_invitation<S: AuthStore>(
         return Err(invalid());
     };
     let email = EmailAddress::parse(&invitation.email).ok_or_else(invalid)?;
-    let display_name = clean_name(&input.display_name)?;
-    check_new_password(&input.password)?;
-    let hash = ctx
-        .services
-        .hasher
-        .hash(Zeroizing::new(input.password))
+    let NewAccount {
+        person,
+        hash,
+        old,
+        new,
+    } = ctx
+        .new_account(
+            &email,
+            &input.display_name,
+            input.password,
+            input.previous_session.as_deref(),
+        )
         .await?;
-    let person = ctx.new_person(display_name, &email);
-    let old = ctx
-        .previous_session(input.previous_session.as_deref())
-        .await?;
-    let new = ctx.new_session(person.id, SessionStage::Active)?;
     let settings = ctx.settings().await?;
     let event = ctx.event(
         by(person.id),

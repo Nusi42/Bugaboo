@@ -415,6 +415,7 @@ dependencies = [
  "bb-app",
  "bb-auth",
  "bb-core",
+ "bb-dev-words",
  "bb-policy",
  "brotli",
  "getrandom 0.4.3",
@@ -451,6 +452,7 @@ dependencies = [
  "base64ct",
  "bb-auth",
  "bb-core",
+ "bb-dev-words",
  "bb-policy",
  "getrandom 0.4.3",
  "jiff",
@@ -471,6 +473,7 @@ dependencies = [
  "argon2 0.6.0",
  "base64ct",
  "bb-core",
+ "bb-dev-words",
  "getrandom 0.4.3",
  "hmac 0.13.0",
  "jiff",
@@ -496,6 +499,15 @@ dependencies = [
  "trybuild",
  "utoipa",
  "uuid",
+]
+
+[[package]]
+name = "bb-dev-words"
+version = "0.0.0"
+dependencies = [
+ "bb-core",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -547,6 +559,7 @@ dependencies = [
  "bb-app",
  "bb-auth",
  "bb-core",
+ "bb-dev-words",
  "bb-store",
  "bb-testing",
  "clap",
@@ -576,6 +589,7 @@ dependencies = [
  "bb-app",
  "bb-auth",
  "bb-core",
+ "bb-dev-words",
  "bb-store",
  "bb-testing",
  "clap",
@@ -624,6 +638,7 @@ dependencies = [
 name = "bb-testing"
 version = "0.0.0"
 dependencies = [
+ "bb-dev-words",
  "sqlx",
  "tempfile",
  "tokio",
@@ -4764,6 +4779,8 @@ version = "0.0.0"
 dependencies = [
  "anyhow",
  "bb-api-words",
+ "bb-core",
+ "bb-dev-words",
  "bb-policy",
  "brotli",
  "clap",

@@ -5,7 +5,6 @@
 //! *Check access* name the fields from it, and the screens of the field-permission matrix are
 //! made from it.
 
-use crate::message::{self, MessageKey};
 use crate::people_kinds::PeopleKind;
 
 words! {
@@ -44,6 +43,7 @@ words! {
         /// *Cost center*.
         CostCenter => "cost-center",
     }
+    messages name = "issue-field.";
 }
 
 words_in_api!(
@@ -65,29 +65,6 @@ pub enum BelongsTo {
 }
 
 impl Field {
-    /// The message that names the field (`issue-field.<key>`).
-    #[must_use]
-    pub const fn name(self) -> MessageKey {
-        match self {
-            Self::Title => message::ISSUE_FIELD_TITLE,
-            Self::Description => message::ISSUE_FIELD_DESCRIPTION,
-            Self::Status => message::ISSUE_FIELD_STATUS,
-            Self::Priority => message::ISSUE_FIELD_PRIORITY,
-            Self::AssignedTo => message::ISSUE_FIELD_ASSIGNED_TO,
-            Self::ReportedBy => message::ISSUE_FIELD_REPORTED_BY,
-            Self::DueDate => message::ISSUE_FIELD_DUE_DATE,
-            Self::Labels => message::ISSUE_FIELD_LABELS,
-            Self::Tags => message::ISSUE_FIELD_TAGS,
-            Self::PlannedForRelease => message::ISSUE_FIELD_PLANNED_FOR_RELEASE,
-            Self::FoundInRelease => message::ISSUE_FIELD_FOUND_IN_RELEASE,
-            Self::EstimatedTime => message::ISSUE_FIELD_ESTIMATED_TIME,
-            Self::TimeLeft => message::ISSUE_FIELD_TIME_LEFT,
-            Self::TimeSpent => message::ISSUE_FIELD_TIME_SPENT,
-            Self::Activity => message::ISSUE_FIELD_ACTIVITY,
-            Self::CostCenter => message::ISSUE_FIELD_COST_CENTER,
-        }
-    }
-
     /// What the field belongs to.
     #[must_use]
     pub const fn belongs_to(self) -> BelongsTo {

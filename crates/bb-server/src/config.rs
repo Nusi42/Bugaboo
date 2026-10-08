@@ -19,29 +19,47 @@ use bb_api::{
 
 use bb_core::message::{self, Message};
 use bb_core::settings::list_items;
+use bb_core::words;
 
-/// Every start-up setting, once. The environment variable of `port` is `BUGABOO_PORT`.
-const KEYS: [&str; 17] = [
-    "address",
-    "port",
-    "data_dir",
-    "database_url",
-    "public_url",
-    "tls_mode",
-    "tls_cert",
-    "tls_key",
-    "tls_names",
-    "trusted_proxies",
-    "log_level",
-    "max_connections",
-    "header_timeout_seconds",
-    "rate_limit_per_minute",
-    "sign_in_attempts_per_minute",
-    "sign_in_failures_per_minute",
-    "access_key_requests_per_minute",
-];
+words! {
+    /// Every start-up setting, once. The word is the name in the settings file and on the command
+    /// line; the environment variable of `port` is `BUGABOO_PORT`.
+    pub(crate) enum SettingName {
+        Address => "address",
+        Port => "port",
+        DataDir => "data_dir",
+        DatabaseUrl => "database_url",
+        PublicUrl => "public_url",
+        TlsMode => "tls_mode",
+        TlsCert => "tls_cert",
+        TlsKey => "tls_key",
+        TlsNames => "tls_names",
+        TrustedProxies => "trusted_proxies",
+        LogLevel => "log_level",
+        MaxConnections => "max_connections",
+        HeaderTimeoutSeconds => "header_timeout_seconds",
+        RateLimitPerMinute => "rate_limit_per_minute",
+        SignInAttemptsPerMinute => "sign_in_attempts_per_minute",
+        SignInFailuresPerMinute => "sign_in_failures_per_minute",
+        AccessKeyRequestsPerMinute => "access_key_requests_per_minute",
+    }
+}
+
+words! {
+    /// How the server gets its HTTPS certificate, as the setting `tls_mode` names it.
+    pub(crate) enum TlsModeName {
+        SelfSigned => "self-signed",
+        Files => "files",
+        Off => "off",
+    }
+}
+
 /// Settings that name files or folders: relative paths in the settings file are relative to it.
-const PATH_KEYS: [&str; 3] = ["data_dir", "tls_cert", "tls_key"];
+const PATH_KEYS: [SettingName; 3] = [
+    SettingName::DataDir,
+    SettingName::TlsCert,
+    SettingName::TlsKey,
+];
 const ENV_PREFIX: &str = "BUGABOO_";
 /// The environment variable that names the settings file.
 pub(crate) const FILE_ENV: &str = "BUGABOO_CONFIG";
@@ -50,8 +68,8 @@ pub(crate) const DEFAULT_FILE: &str = "bugaboo.toml";
 
 pub(crate) const DEFAULT_ADDRESS: &str = "127.0.0.1";
 pub(crate) const DEFAULT_DATA_DIR: &str = "bugaboo-data";
-pub(crate) const DEFAULT_TLS_MODE: &str = "self-signed";
-const DEFAULT_LOG_LEVEL: &str = "info";
+pub(crate) const DEFAULT_TLS_MODE: TlsModeName = TlsModeName::SelfSigned;
+const DEFAULT_LOG_LEVEL: LogLevel = LogLevel::Info;
 
 /// How the server gets its HTTPS certificate (SEC-10).
 #[derive(Debug, PartialEq, Eq)]
@@ -64,13 +82,14 @@ pub(crate) enum TlsMode {
     Off,
 }
 
-/// How much the server writes to its log.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum LogLevel {
-    Error,
-    Warn,
-    Info,
-    Debug,
+words! {
+    /// How much the server writes to its log, as the setting `log_level` names it.
+    pub(crate) enum LogLevel {
+        Error => "error",
+        Warn => "warn",
+        Info => "info",
+        Debug => "debug",
+    }
 }
 
 /// The checked start-up settings.
@@ -99,7 +118,7 @@ pub(crate) struct Sources<'a> {
     /// Looks up an environment variable.
     pub(crate) env: &'a dyn Fn(&str) -> Option<String>,
     /// Values from the command line, by setting name.
-    pub(crate) cli: &'a [(&'static str, String)],
+    pub(crate) cli: &'a [(SettingName, String)],
     /// The folder of the program. Defaults for the data folder and the settings file are
     /// relative to it, not to the current folder (a Windows service starts in System32).
     pub(crate) base: &'a Path,
@@ -126,7 +145,7 @@ pub(crate) enum ConfigError {
     TlsOffPublic(IpAddr),
     ProxyInvalid(String),
     LogLevelInvalid(String),
-    NumberInvalid { name: &'static str, value: String },
+    NumberInvalid { name: SettingName, value: String },
 }
 
 impl ConfigError {
@@ -140,9 +159,16 @@ impl ConfigError {
             Self::FileInvalid { path, reason } => {
                 message::config_file_invalid(shown(path), reason).render()
             }
-            Self::UnknownKey { path, name } => {
-                message::config_file_unknown_key(KEYS.join(", "), name, shown(path)).render()
-            }
+            Self::UnknownKey { path, name } => message::config_file_unknown_key(
+                SettingName::ALL
+                    .iter()
+                    .map(|key| key.code())
+                    .collect::<Vec<_>>()
+                    .join(", "),
+                name,
+                shown(path),
+            )
+            .render(),
             Self::WrongType { path, name } => {
                 message::config_file_wrong_type(name, shown(path)).render()
             }
@@ -163,7 +189,7 @@ impl ConfigError {
             Self::ProxyInvalid(value) => message::config_proxy_invalid(value).render(),
             Self::LogLevelInvalid(value) => message::config_log_level_invalid(value).render(),
             Self::NumberInvalid { name, value } => {
-                message::config_number_invalid(name, value).render()
+                message::config_number_invalid(name.code(), value).render()
             }
         }
     }
@@ -198,8 +224,8 @@ pub(crate) fn has_password(url: &str) -> bool {
 }
 
 /// The name of the environment variable for a setting.
-pub(crate) fn env_name(key: &str) -> String {
-    format!("{ENV_PREFIX}{}", key.to_ascii_uppercase())
+pub(crate) fn env_name(key: SettingName) -> String {
+    format!("{ENV_PREFIX}{}", key.code().to_ascii_uppercase())
 }
 
 /// Reads the settings file text, if there is one: the named file must exist, the default file
@@ -224,17 +250,17 @@ pub(crate) fn read_file(
 
 /// Combines the sources and checks the result.
 pub(crate) fn resolve(sources: &Sources<'_>) -> Result<Settings, ConfigError> {
-    let mut values: BTreeMap<&'static str, String> = BTreeMap::new();
+    let mut values: BTreeMap<SettingName, String> = BTreeMap::new();
     if let Some((path, text)) = sources.file {
         values.extend(from_file(path, text)?);
     }
-    for key in KEYS {
+    for key in SettingName::ALL.iter().copied() {
         if let Some(value) = (sources.env)(&env_name(key)).filter(|value| !value.is_empty()) {
             values.insert(key, value);
         }
     }
     for (key, value) in sources.cli {
-        values.insert(key, value.clone());
+        values.insert(*key, value.clone());
     }
     settings_from(&values, sources.base)
 }
@@ -248,7 +274,7 @@ pub(crate) fn resolve_without_port(sources: &Sources<'_>) -> Result<Settings, Co
     match resolve(sources) {
         Err(ConfigError::PortMissing) => {
             let mut cli = sources.cli.to_vec();
-            cli.push(("port", UNUSED_PORT.to_owned()));
+            cli.push((SettingName::Port, UNUSED_PORT.to_owned()));
             resolve(&Sources {
                 file: sources.file,
                 env: sources.env,
@@ -260,7 +286,7 @@ pub(crate) fn resolve_without_port(sources: &Sources<'_>) -> Result<Settings, Co
     }
 }
 
-fn from_file(path: &Path, text: &str) -> Result<BTreeMap<&'static str, String>, ConfigError> {
+fn from_file(path: &Path, text: &str) -> Result<BTreeMap<SettingName, String>, ConfigError> {
     let table: toml::Table =
         text.parse()
             .map_err(|error: toml::de::Error| ConfigError::FileInvalid {
@@ -272,7 +298,7 @@ fn from_file(path: &Path, text: &str) -> Result<BTreeMap<&'static str, String>, 
         .filter(|folder| !folder.as_os_str().is_empty());
     let mut values = BTreeMap::new();
     for (name, value) in &table {
-        let Some(&key) = KEYS.iter().find(|key| **key == name) else {
+        let Some(key) = SettingName::from_code(name) else {
             return Err(ConfigError::UnknownKey {
                 path: path.to_path_buf(),
                 name: name.clone(),
@@ -316,11 +342,11 @@ fn list(text: &str) -> Vec<String> {
 }
 
 fn settings_from(
-    values: &BTreeMap<&'static str, String>,
+    values: &BTreeMap<SettingName, String>,
     base: &Path,
 ) -> Result<Settings, ConfigError> {
-    let get = |key: &str| values.get(key).map(String::as_str);
-    let port_text = get("port").ok_or(ConfigError::PortMissing)?;
+    let get = |key: SettingName| values.get(&key).map(String::as_str);
+    let port_text = get(SettingName::Port).ok_or(ConfigError::PortMissing)?;
     let port = port_text
         .trim()
         .parse::<u16>()
@@ -328,48 +354,52 @@ fn settings_from(
         .filter(|port| *port != 0)
         .ok_or_else(|| ConfigError::PortInvalid(port_text.to_owned()))?;
 
-    let address_text = get("address").unwrap_or(DEFAULT_ADDRESS);
+    let address_text = get(SettingName::Address).unwrap_or(DEFAULT_ADDRESS);
     let address = address_text
         .trim()
         .parse::<IpAddr>()
         .map_err(|_| ConfigError::AddressInvalid(address_text.to_owned()))?;
 
-    let data_dir = match get("data_dir") {
+    let data_dir = match get(SettingName::DataDir) {
         Some(given) if given.trim().is_empty() => return Err(ConfigError::DataDirEmpty),
         Some(given) => PathBuf::from(given),
         None => base.join(DEFAULT_DATA_DIR),
     };
-    let max_connections = whole_number(values, "max_connections", DEFAULT_MAX_CONNECTIONS as u64)?;
+    let max_connections = whole_number(
+        values,
+        SettingName::MaxConnections,
+        DEFAULT_MAX_CONNECTIONS as u64,
+    )?;
     let header_seconds = whole_number(
         values,
-        "header_timeout_seconds",
+        SettingName::HeaderTimeoutSeconds,
         DEFAULT_HEADER_TIMEOUT.as_secs(),
     )?;
 
     let limits = LimitsConfig {
         requests_per_minute: rate_limit(
             values,
-            "rate_limit_per_minute",
+            SettingName::RateLimitPerMinute,
             DEFAULT_REQUESTS_PER_MINUTE,
         )?,
         sign_in_attempts_per_minute: rate_limit(
             values,
-            "sign_in_attempts_per_minute",
+            SettingName::SignInAttemptsPerMinute,
             DEFAULT_SIGN_IN_ATTEMPTS_PER_MINUTE,
         )?,
         sign_in_failures_per_minute: rate_limit(
             values,
-            "sign_in_failures_per_minute",
+            SettingName::SignInFailuresPerMinute,
             DEFAULT_SIGN_IN_FAILURES_PER_MINUTE,
         )?,
         access_key_requests_per_minute: rate_limit(
             values,
-            "access_key_requests_per_minute",
+            SettingName::AccessKeyRequestsPerMinute,
             DEFAULT_ACCESS_KEY_REQUESTS_PER_MINUTE,
         )?,
     };
 
-    let database_url = get("database_url").map(str::to_owned);
+    let database_url = get(SettingName::DatabaseUrl).map(str::to_owned);
     if let Some(url) = &database_url
         && !["sqlite:", "postgres://", "postgresql://"]
             .iter()
@@ -378,7 +408,7 @@ fn settings_from(
         return Err(ConfigError::DatabaseInvalid);
     }
 
-    let trusted_proxies = list(get("trusted_proxies").unwrap_or_default())
+    let trusted_proxies = list(get(SettingName::TrustedProxies).unwrap_or_default())
         .into_iter()
         .map(|item| {
             item.parse::<IpAddr>()
@@ -387,9 +417,9 @@ fn settings_from(
         .collect::<Result<Vec<_>, _>>()?;
 
     let tls = tls_from(
-        get("tls_mode").unwrap_or(DEFAULT_TLS_MODE),
-        get("tls_cert"),
-        get("tls_key"),
+        get(SettingName::TlsMode).unwrap_or(DEFAULT_TLS_MODE.code()),
+        get(SettingName::TlsCert),
+        get(SettingName::TlsKey),
     )?;
     // Secure by default (SEC-10): plain HTTP only on this computer, or when a proxy that we
     // trust adds the encryption.
@@ -397,15 +427,18 @@ fn settings_from(
         return Err(ConfigError::TlsOffPublic(address));
     }
 
-    let public_url = public_url_from(get("public_url"), address, port, &tls, &trusted_proxies)?;
+    let public_url = public_url_from(
+        get(SettingName::PublicUrl),
+        address,
+        port,
+        &tls,
+        &trusted_proxies,
+    )?;
 
-    let log_text = get("log_level").unwrap_or(DEFAULT_LOG_LEVEL);
-    let log_level = match log_text.trim().to_ascii_lowercase().as_str() {
-        "error" => LogLevel::Error,
-        "warn" => LogLevel::Warn,
-        "info" => LogLevel::Info,
-        "debug" => LogLevel::Debug,
-        _ => return Err(ConfigError::LogLevelInvalid(log_text.to_owned())),
+    let log_level = match get(SettingName::LogLevel) {
+        None => DEFAULT_LOG_LEVEL,
+        Some(text) => LogLevel::from_code(&text.trim().to_ascii_lowercase())
+            .ok_or_else(|| ConfigError::LogLevelInvalid(text.to_owned()))?,
     };
 
     Ok(Settings {
@@ -415,7 +448,7 @@ fn settings_from(
         database_url,
         public_url,
         tls,
-        tls_names: list(get("tls_names").unwrap_or_default()),
+        tls_names: list(get(SettingName::TlsNames).unwrap_or_default()),
         trusted_proxies,
         log_level,
         max_connections: usize::try_from(max_connections).unwrap_or(usize::MAX),
@@ -455,8 +488,8 @@ fn public_url_from(
 
 /// A rate limit: a whole number of at least 1, or `default` when the setting is not given.
 fn rate_limit(
-    values: &BTreeMap<&'static str, String>,
-    name: &'static str,
+    values: &BTreeMap<SettingName, String>,
+    name: SettingName,
     default: u32,
 ) -> Result<u32, ConfigError> {
     let number = whole_number(values, name, u64::from(default))?;
@@ -468,11 +501,11 @@ fn rate_limit(
 
 /// A whole number of at least 1, or `default` when the setting is not given.
 fn whole_number(
-    values: &BTreeMap<&'static str, String>,
-    name: &'static str,
+    values: &BTreeMap<SettingName, String>,
+    name: SettingName,
     default: u64,
 ) -> Result<u64, ConfigError> {
-    let Some(text) = values.get(name) else {
+    let Some(text) = values.get(&name) else {
         return Ok(default);
     };
     text.trim()
@@ -486,25 +519,27 @@ fn whole_number(
 }
 
 fn tls_from(mode: &str, cert: Option<&str>, key: Option<&str>) -> Result<TlsMode, ConfigError> {
-    match mode.trim().to_ascii_lowercase().as_str() {
-        "files" => match (cert, key) {
+    let Some(name) = TlsModeName::from_code(&mode.trim().to_ascii_lowercase()) else {
+        return Err(ConfigError::TlsModeInvalid(mode.to_owned()));
+    };
+    match name {
+        TlsModeName::Files => match (cert, key) {
             (Some(cert), Some(key)) => Ok(TlsMode::Files {
                 cert: PathBuf::from(cert),
                 key: PathBuf::from(key),
             }),
             _ => Err(ConfigError::TlsFilesMissing),
         },
-        other @ ("self-signed" | "off") => {
+        TlsModeName::SelfSigned | TlsModeName::Off => {
             if cert.is_some() || key.is_some() {
                 return Err(ConfigError::TlsFilesUnused);
             }
-            Ok(if other == "off" {
+            Ok(if name == TlsModeName::Off {
                 TlsMode::Off
             } else {
                 TlsMode::SelfSigned
             })
         }
-        _ => Err(ConfigError::TlsModeInvalid(mode.to_owned())),
     }
 }
 
@@ -519,14 +554,14 @@ mod tests {
     fn resolve_with(
         file: Option<&str>,
         env: &[(&str, &str)],
-        cli: &[(&'static str, &str)],
+        cli: &[(SettingName, &str)],
     ) -> Result<Settings, ConfigError> {
         let lookup = |name: &str| {
             env.iter()
                 .find(|(key, _)| *key == name)
                 .map(|(_, value)| (*value).to_owned())
         };
-        let cli: Vec<(&'static str, String)> = cli
+        let cli: Vec<(SettingName, String)> = cli
             .iter()
             .map(|(key, value)| (*key, (*value).to_owned()))
             .collect();
@@ -540,7 +575,7 @@ mod tests {
 
     #[test]
     fn ops_10_only_a_port_is_needed_and_the_rest_is_safe_by_default() {
-        let settings = resolve_with(None, &[], &[("port", "47200")]).unwrap();
+        let settings = resolve_with(None, &[], &[(SettingName::Port, "47200")]).unwrap();
         assert_eq!(settings.port, 47200);
         assert_eq!(settings.address, "127.0.0.1".parse::<IpAddr>().unwrap());
         assert_eq!(settings.tls, TlsMode::SelfSigned);
@@ -567,7 +602,7 @@ mod tests {
 
     #[test]
     fn ops_10_commands_that_do_not_listen_need_no_port_but_still_check_the_rest() {
-        let sources = |cli: &'static [(&'static str, String)]| Sources {
+        let sources = |cli: &'static [(SettingName, String)]| Sources {
             file: None,
             env: &no_env,
             cli,
@@ -575,7 +610,7 @@ mod tests {
         };
         assert!(resolve_without_port(&sources(&[])).is_ok());
         // A port that is given is still checked.
-        let wrong = [("port", "http".to_owned())];
+        let wrong = [(SettingName::Port, "http".to_owned())];
         assert!(matches!(
             resolve_without_port(&Sources {
                 file: None,
@@ -586,7 +621,7 @@ mod tests {
             Err(ConfigError::PortInvalid(_))
         ));
         // Other mistakes are still reported.
-        let bad = [("database_url", "mysql://x".to_owned())];
+        let bad = [(SettingName::DatabaseUrl, "mysql://x".to_owned())];
         assert_eq!(
             resolve_without_port(&Sources {
                 file: None,
@@ -605,7 +640,7 @@ mod tests {
         let settings = resolve_with(
             Some(file),
             &[("BUGABOO_PORT", "1002"), ("BUGABOO_ADDRESS", "127.0.0.2")],
-            &[("port", "1003")],
+            &[(SettingName::Port, "1003")],
         )
         .unwrap();
         assert_eq!(settings.port, 1003);
@@ -640,7 +675,11 @@ public_url = \"https://bugaboo.example.test\"";
             let error = resolve_with(
                 None,
                 &[],
-                &[("port", "47200"), ("tls_mode", "off"), ("address", address)],
+                &[
+                    (SettingName::Port, "47200"),
+                    (SettingName::TlsMode, "off"),
+                    (SettingName::Address, address),
+                ],
             )
             .unwrap_err();
             assert!(matches!(error, ConfigError::TlsOffPublic(_)), "{address}");
@@ -651,31 +690,43 @@ public_url = \"https://bugaboo.example.test\"";
     #[test]
     fn sec_10_tls_off_is_allowed_on_this_computer_or_behind_trusted_proxies() {
         for address in ["127.0.0.1", "::1", "127.0.0.2", "::ffff:127.0.0.1"] {
-            let cli = [("port", "1"), ("tls_mode", "off"), ("address", address)];
+            let cli = [
+                (SettingName::Port, "1"),
+                (SettingName::TlsMode, "off"),
+                (SettingName::Address, address),
+            ];
             assert!(resolve_with(None, &[], &cli).is_ok(), "{address}");
         }
         let cli = [
-            ("port", "1"),
-            ("tls_mode", "off"),
-            ("address", "0.0.0.0"),
-            ("trusted_proxies", "10.0.0.5"),
-            ("public_url", "https://bugaboo.example.test"),
+            (SettingName::Port, "1"),
+            (SettingName::TlsMode, "off"),
+            (SettingName::Address, "0.0.0.0"),
+            (SettingName::TrustedProxies, "10.0.0.5"),
+            (SettingName::PublicUrl, "https://bugaboo.example.test"),
         ];
         assert!(resolve_with(None, &[], &cli).is_ok());
     }
 
     #[test]
     fn auth_02_the_public_address_is_given_or_comes_from_this_computer() {
-        let local = resolve_with(None, &[], &[("port", "47200")]).unwrap();
+        let local = resolve_with(None, &[], &[(SettingName::Port, "47200")]).unwrap();
         assert_eq!(local.public_url, "https://localhost:47200");
-        let plain = resolve_with(None, &[], &[("port", "47200"), ("tls_mode", "off")]).unwrap();
+        let plain = resolve_with(
+            None,
+            &[],
+            &[(SettingName::Port, "47200"), (SettingName::TlsMode, "off")],
+        )
+        .unwrap();
         assert_eq!(plain.public_url, "http://localhost:47200");
         let given = resolve_with(
             None,
             &[],
             &[
-                ("port", "47200"),
-                ("public_url", " https://Bugaboo.example.test:8443/ "),
+                (SettingName::Port, "47200"),
+                (
+                    SettingName::PublicUrl,
+                    " https://Bugaboo.example.test:8443/ ",
+                ),
             ],
         )
         .unwrap();
@@ -686,18 +737,18 @@ public_url = \"https://bugaboo.example.test\"";
     fn auth_02_a_server_behind_a_proxy_must_be_told_its_public_address() {
         // Even on this computer: people reach it through the address of the proxy.
         let cli = [
-            ("port", "1"),
-            ("tls_mode", "off"),
-            ("trusted_proxies", "10.0.0.5"),
+            (SettingName::Port, "1"),
+            (SettingName::TlsMode, "off"),
+            (SettingName::TrustedProxies, "10.0.0.5"),
         ];
         let error = resolve_with(None, &[], &cli).unwrap_err();
         assert!(matches!(error, ConfigError::PublicUrlNeededBehindProxy));
         assert!(error.message().contains("public_url"));
         let with = [
-            ("port", "1"),
-            ("tls_mode", "off"),
-            ("trusted_proxies", "10.0.0.5"),
-            ("public_url", "https://bugaboo.example.test"),
+            (SettingName::Port, "1"),
+            (SettingName::TlsMode, "off"),
+            (SettingName::TrustedProxies, "10.0.0.5"),
+            (SettingName::PublicUrl, "https://bugaboo.example.test"),
         ];
         let settings = resolve_with(None, &[], &with).unwrap();
         assert_eq!(settings.public_url, "https://bugaboo.example.test");
@@ -705,8 +756,15 @@ public_url = \"https://bugaboo.example.test\"";
 
     #[test]
     fn auth_02_a_server_on_the_network_must_be_told_its_public_address() {
-        let error =
-            resolve_with(None, &[], &[("port", "47200"), ("address", "192.168.1.20")]).unwrap_err();
+        let error = resolve_with(
+            None,
+            &[],
+            &[
+                (SettingName::Port, "47200"),
+                (SettingName::Address, "192.168.1.20"),
+            ],
+        )
+        .unwrap_err();
         assert!(matches!(error, ConfigError::PublicUrlNeeded(_)));
         assert!(error.message().contains("public_url"));
         for bad in [
@@ -714,7 +772,12 @@ public_url = \"https://bugaboo.example.test\"";
             "https://example.test/app",
             "ftp://x.test",
         ] {
-            let error = resolve_with(None, &[], &[("port", "1"), ("public_url", bad)]).unwrap_err();
+            let error = resolve_with(
+                None,
+                &[],
+                &[(SettingName::Port, "1"), (SettingName::PublicUrl, bad)],
+            )
+            .unwrap_err();
             assert!(matches!(error, ConfigError::PublicUrlInvalid(_)), "{bad}");
             assert!(error.message().contains("web address"));
         }
@@ -722,22 +785,40 @@ public_url = \"https://bugaboo.example.test\"";
 
     #[test]
     fn ops_10_bad_values_get_plain_explanations() {
-        let cases: [(&[(&'static str, &str)], &str); 8] = [
-            (&[("port", "0")], "not a number from 1 to 65535"),
-            (&[("port", "70000")], "not a number from 1 to 65535"),
-            (&[("port", "http")], "not a number from 1 to 65535"),
+        let cases: [(&[(SettingName, &str)], &str); 8] = [
+            (&[(SettingName::Port, "0")], "not a number from 1 to 65535"),
             (
-                &[("port", "1"), ("address", "localhost")],
+                &[(SettingName::Port, "70000")],
+                "not a number from 1 to 65535",
+            ),
+            (
+                &[(SettingName::Port, "http")],
+                "not a number from 1 to 65535",
+            ),
+            (
+                &[
+                    (SettingName::Port, "1"),
+                    (SettingName::Address, "localhost"),
+                ],
                 "not an IP address",
             ),
-            (&[("port", "1"), ("tls_mode", "maybe")], "is not known"),
-            (&[("port", "1"), ("tls_mode", "files")], "needs both"),
             (
-                &[("port", "1"), ("tls_cert", "a.pem")],
+                &[(SettingName::Port, "1"), (SettingName::TlsMode, "maybe")],
+                "is not known",
+            ),
+            (
+                &[(SettingName::Port, "1"), (SettingName::TlsMode, "files")],
+                "needs both",
+            ),
+            (
+                &[(SettingName::Port, "1"), (SettingName::TlsCert, "a.pem")],
                 "only used with HTTPS mode files",
             ),
             (
-                &[("port", "1"), ("database_url", "mysql://x")],
+                &[
+                    (SettingName::Port, "1"),
+                    (SettingName::DatabaseUrl, "mysql://x"),
+                ],
                 "must start with",
             ),
         ];
@@ -746,20 +827,26 @@ public_url = \"https://bugaboo.example.test\"";
             assert!(error.message().contains(expected), "{cli:?}: {error}");
         }
         for (key, value, expected) in [
-            ("trusted_proxies", "proxy.example", "not an IP address"),
-            ("log_level", "loud", "log level"),
-            ("data_dir", " ", "empty"),
-            ("max_connections", "0", "whole number"),
-            ("header_timeout_seconds", "soon", "whole number"),
+            (
+                SettingName::TrustedProxies,
+                "proxy.example",
+                "not an IP address",
+            ),
+            (SettingName::LogLevel, "loud", "log level"),
+            (SettingName::DataDir, " ", "empty"),
+            (SettingName::MaxConnections, "0", "whole number"),
+            (SettingName::HeaderTimeoutSeconds, "soon", "whole number"),
         ] {
-            let error = resolve_with(None, &[], &[("port", "1"), (key, value)]).unwrap_err();
+            let error =
+                resolve_with(None, &[], &[(SettingName::Port, "1"), (key, value)]).unwrap_err();
             assert!(error.message().contains(expected), "{key}: {error}");
         }
     }
 
     #[test]
     fn ops_10_the_settings_file_is_checked_too() {
-        let unknown = resolve_with(Some("colour = \"red\""), &[], &[("port", "1")]).unwrap_err();
+        let unknown =
+            resolve_with(Some("colour = \"red\""), &[], &[(SettingName::Port, "1")]).unwrap_err();
         assert!(unknown.message().contains("colour"));
         assert!(unknown.message().contains("tls_mode"));
         let broken = resolve_with(Some("port = ["), &[], &[]).unwrap_err();
@@ -781,9 +868,9 @@ public_url = \"https://bugaboo.example.test\"";
     #[test]
     fn ops_10_limits_can_be_changed() {
         let cli = [
-            ("port", "1"),
-            ("max_connections", "50"),
-            ("header_timeout_seconds", "5"),
+            (SettingName::Port, "1"),
+            (SettingName::MaxConnections, "50"),
+            (SettingName::HeaderTimeoutSeconds, "5"),
         ];
         let settings = resolve_with(None, &[], &cli).unwrap();
         assert_eq!(settings.max_connections, 50);
@@ -792,18 +879,21 @@ public_url = \"https://bugaboo.example.test\"";
 
     #[test]
     fn sec_14_rate_limits_have_defaults_and_can_be_changed() {
-        let settings = resolve_with(None, &[], &[("port", "1")]).unwrap();
+        let settings = resolve_with(None, &[], &[(SettingName::Port, "1")]).unwrap();
         assert_eq!(settings.limits, LimitsConfig::default());
         let cli = [
-            ("port", "1"),
-            ("rate_limit_per_minute", "50"),
-            ("sign_in_attempts_per_minute", "3"),
+            (SettingName::Port, "1"),
+            (SettingName::RateLimitPerMinute, "50"),
+            (SettingName::SignInAttemptsPerMinute, "3"),
         ];
         let settings = resolve_with(None, &[], &cli).unwrap();
         assert_eq!(settings.limits.requests_per_minute, 50);
         assert_eq!(settings.limits.sign_in_attempts_per_minute, 3);
         for bad in ["0", "many", "99999999999"] {
-            let cli = [("port", "1"), ("rate_limit_per_minute", bad)];
+            let cli = [
+                (SettingName::Port, "1"),
+                (SettingName::RateLimitPerMinute, bad),
+            ];
             let error = resolve_with(None, &[], &cli).unwrap_err();
             assert!(matches!(error, ConfigError::NumberInvalid { .. }), "{bad}");
         }
@@ -817,7 +907,7 @@ public_url = \"https://bugaboo.example.test\"";
 
     #[test]
     fn ops_10_environment_names_follow_the_setting_names() {
-        assert_eq!(env_name("tls_mode"), "BUGABOO_TLS_MODE");
-        assert_eq!(env_name("port"), "BUGABOO_PORT");
+        assert_eq!(env_name(SettingName::TlsMode), "BUGABOO_TLS_MODE");
+        assert_eq!(env_name(SettingName::Port), "BUGABOO_PORT");
     }
 }

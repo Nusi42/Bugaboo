@@ -18,7 +18,7 @@ use std::path::{Path, PathBuf};
 use serde_json::json;
 
 use crate::error::SampleError;
-use crate::layout::Layout;
+use bb_dev_words::sample::Layout;
 
 /// Tells Git to ignore everything in the folder, like Cargo does for `target/`: `sign-in.txt` holds
 /// passwords, and the folder can be anywhere (`--out`), not only under `target/`.

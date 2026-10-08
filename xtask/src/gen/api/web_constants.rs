@@ -4,196 +4,18 @@
 //!
 //! xtask does not link the product crates, so both are read as Rust source.
 
-use std::collections::BTreeMap;
 use std::fmt::Write as _;
 
 use anyhow::{Context as _, bail};
 
 use super::TS_HEADER;
 use crate::checks::arch_settings::{CATALOG_PATH, REGISTRY_FOLDER};
-use crate::rust_source::Source;
+use crate::rust_registry::{ChoiceLists, read_registry};
+use crate::source::Source;
 
 const PAGING_SOURCE: &str = "crates/bb-core/src/paging.rs";
 const PAGE_SIZE_MAX: &str = "PAGE_SIZE_MAX";
 const PAGE_SIZE_DEFAULT: &str = "PAGE_SIZE_DEFAULT";
-
-/// What one `settings! { … }` declaration says that the browser needs.
-#[derive(Debug, PartialEq, Eq)]
-struct SettingDecl {
-    key: String,
-    /// The default, already written the way TypeScript writes it.
-    default: String,
-    /// The name of the constant that lists the choices, for a setting of `Format::Choices`.
-    choices: Option<String>,
-}
-
-/// One `name: expression` line inside the braces of a declaration.
-struct Field {
-    name: syn::Ident,
-    value: syn::Expr,
-}
-
-impl syn::parse::Parse for Field {
-    fn parse(input: syn::parse::ParseStream<'_>) -> syn::Result<Self> {
-        let name = input.parse()?;
-        input.parse::<syn::Token![:]>()?;
-        Ok(Self {
-            name,
-            value: input.parse()?,
-        })
-    }
-}
-
-/// The declarations of a `settings! { … }` body: `NAME: Type = { field: value, … }`, one after the
-/// other.
-struct Declarations(Vec<SettingDecl>);
-
-impl syn::parse::Parse for Declarations {
-    fn parse(input: syn::parse::ParseStream<'_>) -> syn::Result<Self> {
-        let mut found = Vec::new();
-        while !input.is_empty() {
-            syn::Attribute::parse_outer(input)?;
-            let name: syn::Ident = input.parse()?;
-            input.parse::<syn::Token![:]>()?;
-            input.parse::<syn::Ident>()?;
-            input.parse::<syn::Token![=]>()?;
-            let body;
-            syn::braced!(body in input);
-            let fields =
-                syn::punctuated::Punctuated::<Field, syn::Token![,]>::parse_terminated(&body)?;
-            found.push(declaration(&name, fields.iter())?);
-        }
-        Ok(Self(found))
-    }
-}
-
-fn declaration<'a>(
-    name: &syn::Ident,
-    fields: impl Iterator<Item = &'a Field>,
-) -> syn::Result<SettingDecl> {
-    let mut key = None;
-    let mut default = None;
-    let mut choices = None;
-    for field in fields {
-        match field.name.to_string().as_str() {
-            "key" => key = literal(&field.value).map(|(text, _)| text),
-            "default" => default = literal(&field.value).map(|(_, typescript)| typescript),
-            "format" => choices = choices_of(&field.value)?,
-            _ => {}
-        }
-    }
-    match (key, default) {
-        (Some(key), Some(default)) => Ok(SettingDecl {
-            key,
-            default,
-            choices,
-        }),
-        _ => Err(syn::Error::new(
-            name.span(),
-            format!("the setting {name} has no `key` or no `default` that is a plain value"),
-        )),
-    }
-}
-
-/// A literal as its text and as TypeScript writes it: `"device"`, `false`, `90`.
-fn literal(expr: &syn::Expr) -> Option<(String, String)> {
-    let syn::Expr::Lit(syn::ExprLit { lit, .. }) = expr else {
-        return None;
-    };
-    match lit {
-        syn::Lit::Str(text) => Some((text.value(), format!("{:?}", text.value()))),
-        syn::Lit::Bool(flag) => Some((flag.value.to_string(), flag.value.to_string())),
-        syn::Lit::Int(number) => Some((number.to_string(), number.base10_digits().to_owned())),
-        _ => None,
-    }
-}
-
-/// `Format::Choices(NAME)` as `NAME`; nothing for any other format. A format that says `Choices`
-/// but not as `Choices(NAME)` is an error: its choices would be left out of the browser's list
-/// without a word.
-fn choices_of(expr: &syn::Expr) -> syn::Result<Option<String>> {
-    let syn::Expr::Call(call) = expr else {
-        return Ok(None);
-    };
-    let syn::Expr::Path(function) = &*call.func else {
-        return Ok(None);
-    };
-    if function
-        .path
-        .segments
-        .last()
-        .is_none_or(|segment| segment.ident != "Choices")
-    {
-        return Ok(None);
-    }
-    match call.args.first() {
-        Some(syn::Expr::Path(name)) if call.args.len() == 1 => Ok(name
-            .path
-            .segments
-            .last()
-            .map(|segment| segment.ident.to_string())),
-        _ => Err(syn::Error::new(
-            call.paren_token.span.open(),
-            "`Choices(…)` must name one list of choices, like `Choices(MODE_CHOICES)`",
-        )),
-    }
-}
-
-/// The values of `const NAME: &[Choice] = &[Choice::new("value", label), …];`.
-fn choice_values(item: &syn::ItemConst) -> Option<Vec<String>> {
-    let syn::Expr::Reference(reference) = &*item.expr else {
-        return None;
-    };
-    let syn::Expr::Array(array) = &*reference.expr else {
-        return None;
-    };
-    array
-        .elems
-        .iter()
-        .map(|element| {
-            let syn::Expr::Call(call) = element else {
-                return None;
-            };
-            literal(call.args.first()?).map(|(text, _)| text)
-        })
-        .collect()
-}
-
-/// The lists of choices by the name of the constant that holds them.
-type ChoiceLists = BTreeMap<String, Vec<String>>;
-
-/// The settings of the registry in the order of the file, and the lists of choices by name. The
-/// settings that exist only for tests (`pub mod for_tests`) are left out.
-fn read_registry(path: &str, text: &str) -> anyhow::Result<(Vec<SettingDecl>, ChoiceLists)> {
-    let file = syn::parse_file(text).with_context(|| format!("{path} is not Rust"))?;
-    let mut settings = Vec::new();
-    let mut lists = BTreeMap::new();
-    for item in &file.items {
-        match item {
-            syn::Item::Const(item) => {
-                if let Some(values) = choice_values(item) {
-                    lists.insert(item.ident.to_string(), values);
-                }
-            }
-            syn::Item::Macro(item)
-                if item
-                    .mac
-                    .path
-                    .segments
-                    .last()
-                    .is_some_and(|segment| segment.ident == "settings") =>
-            {
-                let declarations: Declarations = item
-                    .mac
-                    .parse_body()
-                    .with_context(|| format!("{path}: a `settings! {{ … }}` body"))?;
-                settings.extend(declarations.0);
-            }
-            _ => {}
-        }
-    }
-    Ok((settings, lists))
-}
 
 /// `appearance.less-motion` as `appearanceLessMotion`.
 fn camel_case(key: &str) -> String {
@@ -223,7 +45,8 @@ pub(super) fn setting_keys(sources: &[Source]) -> anyhow::Result<String> {
         .filter(|(path, _)| path.starts_with(REGISTRY_FOLDER) && path.ends_with("/catalog.rs"))
     {
         seen = true;
-        let (found, choices) = read_registry(path, text)?;
+        let (found, choices) =
+            read_registry(text).with_context(|| format!("{path} is not a settings registry"))?;
         settings.extend(found);
         lists.extend(choices);
     }

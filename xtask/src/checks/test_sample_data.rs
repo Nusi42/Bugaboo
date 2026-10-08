@@ -40,7 +40,10 @@ use serde::Deserialize;
 use serde_json::Value;
 
 use super::{Check, Context, Finding};
-use crate::dataset::{Layout, OrganizationNames};
+use crate::dataset::load_layout;
+use crate::source::read_text;
+use bb_core::text::CROCKFORD;
+use bb_dev_words::sample::{Layout, OrganizationNames};
 
 /// The list of names, written for Bugaboo. `bb-sample` reads the same file.
 pub(crate) const NAMES_FILE: &str = "crates/bb-sample/data/names.toml";
@@ -72,13 +75,12 @@ impl Check for TestSampleData {
 
     fn run(&self, context: &Context<'_>) -> anyhow::Result<Vec<Finding>> {
         let mut findings = Vec::new();
-        Layout::load(context.repo.root())?;
-        let names = fs::read_to_string(context.repo.path(NAMES_FILE))
-            .with_context(|| format!("could not read {NAMES_FILE}"))?;
+        load_layout(context.repo.root())?;
+        let names = read_text(context.repo, NAMES_FILE)?;
         if let Err(problem) = NameList::parse(&names) {
             findings.push(Finding::at(NAMES_FILE, problem));
         }
-        let ci = fs::read_to_string(context.repo.path(CI_SOURCE)).unwrap_or_default();
+        let ci = read_text(context.repo, CI_SOURCE).unwrap_or_default();
         if !ci.contains(CI_STEP) {
             findings.push(Finding::at(
                 CI_SOURCE,
@@ -185,10 +187,10 @@ fn base32_decode(text: &str) -> Option<Vec<u8>> {
     )
 }
 
-/// The bytes the secret of an access key stands for: Crockford's base 32 in lower case, as
-/// `bb-auth` writes it; `None` for any other character.
+/// The bytes the secret of an access key stands for: Crockford's base 32 (`bb-auth` writes it in
+/// lower case, which the decoding does not tell apart); `None` for any other character.
 fn crockford_decode(text: &str) -> Option<Vec<u8>> {
-    decode_base32(text, b"0123456789abcdefghjkmnpqrstvwxyz")
+    decode_base32(text, CROCKFORD)
 }
 
 /// The bytes a base 32 text stands for, written with the 32 symbols of `alphabet`.
@@ -422,7 +424,7 @@ mod tests {
     const FIXTURES: &str = "../tools/checks/fixtures/TEST-SAMPLE-DATA";
 
     fn layout() -> Layout {
-        Layout::load(Path::new(env!("CARGO_MANIFEST_DIR")).parent().unwrap()).unwrap()
+        load_layout(Path::new(env!("CARGO_MANIFEST_DIR")).parent().unwrap()).unwrap()
     }
 
     fn names() -> NameList {
@@ -624,7 +626,7 @@ mod tests {
 
     #[test]
     fn the_needles_are_the_password_the_code_app_and_the_access_key_columns_only() {
-        let text = "# header\nana@bugaboo.example\tPW-ONE\tcontributor\tAna Moreno\nben@bugaboo.example\tPW-TWO\tteam_member\tBen Hale\tMZXW6YTBOI\ncleo@bugaboo.example\tPW-THREE\tteam_member\tCleo Coder\t\tbb_k7q2x9mf_cpnqj\n";
+        let text = "# header\nana@bugaboo.example\tPW-ONE\tcontributor\tAna Moreno\nben@bugaboo.example\tPW-TWO\tteam-member\tBen Hale\tMZXW6YTBOI\ncleo@bugaboo.example\tPW-THREE\tteam-member\tCleo Coder\t\tbb_k7q2x9mf_cpnqj\n";
         let needles = needles_of(text);
         assert_eq!(
             needles,
@@ -674,9 +676,8 @@ mod tests {
         // `bb_<prefix>_<secret>`: a file may keep the secret alone, or the 32 bytes it stands for.
         // 52 symbols of the alphabet, made here and not written out: the secret scan would
         // (rightly) take a written key for a real one.
-        let alphabet = b"0123456789abcdefghjkmnpqrstvwxyz";
         let secret: String = (0..51)
-            .map(|at| char::from(alphabet[(at * 7 + 3) % 32]))
+            .map(|at| char::from(CROCKFORD[(at * 7 + 3) % 32]).to_ascii_lowercase())
             .chain(['0'])
             .collect();
         let sign_in = format!(

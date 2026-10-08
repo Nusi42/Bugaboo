@@ -7,7 +7,7 @@ import { type Person } from "./accounts.ts";
 
 /** Somebody of the sample organization: the person and how they are known in the sample. */
 export interface SamplePerson extends Person {
-  /** The role the person is given once roles exist, as the sample names it (`team_member`). */
+  /** The role the person is given once roles exist, as the sample names it (`team-member`). */
   readonly role: string;
   /** The secret of the code app, for the people who have one. */
   readonly codeAppSecret: string | undefined;
@@ -74,7 +74,7 @@ function somebody(what: string, matches: (person: SamplePerson) => boolean): Sam
 export function sampleTeamMember(): SamplePerson {
   return somebody(
     "a Team member without a code app",
-    (person) => person.role === "team_member" && person.codeAppSecret === undefined,
+    (person) => person.role === "team-member" && person.codeAppSecret === undefined,
   );
 }
 

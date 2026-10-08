@@ -117,6 +117,11 @@ fn home() -> PathBuf {
         .map_or_else(|| PathBuf::from("."), Path::to_path_buf)
 }
 
+/// The folder setup keeps the downloaded archives in.
+pub(crate) fn cache_dir(root: &Path) -> PathBuf {
+    root.join(TOOLS_DIR).join("cache")
+}
+
 /// The folder setup installs binaries into.
 pub(crate) fn bin_dir(root: &Path) -> PathBuf {
     root.join(TOOLS_DIR).join("bin")
@@ -207,6 +212,45 @@ pub(crate) fn findings_from(run: Result<Output, Finding>, fix: &str) -> Vec<Find
             message.push_str(&shorten(&output.text, 60));
             vec![Finding::general(message)]
         }
+    }
+}
+
+/// A tool that checks the files named on its command line: the one way the checks of Markdown,
+/// TOML, spelling, links and workflows run theirs.
+pub(crate) struct FileTool {
+    /// The installed program.
+    pub(crate) program: &'static str,
+    /// Its arguments before the files.
+    pub(crate) args: &'static [&'static str],
+    /// The arguments that stand for the files when the whole repository is checked.
+    pub(crate) whole: &'static [&'static str],
+    /// What to do about a problem, in plain words.
+    pub(crate) fix: String,
+    /// Takes out of the output what is no finding (a tool that logs its progress on the same
+    /// stream); `None` keeps it all.
+    pub(crate) clean: Option<fn(&str) -> String>,
+}
+
+impl FileTool {
+    /// Runs the tool on `files`, or on the whole repository for `None`. No file is no finding.
+    pub(crate) fn check(
+        &self,
+        root: &Path,
+        files: Option<&[String]>,
+    ) -> anyhow::Result<Vec<Finding>> {
+        let mut args: Vec<&str> = self.args.to_vec();
+        match files {
+            Some([]) => return Ok(Vec::new()),
+            Some(files) => args.extend(files.iter().map(String::as_str)),
+            None => args.extend(self.whole),
+        }
+        let output = run_installed(self.program, &args, root)?.map(|mut output| {
+            if let Some(clean) = self.clean {
+                output.text = clean(&output.text);
+            }
+            output
+        });
+        Ok(findings_from(output, &self.fix))
     }
 }
 

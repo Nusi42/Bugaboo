@@ -5,6 +5,7 @@ use std::fmt;
 use std::path::PathBuf;
 
 use bb_core::message::{self, Message, MessageKey};
+use bb_dev_words::sample::LayoutError;
 
 use crate::roster::PEOPLE;
 
@@ -130,6 +131,12 @@ pub enum SampleError {
     DatabaseUrl(String),
     /// `tools/dev/sample.json` is not usable.
     Layout(String),
+}
+
+impl From<LayoutError> for SampleError {
+    fn from(error: LayoutError) -> Self {
+        Self::Layout(error.to_string())
+    }
 }
 
 impl SampleError {

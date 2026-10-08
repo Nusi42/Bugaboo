@@ -39,6 +39,7 @@ utoipa-axum = { workspace = true }
 [dev-dependencies]
 bb-api = { path = ".", features = ["testing"] }
 bb-core = { path = "../bb-core", features = ["fake-ids"] }
+bb-dev-words = { path = "../bb-dev-words" }
 h2 = { workspace = true }
 brotli = { workspace = true }
 proptest = { workspace = true }

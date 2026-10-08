@@ -400,12 +400,7 @@ async fn sec_03_check_access_names_no_project_the_checker_cannot_see() -> TestRe
         let org = Org::start(&rig).await?;
         let projects = tree(&org).await?;
         let (lea, bea) = (org.person().await?, org.person().await?);
-        let checker = org
-            .role(
-                "Checker",
-                &[Permission::SeeProjects, Permission::CheckAccess],
-            )
-            .await?;
+        let checker = org.checker().await?;
         let member = org.role("Looker", &VIEW).await?;
         // Lea checks in WEB; Bea has her role from ACME, a project Lea cannot see.
         org.give(&lea, checker.id, projects.web).await?;

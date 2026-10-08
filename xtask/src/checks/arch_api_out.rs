@@ -20,24 +20,19 @@
 //! `Authorized<T>`. Comments, string and character literals do not count, and neither does code
 //! behind `#[cfg(test)]`.
 
-use std::collections::BTreeSet;
-
-use anyhow::Context as _;
 use serde::Deserialize;
 
+use super::exemptions::{self, Exemption as _, Used};
 use super::{Check, Context, Finding};
-use crate::rust_source::{Source, read_product_sources, strip, without_tests};
+use crate::rust_source::{balanced, strip, without_tests};
+use crate::source::{Kind, Source, is_word_char, name_uses};
 
-/// The crates whose answers leave the program.
-const FOLDERS: [&str; 2] = ["crates/bb-api/src/", "crates/bb-mcp/src/"];
 /// Where the exceptions are written down, each with its reason.
 const EXEMPTIONS_PATH: &str = "tools/checks/api-out-exemptions.toml";
 /// The wrappers that take any value.
 const PLAIN: [&str; 2] = ["answer", "signed_in"];
 /// What a page of authorized items starts with: its argument is made from `Authorized<T>`.
 const AUTHORIZED_PAGE: &str = "Page::of_authorized(";
-/// The shortest reason that can say anything.
-const REASON_MIN: usize = 20;
 
 pub(crate) struct ArchApiOut;
 
@@ -47,12 +42,9 @@ impl Check for ArchApiOut {
     }
 
     fn run(&self, context: &Context<'_>) -> anyhow::Result<Vec<Finding>> {
-        let text = std::fs::read_to_string(context.repo.path(EXEMPTIONS_PATH))
-            .with_context(|| format!("could not read {EXEMPTIONS_PATH}"))?;
-        let exemptions: Exemptions =
-            toml::from_str(&text).with_context(|| format!("{EXEMPTIONS_PATH} is not valid"))?;
+        let exemptions: Exemptions = exemptions::load(context.repo, EXEMPTIONS_PATH)?;
         Ok(evaluate(
-            &read_product_sources(context.repo)?,
+            &context.sources(self.id(), Kind::Rust)?,
             &exemptions.exempt,
         ))
     }
@@ -75,6 +67,20 @@ struct Exemption {
     reason: String,
 }
 
+impl exemptions::Exemption for Exemption {
+    fn name(&self) -> String {
+        self.operation
+            .as_deref()
+            .or(self.function.as_deref())
+            .unwrap_or("?")
+            .to_owned()
+    }
+
+    fn reason(&self) -> &str {
+        &self.reason
+    }
+}
+
 /// A function found in a source: where it stands and, for a handler, its operation ID.
 struct Function {
     name: String,
@@ -83,29 +89,6 @@ struct Function {
     /// The code of the function (signature and body), comments and texts blanked.
     code: String,
     operation: Option<String>,
-}
-
-/// Whether `c` can be part of a name.
-fn is_name(c: char) -> bool {
-    c.is_alphanumeric() || c == '_'
-}
-
-/// The text up to the bracket that closes the first `open` in `text`, brackets included.
-fn balanced(text: &str, open: char, close: char) -> Option<&str> {
-    let mut depth = 0_usize;
-    let mut started = false;
-    for (at, character) in text.char_indices() {
-        if character == open {
-            depth += 1;
-            started = true;
-        } else if character == close && started {
-            depth = depth.checked_sub(1)?;
-            if depth == 0 {
-                return Some(&text[..at + close.len_utf8()]);
-            }
-        }
-    }
-    None
 }
 
 /// The operation ID in the attribute that stands above the function that starts on `line` (from
@@ -136,11 +119,11 @@ fn functions(original: &str, code: &str) -> Vec<Function> {
     let original_lines: Vec<&str> = original.lines().collect();
     let mut found = Vec::new();
     for (at, _) in code.match_indices("fn ") {
-        if code[..at].chars().next_back().is_some_and(is_name) {
+        if code[..at].chars().next_back().is_some_and(is_word_char) {
             continue;
         }
         let rest = &code[at + 3..];
-        let name: String = rest.chars().take_while(|c| is_name(*c)).collect();
+        let name: String = rest.chars().take_while(|c| is_word_char(*c)).collect();
         if name.is_empty() {
             continue;
         }
@@ -162,7 +145,7 @@ fn functions(original: &str, code: &str) -> Vec<Function> {
         let Some(body_at) = body_at else {
             continue;
         };
-        let Some(body) = balanced(&rest[body_at..], '{', '}') else {
+        let Some(body) = balanced(&rest[body_at..], '{') else {
             continue;
         };
         let end = at + 3 + body_at + body.len();
@@ -181,16 +164,11 @@ fn functions(original: &str, code: &str) -> Vec<Function> {
 /// The places in `code` where `word` is called or named as a whole name, not as the method of a
 /// value (after a dot), not as a definition (after `fn`) and not as part of a longer name.
 fn calls<'a>(code: &'a str, word: &'a str) -> impl Iterator<Item = usize> + 'a {
-    code.match_indices(word).filter_map(move |(at, _)| {
-        let before = &code[..at];
-        let after = code[at + word.len()..].chars().next();
-        let boundary = !before
+    name_uses(code, word).filter(move |at| {
+        code[at + word.len()..]
             .chars()
-            .next_back()
-            .is_some_and(|c| is_name(c) || c == '.');
-        let defines = before.trim_end().ends_with("fn");
-        (boundary && after.is_some_and(|c| c == '(' || c == '<' || c == ':') && !defines)
-            .then_some(at)
+            .next()
+            .is_some_and(|c| matches!(c, '(' | '<' | ':'))
     })
 }
 
@@ -206,27 +184,24 @@ fn argument_at(code: &str, at: usize, word: &str) -> String {
 fn evaluate(sources: &[Source], exemptions: &[Exemption]) -> Vec<Finding> {
     let mut findings = Vec::new();
     // What each exemption was needed for.
-    let mut used: BTreeSet<usize> = BTreeSet::new();
+    let mut used = Used::default();
     for (path, text) in sources {
-        if !FOLDERS.iter().any(|folder| path.starts_with(folder)) {
-            continue;
-        }
         let code = strip(&without_tests(text));
         for function in functions(text, &code) {
             let place = |line: usize| format!("{path}:{line}");
-            let allowed_operation = |used: &mut BTreeSet<usize>| {
+            let allowed_operation = |used: &mut Used| {
                 let index = exemptions.iter().position(|exemption| {
                     exemption.operation.is_some() && exemption.operation == function.operation
                 })?;
-                used.insert(index);
+                used.mark(index);
                 Some(index)
             };
-            let allowed_function = |used: &mut BTreeSet<usize>| {
+            let allowed_function = |used: &mut Used| {
                 let index = exemptions.iter().position(|exemption| {
                     exemption.function.as_deref() == Some(function.name.as_str())
                         && exemption.file.as_deref() == Some(path.as_str())
                 })?;
-                used.insert(index);
+                used.mark(index);
                 Some(index)
             };
             // Raw JSON: `Json(…)`, `Json<…>`, `Json::…`, the type or the constructor of the answer.
@@ -281,14 +256,9 @@ fn evaluate(sources: &[Source], exemptions: &[Exemption]) -> Vec<Finding> {
 }
 
 /// The rules of the file: each entry names one thing, has a reason, and is still needed.
-fn exemption_findings(exemptions: &[Exemption], used: &BTreeSet<usize>) -> Vec<Finding> {
-    let mut findings = Vec::new();
-    for (index, exemption) in exemptions.iter().enumerate() {
-        let name = exemption
-            .operation
-            .as_deref()
-            .or(exemption.function.as_deref())
-            .unwrap_or("?");
+fn exemption_findings(exemptions: &[Exemption], used: &Used) -> Vec<Finding> {
+    let mut findings = exemptions::judge(EXEMPTIONS_PATH, exemptions, used);
+    for exemption in exemptions {
         let well_formed = matches!(
             (&exemption.operation, &exemption.function, &exemption.file),
             (Some(_), None, None) | (None, Some(_), Some(_))
@@ -297,20 +267,9 @@ fn exemption_findings(exemptions: &[Exemption], used: &BTreeSet<usize>) -> Vec<F
             findings.push(Finding::at(
                 EXEMPTIONS_PATH,
                 format!(
-                    "The entry `{name}` names either an `operation`, or a `function` with its \
-                     `file`."
+                    "The entry `{}` names either an `operation`, or a `function` with its `file`.",
+                    exemption.name()
                 ),
-            ));
-        } else if !used.contains(&index) {
-            findings.push(Finding::at(
-                EXEMPTIONS_PATH,
-                format!("The entry `{name}` matches nothing that needs it any more. Remove it."),
-            ));
-        }
-        if exemption.reason.trim().len() < REASON_MIN {
-            findings.push(Finding::at(
-                EXEMPTIONS_PATH,
-                format!("The entry `{name}` needs a reason that says why it may."),
             ));
         }
     }
@@ -413,15 +372,6 @@ mod tests {
                     const T: &str = \"axum::Json(plain)\";\n\
                     #[cfg(test)]\nmod tests {\n    fn t() { axum::Json(plain); }\n}\n";
         assert!(evaluate(&source(FILE, text), &[]).is_empty());
-        // Code outside the two crates is not looked at.
-        let elsewhere = evaluate(
-            &source(
-                "crates/bb-server/src/x.rs",
-                "fn f() { axum::Json(plain); }\n",
-            ),
-            &[],
-        );
-        assert!(elsewhere.is_empty());
     }
 
     #[test]

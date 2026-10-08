@@ -73,6 +73,27 @@ impl<S: AuthStore> Ctx<'_, S> {
             .map_err(|error| internal::<S>(&error))?
             .ok_or(AppError::Refused(ErrorCode::NotFound))
     }
+
+    /// A new custom role, not stored yet, put last in the order of the roles.
+    pub(super) async fn new_role(&self, name: String, two_step: bool) -> Result<Role, AppError> {
+        let position = self
+            .store()
+            .roles()
+            .await
+            .map_err(|error| internal::<S>(&error))?
+            .iter()
+            .map(|record| record.role.position)
+            .max()
+            .map_or(0, |last| last.saturating_add(1));
+        Ok(Role {
+            id: RoleId::generate(&mut self.ids())
+                .map_err(|error| AppError::Internal(error.to_string()))?,
+            name,
+            starting: None,
+            position,
+            two_step,
+        })
+    }
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
@@ -108,23 +129,7 @@ pub async fn make_role<S: AuthStore>(
         .await?;
     let name = clean_name(&input.name)?;
     let permissions = set_of(&input.permissions);
-    let position = ctx
-        .store()
-        .roles()
-        .await
-        .map_err(|error| internal::<S>(&error))?
-        .iter()
-        .map(|record| record.role.position)
-        .max()
-        .map_or(0, |last| last.saturating_add(1));
-    let role = Role {
-        id: RoleId::generate(&mut ctx.ids())
-            .map_err(|error| AppError::Internal(error.to_string()))?,
-        name,
-        starting: None,
-        position,
-        two_step: input.two_step,
-    };
+    let role = ctx.new_role(name, input.two_step).await?;
     let event = ctx.event(
         by(actor.person.id),
         entity(RecordKind::Role, role.id),

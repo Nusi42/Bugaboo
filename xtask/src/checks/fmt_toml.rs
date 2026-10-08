@@ -1,9 +1,7 @@
 //! FMT-TOML: TOML files are formatted (coding-standards §2, `taplo.toml`).
 
-use std::path::Path;
-
 use super::{Check, Context, Finding};
-use crate::tools;
+use crate::tools::{FileTool, TOOLS_DIR};
 
 pub(crate) struct FmtToml;
 
@@ -13,41 +11,38 @@ impl Check for FmtToml {
     }
 
     fn run(&self, context: &Context<'_>) -> anyhow::Result<Vec<Finding>> {
-        check_files(
+        tool().check(
             context.repo.root(),
             context.files_for(self.id())?.as_deref(),
         )
     }
 }
 
-fn check_files(root: &Path, files: Option<&[String]>) -> anyhow::Result<Vec<Finding>> {
-    let mut args = vec![
-        "--colors",
-        "never",
-        "fmt",
-        "--check",
-        "--config",
-        "taplo.toml",
-    ];
-    match files {
-        Some([]) => return Ok(Vec::new()),
-        Some(files) => args.extend(files.iter().map(String::as_str)),
-        None => {}
+fn tool() -> FileTool {
+    FileTool {
+        program: "taplo",
+        args: &[
+            "--colors",
+            "never",
+            "fmt",
+            "--check",
+            "--config",
+            "taplo.toml",
+        ],
+        whole: &[],
+        fix: format!(
+            "TOML files are not formatted. Run `{TOOLS_DIR}/bin/taplo fmt --config taplo.toml`."
+        ),
+        clean: Some(without_progress),
     }
-    let output = tools::run_installed("taplo", &args, root)?.map(|mut output| {
-        // Taplo logs its progress as INFO lines on the same stream as its findings.
-        output.text = output
-            .text
-            .lines()
-            .filter(|line| !line.trim_start().starts_with("INFO "))
-            .collect::<Vec<_>>()
-            .join("\n");
-        output
-    });
-    Ok(tools::findings_from(
-        output,
-        "TOML files are not formatted. Run `.tools/bin/taplo fmt --config taplo.toml`.",
-    ))
+}
+
+/// Taplo logs its progress as INFO lines on the same stream as its findings.
+fn without_progress(text: &str) -> String {
+    text.lines()
+        .filter(|line| !line.trim_start().starts_with("INFO "))
+        .collect::<Vec<_>>()
+        .join("\n")
 }
 
 #[cfg(test)]
@@ -64,7 +59,7 @@ mod tests {
 ",
         );
         temp.write("a.toml", "a   =   1\n[ t ]\nb=2\n");
-        crate::testutil::assert_real_findings(&check_files(temp.path(), None).unwrap());
+        crate::testutil::assert_real_findings(&tool().check(temp.path(), None).unwrap());
     }
 
     #[test]
@@ -76,6 +71,6 @@ mod tests {
 ",
         );
         temp.write("a.toml", "a = 1\n\n[t]\nb = 2\n");
-        assert!(check_files(temp.path(), None).unwrap().is_empty());
+        assert!(tool().check(temp.path(), None).unwrap().is_empty());
     }
 }

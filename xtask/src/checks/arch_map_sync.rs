@@ -11,7 +11,8 @@ use anyhow::Context as _;
 
 use super::{Check, Context, Finding};
 use crate::docs::building_blocks::Layout;
-use crate::docs::source::{BUILDING_BLOCKS, read_text};
+use crate::docs::source::BUILDING_BLOCKS;
+use crate::source::read_text;
 
 pub(crate) struct ArchMapSync;
 

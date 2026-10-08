@@ -342,7 +342,7 @@ fn priv_13_former_user_labels_are_random_and_unique() {
         assert!(
             label
                 .chars()
-                .all(|c| "0123456789ABCDEFGHJKMNPQRSTVWXYZ".contains(c)),
+                .all(|c| c.is_ascii() && bb_core::text::CROCKFORD.contains(&(c as u8))),
             "Crockford Base32: {label}"
         );
         assert!(taken.insert(label.clone()), "{label} was made twice");

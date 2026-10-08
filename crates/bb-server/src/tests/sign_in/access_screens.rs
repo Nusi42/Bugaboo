@@ -568,12 +568,7 @@ async fn sec_06_a_hidden_field_is_missing_from_every_m2_answer_and_cannot_be_ask
         let org = Org::start(&rig).await?;
         let app = app_with_probe(&rig, None);
         let acme = org.project(None, "ACME").await?.id;
-        let checker = org
-            .role(
-                "Checker",
-                &[Permission::SeeProjects, Permission::CheckAccess],
-            )
-            .await?;
+        let checker = org.checker().await?;
         let cleo = org.person().await?;
         org.give(&cleo, checker.id, acme).await?;
         let mut cleo_browser = Browser::signed_in_as(&app, "person1@example.test").await?;
@@ -630,12 +625,7 @@ async fn sec_03_check_access_over_http_names_no_project_the_checker_cannot_see_a
         let app = app_with_probe(&rig, None);
         let acme = org.project(None, "ACME").await?.id;
         let web = org.project(Some(acme), "WEB").await?.id;
-        let checker = org
-            .role(
-                "Checker",
-                &[Permission::SeeProjects, Permission::CheckAccess],
-            )
-            .await?;
+        let checker = org.checker().await?;
         let looker = org.role("Looker", &[Permission::SeeProjects]).await?;
         let lea = org.person().await?;
         let bea = org.person().await?;

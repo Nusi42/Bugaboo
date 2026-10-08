@@ -6,14 +6,13 @@
 //! cookie writes anywhere else: a `Set-Cookie` header in Rust, a cookie library, or a write to
 //! `document.cookie` in the browser app.
 
-use anyhow::Context as _;
-
-use super::web_source::{WebSource, code_of, read_web_sources};
+use super::web_source::code_of;
 use super::{Check, Context, Finding};
 use crate::generate::api::{CookieTable, parse_cookies};
-use crate::generate::messages::{SOURCE_LOCALE_PATH, parse_pairs};
+use crate::generate::messages::{SOURCE_LOCALE_PATH, source_pairs};
 use crate::generate::messages_rust::constant_name;
-use crate::rust_source::{Source, read_product_sources, without_tests};
+use crate::rust_source::{strip_comments, without_tests};
+use crate::source::{Kind, Source};
 
 /// The one file that may set cookies.
 const COOKIE_MODULE: &str = "crates/bb-api/src/cookies.rs";
@@ -38,11 +37,9 @@ impl Check for SecCookies {
     }
 
     fn run(&self, context: &Context<'_>) -> anyhow::Result<Vec<Finding>> {
-        let rust = read_product_sources(context.repo)?;
-        let web = read_web_sources(context.repo)?;
-        let catalog = std::fs::read_to_string(context.repo.path(SOURCE_LOCALE_PATH))
-            .with_context(|| format!("could not read {SOURCE_LOCALE_PATH}"))?;
-        let constants = parse_pairs(&catalog)?
+        let rust = context.sources(self.id(), Kind::Rust)?;
+        let web = context.sources(self.id(), Kind::Web)?;
+        let constants = source_pairs(context.repo)?
             .iter()
             .map(|(key, _)| constant_name(key))
             .collect::<Vec<_>>();
@@ -50,7 +47,7 @@ impl Check for SecCookies {
     }
 }
 
-fn evaluate(rust: &[Source], web: &[WebSource], message_constants: &[String]) -> Vec<Finding> {
+fn evaluate(rust: &[Source], web: &[Source], message_constants: &[String]) -> Vec<Finding> {
     let mut findings = Vec::new();
     match rust.iter().find(|(path, _)| path == COOKIE_MODULE) {
         None => findings.push(Finding::at(COOKIE_MODULE, "The cookie module is missing.")),
@@ -60,7 +57,7 @@ fn evaluate(rust: &[Source], web: &[WebSource], message_constants: &[String]) ->
         },
     }
     for (path, text) in rust.iter().filter(|(path, _)| path != COOKIE_MODULE) {
-        findings.extend(rust_writes(path, &without_tests(text)));
+        findings.extend(rust_writes(path, &strip_comments(&without_tests(text))));
     }
     for (path, text) in web {
         findings.extend(browser_writes(path, text));
@@ -102,7 +99,7 @@ fn rust_writes(path: &str, code: &str) -> Vec<Finding> {
         .enumerate()
         .filter(|(_, line)| {
             let lower = line.to_lowercase();
-            !line.trim_start().starts_with("//") && RUST_WRITES.iter().any(|w| lower.contains(w))
+            RUST_WRITES.iter().any(|w| lower.contains(w))
         })
         .map(|(index, _)| {
             Finding::at(
@@ -144,7 +141,7 @@ mod tests {
         (COOKIE_MODULE.to_owned(), text.to_owned())
     }
 
-    fn run(rust: &[Source], web: &[WebSource]) -> Vec<String> {
+    fn run(rust: &[Source], web: &[Source]) -> Vec<String> {
         let constants = vec!["COOKIE_SESSION_PURPOSE".to_owned()];
         evaluate(rust, web, &constants)
             .into_iter()

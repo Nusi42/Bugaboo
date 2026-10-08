@@ -55,7 +55,7 @@ pub(crate) fn install_with(
         tool.folders.join(", ")
     ));
     let file_name = download.url.rsplit('/').next().unwrap_or("download");
-    let cache = root.join(tools::TOOLS_DIR).join("cache");
+    let cache = tools::cache_dir(root);
     fs::create_dir_all(&cache)?;
     let archive = cache.join(file_name);
     let bytes = cached_or_fetched(&archive, &download.url, &download.sha256, get)?;

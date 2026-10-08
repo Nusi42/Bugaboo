@@ -161,7 +161,7 @@ fn install_download_with(
     let download = tool.download()?;
     output::info(&format!("download {} {}", tool.name, tool.version));
     let file_name = download.url.rsplit('/').next().unwrap_or("download");
-    let cache = root.join(tools::TOOLS_DIR).join("cache");
+    let cache = tools::cache_dir(root);
     fs::create_dir_all(&cache)?;
     let archive = cache.join(file_name);
     get(&download.url, &archive)?;

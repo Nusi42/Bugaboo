@@ -1,55 +1,14 @@
 //! DEV-PORTS: no default framework ports; every port comes from `tools/dev/ports.json` and is
 //! strict (ADR-0023).
 
-use std::fs;
-
-use super::node_tool::Selection;
 use super::{Check, Context, Finding};
-
-const PORTS_FILE: &str = "tools/dev/ports.json";
+use crate::ports::{ALLOWED, Layout, PORTS_FILE};
+use crate::source::read_text;
 
 /// Ports that other projects on the development PC already use (ADR-0023).
 const DEFAULT_PORTS: [u32; 5] = [5173, 4173, 3000, 8080, 51204];
 
-/// All our ports: the blocks of every work folder (ADR-0023). Free on the development PC and
-/// below the dynamic range of Windows (49152 and up).
-const ALLOWED: std::ops::RangeInclusive<u32> = 47200..=48099;
-
-/// The tool configs and package files that could name a port.
-const CONFIGS: Selection = Selection {
-    folders: &["web"],
-    files: &["package.json"],
-    endings: &[
-        "vite.config.ts",
-        "vite.config.mts",
-        "vite.config.js",
-        "vite.config.mjs",
-        "vitest.config.ts",
-        "vitest.config.mts",
-        "vitest.config.js",
-        "vitest.config.mjs",
-        "playwright.config.ts",
-        "playwright.config.mts",
-        "playwright.config.js",
-        "playwright.config.mjs",
-        "package.json",
-    ],
-};
-
-/// Rust and TOML files that could name a port. This check's own list of default ports is not
-/// scanned.
-const OTHER: Selection = Selection {
-    folders: &["crates", "xtask", "tools", ".cargo"],
-    files: &[
-        "Cargo.toml",
-        "deny.toml",
-        "clippy.toml",
-        "rustfmt.toml",
-        "rust-toolchain.toml",
-    ],
-    endings: &[".rs", ".toml"],
-};
-
+/// This check names the default ports it forbids, so it is not scanned for them.
 const THIS_FILE: &str = "xtask/src/checks/dev_ports.rs";
 
 pub(crate) struct DevPorts;
@@ -60,19 +19,19 @@ impl Check for DevPorts {
     }
 
     fn run(&self, context: &Context<'_>) -> anyhow::Result<Vec<Finding>> {
-        let root = context.repo.root();
         let mut findings = Vec::new();
-        match fs::read_to_string(root.join(PORTS_FILE)) {
+        match read_text(context.repo, PORTS_FILE) {
             Ok(text) => findings.extend(check_ports_file(&text)),
             Err(_) => findings.push(Finding::at(PORTS_FILE, "The ports file is missing.")),
         }
-        for path in CONFIGS.pick(context) {
-            let text = fs::read_to_string(root.join(&path))?;
-            findings.extend(check_config(&path, &text));
-        }
-        for path in OTHER.pick(context) {
-            if path != THIS_FILE {
-                let text = fs::read_to_string(root.join(&path))?;
+        for path in context.selected(self.id())? {
+            if path == PORTS_FILE || path == THIS_FILE {
+                continue;
+            }
+            let text = read_text(context.repo, &path)?;
+            if is_tool_config(&path) {
+                findings.extend(check_config(&path, &text));
+            } else {
                 findings.extend(default_port_findings(&path, &text));
             }
         }
@@ -80,35 +39,30 @@ impl Check for DevPorts {
     }
 }
 
+/// The tool configs and package files, which must read their ports from the ports file; every
+/// other file only must not name a default port.
+fn is_tool_config(path: &str) -> bool {
+    let name = path.rsplit('/').next().unwrap_or(path);
+    name == "package.json"
+        || ["vite", "vitest", "playwright"]
+            .iter()
+            .any(|tool| name.starts_with(&format!("{tool}.config.")))
+}
+
 /// The ports file: blocks of `stride` ports from `first`, one block for each work folder, and the
 /// offset of every port inside a block. Every port of every block must be in [`ALLOWED`], and no
 /// two ports of a block may be the same.
 fn check_ports_file(text: &str) -> Vec<Finding> {
-    let Ok(serde_json::Value::Object(map)) = serde_json::from_str::<serde_json::Value>(text) else {
-        return vec![Finding::at(
-            PORTS_FILE,
-            "The ports file must be a JSON object.",
-        )];
-    };
-    let number = |key: &str| map.get(key).and_then(serde_json::Value::as_u64);
-    let (Some(first), Some(stride), Some(blocks)) =
-        (number("first"), number("stride"), number("blocks"))
-    else {
-        return vec![Finding::at(
-            PORTS_FILE,
-            "The ports file needs the numbers `first`, `stride` and `blocks`.",
-        )];
-    };
-    let Some(serde_json::Value::Object(offsets)) = map.get("offsets") else {
-        return vec![Finding::at(
-            PORTS_FILE,
-            "The ports file needs `offsets`: the offset of every port inside a block.",
-        )];
+    let layout = match Layout::parse(text) {
+        Ok(layout) => layout,
+        Err(error) => return vec![Finding::at(PORTS_FILE, format!("{error:#}"))],
     };
     let mut findings = Vec::new();
-    let last = first + stride.saturating_mul(blocks).saturating_sub(1);
+    let first = u64::from(layout.first);
+    let stride = u64::from(layout.stride);
+    let last = first + stride * u64::from(layout.blocks).max(1) - 1;
     let in_range = |port: u64| u32::try_from(port).is_ok_and(|port| ALLOWED.contains(&port));
-    if stride == 0 || blocks == 0 || !in_range(first) || !in_range(last) {
+    if layout.stride == 0 || layout.blocks == 0 || !in_range(first) || !in_range(last) {
         findings.push(Finding::at(
             PORTS_FILE,
             format!(
@@ -118,19 +72,15 @@ fn check_ports_file(text: &str) -> Vec<Finding> {
             ),
         ));
     }
-    let mut seen: Vec<(&str, u64)> = Vec::new();
-    for (name, value) in offsets {
-        let Some(offset) = value.as_u64() else {
+    let mut seen: Vec<(&str, u32)> = Vec::new();
+    for (name, &offset) in &layout.offsets {
+        if offset >= layout.stride {
             findings.push(Finding::at(
                 PORTS_FILE,
-                format!("`{name}` must be an offset (a number)."),
-            ));
-            continue;
-        };
-        if offset >= stride {
-            findings.push(Finding::at(
-                PORTS_FILE,
-                format!("`{name}` is {offset}; an offset must be below the stride {stride}."),
+                format!(
+                    "`{name}` is {offset}; an offset must be below the stride {}.",
+                    layout.stride
+                ),
             ));
         }
         if let Some((other, _)) = seen.iter().find(|(_, used)| *used == offset) {
@@ -317,7 +267,7 @@ export default { server: { port: ports.web, strictPort: true }, preview: { port:
     fn good_example() {
         assert!(check_config("web/app/vite.config.ts", GOOD).is_empty());
         let repo = Repo::discover().unwrap();
-        let ports = fs::read_to_string(repo.path(PORTS_FILE)).unwrap();
+        let ports = read_text(&repo, PORTS_FILE).unwrap();
         assert!(check_ports_file(&ports).is_empty());
     }
 
@@ -432,7 +382,7 @@ export default { server: { port: ports.web, strictPort: true } };
     fn ports_outside_our_range_or_inside_each_other_fail() {
         let file = |first: u64, stride: u64, blocks: u64, offsets: &str| {
             format!(
-                r#"{{"first":{first},"stride":{stride},"blocks":{blocks},"offsets":{offsets}}}"#
+                r#"{{"first":{first},"stride":{stride},"blocks":{blocks},"blockVariable":"V","workFolderPrefix":"w","offsets":{offsets}}}"#
             )
         };
         let good = file(47200, 100, 9, r#"{"web":1,"server":0}"#);

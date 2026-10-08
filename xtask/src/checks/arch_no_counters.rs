@@ -22,13 +22,14 @@
 
 use std::collections::BTreeSet;
 
-use anyhow::Context as _;
 use serde::Deserialize;
 use serde_json::Value;
 
+use super::api_spec::{self, resolve};
+use super::exemptions::{self, Used};
 use super::{Check, Context, Finding};
-use crate::generate::api::SPEC_PATH;
-use crate::rust_source::{Source, read_product_sources, squeezed, strip, without_tests};
+use crate::rust_source::{squeezed, strip, strip_comments, without_tests};
+use crate::source::{Kind, Source};
 
 /// Where the exceptions are written down, each with its reason.
 const EXEMPTIONS_PATH: &str = "tools/checks/counter-exemptions.toml";
@@ -69,15 +70,9 @@ impl Check for ArchNoCounters {
     }
 
     fn run(&self, context: &Context<'_>) -> anyhow::Result<Vec<Finding>> {
-        let text = std::fs::read_to_string(context.repo.path(SPEC_PATH))
-            .with_context(|| format!("could not read {SPEC_PATH}; run `cargo xtask gen api`"))?;
-        let spec: Value = serde_json::from_str(&text)
-            .with_context(|| format!("{SPEC_PATH} is not valid JSON"))?;
-        let exemptions = std::fs::read_to_string(context.repo.path(EXEMPTIONS_PATH))
-            .with_context(|| format!("could not read {EXEMPTIONS_PATH}"))?;
-        let exemptions: Exemptions = toml::from_str(&exemptions)
-            .with_context(|| format!("{EXEMPTIONS_PATH} is not valid"))?;
-        let sources = read_product_sources(context.repo)?;
+        let spec = api_spec::load(context.repo)?;
+        let exemptions: Exemptions = exemptions::load(context.repo, EXEMPTIONS_PATH)?;
+        let sources = context.sources(self.id(), Kind::Rust)?;
         let mut findings = evaluate_spec(&spec, &exemptions.exempt);
         findings.extend(evaluate_code(&sources, &exemptions.counting));
         Ok(findings)
@@ -103,6 +98,20 @@ struct Exemption {
     reason: String,
 }
 
+impl exemptions::Exemption for Exemption {
+    fn name(&self) -> String {
+        format!("{} in {}", self.property, self.route)
+    }
+
+    fn reason(&self) -> &str {
+        &self.reason
+    }
+
+    fn unused(&self) -> String {
+        "matches no property of an answer. Remove it.".to_owned()
+    }
+}
+
 /// A folder of code that may count, and why.
 #[derive(Deserialize)]
 struct Counting {
@@ -110,14 +119,18 @@ struct Counting {
     reason: String,
 }
 
-/// Follows `$ref`s that point into the document itself.
-fn resolve<'a>(spec: &'a Value, value: &'a Value) -> &'a Value {
-    value
-        .get("$ref")
-        .and_then(Value::as_str)
-        .and_then(|reference| reference.strip_prefix('#'))
-        .and_then(|pointer| spec.pointer(pointer))
-        .unwrap_or(value)
+impl exemptions::Exemption for Counting {
+    fn name(&self) -> String {
+        self.folder.clone()
+    }
+
+    fn reason(&self) -> &str {
+        &self.reason
+    }
+
+    fn unused(&self) -> String {
+        "has nothing that counts any more. Remove the entry.".to_owned()
+    }
 }
 
 /// Whether a name is a count: one of its words (split at `_`, `-` and capitals) says so, or it
@@ -210,78 +223,48 @@ fn properties<'a>(
 
 fn evaluate_spec(spec: &Value, exemptions: &[Exemption]) -> Vec<Finding> {
     let mut findings = Vec::new();
-    let Some(paths) = spec.get("paths").and_then(Value::as_object) else {
-        return vec![Finding::at(SPEC_PATH, "The document has no `paths`.")];
+    let Some(operations) = api_spec::operations(spec) else {
+        return vec![api_spec::no_paths()];
     };
-    let mut present: BTreeSet<(String, String)> = BTreeSet::new();
-    let mut used: BTreeSet<(String, String)> = BTreeSet::new();
-    for (path, item) in paths {
-        let Some(item) = item.as_object() else {
-            continue;
-        };
-        for (method, operation) in item {
-            let Some(responses) = operation.get("responses").and_then(Value::as_object) else {
-                continue;
-            };
-            let route = format!("{} {path}", method.to_uppercase());
-            let mut found = Vec::new();
-            let mut seen = BTreeSet::new();
-            for response in responses.values() {
-                let response = resolve(spec, response);
-                for media in response
-                    .get("content")
-                    .and_then(Value::as_object)
-                    .into_iter()
-                    .flat_map(|content| content.values())
-                {
-                    if let Some(schema) = media.get("schema") {
-                        properties(spec, schema, &mut seen, 0, &mut found);
-                    }
-                }
+    let mut present = Used::default();
+    for operation in operations {
+        let route = operation.place();
+        let mut found = Vec::new();
+        let mut seen = BTreeSet::new();
+        for schema in api_spec::answer_schemas(spec, operation.body) {
+            properties(spec, schema, &mut seen, 0, &mut found);
+        }
+        let mut reported = BTreeSet::new();
+        for (name, property) in found {
+            let exemption = exemptions
+                .iter()
+                .position(|exemption| exemption.route == route && exemption.property == name);
+            if let Some(index) = exemption {
+                present.mark(index);
             }
-            let mut reported = BTreeSet::new();
-            for (name, property) in found {
-                present.insert((route.clone(), name.clone()));
-                if !(is_count_name(&name) || describes_a_count(property)) {
-                    continue;
-                }
-                let key = (route.clone(), name.clone());
-                if exemptions
-                    .iter()
-                    .any(|exemption| exemption.route == route && exemption.property == name)
-                {
-                    used.insert(key);
-                } else if reported.insert(name.clone()) {
-                    findings.push(Finding::at(
-                        &route,
-                        format!(
-                            "The answer holds a count, `{name}`. A number that counts can include \
-                             what the viewer may not see: page with `next_cursor` instead of \
-                             answering a total, or name the property in {EXEMPTIONS_PATH} with a \
-                             reason that says why it counts only what the viewer may see."
-                        ),
-                    ));
-                }
+            if !(is_count_name(&name) || describes_a_count(property)) {
+                continue;
+            }
+            if exemption.is_none() && reported.insert(name.clone()) {
+                findings.push(Finding::at(
+                    &route,
+                    format!(
+                        "The answer holds a count, `{name}`. A number that counts can include \
+                         what the viewer may not see: page with `next_cursor` instead of \
+                         answering a total, or name the property in {EXEMPTIONS_PATH} with a \
+                         reason that says why it counts only what the viewer may see."
+                    ),
+                ));
             }
         }
     }
+    findings.extend(exemptions::judge(EXEMPTIONS_PATH, exemptions, &present));
     for exemption in exemptions {
-        let key = (exemption.route.clone(), exemption.property.clone());
-        if !present.contains(&key) {
-            findings.push(Finding::at(
-                EXEMPTIONS_PATH,
-                format!(
-                    "The entry `{}` in {} matches no property of an answer. Remove it.",
-                    exemption.property, exemption.route
-                ),
-            ));
-        }
         if !exemption.reason.to_lowercase().contains("see") || exemption.reason.trim().len() < 30 {
             findings.push(Finding::at(
                 EXEMPTIONS_PATH,
                 format!(
-                    "The entry `{}` in {} needs a reason that says why the number holds only \
-                     what the viewer may see.",
+                    "The entry `{}` in {} needs a reason that says why the number holds only what the viewer may see.",
                     exemption.property, exemption.route
                 ),
             ));
@@ -292,7 +275,7 @@ fn evaluate_spec(spec: &Value, exemptions: &[Exemption]) -> Vec<Finding> {
 
 fn evaluate_code(sources: &[Source], counting: &[Counting]) -> Vec<Finding> {
     let mut findings = Vec::new();
-    let mut used: BTreeSet<usize> = BTreeSet::new();
+    let mut used = Used::default();
     for (path, text) in sources {
         let allowing = counting
             .iter()
@@ -300,7 +283,7 @@ fn evaluate_code(sources: &[Source], counting: &[Counting]) -> Vec<Finding> {
         let code = strip(&without_tests(text));
         // The words of SQL are written in strings, which `strip` blanks: read them from the text
         // with the comments and tests taken away only.
-        let sql = without_tests(text);
+        let sql = strip_comments(&without_tests(text));
         let (squeezed, lines) = squeezed(&code);
         let mut hits: Vec<(usize, &str)> = Vec::new();
         for pattern in CODE_COUNTERS {
@@ -309,9 +292,6 @@ fn evaluate_code(sources: &[Source], counting: &[Counting]) -> Vec<Finding> {
             }
         }
         for (index, line) in sql.lines().enumerate() {
-            if line.trim_start().starts_with("//") {
-                continue;
-            }
             let upper = line.to_uppercase();
             for pattern in SQL_COUNTERS {
                 if upper.contains(pattern) {
@@ -321,7 +301,7 @@ fn evaluate_code(sources: &[Source], counting: &[Counting]) -> Vec<Finding> {
         }
         for (line, pattern) in hits {
             if let Some(index) = allowing {
-                used.insert(index);
+                used.mark(index);
                 continue;
             }
             findings.push(Finding::at(
@@ -335,23 +315,7 @@ fn evaluate_code(sources: &[Source], counting: &[Counting]) -> Vec<Finding> {
             ));
         }
     }
-    for (index, entry) in counting.iter().enumerate() {
-        if !used.contains(&index) {
-            findings.push(Finding::at(
-                EXEMPTIONS_PATH,
-                format!(
-                    "The folder `{}` has nothing that counts any more. Remove the entry.",
-                    entry.folder
-                ),
-            ));
-        }
-        if entry.reason.trim().len() < 20 {
-            findings.push(Finding::at(
-                EXEMPTIONS_PATH,
-                format!("The folder `{}` needs a reason.", entry.folder),
-            ));
-        }
-    }
+    findings.extend(exemptions::judge(EXEMPTIONS_PATH, counting, &used));
     findings
 }
 
@@ -510,6 +474,8 @@ mod tests {
             "fn v(version: i64) -> i64 { version + 1 }\n",
             "fn n(seq: i64) -> i64 { seq + 1 }\n",
             "// count + 1 and AUTOINCREMENT in a comment\n",
+            "/* AUTOINCREMENT in a block\n   comment, and BIGSERIAL on its second line */\n",
+            "fn f() {} // AUTOINCREMENT after code\n",
             "const T: &str = \"count + 1\";\n",
             "fn label(random: [u8; 4]) -> String { String::new() }\n",
             "#[cfg(test)]\nmod tests {\n    fn t(count: u32) -> u32 { count + 1 }\n}\n",

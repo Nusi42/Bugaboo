@@ -17,8 +17,10 @@
 use std::collections::BTreeSet;
 
 use super::{Check, Context, Finding};
-use crate::repo::Repo;
-use crate::rust_source::{Source, read_product_sources, without_tests};
+use crate::rust_registry::declared_keys;
+use crate::rust_source::strip_comments;
+use crate::rust_source::without_tests;
+use crate::source::{Kind, Source};
 
 /// The only place settings are declared.
 pub(crate) const REGISTRY_FOLDER: &str = "crates/bb-core/src/settings/";
@@ -55,31 +57,20 @@ impl Check for ArchSettings {
     }
 
     fn run(&self, context: &Context<'_>) -> anyhow::Result<Vec<Finding>> {
-        let mut sources = read_product_sources(context.repo)?;
-        sources.extend(read_web_sources(context.repo)?);
+        let mut sources = context.sources(self.id(), Kind::Rust)?;
+        sources.extend(
+            context
+                .sources(self.id(), Kind::Web)?
+                .into_iter()
+                .filter(|(path, _)| !NOT_APP_CODE.iter().any(|marker| path.contains(marker))),
+        );
         Ok(evaluate(&sources))
     }
 }
 
-/// The browser app's own code (not its tests or generated files): it must not read settings by key
-/// text either.
-fn read_web_sources(repo: &Repo) -> anyhow::Result<Vec<Source>> {
-    let mut sources = Vec::new();
-    for file in repo.all_files()? {
-        let is_code = file.starts_with("web/")
-            && [".ts", ".tsx", ".mts"]
-                .iter()
-                .any(|ending| file.ends_with(ending))
-            && ![".test.", ".spec.", "/e2e/", "generated.", "node_modules"]
-                .iter()
-                .any(|marker| file.contains(marker));
-        if is_code {
-            let text = std::fs::read_to_string(repo.path(&file))?;
-            sources.push((file, text.replace("\r\n", "\n")));
-        }
-    }
-    Ok(sources)
-}
+/// Web files that are not the app's own code: tests, end-to-end tests and generated files. The app
+/// must not read settings by key text either.
+const NOT_APP_CODE: [&str; 4] = [".test.", ".spec.", "/e2e/", "generated."];
 
 /// What comes before a string that names a message of the catalog, not a setting: messages and
 /// settings are separate namespaces, so a message may have the same text as the key of a setting
@@ -111,10 +102,10 @@ fn storage_findings(sources: &[Source]) -> Vec<Finding> {
     for (path, text) in sources.iter().filter(|(path, _)| {
         path.starts_with("crates/") && !STORAGE_FILES.iter().any(|file| path.starts_with(file))
     }) {
-        for (index, line) in text.lines().enumerate() {
+        for (index, line) in strip_comments(text).lines().enumerate() {
             let by_name = line.contains(STORAGE_TABLE_NAME)
                 && TABLE_NAME_CALLS.iter().any(|call| line.contains(call));
-            if !line.trim_start().starts_with("//") && (line.contains(STORAGE_TABLE) || by_name) {
+            if line.contains(STORAGE_TABLE) || by_name {
                 findings.push(Finding::at(
                     format!("{path}:{}", index + 1),
                     format!(
@@ -137,13 +128,21 @@ fn evaluate(sources: &[Source]) -> Vec<Finding> {
         .iter()
         .filter(|(path, _)| path.starts_with(REGISTRY_FOLDER) && path.ends_with("/catalog.rs"))
     {
-        for key in declared_keys(text) {
-            if !keys.insert(key.clone()) {
-                findings.push(Finding::at(
-                    path,
-                    format!("The setting `{key}` is declared twice."),
-                ));
+        match declared_keys(text) {
+            Ok(found) => {
+                for key in found {
+                    if !keys.insert(key.clone()) {
+                        findings.push(Finding::at(
+                            path,
+                            format!("The setting `{key}` is declared twice."),
+                        ));
+                    }
+                }
             }
+            Err(error) => findings.push(Finding::at(
+                path,
+                format!("The registry cannot be read: {error:#}"),
+            )),
         }
     }
     for (path, text) in sources.iter().filter(|(path, _)| {
@@ -151,7 +150,7 @@ fn evaluate(sources: &[Source]) -> Vec<Finding> {
             && !path.starts_with(MIGRATIONS_FOLDER)
             && !path.contains("generated.")
     }) {
-        let code = without_tests(text);
+        let code = strip_comments(&without_tests(text));
         for (index, line) in code.lines().enumerate() {
             let place = format!("{path}:{}", index + 1);
             if declares(line) {
@@ -173,21 +172,9 @@ fn evaluate(sources: &[Source]) -> Vec<Finding> {
     findings
 }
 
-/// Whether the line starts a `settings! { … }` declaration (not a comment about one).
+/// Whether the line starts a `settings! { … }` declaration.
 fn declares(line: &str) -> bool {
-    let code = line.trim_start();
-    !code.starts_with("//") && (code.contains("settings! {") || code.contains("settings!{"))
-}
-
-/// The keys in `key: "…",` lines of a declaration.
-pub(crate) fn declared_keys(text: &str) -> Vec<String> {
-    text.lines()
-        .filter_map(|line| {
-            let rest = line.trim().strip_prefix("key:")?.trim();
-            let rest = rest.strip_prefix('"')?;
-            Some(rest[..rest.find('"')?].to_owned())
-        })
-        .collect()
+    line.contains("settings! {") || line.contains("settings!{")
 }
 
 #[cfg(test)]
@@ -206,8 +193,7 @@ mod tests {
             .join("\n")
     }
 
-    const DECLARATION: &str =
-        "settings! {\n    THEME: Text = {\n        key: \"appearance.theme\",\n    }\n}\n";
+    const DECLARATION: &str = "settings! {\n    THEME: Text = {\n        key: \"appearance.theme\",\n        default: \"device\",\n    }\n}\n";
 
     #[test]
     fn good_example() {
@@ -362,8 +348,8 @@ const name = t(\"appearance.theme\");
 
     #[test]
     fn the_settings_of_this_repository_pass() {
-        let repo = Repo::discover().unwrap();
-        let sources = read_product_sources(&repo).unwrap();
+        let repo = crate::repo::Repo::discover().unwrap();
+        let sources = crate::source::read_sources(&repo, None, Kind::Rust).unwrap();
         assert!(found(&sources).is_empty(), "{}", found(&sources));
     }
 }

@@ -3,6 +3,8 @@
   "first": 47200,
   "stride": 100,
   "blocks": 9,
+  "blockVariable": "BUGABOO_PORT_BLOCK",
+  "workFolderPrefix": "bugaboo.win",
   "offsets": {
     "server": 0,
     "web": 1,

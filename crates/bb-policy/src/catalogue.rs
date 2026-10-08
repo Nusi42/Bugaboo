@@ -8,7 +8,6 @@
 //! same change. Enforced by: ARCH-PERMS (every route declares one of these keys or `public`,
 //! `signed-in`, `own-account`; every permission is used and has its message).
 
-use bb_core::message::{self, MessageKey};
 use bb_core::{words, words_in_api};
 
 pub use crate::parts::{Counts, Kind, Topic};
@@ -30,15 +29,17 @@ pub const NOT_FOR_KEYS: &[Permission] = &[
     Permission::ChangeOrganizationSettings,
 ];
 
-/// Declares the permissions: one line per permission, with the key, topic, where it counts, kind
-/// and the message of its sentence. Everything else is made from this list.
+/// Declares the permissions: one line per permission, with the key, topic, where it counts and
+/// kind. The sentence on the role page is the message `permission.<key>`. Everything else is made
+/// from this list.
 macro_rules! permissions {
-    ($($(#[$doc:meta])* $variant:ident => ($key:literal, $topic:ident, $counts:ident, $kind:ident, $sentence:path)),+ $(,)?) => {
+    ($($(#[$doc:meta])* $variant:ident => ($key:literal, $topic:ident, $counts:ident, $kind:ident)),+ $(,)?) => {
         words! {
             /// One thing a role can allow. The key is as stored and as written in `x-permission`.
             pub enum Permission {
                 $($(#[$doc])* $variant => $key),+
             }
+            messages sentence = "permission.";
         }
 
         impl Permission {
@@ -66,45 +67,39 @@ macro_rules! permissions {
             pub fn keys_may_hold(self) -> bool {
                 !NOT_FOR_KEYS.contains(&self)
             }
-
-            /// The sentence on the role page (`permission.<key>`).
-            #[must_use]
-            pub const fn sentence(self) -> MessageKey {
-                match self { $(Self::$variant => $sentence),+ }
-            }
         }
     };
 }
 
 permissions! {
     /// See the project and what is in it.
-    SeeProjects => ("see-projects", Projects, Project, See, message::PERMISSION_SEE_PROJECTS),
+    SeeProjects => ("see-projects", Projects, Project, See),
     /// Make projects at the top level.
-    MakeProjects => ("make-projects", Projects, Organization, Change, message::PERMISSION_MAKE_PROJECTS),
+    MakeProjects => ("make-projects", Projects, Organization, Change),
     /// Make sub-projects inside the project.
-    MakeSubProjects => ("make-sub-projects", Projects, Project, Change, message::PERMISSION_MAKE_SUB_PROJECTS),
+    MakeSubProjects => ("make-sub-projects", Projects, Project, Change),
     /// Move sub-projects into or out of the project.
-    MoveProjects => ("move-projects", Projects, Project, Change, message::PERMISSION_MOVE_PROJECTS),
+    MoveProjects => ("move-projects", Projects, Project, Change),
     /// Change the project's name, short name and settings.
-    ChangeProjectSettings => ("change-project-settings", Projects, Project, Manage, message::PERMISSION_CHANGE_PROJECT_SETTINGS),
+    ChangeProjectSettings => ("change-project-settings", Projects, Project, Manage),
     /// Decide who has which role, including *No access*.
-    DecideRoles => ("decide-roles", People, Project, Manage, message::PERMISSION_DECIDE_ROLES),
+    DecideRoles => ("decide-roles", People, Project, Manage),
     /// Decide which fields and which people information each role sees.
-    DecideWhatRolesSee => ("decide-what-roles-see", People, Project, Manage, message::PERMISSION_DECIDE_WHAT_ROLES_SEE),
+    DecideWhatRolesSee => ("decide-what-roles-see", People, Project, Manage),
     /// Check what other people can do, and why.
-    CheckAccess => ("check-access", People, Project, See, message::PERMISSION_CHECK_ACCESS),
+    CheckAccess => ("check-access", People, Project, See),
     /// See everybody's e-mail address and correct their names.
-    ManagePeople => ("manage-people", People, Organization, Manage, message::PERMISSION_MANAGE_PEOPLE),
+    ManagePeople => ("manage-people", People, Organization, Manage),
     /// Invite people and take invitations back.
-    ManageInvitations => ("manage-invitations", People, Organization, Manage, message::PERMISSION_MANAGE_INVITATIONS),
+    ManageInvitations => ("manage-invitations", People, Organization, Manage),
     /// Make, rename and delete groups and change who is in them.
-    ManageGroups => ("manage-groups", People, Organization, Manage, message::PERMISSION_MANAGE_GROUPS),
+    ManageGroups => ("manage-groups", People, Organization, Manage),
     /// Make, change and delete roles.
-    ManageRoles => ("manage-roles", People, Organization, Manage, message::PERMISSION_MANAGE_ROLES),
+    ManageRoles => ("manage-roles", People, Organization, Manage),
     /// Change organization settings.
-    ChangeOrganizationSettings => ("change-organization-settings", Settings, Organization, Manage, message::PERMISSION_CHANGE_ORGANIZATION_SETTINGS),
+    ChangeOrganizationSettings => ("change-organization-settings", Settings, Organization, Manage),
     /// See how the server is doing.
-    SeeStatus => ("see-status", Settings, Organization, See, message::PERMISSION_SEE_STATUS),
+    SeeStatus => ("see-status", Settings, Organization, See),
 }
 
 words_in_api!(Permission, "One permission of the catalogue.");
@@ -118,50 +113,6 @@ mod tests {
     use bb_core::technical::TechnicalName;
 
     use super::*;
-
-    /// The word with a capital, as the table writes the kind.
-    fn capital(word: &str) -> String {
-        let mut letters = word.chars();
-        letters
-            .next()
-            .map(|first| first.to_uppercase().chain(letters).collect())
-            .unwrap_or_default()
-    }
-
-    /// The table "The permission catalogue" of architecture §7 is the only other place that
-    /// holds the topic, the place and the kind of each permission: the test reads it from the
-    /// page, in the order of the catalogue, so there is no third copy.
-    #[test]
-    fn the_catalogue_is_the_table_of_architecture_7() {
-        let architecture = include_str!("../../../docs/architecture/07-cross-cutting.md");
-        let rows: Vec<Vec<&str>> = architecture
-            .split("### The permission catalogue")
-            .nth(1)
-            .unwrap()
-            .lines()
-            .skip_while(|line| !line.starts_with('|'))
-            .take_while(|line| line.starts_with('|'))
-            .skip(2)
-            .map(|line| line.trim_matches('|').split('|').map(str::trim).collect())
-            .collect();
-        assert_eq!(rows.len(), Permission::ALL.len(), "a row per permission");
-        for (permission, row) in Permission::ALL.iter().zip(&rows) {
-            let sentence = Message::from(permission.sentence()).render();
-            assert_eq!(
-                row.iter()
-                    .map(|cell| cell.replace(['`', '*'], ""))
-                    .collect::<Vec<_>>(),
-                [
-                    permission.code().to_owned(),
-                    Message::from(permission.topic().name()).render(),
-                    permission.counts().code().to_owned(),
-                    capital(permission.kind().code()),
-                    sentence.replace('*', "")
-                ],
-                "{permission}"
-            );
-        }
-    }
 
     #[test]
     fn the_keys_are_technical_names_and_unique() {

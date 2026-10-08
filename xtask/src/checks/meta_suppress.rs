@@ -9,9 +9,10 @@ use std::fmt::Write as _;
 use std::fs;
 
 use super::{Check, Context, Finding};
-use crate::docs::source::{normalize, read_text};
 use crate::docs::text::has_extension;
 use crate::repo::Repo;
+use crate::rust_source::balanced;
+use crate::source::{normalize, read_text};
 
 /// Where the counted list lives, relative to the repository root.
 pub(crate) const LIST_PATH: &str = "tools/checks/suppressions.txt";
@@ -73,9 +74,7 @@ impl Check for MetaSuppress {
     fn run(&self, context: &Context<'_>) -> anyhow::Result<Vec<Finding>> {
         let scan = scan_repo(context.repo)?;
         let mut findings = scan.findings;
-        let on_disk = fs::read_to_string(context.repo.path(LIST_PATH))
-            .ok()
-            .map(|text| normalize(&text));
+        let on_disk = read_text(context.repo, LIST_PATH).ok();
         findings.extend(compare_list(&render_list(&scan.counts), on_disk.as_deref()));
         Ok(findings)
     }
@@ -243,32 +242,7 @@ fn missing_reason(place: &str) -> Finding {
 /// Cuts an attribute (or anything starting at its first parenthesis) at the parenthesis that
 /// closes it. Parentheses inside string literals do not count.
 fn cut_attribute(text: &str) -> &str {
-    let mut depth = 0_usize;
-    let mut in_string = false;
-    let mut escaped = false;
-    for (at, character) in text.char_indices() {
-        if in_string {
-            match (escaped, character) {
-                (true, _) => escaped = false,
-                (false, '\\') => escaped = true,
-                (false, '"') => in_string = false,
-                _ => {}
-            }
-            continue;
-        }
-        match character {
-            '"' => in_string = true,
-            '(' => depth += 1,
-            ')' => {
-                depth = depth.saturating_sub(1);
-                if depth == 0 {
-                    return &text[..=at];
-                }
-            }
-            _ => {}
-        }
-    }
-    text
+    balanced(text, '(').unwrap_or(text)
 }
 
 /// The `reason = "…"` text of an attribute, or an empty string when it has none.

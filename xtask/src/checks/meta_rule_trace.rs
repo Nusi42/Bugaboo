@@ -9,8 +9,9 @@
 //! `## Decision` and `## Consequences` sections (the context explains why, it does not decide).
 
 use super::{Check, Context, Finding};
-use crate::docs::source::{ADR_DIR, CODING_STANDARDS, read_adrs, read_chapters, read_text};
+use crate::docs::source::{ADR_DIR, CODING_STANDARDS, read_adrs, read_chapters};
 use crate::docs::text;
+use crate::source::read_text;
 
 /// The decision-record sections that hold rules.
 const ADR_RULE_SECTIONS: [&str; 2] = ["Decision", "Consequences"];
