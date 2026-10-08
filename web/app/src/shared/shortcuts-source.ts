@@ -1,4 +1,12 @@
 import { settingDefaults, settingKeys } from "@bugaboo/api-client";
+import {
+  browserStorage,
+  forgetStored,
+  readStored,
+  storageKey,
+  writeStored,
+  type StoreGetter,
+} from "@bugaboo/ui";
 
 import type { MySettings } from "./my-settings.ts";
 import { textOf } from "./setting-values.ts";
@@ -21,39 +29,21 @@ export interface ShortcutKeysSource {
   readonly subscribe: (listener: () => void) => () => void;
 }
 
-/** The storage of the browser, as far as the shortcut keys need it. */
-export interface KeysStore {
-  readonly getItem: (key: string) => string | null;
-  readonly setItem: (key: string, value: string) => void;
-}
-
-const storageKey = "bugaboo.shortcut-keys";
-
 /**
  * The keys kept on this device. Storage is passed as a getter because merely touching
  * `localStorage` can throw (blocked site data); then the keys last until the page is closed.
  */
-export function storageKeysSource(getStore: () => KeysStore): ShortcutKeysSource {
+export function storageKeysSource(getStore: StoreGetter = browserStorage): ShortcutKeysSource {
   const listeners = new Set<() => void>();
   let current: ShortcutOverrides | null = null;
   return {
     read: () => {
-      if (current === null) {
-        try {
-          current = parseOverrides(getStore().getItem(storageKey));
-        } catch {
-          current = {};
-        }
-      }
+      current ??= parseOverrides(readStored(storageKey.shortcutKeys, getStore));
       return current;
     },
     write: (next) => {
       current = next;
-      try {
-        getStore().setItem(storageKey, JSON.stringify(next));
-      } catch {
-        // The keys then only last until the page is closed.
-      }
+      writeStored(storageKey.shortcutKeys, JSON.stringify(next), getStore);
       for (const listener of listeners) {
         listener();
       }
@@ -69,14 +59,10 @@ export function storageKeysSource(getStore: () => KeysStore): ShortcutKeysSource
 
 /** Removes the keys this device kept (the ones of the pages before sign-in). */
 export function forgetStoredKeys(): void {
-  try {
-    localStorage.removeItem(storageKey);
-  } catch {
-    // Nothing was kept that could be removed.
-  }
+  forgetStored(storageKey.shortcutKeys);
 }
 
-let source: ShortcutKeysSource = storageKeysSource(() => localStorage);
+let source: ShortcutKeysSource = storageKeysSource();
 
 /** WP-07 calls this with a source that keeps the keys with the person's other settings. */
 export function setShortcutKeysSource(next: ShortcutKeysSource): void {

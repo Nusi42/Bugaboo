@@ -8,8 +8,8 @@ import {
   storageSource,
   themeOf,
   type Appearance,
-  type ChoiceStore,
 } from "./appearance.ts";
+import type { KeyStore } from "./storage.ts";
 import { darkThemeIds, defaultDarkTheme, defaultLightTheme, lightThemeIds } from "./tokens.ts";
 
 const blocked = (): never => {
@@ -17,7 +17,7 @@ const blocked = (): never => {
 };
 
 /** Storage in memory; `failToWrite` makes saving fail, as blocked site data does. */
-function memoryStore(failToWrite = false): ChoiceStore {
+function memoryStore(failToWrite = false): KeyStore {
   const saved = new Map<string, string>();
   return {
     getItem: (key) => saved.get(key) ?? null,
@@ -27,6 +27,7 @@ function memoryStore(failToWrite = false): ChoiceStore {
       }
       saved.set(key, value);
     },
+    removeItem: (key) => void saved.delete(key),
   };
 }
 

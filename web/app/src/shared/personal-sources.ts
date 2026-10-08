@@ -1,9 +1,13 @@
 import {
   currentSource,
   defaultAppearance,
+  forgetStored,
   forgetStoredAppearance,
   parseAppearance,
+  readStored,
   setAppearanceSource,
+  storageKey,
+  writeStored,
   type Appearance,
   type AppearanceSource,
 } from "@bugaboo/ui";
@@ -31,22 +35,12 @@ import { type ShortcutOverrides } from "./shortcuts.ts";
  * another for a moment. It goes with the sign-out, so the next person at this device finds
  * nothing of the last person's choices (M2-F13).
  */
-const FIRST_FRAME_KEY = "bugaboo.first-frame";
-
 function readFirstFrame(): string | null {
-  try {
-    return localStorage.getItem(FIRST_FRAME_KEY);
-  } catch {
-    return null;
-  }
+  return readStored(storageKey.firstFrame);
 }
 
 function writeFirstFrame(look: Appearance): void {
-  try {
-    localStorage.setItem(FIRST_FRAME_KEY, JSON.stringify(look));
-  } catch {
-    // Without it the first frame is the device's, which is all it was before.
-  }
+  writeStored(storageKey.firstFrame, JSON.stringify(look));
 }
 
 /**
@@ -67,11 +61,7 @@ function tellUnsentWatchers(): void {
 
 /** Forgets what this browser kept of the person's choices: the copy for the first frame. */
 export function forgetPersonalChoices(): void {
-  try {
-    localStorage.removeItem(FIRST_FRAME_KEY);
-  } catch {
-    // Nothing was kept that could be removed.
-  }
+  forgetStored(storageKey.firstFrame);
   unsent.look = null;
   unsent.keys = null;
 }

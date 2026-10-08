@@ -8,6 +8,14 @@ import {
   resolveTheme,
   type ThemeChoice,
 } from "./theme.ts";
+import {
+  browserStorage,
+  forgetStored,
+  readStored,
+  storageKey,
+  writeStored,
+  type StoreGetter,
+} from "./storage.ts";
 import { darkThemeIds, lightThemeIds, variants, type ThemeId } from "./tokens.ts";
 
 /** The choices of *Spacing*, as the settings registry lists them. */
@@ -133,39 +141,21 @@ export interface AppearanceSource {
   readonly subscribe: (listener: () => void) => () => void;
 }
 
-/** The storage of the browser, as far as the appearance needs it. */
-export interface ChoiceStore {
-  readonly getItem: (key: string) => string | null;
-  readonly setItem: (key: string, value: string) => void;
-}
-
-const storageKey = "bugaboo.appearance";
-
 /**
  * The appearance kept on this device. Storage is passed as a getter because merely touching
  * `localStorage` can throw (blocked site data); then the choices last until the page is closed.
  */
-export function storageSource(getStore: () => ChoiceStore): AppearanceSource {
+export function storageSource(getStore: StoreGetter = browserStorage): AppearanceSource {
   const listeners = new Set<() => void>();
   let current: Appearance | null = null;
   return {
     read: () => {
-      if (current === null) {
-        try {
-          current = parseAppearance(getStore().getItem(storageKey));
-        } catch {
-          current = defaultAppearance;
-        }
-      }
+      current ??= parseAppearance(readStored(storageKey.appearance, getStore));
       return current;
     },
     write: (next) => {
       current = next;
-      try {
-        getStore().setItem(storageKey, JSON.stringify(next));
-      } catch {
-        // The choice then only lasts until the page is closed.
-      }
+      writeStored(storageKey.appearance, JSON.stringify(next), getStore);
       for (const listener of listeners) {
         listener();
       }
@@ -181,14 +171,10 @@ export function storageSource(getStore: () => ChoiceStore): AppearanceSource {
 
 /** Removes the choices this device kept (the ones of the pages before sign-in). */
 export function forgetStoredAppearance(): void {
-  try {
-    localStorage.removeItem(storageKey);
-  } catch {
-    // Nothing was kept that could be removed.
-  }
+  forgetStored(storageKey.appearance);
 }
 
-let source: AppearanceSource = storageSource(() => localStorage);
+let source: AppearanceSource = storageSource();
 
 /** WP-07 calls this with a source that keeps the choices with the person's other settings. */
 export function setAppearanceSource(next: AppearanceSource): void {
