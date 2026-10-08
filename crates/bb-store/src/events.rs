@@ -11,13 +11,12 @@
 //! consumer that has seen position 7 can never miss a position 6 that commits later.
 
 use bb_core::event::{Actor, Channel, DomainEvent, EntityKind, EntityRef, FieldChange};
-use bb_core::id::{EntityId, EventId, UserId};
 use bb_core::outbox::OutboxEntry;
 use bb_core::technical::TechnicalName;
 use jiff::Timestamp;
 use sea_query::{Expr, ExprTrait as _, Order, Query};
 
-use crate::db::{Database, Row, Transaction, from_micros, to_micros};
+use crate::db::{Database, Row, StoredId, Transaction, from_micros, to_micros};
 use crate::error::StoreError;
 use crate::schema::{Event, Outbox, OutboxPosition};
 
@@ -59,7 +58,7 @@ impl Database {
             .columns(event_columns())
             .from(Event::Table)
             .and_where(Expr::col(Event::EntityKind).eq(entity.kind.as_str()))
-            .and_where(Expr::col(Event::EntityId).eq(entity.id.to_bytes().to_vec()))
+            .and_where(Expr::col(Event::EntityId).eq(entity.id.stored()))
             .order_by(Event::Id, Order::Asc)
             .limit(limit);
         self.fetch_all(&select)
@@ -222,7 +221,7 @@ async fn append_event(
         .get(OutboxPosition::Position)?;
 
     let (actor_kind, actor_id) = match event.actor {
-        Actor::Person(person) => (ACTOR_PERSON, Some(person.to_bytes().to_vec())),
+        Actor::Person(person) => (ACTOR_PERSON, Some(person.stored())),
         Actor::System => (ACTOR_SYSTEM, None),
     };
     let mut insert = Query::insert();
@@ -230,13 +229,13 @@ async fn append_event(
         .into_table(Event::Table)
         .columns(event_columns())
         .values([
-            Expr::val(event.id.to_bytes().to_vec()),
+            Expr::val(event.id.stored()),
             Expr::val(to_micros(event.time)),
             Expr::val(actor_kind),
             Expr::val(actor_id),
             Expr::val(event.channel.code()),
             Expr::val(event.entity.kind.as_str()),
-            Expr::val(event.entity.id.to_bytes().to_vec()),
+            Expr::val(event.entity.id.stored()),
             Expr::val(serde_json::to_string(&event.changes)?),
             Expr::val(event.reason.clone()),
         ])
@@ -249,7 +248,7 @@ async fn append_event(
         .columns([Outbox::Position, Outbox::EventId, Outbox::CreatedAt])
         .values([
             Expr::val(position),
-            Expr::val(event.id.to_bytes().to_vec()),
+            Expr::val(event.id.stored()),
             Expr::val(to_micros(event.time)),
         ])
         .map_err(|_| StoreError::Corrupt("an outbox entry"))?;
@@ -274,19 +273,15 @@ fn event_columns() -> [Event; 9] {
 fn read_event(row: &Row) -> Result<DomainEvent, StoreError> {
     let actor = match row.get::<String>(Event::ActorKind)?.as_str() {
         ACTOR_PERSON => Actor::Person(
-            UserId::from_bytes(
-                row.optional_id_bytes(Event::ActorId)?
-                    .ok_or(StoreError::Corrupt("an actor"))?,
-            )
-            .map_err(|_| StoreError::Corrupt("an actor"))?,
+            row.optional_id(Event::ActorId)?
+                .ok_or(StoreError::Corrupt("an actor"))?,
         ),
         ACTOR_SYSTEM => Actor::System,
         _ => return Err(StoreError::Corrupt("an actor")),
     };
     let changes: Vec<FieldChange> = serde_json::from_str(&row.get::<String>(Event::Changes)?)?;
     Ok(DomainEvent {
-        id: EventId::from_bytes(row.id_bytes(Event::Id)?)
-            .map_err(|_| StoreError::Corrupt("an event ID"))?,
+        id: row.id(Event::Id)?,
         time: from_micros(row.get(Event::Time)?)?,
         actor,
         channel: Channel::from_code(&row.get::<String>(Event::Channel)?)
@@ -294,8 +289,7 @@ fn read_event(row: &Row) -> Result<DomainEvent, StoreError> {
         entity: EntityRef {
             kind: EntityKind::new(&row.get::<String>(Event::EntityKind)?)
                 .map_err(|_| StoreError::Corrupt("a kind of record"))?,
-            id: EntityId::from_bytes(row.id_bytes(Event::EntityId)?)
-                .map_err(|_| StoreError::Corrupt("a record ID"))?,
+            id: row.id(Event::EntityId)?,
         },
         changes,
         reason: row.get(Event::Reason)?,

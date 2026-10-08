@@ -13,7 +13,7 @@ use bb_core::technical::TechnicalName;
 use jiff::{SignedDuration, Timestamp};
 use sea_query::{Expr, ExprTrait as _, LockBehavior, LockType, Order, Query};
 
-use crate::db::{Database, Dialect, Row, Transaction, to_micros};
+use crate::db::{Database, Dialect, Row, StoredId, Transaction, to_micros};
 use crate::error::StoreError;
 use crate::schema::{Computed, Job as Columns};
 
@@ -162,7 +162,7 @@ impl Database {
         let mut delete = Query::delete();
         delete
             .from_table(Columns::Table)
-            .and_where(Expr::col(Columns::Id).eq(id.to_bytes().to_vec()))
+            .and_where(Expr::col(Columns::Id).eq(id.stored()))
             .and_where(Expr::col(Columns::LeaseOwner).eq(worker.as_str()));
         Ok(self.execute(&delete).await? > 0)
     }
@@ -185,7 +185,7 @@ impl Database {
         select
             .columns([Columns::Attempts, Columns::MaxAttempts])
             .from(Columns::Table)
-            .and_where(Expr::col(Columns::Id).eq(id.to_bytes().to_vec()))
+            .and_where(Expr::col(Columns::Id).eq(id.stored()))
             .and_where(Expr::col(Columns::LeaseOwner).eq(worker.as_str()));
         let Some(row) = transaction.fetch_optional(&select).await? else {
             return Ok(None);
@@ -205,7 +205,7 @@ impl Database {
             .value(Columns::LeaseOwner, Option::<String>::None)
             .value(Columns::LeaseUntil, Option::<i64>::None)
             .value(Columns::LastFailure, failure.as_str())
-            .and_where(Expr::col(Columns::Id).eq(id.to_bytes().to_vec()));
+            .and_where(Expr::col(Columns::Id).eq(id.stored()));
         match outcome {
             FailureOutcome::Dead => {
                 update.value(Columns::State, JobState::Dead.code());
@@ -252,7 +252,7 @@ impl Database {
             .value(Columns::Attempts, 0_i64)
             .value(Columns::RunAt, to_micros(now))
             .value(Columns::LastFailure, Option::<String>::None)
-            .and_where(Expr::col(Columns::Id).eq(id.to_bytes().to_vec()))
+            .and_where(Expr::col(Columns::Id).eq(id.stored()))
             .and_where(Expr::col(Columns::State).eq(JobState::Dead.code()));
         Ok(self.execute(&update).await? > 0)
     }
@@ -292,7 +292,7 @@ pub(crate) async fn enqueue(
         .into_table(Columns::Table)
         .columns(all_columns())
         .values([
-            Expr::val(id.to_bytes().to_vec()),
+            Expr::val(id.stored()),
             Expr::val(job.kind.as_str()),
             Expr::val(serde_json::to_string(&job.payload)?),
             Expr::val(to_micros(job.run_at)),
@@ -337,8 +337,7 @@ fn technical(row: &Row, column: Columns) -> Result<Option<TechnicalName>, StoreE
 
 fn read_job(row: &Row) -> Result<Job, StoreError> {
     Ok(Job {
-        id: JobId::from_bytes(row.id_bytes(Columns::Id)?)
-            .map_err(|_| StoreError::Corrupt("a job ID"))?,
+        id: row.id(Columns::Id)?,
         kind: TechnicalName::new(&row.get::<String>(Columns::Kind)?)
             .map_err(|_| StoreError::Corrupt("a job kind"))?,
         payload: serde_json::from_str(&row.get::<String>(Columns::Payload)?)?,

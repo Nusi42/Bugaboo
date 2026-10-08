@@ -9,6 +9,10 @@
 use std::str::FromStr as _;
 use std::time::Duration;
 
+use bb_core::id::{
+    AccessKeyId, AssignmentId, EntityId, EventId, GroupId, IdError, InvitationId, JobId, PasskeyId,
+    ProjectId, RoleId, SessionId, UserId,
+};
 use jiff::Timestamp;
 use sea_query::{
     DeleteStatement, Iden, InsertStatement, PostgresQueryBuilder, SchemaStatementBuilder,
@@ -473,18 +477,18 @@ impl Row {
     }
 
     /// An ID stored as 16 bytes.
-    pub(crate) fn id_bytes(&self, column: impl Iden + Copy) -> Result<[u8; 16], StoreError> {
+    pub(crate) fn id<T: StoredId>(&self, column: impl Iden + Copy) -> Result<T, StoreError> {
         let bytes: Vec<u8> = self.get(column)?;
-        <[u8; 16]>::try_from(bytes).map_err(|_| StoreError::Corrupt("an ID"))
+        T::read(bytes)
     }
 
     /// An ID that may be missing.
-    pub(crate) fn optional_id_bytes(
+    pub(crate) fn optional_id<T: StoredId>(
         &self,
         column: impl Iden + Copy,
-    ) -> Result<Option<[u8; 16]>, StoreError> {
+    ) -> Result<Option<T>, StoreError> {
         self.get::<Option<Vec<u8>>>(column)?
-            .map(|bytes| <[u8; 16]>::try_from(bytes).map_err(|_| StoreError::Corrupt("an ID")))
+            .map(T::read)
             .transpose()
     }
 
@@ -503,6 +507,63 @@ impl Row {
             .transpose()
     }
 }
+
+/// An ID as the database holds it: 16 bytes. Writing and reading go through here, so no module
+/// has its own copy of the conversion or its own wording for "this row cannot be read".
+pub(crate) trait StoredId: Copy {
+    /// What the ID is, for the report of a stored value that is not one.
+    const WHAT: &'static str;
+
+    /// The ID with these bytes, if they are one.
+    fn from_stored(bytes: [u8; 16]) -> Result<Self, IdError>;
+
+    /// The 16 bytes of the ID.
+    fn to_stored(self) -> [u8; 16];
+
+    /// The bytes as a value to bind to a query.
+    fn stored(self) -> Vec<u8> {
+        self.to_stored().to_vec()
+    }
+
+    /// The ID stored in `bytes`, or the report that the row is corrupt.
+    fn read(bytes: Vec<u8>) -> Result<Self, StoreError> {
+        <[u8; 16]>::try_from(bytes)
+            .ok()
+            .and_then(|bytes| Self::from_stored(bytes).ok())
+            .ok_or(StoreError::Corrupt(Self::WHAT))
+    }
+}
+
+macro_rules! stored_ids {
+    ($($ty:ident => $what:literal),+ $(,)?) => {
+        $(impl StoredId for $ty {
+            const WHAT: &'static str = $what;
+
+            fn from_stored(bytes: [u8; 16]) -> Result<Self, IdError> {
+                Self::from_bytes(bytes)
+            }
+
+            fn to_stored(self) -> [u8; 16] {
+                self.to_bytes()
+            }
+        })+
+    };
+}
+
+stored_ids!(
+    AccessKeyId => "an access key ID",
+    AssignmentId => "an assignment ID",
+    EntityId => "a record ID",
+    EventId => "an event ID",
+    GroupId => "a group ID",
+    InvitationId => "an invitation ID",
+    JobId => "a job ID",
+    PasskeyId => "a passkey ID",
+    ProjectId => "a project ID",
+    RoleId => "a role ID",
+    SessionId => "a session ID",
+    UserId => "a person ID",
+);
 
 /// A moment as it is stored: microseconds since 1970 (UTC), the same whole number in both databases.
 pub(crate) fn to_micros(time: Timestamp) -> i64 {

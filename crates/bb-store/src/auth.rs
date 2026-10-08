@@ -14,7 +14,7 @@ use bb_app::auth::{
 };
 use bb_app::ports::{BoxFuture, ChangeStore};
 use bb_core::event::DomainEvent;
-use bb_core::id::{AccessKeyId, IdError, InvitationId, PasskeyId, RoleId, SessionId, UserId};
+use bb_core::id::{AccessKeyId, InvitationId, PasskeyId, RoleId, SessionId, UserId};
 use bb_core::network::NetworkPrefix;
 use bb_core::person::Person;
 use bb_core::security_log::Digest;
@@ -32,7 +32,7 @@ use sea_query::{BinOper, Cond, Expr, ExprTrait as _, Func, Order, Query};
 use zeroize::Zeroizing;
 
 use crate::anchor::LogSeal;
-use crate::db::{Database, Row, Transaction, to_micros};
+use crate::db::{Database, Row, StoredId, Transaction, to_micros};
 use crate::error::{SecretProblem, StoreError};
 use crate::keys::KeyRing;
 use crate::schema::{
@@ -87,17 +87,13 @@ impl ChangeStore for AuthStorage {
     }
 }
 
-fn corrupt(what: &'static str) -> impl Fn(IdError) -> StoreError {
-    move |_| StoreError::Corrupt(what)
-}
-
 fn digest(bytes: &[u8]) -> Result<Digest, StoreError> {
     Digest::from_slice(bytes).ok_or(StoreError::Corrupt("a hash"))
 }
 
 fn read_person(row: &Row) -> Result<Person, StoreError> {
     Ok(Person {
-        id: UserId::from_bytes(row.id_bytes(PersonRow::Id)?).map_err(corrupt("a person ID"))?,
+        id: row.id::<UserId>(PersonRow::Id)?,
         display_name: row.get(PersonRow::DisplayName)?,
         email: row.get(PersonRow::Email)?,
         created_at: row.time(PersonRow::CreatedAt)?,
@@ -128,10 +124,8 @@ fn session_columns() -> [SessionColumns; 8] {
 
 fn read_session(row: &Row) -> Result<SignInSession, StoreError> {
     Ok(SignInSession {
-        id: SessionId::from_bytes(row.id_bytes(SessionColumns::Id)?)
-            .map_err(corrupt("a session ID"))?,
-        person: UserId::from_bytes(row.id_bytes(SessionColumns::Person)?)
-            .map_err(corrupt("a person ID"))?,
+        id: row.id::<SessionId>(SessionColumns::Id)?,
+        person: row.id::<UserId>(SessionColumns::Person)?,
         token_hash: digest(&row.get::<Vec<u8>>(SessionColumns::TokenHash)?)?,
         stage: SessionStage::from_code(&row.get::<String>(SessionColumns::Stage)?)
             .ok_or(StoreError::Corrupt("a session stage"))?,
@@ -159,10 +153,8 @@ fn passkey_columns() -> [PasskeyRow; 7] {
 
 fn read_passkey(row: &Row) -> Result<StoredPasskey, StoreError> {
     Ok(StoredPasskey {
-        id: PasskeyId::from_bytes(row.id_bytes(PasskeyRow::Id)?)
-            .map_err(corrupt("a passkey ID"))?,
-        person: UserId::from_bytes(row.id_bytes(PasskeyRow::Person)?)
-            .map_err(corrupt("a person ID"))?,
+        id: row.id::<PasskeyId>(PasskeyRow::Id)?,
+        person: row.id::<UserId>(PasskeyRow::Person)?,
         credential_id: row.get(PasskeyRow::CredentialId)?,
         data: row.get(PasskeyRow::Data)?,
         label: row.get(PasskeyRow::Label)?,
@@ -185,12 +177,10 @@ fn invitation_columns() -> [InvitationColumns; 7] {
 
 fn read_invitation(row: &Row) -> Result<Invitation, StoreError> {
     Ok(Invitation {
-        id: InvitationId::from_bytes(row.id_bytes(InvitationColumns::Id)?)
-            .map_err(corrupt("an invitation ID"))?,
+        id: row.id::<InvitationId>(InvitationColumns::Id)?,
         token_hash: digest(&row.get::<Vec<u8>>(InvitationColumns::TokenHash)?)?,
         email: row.get(InvitationColumns::Email)?,
-        invited_by: UserId::from_bytes(row.id_bytes(InvitationColumns::InvitedBy)?)
-            .map_err(corrupt("a person ID"))?,
+        invited_by: row.id::<UserId>(InvitationColumns::InvitedBy)?,
         created_at: row.time(InvitationColumns::CreatedAt)?,
         expires_at: row.time(InvitationColumns::ExpiresAt)?,
         used_at: row.optional_time(InvitationColumns::UsedAt)?,
@@ -207,10 +197,6 @@ fn wildcards_removed(words: &str) -> String {
         .collect()
 }
 
-fn person_bytes(person: UserId) -> Vec<u8> {
-    person.to_bytes().to_vec()
-}
-
 fn totp_name(person: UserId) -> Result<TechnicalName, StoreError> {
     TechnicalName::new(&format!("{TOTP_SECRET_PREFIX}{person}"))
         .map_err(|_| StoreError::Corrupt("a secret name"))
@@ -222,7 +208,7 @@ impl AuthStorage {
         select
             .columns(person_columns())
             .from(PersonRow::Table)
-            .and_where(Expr::col(PersonRow::Id).eq(person_bytes(id)));
+            .and_where(Expr::col(PersonRow::Id).eq(id.stored()));
         self.database
             .fetch_optional(&select)
             .await?
@@ -330,7 +316,7 @@ impl AuthStore for AuthStorage {
                 Cond::any().add(Expr::expr(name()).gt(last())).add(
                     Cond::all()
                         .add(Expr::expr(name()).eq(last()))
-                        .add(Expr::col(PersonRow::Id).gt(person_bytes(position.id))),
+                        .add(Expr::col(PersonRow::Id).gt(position.id.stored())),
                 ),
             );
         }
@@ -363,7 +349,7 @@ impl AuthStore for AuthStorage {
         select
             .columns(session_columns())
             .from(SessionColumns::Table)
-            .and_where(Expr::col(SessionColumns::Person).eq(person_bytes(person)))
+            .and_where(Expr::col(SessionColumns::Person).eq(person.stored()))
             .order_by(SessionColumns::CreatedAt, Order::Desc)
             .order_by(SessionColumns::Id, Order::Asc);
         self.database
@@ -399,7 +385,7 @@ impl AuthStore for AuthStorage {
                 TwoStepColumns::CreatedAt,
             ])
             .from(TwoStepColumns::Table)
-            .and_where(Expr::col(TwoStepColumns::Person).eq(person_bytes(person)));
+            .and_where(Expr::col(TwoStepColumns::Person).eq(person.stored()));
         let Some(row) = self.database.fetch_optional(&select).await? else {
             return Ok(None);
         };
@@ -428,7 +414,7 @@ impl AuthStore for AuthStorage {
         select
             .expr_as(Expr::col(BackupCode::CodeHash).count(), Computed::Total)
             .from(BackupCode::Table)
-            .and_where(Expr::col(BackupCode::Person).eq(person_bytes(person)))
+            .and_where(Expr::col(BackupCode::Person).eq(person.stored()))
             .and_where(Expr::col(BackupCode::UsedAt).is_null());
         self.count(&select).await
     }
@@ -438,7 +424,7 @@ impl AuthStore for AuthStorage {
         select
             .columns(passkey_columns())
             .from(PasskeyRow::Table)
-            .and_where(Expr::col(PasskeyRow::Person).eq(person_bytes(person)))
+            .and_where(Expr::col(PasskeyRow::Person).eq(person.stored()))
             .order_by(PasskeyRow::CreatedAt, Order::Asc)
             .order_by(PasskeyRow::Id, Order::Asc);
         self.database
@@ -487,7 +473,7 @@ impl AuthStore for AuthStorage {
                     .add(
                         Cond::all()
                             .add(Expr::col(InvitationColumns::CreatedAt).eq(micros))
-                            .add(Expr::col(InvitationColumns::Id).gt(id.to_bytes().to_vec())),
+                            .add(Expr::col(InvitationColumns::Id).gt(id.stored())),
                     ),
             );
         }
@@ -573,7 +559,7 @@ impl AuthStore for AuthStorage {
         update
             .table(SessionColumns::Table)
             .value(SessionColumns::LastSeenAt, to_micros(at))
-            .and_where(Expr::col(SessionColumns::Id).eq(id.to_bytes().to_vec()))
+            .and_where(Expr::col(SessionColumns::Id).eq(id.stored()))
             .and_where(Expr::col(SessionColumns::LastSeenAt).lt(to_micros(at)));
         self.database.execute(&update).await.map(|_| ())
     }
@@ -622,7 +608,7 @@ impl AuthStore for AuthStorage {
             .into_table(PersonRow::Table)
             .columns(person_columns())
             .values([
-                Expr::val(person_bytes(person.id)),
+                Expr::val(person.id.stored()),
                 Expr::val(person.display_name.as_str()),
                 Expr::val(person.email.as_str()),
                 Expr::val(to_micros(person.created_at)),
@@ -638,7 +624,7 @@ impl AuthStore for AuthStorage {
                 PasswordLogin::ChangedAt,
             ])
             .values([
-                Expr::val(person_bytes(person.id)),
+                Expr::val(person.id.stored()),
                 Expr::val(password_hash),
                 Expr::val(to_micros(at)),
             ])
@@ -657,7 +643,7 @@ impl AuthStore for AuthStorage {
             .table(PasswordLogin::Table)
             .value(PasswordLogin::Hash, password_hash)
             .value(PasswordLogin::ChangedAt, to_micros(at))
-            .and_where(Expr::col(PasswordLogin::Person).eq(person_bytes(person)));
+            .and_where(Expr::col(PasswordLogin::Person).eq(person.stored()));
         if transaction.execute(&update).await? > 0 {
             return Ok(());
         }
@@ -671,7 +657,7 @@ impl AuthStore for AuthStorage {
                 PasswordLogin::ChangedAt,
             ])
             .values([
-                Expr::val(person_bytes(person)),
+                Expr::val(person.stored()),
                 Expr::val(password_hash),
                 Expr::val(to_micros(at)),
             ])
@@ -688,8 +674,8 @@ impl AuthStore for AuthStorage {
             .into_table(SessionColumns::Table)
             .columns(session_columns())
             .values([
-                Expr::val(session.id.to_bytes().to_vec()),
-                Expr::val(person_bytes(session.person)),
+                Expr::val(session.id.stored()),
+                Expr::val(session.person.stored()),
                 Expr::val(session.token_hash.as_bytes().to_vec()),
                 Expr::val(session.stage.code()),
                 Expr::val(to_micros(session.created_at)),
@@ -708,7 +694,7 @@ impl AuthStore for AuthStorage {
         let mut delete = Query::delete();
         delete
             .from_table(SessionColumns::Table)
-            .and_where(Expr::col(SessionColumns::Id).eq(id.to_bytes().to_vec()));
+            .and_where(Expr::col(SessionColumns::Id).eq(id.stored()));
         Ok(transaction.execute(&delete).await? > 0)
     }
 
@@ -720,9 +706,9 @@ impl AuthStore for AuthStorage {
         let mut delete = Query::delete();
         delete
             .from_table(SessionColumns::Table)
-            .and_where(Expr::col(SessionColumns::Person).eq(person_bytes(person)));
+            .and_where(Expr::col(SessionColumns::Person).eq(person.stored()));
         if let Some(except) = except {
-            delete.and_where(Expr::col(SessionColumns::Id).ne(except.to_bytes().to_vec()));
+            delete.and_where(Expr::col(SessionColumns::Id).ne(except.stored()));
         }
         transaction.execute(&delete).await
     }
@@ -757,7 +743,7 @@ impl AuthStore for AuthStorage {
         let mut delete = Query::delete();
         delete
             .from_table(TwoStepColumns::Table)
-            .and_where(Expr::col(TwoStepColumns::Person).eq(person_bytes(step.person)));
+            .and_where(Expr::col(TwoStepColumns::Person).eq(step.person.stored()));
         transaction.execute(&delete).await?;
         let mut insert = Query::insert();
         insert
@@ -769,7 +755,7 @@ impl AuthStore for AuthStorage {
                 TwoStepColumns::CreatedAt,
             ])
             .values([
-                Expr::val(person_bytes(step.person)),
+                Expr::val(step.person.stored()),
                 Expr::val(step.confirmed),
                 Expr::val(step.last_step),
                 Expr::val(to_micros(step.created_at)),
@@ -786,7 +772,7 @@ impl AuthStore for AuthStorage {
         update
             .table(TwoStepColumns::Table)
             .value(TwoStepColumns::Confirmed, true)
-            .and_where(Expr::col(TwoStepColumns::Person).eq(person_bytes(person)));
+            .and_where(Expr::col(TwoStepColumns::Person).eq(person.stored()));
         transaction.execute(&update).await.map(|_| ())
     }
 
@@ -797,12 +783,12 @@ impl AuthStore for AuthStorage {
         let mut codes = Query::delete();
         codes
             .from_table(BackupCode::Table)
-            .and_where(Expr::col(BackupCode::Person).eq(person_bytes(person)));
+            .and_where(Expr::col(BackupCode::Person).eq(person.stored()));
         transaction.execute(&codes).await?;
         let mut delete = Query::delete();
         delete
             .from_table(TwoStepColumns::Table)
-            .and_where(Expr::col(TwoStepColumns::Person).eq(person_bytes(person)));
+            .and_where(Expr::col(TwoStepColumns::Person).eq(person.stored()));
         transaction.execute(&delete).await.map(|_| ())
     }
 
@@ -816,7 +802,7 @@ impl AuthStore for AuthStorage {
         update
             .table(TwoStepColumns::Table)
             .value(TwoStepColumns::LastStep, step)
-            .and_where(Expr::col(TwoStepColumns::Person).eq(person_bytes(person)))
+            .and_where(Expr::col(TwoStepColumns::Person).eq(person.stored()))
             .and_where(Expr::col(TwoStepColumns::LastStep).lt(step));
         Ok(transaction.execute(&update).await? > 0)
     }
@@ -829,7 +815,7 @@ impl AuthStore for AuthStorage {
         let mut delete = Query::delete();
         delete
             .from_table(BackupCode::Table)
-            .and_where(Expr::col(BackupCode::Person).eq(person_bytes(person)));
+            .and_where(Expr::col(BackupCode::Person).eq(person.stored()));
         transaction.execute(&delete).await?;
         for hash in hashes {
             let mut insert = Query::insert();
@@ -837,7 +823,7 @@ impl AuthStore for AuthStorage {
                 .into_table(BackupCode::Table)
                 .columns([BackupCode::Person, BackupCode::CodeHash, BackupCode::UsedAt])
                 .values([
-                    Expr::val(person_bytes(person)),
+                    Expr::val(person.stored()),
                     Expr::val(hash.as_bytes().to_vec()),
                     Expr::val(Option::<i64>::None),
                 ])
@@ -857,7 +843,7 @@ impl AuthStore for AuthStorage {
         update
             .table(BackupCode::Table)
             .value(BackupCode::UsedAt, to_micros(at))
-            .and_where(Expr::col(BackupCode::Person).eq(person_bytes(person)))
+            .and_where(Expr::col(BackupCode::Person).eq(person.stored()))
             .and_where(Expr::col(BackupCode::CodeHash).eq(hash.as_bytes().to_vec()))
             .and_where(Expr::col(BackupCode::UsedAt).is_null());
         Ok(transaction.execute(&update).await? > 0)
@@ -872,8 +858,8 @@ impl AuthStore for AuthStorage {
             .into_table(PasskeyRow::Table)
             .columns(passkey_columns())
             .values([
-                Expr::val(passkey.id.to_bytes().to_vec()),
-                Expr::val(person_bytes(passkey.person)),
+                Expr::val(passkey.id.stored()),
+                Expr::val(passkey.person.stored()),
                 Expr::val(passkey.credential_id.clone()),
                 Expr::val(passkey.data.as_str()),
                 Expr::val(passkey.label.as_str()),
@@ -894,7 +880,7 @@ impl AuthStore for AuthStorage {
         update
             .table(PasskeyRow::Table)
             .value(PasskeyRow::LastUsedAt, to_micros(at))
-            .and_where(Expr::col(PasskeyRow::Id).eq(id.to_bytes().to_vec()));
+            .and_where(Expr::col(PasskeyRow::Id).eq(id.stored()));
         if let Some(data) = data {
             update.value(PasskeyRow::Data, data);
         }
@@ -909,8 +895,8 @@ impl AuthStore for AuthStorage {
         let mut delete = Query::delete();
         delete
             .from_table(PasskeyRow::Table)
-            .and_where(Expr::col(PasskeyRow::Id).eq(id.to_bytes().to_vec()))
-            .and_where(Expr::col(PasskeyRow::Person).eq(person_bytes(person)));
+            .and_where(Expr::col(PasskeyRow::Id).eq(id.stored()))
+            .and_where(Expr::col(PasskeyRow::Person).eq(person.stored()));
         Ok(transaction.execute(&delete).await? > 0)
     }
 
@@ -945,10 +931,10 @@ impl AuthStore for AuthStorage {
             .into_table(InvitationColumns::Table)
             .columns(invitation_columns())
             .values([
-                Expr::val(invitation.id.to_bytes().to_vec()),
+                Expr::val(invitation.id.stored()),
                 Expr::val(invitation.token_hash.as_bytes().to_vec()),
                 Expr::val(invitation.email.as_str()),
-                Expr::val(person_bytes(invitation.invited_by)),
+                Expr::val(invitation.invited_by.stored()),
                 Expr::val(to_micros(invitation.created_at)),
                 Expr::val(to_micros(invitation.expires_at)),
                 Expr::val(invitation.used_at.map(to_micros)),
@@ -964,7 +950,7 @@ impl AuthStore for AuthStorage {
         let mut delete = Query::delete();
         delete
             .from_table(InvitationColumns::Table)
-            .and_where(Expr::col(InvitationColumns::Id).eq(id.to_bytes().to_vec()));
+            .and_where(Expr::col(InvitationColumns::Id).eq(id.stored()));
         Ok(transaction.execute(&delete).await? > 0)
     }
 
@@ -977,7 +963,7 @@ impl AuthStore for AuthStorage {
         update
             .table(InvitationColumns::Table)
             .value(InvitationColumns::UsedAt, to_micros(now))
-            .and_where(Expr::col(InvitationColumns::Id).eq(id.to_bytes().to_vec()))
+            .and_where(Expr::col(InvitationColumns::Id).eq(id.stored()))
             .and_where(Expr::col(InvitationColumns::UsedAt).is_null())
             .and_where(Expr::col(InvitationColumns::ExpiresAt).gt(to_micros(now)));
         Ok(transaction.execute(&update).await? > 0)

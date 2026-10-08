@@ -26,7 +26,7 @@ use crate::chain::{
     BLOCK_SIZE, BreakReason, CHECKPOINT_DOMAIN, START, Verification, Verifier, checkpoint_message,
     hash_of,
 };
-use crate::db::{Database, Row, Transaction, to_micros};
+use crate::db::{Database, Row, StoredId, Transaction, to_micros};
 use crate::error::{SecretProblem, StoreError};
 use crate::keys::SigningKey;
 use crate::schema::{Computed, SecurityLog as Columns, SecurityLogCheckpoint as Checkpoint};
@@ -113,15 +113,10 @@ impl Database {
             .values([
                 Expr::val(entry.seq),
                 Expr::val(to_micros(entry.time)),
-                Expr::val(entry.person.map(|person| person.to_bytes().to_vec())),
+                Expr::val(entry.person.map(|person| person.stored())),
                 Expr::val(entry.action.as_str()),
                 Expr::val(entry.subject.as_ref().map(|subject| subject.kind.as_str())),
-                Expr::val(
-                    entry
-                        .subject
-                        .as_ref()
-                        .map(|subject| subject.id.to_bytes().to_vec()),
-                ),
+                Expr::val(entry.subject.as_ref().map(|subject| subject.id.stored())),
                 Expr::val(entry.network.as_ref().map(NetworkPrefix::as_str)),
                 Expr::val(entry.previous_hash.as_bytes().to_vec()),
                 Expr::val(entry.hash.as_bytes().to_vec()),
@@ -661,11 +656,11 @@ fn entry_columns() -> [Columns; 9] {
 fn read_entry(row: &Row) -> Result<SecurityLogEntry, StoreError> {
     let subject = match (
         row.get::<Option<String>>(Columns::SubjectKind)?,
-        row.optional_id_bytes(Columns::SubjectId)?,
+        row.optional_id::<EntityId>(Columns::SubjectId)?,
     ) {
         (Some(kind), Some(id)) => Some(EntityRef {
             kind: EntityKind::new(&kind).map_err(|_| StoreError::Corrupt("a kind of record"))?,
-            id: EntityId::from_bytes(id).map_err(|_| StoreError::Corrupt("a record ID"))?,
+            id,
         }),
         (None, None) => None,
         _ => return Err(StoreError::Corrupt("a subject")),
@@ -673,10 +668,7 @@ fn read_entry(row: &Row) -> Result<SecurityLogEntry, StoreError> {
     Ok(SecurityLogEntry {
         seq: row.get(Columns::Seq)?,
         time: row.time(Columns::Time)?,
-        person: row
-            .optional_id_bytes(Columns::Person)?
-            .map(|bytes| UserId::from_bytes(bytes).map_err(|_| StoreError::Corrupt("a person ID")))
-            .transpose()?,
+        person: row.optional_id(Columns::Person)?,
         action: TechnicalName::new(&row.get::<String>(Columns::Action)?)
             .map_err(|_| StoreError::Corrupt("an action"))?,
         subject,

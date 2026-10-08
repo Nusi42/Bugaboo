@@ -10,14 +10,14 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use bb_app::auth::{AccessKeyRecord, ProjectChoice};
 use bb_core::access_key::{AccessKey, KeyChoice};
-use bb_core::id::{AccessKeyId, IdError, ProjectId, RoleId, UserId};
+use bb_core::id::{AccessKeyId, ProjectId, RoleId, UserId};
 use bb_core::security_log::Digest;
 use bb_core::settings::SECURITY_TWO_STEP_REQUIRED;
 use bb_policy::Permission;
 use jiff::Timestamp;
 use sea_query::{Cond, Expr, ExprTrait as _, Order, Query};
 
-use crate::db::{Database, Row, Transaction, to_micros};
+use crate::db::{Database, Row, StoredId, Transaction, to_micros};
 use crate::error::StoreError;
 use crate::schema::{
     AccessKeyPermissionRow, AccessKeyProjectRow, AccessKeyRow, AssignmentRow, GroupMemberRow,
@@ -28,14 +28,6 @@ use crate::settings::Scopes;
 /// How many people are asked about at once, so the list of IDs stays below what the databases
 /// take in one statement.
 const CHUNK: usize = 500;
-
-fn corrupt(what: &'static str) -> impl Fn(IdError) -> StoreError {
-    move |_| StoreError::Corrupt(what)
-}
-
-fn bytes(id: [u8; 16]) -> Vec<u8> {
-    id.to_vec()
-}
 
 fn key_columns() -> [AccessKeyRow; 9] {
     [
@@ -53,10 +45,8 @@ fn key_columns() -> [AccessKeyRow; 9] {
 
 fn read_key(row: &Row) -> Result<AccessKey, StoreError> {
     Ok(AccessKey {
-        id: AccessKeyId::from_bytes(row.id_bytes(AccessKeyRow::Id)?)
-            .map_err(corrupt("an access key ID"))?,
-        owner: UserId::from_bytes(row.id_bytes(AccessKeyRow::Owner)?)
-            .map_err(corrupt("a person ID"))?,
+        id: row.id::<AccessKeyId>(AccessKeyRow::Id)?,
+        owner: row.id::<UserId>(AccessKeyRow::Owner)?,
         name: row.get(AccessKeyRow::Name)?,
         prefix: row.get(AccessKeyRow::Prefix)?,
         secret_hash: Digest::from_slice(&row.get::<Vec<u8>>(AccessKeyRow::SecretHash)?)
@@ -77,7 +67,7 @@ async fn with_scope(
     if keys.is_empty() {
         return Ok(Vec::new());
     }
-    let ids: Vec<Vec<u8>> = keys.iter().map(|key| bytes(key.id.to_bytes())).collect();
+    let ids: Vec<Vec<u8>> = keys.iter().map(|key| key.id.stored()).collect();
     let mut permissions: BTreeMap<AccessKeyId, Vec<Permission>> = BTreeMap::new();
     let mut select = Query::select();
     select
@@ -89,8 +79,7 @@ async fn with_scope(
         .and_where(Expr::col(AccessKeyPermissionRow::Key).is_in(ids.clone()))
         .order_by(AccessKeyPermissionRow::Permission, Order::Asc);
     for row in database.fetch_all(&select).await? {
-        let key = AccessKeyId::from_bytes(row.id_bytes(AccessKeyPermissionRow::Key)?)
-            .map_err(corrupt("an access key ID"))?;
+        let key = row.id::<AccessKeyId>(AccessKeyPermissionRow::Key)?;
         // A permission that this program does not know any more is left out: the key can only
         // do less because of it, never more.
         if let Some(permission) =
@@ -107,10 +96,8 @@ async fn with_scope(
         .and_where(Expr::col(AccessKeyProjectRow::Key).is_in(ids))
         .order_by(AccessKeyProjectRow::Project, Order::Asc);
     for row in database.fetch_all(&select).await? {
-        let key = AccessKeyId::from_bytes(row.id_bytes(AccessKeyProjectRow::Key)?)
-            .map_err(corrupt("an access key ID"))?;
-        let project = ProjectId::from_bytes(row.id_bytes(AccessKeyProjectRow::Project)?)
-            .map_err(corrupt("a project ID"))?;
+        let key = row.id::<AccessKeyId>(AccessKeyProjectRow::Key)?;
+        let project = row.id::<ProjectId>(AccessKeyProjectRow::Project)?;
         projects.entry(key).or_default().push(project);
     }
     Ok(keys
@@ -151,7 +138,7 @@ impl Database {
         select
             .columns(key_columns())
             .from(AccessKeyRow::Table)
-            .and_where(Expr::col(AccessKeyRow::Owner).eq(bytes(owner.to_bytes())))
+            .and_where(Expr::col(AccessKeyRow::Owner).eq(owner.stored()))
             .order_by(AccessKeyRow::CreatedAt, Order::Desc)
             .order_by(AccessKeyRow::Id, Order::Asc)
             .limit(limit);
@@ -164,7 +151,7 @@ impl Database {
                     .add(
                         Cond::all()
                             .add(Expr::col(AccessKeyRow::CreatedAt).eq(micros))
-                            .add(Expr::col(AccessKeyRow::Id).gt(bytes(id.to_bytes()))),
+                            .add(Expr::col(AccessKeyRow::Id).gt(id.stored())),
                     ),
             );
         }
@@ -186,7 +173,7 @@ impl Database {
                 crate::schema::Computed::Total,
             )
             .from(AccessKeyRow::Table)
-            .and_where(Expr::col(AccessKeyRow::Owner).eq(bytes(owner.to_bytes())));
+            .and_where(Expr::col(AccessKeyRow::Owner).eq(owner.stored()));
         match self.fetch_optional(&select).await? {
             Some(row) => row.get(crate::schema::Computed::Total),
             None => Ok(0),
@@ -216,8 +203,7 @@ impl Database {
             .iter()
             .map(|row| {
                 Ok(ProjectChoice {
-                    id: ProjectId::from_bytes(row.id_bytes(ProjectRow::Id)?)
-                        .map_err(corrupt("a project ID"))?,
+                    id: row.id::<ProjectId>(ProjectRow::Id)?,
                     short_name: row.get(ProjectRow::ShortName)?,
                     name: row.get(ProjectRow::Name)?,
                 })
@@ -237,7 +223,7 @@ impl Database {
         update
             .table(AccessKeyRow::Table)
             .value(AccessKeyRow::LastUsedAt, micros)
-            .and_where(Expr::col(AccessKeyRow::Id).eq(bytes(id.to_bytes())))
+            .and_where(Expr::col(AccessKeyRow::Id).eq(id.stored()))
             .cond_where(
                 Cond::any()
                     .add(Expr::col(AccessKeyRow::LastUsedAt).is_null())
@@ -252,7 +238,7 @@ impl Database {
         code_app
             .column(TwoStep::Person)
             .from(TwoStep::Table)
-            .and_where(Expr::col(TwoStep::Person).eq(bytes(person.to_bytes())))
+            .and_where(Expr::col(TwoStep::Person).eq(person.stored()))
             .and_where(Expr::col(TwoStep::Confirmed).eq(true))
             .limit(1);
         if self.fetch_optional(&code_app).await?.is_some() {
@@ -262,7 +248,7 @@ impl Database {
         passkey
             .column(PasskeyRow::Id)
             .from(PasskeyRow::Table)
-            .and_where(Expr::col(PasskeyRow::Person).eq(bytes(person.to_bytes())))
+            .and_where(Expr::col(PasskeyRow::Person).eq(person.stored()))
             .limit(1);
         Ok(self.fetch_optional(&passkey).await?.is_some())
     }
@@ -280,7 +266,7 @@ impl Database {
         groups
             .column(GroupMemberRow::Group)
             .from(GroupMemberRow::Table)
-            .and_where(Expr::col(GroupMemberRow::Person).eq(bytes(person.to_bytes())));
+            .and_where(Expr::col(GroupMemberRow::Person).eq(person.stored()));
         let mut select = Query::select();
         select
             .column((AssignmentRow::Table, AssignmentRow::Id))
@@ -295,7 +281,7 @@ impl Database {
                 Cond::any()
                     .add(
                         Expr::col((AssignmentRow::Table, AssignmentRow::Person))
-                            .eq(bytes(person.to_bytes())),
+                            .eq(person.stored()),
                     )
                     .add(
                         Expr::col((AssignmentRow::Table, AssignmentRow::Group)).in_subquery(groups),
@@ -315,7 +301,7 @@ impl Database {
         direct
             .column(AssignmentRow::Person)
             .from(AssignmentRow::Table)
-            .and_where(Expr::col(AssignmentRow::Role).eq(bytes(role.to_bytes())))
+            .and_where(Expr::col(AssignmentRow::Role).eq(role.stored()))
             .and_where(Expr::col(AssignmentRow::Person).is_not_null());
         let mut through_groups = Query::select();
         through_groups
@@ -326,26 +312,18 @@ impl Database {
                 Expr::col((AssignmentRow::Table, AssignmentRow::Group))
                     .equals((GroupMemberRow::Table, GroupMemberRow::Group)),
             )
-            .and_where(
-                Expr::col((AssignmentRow::Table, AssignmentRow::Role)).eq(bytes(role.to_bytes())),
-            );
+            .and_where(Expr::col((AssignmentRow::Table, AssignmentRow::Role)).eq(role.stored()));
         let mut holders: BTreeSet<UserId> = BTreeSet::new();
         for row in self.fetch_all(&direct).await? {
-            holders.insert(
-                UserId::from_bytes(row.id_bytes(AssignmentRow::Person)?)
-                    .map_err(corrupt("a person ID"))?,
-            );
+            holders.insert(row.id::<UserId>(AssignmentRow::Person)?);
         }
         for row in self.fetch_all(&through_groups).await? {
-            holders.insert(
-                UserId::from_bytes(row.id_bytes(GroupMemberRow::Person)?)
-                    .map_err(corrupt("a person ID"))?,
-            );
+            holders.insert(row.id::<UserId>(GroupMemberRow::Person)?);
         }
         let holders: Vec<UserId> = holders.into_iter().collect();
         let mut without = Vec::new();
         for chunk in holders.chunks(CHUNK) {
-            let ids: Vec<Vec<u8>> = chunk.iter().map(|id| bytes(id.to_bytes())).collect();
+            let ids: Vec<Vec<u8>> = chunk.iter().map(|id| id.stored()).collect();
             let mut have: BTreeSet<UserId> = BTreeSet::new();
             let mut code_apps = Query::select();
             code_apps
@@ -354,10 +332,7 @@ impl Database {
                 .and_where(Expr::col(TwoStep::Person).is_in(ids.clone()))
                 .and_where(Expr::col(TwoStep::Confirmed).eq(true));
             for row in self.fetch_all(&code_apps).await? {
-                have.insert(
-                    UserId::from_bytes(row.id_bytes(TwoStep::Person)?)
-                        .map_err(corrupt("a person ID"))?,
-                );
+                have.insert(row.id::<UserId>(TwoStep::Person)?);
             }
             let mut passkeys = Query::select();
             passkeys
@@ -365,10 +340,7 @@ impl Database {
                 .from(PasskeyRow::Table)
                 .and_where(Expr::col(PasskeyRow::Person).is_in(ids));
             for row in self.fetch_all(&passkeys).await? {
-                have.insert(
-                    UserId::from_bytes(row.id_bytes(PasskeyRow::Person)?)
-                        .map_err(corrupt("a person ID"))?,
-                );
+                have.insert(row.id::<UserId>(PasskeyRow::Person)?);
             }
             without.extend(
                 chunk
@@ -392,8 +364,8 @@ pub(crate) async fn insert_access_key(
         .into_table(AccessKeyRow::Table)
         .columns(key_columns())
         .values([
-            Expr::val(bytes(key.id.to_bytes())),
-            Expr::val(bytes(key.owner.to_bytes())),
+            Expr::val(key.id.stored()),
+            Expr::val(key.owner.stored()),
             Expr::val(key.name.as_str()),
             Expr::val(key.prefix.as_str()),
             Expr::val(key.secret_hash.as_bytes().to_vec()),
@@ -413,10 +385,7 @@ pub(crate) async fn insert_access_key(
                 AccessKeyPermissionRow::Key,
                 AccessKeyPermissionRow::Permission,
             ])
-            .values([
-                Expr::val(bytes(key.id.to_bytes())),
-                Expr::val(permission.code()),
-            ])
+            .values([Expr::val(key.id.stored()), Expr::val(permission.code())])
             .map_err(|_| StoreError::Corrupt("a permission"))?;
         transaction.execute(&insert).await?;
     }
@@ -426,10 +395,7 @@ pub(crate) async fn insert_access_key(
         insert
             .into_table(AccessKeyProjectRow::Table)
             .columns([AccessKeyProjectRow::Key, AccessKeyProjectRow::Project])
-            .values([
-                Expr::val(bytes(key.id.to_bytes())),
-                Expr::val(bytes(project.to_bytes())),
-            ])
+            .values([Expr::val(key.id.stored()), Expr::val(project.stored())])
             .map_err(|_| StoreError::Corrupt("a project"))?;
         transaction.execute(&insert).await?;
     }
@@ -446,25 +412,25 @@ pub(crate) async fn delete_access_key(
     let mut held = Query::select();
     held.column(AccessKeyRow::Id)
         .from(AccessKeyRow::Table)
-        .and_where(Expr::col(AccessKeyRow::Id).eq(bytes(id.to_bytes())))
-        .and_where(Expr::col(AccessKeyRow::Owner).eq(bytes(owner.to_bytes())));
+        .and_where(Expr::col(AccessKeyRow::Id).eq(id.stored()))
+        .and_where(Expr::col(AccessKeyRow::Owner).eq(owner.stored()));
     if transaction.fetch_optional(&held).await?.is_none() {
         return Ok(false);
     }
     let mut permissions = Query::delete();
     permissions
         .from_table(AccessKeyPermissionRow::Table)
-        .and_where(Expr::col(AccessKeyPermissionRow::Key).eq(bytes(id.to_bytes())));
+        .and_where(Expr::col(AccessKeyPermissionRow::Key).eq(id.stored()));
     transaction.execute(&permissions).await?;
     let mut projects = Query::delete();
     projects
         .from_table(AccessKeyProjectRow::Table)
-        .and_where(Expr::col(AccessKeyProjectRow::Key).eq(bytes(id.to_bytes())));
+        .and_where(Expr::col(AccessKeyProjectRow::Key).eq(id.stored()));
     transaction.execute(&projects).await?;
     let mut delete = Query::delete();
     delete
         .from_table(AccessKeyRow::Table)
-        .and_where(Expr::col(AccessKeyRow::Id).eq(bytes(id.to_bytes())));
+        .and_where(Expr::col(AccessKeyRow::Id).eq(id.stored()));
     Ok(transaction.execute(&delete).await? > 0)
 }
 
@@ -476,13 +442,10 @@ pub(crate) async fn delete_access_keys_of(
     let mut held = Query::select();
     held.column(AccessKeyRow::Id)
         .from(AccessKeyRow::Table)
-        .and_where(Expr::col(AccessKeyRow::Owner).eq(bytes(owner.to_bytes())));
+        .and_where(Expr::col(AccessKeyRow::Owner).eq(owner.stored()));
     let mut ids = Vec::new();
     for row in transaction.fetch_all(&held).await? {
-        ids.push(
-            AccessKeyId::from_bytes(row.id_bytes(AccessKeyRow::Id)?)
-                .map_err(corrupt("a key ID"))?,
-        );
+        ids.push(row.id::<AccessKeyId>(AccessKeyRow::Id)?);
     }
     for id in &ids {
         delete_access_key(transaction, owner, *id).await?;

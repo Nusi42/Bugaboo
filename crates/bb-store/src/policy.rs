@@ -11,7 +11,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use bb_app::access::{LevelRules, PolicyStore, RoleRecord};
 use bb_core::access::{AppliesTo, Assignment, FieldLevel, Group, GroupMember, PeopleLevel, Role};
 use bb_core::fields::Field;
-use bb_core::id::{AssignmentId, GroupId, IdError, ProjectId, RoleId, UserId};
+use bb_core::id::{AssignmentId, GroupId, ProjectId, RoleId, UserId};
 use bb_core::people_kinds::PeopleKind;
 use bb_core::project::{DEPTH_MAX, Project, ShortName};
 use bb_core::technical::TechnicalName;
@@ -21,7 +21,7 @@ use jiff::Timestamp;
 use sea_query::{Expr, ExprTrait as _, Order, Query, SelectStatement};
 
 use crate::auth::AuthStorage;
-use crate::db::{Row as DbRow, Transaction, to_micros};
+use crate::db::{Row as DbRow, StoredId, Transaction, to_micros};
 use crate::error::StoreError;
 use crate::schema::{
     AssignmentRow, GroupMemberRow, GroupRow, LegacyAdministratorRow, ProjectFieldLevelRow,
@@ -33,54 +33,8 @@ use crate::schema::{
 /// the last administrator in place and together leave none.
 const POLICY_LOCK: i64 = 0x4242_504F_4C49_0001;
 
-pub(crate) fn corrupt(what: &'static str) -> impl Fn(IdError) -> StoreError {
-    move |_| StoreError::Corrupt(what)
-}
-
-pub(crate) fn id_bytes(id: [u8; 16]) -> Vec<u8> {
-    id.to_vec()
-}
-
-pub(crate) fn read_user(
-    row: &DbRow,
-    column: impl sea_query::Iden + Copy,
-) -> Result<UserId, StoreError> {
-    UserId::from_bytes(row.id_bytes(column)?).map_err(corrupt("a person ID"))
-}
-
-pub(crate) fn read_role_id(
-    row: &DbRow,
-    column: impl sea_query::Iden + Copy,
-) -> Result<RoleId, StoreError> {
-    RoleId::from_bytes(row.id_bytes(column)?).map_err(corrupt("a role ID"))
-}
-
-pub(crate) fn read_group_id(
-    row: &DbRow,
-    column: impl sea_query::Iden + Copy,
-) -> Result<GroupId, StoreError> {
-    GroupId::from_bytes(row.id_bytes(column)?).map_err(corrupt("a group ID"))
-}
-
-pub(crate) fn read_project_id(
-    row: &DbRow,
-    column: impl sea_query::Iden + Copy,
-) -> Result<ProjectId, StoreError> {
-    ProjectId::from_bytes(row.id_bytes(column)?).map_err(corrupt("a project ID"))
-}
-
-pub(crate) fn optional<T>(
-    bytes: Option<[u8; 16]>,
-    make: impl FnOnce([u8; 16]) -> Result<T, IdError>,
-    what: &'static str,
-) -> Result<Option<T>, StoreError> {
-    bytes
-        .map(|bytes| make(bytes).map_err(corrupt(what)))
-        .transpose()
-}
-
-pub(crate) fn in_list<T: Copy>(ids: &[T], bytes: impl Fn(T) -> [u8; 16]) -> Vec<Vec<u8>> {
-    ids.iter().map(|id| id_bytes(bytes(*id))).collect()
+pub(crate) fn in_list<T: StoredId>(ids: &[T]) -> Vec<Vec<u8>> {
+    ids.iter().map(|id| id.stored()).collect()
 }
 
 // ---- Reads that run in a snapshot ----
@@ -97,16 +51,11 @@ pub(crate) async fn chain_of(
         select
             .column(ProjectRow::Parent)
             .from(ProjectRow::Table)
-            .and_where(Expr::col(ProjectRow::Id).eq(id_bytes(current.to_bytes())));
+            .and_where(Expr::col(ProjectRow::Id).eq(current.stored()));
         let Some(row) = transaction.fetch_optional(&select).await? else {
             return Ok(None);
         };
-        let Some(parent) = optional(
-            row.optional_id_bytes(ProjectRow::Parent)?,
-            ProjectId::from_bytes,
-            "a project ID",
-        )?
-        else {
+        let Some(parent) = row.optional_id::<ProjectId>(ProjectRow::Parent)? else {
             chain.reverse();
             return Ok(Some(chain));
         };
@@ -136,7 +85,7 @@ fn role_select() -> SelectStatement {
 
 fn read_role(row: &DbRow) -> Result<Role, StoreError> {
     Ok(Role {
-        id: read_role_id(row, RoleRow::Id)?,
+        id: row.id::<RoleId>(RoleRow::Id)?,
         name: row.get(RoleRow::Name)?,
         starting: row
             .get::<Option<String>>(RoleRow::Starting)?
@@ -157,7 +106,7 @@ pub(crate) async fn roles_in(
 ) -> Result<Vec<RoleRecord>, StoreError> {
     let mut select = role_select();
     if let Some(only) = only {
-        select.and_where(Expr::col(RoleRow::Id).is_in(in_list(only, RoleId::to_bytes)));
+        select.and_where(Expr::col(RoleRow::Id).is_in(in_list(only)));
     }
     let roles = transaction
         .fetch_all(&select)
@@ -172,9 +121,9 @@ pub(crate) async fn roles_in(
         select
             .columns([RolePermissionRow::Role, RolePermissionRow::Permission])
             .from(RolePermissionRow::Table)
-            .and_where(Expr::col(RolePermissionRow::Role).is_in(in_list(&ids, RoleId::to_bytes)));
+            .and_where(Expr::col(RolePermissionRow::Role).is_in(in_list(&ids)));
         for row in transaction.fetch_all(&select).await? {
-            let role = read_role_id(&row, RolePermissionRow::Role)?;
+            let role = row.id::<RoleId>(RolePermissionRow::Role)?;
             if let Some(permission) =
                 Permission::from_code(&row.get::<String>(RolePermissionRow::Permission)?)
             {
@@ -193,28 +142,11 @@ pub(crate) async fn roles_in(
 
 pub(crate) fn read_assignment(row: &DbRow) -> Result<Assignment, StoreError> {
     Ok(Assignment {
-        id: AssignmentId::from_bytes(row.id_bytes(AssignmentRow::Id)?)
-            .map_err(corrupt("an assignment ID"))?,
-        person: optional(
-            row.optional_id_bytes(AssignmentRow::Person)?,
-            UserId::from_bytes,
-            "a person ID",
-        )?,
-        group: optional(
-            row.optional_id_bytes(AssignmentRow::Group)?,
-            GroupId::from_bytes,
-            "a group ID",
-        )?,
-        role: optional(
-            row.optional_id_bytes(AssignmentRow::Role)?,
-            RoleId::from_bytes,
-            "a role ID",
-        )?,
-        project: optional(
-            row.optional_id_bytes(AssignmentRow::Project)?,
-            ProjectId::from_bytes,
-            "a project ID",
-        )?,
+        id: row.id::<AssignmentId>(AssignmentRow::Id)?,
+        person: row.optional_id::<UserId>(AssignmentRow::Person)?,
+        group: row.optional_id::<GroupId>(AssignmentRow::Group)?,
+        role: row.optional_id::<RoleId>(AssignmentRow::Role)?,
+        project: row.optional_id::<ProjectId>(AssignmentRow::Project)?,
         applies_to: AppliesTo::from_code(&row.get::<String>(AssignmentRow::AppliesTo)?)
             .ok_or(StoreError::Corrupt("a place of a role"))?,
         given_at: row.time(AssignmentRow::GivenAt)?,
@@ -244,7 +176,7 @@ fn assignments_on_select(project: Option<ProjectId>) -> SelectStatement {
     let mut select = assignment_select();
     match project {
         Some(project) => {
-            select.and_where(Expr::col(AssignmentRow::Project).eq(id_bytes(project.to_bytes())));
+            select.and_where(Expr::col(AssignmentRow::Project).eq(project.stored()));
         }
         None => {
             select.and_where(Expr::col(AssignmentRow::Project).is_null());
@@ -256,21 +188,21 @@ fn assignments_on_select(project: Option<ProjectId>) -> SelectStatement {
 /// The rows of a group, wherever they are.
 fn assignments_of_group_select(group: GroupId) -> SelectStatement {
     let mut select = assignment_select();
-    select.and_where(Expr::col(AssignmentRow::Group).eq(id_bytes(group.to_bytes())));
+    select.and_where(Expr::col(AssignmentRow::Group).eq(group.stored()));
     select
 }
 
 /// The rows of a person: their own, not their groups'.
 fn assignments_of_person_select(person: UserId) -> SelectStatement {
     let mut select = assignment_select();
-    select.and_where(Expr::col(AssignmentRow::Person).eq(id_bytes(person.to_bytes())));
+    select.and_where(Expr::col(AssignmentRow::Person).eq(person.stored()));
     select
 }
 
 /// The rows that give a role.
 fn assignments_of_role_select(role: RoleId) -> SelectStatement {
     let mut select = assignment_select();
-    select.and_where(Expr::col(AssignmentRow::Role).eq(id_bytes(role.to_bytes())));
+    select.and_where(Expr::col(AssignmentRow::Role).eq(role.stored()));
     select
 }
 
@@ -292,23 +224,21 @@ async fn inputs_in(
     select
         .column(GroupMemberRow::Group)
         .from(GroupMemberRow::Table)
-        .and_where(Expr::col(GroupMemberRow::Person).eq(id_bytes(person.to_bytes())));
+        .and_where(Expr::col(GroupMemberRow::Person).eq(person.stored()));
     let groups = transaction
         .fetch_all(&select)
         .await?
         .iter()
-        .map(|row| read_group_id(row, GroupMemberRow::Group))
+        .map(|row| row.id::<GroupId>(GroupMemberRow::Group))
         .collect::<Result<Vec<_>, _>>()?;
     let mut select = assignment_select();
-    let mut whose = Expr::col(AssignmentRow::Person).eq(id_bytes(person.to_bytes()));
+    let mut whose = Expr::col(AssignmentRow::Person).eq(person.stored());
     if !groups.is_empty() {
-        whose =
-            whose.or(Expr::col(AssignmentRow::Group).is_in(in_list(&groups, GroupId::to_bytes)));
+        whose = whose.or(Expr::col(AssignmentRow::Group).is_in(in_list(&groups)));
     }
     let mut here = Expr::col(AssignmentRow::Project).is_null();
     if !chain.is_empty() {
-        here =
-            here.or(Expr::col(AssignmentRow::Project).is_in(in_list(&chain, ProjectId::to_bytes)));
+        here = here.or(Expr::col(AssignmentRow::Project).is_in(in_list(&chain)));
     }
     select.and_where(whose).and_where(here);
     let assignments = transaction
@@ -374,8 +304,8 @@ async fn level_rules(
     roles: &[RoleId],
     chain: &[ProjectId],
 ) -> Result<(Vec<FieldRule>, Vec<PeopleRule>), StoreError> {
-    let role_list = in_list(roles, RoleId::to_bytes);
-    let project_list = in_list(chain, ProjectId::to_bytes);
+    let role_list = in_list(roles);
+    let project_list = in_list(chain);
     let mut fields = Vec::new();
     let mut select = Query::select();
     select
@@ -389,7 +319,7 @@ async fn level_rules(
     for row in transaction.fetch_all(&select).await? {
         fields.push(FieldRule {
             project: None,
-            role: read_role_id(&row, RoleFieldLevelRow::Role)?,
+            role: row.id::<RoleId>(RoleFieldLevelRow::Role)?,
             field: read_field(&row, RoleFieldLevelRow::Field)?,
             level: read_field_level(&row, RoleFieldLevelRow::Level)?,
         });
@@ -407,7 +337,7 @@ async fn level_rules(
     for row in transaction.fetch_all(&select).await? {
         people.push(PeopleRule {
             project: None,
-            role: read_role_id(&row, RolePeopleLevelRow::Role)?,
+            role: row.id::<RoleId>(RolePeopleLevelRow::Role)?,
             kind: read_kind(&row, RolePeopleLevelRow::Kind)?,
             level: read_people_level(&row, RolePeopleLevelRow::Level)?,
         });
@@ -426,8 +356,8 @@ async fn level_rules(
             .and_where(Expr::col(ProjectFieldLevelRow::Project).is_in(project_list.clone()));
         for row in transaction.fetch_all(&select).await? {
             fields.push(FieldRule {
-                project: Some(read_project_id(&row, ProjectFieldLevelRow::Project)?),
-                role: read_role_id(&row, ProjectFieldLevelRow::Role)?,
+                project: Some(row.id::<ProjectId>(ProjectFieldLevelRow::Project)?),
+                role: row.id::<RoleId>(ProjectFieldLevelRow::Role)?,
                 field: read_field(&row, ProjectFieldLevelRow::Field)?,
                 level: read_field_level(&row, ProjectFieldLevelRow::Level)?,
             });
@@ -445,8 +375,8 @@ async fn level_rules(
             .and_where(Expr::col(ProjectPeopleLevelRow::Project).is_in(project_list));
         for row in transaction.fetch_all(&select).await? {
             people.push(PeopleRule {
-                project: Some(read_project_id(&row, ProjectPeopleLevelRow::Project)?),
-                role: read_role_id(&row, ProjectPeopleLevelRow::Role)?,
+                project: Some(row.id::<ProjectId>(ProjectPeopleLevelRow::Project)?),
+                role: row.id::<RoleId>(ProjectPeopleLevelRow::Role)?,
                 kind: read_kind(&row, ProjectPeopleLevelRow::Kind)?,
                 level: read_people_level(&row, ProjectPeopleLevelRow::Level)?,
             });
@@ -522,11 +452,11 @@ async fn organization_state_of(
         select
             .columns([GroupMemberRow::Group, GroupMemberRow::Person])
             .from(GroupMemberRow::Table)
-            .and_where(Expr::col(GroupMemberRow::Group).is_in(in_list(&groups, GroupId::to_bytes)));
+            .and_where(Expr::col(GroupMemberRow::Group).is_in(in_list(&groups)));
         for row in transaction.fetch_all(&select).await? {
             members.push((
-                read_group_id(&row, GroupMemberRow::Group)?,
-                read_user(&row, GroupMemberRow::Person)?,
+                row.id::<GroupId>(GroupMemberRow::Group)?,
+                row.id::<UserId>(GroupMemberRow::Person)?,
             ));
         }
     }
@@ -554,12 +484,8 @@ async fn organization_state_of(
 
 pub(crate) fn read_project(row: &DbRow) -> Result<Project, StoreError> {
     Ok(Project {
-        id: read_project_id(row, ProjectRow::Id)?,
-        parent: optional(
-            row.optional_id_bytes(ProjectRow::Parent)?,
-            ProjectId::from_bytes,
-            "a project ID",
-        )?,
+        id: row.id::<ProjectId>(ProjectRow::Id)?,
+        parent: row.optional_id::<ProjectId>(ProjectRow::Parent)?,
         short_name: ShortName::new(&row.get::<String>(ProjectRow::ShortName)?)
             .map_err(|_| StoreError::Corrupt("a short name"))?,
         name: row.get(ProjectRow::Name)?,
@@ -615,7 +541,7 @@ impl PolicyStore for AuthStorage {
             .fetch_all(&select)
             .await?
             .iter()
-            .map(|row| read_user(row, LegacyAdministratorRow::Person))
+            .map(|row| row.id::<UserId>(LegacyAdministratorRow::Person))
             .collect()
     }
 
@@ -677,7 +603,7 @@ impl PolicyStore for AuthStorage {
         select
             .columns([GroupRow::Id, GroupRow::Name])
             .from(GroupRow::Table)
-            .and_where(Expr::col(GroupRow::Id).eq(id_bytes(id.to_bytes())));
+            .and_where(Expr::col(GroupRow::Id).eq(id.stored()));
         self.database()
             .fetch_optional(&select)
             .await?
@@ -695,7 +621,7 @@ impl PolicyStore for AuthStorage {
                 GroupMemberRow::AddedAt,
             ])
             .from(GroupMemberRow::Table)
-            .and_where(Expr::col(GroupMemberRow::Group).eq(id_bytes(group.to_bytes())))
+            .and_where(Expr::col(GroupMemberRow::Group).eq(group.stored()))
             .order_by(GroupMemberRow::AddedAt, Order::Asc)
             .order_by(GroupMemberRow::Person, Order::Asc);
         self.database()
@@ -704,8 +630,8 @@ impl PolicyStore for AuthStorage {
             .iter()
             .map(|row| {
                 Ok(GroupMember {
-                    group: read_group_id(row, GroupMemberRow::Group)?,
-                    person: read_user(row, GroupMemberRow::Person)?,
+                    group: row.id::<GroupId>(GroupMemberRow::Group)?,
+                    person: row.id::<UserId>(GroupMemberRow::Person)?,
                     added_at: row.time(GroupMemberRow::AddedAt)?,
                 })
             })
@@ -757,7 +683,7 @@ impl PolicyStore for AuthStorage {
         member_of
             .column(GroupMemberRow::Group)
             .from(GroupMemberRow::Table)
-            .and_where(Expr::col(GroupMemberRow::Person).eq(id_bytes(person.to_bytes())));
+            .and_where(Expr::col(GroupMemberRow::Person).eq(person.stored()));
         let mut select = Query::select();
         select
             .columns([GroupRow::Id, GroupRow::Name])
@@ -775,7 +701,7 @@ impl PolicyStore for AuthStorage {
 
     async fn assignment(&self, id: AssignmentId) -> Result<Option<Assignment>, StoreError> {
         let mut select = assignment_select();
-        select.and_where(Expr::col(AssignmentRow::Id).eq(id_bytes(id.to_bytes())));
+        select.and_where(Expr::col(AssignmentRow::Id).eq(id.stored()));
         self.database()
             .fetch_optional(&select)
             .await?
@@ -786,7 +712,7 @@ impl PolicyStore for AuthStorage {
 
     async fn project(&self, id: ProjectId) -> Result<Option<Project>, StoreError> {
         let mut select = project_select();
-        select.and_where(Expr::col(ProjectRow::Id).eq(id_bytes(id.to_bytes())));
+        select.and_where(Expr::col(ProjectRow::Id).eq(id.stored()));
         self.database()
             .fetch_optional(&select)
             .await?
@@ -822,7 +748,7 @@ impl PolicyStore for AuthStorage {
                 select
                     .columns([RoleFieldLevelRow::Field, RoleFieldLevelRow::Level])
                     .from(RoleFieldLevelRow::Table)
-                    .and_where(Expr::col(RoleFieldLevelRow::Role).eq(id_bytes(role.to_bytes())));
+                    .and_where(Expr::col(RoleFieldLevelRow::Role).eq(role.stored()));
                 self.database()
                     .fetch_all(&select)
                     .await?
@@ -839,10 +765,8 @@ impl PolicyStore for AuthStorage {
                 select
                     .columns([ProjectFieldLevelRow::Field, ProjectFieldLevelRow::Level])
                     .from(ProjectFieldLevelRow::Table)
-                    .and_where(Expr::col(ProjectFieldLevelRow::Role).eq(id_bytes(role.to_bytes())))
-                    .and_where(
-                        Expr::col(ProjectFieldLevelRow::Project).eq(id_bytes(project.to_bytes())),
-                    );
+                    .and_where(Expr::col(ProjectFieldLevelRow::Role).eq(role.stored()))
+                    .and_where(Expr::col(ProjectFieldLevelRow::Project).eq(project.stored()));
                 self.database()
                     .fetch_all(&select)
                     .await?
@@ -869,7 +793,7 @@ impl PolicyStore for AuthStorage {
                 select
                     .columns([RolePeopleLevelRow::Kind, RolePeopleLevelRow::Level])
                     .from(RolePeopleLevelRow::Table)
-                    .and_where(Expr::col(RolePeopleLevelRow::Role).eq(id_bytes(role.to_bytes())));
+                    .and_where(Expr::col(RolePeopleLevelRow::Role).eq(role.stored()));
                 self.database()
                     .fetch_all(&select)
                     .await?
@@ -886,10 +810,8 @@ impl PolicyStore for AuthStorage {
                 select
                     .columns([ProjectPeopleLevelRow::Kind, ProjectPeopleLevelRow::Level])
                     .from(ProjectPeopleLevelRow::Table)
-                    .and_where(Expr::col(ProjectPeopleLevelRow::Role).eq(id_bytes(role.to_bytes())))
-                    .and_where(
-                        Expr::col(ProjectPeopleLevelRow::Project).eq(id_bytes(project.to_bytes())),
-                    );
+                    .and_where(Expr::col(ProjectPeopleLevelRow::Role).eq(role.stored()))
+                    .and_where(Expr::col(ProjectPeopleLevelRow::Project).eq(project.stored()));
                 self.database()
                     .fetch_all(&select)
                     .await?
@@ -976,12 +898,8 @@ impl PolicyStore for AuthStorage {
             .from(ProjectRow::Table);
         let mut children: BTreeMap<ProjectId, Vec<ProjectId>> = BTreeMap::new();
         for row in transaction.fetch_all(&select).await? {
-            let id = read_project_id(&row, ProjectRow::Id)?;
-            if let Some(parent) = optional(
-                row.optional_id_bytes(ProjectRow::Parent)?,
-                ProjectId::from_bytes,
-                "a project ID",
-            )? {
+            let id = row.id::<ProjectId>(ProjectRow::Id)?;
+            if let Some(parent) = row.optional_id::<ProjectId>(ProjectRow::Parent)? {
                 children.entry(parent).or_default().push(id);
             }
         }
@@ -1028,7 +946,7 @@ impl PolicyStore for AuthStorage {
         let mut delete = Query::delete();
         delete
             .from_table(LegacyAdministratorRow::Table)
-            .and_where(Expr::col(LegacyAdministratorRow::Person).eq(id_bytes(person.to_bytes())));
+            .and_where(Expr::col(LegacyAdministratorRow::Person).eq(person.stored()));
         transaction.execute(&delete).await.map(|_| ())
     }
 
@@ -1050,7 +968,7 @@ impl PolicyStore for AuthStorage {
                 RoleRow::TwoStep,
             ])
             .values([
-                Expr::val(id_bytes(role.id.to_bytes())),
+                Expr::val(role.id.stored()),
                 Expr::val(role.name.as_str()),
                 Expr::val(role.starting.as_ref().map(TechnicalName::as_str)),
                 Expr::val(role.position),
@@ -1073,7 +991,7 @@ impl PolicyStore for AuthStorage {
             .table(RoleRow::Table)
             .value(RoleRow::Name, name)
             .value(RoleRow::TwoStep, two_step)
-            .and_where(Expr::col(RoleRow::Id).eq(id_bytes(id.to_bytes())));
+            .and_where(Expr::col(RoleRow::Id).eq(id.stored()));
         Ok(transaction.execute(&update).await? > 0)
     }
 
@@ -1085,7 +1003,7 @@ impl PolicyStore for AuthStorage {
         let mut delete = Query::delete();
         delete
             .from_table(RolePermissionRow::Table)
-            .and_where(Expr::col(RolePermissionRow::Role).eq(id_bytes(id.to_bytes())));
+            .and_where(Expr::col(RolePermissionRow::Role).eq(id.stored()));
         transaction.execute(&delete).await?;
         write_permissions(transaction, id, permissions).await
     }
@@ -1099,18 +1017,18 @@ impl PolicyStore for AuthStorage {
         let mut delete = Query::delete();
         delete
             .from_table(RoleFieldLevelRow::Table)
-            .and_where(Expr::col(RoleFieldLevelRow::Role).eq(id_bytes(id.to_bytes())));
+            .and_where(Expr::col(RoleFieldLevelRow::Role).eq(id.stored()));
         transaction.execute(&delete).await?;
         let mut delete = Query::delete();
         delete
             .from_table(RolePeopleLevelRow::Table)
-            .and_where(Expr::col(RolePeopleLevelRow::Role).eq(id_bytes(id.to_bytes())));
+            .and_where(Expr::col(RolePeopleLevelRow::Role).eq(id.stored()));
         transaction.execute(&delete).await?;
         write_own_levels(transaction, id, fields, people).await
     }
 
     async fn delete_role(transaction: &mut Transaction, id: RoleId) -> Result<bool, StoreError> {
-        let role = id_bytes(id.to_bytes());
+        let role = id.stored();
         delete_by(
             transaction,
             AssignmentRow::Table,
@@ -1161,10 +1079,7 @@ impl PolicyStore for AuthStorage {
         insert
             .into_table(GroupRow::Table)
             .columns([GroupRow::Id, GroupRow::Name])
-            .values([
-                Expr::val(id_bytes(group.id.to_bytes())),
-                Expr::val(group.name.as_str()),
-            ])
+            .values([Expr::val(group.id.stored()), Expr::val(group.name.as_str())])
             .map_err(|_| StoreError::Corrupt("a group"))?;
         transaction.execute(&insert).await.map(|_| ())
     }
@@ -1178,12 +1093,12 @@ impl PolicyStore for AuthStorage {
         update
             .table(GroupRow::Table)
             .value(GroupRow::Name, name)
-            .and_where(Expr::col(GroupRow::Id).eq(id_bytes(id.to_bytes())));
+            .and_where(Expr::col(GroupRow::Id).eq(id.stored()));
         Ok(transaction.execute(&update).await? > 0)
     }
 
     async fn delete_group(transaction: &mut Transaction, id: GroupId) -> Result<bool, StoreError> {
-        let group = id_bytes(id.to_bytes());
+        let group = id.stored();
         delete_by(
             transaction,
             AssignmentRow::Table,
@@ -1214,8 +1129,8 @@ impl PolicyStore for AuthStorage {
                 GroupMemberRow::AddedAt,
             ])
             .values([
-                Expr::val(id_bytes(member.group.to_bytes())),
-                Expr::val(id_bytes(member.person.to_bytes())),
+                Expr::val(member.group.stored()),
+                Expr::val(member.person.stored()),
                 Expr::val(to_micros(member.added_at)),
             ])
             .map_err(|_| StoreError::Corrupt("a group member"))?;
@@ -1230,8 +1145,8 @@ impl PolicyStore for AuthStorage {
         let mut delete = Query::delete();
         delete
             .from_table(GroupMemberRow::Table)
-            .and_where(Expr::col(GroupMemberRow::Group).eq(id_bytes(group.to_bytes())))
-            .and_where(Expr::col(GroupMemberRow::Person).eq(id_bytes(person.to_bytes())));
+            .and_where(Expr::col(GroupMemberRow::Group).eq(group.stored()))
+            .and_where(Expr::col(GroupMemberRow::Person).eq(person.stored()));
         Ok(transaction.execute(&delete).await? > 0)
     }
 
@@ -1252,11 +1167,11 @@ impl PolicyStore for AuthStorage {
                 AssignmentRow::GivenAt,
             ])
             .values([
-                Expr::val(id_bytes(assignment.id.to_bytes())),
-                Expr::val(assignment.person.map(|id| id_bytes(id.to_bytes()))),
-                Expr::val(assignment.group.map(|id| id_bytes(id.to_bytes()))),
-                Expr::val(assignment.role.map(|id| id_bytes(id.to_bytes()))),
-                Expr::val(assignment.project.map(|id| id_bytes(id.to_bytes()))),
+                Expr::val(assignment.id.stored()),
+                Expr::val(assignment.person.map(|id| id.stored())),
+                Expr::val(assignment.group.map(|id| id.stored())),
+                Expr::val(assignment.role.map(|id| id.stored())),
+                Expr::val(assignment.project.map(|id| id.stored())),
                 Expr::val(assignment.applies_to.code()),
                 Expr::val(to_micros(assignment.given_at)),
             ])
@@ -1271,7 +1186,7 @@ impl PolicyStore for AuthStorage {
         let mut delete = Query::delete();
         delete
             .from_table(AssignmentRow::Table)
-            .and_where(Expr::col(AssignmentRow::Id).eq(id_bytes(id.to_bytes())));
+            .and_where(Expr::col(AssignmentRow::Id).eq(id.stored()));
         Ok(transaction.execute(&delete).await? > 0)
     }
 
@@ -1282,7 +1197,7 @@ impl PolicyStore for AuthStorage {
         field: Field,
         level: Option<FieldLevel>,
     ) -> Result<(), StoreError> {
-        let role_bytes = id_bytes(role.to_bytes());
+        let role_bytes = role.stored();
         match project {
             None => {
                 let mut delete = Query::delete();
@@ -1310,7 +1225,7 @@ impl PolicyStore for AuthStorage {
                 }
             }
             Some(project) => {
-                let project_bytes = id_bytes(project.to_bytes());
+                let project_bytes = project.stored();
                 let mut delete = Query::delete();
                 delete
                     .from_table(ProjectFieldLevelRow::Table)
@@ -1349,7 +1264,7 @@ impl PolicyStore for AuthStorage {
         kind: PeopleKind,
         level: Option<PeopleLevel>,
     ) -> Result<(), StoreError> {
-        let role_bytes = id_bytes(role.to_bytes());
+        let role_bytes = role.stored();
         match project {
             None => {
                 let mut delete = Query::delete();
@@ -1377,7 +1292,7 @@ impl PolicyStore for AuthStorage {
                 }
             }
             Some(project) => {
-                let project_bytes = id_bytes(project.to_bytes());
+                let project_bytes = project.stored();
                 let mut delete = Query::delete();
                 delete
                     .from_table(ProjectPeopleLevelRow::Table)
@@ -1424,8 +1339,8 @@ impl PolicyStore for AuthStorage {
                 ProjectRow::Version,
             ])
             .values([
-                Expr::val(id_bytes(project.id.to_bytes())),
-                Expr::val(project.parent.map(|id| id_bytes(id.to_bytes()))),
+                Expr::val(project.id.stored()),
+                Expr::val(project.parent.map(|id| id.stored())),
                 Expr::val(project.short_name.as_str()),
                 Expr::val(project.name.as_str()),
                 Expr::val(project.version),
@@ -1451,7 +1366,7 @@ async fn delete_by(
 
 fn read_group(row: &DbRow) -> Result<Group, StoreError> {
     Ok(Group {
-        id: read_group_id(row, GroupRow::Id)?,
+        id: row.id::<GroupId>(GroupRow::Id)?,
         name: row.get(GroupRow::Name)?,
     })
 }
@@ -1467,10 +1382,7 @@ async fn write_permissions(
         insert
             .into_table(RolePermissionRow::Table)
             .columns([RolePermissionRow::Role, RolePermissionRow::Permission])
-            .values([
-                Expr::val(id_bytes(role.to_bytes())),
-                Expr::val(permission.code()),
-            ])
+            .values([Expr::val(role.stored()), Expr::val(permission.code())])
             .map_err(|_| StoreError::Corrupt("a permission"))?;
         transaction.execute(&insert).await?;
     }
@@ -1493,7 +1405,7 @@ async fn write_own_levels(
                 RoleFieldLevelRow::Level,
             ])
             .values([
-                Expr::val(id_bytes(role.to_bytes())),
+                Expr::val(role.stored()),
                 Expr::val(field.code()),
                 Expr::val(level.code()),
             ])
@@ -1510,7 +1422,7 @@ async fn write_own_levels(
                 RolePeopleLevelRow::Level,
             ])
             .values([
-                Expr::val(id_bytes(role.to_bytes())),
+                Expr::val(role.stored()),
                 Expr::val(kind.code()),
                 Expr::val(level.code()),
             ])

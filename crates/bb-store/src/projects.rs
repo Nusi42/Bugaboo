@@ -12,12 +12,11 @@ use bb_policy::{FieldRule, PeopleRule, Policy, RoleData};
 use sea_query::{Expr, ExprTrait as _, Query};
 
 use crate::auth::AuthStorage;
-use crate::db::{Transaction, to_micros};
+use crate::db::{StoredId, Transaction, to_micros};
 use crate::error::StoreError;
 use crate::policy::{
-    assignment_select, id_bytes, in_list, project_select, read_assignment, read_field,
-    read_field_level, read_group_id, read_kind, read_people_level, read_project, read_project_id,
-    read_role_id, read_user, roles_in,
+    assignment_select, in_list, project_select, read_assignment, read_field, read_field_level,
+    read_kind, read_people_level, read_project, roles_in,
 };
 use crate::schema::{
     GroupMemberRow, ProjectAliasRow, ProjectFieldLevelRow, ProjectPeopleLevelRow, ProjectRow,
@@ -52,7 +51,7 @@ async fn policy_in(
         ])
         .from(GroupMemberRow::Table);
     if let Some(person) = person {
-        select.and_where(Expr::col(GroupMemberRow::Person).eq(id_bytes(person.to_bytes())));
+        select.and_where(Expr::col(GroupMemberRow::Person).eq(person.stored()));
     }
     let members = transaction
         .fetch_all(&select)
@@ -60,8 +59,8 @@ async fn policy_in(
         .iter()
         .map(|row| {
             Ok(GroupMember {
-                group: read_group_id(row, GroupMemberRow::Group)?,
-                person: read_user(row, GroupMemberRow::Person)?,
+                group: row.id::<GroupId>(GroupMemberRow::Group)?,
+                person: row.id::<UserId>(GroupMemberRow::Person)?,
                 added_at: row.time(GroupMemberRow::AddedAt)?,
             })
         })
@@ -69,11 +68,10 @@ async fn policy_in(
     let mut select = assignment_select();
     if let Some(person) = person {
         let groups: Vec<GroupId> = members.iter().map(|member| member.group).collect();
-        let mut whose =
-            Expr::col(crate::schema::AssignmentRow::Person).eq(id_bytes(person.to_bytes()));
+        let mut whose = Expr::col(crate::schema::AssignmentRow::Person).eq(person.stored());
         if !groups.is_empty() {
-            whose = whose.or(Expr::col(crate::schema::AssignmentRow::Group)
-                .is_in(in_list(&groups, GroupId::to_bytes)));
+            whose =
+                whose.or(Expr::col(crate::schema::AssignmentRow::Group).is_in(in_list(&groups)));
         }
         select.and_where(whose);
     }
@@ -134,7 +132,7 @@ async fn all_levels(
     for row in transaction.fetch_all(&select).await? {
         fields.push(FieldRule {
             project: None,
-            role: read_role_id(&row, RoleFieldLevelRow::Role)?,
+            role: row.id::<RoleId>(RoleFieldLevelRow::Role)?,
             field: read_field(&row, RoleFieldLevelRow::Field)?,
             level: read_field_level(&row, RoleFieldLevelRow::Level)?,
         });
@@ -150,8 +148,8 @@ async fn all_levels(
         .from(ProjectFieldLevelRow::Table);
     for row in transaction.fetch_all(&select).await? {
         fields.push(FieldRule {
-            project: Some(read_project_id(&row, ProjectFieldLevelRow::Project)?),
-            role: read_role_id(&row, ProjectFieldLevelRow::Role)?,
+            project: Some(row.id::<ProjectId>(ProjectFieldLevelRow::Project)?),
+            role: row.id::<RoleId>(ProjectFieldLevelRow::Role)?,
             field: read_field(&row, ProjectFieldLevelRow::Field)?,
             level: read_field_level(&row, ProjectFieldLevelRow::Level)?,
         });
@@ -168,7 +166,7 @@ async fn all_levels(
     for row in transaction.fetch_all(&select).await? {
         people.push(PeopleRule {
             project: None,
-            role: read_role_id(&row, RolePeopleLevelRow::Role)?,
+            role: row.id::<RoleId>(RolePeopleLevelRow::Role)?,
             kind: read_kind(&row, RolePeopleLevelRow::Kind)?,
             level: read_people_level(&row, RolePeopleLevelRow::Level)?,
         });
@@ -184,8 +182,8 @@ async fn all_levels(
         .from(ProjectPeopleLevelRow::Table);
     for row in transaction.fetch_all(&select).await? {
         people.push(PeopleRule {
-            project: Some(read_project_id(&row, ProjectPeopleLevelRow::Project)?),
-            role: read_role_id(&row, ProjectPeopleLevelRow::Role)?,
+            project: Some(row.id::<ProjectId>(ProjectPeopleLevelRow::Project)?),
+            role: row.id::<RoleId>(ProjectPeopleLevelRow::Role)?,
             kind: read_kind(&row, ProjectPeopleLevelRow::Kind)?,
             level: read_people_level(&row, ProjectPeopleLevelRow::Level)?,
         });
@@ -204,7 +202,7 @@ async fn owner_in(
         .from(ProjectRow::Table)
         .and_where(Expr::col(ProjectRow::ShortName).eq(name.as_str()));
     if let Some(row) = transaction.fetch_optional(&select).await? {
-        return read_project_id(&row, ProjectRow::Id).map(Some);
+        return row.id::<ProjectId>(ProjectRow::Id).map(Some);
     }
     let mut select = Query::select();
     select
@@ -214,7 +212,7 @@ async fn owner_in(
     transaction
         .fetch_optional(&select)
         .await?
-        .map(|row| read_project_id(&row, ProjectAliasRow::Project))
+        .map(|row| row.id::<ProjectId>(ProjectAliasRow::Project))
         .transpose()
 }
 
@@ -223,7 +221,7 @@ async fn project_of(
     id: ProjectId,
 ) -> Result<Option<Project>, StoreError> {
     let mut select = project_select();
-    select.and_where(Expr::col(ProjectRow::Id).eq(id_bytes(id.to_bytes())));
+    select.and_where(Expr::col(ProjectRow::Id).eq(id.stored()));
     transaction
         .fetch_optional(&select)
         .await?
@@ -296,7 +294,7 @@ impl ProjectStore for AuthStorage {
             .value(ProjectRow::Name, name)
             .value(ProjectRow::ShortName, short_name.as_str())
             .value(ProjectRow::Version, Expr::col(ProjectRow::Version).add(1))
-            .and_where(Expr::col(ProjectRow::Id).eq(id_bytes(id.to_bytes())))
+            .and_where(Expr::col(ProjectRow::Id).eq(id.stored()))
             .and_where(Expr::col(ProjectRow::Version).eq(version));
         Ok(transaction.execute(&update).await? > 0)
     }
@@ -310,12 +308,9 @@ impl ProjectStore for AuthStorage {
         let mut update = Query::update();
         update
             .table(ProjectRow::Table)
-            .value(
-                ProjectRow::Parent,
-                parent.map(|parent| id_bytes(parent.to_bytes())),
-            )
+            .value(ProjectRow::Parent, parent.map(|parent| parent.stored()))
             .value(ProjectRow::Version, Expr::col(ProjectRow::Version).add(1))
-            .and_where(Expr::col(ProjectRow::Id).eq(id_bytes(id.to_bytes())))
+            .and_where(Expr::col(ProjectRow::Id).eq(id.stored()))
             .and_where(Expr::col(ProjectRow::Version).eq(version));
         Ok(transaction.execute(&update).await? > 0)
     }
@@ -334,7 +329,7 @@ impl ProjectStore for AuthStorage {
             ])
             .values([
                 Expr::val(alias.short_name.as_str()),
-                Expr::val(id_bytes(alias.project.to_bytes())),
+                Expr::val(alias.project.stored()),
                 Expr::val(to_micros(alias.retired_at)),
             ])
             .map_err(|_| StoreError::Corrupt("an old short name"))?;
