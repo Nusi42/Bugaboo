@@ -58,7 +58,7 @@ const PROJECT_LEAD: [Permission; 7] = [
 /// catch-all arm: a field without a row does not compile, so no field falls back to hidden.
 const fn field_levels(field: Field) -> [FieldLevel; 6] {
     match field {
-        Field::Title | Field::Description => [C, C, C, C, S, C],
+        Field::Title | Field::Description | Field::FoundInRelease => [C, C, C, C, S, C],
         Field::Status
         | Field::Priority
         | Field::AssignedTo
@@ -71,7 +71,6 @@ const fn field_levels(field: Field) -> [FieldLevel; 6] {
         | Field::TimeSpent
         | Field::Activity => [C, C, C, S, S, H],
         Field::Tags => [C, C, C, C, S, S],
-        Field::FoundInRelease => [C, C, C, C, S, C],
         Field::CostCenter => [C, C, S, S, S, H],
     }
 }
