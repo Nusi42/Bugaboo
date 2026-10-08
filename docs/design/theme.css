@@ -507,7 +507,17 @@
 }
 
 @media (forced-colors: active) {
-  :root {
+  :root,
+  :root:not([data-theme="light"]),
+  :root[data-theme="dark"],
+  :root[data-look="daylight"],
+  [data-preview-look="daylight"],
+  :root[data-look="paper"],
+  [data-preview-look="paper"],
+  :root[data-look="dusk"],
+  [data-preview-look="dusk"],
+  :root[data-look="midnight"],
+  [data-preview-look="midnight"] {
     --opacity-scrim: 0.6;
     --border: ButtonText;
     --accent: Highlight;

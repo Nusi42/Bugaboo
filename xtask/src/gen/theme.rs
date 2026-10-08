@@ -209,11 +209,19 @@ fn forced_block(out: &mut String, file: &ThemeFile) {
     if forced.is_empty() {
         return;
     }
-    let _ = write!(
-        out,
-        "\n@media {} {{\n  :root {{\n",
-        super::theme_file::FORCED_QUERY
-    );
+    // The same selectors as every block that sets the colors of a theme, and after them, so that
+    // the forced values win over each of them (`:root[data-look]` weighs more than `:root`).
+    let mut selectors = vec![
+        ":root".to_owned(),
+        ":root:not([data-theme=\"light\"])".to_owned(),
+        ":root[data-theme=\"dark\"]".to_owned(),
+    ];
+    for theme in &file.themes {
+        selectors.push(format!(":root[data-look=\"{}\"]", theme.name));
+        selectors.push(format!("[data-preview-look=\"{}\"]", theme.name));
+    }
+    let _ = write!(out, "\n@media {} {{\n", super::theme_file::FORCED_QUERY);
+    let _ = writeln!(out, "  {} {{", selectors.join(",\n  "));
     for token in forced {
         if let Some(value) = &token.forced {
             let _ = writeln!(out, "    --{}: {};", token.name, substitute(value));
@@ -578,6 +586,28 @@ mod tests {
             assert!(css.contains(&format!("[data-preview-look=\"{theme}\"]")));
         }
         assert!(css.contains("prefers-color-scheme: dark"));
+    }
+
+    #[test]
+    fn the_forced_colors_win_over_every_block_that_sets_a_theme() {
+        let css = css(&file()).unwrap();
+        let forced_at = css.find("@media (forced-colors: active)").unwrap();
+        let forced = &css[forced_at..];
+        // Every selector that sets the colors of a theme is in the forced block, which comes after
+        // all of them: at the same weight the later rule wins.
+        let mut wanted = vec![
+            ":root:not([data-theme=\"light\"])".to_owned(),
+            ":root[data-theme=\"dark\"]".to_owned(),
+        ];
+        for theme in ["daylight", "paper", "dusk", "midnight"] {
+            wanted.push(format!(":root[data-look=\"{theme}\"]"));
+            wanted.push(format!("[data-preview-look=\"{theme}\"]"));
+        }
+        for selector in wanted {
+            assert!(css[..forced_at].contains(&selector), "{selector}");
+            assert!(forced.contains(&selector), "{selector} is not forced");
+        }
+        assert!(forced.contains("--accent: Highlight;"), "{forced}");
     }
 
     #[test]
