@@ -35,6 +35,7 @@ use crate::anchor::LogSeal;
 use crate::db::{Database, Row, StoredId, Transaction, to_micros};
 use crate::error::{SecretProblem, StoreError};
 use crate::keys::KeyRing;
+use crate::paging::after_last;
 use crate::schema::{
     BackupCode, Computed, Invitation as InvitationColumns, PasskeyRow, PasswordLogin, PersonRow,
     SetupCodeRow, SignInSession as SessionColumns, TwoStep as TwoStepColumns,
@@ -320,14 +321,13 @@ impl AuthStore for AuthStorage {
             select.cond_where(any);
         }
         if let Some(position) = after {
-            let last = || Func::lower(Expr::val(position.name.clone()));
-            select.cond_where(
-                Cond::any().add(Expr::expr(name()).gt(last())).add(
-                    Cond::all()
-                        .add(Expr::expr(name()).eq(last()))
-                        .add(Expr::col(PersonRow::Id).gt(position.id.stored())),
-                ),
-            );
+            select.cond_where(after_last(
+                || Expr::expr(name()),
+                || Expr::expr(Func::lower(Expr::val(position.name.clone()))),
+                &Order::Asc,
+                PersonRow::Id,
+                position.id.stored(),
+            ));
         }
         self.database
             .fetch_all(&select)
@@ -474,17 +474,13 @@ impl AuthStore for AuthStorage {
             .order_by(InvitationColumns::Id, Order::Asc)
             .limit(limit);
         if let Some((created, id)) = after {
-            // Keyset paging: what comes after the last one in this order.
-            let micros = to_micros(created);
-            select.cond_where(
-                Cond::any()
-                    .add(Expr::col(InvitationColumns::CreatedAt).lt(micros))
-                    .add(
-                        Cond::all()
-                            .add(Expr::col(InvitationColumns::CreatedAt).eq(micros))
-                            .add(Expr::col(InvitationColumns::Id).gt(id.stored())),
-                    ),
-            );
+            select.cond_where(after_last(
+                || Expr::col(InvitationColumns::CreatedAt),
+                || Expr::val(to_micros(created)),
+                &Order::Desc,
+                InvitationColumns::Id,
+                id.stored(),
+            ));
         }
         self.database
             .fetch_all(&select)

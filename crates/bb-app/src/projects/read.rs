@@ -3,6 +3,7 @@
 
 use bb_core::ErrorCode;
 use bb_core::id::ProjectId;
+use bb_core::paging::{Cut, page_len};
 use bb_core::project::ShortName;
 use bb_policy::{Authorized, Permission, Place};
 use jiff::Timestamp;
@@ -201,8 +202,8 @@ pub async fn projects<S: AuthStore>(
         .map(read_cursor)
         .transpose()
         .map_err(|()| AppError::Refused(ErrorCode::InvalidRequest))?;
-    let limit = usize::try_from(bb_core::paging::page_size(Some(input.limit))).unwrap_or(1);
-    let mut items: Vec<ProjectItem> = candidates
+    let limit = page_len(Some(input.limit));
+    let items: Vec<ProjectItem> = candidates
         .into_iter()
         .filter(|project| {
             after.as_ref().is_none_or(|(name, id)| {
@@ -212,9 +213,9 @@ pub async fn projects<S: AuthStore>(
         .take(limit + 1)
         .map(|project| shown.item(project))
         .collect();
-    let more = items.len() > limit;
-    items.truncate(limit);
-    let next_cursor = more.then(|| items.last().map(write_cursor)).flatten();
+    let page = Cut::of(items, limit);
+    let next_cursor = page.next_cursor(write_cursor);
+    let items = page.items;
     Ok(access.authorize(ProjectPage { items, next_cursor }))
 }
 

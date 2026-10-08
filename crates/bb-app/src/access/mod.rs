@@ -128,10 +128,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         place: Place,
     ) -> Result<Arc<Evaluation>, AppError> {
         let owners = self.evaluate(actor.person.id, place).await?;
-        Ok(match &actor.key {
-            Some(key) => Arc::new(owners.narrowed(&key.narrowing)),
-            None => owners,
-        })
+        Ok(owners.narrowed_by(actor.key_scope()))
     }
 
     /// What `person` may do at `place`, from the policy engine. The result is kept for the rest
@@ -282,7 +279,21 @@ impl<S: AuthStore> Ctx<'_, S> {
 }
 
 /// What `person` holds at `place`, read inside a change after the policy lock: what a rule of the
-/// change is judged on, not what was stored when the request began.
+/// change is judged on, not what was stored when the request began. `None` when the place is gone.
+///
+/// # Errors
+/// The error of the store.
+async fn held_if_there_in<S: AuthStore>(
+    transaction: &mut S::Transaction,
+    person: UserId,
+    place: Place,
+) -> Result<Option<Evaluation>, S::Error> {
+    Ok(S::policy_inputs_in(transaction, person, place)
+        .await?
+        .map(|inputs| evaluate(&inputs)))
+}
+
+/// [`held_if_there_in`], for a rule that holds nobody to a place that is gone.
 ///
 /// # Errors
 /// [`Refusal::TooMuch`] (as the error of the store) when the place is gone, or the error of the
@@ -292,10 +303,9 @@ pub(crate) async fn held_in<S: AuthStore>(
     person: UserId,
     place: Place,
 ) -> Result<Evaluation, S::Error> {
-    match S::policy_inputs_in(transaction, person, place).await? {
-        Some(inputs) => Ok(evaluate(&inputs)),
-        None => Err(S::refused(Refusal::TooMuch)),
-    }
+    held_if_there_in::<S>(transaction, person, place)
+        .await?
+        .ok_or_else(|| S::refused(Refusal::TooMuch))
 }
 
 /// Whether `giver` may give this row: they hold every permission of its role at the place it is
@@ -366,10 +376,9 @@ pub(crate) async fn ensure_may_lift_in<S: AuthStore>(
         let (None, Some(project)) = (row.role, row.project) else {
             continue;
         };
-        let may = match S::policy_inputs_in(transaction, actor, Place::Project(project)).await? {
-            Some(inputs) => evaluate(&inputs).allows(Permission::DecideRoles),
-            None => false,
-        };
+        let may = held_if_there_in::<S>(transaction, actor, Place::Project(project))
+            .await?
+            .is_some_and(|held| held.allows(Permission::DecideRoles));
         if !may {
             return Err(S::refused(Refusal::CannotLift));
         }

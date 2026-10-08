@@ -6,6 +6,7 @@
 
 use bb_core::access::PeopleLevel;
 use bb_core::id::{ProjectId, UserId};
+use bb_core::paging::{Cut, page_len, read_len};
 use bb_core::people_kinds::PeopleKind;
 use bb_core::person::Person;
 use bb_policy::{Authorized, Masked, PeopleContext, Permission, PersonRef};
@@ -74,8 +75,7 @@ pub async fn people_to_check<S: AuthStore>(
             next_cursor: None,
         }));
     }
-    let limit = u64::from(bb_core::paging::page_size(Some(input.limit)));
-    let wanted = usize::try_from(limit).unwrap_or(usize::MAX);
+    let wanted = page_len(Some(input.limit));
     let manages = checker.manages_people();
     let mut page: Vec<Person> = Vec::with_capacity(wanted.saturating_add(1));
     // The store gives the people by name, a batch at a time; whoever does not manage people or
@@ -85,10 +85,15 @@ pub async fn people_to_check<S: AuthStore>(
     'batches: loop {
         let batch = ctx
             .store()
-            .people_page(input.search.as_deref(), false, after.as_ref(), limit + 1)
+            .people_page(
+                input.search.as_deref(),
+                false,
+                after.as_ref(),
+                read_len(wanted),
+            )
             .await
             .map_err(|error| internal::<S>(&error))?;
-        let full = u64::try_from(batch.len()).is_ok_and(|count| count > limit);
+        let full = batch.len() > wanted;
         for person in &batch {
             if manages || ctx.has_a_role_at(person.id, place).await? {
                 page.push(person.clone());
@@ -102,11 +107,10 @@ pub async fn people_to_check<S: AuthStore>(
             _ => break,
         }
     }
-    let more = page.len() > wanted;
-    page.truncate(wanted);
-    let next_cursor = more.then(|| page.last().map(write_cursor)).flatten();
-    let mut items = Vec::with_capacity(page.len());
-    for person in &page {
+    let page = Cut::of(page, wanted);
+    let next_cursor = page.next_cursor(write_cursor);
+    let mut items = Vec::with_capacity(page.items.len());
+    for person in &page.items {
         items.push(
             ctx.person_ref(
                 &checker,

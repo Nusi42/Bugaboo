@@ -19,6 +19,7 @@ use sea_query::{Cond, Expr, ExprTrait as _, Order, Query};
 
 use crate::db::{Database, Row, StoredId, Transaction, to_micros};
 use crate::error::StoreError;
+use crate::paging::after_last;
 use crate::schema::{
     AccessKeyPermissionRow, AccessKeyProjectRow, AccessKeyRow, AssignmentRow, GroupMemberRow,
     PasskeyRow, ProjectRow, RoleRow, TwoStep,
@@ -143,17 +144,13 @@ impl Database {
             .order_by(AccessKeyRow::Id, Order::Asc)
             .limit(limit);
         if let Some((created, id)) = after {
-            // Keyset paging: what comes after the last one in this order.
-            let micros = to_micros(created);
-            select.cond_where(
-                Cond::any()
-                    .add(Expr::col(AccessKeyRow::CreatedAt).lt(micros))
-                    .add(
-                        Cond::all()
-                            .add(Expr::col(AccessKeyRow::CreatedAt).eq(micros))
-                            .add(Expr::col(AccessKeyRow::Id).gt(id.stored())),
-                    ),
-            );
+            select.cond_where(after_last(
+                || Expr::col(AccessKeyRow::CreatedAt),
+                || Expr::val(to_micros(created)),
+                &Order::Desc,
+                AccessKeyRow::Id,
+                id.stored(),
+            ));
         }
         let keys = self
             .fetch_all(&select)
