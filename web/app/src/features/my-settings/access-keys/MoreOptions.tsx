@@ -1,8 +1,7 @@
 import type { Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
-import { Switch } from "@bugaboo/ui";
+import { Switch, partOf, part } from "@bugaboo/ui";
 
-import styles from "./AccessKeys.module.css";
 import type { Draft } from "./draft.ts";
 import { PermissionPicker, ProjectPicker } from "./Pickers.tsx";
 
@@ -16,9 +15,9 @@ export interface MoreOptionsProps {
 /** *More options*: single permissions instead of the three choices, and the projects. */
 export function MoreOptions({ draft, rules, onSwitched }: MoreOptionsProps) {
   return (
-    <details className={styles.more}>
-      <summary className={styles.moreTitle}>{t("access-keys.more")}</summary>
-      <div className={styles.moreBody}>
+    <details {...partOf(part.accessKeysMore)}>
+      <summary {...partOf(part.accessKeysMoreTitle)}>{t("access-keys.more")}</summary>
+      <div {...partOf(part.accessKeysMoreBody)}>
         <Switch
           label={t("access-keys.single")}
           isSelected={draft.single}

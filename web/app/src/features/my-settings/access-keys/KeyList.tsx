@@ -1,10 +1,9 @@
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, Card, SaveStatus, Skeleton } from "@bugaboo/ui";
+import { Alert, alertTone, Card, SaveStatus, Skeleton, partOf, part } from "@bugaboo/ui";
 import { useQuery } from "@tanstack/react-query";
 
 import { messageOf } from "../../../shared/errors.ts";
 import { useAfterDelay } from "../../../shared/use-optimistic.ts";
-import styles from "./AccessKeys.module.css";
 import { keysOptions, type AccessKey } from "./access-keys.ts";
 import { KeyRow } from "./KeyRow.tsx";
 import { useDeleteKey } from "./use-delete-key.ts";
@@ -20,9 +19,9 @@ export function KeyList() {
       {keys.isError ? <Alert tone={alertTone.danger}>{messageOf(keys.error)}</Alert> : null}
       <div aria-busy={keys.isPending}>
         {keys.isSuccess && items.length === 0 ? (
-          <p className={styles.muted}>{t("access-keys.empty")}</p>
+          <p {...partOf(part.muted)}>{t("access-keys.empty")}</p>
         ) : null}
-        <ul className={styles.list} aria-label={t("access-keys.list")}>
+        <ul {...partOf(part.list)} aria-label={t("access-keys.list")}>
           {items.map((item) => (
             <KeyRow
               key={item.id}

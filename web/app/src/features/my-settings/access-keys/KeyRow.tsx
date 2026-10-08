@@ -1,8 +1,7 @@
 import { t } from "@bugaboo/messages";
-import { buttonLook, ConfirmDialog } from "@bugaboo/ui";
+import { buttonLook, ConfirmDialog, partOf, part } from "@bugaboo/ui";
 
 import { formatDate, formatDateTime } from "../../../shared/format.ts";
-import styles from "./AccessKeys.module.css";
 import type { AccessKey } from "./access-keys.ts";
 import { choiceName } from "./choice.ts";
 
@@ -48,9 +47,9 @@ function RunsOut({ item }: { readonly item: AccessKey }) {
   }
   const when = formatDate(day);
   return item.expired === true ? (
-    <span className={styles.expired}>{t("access-keys.row.expired", { when })}</span>
+    <span {...partOf(part.accessKeysExpired)}>{t("access-keys.row.expired", { when })}</span>
   ) : (
-    <span className={styles.muted}>{t("access-keys.row.expires", { when })}</span>
+    <span {...partOf(part.muted)}>{t("access-keys.row.expires", { when })}</span>
   );
 }
 
@@ -59,16 +58,16 @@ export function KeyRow({ item, onDelete }: KeyRowProps) {
   const name = item.name ?? "";
   const used = item.last_used_at;
   return (
-    <li className={styles.item}>
-      <span className={styles.itemText}>
-        <span className={styles.itemTitle}>{name}</span>
-        <span className={styles.prefix}>
+    <li {...partOf(part.accessKeysItem)}>
+      <span {...partOf(part.accessKeysItemText)}>
+        <span {...partOf(part.accessKeysItemTitle)}>{name}</span>
+        <span {...partOf(part.accessKeysPrefix)}>
           {t("access-keys.row.prefix", { prefix: `bb_${item.prefix ?? ""}` })}
         </span>
-        <span className={styles.muted}>{mayText(item)}</span>
-        <span className={styles.muted}>{whereText(item)}</span>
+        <span {...partOf(part.muted)}>{mayText(item)}</span>
+        <span {...partOf(part.muted)}>{whereText(item)}</span>
         <RunsOut item={item} />
-        <span className={styles.muted}>
+        <span {...partOf(part.muted)}>
           {used === undefined || used === null
             ? t("access-keys.row.never-used")
             : t("access-keys.row.last-used", { when: formatDateTime(used) })}

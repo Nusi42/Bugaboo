@@ -1,9 +1,8 @@
 import { t } from "@bugaboo/messages";
-import { Button, buttonLook, Card } from "@bugaboo/ui";
+import { Button, buttonLook, Card, partOf, part } from "@bugaboo/ui";
 import { useState } from "react";
 
 import { usePageTitle } from "../../../shared/use-page.ts";
-import styles from "./AccessKeys.module.css";
 import { KeyList } from "./KeyList.tsx";
 import { MakeKeyForm } from "./MakeKeyForm.tsx";
 import { ShownOnce } from "./ShownOnce.tsx";
@@ -22,11 +21,11 @@ export function AccessKeysPage() {
     setMaking({ step: "idle" });
   };
   return (
-    <div className={styles.stack}>
+    <div {...partOf(part.stack)}>
       <Card heading={t("access-keys.title")} level={1}>
-        <p className={styles.text}>{t("access-keys.intro")}</p>
+        <p {...partOf(part.text)}>{t("access-keys.intro")}</p>
         {making.step === "idle" ? (
-          <div className={styles.row}>
+          <div {...partOf(part.row)}>
             <Button
               look={buttonLook.primary}
               onPress={() => {

@@ -9,10 +9,11 @@ import {
   fieldKind,
   SubmitButton,
   TextField,
+  partOf,
+  part,
 } from "@bugaboo/ui";
 
 import { formatDay } from "../../../shared/format.ts";
-import styles from "./AccessKeys.module.css";
 import { choiceHelp, choiceName, plainChoices } from "./choice.ts";
 import type { Draft } from "./draft.ts";
 
@@ -57,8 +58,8 @@ export function Basics({ draft }: PartProps) {
           onChange={draft.setChoice}
         />
       )}
-      <p className={styles.muted}>{t(choiceHelp(draft.single ? "permissions" : draft.choice))}</p>
-      <p className={styles.muted}>{t("access-keys.never")}</p>
+      <p {...partOf(part.muted)}>{t(choiceHelp(draft.single ? "permissions" : draft.choice))}</p>
+      <p {...partOf(part.muted)}>{t("access-keys.never")}</p>
     </>
   );
 }
@@ -113,7 +114,7 @@ export function Send({ draft, needOne, problem, isPending, onCancel }: SendProps
       />
       {needOne ? <Alert tone={alertTone.danger}>{t("access-keys.pick-one")}</Alert> : null}
       {problem === null ? null : <Alert tone={alertTone.danger}>{problem}</Alert>}
-      <div className={styles.row}>
+      <div {...partOf(part.row)}>
         <SubmitButton isPending={isPending}>{t("access-keys.submit")}</SubmitButton>
         <Button onPress={onCancel}>{t("access-keys.cancel")}</Button>
       </div>
