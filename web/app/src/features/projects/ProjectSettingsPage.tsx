@@ -1,5 +1,6 @@
-import { projectPages } from "../../shared/project-pages.ts";
+import { mayOpenProjectPage, projectPages } from "../../shared/project-pages.ts";
 import { ProjectGate } from "./ProjectGate.tsx";
+import { OtherTab } from "./OtherTab.tsx";
 import { ProjectSettings } from "./ProjectSettings.tsx";
 
 /**
@@ -11,7 +12,13 @@ import { ProjectSettings } from "./ProjectSettings.tsx";
 export function ProjectSettingsPage({ address }: { readonly address: string }) {
   return (
     <ProjectGate address={address} page={projectPages.settings}>
-      {(project) => <ProjectSettings project={project} address={address} />}
+      {(project) =>
+        mayOpenProjectPage(projectPages.settings, project) ? (
+          <ProjectSettings project={project} address={address} />
+        ) : (
+          <OtherTab project={project} />
+        )
+      }
     </ProjectGate>
   );
 }

@@ -15,6 +15,8 @@ export interface QueryGateProps<Data> {
    * the same). Without it, that answer is told like any other failure.
    */
   readonly notFound?: ReactNode;
+  /** What shows while the data loads; the word *Loading* by default. */
+  readonly loading?: ReactNode;
   /** The page, once the data is there. */
   readonly children: (data: Readonly<Data>) => ReactNode;
 }
@@ -23,7 +25,13 @@ export interface QueryGateProps<Data> {
  * The part of a page that comes before the page: a failure is told in plain words (a thing that is
  * not there, as `notFound`), and while the data loads nothing is claimed.
  */
-export function QueryGate<Data>({ error, data, notFound, children }: QueryGateProps<Data>) {
+export function QueryGate<Data>({
+  error,
+  data,
+  notFound,
+  loading,
+  children,
+}: QueryGateProps<Data>) {
   if (error !== null && error !== undefined) {
     return notFound !== undefined && codeOf(error) === "resource.not_found" ? (
       notFound
@@ -32,7 +40,7 @@ export function QueryGate<Data>({ error, data, notFound, children }: QueryGatePr
     );
   }
   if (data === undefined) {
-    return <p className={styles.muted}>{t("common.loading")}</p>;
+    return loading === undefined ? <p className={styles.muted}>{t("common.loading")}</p> : loading;
   }
   return children(data);
 }

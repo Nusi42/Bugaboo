@@ -20,7 +20,7 @@ interface ProjectFrameProps {
 
 /** What every page of *What roles see here* has: the tabs of the settings, the heading and the introduction. */
 function ProjectFrame({ project, page, heading, intro, children }: ProjectFrameProps) {
-  if (!mayOpenProjectPage(page, project.permissions)) {
+  if (!mayOpenProjectPage(page, project)) {
     return <NotFoundPage />;
   }
   return (

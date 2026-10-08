@@ -2,15 +2,43 @@ import { settingDefaults, settingKeys } from "@bugaboo/api-client";
 import {
   browserStorage,
   forgetStored,
+  parseJson,
   readStored,
   storageKey,
-  writeStored,
   type StoreGetter,
+  writeStored,
 } from "@bugaboo/ui";
 
 import type { MySettings } from "./my-settings.ts";
 import { textOf } from "./setting-values.ts";
-import { parseOverrides, type ShortcutOverrides } from "./shortcuts.ts";
+import {
+  isReservedKeys,
+  isValidSequence,
+  shortcutIdOf,
+  type ShortcutId,
+  type ShortcutOverrides,
+} from "./shortcuts.ts";
+
+/** The overrides in a saved text; anything that is not a valid choice is left out. */
+export function parseOverrides(text: string | null): ShortcutOverrides {
+  const saved = parseJson(text);
+  if (typeof saved !== "object" || saved === null) {
+    return {};
+  }
+  const result: Partial<Record<ShortcutId, readonly string[]>> = {};
+  for (const [name, keys] of Object.entries(saved)) {
+    const id = shortcutIdOf(name);
+    if (id !== undefined && Array.isArray(keys) && keys.length > 0) {
+      const valid = keys.filter(
+        (key): key is string => typeof key === "string" && isValidSequence(key),
+      );
+      if (valid.length === keys.length && !valid.some((one) => isReservedKeys(one))) {
+        result[id] = valid;
+      }
+    }
+  }
+  return result;
+}
 
 /** The keys the person chose for shortcuts. */
 export function shortcutKeysOf(settings?: MySettings): ShortcutOverrides {

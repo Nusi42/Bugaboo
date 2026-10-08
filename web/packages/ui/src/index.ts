@@ -42,6 +42,7 @@ export { Overlay, type OverlayProps } from "./Overlay.tsx";
 export {
   browserStorage,
   forgetStored,
+  parseJson,
   readStored,
   readStoredJson,
   storageKey,

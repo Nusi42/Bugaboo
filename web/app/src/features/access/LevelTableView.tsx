@@ -2,7 +2,7 @@ import { t } from "@bugaboo/messages";
 import { Alert, alertTone, SaveStatus, SelectField, useLayout } from "@bugaboo/ui";
 import { useState, type ReactNode } from "react";
 
-import { messageOf } from "../../shared/errors.ts";
+import { QueryGate } from "../shell/index.ts";
 import styles from "./Access.module.css";
 import { LevelsMatrix, type LevelsViewProps } from "./LevelsMatrix.tsx";
 import { rank, type LevelTable } from "./levels.ts";
@@ -38,29 +38,27 @@ function hasCeiling<Subject extends string, Level extends string>(
   return table.rows.some((row) => rank(table.levels, row.yours) < table.levels.length - 1);
 }
 
-/**
- * The screen of a table of levels (SEC-04, PRIV-12): the matrix on a computer, one role at a time
- * as a list on a phone and a tablet. Changes show at once; what the server refuses comes back with
- * its plain message.
- */
-export function LevelTableView<Subject extends string, Level extends string>({
-  levels,
-  preferredRole,
+interface TableBodyProps<Subject extends string, Level extends string>
+  extends
+    Omit<LevelTableViewProps<Subject, Level>, "levels" | "preferredRole">,
+    Pick<LevelsOf<Subject, Level>, "edits"> {
+  readonly table: LevelTable<Subject, Level>;
+  readonly computer: boolean;
+  readonly role: string;
+  readonly onChoose: (role: string) => void;
+}
+
+/** The table once it is there: notes about it, the chooser of a role, the matrix or the list. */
+function TableBody<Subject extends string, Level extends string>({
+  table,
+  edits,
+  computer,
+  role,
+  onChoose,
   previewLabel,
   after,
   ...view
-}: LevelTableViewProps<Subject, Level>) {
-  const computer = useLayout() === "computer";
-  const [chosen, setChosen] = useState<string>();
-  const { table, failed, edits } = levels;
-  if (failed !== null && failed !== undefined) {
-    return <Alert tone={alertTone.danger}>{messageOf(failed)}</Alert>;
-  }
-  if (table === undefined) {
-    return <p className={styles.muted}>{t("common.loading")}</p>;
-  }
-  const role =
-    table.roles.find((known) => known.id === chosen)?.id ?? firstRole(table, preferredRole);
+}: TableBodyProps<Subject, Level>) {
   const showChooser = table.roles.length > 0 && (!computer || previewLabel !== undefined);
   return (
     <div className={styles.stack}>
@@ -81,7 +79,7 @@ export function LevelTableView<Subject extends string, Level extends string>({
           label={computer && previewLabel !== undefined ? previewLabel : t("access.role-chooser")}
           choices={table.roles.map((known) => ({ value: known.id, label: known.name }))}
           value={role}
-          onChange={setChosen}
+          onChange={onChoose}
         />
       ) : null}
       {computer ? (
@@ -91,5 +89,36 @@ export function LevelTableView<Subject extends string, Level extends string>({
       )}
       {table.roles.length > 0 && after !== undefined ? after(table, role) : null}
     </div>
+  );
+}
+
+/**
+ * The screen of a table of levels (SEC-04, PRIV-12): the matrix on a computer, one role at a time
+ * as a list on a phone and a tablet. Changes show at once; what the server refuses comes back with
+ * its plain message.
+ */
+export function LevelTableView<Subject extends string, Level extends string>({
+  levels,
+  preferredRole,
+  ...view
+}: LevelTableViewProps<Subject, Level>) {
+  const computer = useLayout() === "computer";
+  const [chosen, setChosen] = useState<string>();
+  const { table, failed, edits } = levels;
+  return (
+    <QueryGate error={failed} data={table}>
+      {(shown) => (
+        <TableBody
+          {...view}
+          table={shown}
+          edits={edits}
+          computer={computer}
+          role={
+            shown.roles.find((known) => known.id === chosen)?.id ?? firstRole(shown, preferredRole)
+          }
+          onChoose={setChosen}
+        />
+      )}
+    </QueryGate>
   );
 }

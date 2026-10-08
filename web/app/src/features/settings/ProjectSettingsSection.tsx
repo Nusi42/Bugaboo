@@ -1,6 +1,4 @@
-import { Alert, alertTone } from "@bugaboo/ui";
-
-import { messageOf } from "../../shared/errors.ts";
+import { QueryGate } from "../shell/index.ts";
 import { useProjectSettings } from "./project.ts";
 import { SettingsForm } from "./SettingsForm.tsx";
 
@@ -16,25 +14,25 @@ export interface ProjectSettingsSectionProps {
  */
 export function ProjectSettingsSection({ projectId }: ProjectSettingsSectionProps) {
   const { settings, failed, edits } = useProjectSettings(projectId);
-  if (failed !== null) {
-    return <Alert tone={alertTone.danger}>{messageOf(failed)}</Alert>;
-  }
-  if (settings === undefined || settings.settings.length === 0) {
-    return null;
-  }
   return (
-    <SettingsForm
-      settings={settings.settings}
-      saveState={edits.saveState}
-      problem={edits.problem}
-      actions={{
-        onChange: (key, value) => {
-          edits.change({ kind: "change", key, value });
-        },
-        onReset: (key) => {
-          edits.change({ kind: "reset", key });
-        },
-      }}
-    />
+    <QueryGate error={failed} data={settings} loading={null}>
+      {(shown) =>
+        shown.settings.length === 0 ? null : (
+          <SettingsForm
+            settings={shown.settings}
+            saveState={edits.saveState}
+            problem={edits.problem}
+            actions={{
+              onChange: (key, value) => {
+                edits.change({ kind: "change", key, value });
+              },
+              onReset: (key) => {
+                edits.change({ kind: "reset", key });
+              },
+            }}
+          />
+        )
+      }
+    </QueryGate>
   );
 }

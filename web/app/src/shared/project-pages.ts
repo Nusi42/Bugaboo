@@ -3,6 +3,8 @@ import { t } from "@bugaboo/messages";
 import { iconName, type IconName } from "@bugaboo/ui";
 
 import { addressInProject, paths, type Path } from "./paths.ts";
+import type { Schema } from "@bugaboo/api-client";
+
 import type { PermissionKey } from "./permissions.ts";
 
 /** One page of a project: where it is, what it is called, who may open it and how it is titled. */
@@ -42,7 +44,7 @@ export const projectPages = {
     icon: iconName.settings,
     parent: paths.project,
     tab: "projects.tab-general",
-    // Opens for a person who may change the project or move it: not one permission alone.
+    // Opens for a person who may change the project or move it: `mayOpenProjectPage` says so.
     needs: null,
     title: (name) => t("projects.settings-title", { name }),
   },
@@ -98,10 +100,29 @@ export function projectPageAddress(page: ProjectPage, shortName: string): string
   return addressInProject(page.path, shortName);
 }
 
-/** Whether the permissions a person holds in a project open a page that one permission decides. */
-export function mayOpenProjectPage(
-  page: ProjectPage,
-  permissions: readonly PermissionKey[],
-): boolean {
-  return page.needs === null || permissions.includes(page.needs);
+/** What a person holds in a project that decides which of its pages open. */
+export interface HeldInProject {
+  readonly permissions: readonly PermissionKey[];
+  readonly may_move: Schema<"ProjectDetailBody">["may_move"];
+}
+
+/** Whether the person may change the name and short name of the project. */
+export function mayChangeProject(held: HeldInProject): boolean {
+  return held.permissions.includes("change-project-settings");
+}
+
+/** Whether the person may move the project somewhere. */
+export function mayMoveProject(held: HeldInProject): boolean {
+  return held.may_move !== "nowhere";
+}
+
+/**
+ * Whether what a person holds in a project opens a page of it. The settings open for a person who
+ * may change the project or move it; every other page by the one permission it names.
+ */
+export function mayOpenProjectPage(page: ProjectPage, held: HeldInProject): boolean {
+  if (page === projectPages.settings) {
+    return mayChangeProject(held) || mayMoveProject(held);
+  }
+  return page.needs === null || held.permissions.includes(page.needs);
 }

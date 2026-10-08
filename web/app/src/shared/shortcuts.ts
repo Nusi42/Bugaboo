@@ -77,10 +77,6 @@ export type ShortcutId = (typeof shortcutDefinitions)[number]["id"];
 /** The keys a person chose to use instead of the defaults, by shortcut. */
 export type ShortcutOverrides = Readonly<Partial<Record<ShortcutId, readonly string[]>>>;
 
-function isShortcutId(value: unknown): value is ShortcutId {
-  return shortcutDefinitions.some((definition) => definition.id === value);
-}
-
 /** The definition of a shortcut. */
 export function definitionOf(id: ShortcutId): ShortcutDefinition {
   const found = shortcutDefinitions.find((definition) => definition.id === id);
@@ -157,34 +153,6 @@ export function conflictFor(
     }
   }
   return null;
-}
-
-/** The overrides in a saved text; anything that is not a valid choice is left out. */
-export function parseOverrides(text: string | null): ShortcutOverrides {
-  let saved: unknown = null;
-  try {
-    saved = text === null ? null : JSON.parse(text);
-  } catch (error) {
-    if (!(error instanceof SyntaxError)) {
-      throw error;
-    }
-    saved = null;
-  }
-  if (typeof saved !== "object" || saved === null) {
-    return {};
-  }
-  const result: Partial<Record<ShortcutId, readonly string[]>> = {};
-  for (const [id, keys] of Object.entries(saved)) {
-    if (isShortcutId(id) && Array.isArray(keys) && keys.length > 0) {
-      const valid = keys.filter(
-        (key): key is string => typeof key === "string" && isValidSequence(key),
-      );
-      if (valid.length === keys.length && !valid.some((one) => isReservedKeys(one))) {
-        result[id] = valid;
-      }
-    }
-  }
-  return result;
 }
 
 /** The functions that do what each shortcut says; a shortcut without one does nothing here. */

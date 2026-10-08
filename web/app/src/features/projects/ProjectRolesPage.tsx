@@ -8,7 +8,7 @@ import type { OneProject } from "./use-projects.ts";
 
 /** The page once the project is known: the tabs, then *Who has which role* in the project. */
 function Roles({ project }: { readonly project: OneProject }) {
-  if (!mayOpenProjectPage(projectPages.roles, project.permissions)) {
+  if (!mayOpenProjectPage(projectPages.roles, project)) {
     return <NotFoundPage />;
   }
   const { id, name } = project.project;

@@ -30,18 +30,13 @@ export type StoreGetter = () => KeyStore;
 /** The storage of the browser itself. */
 export const browserStorage: StoreGetter = () => localStorage;
 
-/** What was kept under the key; nothing when there is none or the storage is blocked. */
-export function readStored(key: StorageKey, store: StoreGetter = browserStorage): string | null {
-  try {
-    return store().getItem(key);
-  } catch {
-    return null;
-  }
+/** Whether the storage refused (blocked site data, no room): the one failure that is handled here. */
+function refused(error: unknown): boolean {
+  return error instanceof DOMException;
 }
 
-/** What was kept under the key as JSON; nothing when there is none, it is not JSON or the storage is blocked. */
-export function readStoredJson(key: StorageKey, store: StoreGetter = browserStorage): unknown {
-  const text = readStored(key, store);
+/** The value in a text of JSON; nothing when there is no text or it is not JSON. */
+export function parseJson(text: string | null): unknown {
   if (text === null) {
     return undefined;
   }
@@ -55,6 +50,23 @@ export function readStoredJson(key: StorageKey, store: StoreGetter = browserStor
   }
 }
 
+/** What was kept under the key; nothing when there is none or the storage is blocked. */
+export function readStored(key: StorageKey, store: StoreGetter = browserStorage): string | null {
+  try {
+    return store().getItem(key);
+  } catch (error) {
+    if (refused(error)) {
+      return null;
+    }
+    throw error;
+  }
+}
+
+/** What was kept under the key as JSON; nothing when there is none, it is not JSON or the storage is blocked. */
+export function readStoredJson(key: StorageKey, store: StoreGetter = browserStorage): unknown {
+  return parseJson(readStored(key, store));
+}
+
 /** Keeps the text under the key. When the storage is blocked the choice lasts until the page is closed, which is all it was before. */
 export function writeStored(
   key: StorageKey,
@@ -63,8 +75,10 @@ export function writeStored(
 ): void {
   try {
     store().setItem(key, text);
-  } catch {
-    // Nothing is kept; the callers hold the value in memory too.
+  } catch (error) {
+    if (!refused(error)) {
+      throw error;
+    }
   }
 }
 
@@ -72,7 +86,9 @@ export function writeStored(
 export function forgetStored(key: StorageKey, store: StoreGetter = browserStorage): void {
   try {
     store().removeItem(key);
-  } catch {
-    // Nothing was kept that could be removed.
+  } catch (error) {
+    if (!refused(error)) {
+      throw error;
+    }
   }
 }

@@ -11,6 +11,7 @@ import {
 import {
   browserStorage,
   forgetStored,
+  parseJson,
   readStored,
   storageKey,
   writeStored,
@@ -66,15 +67,7 @@ function isSpacing(value: unknown): value is SpacingChoice {
  * one part, so a choice that no longer exists never breaks the page.
  */
 export function parseAppearance(text: string | null): Appearance {
-  let saved: unknown = null;
-  try {
-    saved = text === null ? null : JSON.parse(text);
-  } catch (error) {
-    if (!(error instanceof SyntaxError)) {
-      throw error;
-    }
-    saved = null;
-  }
+  const saved = parseJson(text);
   const read = (key: string): unknown =>
     typeof saved === "object" && saved !== null ? Reflect.get(saved, key) : undefined;
   const theme = read("theme");

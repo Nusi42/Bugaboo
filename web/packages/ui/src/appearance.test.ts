@@ -13,7 +13,7 @@ import type { KeyStore } from "./storage.ts";
 import { darkThemeIds, defaultDarkTheme, defaultLightTheme, lightThemeIds } from "./tokens.ts";
 
 const blocked = (): never => {
-  throw new Error("blocked");
+  throw new DOMException("blocked", "SecurityError");
 };
 
 /** Storage in memory; `failToWrite` makes saving fail, as blocked site data does. */

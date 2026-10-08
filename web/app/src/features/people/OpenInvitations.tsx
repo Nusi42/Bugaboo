@@ -8,6 +8,7 @@ import { messageOf } from "../../shared/errors.ts";
 import { formatDateTime } from "../../shared/format.ts";
 import styles from "./People.module.css";
 import { refreshInvitations, useOpenInvitations } from "./invitations.ts";
+import { linesFrom } from "../../shared/paged.ts";
 
 type Invitation = Schema<"InvitationItem">;
 
@@ -64,8 +65,7 @@ function InvitationRow({ invitation, onTakenBack }: InvitationRowProps) {
 export function OpenInvitations() {
   const invitations = useOpenInvitations();
   const [takenBack, setTakenBack] = useState(false);
-  const items =
-    invitations.data?.pages.flatMap((page: Schema<"Page_InvitationItem">) => page.items) ?? [];
+  const items = linesFrom(invitations.data?.pages, (item) => item);
   if (invitations.isError) {
     return <Alert tone={alertTone.danger}>{messageOf(invitations.error)}</Alert>;
   }
