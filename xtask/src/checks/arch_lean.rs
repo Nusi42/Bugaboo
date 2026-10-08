@@ -27,8 +27,16 @@ use super::api_spec::{self, resolve};
 use super::exemptions::{self, Used, names_a_follow_up};
 use super::{Check, Context, Finding};
 
+/// The parameter that says which fields an answer holds.
+const FIELDS_PARAMETER: &str = "fields";
+/// The parameter that says where a page starts.
+const CURSOR_PARAMETER: &str = "cursor";
+/// The parameter that says how long a page is; it has a maximum.
+const LIMIT_PARAMETER: &str = "limit";
 /// The parameters a list route takes.
-const REQUIRED_PARAMETERS: [&str; 3] = ["fields", "cursor", "limit"];
+const REQUIRED_PARAMETERS: [&str; 3] = [FIELDS_PARAMETER, CURSOR_PARAMETER, LIMIT_PARAMETER];
+/// The property of a page that holds the position of the next page.
+const NEXT_CURSOR: &str = "next_cursor";
 /// The only name of a list that is paged.
 const PAGED_LIST: &str = "items";
 /// Where the exemptions are written down, each with its reason.
@@ -143,22 +151,25 @@ fn paging_findings(spec: &Value, operation: &Value, schema: &Value, place: &str)
                     "A list route must take the query parameter `{name}` (lean answers, paging)."
                 ),
             )),
-            Some(parameter) if name == "limit" => {
+            Some(parameter) if name == LIMIT_PARAMETER => {
                 let maximum = parameter.pointer("/schema/maximum");
                 if !maximum.is_some_and(Value::is_number) {
                     findings.push(Finding::at(
                         place,
-                        "The parameter `limit` must have a `maximum`, so one request cannot ask for everything.",
+                        format!("The parameter `{LIMIT_PARAMETER}` must have a `maximum`, so one request cannot ask for everything."),
                     ));
                 }
             }
             Some(_) => {}
         }
     }
-    if schema.pointer("/properties/next_cursor").is_none() {
+    if schema
+        .pointer(&format!("/properties/{NEXT_CURSOR}"))
+        .is_none()
+    {
         findings.push(Finding::at(
             place,
-            "The answer of a list route must hold `next_cursor`.",
+            format!("The answer of a list route must hold `{NEXT_CURSOR}`."),
         ));
     }
     findings
@@ -322,7 +333,7 @@ fn evaluate(spec: &Value, exemptions: &[Exemption]) -> Vec<Finding> {
         if is_array(spec, schema) {
             findings.push(Finding::at(
                 &place,
-                format!("The answer is a bare array. Answer with an object that holds the list as `{PAGED_LIST}`, so there is room for `next_cursor`."),
+                format!("The answer is a bare array. Answer with an object that holds the list as `{PAGED_LIST}`, so there is room for `{NEXT_CURSOR}`."),
             ));
             continue;
         }
@@ -389,7 +400,7 @@ mod tests {
     fn page(list: &str, with_cursor: bool) -> Value {
         let mut properties = json!({ list: {"type": "array", "items": {}}});
         if with_cursor {
-            properties["next_cursor"] = json!({"type": "string"});
+            properties[NEXT_CURSOR] = json!({"type": "string"});
         }
         json!({"type": "object", "properties": properties})
     }
@@ -429,7 +440,7 @@ mod tests {
     fn capped(flag: bool) -> Value {
         let mut schema = page("issues", false);
         if flag {
-            schema["properties"]["truncated"] = json!({"type": "boolean"});
+            schema["properties"][CAP_FLAG] = json!({"type": "boolean"});
         }
         schema
     }
@@ -437,20 +448,23 @@ mod tests {
     #[test]
     fn good_example() {
         let good = spec_with(
-            &parameters(&["fields", "cursor", "limit"], true),
-            &page("items", true),
+            &parameters(&REQUIRED_PARAMETERS, true),
+            &page(PAGED_LIST, true),
         );
         assert!(messages(&good, &[]).is_empty());
     }
 
     #[test]
     fn bad_example() {
-        let bad = spec_with(&parameters(&["limit"], false), &page("items", false));
+        let bad = spec_with(
+            &parameters(&[LIMIT_PARAMETER], false),
+            &page(PAGED_LIST, false),
+        );
         let found = messages(&bad, &[]).join("\n");
         assert!(found.contains("`fields`"), "{found}");
         assert!(found.contains("`cursor`"), "{found}");
         assert!(found.contains("must have a `maximum`"), "{found}");
-        assert!(found.contains("next_cursor"), "{found}");
+        assert!(found.contains(NEXT_CURSOR), "{found}");
     }
 
     #[test]
@@ -463,7 +477,7 @@ mod tests {
     #[test]
     fn bad_example_a_get_that_answers_with_a_bare_array() {
         let bare = spec_with(
-            &parameters(&["fields", "cursor", "limit"], true),
+            &parameters(&REQUIRED_PARAMETERS, true),
             &json!({"type": "array", "items": {"type": "string"}}),
         );
         let found = messages(&bare, &[]).join(
@@ -476,8 +490,8 @@ mod tests {
     #[test]
     fn good_example_a_get_that_answers_with_an_object_around_its_list() {
         let wrapped = spec_with(
-            &parameters(&["fields", "cursor", "limit"], true),
-            &page("items", true),
+            &parameters(&REQUIRED_PARAMETERS, true),
+            &page(PAGED_LIST, true),
         );
         assert!(messages(&wrapped, &[]).is_empty());
     }

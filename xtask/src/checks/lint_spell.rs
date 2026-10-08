@@ -1,9 +1,7 @@
 //! LINT-SPELL: no spelling mistakes in code, UI text and docs (coding-standards §2, `typos.toml`).
 
-use std::path::Path;
-
 use super::{Check, Context, Finding};
-use crate::tools;
+use crate::tools::FileTool;
 
 pub(crate) struct LintSpell;
 
@@ -13,32 +11,28 @@ impl Check for LintSpell {
     }
 
     fn run(&self, context: &Context<'_>) -> anyhow::Result<Vec<Finding>> {
-        check_files(
+        tool().check(
             context.repo.root(),
             context.files_for(self.id())?.as_deref(),
         )
     }
 }
 
-fn check_files(root: &Path, files: Option<&[String]>) -> anyhow::Result<Vec<Finding>> {
-    // --force-exclude: the excludes in typos.toml also apply to files named explicitly.
-    let mut args = vec![
-        "--force-exclude",
-        "--config",
-        "typos.toml",
-        "--format",
-        "brief",
-    ];
-    match files {
-        Some([]) => return Ok(Vec::new()),
-        Some(files) => args.extend(files.iter().map(String::as_str)),
-        None => {}
+fn tool() -> FileTool {
+    FileTool {
+        program: "typos",
+        // --force-exclude: the excludes in typos.toml also apply to files named explicitly.
+        args: &[
+            "--force-exclude",
+            "--config",
+            "typos.toml",
+            "--format",
+            "brief",
+        ],
+        whole: &[],
+        fix: "Spelling mistakes. Fix the words; for a real word the tool does not know, add it to `typos.toml`.".to_owned(),
+        clean: None,
     }
-    let output = tools::run_installed("typos", &args, root)?;
-    Ok(tools::findings_from(
-        output,
-        "Spelling mistakes. Fix the words; for a real word the tool does not know, add it to `typos.toml`.",
-    ))
 }
 
 #[cfg(test)]
@@ -53,7 +47,7 @@ mod tests {
         // Assembled at run time so that this file itself has no misspelling.
         let wrong = ["rec", "ieve"].concat();
         temp.write("a.md", format!("This is a {wrong} mistake.\n"));
-        crate::testutil::assert_real_findings(&check_files(temp.path(), None).unwrap());
+        crate::testutil::assert_real_findings(&tool().check(temp.path(), None).unwrap());
     }
 
     #[test]
@@ -61,6 +55,6 @@ mod tests {
         let temp = TempDir::new("lint-spell-good");
         temp.write("typos.toml", "");
         temp.write("a.md", "This text is spelled correctly.\n");
-        assert!(check_files(temp.path(), None).unwrap().is_empty());
+        assert!(tool().check(temp.path(), None).unwrap().is_empty());
     }
 }

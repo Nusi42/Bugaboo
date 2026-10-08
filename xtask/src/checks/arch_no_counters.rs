@@ -264,7 +264,7 @@ fn evaluate_spec(spec: &Value, exemptions: &[Exemption]) -> Vec<Finding> {
             findings.push(Finding::at(
                 EXEMPTIONS_PATH,
                 format!(
-                    "The entry `{}` in {} needs a reason that says why the number holds only                      what the viewer may see.",
+                    "The entry `{}` in {} needs a reason that says why the number holds only what the viewer may see.",
                     exemption.property, exemption.route
                 ),
             ));

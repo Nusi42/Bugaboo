@@ -1,9 +1,7 @@
 //! LINT-CI: CI workflow files are valid (ADR-0014). Passes when there are no workflow files.
 
-use std::path::Path;
-
 use super::{Check, Context, Finding};
-use crate::tools;
+use crate::tools::FileTool;
 
 pub(crate) struct LintCi;
 
@@ -13,26 +11,18 @@ impl Check for LintCi {
     }
 
     fn run(&self, context: &Context<'_>) -> anyhow::Result<Vec<Finding>> {
-        check_files(context.repo.root(), &context.selected(self.id())?)
+        tool().check(context.repo.root(), Some(&context.selected(self.id())?))
     }
 }
 
-fn check_files(root: &Path, files: &[String]) -> anyhow::Result<Vec<Finding>> {
-    let workflows: Vec<&str> = files
-        .iter()
-        .map(String::as_str)
-        .filter(|file| root.join(file).is_file())
-        .collect();
-    if workflows.is_empty() {
-        return Ok(Vec::new());
+fn tool() -> FileTool {
+    FileTool {
+        program: "actionlint",
+        args: &["-no-color"],
+        whole: &[],
+        fix: "The workflow files have problems. Fix them as described below.".to_owned(),
+        clean: None,
     }
-    let mut args = vec!["-no-color"];
-    args.extend(workflows);
-    let output = tools::run_installed("actionlint", &args, root)?;
-    Ok(tools::findings_from(
-        output,
-        "The workflow files have problems. Fix them as described below.",
-    ))
 }
 
 #[cfg(test)]
@@ -49,7 +39,9 @@ mod tests {
             FILE,
             "on: push\njobs:\n  build:\n    steps:\n      - run: echo hi\n",
         );
-        crate::testutil::assert_real_findings(&check_files(temp.path(), &[FILE.into()]).unwrap());
+        crate::testutil::assert_real_findings(
+            &tool().check(temp.path(), Some(&[FILE.into()])).unwrap(),
+        );
     }
 
     #[test]
@@ -59,16 +51,17 @@ mod tests {
             FILE,
             "on: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - run: echo hi\n",
         );
-        assert!(check_files(temp.path(), &[FILE.into()]).unwrap().is_empty());
+        assert!(
+            tool()
+                .check(temp.path(), Some(&[FILE.into()]))
+                .unwrap()
+                .is_empty()
+        );
     }
 
     #[test]
     fn no_workflow_files_passes() {
         let temp = TempDir::new("lint-ci-none");
-        assert!(
-            check_files(temp.path(), &["README.md".into()])
-                .unwrap()
-                .is_empty()
-        );
+        assert!(tool().check(temp.path(), Some(&[])).unwrap().is_empty());
     }
 }

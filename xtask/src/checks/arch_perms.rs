@@ -28,11 +28,10 @@ use bb_policy::Permission;
 use super::api_spec;
 use super::exemptions::{self, names_a_follow_up};
 use super::{Check, Context, Finding};
+use crate::generate::messages::SOURCE_LOCALE_PATH;
 
 /// Where the permissions are declared; only shown in messages.
 const CATALOGUE_PATH: &str = "crates/bb-policy/src/catalogue.rs";
-/// The message catalog.
-const MESSAGES_PATH: &str = "messages/en.json";
 /// Where the permissions that only the engine uses are named, each with its reason.
 const EXEMPTIONS_PATH: &str = "tools/checks/permission-exemptions.toml";
 
@@ -49,8 +48,8 @@ impl Check for ArchPerms {
                 .with_context(|| format!("could not read {path}{hint}"))
         };
         let spec = api_spec::load(context.repo)?;
-        let messages: Value = serde_json::from_str(&read(MESSAGES_PATH, "")?)
-            .with_context(|| format!("{MESSAGES_PATH} is not valid JSON"))?;
+        let messages: Value = serde_json::from_str(&read(SOURCE_LOCALE_PATH, "")?)
+            .with_context(|| format!("{SOURCE_LOCALE_PATH} is not valid JSON"))?;
         let message_keys: BTreeSet<String> = messages
             .as_object()
             .map(|object| object.keys().cloned().collect())
@@ -175,7 +174,7 @@ fn evaluate(
             if !messages.contains(message) {
                 findings.push(Finding::at(
                     format!("{CATALOGUE_PATH}: {}", declared.key),
-                    format!("The message `{message}` is missing in {MESSAGES_PATH}: every permission is explained on the role page."),
+                    format!("The message `{message}` is missing in {SOURCE_LOCALE_PATH}: every permission is explained on the role page."),
                 ));
             }
         }
@@ -398,7 +397,7 @@ mod tests {
     #[test]
     fn the_permissions_of_this_repository_have_their_messages() {
         let repo = crate::repo::Repo::discover().unwrap();
-        let text = std::fs::read_to_string(repo.path(MESSAGES_PATH)).unwrap();
+        let text = std::fs::read_to_string(repo.path(SOURCE_LOCALE_PATH)).unwrap();
         let object: Value = serde_json::from_str(&text).unwrap();
         let keys: BTreeSet<String> = object.as_object().unwrap().keys().cloned().collect();
         for permission in catalogue() {
