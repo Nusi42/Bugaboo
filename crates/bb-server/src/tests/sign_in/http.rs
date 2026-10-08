@@ -1207,14 +1207,12 @@ async fn sessions_and_password(tour: &mut Tour) -> Outcome {
     Ok(())
 }
 
-/// Every route of the API description under /auth was used.
-fn every_route_was_used(tour: &Tour) -> Outcome {
-    let used = &tour.used;
-    // Every route of the API description under /auth was used.
+/// The routes of the API description below `prefix`, as `METHOD /path`.
+fn documented_routes(prefix: &str) -> Result<BTreeSet<String>, Failure> {
     let document = serde_json::to_value(openapi::document())?;
     let mut documented = BTreeSet::new();
     for (path, item) in document["paths"].as_object().ok_or("no paths")? {
-        if !path.starts_with("/api/v1/auth/") {
+        if !path.starts_with(prefix) {
             continue;
         }
         for method in ["get", "post", "put", "delete"] {
@@ -1223,7 +1221,13 @@ fn every_route_was_used(tour: &Tour) -> Outcome {
             }
         }
     }
-    let used = used.lock().map_err(|_| "poisoned")?.clone();
+    Ok(documented)
+}
+
+/// Every route of the API description under /auth was used.
+fn every_route_was_used(tour: &Tour) -> Outcome {
+    let documented = documented_routes("/api/v1/auth/")?;
+    let used = tour.used.lock().map_err(|_| "poisoned")?.clone();
     assert_eq!(
         documented.difference(&used).collect::<Vec<_>>(),
         Vec::<&String>::new(),
@@ -1231,6 +1235,19 @@ fn every_route_was_used(tour: &Tour) -> Outcome {
     );
     assert!(documented.len() >= 28, "{}", documented.len());
 
+    Ok(())
+}
+
+#[test]
+fn the_walk_over_the_routes_of_the_description_sees_every_method_including_patch() -> Outcome {
+    let documented = documented_routes("/api/v1/")?;
+    for patch in [
+        "PATCH /api/v1/projects/{project}",
+        "PATCH /api/v1/groups/{group_id}",
+        "PATCH /api/v1/roles/{role_id}",
+    ] {
+        assert!(documented.contains(patch), "{patch} is missed by the walk");
+    }
     Ok(())
 }
 
