@@ -87,7 +87,7 @@ export function ShortcutEditor({ id, overrides }: ShortcutEditorProps) {
     <>
       <KeyRow label={t("shortcuts.now")} keys={keysOf(id, overrides)} />
       <KeyRow label={t("shortcuts.usual")} keys={definition.keys} />
-      <div {...partOf(part.shortcutEditorCapture)}>
+      <div {...partOf(part.column, { variants: ["snug"] })}>
         <KeyCaptureField
           value={recorded}
           onChange={(sequence) => {

@@ -23,14 +23,14 @@ export interface ShortcutListProps {
 /** Every shortcut of the registry with its keys and where it works (UX §6.2). */
 export function ShortcutList({ overrides, action, show }: ShortcutListProps) {
   return (
-    <ul {...partOf(part.shortcutListList)} aria-label={t("shortcut.title")}>
+    <ul {...partOf(part.list, { variants: ["snug"] })} aria-label={t("shortcut.title")}>
       {shortcutDefinitions
         .filter((definition) => show?.(definition.id) ?? true)
         .map((definition) => (
           <li key={definition.id} {...partOf(part.shortcutListRow)}>
             <span {...partOf(part.shortcutListWhat)}>
               <span {...partOf(part.shortcutListName)}>{t(definition.message)}</span>
-              <span {...partOf(part.shortcutListWhere)}>
+              <span {...partOf(part.hint)}>
                 {t(
                   definitionOf(definition.id).where === "lists"
                     ? "shortcut.in-lists"
@@ -41,9 +41,7 @@ export function ShortcutList({ overrides, action, show }: ShortcutListProps) {
             <span {...partOf(part.shortcutListKeys)}>
               {keysOf(definition.id, overrides).map((keys, index) => (
                 <span key={keys} {...partOf(part.shortcutListAlternative)}>
-                  {index === 0 ? null : (
-                    <span {...partOf(part.shortcutListOr)}>{t("shortcut.or")}</span>
-                  )}
+                  {index === 0 ? null : <span {...partOf(part.hint)}>{t("shortcut.or")}</span>}
                   <Keys sequence={keys} />
                 </span>
               ))}

@@ -42,7 +42,7 @@ export function PeoplePreview({ table, role }: PeoplePreviewProps) {
   const editing = levelOf(table, role, "editing");
   return (
     <Card heading={t("people-visibility.preview-heading", { role: name })}>
-      <ul {...partOf(part.accessPreviewLines)}>
+      <ul {...partOf(part.list, { variants: ["tight"] })}>
         <li {...partOf(part.accessPreviewLine)}>
           {t("people-visibility.example-assigned", { who: who(assigned, "inside") })}
         </li>

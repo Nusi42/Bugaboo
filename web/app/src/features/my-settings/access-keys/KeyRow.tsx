@@ -58,9 +58,9 @@ export function KeyRow({ item, onDelete }: KeyRowProps) {
   const name = item.name ?? "";
   const used = item.last_used_at;
   return (
-    <li {...partOf(part.accessKeysItem)}>
+    <li {...partOf(part.item)}>
       <span {...partOf(part.accessKeysItemText)}>
-        <span {...partOf(part.accessKeysItemTitle)}>{name}</span>
+        <span {...partOf(part.itemTitle)}>{name}</span>
         <span {...partOf(part.accessKeysPrefix)}>
           {t("access-keys.row.prefix", { prefix: `bb_${item.prefix ?? ""}` })}
         </span>

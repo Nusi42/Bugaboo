@@ -47,9 +47,13 @@ function PermissionLine({ answer, permission }: PermissionLineProps) {
   );
   return (
     <li {...partOf(part.accessAnswer)}>
-      <p {...partOf(part.accessAnswerName)}>{t(`permission.${permission.permission}`)}</p>
+      <p {...partOf(part.subheading)}>{t(`permission.${permission.permission}`)}</p>
       <p {...partOf(part.accessReasons)}>
-        <strong {...partOf(part.accessVerdict, { variants: [permission.allowed ? "yes" : "no"] })}>
+        <strong
+          {...partOf(part.accessAnswerVerdict, {
+            variants: [permission.allowed ? "yes" : "no"],
+          })}
+        >
           {permission.allowed ? t("check-access.yes") : t("check-access.no")}
         </strong>
         {sentences.join(" ")}
@@ -133,8 +137,8 @@ function LevelSection({ answer, heading, entries, levelName, words }: LevelSecti
           ? told.map((entry) => (
               <li key={entry.name} {...partOf(part.accessAnswer)}>
                 <div {...partOf(part.accessAnswerHead)}>
-                  <p {...partOf(part.accessAnswerName)}>{entry.name}</p>
-                  <span {...partOf(part.accessVerdict)}>{levelName(entry.level)}</span>
+                  <p {...partOf(part.subheading)}>{entry.name}</p>
+                  <span {...partOf(part.strong)}>{levelName(entry.level)}</span>
                 </div>
                 <p {...partOf(part.accessReasons)}>{entry.sentences.join(" ")}</p>
               </li>
@@ -142,14 +146,14 @@ function LevelSection({ answer, heading, entries, levelName, words }: LevelSecti
           : groups.map((group, at) => (
               <li key={group.names.join()} {...partOf(part.accessAnswer)}>
                 <div {...partOf(part.accessAnswerHead)}>
-                  <p {...partOf(part.accessAnswerName)}>
+                  <p {...partOf(part.subheading)}>
                     {groups.length === 1
                       ? words.all
                       : at === 0
                         ? words.allOther
                         : listOf(group.names)}
                   </p>
-                  <span {...partOf(part.accessVerdict)}>{levelName(group.level)}</span>
+                  <span {...partOf(part.strong)}>{levelName(group.level)}</span>
                 </div>
                 <p {...partOf(part.accessReasons)}>{group.sentences.join(" ")}</p>
               </li>

@@ -45,25 +45,21 @@ export function MoreSheet({ organizationSettings, name, onSignOut, signingOut }:
   const sections = useSidebarSections();
   return (
     <Overlay {...overlay} label={t("shell.more")} from={overlayEdge.bottom}>
-      <div {...partOf(part.moreSheet)}>
-        <div {...partOf(part.moreSheetHead)}>
-          <h2 {...partOf(part.moreSheetTitle)}>{t("shell.more")}</h2>
+      <div {...partOf(part.sheet)}>
+        <div {...partOf(part.sheetHead)}>
+          <h2 {...partOf(part.title)}>{t("shell.more")}</h2>
           <IconButton icon={iconName.close} label={t("common.close")} onPress={closeOverlay} />
         </div>
         {name === undefined ? null : (
           <p {...partOf(part.moreSheetWho)}>{t("shell.signed-in-as", { name })}</p>
         )}
         {sections.map((section) => (
-          <section
-            key={section.heading}
-            {...partOf(part.moreSheetSection)}
-            aria-label={t(section.heading)}
-          >
-            <h3 {...partOf(part.moreSheetSectionHeading)}>{t(section.heading)}</h3>
+          <section key={section.heading} {...partOf(part.column)} aria-label={t(section.heading)}>
+            <h3 {...partOf(part.sectionHeading)}>{t(section.heading)}</h3>
             {section.render({ narrow: false, onNavigate: closeOverlay })}
           </section>
         ))}
-        <ul {...partOf(part.moreSheetList)}>
+        <ul {...partOf(part.list, { variants: ["tight"] })}>
           <Places organizationSettings={organizationSettings} />
           <li>
             <NavButton

@@ -39,7 +39,7 @@ function Node({ project, pathname, onNavigate }: NodeProps) {
   const opened = useOpened(project.id);
   const current = isOpen(project, pathname);
   return (
-    <li {...partOf(part.projectTreeNode)}>
+    <li {...partOf(part.column)}>
       <div {...partOf(part.projectTreeRow)}>
         {project.hasSubProjects ? (
           <TreeButton
@@ -61,7 +61,7 @@ function Node({ project, pathname, onNavigate }: NodeProps) {
           {...(current ? { "aria-current": currentPage } : {})}
           {...(onNavigate === undefined ? {} : { onPress: onNavigate })}
         >
-          <span {...partOf(part.projectTreeName)}>{project.name}</span>
+          <span {...partOf(part.wrap)}>{project.name}</span>
           <span {...partOf(part.projectTreeShort)}>{project.shortName}</span>
         </Link>
       </div>
@@ -92,7 +92,7 @@ function Branch({ inside, pathname, onNavigate }: BranchProps) {
   }
   return (
     <>
-      <ul {...partOf(part.projectTreeBranch, { variants: [inside !== undefined && "inside"] })}>
+      <ul {...partOf(part.list, { variants: ["tight", inside !== undefined && "inset"] })}>
         {projects.map((project) => (
           <Node key={project.id} project={project} pathname={pathname} onNavigate={onNavigate} />
         ))}
@@ -117,7 +117,7 @@ function Narrow({ pathname, onNavigate }: Omit<BranchProps, "inside">) {
   const list = useProjectList({});
   const projects = linesOf(list.data?.pages);
   return (
-    <ul {...partOf(part.projectTreeBranch)}>
+    <ul {...partOf(part.list, { variants: ["tight"] })}>
       {projects.map((project) => (
         <li key={project.id}>
           <NavLink

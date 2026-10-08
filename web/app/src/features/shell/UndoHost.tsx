@@ -30,7 +30,7 @@ function Offer({ offer }: { readonly offer: UndoOffer }) {
   );
   return (
     <div ref={box} {...partOf(part.undoHostOffer)}>
-      <span {...partOf(part.undoHostMessage)}>{offer.message}</span>
+      <span {...partOf(part.wrap)}>{offer.message}</span>
       <Button
         onPress={() => {
           takeBack(offer);

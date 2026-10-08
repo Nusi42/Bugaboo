@@ -25,13 +25,13 @@ export interface ThemePickerProps {
 export function ThemePicker({ legend, choices, value, onChange }: ThemePickerProps) {
   const group = useId();
   return (
-    <fieldset {...partOf(part.themePickerGroup)}>
-      <legend {...partOf(part.themePickerLegend)}>{legend}</legend>
+    <fieldset {...partOf(part.choiceGroup)}>
+      <legend {...partOf(part.choiceGroupLegend)}>{legend}</legend>
       <div {...partOf(part.row, { variants: ["stretch"] })}>
         {choices.map((choice) => (
-          <label key={choice.value} {...partOf(part.themePickerChoice)}>
+          <label key={choice.value} {...partOf(part.choiceGroupChoice)}>
             <input
-              {...partOf(part.themePickerInput)}
+              {...partOf(part.choiceGroupInput)}
               type={radio}
               name={group}
               value={choice.value}

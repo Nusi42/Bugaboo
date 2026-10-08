@@ -63,7 +63,7 @@ export function RolePermissions({ role, catalogue, held, onChange }: RolePermiss
         <fieldset key={group.topic} {...partOf(part.rolesTopic)}>
           <legend {...partOf(part.rolesLegend)}>{t(topicHeading(group.topic))}</legend>
           {group.permissions.map((permission) => (
-            <div key={permission.key} {...partOf(part.rolesPermission)}>
+            <div key={permission.key} {...partOf(part.column)}>
               <Checkbox
                 label={t(permissionSentence(permission.key))}
                 isSelected={held.includes(permission.key)}

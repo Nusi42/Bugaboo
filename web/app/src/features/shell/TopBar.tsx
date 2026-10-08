@@ -44,14 +44,14 @@ function useGoBack(trail: readonly TrailStep[] | undefined): () => void {
 /** Where you are, as links up: `My settings › Appearance`, or the projects above a project. */
 function Trail({ steps }: { readonly steps: readonly TrailStep[] }) {
   return (
-    <nav aria-label={t("shell.trail")} {...partOf(part.topBarTrail)}>
+    <nav aria-label={t("shell.trail")} {...partOf(part.fill)}>
       <ol {...partOf(part.topBarCrumbs)}>
         {steps.map((step, index) => {
           const last = index === steps.length - 1;
           return (
             <li key={step.href} {...partOf(part.topBarCrumb)}>
               {last ? (
-                <span aria-current={currentPage} {...partOf(part.topBarHere)}>
+                <span aria-current={currentPage} {...partOf(part.strong)}>
                   {step.label}
                 </span>
               ) : (

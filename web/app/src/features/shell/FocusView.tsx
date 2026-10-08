@@ -43,7 +43,7 @@ export function FocusView({ list, onBack, onStep, children }: FocusViewProps) {
   return (
     <div ref={view} {...partOf(part.focusView)}>
       {listState === "shown" ? <div {...partOf(part.focusViewList)}>{list}</div> : null}
-      <div ref={main} tabIndex={-1} {...partOf(part.focusViewMain)}>
+      <div ref={main} tabIndex={-1} {...partOf(part.content)}>
         <div {...partOf(part.focusViewBar)}>
           <FocusBar
             onBack={onBack}

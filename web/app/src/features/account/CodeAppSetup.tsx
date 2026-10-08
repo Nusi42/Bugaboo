@@ -38,7 +38,7 @@ function Scan({ setup, password, onSwitchedOn }: ScanProps) {
       <p {...partOf(part.text)}>{t("code-app.scan")}</p>
       <img {...partOf(part.accountQr)} alt={t("code-app.qr-alt")} src={picture} />
       <p {...partOf(part.muted)}>{t("code-app.key-label")}</p>
-      <code {...partOf(part.accountKey)}>{setup.secret}</code>
+      <code {...partOf(part.keyBox)}>{setup.secret}</code>
       <TextField
         label={t("code-app.confirm-code")}
         description={t("code-app.confirm-help")}

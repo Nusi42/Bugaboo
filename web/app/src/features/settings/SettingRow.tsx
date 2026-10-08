@@ -43,7 +43,7 @@ function valueInWords(setting: Setting): string {
 function Locked({ setting }: { readonly setting: Setting }) {
   return (
     <p {...partOf(part.settingsLocked)}>
-      <span {...partOf(part.settingsLockedTitle)}>{wordsOf(setting.name_key)}</span>
+      <span {...partOf(part.strong)}>{wordsOf(setting.name_key)}</span>
       <span {...partOf(part.settingsLockedValue)}>{valueInWords(setting)}</span>
       <strong>{t("setting.ui.locked")}</strong>
       <span {...partOf(part.muted)}>{t("setting.ui.locked-why")}</span>
@@ -63,7 +63,7 @@ export function SettingRow({ setting, actions, control }: SettingRowProps) {
     actions.onChange(setting.key, value);
   };
   return (
-    <li {...partOf(part.settingsRow)}>
+    <li {...partOf(part.box)}>
       {lockedBelow ? (
         <Locked setting={setting} />
       ) : (

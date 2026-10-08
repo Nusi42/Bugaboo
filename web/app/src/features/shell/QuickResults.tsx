@@ -35,7 +35,7 @@ export function QuickResults({ found }: QuickResultsProps) {
       onAction={open}
     >
       {groups.map((group) => (
-        <ListBoxSection key={group.id} {...partOf(part.quickSearchGroup)}>
+        <ListBoxSection key={group.id} {...partOf(part.column)}>
           <Header {...partOf(part.quickSearchHeading)}>{group.heading}</Header>
           {group.results.map((result) => (
             <ListBoxItem
@@ -46,7 +46,7 @@ export function QuickResults({ found }: QuickResultsProps) {
             >
               <span {...partOf(part.quickSearchTitle)}>{result.title}</span>
               {result.hint === undefined ? null : (
-                <Text slot={descriptionSlot} {...partOf(part.quickSearchHint)}>
+                <Text slot={descriptionSlot} {...partOf(part.hint)}>
                   {result.hint}
                 </Text>
               )}

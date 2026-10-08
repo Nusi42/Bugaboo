@@ -57,7 +57,7 @@ export function SelectField<Value extends string>({
       <select
         ref={select}
         id={id}
-        {...partOf(part.selectField)}
+        {...partOf(part.fieldInput)}
         value={value}
         {...(description === undefined ? {} : { "aria-describedby": helpId })}
         onChange={() => {

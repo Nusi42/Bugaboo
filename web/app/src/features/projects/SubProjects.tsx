@@ -12,7 +12,7 @@ function SubProjectList({ project }: { readonly project: string }) {
   const list = useProjectList({ inside: project });
   return (
     <>
-      <ul {...partOf(part.projectsItems)} aria-label={t("projects.sub-projects")}>
+      <ul {...partOf(part.list, { variants: ["snug"] })} aria-label={t("projects.sub-projects")}>
         {linesOf(list.data?.pages).map((line) => (
           <li key={line.id} {...partOf(part.projectsItem)}>
             <Link href={projectAddress(line.shortName)}>{line.name}</Link>

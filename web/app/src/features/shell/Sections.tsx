@@ -14,7 +14,7 @@ export function Sections({
   const sections = useSidebarSections();
   return sections.map((section) => (
     <section key={section.heading} {...partOf(part.sidebarSection)} aria-label={t(section.heading)}>
-      {narrow ? null : <h2 {...partOf(part.sidebarHeading)}>{t(section.heading)}</h2>}
+      {narrow ? null : <h2 {...partOf(part.sectionHeading)}>{t(section.heading)}</h2>}
       {section.render({ narrow, ...(onNavigate === undefined ? {} : { onNavigate }) })}
     </section>
   ));

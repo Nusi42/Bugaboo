@@ -18,8 +18,8 @@ const databaseKinds: Readonly<Record<State["database"]["kind"], MessageKey>> = {
 /** One line of the status: what it is, and what it says. */
 function Fact({ term, children }: { readonly term: string; readonly children: ReactNode }) {
   return (
-    <div {...partOf(part.adminFact)}>
-      <dt {...partOf(part.adminTerm)}>{term}</dt>
+    <div {...partOf(part.fact)}>
+      <dt {...partOf(part.term)}>{term}</dt>
       <dd {...partOf(part.adminDetail)}>{children}</dd>
     </div>
   );
@@ -94,7 +94,7 @@ function Certificate({ certificate, nowMs }: CertificateProps) {
 /** The facts of the server: version, running time, database, certificate and security log. */
 export function StatusRows({ state }: { readonly state: State }) {
   return (
-    <dl {...partOf(part.adminFacts)}>
+    <dl {...partOf(part.facts)}>
       <Fact term={t("status.version")}>{state.version}</Fact>
       <Fact term={t("status.running")}>
         <span>{t("status.uptime", splitUptime(state.uptime_seconds))}</span>

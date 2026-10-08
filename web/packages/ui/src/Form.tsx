@@ -14,7 +14,7 @@ export interface FormProps {
 export function Form({ onSubmit, children }: FormProps) {
   return (
     <AriaForm
-      {...partOf(part.form)}
+      {...partOf(part.stack)}
       onSubmit={(event) => {
         event.preventDefault();
         onSubmit();

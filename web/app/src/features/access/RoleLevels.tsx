@@ -30,7 +30,7 @@ export function RoleLevels<Subject extends string, Level extends string>({
       {table.rows.map((row) => {
         const cell = row.cells.find((known) => known.role === role);
         return cell === undefined ? null : (
-          <li key={row.subject} {...partOf(part.accessListItem)}>
+          <li key={row.subject} {...partOf(part.box)}>
             <CellControl
               label={subjectName(row.subject)}
               subjectName={subjectName(row.subject)}

@@ -21,7 +21,7 @@ function shapeOf(index: number, lines: number): "short" | "medium" | undefined {
 
 export function Skeleton({ lines = 3 }: SkeletonProps) {
   return (
-    <div {...partOf(part.skeleton)} aria-hidden>
+    <div {...partOf(part.column, { variants: ["snug"] })} aria-hidden>
       {Array.from({ length: lines }, (_, index) => (
         <span key={index} {...partOf(part.skeletonLine, { variants: [shapeOf(index, lines)] })} />
       ))}

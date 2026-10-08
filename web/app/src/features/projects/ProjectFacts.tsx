@@ -9,14 +9,14 @@ import type { OneProject } from "./use-projects.ts";
 function Facts({ project }: { readonly project: OneProject }) {
   const parent = project.trail.at(-1);
   return (
-    <dl {...partOf(part.projectsFacts)}>
-      <div {...partOf(part.projectsFact)}>
-        <dt {...partOf(part.projectsTerm)}>{t("projects.overview-short-name")}</dt>
-        <dd {...partOf(part.projectsDefinition)}>{project.project.short_name}</dd>
+    <dl {...partOf(part.facts)}>
+      <div {...partOf(part.fact)}>
+        <dt {...partOf(part.term)}>{t("projects.overview-short-name")}</dt>
+        <dd {...partOf(part.definition)}>{project.project.short_name}</dd>
       </div>
-      <div {...partOf(part.projectsFact)}>
-        <dt {...partOf(part.projectsTerm)}>{t("projects.overview-inside")}</dt>
-        <dd {...partOf(part.projectsDefinition)}>
+      <div {...partOf(part.fact)}>
+        <dt {...partOf(part.term)}>{t("projects.overview-inside")}</dt>
+        <dd {...partOf(part.definition)}>
           {parent === undefined ? t("projects.overview-top") : parent.name}
         </dd>
       </div>

@@ -30,7 +30,7 @@ function Topics({ groups, pathname }: TopicsProps) {
   return (
     <ul {...partOf(part.settingsFrameGroups)}>
       {groups.map((group) => (
-        <li key={group.heading} {...partOf(part.settingsFrameGroup)}>
+        <li key={group.heading} {...partOf(part.column)}>
           <span id={headingId(names, group)} {...partOf(part.settingsFrameHeading)}>
             {t(group.heading)}
           </span>
@@ -96,7 +96,7 @@ export function SettingsFrame({ parent }: SettingsFrameProps) {
       <nav aria-label={heading} {...partOf(part.settingsFrameMenu)}>
         <Topics groups={groups} pathname={pathname} />
       </nav>
-      <div {...partOf(part.settingsFrameContent)}>
+      <div {...partOf(part.content)}>
         <Outlet />
       </div>
     </div>

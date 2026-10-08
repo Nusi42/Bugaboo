@@ -25,9 +25,9 @@ function PasskeyRow({ passkey, onRemoved }: PasskeyRowProps) {
   });
   const used = passkey.last_used_at;
   return (
-    <li {...partOf(part.accountItem)}>
-      <span {...partOf(part.accountItemText)}>
-        <span {...partOf(part.accountItemTitle)}>{passkey.label}</span>
+    <li {...partOf(part.item)}>
+      <span {...partOf(part.itemText)}>
+        <span {...partOf(part.itemTitle)}>{passkey.label}</span>
         <span {...partOf(part.muted)}>
           {t("passkeys.added-on", { when: formatDateTime(passkey.created_at) })}
         </span>

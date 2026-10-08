@@ -21,7 +21,7 @@ export interface SearchFieldProps {
 /** A box to type a search in, with a button that empties it. */
 export function SearchField({ label, value, onChange, clearLabel, placeholder }: SearchFieldProps) {
   return (
-    <AriaSearchField {...partOf(part.searchField)} value={value} onChange={onChange}>
+    <AriaSearchField {...partOf(part.field)} value={value} onChange={onChange}>
       <Label {...partOf(part.fieldLabel)}>{label}</Label>
       <div {...partOf(part.searchFieldBox)}>
         <Icon name={iconName.search} size={iconSize.small} />

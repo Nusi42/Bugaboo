@@ -29,9 +29,9 @@ function InvitationRow({ invitation, onTakenBack }: InvitationRowProps) {
     return null;
   }
   return (
-    <li {...partOf(part.peopleItem)}>
-      <span {...partOf(part.peopleItemText)}>
-        <span {...partOf(part.peopleItemTitle)}>{email}</span>
+    <li {...partOf(part.item)}>
+      <span {...partOf(part.itemText)}>
+        <span {...partOf(part.itemTitle)}>{email}</span>
         {made === null || made === undefined ? null : (
           <span {...partOf(part.muted)}>
             {t("invitations.made", { when: formatDateTime(made) })}

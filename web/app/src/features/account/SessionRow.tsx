@@ -25,9 +25,9 @@ export interface SessionRowProps {
 export function SessionRow({ session, onEnd }: SessionRowProps) {
   const device = deviceOf(session);
   return (
-    <li {...partOf(part.accountItem)}>
-      <span {...partOf(part.accountItemText)}>
-        <span {...partOf(part.accountItemTitle)}>{device}</span>
+    <li {...partOf(part.item)}>
+      <span {...partOf(part.itemText)}>
+        <span {...partOf(part.itemTitle)}>{device}</span>
         {session.current ? <span {...partOf(part.muted)}>{t("sessions.this")}</span> : null}
         <span {...partOf(part.muted)}>
           {t("sessions.started", { when: formatDateTime(session.started_at) })}

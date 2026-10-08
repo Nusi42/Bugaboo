@@ -40,8 +40,18 @@
   --size-icon-small: 16px;
   --size-list: 300px;
   --size-reading: 75ch;
+  --size-sheet-share: 85%;
+  --size-matrix-cell: calc(var(--size-target) * 3);
+  --size-list-tall: calc(var(--size-list) * 2);
+  --size-line-medium: 80%;
+  --size-line-short: 55%;
+  --size-sample-short: 60%;
+  --angle-tick: 45deg;
+  --angle-open: 90deg;
+  --skip-offset: -300%;
   --motion-fast: 120ms;
   --motion-base: 200ms;
+  --motion-pulse: calc(var(--motion-base) * 8);
   --density: 1;
   --text-scale: 1;
   --weight-regular: 400;
@@ -391,12 +401,14 @@
   :root {
     --motion-fast: 0ms;
     --motion-base: 0ms;
+    --motion-pulse: 0ms;
   }
 }
 
 :root[data-motion="less"] {
   --motion-fast: 0ms;
   --motion-base: 0ms;
+  --motion-pulse: 0ms;
 }
 
 @media (prefers-contrast: more) {

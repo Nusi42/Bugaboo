@@ -14,7 +14,7 @@ export function RoleList() {
       {roles.isError ? <Alert tone={alertTone.danger}>{messageOf(roles.error)}</Alert> : null}
       <ul {...partOf(part.list)} aria-label={t("roles.list")}>
         {lines.map((role) => (
-          <li key={role.id} {...partOf(part.rolesItem)}>
+          <li key={role.id} {...partOf(part.item)}>
             <Link href={roleAddress(role.id)}>{role.name}</Link>
             <span {...partOf(part.muted)}>
               {[

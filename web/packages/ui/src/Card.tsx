@@ -19,7 +19,7 @@ export function Card({ heading, level = 2, children }: CardProps) {
       <Heading id={headingId} {...partOf(part.cardHeading)} tabIndex={-1}>
         {heading}
       </Heading>
-      <div {...partOf(part.cardBody)}>{children}</div>
+      <div {...partOf(part.stack)}>{children}</div>
     </section>
   );
 }

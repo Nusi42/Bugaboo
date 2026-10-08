@@ -55,9 +55,9 @@ export function AssignmentRow({ row, onRemove, onChangeHere }: AssignmentRowProp
   const who =
     row.who.kind === "group" ? t("assignments.who-group", { name: row.who.name }) : row.who.name;
   return (
-    <li {...partOf(part.rolesItem)}>
-      <span {...partOf(part.rolesItemText)}>
-        <span {...partOf(part.rolesItemTitle)}>{who}</span>
+    <li {...partOf(part.item)}>
+      <span {...partOf(part.itemText)}>
+        <span {...partOf(part.itemTitle)}>{who}</span>
         <span {...partOf(row.role === null ? part.rolesNoAccess : part.muted)}>
           {whatText(row)}
         </span>

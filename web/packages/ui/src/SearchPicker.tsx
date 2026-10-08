@@ -60,7 +60,12 @@ export function SearchPicker({
     <fieldset {...partOf(part.picker)}>
       <legend {...partOf(part.pickerLegend, { variants: [look] })}>{legend}</legend>
       <SearchField label={searchLabel} clearLabel={clearLabel} value={query} onChange={onQuery} />
-      <ul {...partOf(part.pickerOptions, { variants: [look] })} aria-label={listLabel}>
+      <ul
+        {...(look === pickerLook.boxed
+          ? partOf(part.list, { variants: ["tight"] })
+          : partOf(part.pickerOptions, { variants: [pickerLook.list] }))}
+        aria-label={listLabel}
+      >
         <LookContext value={look}>{children}</LookContext>
       </ul>
       {failed === undefined ? null : <Alert tone={alertTone.danger}>{failed}</Alert>}

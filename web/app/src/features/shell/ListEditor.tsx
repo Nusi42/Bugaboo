@@ -37,7 +37,7 @@ interface RowsProps extends Pick<ListEditorProps, "rows" | "openKey" | "onOpen">
 /** The rows: the name of an item opens it, and the rest of the row follows. */
 function Rows({ rows, label, openKey, onOpen }: RowsProps) {
   return (
-    <ul {...partOf(part.listEditorRows)} aria-label={label}>
+    <ul {...partOf(part.list, { variants: ["snug"] })} aria-label={label}>
       {rows.map((row) => (
         <li key={row.key} {...partOf(part.listEditorRow)}>
           <Button

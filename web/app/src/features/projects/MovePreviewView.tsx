@@ -13,7 +13,7 @@ export function MovePreviewView({ preview }: { readonly preview: Preview }) {
   const lifts = keyedLiftSentencesOfPreview(preview);
   return (
     <section {...partOf(part.projectsPreview)} aria-label={t("projects.preview-heading")}>
-      <h3 {...partOf(part.projectsPreviewHeading)}>{t("projects.preview-heading")}</h3>
+      <h3 {...partOf(part.definition)}>{t("projects.preview-heading")}</h3>
       {preview.blocked ? (
         <Alert tone={alertTone.danger}>
           <p {...partOf(part.projectsAlertLine)}>{t("projects.preview-blocked")}</p>

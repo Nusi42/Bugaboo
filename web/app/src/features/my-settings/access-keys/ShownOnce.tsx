@@ -15,7 +15,7 @@ export function ShownOnce({ secret, onDone }: ShownOnceProps) {
       <div {...partOf(part.stack)}>
         <Alert tone={alertTone.warning}>{t("access-keys.shown-once")}</Alert>
         <p {...partOf(part.muted)}>{t("access-keys.key-label")}</p>
-        <code {...partOf(part.accessKeysKey)}>{secret}</code>
+        <code {...partOf(part.keyBox)}>{secret}</code>
         <div {...partOf(part.row, { variants: ["stretch"] })}>
           <CopyButton
             text={secret}

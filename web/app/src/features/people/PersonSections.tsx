@@ -18,7 +18,7 @@ export function Groups({ line }: { readonly line: PersonLine }) {
       ) : (
         <ul {...partOf(part.list)} aria-label={t("person.groups")}>
           {line.groups.map((group) => (
-            <li key={group.id} {...partOf(part.peopleItem)}>
+            <li key={group.id} {...partOf(part.item)}>
               <Link href={groupAddress(group.id)}>{group.name}</Link>
             </li>
           ))}
@@ -37,8 +37,8 @@ export function Roles({ line }: { readonly line: PersonLine }) {
       ) : (
         <ul {...partOf(part.list)} aria-label={t("person.roles")}>
           {line.roles.map((held) => (
-            <li key={held.id} {...partOf(part.peopleItem)}>
-              <span {...partOf(part.peopleItemTitle)}>{heldText(held)}</span>
+            <li key={held.id} {...partOf(part.item)}>
+              <span {...partOf(part.itemTitle)}>{heldText(held)}</span>
             </li>
           ))}
         </ul>
@@ -52,14 +52,14 @@ export function Roles({ line }: { readonly line: PersonLine }) {
 export function Facts({ line, since }: { readonly line: PersonLine; readonly since: string }) {
   return (
     <Card heading={line.name} level={1}>
-      <dl {...partOf(part.peopleFacts)}>
-        <div {...partOf(part.peopleFact)}>
-          <dt {...partOf(part.peopleTerm)}>{t("person.email")}</dt>
-          <dd {...partOf(part.peopleDefinition)}>{line.email}</dd>
+      <dl {...partOf(part.facts)}>
+        <div {...partOf(part.fact)}>
+          <dt {...partOf(part.term)}>{t("person.email")}</dt>
+          <dd {...partOf(part.definition)}>{line.email}</dd>
         </div>
-        <div {...partOf(part.peopleFact)}>
-          <dt {...partOf(part.peopleTerm)}>{t("person.since")}</dt>
-          <dd {...partOf(part.peopleDefinition)}>{formatDateTime(since)}</dd>
+        <div {...partOf(part.fact)}>
+          <dt {...partOf(part.term)}>{t("person.since")}</dt>
+          <dd {...partOf(part.definition)}>{formatDateTime(since)}</dd>
         </div>
       </dl>
       <div {...partOf(part.row)}>

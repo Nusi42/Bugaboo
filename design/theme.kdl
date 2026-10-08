@@ -94,10 +94,23 @@ tokens {
     size "size-icon-small" "16px"
     size "size-list" "300px"
     size "size-reading" "75ch"
+    size "size-sheet-share" "85%"
+    size "size-matrix-cell" "calc($size-target * 3)"
+    size "size-list-tall" "calc($size-list * 2)"
+    // Placeholder lines and the sample of a theme: how much of the width a shorter line takes.
+    size "size-line-medium" "80%"
+    size "size-line-short" "55%"
+    size "size-sample-short" "60%"
+    // Turns: the tick of a checkbox, and the arrow of a tree branch that is open.
+    size "angle-tick" "45deg"
+    size "angle-open" "90deg"
+    // Where the skip link waits, out of sight above the page.
+    size "skip-offset" "-300%"
 
     // Motion
     duration "motion-fast" "120ms" less-motion="0ms"
     duration "motion-base" "200ms" less-motion="0ms"
+    duration "motion-pulse" "calc($motion-base * 8)" less-motion="0ms"
 
     // The choices as numbers
     number "density" 1 compact=0.75
@@ -117,12 +130,19 @@ tokens {
     // The width of a line: borders and dividers
     border-width "border-width" "1px"
 
-    // Layers (z-index), from the lowest. The overlay is above everything that sticks to the page.
+    // Layers (z-index), from the lowest, each named for what uses it. The overlay is above everything
+    // that sticks to the page.
+    // z-raised: the corner of the levels table, above the cells that scroll under it.
     layer "z-raised" 1
+    // z-sticky: the top bar of a page, which stays while the page scrolls.
     layer "z-sticky" 5
+    // z-bar: the question of a confirm dialog.
     layer "z-bar" 10
+    // z-panel: what floats over the page at its edge (the offers to undo), and the header of the design pages.
     layer "z-panel" 20
+    // z-overlay: sheets, menus and quick search.
     layer "z-overlay" 30
+    // z-toast: the skip link when it has the focus: above everything.
     layer "z-toast" 40
 
     // Opacity. The scrim is the dimmed page behind a sheet; forced colors make it fainter.
@@ -259,6 +279,31 @@ distinct min-against-surfaces=1.08 min-between-states=1.04 reason="Hovered and s
 mixin "ring" {
     outline "$ring-width solid $accent"
     outline-offset "$ring-offset"
+}
+
+// A control that is waiting for an answer.
+mixin "busy" {
+    cursor progress
+    opacity "$opacity-busy"
+}
+
+// The fill of a box or a track that is switched on.
+mixin "chosen" {
+    border-color "$accent"
+    background "$accent"
+}
+
+// The ring drawn inside the edge of what has the focus, for rows that fill their box.
+mixin "ring-inside" {
+    outline "$ring-width solid $accent"
+    outline-offset "calc($ring-width * -1)"
+}
+
+// The page of the menu or tree that is open now.
+mixin "current-item" {
+    background "$bg-selected"
+    color "$accent-fg"
+    use "marked"
 }
 
 // The chosen or current item: forced colors drop fills, so the item gets an outline to be seen.
@@ -406,8 +451,7 @@ part "button[disabled]" {
 }
 
 part "button[state=busy]" {
-    cursor progress
-    opacity "$opacity-busy"
+    use "busy"
 }
 
 part "button[focus-visible]" {
@@ -462,7 +506,7 @@ part "field.input[variant=multiline]" {
     resize vertical
 }
 
-part "field.input[focused]" {
+part "field.input[focused]" "field.input:focus-visible" {
     outline "$ring-width solid $accent"
     outline-offset 0
     border-color "$accent"
@@ -580,8 +624,7 @@ part "switch.thumb" {
 }
 
 part "switch[selected] switch.track" {
-    border-color "$accent"
-    background "$accent"
+    use "chosen"
 }
 
 part "switch[selected] switch.thumb" {
@@ -621,8 +664,7 @@ part "checkbox[hovered] checkbox.box" {
 }
 
 part "checkbox[selected] checkbox.box" {
-    border-color "$accent"
-    background "$accent"
+    use "chosen"
 }
 
 // The tick: two sides of a box, turned.
@@ -635,7 +677,7 @@ part "checkbox[selected] checkbox.box::after" {
     height "$space-3"
     border solid "$on-accent"
     border-width 0 "$ring-width" "$ring-width" 0
-    transform "rotate(45deg)"
+    transform "rotate($angle-tick)"
 }
 
 part "checkbox[focus-visible] checkbox.box" {
@@ -700,8 +742,21 @@ part "choice-group.label" {
     font-size "$fs-md"
 }
 
+// The tile of the theme picker (a sample and a name) is chosen, pointed at and focused like a label.
+part "theme-picker.tile" {
+    display flex
+    flex-direction column
+    gap "$space-2"
+    padding "$space-2"
+    border "$border-width solid $border"
+    border-radius "$r-card"
+    background "$bg-raised"
+    color "$fg"
+    font-size "$fs-md"
+}
+
 // Forced colors drop background colors, so the chosen one needs an outline to be seen.
-part "choice-group.input:checked + choice-group.label" {
+part "choice-group.input:checked + choice-group.label" "choice-group.input:checked + theme-picker.tile" {
     border-color "$accent"
     background "$bg-selected"
     color "$accent-fg"
@@ -709,11 +764,11 @@ part "choice-group.input:checked + choice-group.label" {
     use "marked"
 }
 
-part "choice-group.input:hover + choice-group.label" {
+part "choice-group.input:hover + choice-group.label" "choice-group.input:hover + theme-picker.tile" {
     background "$bg-hover"
 }
 
-part "choice-group.input:focus-visible + choice-group.label" {
+part "choice-group.input:focus-visible + choice-group.label" "choice-group.input:focus-visible + theme-picker.tile" {
     use "ring"
 }
 
@@ -780,13 +835,13 @@ part "overlay.modal[variant=center]" {
 
 part "overlay.modal[variant=bottom]" {
     width "100%"
-    max-height "85%"
+    max-height "$size-sheet-share"
     border-radius "$r-card $r-card 0 0"
 }
 
 part "overlay.modal[variant=start]" {
     width "$size-sidebar"
-    max-width "85%"
+    max-width "$size-sheet-share"
     height "100%"
     border-radius "0 $r-card $r-card 0"
 }
@@ -876,15 +931,6 @@ part "picker.options[variant=list]" {
     padding "calc($ring-width + $ring-offset)"
     list-style none
     overflow-y auto
-}
-
-part "picker.options[variant=boxed]" {
-    display flex
-    flex-direction column
-    gap "$space-1"
-    margin 0
-    padding 0
-    list-style none
 }
 
 part "picker.option[variant=list]" {
@@ -996,6 +1042,166 @@ part "list[variant=loose]" {
     gap "$space-4"
 }
 
+// What several screens share: an item of a list, facts, a heading, a hint.
+
+part "item" {
+    display flex
+    flex-wrap wrap
+    align-items center
+    justify-content space-between
+    gap "$space-3"
+    padding "$space-3"
+    border "$border-width solid $border-subtle"
+    border-radius "$r-ctl"
+    background "$bg-surface"
+}
+
+part "item.text" {
+    display flex
+    flex-direction column
+    gap "$space-1"
+    min-width 0
+    overflow-wrap anywhere
+}
+
+part "item.title" {
+    font-weight "$weight-bold"
+}
+
+part "facts" {
+    display grid
+    grid-template-columns "minmax(0, 1fr)"
+    gap "$space-3"
+    margin 0
+}
+
+part "fact" {
+    display flex
+    flex-direction column
+    gap "$space-1"
+    min-width 0
+    padding-bottom "$space-3"
+    border-bottom "$border-width solid $border-subtle"
+    overflow-wrap anywhere
+}
+
+part "term" {
+    color "$fg-muted"
+    font-size "$fs-base"
+    font-weight "$weight-bold"
+}
+
+part "definition" {
+    margin 0
+    font-size "$fs-md"
+}
+
+part "key-box" {
+    display block
+    padding "$space-3"
+    border "$border-width solid $border"
+    border-radius "$r-ctl"
+    background "$bg-sunken"
+    font-family "$mono"
+    font-size "$fs-md"
+    overflow-wrap anywhere
+}
+
+part "box" {
+    display flex
+    flex-direction column
+    gap "$space-2"
+    padding "$space-3"
+    border "$border-width solid $border-subtle"
+    border-radius "$r-ctl"
+    background "$bg-surface"
+    min-width 0
+}
+
+part "subheading" {
+    margin 0
+    font-size "$fs-md"
+    font-weight "$weight-bold"
+    color "$fg"
+}
+
+part "strong" {
+    font-weight "$weight-bold"
+    color "$fg"
+}
+
+part "hint" {
+    color "$fg-muted"
+    font-size "$fs-base"
+}
+
+part "column" {
+    display flex
+    flex-direction column
+    gap "$space-1"
+}
+
+part "column[variant=snug]" {
+    gap "$space-2"
+}
+
+part "list[variant=tight]" {
+    gap "$space-1"
+}
+
+part "list[variant=inset]" {
+    padding-inline-start "$space-4"
+}
+
+part "list[variant=snug]" {
+    gap "$space-2"
+}
+
+part "wrap" {
+    min-width 0
+    overflow-wrap anywhere
+}
+
+part "content" {
+    display flex
+    flex 1
+    flex-direction column
+    gap "$space-4"
+    min-width 0
+}
+
+part "section-heading" {
+    margin 0
+    padding "0 $space-3"
+    color "$fg-muted"
+    font-size "$fs-base"
+    font-weight "$weight-bold"
+}
+
+part "fill" {
+    flex 1
+    min-width 0
+}
+
+part "sheet" {
+    display flex
+    flex-direction column
+    gap "$space-3"
+    padding "$space-4"
+}
+
+part "sheet.head" {
+    display flex
+    align-items center
+    justify-content space-between
+    gap "$space-3"
+}
+
+part "title" {
+    margin 0
+    font-size "$fs-lg"
+}
+
 // ───────────── Card, Form, Icon, OrDivider, SaveStatus, Skeleton (packages/ui) ─────────────
 
 part "card" {
@@ -1023,20 +1229,6 @@ part "card.heading:focus" {
     outline none
 }
 
-part "card.body" {
-    display flex
-    flex-direction column
-    gap "$space-4"
-    min-width 0
-}
-
-part "form" {
-    display flex
-    flex-direction column
-    gap "$space-4"
-    min-width 0
-}
-
 part "icon" {
     flex none
     width "$size-icon"
@@ -1062,20 +1254,9 @@ part "or-divider::before" "or-divider::after" {
     border-top "$border-width solid $border"
 }
 
-part "save-status" {
-    color "$fg-muted"
-    font-size "$fs-base"
-}
-
-part "save-status[state=not-saved]" {
+part "hint[state=not-saved]" {
     color "$danger"
     font-weight "$weight-bold"
-}
-
-part "skeleton" {
-    display flex
-    flex-direction column
-    gap "$space-2"
 }
 
 part "skeleton.line" {
@@ -1083,26 +1264,19 @@ part "skeleton.line" {
     height "$space-4"
     border-radius "$r-ctl"
     background "$bg-sunken"
-    animation "pulse calc($motion-base * 8) $ease-in-out infinite alternate"
+    animation "pulse $motion-pulse $ease-in-out infinite alternate"
 }
 
 part "skeleton.line[variant=medium]" {
-    width "80%"
+    width "$size-line-medium"
 }
 
 // The last line is the shortest, also when it is an even one.
 part "skeleton.line[variant=short]" {
-    width "55%"
+    width "$size-line-short"
 }
 
 // ───────────── SearchField and SelectField ─────────────
-
-part "search-field" {
-    display flex
-    flex-direction column
-    gap "$space-1"
-    min-width 0
-}
 
 part "search-field.box" {
     display flex
@@ -1144,26 +1318,6 @@ part "search-field.input::placeholder" {
 // The browser's own clear mark would be a second one.
 part "search-field.input::-webkit-search-cancel-button" {
     display none
-}
-
-part "select-field" {
-    box-sizing border-box
-    width "100%"
-    min-height "$size-target"
-    padding "$space-2 $space-3"
-    border "$border-width solid $border"
-    border-radius "$r-ctl"
-    background "$bg-raised"
-    color "$fg"
-    font-family "$font"
-    font-size "$fs-md"
-    line-height "$lh-body"
-}
-
-part "select-field:focus-visible" {
-    outline "$ring-width solid $accent"
-    outline-offset 0
-    border-color "$accent"
 }
 
 // ───────────── ConfirmDialog (packages/ui) ─────────────
@@ -1257,29 +1411,6 @@ part "sign-in.links" {
 
 // ───────────── Admin (the status page) ─────────────
 
-part "admin.facts" {
-    display grid
-    grid-template-columns "minmax(0, 1fr)"
-    gap "$space-3"
-    margin 0
-}
-
-part "admin.fact" {
-    display flex
-    flex-direction column
-    gap "$space-1"
-    min-width 0
-    padding-bottom "$space-3"
-    border-bottom "$border-width solid $border-subtle"
-    overflow-wrap anywhere
-}
-
-part "admin.term" {
-    color "$fg-muted"
-    font-size "$fs-base"
-    font-weight "$weight-bold"
-}
-
 part "admin.detail" {
     display flex
     flex-direction column
@@ -1290,30 +1421,6 @@ part "admin.detail" {
 }
 
 // ───────────── Account ─────────────
-
-part "account.item" {
-    display flex
-    flex-wrap wrap
-    align-items center
-    justify-content space-between
-    gap "$space-3"
-    padding "$space-3"
-    border "$border-width solid $border-subtle"
-    border-radius "$r-ctl"
-    background "$bg-surface"
-}
-
-part "account.item-text" {
-    display flex
-    flex-direction column
-    gap "$space-1"
-    min-width 0
-    overflow-wrap anywhere
-}
-
-part "account.item-title" {
-    font-weight "$weight-bold"
-}
 
 part "account.codes" {
     display grid
@@ -1329,17 +1436,6 @@ part "account.codes" {
     list-style none
 }
 
-part "account.key" {
-    display block
-    padding "$space-3"
-    border "$border-width solid $border"
-    border-radius "$r-ctl"
-    background "$bg-sunken"
-    font-family "$mono"
-    font-size "$fs-md"
-    overflow-wrap anywhere
-}
-
 part "account.qr" {
     align-self center
     width "$size-qr"
@@ -1351,24 +1447,6 @@ part "account.qr" {
 }
 
 // ───────────── Settings ─────────────
-
-part "settings.row" {
-    display flex
-    flex-direction column
-    gap "$space-2"
-    padding "$space-3"
-    border "$border-width solid $border-subtle"
-    border-radius "$r-ctl"
-    background "$bg-surface"
-    min-width 0
-}
-
-part "settings.name" {
-    margin 0
-    font-size "$fs-md"
-    font-weight "$weight-bold"
-    color "$fg"
-}
 
 part "settings.source" {
     margin 0
@@ -1385,11 +1463,6 @@ part "settings.locked" {
     border "$border-width solid $border"
     border-radius "$r-ctl"
     background "$bg-sunken"
-}
-
-part "settings.locked-title" {
-    font-weight "$weight-bold"
-    color "$fg"
 }
 
 part "settings.locked-value" {
@@ -1440,7 +1513,7 @@ part "access.matrix-cell[variant=head]" {
     background "$bg-sunken"
     color "$fg"
     font-weight "$weight-bold"
-    min-width "calc($size-target * 3)"
+    min-width "$size-matrix-cell"
 }
 
 part "access.matrix-cell[variant=row]" {
@@ -1449,7 +1522,7 @@ part "access.matrix-cell[variant=row]" {
     background "$bg-surface"
     color "$fg"
     font-weight "$weight-bold"
-    min-width "calc($size-target * 3)"
+    min-width "$size-matrix-cell"
 }
 
 part "access.matrix-cell[variant=head]:first-child" {
@@ -1459,17 +1532,6 @@ part "access.matrix-cell[variant=head]:first-child" {
 
 part "access.matrix-row:last-child access.matrix-cell" {
     border-bottom 0
-}
-
-part "access.list-item" {
-    display flex
-    flex-direction column
-    gap "$space-2"
-    padding "$space-3"
-    border "$border-width solid $border-subtle"
-    border-radius "$r-ctl"
-    background "$bg-surface"
-    min-width 0
 }
 
 part "access.cell" {
@@ -1492,22 +1554,6 @@ part "access.preview" {
     border "$border-width solid $border"
     border-radius "$r-ctl"
     background "$bg-sunken"
-}
-
-part "access.preview-heading" {
-    margin 0
-    font-size "$fs-md"
-    font-weight "$weight-bold"
-    color "$fg"
-}
-
-part "access.preview-lines" {
-    display flex
-    flex-direction column
-    gap "$space-1"
-    margin 0
-    padding 0
-    list-style none
 }
 
 part "access.preview-line" {
@@ -1534,22 +1580,16 @@ part "access.answer-head" {
     gap "$space-1 $space-3"
 }
 
-part "access.answer-name" {
-    margin 0
-    font-size "$fs-md"
-    font-weight "$weight-bold"
-    color "$fg"
-}
-
-part "access.verdict" {
+// The answer *Yes.* or *No.* in front of the reasons.
+part "access.answer-verdict" {
     margin-inline-end "$space-1"
 }
 
-part "access.verdict[variant=yes]" {
+part "access.answer-verdict[variant=yes]" {
     color "$success"
 }
 
-part "access.verdict[variant=no]" {
+part "access.answer-verdict[variant=no]" {
     color "$danger"
 }
 
@@ -1569,30 +1609,6 @@ part "access.topic" {
 
 // ───────────── People ─────────────
 
-part "people.item" {
-    display flex
-    flex-wrap wrap
-    align-items center
-    justify-content space-between
-    gap "$space-3"
-    padding "$space-3"
-    border "$border-width solid $border-subtle"
-    border-radius "$r-ctl"
-    background "$bg-surface"
-}
-
-part "people.item-text" {
-    display flex
-    flex-direction column
-    gap "$space-1"
-    min-width 0
-    overflow-wrap anywhere
-}
-
-part "people.item-title" {
-    font-weight "$weight-bold"
-}
-
 part "people.link" {
     display block
     padding "$space-3"
@@ -1606,7 +1622,7 @@ part "people.link" {
 
 part "people" {
     display block
-    max-block-size "calc($size-list * 2)"
+    max-block-size "$size-list-tall"
     margin 0
     padding "$ring-width"
     overflow-y auto
@@ -1633,8 +1649,7 @@ part "people.person[hovered]" {
 }
 
 part "people.person[focus-visible]" {
-    outline "$ring-width solid $accent"
-    outline-offset "calc($ring-width * -1)"
+    use "ring-inside"
 }
 
 part "people.person-name" {
@@ -1651,34 +1666,6 @@ part "people.person-facts" {
     overflow-wrap anywhere
 }
 
-part "people.facts" {
-    display grid
-    grid-template-columns "minmax(0, 1fr)"
-    gap "$space-3"
-    margin 0
-}
-
-part "people.fact" {
-    display flex
-    flex-direction column
-    gap "$space-1"
-    min-width 0
-    padding-bottom "$space-3"
-    border-bottom "$border-width solid $border-subtle"
-    overflow-wrap anywhere
-}
-
-part "people.term" {
-    color "$fg-muted"
-    font-size "$fs-base"
-    font-weight "$weight-bold"
-}
-
-part "people.definition" {
-    margin 0
-    font-size "$fs-md"
-}
-
 // ───────────── Roles ─────────────
 
 part "roles.no-access" {
@@ -1687,30 +1674,6 @@ part "roles.no-access" {
     font-size "$fs-base"
     font-weight "$weight-bold"
     line-height "$lh-body"
-}
-
-part "roles.item" {
-    display flex
-    flex-wrap wrap
-    align-items center
-    justify-content space-between
-    gap "$space-3"
-    padding "$space-3"
-    border "$border-width solid $border-subtle"
-    border-radius "$r-ctl"
-    background "$bg-surface"
-}
-
-part "roles.item-text" {
-    display flex
-    flex-direction column
-    gap "$space-1"
-    min-width 0
-    overflow-wrap anywhere
-}
-
-part "roles.item-title" {
-    font-weight "$weight-bold"
 }
 
 part "roles.topic" {
@@ -1727,12 +1690,6 @@ part "roles.legend" {
     margin-block-end "$space-2"
     padding 0
     font-weight "$weight-bold"
-}
-
-part "roles.permission" {
-    display flex
-    flex-direction column
-    gap "$space-1"
 }
 
 part "roles.note" {
@@ -1753,15 +1710,6 @@ part "projects.details" {
     overflow-wrap anywhere
 }
 
-part "projects.items" {
-    display flex
-    flex-direction column
-    gap "$space-2"
-    margin 0
-    padding 0
-    list-style none
-}
-
 part "projects.item" {
     display flex
     flex-wrap wrap
@@ -1775,44 +1723,11 @@ part "projects.item" {
     overflow-wrap anywhere
 }
 
-part "projects.facts" {
-    display grid
-    grid-template-columns "minmax(0, 1fr)"
-    gap "$space-3"
-    margin 0
-}
-
-part "projects.fact" {
-    display flex
-    flex-direction column
-    gap "$space-1"
-    min-width 0
-    padding-bottom "$space-3"
-    border-bottom "$border-width solid $border-subtle"
-    overflow-wrap anywhere
-}
-
-part "projects.term" {
-    color "$fg-muted"
-    font-size "$fs-base"
-    font-weight "$weight-bold"
-}
-
-part "projects.definition" {
-    margin 0
-    font-size "$fs-md"
-}
-
 part "projects.preview" {
     display flex
     flex-direction column
     gap "$space-3"
     min-width 0
-}
-
-part "projects.preview-heading" {
-    margin 0
-    font-size "$fs-md"
 }
 
 part "projects.sentences" {
@@ -1839,26 +1754,7 @@ part "projects.tabs" {
 
 // ───────────── Project tree (sidebar) ─────────────
 
-part "project-tree.branch" {
-    display flex
-    flex-direction column
-    gap "$space-1"
-    margin 0
-    padding 0
-    list-style none
-}
-
 // What is inside a project stands a little in from it.
-part "project-tree.branch[variant=inside]" {
-    padding-inline-start "$space-4"
-}
-
-part "project-tree.node" {
-    display flex
-    flex-direction column
-    gap "$space-1"
-}
-
 part "project-tree.row" {
     display flex
     align-items center
@@ -1894,7 +1790,7 @@ part "project-tree.toggle[focus-visible]" {
 
 // The arrow points down while what is inside is open.
 part "project-tree.toggle[state=open] icon" {
-    transform "rotate(90deg)"
+    transform "rotate($angle-open)"
 }
 
 part "project-tree.link" {
@@ -1923,14 +1819,7 @@ part "project-tree.link[focus-visible]" {
 }
 
 part "project-tree.link[current]" {
-    background "$bg-selected"
-    color "$accent-fg"
-    use "marked"
-}
-
-part "project-tree.name" {
-    min-width 0
-    overflow-wrap anywhere
+    use "current-item"
 }
 
 part "project-tree.short" {
@@ -1964,62 +1853,6 @@ part "region-page.example" {
     background "$bg-sunken"
     color "$fg"
     font-size "$fs-base"
-}
-
-part "theme-picker.group" {
-    margin 0
-    padding 0
-    border 0
-    min-width 0
-}
-
-part "theme-picker.legend" {
-    padding 0
-    margin-bottom "$space-2"
-    font-size "$fs-md"
-    font-weight "$weight-bold"
-    color "$fg"
-}
-
-part "theme-picker.choice" {
-    position relative
-    display inline-flex
-}
-
-part "theme-picker.input" {
-    position absolute
-    inset 0
-    margin 0
-    opacity 0
-    cursor pointer
-}
-
-part "theme-picker.tile" {
-    display flex
-    flex-direction column
-    gap "$space-2"
-    padding "$space-2"
-    border "$border-width solid $border"
-    border-radius "$r-card"
-    background "$bg-raised"
-    color "$fg"
-    font-size "$fs-md"
-}
-
-part "theme-picker.input:checked + theme-picker.tile" {
-    border-color "$accent"
-    background "$bg-selected"
-    color "$accent-fg"
-    font-weight "$weight-bold"
-    use "marked"
-}
-
-part "theme-picker.input:hover + theme-picker.tile" {
-    background "$bg-hover"
-}
-
-part "theme-picker.input:focus-visible + theme-picker.tile" {
-    use "ring"
 }
 
 part "theme-picker.name" {
@@ -2061,19 +1894,7 @@ part "theme-preview.line" {
 }
 
 part "theme-preview.line[variant=short]" {
-    width "60%"
-}
-
-part "access-keys.item" {
-    display flex
-    flex-wrap wrap
-    align-items center
-    justify-content space-between
-    gap "$space-3"
-    padding "$space-3"
-    border "$border-width solid $border-subtle"
-    border-radius "$r-ctl"
-    background "$bg-surface"
+    width "$size-sample-short"
 }
 
 part "access-keys.item-text" {
@@ -2085,10 +1906,6 @@ part "access-keys.item-text" {
     overflow-wrap anywhere
 }
 
-part "access-keys.item-title" {
-    font-weight "$weight-bold"
-}
-
 part "access-keys.prefix" {
     font-family "$mono"
     font-size "$fs-base"
@@ -2098,17 +1915,6 @@ part "access-keys.expired" {
     color "$danger"
     font-size "$fs-base"
     font-weight "$weight-bold"
-}
-
-part "access-keys.key" {
-    display block
-    padding "$space-3"
-    border "$border-width solid $border"
-    border-radius "$r-ctl"
-    background "$bg-sunken"
-    font-family "$mono"
-    font-size "$fs-md"
-    overflow-wrap anywhere
 }
 
 part "access-keys.more" {
@@ -2203,15 +2009,7 @@ part "shell.who" {
     font-size "$fs-base"
 }
 
-part "shell.main" {
-    display flex
-    flex 1
-    flex-direction column
-    gap "$space-4"
-    min-width 0
-}
-
-part "shell.main:focus" {
+part "content:focus" {
     outline none
 }
 
@@ -2272,7 +2070,7 @@ part "skip" {
     background "$bg-raised"
     color "$accent-fg"
     font-weight "$weight-bold"
-    transform "translateY(-300%)"
+    transform "translateY($skip-offset)"
 }
 
 part "skip:focus" {
@@ -2357,14 +2155,6 @@ part "sidebar.section" {
     width "100%"
 }
 
-part "sidebar.heading" {
-    margin 0
-    padding "0 $space-3"
-    color "$fg-muted"
-    font-size "$fs-base"
-    font-weight "$weight-bold"
-}
-
 part "sidebar.person" {
     display flex
     flex-direction column
@@ -2410,9 +2200,7 @@ part "nav-item[pressed]" {
 }
 
 part "nav-item[current]" {
-    background "$bg-selected"
-    color "$accent-fg"
-    use "marked"
+    use "current-item"
 }
 
 part "nav-item[focus-visible]" {
@@ -2420,8 +2208,7 @@ part "nav-item[focus-visible]" {
 }
 
 part "nav-item[state=busy]" {
-    cursor progress
-    opacity "$opacity-busy"
+    use "busy"
 }
 
 part "nav-item.label" {
@@ -2486,14 +2273,11 @@ part "bottom-bar.item[hovered]" {
 }
 
 part "bottom-bar.item[current]" {
-    color "$accent-fg"
-    background "$bg-selected"
-    use "marked"
+    use "current-item"
 }
 
 part "bottom-bar.item[focus-visible]" {
-    outline "$ring-width solid $accent"
-    outline-offset "calc($ring-width * -1)"
+    use "ring-inside"
 }
 
 part "bottom-bar.label" {
@@ -2515,11 +2299,6 @@ part "top-bar" {
     padding "calc($space-2 + env(safe-area-inset-top)) $space-4 $space-2"
     border-bottom "$border-width solid $border"
     background "$bg-canvas"
-}
-
-part "top-bar.trail" {
-    flex 1
-    min-width 0
 }
 
 part "top-bar.crumbs" {
@@ -2548,11 +2327,6 @@ part "top-bar.up" {
 
 part "top-bar.up[focus-visible]" {
     use "ring"
-}
-
-part "top-bar.here" {
-    color "$fg"
-    font-weight "$weight-bold"
 }
 
 part "top-bar.title" {
@@ -2598,53 +2372,11 @@ part "side-panel.title:focus" {
     outline none
 }
 
-part "more-sheet" {
-    display flex
-    flex-direction column
-    gap "$space-3"
-    padding "$space-4"
-}
-
-part "more-sheet.head" {
-    display flex
-    align-items center
-    justify-content space-between
-    gap "$space-3"
-}
-
-part "more-sheet.title" {
-    margin 0
-    font-size "$fs-lg"
-}
-
-part "more-sheet.list" {
-    display flex
-    flex-direction column
-    gap "$space-1"
-    margin 0
-    padding 0
-    list-style none
-}
-
 part "more-sheet.who" {
     margin 0
     color "$fg-muted"
     font-size "$fs-base"
     overflow-wrap anywhere
-}
-
-part "more-sheet.section" {
-    display flex
-    flex-direction column
-    gap "$space-1"
-}
-
-part "more-sheet.section-heading" {
-    margin 0
-    padding "0 $space-3"
-    color "$fg-muted"
-    font-size "$fs-base"
-    font-weight "$weight-bold"
 }
 
 part "quick-search" {
@@ -2661,11 +2393,6 @@ part "quick-search.head" {
     gap "$space-2"
 }
 
-part "quick-search.field" {
-    flex 1
-    min-width 0
-}
-
 part "quick-search.results" {
     display flex
     flex-direction column
@@ -2673,12 +2400,6 @@ part "quick-search.results" {
     margin 0
     padding 0
     outline none
-}
-
-part "quick-search.group" {
-    display flex
-    flex-direction column
-    gap "$space-1"
 }
 
 part "quick-search.heading" {
@@ -2708,18 +2429,12 @@ part "quick-search.item[hovered]" {
 
 part "quick-search.item[focused]" {
     background "$bg-selected"
-    outline "$ring-width solid $accent"
-    outline-offset "calc($ring-width * -1)"
+    use "ring-inside"
 }
 
 part "quick-search.title" {
     font-size "$fs-md"
     font-weight "$weight-bold"
-}
-
-part "quick-search.hint" {
-    color "$fg-muted"
-    font-size "$fs-base"
 }
 
 part "quick-search.empty" {
@@ -2746,14 +2461,6 @@ part "settings-frame.menu" {
     width "$size-menu"
 }
 
-part "settings-frame.content" {
-    display flex
-    flex 1
-    flex-direction column
-    gap "$space-4"
-    min-width 0
-}
-
 part "settings-frame.groups" "settings-frame.topics" {
     display flex
     flex-direction column
@@ -2767,12 +2474,6 @@ part "settings-frame.groups" {
 }
 
 part "settings-frame.topics" {
-    gap "$space-1"
-}
-
-part "settings-frame.group" {
-    display flex
-    flex-direction column
     gap "$space-1"
 }
 
@@ -2811,11 +2512,6 @@ part "undo-host.offer" {
     pointer-events auto
 }
 
-part "undo-host.message" {
-    min-width 0
-    overflow-wrap anywhere
-}
-
 part "undo-host[variant=above-bar]" {
     bottom "calc($size-bar + $space-4)"
 }
@@ -2837,18 +2533,6 @@ part "focus-view.list" {
     max-width "100%"
 }
 
-part "focus-view.main" {
-    display flex
-    flex 1
-    flex-direction column
-    gap "$space-4"
-    min-width 0
-}
-
-part "focus-view.main:focus" {
-    outline none
-}
-
 part "focus-view.bar" {
     display flex
     flex-wrap wrap
@@ -2856,30 +2540,10 @@ part "focus-view.bar" {
     gap "$space-2"
 }
 
-part "frames-page.item-title" {
-    margin 0
-    font-size "$fs-lg"
-}
-
 part "frames-page.actions" {
     display inline-flex
     flex-wrap wrap
     gap "$space-2"
-}
-
-part "frames-page.slim" {
-    display flex
-    flex-direction column
-    gap "$space-1"
-    margin 0
-    padding 0
-    list-style none
-}
-
-part "key-capture-field" {
-    display flex
-    flex-direction column
-    gap "$space-1"
 }
 
 part "key-capture-field.label" {
@@ -2952,15 +2616,6 @@ part "list-editor.list" {
     min-width 0
 }
 
-part "list-editor.rows" {
-    display flex
-    flex-direction column
-    gap "$space-2"
-    margin 0
-    padding 0
-    list-style none
-}
-
 part "list-editor.row" {
     display flex
     flex-wrap wrap
@@ -3029,31 +2684,6 @@ part "shortcut-editor.label" {
     font-weight "$weight-bold"
 }
 
-part "shortcut-editor.capture" {
-    display flex
-    flex-direction column
-    gap "$space-2"
-}
-
-part "shortcut-help" {
-    display flex
-    flex-direction column
-    gap "$space-3"
-    padding "$space-4"
-}
-
-part "shortcut-help.head" {
-    display flex
-    align-items center
-    justify-content space-between
-    gap "$space-3"
-}
-
-part "shortcut-help.title" {
-    margin 0
-    font-size "$fs-lg"
-}
-
 part "shortcut-help.intro" {
     margin 0
     color "$fg-muted"
@@ -3069,15 +2699,6 @@ part "shortcut-help.change" {
 
 part "shortcut-help.change[focus-visible]" {
     use "ring"
-}
-
-part "shortcut-list.list" {
-    display flex
-    flex-direction column
-    gap "$space-2"
-    margin 0
-    padding 0
-    list-style none
 }
 
 part "shortcut-list.row" {
@@ -3104,11 +2725,6 @@ part "shortcut-list.name" {
     font-weight "$weight-bold"
 }
 
-part "shortcut-list.where" {
-    color "$fg-muted"
-    font-size "$fs-base"
-}
-
 part "shortcut-list.keys" {
     display inline-flex
     flex-wrap wrap
@@ -3120,11 +2736,6 @@ part "shortcut-list.alternative" {
     display inline-flex
     align-items center
     gap "$space-2"
-}
-
-part "shortcut-list.or" {
-    color "$fg-muted"
-    font-size "$fs-base"
 }
 
 part "shortcuts-page.intro" {

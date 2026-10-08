@@ -27,7 +27,7 @@ interface SlimListProps {
 /** The slim list of the focus view: the items around the open one. */
 function SlimList({ items, open, onOpen }: SlimListProps) {
   return (
-    <ul {...partOf(part.framesPageSlim)} aria-label={t("frames.list")}>
+    <ul {...partOf(part.list, { variants: ["tight"] })} aria-label={t("frames.list")}>
       {items.map((example) => (
         <li key={example.id}>
           <Button
@@ -88,7 +88,7 @@ function Focused({
       onBack={onClose}
       onStep={step}
     >
-      <h2 {...partOf(part.framesPageItemTitle)}>{current?.name}</h2>
+      <h2 {...partOf(part.title)}>{current?.name}</h2>
       <p {...partOf(part.text)}>{t("frames.focus-text")}</p>
     </FocusView>
   );

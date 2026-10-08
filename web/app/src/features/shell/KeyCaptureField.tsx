@@ -49,7 +49,7 @@ export function KeyCaptureField({ value, onChange }: KeyCaptureFieldProps) {
     };
   }, []);
   return (
-    <div {...partOf(part.keyCaptureField)}>
+    <div {...partOf(part.column)}>
       <label htmlFor={inputId} {...partOf(part.keyCaptureFieldLabel)}>
         {t("shortcuts.new-keys")}
       </label>

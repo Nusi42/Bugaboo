@@ -23,8 +23,8 @@ function MemberList({ group, changes }: ListProps) {
       ) : (
         <ul {...partOf(part.list)} aria-label={t("groups.members")}>
           {people.map((person) => (
-            <li key={person.id} {...partOf(part.peopleItem)}>
-              <span {...partOf(part.peopleItemTitle)}>{person.name}</span>
+            <li key={person.id} {...partOf(part.item)}>
+              <span {...partOf(part.itemTitle)}>{person.name}</span>
               <Button
                 aria-label={t("groups.remove-name", { name: person.name })}
                 onPress={() => {
