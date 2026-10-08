@@ -95,6 +95,7 @@ export { partOf, type PartAttributes, type PartChoices } from "./parts.ts";
 export {
   darkThemeIds,
   lightThemeIds,
+  pageAttributes,
   part,
   themeIds,
   type ColorToken,

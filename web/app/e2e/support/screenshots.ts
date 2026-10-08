@@ -1,10 +1,11 @@
 import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 
-import { expect, type Page } from "@playwright/test";
+import { type Page } from "@playwright/test";
 
 import { inOrder } from "./sequence.ts";
 import { settingDefaults } from "@bugaboo/api-client";
+import { expectLook } from "./checks.ts";
 
 /** The folder the screenshots go to, from `BB_SCREENSHOT_DIR`; `undefined` when none are wanted. */
 export const screenshotFolder = process.env["BB_SCREENSHOT_DIR"];
@@ -41,7 +42,7 @@ export async function shoot(page: Page, name: string, milestone = "M1"): Promise
       // notice when it is asked for light again (the theme of a check before it would stay).
       await page.emulateMedia({ colorScheme: otherThan[look] });
       await page.emulateMedia({ colorScheme: look });
-      await expect(page.locator("html")).toHaveAttribute("data-look", themeOf[look]);
+      await expectLook(page, themeOf[look]);
       await page.screenshot({ path: join(target, `${name}-${look}.png`), fullPage: true });
     }),
   );
@@ -145,7 +146,7 @@ export function shootWholeAs(
   theme: string,
 ): Promise<void> {
   return withWholePage(page, async () => {
-    await expect(page.locator("html")).toHaveAttribute("data-look", theme);
+    await expectLook(page, theme);
     await page.screenshot({
       path: join(folderOf(milestone), `${name}-${theme}.png`),
       fullPage: true,

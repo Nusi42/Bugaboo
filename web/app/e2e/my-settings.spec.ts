@@ -2,7 +2,7 @@ import { t } from "@bugaboo/messages";
 import { type Locator, type Page } from "@playwright/test";
 
 import { ada, bob, forgetChoices, makeAdmin, makePerson } from "./support/accounts.ts";
-import { expectGoodInEveryLook } from "./support/checks.ts";
+import { expectGoodInEveryLook, expectLook } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
 import {
   addressEndingAt,
@@ -62,7 +62,7 @@ async function chooseMidnight(page: Page): Promise<void> {
   await choose(page.getByRole("radio", { name: t("appearance.mode.dark"), exact: true }));
   const group = page.getByRole("group", { name: t("appearance.dark"), exact: true });
   await choose(group.getByRole("radio", { name: t("theme.midnight"), exact: true }));
-  await expect(page.locator("html")).toHaveAttribute("data-look", "midnight");
+  await expectLook(page, "midnight");
   await saved(page);
 }
 
@@ -106,7 +106,7 @@ test("cfg_04 what a person chooses in My settings follows them to another browse
   const other = await anotherBrowser(browser, server);
   await other.emulateMedia({ colorScheme: "light" });
   await signIn(other, ada);
-  await expect(other.locator("html")).toHaveAttribute("data-look", "midnight");
+  await expectLook(other, "midnight");
   await expect(other.locator("html")).toHaveAttribute("data-motion", "less");
   await expect(other.locator("html")).toHaveAttribute("data-text", "larger");
   await other.goto(paths.region);
@@ -133,13 +133,13 @@ test("cfg_04 after signing out nothing of the person's choices is left in the br
   await signOut(page);
   expect(await storedText(page)).not.toContain(storageKey.firstFrame);
   // The sign-in page is the device's: light on a light device.
-  await expect(page.locator("html")).toHaveAttribute("data-look", "daylight");
+  await expectLook(page, "daylight");
   // The next person gets their own look, not the last person's.
   await sendPassword(page, bob);
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
-  await expect(page.locator("html")).toHaveAttribute("data-look", "daylight");
+  await expectLook(page, "daylight");
   await page.reload();
-  await expect(page.locator("html")).toHaveAttribute("data-look", "daylight");
+  await expectLook(page, "daylight");
 });
 
 test("cfg_04 the storage of the browser holds nothing of the person while they are signed in or after", async ({
@@ -197,7 +197,7 @@ test("cfg_06 an administrator locks the theme and a person sees Set by your orga
   await signIn(person, bob);
   await person.goto(paths.appearance);
   // The organization's theme counts, the choice is read only and the page says why.
-  await expect(person.locator("html")).toHaveAttribute("data-look", "dusk");
+  await expectLook(person, "dusk");
   await expect(person.getByText(t("setting.ui.locked"), { exact: true }).first()).toBeVisible();
   await expect(person.getByText(t("setting.ui.locked-why")).first()).toBeVisible();
   await expect(
@@ -211,7 +211,7 @@ test("cfg_06 an administrator locks the theme and a person sees Set by your orga
   await saved(page);
   await person.reload();
   await choose(person.getByRole("radio", { name: t("appearance.mode.light"), exact: true }));
-  await expect(person.locator("html")).toHaveAttribute("data-look", "daylight");
+  await expectLook(person, "daylight");
   await person.close();
 });
 

@@ -1,4 +1,10 @@
-import { defaultDarkTheme, defaultLightTheme, themeIds, type ThemeId } from "./tokens.ts";
+import {
+  defaultDarkTheme,
+  defaultLightTheme,
+  pageAttributes,
+  themeIds,
+  type ThemeId,
+} from "./tokens.ts";
 
 /** What a person can pick: follow the device, or one of the built-in themes. */
 export const themeChoices = ["device", ...themeIds] as const;
@@ -36,7 +42,7 @@ export function resolveTheme(
   return choice;
 }
 
-/** Puts the theme on the page; the generated token CSS reacts to `data-look`. */
+/** Puts the theme on the page; the generated token CSS reacts to the `look` attribute of the page frame. */
 export function applyTheme(theme: ThemeId): void {
-  document.documentElement.dataset["look"] = theme;
+  document.documentElement.setAttribute(pageAttributes.look, theme);
 }
