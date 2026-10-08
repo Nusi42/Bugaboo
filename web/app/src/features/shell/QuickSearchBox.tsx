@@ -20,7 +20,7 @@ export function QuickSearchBox() {
     <Autocomplete inputValue={query} onInputChange={setQuery}>
       <div {...partOf(part.quickSearch)}>
         <div {...partOf(part.quickSearchHead)}>
-          <div ref={field} {...partOf(part.fill)}>
+          <div ref={field} {...partOf(part.shellFill)}>
             <SearchField
               label={t("search.label")}
               placeholder={t("search.placeholder")}

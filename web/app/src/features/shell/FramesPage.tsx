@@ -88,7 +88,7 @@ function Focused({
       onBack={onClose}
       onStep={step}
     >
-      <h2 {...partOf(part.title)}>{current?.name}</h2>
+      <h2 {...partOf(part.shellTitle)}>{current?.name}</h2>
       <p {...partOf(part.text)}>{t("frames.focus-text")}</p>
     </FocusView>
   );

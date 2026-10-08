@@ -45,9 +45,9 @@ export function MoreSheet({ organizationSettings, name, onSignOut, signingOut }:
   const sections = useSidebarSections();
   return (
     <Overlay {...overlay} label={t("shell.more")} from={overlayEdge.bottom}>
-      <div {...partOf(part.sheet)}>
-        <div {...partOf(part.sheetHead)}>
-          <h2 {...partOf(part.title)}>{t("shell.more")}</h2>
+      <div {...partOf(part.shellSheet)}>
+        <div {...partOf(part.shellSheetHead)}>
+          <h2 {...partOf(part.shellTitle)}>{t("shell.more")}</h2>
           <IconButton icon={iconName.close} label={t("common.close")} onPress={closeOverlay} />
         </div>
         {name === undefined ? null : (
@@ -55,7 +55,7 @@ export function MoreSheet({ organizationSettings, name, onSignOut, signingOut }:
         )}
         {sections.map((section) => (
           <section key={section.heading} {...partOf(part.column)} aria-label={t(section.heading)}>
-            <h3 {...partOf(part.sectionHeading)}>{t(section.heading)}</h3>
+            <h3 {...partOf(part.shellSectionHeading)}>{t(section.heading)}</h3>
             {section.render({ narrow: false, onNavigate: closeOverlay })}
           </section>
         ))}

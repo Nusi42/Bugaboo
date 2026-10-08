@@ -26,7 +26,7 @@ export function Frame({ header, children }: FrameProps) {
         {t("shell.skip")}
       </a>
       <header {...partOf(part.shellHeader)}>{header}</header>
-      <main id={CONTENT_ID} {...partOf(part.content)} tabIndex={-1}>
+      <main id={CONTENT_ID} {...partOf(part.shellContent)} tabIndex={-1}>
         {children}
       </main>
       <footer {...partOf(part.shellFooter)}>

@@ -25,7 +25,7 @@ use super::{Check, Context, Finding};
 use crate::docs::text::has_extension;
 use crate::generate::all_paths;
 use crate::generate::theme::STYLE_SHEET;
-use crate::source::{Kind, Source};
+use crate::source::{Kind, Source, contains_word};
 
 /// Ways to put a style on an element, or a style sheet on the page, from code: the text to find
 /// and what it is.
@@ -118,16 +118,6 @@ fn problem_in(code: &str) -> Option<String> {
         ));
     }
     None
-}
-
-/// Whether `word` stands in the code as a whole word.
-fn contains_word(code: &str, word: &str) -> bool {
-    code.match_indices(word).any(|(at, _)| {
-        let before = code[..at].chars().next_back();
-        let after = code[at + word.len()..].chars().next();
-        let part_of_name = |c: char| c.is_alphanumeric() || c == '_';
-        !before.is_some_and(part_of_name) && !after.is_some_and(part_of_name)
-    })
 }
 
 /// `setAttribute("style", …)`, `setAttribute('class', …)` and `createElement("style")`, written

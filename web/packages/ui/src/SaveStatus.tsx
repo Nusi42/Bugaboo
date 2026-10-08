@@ -19,7 +19,10 @@ export interface SaveStatusProps {
  */
 export function SaveStatus({ state, labels }: SaveStatusProps) {
   return (
-    <span {...partOf(part.hint, { states: [state === "not-saved" && state] })} role={politeStatus}>
+    <span
+      {...partOf(part.saveStatus, { states: [state === "not-saved" && state] })}
+      role={politeStatus}
+    >
       {state === "idle" ? null : labels[state]}
     </span>
   );

@@ -16,9 +16,9 @@ export function ShortcutHelp() {
   const overrides = useShortcutOverrides();
   return (
     <Overlay {...overlay} label={t("shortcut.title")}>
-      <div {...partOf(part.sheet)}>
-        <div {...partOf(part.sheetHead)}>
-          <h2 {...partOf(part.title)}>{t("shortcut.title")}</h2>
+      <div {...partOf(part.shellSheet)}>
+        <div {...partOf(part.shellSheetHead)}>
+          <h2 {...partOf(part.shellTitle)}>{t("shortcut.title")}</h2>
           <IconButton icon={iconName.close} label={t("common.close")} onPress={closeOverlay} />
         </div>
         <p {...partOf(part.shortcutHelpIntro)}>{t("shortcut.intro")}</p>

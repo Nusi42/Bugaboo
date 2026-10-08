@@ -47,7 +47,7 @@ function PermissionLine({ answer, permission }: PermissionLineProps) {
   );
   return (
     <li {...partOf(part.accessAnswer)}>
-      <p {...partOf(part.subheading)}>{t(`permission.${permission.permission}`)}</p>
+      <p {...partOf(part.accessSubheading)}>{t(`permission.${permission.permission}`)}</p>
       <p {...partOf(part.accessReasons)}>
         <strong
           {...partOf(part.accessAnswerVerdict, {
@@ -137,7 +137,7 @@ function LevelSection({ answer, heading, entries, levelName, words }: LevelSecti
           ? told.map((entry) => (
               <li key={entry.name} {...partOf(part.accessAnswer)}>
                 <div {...partOf(part.accessAnswerHead)}>
-                  <p {...partOf(part.subheading)}>{entry.name}</p>
+                  <p {...partOf(part.accessSubheading)}>{entry.name}</p>
                   <span {...partOf(part.strong)}>{levelName(entry.level)}</span>
                 </div>
                 <p {...partOf(part.accessReasons)}>{entry.sentences.join(" ")}</p>
@@ -146,7 +146,7 @@ function LevelSection({ answer, heading, entries, levelName, words }: LevelSecti
           : groups.map((group, at) => (
               <li key={group.names.join()} {...partOf(part.accessAnswer)}>
                 <div {...partOf(part.accessAnswerHead)}>
-                  <p {...partOf(part.subheading)}>
+                  <p {...partOf(part.accessSubheading)}>
                     {groups.length === 1
                       ? words.all
                       : at === 0

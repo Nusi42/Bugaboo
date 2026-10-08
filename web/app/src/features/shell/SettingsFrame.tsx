@@ -96,7 +96,7 @@ export function SettingsFrame({ parent }: SettingsFrameProps) {
       <nav aria-label={heading} {...partOf(part.settingsFrameMenu)}>
         <Topics groups={groups} pathname={pathname} />
       </nav>
-      <div {...partOf(part.content)}>
+      <div {...partOf(part.shellContent)}>
         <Outlet />
       </div>
     </div>
