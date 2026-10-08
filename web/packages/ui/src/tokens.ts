@@ -278,6 +278,14 @@ export const part = {
   peopleFact: "people.fact",
   peopleTerm: "people.term",
   peopleDefinition: "people.definition",
+  rolesNoAccess: "roles.no-access",
+  rolesItem: "roles.item",
+  rolesItemText: "roles.item-text",
+  rolesItemTitle: "roles.item-title",
+  rolesTopic: "roles.topic",
+  rolesLegend: "roles.legend",
+  rolesPermission: "roles.permission",
+  rolesNote: "roles.note",
 } as const;
 export type PartName = (typeof part)[keyof typeof part];
 
@@ -386,4 +394,12 @@ export const partWords = {
   "people.fact": { variant: [], state: [] },
   "people.term": { variant: [], state: [] },
   "people.definition": { variant: [], state: [] },
+  "roles.no-access": { variant: [], state: [] },
+  "roles.item": { variant: [], state: [] },
+  "roles.item-text": { variant: [], state: [] },
+  "roles.item-title": { variant: [], state: [] },
+  "roles.topic": { variant: [], state: [] },
+  "roles.legend": { variant: [], state: [] },
+  "roles.permission": { variant: [], state: [] },
+  "roles.note": { variant: [], state: [] },
 } as const;

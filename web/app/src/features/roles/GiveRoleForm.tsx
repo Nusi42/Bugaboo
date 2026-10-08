@@ -1,10 +1,18 @@
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, ChoiceGroup, Form, SelectField, SubmitButton } from "@bugaboo/ui";
+import {
+  Alert,
+  alertTone,
+  ChoiceGroup,
+  Form,
+  SelectField,
+  SubmitButton,
+  partOf,
+  part,
+} from "@bugaboo/ui";
 
 import { useAllPages } from "../../shared/paged.ts";
 import { type Subject, choicesOf, useChoices } from "./assignments.ts";
 import { ChoicePicker } from "./ChoicePicker.tsx";
-import styles from "./Roles.module.css";
 import { NO_ACCESS, NOTHING, useGiveForm } from "./use-give-form.ts";
 import type { RowSpec } from "./use-row-changes.ts";
 
@@ -80,7 +88,7 @@ export function GiveRoleForm({ project, give, preset }: GiveRoleFormProps) {
         onPick={form.pick}
       />
       {form.who === null ? null : (
-        <p className={styles.text}>{t("assignments.picked", { name: form.who.name })}</p>
+        <p {...partOf(part.text)}>{t("assignments.picked", { name: form.who.name })}</p>
       )}
       <SelectField
         label={t("assignments.role")}
@@ -89,9 +97,9 @@ export function GiveRoleForm({ project, give, preset }: GiveRoleFormProps) {
         onChange={form.setRole}
       />
       {project !== null && !noAccess ? <Reach value={form.reach} onChange={form.setReach} /> : null}
-      {noAccess ? <p className={styles.muted}>{t("assignments.no-access-help")}</p> : null}
+      {noAccess ? <p {...partOf(part.muted)}>{t("assignments.no-access-help")}</p> : null}
       {form.problem === null ? null : <Alert tone={alertTone.danger}>{form.problem}</Alert>}
-      <div className={styles.row}>
+      <div {...partOf(part.row)}>
         <SubmitButton>
           {t(noAccess ? "assignments.give-no-access" : "assignments.give")}
         </SubmitButton>

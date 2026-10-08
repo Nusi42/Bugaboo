@@ -1,10 +1,9 @@
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, Button } from "@bugaboo/ui";
+import { Alert, alertTone, Button, partOf, part } from "@bugaboo/ui";
 
 import { messageOf } from "../../shared/errors.ts";
 import { AssignmentRow } from "./AssignmentRow.tsx";
 import { type RowLine, rowsOf, useAssignments } from "./assignments.ts";
-import styles from "./Roles.module.css";
 
 export interface AssignmentListProps {
   /** The project the rows are for (an ID), or `null` for the whole organization. */
@@ -23,16 +22,16 @@ export function AssignmentList({ project, onRemove, onChangeHere }: AssignmentLi
     <>
       {list.isError ? <Alert tone={alertTone.danger}>{messageOf(list.error)}</Alert> : null}
       {list.isSuccess && rows.length === 0 ? (
-        <p className={styles.muted}>{t("assignments.none")}</p>
+        <p {...partOf(part.muted)}>{t("assignments.none")}</p>
       ) : (
-        <ul className={styles.list} aria-label={t("assignments.list")}>
+        <ul {...partOf(part.list)} aria-label={t("assignments.list")}>
           {rows.map((row) => (
             <AssignmentRow key={row.id} row={row} onRemove={onRemove} onChangeHere={onChangeHere} />
           ))}
         </ul>
       )}
       {list.hasNextPage ? (
-        <div className={styles.row}>
+        <div {...partOf(part.row)}>
           <Button
             isPending={list.isFetchingNextPage}
             onPress={() => {

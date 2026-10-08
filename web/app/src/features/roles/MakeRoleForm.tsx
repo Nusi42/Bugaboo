@@ -1,5 +1,14 @@
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, Form, SelectField, SubmitButton, TextField } from "@bugaboo/ui";
+import {
+  Alert,
+  alertTone,
+  Form,
+  SelectField,
+  SubmitButton,
+  TextField,
+  partOf,
+  part,
+} from "@bugaboo/ui";
 import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 
@@ -8,7 +17,6 @@ import { api } from "../../shared/api.ts";
 import { messageOf } from "../../shared/errors.ts";
 import { roleAddress } from "../../shared/paths.ts";
 import { roleLinesOf, useRoles } from "./roles.ts";
-import styles from "./Roles.module.css";
 
 /** The word that stands for *An empty role* among the roles to start from. */
 const EMPTY = "";
@@ -57,7 +65,7 @@ export function MakeRoleForm() {
       />
       <SelectField label={t("roles.start-from")} choices={start} value={from} onChange={setFrom} />
       {problem === null ? null : <Alert tone={alertTone.danger}>{messageOf(problem)}</Alert>}
-      <div className={styles.row}>
+      <div {...partOf(part.row)}>
         <SubmitButton isPending={empty.isPending || copy.isPending}>{t("roles.make")}</SubmitButton>
       </div>
     </Form>

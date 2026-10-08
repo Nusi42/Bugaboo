@@ -1,6 +1,6 @@
 import type { Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, Button, buttonType, Form, TextField } from "@bugaboo/ui";
+import { Alert, alertTone, Button, buttonType, Form, TextField, partOf, part } from "@bugaboo/ui";
 import { useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 
@@ -8,7 +8,6 @@ import { refreshAccess } from "../../shared/query-keys.ts";
 import { api } from "../../shared/api.ts";
 import { messageOf } from "../../shared/errors.ts";
 import { roleAddress } from "../../shared/paths.ts";
-import styles from "./Roles.module.css";
 
 export interface CopyRoleProps {
   readonly id: string;
@@ -31,7 +30,7 @@ export function CopyRole({ id, name }: CopyRoleProps) {
         copy.mutate({ params: { path: { role_id: id } }, body: { name: typed.trim() } });
       }}
     >
-      <p className={styles.muted}>{t("roles.copy-help")}</p>
+      <p {...partOf(part.muted)}>{t("roles.copy-help")}</p>
       <TextField
         label={t("roles.copy-field")}
         requiredMessage={t("validation.required")}
@@ -39,7 +38,7 @@ export function CopyRole({ id, name }: CopyRoleProps) {
         onChange={setTyped}
       />
       {copy.isError ? <Alert tone={alertTone.danger}>{messageOf(copy.error)}</Alert> : null}
-      <div className={styles.row}>
+      <div {...partOf(part.row)}>
         <Button type={buttonType.submit} isPending={copy.isPending}>
           {t("roles.copy")}
         </Button>

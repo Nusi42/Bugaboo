@@ -1,12 +1,12 @@
 import type { Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
+import { partOf, part } from "@bugaboo/ui";
 
 import { usePageTitle } from "../../shared/use-page.ts";
 import { NotFoundPage, QueryGate } from "../shell/index.ts";
 import { useRoleTrail } from "./role-trail.ts";
 import { RoleSections } from "./RoleSections.tsx";
 import { useRole } from "./roles.ts";
-import styles from "./Roles.module.css";
 
 /**
  * The page of one role (SEC-08, UX §5.2): its name and what it is used for, the switch for two-step
@@ -24,7 +24,7 @@ export function RolePage({ id }: { readonly id: string }) {
   return (
     <QueryGate error={found.error} data={shown} notFound={<NotFoundPage />}>
       {(page) => (
-        <div className={styles.stack}>
+        <div {...partOf(part.stack)}>
           <RoleSections role={page.role} used={page.used} />
         </div>
       )}

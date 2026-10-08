@@ -1672,3 +1672,65 @@ part "people.definition" {
     margin 0
     font-size "$fs-md"
 }
+
+// ───────────── Roles ─────────────
+
+part "roles.no-access" {
+    margin 0
+    color "$danger"
+    font-size "$fs-base"
+    font-weight "$weight-bold"
+    line-height "$lh-body"
+}
+
+part "roles.item" {
+    display flex
+    flex-wrap wrap
+    align-items center
+    justify-content space-between
+    gap "$space-3"
+    padding "$space-3"
+    border "$border-width solid $border-subtle"
+    border-radius "$r-ctl"
+    background "$bg-surface"
+}
+
+part "roles.item-text" {
+    display flex
+    flex-direction column
+    gap "$space-1"
+    min-width 0
+    overflow-wrap anywhere
+}
+
+part "roles.item-title" {
+    font-weight "$weight-bold"
+}
+
+part "roles.topic" {
+    display flex
+    flex-direction column
+    gap "$space-2"
+    min-width 0
+    margin 0
+    padding 0
+    border 0
+}
+
+part "roles.legend" {
+    margin-block-end "$space-2"
+    padding 0
+    font-weight "$weight-bold"
+}
+
+part "roles.permission" {
+    display flex
+    flex-direction column
+    gap "$space-1"
+}
+
+part "roles.note" {
+    padding-inline-start "calc($space-5 + $space-3)"
+    color "$fg-muted"
+    font-size "$fs-sm"
+}

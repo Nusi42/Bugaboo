@@ -1,11 +1,10 @@
 import type { Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
-import { Card } from "@bugaboo/ui";
+import { Card, partOf, part } from "@bugaboo/ui";
 
 import { CopyRole } from "./CopyRole.tsx";
 import { DeleteRole } from "./DeleteRole.tsx";
 import { ResetRole } from "./ResetRole.tsx";
-import styles from "./Roles.module.css";
 
 export interface RoleActionsProps {
   readonly role: Schema<"RoleBody">;
@@ -17,7 +16,7 @@ export function RoleActions({ role, used }: RoleActionsProps) {
   const starting = role.starting !== undefined && role.starting !== null;
   return (
     <Card heading={t("roles.actions-title")}>
-      <div className={styles.stack}>
+      <div {...partOf(part.stack)}>
         {starting ? <ResetRole id={role.id} name={role.name} /> : null}
         <CopyRole id={role.id} name={role.name} />
         <DeleteRole id={role.id} name={role.name} used={used} />
