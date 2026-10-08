@@ -4,6 +4,7 @@
 //! [`Check`] here, and add a failing and a passing example (`bad_example` / `good_example` tests
 //! or `tools/checks/fixtures/<ID>/`).
 
+mod api_spec;
 mod arch_api_out;
 mod arch_authz_only;
 pub(crate) mod arch_db_parity;
@@ -31,6 +32,7 @@ mod dep_register;
 mod dev_ports;
 mod doc_adr_enforced;
 mod doc_generated;
+mod exemptions;
 mod fmt_css;
 mod fmt_md;
 mod fmt_rust;

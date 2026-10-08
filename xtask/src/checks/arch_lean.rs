@@ -19,15 +19,13 @@
 //! another object is only allowed when the route declares the query parameter `include` with the
 //! closed set of names it may embed, and `include` is only allowed on a route that embeds.
 
-use std::collections::BTreeSet;
-
-use anyhow::Context as _;
 use bb_api_words::marks::NEVER_STORED;
 use serde::Deserialize;
 use serde_json::Value;
 
+use super::api_spec::{self, resolve};
+use super::exemptions::{self, Used, names_a_follow_up};
 use super::{Check, Context, Finding};
-use crate::generate::api::SPEC_PATH;
 
 /// The parameters a list route takes.
 const REQUIRED_PARAMETERS: [&str; 3] = ["fields", "cursor", "limit"];
@@ -53,14 +51,8 @@ impl Check for ArchLean {
     }
 
     fn run(&self, context: &Context<'_>) -> anyhow::Result<Vec<Finding>> {
-        let text = std::fs::read_to_string(context.repo.path(SPEC_PATH))
-            .with_context(|| format!("could not read {SPEC_PATH}; run `cargo xtask gen api`"))?;
-        let spec: Value = serde_json::from_str(&text)
-            .with_context(|| format!("{SPEC_PATH} is not valid JSON"))?;
-        let exemptions = std::fs::read_to_string(context.repo.path(EXEMPTIONS_PATH))
-            .with_context(|| format!("could not read {EXEMPTIONS_PATH}"))?;
-        let exemptions: Exemptions = toml::from_str(&exemptions)
-            .with_context(|| format!("{EXEMPTIONS_PATH} is not valid"))?;
+        let spec = api_spec::load(context.repo)?;
+        let exemptions: Exemptions = exemptions::load(context.repo, EXEMPTIONS_PATH)?;
         Ok(evaluate(&spec, &exemptions.exempt))
     }
 }
@@ -85,14 +77,18 @@ struct Exemption {
     whole_value: bool,
 }
 
-/// Follows `$ref`s that point into the document itself.
-fn resolve<'a>(spec: &'a Value, value: &'a Value) -> &'a Value {
-    value
-        .get("$ref")
-        .and_then(Value::as_str)
-        .and_then(|reference| reference.strip_prefix('#'))
-        .and_then(|pointer| spec.pointer(pointer))
-        .unwrap_or(value)
+impl exemptions::Exemption for Exemption {
+    fn name(&self) -> String {
+        format!("{} in {}", self.property, self.route)
+    }
+
+    fn reason(&self) -> &str {
+        &self.reason
+    }
+
+    fn unused(&self) -> String {
+        "matches no list in the API description. Remove it.".to_owned()
+    }
 }
 
 /// The object schema of the successful JSON answer.
@@ -308,15 +304,13 @@ fn include_findings(spec: &Value, operation: &Value, schema: &Value, place: &str
 
 fn evaluate(spec: &Value, exemptions: &[Exemption]) -> Vec<Finding> {
     let mut findings = Vec::new();
-    let Some(paths) = spec.get("paths").and_then(Value::as_object) else {
-        return vec![Finding::at(SPEC_PATH, "The document has no `paths`.")];
+    let Some(operations) = api_spec::operations(spec) else {
+        return vec![api_spec::no_paths()];
     };
-    let mut used: BTreeSet<(String, String)> = BTreeSet::new();
-    for (path, item) in paths {
-        let Some(operation) = item.get("get") else {
-            continue;
-        };
-        let place = format!("GET {path}");
+    let mut used = Used::default();
+    for found in operations.iter().filter(|found| found.method == "GET") {
+        let operation = found.body;
+        let place = found.place();
         if operation.get(NEVER_STORED) != Some(&Value::Bool(true)) {
             findings.extend(etag_findings(spec, operation, &place));
         }
@@ -335,9 +329,10 @@ fn evaluate(spec: &Value, exemptions: &[Exemption]) -> Vec<Finding> {
         for property in array_properties(spec, schema) {
             let exemption = exemptions
                 .iter()
-                .find(|exemption| exemption.route == place && exemption.property == property);
-            if let Some(exemption) = exemption {
-                used.insert((place.clone(), property.clone()));
+                .position(|exemption| exemption.route == place && exemption.property == property);
+            if let Some(index) = exemption {
+                let exemption = &exemptions[index];
+                used.mark(index);
                 if !names_a_follow_up(&exemption.reason) {
                     findings.push(Finding::at(
                         EXEMPTIONS_PATH,
@@ -362,38 +357,8 @@ fn evaluate(spec: &Value, exemptions: &[Exemption]) -> Vec<Finding> {
             }
         }
     }
-    for exemption in exemptions {
-        if !used.contains(&(exemption.route.clone(), exemption.property.clone())) {
-            findings.push(Finding::at(
-                EXEMPTIONS_PATH,
-                format!(
-                    "The exemption of `{}` in {} matches no list in the API description. Remove it.",
-                    exemption.property, exemption.route
-                ),
-            ));
-        }
-    }
+    findings.extend(exemptions::judge(EXEMPTIONS_PATH, exemptions, &used));
     findings
-}
-
-/// Whether the reason names a follow-up like `M1-F44`.
-pub(super) fn names_a_follow_up(reason: &str) -> bool {
-    reason
-        .split(|c: char| !c.is_ascii_alphanumeric() && c != '-')
-        .any(|word| {
-            let mut parts = word.split('-');
-            let (Some(milestone), Some(number), None) = (parts.next(), parts.next(), parts.next())
-            else {
-                return false;
-            };
-            let milestone_ok = milestone.len() >= 2
-                && milestone.starts_with(['M', 'V'])
-                && milestone[1..].chars().all(|c| c.is_ascii_digit());
-            let number_ok = number.len() >= 2
-                && number.starts_with('F')
-                && number[1..].chars().all(|c| c.is_ascii_digit());
-            milestone_ok && number_ok
-        })
 }
 
 #[cfg(test)]
@@ -560,15 +525,6 @@ mod tests {
         )
         .join("\n");
         assert!(found.contains("matches no list"), "{found}");
-    }
-
-    #[test]
-    fn follow_ups_are_recognised_in_a_reason() {
-        assert!(names_a_follow_up("See M1-F44."));
-        assert!(names_a_follow_up("tracked as V1-F12, later"));
-        for bad in ["", "M1", "F44", "M1-44", "see the follow-up list"] {
-            assert!(!names_a_follow_up(bad), "{bad}");
-        }
     }
 
     #[test]

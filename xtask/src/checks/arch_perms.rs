@@ -24,15 +24,11 @@ use serde_json::Value;
 use bb_api_words::marks::PERMISSION as MARK;
 use bb_api_words::needs::WITHOUT_CATALOGUE as WORDS;
 
-use super::arch_lean::names_a_follow_up;
+use super::api_spec;
+use super::exemptions::{self, names_a_follow_up};
 use super::{Check, Context, Finding};
-use crate::generate::api::SPEC_PATH;
 use crate::source::normalize;
 
-/// The methods of an item of `paths` that are operations.
-const METHODS: [&str; 8] = [
-    "get", "put", "post", "delete", "options", "head", "patch", "trace",
-];
 /// Where the permissions are declared.
 const CATALOGUE_PATH: &str = "crates/bb-policy/src/catalogue.rs";
 /// The message catalog.
@@ -52,8 +48,7 @@ impl Check for ArchPerms {
             std::fs::read_to_string(context.repo.path(path))
                 .with_context(|| format!("could not read {path}{hint}"))
         };
-        let spec: Value = serde_json::from_str(&read(SPEC_PATH, "; run `cargo xtask gen api`")?)
-            .with_context(|| format!("{SPEC_PATH} is not valid JSON"))?;
+        let spec = api_spec::load(context.repo)?;
         let source = normalize(&read(CATALOGUE_PATH, "")?);
         let catalogue = read_catalogue(&source);
         let messages: Value = serde_json::from_str(&read(MESSAGES_PATH, "")?)
@@ -62,8 +57,7 @@ impl Check for ArchPerms {
             .as_object()
             .map(|object| object.keys().cloned().collect())
             .unwrap_or_default();
-        let exemptions: Exemptions = toml::from_str(&read(EXEMPTIONS_PATH, "")?)
-            .with_context(|| format!("{EXEMPTIONS_PATH} is not valid"))?;
+        let exemptions: Exemptions = exemptions::load(context.repo, EXEMPTIONS_PATH)?;
         let mut findings = reading_findings(&source, &catalogue);
         findings.extend(evaluate(
             &spec,
@@ -87,6 +81,16 @@ struct Exemptions {
 struct EngineOnly {
     permission: String,
     reason: String,
+}
+
+impl exemptions::Exemption for EngineOnly {
+    fn name(&self) -> String {
+        self.permission.clone()
+    }
+
+    fn reason(&self) -> &str {
+        &self.reason
+    }
 }
 
 /// One permission as the catalogue declares it: its key and the name of its topic.
@@ -173,38 +177,32 @@ fn evaluate(
         .iter()
         .map(|declared| declared.key.as_str())
         .collect();
-    let Some(paths) = spec.get("paths").and_then(Value::as_object) else {
-        findings.push(Finding::at(SPEC_PATH, "The document has no `paths`."));
+    let Some(operations) = api_spec::operations(spec) else {
+        findings.push(api_spec::no_paths());
         return findings;
     };
     let mut asked: BTreeSet<&str> = BTreeSet::new();
-    for (path, item) in paths {
-        for method in METHODS {
-            let Some(operation) = item.get(method) else {
-                continue;
-            };
-            let place = format!("{} {path}", method.to_uppercase());
-            match operation.get(MARK).and_then(Value::as_str) {
-                None => findings.push(Finding::at(
-                    place,
-                    format!(
-                        "The route declares no permission. Add it to the table of routes in \
-                         `bb-api` (`permissions.rs`): a key of the catalogue, or one of {}.",
-                        WORDS.join(", ")
-                    ),
-                )),
-                Some(value) if known.contains(value) => {
-                    asked.insert(value);
-                }
-                Some(value) if WORDS.contains(&value) => {}
-                Some(value) => findings.push(Finding::at(
-                    place,
-                    format!(
-                        "`{value}` is neither a permission of the catalogue nor one of {}.",
-                        WORDS.join(", ")
-                    ),
-                )),
+    for operation in operations {
+        let place = operation.place();
+        match operation.text(MARK) {
+            None => findings.push(Finding::at(
+                place,
+                format!(
+                    "The route declares no permission. Add it to the table of routes in                      `bb-api` (`permissions.rs`): a key of the catalogue, or one of {}.",
+                    WORDS.join(", ")
+                ),
+            )),
+            Some(value) if known.contains(value) => {
+                asked.insert(value);
             }
+            Some(value) if WORDS.contains(&value) => {}
+            Some(value) => findings.push(Finding::at(
+                place,
+                format!(
+                    "`{value}` is neither a permission of the catalogue nor one of {}.",
+                    WORDS.join(", ")
+                ),
+            )),
         }
     }
     for declared in catalogue {
@@ -245,7 +243,7 @@ fn exemption_findings(
     known: &BTreeSet<&str>,
     asked: &BTreeSet<&str>,
 ) -> Vec<Finding> {
-    let mut findings = Vec::new();
+    let mut findings = exemptions::reason_findings(EXEMPTIONS_PATH, exemptions);
     let mut seen = BTreeSet::new();
     for exemption in exemptions {
         let key = exemption.permission.as_str();

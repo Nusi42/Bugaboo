@@ -7,11 +7,9 @@
 
 use std::collections::BTreeSet;
 
-use anyhow::Context as _;
-
+use super::api_spec;
 use super::web_source::code_of;
 use super::{Check, Context, Finding};
-use crate::generate::api::SPEC_PATH;
 use crate::source::{Kind, Source};
 
 /// The app; the client package itself is where the types live.
@@ -27,22 +25,13 @@ impl Check for LintApiTypes {
     }
 
     fn run(&self, context: &Context<'_>) -> anyhow::Result<Vec<Finding>> {
-        let spec = std::fs::read_to_string(context.repo.path(SPEC_PATH))
-            .with_context(|| format!("could not read {SPEC_PATH}; run `cargo xtask gen api`"))?;
-        let schemas = schema_names(&spec)?;
+        let spec = api_spec::load(context.repo)?;
+        let schemas = api_spec::schema_names(&spec)
+            .into_iter()
+            .map(str::to_owned)
+            .collect();
         Ok(evaluate(&context.sources(self.id(), Kind::Web)?, &schemas))
     }
-}
-
-/// The names under `components.schemas`.
-fn schema_names(spec: &str) -> anyhow::Result<BTreeSet<String>> {
-    let document: serde_json::Value =
-        serde_json::from_str(spec).with_context(|| format!("{SPEC_PATH} is not valid JSON"))?;
-    Ok(document
-        .pointer("/components/schemas")
-        .and_then(serde_json::Value::as_object)
-        .map(|schemas| schemas.keys().cloned().collect())
-        .unwrap_or_default())
 }
 
 fn evaluate(sources: &[Source], schemas: &BTreeSet<String>) -> Vec<Finding> {
@@ -133,13 +122,5 @@ mod tests {
             ),
             0
         );
-    }
-
-    #[test]
-    fn schema_names_are_read_from_the_document() {
-        let spec = r#"{"components":{"schemas":{"A":{},"B":{}}}}"#;
-        let names: Vec<String> = schema_names(spec).unwrap().into_iter().collect();
-        assert_eq!(names, ["A", "B"]);
-        assert!(schema_names("{}").unwrap().is_empty());
     }
 }

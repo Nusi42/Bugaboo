@@ -42,7 +42,7 @@ use serde::Deserialize;
 use serde_json::Value;
 
 use super::{Check, Context, Finding};
-use crate::generate::api::SPEC_PATH;
+use super::{api_spec, exemptions};
 
 mod readable;
 
@@ -122,6 +122,16 @@ struct Allow {
     reason: String,
 }
 
+impl exemptions::Exemption for Allow {
+    fn name(&self) -> String {
+        self.term.clone()
+    }
+
+    fn reason(&self) -> &str {
+        &self.reason
+    }
+}
+
 /// Reads the glossary and the three places under `root` and reports every banned word.
 pub(crate) fn scan(root: &Path) -> anyhow::Result<Vec<Finding>> {
     let glossary = fs::read_to_string(root.join(GLOSSARY))
@@ -135,9 +145,7 @@ pub(crate) fn scan(root: &Path) -> anyhow::Result<Vec<Finding>> {
         ));
     }
     let exemptions = match fs::read_to_string(root.join(EXEMPTIONS_PATH)) {
-        Ok(text) => {
-            toml::from_str(&text).with_context(|| format!("{EXEMPTIONS_PATH} is not valid"))?
-        }
+        Ok(text) => exemptions::parse(&text, EXEMPTIONS_PATH)?,
         Err(_) => Exemptions::default(),
     };
     let sources = sources(root)?;
@@ -182,12 +190,7 @@ fn sources(root: &Path) -> anyhow::Result<Vec<Source>> {
             text: readable::prose(&text),
         });
     }
-    let spec_path = root.join(SPEC_PATH);
-    let spec = fs::read_to_string(&spec_path)
-        .with_context(|| format!("could not read {SPEC_PATH}; run `cargo xtask gen api`"))?;
-    let spec: Value =
-        serde_json::from_str(&spec).with_context(|| format!("{SPEC_PATH} is not valid JSON"))?;
-    for name in readable::api_names(&spec) {
+    for name in readable::api_names(&api_spec::load_at(root)?) {
         let (key, shown) = readable::api_place(&name);
         sources.push(Source {
             place: Place { key, shown },
@@ -462,15 +465,7 @@ fn evaluate(
         })
         .collect::<anyhow::Result<Vec<_>>>()?;
     let mut used: BTreeSet<(usize, usize)> = BTreeSet::new();
-    let mut findings = Vec::new();
-    for allow in &exemptions.allow {
-        if allow.reason.trim().is_empty() {
-            findings.push(Finding::at(
-                EXEMPTIONS_PATH,
-                format!("The exemption of \"{}\" has no reason.", allow.term),
-            ));
-        }
-    }
+    let mut findings = exemptions::reason_findings(EXEMPTIONS_PATH, &exemptions.allow);
     for source in sources {
         let text = if source.kind == Kind::Name {
             name_words(&source.text)
@@ -756,7 +751,7 @@ login
                 term: term.to_owned(),
                 at: vec![at.to_owned()],
                 phrases: Vec::new(),
-                reason: "a test".to_owned(),
+                reason: "A test, with a reason that says enough.".to_owned(),
             }],
         }
     }
@@ -858,7 +853,7 @@ login
                 term: "login".to_owned(),
                 at: vec!["page.md".to_owned()],
                 phrases: vec!["the login page".to_owned()],
-                reason: "a test".to_owned(),
+                reason: "A test, with a reason that says enough.".to_owned(),
             }],
         };
         let check = |page: &str| {

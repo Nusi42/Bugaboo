@@ -11,10 +11,10 @@ use anyhow::Context as _;
 use globset::{GlobBuilder, GlobSet, GlobSetBuilder};
 use serde::Deserialize;
 
+use super::exemptions::{self, Used};
 use super::{Check, Context, Finding};
 use crate::catalog::Entry;
 use crate::generate::all_paths;
-use crate::source::read_text;
 
 /// Where the exemptions live, relative to the repository root.
 const EXEMPTIONS_PATH: &str = "tools/checks/coverage-exemptions.toml";
@@ -32,6 +32,20 @@ struct Exemption {
     reason: String,
 }
 
+impl exemptions::Exemption for Exemption {
+    fn name(&self) -> String {
+        self.path.clone()
+    }
+
+    fn reason(&self) -> &str {
+        &self.reason
+    }
+
+    fn unused(&self) -> String {
+        "matches no file. Remove it.".to_owned()
+    }
+}
+
 pub(crate) struct MetaCoverage;
 
 impl Check for MetaCoverage {
@@ -41,8 +55,7 @@ impl Check for MetaCoverage {
 
     fn run(&self, context: &Context<'_>) -> anyhow::Result<Vec<Finding>> {
         let repo = context.repo;
-        let exemptions: Exemptions = toml::from_str(&read_text(repo, EXEMPTIONS_PATH)?)
-            .with_context(|| format!("{EXEMPTIONS_PATH} is not valid"))?;
+        let exemptions: Exemptions = exemptions::load(repo, EXEMPTIONS_PATH)?;
         let generated = all_paths();
         let files: Vec<File> = repo
             .all_files()?
@@ -85,27 +98,22 @@ fn evaluate(
         }
         covering.push(builder.build()?);
     }
-    let mut exempt: Vec<(&Exemption, bool, _)> = Vec::new();
+    let mut exempt: Vec<_> = Vec::new();
     for exemption in &exemptions.exempt {
-        if exemption.reason.trim().is_empty() {
-            findings.push(Finding::at(
-                EXEMPTIONS_PATH,
-                format!("The exemption for `{}` has no reason.", exemption.path),
-            ));
-        }
         let glob = GlobBuilder::new(&exemption.path)
             .literal_separator(true)
             .build()
             .with_context(|| format!("{EXEMPTIONS_PATH}: bad path `{}`", exemption.path))?
             .compile_matcher();
-        exempt.push((exemption, false, glob));
+        exempt.push(glob);
     }
+    let mut used = Used::default();
     let mut uncovered: BTreeMap<String, Vec<&str>> = BTreeMap::new();
     for file in files {
         let mut is_exempt = false;
-        for (_, used, glob) in &mut exempt {
+        for (index, glob) in exempt.iter().enumerate() {
             if glob.is_match(&file.path) {
-                *used = true;
+                used.mark(index);
                 is_exempt = true;
             }
         }
@@ -117,17 +125,11 @@ fn evaluate(
             .or_default()
             .push(&file.path);
     }
-    for (exemption, used, _) in &exempt {
-        if !used {
-            findings.push(Finding::at(
-                EXEMPTIONS_PATH,
-                format!(
-                    "The exemption for `{}` matches no file. Remove it.",
-                    exemption.path
-                ),
-            ));
-        }
-    }
+    findings.extend(exemptions::judge(
+        EXEMPTIONS_PATH,
+        &exemptions.exempt,
+        &used,
+    ));
     findings.extend(uncovered.into_iter().map(|(kind, paths)| {
         Finding::at(
             format!(".{kind} files ({})", paths.len()),
@@ -177,7 +179,7 @@ mod tests {
                 .iter()
                 .map(|path| Exemption {
                     path: (*path).to_owned(),
-                    reason: "because".to_owned(),
+                    reason: "A reason that says enough about why.".to_owned(),
                 })
                 .collect(),
         }

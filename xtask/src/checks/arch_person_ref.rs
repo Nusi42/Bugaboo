@@ -18,10 +18,11 @@
 
 use std::collections::BTreeSet;
 
-use anyhow::Context as _;
 use serde::Deserialize;
 use serde_json::Value;
 
+use super::api_spec;
+use super::exemptions::{self, Used};
 use super::{Check, Context, Finding};
 use crate::generate::api::SPEC_PATH;
 use crate::rust_source::{strip, without_tests};
@@ -29,8 +30,6 @@ use crate::source::{Kind, Source, contains_word, word_positions};
 
 /// Where the exemptions are written down, each with its reason.
 const EXEMPTIONS_PATH: &str = "tools/checks/person-ref-exemptions.toml";
-/// The crates whose types go to a browser or a script.
-const VIEW_FOLDERS: [&str; 2] = ["crates/bb-api/src/", "crates/bb-app/src/"];
 /// Field names that hold a person's name or address.
 const PERSON_FIELDS: [&str; 9] = [
     "display_name",
@@ -53,14 +52,8 @@ impl Check for ArchPersonRef {
 
     fn run(&self, context: &Context<'_>) -> anyhow::Result<Vec<Finding>> {
         let sources = context.sources(self.id(), Kind::Rust)?;
-        let text = std::fs::read_to_string(context.repo.path(SPEC_PATH))
-            .with_context(|| format!("could not read {SPEC_PATH}; run `cargo xtask gen api`"))?;
-        let spec: Value = serde_json::from_str(&text)
-            .with_context(|| format!("{SPEC_PATH} is not valid JSON"))?;
-        let exemptions = std::fs::read_to_string(context.repo.path(EXEMPTIONS_PATH))
-            .with_context(|| format!("could not read {EXEMPTIONS_PATH}"))?;
-        let exemptions: Exemptions = toml::from_str(&exemptions)
-            .with_context(|| format!("{EXEMPTIONS_PATH} is not valid"))?;
+        let spec = api_spec::load(context.repo)?;
+        let exemptions: Exemptions = exemptions::load(context.repo, EXEMPTIONS_PATH)?;
         Ok(evaluate(&sources, &spec, &exemptions.exempt))
     }
 }
@@ -79,6 +72,20 @@ struct Exemption {
     r#type: String,
     field: String,
     reason: String,
+}
+
+impl exemptions::Exemption for Exemption {
+    fn name(&self) -> String {
+        format!("{}.{}", self.r#type, self.field)
+    }
+
+    fn reason(&self) -> &str {
+        &self.reason
+    }
+
+    fn unused(&self) -> String {
+        "matches nothing in the code or in the API description. Remove it.".to_owned()
+    }
 }
 
 /// A struct that derives `Serialize` with a field of the list, found in the code.
@@ -348,30 +355,11 @@ fn line_of(code: &[char], position: usize) -> usize {
 /// those they name in turn.
 fn answer_schemas(spec: &Value) -> BTreeSet<String> {
     let mut reached = BTreeSet::new();
-    let mut open: Vec<&Value> = Vec::new();
-    for item in spec
-        .get("paths")
-        .and_then(Value::as_object)
+    let mut open: Vec<&Value> = api_spec::operations(spec)
         .into_iter()
-        .flat_map(serde_json::Map::values)
-    {
-        for operation in item
-            .as_object()
-            .into_iter()
-            .flat_map(serde_json::Map::values)
-        {
-            for response in operation
-                .get("responses")
-                .and_then(Value::as_object)
-                .into_iter()
-                .flat_map(serde_json::Map::values)
-            {
-                if let Some(schema) = response.pointer("/content/application~1json/schema") {
-                    open.push(schema);
-                }
-            }
-        }
-    }
+        .flatten()
+        .flat_map(|operation| api_spec::answer_schemas(spec, operation.body))
+        .collect();
     while let Some(schema) = open.pop() {
         if let Some(name) = schema
             .get("$ref")
@@ -401,19 +389,16 @@ fn answer_schemas(spec: &Value) -> BTreeSet<String> {
 
 fn evaluate(sources: &[Source], spec: &Value, exempt: &[Exemption]) -> Vec<Finding> {
     let mut findings = Vec::new();
-    let mut used: BTreeSet<(String, String)> = BTreeSet::new();
-    let is_exempt = |r#type: &str, field: &str| {
+    let mut used = Used::default();
+    let exemption_of = |r#type: &str, field: &str| {
         exempt
             .iter()
-            .any(|entry| entry.r#type == r#type && entry.field == field)
+            .position(|entry| entry.r#type == r#type && entry.field == field)
     };
-    for (path, text) in sources
-        .iter()
-        .filter(|(path, _)| VIEW_FOLDERS.iter().any(|folder| path.starts_with(folder)))
-    {
+    for (path, text) in sources {
         for found in serialized_fields(path, text) {
-            if is_exempt(&found.r#type, &found.field) {
-                used.insert((found.r#type, found.field));
+            if let Some(index) = exemption_of(&found.r#type, &found.field) {
+                used.mark(index);
             } else {
                 findings.push(Finding::at(
                     found.place,
@@ -444,8 +429,8 @@ fn evaluate(sources: &[Source], spec: &Value, exempt: &[Exemption]) -> Vec<Findi
                 .flat_map(serde_json::Map::keys)
                 .filter(|field| PERSON_FIELDS.contains(&field.as_str()))
             {
-                if is_exempt(schema, field) {
-                    used.insert((schema.clone(), field.clone()));
+                if let Some(index) = exemption_of(schema, field) {
+                    used.mark(index);
                 } else {
                     findings.push(Finding::at(
                         SPEC_PATH,
@@ -459,27 +444,7 @@ fn evaluate(sources: &[Source], spec: &Value, exempt: &[Exemption]) -> Vec<Findi
             }
         }
     }
-    for entry in exempt {
-        if entry.reason.trim().is_empty() {
-            findings.push(Finding::at(
-                EXEMPTIONS_PATH,
-                format!(
-                    "The exemption of `{}.{}` needs a reason.",
-                    entry.r#type, entry.field
-                ),
-            ));
-        }
-        if !used.contains(&(entry.r#type.clone(), entry.field.clone())) {
-            findings.push(Finding::at(
-                EXEMPTIONS_PATH,
-                format!(
-                    "The exemption of `{}.{}` matches nothing in the code or in the API \
-                     description. Remove it.",
-                    entry.r#type, entry.field
-                ),
-            ));
-        }
-    }
+    findings.extend(exemptions::judge(EXEMPTIONS_PATH, exempt, &used));
     findings
 }
 
@@ -587,14 +552,5 @@ mod tests {
         let mut empty = exemption("Gone", "email");
         empty.reason = " ".to_owned();
         assert_eq!(evaluate(&[], &json!({}), &[empty]).len(), 2);
-    }
-
-    #[test]
-    fn code_outside_the_view_crates_is_not_read() {
-        let sources = vec![(
-            "crates/bb-core/src/person.rs".to_owned(),
-            "#[derive(Serialize)]\npub struct Person {\n    pub email: String,\n}\n".to_owned(),
-        )];
-        assert!(evaluate(&sources, &json!({}), &[]).is_empty());
     }
 }
