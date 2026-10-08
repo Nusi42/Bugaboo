@@ -1,10 +1,8 @@
 import { Input, Label, SearchField as AriaSearchField } from "react-aria-components";
 
-import { cx } from "./cx.ts";
 import { Icon } from "./Icon.tsx";
 import { iconName } from "./icons.ts";
 import { IconButton } from "./IconButton.tsx";
-import styles from "./SearchField.module.css";
 import { partOf } from "./parts.ts";
 import { iconSize } from "./props.ts";
 import { part } from "./tokens.ts";
@@ -23,12 +21,12 @@ export interface SearchFieldProps {
 /** A box to type a search in, with a button that empties it. */
 export function SearchField({ label, value, onChange, clearLabel, placeholder }: SearchFieldProps) {
   return (
-    <AriaSearchField className={cx(styles.search)} value={value} onChange={onChange}>
+    <AriaSearchField {...partOf(part.searchField)} value={value} onChange={onChange}>
       <Label {...partOf(part.fieldLabel)}>{label}</Label>
-      <div className={styles.box}>
+      <div {...partOf(part.searchFieldBox)}>
         <Icon name={iconName.search} size={iconSize.small} />
         <Input
-          className={cx(styles.input)}
+          {...partOf(part.searchFieldInput)}
           {...(placeholder === undefined ? {} : { placeholder })}
         />
         {value === "" ? null : (

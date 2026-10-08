@@ -2,7 +2,6 @@ import { useId, useRef } from "react";
 import { VisuallyHidden } from "react-aria-components";
 
 import { partOf } from "./parts.ts";
-import selectStyles from "./SelectField.module.css";
 import { part } from "./tokens.ts";
 
 export interface SelectChoice<Value extends string> {
@@ -58,7 +57,7 @@ export function SelectField<Value extends string>({
       <select
         ref={select}
         id={id}
-        className={selectStyles.select}
+        {...partOf(part.selectField)}
         value={value}
         {...(description === undefined ? {} : { "aria-describedby": helpId })}
         onChange={() => {

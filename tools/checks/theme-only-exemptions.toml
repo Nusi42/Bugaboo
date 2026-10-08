@@ -52,39 +52,3 @@ reason = "The shell feature still has CSS Modules and class names; package C-06 
 [[exempt]]
 path = "web/app/src/features/sign-in/"
 reason = "The sign-in feature still has CSS Modules and class names; package C-06 moves it onto part rules (M2C-F90)."
-
-[[exempt]]
-path = "web/packages/ui/src/Card."
-reason = "Card of packages/ui still has a CSS Module and class names; it moves onto part rules in package C-06 (M2C-F90)."
-
-[[exempt]]
-path = "web/packages/ui/src/ConfirmDialog."
-reason = "ConfirmDialog of packages/ui still has a CSS Module and class names; it moves onto part rules in package C-06 (M2C-F90)."
-
-[[exempt]]
-path = "web/packages/ui/src/Form."
-reason = "Form of packages/ui still has a CSS Module and class names; it moves onto part rules in package C-06 (M2C-F90)."
-
-[[exempt]]
-path = "web/packages/ui/src/Icon."
-reason = "Icon of packages/ui still has a CSS Module and class names; it moves onto part rules in package C-06 (M2C-F90)."
-
-[[exempt]]
-path = "web/packages/ui/src/OrDivider."
-reason = "OrDivider of packages/ui still has a CSS Module and class names; it moves onto part rules in package C-06 (M2C-F90)."
-
-[[exempt]]
-path = "web/packages/ui/src/SaveStatus."
-reason = "SaveStatus of packages/ui still has a CSS Module and class names; it moves onto part rules in package C-06 (M2C-F90)."
-
-[[exempt]]
-path = "web/packages/ui/src/SearchField."
-reason = "SearchField of packages/ui still has a CSS Module and class names; it moves onto part rules in package C-06 (M2C-F90)."
-
-[[exempt]]
-path = "web/packages/ui/src/SelectField."
-reason = "SelectField of packages/ui still has a CSS Module and class names; it moves onto part rules in package C-06 (M2C-F90)."
-
-[[exempt]]
-path = "web/packages/ui/src/Skeleton."
-reason = "Skeleton of packages/ui still has a CSS Module and class names; it moves onto part rules in package C-06 (M2C-F90)."

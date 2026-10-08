@@ -255,6 +255,13 @@ mixin "ring" {
     outline-offset "$ring-offset"
 }
 
+// The chosen or current item: forced colors drop fills, so the item gets an outline to be seen.
+mixin "marked" {
+    forced {
+        outline "$ring-width solid $accent"
+    }
+}
+
 // ───────────── Animations ─────────────
 
 keyframes "fade" {
@@ -272,6 +279,13 @@ keyframes "from-bottom" {
 keyframes "from-start" {
     from {
         transform "translateX(-100%)"
+    }
+}
+
+// The placeholder lines pulse while the text is on its way.
+keyframes "pulse" {
+    from {
+        opacity "$opacity-faint"
     }
 }
 
@@ -686,9 +700,7 @@ part "choice-group.input:checked + choice-group.label" {
     background "$bg-selected"
     color "$accent-fg"
     font-weight "$weight-bold"
-    forced {
-        outline "$ring-width solid $accent"
-    }
+    use "marked"
 }
 
 part "choice-group.input:hover + choice-group.label" {
@@ -933,4 +945,283 @@ part "picker.name[variant=boxed]" {
 part "picker.hint" {
     color "$fg-muted"
     font-size "$fs-sm"
+}
+
+// ───────────── Shared layout parts ─────────────
+//
+// What several screens say the same way: a column with a gap, a line of text, a row that wraps,
+// a list without bullets.
+
+part "stack" {
+    display flex
+    flex-direction column
+    gap "$space-4"
+    min-width 0
+}
+
+part "text" {
+    margin 0
+    font-size "$fs-md"
+    line-height "$lh-text"
+}
+
+part "row" {
+    display flex
+    flex-wrap wrap
+    align-items center
+    gap "$space-3"
+}
+
+// A row whose items are as high as the row.
+part "row[variant=stretch]" {
+    align-items stretch
+}
+
+part "list" {
+    display flex
+    flex-direction column
+    gap "$space-3"
+    margin 0
+    padding 0
+    list-style none
+}
+
+part "list[variant=loose]" {
+    gap "$space-4"
+}
+
+// ───────────── Card, Form, Icon, OrDivider, SaveStatus, Skeleton (packages/ui) ─────────────
+
+part "card" {
+    box-sizing border-box
+    display flex
+    flex-direction column
+    gap "$space-4"
+    min-width 0
+    padding "$space-5"
+    border "$border-width solid $border"
+    border-radius "$r-card"
+    background "$bg-raised"
+    color "$fg"
+    box-shadow "$shadow"
+}
+
+part "card.heading" {
+    margin 0
+    font-size "$fs-lg"
+    line-height "$lh-snug"
+    color "$fg"
+}
+
+part "card.heading:focus" {
+    outline none
+}
+
+part "card.body" {
+    display flex
+    flex-direction column
+    gap "$space-4"
+    min-width 0
+}
+
+part "form" {
+    display flex
+    flex-direction column
+    gap "$space-4"
+    min-width 0
+}
+
+part "icon" {
+    flex none
+    width "$size-icon"
+    height "$size-icon"
+}
+
+part "icon[variant=small]" {
+    width "$size-icon-small"
+    height "$size-icon-small"
+}
+
+part "or-divider" {
+    display flex
+    align-items center
+    gap "$space-3"
+    color "$fg-muted"
+    font-size "$fs-base"
+}
+
+part "or-divider::before" "or-divider::after" {
+    content "\"\""
+    flex 1
+    border-top "$border-width solid $border"
+}
+
+part "save-status" {
+    color "$fg-muted"
+    font-size "$fs-base"
+}
+
+part "save-status[state=not-saved]" {
+    color "$danger"
+    font-weight "$weight-bold"
+}
+
+part "skeleton" {
+    display flex
+    flex-direction column
+    gap "$space-2"
+}
+
+part "skeleton.line" {
+    display block
+    height "$space-4"
+    border-radius "$r-ctl"
+    background "$bg-sunken"
+    animation "pulse calc($motion-base * 8) $ease-in-out infinite alternate"
+}
+
+part "skeleton.line[variant=medium]" {
+    width "80%"
+}
+
+// The last line is the shortest, also when it is an even one.
+part "skeleton.line[variant=short]" {
+    width "55%"
+}
+
+// ───────────── SearchField and SelectField ─────────────
+
+part "search-field" {
+    display flex
+    flex-direction column
+    gap "$space-1"
+    min-width 0
+}
+
+part "search-field.box" {
+    display flex
+    align-items center
+    gap "$space-2"
+    box-sizing border-box
+    min-height "$size-target"
+    padding "0 $space-3"
+    border "$border-width solid $border"
+    border-radius "$r-ctl"
+    background "$bg-raised"
+    color "$fg-muted"
+}
+
+part "search-field.box:focus-within" {
+    use "ring"
+}
+
+part "search-field.input" {
+    flex 1
+    min-width 0
+    padding "$space-2 0"
+    border 0
+    background transparent
+    color "$fg"
+    font-family "$font"
+    font-size "$fs-md"
+}
+
+part "search-field.input:focus" {
+    outline none
+}
+
+part "search-field.input::placeholder" {
+    color "$fg-muted"
+    opacity 1
+}
+
+// The browser's own clear mark would be a second one.
+part "search-field.input::-webkit-search-cancel-button" {
+    display none
+}
+
+part "select-field" {
+    box-sizing border-box
+    width "100%"
+    min-height "$size-target"
+    padding "$space-2 $space-3"
+    border "$border-width solid $border"
+    border-radius "$r-ctl"
+    background "$bg-raised"
+    color "$fg"
+    font-family "$font"
+    font-size "$fs-md"
+    line-height "$lh-body"
+}
+
+part "select-field:focus-visible" {
+    outline "$ring-width solid $accent"
+    outline-offset 0
+    border-color "$accent"
+}
+
+// ───────────── ConfirmDialog (packages/ui) ─────────────
+//
+// On a phone the variant `full` makes the question fill the screen.
+
+part "confirm" {
+    position fixed
+    inset 0
+    z-index "$z-bar"
+    display flex
+    align-items center
+    justify-content center
+    padding "$space-4"
+    background "$bg-sunken"
+    overflow-y auto
+}
+
+part "confirm.modal" {
+    box-sizing border-box
+    width "100%"
+    max-width "$size-form"
+    border "$border-width solid $border"
+    border-radius "$r-card"
+    background "$bg-raised"
+    color "$fg"
+    box-shadow "$shadow"
+}
+
+part "confirm.dialog" {
+    display flex
+    flex-direction column
+    gap "$space-4"
+    padding "$space-5"
+    outline none
+}
+
+part "confirm.title" {
+    margin 0
+    font-size "$fs-lg"
+    line-height "$lh-snug"
+}
+
+part "confirm.actions" {
+    display flex
+    flex-wrap wrap
+    justify-content flex-end
+    gap "$space-3"
+}
+
+part "confirm[variant=full]" {
+    align-items stretch
+    padding 0
+}
+
+part "confirm.modal[variant=full]" {
+    display flex
+    flex-direction column
+    max-width none
+    border 0
+    border-radius 0
+}
+
+part "confirm.modal[variant=full] confirm.dialog" {
+    flex 1
+    justify-content center
 }
