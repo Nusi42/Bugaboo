@@ -54,39 +54,41 @@ const PROJECT_LEAD: [Permission; 7] = [
     Permission::CheckAccess,
 ];
 
-/// Field levels per field, in the order of the roles of [`StartingRole::ALL`].
-const FIELD_LEVELS: [(Field, [FieldLevel; 6]); 16] = [
-    (Field::Title, [C, C, C, C, S, C]),
-    (Field::Description, [C, C, C, C, S, C]),
-    (Field::Status, [C, C, C, S, S, S]),
-    (Field::Priority, [C, C, C, S, S, S]),
-    (Field::AssignedTo, [C, C, C, S, S, S]),
-    (Field::ReportedBy, [C, C, S, S, S, S]),
-    (Field::DueDate, [C, C, C, S, S, H]),
-    (Field::Labels, [C, C, C, S, S, S]),
-    (Field::Tags, [C, C, C, C, S, S]),
-    (Field::PlannedForRelease, [C, C, C, S, S, S]),
-    (Field::FoundInRelease, [C, C, C, C, S, C]),
-    (Field::EstimatedTime, [C, C, C, S, S, H]),
-    (Field::TimeLeft, [C, C, C, S, S, H]),
-    (Field::TimeSpent, [C, C, C, S, S, H]),
-    (Field::Activity, [C, C, C, S, S, H]),
-    (Field::CostCenter, [C, C, S, S, S, H]),
-];
+/// Field levels of a field, in the order of the roles of [`StartingRole::ALL`]. A `match` with no
+/// catch-all arm: a field without a row does not compile, so no field falls back to hidden.
+const fn field_levels(field: Field) -> [FieldLevel; 6] {
+    match field {
+        Field::Title | Field::Description => [C, C, C, C, S, C],
+        Field::Status
+        | Field::Priority
+        | Field::AssignedTo
+        | Field::Labels
+        | Field::PlannedForRelease => [C, C, C, S, S, S],
+        Field::ReportedBy => [C, C, S, S, S, S],
+        Field::DueDate
+        | Field::EstimatedTime
+        | Field::TimeLeft
+        | Field::TimeSpent
+        | Field::Activity => [C, C, C, S, S, H],
+        Field::Tags => [C, C, C, C, S, S],
+        Field::FoundInRelease => [C, C, C, C, S, C],
+        Field::CostCenter => [C, C, S, S, S, H],
+    }
+}
 
-/// *Who sees people* levels per kind, in the order of the roles of [`StartingRole::ALL`].
-const PEOPLE_LEVELS: [(PeopleKind, [PeopleLevel; 6]); 10] = [
-    (PeopleKind::AssignedTo, [N, N, N, N, N, R]),
-    (PeopleKind::ReportedBy, [N, N, N, N, N, O]),
-    (PeopleKind::LastChangedBy, [N, N, N, N, N, R]),
-    (PeopleKind::Authors, [N, N, N, N, N, R]),
-    (PeopleKind::Editing, [N, N, N, N, N, O]),
-    (PeopleKind::Followers, [N, N, N, R, R, O]),
-    (PeopleKind::TimeEntries, [N, N, N, O, O, O]),
-    (PeopleKind::Mentions, [N, N, N, N, N, R]),
-    (PeopleKind::Pictures, [N, N, N, N, N, O]),
-    (PeopleKind::ProjectMembers, [N, N, N, R, R, O]),
-];
+/// *Who sees people* levels of a kind, in the order of the roles of [`StartingRole::ALL`]. A
+/// `match` with no catch-all arm, like [`field_levels`].
+const fn people_levels(kind: PeopleKind) -> [PeopleLevel; 6] {
+    match kind {
+        PeopleKind::AssignedTo
+        | PeopleKind::LastChangedBy
+        | PeopleKind::Authors
+        | PeopleKind::Mentions => [N, N, N, N, N, R],
+        PeopleKind::ReportedBy | PeopleKind::Editing | PeopleKind::Pictures => [N, N, N, N, N, O],
+        PeopleKind::Followers | PeopleKind::ProjectMembers => [N, N, N, R, R, O],
+        PeopleKind::TimeEntries => [N, N, N, O, O, O],
+    }
+}
 
 impl StartingRole {
     /// The place of the role in the starting order, counting from 0.
@@ -110,19 +112,13 @@ impl StartingRole {
     /// The level of a field for the role.
     #[must_use]
     pub fn field_level(self, field: Field) -> FieldLevel {
-        FIELD_LEVELS
-            .iter()
-            .find(|(candidate, _)| *candidate == field)
-            .map_or(FieldLevel::Hidden, |(_, levels)| levels[self.index()])
+        field_levels(field)[self.index()]
     }
 
     /// How the role sees people of a kind.
     #[must_use]
     pub fn people_level(self, kind: PeopleKind) -> PeopleLevel {
-        PEOPLE_LEVELS
-            .iter()
-            .find(|(candidate, _)| *candidate == kind)
-            .map_or(PeopleLevel::Hidden, |(_, levels)| levels[self.index()])
+        people_levels(kind)[self.index()]
     }
 
     /// Whether everybody with the role needs two-step sign-in at the start: off for all.
