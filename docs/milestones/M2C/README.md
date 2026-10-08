@@ -108,4 +108,4 @@ Fix audit section A:
 
 ## Question for the maintainer
 
-- **M2C-Q1, the format of the theming file.** Proposal: **KDL, like the sister project** (`design/theme.kdl`). It allows comments, keeps each value's variants on one line, and is read only by `cargo xtask gen theme` at build time, so the browser never parses it. The alternative is to keep JSON (`design/theme.json`): it needs no new dependency, but it gets long and has no comments.
+- **M2C-Q1, the format of the theming file** (answered: **KDL**, `design/theme.kdl`). Proposal: **KDL, like the sister project** (`design/theme.kdl`). It allows comments, keeps each value's variants on one line, and is read only by `cargo xtask gen theme` at build time, so the browser never parses it. The alternative is to keep JSON (`design/theme.json`): it needs no new dependency, but it gets long and has no comments.
