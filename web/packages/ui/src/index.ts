@@ -51,6 +51,17 @@ export {
   type StoreGetter,
 } from "./storage.ts";
 export { SaveStatus, type SaveState, type SaveStatusProps } from "./SaveStatus.tsx";
+export {
+  PickerHint,
+  PickerOption,
+  PickerRow,
+  SearchPicker,
+  type PickerMore,
+  type PickerOptionProps,
+  type PickerRowProps,
+  type SearchPickerProps,
+} from "./SearchPicker.tsx";
+export { pickerLook, type PickerLook } from "./picker-look.ts";
 export { SearchField, type SearchFieldProps } from "./SearchField.tsx";
 export { SelectField, type SelectChoice, type SelectFieldProps } from "./SelectField.tsx";
 export { Skeleton, type SkeletonProps } from "./Skeleton.tsx";
