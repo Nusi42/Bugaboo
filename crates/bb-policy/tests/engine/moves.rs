@@ -587,6 +587,73 @@ fn prj_03_a_move_is_asked_for_by_one_set_of_rules_and_each_refusal_has_its_word(
 }
 
 #[test]
+fn prj_03_a_move_to_the_top_level_takes_make_projects_for_the_whole_organization() {
+    let mut world = World::new();
+    let (bob, cleo) = (world.person(), world.person());
+    let (acme, other) = (world.project(None), world.project(None));
+    let web = world.project(Some(acme));
+    let mover = world.role("Mover", &MOVER);
+    let moves_only = world.role(
+        "Moves only",
+        &[Permission::SeeProjects, Permission::MoveProjects],
+    );
+    world.row(Ok(bob), Some(mover), None, AppliesTo::Organization);
+    // Cleo may move everywhere but is not allowed to make projects.
+    world.row(Ok(cleo), Some(moves_only), None, AppliesTo::Organization);
+
+    assert_eq!(may_move(&world, bob, web, None), Ok(()));
+    assert_eq!(
+        may_move(&world, cleo, web, None),
+        Err(MoveRefusal::Forbidden),
+        "a project that goes to the top level is made there"
+    );
+    assert_eq!(
+        may_move(&world, cleo, web, Some(other)),
+        Ok(()),
+        "into another project it takes no Make projects"
+    );
+}
+
+#[test]
+fn prj_03_a_move_takes_move_projects_in_the_old_parent_as_well_as_the_new_one() {
+    let mut world = World::new();
+    let (bob, cleo) = (world.person(), world.person());
+    let (acme, other) = (world.project(None), world.project(None));
+    let web = world.project(Some(acme));
+    let loose = world.project(None);
+    let mover = world.role("Mover", &MOVER);
+    let viewer = world.role("Viewer", &VIEW);
+    // Bob sees everything and may move only in OTHER; Cleo may also move in ACME.
+    for person in [bob, cleo] {
+        world.row(Ok(person), Some(viewer), None, AppliesTo::Organization);
+        world.row(
+            Ok(person),
+            Some(mover),
+            Some(other),
+            AppliesTo::ProjectAndSubProjects,
+        );
+    }
+    world.row(
+        Ok(cleo),
+        Some(mover),
+        Some(acme),
+        AppliesTo::ProjectAndSubProjects,
+    );
+
+    assert_eq!(
+        may_move(&world, bob, web, Some(other)),
+        Err(MoveRefusal::Forbidden),
+        "he may move into OTHER but not out of ACME"
+    );
+    assert_eq!(may_move(&world, cleo, web, Some(other)), Ok(()));
+    assert_eq!(
+        may_move(&world, bob, loose, Some(other)),
+        Err(MoveRefusal::Forbidden),
+        "a project at the top level is held by the whole organization"
+    );
+}
+
+#[test]
 fn prj_03_a_project_cannot_be_moved_deeper_than_a_tree_may_go() {
     let mut world = World::new();
     let bob = world.person();
