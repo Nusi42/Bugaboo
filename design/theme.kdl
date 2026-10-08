@@ -231,7 +231,7 @@ contrast min=4.5 {
     non-text "border" "border-subtle" reason="Borders and dividers are decorative lines, not text; they are not part of the text contrast rules."
 
     // With the device setting for more contrast.
-    more min-text=7 min-line=3 reason="With the device setting for more contrast, text reaches 7:1 (WCAG AAA) and lines reach 3:1 (WCAG 1.4.11) on the plain surfaces. Category colors keep their AA ratio: they carry words, never meaning alone." {
+    more min-text=7 min-line=3 reason="With the device setting for more contrast, the listed text colors reach 7:1 (WCAG AAA) on every background they are used on, and the listed lines reach 3:1 (WCAG 1.4.11) on the plain surfaces. The other text colors, the category colors, keep their AA ratio: they carry words, never meaning alone." {
         text "fg" "fg-muted" "fg-subtle" "accent-fg" "danger" "warning" "success" "st-ns" "st-ip" "st-done" "on-accent"
         lines "border" "border-subtle"
         line-on "bg-canvas" "bg-surface" "bg-raised"
