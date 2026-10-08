@@ -11,24 +11,28 @@ use bb_core::access::{FieldLevel, PeopleLevel};
 use bb_core::fields::Field;
 use bb_core::message::{self, MessageKey};
 use bb_core::people_kinds::PeopleKind;
+use bb_core::words;
 
 use crate::catalogue::Permission;
 
-/// One of the six roles every organization starts with.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub enum StartingRole {
-    /// Everything.
-    Administrator,
-    /// Manages their projects, their sub-projects and who has which role there.
-    ProjectLead,
-    /// Works on issues.
-    TeamMember,
-    /// Makes issues and changes their own.
-    Contributor,
-    /// Only looks.
-    Viewer,
-    /// Sees only what they reported, and sees people by role only.
-    Guest,
+words! {
+    /// One of the six roles every organization starts with, in the starting order (which is also
+    /// the order for role labels). The word is the key that a copy keeps in its `starting` mark,
+    /// also when it is renamed.
+    pub enum StartingRole {
+        /// Everything.
+        Administrator => "administrator",
+        /// Manages their projects, their sub-projects and who has which role there.
+        ProjectLead => "project-lead",
+        /// Works on issues.
+        TeamMember => "team-member",
+        /// Makes issues and changes their own.
+        Contributor => "contributor",
+        /// Only looks.
+        Viewer => "viewer",
+        /// Sees only what they reported, and sees people by role only.
+        Guest => "guest",
+    }
 }
 
 const C: FieldLevel = FieldLevel::CanChange;
@@ -85,46 +89,10 @@ const PEOPLE_LEVELS: [(PeopleKind, [PeopleLevel; 6]); 10] = [
 ];
 
 impl StartingRole {
-    /// The six roles, in the starting order (which is also the order for role labels).
-    pub const ALL: [Self; 6] = [
-        Self::Administrator,
-        Self::ProjectLead,
-        Self::TeamMember,
-        Self::Contributor,
-        Self::Viewer,
-        Self::Guest,
-    ];
-
     /// The place of the role in the starting order, counting from 0.
     #[must_use]
     pub const fn index(self) -> usize {
-        match self {
-            Self::Administrator => 0,
-            Self::ProjectLead => 1,
-            Self::TeamMember => 2,
-            Self::Contributor => 3,
-            Self::Viewer => 4,
-            Self::Guest => 5,
-        }
-    }
-
-    /// The key that a copy keeps in its `starting` mark, also when it is renamed.
-    #[must_use]
-    pub const fn key(self) -> &'static str {
-        match self {
-            Self::Administrator => "administrator",
-            Self::ProjectLead => "project-lead",
-            Self::TeamMember => "team-member",
-            Self::Contributor => "contributor",
-            Self::Viewer => "viewer",
-            Self::Guest => "guest",
-        }
-    }
-
-    /// The starting role with this key.
-    #[must_use]
-    pub fn from_key(key: &str) -> Option<Self> {
-        Self::ALL.into_iter().find(|role| role.key() == key)
+        self as usize
     }
 
     /// The name of the role when it is made (`starting-role.<key>`).
@@ -183,91 +151,98 @@ mod tests {
 
     use super::*;
 
-    /// The rows of the table "Starting roles" in architecture §7, one letter per role:
-    /// a tick is a permission the role has.
-    const PERMISSION_TABLE: [(Permission, &str); 14] = [
-        (Permission::SeeProjects, "YYYYYY"),
-        (Permission::MakeProjects, "Y-----"),
-        (Permission::MakeSubProjects, "YY----"),
-        (Permission::MoveProjects, "YY----"),
-        (Permission::ChangeProjectSettings, "YY----"),
-        (Permission::DecideRoles, "YY----"),
-        (Permission::DecideWhatRolesSee, "YY----"),
-        (Permission::CheckAccess, "YY----"),
-        (Permission::ManagePeople, "Y-----"),
-        (Permission::ManageInvitations, "Y-----"),
-        (Permission::ManageGroups, "Y-----"),
-        (Permission::ManageRoles, "Y-----"),
-        (Permission::ChangeOrganizationSettings, "Y-----"),
-        (Permission::SeeStatus, "Y-----"),
-    ];
+    /// The tables of "Starting roles" in architecture §7 are the only other place that holds the
+    /// starting values: the tests read them from the page, so no third copy exists. Rows are in
+    /// the order of the catalogues ([`Permission::ALL`], [`Field::ALL`], [`PeopleKind::ALL`]),
+    /// the columns in the starting order.
+    const ARCHITECTURE: &str = include_str!("../../../docs/architecture/07-cross-cutting.md");
 
-    fn level(letter: char) -> FieldLevel {
+    /// The cells of the data rows (without the label) of the `at`th table of the section.
+    fn table(at: usize) -> Vec<Vec<String>> {
+        let section = ARCHITECTURE
+            .split("### Starting roles")
+            .nth(1)
+            .and_then(|rest| rest.split("### The field catalogue").next())
+            .unwrap();
+        let mut tables: Vec<Vec<Vec<String>>> = Vec::new();
+        let mut inside = false;
+        for line in section.lines() {
+            if !line.starts_with('|') {
+                inside = false;
+                continue;
+            }
+            if !inside {
+                tables.push(Vec::new());
+                inside = true;
+            }
+            let cells: Vec<String> = line
+                .trim_matches('|')
+                .split('|')
+                .skip(1)
+                .map(|cell| cell.trim().to_owned())
+                .collect();
+            if let Some(rows) = tables.last_mut()
+                && !cells.iter().all(|cell| cell.starts_with(['-', ':']))
+            {
+                rows.push(cells);
+            }
+        }
+        let mut rows = tables.swap_remove(at);
+        rows.remove(0);
+        rows
+    }
+
+    /// What `letter` says: a level of a field.
+    fn level(letter: &str) -> FieldLevel {
         match letter {
-            'C' => FieldLevel::CanChange,
-            'S' => FieldLevel::CanSee,
+            "C" => FieldLevel::CanChange,
+            "S" => FieldLevel::CanSee,
             _ => FieldLevel::Hidden,
         }
     }
 
-    fn people(letter: char) -> PeopleLevel {
+    /// What `letter` says: how people of a kind are seen.
+    fn people(letter: &str) -> PeopleLevel {
         match letter {
-            'N' => PeopleLevel::Names,
-            'R' => PeopleLevel::RoleOnly,
+            "N" => PeopleLevel::Names,
+            "R" => PeopleLevel::RoleOnly,
             _ => PeopleLevel::Hidden,
         }
     }
 
     #[test]
     fn m2_q5_the_permissions_are_the_table_of_architecture_7() {
-        let listed: HashSet<Permission> = PERMISSION_TABLE.iter().map(|(p, _)| *p).collect();
+        let rows = table(0);
+        // One row per permission, then the switch for two-step sign-in.
         assert_eq!(
-            listed.len(),
-            Permission::ALL.len(),
-            "every permission has a row"
+            rows.len(),
+            Permission::ALL.len() + 1,
+            "a row per permission"
         );
-        for (permission, ticks) in PERMISSION_TABLE {
-            for (role, tick) in StartingRole::ALL.into_iter().zip(ticks.chars()) {
+        for (permission, ticks) in Permission::ALL.iter().zip(&rows) {
+            for (role, tick) in StartingRole::ALL.iter().zip(ticks) {
                 assert_eq!(
-                    role.permissions().contains(&permission),
-                    tick == 'Y',
-                    "{} for {}",
-                    permission,
-                    role.key()
+                    role.permissions().contains(permission),
+                    tick == "✓",
+                    "{permission} for {role}"
                 );
             }
+        }
+        for (role, cell) in StartingRole::ALL.iter().zip(&rows[Permission::ALL.len()]) {
+            assert_eq!(role.two_step(), cell != "off", "two-step for {role}");
         }
     }
 
     #[test]
     fn m2_q5_the_field_levels_are_the_table_of_architecture_7() {
-        let table = [
-            ("title", "CCCCSC"),
-            ("description", "CCCCSC"),
-            ("status", "CCCSSS"),
-            ("priority", "CCCSSS"),
-            ("assigned-to", "CCCSSS"),
-            ("reported-by", "CCSSSS"),
-            ("due-date", "CCCSSH"),
-            ("labels", "CCCSSS"),
-            ("tags", "CCCCSS"),
-            ("planned-for-release", "CCCSSS"),
-            ("found-in-release", "CCCCSC"),
-            ("estimated-time", "CCCSSH"),
-            ("time-left", "CCCSSH"),
-            ("time-spent", "CCCSSH"),
-            ("activity", "CCCSSH"),
-            ("cost-center", "CCSSSH"),
-        ];
-        assert_eq!(table.len(), Field::ALL.len());
-        for (key, letters) in table {
-            let field = Field::from_code(key).unwrap();
-            for (role, letter) in StartingRole::ALL.into_iter().zip(letters.chars()) {
+        let rows = table(1);
+        assert_eq!(rows.len(), Field::ALL.len());
+        for (field, letters) in Field::ALL.iter().zip(&rows) {
+            for (role, letter) in StartingRole::ALL.iter().zip(letters) {
                 assert_eq!(
-                    role.field_level(field),
+                    role.field_level(*field),
                     level(letter),
-                    "{key} for {}",
-                    role.key()
+                    "{field} for {role}"
                 );
             }
         }
@@ -275,27 +250,14 @@ mod tests {
 
     #[test]
     fn m2_q5_the_people_levels_are_the_table_of_architecture_7() {
-        let table = [
-            ("assigned-to", "NNNNNR"),
-            ("reported-by", "NNNNNH"),
-            ("last-changed-by", "NNNNNR"),
-            ("authors", "NNNNNR"),
-            ("editing", "NNNNNH"),
-            ("followers", "NNNRRH"),
-            ("time-entries", "NNNHHH"),
-            ("mentions", "NNNNNR"),
-            ("pictures", "NNNNNH"),
-            ("project-members", "NNNRRH"),
-        ];
-        assert_eq!(table.len(), PeopleKind::ALL.len());
-        for (key, letters) in table {
-            let kind = PeopleKind::from_code(key).unwrap();
-            for (role, letter) in StartingRole::ALL.into_iter().zip(letters.chars()) {
+        let rows = table(2);
+        assert_eq!(rows.len(), PeopleKind::ALL.len());
+        for (kind, letters) in PeopleKind::ALL.iter().zip(&rows) {
+            for (role, letter) in StartingRole::ALL.iter().zip(letters) {
                 assert_eq!(
-                    role.people_level(kind),
+                    role.people_level(*kind),
                     people(letter),
-                    "{key} for {}",
-                    role.key()
+                    "{kind} for {role}"
                 );
             }
         }
@@ -303,25 +265,13 @@ mod tests {
 
     #[test]
     fn the_roles_come_in_the_starting_order_with_their_own_keys_and_names() {
-        let keys: Vec<&str> = StartingRole::ALL.iter().map(|role| role.key()).collect();
-        assert_eq!(
-            keys,
-            [
-                "administrator",
-                "project-lead",
-                "team-member",
-                "contributor",
-                "viewer",
-                "guest"
-            ]
-        );
         let mut names = HashSet::new();
-        for (at, role) in StartingRole::ALL.into_iter().enumerate() {
+        for (at, role) in StartingRole::ALL.iter().copied().enumerate() {
             assert_eq!(role.index(), at);
-            assert_eq!(StartingRole::from_key(role.key()), Some(role));
+            assert_eq!(StartingRole::from_code(role.code()), Some(role));
             assert_eq!(
                 role.name().as_str(),
-                format!("starting-role.{}", role.key())
+                format!("starting-role.{}", role.code())
             );
             assert!(names.insert(role.name()));
             assert!(
@@ -329,7 +279,7 @@ mod tests {
                 "two-step sign-in is off for every starting role"
             );
         }
-        assert_eq!(StartingRole::from_key("owner"), None);
+        assert_eq!(StartingRole::from_code("owner"), None);
     }
 
     #[test]

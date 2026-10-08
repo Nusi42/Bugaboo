@@ -6,7 +6,7 @@
 extern crate self as bb_core;
 
 #[macro_use]
-mod words;
+pub mod words;
 
 pub mod access;
 pub mod access_key;

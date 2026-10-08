@@ -38,7 +38,7 @@ pub(crate) struct NewRole {
 impl<S: AuthStore> Ctx<'_, S> {
     /// The copy of a starting role as it is made at the start.
     pub(crate) fn new_starting_role(&self, starting: StartingRole) -> Result<NewRole, AppError> {
-        let key = TechnicalName::new(starting.key())
+        let key = TechnicalName::new(starting.code())
             .map_err(|error| AppError::Internal(error.to_string()))?;
         let id = RoleId::generate(&mut self.ids())
             .map_err(|error| AppError::Internal(error.to_string()))?;
@@ -101,8 +101,8 @@ pub async fn make_starting_roles<S: AuthStore>(
         .map_err(|error| internal::<S>(&error))?;
     if !made {
         let roles = StartingRole::ALL
-            .into_iter()
-            .map(|starting| ctx.new_starting_role(starting))
+            .iter()
+            .map(|starting| ctx.new_starting_role(*starting))
             .collect::<Result<Vec<_>, _>>()?;
         let names: Vec<serde_json::Value> = roles.iter().map(|new| json!(new.role.name)).collect();
         let event = ctx.event(
@@ -163,7 +163,7 @@ async fn role_of<S: AuthStore>(
         .await
         .map_err(|error| internal::<S>(&error))?;
     if let Some(found) = roles.iter().find(|record| {
-        record.role.starting.as_ref().map(TechnicalName::as_str) == Some(starting.key())
+        record.role.starting.as_ref().map(TechnicalName::as_str) == Some(starting.code())
     }) {
         return Ok(found.role.id);
     }

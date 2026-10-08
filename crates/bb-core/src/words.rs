@@ -5,13 +5,19 @@
 //! come from that one line. `#[derive(Entity)]` looks words up through `from_code_const`, and
 //! `cargo xtask` reads the same lines from the source, so no second rule connects a word to its
 //! variant.
+//!
+//! The macros are exported (`bb_core::words!`, `bb_core::words_in_api!`), so every crate that has
+//! a vocabulary of fixed words declares it the same way instead of writing the same code again
+//! (`Topic`, `Counts`, `Kind`, `Permission`, `StartingRole` of `bb-policy`, `ErrorCode`).
 
 use std::fmt;
 
 // The macro writes its code at the place of use, where these names may mean something else or
 // already be imported; it reaches them by this path.
-pub(crate) use ::serde as __serde;
-pub(crate) use std::fmt as __fmt;
+#[doc(hidden)]
+pub use ::serde as __serde;
+#[doc(hidden)]
+pub use std::fmt as __fmt;
 
 /// The text is not one of the words.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -26,8 +32,9 @@ impl fmt::Display for UnknownWord {
 impl std::error::Error for UnknownWord {}
 
 /// Whether two texts are equal. `str` cannot be compared in a `const fn` yet, so the bytes are.
+#[doc(hidden)]
 #[must_use]
-pub(crate) const fn same_text(a: &str, b: &str) -> bool {
+pub const fn same_text(a: &str, b: &str) -> bool {
     let (a, b) = (a.as_bytes(), b.as_bytes());
     if a.len() != b.len() {
         return false;
@@ -43,6 +50,7 @@ pub(crate) const fn same_text(a: &str, b: &str) -> bool {
 }
 
 /// Declares an enum with its words.
+#[macro_export]
 macro_rules! words {
     (
         $(#[$meta:meta])*
@@ -128,6 +136,7 @@ macro_rules! words {
 
 /// Describes a words enum in the API description as one of its words, so a client gets a union
 /// type and the list of words is the one in the Rust enum (`words_in_api!(Field, "…")`).
+#[macro_export]
 macro_rules! words_in_api {
     ($name:ident, $description:literal) => {
         #[cfg(feature = "openapi")]

@@ -106,7 +106,7 @@ impl Actor {
             Self::Exactly(_) => "exactly-the-permission".to_owned(),
             Self::Nobody => "nobody".to_owned(),
             Self::NoRole => "no-role".to_owned(),
-            Self::Role(role) => format!("role-{}", role.key()),
+            Self::Role(role) => format!("role-{}", role.code()),
             Self::LeadOnParent => "lead-on-parent".to_owned(),
             Self::LeadOnSiblingOnly => "lead-on-sibling-only".to_owned(),
             Self::NoAccessOnTarget => "no-access-on-target".to_owned(),
@@ -357,9 +357,9 @@ mod tests {
 
     #[test]
     fn the_table_of_the_matrix_is_the_table_of_the_starting_roles() {
-        for role in StartingRole::ALL {
+        for role in StartingRole::ALL.iter().copied() {
             let in_the_code: BTreeSet<Permission> = role.permissions().into_iter().collect();
-            assert_eq!(role_permissions(role), in_the_code, "{}", role.key());
+            assert_eq!(role_permissions(role), in_the_code, "{}", role.code());
         }
     }
 

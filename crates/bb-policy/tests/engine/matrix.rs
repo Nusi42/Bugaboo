@@ -114,7 +114,7 @@ fn the_tables_of_the_matrix_are_the_starting_roles_of_the_code() {
                 role.field_level(field),
                 level,
                 "{field:?} for {}",
-                role.key()
+                role.code()
             );
         }
     }
@@ -124,7 +124,7 @@ fn the_tables_of_the_matrix_are_the_starting_roles_of_the_code() {
                 role.people_level(kind),
                 level,
                 "{kind:?} for {}",
-                role.key()
+                role.code()
             );
         }
     }
@@ -147,7 +147,7 @@ fn sec_06_every_field_level_of_every_role_shows_or_hides_the_field_in_answers() 
     for (index, role_key) in StartingRole::ALL.iter().enumerate() {
         // The levels the role has of its own, for the whole organization.
         let mut world = World::new();
-        let role = world.role(role_key.key(), &[Permission::SeeProjects]);
+        let role = world.role(role_key.code(), &[Permission::SeeProjects]);
         world.give_everywhere(role);
         for (field, levels) in FIELD_LEVELS {
             world.field(role, None, field, levels[index]);
@@ -177,7 +177,7 @@ fn sec_06_every_field_level_of_every_role_shows_or_hides_the_field_in_answers() 
         // every level, whatever the role had of its own.
         for level in FieldLevel::ALL.iter().copied() {
             let mut world = World::new();
-            let role = world.role(role_key.key(), &[Permission::SeeProjects]);
+            let role = world.role(role_key.code(), &[Permission::SeeProjects]);
             world.give_everywhere(role);
             for (field, levels) in FIELD_LEVELS {
                 world.field(role, None, field, levels[index]);
@@ -244,7 +244,7 @@ fn priv_12_every_kind_and_level_shows_the_person_as_the_rule_says() {
         for (kind, levels) in PEOPLE_LEVELS {
             // The starting level of the role for the kind, then every level set on a project.
             let mut starting = World::new();
-            let role = starting.role(role_key.key(), &[Permission::SeeProjects]);
+            let role = starting.role(role_key.code(), &[Permission::SeeProjects]);
             starting.give_everywhere(role);
             starting.people(role, None, kind, levels[index]);
             let held = starting.at(starting.web);
@@ -265,7 +265,7 @@ fn priv_12_every_kind_and_level_shows_the_person_as_the_rule_says() {
             rows += 1;
             for level in PeopleLevel::ALL.iter().copied() {
                 let mut world = World::new();
-                let role = world.role(role_key.key(), &[Permission::SeeProjects]);
+                let role = world.role(role_key.code(), &[Permission::SeeProjects]);
                 world.give_everywhere(role);
                 world.people(role, None, kind, levels[index]);
                 world.people(role, Some(world.acme), kind, level);

@@ -602,10 +602,10 @@ impl Making<'_, '_> {
                     .starting
                     .as_ref()
                     .map(bb_core::technical::TechnicalName::as_str)
-                    == Some(role.key())
+                    == Some(role.code())
             })
             .map(|record| record.role.id)
-            .ok_or_else(|| SampleError::NotMade(role.key().to_owned()))
+            .ok_or_else(|| SampleError::NotMade(role.code().to_owned()))
     }
 
     async fn named_role(&self, name: &str) -> Result<RoleId, SampleError> {

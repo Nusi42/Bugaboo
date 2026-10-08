@@ -317,7 +317,7 @@ fn dump_projects(read: &Read) -> Vec<DumpProject> {
         .iter()
         .find(|record| {
             record.role.starting.as_ref().map(TechnicalName::as_str)
-                == Some(StartingRole::ProjectLead.key())
+                == Some(StartingRole::ProjectLead.code())
         })
         .map(|record| record.role.id);
     let mut projects: Vec<DumpProject> = read

@@ -8,37 +8,24 @@
 //! same change. Enforced by: ARCH-PERMS (every route declares one of these keys or `public`,
 //! `signed-in`, `own-account`; every permission is used and has its message).
 
-use std::fmt;
-use std::str::FromStr;
-
 use bb_core::message::{self, MessageKey};
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use bb_core::{words, words_in_api};
 
-/// What a group of permissions is about, for the role page.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub enum Topic {
-    /// Projects and sub-projects.
-    Projects,
-    /// People, groups, roles and who has which role.
-    People,
-    /// Organization settings and the state of the server.
-    Settings,
+words! {
+    /// What a group of permissions is about, for the role page.
+    pub enum Topic {
+        /// Projects and sub-projects.
+        Projects => "projects",
+        /// People, groups, roles and who has which role.
+        People => "people",
+        /// Organization settings and the state of the server.
+        Settings => "settings",
+    }
 }
 
+words_in_api!(Topic, "What a group of permissions is about.");
+
 impl Topic {
-    /// Every topic, in the order of the role page.
-    pub const ALL: &'static [Self] = &[Self::Projects, Self::People, Self::Settings];
-
-    /// The word of the topic in the API (`projects`).
-    #[must_use]
-    pub const fn code(self) -> &'static str {
-        match self {
-            Self::Projects => "projects",
-            Self::People => "people",
-            Self::Settings => "settings",
-        }
-    }
-
     /// The message that names the topic (`permission-topic.<topic>`).
     #[must_use]
     pub const fn name(self) -> MessageKey {
@@ -50,70 +37,28 @@ impl Topic {
     }
 }
 
-impl Serialize for Topic {
-    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        serializer.serialize_str(self.code())
+words! {
+    /// Where a permission counts (ADR-0025, decision 1).
+    pub enum Counts {
+        /// Only from a role given for the whole organization. A role given on a project that holds
+        /// such a permission gives nothing for it, and the role page says so.
+        Organization => "organization",
+        /// In projects: from a role given for the whole organization (every project) or on a
+        /// project.
+        Project => "project",
     }
 }
 
-/// In the API description a topic is one of its words, so clients get a union type.
-#[cfg(feature = "openapi")]
-impl utoipa::PartialSchema for Topic {
-    fn schema() -> utoipa::openapi::RefOr<utoipa::openapi::schema::Schema> {
-        use utoipa::openapi::schema::{ObjectBuilder, Type};
-        ObjectBuilder::new()
-            .schema_type(Type::String)
-            .description(Some("What a group of permissions is about."))
-            .enum_values(Some(Self::ALL.iter().map(|topic| topic.code())))
-            .into()
+words! {
+    /// What an access key's choice keeps (ADR-0025, decision 8).
+    pub enum Kind {
+        /// Changes nothing.
+        See => "see",
+        /// Work in projects.
+        Change => "change",
+        /// People, roles and settings.
+        Manage => "manage",
     }
-}
-
-#[cfg(feature = "openapi")]
-impl utoipa::ToSchema for Topic {}
-
-/// Where a permission counts (ADR-0025, decision 1).
-#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub enum Counts {
-    /// Only from a role given for the whole organization. A role given on a project that holds
-    /// such a permission gives nothing for it, and the role page says so.
-    Organization,
-    /// In projects: from a role given for the whole organization (every project) or on a
-    /// project.
-    Project,
-}
-
-impl Counts {
-    /// The word of the place in the API (`organization`, `project`).
-    #[must_use]
-    pub const fn code(self) -> &'static str {
-        match self {
-            Self::Organization => "organization",
-            Self::Project => "project",
-        }
-    }
-}
-
-impl Serialize for Counts {
-    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        serializer.serialize_str(self.code())
-    }
-}
-
-/// What an access key's choice keeps (ADR-0025, decision 8).
-#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub enum Kind {
-    /// Changes nothing.
-    See,
-    /// Work in projects.
-    Change,
-    /// People, roles and settings.
-    Manage,
-}
-
-impl Kind {
-    /// Every kind, from the least to the most.
-    pub const ALL: &'static [Self] = &[Self::See, Self::Change, Self::Manage];
 }
 
 /// The permissions an access key never keeps, whatever its choice, even *Everything I can do*
@@ -137,22 +82,14 @@ pub const NOT_FOR_KEYS: &[Permission] = &[
 /// and the message of its sentence. Everything else is made from this list.
 macro_rules! permissions {
     ($($(#[$doc:meta])* $variant:ident => ($key:literal, $topic:ident, $counts:ident, $kind:ident, $sentence:path)),+ $(,)?) => {
-        /// One thing a role can allow.
-        #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
-        pub enum Permission {
-            $($(#[$doc])* $variant),+
+        words! {
+            /// One thing a role can allow. The key is as stored and as written in `x-permission`.
+            pub enum Permission {
+                $($(#[$doc])* $variant => $key),+
+            }
         }
 
         impl Permission {
-            /// Every permission, in the order of the catalogue.
-            pub const ALL: &'static [Self] = &[$(Self::$variant),+];
-
-            /// The key of the permission, as stored and as written in `x-permission`.
-            #[must_use]
-            pub const fn code(self) -> &'static str {
-                match self { $(Self::$variant => $key),+ }
-            }
-
             /// What the permission is about.
             #[must_use]
             pub const fn topic(self) -> Topic {
@@ -182,12 +119,6 @@ macro_rules! permissions {
             #[must_use]
             pub const fn sentence(self) -> MessageKey {
                 match self { $(Self::$variant => $sentence),+ }
-            }
-
-            /// The permission with this key, if there is one.
-            #[must_use]
-            pub fn from_code(code: &str) -> Option<Self> {
-                Self::ALL.iter().copied().find(|permission| permission.code() == code)
             }
         }
     };
@@ -224,105 +155,60 @@ permissions! {
     SeeStatus => ("see-status", Settings, Organization, See, message::PERMISSION_SEE_STATUS),
 }
 
-impl fmt::Display for Permission {
-    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
-        formatter.write_str(self.code())
-    }
-}
-
-/// The text is not the key of a permission.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub struct UnknownPermission;
-
-impl fmt::Display for UnknownPermission {
-    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
-        formatter.write_str("not the key of a permission")
-    }
-}
-
-impl std::error::Error for UnknownPermission {}
-
-impl FromStr for Permission {
-    type Err = UnknownPermission;
-
-    fn from_str(text: &str) -> Result<Self, UnknownPermission> {
-        Self::from_code(text).ok_or(UnknownPermission)
-    }
-}
-
-impl Serialize for Permission {
-    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        serializer.serialize_str(self.code())
-    }
-}
-
-impl<'de> Deserialize<'de> for Permission {
-    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        let text = <std::borrow::Cow<'de, str>>::deserialize(deserializer)?;
-        text.parse().map_err(serde::de::Error::custom)
-    }
-}
-
-/// In the API description a permission is one of the keys of the catalogue, so clients get a
-/// union type and the description is made from the same list.
-#[cfg(feature = "openapi")]
-impl utoipa::PartialSchema for Permission {
-    fn schema() -> utoipa::openapi::RefOr<utoipa::openapi::schema::Schema> {
-        use utoipa::openapi::schema::{ObjectBuilder, Type};
-        ObjectBuilder::new()
-            .schema_type(Type::String)
-            .description(Some("One permission of the catalogue."))
-            .enum_values(Some(Self::ALL.iter().map(|permission| permission.code())))
-            .into()
-    }
-}
-
-#[cfg(feature = "openapi")]
-impl utoipa::ToSchema for Permission {}
+words_in_api!(Permission, "One permission of the catalogue.");
 
 #[cfg(test)]
 mod tests {
     use std::collections::HashSet;
 
-    use Counts::{Organization as Org, Project as Proj};
-    use Kind::{Change, Manage, See};
-    use Topic::{People, Projects, Settings};
+    use bb_core::UnknownWord;
+    use bb_core::message::Message;
     use bb_core::technical::TechnicalName;
 
     use super::*;
 
+    /// The word with a capital, as the table writes the kind.
+    fn capital(word: &str) -> String {
+        let mut letters = word.chars();
+        letters
+            .next()
+            .map(|first| first.to_uppercase().chain(letters).collect())
+            .unwrap_or_default()
+    }
+
+    /// The table "The permission catalogue" of architecture §7 is the only other place that
+    /// holds the topic, the place and the kind of each permission: the test reads it from the
+    /// page, in the order of the catalogue, so there is no third copy.
     #[test]
-    fn the_catalogue_has_the_fourteen_permissions_of_architecture_7() {
-        let rows: Vec<(&str, Topic, Counts, Kind)> = Permission::ALL
-            .iter()
-            .map(|permission| {
-                (
-                    permission.code(),
-                    permission.topic(),
-                    permission.counts(),
-                    permission.kind(),
-                )
-            })
+    fn the_catalogue_is_the_table_of_architecture_7() {
+        let architecture = include_str!("../../../docs/architecture/07-cross-cutting.md");
+        let rows: Vec<Vec<&str>> = architecture
+            .split("### The permission catalogue")
+            .nth(1)
+            .unwrap()
+            .lines()
+            .skip_while(|line| !line.starts_with('|'))
+            .take_while(|line| line.starts_with('|'))
+            .skip(2)
+            .map(|line| line.trim_matches('|').split('|').map(str::trim).collect())
             .collect();
-        assert_eq!(
-            rows,
-            [
-                ("see-projects", Projects, Proj, See),
-                ("make-projects", Projects, Org, Change),
-                ("make-sub-projects", Projects, Proj, Change),
-                ("move-projects", Projects, Proj, Change),
-                ("change-project-settings", Projects, Proj, Manage),
-                ("decide-roles", People, Proj, Manage),
-                ("decide-what-roles-see", People, Proj, Manage),
-                ("check-access", People, Proj, See),
-                ("manage-people", People, Org, Manage),
-                ("manage-invitations", People, Org, Manage),
-                ("manage-groups", People, Org, Manage),
-                ("manage-roles", People, Org, Manage),
-                ("change-organization-settings", Settings, Org, Manage),
-                ("see-status", Settings, Org, See),
-            ]
-        );
+        assert_eq!(rows.len(), Permission::ALL.len(), "a row per permission");
+        for (permission, row) in Permission::ALL.iter().zip(&rows) {
+            let sentence = Message::from(permission.sentence()).render();
+            assert_eq!(
+                row.iter()
+                    .map(|cell| cell.replace(['`', '*'], ""))
+                    .collect::<Vec<_>>(),
+                [
+                    permission.code().to_owned(),
+                    Message::from(permission.topic().name()).render(),
+                    permission.counts().code().to_owned(),
+                    capital(permission.kind().code()),
+                    sentence.replace('*', "")
+                ],
+                "{permission}"
+            );
+        }
     }
 
     #[test]
@@ -333,10 +219,7 @@ mod tests {
             assert!(seen.insert(permission.code()));
             assert_eq!(permission.code().parse(), Ok(*permission));
         }
-        assert_eq!(
-            "see-everything".parse::<Permission>(),
-            Err(UnknownPermission)
-        );
+        assert_eq!("see-everything".parse::<Permission>(), Err(UnknownWord));
     }
 
     #[test]
@@ -346,10 +229,10 @@ mod tests {
             let key = permission.sentence();
             assert_eq!(key.as_str(), format!("permission.{}", permission.code()));
             assert!(seen.insert(key));
-            assert!(!message::Message::from(key).render().is_empty());
+            assert!(!Message::from(key).render().is_empty());
         }
         for topic in Topic::ALL {
-            assert!(!message::Message::from(topic.name()).render().is_empty());
+            assert!(!Message::from(topic.name()).render().is_empty());
         }
     }
 

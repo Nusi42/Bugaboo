@@ -10,32 +10,24 @@
 //! catalog.
 
 use std::collections::BTreeMap;
-use std::fmt;
-use std::str::FromStr;
 
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use serde::Serialize;
 
 use crate::message::{self, Message, MessageKey};
 
-/// Declares the codes. One line per code: variant, text, HTTP status, message.
+/// Declares the codes. One line per code: variant, text, HTTP status, message. The word, its
+/// lists and its serde form come from [`words!`]; the status and the message are added here.
 macro_rules! error_codes {
     ($($(#[$doc:meta])* $variant:ident => ($code:literal, $status:literal, $message:path)),+ $(,)?) => {
-        /// Something that can go wrong, as the API reports it.
-        #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-        pub enum ErrorCode {
-            $($(#[$doc])* $variant),+
+        words! {
+            /// Something that can go wrong, as the API reports it. The word is the stable text of
+            /// the code, like `auth.wrong_credentials`.
+            pub enum ErrorCode {
+                $($(#[$doc])* $variant => $code),+
+            }
         }
 
         impl ErrorCode {
-            /// Every code, in the order of the table.
-            pub const ALL: &'static [Self] = &[$(Self::$variant),+];
-
-            /// The stable text of the code, like `auth.wrong_credentials`.
-            #[must_use]
-            pub const fn code(self) -> &'static str {
-                match self { $(Self::$variant => $code),+ }
-            }
-
             /// The HTTP status the API answers with.
             #[must_use]
             pub const fn status(self) -> u16 {
@@ -131,66 +123,10 @@ error_codes! {
     Internal => ("server.internal", 500, message::ERROR_SERVER_INTERNAL),
 }
 
-/// In the API description the code is one of the known texts, so clients get a union type.
-#[cfg(feature = "openapi")]
-impl utoipa::PartialSchema for ErrorCode {
-    fn schema() -> utoipa::openapi::RefOr<utoipa::openapi::schema::Schema> {
-        use utoipa::openapi::schema::{ObjectBuilder, Type};
-        ObjectBuilder::new()
-            .schema_type(Type::String)
-            .description(Some(
-                "What went wrong. Clients react to this text, which never changes.",
-            ))
-            .enum_values(Some(Self::ALL.iter().map(|code| code.code())))
-            .into()
-    }
-}
-
-#[cfg(feature = "openapi")]
-impl utoipa::ToSchema for ErrorCode {}
-
-/// The text is not the code of any error.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub struct UnknownErrorCode;
-
-impl fmt::Display for UnknownErrorCode {
-    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
-        formatter.write_str("not the code of any error")
-    }
-}
-
-impl std::error::Error for UnknownErrorCode {}
-
-impl fmt::Display for ErrorCode {
-    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
-        formatter.write_str(self.code())
-    }
-}
-
-impl FromStr for ErrorCode {
-    type Err = UnknownErrorCode;
-
-    fn from_str(text: &str) -> Result<Self, UnknownErrorCode> {
-        Self::ALL
-            .iter()
-            .copied()
-            .find(|code| code.code() == text)
-            .ok_or(UnknownErrorCode)
-    }
-}
-
-impl Serialize for ErrorCode {
-    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        serializer.serialize_str(self.code())
-    }
-}
-
-impl<'de> Deserialize<'de> for ErrorCode {
-    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        let text = <std::borrow::Cow<'de, str>>::deserialize(deserializer)?;
-        text.parse().map_err(serde::de::Error::custom)
-    }
-}
+words_in_api!(
+    ErrorCode,
+    "What went wrong. Clients react to this text, which never changes."
+);
 
 /// The content type of an error answer (RFC 9457).
 pub const PROBLEM_CONTENT_TYPE: &str = "application/problem+json";
@@ -281,6 +217,7 @@ mod tests {
     use std::collections::HashSet;
 
     use super::*;
+    use crate::UnknownWord;
 
     #[test]
     fn codes_are_unique_and_shaped_like_area_dot_name() {
@@ -317,7 +254,7 @@ mod tests {
             let json = serde_json::to_string(code).unwrap();
             assert_eq!(serde_json::from_str::<ErrorCode>(&json).unwrap(), *code);
         }
-        assert_eq!("auth.nothing".parse::<ErrorCode>(), Err(UnknownErrorCode));
+        assert_eq!("auth.nothing".parse::<ErrorCode>(), Err(UnknownWord));
     }
 
     #[test]

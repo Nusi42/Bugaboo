@@ -125,7 +125,7 @@ async fn sec_08_starting_roles_are_made_once_and_can_be_changed_and_reset() -> O
             ]
         );
         for (role, starting) in made.iter().zip(StartingRole::ALL) {
-            assert_eq!(role.starting.as_deref(), Some(starting.key()));
+            assert_eq!(role.starting.as_deref(), Some(starting.code()));
             let wanted: Vec<Permission> = {
                 let mut all = starting.permissions();
                 all.sort();

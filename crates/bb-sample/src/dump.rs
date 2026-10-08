@@ -127,7 +127,7 @@ impl Sample {
             .into_iter()
             .filter(|record| {
                 record.role.starting.as_ref().map(TechnicalName::as_str)
-                    == Some(StartingRole::Administrator.key())
+                    == Some(StartingRole::Administrator.code())
             })
             .map(|record| record.role.id)
             .collect();

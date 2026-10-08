@@ -347,7 +347,7 @@ pub async fn reset_role<S: AuthStore>(
         .starting
         .as_ref()
         .map(TechnicalName::as_str)
-        .and_then(StartingRole::from_key)
+        .and_then(StartingRole::from_code)
         .ok_or(ErrorCode::InvalidRequest)?;
     let permissions: BTreeSet<Permission> = starting.permissions().into_iter().collect();
     let fields: Vec<_> = bb_core::fields::Field::ALL
