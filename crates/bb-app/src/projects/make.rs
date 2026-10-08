@@ -1,6 +1,7 @@
 //! *Make a project* (PRJ-01): at the top level, or inside another project.
 
 use bb_core::ErrorCode;
+use bb_core::event::RecordKind;
 use bb_core::id::ProjectId;
 use bb_core::project::{DEPTH_MAX, Project, ShortName};
 use bb_core::sign_in::SecurityAction;
@@ -65,7 +66,7 @@ pub async fn make_project<S: AuthStore>(
     };
     let event = ctx.event(
         by(actor.person.id),
-        entity("project", project.id)?,
+        entity(RecordKind::Project, project.id),
         vec![
             set_to("short_name", json!(project.short_name.as_str())),
             set_to("name", json!(project.name)),
@@ -112,7 +113,7 @@ pub async fn make_project<S: AuthStore>(
     ctx.note(
         SecurityAction::ProjectMade,
         Some(actor.person.id),
-        Some(entity("project", project.id)?),
+        Some(entity(RecordKind::Project, project.id)),
     )
     .await;
     Ok(access.authorize(ProjectView {

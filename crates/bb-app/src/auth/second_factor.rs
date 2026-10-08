@@ -3,6 +3,7 @@
 
 use bb_auth::{ChallengeId, HumanCode, Purpose, TotpSecret};
 use bb_core::ErrorCode;
+use bb_core::event::RecordKind;
 use bb_core::id::PasskeyId;
 use bb_core::sign_in::{SecurityAction, SessionStage, StoredPasskey, TwoStep};
 use bb_core::text::LABEL_MAX;
@@ -183,7 +184,7 @@ pub async fn passkey_sign_in<S: AuthStore>(
         .await?;
     let event = ctx.event(
         by(person.id),
-        entity("session", new.session.id)?,
+        entity(RecordKind::Session, new.session.id),
         vec![set_to("stage", json!(SessionStage::Active.code()))],
     )?;
     let (store, session, now) = (ctx.store(), new.session.clone(), ctx.now());
@@ -204,7 +205,7 @@ pub async fn passkey_sign_in<S: AuthStore>(
     ctx.note(
         SecurityAction::PasskeySignInSucceeded,
         Some(person.id),
-        Some(entity("session", new.session.id)?),
+        Some(entity(RecordKind::Session, new.session.id)),
     )
     .await;
     ctx.started(&new, &person, &settings, None)
@@ -245,7 +246,7 @@ pub async fn start_code_app<S: AuthStore>(
     };
     let event = ctx.event(
         by(person.id),
-        entity("person", person.id)?,
+        entity(RecordKind::Person, person.id),
         vec![changed("two_step")],
     )?;
     let store = ctx.store();
@@ -313,7 +314,7 @@ pub async fn confirm_code_app<S: AuthStore>(
     let (shown, hashes) = ctx.unless_internal(&slot, new_backup_codes())?;
     let event = ctx.event(
         by(person),
-        entity("person", person)?,
+        entity(RecordKind::Person, person),
         vec![changed("two_step")],
     )?;
     let store = ctx.store();
@@ -349,7 +350,7 @@ pub async fn remove_code_app<S: AuthStore>(
     let person = record.person.id;
     let event = ctx.event(
         by(person),
-        entity("person", person)?,
+        entity(RecordKind::Person, person),
         vec![changed("two_step")],
     )?;
     let store = ctx.store();
@@ -391,7 +392,7 @@ pub async fn renew_backup_codes<S: AuthStore>(
     let (shown, hashes) = new_backup_codes()?;
     let event = ctx.event(
         by(person),
-        entity("person", person)?,
+        entity(RecordKind::Person, person),
         vec![changed("backup_codes")],
     )?;
     let store = ctx.store();
@@ -468,7 +469,7 @@ pub async fn add_passkey<S: AuthStore>(
     };
     let event = ctx.event(
         by(person),
-        entity("passkey", passkey.id)?,
+        entity(RecordKind::Passkey, passkey.id),
         vec![changed("passkey")],
     )?;
     let (store, stored) = (ctx.store(), passkey.clone());
@@ -481,7 +482,7 @@ pub async fn add_passkey<S: AuthStore>(
     ctx.note(
         SecurityAction::PasskeyAdded,
         Some(person),
-        Some(entity("passkey", passkey.id)?),
+        Some(entity(RecordKind::Passkey, passkey.id)),
     )
     .await;
     Ok(view(&passkey))
@@ -500,7 +501,11 @@ pub async fn remove_passkey<S: AuthStore>(
     ctx.confirm_password(&record.person, input.password).await?;
     let person = record.person.id;
     let id = input.passkey_id;
-    let event = ctx.event(by(person), entity("passkey", id)?, vec![changed("passkey")])?;
+    let event = ctx.event(
+        by(person),
+        entity(RecordKind::Passkey, id),
+        vec![changed("passkey")],
+    )?;
     let store = ctx.store();
     store
         .record_change(&event, move |transaction| {
@@ -517,7 +522,7 @@ pub async fn remove_passkey<S: AuthStore>(
     ctx.note(
         SecurityAction::PasskeyRemoved,
         Some(person),
-        Some(entity("passkey", id)?),
+        Some(entity(RecordKind::Passkey, id)),
     )
     .await;
     Ok(Done)

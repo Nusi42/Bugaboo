@@ -3,7 +3,7 @@
 
 use bb_core::ErrorCode;
 use bb_core::access::{AppliesTo, Assignment};
-use bb_core::event::FieldChange;
+use bb_core::event::{FieldChange, RecordKind};
 use bb_core::id::{AssignmentId, ProjectId};
 use bb_core::people_kinds::PeopleKind;
 use bb_core::sign_in::SecurityAction;
@@ -165,7 +165,7 @@ pub async fn assign_role<S: AuthStore>(
     };
     let event = ctx.event(
         by(actor.person.id),
-        entity("assignment", row.id)?,
+        entity(RecordKind::Assignment, row.id),
         vec![
             set_to("role", json!(row.role.map(|role| role.to_string()))),
             set_to("applies_to", json!(row.applies_to.code())),
@@ -204,7 +204,7 @@ pub async fn assign_role<S: AuthStore>(
     ctx.note(
         SecurityAction::AssignmentMade,
         Some(actor.person.id),
-        Some(entity("assignment", row.id)?),
+        Some(entity(RecordKind::Assignment, row.id)),
     )
     .await;
     let view = ctx
@@ -238,7 +238,7 @@ pub async fn remove_assignment<S: AuthStore>(
     // The row that is taken away, so the history can say whom it was for and what it gave.
     let event = ctx.event(
         by(actor.person.id),
-        entity("assignment", id)?,
+        entity(RecordKind::Assignment, id),
         vec![FieldChange {
             field: "assignment".to_owned(),
             before: Some(json!({
@@ -268,7 +268,7 @@ pub async fn remove_assignment<S: AuthStore>(
     ctx.note(
         SecurityAction::AssignmentRemoved,
         Some(actor.person.id),
-        Some(entity("assignment", id)?),
+        Some(entity(RecordKind::Assignment, id)),
     )
     .await;
     Ok(Done)

@@ -7,7 +7,7 @@
 
 use bb_core::ErrorCode;
 use bb_core::access::{FieldLevel, PeopleLevel};
-use bb_core::event::FieldChange;
+use bb_core::event::{FieldChange, RecordKind};
 use bb_core::fields::Field;
 use bb_core::id::{ProjectId, RoleId};
 use bb_core::people_kinds::PeopleKind;
@@ -147,7 +147,7 @@ pub async fn set_field_level<S: AuthStore>(
         .map(|(_, level)| level);
     let event = ctx.event(
         by(actor.person.id),
-        entity("role", role)?,
+        entity(RecordKind::Role, role),
         vec![FieldChange {
             field: format!("field.{}", field.code()),
             before: before.map(|level| json!(level.code())),
@@ -178,7 +178,7 @@ pub async fn set_field_level<S: AuthStore>(
     ctx.note(
         SecurityAction::FieldLevelChanged,
         Some(actor.person.id),
-        Some(entity("role", role)?),
+        Some(entity(RecordKind::Role, role)),
     )
     .await;
     Ok(Done)
@@ -227,7 +227,7 @@ pub async fn set_people_level<S: AuthStore>(
         .map(|(_, level)| level);
     let event = ctx.event(
         by(actor.person.id),
-        entity("role", role)?,
+        entity(RecordKind::Role, role),
         vec![FieldChange {
             field: format!("people.{}", kind.code()),
             before: before.map(|level| json!(level.code())),
@@ -257,7 +257,7 @@ pub async fn set_people_level<S: AuthStore>(
     ctx.note(
         SecurityAction::PeopleLevelChanged,
         Some(actor.person.id),
-        Some(entity("role", role)?),
+        Some(entity(RecordKind::Role, role)),
     )
     .await;
     Ok(Done)

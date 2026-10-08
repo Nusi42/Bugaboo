@@ -4,7 +4,7 @@
 use std::sync::Arc;
 
 use bb_core::ErrorCode;
-use bb_core::event::FieldChange;
+use bb_core::event::{FieldChange, RecordKind};
 use bb_core::project::{Project, ProjectAlias, ShortName};
 use bb_core::sign_in::SecurityAction;
 use bb_policy::{Authorized, Evaluation, Permission, Place};
@@ -136,7 +136,11 @@ pub async fn change_project<S: AuthStore>(
         return Ok(access.authorize(view(plan.current.version)));
     }
     let id = plan.current.id;
-    let event = ctx.event(by(actor.person.id), entity("project", id)?, field_changes)?;
+    let event = ctx.event(
+        by(actor.person.id),
+        entity(RecordKind::Project, id),
+        field_changes,
+    )?;
     let why = Why::default();
     let stopped = why.clone();
     let (renames, retired) = (plan.changes_short_name(), plan.current.short_name.clone());
@@ -187,7 +191,7 @@ pub async fn change_project<S: AuthStore>(
         ctx.note(
             SecurityAction::ProjectShortNameChanged,
             Some(actor.person.id),
-            Some(entity("project", id)?),
+            Some(entity(RecordKind::Project, id)),
         )
         .await;
     }
@@ -195,7 +199,7 @@ pub async fn change_project<S: AuthStore>(
         ctx.note(
             SecurityAction::ProjectRenamed,
             Some(actor.person.id),
-            Some(entity("project", id)?),
+            Some(entity(RecordKind::Project, id)),
         )
         .await;
     }

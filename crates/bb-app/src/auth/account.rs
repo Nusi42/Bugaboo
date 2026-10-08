@@ -6,7 +6,7 @@ use bb_auth::{
     domain_is_listed, same_digest,
 };
 use bb_core::ErrorCode;
-use bb_core::event::Actor;
+use bb_core::event::{Actor, RecordKind};
 use bb_core::id::UserId;
 use bb_core::person::Person;
 use bb_core::sign_in::{SecurityAction, SessionStage, SetupCode};
@@ -76,7 +76,7 @@ pub async fn issue_setup_code<S: AuthStore>(
     });
     let event = ctx.event(
         Actor::System,
-        fixed_entity("setup_code", "first-start")?,
+        fixed_entity(RecordKind::SetupCode, "first-start")?,
         vec![changed("setup_code")],
     )?;
     let store = ctx.store();
@@ -157,7 +157,7 @@ pub async fn complete_setup<S: AuthStore>(
     let (assignment_id, administrator) = (assignment.id, assignment.role);
     let event = ctx.event(
         by(person.id),
-        entity("person", person.id)?,
+        entity(RecordKind::Person, person.id),
         vec![
             changed("account"),
             set_to("role", json!(administrator.map(|role| role.to_string()))),
@@ -192,13 +192,13 @@ pub async fn complete_setup<S: AuthStore>(
     ctx.note(
         SecurityAction::SetupCompleted,
         Some(person.id),
-        Some(entity("person", person.id)?),
+        Some(entity(RecordKind::Person, person.id)),
     )
     .await;
     ctx.note(
         SecurityAction::AssignmentMade,
         Some(person.id),
-        Some(entity("assignment", assignment_id)?),
+        Some(entity(RecordKind::Assignment, assignment_id)),
     )
     .await;
     ctx.started(&new, &person, &settings, None)
@@ -234,7 +234,7 @@ pub async fn sign_up<S: AuthStore>(ctx: &Ctx<'_, S>, input: SignUp) -> Result<St
     let new = ctx.new_session(person.id, SessionStage::Active)?;
     let event = ctx.event(
         by(person.id),
-        entity("person", person.id)?,
+        entity(RecordKind::Person, person.id),
         vec![changed("account")],
     )?;
     let (store, stored_person, session, now) =
@@ -260,7 +260,7 @@ pub async fn sign_up<S: AuthStore>(ctx: &Ctx<'_, S>, input: SignUp) -> Result<St
     ctx.note(
         SecurityAction::SignUpAccepted,
         Some(person.id),
-        Some(entity("person", person.id)?),
+        Some(entity(RecordKind::Person, person.id)),
     )
     .await;
     ctx.started(&new, &person, &settings, None)
@@ -309,7 +309,7 @@ pub async fn accept_invitation<S: AuthStore>(
     let settings = ctx.settings().await?;
     let event = ctx.event(
         by(person.id),
-        entity("person", person.id)?,
+        entity(RecordKind::Person, person.id),
         vec![changed("account")],
     )?;
     let (store, stored_person, session, invitation_id) = (
@@ -343,7 +343,7 @@ pub async fn accept_invitation<S: AuthStore>(
     ctx.note(
         SecurityAction::InvitationAccepted,
         Some(person.id),
-        Some(entity("invitation", invitation.id)?),
+        Some(entity(RecordKind::Invitation, invitation.id)),
     )
     .await;
     ctx.started(&new, &person, &settings, None)
@@ -372,7 +372,7 @@ pub async fn change_password<S: AuthStore>(
     let settings = ctx.settings().await?;
     let event = ctx.event(
         by(person.id),
-        entity("person", person.id)?,
+        entity(RecordKind::Person, person.id),
         vec![changed("password")],
     )?;
     let (store, session, person_id, now) = (ctx.store(), new.session.clone(), person.id, ctx.now());

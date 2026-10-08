@@ -12,6 +12,7 @@ use bb_auth::{
     looks_like_access_key,
 };
 use bb_core::ErrorCode;
+use bb_core::event::RecordKind;
 use bb_core::id::UserId;
 use bb_core::sign_in::{SecurityAction, SessionStage};
 use bb_policy::{Authorized, Evaluation, Permission, Place};
@@ -219,7 +220,11 @@ pub async fn sign_in<S: AuthStore>(ctx: &Ctx<'_, S>, input: SignIn) -> Result<St
     if old.is_some() {
         changes.push(changed("previous_session"));
     }
-    let event = ctx.event(by(person.id), entity("session", new.session.id)?, changes)?;
+    let event = ctx.event(
+        by(person.id),
+        entity(RecordKind::Session, new.session.id),
+        changes,
+    )?;
     let (store, session, person_id, now) = (ctx.store(), new.session.clone(), person.id, ctx.now());
     let purge_settings = settings.clone();
     store
@@ -245,7 +250,7 @@ pub async fn sign_in<S: AuthStore>(ctx: &Ctx<'_, S>, input: SignIn) -> Result<St
     ctx.note(
         action,
         Some(person.id),
-        Some(entity("session", new.session.id)?),
+        Some(entity(RecordKind::Session, new.session.id)),
     )
     .await;
     ctx.started(&new, &person, &settings, methods)
@@ -322,7 +327,7 @@ pub async fn second_step<S: AuthStore>(
     let settings = ctx.settings().await?;
     let event = ctx.event(
         by(person.id),
-        entity("session", new.session.id)?,
+        entity(RecordKind::Session, new.session.id),
         vec![set_to("stage", json!(SessionStage::Active.code()))],
     )?;
     let (store, session, pending_id) = (ctx.store(), new.session.clone(), pending.session.id);
@@ -365,7 +370,7 @@ pub async fn second_step<S: AuthStore>(
     ctx.note(
         SecurityAction::SecondStepSucceeded,
         Some(person.id),
-        Some(entity("session", new.session.id)?),
+        Some(entity(RecordKind::Session, new.session.id)),
     )
     .await;
     ctx.started(&new, &person, &settings, None)
@@ -424,7 +429,7 @@ pub async fn passkey_second_step<S: AuthStore>(
     let settings = ctx.settings().await?;
     let event = ctx.event(
         by(person.id),
-        entity("session", new.session.id)?,
+        entity(RecordKind::Session, new.session.id),
         vec![set_to("stage", json!(SessionStage::Active.code()))],
     )?;
     let (store, session, pending_id, now) = (
@@ -448,7 +453,7 @@ pub async fn passkey_second_step<S: AuthStore>(
     ctx.note(
         SecurityAction::SecondStepSucceeded,
         Some(person.id),
-        Some(entity("session", new.session.id)?),
+        Some(entity(RecordKind::Session, new.session.id)),
     )
     .await;
     ctx.started(&new, &person, &settings, None)
@@ -476,7 +481,11 @@ pub async fn sign_out<S: AuthStore>(ctx: &Ctx<'_, S>, input: SignOut) -> Result<
         return Ok(Done);
     };
     let (person, id) = (record.person.id, record.session.id);
-    let event = ctx.event(by(person), entity("session", id)?, vec![changed("session")])?;
+    let event = ctx.event(
+        by(person),
+        entity(RecordKind::Session, id),
+        vec![changed("session")],
+    )?;
     let store = ctx.store();
     store
         .record_change(&event, move |transaction| {
@@ -487,7 +496,7 @@ pub async fn sign_out<S: AuthStore>(ctx: &Ctx<'_, S>, input: SignOut) -> Result<
     ctx.note(
         SecurityAction::SessionEnded,
         Some(person),
-        Some(entity("session", id)?),
+        Some(entity(RecordKind::Session, id)),
     )
     .await;
     Ok(Done)
@@ -508,7 +517,7 @@ pub async fn sign_out_everywhere<S: AuthStore>(
     let person = record.person.id;
     let event = ctx.event(
         by(person),
-        entity("person", person)?,
+        entity(RecordKind::Person, person),
         vec![changed("sessions")],
     )?;
     let store = ctx.store();
@@ -527,7 +536,7 @@ pub async fn sign_out_everywhere<S: AuthStore>(
         ctx.note(
             SecurityAction::AccessKeyDeleted,
             Some(person),
-            Some(entity("access_key", key)?),
+            Some(entity(RecordKind::AccessKey, key)),
         )
         .await;
     }
@@ -556,7 +565,11 @@ pub async fn end_session<S: AuthStore>(
     if !owned {
         return Err(ErrorCode::NotFound.into());
     }
-    let event = ctx.event(by(person), entity("session", id)?, vec![changed("session")])?;
+    let event = ctx.event(
+        by(person),
+        entity(RecordKind::Session, id),
+        vec![changed("session")],
+    )?;
     let store = ctx.store();
     store
         .record_change(&event, move |transaction| {
@@ -567,7 +580,7 @@ pub async fn end_session<S: AuthStore>(
     ctx.note(
         SecurityAction::SessionEnded,
         Some(person),
-        Some(entity("session", id)?),
+        Some(entity(RecordKind::Session, id)),
     )
     .await;
     Ok(SessionEnded {

@@ -3,6 +3,7 @@
 
 use bb_auth::{EmailAddress, Purpose, SecretToken, listed_domains};
 use bb_core::ErrorCode;
+use bb_core::event::RecordKind;
 use bb_core::id::InvitationId;
 use bb_core::settings::{AUTH_SIGN_UP_DOMAINS, AUTH_SIGN_UP_ENABLED, SettingValue};
 use bb_core::sign_in::{Invitation, SecurityAction};
@@ -68,7 +69,7 @@ pub async fn create_invitation<S: AuthStore>(
     };
     let event = ctx.event(
         by(actor.person.id),
-        entity("invitation", invitation.id)?,
+        entity(RecordKind::Invitation, invitation.id),
         vec![set_to("email", json!(invitation.email))],
     )?;
     let (store, stored) = (ctx.store(), invitation.clone());
@@ -81,7 +82,7 @@ pub async fn create_invitation<S: AuthStore>(
     ctx.note(
         SecurityAction::InvitationCreated,
         Some(actor.person.id),
-        Some(entity("invitation", invitation.id)?),
+        Some(entity(RecordKind::Invitation, invitation.id)),
     )
     .await;
     Ok(access.authorize(CreatedInvitation {
@@ -104,7 +105,7 @@ pub async fn revoke_invitation<S: AuthStore>(
     let id = input.invitation_id;
     let event = ctx.event(
         by(actor.person.id),
-        entity("invitation", id)?,
+        entity(RecordKind::Invitation, id),
         vec![changed("invitation")],
     )?;
     let store = ctx.store();
@@ -123,7 +124,7 @@ pub async fn revoke_invitation<S: AuthStore>(
     ctx.note(
         SecurityAction::InvitationRevoked,
         Some(actor.person.id),
-        Some(entity("invitation", id)?),
+        Some(entity(RecordKind::Invitation, id)),
     )
     .await;
     Ok(Done)
@@ -269,7 +270,7 @@ pub async fn change_sign_up_policy<S: AuthStore>(
     }
     let event = ctx.event(
         by(actor.person.id),
-        fixed_entity("setting", "auth.sign-up-policy")?,
+        fixed_entity(RecordKind::Setting, "auth.sign-up-policy")?,
         vec![
             set_to("auth_sign_up_enabled", json!(policy.enabled)),
             set_to("auth_sign_up_domains", json!(list)),

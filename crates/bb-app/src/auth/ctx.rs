@@ -14,7 +14,7 @@ use bb_auth::{
     looks_like_access_key, same_digest,
 };
 use bb_core::ErrorCode;
-use bb_core::event::{Actor, Channel, DomainEvent, EntityKind, EntityRef, FieldChange};
+use bb_core::event::{Actor, Channel, DomainEvent, EntityRef, FieldChange, RecordKind};
 use bb_core::id::{EntityId, EventId, IdSource, SessionId, UserId};
 use bb_core::network::NetworkPrefix;
 use bb_core::person::Person;
@@ -477,7 +477,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         let id = pending.session.id;
         let event = self.event(
             Actor::Person(person),
-            entity("session", id)?,
+            entity(RecordKind::Session, id),
             vec![changed("session")],
         )?;
         self.store()
@@ -491,7 +491,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         self.note(
             SecurityAction::SecondStepGivenUp,
             Some(person),
-            Some(entity("session", id)?),
+            Some(entity(RecordKind::Session, id)),
         )
         .await;
         Ok(())
@@ -730,19 +730,19 @@ pub(crate) fn change_failed<S: AuthStore>(
 }
 
 /// The record `id` of a kind, for events and the security log.
-pub(crate) fn entity(kind: &str, id: impl Into<EntityId>) -> Result<EntityRef, AppError> {
-    Ok(EntityRef {
-        kind: EntityKind::new(kind).map_err(|_| AppError::Internal("an entity kind".into()))?,
+pub(crate) fn entity(kind: RecordKind, id: impl Into<EntityId>) -> EntityRef {
+    EntityRef {
+        kind: kind.into(),
         id: id.into(),
-    })
+    }
 }
 
 /// The record that is one fixed thing (a setting, the setup code of the first start): its ID is
 /// made from its name, so every event about it names the same record.
-pub(crate) fn fixed_entity(kind: &str, name: &str) -> Result<EntityRef, AppError> {
-    let id = EntityId::from_bytes(bb_auth::stable_id(kind, name))
+pub(crate) fn fixed_entity(kind: RecordKind, name: &str) -> Result<EntityRef, AppError> {
+    let id = EntityId::from_bytes(bb_auth::stable_id(kind.code(), name))
         .map_err(|error| AppError::Internal(error.to_string()))?;
-    entity(kind, id)
+    Ok(entity(kind, id))
 }
 
 /// The key under which the wrong codes of a half-finished sign-in are counted. Only a finished

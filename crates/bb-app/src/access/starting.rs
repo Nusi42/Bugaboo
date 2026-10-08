@@ -8,7 +8,7 @@
 //! to do, so it can be stopped half way and run again.
 
 use bb_core::access::{AppliesTo, Assignment, Role};
-use bb_core::event::Actor;
+use bb_core::event::{Actor, RecordKind};
 use bb_core::id::{AssignmentId, RoleId};
 use bb_core::message::Message;
 use bb_core::sign_in::SecurityAction;
@@ -107,7 +107,7 @@ pub async fn make_starting_roles<S: AuthStore>(
         let names: Vec<serde_json::Value> = roles.iter().map(|new| json!(new.role.name)).collect();
         let event = ctx.event(
             Actor::System,
-            fixed_entity("starting_roles", "made")?,
+            fixed_entity(RecordKind::StartingRoles, "made")?,
             vec![set_to("roles", serde_json::Value::Array(names))],
         )?;
         let now = ctx.now();
@@ -140,7 +140,7 @@ pub async fn make_starting_roles<S: AuthStore>(
                 ctx.note(
                     SecurityAction::StartingRolesMade,
                     None,
-                    Some(fixed_entity("starting_roles", "made")?),
+                    Some(fixed_entity(RecordKind::StartingRoles, "made")?),
                 )
                 .await;
             }
@@ -169,7 +169,11 @@ async fn role_of<S: AuthStore>(
     }
     let new = ctx.new_starting_role(starting)?;
     let id = new.role.id;
-    let event = ctx.event(Actor::System, entity("role", id)?, vec![changed("role")])?;
+    let event = ctx.event(
+        Actor::System,
+        entity(RecordKind::Role, id),
+        vec![changed("role")],
+    )?;
     ctx.store()
         .record_change(&event, move |transaction| {
             Box::pin(async move {
@@ -186,8 +190,12 @@ async fn role_of<S: AuthStore>(
         })
         .await
         .map_err(|error| change_failed::<S>(&error, None))?;
-    ctx.note(SecurityAction::RoleMade, None, Some(entity("role", id)?))
-        .await;
+    ctx.note(
+        SecurityAction::RoleMade,
+        None,
+        Some(entity(RecordKind::Role, id)),
+    )
+    .await;
     Ok(id)
 }
 
@@ -219,7 +227,7 @@ async fn give_the_old_administrators_their_role<S: AuthStore>(
         let id = assignment.id;
         let event = ctx.event(
             Actor::System,
-            entity("assignment", id)?,
+            entity(RecordKind::Assignment, id),
             vec![
                 set_to("role", json!(administrator.to_string())),
                 set_to("applies_to", json!(AppliesTo::Organization.code())),
@@ -245,7 +253,7 @@ async fn give_the_old_administrators_their_role<S: AuthStore>(
         ctx.note(
             SecurityAction::AssignmentMade,
             None,
-            Some(entity("assignment", id)?),
+            Some(entity(RecordKind::Assignment, id)),
         )
         .await;
     }

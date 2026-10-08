@@ -19,7 +19,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
 
 use bb_core::ErrorCode;
-use bb_core::event::FieldChange;
+use bb_core::event::{FieldChange, RecordKind};
 use bb_core::id::ProjectId;
 use bb_core::people_kinds::PeopleKind;
 use bb_core::project::Project;
@@ -372,7 +372,7 @@ pub async fn move_project<S: AuthStore>(
     let key = actor.key_scope().cloned();
     let event = ctx.event(
         by(person),
-        entity("project", id)?,
+        entity(RecordKind::Project, id),
         vec![FieldChange {
             field: "parent".to_owned(),
             before: Some(json!(project.parent.map(|parent| parent.to_string()))),
@@ -438,7 +438,7 @@ pub async fn move_project<S: AuthStore>(
     ctx.note(
         SecurityAction::ProjectMoved,
         Some(actor.person.id),
-        Some(entity("project", id)?),
+        Some(entity(RecordKind::Project, id)),
     )
     .await;
     Ok(viewer.authorize(ProjectView {

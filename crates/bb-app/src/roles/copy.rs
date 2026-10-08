@@ -4,6 +4,7 @@
 
 use bb_core::ErrorCode;
 use bb_core::access::Role;
+use bb_core::event::RecordKind;
 use bb_core::id::RoleId;
 use bb_core::sign_in::SecurityAction;
 use bb_policy::guards::{Refusal, ensure_no_escalation};
@@ -74,7 +75,7 @@ pub async fn copy_role<S: AuthStore>(
     };
     let event = ctx.event(
         by(actor.person.id),
-        entity("role", role.id)?,
+        entity(RecordKind::Role, role.id),
         vec![
             set_to("name", json!(role.name)),
             set_to("permissions", json!(keys(&source.permissions))),
@@ -121,7 +122,7 @@ pub async fn copy_role<S: AuthStore>(
     ctx.note(
         SecurityAction::RoleMade,
         Some(actor.person.id),
-        Some(entity("role", role.id)?),
+        Some(entity(RecordKind::Role, role.id)),
     )
     .await;
     Ok(access.authorize(view(&RoleRecord {

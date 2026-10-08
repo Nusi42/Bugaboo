@@ -21,7 +21,7 @@ use std::collections::BTreeSet;
 use bb_auth::{AccessKeySecret, same_digest};
 use bb_core::ErrorCode;
 use bb_core::access_key::{AccessKey, KeyChoice, MOST_KEYS, MOST_PROJECTS};
-use bb_core::event::DomainEvent;
+use bb_core::event::{DomainEvent, RecordKind};
 use bb_core::id::{AccessKeyId, ProjectId, UserId};
 use bb_core::sign_in::{SecurityAction, SessionStage};
 use bb_policy::{Authorized, Choice, Narrowing, Permission, Place};
@@ -128,7 +128,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         // A key follows its owner's two-step requirement: a person who has to set up a second
         // step cannot get around it with a key (ADR-0025, decision 8; M2-F46).
         if self.must_set_up_second_step(owner.id).await? {
-            let subject = entity("access_key", record.key.id).ok();
+            let subject = Some(entity(RecordKind::AccessKey, record.key.id));
             self.note(SecurityAction::AccessKeyRefused, Some(owner.id), subject)
                 .await;
             return Err(AppError::Refused(ErrorCode::SecondStepRequired));
@@ -161,7 +161,7 @@ impl<S: AuthStore> Ctx<'_, S> {
                 let subject = actor
                     .key
                     .as_ref()
-                    .and_then(|key| entity("access_key", key.id).ok());
+                    .map(|key| entity(RecordKind::AccessKey, key.id));
                 self.note(
                     SecurityAction::AccessKeyRefused,
                     Some(actor.person.id),
@@ -256,7 +256,7 @@ fn a_try_at_the_key<S: AuthStore>(
     stored.key.secret_hash = secret.hash();
     let event = ctx.event(
         by(stored.key.owner),
-        entity("access_key", stored.key.id)?,
+        entity(RecordKind::AccessKey, stored.key.id),
         vec![
             set_to("name", json!(stored.key.name)),
             set_to("choice", json!(stored.key.choice.code())),
@@ -359,7 +359,7 @@ pub async fn make_access_key<S: AuthStore>(
     ctx.note(
         SecurityAction::AccessKeyMade,
         Some(owner),
-        Some(entity("access_key", stored.key.id)?),
+        Some(entity(RecordKind::AccessKey, stored.key.id)),
     )
     .await;
     let access = ctx.evaluate(owner, Place::Organization).await?;
@@ -382,7 +382,7 @@ pub async fn delete_access_key<S: AuthStore>(
     let (owner, id) = (record.person.id, input.id);
     let event = ctx.event(
         by(owner),
-        entity("access_key", id)?,
+        entity(RecordKind::AccessKey, id),
         vec![super::ctx::changed("access_key")],
     )?;
     ctx.store()
@@ -400,7 +400,7 @@ pub async fn delete_access_key<S: AuthStore>(
     ctx.note(
         SecurityAction::AccessKeyDeleted,
         Some(owner),
-        Some(entity("access_key", id)?),
+        Some(entity(RecordKind::AccessKey, id)),
     )
     .await;
     Ok(Done)

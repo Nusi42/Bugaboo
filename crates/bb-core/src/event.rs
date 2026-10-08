@@ -98,6 +98,45 @@ impl From<EntityKind> for String {
     }
 }
 
+words! {
+    /// The kinds of record the use cases write events and security-log entries about. The word
+    /// is the [`EntityKind`] that is stored, so a kind is spelled once and a misspelling does not
+    /// compile.
+    pub enum RecordKind {
+        /// An access key.
+        AccessKey => "access_key",
+        /// One row of *Who has which role*.
+        Assignment => "assignment",
+        /// A group of people.
+        Group => "group",
+        /// An invitation.
+        Invitation => "invitation",
+        /// A passkey.
+        Passkey => "passkey",
+        /// A person.
+        Person => "person",
+        /// A project.
+        Project => "project",
+        /// A role.
+        Role => "role",
+        /// A sign-in session.
+        Session => "session",
+        /// A setting.
+        Setting => "setting",
+        /// The setup code of the first start.
+        SetupCode => "setup_code",
+        /// The making of the starting roles.
+        StartingRoles => "starting_roles",
+    }
+}
+
+impl From<RecordKind> for EntityKind {
+    fn from(kind: RecordKind) -> Self {
+        // Every word of `RecordKind` is a valid name (a test checks it).
+        Self(kind.code().to_owned())
+    }
+}
+
 /// The record an event is about.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct EntityRef {
@@ -182,6 +221,16 @@ mod tests {
         let event = sample();
         let json = serde_json::to_string(&event).unwrap();
         assert_eq!(serde_json::from_str::<DomainEvent>(&json).unwrap(), event);
+    }
+
+    #[test]
+    fn every_kind_of_record_is_a_valid_name_for_an_entity_kind() {
+        for kind in RecordKind::ALL {
+            assert_eq!(
+                EntityKind::new(kind.code()).as_ref(),
+                Ok(&EntityKind::from(*kind))
+            );
+        }
     }
 
     #[test]

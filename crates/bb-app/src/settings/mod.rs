@@ -22,7 +22,7 @@ mod store;
 use std::sync::Arc;
 
 use bb_core::ErrorCode;
-use bb_core::event::{EntityRef, FieldChange};
+use bb_core::event::{EntityRef, FieldChange, RecordKind};
 use bb_core::id::ProjectId;
 use bb_core::settings::{
     ChangedBy, Layers, Level, OrganizationValue, Scope, SettingDefinition, SettingValue, Source,
@@ -444,7 +444,7 @@ pub async fn change_setting<S: AuthStore>(
     if scope != Scope::Organization && layers.resolve(definition).locked {
         return Err(ErrorCode::SettingLocked.into());
     }
-    let entity = fixed_entity("setting", &record_of(scope, definition.key()))?;
+    let entity = fixed_entity(RecordKind::Setting, &record_of(scope, definition.key()))?;
     let event = ctx.event(
         by(actor.person.id),
         entity.clone(),
@@ -491,7 +491,7 @@ pub async fn reset_setting<S: AuthStore>(
     }
     let keeps_the_lock = scope == Scope::Organization && view.locked;
     let standard = definition.default().to_value();
-    let entity = fixed_entity("setting", &record_of(scope, definition.key()))?;
+    let entity = fixed_entity(RecordKind::Setting, &record_of(scope, definition.key()))?;
     let event = ctx.event(
         by(actor.person.id),
         entity.clone(),
@@ -552,7 +552,10 @@ pub async fn lock_setting<S: AuthStore>(
             .await?;
         return Ok(evaluation.authorize(view));
     }
-    let entity = fixed_entity("setting", &record_of(Scope::Organization, definition.key()))?;
+    let entity = fixed_entity(
+        RecordKind::Setting,
+        &record_of(Scope::Organization, definition.key()),
+    )?;
     let event = ctx.event(
         by(actor.person.id),
         entity.clone(),

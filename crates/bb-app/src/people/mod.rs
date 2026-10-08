@@ -21,6 +21,7 @@ pub use used_by::{GroupDetail, GroupUsedBy, RoleUsedBy};
 
 use bb_core::ErrorCode;
 use bb_core::access::{Group, GroupMember};
+use bb_core::event::RecordKind;
 use bb_core::id::{GroupId, ProjectId, UserId};
 use bb_core::people_kinds::PeopleKind;
 use bb_core::sign_in::SecurityAction;
@@ -191,7 +192,7 @@ pub async fn make_group<S: AuthStore>(
     };
     let event = ctx.event(
         by(actor.person.id),
-        entity("group", group.id)?,
+        entity(RecordKind::Group, group.id),
         vec![set_to("name", json!(group.name))],
     )?;
     let stored = group.clone();
@@ -204,7 +205,7 @@ pub async fn make_group<S: AuthStore>(
     ctx.note(
         SecurityAction::GroupMade,
         Some(actor.person.id),
-        Some(entity("group", group.id)?),
+        Some(entity(RecordKind::Group, group.id)),
     )
     .await;
     Ok(access.authorize(GroupView::from(&group)))
@@ -228,7 +229,7 @@ pub async fn rename_group<S: AuthStore>(
     let id = before.id;
     let event = ctx.event(
         by(actor.person.id),
-        entity("group", id)?,
+        entity(RecordKind::Group, id),
         vec![bb_core::event::FieldChange {
             field: "name".to_owned(),
             before: Some(json!(before.name)),
@@ -251,7 +252,7 @@ pub async fn rename_group<S: AuthStore>(
     ctx.note(
         SecurityAction::GroupRenamed,
         Some(actor.person.id),
-        Some(entity("group", id)?),
+        Some(entity(RecordKind::Group, id)),
     )
     .await;
     Ok(access.authorize(GroupView { id, name }))
@@ -272,7 +273,7 @@ pub async fn delete_group<S: AuthStore>(
     let id = ctx.group_or_missing(input.group).await?.id;
     let event = ctx.event(
         by(actor.person.id),
-        entity("group", id)?,
+        entity(RecordKind::Group, id),
         vec![changed("group")],
     )?;
     let by_person = actor.person.id;
@@ -295,7 +296,7 @@ pub async fn delete_group<S: AuthStore>(
     ctx.note(
         SecurityAction::GroupDeleted,
         Some(actor.person.id),
-        Some(entity("group", id)?),
+        Some(entity(RecordKind::Group, id)),
     )
     .await;
     Ok(Done)
@@ -350,7 +351,7 @@ pub async fn add_group_member<S: AuthStore>(
     };
     let event = ctx.event(
         by(actor.person.id),
-        entity("group", group.id)?,
+        entity(RecordKind::Group, group.id),
         vec![changed("member")],
     )?;
     let giver = actor.person.id;
@@ -371,7 +372,7 @@ pub async fn add_group_member<S: AuthStore>(
     ctx.note(
         SecurityAction::GroupMemberAdded,
         Some(actor.person.id),
-        Some(entity("group", group.id)?),
+        Some(entity(RecordKind::Group, group.id)),
     )
     .await;
     Ok(Done)
@@ -394,7 +395,7 @@ pub async fn remove_group_member<S: AuthStore>(
     let person = input.person;
     let event = ctx.event(
         by(actor.person.id),
-        entity("group", group)?,
+        entity(RecordKind::Group, group),
         vec![changed("member")],
     )?;
     let by_person = actor.person.id;
@@ -417,7 +418,7 @@ pub async fn remove_group_member<S: AuthStore>(
     ctx.note(
         SecurityAction::GroupMemberRemoved,
         Some(actor.person.id),
-        Some(entity("group", group)?),
+        Some(entity(RecordKind::Group, group)),
     )
     .await;
     Ok(Done)

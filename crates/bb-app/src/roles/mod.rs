@@ -17,7 +17,7 @@ use std::collections::BTreeSet;
 
 use bb_core::ErrorCode;
 use bb_core::access::Role;
-use bb_core::event::FieldChange;
+use bb_core::event::{FieldChange, RecordKind};
 use bb_core::id::RoleId;
 use bb_core::sign_in::SecurityAction;
 use bb_core::technical::TechnicalName;
@@ -116,7 +116,7 @@ pub async fn make_role<S: AuthStore>(
     };
     let event = ctx.event(
         by(actor.person.id),
-        entity("role", role.id)?,
+        entity(RecordKind::Role, role.id),
         vec![
             set_to("name", json!(role.name)),
             set_to("permissions", json!(keys(&permissions))),
@@ -143,7 +143,7 @@ pub async fn make_role<S: AuthStore>(
     ctx.note(
         SecurityAction::RoleMade,
         Some(actor.person.id),
-        Some(entity("role", role.id)?),
+        Some(entity(RecordKind::Role, role.id)),
     )
     .await;
     Ok(access.authorize(view(&RoleRecord { role, permissions })))
@@ -177,7 +177,7 @@ pub async fn change_role<S: AuthStore>(
     let id = before.role.id;
     let event = ctx.event(
         by(actor.person.id),
-        entity("role", id)?,
+        entity(RecordKind::Role, id),
         vec![
             FieldChange {
                 field: "name".to_owned(),
@@ -231,7 +231,7 @@ pub async fn change_role<S: AuthStore>(
     ctx.note(
         SecurityAction::RoleChanged,
         Some(actor.person.id),
-        Some(entity("role", id)?),
+        Some(entity(RecordKind::Role, id)),
     )
     .await;
     let mut role = before.role;
@@ -265,7 +265,7 @@ pub async fn delete_role<S: AuthStore>(
     };
     let event = ctx.event(
         by(actor.person.id),
-        entity("role", id)?,
+        entity(RecordKind::Role, id),
         vec![
             changed("role"),
             set_to(
@@ -313,14 +313,14 @@ pub async fn delete_role<S: AuthStore>(
         ctx.note(
             SecurityAction::AssignmentMade,
             Some(actor.person.id),
-            Some(entity("assignment", row.id)?),
+            Some(entity(RecordKind::Assignment, row.id)),
         )
         .await;
     }
     ctx.note(
         SecurityAction::RoleDeleted,
         Some(actor.person.id),
-        Some(entity("role", id)?),
+        Some(entity(RecordKind::Role, id)),
     )
     .await;
     Ok(Done)
@@ -362,7 +362,7 @@ pub async fn reset_role<S: AuthStore>(
     let id = before.role.id;
     let event = ctx.event(
         by(actor.person.id),
-        entity("role", id)?,
+        entity(RecordKind::Role, id),
         vec![FieldChange {
             field: "permissions".to_owned(),
             before: Some(json!(keys(&before.permissions))),
@@ -414,7 +414,7 @@ pub async fn reset_role<S: AuthStore>(
     ctx.note(
         SecurityAction::RoleReset,
         Some(actor.person.id),
-        Some(entity("role", id)?),
+        Some(entity(RecordKind::Role, id)),
     )
     .await;
     let mut role = before.role;
