@@ -20,6 +20,7 @@
 //! closed set of names it may embed, and `include` is only allowed on a route that embeds.
 
 use bb_api_words::marks::NEVER_STORED;
+use bb_api_words::paging::{CURSOR, FIELDS, INCLUDE, ITEMS, LIMIT, NEXT_CURSOR, TRUNCATED};
 use serde::Deserialize;
 use serde_json::Value;
 
@@ -27,27 +28,13 @@ use super::api_spec::{self, resolve};
 use super::exemptions::{self, Used};
 use super::{Check, Context, Finding};
 
-/// The parameter that says which fields an answer holds.
-const FIELDS_PARAMETER: &str = "fields";
-/// The parameter that says where a page starts.
-const CURSOR_PARAMETER: &str = "cursor";
-/// The parameter that says how long a page is; it has a maximum.
-const LIMIT_PARAMETER: &str = "limit";
 /// The parameters a list route takes.
-const REQUIRED_PARAMETERS: [&str; 3] = [FIELDS_PARAMETER, CURSOR_PARAMETER, LIMIT_PARAMETER];
-/// The property of a page that holds the position of the next page.
-const NEXT_CURSOR: &str = "next_cursor";
-/// The only name of a list that is paged.
-const PAGED_LIST: &str = "items";
+const REQUIRED_PARAMETERS: [&str; 3] = [FIELDS, CURSOR, LIMIT];
 /// Where the exemptions are written down, each with its reason.
 const EXEMPTIONS_PATH: &str = "tools/checks/lean-exemptions.toml";
-/// What the answer of an exempt list must say.
-const CAP_FLAG: &str = "truncated";
 /// The header every `GET` answer documents, and the status of the answer to a match.
 const ETAG_HEADER: &str = "etag";
 const NOT_MODIFIED: &str = "304";
-/// The query parameter that asks for related objects inside the items.
-const INCLUDE_PARAMETER: &str = "include";
 /// A schema whose name ends like this is a reference to a thing, not the thing itself.
 const REFERENCE_SUFFIX: &str = "Ref";
 
@@ -151,12 +138,12 @@ fn paging_findings(spec: &Value, operation: &Value, schema: &Value, place: &str)
                     "A list route must take the query parameter `{name}` (lean answers, paging)."
                 ),
             )),
-            Some(parameter) if name == LIMIT_PARAMETER => {
+            Some(parameter) if name == LIMIT => {
                 let maximum = parameter.pointer("/schema/maximum");
                 if !maximum.is_some_and(Value::is_number) {
                     findings.push(Finding::at(
                         place,
-                        format!("The parameter `{LIMIT_PARAMETER}` must have a `maximum`, so one request cannot ask for everything."),
+                        format!("The parameter `{LIMIT}` must have a `maximum`, so one request cannot ask for everything."),
                     ));
                 }
             }
@@ -250,7 +237,7 @@ fn embeds(spec: &Value, property: &Value) -> bool {
 /// The properties of the items of a paged list that embed another object.
 fn embedded_properties(spec: &Value, schema: &Value) -> Vec<String> {
     let Some(item) = schema
-        .pointer(&format!("/properties/{PAGED_LIST}/items"))
+        .pointer(&format!("/properties/{ITEMS}/items"))
         .map(|item| resolve(spec, item))
     else {
         return Vec::new();
@@ -276,7 +263,7 @@ fn include_findings(spec: &Value, operation: &Value, schema: &Value, place: &str
         .flatten()
         .map(|parameter| resolve(spec, parameter))
         .find(|parameter| {
-            parameter.get("name").and_then(Value::as_str) == Some(INCLUDE_PARAMETER)
+            parameter.get("name").and_then(Value::as_str) == Some(INCLUDE)
                 && parameter.get("in").and_then(Value::as_str) == Some("query")
         });
     let embedded = embedded_properties(spec, schema);
@@ -284,15 +271,13 @@ fn include_findings(spec: &Value, operation: &Value, schema: &Value, place: &str
         (None, false) => vec![Finding::at(
             place,
             format!(
-                "The items embed `{}`. Name related things by ID (or a `{REFERENCE_SUFFIX}` schema), or declare the query parameter `{INCLUDE_PARAMETER}` with the names that may be embedded.",
+                "The items embed `{}`. Name related things by ID (or a `{REFERENCE_SUFFIX}` schema), or declare the query parameter `{INCLUDE}` with the names that may be embedded.",
                 embedded.join("`, `")
             ),
         )],
         (Some(_), true) => vec![Finding::at(
             place,
-            format!(
-                "The route declares `{INCLUDE_PARAMETER}` but its items embed nothing. Remove it."
-            ),
+            format!("The route declares `{INCLUDE}` but its items embed nothing. Remove it."),
         )],
         (Some(parameter), false) => {
             let closed = ["/schema/enum", "/schema/items/enum"]
@@ -304,7 +289,7 @@ fn include_findings(spec: &Value, operation: &Value, schema: &Value, place: &str
                 vec![Finding::at(
                     place,
                     format!(
-                        "The parameter `{INCLUDE_PARAMETER}` must list the names that may be embedded (an `enum`)."
+                        "The parameter `{INCLUDE}` must list the names that may be embedded (an `enum`)."
                     ),
                 )]
             }
@@ -333,7 +318,7 @@ fn evaluate(spec: &Value, exemptions: &[Exemption]) -> Vec<Finding> {
         if is_array(spec, schema) {
             findings.push(Finding::at(
                 &place,
-                format!("The answer is a bare array. Answer with an object that holds the list as `{PAGED_LIST}`, so there is room for `{NEXT_CURSOR}`."),
+                format!("The answer is a bare array. Answer with an object that holds the list as `{ITEMS}`, so there is room for `{NEXT_CURSOR}`."),
             ));
             continue;
         }
@@ -344,20 +329,20 @@ fn evaluate(spec: &Value, exemptions: &[Exemption]) -> Vec<Finding> {
             if let Some(index) = exemption {
                 let exemption = &exemptions[index];
                 used.mark(index);
-                let flag = schema.pointer(&format!("/properties/{CAP_FLAG}/type"));
+                let flag = schema.pointer(&format!("/properties/{TRUNCATED}/type"));
                 if !exemption.whole_value && flag.and_then(Value::as_str) != Some("boolean") {
                     findings.push(Finding::at(
                         &place,
-                        format!("A list with a hard cap must say when the cap cut it off: the answer needs a boolean `{CAP_FLAG}`."),
+                        format!("A list with a hard cap must say when the cap cut it off: the answer needs a boolean `{TRUNCATED}`."),
                     ));
                 }
-            } else if property == PAGED_LIST {
+            } else if property == ITEMS {
                 findings.extend(paging_findings(spec, operation, schema, &place));
                 findings.extend(include_findings(spec, operation, schema, &place));
             } else {
                 findings.push(Finding::at(
                     &place,
-                    format!("The answer has the list `{property}`. A list is called `{PAGED_LIST}` and takes `fields`, `cursor` and `limit`; or, when it is small by nature, it is named in {EXEMPTIONS_PATH} with a reason."),
+                    format!("The answer has the list `{property}`. A list is called `{ITEMS}` and takes `{FIELDS}`, `{CURSOR}` and `{LIMIT}`; or, when it is small by nature, it is named in {EXEMPTIONS_PATH} with a reason."),
                 ));
             }
         }
@@ -435,26 +420,20 @@ mod tests {
     fn capped(flag: bool) -> Value {
         let mut schema = page("issues", false);
         if flag {
-            schema["properties"][CAP_FLAG] = json!({"type": "boolean"});
+            schema["properties"][TRUNCATED] = json!({"type": "boolean"});
         }
         schema
     }
 
     #[test]
     fn good_example() {
-        let good = spec_with(
-            &parameters(&REQUIRED_PARAMETERS, true),
-            &page(PAGED_LIST, true),
-        );
+        let good = spec_with(&parameters(&REQUIRED_PARAMETERS, true), &page(ITEMS, true));
         assert!(messages(&good, &[]).is_empty());
     }
 
     #[test]
     fn bad_example() {
-        let bad = spec_with(
-            &parameters(&[LIMIT_PARAMETER], false),
-            &page(PAGED_LIST, false),
-        );
+        let bad = spec_with(&parameters(&[LIMIT], false), &page(ITEMS, false));
         let found = messages(&bad, &[]).join("\n");
         assert!(found.contains("`fields`"), "{found}");
         assert!(found.contains("`cursor`"), "{found}");
@@ -484,10 +463,7 @@ mod tests {
 
     #[test]
     fn good_example_a_get_that_answers_with_an_object_around_its_list() {
-        let wrapped = spec_with(
-            &parameters(&REQUIRED_PARAMETERS, true),
-            &page(PAGED_LIST, true),
-        );
+        let wrapped = spec_with(&parameters(&REQUIRED_PARAMETERS, true), &page(ITEMS, true));
         assert!(messages(&wrapped, &[]).is_empty());
     }
 

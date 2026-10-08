@@ -1,6 +1,6 @@
 //! The words of the API description that more than one program needs, each written once: the marks
-//! that `bb-api` puts on a route, the three words for a route that needs no permission of the
-//! catalogue, and the names of the actors and answers of the permission matrix (SEC-MATRIX).
+//! that `bb-api` puts on a route, the words of a paged list, the three words for a route that needs no
+//! permission of the catalogue, and the names of the actors and answers of the permission matrix (SEC-MATRIX).
 //! `sec_matrix::RECORD_PATH` is the exception that is no word of the API: the path of the record in
 //! the repository.
 //!
@@ -20,6 +20,25 @@ pub mod marks {
     pub const NEVER_STORED: &str = "x-never-stored";
     /// A route whose answer hands out a secret: never stored, never compressed.
     pub const SECRET: &str = "x-secret";
+}
+
+/// The words of a paged list: the query parameters a list route takes, and the properties of its
+/// answer (PERF-02). `bb-api` writes them, ARCH-LEAN holds the generated description to them.
+pub mod paging {
+    /// The query parameter that says which fields an answer holds.
+    pub const FIELDS: &str = "fields";
+    /// The query parameter that says where a page starts.
+    pub const CURSOR: &str = "cursor";
+    /// The query parameter that says how long a page is; it has a maximum.
+    pub const LIMIT: &str = "limit";
+    /// The query parameter that asks for related objects inside the items.
+    pub const INCLUDE: &str = "include";
+    /// The property of an answer that holds the list; the only name of a list that is paged.
+    pub const ITEMS: &str = "items";
+    /// The property of a page that holds the position of the next page (`null` on the last page).
+    pub const NEXT_CURSOR: &str = "next_cursor";
+    /// The property of the answer of a list with a hard cap that says the cap cut it off.
+    pub const TRUNCATED: &str = "truncated";
 }
 
 /// The words for a route that needs no permission of the catalogue.
