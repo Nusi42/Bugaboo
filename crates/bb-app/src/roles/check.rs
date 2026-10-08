@@ -8,7 +8,7 @@
 use bb_core::ErrorCode;
 use bb_core::access::{AppliesTo, FieldLevel, PeopleLevel};
 use bb_core::fields::Field;
-use bb_core::id::{AssignmentId, RoleId};
+use bb_core::id::AssignmentId;
 use bb_core::people_kinds::PeopleKind;
 use bb_policy::{
     AccessReport, Authorized, LevelDecision, LevelSource, LevelSubject, Masked, PeopleContext,
@@ -161,17 +161,6 @@ pub struct AccessAnswer {
 impl Masked for AccessAnswer {}
 
 impl<S: AuthStore> Ctx<'_, S> {
-    async fn role_ref(&self, id: RoleId) -> Result<RoleRef, AppError> {
-        let name = self
-            .store()
-            .role(id)
-            .await
-            .map_err(|error| internal::<S>(&error))?
-            .map(|record| record.role.name)
-            .unwrap_or_default();
-        Ok(RoleRef { id, name })
-    }
-
     async fn reason_row(
         &self,
         checker: &Actor,
@@ -180,19 +169,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         let who = match row.who {
             Who::Person => ReasonWho::Person,
             Who::Group(id) => ReasonWho::Group {
-                group: self
-                    .store()
-                    .group(id)
-                    .await
-                    .map_err(|error| internal::<S>(&error))?
-                    .as_ref()
-                    .map_or_else(
-                        || GroupView {
-                            id,
-                            name: String::new(),
-                        },
-                        GroupView::from,
-                    ),
+                group: self.group_view(id).await?,
             },
         };
         Ok(ReasonRowView {

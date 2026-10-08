@@ -14,7 +14,7 @@ use super::types::{
     MoveRight, ProjectDetail, ProjectItem, ProjectPage, ProjectQuery, ProjectView, ProjectsQuery,
 };
 use crate::access::Actor;
-use crate::auth::{AppError, AuthStore, Ctx, internal};
+use crate::auth::{AppError, AuthStore, Ctx, if_there, internal};
 
 impl<S: AuthStore> Ctx<'_, S> {
     /// The project an address names: an ID, or a short name (also an old one). An address that is
@@ -60,10 +60,8 @@ impl<S: AuthStore> Ctx<'_, S> {
                 (Permission::MakeSubProjects, Place::Project(parent))
             });
         // A parent that is gone holds nobody back from nothing: it is not one they may make in.
-        Ok(self
-            .evaluation_of(actor, place)
-            .await
-            .is_ok_and(|held| held.allows(permission)))
+        Ok(if_there(self.evaluation_of(actor, place).await)?
+            .is_some_and(|held| held.allows(permission)))
     }
 }
 

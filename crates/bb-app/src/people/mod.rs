@@ -169,6 +169,12 @@ impl<S: AuthStore> Ctx<'_, S> {
             .map_err(|error| internal::<S>(&error))?
             .ok_or(AppError::Refused(ErrorCode::NotFound))
     }
+
+    /// The group as a name in a sentence, or `resource.not_found` for a group that is gone (a row
+    /// that names a group the store does not have was read between two changes).
+    pub(crate) async fn group_view(&self, id: GroupId) -> Result<GroupView, AppError> {
+        Ok(GroupView::from(&self.group_or_missing(id).await?))
+    }
 }
 
 /// Makes a group.

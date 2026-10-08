@@ -23,7 +23,7 @@ use serde::Serialize;
 
 use super::GroupView;
 use crate::access::{Actor, ProjectLabel};
-use crate::auth::{AppError, AuthStore, Ctx, PeoplePosition, internal};
+use crate::auth::{AppError, AuthStore, Ctx, PeoplePosition, if_there, internal};
 use crate::roles::RoleRef;
 
 /// List the people, a page at a time.
@@ -222,35 +222,24 @@ impl<S: AuthStore> Ctx<'_, S> {
         actor: &Actor,
         rows: &[Assignment],
     ) -> Result<Vec<HeldRole>, AppError> {
-        let mut names: BTreeMap<RoleId, String> = BTreeMap::new();
+        let mut roles: BTreeMap<RoleId, RoleRef> = BTreeMap::new();
         let mut held = Vec::new();
         for row in rows {
             let place = Place::from(row.project);
-            let may = match self.evaluation_of(actor, place).await {
-                Ok(evaluation) => evaluation.allows(Permission::DecideRoles),
-                Err(_) => false,
-            };
+            let may = if_there(self.evaluation_of(actor, place).await)?
+                .is_some_and(|evaluation| evaluation.allows(Permission::DecideRoles));
             if !may {
                 continue;
             }
             let project = self.place_label(actor, row.project).await?;
             let role = match row.role {
-                Some(id) => {
-                    let name = if let Some(known) = names.get(&id) {
-                        known.clone()
-                    } else {
-                        let found = self
-                            .store()
-                            .role(id)
-                            .await
-                            .map_err(|error| internal::<S>(&error))?
-                            .map(|record| record.role.name)
-                            .unwrap_or_default();
-                        names.insert(id, found.clone());
-                        found
-                    };
-                    Some(RoleRef { id, name })
-                }
+                Some(id) => Some(if let Some(known) = roles.get(&id) {
+                    known.clone()
+                } else {
+                    let named = self.role_ref(id).await?;
+                    roles.insert(id, named.clone());
+                    named
+                }),
                 None => None,
             };
             held.push(HeldRole {

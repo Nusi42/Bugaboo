@@ -39,7 +39,7 @@ pub use visibility::{
 
 use serde::Serialize;
 
-use crate::auth::{AppError, AuthStore, Ctx, internal};
+use crate::auth::{AppError, AuthStore, Ctx, if_there, internal};
 use crate::projects::sub_projects_in;
 
 /// Who asks: the signed-in person behind a session, or the owner of the access key a script
@@ -223,10 +223,8 @@ impl<S: AuthStore> Ctx<'_, S> {
             return Ok(PersonRef::Someone);
         };
         // The role label is the person's own role at the place the viewer looks at.
-        let role = match self.evaluate(person, viewer.place()).await {
-            Ok(theirs) => theirs.first_role_name().map(str::to_owned),
-            Err(_) => None,
-        };
+        let role = if_there(self.evaluate(person, viewer.place()).await)?
+            .and_then(|theirs| theirs.first_role_name().map(str::to_owned));
         Ok(resolve(
             viewer,
             kind,
@@ -259,7 +257,8 @@ impl<S: AuthStore> Ctx<'_, S> {
         actor: &Actor,
         project: ProjectId,
     ) -> Result<ProjectLabel, AppError> {
-        let Ok(evaluation) = self.evaluation_of(actor, Place::Project(project)).await else {
+        let Some(evaluation) = if_there(self.evaluation_of(actor, Place::Project(project)).await)?
+        else {
             return Ok(ProjectLabel::Hidden);
         };
         if !evaluation.knows_project() {

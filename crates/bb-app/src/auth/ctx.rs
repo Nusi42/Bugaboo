@@ -68,6 +68,17 @@ impl AppError {
     }
 }
 
+/// What a read that may find nothing answers: `None` for "not found", which is a fact about the
+/// place or the record that was asked about; every other failure (the store broke) stays a
+/// failure and is not turned into an answer.
+pub(crate) fn if_there<T>(result: Result<T, AppError>) -> Result<Option<T>, AppError> {
+    match result {
+        Ok(value) => Ok(Some(value)),
+        Err(AppError::Refused(ErrorCode::NotFound)) => Ok(None),
+        Err(error) => Err(error),
+    }
+}
+
 impl From<ErrorCode> for AppError {
     fn from(code: ErrorCode) -> Self {
         Self::Refused(code)

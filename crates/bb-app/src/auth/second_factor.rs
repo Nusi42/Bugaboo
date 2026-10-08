@@ -143,15 +143,24 @@ pub async fn passkey_sign_in<S: AuthStore>(
 ) -> Result<Started, AppError> {
     let rejected = || AppError::Refused(ErrorCode::PasskeyRejected);
     let outcome = async {
-        let id = ChallengeId::parse(&input.challenge_id).ok_or(bb_auth::AuthError::Challenge)?;
-        let named = ctx.passkeys()?.identify(&input.credential)?;
+        let id = ChallengeId::parse(&input.challenge_id).ok_or_else(rejected)?;
+        let named = ctx
+            .passkeys()?
+            .identify(&input.credential)
+            .map_err(challenge_failed)?;
         Ok::<_, AppError>((id, named))
     }
     .await;
-    let Ok((challenge, named)) = outcome else {
-        ctx.note(SecurityAction::PasskeySignInFailed, None, None)
-            .await;
-        return Err(rejected());
+    let (challenge, named) = match outcome {
+        Ok(found) => found,
+        // Only what does not check out is written down and answered alike; a failure of the
+        // server is not turned into a rejection.
+        Err(AppError::Refused(ErrorCode::PasskeyRejected)) => {
+            ctx.note(SecurityAction::PasskeySignInFailed, None, None)
+                .await;
+            return Err(rejected());
+        }
+        Err(error) => return Err(error),
     };
     let (stored, credentials) = ctx.credentials(named.person).await?;
     let check =

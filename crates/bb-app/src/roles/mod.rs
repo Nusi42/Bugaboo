@@ -75,6 +75,17 @@ impl<S: AuthStore> Ctx<'_, S> {
     }
 }
 
+impl<S: AuthStore> Ctx<'_, S> {
+    /// The role as a name in a sentence, or `resource.not_found` for a role that is gone (a row
+    /// that names a role the store does not have was read between two changes).
+    pub(crate) async fn role_ref(&self, id: RoleId) -> Result<RoleRef, AppError> {
+        Ok(RoleRef {
+            id,
+            name: self.role_or_missing(id).await?.role.name,
+        })
+    }
+}
+
 /// The permissions as a set; a permission named twice counts once.
 fn set_of(permissions: &[Permission]) -> BTreeSet<Permission> {
     permissions.iter().copied().collect()

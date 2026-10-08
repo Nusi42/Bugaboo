@@ -12,14 +12,13 @@ use bb_policy::{Authorized, PeopleContext, Permission, Place};
 use serde_json::json;
 
 use super::types::{
-    AssignRole, AssignmentList, AssignmentView, AssignmentsQuery, Given, RemoveAssignment, RoleRef,
-    Subject, WhoView,
+    AssignRole, AssignmentList, AssignmentView, AssignmentsQuery, Given, RemoveAssignment, Subject,
+    WhoView,
 };
 use crate::access::{Actor, ensure_may_give_in};
 use crate::auth::{
     AppError, AuthStore, Ctx, Done, Stops, by, change_failed, entity, internal, set_to,
 };
-use crate::people::GroupView;
 
 /// Whether `new` and `old` are for the same person or group.
 pub(super) fn same_subject(new: &Assignment, old: &Assignment) -> bool {
@@ -48,35 +47,13 @@ impl<S: AuthStore> Ctx<'_, S> {
                     )
                     .await?,
             },
-            (None, Some(group)) => {
-                let found = self
-                    .store()
-                    .group(group)
-                    .await
-                    .map_err(|error| internal::<S>(&error))?;
-                WhoView::Group {
-                    group: found.as_ref().map_or_else(
-                        || GroupView {
-                            id: group,
-                            name: String::new(),
-                        },
-                        GroupView::from,
-                    ),
-                }
-            }
+            (None, Some(group)) => WhoView::Group {
+                group: self.group_view(group).await?,
+            },
             (None, None) => return Err(AppError::Internal("a row for nobody".into())),
         };
         let role = match row.role {
-            Some(id) => Some(RoleRef {
-                id,
-                name: self
-                    .store()
-                    .role(id)
-                    .await
-                    .map_err(|error| internal::<S>(&error))?
-                    .map(|record| record.role.name)
-                    .unwrap_or_default(),
-            }),
+            Some(id) => Some(self.role_ref(id).await?),
             None => None,
         };
         let project = self.place_label(actor, row.project).await?;

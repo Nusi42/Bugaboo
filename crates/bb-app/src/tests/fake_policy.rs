@@ -62,7 +62,13 @@ impl PolicyStore for FakeStore {
         place: Place,
     ) -> Result<Option<Inputs>, FakeError> {
         // Counted for the tests that check an evaluation is made once per request.
-        self.lock().policy_loads += 1;
+        {
+            let mut shared = self.lock();
+            if shared.policy_reads_fail {
+                return Err(FakeError::Failed);
+            }
+            shared.policy_loads += 1;
+        }
         self.read_snapshot(move |tx| Box::pin(Self::policy_inputs_in(tx, person, place)))
             .await
     }

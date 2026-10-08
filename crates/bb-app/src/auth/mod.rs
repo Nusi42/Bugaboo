@@ -57,7 +57,9 @@ pub use access_keys::{
 };
 pub use account::{accept_invitation, change_password, complete_setup, issue_setup_code, sign_up};
 pub use ctx::{AppError, AuthServices, Ctx, FailureLimit, NETWORK_KEY_PREFIX, RequestInfo};
-pub(crate) use ctx::{Stops, by, change_failed, changed, entity, fixed_entity, internal, set_to};
+pub(crate) use ctx::{
+    Stops, by, change_failed, changed, entity, fixed_entity, if_there, internal, set_to,
+};
 pub use invitations::{
     change_sign_up_policy, create_invitation, invitation_lookup, invitations, revoke_invitation,
     sign_up_policy,
