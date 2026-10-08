@@ -1,11 +1,7 @@
-import { t } from "@bugaboo/messages";
-import { Alert } from "@bugaboo/ui";
 import type { ReactNode } from "react";
 
-import { codeOf, messageOf } from "../../shared/errors.ts";
 import type { ProjectPage } from "../../shared/project-pages.ts";
-import { NotFoundPage } from "../shell/index.ts";
-import styles from "./Projects.module.css";
+import { NotFoundPage, QueryGate } from "../shell/index.ts";
 import { useProjectPage } from "./use-project-page.ts";
 import type { OneProject } from "./use-projects.ts";
 
@@ -23,15 +19,9 @@ export interface ProjectGateProps {
  */
 export function ProjectGate({ address, page, children }: ProjectGateProps) {
   const project = useProjectPage(address, page);
-  if (project.isError) {
-    return codeOf(project.error) === "resource.not_found" ? (
-      <NotFoundPage />
-    ) : (
-      <Alert danger>{messageOf(project.error)}</Alert>
-    );
-  }
-  if (project.data === undefined) {
-    return <p className={styles.muted}>{t("common.loading")}</p>;
-  }
-  return children(project.data);
+  return (
+    <QueryGate error={project.error} data={project.data} notFound={<NotFoundPage />}>
+      {children}
+    </QueryGate>
+  );
 }

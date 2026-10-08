@@ -81,3 +81,10 @@
   padding-top: var(--space-4);
   border-top: 1px solid var(--border-subtle);
 }
+
+.muted {
+  margin: 0;
+  color: var(--fg-muted);
+  font-size: var(--fs-base);
+  line-height: 1.4;
+}

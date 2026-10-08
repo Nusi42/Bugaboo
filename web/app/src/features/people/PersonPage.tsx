@@ -1,9 +1,7 @@
 import { t } from "@bugaboo/messages";
-import { Alert } from "@bugaboo/ui";
 
-import { codeOf, messageOf } from "../../shared/errors.ts";
 import { usePageTitle } from "../../shared/use-page.ts";
-import { NotFoundPage } from "../shell/index.ts";
+import { NotFoundPage, QueryGate } from "../shell/index.ts";
 import { lineOf, usePerson } from "./people.ts";
 import styles from "./People.module.css";
 import { usePersonTrail } from "./person-trail.ts";
@@ -17,23 +15,21 @@ import { Facts, Groups, Roles } from "./PersonSections.tsx";
 export function PersonPage({ id }: { readonly id: string }) {
   const found = usePerson(id);
   const line = found.data === undefined ? undefined : lineOf(found.data.person);
+  const shown =
+    found.data !== undefined && line !== undefined
+      ? { line, since: found.data.created_at }
+      : undefined;
   usePageTitle(line?.name ?? t("nav.people"));
   usePersonTrail(line?.name);
-  if (found.isError) {
-    return codeOf(found.error) === "resource.not_found" ? (
-      <NotFoundPage />
-    ) : (
-      <Alert danger>{messageOf(found.error)}</Alert>
-    );
-  }
-  if (found.data === undefined || line === undefined) {
-    return <p className={styles.muted}>{t("common.loading")}</p>;
-  }
   return (
-    <div className={styles.stack}>
-      <Facts line={line} since={found.data.created_at} />
-      <Groups line={line} />
-      <Roles line={line} />
-    </div>
+    <QueryGate error={found.error} data={shown} notFound={<NotFoundPage />}>
+      {(person) => (
+        <div className={styles.stack}>
+          <Facts line={person.line} since={person.since} />
+          <Groups line={person.line} />
+          <Roles line={person.line} />
+        </div>
+      )}
+    </QueryGate>
   );
 }

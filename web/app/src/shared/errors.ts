@@ -1,4 +1,4 @@
-import { ApiError, type ErrorCode } from "@bugaboo/api-client";
+import { ApiError, messageKeyOf, type ErrorCode } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 
 /** The code of an error answer of the server, if the error is one. */
@@ -11,7 +11,7 @@ export function codeOf(error: unknown): ErrorCode | undefined {
  * of the app does not know, or no answer at all, becomes "not available right now".
  */
 export function messageOf(error: unknown): string {
-  return t(error instanceof ApiError ? error.messageKey : "error.server.unavailable");
+  return t(error instanceof ApiError ? error.messageKey : messageKeyOf());
 }
 
 /** Whether the answer says that the person has to set up a second step before anything else. */

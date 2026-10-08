@@ -33,8 +33,8 @@ export function isProblem(value: unknown): value is Problem {
   );
 }
 
-/** The message to show for a problem: the key the server named, if this app has it. */
-export function messageKeyOf(problem: Pick<Problem, "message_key"> | undefined): MessageKey {
+/** The message to show for a problem: the key the server named, if this app has it; else the one for no answer. */
+export function messageKeyOf(problem?: Pick<Problem, "message_key">): MessageKey {
   if (problem !== undefined && isMessageKey(problem.message_key)) {
     return problem.message_key;
   }

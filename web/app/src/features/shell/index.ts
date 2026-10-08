@@ -2,6 +2,7 @@ export { AppLayout } from "./AppLayout.tsx";
 export { FramesPage, type FramesShow } from "./FramesPage.tsx";
 export { GuestLayout } from "./GuestLayout.tsx";
 export { ErrorPage, NotFoundPage, PendingPage } from "./Pages.tsx";
+export { QueryGate, type QueryGateProps } from "./QueryGate.tsx";
 export {
   addQuickSearchSource,
   type QuickResult,
