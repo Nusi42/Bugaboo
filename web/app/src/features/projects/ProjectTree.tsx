@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Alert, Button, cx, Icon, iconName } from "@bugaboo/ui";
+import { Alert, alertTone, Button, buttonLook, cx, Icon, iconName, iconSize } from "@bugaboo/ui";
 import { useLocation } from "@tanstack/react-router";
 import { Button as TreeButton, Link } from "react-aria-components";
 
@@ -41,7 +41,7 @@ function Node({ project, pathname, onNavigate }: NodeProps) {
               toggleOpened(project.id);
             }}
           >
-            <Icon name={iconName.next} small />
+            <Icon name={iconName.next} size={iconSize.small} />
           </TreeButton>
         ) : (
           <span className={styles.spacer} aria-hidden />
@@ -73,7 +73,7 @@ function Branch({ inside, pathname, onNavigate }: BranchProps) {
   const list = useProjectList(inside === undefined ? {} : { inside });
   const projects = linesOf(list.data?.pages);
   if (list.isError) {
-    return <Alert danger>{messageOf(list.error)}</Alert>;
+    return <Alert tone={alertTone.danger}>{messageOf(list.error)}</Alert>;
   }
   if (list.isPending) {
     return <p className={styles.note}>{t("common.loading")}</p>;
@@ -90,7 +90,7 @@ function Branch({ inside, pathname, onNavigate }: BranchProps) {
       </ul>
       {list.hasNextPage ? (
         <Button
-          quiet
+          look={buttonLook.quiet}
           isPending={list.isFetchingNextPage}
           onPress={() => {
             void list.fetchNextPage();

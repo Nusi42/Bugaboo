@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Alert, Card } from "@bugaboo/ui";
+import { Alert, alertTone, Card } from "@bugaboo/ui";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 
@@ -19,7 +19,7 @@ export function CodeAppSection() {
       <p className={styles.text}>{t("code-app.intro")}</p>
       {codes === null ? null : (
         <>
-          <Alert success>{t("code-app.switched-on")}</Alert>
+          <Alert tone={alertTone.success}>{t("code-app.switched-on")}</Alert>
           <BackupCodes
             codes={codes}
             onSaved={() => {
@@ -28,7 +28,7 @@ export function CodeAppSection() {
           />
         </>
       )}
-      {turnedOff && !on ? <Alert success>{t("code-app.turned-off")}</Alert> : null}
+      {turnedOff && !on ? <Alert tone={alertTone.success}>{t("code-app.turned-off")}</Alert> : null}
       {on ? (
         <SwitchOff
           onSwitchedOff={() => {

@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Alert } from "@bugaboo/ui";
+import { Alert, alertTone } from "@bugaboo/ui";
 import { useState } from "react";
 
 import { messageOf } from "../../shared/errors.ts";
@@ -29,7 +29,7 @@ export function CheckAccessView({ project }: CheckAccessViewProps) {
       {person === undefined ? (
         <p className={styles.muted}>{t("check-access.pick-a-person")}</p>
       ) : null}
-      {answer.isError ? <Alert danger>{messageOf(answer.error)}</Alert> : null}
+      {answer.isError ? <Alert tone={alertTone.danger}>{messageOf(answer.error)}</Alert> : null}
       {answer.data === undefined ? null : <CheckAnswer answer={answer.data} />}
     </div>
   );

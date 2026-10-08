@@ -1,11 +1,20 @@
+import {
+  settingChoices,
+  settingDefaults,
+  settingKeys,
+  type SettingChoice,
+} from "@bugaboo/api-client";
 import { useSyncExternalStore } from "react";
 
+import type { MySettings } from "./my-settings.ts";
+import { oneOf, textOf } from "./setting-values.ts";
+
 /** How dates are written, as the setting says it. */
-export type DateFormat = "device" | "day-month-year" | "month-day-year" | "year-month-day";
+export type DateFormat = SettingChoice<"regionDateFormat">;
 /** How big numbers and decimals are written, as the setting says it. */
-export type NumberFormat = "device" | "point" | "comma" | "space";
+export type NumberFormat = SettingChoice<"regionNumberFormat">;
 /** The day a week starts on, as the setting says it. */
-export type FirstDay = "device" | "monday" | "sunday" | "saturday";
+export type FirstDay = SettingChoice<"regionFirstDay">;
 
 /** The choices of *Region* (CFG-04): where the person is, as far as times and numbers go. */
 export interface Region {
@@ -18,10 +27,10 @@ export interface Region {
 
 /** Everything from the device: what a person who chose nothing sees. */
 export const deviceRegion: Region = {
-  timeZone: "device",
-  dateFormat: "device",
-  numberFormat: "device",
-  firstDay: "device",
+  timeZone: settingDefaults.regionTimeZone,
+  dateFormat: settingDefaults.regionDateFormat,
+  numberFormat: settingDefaults.regionNumberFormat,
+  firstDay: settingDefaults.regionFirstDay,
 };
 
 /**
@@ -32,9 +41,37 @@ export const deviceRegion: Region = {
 export function isKnownTimeZone(name: string): boolean {
   try {
     return new Intl.DateTimeFormat("en", { timeZone: name }).resolvedOptions().timeZone !== "";
-  } catch {
-    return false;
+  } catch (error) {
+    // `Intl` refuses a name it does not know with a RangeError; any other failure is a real one.
+    if (error instanceof RangeError) {
+      return false;
+    }
+    throw error;
   }
+}
+
+/** The region the settings describe. */
+export function regionOf(settings?: MySettings): Region {
+  const zone = textOf(settings, settingKeys.regionTimeZone, settingDefaults.regionTimeZone);
+  return {
+    timeZone:
+      zone === deviceRegion.timeZone || isKnownTimeZone(zone) ? zone : deviceRegion.timeZone,
+    dateFormat: oneOf(
+      settingChoices.regionDateFormat,
+      textOf(settings, settingKeys.regionDateFormat, settingDefaults.regionDateFormat),
+      settingDefaults.regionDateFormat,
+    ),
+    numberFormat: oneOf(
+      settingChoices.regionNumberFormat,
+      textOf(settings, settingKeys.regionNumberFormat, settingDefaults.regionNumberFormat),
+      settingDefaults.regionNumberFormat,
+    ),
+    firstDay: oneOf(
+      settingChoices.regionFirstDay,
+      textOf(settings, settingKeys.regionFirstDay, settingDefaults.regionFirstDay),
+      settingDefaults.regionFirstDay,
+    ),
+  };
 }
 
 let current: Region = deviceRegion;

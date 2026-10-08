@@ -1,9 +1,8 @@
+import type { Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
-import { Alert } from "@bugaboo/ui";
 
-import { codeOf, messageOf } from "../../shared/errors.ts";
 import { usePageTitle } from "../../shared/use-page.ts";
-import { NotFoundPage } from "../shell/index.ts";
+import { NotFoundPage, QueryGate } from "../shell/index.ts";
 import { useRoleTrail } from "./role-trail.ts";
 import { RoleSections } from "./RoleSections.tsx";
 import { useRole } from "./roles.ts";
@@ -16,22 +15,19 @@ import styles from "./Roles.module.css";
  */
 export function RolePage({ id }: { readonly id: string }) {
   const found = useRole(id);
-  const role = found.data?.role;
+  const detail: Schema<"RoleDetailBody"> | undefined = found.data;
+  const role = detail?.role;
   usePageTitle(role?.name ?? t("nav.roles"));
   useRoleTrail(role?.name);
-  if (found.isError) {
-    return codeOf(found.error) === "resource.not_found" ? (
-      <NotFoundPage />
-    ) : (
-      <Alert danger>{messageOf(found.error)}</Alert>
-    );
-  }
-  if (found.data === undefined || role === undefined) {
-    return <p className={styles.muted}>{t("common.loading")}</p>;
-  }
+  const shown =
+    detail !== undefined && role !== undefined ? { role, used: detail.used_by } : undefined;
   return (
-    <div className={styles.stack}>
-      <RoleSections role={role} used={found.data.used_by} />
-    </div>
+    <QueryGate error={found.error} data={shown} notFound={<NotFoundPage />}>
+      {(page) => (
+        <div className={styles.stack}>
+          <RoleSections role={page.role} used={page.used} />
+        </div>
+      )}
+    </QueryGate>
   );
 }

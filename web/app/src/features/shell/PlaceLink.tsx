@@ -3,7 +3,7 @@ import { useLocation } from "@tanstack/react-router";
 
 import { paths } from "../../shared/paths.ts";
 import { NavLink } from "./NavItem.tsx";
-import { placeAt, type Place } from "./places.ts";
+import { placeAt, type Place } from "../../shared/places.ts";
 
 /** Whether a page of the menu is the one that is open: *My settings* stays marked on its topics. */
 function isCurrent(path: string, pathname: string): boolean {

@@ -41,14 +41,33 @@ export const paths = {
   frames: "/frames",
 } as const;
 
+/** An address of the app, as the routes know it. */
+export type Path = (typeof paths)[keyof typeof paths];
+
+/** The parts of an address that change from page to page, by the name the route gives them. */
+export const routeParam = { project: "project", person: "person", role: "role" } as const;
+
+/** The name of a part of an address that changes. */
+export type RouteParam = (typeof routeParam)[keyof typeof routeParam];
+
+/** The address of a route with one changing part filled in: `/p/$project` and `WEB` is `/p/WEB`. */
+function filled(path: Path, param: RouteParam, value: string): string {
+  return path.replace(`$${param}`, encodeURIComponent(value));
+}
+
 /** The address of a project: its short name, or an old one, in `/p/WEB`. */
 export function projectAddress(shortName: string): string {
-  return paths.project.replace("$project", encodeURIComponent(shortName));
+  return filled(paths.project, routeParam.project, shortName);
+}
+
+/** The address of a page below a project, like `/p/WEB/settings/fields`, with the short name filled in. */
+export function addressInProject(path: Extract<Path, `/p/${string}`>, shortName: string): string {
+  return filled(path, routeParam.project, shortName);
 }
 
 /** The address of the page of a person, `/settings/people/<ID>`. */
 export function personAddress(id: string): string {
-  return paths.person.replace("$person", encodeURIComponent(id));
+  return filled(paths.person, routeParam.person, id);
 }
 
 /** The address of *Groups* with one group open, `/settings/groups?open=<ID>`. */
@@ -58,23 +77,5 @@ export function groupAddress(id: string): string {
 
 /** The address of the page of a role, `/settings/roles/<ID>`. */
 export function roleAddress(id: string): string {
-  return paths.role.replace("$role", encodeURIComponent(id));
-}
-
-/** The address of *Who has which role* in a project, `/p/WEB/settings/roles`. */
-export function projectRolesAddress(shortName: string): string {
-  return paths.projectRoles.replace("$project", encodeURIComponent(shortName));
-}
-
-/** The address of a page below the settings of a project, `/p/WEB/settings/fields`, with the short name filled in. */
-export function projectPageAddress(
-  path: typeof paths.projectFields | typeof paths.projectPeople | typeof paths.projectCheckAccess,
-  shortName: string,
-): string {
-  return path.replace("$project", encodeURIComponent(shortName));
-}
-
-/** The address of the settings of a project, `/p/WEB/settings`. */
-export function projectSettingsAddress(shortName: string): string {
-  return paths.projectSettings.replace("$project", encodeURIComponent(shortName));
+  return filled(paths.role, routeParam.role, id);
 }

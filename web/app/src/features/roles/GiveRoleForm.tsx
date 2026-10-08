@@ -1,7 +1,7 @@
 import { t } from "@bugaboo/messages";
-import { Alert, Button, ChoiceGroup, Form, SelectField } from "@bugaboo/ui";
+import { Alert, alertTone, ChoiceGroup, Form, SelectField, SubmitButton } from "@bugaboo/ui";
 
-import { useAllPages } from "../../shared/use-all-pages.ts";
+import { useAllPages } from "../../shared/paged.ts";
 import { type Subject, choicesOf, useChoices } from "./assignments.ts";
 import { ChoicePicker } from "./ChoicePicker.tsx";
 import styles from "./Roles.module.css";
@@ -90,11 +90,11 @@ export function GiveRoleForm({ project, give, preset }: GiveRoleFormProps) {
       />
       {project !== null && !noAccess ? <Reach value={form.reach} onChange={form.setReach} /> : null}
       {noAccess ? <p className={styles.muted}>{t("assignments.no-access-help")}</p> : null}
-      {form.problem === null ? null : <Alert danger>{form.problem}</Alert>}
+      {form.problem === null ? null : <Alert tone={alertTone.danger}>{form.problem}</Alert>}
       <div className={styles.row}>
-        <Button primary submit>
+        <SubmitButton>
           {t(noAccess ? "assignments.give-no-access" : "assignments.give")}
-        </Button>
+        </SubmitButton>
       </div>
     </Form>
   );

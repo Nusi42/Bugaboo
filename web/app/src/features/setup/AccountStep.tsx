@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Alert, Button, Card, Form } from "@bugaboo/ui";
+import { Alert, alertTone, Card, Form, SubmitButton } from "@bugaboo/ui";
 import { useState } from "react";
 
 import { type SignedIn } from "../../shared/after-sign-in.ts";
@@ -59,10 +59,12 @@ export function AccountStep({ code, onCreated, onWrongCode }: AccountStepProps) 
           }}
           problem={tooWeak ? messageOf(setup.error) : undefined}
         />
-        {setup.isError && !tooWeak ? <Alert danger>{messageOf(setup.error)}</Alert> : null}
-        <Button primary wide submit isPending={setup.isPending}>
+        {setup.isError && !tooWeak ? (
+          <Alert tone={alertTone.danger}>{messageOf(setup.error)}</Alert>
+        ) : null}
+        <SubmitButton wide isPending={setup.isPending}>
           {t("first-run.account.submit")}
-        </Button>
+        </SubmitButton>
       </Form>
     </Card>
   );

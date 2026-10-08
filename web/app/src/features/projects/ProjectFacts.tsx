@@ -1,9 +1,9 @@
 import { t } from "@bugaboo/messages";
 import { Link } from "@bugaboo/ui";
 
-import { projectRolesAddress } from "../../shared/paths.ts";
+import { projectPageAddress, projectPages } from "../../shared/project-pages.ts";
 import styles from "./Projects.module.css";
-import { settingsTab, tabAddress, tabsOf } from "./settings-tabs.ts";
+import { tabsOf } from "./settings-tabs.ts";
 import type { OneProject } from "./use-projects.ts";
 
 /** The facts of a project: its short name, and where it sits when the person sees that. */
@@ -33,10 +33,12 @@ function ProjectLinks({ project }: { readonly project: OneProject }) {
   return (
     <div className={styles.row}>
       {first === undefined ? null : (
-        <Link href={tabAddress(first, shortName)}>{t("projects.settings-link")}</Link>
+        <Link href={projectPageAddress(first, shortName)}>{t("projects.settings-link")}</Link>
       )}
-      {first !== settingsTab.roles && tabs.includes(settingsTab.roles) ? (
-        <Link href={projectRolesAddress(shortName)}>{t("roles.project-link")}</Link>
+      {first !== projectPages.roles && tabs.includes(projectPages.roles) ? (
+        <Link href={projectPageAddress(projectPages.roles, shortName)}>
+          {t("roles.project-link")}
+        </Link>
       ) : null}
     </div>
   );

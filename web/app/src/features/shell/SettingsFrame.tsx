@@ -6,7 +6,7 @@ import { useId } from "react";
 import { usePermissions } from "../../shared/use-me.ts";
 import { usePageTitle } from "../../shared/use-page.ts";
 import { NavLink } from "./NavItem.tsx";
-import { placeAt, topicGroups, type Place, type TopicGroup } from "./places.ts";
+import { placeAt, topicGroups, type Place, type TopicGroup } from "../../shared/places.ts";
 import styles from "./SettingsFrame.module.css";
 
 export interface SettingsFrameProps {

@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Alert, Button } from "@bugaboo/ui";
+import { Alert, alertTone, Button, buttonLook } from "@bugaboo/ui";
 import { useState } from "react";
 
 import {
@@ -47,17 +47,19 @@ function Problems({ conflict, invalid, reserved, saved }: ProblemsProps) {
   return (
     <>
       {conflict === null ? null : (
-        <Alert warning>
+        <Alert tone={alertTone.warning}>
           {t("shortcuts.conflict", {
             keys: describeKeys(conflict.keys),
             action: t(definitionOf(conflict.id).message),
           })}
         </Alert>
       )}
-      {invalid ? <Alert warning>{t("shortcuts.invalid")}</Alert> : null}
-      {reserved ? <Alert warning>{t("shortcuts.reserved")}</Alert> : null}
-      {saved === "keys" ? <Alert success>{t("shortcuts.saved")}</Alert> : null}
-      {saved === "usual" ? <Alert success>{t("shortcuts.reset-done")}</Alert> : null}
+      {invalid ? <Alert tone={alertTone.warning}>{t("shortcuts.invalid")}</Alert> : null}
+      {reserved ? <Alert tone={alertTone.warning}>{t("shortcuts.reserved")}</Alert> : null}
+      {saved === "keys" ? <Alert tone={alertTone.success}>{t("shortcuts.saved")}</Alert> : null}
+      {saved === "usual" ? (
+        <Alert tone={alertTone.success}>{t("shortcuts.reset-done")}</Alert>
+      ) : null}
     </>
   );
 }
@@ -98,7 +100,7 @@ export function ShortcutEditor({ id, overrides }: ShortcutEditorProps) {
       <Problems conflict={conflict} invalid={invalid} reserved={reserved} saved={saved} />
       <div className={styles.actions}>
         <Button
-          primary
+          look={buttonLook.primary}
           isDisabled={recorded === "" || conflict !== null || invalid || reserved}
           onPress={use}
         >

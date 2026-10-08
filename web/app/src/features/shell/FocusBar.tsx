@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Button, Icon, iconName } from "@bugaboo/ui";
+import { Button, buttonLook, Icon, iconName } from "@bugaboo/ui";
 
 export interface FocusBarProps {
   readonly onBack: () => void;
@@ -13,7 +13,7 @@ export interface FocusBarProps {
 export function FocusBar({ onBack, onStep, list, onToggleList }: FocusBarProps) {
   return (
     <>
-      <Button quiet onPress={onBack}>
+      <Button look={buttonLook.quiet} onPress={onBack}>
         <Icon name={iconName.back} />
         {t("focus.back")}
       </Button>
@@ -32,7 +32,7 @@ export function FocusBar({ onBack, onStep, list, onToggleList }: FocusBarProps) 
         {t("list.next")}
       </Button>
       {list === "none" ? null : (
-        <Button quiet onPress={onToggleList}>
+        <Button look={buttonLook.quiet} onPress={onToggleList}>
           {list === "hidden" ? t("focus.show-list") : t("focus.hide-list")}
         </Button>
       )}

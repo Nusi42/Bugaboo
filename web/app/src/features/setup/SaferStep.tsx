@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Button, Card } from "@bugaboo/ui";
+import { Button, buttonLook, Card } from "@bugaboo/ui";
 
 import { CodeAppSection, PasskeysSection } from "../account/index.ts";
 import styles from "./Setup.module.css";
@@ -17,7 +17,7 @@ export function SaferStep({ onFinish }: SaferStepProps) {
       </Card>
       <PasskeysSection />
       <CodeAppSection />
-      <Button primary wide onPress={onFinish}>
+      <Button look={buttonLook.primary} wide onPress={onFinish}>
         {t("first-run.safer.finish")}
       </Button>
     </>

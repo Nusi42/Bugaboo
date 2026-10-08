@@ -1,6 +1,6 @@
 import { createRoute, lazyRouteComponent, useNavigate, useSearch } from "@tanstack/react-router";
 
-import { paths } from "../shared/paths.ts";
+import { paths, routeParam } from "../shared/paths.ts";
 import { useAddressPart } from "./address-part.ts";
 import { appRoute, organizationSettingsRoute } from "./layouts.tsx";
 import { OnlyWith } from "./OnlyWith.tsx";
@@ -36,7 +36,7 @@ export const personRoute = createRoute({
   getParentRoute: () => organizationSettingsRoute,
   path: paths.person,
   component: function Person() {
-    const id = useAddressPart("person");
+    const id = useAddressPart(routeParam.person);
     return (
       <OnlyWith path={paths.person}>{id === undefined ? null : <PersonScreen id={id} />}</OnlyWith>
     );
@@ -87,7 +87,7 @@ export const roleRoute = createRoute({
   getParentRoute: () => organizationSettingsRoute,
   path: paths.role,
   component: function Role() {
-    const id = useAddressPart("role");
+    const id = useAddressPart(routeParam.role);
     return (
       <OnlyWith path={paths.role}>{id === undefined ? null : <RoleScreen id={id} />}</OnlyWith>
     );
@@ -99,7 +99,7 @@ export const projectRolesRoute = createRoute({
   getParentRoute: () => appRoute,
   path: paths.projectRoles,
   component: function ProjectRoles() {
-    const project = useAddressPart("project");
+    const project = useAddressPart(routeParam.project);
     return project === undefined ? null : <ProjectRolesScreen address={project} />;
   },
 });

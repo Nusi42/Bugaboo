@@ -4,7 +4,8 @@ import { type Locator, type Page } from "@playwright/test";
 import { ada, endEverySession, makeAdmin } from "./support/accounts.ts";
 import { expectGoodInEveryTheme } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
-import { anotherBrowser, openFromMenu, signIn } from "./support/flows.ts";
+import { addressWith, anotherBrowser, openFromMenu, signIn } from "./support/flows.ts";
+import { paths } from "../src/shared/paths.ts";
 
 test.use({
   preparation: {
@@ -82,7 +83,7 @@ test("auth_01 signing out everywhere ends every place, this one included", async
     .getByRole("alertdialog")
     .getByRole("button", { name: t("sessions.everywhere") })
     .click();
-  await expect(page).toHaveURL(/\/sign-in/u);
+  await expect(page).toHaveURL(addressWith(paths.signIn));
   await expect(page.getByText(t("sign-in.signed-out"))).toBeVisible();
 
   await other.reload();

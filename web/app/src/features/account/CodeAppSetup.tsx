@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Alert, autoComplete, Button, Form, TextField } from "@bugaboo/ui";
+import { Alert, alertTone, autoComplete, Form, SubmitButton, TextField } from "@bugaboo/ui";
 import type { Schema } from "@bugaboo/api-client";
 import { useState } from "react";
 
@@ -39,10 +39,8 @@ function Scan({ setup, password, onSwitchedOn }: ScanProps) {
         value={code}
         onChange={setCode}
       />
-      {confirm.isError ? <Alert danger>{messageOf(confirm.error)}</Alert> : null}
-      <Button primary submit isPending={confirm.isPending}>
-        {t("code-app.confirm")}
-      </Button>
+      {confirm.isError ? <Alert tone={alertTone.danger}>{messageOf(confirm.error)}</Alert> : null}
+      <SubmitButton isPending={confirm.isPending}>{t("code-app.confirm")}</SubmitButton>
     </Form>
   );
 }
@@ -72,10 +70,8 @@ export function CodeAppSetup({ onSwitchedOn }: CodeAppSetupProps) {
       }}
     >
       <ConfirmPasswordField value={password} onChange={setPassword} />
-      {start.isError ? <Alert danger>{messageOf(start.error)}</Alert> : null}
-      <Button primary submit isPending={start.isPending}>
-        {t("code-app.setup")}
-      </Button>
+      {start.isError ? <Alert tone={alertTone.danger}>{messageOf(start.error)}</Alert> : null}
+      <SubmitButton isPending={start.isPending}>{t("code-app.setup")}</SubmitButton>
     </Form>
   );
 }

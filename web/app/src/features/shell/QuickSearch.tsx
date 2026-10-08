@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Overlay, useLayout } from "@bugaboo/ui";
+import { Overlay, overlayEdge, useLayout } from "@bugaboo/ui";
 
 import { useOverlay } from "./overlay-state.ts";
 import { QuickSearchBox } from "./QuickSearchBox.tsx";
@@ -14,7 +14,11 @@ export function QuickSearch() {
   const overlay = useOverlay("search");
   const phone = useLayout() === "phone";
   return (
-    <Overlay {...overlay} label={t("search.title")} top={phone}>
+    <Overlay
+      {...overlay}
+      label={t("search.title")}
+      from={phone ? overlayEdge.top : overlayEdge.center}
+    >
       {overlay.isOpen ? <QuickSearchBox /> : null}
     </Overlay>
   );

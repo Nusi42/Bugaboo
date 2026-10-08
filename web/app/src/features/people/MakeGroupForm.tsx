@@ -1,10 +1,10 @@
 import { t } from "@bugaboo/messages";
-import { Alert, Button, Form, TextField } from "@bugaboo/ui";
+import { Alert, alertTone, Form, SubmitButton, TextField } from "@bugaboo/ui";
 import { useState } from "react";
 
 import { api } from "../../shared/api.ts";
 import { messageOf } from "../../shared/errors.ts";
-import { refreshAccess } from "../../shared/access-cache.ts";
+import { refreshAccess } from "../../shared/query-keys.ts";
 import styles from "./People.module.css";
 
 /** *Make a group*: a name; the group starts empty. */
@@ -31,12 +31,12 @@ export function MakeGroupForm() {
         value={name}
         onChange={setName}
       />
-      {make.isError ? <Alert danger>{messageOf(make.error)}</Alert> : null}
-      {made === null ? null : <Alert success>{t("groups.made", { name: made })}</Alert>}
+      {make.isError ? <Alert tone={alertTone.danger}>{messageOf(make.error)}</Alert> : null}
+      {made === null ? null : (
+        <Alert tone={alertTone.success}>{t("groups.made", { name: made })}</Alert>
+      )}
       <div className={styles.row}>
-        <Button primary submit isPending={make.isPending}>
-          {t("groups.make")}
-        </Button>
+        <SubmitButton isPending={make.isPending}>{t("groups.make")}</SubmitButton>
       </div>
     </Form>
   );

@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Button, cx, Icon, iconName } from "@bugaboo/ui";
+import { Button, cx, Icon, iconName, iconSize } from "@bugaboo/ui";
 
 import { focusRestored } from "../../shared/focus.ts";
 import { undoStore, type UndoOffer } from "../../shared/optimistic-undo.ts";
@@ -37,7 +37,7 @@ function Offer({ offer }: { readonly offer: UndoOffer }) {
           takeBack(offer);
         }}
       >
-        <Icon name={iconName.undo} small />
+        <Icon name={iconName.undo} size={iconSize.small} />
         {t("common.undo")}
       </Button>
     </div>

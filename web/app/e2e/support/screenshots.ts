@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { expect, type Page } from "@playwright/test";
 
 import { inOrder } from "./sequence.ts";
+import { settingDefaults } from "@bugaboo/api-client";
 
 /** The folder the screenshots go to, from `BB_SCREENSHOT_DIR`; `undefined` when none are wanted. */
 export const screenshotFolder = process.env["BB_SCREENSHOT_DIR"];
@@ -12,7 +13,10 @@ export const screenshotFolder = process.env["BB_SCREENSHOT_DIR"];
 const looks = ["light", "dark"] as const;
 
 /** The theme "Match my device" shows for each look, with the standard settings (the app's `data-look`). */
-const themeOf = { light: "daylight", dark: "dusk" } as const;
+const themeOf = {
+  light: settingDefaults.appearanceLightTheme,
+  dark: settingDefaults.appearanceDarkTheme,
+} as const;
 
 /** The look the device does not ask for: asking for it first makes the app notice the change. */
 const otherThan = { light: "dark", dark: "light" } as const;
@@ -102,4 +106,19 @@ export async function shootWhole(page: Page, name: string, milestone: string): P
   if (original !== null) {
     await page.setViewportSize(original);
   }
+}
+
+/** How long a sheet, a menu or a list takes to settle; the picture is taken when it has stopped. */
+const SETTLING_FOR_SHOT_MS = 500;
+
+/** Waits for the screen to settle, then takes it in both looks. */
+export async function shot(page: Page, name: string, milestone: string): Promise<void> {
+  await page.waitForTimeout(SETTLING_FOR_SHOT_MS);
+  await shoot(page, name, milestone);
+}
+
+/** The same with the window grown to the height of the page, then put back. */
+export async function shotWhole(page: Page, name: string, milestone: string): Promise<void> {
+  await page.waitForTimeout(SETTLING_FOR_SHOT_MS);
+  await shootWhole(page, name, milestone);
 }

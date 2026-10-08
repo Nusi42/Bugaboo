@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Alert, ConfirmDialog } from "@bugaboo/ui";
+import { Alert, alertTone, buttonLook, ConfirmDialog } from "@bugaboo/ui";
 import { useNavigate } from "@tanstack/react-router";
 
 import { api } from "../../shared/api.ts";
@@ -17,7 +17,9 @@ export function SignOutEverywhere() {
   });
   return (
     <>
-      {everywhere.isError ? <Alert danger>{messageOf(everywhere.error)}</Alert> : null}
+      {everywhere.isError ? (
+        <Alert tone={alertTone.danger}>{messageOf(everywhere.error)}</Alert>
+      ) : null}
       <div className={styles.row}>
         <ConfirmDialog
           triggerLabel={t("sessions.everywhere")}
@@ -25,7 +27,7 @@ export function SignOutEverywhere() {
           text={t("sessions.everywhere-text")}
           confirmLabel={t("sessions.everywhere")}
           cancelLabel={t("common.cancel")}
-          danger
+          confirmLook={buttonLook.danger}
           onConfirm={() => {
             everywhere.mutate({});
           }}

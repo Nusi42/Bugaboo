@@ -1,10 +1,10 @@
 import { t } from "@bugaboo/messages";
-import { Alert, Button, Form, TextField } from "@bugaboo/ui";
+import { Alert, alertTone, Form, SubmitButton, TextField } from "@bugaboo/ui";
 import { useState } from "react";
 
 import { api } from "../../shared/api.ts";
 import { messageOf } from "../../shared/errors.ts";
-import { refreshAccess } from "../../shared/access-cache.ts";
+import { refreshAccess } from "../../shared/query-keys.ts";
 import type { GroupLine } from "./groups.ts";
 import styles from "./People.module.css";
 
@@ -26,12 +26,10 @@ export function RenameGroup({ group }: { readonly group: GroupLine }) {
         value={name}
         onChange={setName}
       />
-      {rename.isError ? <Alert danger>{messageOf(rename.error)}</Alert> : null}
-      {rename.isSuccess ? <Alert success>{t("groups.saved")}</Alert> : null}
+      {rename.isError ? <Alert tone={alertTone.danger}>{messageOf(rename.error)}</Alert> : null}
+      {rename.isSuccess ? <Alert tone={alertTone.success}>{t("groups.saved")}</Alert> : null}
       <div className={styles.row}>
-        <Button primary submit isPending={rename.isPending}>
-          {t("common.save")}
-        </Button>
+        <SubmitButton isPending={rename.isPending}>{t("common.save")}</SubmitButton>
       </div>
     </Form>
   );

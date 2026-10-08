@@ -5,7 +5,7 @@ import { useShortcuts } from "../../shared/use-shortcuts.ts";
 import { FocusBar } from "./FocusBar.tsx";
 import styles from "./FocusView.module.css";
 import { useNarrowSidebarWhile } from "./sidebar-state.ts";
-import { useEscape } from "./use-escape.ts";
+import { escapeInField, useEscape } from "./use-escape.ts";
 import { useTakeFocus } from "./use-take-focus.ts";
 
 export interface FocusViewProps {
@@ -37,7 +37,7 @@ export function FocusView({ list, onBack, onStep, children }: FocusViewProps) {
       onStep(-1);
     },
   });
-  const view = useEscape<HTMLDivElement>(onBack, true);
+  const view = useEscape<HTMLDivElement>(onBack, escapeInField.leave);
   const main = useTakeFocus<HTMLDivElement>();
   const phone = layout === "phone";
   const listState = phone ? "none" : listHidden ? "hidden" : "shown";

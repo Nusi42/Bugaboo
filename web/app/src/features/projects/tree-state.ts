@@ -1,17 +1,12 @@
+import { readStoredJson, storageKey, writeStored } from "@bugaboo/ui";
 import { useSyncExternalStore } from "react";
 
 /** Remembers in this browser which projects of the tree the person opened. */
-const storageKey = "bugaboo.project-tree";
-
 function read(): ReadonlySet<string> {
-  try {
-    const stored: unknown = JSON.parse(localStorage.getItem(storageKey) ?? "[]");
-    return new Set(
-      Array.isArray(stored) ? stored.filter((id): id is string => typeof id === "string") : [],
-    );
-  } catch {
-    return new Set();
-  }
+  const stored = readStoredJson(storageKey.projectTree);
+  return new Set(
+    Array.isArray(stored) ? stored.filter((id): id is string => typeof id === "string") : [],
+  );
 }
 
 let opened: ReadonlySet<string> = read();
@@ -36,11 +31,7 @@ export function toggleOpened(project: string): void {
     next.add(project);
   }
   opened = next;
-  try {
-    localStorage.setItem(storageKey, JSON.stringify([...next]));
-  } catch {
-    // The choice then only lasts until the page is closed.
-  }
+  writeStored(storageKey.projectTree, JSON.stringify([...next]));
   for (const listener of listeners) {
     listener();
   }

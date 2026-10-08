@@ -1,6 +1,17 @@
 import type { Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
-import { Alert, Button, Card, ConfirmDialog, Form, Switch, TextField } from "@bugaboo/ui";
+import {
+  Alert,
+  alertTone,
+  buttonLook,
+  Card,
+  ConfirmDialog,
+  fieldKind,
+  Form,
+  SubmitButton,
+  Switch,
+  TextField,
+} from "@bugaboo/ui";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 
@@ -38,13 +49,13 @@ function PolicyForm({ policy }: { readonly policy: Schema<"SignUpPolicyBody"> })
       <TextField
         label={t("sign-up-policy.domains")}
         description={t("sign-up-policy.domains-help")}
-        multiline
+        kind={fieldKind.multiline}
         value={text}
         onChange={setText}
       />
-      {everybody ? <Alert warning>{t("sign-up-policy.warning")}</Alert> : null}
-      {save.isError ? <Alert danger>{messageOf(save.error)}</Alert> : null}
-      {save.isSuccess ? <Alert success>{t("sign-up-policy.saved")}</Alert> : null}
+      {everybody ? <Alert tone={alertTone.warning}>{t("sign-up-policy.warning")}</Alert> : null}
+      {save.isError ? <Alert tone={alertTone.danger}>{messageOf(save.error)}</Alert> : null}
+      {save.isSuccess ? <Alert tone={alertTone.success}>{t("sign-up-policy.saved")}</Alert> : null}
       <div className={styles.row}>
         {everybody ? (
           <ConfirmDialog
@@ -53,13 +64,11 @@ function PolicyForm({ policy }: { readonly policy: Schema<"SignUpPolicyBody"> })
             text={t("sign-up-policy.confirm-text")}
             confirmLabel={t("sign-up-policy.confirm-yes")}
             cancelLabel={t("sign-up-policy.confirm-no")}
-            danger
+            confirmLook={buttonLook.danger}
             onConfirm={send}
           />
         ) : (
-          <Button primary submit isPending={save.isPending}>
-            {t("common.save")}
-          </Button>
+          <SubmitButton isPending={save.isPending}>{t("common.save")}</SubmitButton>
         )}
       </div>
     </Form>
@@ -72,7 +81,7 @@ export function SignUpPolicySection() {
   return (
     <Card heading={t("sign-up-policy.title")}>
       <p className={styles.text}>{t("sign-up-policy.intro")}</p>
-      {policy.isError ? <Alert danger>{messageOf(policy.error)}</Alert> : null}
+      {policy.isError ? <Alert tone={alertTone.danger}>{messageOf(policy.error)}</Alert> : null}
       {policy.data === undefined ? null : <PolicyForm policy={policy.data} />}
     </Card>
   );

@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Alert, Button, Form } from "@bugaboo/ui";
+import { Alert, alertTone, Form, SubmitButton } from "@bugaboo/ui";
 import { useState } from "react";
 
 import { messageOf } from "../../shared/errors.ts";
@@ -52,12 +52,10 @@ export function ChangeProjectForm({ project, onSaved }: ChangeProjectFormProps) 
       ) : (
         <p className={styles.muted}>{t("projects.short-name-fixed")}</p>
       )}
-      {change.isError ? <Alert danger>{messageOf(change.error)}</Alert> : null}
-      {saved ? <Alert success>{t("projects.saved")}</Alert> : null}
+      {change.isError ? <Alert tone={alertTone.danger}>{messageOf(change.error)}</Alert> : null}
+      {saved ? <Alert tone={alertTone.success}>{t("projects.saved")}</Alert> : null}
       <div className={styles.row}>
-        <Button primary submit isPending={change.isPending}>
-          {t("common.save")}
-        </Button>
+        <SubmitButton isPending={change.isPending}>{t("common.save")}</SubmitButton>
       </div>
     </Form>
   );

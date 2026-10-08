@@ -1,9 +1,10 @@
 import { t } from "@bugaboo/messages";
 
 import { api } from "../../shared/api.ts";
+import { fieldList } from "../../shared/paged.ts";
 import { projectAddress } from "../../shared/paths.ts";
 import type { QuickResult, QuickSearchSource } from "../shell/index.ts";
-import { lineOf } from "./use-projects.ts";
+import { lineOf, type ListItem } from "./use-projects.ts";
 
 /** How many projects quick search shows. */
 const RESULTS = 8;
@@ -18,7 +19,13 @@ export const projectsSource: QuickSearchSource = {
   heading: t("search.projects"),
   search: async (query): Promise<readonly QuickResult[]> => {
     const { data } = await api.client.GET("/api/v1/projects", {
-      params: { query: { search: query, fields: "id,short_name,name", limit: RESULTS } },
+      params: {
+        query: {
+          search: query,
+          fields: fieldList<ListItem>(["id", "short_name", "name"]),
+          limit: RESULTS,
+        },
+      },
     });
     return (data?.items ?? []).flatMap((item) => {
       const line = lineOf(item);

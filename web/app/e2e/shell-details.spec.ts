@@ -5,6 +5,8 @@ import { ada, makeAdmin } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { onThisLayout } from "./support/layout.ts";
+import { paths } from "../src/shared/paths.ts";
+import { viewports } from "../../tooling/viewports.ts";
 
 test.use({
   preparation: {
@@ -21,12 +23,12 @@ function mainMenu(page: Page): Locator {
 
 async function stayingPut(page: Page): Promise<void> {
   // A short window and a long page: the sidebar stays in the window, Sign out among it.
-  await page.setViewportSize({ width: 1280, height: 600 });
-  await page.goto("/me/appearance");
+  await page.setViewportSize({ width: viewports.computer.width, height: 600 });
+  await page.goto(paths.appearance);
   await page.mouse.wheel(0, 3000);
   await expect(page.getByRole("button", { name: t("nav.sign-out"), exact: true })).toBeInViewport();
   // A window so short that the sidebar does not fit scrolls the sidebar itself, not the page.
-  await page.setViewportSize({ width: 1280, height: 360 });
+  await page.setViewportSize({ width: viewports.computer.width, height: 360 });
   const signOut = page.getByRole("button", { name: t("nav.sign-out"), exact: true });
   await signOut.scrollIntoViewIfNeeded();
   await expect(signOut).toBeInViewport();
@@ -69,12 +71,12 @@ async function groupsOfTopics(page: Page): Promise<void> {
 }
 
 async function groupsOnLargeScreens(page: Page): Promise<void> {
-  await page.goto("/me/appearance");
+  await page.goto(paths.appearance);
   await groupsOfTopics(page);
 }
 
 async function groupsOnPhone(page: Page): Promise<void> {
-  await page.goto("/me");
+  await page.goto(paths.mySettings);
   await groupsOfTopics(page);
 }
 
@@ -88,7 +90,7 @@ test("ux_04 the groups of the settings menu are labelled lists", async ({ page }
 });
 
 async function openQuestion(page: Page): Promise<{ width: number; height: number }> {
-  await page.goto("/me/sessions");
+  await page.goto(paths.sessions);
   await page.getByRole("button", { name: t("sessions.everywhere") }).click();
   const box = await page.getByRole("alertdialog").boundingBox();
   return { width: box?.width ?? 0, height: box?.height ?? 0 };

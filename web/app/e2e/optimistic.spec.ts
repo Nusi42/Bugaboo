@@ -5,6 +5,7 @@ import { ada, endEverySession, makeAdmin } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { type Instance } from "./support/server.ts";
 import { anotherBrowser, openFromMenu, signIn } from "./support/flows.ts";
+import { paths } from "../src/shared/paths.ts";
 
 test.use({
   preparation: {
@@ -119,7 +120,7 @@ test("ux_06 grey shapes stand in for a slow list, and the list says it is busy",
     await slow.promise;
     await route.continue();
   });
-  await page.goto("/me/sessions");
+  await page.goto(paths.sessions);
   const region = page.getByRole("list", { name: t("sessions.list") }).locator("..");
   await expect(region).toHaveAttribute("aria-busy", "true");
   // Nothing grey in the first 0.3 s, so a quick answer never flashes.

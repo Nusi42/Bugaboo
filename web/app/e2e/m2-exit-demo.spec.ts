@@ -1,10 +1,9 @@
 import { t } from "@bugaboo/messages";
 import { type Page } from "@playwright/test";
 
-import { paths, projectAddress, projectPageAddress } from "../src/shared/paths.ts";
-import { around, levelList, pickLevel, roleName } from "./support/access.ts";
+import { paths, projectAddress, addressInProject } from "../src/shared/paths.ts";
+import { around, check, levelList, pickLevel, roleName } from "./support/access.ts";
 import {
-  check,
   closeTheSheet,
   findsNoneOf,
   good,
@@ -84,7 +83,7 @@ async function hideCostCenter(page: Page): Promise<void> {
   const mobileApp = sampleProjectName("APP");
   await open(
     page,
-    projectPageAddress(paths.projectFields, "APP"),
+    addressInProject(paths.projectFields, "APP"),
     t("field-permissions.project-title", { project: mobileApp }),
   );
   const inApp = await levelList(page, costCenter, roleName.contributor);
@@ -94,7 +93,7 @@ async function hideCostCenter(page: Page): Promise<void> {
   const website = sampleProjectName("WEB");
   await open(
     page,
-    projectPageAddress(paths.projectFields, "WEB"),
+    addressInProject(paths.projectFields, "WEB"),
     t("field-permissions.project-title", { project: website }),
   );
   const inWebsite = await levelList(page, costCenter, roleName.contributor);
@@ -106,7 +105,7 @@ async function hideCostCenter(page: Page): Promise<void> {
   // The sub-projects of the Website have it hidden as well, and say where that comes from.
   await open(
     page,
-    projectPageAddress(paths.projectFields, "SHOP"),
+    addressInProject(paths.projectFields, "SHOP"),
     t("field-permissions.project-title", { project: sampleProjectName("SHOP") }),
   );
   const inShop = await levelList(page, costCenter, roleName.contributor);
@@ -118,7 +117,7 @@ async function hideCostCenter(page: Page): Promise<void> {
 async function hideNames(page: Page): Promise<void> {
   await open(
     page,
-    projectPageAddress(paths.projectPeople, "WEB"),
+    addressInProject(paths.projectPeople, "WEB"),
     t("people-visibility.project-title", { project: sampleProjectName("WEB") }),
   );
   const assigned = await levelList(page, t("people-kind.assigned-to"), roleName.guest);
@@ -136,7 +135,7 @@ async function seeFromTheSideOfAGuest(page: Page): Promise<void> {
   const website = sampleProjectName("WEB");
   await open(
     page,
-    projectPageAddress(paths.projectCheckAccess, "WEB"),
+    addressInProject(paths.projectCheckAccess, "WEB"),
     t("check-access.project-title", { project: website }),
   );
   await check(page, null, sampleGuestIn("WEB"));
@@ -154,7 +153,7 @@ async function checkAnasAccess(page: Page): Promise<void> {
   const website = sampleProjectName("WEB");
   await open(
     page,
-    projectPageAddress(paths.projectCheckAccess, "WEB"),
+    addressInProject(paths.projectCheckAccess, "WEB"),
     t("check-access.project-title", { project: website }),
   );
   await check(page, null, ana);
@@ -189,7 +188,7 @@ async function checkAnasAccess(page: Page): Promise<void> {
 async function readNoAccess(page: Page): Promise<void> {
   await open(
     page,
-    projectPageAddress(paths.projectCheckAccess, "AND"),
+    addressInProject(paths.projectCheckAccess, "AND"),
     t("check-access.project-title", { project: sampleProjectName("AND") }),
   );
   await check(page, null, ben);

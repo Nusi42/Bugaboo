@@ -1,6 +1,6 @@
 import type { Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
-import { Alert, Card, SaveStatus } from "@bugaboo/ui";
+import { Alert, alertTone, Card, SaveStatus } from "@bugaboo/ui";
 
 import { RolePermissions } from "./RolePermissions.tsx";
 import { useCatalogue } from "./roles.ts";
@@ -26,7 +26,7 @@ export function PermissionsCard({ role }: { readonly role: Schema<"RoleBody"> })
           "not-saved": t("save.not-saved"),
         }}
       />
-      {edits.problem === null ? null : <Alert danger>{edits.problem}</Alert>}
+      {edits.problem === null ? null : <Alert tone={alertTone.danger}>{edits.problem}</Alert>}
       <RoleSwitch
         id={role.id}
         on={role.two_step}

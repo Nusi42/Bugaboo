@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Alert, Card, Link } from "@bugaboo/ui";
+import { Alert, alertTone, Card, Link } from "@bugaboo/ui";
 import { useQuery } from "@tanstack/react-query";
 
 import { paths } from "../../shared/paths.ts";
@@ -13,7 +13,11 @@ export function SignUpPage() {
   const open = useQuery(statusOptions()).data?.sign_up_open;
   return (
     <Card heading={t("sign-up.title")} level={1}>
-      {open === false ? <Alert warning>{t("sign-up.closed")}</Alert> : <SignUpForm />}
+      {open === false ? (
+        <Alert tone={alertTone.warning}>{t("sign-up.closed")}</Alert>
+      ) : (
+        <SignUpForm />
+      )}
       <Link href={paths.signIn}>{t("sign-up.have-account")}</Link>
     </Card>
   );

@@ -1,7 +1,6 @@
 import { t } from "@bugaboo/messages";
-import { Alert } from "@bugaboo/ui";
 
-import { codeOf, messageOf } from "../../shared/errors.ts";
+import { QueryGate } from "../shell/index.ts";
 import { DeleteGroup } from "./DeleteGroup.tsx";
 import { GroupMembers } from "./GroupMembers.tsx";
 import { useGroup } from "./groups.ts";
@@ -27,22 +26,24 @@ export interface GroupEditorProps {
 export function GroupEditor({ id, onDeleted }: GroupEditorProps) {
   const found = useGroup(id);
   const group = found.data?.group;
-  if (found.isError) {
-    return codeOf(found.error) === "resource.not_found" ? (
-      <p className={styles.muted}>{t("groups.gone")}</p>
-    ) : (
-      <Alert danger>{messageOf(found.error)}</Alert>
-    );
-  }
-  if (found.data === undefined || group === undefined) {
-    return <p className={styles.muted}>{t("common.loading")}</p>;
-  }
+  const shown =
+    found.data !== undefined && group !== undefined
+      ? { group, used: found.data.used_by }
+      : undefined;
   return (
-    <div className={styles.stack}>
-      <RenameGroup key={renameKey(group)} group={group} />
-      <p className={styles.muted}>{groupUsedText(found.data.used_by)}</p>
-      <GroupMembers group={group} />
-      <DeleteGroup group={group} members={found.data.used_by.members} onDeleted={onDeleted} />
-    </div>
+    <QueryGate
+      error={found.error}
+      data={shown}
+      notFound={<p className={styles.muted}>{t("groups.gone")}</p>}
+    >
+      {(editor) => (
+        <div className={styles.stack}>
+          <RenameGroup key={renameKey(editor.group)} group={editor.group} />
+          <p className={styles.muted}>{groupUsedText(editor.used)}</p>
+          <GroupMembers group={editor.group} />
+          <DeleteGroup group={editor.group} members={editor.used.members} onDeleted={onDeleted} />
+        </div>
+      )}
+    </QueryGate>
   );
 }

@@ -1,9 +1,9 @@
 import { createRoute, lazyRouteComponent } from "@tanstack/react-router";
 
-import { paths } from "../shared/paths.ts";
+import { paths, routeParam } from "../shared/paths.ts";
+import { useAddressPart } from "./address-part.ts";
 import { appRoute, organizationSettingsRoute } from "./layouts.tsx";
 import { OnlyWith } from "./OnlyWith.tsx";
-import { useProjectOfAddress } from "./project-pages.tsx";
 
 // What roles see and what a person can do and why: three pages in *Organization settings* and the
 // same three below the settings of a project. Loaded when first opened (coding-standards section 6).
@@ -57,7 +57,7 @@ export const projectFieldsRoute = createRoute({
   getParentRoute: () => appRoute,
   path: paths.projectFields,
   component: function ProjectFields() {
-    const project = useProjectOfAddress();
+    const project = useAddressPart(routeParam.project);
     return project === undefined ? null : <ProjectFieldsScreen address={project} />;
   },
 });
@@ -66,7 +66,7 @@ export const projectPeopleRoute = createRoute({
   getParentRoute: () => appRoute,
   path: paths.projectPeople,
   component: function ProjectPeople() {
-    const project = useProjectOfAddress();
+    const project = useAddressPart(routeParam.project);
     return project === undefined ? null : <ProjectPeopleScreen address={project} />;
   },
 });
@@ -75,7 +75,7 @@ export const projectCheckAccessRoute = createRoute({
   getParentRoute: () => appRoute,
   path: paths.projectCheckAccess,
   component: function ProjectCheckAccess() {
-    const project = useProjectOfAddress();
+    const project = useAddressPart(routeParam.project);
     return project === undefined ? null : <ProjectCheckScreen address={project} />;
   },
 });

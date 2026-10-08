@@ -1,10 +1,10 @@
 import type { Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
-import { Alert, Button, Form, TextField } from "@bugaboo/ui";
+import { Alert, alertTone, Button, buttonType, Form, TextField } from "@bugaboo/ui";
 import { useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 
-import { refreshAccess } from "../../shared/access-cache.ts";
+import { refreshAccess } from "../../shared/query-keys.ts";
 import { api } from "../../shared/api.ts";
 import { messageOf } from "../../shared/errors.ts";
 import { roleAddress } from "../../shared/paths.ts";
@@ -38,9 +38,9 @@ export function CopyRole({ id, name }: CopyRoleProps) {
         value={typed}
         onChange={setTyped}
       />
-      {copy.isError ? <Alert danger>{messageOf(copy.error)}</Alert> : null}
+      {copy.isError ? <Alert tone={alertTone.danger}>{messageOf(copy.error)}</Alert> : null}
       <div className={styles.row}>
-        <Button submit isPending={copy.isPending}>
+        <Button type={buttonType.submit} isPending={copy.isPending}>
           {t("roles.copy")}
         </Button>
       </div>

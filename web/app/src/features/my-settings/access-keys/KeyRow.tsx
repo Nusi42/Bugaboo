@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { ConfirmDialog } from "@bugaboo/ui";
+import { buttonLook, ConfirmDialog } from "@bugaboo/ui";
 
 import { formatDate, formatDateTime } from "../../../shared/format.ts";
 import styles from "./AccessKeys.module.css";
@@ -81,7 +81,7 @@ export function KeyRow({ item, onDelete }: KeyRowProps) {
         text={t("access-keys.delete-text")}
         confirmLabel={t("access-keys.delete-confirm")}
         cancelLabel={t("common.cancel")}
-        danger
+        confirmLook={buttonLook.danger}
         onConfirm={onDelete}
       />
     </li>

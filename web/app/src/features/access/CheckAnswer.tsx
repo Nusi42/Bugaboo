@@ -1,5 +1,5 @@
 import { isMessageKey, locale, t } from "@bugaboo/messages";
-import { Button, Card } from "@bugaboo/ui";
+import { Button, buttonLook, Card } from "@bugaboo/ui";
 import { useState } from "react";
 
 import { personName } from "../../shared/person.ts";
@@ -121,7 +121,7 @@ function LevelSection({ answer, heading, entries, levelName, words }: LevelSecti
     <Card heading={heading}>
       <div className={styles.row}>
         <Button
-          quiet
+          look={buttonLook.quiet}
           onPress={() => {
             setEvery(!every);
           }}

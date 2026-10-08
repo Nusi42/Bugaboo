@@ -5,6 +5,7 @@ import { Button } from "./Button.tsx";
 import styles from "./ConfirmDialog.module.css";
 import { cx } from "./cx.ts";
 import { useLayout } from "./layout.ts";
+import { buttonLook, type ButtonLook } from "./props.ts";
 
 /** Words of React Aria Components and of the ARIA standard, not text for people. */
 const dialogRole = "alertdialog";
@@ -21,8 +22,8 @@ export interface ConfirmDialogProps {
   readonly text: string;
   readonly confirmLabel: string;
   readonly cancelLabel: string;
-  /** The confirming button is drawn in the color of warnings: the question is about a loss. */
-  readonly danger?: boolean;
+  /** `danger` draws the confirming button in the color of warnings: the question is about a loss. */
+  readonly confirmLook?: ButtonLook;
   readonly onConfirm: () => void;
   /** Something to fill in before confirming, for example a password. */
   readonly children?: ReactNode;
@@ -105,7 +106,7 @@ function Question({
   text,
   confirmLabel,
   cancelLabel,
-  danger = false,
+  confirmLook = buttonLook.plain,
   onConfirm,
   children,
   confirmDisabled = false,
@@ -121,7 +122,7 @@ function Question({
       <div className={styles.actions}>
         <Button onPress={close}>{cancelLabel}</Button>
         <Button
-          danger={danger}
+          look={confirmLook}
           isDisabled={confirmDisabled}
           onPress={() => {
             // The answer first: closing tells whoever listens that the question went away, and

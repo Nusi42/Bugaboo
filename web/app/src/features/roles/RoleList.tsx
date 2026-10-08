@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Alert, Button, Link } from "@bugaboo/ui";
+import { Alert, alertTone, Button, Link } from "@bugaboo/ui";
 
 import { messageOf } from "../../shared/errors.ts";
 import { roleAddress } from "../../shared/paths.ts";
@@ -12,7 +12,7 @@ export function RoleList() {
   const lines = roleLinesOf(roles.data?.pages);
   return (
     <div className={styles.stack}>
-      {roles.isError ? <Alert danger>{messageOf(roles.error)}</Alert> : null}
+      {roles.isError ? <Alert tone={alertTone.danger}>{messageOf(roles.error)}</Alert> : null}
       <ul className={styles.list} aria-label={t("roles.list")}>
         {lines.map((role) => (
           <li key={role.id} className={styles.item}>

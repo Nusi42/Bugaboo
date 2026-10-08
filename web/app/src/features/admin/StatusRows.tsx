@@ -1,6 +1,6 @@
 import type { Schema } from "@bugaboo/api-client";
 import { t, type MessageKey } from "@bugaboo/messages";
-import { Alert } from "@bugaboo/ui";
+import { Alert, alertTone } from "@bugaboo/ui";
 import type { ReactNode } from "react";
 
 import { daysUntil, formatDate, formatDateTime, splitUptime } from "../../shared/format.ts";
@@ -44,7 +44,7 @@ function Parts({
 }) {
   return (
     <>
-      <Alert warning>{heading}</Alert>
+      <Alert tone={alertTone.warning}>{heading}</Alert>
       <ul className={styles.list}>
         {parts.map((part) => (
           <li key={part}>{t(partNames[part])}</li>
@@ -84,10 +84,10 @@ function Certificate({ certificate, nowMs }: CertificateProps) {
   const date = formatDate(certificate.expires_at);
   const days = daysUntil(certificate.expires_at, nowMs);
   if (days < 0) {
-    return <Alert danger>{t("status.certificate.expired", { date })}</Alert>;
+    return <Alert tone={alertTone.danger}>{t("status.certificate.expired", { date })}</Alert>;
   }
   if (days < CERTIFICATE_WARNING_DAYS) {
-    return <Alert warning>{t("status.certificate.soon", { date, days })}</Alert>;
+    return <Alert tone={alertTone.warning}>{t("status.certificate.soon", { date, days })}</Alert>;
   }
   return <span>{t("status.certificate.valid", { date, days })}</span>;
 }
@@ -108,7 +108,7 @@ export function StatusRows({ state }: { readonly state: State }) {
         {state.database.ok ? (
           <span>{t("status.database.ok")}</span>
         ) : (
-          <Alert danger>{t("status.database.failed")}</Alert>
+          <Alert tone={alertTone.danger}>{t("status.database.failed")}</Alert>
         )}
       </Fact>
       <Fact term={t("status.certificate")}>

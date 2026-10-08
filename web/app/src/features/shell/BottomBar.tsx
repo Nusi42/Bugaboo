@@ -6,7 +6,7 @@ import { Button, Link } from "react-aria-components";
 import { paths } from "../../shared/paths.ts";
 import styles from "./BottomBar.module.css";
 import { openOverlay, useOverlayOpen } from "./overlay-state.ts";
-import { placeAt } from "./places.ts";
+import { placeAt } from "../../shared/places.ts";
 
 /** Words of the ARIA standard, not text for people. */
 const currentPage = "page";

@@ -4,6 +4,7 @@ import { resolve } from "node:path";
 import { defineConfig } from "@playwright/test";
 
 import { readPorts, repoRoot } from "./ports.ts";
+import { viewports } from "./viewports.ts";
 
 // Every worker starts its own Bugaboo server with its own data on a port of its own (ADR-0023),
 // so there are never more workers than ports.
@@ -27,12 +28,12 @@ export default defineConfig({
     {
       name: "tablet",
       testMatch: "**/shell.spec.ts",
-      use: { browserName: "chromium", viewport: { width: 900, height: 1000 }, hasTouch: true },
+      use: { browserName: "chromium", viewport: viewports.tablet, hasTouch: true },
     },
-    { name: "desktop", use: { browserName: "chromium", viewport: { width: 1280, height: 800 } } },
+    { name: "desktop", use: { browserName: "chromium", viewport: viewports.computer } },
     {
       name: "phone",
-      use: { browserName: "chromium", viewport: { width: 360, height: 740 }, hasTouch: true },
+      use: { browserName: "chromium", viewport: viewports.phone, hasTouch: true },
     },
   ],
 });

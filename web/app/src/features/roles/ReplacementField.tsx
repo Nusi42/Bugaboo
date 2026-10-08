@@ -1,7 +1,7 @@
 import { t } from "@bugaboo/messages";
 import { SelectField } from "@bugaboo/ui";
 
-import { useAllPages } from "../../shared/use-all-pages.ts";
+import { useAllPages } from "../../shared/paged.ts";
 import { roleLinesOf, useRoles } from "./roles.ts";
 
 export interface ReplacementFieldProps {
@@ -15,7 +15,7 @@ export interface ReplacementFieldProps {
 /** The roles that can take the place of a deleted one, to choose from. */
 export function ReplacementField({ id, value, onChange }: ReplacementFieldProps) {
   // Only the roles the person may give, and every one of them, not the first page.
-  const roles = useRoles(true);
+  const roles = useRoles("giveable");
   useAllPages(roles);
   const choices = [
     { value: "", label: t("roles.replace-choose") },

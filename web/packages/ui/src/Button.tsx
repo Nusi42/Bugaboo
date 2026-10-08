@@ -3,23 +3,23 @@ import { Button as AriaButton } from "react-aria-components";
 
 import styles from "./Button.module.css";
 import { cx } from "./cx.ts";
+import { buttonLook, buttonType, type ButtonLook, type ButtonType } from "./props.ts";
 
-/** Words of the HTML standard, not text for people. */
-const buttonTypes = { button: "button", submit: "submit" } as const;
+/** A word of the ARIA standard, not text for people. */
 const currentItem = "true";
 
 export interface ButtonProps {
   readonly children: ReactNode;
-  /** The one button of a screen that does what the screen is for. */
-  readonly primary?: boolean;
-  /** A button that is only text until it is pointed at, for small actions. */
-  readonly quiet?: boolean;
-  /** A button that takes something away: it is drawn in the color of warnings. */
-  readonly danger?: boolean;
+  /**
+   * `primary` is the one button of a screen that does what the screen is for; `quiet` is only
+   * text until it is pointed at, for small actions; `danger` takes something away and is drawn in
+   * the color of warnings.
+   */
+  readonly look?: ButtonLook;
   /** Fills the width of its container, as on a phone. */
   readonly wide?: boolean;
-  /** Sends the form the button is in, instead of only reacting to a press. */
-  readonly submit?: boolean;
+  /** `submit` sends the form the button is in, instead of only reacting to a press. */
+  readonly type?: ButtonType;
   /**
    * Waiting for an answer: the button does nothing when pressed again, and says it is busy. (The
    * pending state of React Aria Components is not used: it announces itself with an element that
@@ -36,11 +36,9 @@ export interface ButtonProps {
 
 export function Button({
   children,
-  primary = false,
-  quiet = false,
-  danger = false,
+  look = buttonLook.plain,
   wide = false,
-  submit = false,
+  type = buttonType.button,
   isPending = false,
   current = false,
   onPress,
@@ -51,16 +49,10 @@ export function Button({
       {...props}
       {...(isPending || onPress === undefined ? {} : { onPress })}
       // A button that waits for an answer must not send the form a second time.
-      type={submit && !isPending ? buttonTypes.submit : buttonTypes.button}
+      type={type === buttonType.submit && !isPending ? buttonType.submit : buttonType.button}
       aria-busy={isPending}
       {...(current ? { "aria-current": currentItem } : {})}
-      className={cx(
-        styles.button,
-        primary && styles.primary,
-        quiet && styles.quiet,
-        danger && styles.danger,
-        wide && styles.wide,
-      )}
+      className={cx(styles.button, look !== buttonLook.plain && styles[look], wide && styles.wide)}
     >
       {children}
     </AriaButton>

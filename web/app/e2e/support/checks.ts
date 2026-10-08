@@ -3,16 +3,19 @@ import { t } from "@bugaboo/messages";
 import { expect, type Page } from "@playwright/test";
 
 import { inOrder } from "./sequence.ts";
+import { type SettingChoice, settingChoices } from "@bugaboo/api-client";
+
+/** One of the built-in themes: the id on the page and the name people read. */
+export interface Theme {
+  readonly id: SettingChoice<"appearanceLightTheme" | "appearanceDarkTheme">;
+  readonly label: string;
+}
 
 /** The four built-in themes, by the id on the page and the name people read. */
-export const themes = [
-  { id: "daylight", label: t("theme.daylight") },
-  { id: "paper", label: t("theme.paper") },
-  { id: "dusk", label: t("theme.dusk") },
-  { id: "midnight", label: t("theme.midnight") },
-] as const;
-
-export type Theme = (typeof themes)[number];
+export const themes: readonly Theme[] = [
+  ...settingChoices.appearanceLightTheme,
+  ...settingChoices.appearanceDarkTheme,
+].map((id) => ({ id, label: t(`theme.${id}`) }));
 
 /**
  * Picks a theme with the choice at the bottom of the pages before sign-in, as a person would. The

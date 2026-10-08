@@ -1,6 +1,7 @@
+import { mayOpenProjectPage, projectPages } from "../../shared/project-pages.ts";
 import { ProjectGate } from "./ProjectGate.tsx";
+import { OtherTab } from "./OtherTab.tsx";
 import { ProjectSettings } from "./ProjectSettings.tsx";
-import { projectPage } from "./use-project-page.ts";
 
 /**
  * *Project settings*, `/p/WEB/settings` (PRJ-01, PRJ-03): the name and short name of a project and
@@ -10,8 +11,14 @@ import { projectPage } from "./use-project-page.ts";
  */
 export function ProjectSettingsPage({ address }: { readonly address: string }) {
   return (
-    <ProjectGate address={address} kind={projectPage.settings}>
-      {(project) => <ProjectSettings project={project} address={address} />}
+    <ProjectGate address={address} page={projectPages.settings}>
+      {(project) =>
+        mayOpenProjectPage(projectPages.settings, project) ? (
+          <ProjectSettings project={project} address={address} />
+        ) : (
+          <OtherTab project={project} />
+        )
+      }
     </ProjectGate>
   );
 }

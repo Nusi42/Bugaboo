@@ -5,26 +5,12 @@ import { ada } from "./support/accounts.ts";
 import { addVirtualAuthenticator } from "./support/authenticator.ts";
 import { expectGoodInEveryLook } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
-import { addPasskey } from "./support/flows.ts";
+import { addPasskey, addressEndingAt, enterSetupCode, sendSetupAccount } from "./support/flows.ts";
+import { paths } from "../src/shared/paths.ts";
 
 test.describe.configure({ mode: "serial" });
 
 const wrongCode = "aaaa-bbbb-cccc-dddd";
-
-/** Types the setup code on the first step and goes on to the account. */
-async function enterCode(page: Page, code: string): Promise<void> {
-  await page.getByLabel(t("first-run.code.label")).fill(code);
-  await page.getByRole("button", { name: t("common.continue") }).click();
-  await expect(page.getByRole("heading", { name: t("first-run.account.title") })).toBeVisible();
-}
-
-/** Fills in the account of the second step and sends it. */
-async function sendAccount(page: Page, password: string): Promise<void> {
-  await page.getByLabel(t("field.name")).fill(ada.name);
-  await page.getByLabel(t("field.email")).fill(ada.email);
-  await page.getByLabel(t("field.password"), { exact: true }).fill(password);
-  await page.getByRole("button", { name: t("first-run.account.submit") }).click();
-}
 
 /** The third step: a passkey is added, as the first of the second checks for the account. */
 async function addTheFirstPasskey(page: Page): Promise<void> {
@@ -37,8 +23,8 @@ async function addTheFirstPasskey(page: Page): Promise<void> {
 }
 
 test("auth_09 a fresh server opens the setup and says where the code is", async ({ page }) => {
-  await page.goto("/");
-  await expect(page).toHaveURL(/\/setup$/u);
+  await page.goto(paths.home);
+  await expect(page).toHaveURL(addressEndingAt(paths.setup));
   await expect(page.getByRole("heading", { level: 1, name: t("first-run.title") })).toBeVisible();
   await expect(page.getByText(t("first-run.code.where"))).toBeVisible();
   await expect(
@@ -50,9 +36,9 @@ test("auth_09 a fresh server opens the setup and says where the code is", async 
 test("auth_09 a wrong setup code is refused and the person goes back to the first step", async ({
   page,
 }) => {
-  await page.goto("/setup");
-  await enterCode(page, wrongCode);
-  await sendAccount(page, ada.password);
+  await page.goto(paths.setup);
+  await enterSetupCode(page, wrongCode);
+  await sendSetupAccount(page, ada);
   await expect(page.getByRole("heading", { name: t("first-run.title") })).toBeVisible();
   await expect(page.getByRole("alert")).toHaveText(t("error.auth.wrong-setup-code"));
 });
@@ -61,9 +47,9 @@ test("auth_01 a password that is too short is explained next to the field", asyn
   page,
   server,
 }) => {
-  await page.goto("/setup");
-  await enterCode(page, server.setupCode());
-  await sendAccount(page, "short");
+  await page.goto(paths.setup);
+  await enterSetupCode(page, server.setupCode());
+  await sendSetupAccount(page, ada, "short");
   await expect(page.getByText(t("error.auth.password-too-short"))).toBeVisible();
   await expect(page.getByRole("heading", { name: t("first-run.account.title") })).toBeVisible();
 });
@@ -73,10 +59,10 @@ test("auth_09 the setup code makes the first administrator, who can add a passke
   server,
 }) => {
   await addVirtualAuthenticator(page);
-  await page.goto("/setup");
-  await enterCode(page, server.setupCode());
+  await page.goto(paths.setup);
+  await enterSetupCode(page, server.setupCode());
   await expectGoodInEveryLook(page);
-  await sendAccount(page, ada.password);
+  await sendSetupAccount(page, ada);
   await addTheFirstPasskey(page);
 
   await page.getByRole("button", { name: t("first-run.safer.finish") }).click();
@@ -92,7 +78,7 @@ test("auth_09 the setup code makes the first administrator, who can add a passke
 });
 
 test("auth_09 the setup is closed for good afterwards", async ({ page }) => {
-  await page.goto("/setup");
-  await expect(page).toHaveURL(/\/sign-in$/u);
+  await page.goto(paths.setup);
+  await expect(page).toHaveURL(addressEndingAt(paths.signIn));
   await expect(page.getByRole("heading", { level: 1, name: t("sign-in.title") })).toBeVisible();
 });

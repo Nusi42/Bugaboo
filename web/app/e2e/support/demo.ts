@@ -1,11 +1,11 @@
 import { t } from "@bugaboo/messages";
 import { expect, type Locator, type Page } from "@playwright/test";
 
-import { paths, projectPageAddress } from "../../src/shared/paths.ts";
+import { addressInProject, paths, projectAddress } from "../../src/shared/paths.ts";
 import { expectGoodInEveryLook } from "./checks.ts";
 import { layoutOf } from "./layout.ts";
 import { inOrder } from "./sequence.ts";
-import { sampleProjectName, sampleProjects, type SamplePerson } from "./sample.ts";
+import { sampleProjectName, sampleProjects } from "./sample.ts";
 import { tree } from "./projects.ts";
 import { shootWhole } from "./screenshots.ts";
 
@@ -32,18 +32,6 @@ export async function open(page: Page, address: string, heading: string): Promis
   await expect(page.getByRole("heading", { level: 1, name: heading })).toBeVisible();
 }
 
-/** Chooses whom to check, and where when `place` is named, on the page of *Check access*. */
-export async function check(page: Page, place: string | null, person: SamplePerson): Promise<void> {
-  await (place === null
-    ? Promise.resolve()
-    : page
-        .getByLabel(t("check-access.place-search"))
-        .fill(place)
-        .then(() => page.getByRole("radio", { name: new RegExp(place, "u") }).check()));
-  await page.getByLabel(t("check-access.person-search")).fill(person.name);
-  await page.getByRole("radio", { name: person.name }).check();
-}
-
 /** A sentence of the answer of *Check access* or of a preview (the first place it is written). */
 export function sentence(page: Page, text: string): Locator {
   return page.getByText(text).first();
@@ -67,14 +55,17 @@ export async function seesOnlyTheTreeOf(page: Page, shortName: string): Promise<
 /** The pages of the administrators, and a project the person has no part in, do not exist for them. */
 export async function findsNoneOf(page: Page, own: string, other: string): Promise<void> {
   await inOrder(
-    [paths.people, paths.roles, projectPageAddress(paths.projectFields, own), `/p/${other}`].map(
-      (address) => async () => {
-        await page.goto(address);
-        await expect(
-          page.getByRole("heading", { level: 1, name: t("page.not-found.title") }),
-        ).toBeVisible();
-      },
-    ),
+    [
+      paths.people,
+      paths.roles,
+      addressInProject(paths.projectFields, own),
+      projectAddress(other),
+    ].map((address) => async () => {
+      await page.goto(address);
+      await expect(
+        page.getByRole("heading", { level: 1, name: t("page.not-found.title") }),
+      ).toBeVisible();
+    }),
   );
 }
 

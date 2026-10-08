@@ -1,5 +1,13 @@
 import { t } from "@bugaboo/messages";
-import { Alert, autoComplete, Button, Form, TextField } from "@bugaboo/ui";
+import {
+  Alert,
+  alertTone,
+  autoComplete,
+  fieldKind,
+  Form,
+  SubmitButton,
+  TextField,
+} from "@bugaboo/ui";
 import { useState } from "react";
 
 import { api } from "../../shared/api.ts";
@@ -20,7 +28,7 @@ export function PasswordForm() {
     >
       <TextField
         label={t("field.email")}
-        email
+        kind={fieldKind.email}
         autoComplete={autoComplete.username}
         requiredMessage={t("validation.required")}
         emailMessage={t("validation.email")}
@@ -29,16 +37,16 @@ export function PasswordForm() {
       />
       <TextField
         label={t("field.password")}
-        password
+        kind={fieldKind.password}
         autoComplete={autoComplete.currentPassword}
         requiredMessage={t("validation.required")}
         value={password}
         onChange={setPassword}
       />
-      {signIn.isError ? <Alert danger>{messageOf(signIn.error)}</Alert> : null}
-      <Button primary wide submit isPending={signIn.isPending}>
+      {signIn.isError ? <Alert tone={alertTone.danger}>{messageOf(signIn.error)}</Alert> : null}
+      <SubmitButton wide isPending={signIn.isPending}>
         {t("sign-in.submit")}
-      </Button>
+      </SubmitButton>
     </Form>
   );
 }

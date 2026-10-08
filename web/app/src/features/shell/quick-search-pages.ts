@@ -1,6 +1,6 @@
 import { t } from "@bugaboo/messages";
 
-import { placeAt, placesFor } from "./places.ts";
+import { placeAt, placesFor } from "../../shared/places.ts";
 import type { QuickResult, QuickSearchAsker, QuickSearchSource } from "./quick-search-sources.ts";
 
 /** Whether every word the person typed is in the text, in any order. */

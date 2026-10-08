@@ -2,30 +2,25 @@ import { t } from "@bugaboo/messages";
 import { Card } from "@bugaboo/ui";
 import type { ReactNode } from "react";
 
-import type { PermissionKey } from "../../shared/permissions.ts";
+import { mayOpenProjectPage, projectPages, type ProjectPage } from "../../shared/project-pages.ts";
 import { ProjectTabs, type OneProject } from "../projects/index.ts";
 import { NotFoundPage } from "../shell/index.ts";
 import styles from "./Access.module.css";
 import { CheckAccessView } from "./CheckAccessView.tsx";
 import { FieldPermissionsTable, PeopleVisibilityTable } from "./tables.tsx";
 
-/** The permission that opens the field permissions and *Who sees people*. */
-const DECIDE = "decide-what-roles-see";
-/** The permission that opens *Check access*. */
-const CHECK = "check-access";
-
 interface ProjectFrameProps {
   readonly project: OneProject;
-  /** The permission the page needs in the project; a person without it finds nothing, as at an address that is not there. */
-  readonly needs: PermissionKey;
+  /** The page; a person who may not open it finds nothing, as at an address that is not there. */
+  readonly page: ProjectPage;
   readonly heading: string;
   readonly intro: string;
   readonly children: ReactNode;
 }
 
 /** What every page of *What roles see here* has: the tabs of the settings, the heading and the introduction. */
-function ProjectFrame({ project, needs, heading, intro, children }: ProjectFrameProps) {
-  if (!project.permissions.includes(needs)) {
+function ProjectFrame({ project, page, heading, intro, children }: ProjectFrameProps) {
+  if (!mayOpenProjectPage(page, project)) {
     return <NotFoundPage />;
   }
   return (
@@ -46,7 +41,7 @@ export function ProjectFieldPermissionsPage({ project }: { readonly project: One
   return (
     <ProjectFrame
       project={project}
-      needs={DECIDE}
+      page={projectPages.fields}
       heading={t("field-permissions.project-title", { project: project.project.name })}
       intro={t("field-permissions.intro-project", { project: project.project.name })}
     >
@@ -60,7 +55,7 @@ export function ProjectPeopleVisibilityPage({ project }: { readonly project: One
   return (
     <ProjectFrame
       project={project}
-      needs={DECIDE}
+      page={projectPages.people}
       heading={t("people-visibility.project-title", { project: project.project.name })}
       intro={t("people-visibility.intro-project", { project: project.project.name })}
     >
@@ -74,7 +69,7 @@ export function ProjectCheckAccessPage({ project }: { readonly project: OneProje
   return (
     <ProjectFrame
       project={project}
-      needs={CHECK}
+      page={projectPages.check}
       heading={t("check-access.project-title", { project: project.project.name })}
       intro={t("check-access.intro")}
     >

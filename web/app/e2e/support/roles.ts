@@ -1,13 +1,15 @@
+import { dataOf } from "@bugaboo/api-client";
 import { type Page } from "@playwright/test";
+
+import { sessionOver } from "./api.ts";
 
 /** What the server says about the two-step switch of the role whose page is open (the page may not have caught up). */
 export async function twoStepOf(page: Page): Promise<unknown> {
-  const role = new URL(page.url()).pathname.split("/").at(-1) ?? "";
-  const answer = await page.context().request.get(`/api/v1/roles/${role}`);
-  const body: unknown = await answer.json();
-  const detail: unknown =
-    typeof body === "object" && body !== null ? Reflect.get(body, "role") : undefined;
-  return typeof detail === "object" && detail !== null
-    ? Reflect.get(detail, "two_step")
-    : undefined;
+  const { origin, pathname } = new URL(page.url());
+  const role = pathname.split("/").at(-1) ?? "";
+  const session = sessionOver(page.context().request, origin);
+  const answer = dataOf(
+    await session.client.GET("/api/v1/roles/{role_id}", { params: { path: { role_id: role } } }),
+  );
+  return answer.role.two_step;
 }

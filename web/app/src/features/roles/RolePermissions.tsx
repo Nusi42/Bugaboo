@@ -5,7 +5,7 @@ import { Checkbox } from "@bugaboo/ui";
 import { permissionSentence, topicHeading } from "../../shared/access-words.ts";
 import { useAskFirst } from "../../shared/ask-first.tsx";
 import styles from "./Roles.module.css";
-import type { PermissionKey } from "./roles.ts";
+import type { PermissionKey } from "../../shared/permissions.ts";
 
 export interface RolePermissionsProps {
   /** The ID of the role. */

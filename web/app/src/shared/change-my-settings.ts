@@ -1,14 +1,9 @@
 import { api } from "./api.ts";
 import { messageOf } from "./errors.ts";
-import {
-  isMySettings,
-  mySettingsKey,
-  withChange,
-  type MySettings,
-  type SettingChange,
-} from "./my-settings.ts";
+import { isMySettings, mySettingsKey, type MySettings } from "./my-settings.ts";
 import { optimisticSend } from "./optimistic.ts";
 import { queryClient } from "./query-client.ts";
+import { withChange, type SettingChange } from "./setting-change.ts";
 
 /** What the person is told about their changes: nothing before the first, then where it stands. */
 export interface SaveProgress {

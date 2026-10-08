@@ -12,6 +12,7 @@ import {
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { inOrder } from "./support/sequence.ts";
+import { paths } from "../src/shared/paths.ts";
 
 test.use({
   preparation: {
@@ -28,7 +29,7 @@ test.beforeEach(async ({ server }) => {
 /** Signs in and opens *My settings › Appearance*. */
 async function openAppearance(page: Page): Promise<void> {
   await signIn(page, ada);
-  await page.goto("/me/appearance");
+  await page.goto(paths.appearance);
   await expect(page.getByRole("heading", { level: 1, name: t("appearance.title") })).toBeVisible();
 }
 

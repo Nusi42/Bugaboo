@@ -1,10 +1,10 @@
 import { t } from "@bugaboo/messages";
-import { Alert, ConfirmDialog } from "@bugaboo/ui";
+import { Alert, alertTone, buttonLook, ConfirmDialog } from "@bugaboo/ui";
 
 import { api } from "../../shared/api.ts";
 import { useAskFirst } from "../../shared/ask-first.tsx";
 import { messageOf } from "../../shared/errors.ts";
-import { refreshAccess } from "../../shared/access-cache.ts";
+import { refreshAccess } from "../../shared/query-keys.ts";
 import type { GroupLine } from "./groups.ts";
 import styles from "./People.module.css";
 
@@ -31,7 +31,7 @@ export function DeleteGroup({ group, members, onDeleted }: DeleteGroupProps) {
   return (
     <div className={styles.stack}>
       {dialog}
-      {remove.isError ? <Alert danger>{messageOf(remove.error)}</Alert> : null}
+      {remove.isError ? <Alert tone={alertTone.danger}>{messageOf(remove.error)}</Alert> : null}
       <div className={styles.row}>
         <ConfirmDialog
           triggerLabel={t("groups.delete")}
@@ -40,7 +40,7 @@ export function DeleteGroup({ group, members, onDeleted }: DeleteGroupProps) {
           text={t("groups.delete-text", { members })}
           confirmLabel={t("groups.delete")}
           cancelLabel={t("common.cancel")}
-          danger
+          confirmLook={buttonLook.danger}
           onConfirm={() => {
             // The group may be what gives the person their own way to manage roles.
             void ask({ kind: "delete-group", group: group.id }).then((go) => {

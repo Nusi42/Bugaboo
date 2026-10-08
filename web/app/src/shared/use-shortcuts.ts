@@ -2,12 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useSyncExternalStore } from "react"
 
 import { createEngine } from "./shortcuts-engine.ts";
 import { currentKeysSource } from "./shortcuts-source.ts";
-import {
-  shortcutDefinitions,
-  type ShortcutHandlers,
-  type ShortcutId,
-  type ShortcutOverrides,
-} from "./shortcuts.ts";
+import type { ShortcutHandlers, ShortcutId, ShortcutOverrides } from "./shortcuts.ts";
 
 /** What the screens on show do for each shortcut. The one registered last has the say. */
 const registrations: { readonly current: () => ShortcutHandlers }[] = [];
@@ -96,8 +91,3 @@ export function setShortcutKeys(id: ShortcutId, keys: readonly string[] | null):
   }
   source.write(next);
 }
-
-/** Whether every shortcut has a place in the list (a guard for tests and for the list under `?`). */
-export const allShortcutIds: readonly ShortcutId[] = shortcutDefinitions.map(
-  (definition) => definition.id,
-);

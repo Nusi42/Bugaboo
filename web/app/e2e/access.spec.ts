@@ -1,11 +1,12 @@
 import { t } from "@bugaboo/messages";
 import { type Page } from "@playwright/test";
 
-import { paths, projectPageAddress } from "../src/shared/paths.ts";
+import { addressInProject, paths } from "../src/shared/paths.ts";
 import { ada, bob, cleo, makeAdmin } from "./support/accounts.ts";
 import {
   ana,
   around,
+  check,
   forgetFieldLevel,
   lea,
   levelList,
@@ -14,6 +15,7 @@ import {
   projectIdOf,
   roleId,
   roleName,
+  setPeopleLevel,
   signedInAdmin,
 } from "./support/access.ts";
 import { expectGoodInEveryLook } from "./support/checks.ts";
@@ -71,7 +73,7 @@ test("sec_04 hiding Cost center from Contributors in a project reaches its sub-p
   // DOCS, inside WEB, inherits it as well.
   await open(
     page,
-    projectPageAddress(paths.projectFields, "DOCS"),
+    addressInProject(paths.projectFields, "DOCS"),
     t("field-permissions.project-title", { project: "Documents" }),
   );
   const inDocs = await levelList(page, costCenter, roleName.contributor);
@@ -81,7 +83,7 @@ test("sec_04 hiding Cost center from Contributors in a project reaches its sub-p
 /** A Contributor starts with *Can see* on Cost center; hide it in ACME. */
 async function hideInAcme(page: Page): Promise<void> {
   const acme = t("field-permissions.project-title", { project: "Acme Corporation" });
-  await open(page, projectPageAddress(paths.projectFields, "ACME"), acme);
+  await open(page, addressInProject(paths.projectFields, "ACME"), acme);
   const inAcme = await levelList(page, costCenter, roleName.contributor);
   await expect(inAcme).toHaveValue("can-see");
   await pickLevel(inAcme, page, t("field-level.hidden"));
@@ -92,7 +94,7 @@ async function hideInAcme(page: Page): Promise<void> {
 async function changeBelow(page: Page): Promise<void> {
   await open(
     page,
-    projectPageAddress(paths.projectFields, "WEB"),
+    addressInProject(paths.projectFields, "WEB"),
     t("field-permissions.project-title", { project: "Website" }),
   );
   const inWeb = await levelList(page, costCenter, roleName.contributor);
@@ -117,7 +119,7 @@ async function changeBelow(page: Page): Promise<void> {
 
 test("sec_04 the settings of a project lead to what roles see there", async ({ page }) => {
   await signIn(page, ada);
-  await page.goto("/p/ACME/settings");
+  await page.goto(addressInProject(paths.projectSettings, "ACME"));
   await page.getByRole("link", { name: t("nav.field-permissions"), exact: true }).click();
   await expect(
     page.getByRole("heading", {
@@ -141,7 +143,7 @@ test("priv_12 hiding who is assigned from Guests shows them Someone, and the scr
   const admin = await signedInAdmin(server);
   const guest = await roleId(admin, roleName.guest);
   // Where the last run left it: Guests see the role of who is assigned.
-  await admin.put(`/api/v1/people-visibility/${guest}/assigned-to`, { level: "role-only" });
+  await setPeopleLevel(admin, { role: guest, kind: "assigned-to" }, "role-only");
   await admin.dispose();
   await signIn(page, ada);
   await open(page, paths.peopleVisibility, t("nav.people-visibility"));
@@ -165,22 +167,12 @@ test("priv_12 hiding who is assigned from Guests shows them Someone, and the scr
   ).toBeVisible();
 });
 
-/** Chooses where to look and whom to check in the page of *Check access* that is open. */
-async function check(page: Page, place: string | null, person: string): Promise<void> {
-  if (place !== null) {
-    await page.getByLabel(t("check-access.place-search")).fill(place);
-    await page.getByRole("radio", { name: new RegExp(place, "u") }).check();
-  }
-  await page.getByLabel(t("check-access.person-search")).fill(person);
-  await page.getByRole("radio", { name: person }).check();
-}
-
 test("sec_03 checking Ana's access in Website reads as a sentence with its reasons", async ({
   page,
 }) => {
   await signIn(page, ada);
   await open(page, paths.checkAccess, t("nav.check-access"));
-  await check(page, "Website", ana.name);
+  await check(page, "Website", ana);
   await expect(
     page.getByRole("heading", {
       name: t("check-access.result-heading", { person: ana.name, place: "Website" }),
@@ -220,10 +212,10 @@ test("sec_03 a lead who cannot see the project a role comes from reads a project
   await signIn(page, lea);
   await open(
     page,
-    projectPageAddress(paths.projectCheckAccess, "WEB"),
+    addressInProject(paths.projectCheckAccess, "WEB"),
     t("check-access.project-title", { project: "Website" }),
   );
-  await check(page, null, ana.name);
+  await check(page, null, ana);
   await expect(
     page.getByText(
       t("check-access.reason.inherited-project", {
@@ -240,9 +232,9 @@ test("sec_01 a Contributor and a Guest find none of these pages", async ({ brows
     paths.fieldPermissions,
     paths.peopleVisibility,
     paths.checkAccess,
-    projectPageAddress(paths.projectFields, "ACME"),
-    projectPageAddress(paths.projectPeople, "ACME"),
-    projectPageAddress(paths.projectCheckAccess, "ACME"),
+    addressInProject(paths.projectFields, "ACME"),
+    addressInProject(paths.projectPeople, "ACME"),
+    addressInProject(paths.projectCheckAccess, "ACME"),
   ];
   await inOrder(
     [bob, cleo].map((person) => async () => {
@@ -268,7 +260,7 @@ test("ux_04 the matrix, the preview and the answer are good in the four themes",
   await signIn(page, ada);
   await open(
     page,
-    projectPageAddress(paths.projectFields, "WEB"),
+    addressInProject(paths.projectFields, "WEB"),
     t("field-permissions.project-title", { project: "Website" }),
   );
   await levelList(page, costCenter, roleName.contributor);
@@ -277,7 +269,7 @@ test("ux_04 the matrix, the preview and the answer are good in the four themes",
   await levelList(page, t("people-kind.assigned-to"), roleName.guest);
   await expectGoodInEveryLook(page);
   await open(page, paths.checkAccess, t("nav.check-access"));
-  await check(page, "Website", ana.name);
+  await check(page, "Website", ana);
   await expect(page.getByText(t("check-access.fields-heading"), { exact: true })).toBeVisible();
   await expectGoodInEveryLook(page);
 });

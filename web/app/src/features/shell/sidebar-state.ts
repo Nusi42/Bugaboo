@@ -1,7 +1,9 @@
+import { readStored, storageKey, writeStored } from "@bugaboo/ui";
 import { useEffect, useSyncExternalStore } from "react";
 
 /** Remembers on this device whether the person narrowed the sidebar to icons. */
-const storageKey = "bugaboo.sidebar-narrow";
+const NARROW = "yes";
+const WIDE = "no";
 
 interface SidebarState {
   /** The person narrowed it. */
@@ -10,15 +12,10 @@ interface SidebarState {
   readonly squeezed: number;
 }
 
-function readNarrowed(): boolean {
-  try {
-    return localStorage.getItem(storageKey) === "yes";
-  } catch {
-    return false;
-  }
-}
-
-let state: SidebarState = { narrowed: readNarrowed(), squeezed: 0 };
+let state: SidebarState = {
+  narrowed: readStored(storageKey.sidebarNarrow) === NARROW,
+  squeezed: 0,
+};
 const listeners = new Set<() => void>();
 
 function change(next: SidebarState): void {
@@ -52,11 +49,7 @@ export function useSidebarNarrow(): {
 /** Narrows or widens the sidebar, and remembers it. */
 export function toggleSidebar(): void {
   const narrowed = !state.narrowed;
-  try {
-    localStorage.setItem(storageKey, narrowed ? "yes" : "no");
-  } catch {
-    // The choice then only lasts until the page is closed.
-  }
+  writeStored(storageKey.sidebarNarrow, narrowed ? NARROW : WIDE);
   change({ ...state, narrowed });
 }
 
