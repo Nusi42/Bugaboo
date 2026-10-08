@@ -15,6 +15,7 @@ use bb_core::id::UserId;
 use bb_core::technical::TechnicalName;
 use serde::Serialize;
 
+use crate::dump_organization::{DumpAssignment, DumpGroup, DumpLevel, DumpProject, DumpRole};
 use crate::error::SampleError;
 use crate::generate::Sample;
 
@@ -30,6 +31,11 @@ pub struct Dump {
     seed: u64,
     start: String,
     people: Vec<DumpPerson>,
+    groups: Vec<DumpGroup>,
+    roles: Vec<DumpRole>,
+    projects: Vec<DumpProject>,
+    assignments: Vec<DumpAssignment>,
+    levels: Vec<DumpLevel>,
     events: Vec<DumpEvent>,
     security_log: Vec<DumpLogEntry>,
 }
@@ -41,6 +47,11 @@ struct DumpPerson {
     role: &'static str,
     administrator: bool,
     code_app: bool,
+    access_key: bool,
+    time_zone: String,
+    date_format: String,
+    number_format: String,
+    first_day: String,
     created_at: String,
 }
 
@@ -157,6 +168,11 @@ impl Sample {
                 role: made.person.role.code(),
                 administrator: administrators.contains(&account.person.id),
                 code_app,
+                access_key: made.access_key.is_some(),
+                time_zone: made.person.region.time_zone.clone(),
+                date_format: made.person.region.date_format.clone(),
+                number_format: made.person.region.number_format.clone(),
+                first_day: made.person.region.first_day.clone(),
                 created_at: account.person.created_at.to_string(),
             });
         }
@@ -186,10 +202,16 @@ impl Sample {
                 network: entry.network.map(|network| network.to_string()),
             })
             .collect();
+        let organization = self.organization().await?;
         Ok(Dump {
             seed: self.options.seed,
             start: self.options.start.to_string(),
             people,
+            groups: organization.groups,
+            roles: organization.roles,
+            projects: organization.projects,
+            assignments: organization.assignments,
+            levels: organization.levels,
             events,
             security_log,
         })

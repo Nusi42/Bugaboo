@@ -2,12 +2,13 @@ import { t } from "@bugaboo/messages";
 import { type Page } from "@playwright/test";
 
 import { paths, projectPageAddress } from "../src/shared/paths.ts";
-import { ada, bob, cleo, makeAdmin, makePerson } from "./support/accounts.ts";
+import { ada, bob, cleo, makeAdmin } from "./support/accounts.ts";
 import {
   ana,
   forgetFieldLevel,
   lea,
   levelList,
+  makePeopleWithRoles,
   pickLevel,
   projectIdOf,
   roleId,
@@ -17,7 +18,6 @@ import {
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { makeProject } from "./support/projects.ts";
-import { inOrder } from "./support/sequence.ts";
 import { screenshotFolder, shoot } from "./support/screenshots.ts";
 
 // The screens of what roles see and of Check access for the maintainer's review of M2 WP-12, at phone
@@ -35,17 +35,14 @@ test.use({
   preparation: {
     run: async (server) => {
       const admin = await makeAdmin(server);
-      await inOrder(
-        [bob, cleo, ana, lea].map((person) => async () => {
-          await (await makePerson(server, admin, person)).dispose();
-        }),
-      );
       const acme = await makeProject(admin, "ACME", "Acme Corporation");
       await makeProject(admin, "WEB", "Website", acme);
-      server.giveRole(bob.email, "contributor", "ACME");
-      server.giveRole(cleo.email, "guest", "ACME");
-      server.giveRole(ana.email, "team-member", "ACME");
-      server.giveRole(lea.email, "project-lead", "WEB");
+      await makePeopleWithRoles(server, admin, [
+        { person: bob, role: roleName.contributor, project: "ACME" },
+        { person: cleo, role: roleName.guest, project: "ACME" },
+        { person: ana, role: roleName.teamMember, project: "ACME" },
+        { person: lea, role: roleName.projectLead, project: "WEB" },
+      ]);
       await admin.dispose();
     },
   },

@@ -6,6 +6,7 @@
 //! The program never reads the clock: this file hands it the start moment (now; a fixed moment
 //! for `--check`, so the runs are comparable).
 
+use std::collections::BTreeMap;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
@@ -57,6 +58,37 @@ pub(crate) struct Layout {
     pub(crate) dump_file: String,
     /// The environment variable that holds the address of the PostgreSQL database of the program.
     database_url_variable: String,
+    /// What the groups and projects of the organization are called: the names TEST-SAMPLE-DATA
+    /// expects to find in the dump.
+    pub(crate) organization: OrganizationNames,
+}
+
+/// The names of the organization in `tools/dev/sample.json`.
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct OrganizationNames {
+    /// The groups: key, name.
+    pub(crate) groups: BTreeMap<String, String>,
+    /// The projects of the top level.
+    pub(crate) projects: Vec<ProjectNames>,
+}
+
+/// A project of the sample organization.
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct ProjectNames {
+    /// The letters of its address.
+    pub(crate) short_name: String,
+    /// The projects inside it.
+    pub(crate) sub_projects: Vec<SubProjectNames>,
+}
+
+/// A sub-project of the sample organization.
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct SubProjectNames {
+    /// The letters of its address.
+    pub(crate) short_name: String,
 }
 
 impl Layout {
@@ -296,7 +328,7 @@ fn check(repo: &Repo, program: &Path, seed: Option<u64>) -> anyhow::Result<bool>
         }
         Ok(runs)
     })?;
-    let problems = test_sample_data::problems(&names, &runs);
+    let problems = test_sample_data::problems(&names, &layout.organization, &runs);
     for problem in &problems {
         output::info(&format!("TEST-SAMPLE-DATA: {problem}"));
     }

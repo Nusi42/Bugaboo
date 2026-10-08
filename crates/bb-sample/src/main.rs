@@ -8,7 +8,7 @@ use std::path::PathBuf;
 use std::process::ExitCode;
 
 use bb_core::message::{self, Message, MessageKey};
-use bb_sample::{DEFAULT_SEED, Layout, NothingMore, Options, Output, SampleError, Target, make};
+use bb_sample::{DEFAULT_SEED, Layout, Options, Organization, Output, SampleError, Target, make};
 use clap::{CommandFactory as _, FromArgMatches as _, Parser, ValueEnum};
 use jiff::Timestamp;
 
@@ -65,7 +65,7 @@ async fn run(args: &Args, layout: &Layout) -> Result<String, SampleError> {
         seed: args.seed,
         start,
     };
-    let sample = make(&options, &output.data_folder(), &target, &mut NothingMore).await?;
+    let sample = make(&options, &output.data_folder(), &target, &mut Organization).await?;
     sample.verify_security_log().await?;
     output.write_dump(&sample.dump().await?.to_json()?)?;
     output.write_sign_in(&sample.sign_in_text())?;

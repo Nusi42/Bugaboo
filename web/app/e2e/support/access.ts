@@ -1,10 +1,11 @@
 import { t } from "@bugaboo/messages";
 import { expect, type Locator, type Page } from "@playwright/test";
 
-import { ada, type Person } from "./accounts.ts";
+import { ada, makePerson, type Person } from "./accounts.ts";
 import { type ApiSession, openSession } from "./api.ts";
 import { type Instance } from "./server.ts";
 import { layoutOf } from "./layout.ts";
+import { inOrder } from "./sequence.ts";
 
 export const ana: Person = {
   name: "Ana Analyst",
@@ -20,6 +21,9 @@ export const lea: Person = {
 
 /** The roles of the starting set, by the name people read. */
 export const roleName = {
+  administrator: t("starting-role.administrator"),
+  projectLead: t("starting-role.project-lead"),
+  teamMember: t("starting-role.team-member"),
   contributor: t("starting-role.contributor"),
   guest: t("starting-role.guest"),
 } as const;
@@ -87,6 +91,52 @@ export async function signedInAdmin(server: Instance): Promise<ApiSession> {
   const session = await openSession(server.url);
   await session.post("/api/v1/auth/sign-in", { email: ada.email, password: ada.password });
   return session;
+}
+
+/** The ID of the person behind a session. */
+export async function ownId(session: ApiSession): Promise<string> {
+  return String((await session.get("/api/v1/auth/me"))["id"]);
+}
+
+/**
+ * Gives a person a role the way *Who has which role* does: for the whole organization, or on a
+ * project (given by its short name) and its sub-projects (M2-F92).
+ */
+export async function giveRole(
+  admin: ApiSession,
+  person: string,
+  role: string,
+  project: string | null,
+): Promise<void> {
+  const row = { who: { person }, role: await roleId(admin, role) };
+  await (project === null
+    ? admin.post("/api/v1/assignments", row)
+    : admin.post(`/api/v1/projects/${await projectIdOf(admin, project)}/assignments`, {
+        ...row,
+        applies_to: "project-and-sub-projects",
+      }));
+}
+
+/** A person who is made, and the role they are given on a project and its sub-projects. */
+export interface WithRole {
+  readonly person: Person;
+  readonly role: string;
+  readonly project: string;
+}
+
+/** Makes an account for each person and gives each the role they are named with (M2-F92). */
+export async function makePeopleWithRoles(
+  server: Instance,
+  admin: ApiSession,
+  who: readonly WithRole[],
+): Promise<void> {
+  await inOrder(
+    who.map(({ person, role, project }) => async () => {
+      const session = await makePerson(server, admin, person);
+      await giveRole(admin, await ownId(session), role, project);
+      await session.dispose();
+    }),
+  );
 }
 
 /** The ID of a project, found by its address (a short name). */

@@ -18,6 +18,11 @@ impl SampleClock {
         Self(AtomicI64::new(moment.as_second()))
     }
 
+    /// Moves the clock on by `seconds`.
+    pub fn advance(&self, seconds: i64) {
+        self.0.fetch_add(seconds, Ordering::SeqCst);
+    }
+
     /// Moves the clock to `moment`.
     pub fn set(&self, moment: Timestamp) {
         self.0.store(moment.as_second(), Ordering::SeqCst);
@@ -43,5 +48,7 @@ mod tests {
         let later = Timestamp::from_second(1_800_000_020).unwrap();
         clock.set(later);
         assert_eq!(clock.now(), later);
+        clock.advance(1);
+        assert_eq!(clock.now().as_second(), later.as_second() + 1);
     }
 }

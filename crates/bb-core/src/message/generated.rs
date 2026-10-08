@@ -1656,6 +1656,9 @@ pub const ROLES_USED_NOTHING: MessageKey = MessageKey::new("roles.used-nothing")
 /// The message `roles.used-whole`.
 pub const ROLES_USED_WHOLE: MessageKey = MessageKey::new("roles.used-whole");
 
+/// The message `sample.error.key-missing`.
+pub const SAMPLE_ERROR_KEY_MISSING: MessageKey = MessageKey::new("sample.error.key-missing");
+
 /// The message `sample.error.link-missing`.
 pub const SAMPLE_ERROR_LINK_MISSING: MessageKey = MessageKey::new("sample.error.link-missing");
 
@@ -1686,6 +1689,12 @@ pub const SAMPLE_SIGN_IN_HEADER: MessageKey = MessageKey::new("sample.sign-in-he
 pub const SAMPLE_STEP_ACCEPTING_INVITATION: MessageKey =
     MessageKey::new("sample.step.accepting-invitation");
 
+/// The message `sample.step.access-key`.
+pub const SAMPLE_STEP_ACCESS_KEY: MessageKey = MessageKey::new("sample.step.access-key");
+
+/// The message `sample.step.assignment`.
+pub const SAMPLE_STEP_ASSIGNMENT: MessageKey = MessageKey::new("sample.step.assignment");
+
 /// The message `sample.step.code-app`.
 pub const SAMPLE_STEP_CODE_APP: MessageKey = MessageKey::new("sample.step.code-app");
 
@@ -1696,11 +1705,29 @@ pub const SAMPLE_STEP_DATES: MessageKey = MessageKey::new("sample.step.dates");
 pub const SAMPLE_STEP_FIRST_ADMINISTRATOR: MessageKey =
     MessageKey::new("sample.step.first-administrator");
 
+/// The message `sample.step.group`.
+pub const SAMPLE_STEP_GROUP: MessageKey = MessageKey::new("sample.step.group");
+
+/// The message `sample.step.group-member`.
+pub const SAMPLE_STEP_GROUP_MEMBER: MessageKey = MessageKey::new("sample.step.group-member");
+
 /// The message `sample.step.invitation`.
 pub const SAMPLE_STEP_INVITATION: MessageKey = MessageKey::new("sample.step.invitation");
 
+/// The message `sample.step.levels`.
+pub const SAMPLE_STEP_LEVELS: MessageKey = MessageKey::new("sample.step.levels");
+
 /// The message `sample.step.password-hasher`.
 pub const SAMPLE_STEP_PASSWORD_HASHER: MessageKey = MessageKey::new("sample.step.password-hasher");
+
+/// The message `sample.step.project`.
+pub const SAMPLE_STEP_PROJECT: MessageKey = MessageKey::new("sample.step.project");
+
+/// The message `sample.step.region`.
+pub const SAMPLE_STEP_REGION: MessageKey = MessageKey::new("sample.step.region");
+
+/// The message `sample.step.role`.
+pub const SAMPLE_STEP_ROLE: MessageKey = MessageKey::new("sample.step.role");
 
 /// The message `sample.step.setup-code`.
 pub const SAMPLE_STEP_SETUP_CODE: MessageKey = MessageKey::new("sample.step.setup-code");
@@ -4084,6 +4111,15 @@ pub fn sample_error_not_a_sample_folder(path: impl std::fmt::Display) -> Message
     )
 }
 
+/// The message `sample.error.not-made`.
+#[must_use]
+pub fn sample_error_not_made(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("sample.error.not-made"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
 /// The message `sample.error.start`.
 #[must_use]
 pub fn sample_error_start(start: impl std::fmt::Display) -> Message {
@@ -6153,6 +6189,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "The sample cannot use {path}: {reason}",
     ),
     (
+        "sample.error.key-missing",
+        "The answer to a new access key does not hold the key.",
+    ),
+    (
         "sample.error.layout",
         "The file tools/dev/sample.json is not usable: {reason}",
     ),
@@ -6185,6 +6225,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "The folder {path} has other things in it and was not made by this tool, so it is left alone. Choose another folder or empty this one.",
     ),
     (
+        "sample.error.not-made",
+        "{name} is not in the database although it was made just now.",
+    ),
+    (
         "sample.error.person-missing",
         "A person of the plan has no account in the database.",
     ),
@@ -6215,20 +6259,28 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "sample.sign-in-header",
-        "Sample organization: how to sign in.\nThe passwords are random and belong to this run only. Never copy this file anywhere.\nOne line per person, separated by tabs: e-mail address, password, role, name, and the secret of the code app for the people who have one.",
+        "Sample organization: how to sign in.\nThe passwords are random and belong to this run only. Never copy this file anywhere.\nOne line per person, separated by tabs: e-mail address, password, role, name, the secret of the code app (empty for people who have none), and the access key for the few people who have one.",
     ),
     (
         "sample.step.accepting-invitation",
         "accepting an invitation",
     ),
+    ("sample.step.access-key", "making an access key"),
+    ("sample.step.assignment", "giving a role"),
     ("sample.step.code-app", "setting up a code app"),
     ("sample.step.dates", "working out the dates"),
     (
         "sample.step.first-administrator",
         "making the first administrator",
     ),
+    ("sample.step.group", "making a group"),
+    ("sample.step.group-member", "putting a person into a group"),
     ("sample.step.invitation", "inviting a person"),
+    ("sample.step.levels", "setting what a role sees"),
     ("sample.step.password-hasher", "making the password hasher"),
+    ("sample.step.project", "making a project"),
+    ("sample.step.region", "choosing the region of a person"),
+    ("sample.step.role", "making a role"),
     ("sample.step.setup-code", "using the setup code"),
     ("sample.step.signing-out", "signing out"),
     ("sample.step.starting-roles", "making the starting roles"),

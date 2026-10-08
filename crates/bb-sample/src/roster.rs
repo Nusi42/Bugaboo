@@ -2,9 +2,14 @@
 //! from the seed alone. The roster is the plan; `generate` makes the people it names through the
 //! use cases.
 //!
-//! The roles are recorded here and nowhere else in the sample yet: M2 has no use case that gives a
-//! person a role. When the policy engine exists (WP-05), WP-13 gives each person the role the
-//! roster names, through the extension point [`crate::Later`].
+//! The role of each person is recorded here; `organization` gives it to them as assignments, directly
+//! or through a group. The same goes for the settings of each person (time zone and region) and
+//! for the few people who have an access key.
+
+use bb_core::access_key::KeyChoice;
+use bb_core::settings::{
+    DEVICE, REGION_DATE_FORMAT, REGION_FIRST_DAY, REGION_NUMBER_FORMAT, SettingDefinition,
+};
 
 use crate::error::SampleError;
 use crate::names::NameList;
@@ -76,6 +81,45 @@ const CODE_APPS: [(Role, usize); 4] = [
     (Role::Viewer, 1),
 ];
 
+/// Who gets an access key, by role: a few people, never the people the demos name.
+const KEY_HOLDERS: [(Role, usize); 2] = [(Role::ProjectLead, 1), (Role::TeamMember, 2)];
+
+/// The access keys of the sample: what each is called and what it may do. Keys are given to the
+/// people of [`KEY_HOLDERS`] in this order.
+pub const ACCESS_KEYS: [(&str, KeyChoice); 3] = [
+    ("Build server", KeyChoice::SeeOnly),
+    ("Release script", KeyChoice::SeeAndChange),
+    ("Reporting", KeyChoice::SeeOnly),
+];
+
+/// The time zones the people of the sample live in: spread over the world.
+pub const TIME_ZONES: [&str; 10] = [
+    "Europe/Berlin",
+    "Europe/London",
+    "Europe/Lisbon",
+    "America/New_York",
+    "America/Sao_Paulo",
+    "Africa/Lagos",
+    "Asia/Kolkata",
+    "Asia/Tokyo",
+    "Australia/Sydney",
+    "UTC",
+];
+
+/// The region a person chose in *My settings*: time zone, how dates and numbers are written and
+/// the first day of the week.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Region {
+    /// A name of the IANA list.
+    pub time_zone: String,
+    /// A choice of the setting *Date format*.
+    pub date_format: String,
+    /// A choice of the setting *Number format*.
+    pub number_format: String,
+    /// A choice of the setting *First day of the week*.
+    pub first_day: String,
+}
+
 /// One person of the plan.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct SamplePerson {
@@ -87,6 +131,10 @@ pub struct SamplePerson {
     pub role: Role,
     /// Whether the person gets a code app.
     pub code_app: bool,
+    /// Which of the [`ACCESS_KEYS`] the person gets, if any.
+    pub access_key: Option<usize>,
+    /// What the person chose in *My settings › Region*.
+    pub region: Region,
     fixed: bool,
 }
 
@@ -101,6 +149,13 @@ impl SamplePerson {
             ),
             role,
             code_app: false,
+            access_key: None,
+            region: Region {
+                time_zone: DEVICE.to_owned(),
+                date_format: DEVICE.to_owned(),
+                number_format: DEVICE.to_owned(),
+                first_day: DEVICE.to_owned(),
+            },
             fixed,
         }
     }
@@ -153,6 +208,7 @@ pub fn roster(seed: u64, names: &NameList) -> Result<Vec<SamplePerson>, SampleEr
     if let Some((_, rest)) = people.split_first_mut() {
         random.shuffle(rest);
     }
+    let mut next_key = 0;
     for (role, count) in CODE_APPS {
         let chosen = people
             .iter_mut()
@@ -162,7 +218,41 @@ pub fn roster(seed: u64, names: &NameList) -> Result<Vec<SamplePerson>, SampleEr
             person.code_app = true;
         }
     }
+    for (role, count) in KEY_HOLDERS {
+        let chosen = people
+            .iter_mut()
+            .filter(|person| person.role == role && !person.fixed && !person.code_app)
+            .take(count);
+        for person in chosen {
+            person.access_key = Some(next_key);
+            next_key += 1;
+        }
+    }
+    // The last thing drawn from the seed, so nothing above changes when a setting is added.
+    for person in &mut people {
+        person.region = Region {
+            time_zone: TIME_ZONES[random.below(TIME_ZONES.len())].to_owned(),
+            date_format: choice_of(&mut random, REGION_DATE_FORMAT.definition()),
+            number_format: choice_of(&mut random, REGION_NUMBER_FORMAT.definition()),
+            first_day: choice_of(&mut random, REGION_FIRST_DAY.definition()),
+        };
+    }
     Ok(people)
+}
+
+/// A choice of a setting that is not "whatever my device says".
+fn choice_of(random: &mut SeededRandom, setting: &SettingDefinition) -> String {
+    let choices: Vec<&str> = setting
+        .format()
+        .choices()
+        .iter()
+        .map(bb_core::settings::Choice::value)
+        .filter(|value| *value != DEVICE)
+        .collect();
+    choices
+        .get(random.below(choices.len()))
+        .map_or(DEVICE, |value| value)
+        .to_owned()
 }
 
 #[cfg(test)]
@@ -231,6 +321,49 @@ mod tests {
         let with: Vec<&SamplePerson> = people.iter().filter(|person| person.code_app).collect();
         assert_eq!(with.len(), 5);
         assert!(with.iter().all(|person| !person.is_fixed()));
+    }
+
+    #[test]
+    fn three_people_have_an_access_key_and_never_the_people_the_demos_name() {
+        let people = roster(42, &names()).unwrap();
+        let mut keys: Vec<(usize, Role)> = people
+            .iter()
+            .filter_map(|person| person.access_key.map(|at| (at, person.role)))
+            .collect();
+        keys.sort_by_key(|(at, _)| *at);
+        assert_eq!(keys.len(), ACCESS_KEYS.len());
+        assert_eq!(
+            keys.iter().map(|(at, _)| *at).collect::<Vec<_>>(),
+            [0, 1, 2]
+        );
+        assert!(
+            people
+                .iter()
+                .filter(|person| person.access_key.is_some())
+                .all(|person| !person.is_fixed() && !person.code_app)
+        );
+    }
+
+    #[test]
+    fn the_people_live_in_many_time_zones_and_write_dates_and_numbers_in_chosen_ways() {
+        let people = roster(42, &names()).unwrap();
+        let zones: BTreeSet<&str> = people
+            .iter()
+            .map(|person| person.region.time_zone.as_str())
+            .collect();
+        assert!(zones.len() >= 6, "{zones:?}");
+        assert!(zones.iter().all(|zone| TIME_ZONES.contains(zone)));
+        for person in &people {
+            let region = &person.region;
+            for (setting, value) in [
+                (REGION_DATE_FORMAT.definition(), &region.date_format),
+                (REGION_NUMBER_FORMAT.definition(), &region.number_format),
+                (REGION_FIRST_DAY.definition(), &region.first_day),
+            ] {
+                assert!(setting.format().accepts(value), "{value}");
+                assert_ne!(value, DEVICE, "a choice, not the device");
+            }
+        }
     }
 
     #[test]

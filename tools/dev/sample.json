@@ -1,5 +1,5 @@
 {
-  "$comment": "Single source for where the sample organization is made and what its files are called (architecture §11, 'Sample organization'). xtask (xtask/src/dataset.rs), the program bb-sample (crates/bb-sample/src/layout.rs) and the end-to-end tests (web/app/e2e/support/sample.ts) read it; nothing else names a folder, a file or the variable. The folders are relative to the work folder and use / as separator.",
+  "$comment": "Single source for where the sample organization is made, what its files are called and what its groups, projects and custom roles are called (architecture §11, 'Sample organization'). xtask (xtask/src/dataset.rs), the program bb-sample (crates/bb-sample/src/layout.rs) and the end-to-end tests (web/app/e2e/support/sample.ts) read it; nothing else names a folder, a file, the variable, a group, a project or a custom role. The folders are relative to the work folder and use / as separator.",
   "out": "target/sample",
   "outPostgres": "target/sample-postgres",
   "devOut": "target/dev-sample",
@@ -8,5 +8,42 @@
   "signInFile": "sign-in.txt",
   "dumpFile": "dump.json",
   "markerFile": "sample.json",
-  "databaseUrlVariable": "BB_SAMPLE_DATABASE_URL"
+  "databaseUrlVariable": "BB_SAMPLE_DATABASE_URL",
+  "organization": {
+    "$comment": "The code names a group, a project or a role by its key (groups and roles) or its short name (projects); this is what people read. The first four projects have their project lead, in the order of the people of the plan.",
+    "groups": {
+      "backend": "Backend",
+      "frontend": "Frontend",
+      "mobile": "Mobile",
+      "qa": "QA",
+      "support": "Support",
+      "docs": "Docs",
+      "management": "Management",
+      "external": "External"
+    },
+    "roles": {
+      "support-agent": "Support agent",
+      "security-reviewer": "Security reviewer"
+    },
+    "projects": [
+      {
+        "shortName": "APP",
+        "name": "Mobile app",
+        "subProjects": [
+          { "shortName": "IOS", "name": "iOS" },
+          { "shortName": "AND", "name": "Android" }
+        ]
+      },
+      {
+        "shortName": "WEB",
+        "name": "Website",
+        "subProjects": [
+          { "shortName": "SHOP", "name": "Shop" },
+          { "shortName": "BLOG", "name": "Blog" }
+        ]
+      },
+      { "shortName": "OPS", "name": "Operations", "subProjects": [] },
+      { "shortName": "DOC", "name": "Handbook", "subProjects": [] }
+    ]
+  }
 }

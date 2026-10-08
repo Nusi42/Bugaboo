@@ -3,6 +3,7 @@ import { type Page } from "@playwright/test";
 
 import { ada, cleo, makeAdmin, makePerson } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
+import { setOrganizationSwitch, TWO_STEP_REQUIRED } from "./support/organization.ts";
 import { sendPassword, signIn, signOut } from "./support/flows.ts";
 import { screenshotFolder, shoot } from "./support/screenshots.ts";
 
@@ -71,11 +72,11 @@ test("the screens of access keys and of the second step", async ({ page, server 
   await signOut(page);
 
   // A person whose organization asks for two-step sign-in sees only this screen.
-  server.setOrganizationSwitch("security.two-step-required", true);
+  await setOrganizationSwitch(server, TWO_STEP_REQUIRED, true);
   await sendPassword(page, cleo);
   await expect(
     page.getByRole("heading", { level: 1, name: t("set-up-second-step.title") }),
   ).toBeVisible();
   await shot(page, "43-set-up-second-step");
-  server.setOrganizationSwitch("security.two-step-required", false);
+  await setOrganizationSwitch(server, TWO_STEP_REQUIRED, false);
 });

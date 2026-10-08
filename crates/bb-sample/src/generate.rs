@@ -3,7 +3,10 @@
 //! its event and its security log entry, and nothing is written to the database by hand.
 //!
 //! The generator never reads the clock. Every date comes from the one start moment it is given:
-//! the people join in the minutes before it, one every [`STEP_SECONDS`].
+//! the people join in the time before it, one every [`STEP_SECONDS`], and what follows the people
+//! (groups, roles, projects, assignments) is made in the last [`LATER_SECONDS`], one change every
+//! second, so no two changes have the same moment and the order of the records is the same every
+//! time.
 
 use std::fmt;
 use std::future::Future;
@@ -13,13 +16,18 @@ use std::sync::Arc;
 use bb_app::access::{Authorized, MakeStartingRoles, Masked, make_starting_roles};
 use bb_app::auth::{
     AcceptInvitation, AuthApi, AuthServices, AuthStore as _, CompleteSetup, ConfirmCodeApp,
-    CreateInvitation, CreatedInvitation, IssueSetupCode, RequestInfo, SignOut, StartCodeApp,
-    Started, issue_setup_code,
+    CreateInvitation, CreatedInvitation, IssueSetupCode, MakeAccessKey, RequestInfo, SignOut,
+    StartCodeApp, Started, issue_setup_code, make_access_key,
 };
 use bb_app::context::Clock as _;
+use bb_app::settings::{ChangeSetting, SettingsScope, change_setting};
 use bb_auth::{CsrfKey, PasswordHasher, TotpSecret};
+use bb_core::access_key::KeyChoice;
 use bb_core::id::UserId;
 use bb_core::message::{self, Message};
+use bb_core::settings::{
+    REGION_DATE_FORMAT, REGION_FIRST_DAY, REGION_NUMBER_FORMAT, REGION_TIME_ZONE, SettingValue,
+};
 use bb_store::{
     AuthStorage, DATABASE_FILE, Database, KEYS_FOLDER, LOGS_FOLDER, LogSeal,
     SECURITY_LOG_ANCHOR_FILE, Verification,
@@ -31,7 +39,7 @@ use crate::error::{SampleError, Step};
 use crate::limits::Unlimited;
 use crate::names::NameList;
 use crate::password::random_password;
-use crate::roster::{SamplePerson, roster};
+use crate::roster::{ACCESS_KEYS, SamplePerson, roster};
 
 /// The seed of the sample when nobody names another one.
 pub const DEFAULT_SEED: u64 = 42;
@@ -39,6 +47,10 @@ pub const DEFAULT_SEED: u64 = 42;
 /// Seconds between two people joining. Short enough that the administrator's session never runs
 /// out of idle time while the sample is made (30 minutes by default).
 pub const STEP_SECONDS: i64 = 20;
+
+/// Seconds reserved before the start moment for what follows the people: one change every second.
+/// The sample is made in less than this; its end is always before the start moment.
+pub const LATER_SECONDS: i64 = 3600;
 
 /// What the sample is made from.
 #[derive(Clone, Copy, Debug)]
@@ -69,6 +81,8 @@ pub struct MadePerson {
     pub password: String,
     /// The secret of the code app, for people who have one (base 32, as an app takes it).
     pub code_app_secret: Option<String>,
+    /// The access key, for people who have one (the whole key, `bb_…`).
+    pub access_key: Option<String>,
 }
 
 // Passwords and secrets never show in a message or a failed test.
@@ -83,26 +97,39 @@ impl fmt::Debug for MadePerson {
 
 /// What a step after the people can use: the use cases, signed in as the first administrator.
 pub struct World<'a> {
-    /// The use cases of signing in and inviting; later packages add their own services here.
+    /// The use cases: signing in, inviting, groups, roles, projects, settings.
     pub services: &'a AuthServices<AuthStorage>,
+    /// The storage the use cases write to, to look up what they made by its name.
+    pub storage: &'a AuthStorage,
     /// The session of the administrator who makes the organization (the secret of its cookie).
     pub administrator_session: &'a str,
     /// The people, in the order they were made.
     pub people: &'a [MadePerson],
-    /// The clock of the sample; set it before a step to date what the step makes.
+    /// The clock of the sample; [`World::tick`] moves it on a second before each change.
     pub clock: &'a SampleClock,
 }
 
-/// EXTENSION POINT (M2 WP-13): what comes after the people. WP-13 fills it in with the groups,
-/// the roles of the roster, the projects and the assignments, made through the use cases of
-/// WP-05, WP-08 and WP-11. Until then [`NothingMore`] stands in. A step runs once, after every
-/// person exists and before the administrator signs out.
+impl World<'_> {
+    /// A request from the server's own computer, as the sample makes every change.
+    #[must_use]
+    pub fn request(&self) -> RequestInfo {
+        request()
+    }
+
+    /// Moves the clock on by a second, so the next change has a moment of its own.
+    pub fn tick(&self) {
+        self.clock.advance(1);
+    }
+}
+
+/// The extension point: what comes after the people. [`crate::Organization`] fills it in with the
+/// groups, the roles of the roster, the projects and the assignments, made through the use cases
+/// of the policy engine, the projects and the roles. [`NothingMore`] stands in where only the
+/// people are wanted. A step runs once, after every person exists and before the administrator
+/// signs out.
 pub trait Later {
     /// Makes whatever follows the people.
-    fn after_people(
-        &mut self,
-        world: &World<'_>,
-    ) -> impl Future<Output = Result<(), SampleError>> + Send;
+    fn after_people(&mut self, world: &World<'_>) -> impl Future<Output = Result<(), SampleError>>;
 }
 
 /// The step that follows the people today: none.
@@ -169,9 +196,14 @@ impl Sample {
             text.push_str(made.person.role.code());
             text.push('\t');
             text.push_str(&made.person.name);
-            if let Some(secret) = &made.code_app_secret {
+            // The secret of the code app (empty for most), then the access key.
+            if made.code_app_secret.is_some() || made.access_key.is_some() {
                 text.push('\t');
-                text.push_str(secret);
+                text.push_str(made.code_app_secret.as_deref().unwrap_or_default());
+            }
+            if let Some(key) = &made.access_key {
+                text.push('\t');
+                text.push_str(key);
             }
             text.push('\n');
         }
@@ -206,7 +238,7 @@ pub async fn make<L: Later>(
 ) -> Result<Sample, SampleError> {
     let plan = roster(options.seed, &NameList::bundled()?)?;
     let count = i64::try_from(plan.len()).unwrap_or(0);
-    let first_moment = moment(options.start, -count * STEP_SECONDS)?;
+    let first_moment = moment(options.start, -(count * STEP_SECONDS + LATER_SECONDS))?;
     let clock = Arc::new(SampleClock::at(first_moment));
 
     let Opened {
@@ -253,6 +285,14 @@ pub async fn make<L: Later>(
         } else {
             None
         };
+        // What the person chose for themselves, and the keys of the few who have one.
+        choose_region(&services, &started.session_token, &person).await?;
+        let access_key = match person.access_key.and_then(|at| ACCESS_KEYS.get(at)) {
+            Some((name, choice)) => Some(
+                add_access_key(&services, &started.session_token, &password, name, *choice).await?,
+            ),
+            None => None,
+        };
         if at == 0 {
             // The administrator stays signed in to make everybody else.
             administrator_session.clone_from(&started.session_token);
@@ -264,13 +304,15 @@ pub async fn make<L: Later>(
             id: started.person.id,
             password,
             code_app_secret,
+            access_key,
         });
     }
 
-    clock.set(options.start);
+    clock.set(moment(first_moment, count * STEP_SECONDS)?);
     later
         .after_people(&World {
             services: &services,
+            storage: &storage,
             administrator_session: &administrator_session,
             people: &made,
             clock: &clock,
@@ -348,25 +390,85 @@ async fn invited(
 
 /// The path of the invitation link, read from the answer the way the browser gets it.
 fn link_path(created: Authorized<CreatedInvitation>) -> Result<String, SampleError> {
+    plain_text(created, |created| created.link_path).ok_or(SampleError::LinkMissing)
+}
+
+/// One text out of an answer, read the way the browser gets it: through the answer's own view.
+fn plain_text<T>(answer: Authorized<T>, pick: impl FnOnce(T) -> String) -> Option<String> {
     /// The one field of the answer the sample needs.
     #[derive(serde::Serialize)]
-    struct Link {
-        link_path: String,
+    struct Text {
+        text: String,
     }
-    impl Masked for Link {}
-    created
-        .map(|created| Link {
-            link_path: created.link_path,
-        })
+    impl Masked for Text {}
+    answer
+        .map(|answer| Text { text: pick(answer) })
         .masked_value()
         .ok()
         .and_then(|value| {
             value
-                .get("link_path")
+                .get("text")
                 .and_then(serde_json::Value::as_str)
                 .map(str::to_owned)
         })
-        .ok_or(SampleError::LinkMissing)
+}
+
+/// Chooses the time zone, the way dates and numbers are written and the first day of the week, as
+/// the person does in *My settings › Region*.
+async fn choose_region(
+    services: &AuthServices<AuthStorage>,
+    session: &str,
+    person: &SamplePerson,
+) -> Result<(), SampleError> {
+    let region = &person.region;
+    let choices = [
+        (REGION_TIME_ZONE.definition().key(), &region.time_zone),
+        (REGION_DATE_FORMAT.definition().key(), &region.date_format),
+        (
+            REGION_NUMBER_FORMAT.definition().key(),
+            &region.number_format,
+        ),
+        (REGION_FIRST_DAY.definition().key(), &region.first_day),
+    ];
+    for (key, value) in choices {
+        change_setting(
+            &services.ctx(request()),
+            ChangeSetting {
+                session_token: session.to_owned(),
+                scope: SettingsScope::Person,
+                key: key.to_owned(),
+                value: SettingValue::Text(value.clone()),
+            },
+        )
+        .await
+        .map_err(|error| SampleError::step(Step::Region, &error))?;
+    }
+    Ok(())
+}
+
+/// Makes an access key as the person does (the password is asked again) and returns the key.
+async fn add_access_key(
+    services: &AuthServices<AuthStorage>,
+    session: &str,
+    password: &str,
+    name: &str,
+    choice: KeyChoice,
+) -> Result<String, SampleError> {
+    let made = make_access_key(
+        &services.ctx(request()),
+        MakeAccessKey {
+            session_token: session.to_owned(),
+            password: password.to_owned(),
+            name: name.to_owned(),
+            choice,
+            permissions: Vec::new(),
+            projects: Vec::new(),
+            expires_at: None,
+        },
+    )
+    .await
+    .map_err(|error| SampleError::step(Step::AccessKey, &error))?;
+    plain_text(made, |made| made.secret).ok_or(SampleError::KeyMissing)
 }
 
 /// Ends the session, so nobody of the sample is signed in when it is done.

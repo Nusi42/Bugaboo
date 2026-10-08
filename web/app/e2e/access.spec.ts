@@ -2,13 +2,14 @@ import { t } from "@bugaboo/messages";
 import { type Page } from "@playwright/test";
 
 import { paths, projectPageAddress } from "../src/shared/paths.ts";
-import { ada, bob, cleo, makeAdmin, makePerson } from "./support/accounts.ts";
+import { ada, bob, cleo, makeAdmin } from "./support/accounts.ts";
 import {
   ana,
   around,
   forgetFieldLevel,
   lea,
   levelList,
+  makePeopleWithRoles,
   pickLevel,
   projectIdOf,
   roleId,
@@ -29,18 +30,15 @@ test.use({
   preparation: {
     run: async (server) => {
       const admin = await makeAdmin(server);
-      await inOrder(
-        [bob, cleo, ana, lea].map((person) => async () => {
-          await (await makePerson(server, admin, person)).dispose();
-        }),
-      );
       const acme = await makeProject(admin, "ACME", "Acme Corporation");
       const website = await makeProject(admin, "WEB", "Website", acme);
       await makeProject(admin, "DOCS", "Documents", website);
-      server.giveRole(bob.email, "contributor", "ACME");
-      server.giveRole(cleo.email, "guest", "ACME");
-      server.giveRole(ana.email, "team-member", "ACME");
-      server.giveRole(lea.email, "project-lead", "WEB");
+      await makePeopleWithRoles(server, admin, [
+        { person: bob, role: roleName.contributor, project: "ACME" },
+        { person: cleo, role: roleName.guest, project: "ACME" },
+        { person: ana, role: roleName.teamMember, project: "ACME" },
+        { person: lea, role: roleName.projectLead, project: "WEB" },
+      ]);
       await admin.dispose();
     },
   },
