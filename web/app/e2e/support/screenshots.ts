@@ -9,6 +9,13 @@ import { settingDefaults } from "@bugaboo/api-client";
 /** The folder the screenshots go to, from `BB_SCREENSHOT_DIR`; `undefined` when none are wanted. */
 export const screenshotFolder = process.env["BB_SCREENSHOT_DIR"];
 
+/** The folder of a milestone (or of a set of pictures) inside the screenshot folder, made if it is missing. */
+function folderOf(milestone: string): string {
+  const target = join(screenshotFolder ?? ".", milestone);
+  mkdirSync(target, { recursive: true });
+  return target;
+}
+
 /** The two looks the maintainer sees: the device asks for a light or a dark look, as a phone does. */
 const looks = ["light", "dark"] as const;
 
@@ -26,8 +33,7 @@ const otherThan = { light: "dark", dark: "light" } as const;
  * of the milestone.
  */
 export async function shoot(page: Page, name: string, milestone = "M1"): Promise<void> {
-  const target = join(screenshotFolder ?? ".", milestone);
-  mkdirSync(target, { recursive: true });
+  const target = folderOf(milestone);
   await inOrder(
     looks.map((look) => async () => {
       // Like a phone in dark mode: "Match my device" then shows the dark theme as chosen. The
@@ -51,8 +57,10 @@ function missingHeight(page: Page): Promise<number> {
     const scrolling = document.scrollingElement;
     let most = 0;
     for (const element of document.querySelectorAll("*")) {
-      const overflow = getComputedStyle(element).overflowY;
-      if (element === scrolling || overflow === "auto" || overflow === "scroll") {
+      const { overflowY: overflow, maxHeight } = getComputedStyle(element);
+      // A list with a height of its own (`max-height`) scrolls inside its box whatever the window.
+      const framed = element !== scrolling && maxHeight !== "none";
+      if (!framed && (element === scrolling || overflow === "auto" || overflow === "scroll")) {
         most = Math.max(most, element.scrollHeight - element.clientHeight);
       }
     }
@@ -72,12 +80,21 @@ function missingHeight(page: Page): Promise<number> {
 /**
  * Makes the window as tall as the page needs, so that the whole page is in the picture: the app
  * scrolls inside its frame, where a full-page picture would cut it off. A taller window can make
- * the page taller still (a bottom bar moves), so it looks again, a few times.
+ * the page taller still (a bottom bar moves), so it looks again, a few times. A list with a
+ * height of its own (the people to put into a group) scrolls inside its box however tall the
+ * window is, so it is not counted, and a look that finds no less missing than the one before
+ * stops there.
  */
-async function growToContent(page: Page, rounds = 4): Promise<void> {
+async function growToContent(page: Page, rounds = 4, before = Infinity): Promise<void> {
   const size = page.viewportSize();
   const missing = await missingHeight(page);
-  if (rounds === 0 || size === null || missing <= 0 || size.height >= TALLEST) {
+  if (
+    rounds === 0 ||
+    size === null ||
+    missing <= 0 ||
+    missing >= before ||
+    size.height >= TALLEST
+  ) {
     return;
   }
   await page.setViewportSize({
@@ -85,27 +102,55 @@ async function growToContent(page: Page, rounds = 4): Promise<void> {
     height: Math.min(size.height + missing, TALLEST),
   });
   await page.waitForTimeout(SETTLING_MS);
-  await growToContent(page, rounds - 1);
+  await growToContent(page, rounds - 1, missing);
 }
 
 /** How long the page takes to settle after the window changed. */
 const SETTLING_MS = 300;
 
 /**
- * Takes the whole open screen in both looks, as `<name>-light.png` and `<name>-dark.png` in the
- * folder of the milestone (`M2/demo`), with the window grown to the height of the page. Does
- * nothing when no folder is wanted.
+ * Makes the window as tall as the page needs, lets `take` take the picture, and puts the window
+ * back. Does nothing when no folder is wanted.
  */
-export async function shootWhole(page: Page, name: string, milestone: string): Promise<void> {
+async function withWholePage(page: Page, take: () => Promise<void>): Promise<void> {
   if (screenshotFolder === undefined) {
     return;
   }
   const original = page.viewportSize();
   await growToContent(page);
-  await shoot(page, name, milestone);
+  await take();
   if (original !== null) {
     await page.setViewportSize(original);
   }
+}
+
+/**
+ * Takes the whole open screen in both looks, as `<name>-light.png` and `<name>-dark.png` in the
+ * folder of the milestone (`M2/demo`), with the window grown to the height of the page. Does
+ * nothing when no folder is wanted.
+ */
+export function shootWhole(page: Page, name: string, milestone: string): Promise<void> {
+  return withWholePage(page, () => shoot(page, name, milestone));
+}
+
+/**
+ * Takes the whole open screen in the theme it shows, as `<name>-<theme>.png` in the folder of the
+ * milestone, with the window grown to the height of the page. The page must show that theme: the
+ * picture is not taken otherwise. Does nothing when no folder is wanted.
+ */
+export function shootWholeAs(
+  page: Page,
+  name: string,
+  milestone: string,
+  theme: string,
+): Promise<void> {
+  return withWholePage(page, async () => {
+    await expect(page.locator("html")).toHaveAttribute("data-look", theme);
+    await page.screenshot({
+      path: join(folderOf(milestone), `${name}-${theme}.png`),
+      fullPage: true,
+    });
+  });
 }
 
 /** How long a sheet, a menu or a list takes to settle; the picture is taken when it has stopped. */
@@ -115,6 +160,17 @@ const SETTLING_FOR_SHOT_MS = 500;
 export async function shot(page: Page, name: string, milestone: string): Promise<void> {
   await page.waitForTimeout(SETTLING_FOR_SHOT_MS);
   await shoot(page, name, milestone);
+}
+
+/** Waits for the screen to settle, then takes the whole of it in the theme it shows. */
+export async function shotWholeAs(
+  page: Page,
+  name: string,
+  milestone: string,
+  theme: string,
+): Promise<void> {
+  await page.waitForTimeout(SETTLING_FOR_SHOT_MS);
+  await shootWholeAs(page, name, milestone, theme);
 }
 
 /** The same with the window grown to the height of the page, then put back. */

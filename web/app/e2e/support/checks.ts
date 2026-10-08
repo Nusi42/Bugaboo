@@ -32,6 +32,26 @@ export async function chooseTheme(page: Page, theme: Theme): Promise<void> {
 }
 
 /**
+ * Shows a theme the way a person does in *My settings › Appearance*: *Always light* or *Always
+ * dark*, and the theme among the samples of the light or the dark themes. The choice is kept on
+ * the server for the person, and the page shows the theme once it is saved.
+ */
+export async function pickTheme(page: Page, theme: Theme): Promise<void> {
+  const dark = theme.id === "dusk" || theme.id === "midnight";
+  await page
+    .getByRole("radio", {
+      name: t(dark ? "appearance.mode.dark" : "appearance.mode.light"),
+      exact: true,
+    })
+    .check();
+  const group = page.getByRole("group", {
+    name: t(dark ? "appearance.dark" : "appearance.light"),
+    exact: true,
+  });
+  await group.getByRole("radio", { name: theme.label, exact: true }).check();
+}
+
+/**
  * Puts a theme on the page without the choice at the bottom, which a question that covers the
  * page makes unreachable. The colors follow `data-look` at once.
  */

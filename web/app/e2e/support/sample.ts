@@ -70,12 +70,17 @@ function somebody(what: string, matches: (person: SamplePerson) => boolean): Sam
   return found;
 }
 
+/** A person with this role (as the sample names it) and no code app: signs in with the password alone. */
+export function sampleWithRole(role: string): SamplePerson {
+  return somebody(
+    `a ${role} without a code app`,
+    (person) => person.role === role && person.codeAppSecret === undefined,
+  );
+}
+
 /** A Team member without a code app: signs in with the password alone. */
 export function sampleTeamMember(): SamplePerson {
-  return somebody(
-    "a Team member without a code app",
-    (person) => person.role === "team-member" && person.codeAppSecret === undefined,
-  );
+  return sampleWithRole("team-member");
 }
 
 /** A person with a code app, and the secret of the app. */
@@ -180,11 +185,16 @@ export function sampleProjectName(shortName: string): string {
   return named.name;
 }
 
-/** A Guest who has the role in this project and no code app: signs in with the password alone. */
-export function sampleGuestIn(project: string): SamplePerson {
-  const rows = sampleRows().filter((row) => row.project === project && row.role === "Guest");
+/** A person who has the role (by the name people read) in this project and no code app: signs in with the password alone. */
+export function sampleHolderIn(role: string, project: string): SamplePerson {
+  const rows = sampleRows().filter((row) => row.project === project && row.role === role);
   return somebody(
-    `a Guest in ${project}`,
+    `${role} in ${project}`,
     (person) => person.codeAppSecret === undefined && rows.some((row) => row.who === person.email),
   );
+}
+
+/** A Guest who has the role in this project and no code app: signs in with the password alone. */
+export function sampleGuestIn(project: string): SamplePerson {
+  return sampleHolderIn("Guest", project);
 }
