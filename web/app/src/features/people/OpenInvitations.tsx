@@ -1,12 +1,11 @@
 import type { Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, Button, buttonLook, ConfirmDialog } from "@bugaboo/ui";
+import { Alert, alertTone, Button, buttonLook, ConfirmDialog, partOf, part } from "@bugaboo/ui";
 import { useState } from "react";
 
 import { api } from "../../shared/api.ts";
 import { messageOf } from "../../shared/errors.ts";
 import { formatDateTime } from "../../shared/format.ts";
-import styles from "./People.module.css";
 import { refreshInvitations, useOpenInvitations } from "./invitations.ts";
 import { linesFrom } from "../../shared/paged.ts";
 
@@ -30,16 +29,16 @@ function InvitationRow({ invitation, onTakenBack }: InvitationRowProps) {
     return null;
   }
   return (
-    <li className={styles.item}>
-      <span className={styles.itemText}>
-        <span className={styles.itemTitle}>{email}</span>
+    <li {...partOf(part.peopleItem)}>
+      <span {...partOf(part.peopleItemText)}>
+        <span {...partOf(part.peopleItemTitle)}>{email}</span>
         {made === null || made === undefined ? null : (
-          <span className={styles.muted}>
+          <span {...partOf(part.muted)}>
             {t("invitations.made", { when: formatDateTime(made) })}
           </span>
         )}
         {expires === null || expires === undefined ? null : (
-          <span className={styles.muted}>
+          <span {...partOf(part.muted)}>
             {t("invitations.expires", { when: formatDateTime(expires) })}
           </span>
         )}
@@ -70,12 +69,12 @@ export function OpenInvitations() {
     return <Alert tone={alertTone.danger}>{messageOf(invitations.error)}</Alert>;
   }
   if (invitations.isSuccess && items.length === 0) {
-    return <p className={styles.muted}>{t("invitations.none")}</p>;
+    return <p {...partOf(part.muted)}>{t("invitations.none")}</p>;
   }
   return (
     <>
       {takenBack ? <Alert tone={alertTone.success}>{t("invitations.taken-back")}</Alert> : null}
-      <ul className={styles.list} aria-label={t("invitations.open")}>
+      <ul {...partOf(part.list)} aria-label={t("invitations.open")}>
         {items.map((invitation) => (
           <InvitationRow
             key={invitation.id}
@@ -87,7 +86,7 @@ export function OpenInvitations() {
         ))}
       </ul>
       {invitations.hasNextPage ? (
-        <div className={styles.row}>
+        <div {...partOf(part.row)}>
           <Button
             isPending={invitations.isFetchingNextPage}
             onPress={() => {

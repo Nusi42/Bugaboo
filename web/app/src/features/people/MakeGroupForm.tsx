@@ -1,11 +1,10 @@
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, Form, SubmitButton, TextField } from "@bugaboo/ui";
+import { Alert, alertTone, Form, SubmitButton, TextField, partOf, part } from "@bugaboo/ui";
 import { useState } from "react";
 
 import { api } from "../../shared/api.ts";
 import { messageOf } from "../../shared/errors.ts";
 import { refreshAccess } from "../../shared/query-keys.ts";
-import styles from "./People.module.css";
 
 /** *Make a group*: a name; the group starts empty. */
 export function MakeGroupForm() {
@@ -35,7 +34,7 @@ export function MakeGroupForm() {
       {made === null ? null : (
         <Alert tone={alertTone.success}>{t("groups.made", { name: made })}</Alert>
       )}
-      <div className={styles.row}>
+      <div {...partOf(part.row)}>
         <SubmitButton isPending={make.isPending}>{t("groups.make")}</SubmitButton>
       </div>
     </Form>

@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, Button, cx, SearchField } from "@bugaboo/ui";
+import { Alert, alertTone, Button, SearchField, partOf, part } from "@bugaboo/ui";
 import { useState } from "react";
 import {
   Collection,
@@ -14,7 +14,6 @@ import { heldText, listOf } from "../../shared/access-words.ts";
 import { messageOf } from "../../shared/errors.ts";
 import { personAddress } from "../../shared/paths.ts";
 import { type PersonLine, linesOf, usePeople } from "./people.ts";
-import styles from "./People.module.css";
 
 /**
  * What a row is expected to measure, before it is drawn: the list measures the real rows as they
@@ -47,17 +46,17 @@ interface RowsProps {
 function Rows({ lines, onLoadMore }: RowsProps) {
   return (
     <Virtualizer layout={ListLayout} layoutOptions={{ estimatedRowSize: ROW_GUESS }}>
-      <ListBox aria-label={t("people.list")} className={cx(styles.people)}>
+      <ListBox aria-label={t("people.list")} {...partOf(part.people)}>
         <Collection items={lines}>
           {(person) => (
             <ListBoxItem
               id={person.id}
               href={personAddress(person.id)}
               textValue={person.name}
-              className={cx(styles.person)}
+              {...partOf(part.peoplePerson)}
             >
-              <span className={styles.personName}>{person.name}</span>
-              <span className={styles.personFacts}>{factsOf(person)}</span>
+              <span {...partOf(part.peoplePersonName)}>{person.name}</span>
+              <span {...partOf(part.peoplePersonFacts)}>{factsOf(person)}</span>
             </ListBoxItem>
           )}
         </Collection>
@@ -82,7 +81,7 @@ export function PeopleList() {
     }
   };
   return (
-    <div className={styles.stack}>
+    <div {...partOf(part.stack)}>
       <SearchField
         label={t("people.search")}
         clearLabel={t("search.clear")}
@@ -91,12 +90,12 @@ export function PeopleList() {
       />
       {people.isError ? <Alert tone={alertTone.danger}>{messageOf(people.error)}</Alert> : null}
       {people.isSuccess && lines.length === 0 ? (
-        <p className={styles.muted}>{t("people.nothing")}</p>
+        <p {...partOf(part.muted)}>{t("people.nothing")}</p>
       ) : (
         <Rows lines={lines} onLoadMore={more} />
       )}
       {people.hasNextPage ? (
-        <div className={styles.row}>
+        <div {...partOf(part.row)}>
           <Button isPending={people.isFetchingNextPage} onPress={more}>
             {t("people.more")}
           </Button>

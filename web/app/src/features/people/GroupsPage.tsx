@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, Button, Card } from "@bugaboo/ui";
+import { Alert, alertTone, Button, Card, partOf, part } from "@bugaboo/ui";
 
 import { messageOf } from "../../shared/errors.ts";
 import { usePageTitle } from "../../shared/use-page.ts";
@@ -7,7 +7,6 @@ import { ListEditor, type ListRow } from "../shell/index.ts";
 import { GroupEditor } from "./GroupEditor.tsx";
 import { groupLinesOf, useGroups } from "./groups.ts";
 import { MakeGroupForm } from "./MakeGroupForm.tsx";
-import styles from "./People.module.css";
 
 export interface GroupsPageProps {
   /** The ID of the group that is open in the side panel, from the address. */
@@ -29,12 +28,12 @@ export function GroupsPage({ open, onOpen, onClose }: GroupsPageProps) {
     editor: <GroupEditor id={group.id} onDeleted={onClose} />,
   }));
   return (
-    <div className={styles.stack}>
+    <div {...partOf(part.stack)}>
       <Card heading={t("nav.groups")} level={1}>
-        <p className={styles.text}>{t("groups.intro")}</p>
+        <p {...partOf(part.text)}>{t("groups.intro")}</p>
         {list.isError ? <Alert tone={alertTone.danger}>{messageOf(list.error)}</Alert> : null}
         {list.isSuccess && rows.length === 0 ? (
-          <p className={styles.muted}>{t("groups.none-yet")}</p>
+          <p {...partOf(part.muted)}>{t("groups.none-yet")}</p>
         ) : (
           <ListEditor
             rows={rows}
@@ -57,7 +56,7 @@ export function GroupsPage({ open, onOpen, onClose }: GroupsPageProps) {
         ) : null}
       </Card>
       <Card heading={t("groups.make-title")}>
-        <p className={styles.text}>{t("groups.make-intro")}</p>
+        <p {...partOf(part.text)}>{t("groups.make-intro")}</p>
         <MakeGroupForm />
       </Card>
     </div>

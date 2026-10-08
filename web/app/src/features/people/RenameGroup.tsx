@@ -1,12 +1,11 @@
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, Form, SubmitButton, TextField } from "@bugaboo/ui";
+import { Alert, alertTone, Form, SubmitButton, TextField, partOf, part } from "@bugaboo/ui";
 import { useState } from "react";
 
 import { api } from "../../shared/api.ts";
 import { messageOf } from "../../shared/errors.ts";
 import { refreshAccess } from "../../shared/query-keys.ts";
 import type { GroupLine } from "./groups.ts";
-import styles from "./People.module.css";
 
 /** *Rename*: the name of the group, saved with the button. */
 export function RenameGroup({ group }: { readonly group: GroupLine }) {
@@ -28,7 +27,7 @@ export function RenameGroup({ group }: { readonly group: GroupLine }) {
       />
       {rename.isError ? <Alert tone={alertTone.danger}>{messageOf(rename.error)}</Alert> : null}
       {rename.isSuccess ? <Alert tone={alertTone.success}>{t("groups.saved")}</Alert> : null}
-      <div className={styles.row}>
+      <div {...partOf(part.row)}>
         <SubmitButton isPending={rename.isPending}>{t("common.save")}</SubmitButton>
       </div>
     </Form>

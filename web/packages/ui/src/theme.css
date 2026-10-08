@@ -1782,3 +1782,113 @@ body {
   font-weight: var(--weight-bold);
   color: var(--fg);
 }
+
+[data-part="people.item"] {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border: var(--border-width) solid var(--border-subtle);
+  border-radius: var(--r-ctl);
+  background: var(--bg-surface);
+}
+
+[data-part="people.item-text"] {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+[data-part="people.item-title"] {
+  font-weight: var(--weight-bold);
+}
+
+[data-part="people.link"] {
+  display: block;
+  padding: var(--space-3);
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--r-ctl);
+  background: var(--bg-sunken);
+  font-family: var(--mono);
+  font-size: var(--fs-base);
+  overflow-wrap: anywhere;
+}
+
+[data-part="people"] {
+  display: block;
+  max-block-size: calc(var(--size-list) * 2);
+  margin: 0;
+  padding: var(--ring-width);
+  overflow-y: auto;
+  border: var(--border-width) solid var(--border-subtle);
+  border-radius: var(--r-ctl);
+  background: var(--bg-surface);
+}
+
+[data-part="people.person"] {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  box-sizing: border-box;
+  min-height: var(--size-target);
+  padding: var(--space-2) var(--space-3);
+  border-bottom: var(--border-width) solid var(--border-subtle);
+  color: var(--fg);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+[data-part="people.person"][data-hovered] {
+  background: var(--bg-hover);
+}
+
+[data-part="people.person"][data-focus-visible] {
+  outline: var(--ring-width) solid var(--accent);
+  outline-offset: calc(var(--ring-width) * -1);
+}
+
+[data-part="people.person-name"] {
+  font-weight: var(--weight-bold);
+  color: var(--accent-fg);
+  text-decoration: underline;
+  text-underline-offset: var(--space-1);
+  overflow-wrap: anywhere;
+}
+
+[data-part="people.person-facts"] {
+  color: var(--fg-muted);
+  font-size: var(--fs-base);
+  overflow-wrap: anywhere;
+}
+
+[data-part="people.facts"] {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-3);
+  margin: 0;
+}
+
+[data-part="people.fact"] {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+  padding-bottom: var(--space-3);
+  border-bottom: var(--border-width) solid var(--border-subtle);
+  overflow-wrap: anywhere;
+}
+
+[data-part="people.term"] {
+  color: var(--fg-muted);
+  font-size: var(--fs-base);
+  font-weight: var(--weight-bold);
+}
+
+[data-part="people.definition"] {
+  margin: 0;
+  font-size: var(--fs-md);
+}

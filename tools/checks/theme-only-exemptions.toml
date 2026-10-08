@@ -10,10 +10,6 @@ path = "web/app/src/features/my-settings/"
 reason = "The my-settings feature still has CSS Modules and class names; package C-06 moves it onto part rules (M2C-F90)."
 
 [[exempt]]
-path = "web/app/src/features/people/"
-reason = "The people feature still has CSS Modules and class names; package C-06 moves it onto part rules (M2C-F90)."
-
-[[exempt]]
 path = "web/app/src/features/projects/"
 reason = "The projects feature still has CSS Modules and class names; package C-06 moves it onto part rules (M2C-F90)."
 
