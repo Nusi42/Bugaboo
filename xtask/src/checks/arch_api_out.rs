@@ -24,7 +24,7 @@ use serde::Deserialize;
 
 use super::exemptions::{self, Exemption as _, Used};
 use super::{Check, Context, Finding};
-use crate::rust_source::{strip, without_tests};
+use crate::rust_source::{balanced, strip, without_tests};
 use crate::source::{Kind, Source, is_word_char, name_uses};
 
 /// Where the exceptions are written down, each with its reason.
@@ -91,24 +91,6 @@ struct Function {
     operation: Option<String>,
 }
 
-/// The text up to the bracket that closes the first `open` in `text`, brackets included.
-fn balanced(text: &str, open: char, close: char) -> Option<&str> {
-    let mut depth = 0_usize;
-    let mut started = false;
-    for (at, character) in text.char_indices() {
-        if character == open {
-            depth += 1;
-            started = true;
-        } else if character == close && started {
-            depth = depth.checked_sub(1)?;
-            if depth == 0 {
-                return Some(&text[..at + close.len_utf8()]);
-            }
-        }
-    }
-    None
-}
-
 /// The operation ID in the attribute that stands above the function that starts on `line` (from
 /// 1), read from the original text: the attribute, its lines and the doc comments above it, up to
 /// the first line that is none of them.
@@ -163,7 +145,7 @@ fn functions(original: &str, code: &str) -> Vec<Function> {
         let Some(body_at) = body_at else {
             continue;
         };
-        let Some(body) = balanced(&rest[body_at..], '{', '}') else {
+        let Some(body) = balanced(&rest[body_at..], '{') else {
             continue;
         };
         let end = at + 3 + body_at + body.len();

@@ -18,7 +18,7 @@
 
 use super::{Check, Context, Finding};
 use crate::metadata::{self, Package};
-use crate::rust_source::strip_comments;
+use crate::rust_source::{balanced, strip_comments};
 use crate::source::{Kind, Source};
 
 /// Libraries that talk to a database, build queries for one, or pool connections to one.
@@ -141,40 +141,6 @@ fn evaluate_dependencies(packages: &[Package]) -> Vec<Finding> {
     findings
 }
 
-/// The text of a call from its opening parenthesis to the closing one (quotes are respected, so
-/// a parenthesis inside a string does not end it); a call that never closes is cut at 1000 bytes.
-fn call_text(text: &str) -> &str {
-    let mut depth = 0_i32;
-    let mut in_string = false;
-    let mut escaped = false;
-    for (at, character) in text.char_indices() {
-        if in_string {
-            match (escaped, character) {
-                (true, _) => escaped = false,
-                (false, '\\') => escaped = true,
-                (false, '"') => in_string = false,
-                _ => {}
-            }
-            continue;
-        }
-        match character {
-            '"' => in_string = true,
-            '(' => depth += 1,
-            ')' => {
-                depth -= 1;
-                if depth <= 0 {
-                    return &text[..=at];
-                }
-            }
-            _ => {}
-        }
-        if at > 1000 {
-            return &text[..at];
-        }
-    }
-    text
-}
-
 /// The kinds of SQL statement in `text`, by their shape and in any letter case.
 fn sql_statements(text: &str) -> Vec<&'static str> {
     let lower = text.to_ascii_lowercase();
@@ -271,7 +237,8 @@ fn query_function_findings(path: &str, text: &str) -> Vec<Finding> {
                     let at = offset + column;
                     // The harness may wrap its two statements, nothing else.
                     if path == HARNESS_FILE && *name == "AssertSqlSafe" {
-                        let call = call_text(&text[at + name.len()..]);
+                        let rest = &text[at + name.len()..];
+                        let call = balanced(rest, '(').unwrap_or(rest);
                         if only_harness_statements(&sql_statements(call)) {
                             continue;
                         }
@@ -297,7 +264,8 @@ fn sql_text_findings(path: &str, text: &str) -> Vec<Finding> {
     let mut findings = Vec::new();
     for builder in TEXT_BUILDERS {
         for (at, _) in text.match_indices(builder) {
-            let call = call_text(&text[at + builder.len() - 1..]);
+            let rest = &text[at + builder.len() - 1..];
+            let call = balanced(rest, '(').unwrap_or(rest);
             let statements = sql_statements(call);
             if statements.is_empty()
                 || (path == HARNESS_FILE && only_harness_statements(&statements))

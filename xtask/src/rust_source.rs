@@ -225,9 +225,58 @@ fn item_end(code: &[char], from: usize) -> usize {
     at
 }
 
+/// The text from the first `open` bracket in `text` (`(`, `[` or `{`) up to the bracket that
+/// closes it, brackets included, or `None` when it never closes. Brackets inside a string do not
+/// count, so this reads code with its strings kept as well as blanked code. The one way the checks
+/// cut a call, an attribute or a body out of code.
+pub(crate) fn balanced(text: &str, open: char) -> Option<&str> {
+    let close = match open {
+        '(' => ')',
+        '[' => ']',
+        _ => '}',
+    };
+    let mut start = None;
+    let mut depth = 0_usize;
+    let mut in_string = false;
+    let mut escaped = false;
+    for (at, character) in text.char_indices() {
+        if in_string {
+            match (escaped, character) {
+                (true, _) => escaped = false,
+                (false, '\\') => escaped = true,
+                (false, '"') => in_string = false,
+                _ => {}
+            }
+        } else if character == '"' {
+            in_string = true;
+        } else if character == open {
+            start.get_or_insert(at);
+            depth += 1;
+        } else if character == close && start.is_some() {
+            depth = depth.checked_sub(1)?;
+            if depth == 0 {
+                return start.map(|from| &text[from..at + close.len_utf8()]);
+            }
+        }
+    }
+    None
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_bracket_is_matched_with_its_partner_and_strings_do_not_count() {
+        assert_eq!(
+            balanced("f(a, b(c), \")\") rest", '('),
+            Some("(a, b(c), \")\")")
+        );
+        assert_eq!(balanced("x { a { b } c } d", '{'), Some("{ a { b } c }"));
+        assert_eq!(balanced("v[0][1]", '['), Some("[0]"));
+        assert_eq!(balanced("f(a, (b", '('), None, "never closes");
+        assert_eq!(balanced("no bracket", '('), None);
+    }
 
     #[test]
     fn the_unit_tests_are_left_out_and_the_rest_of_the_file_stays() {

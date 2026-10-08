@@ -146,7 +146,7 @@ title = "No copy-pasted code blocks above the duplication threshold"
 rule = "coding-standards §1 (DRY)"
 tool = "jscpd (Rust and TypeScript; .jscpd.json, tools/checks/dry-exemptions.toml)"
 when = ["ci"]
-files = ["crates/**/*.rs", "web/**/*.{ts,tsx}"]
+files = ["crates/**/*.rs", "xtask/**/*.rs", "web/**/*.{ts,tsx}"]
 status = "active"
 
 [[check]]
@@ -155,7 +155,7 @@ title = "No console.log, no any, no non-null !, no @ts-ignore, no TODO without a
 rule = "coding-standards §2, §3, §4"
 tool = "oxlint rules + ast-grep"
 when = ["edit", "commit", "ci"]
-files = ["crates/**/*.rs", "web/**/*.{ts,tsx}"]
+files = ["crates/**/*.rs", "xtask/**/*.rs", "web/**/*.{ts,tsx}"]
 status = "planned"
 
 [[check]]
@@ -358,7 +358,7 @@ title = "Settings are only read and written through the settings registry"
 rule = "ADR-0018"
 tool = "xtask (declarations and key literals in Rust and in the browser app, except generated files, migrations and the argument of a message lookup; the tables of setting values are named in the settings repository only)"
 when = ["edit", "commit", "ci"]
-files = ["crates/**/*.rs", "web/**/*.{ts,tsx}"]
+files = ["crates/**/*.rs", "xtask/**/*.rs", "web/**/*.{ts,tsx}"]
 status = "active"
 
 [[check]]
@@ -476,7 +476,7 @@ title = "No unwrap/expect/panic in production code, no dangerouslySetInnerHTML, 
 rule = "coding-standards §3, §4"
 tool = "ast-grep"
 when = ["edit", "commit", "ci"]
-files = ["crates/**/*.rs", "web/**/*.{ts,tsx}"]
+files = ["crates/**/*.rs", "xtask/**/*.rs", "web/**/*.{ts,tsx}"]
 status = "planned"
 
 [[check]]

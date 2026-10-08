@@ -15,7 +15,7 @@
 //! change is a part of one), so a new command cannot be left untested.
 
 use super::{Check, Context, Finding};
-use crate::rust_source::{strip, without_tests};
+use crate::rust_source::{balanced, strip, without_tests};
 use crate::source::read_text;
 use crate::source::{Kind, Source, contains_word};
 
@@ -44,22 +44,6 @@ impl Check for ArchEvents {
             table.as_deref(),
         ))
     }
-}
-
-/// The text between the bracket at the start of `text` and its partner, brackets included.
-fn balanced(text: &str, open: char, close: char) -> Option<&str> {
-    let mut depth = 0_usize;
-    for (at, character) in text.char_indices() {
-        if character == open {
-            depth += 1;
-        } else if character == close {
-            depth = depth.checked_sub(1)?;
-            if depth == 0 {
-                return Some(&text[..at + close.len_utf8()]);
-            }
-        }
-    }
-    None
 }
 
 /// The types of the parameters of a parameter list `( … )`.
@@ -137,7 +121,7 @@ fn evaluate(sources: &[Source], table: Option<&str>) -> Vec<Finding> {
                 .take_while(|c| c.is_alphanumeric() || *c == '_')
                 .collect();
             let Some(open) = rest.find('(') else { continue };
-            let Some(parameters) = balanced(&rest[open..], '(', ')') else {
+            let Some(parameters) = balanced(&rest[open..], '(') else {
                 continue;
             };
             let types = parameter_types(parameters);
@@ -150,7 +134,7 @@ fn evaluate(sources: &[Source], table: Option<&str>) -> Vec<Finding> {
             let Some(body_start) = after.find('{') else {
                 continue;
             };
-            let Some(body) = balanced(&after[body_start..], '{', '}') else {
+            let Some(body) = balanced(&after[body_start..], '{') else {
                 continue;
             };
             if body.contains(&format!("{RECORD}(")) {

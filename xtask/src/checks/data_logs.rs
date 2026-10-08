@@ -8,7 +8,7 @@
 //! items (`#[cfg(test)]` and the item after it) and files in `tests/` are not checked.
 
 use super::{Check, Context, Finding};
-use crate::rust_source::{strip_comments, without_tests};
+use crate::rust_source::{balanced, strip_comments, without_tests};
 use crate::source::{Kind, is_word_char, word_positions};
 
 /// Names (lower case) that must not appear in a log statement.
@@ -92,45 +92,12 @@ fn log_calls(code: &str) -> Vec<(usize, &str)> {
             else {
                 continue;
             };
-            if let Some(body) = balanced(&rest[2..], open) {
-                calls.push((at, body));
+            if let Some(body) = balanced(&rest[1..], open) {
+                calls.push((at, &body[1..body.len() - 1]));
             }
         }
     }
     calls
-}
-
-/// The text up to the bracket that closes `open`, skipping strings.
-fn balanced(text: &str, open: char) -> Option<&str> {
-    let close = match open {
-        '(' => ')',
-        '[' => ']',
-        _ => '}',
-    };
-    let mut depth = 1_usize;
-    let mut in_string = false;
-    let mut escaped = false;
-    for (at, c) in text.char_indices() {
-        if in_string {
-            if escaped {
-                escaped = false;
-            } else if c == '\\' {
-                escaped = true;
-            } else if c == '"' {
-                in_string = false;
-            }
-        } else if c == '"' {
-            in_string = true;
-        } else if c == open {
-            depth += 1;
-        } else if c == close {
-            depth -= 1;
-            if depth == 0 {
-                return Some(&text[..at]);
-            }
-        }
-    }
-    None
 }
 
 fn personal(word: &str) -> Option<&'static str> {
