@@ -74,14 +74,7 @@ fn version_of(
         to.and_then(|parent| projects.get(&parent))
             .map(|found| &found.name),
     );
-    bb_auth::stable_id("move-preview", &text)
-        .iter()
-        .fold(String::new(), |mut hex, byte| {
-            use std::fmt::Write as _;
-            // Writing to a string cannot fail.
-            let _ = write!(hex, "{byte:02x}");
-            hex
-        })
+    bb_core::hex::encode(&bb_auth::stable_id("move-preview", &text))
 }
 
 /// What a move would do, from the tree and the policy as they are.

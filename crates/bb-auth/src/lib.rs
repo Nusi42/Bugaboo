@@ -22,9 +22,9 @@ mod totp;
 
 pub use access_key::{AccessKeySecret, KEY_START, PREFIX_SYMBOLS, looks_like_access_key};
 pub use code::{HumanCode, code_hash};
-pub use csrf::CsrfKey;
+pub use csrf::{CsrfKey, KEY_LENGTH as CSRF_KEY_LENGTH};
 pub use device::Device;
-pub use email::{EmailAddress, domain_is_listed};
+pub use email::{EmailAddress, domain_is_listed, listed_domains};
 pub use error::AuthError;
 pub use passkeys::{
     CHALLENGE_LIFETIME, ChallengeId, DiscoverableMatch, PasskeyCheck, Passkeys, RelyingParty,

@@ -4,7 +4,7 @@
 use std::sync::Arc;
 use std::sync::atomic::{AtomicI64, Ordering};
 
-use bb_auth::{CsrfKey, Passkeys, PasswordHasher, RelyingParty};
+use bb_auth::{CSRF_KEY_LENGTH, CsrfKey, Passkeys, PasswordHasher, RelyingParty};
 use bb_core::id::UserId;
 use jiff::Timestamp;
 
@@ -87,7 +87,7 @@ impl World {
             clock.clone(),
             PasswordHasher::new().map_err(text)?,
             Some(Passkeys::new(&party).map_err(text)?),
-            CsrfKey::from_bytes(zeroize::Zeroizing::new([7; 32])),
+            CsrfKey::from_bytes(zeroize::Zeroizing::new([7; CSRF_KEY_LENGTH])),
             Arc::new(NoLimit),
             "Bugaboo".to_owned(),
         );

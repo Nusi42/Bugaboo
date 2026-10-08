@@ -26,7 +26,7 @@ use bb_core::event::{EntityRef, FieldChange};
 use bb_core::id::ProjectId;
 use bb_core::settings::{
     ChangedBy, Layers, Level, OrganizationValue, Scope, SettingDefinition, SettingValue, Source,
-    find, registry,
+    find, list_items, registry,
 };
 use bb_core::sign_in::SecurityAction;
 use bb_policy::{Authorized, Evaluation, Permission, Place};
@@ -414,9 +414,7 @@ pub async fn settings<S: AuthStore>(
     for definition in registry().filter(|definition| {
         definition.levels().contains(&scope.level())
             && input.topic.as_deref().is_none_or(|topic| {
-                topic
-                    .split(',')
-                    .any(|start| !start.is_empty() && definition.key().starts_with(start))
+                list_items(topic).any(|start| definition.key().starts_with(start))
             })
     }) {
         settings.push(ctx.view_of(&actor, scope, definition, &layers).await?);

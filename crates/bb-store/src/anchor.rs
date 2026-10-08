@@ -20,6 +20,7 @@ use std::fs;
 use std::io::Write as _;
 use std::path::{Path, PathBuf};
 
+use bb_core::hex;
 use bb_core::security_log::Digest;
 
 use crate::error::StoreError;
@@ -71,7 +72,11 @@ impl LogSeal {
         let signature = self
             .key
             .sign(&[ANCHOR_DOMAIN, &seq.to_be_bytes(), hash.as_bytes()])?;
-        let line = format!("{seq} {} {}\n", hex(hash.as_bytes()), hex(&signature));
+        let line = format!(
+            "{seq} {} {}\n",
+            hex::encode(hash.as_bytes()),
+            hex::encode(&signature)
+        );
         let mut file = open_append(&self.file).map_err(StoreError::AnchorFile)?;
         // One write call per line keeps lines whole when two appends finish together.
         file.write_all(line.as_bytes())
@@ -108,8 +113,8 @@ impl LogSeal {
     fn read_line(&self, line: &str) -> Option<(i64, Digest)> {
         let mut parts = line.split(' ');
         let seq: i64 = parts.next()?.parse().ok()?;
-        let hash: [u8; 32] = unhex(parts.next()?)?;
-        let signature: [u8; 32] = unhex(parts.next()?)?;
+        let hash: [u8; 32] = hex::decode(parts.next()?)?;
+        let signature: [u8; 32] = hex::decode(parts.next()?)?;
         if parts.next().is_some() {
             return None;
         }
@@ -117,26 +122,6 @@ impl LogSeal {
             .verify(&[ANCHOR_DOMAIN, &seq.to_be_bytes(), &hash], &signature)
             .then(|| (seq, Digest::new(hash)))
     }
-}
-
-fn hex(bytes: &[u8]) -> String {
-    use std::fmt::Write as _;
-    let mut text = String::with_capacity(bytes.len() * 2);
-    for byte in bytes {
-        let _ = write!(text, "{byte:02x}");
-    }
-    text
-}
-
-fn unhex<const N: usize>(text: &str) -> Option<[u8; N]> {
-    if text.len() != N * 2 || !text.is_ascii() {
-        return None;
-    }
-    let mut bytes = [0_u8; N];
-    for (at, slot) in bytes.iter_mut().enumerate() {
-        *slot = u8::from_str_radix(&text[at * 2..at * 2 + 2], 16).ok()?;
-    }
-    Some(bytes)
 }
 
 #[cfg(unix)]

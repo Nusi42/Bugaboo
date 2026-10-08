@@ -14,6 +14,7 @@ pub mod entities;
 pub mod error_code;
 pub mod event;
 pub mod fields;
+pub mod hex;
 pub mod id;
 pub mod job;
 pub mod message;

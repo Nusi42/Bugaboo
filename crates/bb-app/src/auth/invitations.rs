@@ -1,7 +1,7 @@
 //! Invitations and the rule for signing up (AUTH-06): what administrators do. People who use an
 //! invitation or sign up are in `account.rs`.
 
-use bb_auth::{EmailAddress, Purpose, SecretToken};
+use bb_auth::{EmailAddress, Purpose, SecretToken, listed_domains};
 use bb_core::ErrorCode;
 use bb_core::id::InvitationId;
 use bb_core::settings::{AUTH_SIGN_UP_DOMAINS, AUTH_SIGN_UP_ENABLED, SettingValue};
@@ -196,13 +196,6 @@ pub async fn invitation_lookup<S: AuthStore>(
         .ok_or_else(invalid)
 }
 
-fn domains_of(list: &str) -> Vec<String> {
-    list.split(',')
-        .map(|item| item.trim().trim_start_matches('@').to_lowercase())
-        .filter(|item| !item.is_empty())
-        .collect()
-}
-
 /// Who may sign up on their own.
 ///
 /// # Errors
@@ -222,7 +215,7 @@ pub async fn sign_up_policy<S: AuthStore>(
     let settings = ctx.settings().await?;
     Ok(access.authorize(SignUpPolicy {
         enabled: settings.sign_up_enabled,
-        domains: domains_of(&settings.sign_up_domains),
+        domains: listed_domains(&settings.sign_up_domains).collect(),
     }))
 }
 
@@ -249,7 +242,7 @@ pub async fn change_sign_up_policy<S: AuthStore>(
         .policy
         .domains
         .iter()
-        .flat_map(|item| domains_of(item))
+        .flat_map(|item| listed_domains(item))
     {
         let plain = domain.contains('.')
             && !domain.starts_with('.')

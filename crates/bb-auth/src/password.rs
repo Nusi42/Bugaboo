@@ -141,7 +141,7 @@ impl PasswordHasher {
     pub fn new() -> Result<Self, AuthError> {
         let processors = std::thread::available_parallelism().map_or(2, std::num::NonZero::get);
         // A password nobody can type: 16 random bytes in hex.
-        let unknown = Zeroizing::new(random::<16>()?.map(|byte| format!("{byte:02x}")).concat());
+        let unknown = Zeroizing::new(bb_core::hex::encode(&random::<16>()?));
         Ok(Self {
             permits: Arc::new(Semaphore::new(processors.max(2))),
             dummy: Arc::from(hash_now(&unknown)?),

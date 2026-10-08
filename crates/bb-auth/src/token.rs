@@ -14,10 +14,11 @@ use zeroize::Zeroizing;
 use crate::access_key::looks_like_access_key;
 use crate::error::{AuthError, random};
 
-/// Length of a secret in bytes (256 bits).
-const LENGTH: usize = 32;
-/// Length of a secret written as base64url without padding.
-const ENCODED_LENGTH: usize = 43;
+/// Length of a secret in bytes (256 bits). Also the length of the CSRF key and of its token (an
+/// HMAC-SHA256 tag).
+pub(crate) const LENGTH: usize = 32;
+/// Length of `LENGTH` bytes written as base64url without padding (43).
+pub(crate) const ENCODED_LENGTH: usize = (LENGTH * 4).div_ceil(3);
 
 /// What a secret or a code is for. It is part of the hash, so hashes of different purposes never
 /// match.

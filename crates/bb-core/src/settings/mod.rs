@@ -213,20 +213,13 @@ impl SettingDefinition {
         self.list
     }
 
-    fn items(value: &str) -> impl Iterator<Item = &str> {
-        value
-            .split(',')
-            .map(str::trim)
-            .filter(|item| !item.is_empty())
-    }
-
     /// Whether `value` (a list separated by commas) is within the limits of the setting, if it
     /// has any.
     #[must_use]
     pub fn list_fits(&self, value: &str) -> bool {
         self.list.is_none_or(|(most_items, longest)| {
-            Self::items(value).count() <= most_items
-                && Self::items(value).all(|item| item.chars().count() <= longest)
+            list_items(value).count() <= most_items
+                && list_items(value).all(|item| item.chars().count() <= longest)
         })
     }
 
@@ -237,7 +230,7 @@ impl SettingDefinition {
         let Some((most_items, longest)) = self.list else {
             return value.to_owned();
         };
-        Self::items(value)
+        list_items(value)
             .filter(|item| item.chars().count() <= longest)
             .take(most_items)
             .collect::<Vec<_>>()
@@ -550,6 +543,16 @@ pub struct StoredPersonSetting {
     /// When the person last changed it.
     #[personal(category = "activity", basis = "contract")]
     pub updated_at: jiff::Timestamp,
+}
+
+/// The items of a list written as text with commas between the items: spaces around an item are
+/// dropped, and so are empty items. The one reading of a comma list (the limits of a list
+/// setting, the approved domains, the topics of a settings query).
+pub fn list_items(value: &str) -> impl Iterator<Item = &str> {
+    value
+        .split(',')
+        .map(str::trim)
+        .filter(|item| !item.is_empty())
 }
 
 /// Every setting of the registry, and in tests the ones that only exist for them.

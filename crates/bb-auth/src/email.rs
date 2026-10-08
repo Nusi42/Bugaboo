@@ -4,6 +4,8 @@
 //! deliberately small: one `@`, something on each side, a dot in the domain, no spaces or control
 //! characters. Whether the mailbox exists is something only a message can show (M4).
 
+use bb_core::settings::list_items;
+
 /// The longest address (RFC 5321).
 const MAX_LENGTH: usize = 254;
 /// The longest part before the `@` (RFC 5321).
@@ -47,13 +49,19 @@ impl EmailAddress {
     }
 }
 
+/// The domains of `list`, a list separated by commas, in one spelling: without spaces, without a
+/// leading `@` and in lower case. The one reading of the approved domains for signing up.
+pub fn listed_domains(list: &str) -> impl Iterator<Item = String> {
+    list_items(list)
+        .map(|item| item.trim_start_matches('@').to_lowercase())
+        .filter(|item| !item.is_empty())
+}
+
 /// Whether the domain of `address` is on `list`, a list of domains separated by commas (spaces
 /// and capitals do not matter). An empty list names nobody.
 #[must_use]
 pub fn domain_is_listed(address: &EmailAddress, list: &str) -> bool {
-    list.split(',')
-        .map(|item| item.trim().trim_start_matches('@').to_lowercase())
-        .any(|item| !item.is_empty() && item == address.domain())
+    listed_domains(list).any(|item| item == address.domain())
 }
 
 #[cfg(test)]

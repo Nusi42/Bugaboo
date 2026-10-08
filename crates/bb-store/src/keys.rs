@@ -28,6 +28,7 @@ use std::path::{Path, PathBuf};
 use std::sync::{Arc, RwLock};
 use std::time::{Duration, SystemTime};
 
+use bb_core::hex;
 use bb_core::technical::TechnicalName;
 use hmac::{Hmac, KeyInit as _, Mac as _};
 use sha2::Sha256;
@@ -445,24 +446,14 @@ fn render_log(key: &SigningKey) -> Zeroizing<String> {
     text
 }
 
+/// A key read from its hexadecimal text, straight into memory that is wiped when it is dropped.
 fn from_hex(text: &str) -> Option<Zeroizing<[u8; KEY_LENGTH]>> {
-    if text.len() != KEY_LENGTH * 2 || !text.is_ascii() {
-        return None;
-    }
     let mut bytes = Zeroizing::new([0_u8; KEY_LENGTH]);
-    for (at, slot) in bytes.iter_mut().enumerate() {
-        *slot = u8::from_str_radix(&text[at * 2..at * 2 + 2], 16).ok()?;
-    }
-    Some(bytes)
+    hex::decode_into(text, bytes.as_mut_slice()).then_some(bytes)
 }
 
 fn to_hex(bytes: &[u8]) -> Zeroizing<String> {
-    let mut text = Zeroizing::new(String::with_capacity(bytes.len() * 2));
-    for byte in bytes {
-        text.push(char::from_digit(u32::from(byte >> 4), 16).unwrap_or('0'));
-        text.push(char::from_digit(u32::from(byte & 0x0f), 16).unwrap_or('0'));
-    }
-    text
+    Zeroizing::new(hex::encode(bytes))
 }
 
 /// Makes the file with this content, unless it exists already. A process that loses the race

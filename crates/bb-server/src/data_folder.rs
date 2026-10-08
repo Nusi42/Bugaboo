@@ -544,13 +544,9 @@ fn make_staging_folder_with(
 
 /// A name for the staging folder beside `path` that cannot be guessed: it ends in random bytes.
 fn staging_name(path: &Path) -> std::io::Result<PathBuf> {
-    use std::fmt::Write as _;
     let mut random = [0_u8; 8];
     getrandom::fill(&mut random).map_err(std::io::Error::other)?;
-    let tail = random.iter().fold(String::new(), |mut hex, byte| {
-        let _ = write!(hex, "{byte:02x}");
-        hex
-    });
+    let tail = bb_core::hex::encode(&random);
     let name = path
         .file_name()
         .map_or_else(String::new, |name| name.to_string_lossy().into_owned());

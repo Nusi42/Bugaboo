@@ -12,18 +12,18 @@ use sha2::Sha256;
 use zeroize::Zeroizing;
 
 use crate::error::AuthError;
-use crate::token::SecretToken;
+use crate::token::{ENCODED_LENGTH, LENGTH, SecretToken};
 
 type HmacSha256 = Hmac<Sha256>;
 
 /// Keeps the token apart from any other use of the key.
 const DOMAIN: &[u8] = b"bugaboo.csrf.v1";
-/// A token is 32 bytes of HMAC written as base64url without padding.
-const ENCODED_LENGTH: usize = 43;
+/// The length of the key in bytes (the content of `keys/csrf.key`).
+pub const KEY_LENGTH: usize = LENGTH;
 
 /// The key the token is derived under.
 #[derive(Clone)]
-pub struct CsrfKey(Zeroizing<[u8; 32]>);
+pub struct CsrfKey(Zeroizing<[u8; KEY_LENGTH]>);
 
 impl std::fmt::Debug for CsrfKey {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -34,7 +34,7 @@ impl std::fmt::Debug for CsrfKey {
 impl CsrfKey {
     /// The key made of these bytes (the content of `keys/csrf.key`).
     #[must_use]
-    pub const fn from_bytes(bytes: Zeroizing<[u8; 32]>) -> Self {
+    pub const fn from_bytes(bytes: Zeroizing<[u8; KEY_LENGTH]>) -> Self {
         Self(bytes)
     }
 
@@ -49,9 +49,9 @@ impl CsrfKey {
     /// The token for `session`, as text for the `__Host-bb_csrf` cookie.
     ///
     /// # Errors
-    /// Fails when the key cannot be used (it never happens with a 32-byte key).
+    /// Fails when the key cannot be used (it never happens with a key of [`KEY_LENGTH`] bytes).
     pub fn token(&self, session: &SecretToken) -> Result<String, AuthError> {
-        let bytes: [u8; 32] = self.mac(session)?.finalize().into_bytes().into();
+        let bytes: [u8; LENGTH] = self.mac(session)?.finalize().into_bytes().into();
         Ok(Base64UrlUnpadded::encode_string(&bytes))
     }
 
@@ -62,7 +62,7 @@ impl CsrfKey {
         if presented.len() != ENCODED_LENGTH {
             return false;
         }
-        let mut bytes = [0_u8; 32];
+        let mut bytes = [0_u8; LENGTH];
         let Ok(decoded) = Base64UrlUnpadded::decode(presented, &mut bytes) else {
             return false;
         };
@@ -76,7 +76,7 @@ mod tests {
     use super::*;
 
     fn key(byte: u8) -> CsrfKey {
-        CsrfKey::from_bytes(Zeroizing::new([byte; 32]))
+        CsrfKey::from_bytes(Zeroizing::new([byte; KEY_LENGTH]))
     }
 
     #[test]
@@ -91,7 +91,13 @@ mod tests {
         assert!(!key.verify(&other, &token));
         // Bound to the key.
         assert!(!self::key(8).verify(&session, &token));
-        for bad in ["", "x", &token[..42], &format!("{token}A"), &"A".repeat(43)] {
+        for bad in [
+            "",
+            "x",
+            &token[..ENCODED_LENGTH - 1],
+            &format!("{token}A"),
+            &"A".repeat(ENCODED_LENGTH),
+        ] {
             assert!(!key.verify(&session, bad), "{bad}");
         }
     }
