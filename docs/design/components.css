@@ -30,10 +30,11 @@ button,
 input,
 select,
 textarea {
-  font-family: var(--font);
+  font-family: inherit;
   font-size: inherit;
   font-weight: inherit;
   font-style: inherit;
+  line-height: inherit;
   color: inherit;
 }
 

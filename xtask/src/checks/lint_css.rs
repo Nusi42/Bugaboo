@@ -65,33 +65,36 @@ fn lint_batch(root: &Path, files: &[String], config: &str) -> anyhow::Result<Vec
 /// theme file that the rule comes from (not by the temporary file, whatever way stylelint writes
 /// its path), and the message says which line of the compiled text it is.
 fn lint_theme(root: &Path, file: &ThemeFile, name: &str) -> anyhow::Result<Vec<Finding>> {
-    let mut findings = lint_compiled(root, parts_css_with_lines(file)?, name)?;
-    // Each sheet of the design pages is read on its own: its selectors are plain CSS, and the same
-    // element selector may stand in both.
-    for sheet in &file.docs {
-        let compiled = doc_css_with_lines(file, sheet)?;
-        findings.extend(lint_compiled(
-            root,
-            compiled,
-            &format!("doc-{}-{name}", sheet.name),
-        )?);
-    }
-    Ok(findings)
-}
-
-fn lint_compiled(
-    root: &Path,
-    (css, from): (String, Vec<usize>),
-    name: &str,
-) -> anyhow::Result<Vec<Finding>> {
+    // The rules of the parts, and each sheet of the design pages on its own (its selectors are
+    // plain CSS, and the same element selector may stand in two sheets). One run of stylelint reads
+    // them all: starting it is most of the time.
     let folder = root.join(WORK_FOLDER);
     std::fs::create_dir_all(&folder)?;
-    std::fs::write(folder.join(name), css)?;
-    let compiled = format!("{WORK_FOLDER}/{name}");
-    let findings = lint(root, std::slice::from_ref(&compiled), CONFIG)?;
-    Ok(findings
+    let mut compiled = vec![(name.to_owned(), parts_css_with_lines(file)?)];
+    for sheet in &file.docs {
+        compiled.push((
+            format!("doc-{}-{name}", sheet.name),
+            doc_css_with_lines(file, sheet)?,
+        ));
+    }
+    let mut paths = Vec::new();
+    for (written, (css, _)) in &compiled {
+        std::fs::write(folder.join(written), css)?;
+        paths.push(format!("{WORK_FOLDER}/{written}"));
+    }
+    Ok(lint(root, &paths, CONFIG)?
         .into_iter()
-        .map(|finding| point_at_theme_file(finding, &from))
+        .map(|finding| {
+            // The longest name that the place holds is the sheet it is about.
+            let place = finding.location.clone().unwrap_or_default();
+            let from = compiled
+                .iter()
+                .filter(|(written, _)| place.contains(written.as_str()))
+                .max_by_key(|(written, _)| written.len())
+                .map(|(_, (_, from))| from.as_slice())
+                .unwrap_or_default();
+            point_at_theme_file(finding, from)
+        })
         .collect())
 }
 

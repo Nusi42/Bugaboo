@@ -4,399 +4,12 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Mono:wght@400;600&family=Atkinson+Hyperlegible+Next:wght@400;500;600;700&display=swap">
 <link rel="stylesheet" href="theme.css">
 <link rel="stylesheet" href="components.css">
-<style>
-/* Mockup app layout: sidebar | main | side panel; phone: single pane + bottom bar. Tokens and shared components come from ../design/. */
-html,body{height:100%}
-/* ---------- shell ---------- */
-.app{height:100%;display:grid;grid-template-columns:236px minmax(0,1fr) auto;overflow:hidden;position:relative}
-.sidebar{background:var(--bg-surface);border-right:1px solid var(--border);display:flex;flex-direction:column;min-height:0}
-.brand{display:flex;align-items:center;gap:10px;padding:16px 16px 8px;font-weight:700;font-size:var(--fs-md);letter-spacing:.01em}
-.brand svg{width:26px;height:26px}
-.side-scroll{flex:1;overflow:auto;padding:4px 10px 10px;display:flex;flex-direction:column;gap:2px}
-.side-search{display:flex;align-items:center;gap:8px;margin:6px 10px 8px;padding:8px 10px;border:1px solid var(--border);border-radius:var(--r-ctl);background:var(--bg-raised);color:var(--fg-muted);text-align:left;width:calc(100% - 20px)}
-.side-search kbd{margin-left:auto}
-.nav-item{display:flex;align-items:center;gap:10px;padding:7px 10px;border-radius:var(--r-ctl);border:0;background:none;text-align:left;width:100%;color:var(--fg)}
-.nav-item:hover{background:var(--bg-hover)}
-.nav-item[aria-current="true"]{background:var(--bg-selected);color:var(--accent-fg);font-weight:600}
-.nav-item .count{margin-left:auto;font-size:var(--fs-xs);background:var(--accent);color:var(--on-accent);border-radius:999px;padding:0 7px;font-weight:600}
-.nav-label{font-size:var(--fs-xs);color:var(--fg-subtle);text-transform:uppercase;letter-spacing:.06em;padding:14px 10px 4px;font-weight:600}
-.nav-sub{padding-left:30px}
-.side-foot{border-top:1px solid var(--border);padding:10px;display:flex;flex-direction:column;gap:6px}
-.timer-chip{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:var(--r-ctl);background:var(--accent-soft);color:var(--accent-fg);border:0;width:100%;text-align:left}
-.timer-chip .t{margin-left:auto;font-weight:600}
-.timer-chip.off{background:transparent;color:var(--fg-muted);border:1px dashed var(--border)}
-
-.main{display:flex;flex-direction:column;min-width:0;min-height:0;background:var(--bg-canvas)}
-.topbar{display:flex;align-items:center;gap:12px;padding:10px 20px;border-bottom:1px solid var(--border);min-height:56px;flex-wrap:wrap}
-.crumbs{display:flex;align-items:center;gap:6px;color:var(--fg-muted);min-width:0;flex:1 1 auto}
-.crumbs b{color:var(--fg);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.top-actions{display:flex;align-items:center;gap:8px;margin-left:auto}
-select.look{padding:6px 8px;border:1px solid var(--border);border-radius:var(--r-ctl);background:var(--bg-raised)}
-.content{flex:1;overflow:auto;padding:20px 24px 40px;min-height:0}
-.content.flush{padding:0}
-
-/* ---------- search bar ---------- */
-.searchbar{display:flex;align-items:flex-start;gap:8px;padding:12px 24px;border-bottom:1px solid var(--border-subtle);background:var(--bg-canvas);flex-wrap:wrap}
-.adv{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
-.adv textarea{width:100%;min-height:62px;resize:vertical;padding:10px 12px;border:1px solid var(--border);border-radius:var(--r-ctl);background:var(--bg-raised);font-family:var(--mono);font-size:var(--fs-sm);line-height:1.55}
-.adv .err{color:var(--danger);font-size:var(--fs-sm);display:flex;gap:6px;align-items:center}
-.adv .hint{color:var(--fg-muted);font-size:var(--fs-xs)}
-.ask{display:flex;gap:8px;flex:1;min-width:0;flex-wrap:wrap}
-.ask input{flex:1;min-width:180px;padding:8px 12px;border:1px solid var(--accent);border-radius:var(--r-ctl);background:var(--bg-raised)}
-.ask-result{flex-basis:100%;border:1px solid var(--border);background:var(--accent-soft);border-radius:var(--r-ctl);padding:10px 12px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
-.ask-result code{font-family:var(--mono);font-size:var(--fs-sm);flex:1;min-width:0}
-
-/* ---------- list ---------- */
-.tbl{width:100%;border-collapse:collapse}
-.tbl th{font-size:var(--fs-xs);text-transform:uppercase;letter-spacing:.05em;color:var(--fg-subtle);text-align:left;padding:8px 10px;border-bottom:1px solid var(--border);font-weight:600;white-space:nowrap}
-.tbl td{padding:9px 10px;border-bottom:1px solid var(--border-subtle);vertical-align:middle}
-.tbl tr.row{cursor:pointer}
-.tbl tr.row:hover td{background:var(--bg-hover)}
-.tbl tr.row.sel td{background:var(--bg-selected)}
-.tbl .title{font-weight:500}
-.group-h td{background:var(--bg-surface);font-weight:600;font-size:var(--fs-sm);color:var(--fg-muted)}
-.cards{display:none}
-.bulkbar{position:sticky;bottom:12px;margin:12px auto 0;width:max-content;max-width:100%;display:flex;flex-wrap:wrap;gap:6px;align-items:center;background:var(--bg-raised);border:1px solid var(--border);box-shadow:var(--shadow);border-radius:var(--r-card);padding:8px 10px}
-
-/* ---------- board ---------- */
-.board{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(240px,1fr);gap:14px;overflow-x:auto;padding:16px 24px 24px;min-height:100%;align-items:start}
-.col{background:var(--bg-surface);border:1px solid var(--border-subtle);border-radius:var(--r-card);display:flex;flex-direction:column;min-height:200px}
-.col.drop-ok{outline:2px dashed var(--accent);outline-offset:-2px}
-.col.drop-no{opacity:.45}
-.col-h{display:flex;align-items:center;gap:8px;padding:10px 12px;font-weight:600}
-.col-h .lim{margin-left:auto;font-size:var(--fs-xs);color:var(--fg-muted);font-weight:500}
-.col-h .lim.over{color:var(--warning);font-weight:700}
-.col-b{display:flex;flex-direction:column;gap:8px;padding:0 10px 12px}
-.card{background:var(--bg-raised);border:1px solid var(--border);border-radius:8px;padding:10px;display:flex;flex-direction:column;gap:8px;cursor:grab;box-shadow:0 1px 1px rgba(0,0,0,.03)}
-.card:hover{border-color:var(--accent)}
-.card .title{font-weight:500}
-.card .meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:var(--fs-sm)}
-.card .move{margin-left:auto}
-.board-tabs{display:none}
-
-/* ---------- timeline ---------- */
-.tl-wrap{overflow-x:auto;padding:16px 24px 24px}
-.tl{min-width:760px;display:grid;grid-template-columns:260px 1fr;border:1px solid var(--border);border-radius:var(--r-card);overflow:hidden;background:var(--bg-raised)}
-.tl-h{display:contents}
-.tl-h>div{background:var(--bg-surface);border-bottom:1px solid var(--border);padding:8px 10px;font-size:var(--fs-xs);color:var(--fg-muted);font-weight:600}
-.tl-weeks{display:grid;grid-template-columns:repeat(5,1fr);padding:0!important}
-.tl-weeks span{padding:8px 10px;border-left:1px solid var(--border-subtle)}
-.tl-name{padding:8px 10px;border-bottom:1px solid var(--border-subtle);display:flex;align-items:center;gap:8px;min-width:0;cursor:pointer}
-.tl-name:hover{background:var(--bg-hover)}
-.tl-name .t{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.tl-name.goal{font-weight:600;background:var(--bg-surface)}
-.tl-name.child{padding-left:28px}
-.tl-lane{position:relative;border-bottom:1px solid var(--border-subtle);min-height:38px;background-image:repeating-linear-gradient(to right,transparent 0,transparent calc(20% - 1px),var(--border-subtle) calc(20% - 1px),var(--border-subtle) 20%)}
-.bar{position:absolute;top:9px;height:20px;border-radius:5px;background:var(--st-ip);color:var(--on-accent);font-size:11px;padding:0 6px;display:flex;align-items:center;overflow:hidden;white-space:nowrap;cursor:pointer;border:0}
-.bar.ns{background:var(--fg-subtle)}
-.bar.done{background:var(--st-done)}
-.bar.goal{background:var(--accent);height:10px;top:14px;border-radius:3px}
-.bar.goal .prog{position:absolute;inset:0 auto 0 0;background:var(--accent-fg);opacity:.55}
-.ms{position:absolute;top:11px;width:16px;height:16px;transform:translateX(-8px) rotate(45deg);background:var(--warning);border-radius:2px}
-.today{position:absolute;top:0;bottom:0;width:2px;background:var(--danger);opacity:.7;pointer-events:none}
-.today-label{position:absolute;top:2px;font-size:10px;color:var(--danger);font-weight:700;transform:translateX(4px)}
-.tl-list{display:none}
-.tl-legend{display:flex;gap:16px;flex-wrap:wrap;margin-top:10px;font-size:var(--fs-sm);color:var(--fg-muted);align-items:center}
-.tl-legend i{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-2px;margin-right:4px}
-
-/* ---------- side panel ---------- */
-.panel{width:440px;border-left:1px solid var(--border);background:var(--bg-canvas);display:flex;flex-direction:column;min-height:0}
-.panel[hidden]{display:none!important}
-.panel-h{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--border);min-height:56px}
-.panel-tabs{display:flex;gap:4px}
-.panel-b{flex:1;overflow:auto;padding:18px 20px 32px;display:flex;flex-direction:column;gap:18px;min-height:0}
-.issue-title{font-size:var(--fs-lg);font-weight:700;line-height:1.3;border:1px solid transparent;border-radius:var(--r-ctl);padding:4px 6px;margin:-4px -6px;background:none;width:calc(100% + 12px);text-wrap:balance}
-.issue-title:hover{border-color:var(--border)}
-.fval{border:1px solid transparent;background:none;border-radius:var(--r-ctl);padding:5px 7px;margin-left:-7px;text-align:left;display:inline-flex;align-items:center;gap:6px;max-width:100%}
-.fval:hover{border-color:var(--border);background:var(--bg-raised)}
-.fval.add{color:var(--fg-subtle)}
-.ro{display:inline-flex;align-items:center;gap:6px;padding:5px 0}
-.ro .lock{color:var(--fg-subtle)}
-.ro-note{font-size:var(--fs-xs);color:var(--fg-muted);grid-column:2;margin-top:-4px}
-.section-h{font-size:var(--fs-sm);font-weight:700;color:var(--fg-muted);text-transform:uppercase;letter-spacing:.06em;margin:0 0 8px}
-.desc{line-height:1.6;max-width:65ch}
-.desc ol{padding-left:20px;margin:6px 0}
-.subs{display:flex;flex-direction:column;border:1px solid var(--border);border-radius:var(--r-card);overflow:hidden}
-.subs button{display:flex;gap:10px;align-items:center;padding:8px 10px;border:0;border-bottom:1px solid var(--border-subtle);background:var(--bg-raised);text-align:left}
-.subs button:last-child{border-bottom:0}
-.subs button:hover{background:var(--bg-hover)}
-.activity{display:flex;flex-direction:column;gap:12px}
-.act{display:flex;gap:10px}
-.act .body{flex:1;min-width:0}
-.act .bubble{background:var(--bg-surface);border:1px solid var(--border-subtle);border-radius:var(--r-card);padding:8px 12px;margin-top:4px}
-.act.change{color:var(--fg-muted);font-size:var(--fs-sm);align-items:center}
-.comment-box{display:flex;gap:8px;align-items:flex-end}
-.comment-box textarea{flex:1;min-height:42px;padding:9px 12px;border:1px solid var(--border);border-radius:var(--r-ctl);background:var(--bg-raised);resize:vertical}
-.back-btn{display:none}
-
-/* ---------- assistant ---------- */
-.ai-ctx{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:var(--fs-sm)}
-.ai-src{font-size:var(--fs-sm);background:var(--bg-surface);border:1px solid var(--border-subtle);border-radius:var(--r-ctl);padding:8px 10px;display:flex;flex-direction:column;gap:2px}
-.msg{max-width:92%;padding:10px 12px;border-radius:12px;line-height:1.55}
-.msg.me{align-self:flex-end;background:var(--accent);color:var(--on-accent);border-bottom-right-radius:4px}
-.msg.ai{align-self:flex-start;background:var(--bg-surface);border:1px solid var(--border-subtle);border-bottom-left-radius:4px}
-.msg ul{margin:6px 0;padding-left:18px}
-.ai-label{font-size:var(--fs-xs);color:var(--fg-subtle);display:flex;gap:4px;align-items:center}
-.proposal{border:1px solid var(--accent);border-radius:var(--r-card);padding:12px;background:var(--bg-raised);display:flex;flex-direction:column;gap:10px}
-.proposal .diff{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.proposal .old{text-decoration:line-through;color:var(--fg-muted)}
-.ai-input{display:flex;gap:8px;border-top:1px solid var(--border);padding:12px 14px}
-.ai-input input{flex:1;min-width:0;padding:9px 12px;border:1px solid var(--border);border-radius:var(--r-ctl);background:var(--bg-raised)}
-
-/* ---------- home / generic ---------- */
-.page-h{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin:0 0 18px}
-.page-h h1{font-size:var(--fs-xl);margin:0;text-wrap:balance}
-.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:18px;align-items:start}
-.box{background:var(--bg-raised);border:1px solid var(--border);border-radius:var(--r-card);overflow:hidden}
-.box-h{display:flex;align-items:center;gap:8px;padding:12px 14px;border-bottom:1px solid var(--border-subtle);font-weight:700}
-.box-h .muted{font-weight:400;margin-left:auto;font-size:var(--fs-sm)}
-.box-row{display:flex;align-items:center;gap:10px;padding:9px 14px;border:0;border-bottom:1px solid var(--border-subtle);background:none;width:100%;text-align:left}
-.box-row:last-child{border-bottom:0}
-.box-row:hover{background:var(--bg-hover)}
-.box-row .t{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.timer-big{display:flex;align-items:center;gap:14px;padding:16px;background:var(--accent-soft);border:1px solid var(--accent);border-radius:var(--r-card);margin-bottom:18px;flex-wrap:wrap}
-.timer-big .clock{font-family:var(--mono);font-size:28px;font-weight:600;color:var(--accent-fg)}
-.checklist{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px;padding:14px;border:1px dashed var(--border);border-radius:var(--r-card)}
-.checklist .step{display:flex;align-items:center;gap:8px}
-.done-mark{width:20px;height:20px;border-radius:50%;background:var(--success);color:var(--bg-canvas);display:grid;place-items:center;font-size:12px;font-weight:700}
-
-/* ---------- docs ---------- */
-.docs{display:grid;grid-template-columns:240px minmax(0,1fr) 240px;min-height:100%}
-.doc-tree{border-right:1px solid var(--border);padding:14px 10px;background:var(--bg-surface);display:flex;flex-direction:column;gap:2px}
-.doc-tree .nav-item{font-size:var(--fs-sm)}
-.doc-page{padding:28px 36px 48px;min-width:0}
-.doc-page h1{font-size:30px;margin:4px 0 6px;text-wrap:balance}
-.doc-page h2{font-size:var(--fs-lg);margin:24px 0 8px}
-.doc-page p,.doc-page li{max-width:68ch;line-height:1.65}
-.doc-toolbar{display:flex;gap:4px;flex-wrap:wrap;border:1px solid var(--border);border-radius:var(--r-ctl);padding:4px;margin:12px 0 20px;width:max-content;max-width:100%;background:var(--bg-surface)}
-.doc-toolbar button{border:0;background:none;padding:4px 8px;border-radius:4px;font-size:var(--fs-sm)}
-.doc-toolbar button:hover{background:var(--bg-hover)}
-.live-chip{display:inline-flex;align-items:center;gap:6px;padding:2px 8px 2px 6px;border:1px solid var(--border);border-radius:6px;background:var(--bg-raised);vertical-align:1px;font-size:var(--fs-sm)}
-.doc-side{border-left:1px solid var(--border);padding:16px 14px;display:flex;flex-direction:column;gap:18px;font-size:var(--fs-sm)}
-.ver{display:flex;gap:8px;align-items:center;padding:4px 0}
-.lockbadge{display:inline-flex;gap:4px;align-items:center;font-size:var(--fs-xs);color:var(--warning);margin-left:auto}
-
-/* ---------- time ---------- */
-.ts-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:var(--r-card);background:var(--bg-raised)}
-.ts{border-collapse:collapse;width:100%;min-width:720px}
-.ts th,.ts td{padding:8px 8px;border-bottom:1px solid var(--border-subtle);text-align:center;font-variant-numeric:tabular-nums}
-.ts th{font-size:var(--fs-xs);color:var(--fg-muted);font-weight:600;background:var(--bg-surface)}
-.ts th.today{color:var(--accent-fg)}
-.ts td:first-child,.ts th:first-child{text-align:left}
-.ts input{width:64px;padding:6px;text-align:center;border:1px solid var(--border-subtle);border-radius:var(--r-ctl);background:var(--bg-canvas);font-family:var(--mono)}
-.ts input:focus{border-color:var(--accent)}
-.ts input.bad{border-color:var(--danger);background:var(--danger-soft)}
-.ts tfoot td{font-weight:700;background:var(--bg-surface)}
-
-/* ---------- settings ---------- */
-.perm{border-collapse:collapse;width:100%;min-width:640px}
-.perm th,.perm td{padding:10px;border-bottom:1px solid var(--border-subtle);text-align:left}
-.perm th{font-size:var(--fs-xs);color:var(--fg-muted);text-transform:uppercase;letter-spacing:.05em;background:var(--bg-surface)}
-.perm select{padding:5px 8px;border-radius:var(--r-ctl);border:1px solid var(--border);background:var(--bg-raised);font-size:var(--fs-sm)}
-.perm select.hid{color:var(--fg-subtle)}
-.perm select.see{color:var(--st-ip)}
-.perm select.chg{color:var(--success);font-weight:600}
-.explain{background:var(--bg-surface);border:1px solid var(--border-subtle);border-radius:var(--r-card);padding:12px 14px;line-height:1.6}
-.wf{display:flex;flex-direction:column;gap:10px}
-.wf-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:12px 14px;border:1px solid var(--border);border-radius:var(--r-card);background:var(--bg-raised)}
-.wf-row .arrow{color:var(--fg-subtle)}
-.themes{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px}
-.theme-card{border:2px solid var(--border);border-radius:var(--r-card);padding:0;overflow:hidden;background:none;text-align:left}
-.theme-card[aria-pressed="true"]{border-color:var(--accent)}
-.theme-card .pv{height:96px;display:grid;grid-template-columns:30% 1fr}
-.theme-card .pv i{display:block}
-.theme-card .pv .s{padding:8px 6px;display:flex;flex-direction:column;gap:5px}
-.theme-card .pv .m{padding:10px;display:flex;flex-direction:column;gap:6px}
-.theme-card .pv span{display:block;height:6px;border-radius:3px}
-.theme-card .cap{padding:8px 10px;display:flex;flex-direction:column;background:var(--bg-raised)}
-.theme-card .cap small{color:var(--fg-muted)}
-.setting-tabs{display:flex;gap:4px;margin-bottom:18px;border-bottom:1px solid var(--border);overflow-x:auto}
-.setting-tabs button{border:0;background:none;padding:8px 12px;color:var(--fg-muted);border-bottom:2px solid transparent;white-space:nowrap}
-.setting-tabs button[aria-selected="true"]{color:var(--fg);font-weight:600;border-bottom-color:var(--accent)}
-.help{font-size:var(--fs-sm);color:var(--fg-muted);margin:-6px 0 14px;max-width:70ch}
-
-/* ---------- overlays ---------- */
-.pop{position:fixed;z-index:50;min-width:220px;max-width:min(320px,calc(100vw - 32px));max-height:60vh;overflow:auto;background:var(--bg-raised);border:1px solid var(--border);border-radius:var(--r-card);box-shadow:var(--shadow);padding:6px}
-.pop-h{font-size:var(--fs-xs);color:var(--fg-subtle);text-transform:uppercase;letter-spacing:.06em;padding:6px 10px 4px;font-weight:600}
-.pop-item{display:flex;align-items:center;gap:8px;padding:8px 10px;border:0;background:none;width:100%;text-align:left;border-radius:var(--r-ctl)}
-.pop-item:hover,.pop-item:focus-visible{background:var(--bg-hover)}
-.pop-item small{color:var(--fg-muted);margin-left:auto}
-.pop-note{font-size:var(--fs-xs);color:var(--fg-muted);padding:6px 10px;border-top:1px solid var(--border-subtle);margin-top:4px}
-.scrim{position:fixed;inset:0;background:rgba(10,12,16,.45);z-index:60;display:grid;place-items:start center;padding:10vh 16px 16px}
-.dialog{background:var(--bg-raised);border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow);width:min(560px,100%);max-height:80vh;overflow:auto;display:flex;flex-direction:column}
-.dialog-h{display:flex;align-items:center;gap:8px;padding:14px 18px;border-bottom:1px solid var(--border-subtle)}
-.dialog-h h2{margin:0;font-size:var(--fs-md)}
-.dialog-b{padding:16px 18px;display:flex;flex-direction:column;gap:14px}
-.dialog-f{padding:12px 18px;border-top:1px solid var(--border-subtle);display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
-.qs-input{width:100%;padding:14px 18px;border:0;border-bottom:1px solid var(--border);background:none;font-size:var(--fs-md)}
-.qs-input:focus{outline:none}
-.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:70;background:var(--fg);color:var(--bg-canvas);border-radius:var(--r-card);padding:10px 12px 10px 16px;display:flex;align-items:center;gap:12px;box-shadow:var(--shadow);max-width:calc(100vw - 32px)}
-.toast button{background:none;border:0;color:inherit;font-weight:700;text-decoration:underline;padding:4px 6px}
-.mock-note{font-size:var(--fs-xs);color:var(--fg-subtle);padding:8px 24px;border-top:1px solid var(--border-subtle)}
-.bottombar{display:none}
-
-/* ---------- relations, relation map, calendar ---------- */
-.seg{max-width:100%;overflow-x:auto}
-.rel-ph{min-width:104px;font-size:var(--fs-sm)}
-.pop-find{width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:var(--r-ctl);background:var(--bg-canvas);margin:2px 0 6px}
-.map-head{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:14px 24px 0}
-.map-wrap{padding:14px 24px 24px;display:flex;flex-direction:column;gap:12px}
-.map-ctl{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
-.kind-chip{padding:4px 10px!important;gap:8px!important}
-.kind-chip[aria-pressed="false"]{opacity:.55}
-.kind-chip[aria-pressed="false"] .lbl{text-decoration:line-through}
-.sw{width:20px;height:0;border-top:3px solid var(--fg-muted);display:inline-block}
-.sw.k-blocks{border-color:var(--warning)}.sw.k-cause{border-color:var(--danger)}.sw.k-dup{border-top-style:dashed;border-color:var(--fg-subtle)}.sw.k-rel{border-color:var(--fg-muted)}.sw.k-part{border-color:var(--accent)}
-.map-canvas{border:1px solid var(--border);border-radius:var(--r-card);background:var(--bg-surface);overflow:auto}
-.map-canvas svg{display:block;width:100%;min-width:620px;height:auto;max-height:72vh}
-.edge{stroke-width:2;fill:none;transition:opacity var(--motion-fast),stroke-width var(--motion-fast)}
-.edge.k-blocks{stroke:var(--warning)}.edge.k-cause{stroke:var(--danger)}.edge.k-dup{stroke:var(--fg-subtle);stroke-dasharray:6 5}.edge.k-rel{stroke:var(--fg-muted)}.edge.k-part{stroke:var(--accent)}
-.mk-blocks{fill:var(--warning)}.mk-cause{fill:var(--danger)}.mk-dup{fill:var(--fg-subtle)}.mk-part{fill:var(--accent)}
-.elabel{font-size:12px;fill:var(--fg-muted);paint-order:stroke;stroke:var(--bg-surface);stroke-width:5px;stroke-linejoin:round;font-family:var(--font);transition:opacity var(--motion-fast)}
-.node{cursor:pointer;transition:opacity var(--motion-fast)}
-.node rect{fill:var(--bg-raised);stroke:var(--border);stroke-width:1.2}
-.node:hover rect,.node:focus rect{stroke:var(--accent);stroke-width:2.2}
-.node:focus{outline:none}
-.node.center rect{fill:var(--accent-soft);stroke:var(--accent);stroke-width:2.5}
-.nkey{font-family:var(--mono);font-size:12px;fill:var(--fg-muted)}
-.ntitle{font-family:var(--font);font-size:13px;font-weight:600;fill:var(--fg)}
-.nd-ns{fill:var(--st-ns)}.nd-ip{fill:var(--st-ip)}.nd-done{fill:var(--st-done)}
-.map-canvas.hl-on .edge:not(.hl),.map-canvas.hl-on .elabel:not(.hl),.map-canvas.hl-on .node:not(.hl){opacity:.2}
-.edge.hl{stroke-width:3.5}
-.map-info{margin:0;min-height:1.5em;line-height:1.6}
-.chains{display:flex;flex-direction:column;gap:14px}
-.chains h4{margin:0 0 6px;font-size:var(--fs-sm);color:var(--fg-muted);text-transform:uppercase;letter-spacing:.06em}
-.chains li{margin:4px 0;line-height:1.6}
-.cal-wrap{padding:16px 24px 24px;display:flex;flex-direction:column;gap:10px}
-.cal-top{display:flex;gap:12px;align-items:baseline;flex-wrap:wrap}
-.cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:1px;background:var(--border-subtle);border:1px solid var(--border);border-radius:var(--r-card);overflow:hidden}
-.cal-h{background:var(--bg-surface);padding:6px 8px;font-size:var(--fs-xs);font-weight:700;color:var(--fg-muted)}
-.cal-d{background:var(--bg-raised);min-height:96px;padding:6px;display:flex;flex-direction:column;gap:4px;min-width:0}
-.cal-d.other{background:var(--bg-surface)}
-.cal-d.drop-ok{outline:2px dashed var(--accent);outline-offset:-2px}
-.cal-d .n{font-size:var(--fs-sm);font-weight:600;color:var(--fg-muted);align-self:flex-start;padding:0 6px;border-radius:999px}
-.cal-d.today .n{background:var(--accent);color:var(--on-accent)}
-.cal-i{display:block;border:0;text-align:left;font-size:12px;padding:3px 6px;border-radius:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:100%;cursor:grab;font-weight:600}
-.cal-agenda{display:none}
-.editing-note{display:flex;gap:8px;align-items:center;padding:8px 10px;border:1px dashed var(--accent);background:var(--accent-soft);border-radius:var(--r-ctl);font-size:var(--fs-sm)}
-.desc-edit{width:100%;min-height:150px;padding:10px 12px;border:1px solid var(--accent);border-radius:var(--r-ctl);background:var(--bg-raised);line-height:1.55;resize:vertical}
-.savestate{display:flex;gap:8px;align-items:center;font-size:var(--fs-sm);color:var(--fg-muted);flex-wrap:wrap}
-.ss-dot{width:8px;height:8px;border-radius:50%;display:inline-block;flex:none}
-.ss-dot.ip{background:var(--st-ip)}.ss-dot.ok{background:var(--success)}
-.banner{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:8px 10px;border-radius:var(--r-ctl);background:var(--warning-soft);border:1px solid var(--warning);color:var(--fg)}
-.ni-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
-/* ---------- focus view (issue gets most of the screen) ---------- */
-.app.focus{grid-template-columns:64px minmax(0,1fr) auto}
-.app.focus .sidebar .brand{font-size:0;justify-content:center;padding:16px 0 8px}
-.app.focus .sidebar .side-search{font-size:0;justify-content:center;width:44px;margin:6px auto 8px;padding:8px}
-.app.focus .sidebar .side-search kbd,.app.focus .sidebar .nav-label,.app.focus .sidebar .nav-item .count{display:none}
-.app.focus .sidebar .nav-item{font-size:0;justify-content:center;padding:9px 0}
-.app.focus .sidebar .nav-sub{padding-left:0}
-.app.focus .sidebar .timer-chip,.app.focus .sidebar .wd-chip{font-size:0;justify-content:center;padding:9px 0}
-.app.focus .sidebar .timer-chip .t,.app.focus .sidebar .wd-chip .t{display:none}
-.focus-wrap{flex:1;min-height:0;display:grid;grid-template-columns:270px minmax(0,1fr)}
-.focus-wrap.no-rail{grid-template-columns:minmax(0,1fr)}
-.rail{border-right:1px solid var(--border);overflow:auto;background:var(--bg-surface);display:flex;flex-direction:column}
-.rail-h{display:flex;align-items:center;gap:8px;padding:10px 10px 6px;position:sticky;top:0;background:var(--bg-surface)}
-.rail-h .btn{margin-left:auto}
-.rail-i{display:grid;grid-template-columns:10px auto;grid-template-areas:"d k" "d t";gap:2px 8px;align-items:center;text-align:left;border:0;background:none;padding:8px 10px;border-bottom:1px solid var(--border-subtle)}
-.rail-i:hover{background:var(--bg-hover)}
-.rail-i.on{background:var(--bg-selected)}
-.rail-i .rd{grid-area:d;width:8px;height:8px;border-radius:50%}
-.rail-i .rd.nd-ns{background:var(--st-ns)}.rail-i .rd.nd-ip{background:var(--st-ip)}.rail-i .rd.nd-done{background:var(--st-done)}
-.rail-i .key{grid-area:k;font-size:var(--fs-xs)}
-.rail-i .t{grid-area:t;font-size:var(--fs-sm);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.fx{display:flex;flex-direction:column;min-width:0;min-height:0}
-.fx-h{display:flex;align-items:center;gap:6px;padding:8px 20px;border-bottom:1px solid var(--border-subtle);flex-wrap:wrap}
-.fx-body{flex:1;min-height:0;overflow:hidden;display:grid;grid-template-columns:minmax(0,1fr) 290px}
-.fx-main-scroll{overflow:auto;min-height:0}
-.fx-main{padding:22px 32px 48px;display:flex;flex-direction:column;gap:20px;max-width:900px;width:100%;margin:0 auto;min-width:0}
-.fx-main .issue-title{font-size:26px}
-.fx-main .desc{font-size:15px;line-height:1.7;max-width:75ch}
-.fx-details{overflow:auto;min-height:0;padding:22px 20px;border-left:1px solid var(--border-subtle);background:var(--bg-canvas)}
-.fx-details .fields{grid-template-columns:110px minmax(0,1fr)}
-.fx-inline-details{display:none;border:1px solid var(--border);border-radius:var(--r-card);padding:12px 14px;background:var(--bg-surface)}
-.fx-details-btn{display:none}
-.facts{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
-.fact{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border);background:var(--bg-raised);border-radius:999px;padding:3px 10px;font-size:var(--fs-sm)}
-button.fact:hover{border-color:var(--accent)}
-.fact .fl{color:var(--fg-subtle);font-size:var(--fs-xs)}
-@media (max-width:1279px){
-  .fx-body{grid-template-columns:minmax(0,1fr)}
-  .fx-details{display:none}
-  .fx-details-btn{display:inline-flex}
-  .fx-body.details-open .fx-inline-details{display:block}
-  .focus-wrap{grid-template-columns:230px minmax(0,1fr)}
-  .fx-main{padding:18px 22px 40px}
-}
-.viewas-bar{display:flex;align-items:center;gap:8px;flex-basis:100%;padding:6px 10px;border-radius:var(--r-ctl);background:var(--warning-soft);border:1px solid var(--warning);font-size:var(--fs-sm)}
-.viewas-bar .btn{margin-left:auto}
-/* ---------- working hours & privacy ---------- */
-.wd-chip{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:var(--r-ctl);background:var(--success-soft);color:var(--fg);border:1px solid var(--success);width:100%;text-align:left}
-.wd-chip.off{background:transparent;border:1px dashed var(--border);color:var(--fg-muted)}
-.wd-chip.brk{background:var(--warning-soft);border-color:var(--warning)}
-.wd-chip .t{margin-left:auto;font-weight:600}
-.ts input.warn{border-color:var(--warning);background:var(--warning-soft)}
-.ts tr.wh td{background:var(--bg-surface);font-weight:700}
-.ts .warnt{color:var(--warning)}
-.ts select{padding:5px 6px;border:1px solid var(--border-subtle);border-radius:var(--r-ctl);background:var(--bg-canvas);font-size:var(--fs-sm)}
-.rule-warn{display:flex;gap:8px;align-items:flex-start;padding:10px 12px;margin:10px 0;border:1px solid var(--warning);background:var(--warning-soft);border-radius:var(--r-card);font-size:var(--fs-sm);line-height:1.5}
-/* ---------- tablet: panel floats over content ---------- */
-@media (min-width:900px) and (max-width:1279px){
-  .panel{position:absolute;right:0;top:0;bottom:0;z-index:20;box-shadow:var(--shadow);width:min(440px,70vw)}
-}
-/* ---------- phone ---------- */
-@media (max-width:899px){
-  .map-head{padding:12px 16px 0}
-  .map-wrap,.cal-wrap{padding:12px 16px 20px}
-  .cal{display:none}
-  .cal-agenda{display:flex;flex-direction:column;gap:8px}
-  .app{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr) auto}
-  .sidebar{display:none}
-  .topbar{padding:8px 16px;min-height:52px}
-  .topbar .hide-phone{display:none}
-  .content{padding:16px 16px 32px}
-  .searchbar{padding:10px 16px}
-  .chips{flex-wrap:nowrap;overflow-x:auto;padding-bottom:2px}
-  .chip{flex:none}
-  .tbl{display:none}
-  .cards{display:flex;flex-direction:column}
-  .lrow{display:flex;gap:10px;padding:12px 2px;border:0;border-bottom:1px solid var(--border-subtle);background:none;text-align:left;width:100%}
-  .lrow .t{font-weight:600;display:block;margin:2px 0 4px}
-  .lrow .m{display:flex;gap:10px;flex-wrap:wrap;align-items:center;font-size:var(--fs-sm);color:var(--fg-muted)}
-  .board{grid-auto-flow:row;grid-auto-columns:auto;padding:0 16px 24px}
-  .board .col{display:none}
-  .board .col.show{display:flex}
-  .board-tabs{display:flex;gap:6px;overflow-x:auto;padding:12px 16px 10px}
-  .board-tabs button{flex:none}
-  .tl-wrap{display:none}
-  .tl-list{display:flex;flex-direction:column;gap:14px;padding:16px}
-  .tl-day{font-size:var(--fs-sm);font-weight:700;color:var(--fg-muted)}
-  .panel{position:fixed;inset:0;width:auto;z-index:40;border:0;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
-  .panel .back-btn{display:inline-flex}
-  .panel .hide-phone{display:none}
-  .fields{grid-template-columns:110px minmax(0,1fr)}
-  .docs{grid-template-columns:minmax(0,1fr)}
-  .doc-tree{border-right:0;border-bottom:1px solid var(--border)}
-  .doc-side{border-left:0;border-top:1px solid var(--border)}
-  .doc-page{padding:20px 16px 32px}
-  .bottombar{display:grid;grid-template-columns:repeat(5,1fr);border-top:1px solid var(--border);background:var(--bg-surface);padding-bottom:env(safe-area-inset-bottom,0px)}
-  .bottombar button{border:0;background:none;display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 2px;font-size:11px;color:var(--fg-muted);min-height:56px;justify-content:center}
-  .bottombar button[aria-current="true"]{color:var(--accent-fg);font-weight:700}
-  .bottombar .new{color:var(--accent-fg)}
-  .bottombar .new .ico{width:26px;height:26px;background:var(--accent);color:var(--on-accent);border-radius:50%;padding:4px}
-  .pop{left:0!important;right:0!important;top:auto!important;bottom:0!important;max-width:none;border-radius:16px 16px 0 0;max-height:70vh;padding-bottom:calc(10px + env(safe-area-inset-bottom,0px))}
-  .scrim{place-items:end stretch;padding:0}
-  .dialog{width:100%;max-height:92vh;border-radius:16px 16px 0 0}
-  .toast{bottom:76px}
-  .mock-note{padding:8px 16px}
-}
-</style>
+<link rel="stylesheet" href="mockup.css">
 
 <div class="app" id="app">
   <aside class="sidebar" aria-label="Main menu">
     <div class="brand">
-      <svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="17" r="11" style="fill:var(--accent)"/><path d="M16 6v22" style="stroke:var(--bg-surface)" stroke-width="2"/><circle cx="11.5" cy="14" r="2.2" style="fill:var(--bg-surface)"/><circle cx="20.5" cy="14" r="2.2" style="fill:var(--bg-surface)"/><circle cx="12" cy="21.5" r="1.8" style="fill:var(--bg-surface)"/><circle cx="20" cy="21.5" r="1.8" style="fill:var(--bg-surface)"/><path d="M12 6.5 9 3M20 6.5 23 3" style="stroke:var(--accent)" stroke-width="2" stroke-linecap="round" fill="none"/></svg>
+      <svg viewBox="0 0 32 32" aria-hidden="true"><circle class="u-fill-accent" cx="16" cy="17" r="11"/><path class="u-stroke-bg-surface" d="M16 6v22" stroke-width="2"/><circle class="u-fill-bg-surface" cx="11.5" cy="14" r="2.2"/><circle class="u-fill-bg-surface" cx="20.5" cy="14" r="2.2"/><circle class="u-fill-bg-surface" cx="12" cy="21.5" r="1.8"/><circle class="u-fill-bg-surface" cx="20" cy="21.5" r="1.8"/><path class="u-stroke-accent" d="M12 6.5 9 3M20 6.5 23 3" stroke-width="2" stroke-linecap="round" fill="none"/></svg>
       Bugaboo
     </div>
     <button type="button" class="side-search" data-act="quick"><svg class="ico"><use href="#i-search"/></svg>Search<kbd>Ctrl K</kbd></button>
@@ -413,7 +26,7 @@ button.fact:hover{border-color:var(--accent)}
 
 <div id="overlay"></div>
 
-<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<svg class="u-position-absolute" width="0" height="0" aria-hidden="true">
   <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></symbol>
   <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></symbol>
   <symbol id="i-bookmark" viewBox="0 0 24 24"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></symbol>
@@ -449,6 +62,7 @@ button.fact:hover{border-color:var(--accent)}
   <symbol id="i-calendar" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></symbol>
 </svg>
 
+<script src="frame.js"></script>
 <script>
 "use strict";
 /* ============ sample data (examples, not real records) ============ */
@@ -571,17 +185,17 @@ function persistLook(){ try{ localStorage.setItem("bugaboo-look", JSON.stringify
 /* ============ theme ============ */
 const LOOKS = {daylight:"Daylight",paper:"Paper",dusk:"Dusk",midnight:"Midnight"};
 function hostIsDark(){
-  const t = document.documentElement.getAttribute("data-theme");
+  const t = document.documentElement.getAttribute(bugabooFrame.mode);
   if(t === "dark") return true;
   if(t === "light") return false;
   return matchMedia("(prefers-color-scheme: dark)").matches;
 }
 function applyLook(){
   const look = S.look === "system" ? (hostIsDark() ? S.prefDark : S.prefLight) : S.look;
-  document.documentElement.setAttribute("data-look", look);
+  document.documentElement.setAttribute(bugabooFrame.look, look);
 }
 matchMedia("(prefers-color-scheme: dark)").addEventListener("change", applyLook);
-new MutationObserver(applyLook).observe(document.documentElement,{attributes:true,attributeFilter:["data-theme"]});
+new MutationObserver(applyLook).observe(document.documentElement,{attributes:true,attributeFilter:[bugabooFrame.mode]});
 
 /* ============ search language (mockup-sized) ============ */
 const FIELD_ALIASES = {project:"project",status:"status",assignedto:"assignedTo",priority:"priority",type:"type",label:"label",labels:"label"};
@@ -673,7 +287,7 @@ function workdayChip(){
   const w = S.workday;
   if(!w) return `<button type="button" class="wd-chip off" data-act="wd-start">${ico("i-play")}Start work day</button>`;
   const since = new Date(w.start).toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"});
-  return `<button type="button" class="wd-chip ${w.onBreak?"brk":""}" data-act="wd-menu" aria-label="Work day. ${w.onBreak?"On break":"Working since "+since}">${w.onBreak?ico("i-clock")+"On break":`<span class="dot-live" style="background:var(--success)"></span>Working since ${since}`}<span class="t mono" id="wd-sidebar">${wdElapsed()}</span></button>`;
+  return `<button type="button" class="wd-chip ${w.onBreak?"brk":""}" data-act="wd-menu" aria-label="Work day. ${w.onBreak?"On break":"Working since "+since}">${w.onBreak?ico("i-clock")+"On break":`<span class="dot-live u-background-success"></span>Working since ${since}`}<span class="t mono" id="wd-sidebar">${wdElapsed()}</span></button>`;
 }
 function wdElapsedOf(w){ const m = Math.max(0, Math.floor((Date.now()-w.start)/60000) - w.brk); return `${Math.floor(m/60)} h ${m%60} min`; }
 function wdElapsed(){ const w = S.workday; if(!w) return ""; const m = Math.max(0, Math.floor((Date.now()-w.start)/60000) - w.brk); return `${Math.floor(m/60)}:${String(m%60).padStart(2,"0")}`; }
@@ -686,8 +300,8 @@ function topbar(crumbs, center=""){
     ${center}
     <div class="top-actions">
       <button type="button" class="btn ghost hide-phone" data-act="assistant">${ico("i-spark")}Assistant</button>
-      <button type="button" class="btn ghost" data-act="assistant" aria-label="Assistant" style="${narrow()?"":"display:none"}">${ico("i-spark","lg")}</button>
-      <label class="hide-phone" style="display:flex;align-items:center;gap:6px">${ico("i-palette")}<span class="sr">Theme</span>
+      <button type="button" class="btn ghost${narrow()?"":" u-display-none"}" data-act="assistant" aria-label="Assistant">${ico("i-spark","lg")}</button>
+      <label class="hide-phone u-display-flex--align-items-center--gap-6px">${ico("i-palette")}<span class="sr">Theme</span>
         <select class="look" id="look-select" data-act-change="look" aria-label="Theme">
           <option value="system">Match my device</option>${Object.entries(LOOKS).map(([k,v])=>`<option value="${k}">${v}</option>`).join("")}
         </select></label>
@@ -720,7 +334,7 @@ function renderSearchbar(){
       ${S.advErr ? `<div class="err" role="alert">${ico("i-x")}${esc(S.advErr)}</div>` : ""}
       <div class="hint">Try: <span class="mono">status is Open and priority is Critical</span> · or type <span class="mono">costCenter is 4100</span> — you get the same answer as for a field that doesn't exist, because you aren't allowed to see that field.</div>
     </div>
-    <div style="display:flex;gap:6px;flex-wrap:wrap"><button type="button" class="btn primary" data-act="adv-run">Search</button><button type="button" class="btn" data-act="mode-simple">Simple</button></div></div>`;
+    <div class="u-display-flex--gap-6px--flex-wrap-wrap"><button type="button" class="btn primary" data-act="adv-run">Search</button><button type="button" class="btn" data-act="mode-simple">Simple</button></div></div>`;
   }
   if(S.searchMode === "ask"){
     return `<div class="searchbar"><div class="ask">
@@ -738,7 +352,7 @@ function renderSearchbar(){
     ${S.sort ? `<span class="chip"><button type="button" data-act="sort-menu"><b>Sort:</b> ${esc(S.sort)}</button></span>` : ""}
     <button type="button" class="chip add" data-act="chip-add">${ico("i-plus")}Add filter</button>
   </div>
-  <div style="display:flex;gap:6px;flex-wrap:wrap">
+  <div class="u-display-flex--gap-6px--flex-wrap-wrap">
     <button type="button" class="btn ghost" data-act="mode-ask">${ico("i-spark")}Ask</button>
     <button type="button" class="btn ghost" data-act="mode-adv">Advanced</button>
     <button type="button" class="btn hide-phone" data-act="save-search">${ico("i-bookmark")}Save search</button>
@@ -746,7 +360,7 @@ function renderSearchbar(){
 }
 
 function renderList(list){
-  if(!list.length) return `<div class="box" style="padding:28px;text-align:center"><p style="margin:0 0 12px">No issues match these filters.</p><button type="button" class="btn" data-act="clear-filters">Clear filters</button> <button type="button" class="btn primary" data-act="new">Create an issue</button></div>`;
+  if(!list.length) return `<div class="box u-padding-28px--text-align-center"><p class="u-margin-0-0-12px">No issues match these filters.</p><button type="button" class="btn" data-act="clear-filters">Clear filters</button> <button type="button" class="btn primary" data-act="new">Create an issue</button></div>`;
   const rows = list.map(i => `<tr class="row ${S.open===i.key?"sel":""}" data-act="open" data-key="${i.key}">
       <td><input type="checkbox" class="cb" data-act-change="select" data-key="${i.key}" ${S.selected.has(i.key)?"checked":""} aria-label="Select ${i.key}"></td>
       <td>${typeTag(i,false)} <span class="key">${i.key}</span></td>
@@ -755,12 +369,12 @@ function renderList(list){
       <td class="num muted">${i.due||""}</td></tr>`).join("");
   const cards = list.map(i => `<button type="button" class="lrow" data-act="open" data-key="${i.key}">
       <span>${typeTag(i,false)}</span>
-      <span style="min-width:0;flex:1"><span class="key">${i.key}</span><span class="t">${esc(i.title)}</span>
+      <span class="u-min-width-0--flex-1"><span class="key">${i.key}</span><span class="t">${esc(i.title)}</span>
       <span class="m">${statusPill(i,false)}${prioTag(i.prio)}${i.who?whoTag(i.who):""}</span></span></button>`).join("");
   const n = S.selected.size;
-  return `<table class="tbl"><thead><tr><th style="width:36px"></th><th>Issue</th><th>Title</th><th>Status</th><th>Priority</th><th>Assigned to</th><th>Due</th></tr></thead><tbody>${rows}</tbody></table>
+  return `<table class="tbl"><thead><tr><th class="u-width-36px"></th><th>Issue</th><th>Title</th><th>Status</th><th>Priority</th><th>Assigned to</th><th>Due</th></tr></thead><tbody>${rows}</tbody></table>
     <div class="cards">${cards}</div>
-    <p class="muted" style="font-size:var(--fs-sm);margin-top:12px">${list.length} issue${list.length===1?"":"s"} · Click a status to change it · Tick boxes to change several issues at once</p>
+    <p class="muted u-font-size-fs-sm--margin-top-12px">${list.length} issue${list.length===1?"":"s"} · Click a status to change it · Tick boxes to change several issues at once</p>
     ${n ? `<div class="bulkbar" role="region" aria-label="Change selected issues"><b>${n} selected</b>
       <button type="button" class="btn sm" data-act="bulk" data-what="status">Change status</button>
       <button type="button" class="btn sm" data-act="bulk" data-what="assign">Assign to me</button>
@@ -778,11 +392,11 @@ function renderBoard(list){
         ${lim ? `<span class="lim ${items.length>lim?"over":""}">${items.length} of ${lim}</span>` : `<span class="lim">${items.length}</span>`}</div>
       <div class="col-b">${items.map(i => `<article class="card" draggable="true" data-drag="${i.key}">
         <div class="meta">${typeTag(i,false)}<span class="key">${i.key}</span><button type="button" class="btn sm ghost move" data-act="status-menu" data-key="${i.key}" aria-label="Move ${i.key} to another column">Move to …</button></div>
-        <button type="button" class="title" data-act="open" data-key="${i.key}" style="border:0;background:none;padding:0;text-align:left">${esc(i.title)}</button>
+        <button type="button" class="title u-border-0--background-none--padding-0--text-align-left" data-act="open" data-key="${i.key}">${esc(i.title)}</button>
         <div class="meta">${prioTag(i.prio)}${avatar(i.who)}${labelTags(i.labels)}</div></article>`).join("") ||
-        `<p class="subtle" style="font-size:var(--fs-sm);margin:4px 2px">No issues here.</p>`}</div></section>`;
+        `<p class="subtle u-font-size-fs-sm--margin-4px-2px">No issues here.</p>`}</div></section>`;
   }).join("");
-  const tabs = `<div class="board-tabs" role="tablist">${STATUSES.map(st => `<button type="button" class="btn sm" role="tab" aria-selected="${S.boardCol===st}" style="${S.boardCol===st?"border-color:var(--accent);color:var(--accent-fg);font-weight:600":""}" data-act="board-col" data-col="${st}">${st} (${list.filter(i=>i.status===st).length})</button>`).join("")}</div>`;
+  const tabs = `<div class="board-tabs" role="tablist">${STATUSES.map(st => `<button type="button" class="btn sm" role="tab" aria-selected="${S.boardCol===st}" data-act="board-col" data-col="${st}">${st} (${list.filter(i=>i.status===st).length})</button>`).join("")}</div>`;
   return tabs + `<div class="board">${cols}</div>`;
 }
 
@@ -801,21 +415,21 @@ function renderTimeline(){
   const grid = `<div class="tl">
     <div class="tl-h"><div>Issue</div><div class="tl-weeks">${["Sep 28","Oct 5","Oct 12","Oct 19","Oct 26"].map(w=>`<span>Week of ${w}</span>`).join("")}</div></div>
     <div class="tl-name goal" data-act="open" data-key="WEB-145">${typeTag(goal,false)}<span class="t">Goal: ${esc(goal.title)}</span></div>
-    <div class="tl-lane">${today}<div class="today-label" style="left:${TODAY/SPAN*100}%">Today</div><button type="button" class="bar goal" data-act="open" data-key="WEB-145" style="left:${gl}%;width:${gw}%" title="About 40% done"><span class="prog" style="width:40%"></span></button></div>
+    <div class="tl-lane">${today}<div class="today-label" style="left:${TODAY/SPAN*100}%">Today</div><button type="button" class="bar goal" data-act="open" data-key="WEB-145" style="left:${gl}%;width:${gw}%" title="About 40% done"><span class="prog u-width-40pc"></span></button></div>
     ${kids.map(k => row(k,"child")).join("")}
-    <div class="tl-name" style="background:var(--bg-surface);font-weight:600">${ico("i-goal")}Release 2.4</div>
-    <div class="tl-lane" style="background-color:var(--bg-surface)">${today}<div class="ms" style="left:${pos("2026-10-23")}%" title="Release 2.4 on Oct 23"></div></div>
+    <div class="tl-name u-background-bg-surface--font-weight-600">${ico("i-goal")}Release 2.4</div>
+    <div class="tl-lane u-background-color-bg-surface">${today}<div class="ms" style="left:${pos("2026-10-23")}%" title="Release 2.4 on Oct 23"></div></div>
     ${others.map(o => row(o,"")).join("")}
   </div>
-  <div class="tl-legend"><span><i style="background:var(--fg-subtle)"></i>Not started</span><span><i style="background:var(--st-ip)"></i>In progress</span><span><i style="background:var(--st-done)"></i>Done</span><span><i style="background:var(--warning);transform:rotate(45deg)"></i>Milestone</span>
+  <div class="tl-legend"><span><i class="u-background-fg-subtle"></i>Not started</span><span><i class="u-background-st-ip"></i>In progress</span><span><i class="u-background-st-done"></i>Done</span><span><i class="u-background-warning--transform-rotate-45deg"></i>Milestone</span>
     <span>WEB-141 must wait for WEB-140 to finish first.</span>
     <button type="button" class="btn sm" data-act="toast" data-msg="Deadline drivers: WEB-140 → WEB-141 → Release 2.4. A delay in either moves the release.">Show deadline drivers</button></div>
-  <div class="box" style="margin-top:14px"><div class="box-h">Not scheduled yet<span class="muted">Drag onto the chart, or use “Set dates …”</span></div>
+  <div class="box u-margin-top-14px"><div class="box-h">Not scheduled yet<span class="muted">Drag onto the chart, or use “Set dates …”</span></div>
     ${unscheduled.map(u => `<div class="box-row">${typeTag(u,false)}<span class="key">${u.key}</span><span class="t">${esc(u.title)}</span><button type="button" class="btn sm" data-act="toast" data-msg="In the real app this opens a date picker for ${u.key}.">Set dates …</button></div>`).join("")}</div>`;
   const dated = issues.filter(i => i.start).sort((a,b) => a.start.localeCompare(b.start));
-  const lst = `<div class="tl-list"><p class="muted" style="margin:0;font-size:var(--fs-sm)">On phones the timeline is a dated list. Change dates inside each issue.</p>
-    ${dated.map(i => `<button type="button" class="lrow" data-act="open" data-key="${i.key}" style="border:1px solid var(--border);border-radius:var(--r-card);padding:10px 12px;background:var(--bg-raised)">
-      <span style="min-width:0;flex:1"><span class="tl-day">${new Date(i.start).toLocaleDateString(undefined,{month:"short",day:"numeric"})} → ${new Date(i.end).toLocaleDateString(undefined,{month:"short",day:"numeric"})}</span>
+  const lst = `<div class="tl-list"><p class="muted u-margin-0--font-size-fs-sm">On phones the timeline is a dated list. Change dates inside each issue.</p>
+    ${dated.map(i => `<button type="button" class="lrow u-bd4668a6" data-act="open" data-key="${i.key}">
+      <span class="u-min-width-0--flex-1"><span class="tl-day">${new Date(i.start).toLocaleDateString(undefined,{month:"short",day:"numeric"})} → ${new Date(i.end).toLocaleDateString(undefined,{month:"short",day:"numeric"})}</span>
       <span class="t">${esc(i.title)}</span><span class="m">${typeTag(i,false)}<span class="key">${i.key}</span>${statusPill(i,false)}</span></span></button>`).join("")}</div>`;
   return `<div class="tl-wrap">${grid}</div>${lst}`;
 }
@@ -826,17 +440,17 @@ function renderHome(){
   const rows = arr => arr.map(i => `<button type="button" class="box-row" data-act="open" data-key="${i.key}">${typeTag(i,false)}<span class="key">${i.key}</span><span class="t">${esc(i.title)}</span>${statusPill(i,false)}</button>`).join("") || `<div class="box-row subtle">Nothing here.</div>`;
   return topbar(`<b>Home</b>`) + `<div class="content">
     <div class="page-h"><h1>Good morning, Ana</h1><span class="muted">Sunday, October 4</span></div>
-    <div class="checklist" aria-label="Getting started"><b style="flex-basis:100%">Getting started</b>
+    <div class="checklist" aria-label="Getting started"><b class="u-flex-basis-100pc">Getting started</b>
       <span class="step"><span class="done-mark">✓</span>Create your first issue</span>
       <span class="step"><span class="done-mark">✓</span>Invite people</span>
       <button type="button" class="btn sm" data-act="go" data-screen="settings" data-tab="look">${ico("i-palette")}Pick your theme</button>
       <button type="button" class="btn sm ghost" data-act="toast" data-msg="Getting started hidden. You can bring it back in My settings.">Hide this</button></div>
-    ${S.timer ? `<div class="timer-big"><span class="dot-live"></span><div style="flex:1;min-width:180px"><div class="muted" style="font-size:var(--fs-sm)">Timer running on</div><b>${S.timer.key} · ${esc(byKey(S.timer.key).title)}</b></div>
+    ${S.timer ? `<div class="timer-big"><span class="dot-live"></span><div class="u-flex-1--min-width-180px"><div class="muted u-font-size-fs-sm">Timer running on</div><b>${S.timer.key} · ${esc(byKey(S.timer.key).title)}</b></div>
       <span class="clock" id="timer-home">${elapsed()}</span><button type="button" class="btn primary" data-act="timer-stop">${ico("i-stop")}Stop</button><button type="button" class="btn" data-act="quick" data-mode="timer">Switch issue</button></div>` : ""}
     <div class="grid2">
       <section class="box"><div class="box-h">${ico("i-list")}My issues<span class="muted">Assigned to me</span></div>
-        <div class="box-row muted" style="font-size:var(--fs-xs);text-transform:uppercase;letter-spacing:.06em;font-weight:700">In progress</div>${rows(grp("ip"))}
-        <div class="box-row muted" style="font-size:var(--fs-xs);text-transform:uppercase;letter-spacing:.06em;font-weight:700">Not started</div>${rows(grp("ns"))}</section>
+        <div class="box-row muted u-9ada02bc">In progress</div>${rows(grp("ip"))}
+        <div class="box-row muted u-9ada02bc">Not started</div>${rows(grp("ns"))}</section>
       <section class="box"><div class="box-h">${ico("i-bell")}Mentions<span class="muted">2 unread</span></div>
         <button type="button" class="box-row" data-act="open" data-key="WEB-142">${avatar("Ben")}<span class="t"><b>Ben</b> in WEB-142: “@Ana can you check the reset e-mail link?”</span></button>
         <button type="button" class="box-row" data-act="go" data-screen="docs">${avatar("Chloe")}<span class="t"><b>Chloe</b> in <i>Login flow</i>: “@Ana is step 3 still right?”</span></button></section>
@@ -847,7 +461,7 @@ function renderHome(){
         <button type="button" class="box-row" data-act="go" data-screen="docs">${ico("i-file")}<span class="t">Login flow</span><span class="muted">Page</span></button>
         <button type="button" class="box-row" data-act="open" data-key="WEB-141">${typeTag(byKey("WEB-141"),false)}<span class="t">Sign in with a passkey</span><span class="key">WEB-141</span></button></section>
     </div>
-    <p class="muted" style="font-size:var(--fs-sm);margin-top:16px">Each box is a saved search. <button type="button" class="btn sm ghost" data-act="toast" data-msg="In the real app this opens a dialog to reorder, remove or add boxes.">Customize Home</button></p></div>`;
+    <p class="muted u-font-size-fs-sm--margin-top-16px">Each box is a saved search. <button type="button" class="btn sm ghost" data-act="toast" data-msg="In the real app this opens a dialog to reorder, remove or add boxes.">Customize Home</button></p></div>`;
 }
 
 function renderDocs(){
@@ -861,10 +475,10 @@ function renderDocs(){
       <button type="button" class="nav-item nav-sub">${ico("i-file")}Release checklist</button>
       <button type="button" class="nav-item">${ico("i-folder")}<b>Files</b></button>
       <button type="button" class="nav-item nav-sub">${ico("i-file")}login-wireframes.pdf<span class="lockbadge" title="Locked for editing by Ben since 10:12">${ico("i-lock")}Ben</span></button>
-      <button type="button" class="btn sm" style="margin-top:10px" data-act="toast" data-msg="Choose: Page, Folder or Upload a file.">${ico("i-plus")}New</button>
+      <button type="button" class="btn sm u-margin-top-10px" data-act="toast" data-msg="Choose: Page, Folder or Upload a file.">${ico("i-plus")}New</button>
     </nav>
     <article class="doc-page">
-      <div class="muted" style="font-size:var(--fs-sm)">Specs › Login flow · Version 7 · changed by Ana 2 days ago</div>
+      <div class="muted u-font-size-fs-sm">Specs › Login flow · Version 7 · changed by Ana 2 days ago</div>
       <h1>Login flow</h1>
       <div class="doc-toolbar" role="toolbar" aria-label="Formatting">${["Heading","Bold","List","Checklist","Table","Image","Code"].map(b=>`<button type="button">${b}</button>`).join("")}</div>
       <p>People sign in with a <b>passkey</b> first. If they don't have one yet, they use e-mail and password, and we offer to create a passkey right after.</p>
@@ -878,11 +492,11 @@ function renderDocs(){
     <aside class="doc-side">
       <div><div class="section-h">On this page</div><div>Known problems</div><div>Steps</div></div>
       <div><div class="section-h">Related issues</div>
-        <button type="button" class="box-row" style="padding:4px 0" data-act="open" data-key="WEB-142"><span class="key">WEB-142</span><span class="t">Login fails after reset</span></button>
-        <button type="button" class="box-row" style="padding:4px 0" data-act="open" data-key="WEB-141"><span class="key">WEB-141</span><span class="t">Sign in with a passkey</span></button></div>
+        <button type="button" class="box-row u-padding-4px-0" data-act="open" data-key="WEB-142"><span class="key">WEB-142</span><span class="t">Login fails after reset</span></button>
+        <button type="button" class="box-row u-padding-4px-0" data-act="open" data-key="WEB-141"><span class="key">WEB-141</span><span class="t">Sign in with a passkey</span></button></div>
       <div><div class="section-h">Versions</div>
-        ${[["7","Ana","2 days ago"],["6","Ben","last week"],["5","Ana","Sep 14"]].map(([v,w,d])=>`<div class="ver">${avatar(w)}<span>Version ${v}</span><span class="muted" style="margin-left:auto">${d}</span></div>`).join("")}
-        <button type="button" class="btn sm" style="margin-top:6px" data-act="toast" data-msg="Pick any two versions to see what changed between them.">Compare versions</button></div>
+        ${[["7","Ana","2 days ago"],["6","Ben","last week"],["5","Ana","Sep 14"]].map(([v,w,d])=>`<div class="ver">${avatar(w)}<span>Version ${v}</span><span class="muted u-margin-left-auto">${d}</span></div>`).join("")}
+        <button type="button" class="btn sm u-margin-top-6px" data-act="toast" data-msg="Pick any two versions to see what changed between them.">Compare versions</button></div>
     </aside></div></div>`;
 }
 
@@ -895,23 +509,23 @@ function renderTime(){
   const wdRow = (label, key) => `<tr><td>${label}</td>${workdays.map((w,d)=>`<td><input type="text" inputmode="numeric" class="${key==="brk"&&ruleWarnings(w).some(x=>x.includes("break"))?"warn":""}" value="${w?(key==="brk"?fmtClock(w.brk):fmtClock(w[key])):""}" data-act-change="wd" data-k="${key}" data-d="${d}" aria-label="${label}, ${days[d]}" placeholder="–"></td>`).join("")}<td></td></tr>`;
   return topbar(`<b>Time</b>`) + `<div class="content">
     <div class="page-h"><h1>My timesheet</h1><span class="muted">Week of September 28</span></div>
-    <h2 class="section-h" style="margin-top:4px">Working hours</h2>
-    <p class="help" style="margin-top:0">When you started and ended work, and your breaks. German law requires this record. Type times like <span class="mono">8:05</span>; breaks like <span class="mono">0:30</span>.</p>
+    <h2 class="section-h u-margin-top-4px">Working hours</h2>
+    <p class="help u-margin-top-0">When you started and ended work, and your breaks. German law requires this record. Type times like <span class="mono">8:05</span>; breaks like <span class="mono">0:30</span>.</p>
     <div class="ts-wrap"><table class="ts"><thead><tr><th>Work day</th>${days.map((d,ix)=>`<th class="${ix===6?"today":""}">${d}${ix===6?" · today":""}</th>`).join("")}<th>Total</th></tr></thead>
       <tbody>${wdRow("Start","start")}${wdRow("End","end")}${wdRow("Breaks","brk")}
       <tr class="wh"><td>Working hours</td>${workdays.map(w=>`<td class="${ruleWarnings(w).length?"warnt":""}">${fmtMin(worked(w))}</td>`).join("")}<td>${fmtMin(wh)}</td></tr></tbody></table></div>
     ${warns.length ? `<div class="rule-warn" role="note">${ico("i-clock")}<span>${warns.join("<br>")}<br><span class="muted">German working-time rules. This is a warning; days are recorded as they happened.</span></span></div>` : ""}
-    <h2 class="section-h" style="margin-top:22px">Time on issues</h2>
-    <p class="help" style="margin-top:0">Type <span class="mono">1:30</span>, <span class="mono">1.5</span> or <span class="mono">90m</span> — they all mean ninety minutes. Activity and cost center come from the issue; change them per row.</p>
-    <div class="ts-wrap"><table class="ts" style="min-width:980px"><thead><tr><th>Issue</th><th>Activity</th><th>Cost center</th>${days.map((d,ix)=>`<th class="${ix===6?"today":""}">${d}</th>`).join("")}<th>Total</th></tr></thead>
-      <tbody>${timesheet.map((r,ri) => { const i = byKey(r.key); return `<tr><td><button type="button" class="box-row" style="padding:0;border:0" data-act="open" data-key="${i.key}"><span class="key">${i.key}</span><span class="t" style="max-width:180px">${esc(i.title)}</span></button></td>
+    <h2 class="section-h u-margin-top-22px">Time on issues</h2>
+    <p class="help u-margin-top-0">Type <span class="mono">1:30</span>, <span class="mono">1.5</span> or <span class="mono">90m</span> — they all mean ninety minutes. Activity and cost center come from the issue; change them per row.</p>
+    <div class="ts-wrap"><table class="ts u-min-width-980px"><thead><tr><th>Issue</th><th>Activity</th><th>Cost center</th>${days.map((d,ix)=>`<th class="${ix===6?"today":""}">${d}</th>`).join("")}<th>Total</th></tr></thead>
+      <tbody>${timesheet.map((r,ri) => { const i = byKey(r.key); return `<tr><td><button type="button" class="box-row u-padding-0--border-0" data-act="open" data-key="${i.key}"><span class="key">${i.key}</span><span class="t u-max-width-180px">${esc(i.title)}</span></button></td>
         <td><select data-act-change="ts-act" data-r="${ri}" aria-label="Activity for ${i.key}">${ACTIVITIES.map(a=>`<option ${a===r.act?"selected":""}>${a}</option>`).join("")}</select></td>
         <td><select data-act-change="ts-cc" data-r="${ri}" aria-label="Cost center for ${i.key}">${COST_CENTERS.map(([n,l])=>`<option value="${n}" ${n===r.cc?"selected":""}>${n} ${l}</option>`).join("")}</select></td>
         ${r.m.map((m,d)=>`<td><input type="text" inputmode="decimal" value="${fmtMin(m)}" data-act-change="ts" data-r="${ri}" data-d="${d}" aria-label="${i.key}, ${days[d]}"></td>`).join("")}
         <td class="num"><b>${fmtMin(r.m.reduce((a,b)=>a+b,0))}</b></td></tr>`; }).join("")}</tbody>
       <tfoot><tr><td colspan="3">Booked on issues</td>${days.map((_,d)=>`<td>${fmtMin(col(d))}</td>`).join("")}<td>${fmtMin(booked)}</td></tr>
         <tr><td colspan="3">Working hours not booked on issues</td>${days.map((_,d)=>`<td>${fmtMin(Math.max(0,worked(workdays[d])-col(d)))}</td>`).join("")}<td>${fmtMin(Math.max(0,wh-booked))}</td></tr></tfoot></table></div>
-    <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn" data-act="toast" data-msg="Search for an issue to add a row.">${ico("i-plus")}Add issue</button><button type="button" class="btn ghost" data-act="toast" data-msg="Reports: same search bar, grouped by person, project, issue, activity, cost center or week.">Reports</button></div></div>`;
+    <div class="u-margin-top-12px--display-flex--gap-8px--flex-wrap-wrap"><button type="button" class="btn" data-act="toast" data-msg="Search for an issue to add a row.">${ico("i-plus")}Add issue</button><button type="button" class="btn ghost" data-act="toast" data-msg="Reports: same search bar, grouped by person, project, issue, activity, cost center or week.">Reports</button></div></div>`;
 }
 
 function renderNotifications(){
@@ -921,8 +535,8 @@ function renderNotifications(){
     ["n3","Login flow","Chloe mentioned you in a document","“@Ana is step 3 still right?”","Yesterday"]
   ];
   return topbar(`<b>Notifications</b>`) + `<div class="content"><div class="page-h"><h1>Notifications</h1><button type="button" class="btn sm ghost" data-act="toast" data-msg="Opens notification settings: what you get, and how (in Bugaboo, e-mail).">Customize</button></div>
-    <div class="box">${items.map(([id,k,t,q,w]) => `<div class="box-row" style="${S.notifRead.has(id)?"opacity:.6":""}">${S.notifRead.has(id)?"":`<span class="dot-live" style="animation:none"></span>`}
-      <span class="t" style="white-space:normal"><span class="key">${k}</span> · <b>${t}</b>${q?`<br><span class="muted">${q}</span>`:""}</span><span class="muted" style="font-size:var(--fs-sm)">${w}</span>
+    <div class="box">${items.map(([id,k,t,q,w]) => `<div class="box-row${S.notifRead.has(id)?" read":""}">${S.notifRead.has(id)?"":`<span class="dot-live u-animation-none"></span>`}
+      <span class="t u-white-space-normal"><span class="key">${k}</span> · <b>${t}</b>${q?`<br><span class="muted">${q}</span>`:""}</span><span class="muted u-font-size-fs-sm">${w}</span>
       ${k.startsWith("WEB")?`<button type="button" class="btn sm" data-act="open" data-key="${k}">Open</button>`:`<button type="button" class="btn sm" data-act="go" data-screen="docs">Open</button>`}
       <button type="button" class="btn sm ghost" data-act="notif-read" data-id="${id}">${S.notifRead.has(id)?"Read":"Mark as read"}</button></div>`).join("")}</div></div>`;
 }
@@ -930,7 +544,7 @@ function renderNotifications(){
 function renderSaved(){
   const s = [["Open bugs in Website","status is not Done and type is Bug","List"],["Release 2.4 plan","project within WEB","Timeline"],["Team board","project within WEB","Board"],["Critical, nobody assigned","priority is Critical and assignedTo is nobody","List"]];
   return topbar(`<b>Saved searches</b>`) + `<div class="content"><div class="page-h"><h1>Saved searches</h1></div>
-    <div class="box">${s.map(([n,q,v])=>`<button type="button" class="box-row" data-act="saved-open" data-q="${esc(q)}" data-v="${v.toLowerCase()}">${ico("i-bookmark")}<span class="t"><b>${n}</b><br><span class="mono muted" style="font-size:var(--fs-xs)">${esc(q)}</span></span><span class="muted">${v}</span></button>`).join("")}</div></div>`;
+    <div class="box">${s.map(([n,q,v])=>`<button type="button" class="box-row" data-act="saved-open" data-q="${esc(q)}" data-v="${v.toLowerCase()}">${ico("i-bookmark")}<span class="t"><b>${n}</b><br><span class="mono muted u-font-size-fs-xs">${esc(q)}</span></span><span class="muted">${v}</span></button>`).join("")}</div></div>`;
 }
 
 function renderSettings(){
@@ -941,51 +555,51 @@ function renderSettings(){
     const rows = [["Priority",["chg","chg","see","see"]],["Severity",["chg","chg","chg","hid"]],["Cost center",["chg","see","hid","hid"]],["Time spent",["chg","chg","see","hid"]]];
     const opt = v => `<option value="hid" ${v==="hid"?"selected":""}>Hidden</option><option value="see" ${v==="see"?"selected":""}>Can see</option><option value="chg" ${v==="chg"?"selected":""}>Can change</option>`;
     body = `<p class="help">Choose, for each field, what people with each role can do. <b>Hidden</b> means they won't know the field exists — not in issues, searches, e-mails or the assistant.</p>
-      <div style="overflow-x:auto" class="box"><table class="perm"><thead><tr><th>Field</th>${roles.map(r=>`<th>${r}</th>`).join("")}</tr></thead><tbody>
+      <div class="box u-overflow-x-auto"><table class="perm"><thead><tr><th>Field</th>${roles.map(r=>`<th>${r}</th>`).join("")}</tr></thead><tbody>
       ${rows.map(([f,vals])=>`<tr><td><b>${f}</b></td>${vals.map((v,ix)=>`<td><select class="${v}" data-act-change="perm" aria-label="${f} for ${roles[ix]}">${opt(v)}</select></td>`).join("")}</tr>`).join("")}</tbody></table></div>
-      <h3 style="margin:22px 0 8px">Check access</h3>
+      <h3 class="u-margin-22px-0-8px">Check access</h3>
       <div class="explain"><b>Can Ana change Priority in Website?</b><br>${ico("i-check")} Yes — Ana is in the group <b>Backend</b>, which has the role <b>Team member</b> in <b>ACME</b>. Website is inside ACME, so the role applies here too.</div>
-      <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn" data-act="toast" data-msg="See as … shows any screen exactly as the chosen person sees it. Nothing can be changed there, and it's recorded in the security log.">See Bugaboo as a Contributor …</button></div>`;
+      <div class="u-margin-top-10px--display-flex--gap-8px--flex-wrap-wrap"><button type="button" class="btn" data-act="toast" data-msg="See as … shows any screen exactly as the chosen person sees it. Nothing can be changed there, and it's recorded in the security log.">See Bugaboo as a Contributor …</button></div>`;
   }
   if(S.setTab === "wf"){
     body = `<p class="help">The workflow for <b>Bugs</b> in Website. Each status lists where an issue can go next, and what the button says.</p>
       <div class="wf">${STATUSES.map(st => `<div class="wf-row"><span class="muted">From</span><span class="pill st-${STATUS_GROUP[st]}">${st}</span><span class="muted">you can go to:</span>
-        ${MOVES[st].map(([to,lab])=>`<button type="button" class="btn sm" data-act="toast" data-msg="Rules for “${lab}”: Who can do it · Only if … · Must be filled in · Ask for · Then automatically …"><span class="pill st-${STATUS_GROUP[to]}" style="padding:0 6px">${to}</span>“${lab}”</button>`).join("")}</div>`).join("")}</div>
-      <p class="help" style="margin-top:12px">“Mark as done” asks for <b>Planned for release</b> if it's empty. Try it on WEB-139 after moving it to Testing.</p>
-      <div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn" data-act="toast" data-msg="The drawing view shows statuses as boxes and allowed changes as arrows.">Show as drawing</button><button type="button" class="btn" data-act="toast" data-msg="Try it: pick an issue and a person to see which status changes they'd get, and why.">Try it</button></div>`;
+        ${MOVES[st].map(([to,lab])=>`<button type="button" class="btn sm" data-act="toast" data-msg="Rules for “${lab}”: Who can do it · Only if … · Must be filled in · Ask for · Then automatically …"><span class="pill st-${STATUS_GROUP[to]} u-padding-0-6px">${to}</span>“${lab}”</button>`).join("")}</div>`).join("")}</div>
+      <p class="help u-margin-top-12px">“Mark as done” asks for <b>Planned for release</b> if it's empty. Try it on WEB-139 after moving it to Testing.</p>
+      <div class="u-display-flex--gap-8px--flex-wrap-wrap"><button type="button" class="btn" data-act="toast" data-msg="The drawing view shows statuses as boxes and allowed changes as arrows.">Show as drawing</button><button type="button" class="btn" data-act="toast" data-msg="Try it: pick an issue and a person to see which status changes they'd get, and why.">Try it</button></div>`;
   }
   if(S.setTab === "privacy"){
     const rows = [["Working hours","2 years","German working-time recording"],["Time on issues","10 years","Accounting; your organization sets the period"],["Security log","1 year","Finding and explaining security problems"],["IP addresses in logs","7 days","Stopping attacks on sign-in"],["Notifications","90 days","Not needed longer"],["Trash","30 days","Time to restore by mistake"]];
     body = `<p class="help">How long Bugaboo keeps each kind of data. After that it is deleted automatically.</p>
-      <div style="overflow-x:auto" class="box"><table class="perm"><thead><tr><th>Kind of data</th><th>Kept for</th><th>Why</th></tr></thead><tbody>
+      <div class="box u-overflow-x-auto"><table class="perm"><thead><tr><th>Kind of data</th><th>Kept for</th><th>Why</th></tr></thead><tbody>
       ${rows.map(([k,v,w])=>`<tr><td><b>${k}</b></td><td>${v}</td><td class="muted">${w}</td></tr>`).join("")}</tbody></table></div>
-      <h3 style="margin:22px 0 8px">Who sees people</h3>
+      <h3 class="u-margin-22px-0-8px">Who sees people</h3>
       <p class="help">For each role: show people's names, only their role ("a Team member"), or nothing ("Someone"). People who can't see names can't search or filter by them either.</p>
-      <div style="overflow-x:auto" class="box"><table class="perm"><thead><tr><th>What</th><th>Team member</th><th>Contributor</th><th>Guest</th></tr></thead><tbody>
+      <div class="box u-overflow-x-auto"><table class="perm"><thead><tr><th>What</th><th>Team member</th><th>Contributor</th><th>Guest</th></tr></thead><tbody>
       ${[["Assigned to","n","n","r"],["Reported by","n","n","h"],["Comment and history authors","n","n","r"],["“… is editing”","n","n","h"],["Followers","n","r","h"],["Time entries","n","h","h"]].map(([w,...v])=>`<tr><td><b>${w}</b></td>${v.map(x=>`<td><select class="${x==="n"?"chg":x==="r"?"see":"hid"}" aria-label="${w}"><option ${x==="n"?"selected":""}>Names</option><option ${x==="r"?"selected":""}>Role only</option><option ${x==="h"?"selected":""}>Hidden</option></select></td>`).join("")}</tr>`).join("")}</tbody></table></div>
-      <div style="margin-top:10px"><button type="button" class="btn" data-act="viewas" data-v="guest">${ico("i-lock")}See Bugaboo as a Guest</button></div>
-      <h3 style="margin:22px 0 8px">Issue IDs</h3>
+      <div class="u-margin-top-10px"><button type="button" class="btn" data-act="viewas" data-v="guest">${ico("i-lock")}See Bugaboo as a Guest</button></div>
+      <h3 class="u-margin-22px-0-8px">Issue IDs</h3>
       <p class="help">Counting IDs are easy to say aloud but show how many issues a project has. Random IDs don't. Existing IDs keep working when you switch.</p>
       <div class="seg" role="group" aria-label="Issue IDs for Website"><button type="button" aria-pressed="${S.idMode==="random"}" data-act="idmode" data-m="random">Random · <span class="mono">WEB-K7Q2X</span></button><button type="button" aria-pressed="${S.idMode==="counting"}" data-act="idmode" data-m="counting">Counting · <span class="mono">WEB-142</span></button></div>
-      <h3 style="margin:22px 0 8px">My data</h3>
-      <div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn" data-act="toast" data-msg="Preparing your data: everything Bugaboo stores about you, as readable pages and as a JSON file. You'll get a notification when it's ready.">Download my data</button>
+      <h3 class="u-margin-22px-0-8px">My data</h3>
+      <div class="u-display-flex--gap-8px--flex-wrap-wrap"><button type="button" class="btn" data-act="toast" data-msg="Preparing your data: everything Bugaboo stores about you, as readable pages and as a JSON file. You'll get a notification when it's ready.">Download my data</button>
       <button type="button" class="btn" data-act="toast" data-msg="Remove a person: their account is deleted and their name becomes “Former user K7Q2”. Records the law requires are kept until their period ends.">Remove a person …</button></div>
-      <h3 style="margin:22px 0 8px">Outside services</h3>
+      <h3 class="u-margin-22px-0-8px">Outside services</h3>
       <div class="explain">${ico("i-spark")} <b>Assistant:</b> Claude (Anthropic) · data processing agreement confirmed by Ana on Sep 30 · fields never sent: Cost center, Working hours.<br><span class="muted">E-mail: own mail server. No tracking, analytics or outside scripts.</span></div>`;
   }
   if(S.setTab === "look"){
     const card = (k, light) => `<button type="button" class="theme-card" data-act="pick-look" data-look="${k}" aria-pressed="${S.look===k}">
       <div class="pv" data-look-preview="${k}"></div><div class="cap"><b>${LOOKS[k]}</b><small>${{daylight:"Light, neutral",paper:"Light, warm and soft",dusk:"Dark, dim grey",midnight:"Dark, pure black"}[k]}</small></div></button>`;
     body = `<p class="help">Bugaboo follows your device's light or dark setting. Pick which theme to use for each.</p>
-      <div class="seg" role="group" aria-label="Mode" style="margin-bottom:18px">
+      <div class="seg u-margin-bottom-18px" role="group" aria-label="Mode">
         <button type="button" aria-pressed="${S.look==="system"}" data-act="pick-look" data-look="system">Match my device</button>
         <button type="button" aria-pressed="${["daylight","paper"].includes(S.look)}" data-act="pick-look" data-look="${S.prefLight}">Always light</button>
         <button type="button" aria-pressed="${["dusk","midnight"].includes(S.look)}" data-act="pick-look" data-look="${S.prefDark}">Always dark</button></div>
-      <h3 style="margin:0 0 10px">Open issues in</h3>
-      <div class="seg" role="group" aria-label="Open issues in" style="margin-bottom:20px"><button type="button" aria-pressed="${S.issueLayout==="focus"}" data-act="layout" data-l="focus">Focus view · more room</button><button type="button" aria-pressed="${S.issueLayout==="panel"}" data-act="layout" data-l="panel">Side panel · list stays visible</button></div>
-      <h3 style="margin:0 0 10px">Light theme</h3><div class="themes" style="margin-bottom:20px">${card("daylight")}${card("paper")}</div>
-      <h3 style="margin:0 0 10px">Dark theme</h3><div class="themes">${card("dusk")}${card("midnight")}</div>
-      <p class="help" style="margin-top:16px">Want your own colors? Copy a theme in Organization settings › Themes. Every text color shows how easy it is to read.</p>`;
+      <h3 class="u-margin-0-0-10px">Open issues in</h3>
+      <div class="seg u-margin-bottom-20px" role="group" aria-label="Open issues in"><button type="button" aria-pressed="${S.issueLayout==="focus"}" data-act="layout" data-l="focus">Focus view · more room</button><button type="button" aria-pressed="${S.issueLayout==="panel"}" data-act="layout" data-l="panel">Side panel · list stays visible</button></div>
+      <h3 class="u-margin-0-0-10px">Light theme</h3><div class="themes u-margin-bottom-20px">${card("daylight")}${card("paper")}</div>
+      <h3 class="u-margin-0-0-10px">Dark theme</h3><div class="themes">${card("dusk")}${card("midnight")}</div>
+      <p class="help u-margin-top-16px">Want your own colors? Copy a theme in Organization settings › Themes. Every text color shows how easy it is to read.</p>`;
   }
   return topbar(`<b>Settings</b>`) + `<div class="content"><div class="page-h"><h1>Settings</h1><span class="muted">Example pages from Organization settings and My settings</span></div>
     <div class="setting-tabs" role="tablist">${tabs.map(([k,l])=>`<button type="button" role="tab" aria-selected="${S.setTab===k}" data-act="set-tab" data-tab="${k}">${l}</button>`).join("")}</div>${body}</div>`;
@@ -1011,10 +625,10 @@ function issueParts(i){
   const parent = i.parent ? byKey(i.parent) : null;
   const rels = neighbors(i.key, new Set(Object.keys(RELATION_KINDS))).filter(n => n.rel.kind !== "part");
   const P = {};
-  P.parent = parent ? `<button type="button" class="btn sm ghost" style="align-self:flex-start" data-act="open" data-key="${parent.key}">${ico("i-goal")}Part of: ${esc(parent.title)}</button>` : "";
+  P.parent = parent ? `<button type="button" class="btn sm ghost u-align-self-flex-start" data-act="open" data-key="${parent.key}">${ico("i-goal")}Part of: ${esc(parent.title)}</button>` : "";
   P.title = `<input type="text" class="issue-title" value="${esc(i.title)}" aria-label="Title" data-act-change="title" data-key="${i.key}">`;
   P.timer = `<button type="button" class="btn sm ${running?"primary":""}" data-act="${running?"timer-stop":"timer-start"}" data-key="${i.key}">${ico(running?"i-stop":"i-play")}${running?"Stop timer":"Start timer"}</button>`;
-  P.status = `<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">${statusPill(i)}${P.timer}</div>`;
+  P.status = `<div class="u-display-flex--gap-8px--align-items-center--flex-wrap-wrap">${statusPill(i)}${P.timer}</div>`;
   P.fields = `<dl class="fields">
         <dt>Assigned to</dt><dd><button type="button" class="fval" data-act="field-menu" data-field="who" data-key="${i.key}">${whoTag(i.who,"assigned")}</button></dd>
         <dt>Priority</dt><dd><button type="button" class="fval" data-act="field-menu" data-field="prio" data-key="${i.key}">${prioTag(i.prio)}</button></dd>
@@ -1040,14 +654,14 @@ function issueParts(i){
       ${P.timer}
       <button type="button" class="btn sm ghost fx-details-btn" data-act="fx-details">${S.detailsOpen ? "Hide details" : "All details"}</button></div>`;
   P.desc = descSection(i);
-  P.subs = kids.length ? `<section><h3 class="section-h">Sub-issues (${kids.length})</h3><div class="subs">${kids.map(k=>`<button type="button" data-act="open" data-key="${k.key}">${typeTag(k,false)}<span class="key">${k.key}</span><span style="flex:1;min-width:0">${esc(k.title)}</span>${statusPill(k,false)}</button>`).join("")}</div></section>` : "";
+  P.subs = kids.length ? `<section><h3 class="section-h">Sub-issues (${kids.length})</h3><div class="subs">${kids.map(k=>`<button type="button" data-act="open" data-key="${k.key}">${typeTag(k,false)}<span class="key">${k.key}</span><span class="u-flex-1--min-width-0">${esc(k.title)}</span>${statusPill(k,false)}</button>`).join("")}</div></section>` : "";
   P.related = `<section><h3 class="section-h">Related issues (${rels.length})</h3>
-        ${rels.length ? `<div class="subs">${rels.map(({rel, other}) => { const o = byKey(other); return `<button type="button" data-act="open" data-key="${other}"><span class="muted rel-ph">${relPhrase(rel, i.key)}</span><span class="key">${other}</span><span style="flex:1;min-width:0">${esc(o.title)}</span>${statusPill(o,false)}</button>`; }).join("")}</div>` : `<p class="subtle" style="margin:0">No related issues yet.</p>`}
-        <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap"><button type="button" class="btn sm" data-act="rel-add" data-key="${i.key}">${ico("i-plus")}Add relation</button><button type="button" class="btn sm" data-act="map-open" data-key="${i.key}">${ico("i-map")}Show relation map</button></div></section>`;
+        ${rels.length ? `<div class="subs">${rels.map(({rel, other}) => { const o = byKey(other); return `<button type="button" data-act="open" data-key="${other}"><span class="muted rel-ph">${relPhrase(rel, i.key)}</span><span class="key">${other}</span><span class="u-flex-1--min-width-0">${esc(o.title)}</span>${statusPill(o,false)}</button>`; }).join("")}</div>` : `<p class="subtle u-margin-0">No related issues yet.</p>`}
+        <div class="u-display-flex--gap-8px--margin-top-8px--flex-wrap-wrap"><button type="button" class="btn sm" data-act="rel-add" data-key="${i.key}">${ico("i-plus")}Add relation</button><button type="button" class="btn sm" data-act="map-open" data-key="${i.key}">${ico("i-map")}Show relation map</button></div></section>`;
   P.activity = `<section><h3 class="section-h">Activity</h3>
         <div class="tabs" role="tablist">${[["all","Everything"],["comments","Comments"],["changes","Changes"],["time","Time"]].map(([k,l])=>`<button type="button" role="tab" aria-selected="${S.panelTab===k}" data-act="ptab" data-tab="${k}">${l}</button>`).join("")}</div>
         <div class="activity">
-          ${S.panelTab!=="changes"&&S.panelTab!=="time" ? `<div class="act">${personAvatar("Ben","author")}<div class="body"><b>${personLabel("Ben","author")}</b> <span class="muted" style="font-size:var(--fs-sm)">· 10 min ago</span><div class="bubble">@Ana can you check the reset e-mail link? 14 customers have reported this since Friday.</div></div></div>` : ""}
+          ${S.panelTab!=="changes"&&S.panelTab!=="time" ? `<div class="act">${personAvatar("Ben","author")}<div class="body"><b>${personLabel("Ben","author")}</b> <span class="muted u-font-size-fs-sm">· 10 min ago</span><div class="bubble">@Ana can you check the reset e-mail link? 14 customers have reported this since Friday.</div></div></div>` : ""}
           ${S.panelTab!=="comments"&&S.panelTab!=="time" ? `<div class="act change">${personAvatar("Ana","author")}<span><b>${personLabel("Ana","author")}</b> changed the status from <b>Open</b> to <b>In progress</b> · 2 h ago</span></div>` : ""}
           ${S.panelTab==="all"||S.panelTab==="time" ? `<div class="act change">${ico("i-clock")}<span><b>${personLabel("Ana","author")}</b> added 1 h 20 min · “Found the token check” · Friday</span></div>` : ""}
         </div></section>`;
@@ -1064,8 +678,8 @@ function renderPanel(){
   p.hidden = false;
   p.innerHTML = `<div class="panel-h">
       <button type="button" class="btn ghost back-btn" data-act="close">${ico("i-back")}Back</button>
-      ${typeTag(i)}<button type="button" class="key" data-act="toast" data-msg="Link to ${i.key} copied." style="border:0;background:none">${i.key}</button>
-      <span style="margin-left:auto"></span>
+      ${typeTag(i)}<button type="button" class="key u-border-0--background-none" data-act="toast" data-msg="Link to ${i.key} copied.">${i.key}</button>
+      <span class="u-margin-left-auto"></span>
       <button type="button" class="btn ghost" data-act="assistant" aria-label="Ask the assistant about this issue">${ico("i-spark")}<span class="hide-phone">Ask</span></button>
       <button type="button" class="btn ghost hide-phone" data-act="layout" data-l="focus" title="Open in the focus view, with much more room">${ico("i-expand")}<span>Focus view</span></button>
       <button type="button" class="btn ghost hide-phone" data-act="close" aria-label="Close">${ico("i-x")}</button></div>
@@ -1078,15 +692,15 @@ function renderFocus(){
   const rail = list.length && S.railOpen ? `<aside class="rail" aria-label="Issues in this search">
       <div class="rail-h"><b>Website issues</b><button type="button" class="btn sm ghost" data-act="rail" title="Hide the list for even more room">Hide list</button></div>
       ${list.map(x => `<button type="button" class="rail-i ${x.key===i.key?"on":""}" data-act="open" data-key="${x.key}"><span class="rd nd-${STATUS_GROUP[x.status]}"></span><span class="key">${x.key}</span><span class="t">${esc(x.title)}</span></button>`).join("")}
-      <p class="subtle" style="font-size:var(--fs-xs);padding:8px 10px;margin:0">Use j / k to move through the list.</p></aside>` : "";
+      <p class="subtle u-font-size-fs-xs--padding-8px-10px--margin-0">Use j / k to move through the list.</p></aside>` : "";
   const crumbs = `<span class="hide-phone">${S.screen === "issues" ? "Website issues ›" : ""}</span><b>${i.key}</b>`;
   return topbar(crumbs) + `<div class="focus-wrap ${rail ? "" : "no-rail"}">${rail}
     <article class="fx">
       <div class="fx-h">
         <button type="button" class="btn sm ghost" data-act="close">${ico("i-back")}${S.screen === "issues" ? "Back to list" : "Back"}</button>
         ${list.length && !S.railOpen ? `<button type="button" class="btn sm ghost" data-act="rail">${ico("i-list")}Show list</button>` : ""}
-        ${typeTag(i)}<button type="button" class="key" data-act="toast" data-msg="Link to ${i.key} copied." style="border:0;background:none">${i.key}</button>
-        <span style="margin-left:auto"></span>
+        ${typeTag(i)}<button type="button" class="key u-border-0--background-none" data-act="toast" data-msg="Link to ${i.key} copied.">${i.key}</button>
+        <span class="u-margin-left-auto"></span>
         <button type="button" class="btn sm ghost" data-act="layout" data-l="panel" title="Show the issue next to the list instead">${ico("i-board")}Side panel view</button>
         <button type="button" class="btn sm ghost" data-act="toast" data-msg="More: copy link, move, clone, delete …">${ico("i-more")}</button></div>
       <div class="fx-body ${S.detailsOpen ? "details-open" : ""}">
@@ -1106,13 +720,13 @@ function personLabel(n, kind){
   return GUEST_PEOPLE[kind] === "role" ? "a Team member" : "Someone";
 }
 function personAvatar(n, kind){
-  return S.viewAs === "guest" ? `<span class="av" style="background:var(--bg-sunken);color:var(--fg-muted)">?</span>` : avatar(n);
+  return S.viewAs === "guest" ? `<span class="av u-background-bg-sunken--color-fg-muted">?</span>` : avatar(n);
 }
 
 function renderAssistant(){
   const i = byKey("WEB-142");
-  return `<div class="panel-h"><button type="button" class="btn ghost back-btn" data-act="close-ai">${ico("i-back")}Back</button>${ico("i-spark")}<b>Assistant</b><span style="margin-left:auto"></span><button type="button" class="btn ghost hide-phone" data-act="close-ai" aria-label="Close assistant">${ico("i-x")}</button></div>
-    <div class="panel-b" style="gap:12px">
+  return `<div class="panel-h"><button type="button" class="btn ghost back-btn" data-act="close-ai">${ico("i-back")}Back</button>${ico("i-spark")}<b>Assistant</b><span class="u-margin-left-auto"></span><button type="button" class="btn ghost hide-phone" data-act="close-ai" aria-label="Close assistant">${ico("i-x")}</button></div>
+    <div class="panel-b u-gap-12px">
       <div class="ai-ctx"><span class="muted">Looking at:</span>
         ${S.aiCtx.includes("issue")?`<span class="chip">WEB-142<button type="button" class="x" data-act="ai-ctx" data-c="issue" aria-label="Stop sharing WEB-142">${ico("i-x")}</button></span>`:""}
         ${S.aiCtx.includes("list")?`<span class="chip">This list<button type="button" class="x" data-act="ai-ctx" data-c="list" aria-label="Stop sharing this list">${ico("i-x")}</button></span>`:""}
@@ -1126,7 +740,7 @@ function renderAssistant(){
         : S.aiState==="discarded" ? `<div class="proposal"><span>Discarded. Nothing was changed.</span></div>`
         : `<div class="proposal" aria-label="Proposed change"><div class="ai-label">${ico("i-spark")}Proposed change — nothing is saved until you apply it</div>
           <div class="diff"><span class="key">WEB-142</span> Priority: <span class="old">${prioTag(i.prio)}</span> → ${prioTag("Critical")}</div>
-          <div style="display:flex;gap:8px"><button type="button" class="btn primary sm" data-act="ai-apply">Apply</button><button type="button" class="btn sm" data-act="ai-discard">Discard</button></div></div>`}
+          <div class="u-display-flex--gap-8px"><button type="button" class="btn primary sm" data-act="ai-apply">Apply</button><button type="button" class="btn sm" data-act="ai-discard">Discard</button></div></div>`}
     </div>
     <form class="ai-input" data-form="ai"><input type="text" id="ai-q" placeholder="Ask about this issue or list" aria-label="Ask the assistant"><button class="btn primary" type="submit">Ask</button></form>`;
 }
@@ -1147,24 +761,24 @@ function descSection(i){
   let body;
   if(lock && !ed){
     body = `<div class="editing-note">${personAvatar(lock.who,"editing")}<span><b>${personLabel(lock.who,"editing")} is editing the description</b> · since ${lock.since}</span></div>
-      <div class="desc muted" style="white-space:pre-wrap">${esc(text)}</div>
-      <div style="display:flex;gap:6px;flex-wrap:wrap"><button type="button" class="btn sm" data-act="lock-ask" data-key="${i.key}">Ask ${S.viewAs==="guest"?"them":lock.who} to finish</button><button type="button" class="btn sm ghost" data-act="lock-take" data-key="${i.key}">Edit anyway</button></div>`;
+      <div class="desc muted u-white-space-pre-wrap">${esc(text)}</div>
+      <div class="u-display-flex--gap-6px--flex-wrap-wrap"><button type="button" class="btn sm" data-act="lock-ask" data-key="${i.key}">Ask ${S.viewAs==="guest"?"them":lock.who} to finish</button><button type="button" class="btn sm ghost" data-act="lock-take" data-key="${i.key}">Edit anyway</button></div>`;
   } else if(ed){
     body = `<textarea class="desc-edit" id="desc-edit" aria-label="Description">${esc(S.draft ?? text)}</textarea>
       <div class="savestate" id="savestate" aria-live="polite">${saveStateHtml()}</div>
-      <div style="display:flex;gap:6px;flex-wrap:wrap"><button type="button" class="btn sm primary" data-act="desc-done" data-key="${i.key}">Done</button>
+      <div class="u-display-flex--gap-6px--flex-wrap-wrap"><button type="button" class="btn sm primary" data-act="desc-done" data-key="${i.key}">Done</button>
         <button type="button" class="btn sm ghost" data-act="lock-lose" data-key="${i.key}" title="Mockup only: shows what happens when the lock runs out">Simulate: lock runs out</button></div>`;
   } else {
-    body = `<div class="desc" style="white-space:pre-wrap">${esc(text)}</div>
+    body = `<div class="desc u-white-space-pre-wrap">${esc(text)}</div>
       <div><button type="button" class="btn sm" data-act="desc-edit" data-key="${i.key}">Edit description</button></div>`;
   }
-  return `<section><h3 class="section-h">Description</h3><div style="display:flex;flex-direction:column;gap:8px">${body}</div></section>`;
+  return `<section><h3 class="section-h">Description</h3><div class="u-display-flex--flex-direction-column--gap-8px">${body}</div></section>`;
 }
 function saveStateHtml(){
   switch(S.saveState){
     case "saving": return `<span class="ss-dot ip"></span>Saving…`;
     case "saved": return `<span class="ss-dot ok"></span>Saved · ${new Date().toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"})}`;
-    case "lost": return `<span class="banner" style="width:100%"><b>Not saved:</b> your editing time ran out and Ben changed the description since. Your text is kept. <button type="button" class="btn sm primary" data-act="lock-compare">Compare and save</button></span>`;
+    case "lost": return `<span class="banner u-width-100pc"><b>Not saved:</b> your editing time ran out and Ben changed the description since. Your text is kept. <button type="button" class="btn sm primary" data-act="lock-compare">Compare and save</button></span>`;
     default: return `<span class="ss-dot ok"></span>You're editing · others see “Ana is editing the description”`;
   }
 }
@@ -1213,7 +827,7 @@ function moveIssue(key, to){
   }
   if(to === "Done" && from === "Testing" && !i.release){
     openDialog(`<div class="dialog-h"><h2>Mark ${key} as done</h2></div><div class="dialog-b">
-      <p style="margin:0">Before this issue can be done, it needs a release.</p>
+      <p class="u-margin-0">Before this issue can be done, it needs a release.</p>
       <div class="field"><label for="rel">Planned for release <span class="req">(required)</span></label><select id="rel"><option>2.4</option><option>2.5</option></select></div></div>
       <div class="dialog-f"><button type="button" class="btn" data-act="dialog-close">Cancel</button><button type="button" class="btn primary" data-act="move-confirm" data-key="${key}">Mark as done</button></div>`);
     return;
@@ -1224,7 +838,7 @@ function moveIssue(key, to){
 
 function quickSearch(mode){
   S.qsMode = mode || "";
-  openDialog(`<input type="text" class="qs-input" id="qs" placeholder="${mode==="timer"?"Which issue are you working on now?":"Search issues, documents, settings, or type an action"}" aria-label="Quick search"><div id="qs-res" style="padding:6px"></div>
+  openDialog(`<input type="text" class="qs-input" id="qs" placeholder="${mode==="timer"?"Which issue are you working on now?":"Search issues, documents, settings, or type an action"}" aria-label="Quick search"><div class="u-padding-6px" id="qs-res"></div>
     <div class="pop-note">Tip: press Ctrl K from anywhere.</div>`);
   const draw = () => {
     const q = $("#qs").value.toLowerCase().trim();
@@ -1233,7 +847,7 @@ function quickSearch(mode){
       .filter(([l]) => !q || l.toLowerCase().includes(q));
     $("#qs-res").innerHTML = (iss.length?`<div class="pop-h">Issues</div>`:"") + iss.map(i => `<button type="button" class="pop-item" data-act="qs-open" data-key="${i.key}">${typeTag(i,false)}<span class="key">${i.key}</span>${esc(i.title)}${S.timer?.key!==i.key?``:`<small>timer running</small>`}</button>`).join("") +
       (acts.length?`<div class="pop-h">Go to or do</div>`:"") + acts.map(([l,a]) => `<button type="button" class="pop-item" data-act="qs-act" data-a="${a}">${l}</button>`).join("") +
-      (!iss.length && !acts.length ? `<p class="muted" style="padding:8px 10px;margin:0">Nothing found for “${esc(q)}”.</p>` : "");
+      (!iss.length && !acts.length ? `<p class="muted u-padding-8px-10px--margin-0">Nothing found for “${esc(q)}”.</p>` : "");
   };
   $("#qs").addEventListener("input", draw); draw();
 }
@@ -1259,28 +873,28 @@ function newIssueFields(type){
 }
 function newIssue(){
   const type = "Bug";
-  openDialog(`<div class="dialog-h"><h2>New issue</h2><button type="button" class="btn ghost" style="margin-left:auto" data-act="dialog-close" aria-label="Close">${ico("i-x")}</button></div>
+  openDialog(`<div class="dialog-h"><h2>New issue</h2><button type="button" class="btn ghost u-margin-left-auto" data-act="dialog-close" aria-label="Close">${ico("i-x")}</button></div>
     <div class="dialog-b">
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px">
+      <div class="u-10e6c9c8">
         <div class="field"><label for="ni-p">Project</label><select id="ni-p"><option>Website</option><option>Mobile app</option></select></div>
         <div class="field"><label for="ni-t">Type</label><select id="ni-t" data-act-change="ni-type"><option>Bug</option><option>Task</option><option>Feature</option><option>Goal</option></select></div></div>
       <div class="field"><label for="ni-title">Title <span class="req">(required)</span></label>${NEW_FORM[0].html}</div>
       <div class="field"><label for="ni-d">Description</label>${NEW_FORM[1].html}</div>
       <div class="ni-grid" id="ni-fields">${newIssueFields(type)}</div>
-      <button type="button" class="btn" style="align-self:flex-start" data-act="writeup">${ico("i-spark")}Write it up for me</button>
-      <p class="muted" style="margin:0;font-size:var(--fs-sm)">The fields depend on the project, the type and your role (<b>${viewerRole()}</b>). ${S.viewAs==="guest" ? "" : `<button type="button" class="btn sm ghost" data-act="form-edit">Customize this form</button>`}</p>
-      <span class="subtle" style="font-size:var(--fs-xs)">Your draft is kept if you close this window.</span>
+      <button type="button" class="btn u-align-self-flex-start" data-act="writeup">${ico("i-spark")}Write it up for me</button>
+      <p class="muted u-margin-0--font-size-fs-sm">The fields depend on the project, the type and your role (<b>${viewerRole()}</b>). ${S.viewAs==="guest" ? "" : `<button type="button" class="btn sm ghost" data-act="form-edit">Customize this form</button>`}</p>
+      <span class="subtle u-font-size-fs-xs">Your draft is kept if you close this window.</span>
     </div>
     <div class="dialog-f"><button type="button" class="btn" data-act="dialog-close">Cancel</button><button type="button" class="btn" data-act="create" data-more="1">Create and start another</button><button type="button" class="btn primary" data-act="create">Create</button></div>`);
 }
 function formEditor(){
-  openDialog(`<div class="dialog-h"><h2>Customize the new-issue form</h2><span class="muted" style="margin-left:8px;font-size:var(--fs-sm)">Website · Bug</span><button type="button" class="btn ghost" style="margin-left:auto" data-act="dialog-close" aria-label="Close">${ico("i-x")}</button></div>
+  openDialog(`<div class="dialog-h"><h2>Customize the new-issue form</h2><span class="muted u-margin-left-8px--font-size-fs-sm">Website · Bug</span><button type="button" class="btn ghost u-margin-left-auto" data-act="dialog-close" aria-label="Close">${ico("i-x")}</button></div>
     <div class="dialog-b">
-      <p class="help" style="margin:0">Drag to change the order. Choose which roles see each field. Roles that may not see a field (Field permissions) can't get it here either.</p>
-      <div style="overflow-x:auto"><table class="perm" style="min-width:520px"><thead><tr><th></th><th>Field</th><th>Required</th>${ROLES.map(r=>`<th>${r}</th>`).join("")}</tr></thead><tbody>
+      <p class="help u-margin-0">Drag to change the order. Choose which roles see each field. Roles that may not see a field (Field permissions) can't get it here either.</p>
+      <div class="u-overflow-x-auto"><table class="perm u-min-width-520px"><thead><tr><th></th><th>Field</th><th>Required</th>${ROLES.map(r=>`<th>${r}</th>`).join("")}</tr></thead><tbody>
       ${NEW_FORM.map(f => `<tr><td class="subtle" aria-hidden="true">⋮⋮</td><td><b>${f.label}</b>${f.types?` <span class="subtle">(Bugs only)</span>`:""}</td><td><input type="checkbox" class="cb" ${f.req?"checked disabled":""} aria-label="${f.label} required"></td>
         ${ROLES.map(r => `<td><input type="checkbox" class="cb" data-act-change="form-role" data-f="${f.id}" data-r="${r}" ${f.roles.includes(r)?"checked":""} ${f.id==="title"?"disabled":""} aria-label="${f.label} for ${r}"></td>`).join("")}</tr>`).join("")}</tbody></table></div>
-      <button type="button" class="btn sm" style="align-self:flex-start" data-act="toast" data-msg="Lists every field that this project and issue type can use.">${ico("i-plus")}Add a field to the form</button>
+      <button type="button" class="btn sm u-align-self-flex-start" data-act="toast" data-msg="Lists every field that this project and issue type can use.">${ico("i-plus")}Add a field to the form</button>
     </div>
     <div class="dialog-f"><button type="button" class="btn" data-act="new">Preview the form</button><button type="button" class="btn primary" data-act="dialog-ok" data-msg="Form saved. People see the new layout the next time they create an issue.">Save</button></div>`);
 }
@@ -1361,7 +975,7 @@ function layout(g, center){
   return pos;
 }
 function renderMapSvg(g, pos, center){
-  if(!g.nodes.length) return `<p class="muted" style="padding:20px;margin:0">Nothing to show with these settings.</p>`;
+  if(!g.nodes.length) return `<p class="muted u-padding-20px--margin-0">Nothing to show with these settings.</p>`;
   const r1 = v => Math.round(v*10)/10;
   const xs = g.nodes.map(n => pos[n.key].x), ys = g.nodes.map(n => pos[n.key].y);
   const x0 = Math.min(...xs)-NW/2-30, x1 = Math.max(...xs)+NW/2+30, y0 = Math.min(...ys)-NH/2-30, y1 = Math.max(...ys)+NH/2+30;
@@ -1408,7 +1022,7 @@ function mapBody(center){
     inner = `<div class="map-canvas">${renderMapSvg(g, pos, center)}</div>
       <p class="map-info" id="map-info" aria-live="polite">${center ? `Point at an issue to see how it connects to <b class="mono">${center}</b>. Click an issue to move it to the middle.` : "Point at an issue to see its relations. Click it to open it."}</p>`;
   }
-  return `<div class="map-wrap">${ctl}${inner}<p class="subtle" style="font-size:var(--fs-xs);margin:0">Only issues you're allowed to see are shown. Chains never pass through issues you can't see.</p></div>`;
+  return `<div class="map-wrap">${ctl}${inner}<p class="subtle u-font-size-fs-xs--margin-0">Only issues you're allowed to see are shown. Chains never pass through issues you can't see.</p></div>`;
 }
 function renderMapScreen(){
   const c = byKey(S.mapCenter);
@@ -1454,12 +1068,12 @@ function renderCalendar(list){
   }).join("");
   const agenda = Object.keys(by).map(Number).sort((a,b) => a-b).map(d =>
     `<div class="tl-day">${calDate(d).toLocaleDateString("en",{weekday:"long",month:"long",day:"numeric",timeZone:"UTC"})}${d === TODAY ? " · today" : ""}</div>` +
-    by[d].map(i => `<button type="button" class="lrow" data-act="open" data-key="${i.key}" style="border:1px solid var(--border);border-radius:var(--r-card);padding:10px 12px;background:var(--bg-raised)"><span style="min-width:0;flex:1"><span class="t">${esc(i.title)}</span><span class="m">${typeTag(i,false)}<span class="key">${i.key}</span>${statusPill(i,false)}</span></span></button>`).join("")).join("");
+    by[d].map(i => `<button type="button" class="lrow u-bd4668a6" data-act="open" data-key="${i.key}"><span class="u-min-width-0--flex-1"><span class="t">${esc(i.title)}</span><span class="m">${typeTag(i,false)}<span class="key">${i.key}</span>${statusPill(i,false)}</span></span></button>`).join("")).join("");
   const noDate = list.filter(i => !i.end).length;
-  return `<div class="cal-wrap"><div class="cal-top"><b style="font-size:var(--fs-md)">October 2026</b><span class="muted" style="font-size:var(--fs-sm)">Issues on their due date. Drag one to another day to change it, or open it and use “Change due date”.</span></div>
+  return `<div class="cal-wrap"><div class="cal-top"><b class="u-font-size-fs-md">October 2026</b><span class="muted u-font-size-fs-sm">Issues on their due date. Drag one to another day to change it, or open it and use “Change due date”.</span></div>
     <div class="cal" role="grid" aria-label="October 2026">${["Mon","Tue","Wed","Thu","Fri","Sat","Sun"].map(x => `<div class="cal-h">${x}</div>`).join("")}${cells}</div>
     <div class="cal-agenda">${agenda}</div>
-    ${noDate ? `<p class="muted" style="font-size:var(--fs-sm);margin:0">${noDate} issue${noDate === 1 ? " has" : "s have"} no due date and ${noDate === 1 ? "isn't" : "aren't"} shown.</p>` : ""}</div>`;
+    ${noDate ? `<p class="muted u-font-size-fs-sm--margin-0">${noDate} issue${noDate === 1 ? " has" : "s have"} no due date and ${noDate === 1 ? "isn't" : "aren't"} shown.</p>` : ""}</div>`;
 }
 
 /* ============ board drag & drop ============ */
@@ -1519,7 +1133,7 @@ document.addEventListener("click", e => {
       break; }
     case "set-field": { const i = byKey(key), f = el.dataset.field, old = i[f]; i[f] = el.dataset.val || null; closePop(); render(); toast(`${key}: ${f==="who"?"assigned to "+(i.who||"nobody"):"priority set to "+i.prio}.`, () => { i[f] = old; }); break; }
     case "timer-start": if(!S.workday && !el.dataset.skipwd){
-      openDialog(`<div class="dialog-h"><h2>Start your work day too?</h2></div><div class="dialog-b"><p style="margin:0">Your work day hasn't started yet. Working hours are recorded separately from time on issues.</p></div>
+      openDialog(`<div class="dialog-h"><h2>Start your work day too?</h2></div><div class="dialog-b"><p class="u-margin-0">Your work day hasn't started yet. Working hours are recorded separately from time on issues.</p></div>
         <div class="dialog-f"><button type="button" class="btn" data-act="timer-start" data-key="${key}" data-skipwd="1">Only the timer</button><button type="button" class="btn primary" data-act="wd-start-timer" data-key="${key}">Start work day and timer</button></div>`); break; }
       closeDialog(); /* falls through */
     case "timer-start-go": { const prev = S.timer; S.timer = {key, start:Date.now()}; render(); toast(prev ? `Timer switched from ${prev.key} to ${key}.` : `Timer started on ${key}.`, () => { S.timer = prev; }); break; }
@@ -1527,10 +1141,10 @@ document.addEventListener("click", e => {
       if(!S.timer) break;
       const mins = Math.max(1, Math.floor((Date.now()-S.timer.start)/60000));
       openDialog(`<div class="dialog-h"><h2>Stop timer on ${S.timer.key}</h2></div><div class="dialog-b">
-        <p style="margin:0">You worked <b>${fmtSpent(mins)}</b> on “${esc(byKey(S.timer.key).title)}”.</p>
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px"><div class="field"><label for="tact">Activity</label><select id="tact">${ACTIVITIES.map(a=>`<option>${a}</option>`).join("")}</select></div><div class="field"><label for="tcc">Cost center</label><select id="tcc">${COST_CENTERS.map(([n,l])=>`<option value="${n}">${n} ${l}</option>`).join("")}</select></div></div>
+        <p class="u-margin-0">You worked <b>${fmtSpent(mins)}</b> on “${esc(byKey(S.timer.key).title)}”.</p>
+        <div class="u-10e6c246"><div class="field"><label for="tact">Activity</label><select id="tact">${ACTIVITIES.map(a=>`<option>${a}</option>`).join("")}</select></div><div class="field"><label for="tcc">Cost center</label><select id="tcc">${COST_CENTERS.map(([n,l])=>`<option value="${n}">${n} ${l}</option>`).join("")}</select></div></div>
         <div class="field"><label for="tdesc">What did you do? <span class="req">(optional)</span></label><input type="text" id="tdesc" placeholder="e.g. Found the token check"></div>
-        <p class="muted" style="margin:0;font-size:var(--fs-sm)">Activity and cost center come from the issue. Change them if this time was different.</p></div>
+        <p class="muted u-margin-0--font-size-fs-sm">Activity and cost center come from the issue. Change them if this time was different.</p></div>
         <div class="dialog-f"><button type="button" class="btn danger" data-act="timer-discard">Throw away</button><button type="button" class="btn" data-act="dialog-close">Keep running</button><button type="button" class="btn primary" data-act="timer-save" data-min="${mins}">Save time</button></div>`);
       break; }
     case "timer-save": { const k = S.timer.key, m = +el.dataset.min; byKey(k).spent += m; const act = $("#tact")?.value, cc = $("#tcc")?.value; S.timer = null; closeDialog(); render(); toast(`${fmtSpent(m)} added to ${k} · ${act} · cost center ${cc}.`); break; }
@@ -1540,7 +1154,7 @@ document.addEventListener("click", e => {
       const ix = +el.dataset.ix, c = S.filters[ix];
       if(c.f === "project"){ openPop(el, `<div class="pop-h">Project</div><button type="button" class="pop-item">Website and everything in it</button><div class="pop-note">This mockup has one project.</div>`); break; }
       openPop(el, `<div class="pop-h">${FIELDS[c.f]}</div>
-        <div style="display:flex;gap:4px;padding:4px 6px 8px"><button type="button" class="btn sm ${c.op==="is"?"primary":""}" data-act="chip-op" data-ix="${ix}" data-op="is">is</button><button type="button" class="btn sm ${c.op==="is not"?"primary":""}" data-act="chip-op" data-ix="${ix}" data-op="is not">is not</button></div>` +
+        <div class="u-display-flex--gap-4px--padding-4px-6px-8px"><button type="button" class="btn sm ${c.op==="is"?"primary":""}" data-act="chip-op" data-ix="${ix}" data-op="is">is</button><button type="button" class="btn sm ${c.op==="is not"?"primary":""}" data-act="chip-op" data-ix="${ix}" data-op="is not">is not</button></div>` +
         VALUES[c.f].map(v => `<button type="button" class="pop-item" data-act="chip-val" data-ix="${ix}" data-v="${v}">${v}${c.v===v?`<small>${ico("i-check")}</small>`:""}</button>`).join(""));
       break; }
     case "chip-op": S.filters[+el.dataset.ix].op = el.dataset.op; closePop(); render(); break;
@@ -1568,7 +1182,7 @@ document.addEventListener("click", e => {
     case "save-search": openDialog(`<div class="dialog-h"><h2>Save this search</h2></div><div class="dialog-b">
         <div class="field"><label for="ss-n">Name</label><input type="text" id="ss-n" value="Open issues in Website"></div>
         <div class="field"><label for="ss-w">Who can use it</label><select id="ss-w"><option>Only me</option><option>Group: Backend</option><option>Everyone in Website</option></select></div>
-        <p class="muted" style="margin:0;font-size:var(--fs-sm)">Saves the filters and how they're shown (${S.show}).</p></div>
+        <p class="muted u-margin-0--font-size-fs-sm">Saves the filters and how they're shown (${S.show}).</p></div>
         <div class="dialog-f"><button type="button" class="btn" data-act="dialog-close">Cancel</button><button type="button" class="btn primary" data-act="dialog-ok" data-msg="Search saved. Find it under Saved searches.">Save</button></div>`); break;
     case "saved-open": { const r = parse(el.dataset.q); S.filters = r.filters.some(c=>c.f==="project") ? r.filters : [{f:"project",op:"within",v:"WEB"}, ...r.filters]; S.show = el.dataset.v; S.screen = "issues"; S.searchMode="simple"; render(); break; }
     case "board-col": S.boardCol = el.dataset.col; render(); break;
@@ -1578,7 +1192,7 @@ document.addEventListener("click", e => {
       else if(what === "status"){
         const can = keys.filter(k => MOVES[byKey(k).status].some(([t]) => t === "Testing"));
         openDialog(`<div class="dialog-h"><h2>Send ${keys.length} issues to Testing?</h2></div><div class="dialog-b">
-          <p style="margin:0"><b>${can.length}</b> will move to Testing.${keys.length-can.length ? ` <b>${keys.length-can.length}</b> will be skipped, because their workflow doesn't allow it from their current status.` : ""}</p></div>
+          <p class="u-margin-0"><b>${can.length}</b> will move to Testing.${keys.length-can.length ? ` <b>${keys.length-can.length}</b> will be skipped, because their workflow doesn't allow it from their current status.` : ""}</p></div>
           <div class="dialog-f"><button type="button" class="btn" data-act="dialog-close">Cancel</button><button type="button" class="btn primary" data-act="bulk-go" data-keys="${can.join(",")}">Move ${can.length}</button></div>`);
       } else toast("In the real app this opens the label list for the selected issues.");
       break; }
@@ -1653,9 +1267,9 @@ document.addEventListener("click", e => {
     case "lock-take": { const who = LOCKS[key].who; delete LOCKS[key]; S.editing = key; S.draft = null; S.saveState = "editing"; renderPanel(); toast(`You're editing now. ${who} was told, and their unsaved text is kept as their draft.`); break; }
     case "lock-lose": S.draft = $("#desc-edit")?.value; S.saveState = "lost"; renderPanel(); break;
     case "lock-compare": openDialog(`<div class="dialog-h"><h2>Compare and save</h2></div><div class="dialog-b">
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px">
-          <div><div class="section-h">Ben's newer version</div><div class="desc" style="white-space:pre-wrap;border:1px solid var(--border);border-radius:var(--r-ctl);padding:8px">${esc((DESCS[S.open] ?? defaultDesc(byKey(S.open))) + "\n\nUpdate: also happens with passkeys.")}</div></div>
-          <div><div class="section-h">Your text</div><div class="desc" style="white-space:pre-wrap;border:1px solid var(--accent);border-radius:var(--r-ctl);padding:8px">${esc(S.draft ?? "")}</div></div></div></div>
+        <div class="u-268a4e1f">
+          <div><div class="section-h">Ben's newer version</div><div class="desc u-dbec227">${esc((DESCS[S.open] ?? defaultDesc(byKey(S.open))) + "\n\nUpdate: also happens with passkeys.")}</div></div>
+          <div><div class="section-h">Your text</div><div class="desc u-e9f48cc5">${esc(S.draft ?? "")}</div></div></div></div>
         <div class="dialog-f"><button type="button" class="btn" data-act="cmp-theirs">Keep Ben's</button><button type="button" class="btn primary" data-act="cmp-mine">Use mine</button></div>`); break;
     case "cmp-mine": DESCS[S.open] = S.draft; S.editing = null; S.saveState = null; closeDialog(); renderPanel(); toast("Your text was saved. Ben's version stays in the history."); break;
     case "cmp-theirs": DESCS[S.open] = (DESCS[S.open] ?? defaultDesc(byKey(S.open))) + "\n\nUpdate: also happens with passkeys."; S.editing = null; S.saveState = null; closeDialog(); renderPanel(); toast("Kept Ben's version. Your text is still in your drafts."); break;

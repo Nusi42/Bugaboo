@@ -16,6 +16,12 @@
 //!   `.sass`, `.less`), and no
 //!   `import`, `import()` or `require` of one, with or without `?inline` or `?raw` after the name.
 //!
+//! The pages of the documents and the mockups (`docs/**/*.html`) follow the same rule: no
+//! `<style>` element and no `style` attribute in the markup, because their look is written in the
+//! `docs` blocks of the theme file and generated (M2C-F93). A `style` attribute that the page's own
+//! script builds from a value it computes (a position, a color read from the page) is a style
+//! of the run time, not of the markup, and stays.
+//!
 //! Nothing is exempt: the components moved onto the theme file in package C-06 (M2C-F90).
 
 use std::path::Path;
@@ -58,7 +64,10 @@ impl Check for ThemeOnly {
 
     fn run(&self, context: &Context<'_>) -> anyhow::Result<Vec<Finding>> {
         let sources = context.sources(self.id(), Kind::WebAndStyles)?;
-        Ok(evaluate(&sources))
+        let pages = context.sources(self.id(), Kind::DocPages)?;
+        let mut findings = evaluate(&sources);
+        findings.extend(pages.iter().flat_map(|(path, text)| scan_page(path, text)));
+        Ok(findings)
     }
 }
 fn evaluate(sources: &[Source]) -> Vec<Finding> {
@@ -68,6 +77,52 @@ fn evaluate(sources: &[Source]) -> Vec<Finding> {
         .filter(|(path, _)| is_app_source(path) && !generated.contains(&path.as_str()))
         .flat_map(|(path, text)| scan(path, text))
         .collect()
+}
+
+/// What breaks the rule in a page of the documents: a `<style>` element, or a `style` attribute
+/// whose value is not built by the script of the page.
+fn scan_page(path: &str, text: &str) -> Vec<Finding> {
+    let mut findings = Vec::new();
+    let mut line = 1;
+    let mut rest = text;
+    while let Some(at) = rest.find('<') {
+        line += rest[..at].matches('\n').count();
+        rest = &rest[at..];
+        let end = rest.find('>').unwrap_or(rest.len());
+        let tag = &rest[..end];
+        let name: String = tag[1..]
+            .chars()
+            .take_while(char::is_ascii_alphanumeric)
+            .collect();
+        if name.eq_ignore_ascii_case("style") {
+            findings.push(Finding::at(
+                format!("{path}:{line}"),
+                "A <style> element. Write the rules in a `docs` block of design/theme.kdl; `cargo xtask gen theme` writes the sheet (M2C-F93).",
+            ));
+        } else if !name.is_empty() && has_markup_style(tag) {
+            findings.push(Finding::at(
+                format!("{path}:{line}"),
+                "A `style` attribute in the markup. Use a class of the page's sheet, written in a `docs` block of design/theme.kdl (M2C-F93).",
+            ));
+        }
+        line += tag.matches('\n').count();
+        rest = &rest[end.min(rest.len())..];
+        rest = rest.strip_prefix('>').unwrap_or(rest);
+    }
+    findings
+}
+
+/// Whether the tag has a `style="…"` attribute that the markup alone fixes: its value has no part
+/// that a script puts in (`${…}` of a template, or a string joined with `+`).
+fn has_markup_style(tag: &str) -> bool {
+    tag.match_indices(" style=").any(|(at, _)| {
+        let value = &tag[at + " style=".len()..];
+        let Some(quote) = value.chars().next().filter(|c| matches!(c, '"' | '\'')) else {
+            return true;
+        };
+        let inner = value[1..].split(quote).next().unwrap_or("");
+        !(["${", "' +", "+ '"].iter().any(|made| inner.contains(made)))
+    })
 }
 
 /// What breaks the rule in one file.
@@ -296,5 +351,38 @@ mod tests {
     #[test]
     fn the_generated_sheet_is_the_one_css_file() {
         assert!(run(STYLE_SHEET, "body { color: red; }").is_empty());
+    }
+
+    fn page_findings(text: &str) -> usize {
+        scan_page("docs/page.html", text).len()
+    }
+
+    #[test]
+    fn bad_example_a_page_of_the_documents_with_a_style_element_or_attribute() {
+        for bad in [
+            "<style>.a { color: red }</style>",
+            "<style media=\"print\">.a {}</style>",
+            "<p style=\"margin:0\">x</p>",
+            "<td style=\"text-align: center\">x</td>",
+            "<svg><circle style=\"fill:var(--accent)\"/></svg>",
+            "<div class=\"a\"
+   style=\"width:90px\">x</div>",
+        ] {
+            assert!(page_findings(bad) > 0, "{bad}");
+        }
+    }
+
+    #[test]
+    fn good_example_a_page_of_the_documents_with_classes_and_computed_styles() {
+        for good in [
+            "<p class=\"muted\">x</p>",
+            "<p>THEME-ONLY says no <code>style=</code> and no <code>&lt;style&gt;</code>.</p>",
+            "<link rel=\"stylesheet\" href=\"ux-design.css\">",
+            "<script>const bar = `<div style=\"left:${at}%\"></div>`;</script>",
+            "<script>const swatch = '<i style=\"background:' + c + '\"></i>';</script>",
+            "<script>if (a < b && c > d) { go(); }</script>",
+        ] {
+            assert_eq!(page_findings(good), 0, "{good}");
+        }
     }
 }

@@ -5,285 +5,10 @@
 <link rel="stylesheet" href="theme.css">
 <link rel="stylesheet" href="components.css">
 <link rel="stylesheet" href="docpage.css">
-<style>
-/* Layout: sticky header + contents rail (wide) / collapsible contents (phone) + one reading column.
-   Mini-screens are framed demos built from the shared components; all colors come from theme.css. */
-
-/* reading type */
-.target{border-left:3px solid var(--accent);padding:4px 0 4px 14px;margin:20px 0;max-width:70ch}
-.principles{list-style:none;padding:0!important;display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;counter-reset:p}
-.principles li{counter-increment:p;border:1px solid var(--border);border-radius:var(--r-card);padding:12px 14px 12px 46px;position:relative;background:var(--bg-raised);margin:0;max-width:none}
-.principles li::before{content:counter(p);position:absolute;left:12px;top:12px;width:24px;height:24px;border-radius:50%;background:var(--accent-soft);color:var(--accent-fg);font-weight:700;font-size:12px;display:grid;place-items:center;font-family:var(--mono)}
-.tree{list-style:none;padding-left:0!important;font-size:var(--fs-sm);border:1px solid var(--border);border-radius:var(--r-card);padding:12px 14px!important;background:var(--bg-surface);max-width:560px}
-.tree ul{list-style:none;padding-left:18px;border-left:1px dashed var(--border);margin:2px 0 2px 7px}
-.tree li{display:block;margin:3px 0;max-width:none}
-.tree .lbl{display:inline-flex;align-items:center;gap:6px;font-weight:600}
-.tree .d{color:var(--fg-muted);font-weight:400}
-
-/* demo frames */
-.demo{margin:18px 0 22px;display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start}
-.frame{border:1px solid var(--border);border-radius:12px;background:var(--bg-canvas);box-shadow:var(--shadow);overflow:hidden;min-width:0;flex:1 1 520px;max-width:100%}
-.frame-cap{font-size:11px;color:var(--fg-subtle);text-transform:uppercase;letter-spacing:.07em;font-weight:700;padding:6px 12px;border-bottom:1px solid var(--border-subtle);background:var(--bg-surface);display:flex;gap:8px;align-items:center}
-.frame-body{overflow-x:auto}
-.frame-body>.scr{min-width:640px}
-.frame.phone{flex:0 0 300px;border-radius:28px;border:7px solid var(--border)}
-.frame.phone .frame-body>.scr{min-width:0}
-.frame.narrow{flex:1 1 340px}
-.frame.narrow .frame-body>.scr{min-width:0}
-.cap-note{font-size:var(--fs-sm);color:var(--fg-muted);margin:-10px 0 18px;max-width:70ch}
-
-/* mini app pieces */
-.scr{font-size:13px;background:var(--bg-canvas);color:var(--fg)}
-.scr .btn{padding:5px 10px;font-size:12.5px}
-.scr .btn.sm{padding:3px 8px;font-size:12px}
-.scr .seg button{padding:4px 9px;font-size:12px}
-.scr .pill{font-size:12px;padding:1px 8px}
-.scr .key{font-size:12px}
-.scr .chip{font-size:12px;padding:3px 3px 3px 9px}
-.scr .chip.add{padding:3px 9px}
-.app3{display:grid;grid-template-columns:150px minmax(0,1fr) 230px;min-height:320px}
-.app2{display:grid;grid-template-columns:150px minmax(0,1fr);min-height:280px}
-.sb{background:var(--bg-surface);border-right:1px solid var(--border);padding:10px 8px;display:flex;flex-direction:column;gap:1px}
-.sb .ttl{display:flex;align-items:center;gap:6px;font-weight:700;padding:2px 6px 8px}
-.ni{display:flex;align-items:center;gap:7px;padding:5px 7px;border-radius:6px}
-.ni.on{background:var(--bg-selected);color:var(--accent-fg);font-weight:600}
-.ni .cnt{margin-left:auto;font-size:10px;background:var(--accent);color:var(--on-accent);border-radius:999px;padding:0 6px;font-weight:700}
-.nl{font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:var(--fg-subtle);padding:8px 7px 2px;font-weight:700}
-.timer-mini{margin-top:auto;display:flex;align-items:center;gap:6px;padding:6px 8px;border-radius:6px;background:var(--accent-soft);color:var(--accent-fg);font-weight:600;font-size:12px}
-.mainc{display:flex;flex-direction:column;min-width:0}
-.tb{display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid var(--border);flex-wrap:wrap}
-.tb .crumb{color:var(--fg-muted)}
-.tb .crumb b{color:var(--fg)}
-.sbar{display:flex;gap:6px;padding:8px 12px;border-bottom:1px solid var(--border-subtle);flex-wrap:wrap;align-items:center}
-.r{display:flex;align-items:center;gap:8px;padding:7px 12px;border-bottom:1px solid var(--border-subtle)}
-.r .t{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:500}
-.r.sel{background:var(--bg-selected)}
-.r.hd{background:var(--bg-surface);font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--fg-subtle);font-weight:700}
-.pn{border-left:1px solid var(--border);padding:12px;display:flex;flex-direction:column;gap:10px;min-width:0}
-.pn h5{margin:0;font-size:15px;line-height:1.3}
-.mini-fields{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 10px;font-size:12px;align-items:center}
-.mini-fields dt{color:var(--fg-muted)}
-.mini-fields dd{margin:0;min-width:0}
-.sh{font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--fg-muted);font-weight:700;margin:4px 0 4px}
-.blk{border:1px solid var(--border);border-radius:8px;overflow:hidden}
-.blk .r:last-child{border-bottom:0}
-.rel-kind{min-width:96px;color:var(--fg-muted);font-size:12px}
-.ph-top{display:flex;align-items:center;gap:6px;padding:10px 12px;border-bottom:1px solid var(--border);font-weight:600}
-.ph-body{min-height:300px}
-.bb{display:grid;grid-template-columns:repeat(5,1fr);border-top:1px solid var(--border);background:var(--bg-surface)}
-.bb span{display:flex;flex-direction:column;align-items:center;font-size:10px;padding:6px 0 8px;color:var(--fg-muted);gap:2px}
-.bb .on{color:var(--accent-fg);font-weight:700}
-.bb .new .ico{background:var(--accent);color:var(--on-accent);border-radius:50%;padding:3px;width:22px;height:22px}
-.actbar{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--border);background:var(--bg-surface);text-align:center;font-size:11px}
-.actbar span{padding:8px 0;display:flex;flex-direction:column;align-items:center;gap:2px}
-.lrow{padding:10px 12px;border-bottom:1px solid var(--border-subtle)}
-.lrow .t{font-weight:600;margin:2px 0 4px}
-.lrow .m{display:flex;gap:8px;flex-wrap:wrap;align-items:center;font-size:12px;color:var(--fg-muted)}
-.banner{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:8px 10px;border-radius:8px;background:var(--warning-soft);color:var(--fg);border:1px solid var(--warning);font-size:12px}
-.bubble{background:var(--bg-surface);border:1px solid var(--border-subtle);border-radius:10px;padding:7px 10px;font-size:12px}
-.box{background:var(--bg-raised);border:1px solid var(--border);border-radius:var(--r-card);overflow:hidden}
-.box-h{display:flex;align-items:center;gap:6px;padding:9px 12px;border-bottom:1px solid var(--border-subtle);font-weight:700}
-.box-h .muted{margin-left:auto;font-weight:400;font-size:11px}
-.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;padding:12px}
-.timer-card{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--accent);background:var(--accent-soft);border-radius:var(--r-card);margin:12px 12px 0;flex-wrap:wrap}
-.timer-card .clock{font-family:var(--mono);font-size:20px;font-weight:600;color:var(--accent-fg)}
-.checklist{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:12px 12px 0;padding:10px 12px;border:1px dashed var(--border);border-radius:var(--r-card)}
-.okmark{width:18px;height:18px;border-radius:50%;background:var(--success);color:var(--bg-canvas);display:inline-grid;place-items:center;font-size:11px;font-weight:700}
-.bulk{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:10px auto;width:max-content;max-width:calc(100% - 24px);background:var(--bg-raised);border:1px solid var(--border);box-shadow:var(--shadow);border-radius:var(--r-card);padding:7px 9px}
-.preview-msg{margin:0 12px 12px;border:1px solid var(--border);border-radius:var(--r-card);padding:10px 12px;background:var(--bg-raised);font-size:12.5px}
-.adv-box{font-family:var(--mono);font-size:12.5px;line-height:1.6;border:1px solid var(--border);border-radius:var(--r-ctl);padding:8px 10px;background:var(--bg-raised);white-space:pre-wrap}
-.adv-box .err{text-decoration:underline wavy var(--danger);text-underline-offset:3px}
-.errline{color:var(--danger);font-size:12px;display:flex;gap:6px;align-items:center;margin-top:6px}
-.ask-res{border:1px solid var(--border);background:var(--accent-soft);border-radius:var(--r-ctl);padding:8px 10px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:12px}
-.ask-res code{flex:1;min-width:0;font-family:var(--mono)}
-.pop-demo{border:1px solid var(--border);border-radius:var(--r-card);background:var(--bg-raised);box-shadow:var(--shadow);padding:5px;min-width:200px;font-size:12.5px}
-.pop-demo .h{font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--fg-subtle);font-weight:700;padding:5px 8px 3px}
-.pop-demo .it{display:flex;gap:8px;align-items:center;padding:6px 8px;border-radius:6px}
-.pop-demo .it.on{background:var(--bg-hover)}
-.pop-demo input{width:100%;padding:6px 8px;border:1px solid var(--accent);border-radius:6px;background:var(--bg-canvas);margin:2px 0 4px;font-size:12.5px}
-.flow{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-start}
-.flow .step{display:flex;flex-direction:column;gap:6px;flex:1 1 200px;min-width:0}
-.flow .step>span{font-size:var(--fs-xs);font-weight:700;color:var(--fg-muted)}
-.toast-demo{display:inline-flex;gap:10px;align-items:center;background:var(--fg);color:var(--bg-canvas);border-radius:var(--r-card);padding:8px 12px;font-size:12.5px}
-.toast-demo u{font-weight:700}
-.dialog-demo{border:1px solid var(--border);border-radius:14px;background:var(--bg-raised);box-shadow:var(--shadow);max-width:460px;margin:14px auto}
-.dialog-demo .dh{display:flex;align-items:center;padding:10px 14px;border-bottom:1px solid var(--border-subtle);font-weight:700}
-.dialog-demo .db{padding:12px 14px;display:flex;flex-direction:column;gap:10px}
-.dialog-demo .df{padding:10px 14px;border-top:1px solid var(--border-subtle);display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap}
-.scr .field input,.scr .field select,.scr .field textarea{padding:6px 9px;font-size:12.5px}
-.scr .field textarea{min-height:56px}
-.board{display:grid;grid-template-columns:repeat(4,minmax(150px,1fr));gap:10px;padding:12px}
-.col{background:var(--bg-surface);border:1px solid var(--border-subtle);border-radius:var(--r-card);padding-bottom:8px;display:flex;flex-direction:column;gap:7px}
-.col.fade{opacity:.4}
-.col.ok{outline:2px dashed var(--accent);outline-offset:-2px}
-.col-h{display:flex;align-items:center;gap:6px;padding:8px 9px 2px;font-weight:600}
-.col-h .lim{margin-left:auto;font-size:11px;color:var(--fg-muted)}
-.col-h .lim.over{color:var(--warning);font-weight:700}
-.card{margin:0 8px;background:var(--bg-raised);border:1px solid var(--border);border-radius:8px;padding:8px;display:flex;flex-direction:column;gap:6px;font-size:12px}
-.card .t{font-weight:500;font-size:12.5px}
-.card .m{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
-.card.drag{transform:rotate(-2deg);box-shadow:var(--shadow);border-color:var(--accent)}
-.tl{display:grid;grid-template-columns:190px 1fr;font-size:12px}
-.tl .hdr{background:var(--bg-surface);border-bottom:1px solid var(--border);padding:6px 8px;color:var(--fg-muted);font-weight:600;font-size:11px}
-.tl .wk{display:grid;grid-template-columns:repeat(5,1fr);padding:0}
-.tl .wk span{padding:6px 8px;border-left:1px solid var(--border-subtle)}
-.tl .nm{padding:6px 8px;border-bottom:1px solid var(--border-subtle);display:flex;gap:6px;align-items:center;white-space:nowrap;overflow:hidden}
-.tl .nm.child{padding-left:22px}
-.tl .ln{position:relative;border-bottom:1px solid var(--border-subtle);min-height:31px;background-image:repeating-linear-gradient(to right,transparent 0,transparent calc(20% - 1px),var(--border-subtle) calc(20% - 1px),var(--border-subtle) 20%)}
-.bar{position:absolute;top:7px;height:17px;border-radius:4px;background:var(--st-ip);color:var(--on-accent);font-size:10px;padding:0 5px;display:flex;align-items:center;font-family:var(--mono);white-space:nowrap;overflow:hidden}
-.bar.ns{background:var(--fg-subtle)}.bar.dn{background:var(--st-done)}
-.bar.goal{background:var(--accent);height:8px;top:12px}
-.ms{position:absolute;top:9px;width:13px;height:13px;transform:translateX(-6px) rotate(45deg);background:var(--warning);border-radius:2px}
-.today{position:absolute;top:0;bottom:0;width:2px;background:var(--danger);opacity:.7}
-.dep{position:absolute;height:2px;background:var(--fg-muted);top:15px}
-.docs3{display:grid;grid-template-columns:150px minmax(0,1fr) 150px;min-height:280px}
-.doc-page{padding:14px 18px;min-width:0}
-.doc-page h5{font-size:20px;margin:4px 0 8px}
-.doc-page p{font-size:12.5px;line-height:1.6;margin:6px 0}
-.tbtn{display:flex;gap:2px;flex-wrap:wrap;border:1px solid var(--border);border-radius:6px;padding:3px;background:var(--bg-surface);width:max-content;max-width:100%;font-size:11.5px}
-.tbtn span{padding:2px 6px;border-radius:4px}
-.live{display:inline-flex;gap:5px;align-items:center;border:1px solid var(--border);border-radius:6px;padding:1px 6px;background:var(--bg-raised)}
-.dside{border-left:1px solid var(--border);padding:12px 10px;font-size:12px;display:flex;flex-direction:column;gap:12px}
-.lockb{margin-left:auto;display:inline-flex;gap:3px;align-items:center;font-size:10.5px;color:var(--warning)}
-.ts{border-collapse:collapse;width:100%;font-size:12px}
-.ts th,.ts td{padding:6px;border-bottom:1px solid var(--border-subtle);text-align:center;font-variant-numeric:tabular-nums}
-.ts th{background:var(--bg-surface);color:var(--fg-muted);font-size:11px}
-.ts td:first-child,.ts th:first-child{text-align:left}
-.ts .cell{display:inline-block;min-width:44px;padding:3px 4px;border:1px solid var(--border-subtle);border-radius:5px;font-family:var(--mono);background:var(--bg-canvas)}
-.ts .cell.focus{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft)}
-.ts tfoot td{font-weight:700;background:var(--bg-surface)}
-.ts th.today{color:var(--accent-fg)}
-.bars{display:flex;flex-direction:column;gap:6px;padding:12px;font-size:12px}
-.bars div{display:grid;grid-template-columns:70px 1fr 30px;gap:8px;align-items:center}
-.bars i{display:block;height:10px;border-radius:3px}
-.msg{max-width:92%;padding:8px 10px;border-radius:10px;line-height:1.5;font-size:12.5px}
-.msg.me{align-self:flex-end;background:var(--accent);color:var(--on-accent)}
-.msg.ai{align-self:flex-start;background:var(--bg-surface);border:1px solid var(--border-subtle)}
-.ai-l{font-size:10.5px;color:var(--fg-subtle);display:flex;gap:4px;align-items:center}
-.prop{border:1px solid var(--accent);border-radius:var(--r-card);padding:10px;background:var(--bg-raised);display:flex;flex-direction:column;gap:8px;font-size:12.5px}
-.prop .old{text-decoration:line-through;color:var(--fg-muted)}
-.src{font-size:12px;background:var(--bg-surface);border:1px solid var(--border-subtle);border-radius:var(--r-ctl);padding:6px 9px}
-.cards-pick{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;padding:12px}
-.cards-pick div{border:1px solid var(--border);border-radius:8px;padding:8px 10px;background:var(--bg-raised);font-size:12px}
-.cards-pick b{display:block;font-size:12.5px}
-.cards-pick div.on{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft)}
-.perm{border-collapse:collapse;width:100%;font-size:12.5px}
-.perm th,.perm td{padding:8px 10px;border-bottom:1px solid var(--border-subtle);text-align:left}
-.perm th{background:var(--bg-surface);font-size:10.5px;color:var(--fg-muted);text-transform:uppercase;letter-spacing:.05em}
-.perm select{padding:4px 6px;border-radius:6px;border:1px solid var(--border);background:var(--bg-raised);font-size:12px}
-.perm select.hid{color:var(--fg-subtle)}.perm select.see{color:var(--st-ip)}.perm select.chg{color:var(--success);font-weight:600}
-.explain{background:var(--bg-surface);border:1px solid var(--border-subtle);border-radius:var(--r-card);padding:10px 12px;line-height:1.6;font-size:12.5px;margin:12px}
-.wfrow{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:9px 12px;border-bottom:1px solid var(--border-subtle)}
-.te{display:grid;grid-template-columns:200px minmax(0,1fr);min-height:260px}
-.te-l{border-right:1px solid var(--border);padding:10px;font-size:12px;display:flex;flex-direction:column;gap:4px;background:var(--bg-surface)}
-.te-l .g{font-weight:700;margin-top:6px}
-.te-l .row{display:flex;align-items:center;gap:6px}
-.sw{width:14px;height:14px;border-radius:4px;border:1px solid var(--border);display:inline-block;flex:none}
-.rd{margin-left:auto;font-size:10.5px;font-weight:700}
-.rd.ok{color:var(--success)}.rd.bad{color:var(--danger)}
-.te-r{padding:12px;display:flex;flex-direction:column;gap:10px}
-.stepper{list-style:none;padding:0!important;counter-reset:s;display:flex;flex-direction:column;gap:8px}
-.stepper li{counter-increment:s;display:grid;grid-template-columns:28px minmax(0,1fr);gap:10px;margin:0;align-items:start}
-.stepper li::before{content:counter(s);width:26px;height:26px;border-radius:50%;border:2px solid var(--accent);color:var(--accent-fg);display:grid;place-items:center;font-weight:700;font-size:12px;font-family:var(--mono)}
-.signin{max-width:320px;margin:14px auto;display:flex;flex-direction:column;gap:8px;padding:16px;border:1px solid var(--border);border-radius:14px;background:var(--bg-raised)}
-.signin .or{text-align:center;font-size:11px;color:var(--fg-subtle)}
-.state{border:1px dashed var(--border);border-radius:var(--r-card);padding:14px;text-align:center;font-size:13px;flex:1 1 220px}
-.offline{background:var(--warning-soft);color:var(--fg);border-bottom:1px solid var(--warning);padding:6px 10px;font-size:12px}
-
-.wd{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 10px;border:1px solid var(--success);background:var(--success-soft);border-radius:var(--r-card);font-size:12.5px}
-.ts .cell.warnc{border-color:var(--warning);background:var(--warning-soft)}
-.ts .warnt{color:var(--warning)}
-.ts tr.wh td{background:var(--bg-surface)}
-
-.editing-note{display:flex;gap:8px;align-items:center;padding:7px 10px;border:1px dashed var(--accent);background:var(--accent-soft);border-radius:8px;font-size:12.5px}
-.savestate{display:flex;gap:8px;align-items:center;font-size:12.5px;color:var(--fg-muted)}
-.ss-dot{width:8px;height:8px;border-radius:50%;display:inline-block}
-.ss-dot.ip{background:var(--st-ip)}.ss-dot.ok{background:var(--success)}
-
-.fv{display:grid;grid-template-columns:44px 170px minmax(0,1fr);min-height:330px}
-.fv-icons{background:var(--bg-surface);border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;gap:6px;padding:10px 0}
-.fv-ic{width:30px;height:30px;border-radius:6px;display:grid;place-items:center;color:var(--fg-muted)}
-.fv-ic.on{background:var(--bg-selected);color:var(--accent-fg)}
-.fv-rail{border-right:1px solid var(--border);background:var(--bg-surface);font-size:12px}
-.fv-rh{display:flex;padding:8px 9px;border-bottom:1px solid var(--border-subtle)}
-.fv-ri{display:flex;flex-direction:column;gap:1px;padding:6px 9px;border-bottom:1px solid var(--border-subtle)}
-.fv-ri.on{background:var(--bg-selected)}
-.fv-main{display:flex;flex-direction:column;min-width:0}
-.fv-h{display:flex;gap:8px;align-items:center;padding:7px 12px;border-bottom:1px solid var(--border-subtle);font-size:12px}
-.fv-body{display:grid;grid-template-columns:minmax(0,1fr) 150px}
-.fv-col{padding:14px 18px;display:flex;flex-direction:column;gap:10px;min-width:0}
-.fv-det{border-left:1px solid var(--border-subtle);padding:14px 10px}
-.fv-facts{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
-.fv-fact{display:inline-flex;gap:5px;align-items:center;border:1px solid var(--border);border-radius:999px;padding:1px 8px;font-size:11.5px;background:var(--bg-raised)}
-.fv-fact .fl{color:var(--fg-subtle);font-size:10.5px}
-
-/* relation map */
-.map-ctl{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px 12px;border-bottom:1px solid var(--border-subtle)}
-.kchip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border);background:var(--bg-surface);border-radius:999px;padding:3px 10px;font-size:12px}
-.kchip[aria-pressed="false"]{opacity:.5;text-decoration:line-through}
-.kline{width:18px;height:0;border-top:2px solid var(--fg-muted);display:inline-block}
-.map-svg{display:block;width:100%;height:auto;background:var(--bg-surface)}
-.edge{fill:none;stroke-width:2;transition:opacity var(--motion-fast),stroke-width var(--motion-fast)}
-.k-blocks{stroke:var(--warning)}.k-causes{stroke:var(--danger)}.k-dup{stroke:var(--fg-subtle);stroke-dasharray:5 4}.k-rel{stroke:var(--fg-muted)}.k-part{stroke:var(--accent)}
-.elabel{font-size:11px;fill:var(--fg-muted);paint-order:stroke;stroke:var(--bg-surface);stroke-width:4px;stroke-linejoin:round;font-family:var(--font)}
-.node{cursor:pointer;transition:opacity var(--motion-fast)}
-.node rect{fill:var(--bg-raised);stroke:var(--border);stroke-width:1.2}
-.node:hover rect,.node:focus rect{stroke:var(--accent);stroke-width:2}
-.node:focus{outline:none}
-.node.center rect{fill:var(--accent-soft);stroke:var(--accent);stroke-width:2.5}
-.nkey{font-family:var(--mono);font-size:11px;fill:var(--fg-muted)}
-.ntitle{font-size:12px;fill:var(--fg);font-weight:600;font-family:var(--font)}
-.nd-ns{fill:var(--st-ns)}.nd-ip{fill:var(--st-ip)}.nd-dn{fill:var(--st-done)}
-.map-svg.hl-on .edge:not(.hl),.map-svg.hl-on .elabel:not(.hl),.map-svg.hl-on .node:not(.hl){opacity:.2}
-.map-svg .edge.hl{stroke-width:3.4}
-.map-svg.hide-blocks .k-blocks,.map-svg.hide-blocks .l-blocks,.map-svg.hide-causes .k-causes,.map-svg.hide-causes .l-causes,.map-svg.hide-dup .k-dup,.map-svg.hide-dup .l-dup,.map-svg.hide-rel .k-rel,.map-svg.hide-rel .l-rel,.map-svg.hide-part .k-part,.map-svg.hide-part .l-part{display:none}
-.chains{padding:12px;display:flex;flex-direction:column;gap:6px;font-size:12.5px;line-height:1.6}
-.chains .stp{font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--fg-subtle);font-weight:700;margin-top:6px}
-.circle-warn{display:flex;gap:8px;align-items:flex-start;margin:0 12px 12px;padding:8px 10px;border:1px solid var(--warning);background:var(--warning-soft);border-radius:8px;font-size:12px}
-
-/* calendar */
-.cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:1px;background:var(--border-subtle);border-top:1px solid var(--border-subtle)}
-.cal .h{background:var(--bg-surface);padding:5px 6px;font-size:10.5px;font-weight:700;color:var(--fg-muted)}
-.cal .d{background:var(--bg-raised);min-height:78px;padding:4px;display:flex;flex-direction:column;gap:3px;min-width:0}
-.cal .d.out{background:var(--bg-surface)}
-.cal .d .n{font-size:11px;font-weight:600;color:var(--fg-muted);align-self:flex-start;padding:0 5px}
-.cal .d.today .n{background:var(--accent);color:var(--on-accent);border-radius:999px}
-.cal .it{display:block;font-size:10.5px;padding:1px 5px;border-radius:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.cal .it.msn{background:var(--warning-soft);color:var(--warning);font-weight:700}
-.cal .it.drag{outline:2px dashed var(--accent)}
-.agenda{display:flex;flex-direction:column}
-.agenda .day{font-size:11px;font-weight:700;color:var(--fg-muted);padding:8px 12px 2px;text-transform:uppercase;letter-spacing:.06em}
-.agenda .day.today{color:var(--accent-fg)}
-
-/* theme section */
-.theme-strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin:16px 0}
-.tcard{border:1px solid var(--border);border-radius:var(--r-card);overflow:hidden;background:var(--bg-canvas);color:var(--fg)}
-.tcard .tc-h{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:var(--bg-surface);border-bottom:1px solid var(--border);font-weight:700;font-size:13px}
-.tcard .tc-b{padding:10px;display:flex;flex-direction:column;gap:8px;font-size:12.5px}
-.tcard .tc-b .row{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
-.swatch{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:11.5px;white-space:nowrap}
-.swatch i{width:18px;height:18px;border-radius:4px;border:1px solid var(--border);display:inline-block}
-.specimen{border:1px solid var(--border);border-radius:var(--r-card);padding:14px 16px;background:var(--bg-raised);margin:12px 0;display:flex;flex-direction:column;gap:6px}
-.specimen .big{font-size:30px;font-weight:700;line-height:1.1}
-.specimen .mono-s{font-family:var(--mono);font-size:15px}
-.scale{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin:10px 0}
-.scale span{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:11px;color:var(--fg-muted);font-family:var(--mono)}
-.scale i{display:block;background:var(--accent-soft);border:1px solid var(--accent)}
-.dodont{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px;margin:12px 0}
-.dodont div{border:1px solid var(--border);border-radius:var(--r-card);padding:10px 12px;font-size:var(--fs-sm);background:var(--bg-raised)}
-.dodont .y{border-left:4px solid var(--success)}
-.dodont .n{border-left:4px solid var(--danger)}
-.dodont b{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px}
-.dodont .y b{color:var(--success)}.dodont .n b{color:var(--danger)}
-.decision{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--border-subtle);max-width:72ch}
-.decision .okmark{margin-top:3px;flex:none}
-@media (max-width:600px){
-  .grid2{grid-template-columns:minmax(0,1fr)}
-}
-</style>
+<link rel="stylesheet" href="ux-design.css">
 
 <header class="top"><div class="top-in">
-  <div class="brand"><svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="17" r="11" style="fill:var(--accent)"/><path d="M16 6v22" style="stroke:var(--bg-canvas)" stroke-width="2"/><circle cx="11.5" cy="14" r="2.2" style="fill:var(--bg-canvas)"/><circle cx="20.5" cy="14" r="2.2" style="fill:var(--bg-canvas)"/><circle cx="12" cy="21.5" r="1.8" style="fill:var(--bg-canvas)"/><circle cx="20" cy="21.5" r="1.8" style="fill:var(--bg-canvas)"/><path d="M12 6.5 9 3M20 6.5 23 3" style="stroke:var(--accent)" stroke-width="2" stroke-linecap="round" fill="none"/></svg>Bugaboo <small>UX design</small></div>
+  <div class="brand"><svg viewBox="0 0 32 32" aria-hidden="true"><circle class="u-fill-accent" cx="16" cy="17" r="11"/><path class="u-stroke-bg-canvas" d="M16 6v22" stroke-width="2"/><circle class="u-fill-bg-canvas" cx="11.5" cy="14" r="2.2"/><circle class="u-fill-bg-canvas" cx="20.5" cy="14" r="2.2"/><circle class="u-fill-bg-canvas" cx="12" cy="21.5" r="1.8"/><circle class="u-fill-bg-canvas" cx="20" cy="21.5" r="1.8"/><path class="u-stroke-accent" d="M12 6.5 9 3M20 6.5 23 3" stroke-width="2" stroke-linecap="round" fill="none"/></svg>Bugaboo <small>UX design</small></div>
   <label class="look-pick">Theme
     <select id="look"><option value="system">Match my device</option><option value="daylight">Daylight</option><option value="paper">Paper</option><option value="dusk">Dusk</option><option value="midnight">Midnight</option></select></label>
 </div></header>
@@ -291,13 +16,13 @@
 <div class="layout">
   <nav class="toc" aria-label="Contents"><div class="toc-h">Contents</div><div id="toc"></div></nav>
   <main class="doc">
-    <details class="toc-phone"><summary>Contents</summary><nav id="toc-phone" class="toc" aria-label="Page contents" style="display:block;position:static;max-height:none;padding:0"></nav></details>
+    <details class="toc-phone"><summary>Contents</summary><nav id="toc-phone" class="toc u-display-block--position-static--max-height-none--padding-0" aria-label="Page contents"></nav></details>
 
     <h1>Bugaboo UX design</h1>
     <div class="status-line"><span class="pill st-done">Accepted</span><span>Phase 2 of 5</span><span>·</span><span>2026-10-05</span></div>
     <p class="lede">How Bugaboo looks, feels and behaves. Feature IDs (like ISS-04) refer to the feature list. All names follow the glossary. The <a href="a published page, not linked here" target="_blank" rel="noopener">clickable mockup</a> shows the same design in action; this page is the source of truth.</p>
 
-    <div class="note feedback"><b>How to give feedback</b>Use this page's comment button. Mention the section number shown next to each heading (for example <span class="sec" style="vertical-align:0">§4.4</span>), or select text and comment on it. Tapping a section number copies it, ready to paste into your comment.</div>
+    <div class="note feedback"><b>How to give feedback</b>Use this page's comment button. Mention the section number shown next to each heading (for example <span class="sec u-vertical-align-0">§4.4</span>), or select text and comment on it. Tapping a section number copies it, ready to paste into your comment.</div>
 
     <div class="target"><b>Design target:</b> people <i>less</i> technical than the average person. If someone who has never used a bug tracker can't figure out a screen without help, the screen is wrong. Experts get speed through shortcuts and Advanced search, but never at the cost of simplicity for everyone else.</div>
 
@@ -367,28 +92,28 @@
     <div class="demo"><div class="frame"><div class="frame-cap">Computer</div><div class="frame-body"><div class="scr app3">
       <div class="sb">
         <div class="ttl">Bugaboo</div>
-        <div class="ni"><svg class="ico"><use href="#i-search"/></svg>Search <kbd style="margin-left:auto">Ctrl K</kbd></div>
+        <div class="ni"><svg class="ico"><use href="#i-search"/></svg>Search <kbd class="u-margin-left-auto">Ctrl K</kbd></div>
         <div class="ni"><svg class="ico"><use href="#i-home"/></svg>Home</div>
         <div class="ni"><svg class="ico"><use href="#i-bell"/></svg>Notifications<span class="cnt">3</span></div>
         <div class="ni"><svg class="ico"><use href="#i-bookmark"/></svg>Saved searches</div>
         <div class="ni"><svg class="ico"><use href="#i-clock"/></svg>Time</div>
         <div class="nl">Projects</div>
         <div class="ni"><svg class="ico"><use href="#i-folder"/></svg>ACME</div>
-        <div class="ni on" style="padding-left:20px">Website issues</div>
-        <div class="ni" style="padding-left:20px">Website documents</div>
-        <div class="timer-mini"><span class="dot-live"></span>WEB-142 <span class="mono" style="margin-left:auto">0:42</span></div>
+        <div class="ni on u-padding-left-20px">Website issues</div>
+        <div class="ni u-padding-left-20px">Website documents</div>
+        <div class="timer-mini"><span class="dot-live"></span>WEB-142 <span class="mono u-margin-left-auto">0:42</span></div>
         <div class="ni"><svg class="ico"><use href="#i-settings"/></svg>Settings</div>
       </div>
       <div class="mainc">
         <div class="tb"><span class="crumb">ACME › <b>Website issues</b></span>
-          <div class="seg" style="margin-left:auto"><button type="button" aria-pressed="true">List</button><button type="button">Board</button><button type="button">Timeline</button><button type="button">Calendar</button><button type="button">Map</button></div></div>
+          <div class="seg u-margin-left-auto"><button type="button" aria-pressed="true">List</button><button type="button">Board</button><button type="button">Timeline</button><button type="button">Calendar</button><button type="button">Map</button></div></div>
         <div class="sbar"><span class="chip"><button type="button"><b>Project:</b> Website</button></span><span class="chip"><button type="button"><b>Status:</b> not Done</button><span class="x"><svg class="ico"><use href="#i-x"/></svg></span></span><span class="chip add">+ Add filter</span></div>
         <div class="r"><span class="type bug"><svg class="ico"><use href="#i-bug"/></svg></span><span class="key">WEB-139</span><span class="t">App crashes when saving a long comment</span><span class="pill st-ns">Open</span></div>
         <div class="r sel"><span class="type bug"><svg class="ico"><use href="#i-bug"/></svg></span><span class="key">WEB-142</span><span class="t">Login fails after password reset</span><span class="pill st-ip">In progress</span></div>
         <div class="r"><span class="type feature"><svg class="ico"><use href="#i-feature"/></svg></span><span class="key">WEB-141</span><span class="t">Sign in with a passkey</span><span class="pill st-ip">In progress</span></div>
         <div class="r"><span class="type task"><svg class="ico"><use href="#i-task"/></svg></span><span class="key">WEB-140</span><span class="t">Design the new sign-in page</span><span class="pill st-ip">Testing</span></div>
       </div>
-      <div class="pn"><div style="display:flex;gap:6px;align-items:center"><span class="type bug"><svg class="ico"><use href="#i-bug"/></svg>Bug</span><span class="key">WEB-142</span><span class="muted" style="margin-left:auto">Side panel</span></div>
+      <div class="pn"><div class="u-display-flex--gap-6px--align-items-center"><span class="type bug"><svg class="ico"><use href="#i-bug"/></svg>Bug</span><span class="key">WEB-142</span><span class="muted u-margin-left-auto">Side panel</span></div>
         <h5>Login fails after password reset</h5><span><span class="pill st-ip">In progress</span></span>
         <dl class="mini-fields"><dt>Assigned to</dt><dd><span class="who"><span class="av c5">A</span>Ana</span></dd><dt>Priority</dt><dd><span class="prio High"><svg class="ico"><use href="#i-up"/></svg>High</span></dd><dt>Planned for</dt><dd>Release 2.4</dd></dl>
       </div>
@@ -408,8 +133,8 @@
 
     <h3 id="s3-3"><button type="button" class="sec" data-sec>§3.3</button>Phone (narrower than 768 px)</h3>
     <div class="demo"><div class="frame phone"><div class="frame-cap">Phone</div><div class="frame-body"><div class="scr">
-      <div class="ph-top"><svg class="ico"><use href="#i-back"/></svg>Back<span style="flex:1;text-align:center">Website issues</span><svg class="ico"><use href="#i-more"/></svg></div>
-      <div class="sbar" style="flex-wrap:nowrap;overflow:hidden"><span class="chip" style="flex:none"><button type="button">Not done</button><span class="x"><svg class="ico"><use href="#i-x"/></svg></span></span><span class="chip" style="flex:none"><button type="button">Mine</button><span class="x"><svg class="ico"><use href="#i-x"/></svg></span></span><span class="chip add" style="flex:none">+ Filter</span></div>
+      <div class="ph-top"><svg class="ico"><use href="#i-back"/></svg>Back<span class="u-flex-1--text-align-center">Website issues</span><svg class="ico"><use href="#i-more"/></svg></div>
+      <div class="sbar u-flex-wrap-nowrap--overflow-hidden"><span class="chip u-flex-none"><button type="button">Not done</button><span class="x"><svg class="ico"><use href="#i-x"/></svg></span></span><span class="chip u-flex-none"><button type="button">Mine</button><span class="x"><svg class="ico"><use href="#i-x"/></svg></span></span><span class="chip add u-flex-none">+ Filter</span></div>
       <div class="ph-body">
         <div class="lrow"><span class="key">WEB-142</span><div class="t">Login fails after password reset</div><div class="m"><span class="pill st-ip">In progress</span><span class="prio High"><svg class="ico"><use href="#i-up"/></svg>High</span><span>Ana · 2 days ago</span></div></div>
         <div class="lrow"><span class="key">WEB-139</span><div class="t">App crashes when saving a long comment</div><div class="m"><span class="pill st-ns">Open</span><span class="prio Critical"><svg class="ico"><use href="#i-up2"/></svg>Critical</span><span>Ben</span></div></div>
@@ -417,8 +142,8 @@
       </div>
       <div class="bb"><span><svg class="ico"><use href="#i-home"/></svg>Home</span><span class="on"><svg class="ico"><use href="#i-search"/></svg>Search</span><span class="new"><svg class="ico"><use href="#i-plus"/></svg>New</span><span><svg class="ico"><use href="#i-bell"/></svg>Notifications</span><span><svg class="ico"><use href="#i-more"/></svg>More</span></div>
     </div></div></div>
-    <div style="flex:1 1 280px;min-width:0">
-      <ul style="margin-top:0">
+    <div class="u-flex-1-1-280px--min-width-0">
+      <ul class="u-margin-top-0">
         <li><b>One screen at a time</b>, with a <i>Back</i> button and the phone's back gesture.</li>
         <li><b>Bottom bar with labels:</b> <i>Home · Search · New · Notifications · More</i>. <i>More</i> holds Saved searches, Time, Projects, Documents and Settings.</li>
         <li><b>Sheets from the bottom</b> replace small pop-ups (choosing a person, a status, filters).</li>
@@ -434,15 +159,15 @@
     <p>Descriptions and comments need room to read and write. The <b>focus view</b> is the default; the <b>side panel view</b> stays available for people who mostly skim lists.</p>
     <div class="demo"><div class="frame"><div class="frame-cap">Focus view (default) · computer</div><div class="frame-body"><div class="scr fv">
       <div class="fv-icons"><span class="fv-ic on"><svg class="ico"><use href="#i-search"/></svg></span><span class="fv-ic"><svg class="ico"><use href="#i-home"/></svg></span><span class="fv-ic"><svg class="ico"><use href="#i-bell"/></svg></span><span class="fv-ic"><svg class="ico"><use href="#i-clock"/></svg></span><span class="fv-ic"><svg class="ico"><use href="#i-folder"/></svg></span></div>
-      <div class="fv-rail"><div class="fv-rh"><b>Website issues</b><span class="muted" style="margin-left:auto;font-size:11px">Hide list</span></div>
+      <div class="fv-rail"><div class="fv-rh"><b>Website issues</b><span class="muted u-margin-left-auto--font-size-11px">Hide list</span></div>
         <div class="fv-ri on"><span class="key">WEB-142</span><span>Login fails after reset</span></div><div class="fv-ri"><span class="key">WEB-139</span><span>Crash on long comment</span></div><div class="fv-ri"><span class="key">WEB-141</span><span>Sign in with a passkey</span></div><div class="fv-ri"><span class="key">WEB-144</span><span>Chart labels in dark themes</span></div></div>
       <div class="fv-main">
-        <div class="fv-h"><span class="muted">‹ Back to list</span><span class="type bug"><svg class="ico"><use href="#i-bug"/></svg>Bug</span><span class="key">WEB-142</span><span style="margin-left:auto" class="muted">Side panel view</span></div>
+        <div class="fv-h"><span class="muted">‹ Back to list</span><span class="type bug"><svg class="ico"><use href="#i-bug"/></svg>Bug</span><span class="key">WEB-142</span><span class="muted u-margin-left-auto">Side panel view</span></div>
         <div class="fv-body"><div class="fv-col">
-          <div style="font-size:20px;font-weight:700;line-height:1.25">Login fails after password reset</div>
+          <div class="u-font-size-20px--font-weight-700--line-height-1-25">Login fails after password reset</div>
           <div class="fv-facts"><span class="pill st-ip">In progress</span><span class="fv-fact"><span class="fl">Assigned to</span>Ana</span><span class="fv-fact"><span class="fl">Priority</span><span class="prio High">High</span></span><span class="fv-fact"><span class="fl">Due</span>Oct 12</span><span class="fv-fact"><span class="fl">Planned for</span>2.4</span></div>
           <div class="sh">Description</div>
-          <div style="font-size:13px;line-height:1.65">After resetting the password, signing in with the new password shows "Something went wrong". Steps: 1. Click "Forgot password". 2. Set a new password. 3. Sign in.</div>
+          <div class="u-font-size-13px--line-height-1-65">After resetting the password, signing in with the new password shows "Something went wrong". Steps: 1. Click "Forgot password". 2. Set a new password. 3. Sign in.</div>
           <div class="sh">Activity</div>
           <div class="bubble"><b>Ben</b> · 10 min ago<br>@Ana can you check the reset e-mail link? 14 customers have reported this since Friday.</div>
         </div>
@@ -462,9 +187,9 @@
 
     <h3 id="s4-1"><button type="button" class="sec" data-sec>§4.1</button>Home</h3>
     <div class="demo"><div class="frame"><div class="frame-cap">Computer · first weeks</div><div class="frame-body"><div class="scr">
-      <div class="tb"><b style="font-size:16px">Good morning, Ana</b><span class="muted">Sunday, October 4</span></div>
-      <div class="checklist"><b style="flex-basis:100%">Getting started</b><span><span class="okmark">✓</span> Create your first issue</span><span><span class="okmark">✓</span> Invite people</span><span class="btn sm">Pick your theme</span><span class="btn sm ghost">Hide this</span></div>
-      <div class="timer-card"><span class="dot-live"></span><div style="flex:1;min-width:160px"><div class="muted" style="font-size:11px">Timer running on</div><b>WEB-142 · Login fails after password reset</b></div><span class="clock">0:42:10</span><span class="btn primary sm"><svg class="ico"><use href="#i-stop"/></svg>Stop</span><span class="btn sm">Switch issue</span></div>
+      <div class="tb"><b class="u-font-size-16px">Good morning, Ana</b><span class="muted">Sunday, October 4</span></div>
+      <div class="checklist"><b class="u-flex-basis-100pc">Getting started</b><span><span class="okmark">✓</span> Create your first issue</span><span><span class="okmark">✓</span> Invite people</span><span class="btn sm">Pick your theme</span><span class="btn sm ghost">Hide this</span></div>
+      <div class="timer-card"><span class="dot-live"></span><div class="u-flex-1--min-width-160px"><div class="muted u-font-size-11px">Timer running on</div><b>WEB-142 · Login fails after password reset</b></div><span class="clock">0:42:10</span><span class="btn primary sm"><svg class="ico"><use href="#i-stop"/></svg>Stop</span><span class="btn sm">Switch issue</span></div>
       <div class="grid2">
         <div class="box"><div class="box-h">My issues<span class="muted">Assigned to me</span></div>
           <div class="r hd">In progress</div>
@@ -488,12 +213,12 @@
 
     <h3 id="s4-2"><button type="button" class="sec" data-sec>§4.2</button>Issue list</h3>
     <div class="demo"><div class="frame"><div class="frame-cap">Computer · two issues ticked</div><div class="frame-body"><div class="scr">
-      <div class="r hd"><span style="width:18px"></span><span style="width:80px">Issue</span><span class="t">Title</span><span style="width:90px">Status</span><span style="width:80px">Priority</span><span style="width:90px">Assigned to</span></div>
-      <div class="r sel"><input type="checkbox" class="cb" checked aria-label="Select WEB-139"><span class="key" style="width:80px">WEB-139</span><span class="t">App crashes when saving a long comment</span><span style="width:90px"><span class="pill st-ns">Open</span></span><span class="prio Critical" style="width:80px"><svg class="ico"><use href="#i-up2"/></svg>Critical</span><span style="width:90px" class="who"><span class="av c2">B</span>Ben</span></div>
-      <div class="r sel"><input type="checkbox" class="cb" checked aria-label="Select WEB-142"><span class="key" style="width:80px">WEB-142</span><span class="t">Login fails after password reset</span><span style="width:90px"><span class="pill st-ip">In progress</span></span><span class="prio High" style="width:80px"><svg class="ico"><use href="#i-up"/></svg>High</span><span style="width:90px" class="who"><span class="av c5">A</span>Ana</span></div>
-      <div class="r"><input type="checkbox" class="cb" aria-label="Select WEB-144"><span class="key" style="width:80px">WEB-144</span><span class="t">Chart labels are hard to read in dark themes</span><span style="width:90px"><span class="pill st-ns">Open</span></span><span class="prio Medium" style="width:80px"><svg class="ico"><use href="#i-eq"/></svg>Medium</span><span style="width:90px" class="who"><span class="av c4">M</span>Malik</span></div>
+      <div class="r hd"><span class="u-width-18px"></span><span class="u-width-80px">Issue</span><span class="t">Title</span><span class="u-width-90px">Status</span><span class="u-width-80px">Priority</span><span class="u-width-90px">Assigned to</span></div>
+      <div class="r sel"><input type="checkbox" class="cb" checked aria-label="Select WEB-139"><span class="key u-width-80px">WEB-139</span><span class="t">App crashes when saving a long comment</span><span class="u-width-90px"><span class="pill st-ns">Open</span></span><span class="prio Critical u-width-80px"><svg class="ico"><use href="#i-up2"/></svg>Critical</span><span class="who u-width-90px"><span class="av c2">B</span>Ben</span></div>
+      <div class="r sel"><input type="checkbox" class="cb" checked aria-label="Select WEB-142"><span class="key u-width-80px">WEB-142</span><span class="t">Login fails after password reset</span><span class="u-width-90px"><span class="pill st-ip">In progress</span></span><span class="prio High u-width-80px"><svg class="ico"><use href="#i-up"/></svg>High</span><span class="who u-width-90px"><span class="av c5">A</span>Ana</span></div>
+      <div class="r"><input type="checkbox" class="cb" aria-label="Select WEB-144"><span class="key u-width-80px">WEB-144</span><span class="t">Chart labels are hard to read in dark themes</span><span class="u-width-90px"><span class="pill st-ns">Open</span></span><span class="prio Medium u-width-80px"><svg class="ico"><use href="#i-eq"/></svg>Medium</span><span class="who u-width-90px"><span class="av c4">M</span>Malik</span></div>
       <div class="bulk"><b>2 selected</b><span class="btn sm">Change fields</span><span class="btn sm">Change status</span><span class="btn sm">Move to project</span><span class="btn sm">Add label</span><span class="btn sm danger">Delete</span></div>
-      <div class="preview-msg"><b>Send 2 issues to Testing?</b><br>1 will move to Testing. 1 will be skipped, because its workflow doesn't allow it from <i>Open</i>. <span class="btn sm primary" style="margin-left:6px">Move 1</span></div>
+      <div class="preview-msg"><b>Send 2 issues to Testing?</b><br>1 will move to Testing. 1 will be skipped, because its workflow doesn't allow it from <i>Open</i>. <span class="btn sm primary u-margin-left-6px">Move 1</span></div>
     </div></div></div></div>
     <ul>
       <li>Columns are chosen with <i>Customize → Columns</i> (a checklist with drag to reorder). Resize columns by dragging their edges, and sort by clicking the column name.</li>
@@ -508,7 +233,7 @@
     <p>One search bar sits above every list, board, timeline, calendar and map.</p>
     <div class="demo"><div class="frame"><div class="frame-cap">Simple search (default)</div><div class="frame-body"><div class="scr">
       <div class="sbar"><span class="chip"><button type="button"><b>Project:</b> Website</button></span><span class="chip"><button type="button"><b>Status:</b> not Done</button><span class="x"><svg class="ico"><use href="#i-x"/></svg></span></span><span class="chip"><button type="button"><b>Assigned to:</b> me</button><span class="x"><svg class="ico"><use href="#i-x"/></svg></span></span><span class="chip"><button type="button"><b>Any of:</b> Bug, label crash</button><span class="x"><svg class="ico"><use href="#i-x"/></svg></span></span><span class="chip raw"><button type="button">changed in last 7 days</button><span class="x"><svg class="ico"><use href="#i-x"/></svg></span></span><span class="chip add">+ Add filter</span>
-        <span style="margin-left:auto;display:flex;gap:6px"><span class="btn ghost sm"><svg class="ico"><use href="#i-spark"/></svg>Ask</span><span class="btn ghost sm">Advanced</span><span class="btn sm"><svg class="ico"><use href="#i-bookmark"/></svg>Save search</span></span></div>
+        <span class="u-margin-left-auto--display-flex--gap-6px"><span class="btn ghost sm"><svg class="ico"><use href="#i-spark"/></svg>Ask</span><span class="btn ghost sm">Advanced</span><span class="btn sm"><svg class="ico"><use href="#i-bookmark"/></svg>Save search</span></span></div>
     </div></div></div></div>
     <ul>
       <li>Each condition is a <b>filter button</b>. Click it to change it, or ✕ to remove it.</li>
@@ -516,12 +241,12 @@
       <li><b>"Any of"</b> buttons cover "this OR that". Opening one shows the conditions inside.</li>
       <li>Conditions that Simple search has no picker for appear as a button with their typed text (dashed), editable as text right there. Because of this, switching between Simple and Advanced never loses anything.</li>
     </ul>
-    <div class="demo"><div class="frame narrow"><div class="frame-cap">Advanced search</div><div class="frame-body"><div class="scr" style="padding:12px">
+    <div class="demo"><div class="frame narrow"><div class="frame-cap">Advanced search</div><div class="frame-body"><div class="scr u-padding-12px">
       <div class="adv-box">project within WEB and status is not Done and <span class="err">prio</span> is High
 sort by priority, highest first</div>
       <div class="errline"><svg class="ico"><use href="#i-x"/></svg>There is no field called "prio". Did you mean "priority"?</div>
     </div></div></div>
-    <div class="frame narrow"><div class="frame-cap">Ask in your own words (assistant)</div><div class="frame-body"><div class="scr" style="padding:12px;display:flex;flex-direction:column;gap:8px">
+    <div class="frame narrow"><div class="frame-cap">Ask in your own words (assistant)</div><div class="frame-body"><div class="scr u-padding-12px--display-flex--flex-direction-column--gap-8px">
       <div class="field"><input type="text" value="bugs Ana fixed last week" aria-label="Ask in your own words" readonly></div>
       <div class="ask-res"><span class="ai-l"><svg class="ico"><use href="#i-spark"/></svg>Suggested by the assistant</span><code>type is Bug and status is Done and assignedTo is Ana and changed in last 7 days</code><span class="btn sm primary">Use this search</span><span class="btn sm">Edit first</span></div>
     </div></div></div></div>
@@ -534,14 +259,14 @@ sort by priority, highest first</div>
     </ul>
 
     <h3 id="s4-4"><button type="button" class="sec" data-sec>§4.4</button>Issue page <span class="ids">ISS-04</span></h3>
-    <div class="demo"><div class="frame"><div class="frame-cap">Computer · full page</div><div class="frame-body"><div class="scr" style="display:grid;grid-template-columns:minmax(0,1fr) 220px">
-      <div style="padding:14px;display:flex;flex-direction:column;gap:12px;min-width:0">
-        <div style="display:flex;gap:6px;align-items:center"><span class="type bug"><svg class="ico"><use href="#i-bug"/></svg>Bug</span><span class="key">WEB-142</span><span style="margin-left:auto" class="btn ghost sm"><svg class="ico"><use href="#i-spark"/></svg>Ask</span><span class="btn ghost sm"><svg class="ico"><use href="#i-more"/></svg></span></div>
-        <h5 style="font-size:19px;margin:0">Login fails after password reset</h5>
+    <div class="demo"><div class="frame"><div class="frame-cap">Computer · full page</div><div class="frame-body"><div class="scr u-display-grid--grid-template-columns-minmax-0-1fr-220px">
+      <div class="u-f99ad20c">
+        <div class="u-display-flex--gap-6px--align-items-center"><span class="type bug"><svg class="ico"><use href="#i-bug"/></svg>Bug</span><span class="key">WEB-142</span><span class="btn ghost sm u-margin-left-auto"><svg class="ico"><use href="#i-spark"/></svg>Ask</span><span class="btn ghost sm"><svg class="ico"><use href="#i-more"/></svg></span></div>
+        <h5 class="u-font-size-19px--margin-0">Login fails after password reset</h5>
         <div class="banner"><svg class="ico"><use href="#i-clock"/></svg>Ben changed Priority to Critical 2 minutes ago.<span class="btn sm">Keep Ben's</span><span class="btn sm">Use mine</span></div>
-        <div><div class="sh">Description</div><div style="font-size:12.5px;line-height:1.55">After resetting the password, signing in with the new password shows "Something went wrong". <b>Steps:</b> 1. Click "Forgot password" 2. Set a new password 3. Sign in.</div></div>
-        <div><span class="btn sm ghost" style="padding-left:0"><svg class="ico"><use href="#i-goal"/></svg>Part of: Goal: New login experience</span></div>
-        <div><div class="sh">Sub-issues (0)</div><div class="muted" style="font-size:12px">None yet · <u>Add sub-issue</u></div></div>
+        <div><div class="sh">Description</div><div class="u-font-size-12-5px--line-height-1-55">After resetting the password, signing in with the new password shows "Something went wrong". <b>Steps:</b> 1. Click "Forgot password" 2. Set a new password 3. Sign in.</div></div>
+        <div><span class="btn sm ghost u-padding-left-0"><svg class="ico"><use href="#i-goal"/></svg>Part of: Goal: New login experience</span></div>
+        <div><div class="sh">Sub-issues (0)</div><div class="muted u-font-size-12px">None yet · <u>Add sub-issue</u></div></div>
         <div><div class="sh">Related issues (4)</div>
           <div class="blk">
             <div class="r"><span class="rel-kind">blocks</span><span class="key">WEB-147</span><span class="t">Write the release notes for 2.4</span><span class="pill st-ns">Open</span></div>
@@ -549,12 +274,12 @@ sort by priority, highest first</div>
             <div class="r"><span class="rel-kind">has duplicate</span><span class="key">WEB-151</span><span class="t">Can't sign in after changing password</span><span class="pill st-done">Done</span></div>
             <div class="r"><span class="rel-kind">related to</span><span class="key">WEB-141</span><span class="t">Sign in with a passkey</span><span class="pill st-ip">In progress</span></div>
           </div>
-          <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap"><span class="btn sm"><svg class="ico"><use href="#i-plus"/></svg>Add relation</span><span class="btn sm"><svg class="ico"><use href="#i-map"/></svg>Show relation map</span></div></div>
+          <div class="u-display-flex--gap-6px--margin-top-8px--flex-wrap-wrap"><span class="btn sm"><svg class="ico"><use href="#i-plus"/></svg>Add relation</span><span class="btn sm"><svg class="ico"><use href="#i-map"/></svg>Show relation map</span></div></div>
         <div><div class="sh">Activity</div>
           <div class="tabs" role="tablist"><button type="button" aria-selected="true">Everything</button><button type="button">Comments</button><button type="button">Changes</button><button type="button">Time</button></div>
-          <div style="display:flex;gap:8px"><span class="av c2">B</span><div class="bubble"><b>Ben</b> · 10 min ago<br>@Ana can you check the reset e-mail link? 14 customers have reported this since Friday.</div></div></div>
+          <div class="u-display-flex--gap-8px"><span class="av c2">B</span><div class="bubble"><b>Ben</b> · 10 min ago<br>@Ana can you check the reset e-mail link? 14 customers have reported this since Friday.</div></div></div>
       </div>
-      <div style="border-left:1px solid var(--border);padding:14px 12px;display:flex;flex-direction:column;gap:10px">
+      <div class="u-bbda7eb8">
         <div class="sh">Status</div><span><span class="pill st-ip">In progress ▾</span></span>
         <dl class="mini-fields">
           <dt>Assigned to</dt><dd><span class="who"><span class="av c5">A</span>Ana</span></dd>
@@ -564,28 +289,28 @@ sort by priority, highest first</div>
           <dt>Planned for</dt><dd>Release 2.4</dd>
           <dt>Due date</dt><dd class="num">Oct 12</dd>
           <dt>Estimated</dt><dd class="num">4 h</dd>
-          <dt>Spent</dt><dd class="num">1 h 20 <span class="btn sm" style="padding:1px 5px"><svg class="ico"><use href="#i-play"/></svg></span></dd>
+          <dt>Spent</dt><dd class="num">1 h 20 <span class="btn sm u-padding-1px-5px"><svg class="ico"><use href="#i-play"/></svg></span></dd>
           <dt>Cost center</dt><dd>4100 <svg class="ico subtle"><use href="#i-lock"/></svg></dd>
           <dt>Activity</dt><dd><span class="tag c2">Development</span></dd>
           <dt>Followers</dt><dd>3 · Follow</dd>
           <dt>Reported by</dt><dd><span class="who"><span class="av c2">B</span>Ben</span></dd>
         </dl>
-        <div class="muted" style="font-size:11px">Cost center: only team members and administrators can change this.</div>
+        <div class="muted u-font-size-11px">Cost center: only team members and administrators can change this.</div>
       </div>
     </div></div></div>
     <div class="frame phone"><div class="frame-cap">Phone</div><div class="frame-body"><div class="scr">
-      <div class="ph-top"><svg class="ico"><use href="#i-back"/></svg>Back<span class="key" style="margin-left:auto">WEB-142</span></div>
-      <div class="ph-body" style="padding:12px;display:flex;flex-direction:column;gap:10px">
-        <b style="font-size:16px;line-height:1.3">Login fails after password reset</b>
+      <div class="ph-top"><svg class="ico"><use href="#i-back"/></svg>Back<span class="key u-margin-left-auto">WEB-142</span></div>
+      <div class="ph-body u-padding-12px--display-flex--flex-direction-column--gap-10px">
+        <b class="u-font-size-16px--line-height-1-3">Login fails after password reset</b>
         <span><span class="pill st-ip">In progress</span></span>
-        <div class="blk"><div class="r"><span class="muted" style="flex:1">Details</span><span class="muted">Ana · High · 2.4 ▾</span></div></div>
+        <div class="blk"><div class="r"><span class="muted u-flex-1">Details</span><span class="muted">Ana · High · 2.4 ▾</span></div></div>
         <div><div class="sh">Related issues (4)</div><div class="blk">
-          <div class="r"><span class="rel-kind" style="min-width:70px">blocks</span><span class="key">WEB-147</span></div>
-          <div class="r"><span class="rel-kind" style="min-width:70px">is caused by</span><span class="key">WEB-150</span></div>
+          <div class="r"><span class="rel-kind u-min-width-70px">blocks</span><span class="key">WEB-147</span></div>
+          <div class="r"><span class="rel-kind u-min-width-70px">is caused by</span><span class="key">WEB-150</span></div>
           <div class="r"><span class="muted">+ 2 more</span></div></div></div>
         <div class="bubble"><b>Ben</b> · 10 min ago<br>@Ana can you check the reset e-mail link?</div>
       </div>
-      <div class="actbar"><span><span class="pill st-ip" style="padding:0 6px">Status</span></span><span>Comment</span><span><svg class="ico"><use href="#i-play"/></svg>Timer</span><span>More</span></div>
+      <div class="actbar"><span><span class="pill st-ip u-padding-0-6px">Status</span></span><span>Comment</span><span><svg class="ico"><use href="#i-play"/></svg>Timer</span><span>More</span></div>
     </div></div></div></div>
     <ul>
       <li><b>Header:</b> type and issue ID (click to copy a link), the title (click to change it), a <i>More</i> menu, <i>Open full page</i> and <i>Close</i>.</li>
@@ -598,17 +323,17 @@ sort by priority, highest first</div>
       <li><b>When someone else changed it meanwhile:</b> saving shows a message instead of overwriting: <i>"Ben changed Priority to Critical 2 minutes ago. [Keep Ben's] [Use mine]"</i>.</li>
     </ul>
     <h4>Editing long text: locks and confirmed saves <span class="ids">ISS-17, ADR-0019</span></h4>
-    <div class="demo"><div class="frame narrow"><div class="frame-cap">Ben's screen while Ana edits</div><div class="frame-body"><div class="scr" style="padding:12px;display:flex;flex-direction:column;gap:8px">
+    <div class="demo"><div class="frame narrow"><div class="frame-cap">Ben's screen while Ana edits</div><div class="frame-body"><div class="scr u-padding-12px--display-flex--flex-direction-column--gap-8px">
       <div class="sh">Description</div>
       <div class="editing-note"><span class="av c5">A</span><span><b>Ana is editing the description</b> · since 2 min</span></div>
-      <div style="font-size:12.5px;line-height:1.55;color:var(--fg-muted)">After resetting the password, signing in with the new password shows "Something went wrong" …</div>
-      <div style="display:flex;gap:6px;flex-wrap:wrap"><span class="btn sm">Ask Ana to finish</span><span class="btn sm ghost">Edit anyway</span></div>
+      <div class="u-font-size-12-5px--line-height-1-55--color-fg-muted">After resetting the password, signing in with the new password shows "Something went wrong" …</div>
+      <div class="u-display-flex--gap-6px--flex-wrap-wrap"><span class="btn sm">Ask Ana to finish</span><span class="btn sm ghost">Edit anyway</span></div>
     </div></div></div>
-    <div class="frame narrow"><div class="frame-cap">Ana's screen · the three save states</div><div class="frame-body"><div class="scr" style="padding:12px;display:flex;flex-direction:column;gap:8px">
+    <div class="frame narrow"><div class="frame-cap">Ana's screen · the three save states</div><div class="frame-body"><div class="scr u-padding-12px--display-flex--flex-direction-column--gap-8px">
       <div class="savestate"><span class="ss-dot ip"></span>Saving…</div>
       <div class="savestate"><span class="ss-dot ok"></span>Saved · 10:42</div>
       <div class="banner"><svg class="ico"><use href="#i-alert"/></svg><span><b>Not saved:</b> your editing time ran out while you were offline, and Ben changed the description since. Your text is kept.</span><span class="btn sm primary">Compare and save</span></div>
-      <div class="banner" style="background:var(--bg-surface);border-color:var(--border)"><svg class="ico"><use href="#i-clock"/></svg><span>Ben changed the description after you, 1 min ago.</span><span class="btn sm">Show changes</span></div>
+      <div class="banner u-background-bg-surface--border-color-border"><svg class="ico"><use href="#i-clock"/></svg><span>Ben changed the description after you, 1 min ago.</span><span class="btn sm">Show changes</span></div>
     </div></div></div></div>
     <ul>
       <li><b>Long text</b> (description, long-text fields, a comment being edited, document pages, workflow, layout and theme editors) is locked to one person while they type. The lock starts with the first keystroke, so just reading never blocks anyone.</li>
@@ -626,20 +351,20 @@ sort by priority, highest first</div>
       <li><b>Sub-issues</b> stay a separate block, because they describe a parent and its parts, not a relation between equals.</li>
       <li>Two buttons under the block: <i>Add relation</i> and <i>Show relation map</i> (§4.15).</li>
     </ul>
-    <div class="demo"><div class="frame"><div class="frame-cap">Add relation · three small steps</div><div class="frame-body"><div class="scr" style="padding:12px"><div class="flow">
+    <div class="demo"><div class="frame"><div class="frame-cap">Add relation · three small steps</div><div class="frame-body"><div class="scr u-padding-12px"><div class="flow">
       <div class="step"><span>1 · Pick the kind</span><div class="pop-demo"><div class="h">WEB-142 …</div><div class="it on">blocks …</div><div class="it">is blocked by …</div><div class="it">is a duplicate of …</div><div class="it">causes …</div><div class="it">is caused by …</div><div class="it">is related to …</div></div></div>
       <div class="step"><span>2 · Find the issue</span><div class="pop-demo"><div class="h">WEB-142 blocks …</div><input type="text" value="release notes" aria-label="Find an issue by number or title" readonly><div class="it on"><span class="key">WEB-147</span>Write the release notes for 2.4</div><div class="it"><span class="key">WEB-133</span>Release notes template</div></div></div>
-      <div class="step"><span>3 · Done, with Undo</span><div class="toast-demo">WEB-142 now blocks WEB-147. <u>Undo</u></div><div class="muted" style="font-size:12px">The relation also shows on WEB-147 as "is blocked by WEB-142", and both histories record it.</div></div>
+      <div class="step"><span>3 · Done, with Undo</span><div class="toast-demo">WEB-142 now blocks WEB-147. <u>Undo</u></div><div class="muted u-font-size-12px">The relation also shows on WEB-147 as "is blocked by WEB-142", and both histories record it.</div></div>
     </div></div></div></div></div>
 
     <h3 id="s4-5"><button type="button" class="sec" data-sec>§4.5</button>New issue</h3>
-    <div class="demo"><div class="frame narrow"><div class="frame-cap">Dialog (full screen on phones)</div><div class="frame-body"><div class="scr" style="padding:6px 10px">
-      <div class="dialog-demo" style="margin:8px auto"><div class="dh">New issue</div><div class="db">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div class="field"><label>Project</label><select><option>Website</option></select></div><div class="field"><label>Type</label><select><option>Bug</option></select></div></div>
+    <div class="demo"><div class="frame narrow"><div class="frame-cap">Dialog (full screen on phones)</div><div class="frame-body"><div class="scr u-padding-6px-10px">
+      <div class="dialog-demo u-margin-8px-auto"><div class="dh">New issue</div><div class="db">
+        <div class="u-display-grid--grid-template-columns-1fr-1fr--gap-8px"><div class="field"><label>Project</label><select><option>Website</option></select></div><div class="field"><label>Type</label><select><option>Bug</option></select></div></div>
         <div class="field"><label>Title <span class="req">(required)</span></label><input type="text" placeholder="Short summary, e.g. “Save button does nothing”"></div>
         <div class="field"><label>Description</label><textarea placeholder="What happened? What did you expect?"></textarea></div>
         <span><span class="btn sm"><svg class="ico"><use href="#i-spark"/></svg>Write it up for me</span></span>
-        <span class="subtle" style="font-size:11px">Your draft is kept if you close this window.</span></div>
+        <span class="subtle u-font-size-11px">Your draft is kept if you close this window.</span></div>
         <div class="df"><span class="btn sm">Cancel</span><span class="btn sm">Create and start another</span><span class="btn sm primary">Create</span></div></div>
     </div></div></div></div>
     <ul>
@@ -654,7 +379,7 @@ sort by priority, highest first</div>
     <h3 id="s4-6"><button type="button" class="sec" data-sec>§4.6</button>Board <span class="ids">PLAN-06</span></h3>
     <div class="demo"><div class="frame"><div class="frame-cap">Computer · dragging WEB-139</div><div class="frame-body"><div class="scr"><div class="board">
       <div class="col"><div class="col-h"><span class="pill st-ns">Open</span><span class="lim">2</span></div>
-        <div class="card drag"><div class="m"><span class="key">WEB-139</span><span class="btn sm ghost" style="margin-left:auto">Move to …</span></div><div class="t">App crashes when saving a long comment</div><div class="m"><span class="prio Critical"><svg class="ico"><use href="#i-up2"/></svg>Critical</span><span class="av c2">B</span></div></div>
+        <div class="card drag"><div class="m"><span class="key">WEB-139</span><span class="btn sm ghost u-margin-left-auto">Move to …</span></div><div class="t">App crashes when saving a long comment</div><div class="m"><span class="prio Critical"><svg class="ico"><use href="#i-up2"/></svg>Critical</span><span class="av c2">B</span></div></div>
         <div class="card"><div class="m"><span class="key">WEB-144</span></div><div class="t">Chart labels are hard to read in dark themes</div></div></div>
       <div class="col ok"><div class="col-h"><span class="pill st-ip">In progress</span><span class="lim over">4 of 3</span></div>
         <div class="card"><div class="m"><span class="key">WEB-142</span></div><div class="t">Login fails after password reset</div></div>
@@ -674,12 +399,12 @@ sort by priority, highest first</div>
     <h3 id="s4-7"><button type="button" class="sec" data-sec>§4.7</button>Timeline (Gantt chart) <span class="ids">PLAN-01…05, PLAN-08</span></h3>
     <div class="demo"><div class="frame"><div class="frame-cap">Computer · weeks</div><div class="frame-body"><div class="scr"><div class="tl">
       <div class="hdr">Issue</div><div class="hdr wk"><span>Sep 28</span><span>Oct 5</span><span>Oct 12</span><span>Oct 19</span><span>Oct 26</span></div>
-      <div class="nm" style="font-weight:700;background:var(--bg-surface)"><svg class="ico"><use href="#i-goal"/></svg>Goal: New login experience</div><div class="ln"><div class="today" style="left:17%"></div><div class="bar goal" style="left:3%;width:91%"></div></div>
-      <div class="nm child"><span class="key">WEB-140</span>Design sign-in page</div><div class="ln"><div class="today" style="left:17%"></div><div class="bar" style="left:3%;width:29%">WEB-140</div></div>
-      <div class="nm child"><span class="key">WEB-141</span>Passkey sign-in</div><div class="ln"><div class="today" style="left:17%"></div><div class="bar" style="left:34%;width:34%">WEB-141</div></div>
-      <div class="nm child"><span class="key">WEB-142</span>Login after reset</div><div class="ln"><div class="today" style="left:17%"></div><div class="bar" style="left:11%;width:23%">WEB-142</div></div>
-      <div class="nm"><svg class="ico"><use href="#i-goal"/></svg>Release 2.4</div><div class="ln"><div class="today" style="left:17%"></div><div class="ms" style="left:72%"></div></div>
-      <div class="nm"><span class="key">WEB-147</span>Release notes</div><div class="ln"><div class="today" style="left:17%"></div><div class="bar ns" style="left:60%;width:11%">WEB-147</div></div>
+      <div class="nm u-font-weight-700--background-bg-surface"><svg class="ico"><use href="#i-goal"/></svg>Goal: New login experience</div><div class="ln"><div class="today u-left-17pc"></div><div class="bar goal u-left-3pc--width-91pc"></div></div>
+      <div class="nm child"><span class="key">WEB-140</span>Design sign-in page</div><div class="ln"><div class="today u-left-17pc"></div><div class="bar u-left-3pc--width-29pc">WEB-140</div></div>
+      <div class="nm child"><span class="key">WEB-141</span>Passkey sign-in</div><div class="ln"><div class="today u-left-17pc"></div><div class="bar u-left-34pc--width-34pc">WEB-141</div></div>
+      <div class="nm child"><span class="key">WEB-142</span>Login after reset</div><div class="ln"><div class="today u-left-17pc"></div><div class="bar u-left-11pc--width-23pc">WEB-142</div></div>
+      <div class="nm"><svg class="ico"><use href="#i-goal"/></svg>Release 2.4</div><div class="ln"><div class="today u-left-17pc"></div><div class="ms u-left-72pc"></div></div>
+      <div class="nm"><span class="key">WEB-147</span>Release notes</div><div class="ln"><div class="today u-left-17pc"></div><div class="bar ns u-left-60pc--width-11pc">WEB-147</div></div>
     </div></div></div></div></div>
     <ul>
       <li>Left: rows that can be folded (grouped by goal, project, person, release or field). Right: the dates. The red line is today.</li>
@@ -694,8 +419,8 @@ sort by priority, highest first</div>
 
     <h3 id="s4-8"><button type="button" class="sec" data-sec>§4.8</button>Documents <span class="ids">DOC</span></h3>
     <div class="demo"><div class="frame"><div class="frame-cap">Computer</div><div class="frame-body"><div class="scr docs3">
-      <div class="sb"><div class="ni"><svg class="ico"><use href="#i-search"/></svg>Find</div><div class="ni"><svg class="ico"><use href="#i-folder"/></svg><b>Specs</b></div><div class="ni on" style="padding-left:20px">Login flow</div><div class="ni" style="padding-left:20px">Search</div><div class="ni"><svg class="ico"><use href="#i-folder"/></svg><b>How-tos</b></div><div class="ni"><svg class="ico"><use href="#i-folder"/></svg><b>Files</b></div><div class="ni" style="padding-left:20px;font-size:11.5px">wireframes.pdf<span class="lockb"><svg class="ico" style="width:12px;height:12px"><use href="#i-lock"/></svg>Ben</span></div><div class="ni" style="color:var(--accent-fg)">+ New</div></div>
-      <div class="doc-page"><div class="muted" style="font-size:11px">Specs › Login flow · Version 7 · changed by Ana 2 days ago</div><h5>Login flow</h5>
+      <div class="sb"><div class="ni"><svg class="ico"><use href="#i-search"/></svg>Find</div><div class="ni"><svg class="ico"><use href="#i-folder"/></svg><b>Specs</b></div><div class="ni on u-padding-left-20px">Login flow</div><div class="ni u-padding-left-20px">Search</div><div class="ni"><svg class="ico"><use href="#i-folder"/></svg><b>How-tos</b></div><div class="ni"><svg class="ico"><use href="#i-folder"/></svg><b>Files</b></div><div class="ni u-padding-left-20px--font-size-11-5px">wireframes.pdf<span class="lockb"><svg class="ico u-width-12px--height-12px"><use href="#i-lock"/></svg>Ben</span></div><div class="ni u-color-accent-fg">+ New</div></div>
+      <div class="doc-page"><div class="muted u-font-size-11px">Specs › Login flow · Version 7 · changed by Ana 2 days ago</div><h5>Login flow</h5>
         <div class="tbtn"><span>Heading</span><span>Bold</span><span>List</span><span>Checklist</span><span>Table</span><span>Image</span><span>Code</span></div>
         <p>People sign in with a <b>passkey</b> first. If they don't have one yet, they use e-mail and password.</p>
         <p>Known problem: <span class="live"><span class="key">WEB-142</span><span class="pill st-ip">In progress</span></span></p></div>
@@ -715,19 +440,19 @@ sort by priority, highest first</div>
       <li><b>Working hours:</b> when your work day started and ended, and your breaks. German law requires employers to record this for every working day.</li>
       <li><b>Time on issues:</b> what you spent your time on, with an <b>activity</b> and a <b>cost center</b> for accounting.</li>
     </ul>
-    <div class="demo"><div class="frame narrow" style="flex-basis:360px"><div class="frame-cap">Sidebar and Home · work day running</div><div class="frame-body"><div class="scr" style="padding:12px;display:flex;flex-direction:column;gap:8px">
-      <div class="wd"><span class="dot-live"></span><div style="flex:1;min-width:0"><b>Working since 8:02</b><div class="muted" style="font-size:11px">Break 12:10–12:40 · 6 h 51 so far</div></div><span class="btn sm">Start break</span><span class="btn sm">End work day</span></div>
-      <div class="timer-mini" style="margin:0"><span class="dot-live"></span>WEB-142 <span class="mono" style="margin-left:auto">0:42</span></div>
-      <div class="muted" style="font-size:11.5px">Starting an issue timer before the work day asks: <i>"Start your work day too?"</i></div>
+    <div class="demo"><div class="frame narrow u-flex-basis-360px"><div class="frame-cap">Sidebar and Home · work day running</div><div class="frame-body"><div class="scr u-padding-12px--display-flex--flex-direction-column--gap-8px">
+      <div class="wd"><span class="dot-live"></span><div class="u-flex-1--min-width-0"><b>Working since 8:02</b><div class="muted u-font-size-11px">Break 12:10–12:40 · 6 h 51 so far</div></div><span class="btn sm">Start break</span><span class="btn sm">End work day</span></div>
+      <div class="timer-mini u-margin-0"><span class="dot-live"></span>WEB-142 <span class="mono u-margin-left-auto">0:42</span></div>
+      <div class="muted u-font-size-11-5px">Starting an issue timer before the work day asks: <i>"Start your work day too?"</i></div>
     </div></div></div>
-    <div class="frame narrow" style="flex-basis:360px"><div class="frame-cap">Stopping the timer</div><div class="frame-body"><div class="scr"><div class="dialog-demo" style="margin:10px auto"><div class="dh">Stop timer on WEB-142</div><div class="db">
-      <div style="font-size:12.5px">You worked <b>42 min</b> on "Login fails after password reset".</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div class="field"><label>Activity</label><select><option>Development</option></select></div><div class="field"><label>Cost center</label><select><option>4100 Product development</option></select></div></div>
+    <div class="frame narrow u-flex-basis-360px"><div class="frame-cap">Stopping the timer</div><div class="frame-body"><div class="scr"><div class="dialog-demo u-margin-10px-auto"><div class="dh">Stop timer on WEB-142</div><div class="db">
+      <div class="u-font-size-12-5px">You worked <b>42 min</b> on "Login fails after password reset".</div>
+      <div class="u-display-grid--grid-template-columns-1fr-1fr--gap-8px"><div class="field"><label>Activity</label><select><option>Development</option></select></div><div class="field"><label>Cost center</label><select><option>4100 Product development</option></select></div></div>
       <div class="field"><label>What did you do? <span class="req">(optional)</span></label><input type="text" value="Found the token check" readonly></div>
-      <div class="muted" style="font-size:11px">Activity and cost center come from the issue. Change them here if this time was different.</div></div>
+      <div class="muted u-font-size-11px">Activity and cost center come from the issue. Change them here if this time was different.</div></div>
       <div class="df"><span class="btn sm danger">Throw away</span><span class="btn sm primary">Save time</span></div></div></div></div></div></div>
 
-    <div class="demo"><div class="frame"><div class="frame-cap">Timesheet · week of September 28</div><div class="frame-body"><div class="scr" style="padding:10px">
+    <div class="demo"><div class="frame"><div class="frame-cap">Timesheet · week of September 28</div><div class="frame-body"><div class="scr u-padding-10px">
       <table class="ts"><thead><tr><th>Work day</th><th>Mon 28</th><th>Tue 29</th><th>Wed 30</th><th>Thu 1</th><th>Fri 2</th><th>Sat 3</th><th class="today">Sun 4 · today</th><th>Total</th></tr></thead>
         <tbody>
           <tr><td>Start</td><td><span class="cell">8:05</span></td><td><span class="cell">8:30</span></td><td><span class="cell">9:00</span></td><td><span class="cell">7:40</span></td><td><span class="cell">8:02</span></td><td></td><td></td><td></td></tr>
@@ -735,7 +460,7 @@ sort by priority, highest first</div>
           <tr><td>Breaks</td><td><span class="cell">0:45</span></td><td><span class="cell">0:30</span></td><td><span class="cell">0:00</span></td><td><span class="cell warnc">0:15</span></td><td><span class="cell">0:30</span></td><td></td><td></td><td></td></tr>
           <tr class="wh"><td><b>Working hours</b></td><td>8:00</td><td>8:10</td><td>4:00</td><td><b class="warnt">10:35</b></td><td>8:43</td><td></td><td></td><td><b>39:28</b></td></tr>
         </tbody></table>
-      <div class="banner" style="margin:8px 0"><svg class="ico"><use href="#i-alert"/></svg><span><b>Thursday:</b> 10 h 35 min worked and only 15 min break. The German working-time rules allow 10 hours a day at most, with 45 min break after 9 hours. This is a warning; the day is recorded as it happened.</span></div>
+      <div class="banner u-margin-8px-0"><svg class="ico"><use href="#i-alert"/></svg><span><b>Thursday:</b> 10 h 35 min worked and only 15 min break. The German working-time rules allow 10 hours a day at most, with 45 min break after 9 hours. This is a warning; the day is recorded as it happened.</span></div>
       <table class="ts"><thead><tr><th>Time on issues</th><th>Activity</th><th>Cost center</th><th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th><th>Total</th></tr></thead>
         <tbody>
           <tr><td><span class="key">WEB-142</span> Login after reset</td><td><span class="tag c2">Development</span></td><td class="mono">4100</td><td></td><td></td><td></td><td></td><td><span class="cell">1:20</span></td><td><b>1:20</b></td></tr>
@@ -768,10 +493,10 @@ sort by priority, highest first</div>
     <div class="demo"><div class="frame narrow"><div class="frame-cap">One box: "Open bugs by priority"</div><div class="frame-body"><div class="scr">
       <div class="box-h">Open bugs by priority<span class="muted">Website</span></div>
       <div class="bars">
-        <div><span>Critical</span><i style="width:30%;background:var(--danger)"></i><span class="num">3</span></div>
-        <div><span>High</span><i style="width:60%;background:var(--warning)"></i><span class="num">6</span></div>
-        <div><span>Medium</span><i style="width:90%;background:var(--st-ip)"></i><span class="num">9</span></div>
-        <div><span>Low</span><i style="width:40%;background:var(--fg-subtle)"></i><span class="num">4</span></div>
+        <div><span>Critical</span><i class="u-width-30pc--background-danger"></i><span class="num">3</span></div>
+        <div><span>High</span><i class="u-width-60pc--background-warning"></i><span class="num">6</span></div>
+        <div><span>Medium</span><i class="u-width-90pc--background-st-ip"></i><span class="num">9</span></div>
+        <div><span>Low</span><i class="u-width-40pc--background-fg-subtle"></i><span class="num">4</span></div>
       </div></div></div></div></div>
     <ul>
       <li>Boxes on a grid: search results, numbers and charts, time totals, a small timeline, my timer, and recent activity. Drag to place, drag the corner to resize.</li>
@@ -787,14 +512,14 @@ sort by priority, highest first</div>
     </ul>
 
     <h3 id="s4-12"><button type="button" class="sec" data-sec>§4.12</button>Assistant <span class="ids">AI</span></h3>
-    <div class="demo"><div class="frame narrow" style="flex-basis:360px"><div class="frame-cap">Assistant panel</div><div class="frame-body"><div class="scr" style="padding:12px;display:flex;flex-direction:column;gap:9px">
-      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;font-size:12px"><span class="muted">Looking at:</span><span class="chip">WEB-142<span class="x"><svg class="ico"><use href="#i-x"/></svg></span></span><span class="chip">This list<span class="x"><svg class="ico"><use href="#i-x"/></svg></span></span></div>
+    <div class="demo"><div class="frame narrow u-flex-basis-360px"><div class="frame-cap">Assistant panel</div><div class="frame-body"><div class="scr u-padding-12px--display-flex--flex-direction-column--gap-9px">
+      <div class="u-8d461e0"><span class="muted">Looking at:</span><span class="chip">WEB-142<span class="x"><svg class="ico"><use href="#i-x"/></svg></span></span><span class="chip">This list<span class="x"><svg class="ico"><use href="#i-x"/></svg></span></span></div>
       <div class="src">Answers come from <b>Claude (Anthropic)</b>. Your organization chose this.<br><span class="muted">Never sent to AI: Cost center</span></div>
       <div class="msg me">Summarize the comments on WEB-142.</div>
       <div><div class="ai-l"><svg class="ico"><use href="#i-spark"/></svg>Assistant</div><div class="msg ai">Signing in fails right after a password reset. 14 customers reported it since Friday. I suggest raising the priority.</div></div>
-      <div class="prop"><div class="ai-l"><svg class="ico"><use href="#i-spark"/></svg>Proposed change. Nothing is saved until you apply it.</div><div><span class="key">WEB-142</span> Priority: <span class="old">High</span> → <span class="prio Critical"><svg class="ico"><use href="#i-up2"/></svg>Critical</span></div><div style="display:flex;gap:6px"><span class="btn sm primary">Apply</span><span class="btn sm">Discard</span></div></div>
+      <div class="prop"><div class="ai-l"><svg class="ico"><use href="#i-spark"/></svg>Proposed change. Nothing is saved until you apply it.</div><div><span class="key">WEB-142</span> Priority: <span class="old">High</span> → <span class="prio Critical"><svg class="ico"><use href="#i-up2"/></svg>Critical</span></div><div class="u-display-flex--gap-6px"><span class="btn sm primary">Apply</span><span class="btn sm">Discard</span></div></div>
     </div></div></div>
-    <div style="flex:1 1 280px;min-width:0"><ul style="margin-top:0">
+    <div class="u-flex-1-1-280px--min-width-0"><ul class="u-margin-top-0">
       <li>Opens from <i>Assistant</i> in the top bar or from small sparkle buttons where they help (<i>Summarize comments</i>, <i>Write it up for me</i>, <i>Suggest fields</i>).</li>
       <li><b>What it can see</b> is shown at the top. Each item can be removed.</li>
       <li><b>Where your data goes</b> is always shown: <i>"Answers come from Claude (Anthropic)"</i> or <i>"Answers come from a model on your own server"</i>. Fields never sent to AI are listed (AI-03).</li>
@@ -815,8 +540,8 @@ sort by priority, highest first</div>
     </ul>
 
     <h3 id="s4-14"><button type="button" class="sec" data-sec>§4.14</button>First start and signing in</h3>
-    <div class="demo"><div style="flex:1 1 320px;min-width:0">
-      <h4 style="margin-top:0">Setup in the browser (after installing)</h4>
+    <div class="demo"><div class="u-flex-1-1-320px--min-width-0">
+      <h4 class="u-margin-top-0">Setup in the browser (after installing)</h4>
       <ol class="stepper">
         <li><div><b>Welcome:</b> type the setup code shown by the server (AUTH-09). The page explains where to find it.</div></li>
         <li><div><b>Your administrator account:</b> a passkey is suggested first; a password plus two-step sign-in also works.</div></li>
@@ -826,38 +551,38 @@ sort by priority, highest first</div>
         <li><div><b>First project:</b> a name, a short name and a starting template.</div></li>
         <li><div><b>Done:</b> a checklist of recommended safety steps (SEC-19).</div></li>
       </ol></div>
-      <div class="frame narrow" style="flex:0 1 340px"><div class="frame-cap">Sign-in</div><div class="frame-body"><div class="scr"><div class="signin">
-        <b style="text-align:center;font-size:16px">Sign in to Bugaboo</b>
-        <span class="btn primary" style="justify-content:center">Sign in with a passkey</span>
+      <div class="frame narrow u-flex-0-1-340px"><div class="frame-cap">Sign-in</div><div class="frame-body"><div class="scr"><div class="signin">
+        <b class="u-text-align-center--font-size-16px">Sign in to Bugaboo</b>
+        <span class="btn primary u-justify-content-center">Sign in with a passkey</span>
         <div class="or">or</div>
         <div class="field"><label>E-mail</label><input type="text" value="ana@acme.example" readonly></div>
         <div class="field"><label>Password</label><input type="password" value="xxxxxxxxxx" readonly autocomplete="current-password"></div>
-        <span class="btn" style="justify-content:center">Sign in</span>
-        <div class="errline" style="justify-content:center">E-mail or password is wrong.</div>
-        <span class="btn ghost sm" style="justify-content:center">Sign in with your company account</span>
+        <span class="btn u-justify-content-center">Sign in</span>
+        <div class="errline u-justify-content-center">E-mail or password is wrong.</div>
+        <span class="btn ghost sm u-justify-content-center">Sign in with your company account</span>
       </div></div></div></div></div>
     <p>A wrong password and an unknown e-mail get the same message, so nobody can find out who has an account.</p>
 
     <h3 id="s4-15"><button type="button" class="sec" data-sec>§4.15</button>Relation map <span class="ids">ISS-16</span></h3>
     <p>A picture of everything connected to an issue: in any direction, through any number of steps. It answers questions like <i>"what is all this waiting on?"</i> and <i>"what else breaks if this slips?"</i>.</p>
-    <div class="demo"><div class="frame" style="flex-basis:640px"><div class="frame-cap">Relation map of WEB-142 · point at an issue</div><div class="frame-body"><div class="scr" style="min-width:600px">
+    <div class="demo"><div class="frame u-flex-basis-640px"><div class="frame-cap">Relation map of WEB-142 · point at an issue</div><div class="frame-body"><div class="scr u-min-width-600px">
       <div class="map-ctl">
-        <span class="muted" style="font-size:12px">Steps away</span><div class="seg" role="group" aria-label="Steps away"><button type="button" aria-pressed="false">1</button><button type="button" aria-pressed="true">2</button><button type="button" aria-pressed="false">3</button><button type="button" aria-pressed="false">Everything</button></div>
-        <span class="muted" style="font-size:12px;margin-left:6px">Follow</span>
-        <button type="button" class="kchip" aria-pressed="true" data-kind="blocks"><span class="kline" style="border-color:var(--warning)"></span>blocks</button>
-        <button type="button" class="kchip" aria-pressed="true" data-kind="causes"><span class="kline" style="border-color:var(--danger)"></span>causes</button>
-        <button type="button" class="kchip" aria-pressed="true" data-kind="dup"><span class="kline" style="border-top-style:dashed;border-color:var(--fg-subtle)"></span>duplicate</button>
+        <span class="muted u-font-size-12px">Steps away</span><div class="seg" role="group" aria-label="Steps away"><button type="button" aria-pressed="false">1</button><button type="button" aria-pressed="true">2</button><button type="button" aria-pressed="false">3</button><button type="button" aria-pressed="false">Everything</button></div>
+        <span class="muted u-font-size-12px--margin-left-6px">Follow</span>
+        <button type="button" class="kchip" aria-pressed="true" data-kind="blocks"><span class="kline u-border-color-warning"></span>blocks</button>
+        <button type="button" class="kchip" aria-pressed="true" data-kind="causes"><span class="kline u-border-color-danger"></span>causes</button>
+        <button type="button" class="kchip" aria-pressed="true" data-kind="dup"><span class="kline u-border-top-style-dashed--border-color-fg-subtle"></span>duplicate</button>
         <button type="button" class="kchip" aria-pressed="true" data-kind="rel"><span class="kline"></span>related</button>
-        <button type="button" class="kchip" aria-pressed="true" data-kind="part"><span class="kline" style="border-color:var(--accent)"></span>part of</button>
-        <button type="button" class="btn sm" id="map-list-btn" style="margin-left:auto">Show as list</button>
+        <button type="button" class="kchip" aria-pressed="true" data-kind="part"><span class="kline u-border-color-accent"></span>part of</button>
+        <button type="button" class="btn sm u-margin-left-auto" id="map-list-btn">Show as list</button>
       </div>
       <div id="map-pic">
       <svg class="map-svg" id="map-svg" viewBox="0 0 740 400" role="img" aria-label="Relation map of WEB-142">
         <defs>
-          <marker id="ar-blocks" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="9" markerHeight="9" orient="auto"><path d="M0 0 10 5 0 10z" style="fill:var(--warning)"/></marker>
-          <marker id="ar-causes" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="9" markerHeight="9" orient="auto"><path d="M0 0 10 5 0 10z" style="fill:var(--danger)"/></marker>
-          <marker id="ar-part" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0 10 5 0 10z" style="fill:var(--accent)"/></marker>
-          <marker id="ar-dup" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0 10 5 0 10z" style="fill:var(--fg-subtle)"/></marker>
+          <marker id="ar-blocks" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="9" markerHeight="9" orient="auto"><path class="u-fill-warning" d="M0 0 10 5 0 10z"/></marker>
+          <marker id="ar-causes" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="9" markerHeight="9" orient="auto"><path class="u-fill-danger" d="M0 0 10 5 0 10z"/></marker>
+          <marker id="ar-part" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path class="u-fill-accent" d="M0 0 10 5 0 10z"/></marker>
+          <marker id="ar-dup" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path class="u-fill-fg-subtle" d="M0 0 10 5 0 10z"/></marker>
         </defs>
         <!-- edges: arrows sit at the middle of each line (marker-mid) -->
         <polyline class="edge k-part" id="e-142-145" points="370,198 370,124 370,50" marker-mid="url(#ar-part)"/>
@@ -897,7 +622,7 @@ sort by priority, highest first</div>
         <div><span class="key">WEB-142</span> blocks <span class="key">WEB-147</span>, which is blocked by <span class="key">WEB-148</span> <span class="muted">Download the timesheet as a spreadsheet</span></div>
         <div><span class="key">WEB-142</span> is related to <span class="key">WEB-141</span>, which is blocked by <span class="key">WEB-140</span> <span class="muted">Design the new sign-in page</span></div>
       </div>
-      <div class="circle-warn"><svg class="ico" style="color:var(--warning)"><use href="#i-alert"/></svg><span><b>Circle found</b> (example from another project): WEB-160 blocks WEB-161, which blocks WEB-160. Neither can start until one of these relations is removed.</span></div>
+      <div class="circle-warn"><svg class="ico u-color-warning"><use href="#i-alert"/></svg><span><b>Circle found</b> (example from another project): WEB-160 blocks WEB-161, which blocks WEB-160. Neither can start until one of these relations is removed.</span></div>
     </div></div></div></div>
     <p class="cap-note">Try it: point at (or tap) WEB-148 to see how it connects back to WEB-142. The <i>Follow</i> chips switch kinds of relation on and off, and <i>Show as list</i> switches to sentences.</p>
     <ul>
@@ -913,11 +638,11 @@ sort by priority, highest first</div>
 
     <h3 id="s4-16"><button type="button" class="sec" data-sec>§4.16</button>Calendar <span class="ids">PLAN-09</span></h3>
     <div class="demo"><div class="frame"><div class="frame-cap">Computer · October 2026 · moving WEB-139</div><div class="frame-body"><div class="scr">
-      <div class="tb"><span class="btn sm">‹</span><b>October 2026</b><span class="btn sm">›</span><span class="btn sm">Today</span><div class="seg" style="margin-left:auto"><button type="button" aria-pressed="true">Month</button><button type="button" aria-pressed="false">Week</button></div></div>
+      <div class="tb"><span class="btn sm">‹</span><b>October 2026</b><span class="btn sm">›</span><span class="btn sm">Today</span><div class="seg u-margin-left-auto"><button type="button" aria-pressed="true">Month</button><button type="button" aria-pressed="false">Week</button></div></div>
       <div class="cal" id="cal"></div>
     </div></div></div>
     <div class="frame phone"><div class="frame-cap">Phone · day by day</div><div class="frame-body"><div class="scr">
-      <div class="ph-top">Calendar<span class="muted" style="margin-left:auto;font-weight:400">October</span></div>
+      <div class="ph-top">Calendar<span class="muted u-margin-left-auto--font-weight-400">October</span></div>
       <div class="agenda" id="agenda"></div>
     </div></div></div></div>
     <ul>
@@ -1012,7 +737,7 @@ sort by priority, highest first</div>
       <div class="wfrow"><span class="muted">From</span><span class="pill st-ns">Open</span><span class="muted">you can go to:</span><span class="btn sm">In progress · "Start working"</span><span class="btn sm">Done · "Won't fix"</span></div>
       <div class="wfrow"><span class="muted">From</span><span class="pill st-ip">In progress</span><span class="muted">you can go to:</span><span class="btn sm">Testing · "Send to testing"</span><span class="btn sm">Open · "Stop working on it"</span></div>
       <div class="wfrow"><span class="muted">From</span><span class="pill st-ip">Testing</span><span class="muted">you can go to:</span><span class="btn sm">Done · "Mark as done"</span><span class="btn sm">In progress · "Send back to work"</span></div>
-      <div class="wfrow" style="border-bottom:0"><span class="muted">From</span><span class="pill st-done">Done</span><span class="muted">you can go to:</span><span class="btn sm">Open · "Reopen"</span></div>
+      <div class="wfrow u-border-bottom-0"><span class="muted">From</span><span class="pill st-done">Done</span><span class="muted">you can go to:</span><span class="btn sm">Open · "Reopen"</span></div>
     </div></div></div></div>
     <ul>
       <li>The default view is a <b>plain list</b> of statuses, each with its allowed next statuses and the button text people will see.</li>
@@ -1034,17 +759,17 @@ sort by priority, highest first</div>
     <div class="demo"><div class="frame"><div class="frame-cap">Theme: Dusk (my copy)</div><div class="frame-body"><div class="scr te">
       <div class="te-l">
         <div class="g">Backgrounds</div>
-        <div class="row"><i class="sw" style="background:var(--bg-canvas)"></i>Page</div>
-        <div class="row"><i class="sw" style="background:var(--bg-surface)"></i>Panels</div>
+        <div class="row"><i class="sw u-background-bg-canvas"></i>Page</div>
+        <div class="row"><i class="sw u-background-bg-surface"></i>Panels</div>
         <div class="g">Text</div>
-        <div class="row"><i class="sw" style="background:var(--fg)"></i>Main text<span class="rd ok">✓ Easy</span></div>
-        <div class="row"><i class="sw" style="background:var(--fg-muted)"></i>Quiet text<span class="rd ok">✓ OK</span></div>
-        <div class="row"><i class="sw" style="background:var(--border)"></i>Hint text<span class="rd bad">✗ Hard to read</span></div>
+        <div class="row"><i class="sw u-background-fg"></i>Main text<span class="rd ok">✓ Easy</span></div>
+        <div class="row"><i class="sw u-background-fg-muted"></i>Quiet text<span class="rd ok">✓ OK</span></div>
+        <div class="row"><i class="sw u-background-border"></i>Hint text<span class="rd bad">✗ Hard to read</span></div>
         <div class="g">▸ Highlight color</div><div class="g">▸ Status &amp; tag colors</div><div class="g">▸ Font &amp; corners</div>
       </div>
-      <div class="te-r"><div class="muted" style="font-size:11px">Preview</div>
-        <div class="box"><div class="r"><span class="key">WEB-142</span><span class="t">Login fails after password reset</span><span class="pill st-ip">In progress</span></div><div class="r"><span class="tag c5">login</span><span class="tag c1">crash</span><span style="margin-left:auto" class="btn sm primary">Button</span></div></div>
-        <div style="font-size:12px"><b>Readability:</b> 42 pairs easy to read, <span style="color:var(--danger);font-weight:700">1 hard to read</span>. Fix it to share this theme with everyone.</div></div>
+      <div class="te-r"><div class="muted u-font-size-11px">Preview</div>
+        <div class="box"><div class="r"><span class="key">WEB-142</span><span class="t">Login fails after password reset</span><span class="pill st-ip">In progress</span></div><div class="r"><span class="tag c5">login</span><span class="tag c1">crash</span><span class="btn sm primary u-margin-left-auto">Button</span></div></div>
+        <div class="u-font-size-12px"><b>Readability:</b> 42 pairs easy to read, <span class="u-color-danger--font-weight-700">1 hard to read</span>. Fix it to share this theme with everyone.</div></div>
     </div></div></div></div>
     <ul>
       <li>Color groups on the left with plain names; a live preview of real Bugaboo screens on the right.</li>
@@ -1063,7 +788,7 @@ sort by priority, highest first</div>
         <tr><td><b>Notifications</b></td><td>90 days</td><td>Deleted</td><td class="muted">Not needed longer</td></tr>
         <tr><td><b>Trash</b></td><td>30 days</td><td>Deleted</td><td class="muted">Time to restore by mistake</td></tr>
       </tbody></table>
-      <div class="explain"><b>Remove a person: Malik Weber</b><br>The account is deleted and "Malik Weber" becomes <b>Former user K7Q2</b> everywhere. Comments written by this person: <u>keep, anonymized</u> ▾.<br><span class="muted">The working hours of this person must be kept until 2028-10-01 by law. They are then deleted automatically.</span><div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap"><span class="btn sm">Cancel</span><span class="btn sm danger">Remove Malik Weber</span></div></div>
+      <div class="explain"><b>Remove a person: Malik Weber</b><br>The account is deleted and "Malik Weber" becomes <b>Former user K7Q2</b> everywhere. Comments written by this person: <u>keep, anonymized</u> ▾.<br><span class="muted">The working hours of this person must be kept until 2028-10-01 by law. They are then deleted automatically.</span><div class="u-margin-top-8px--display-flex--gap-6px--flex-wrap-wrap"><span class="btn sm">Cancel</span><span class="btn sm danger">Remove Malik Weber</span></div></div>
     </div></div></div></div>
     <ul>
       <li><b>Nothing extra is collected:</b> no tracking, no analytics, no outside scripts or fonts. Only the cookies needed to stay signed in, so there's no cookie banner.</li>
@@ -1092,9 +817,9 @@ sort by priority, highest first</div>
 
     <h3 id="s6-1"><button type="button" class="sec" data-sec>§6.1</button>States</h3>
     <div class="demo">
-      <div class="state"><b>Empty</b><p style="margin:6px auto 10px">No issues match these filters.</p><span class="btn sm">Clear filters</span> <span class="btn sm primary">Create an issue</span></div>
-      <div class="state"><b>Error</b><p style="margin:6px auto 10px">Couldn't save. Ben changed Priority a moment ago.</p><span class="btn sm">Show me</span><div class="subtle" style="font-size:11px;margin-top:8px">Code BUG-409</div></div>
-      <div class="state" style="padding:0;overflow:hidden;text-align:left"><div class="offline">You're offline. Changes will be possible again when you're back online.</div><div style="padding:10px 12px"><b>Offline</b><p style="margin:6px 0 0;font-size:12.5px">Recently opened issues stay readable (UX-03).</p></div></div>
+      <div class="state"><b>Empty</b><p class="u-margin-6px-auto-10px">No issues match these filters.</p><span class="btn sm">Clear filters</span> <span class="btn sm primary">Create an issue</span></div>
+      <div class="state"><b>Error</b><p class="u-margin-6px-auto-10px">Couldn't save. Ben changed Priority a moment ago.</p><span class="btn sm">Show me</span><div class="subtle u-font-size-11px--margin-top-8px">Code BUG-409</div></div>
+      <div class="state u-padding-0--overflow-hidden--text-align-left"><div class="offline">You're offline. Changes will be possible again when you're back online.</div><div class="u-padding-10px-12px"><b>Offline</b><p class="u-margin-6px-0-0--font-size-12-5px">Recently opened issues stay readable (UX-03).</p></div></div>
     </div>
     <ul>
       <li><b>Loading:</b> grey shapes of the coming content. Nothing shows for the first 0.3 s, to avoid flicker.</li>
@@ -1140,10 +865,10 @@ sort by priority, highest first</div>
 
     <h3 id="s7-2"><button type="button" class="sec" data-sec>§7.2</button>The four built-in themes <span class="ids">THM-01</span></h3>
     <div class="theme-strip" id="theme-strip">
-      <div class="tcard" data-force-look="daylight"><div class="tc-h">Daylight<span class="muted" style="font-weight:400;font-size:11px">light · default light</span></div><div class="tc-b"><div class="row"><span class="key">WEB-142</span><b>Login fails after reset</b></div><div class="row"><span class="pill st-ns">Open</span><span class="pill st-ip">In progress</span><span class="pill st-done">Done</span></div><div class="row"><span class="tag c1">crash</span><span class="tag c2">search</span><span class="tag c3">time</span><span class="tag c4">themes</span><span class="tag c5">login</span><span class="tag c6">design</span></div><div class="row"><span class="btn sm primary">Create</span><span class="btn sm">Cancel</span><span class="prio Critical"><svg class="ico"><use href="#i-up2"/></svg>Critical</span></div></div></div>
-      <div class="tcard" data-force-look="paper"><div class="tc-h">Paper<span class="muted" style="font-weight:400;font-size:11px">light · warm, softer</span></div><div class="tc-b"><div class="row"><span class="key">WEB-142</span><b>Login fails after reset</b></div><div class="row"><span class="pill st-ns">Open</span><span class="pill st-ip">In progress</span><span class="pill st-done">Done</span></div><div class="row"><span class="tag c1">crash</span><span class="tag c2">search</span><span class="tag c3">time</span><span class="tag c4">themes</span><span class="tag c5">login</span><span class="tag c6">design</span></div><div class="row"><span class="btn sm primary">Create</span><span class="btn sm">Cancel</span><span class="prio Critical"><svg class="ico"><use href="#i-up2"/></svg>Critical</span></div></div></div>
-      <div class="tcard" data-force-look="dusk"><div class="tc-h">Dusk<span class="muted" style="font-weight:400;font-size:11px">dark · default dark</span></div><div class="tc-b"><div class="row"><span class="key">WEB-142</span><b>Login fails after reset</b></div><div class="row"><span class="pill st-ns">Open</span><span class="pill st-ip">In progress</span><span class="pill st-done">Done</span></div><div class="row"><span class="tag c1">crash</span><span class="tag c2">search</span><span class="tag c3">time</span><span class="tag c4">themes</span><span class="tag c5">login</span><span class="tag c6">design</span></div><div class="row"><span class="btn sm primary">Create</span><span class="btn sm">Cancel</span><span class="prio Critical"><svg class="ico"><use href="#i-up2"/></svg>Critical</span></div></div></div>
-      <div class="tcard" data-force-look="midnight"><div class="tc-h">Midnight<span class="muted" style="font-weight:400;font-size:11px">dark · pure black</span></div><div class="tc-b"><div class="row"><span class="key">WEB-142</span><b>Login fails after reset</b></div><div class="row"><span class="pill st-ns">Open</span><span class="pill st-ip">In progress</span><span class="pill st-done">Done</span></div><div class="row"><span class="tag c1">crash</span><span class="tag c2">search</span><span class="tag c3">time</span><span class="tag c4">themes</span><span class="tag c5">login</span><span class="tag c6">design</span></div><div class="row"><span class="btn sm primary">Create</span><span class="btn sm">Cancel</span><span class="prio Critical"><svg class="ico"><use href="#i-up2"/></svg>Critical</span></div></div></div>
+      <div class="tcard" data-force-look="daylight"><div class="tc-h">Daylight<span class="muted u-font-weight-400--font-size-11px">light · default light</span></div><div class="tc-b"><div class="row"><span class="key">WEB-142</span><b>Login fails after reset</b></div><div class="row"><span class="pill st-ns">Open</span><span class="pill st-ip">In progress</span><span class="pill st-done">Done</span></div><div class="row"><span class="tag c1">crash</span><span class="tag c2">search</span><span class="tag c3">time</span><span class="tag c4">themes</span><span class="tag c5">login</span><span class="tag c6">design</span></div><div class="row"><span class="btn sm primary">Create</span><span class="btn sm">Cancel</span><span class="prio Critical"><svg class="ico"><use href="#i-up2"/></svg>Critical</span></div></div></div>
+      <div class="tcard" data-force-look="paper"><div class="tc-h">Paper<span class="muted u-font-weight-400--font-size-11px">light · warm, softer</span></div><div class="tc-b"><div class="row"><span class="key">WEB-142</span><b>Login fails after reset</b></div><div class="row"><span class="pill st-ns">Open</span><span class="pill st-ip">In progress</span><span class="pill st-done">Done</span></div><div class="row"><span class="tag c1">crash</span><span class="tag c2">search</span><span class="tag c3">time</span><span class="tag c4">themes</span><span class="tag c5">login</span><span class="tag c6">design</span></div><div class="row"><span class="btn sm primary">Create</span><span class="btn sm">Cancel</span><span class="prio Critical"><svg class="ico"><use href="#i-up2"/></svg>Critical</span></div></div></div>
+      <div class="tcard" data-force-look="dusk"><div class="tc-h">Dusk<span class="muted u-font-weight-400--font-size-11px">dark · default dark</span></div><div class="tc-b"><div class="row"><span class="key">WEB-142</span><b>Login fails after reset</b></div><div class="row"><span class="pill st-ns">Open</span><span class="pill st-ip">In progress</span><span class="pill st-done">Done</span></div><div class="row"><span class="tag c1">crash</span><span class="tag c2">search</span><span class="tag c3">time</span><span class="tag c4">themes</span><span class="tag c5">login</span><span class="tag c6">design</span></div><div class="row"><span class="btn sm primary">Create</span><span class="btn sm">Cancel</span><span class="prio Critical"><svg class="ico"><use href="#i-up2"/></svg>Critical</span></div></div></div>
+      <div class="tcard" data-force-look="midnight"><div class="tc-h">Midnight<span class="muted u-font-weight-400--font-size-11px">dark · pure black</span></div><div class="tc-b"><div class="row"><span class="key">WEB-142</span><b>Login fails after reset</b></div><div class="row"><span class="pill st-ns">Open</span><span class="pill st-ip">In progress</span><span class="pill st-done">Done</span></div><div class="row"><span class="tag c1">crash</span><span class="tag c2">search</span><span class="tag c3">time</span><span class="tag c4">themes</span><span class="tag c5">login</span><span class="tag c6">design</span></div><div class="row"><span class="btn sm primary">Create</span><span class="btn sm">Cancel</span><span class="prio Critical"><svg class="ico"><use href="#i-up2"/></svg>Critical</span></div></div></div>
     </div>
     <p>These samples are always shown in their own theme, whatever theme you picked at the top. The values below are read live from the token file:</p>
     <div class="tbl-wrap"><table class="dtable" id="theme-table"><thead><tr><th>Token</th><th>Daylight</th><th>Paper</th><th>Dusk</th><th>Midnight</th></tr></thead><tbody></tbody></table></div>
@@ -1160,7 +885,7 @@ sort by priority, highest first</div>
       <span class="big">Login fails after reset</span>
       <span>Atkinson Hyperlegible Next: designed by the Braille Institute so that similar letters are easy to tell apart. <b>Il1 O0 rn m</b></span>
       <span class="mono-s">WEB-142 · status is not Done · 1:30 · Il1 O0</span>
-      <span class="muted" style="font-size:12px">Atkinson Hyperlegible Mono: issue IDs, Advanced search, time values and code.</span>
+      <span class="muted u-font-size-12px">Atkinson Hyperlegible Mono: issue IDs, Advanced search, time values and code.</span>
     </div>
     <ul>
       <li><b>Font:</b> <i>Atkinson Hyperlegible Next</i>, shipped with Bugaboo; no requests to outside font services. <b>Monospace:</b> <i>Atkinson Hyperlegible Mono</i>. Both use the SIL Open Font License. (This design page loads them from Google Fonts only because it is a preview.)</li>
@@ -1170,7 +895,7 @@ sort by priority, highest first</div>
 
     <h3 id="s7-4"><button type="button" class="sec" data-sec>§7.4</button>Shape, spacing, motion</h3>
     <div class="scale" role="group" aria-label="Spacing steps">
-      <span><i style="width:4px;height:4px"></i>4</span><span><i style="width:8px;height:8px"></i>8</span><span><i style="width:12px;height:12px"></i>12</span><span><i style="width:16px;height:16px"></i>16</span><span><i style="width:24px;height:24px"></i>24</span><span><i style="width:32px;height:32px"></i>32</span><span><i style="width:48px;height:48px"></i>48</span>
+      <span><i class="u-width-4px--height-4px"></i>4</span><span><i class="u-width-8px--height-8px"></i>8</span><span><i class="u-width-12px--height-12px"></i>12</span><span><i class="u-width-16px--height-16px"></i>16</span><span><i class="u-width-24px--height-24px"></i>24</span><span><i class="u-width-32px--height-32px"></i>32</span><span><i class="u-width-48px--height-48px"></i>48</span>
     </div>
     <ul>
       <li><b>Spacing:</b> steps of 4 px (4, 8, 12, 16, 24, 32, 48).</li>
@@ -1180,7 +905,7 @@ sort by priority, highest first</div>
     </ul>
 
     <h3 id="s7-5"><button type="button" class="sec" data-sec>§7.5</button>Icons</h3>
-    <p style="display:flex;gap:14px;flex-wrap:wrap;align-items:center">
+    <p class="u-display-flex--gap-14px--flex-wrap-wrap--align-items-center">
       <span class="who"><svg class="ico lg"><use href="#i-home"/></svg>Home</span><span class="who"><svg class="ico lg"><use href="#i-bell"/></svg>Notifications</span><span class="who"><svg class="ico lg"><use href="#i-clock"/></svg>Time</span><span class="who type bug"><svg class="ico lg"><use href="#i-bug"/></svg>Bug</span><span class="who type task"><svg class="ico lg"><use href="#i-task"/></svg>Task</span><span class="who type feature"><svg class="ico lg"><use href="#i-feature"/></svg>Feature</span><span class="who type goal"><svg class="ico lg"><use href="#i-goal"/></svg>Goal</span></p>
     <ul>
       <li><b>Lucide</b> icons (ISC license); only the ones used are shipped.</li>
@@ -1240,7 +965,7 @@ sort by priority, highest first</div>
   </main>
 </div>
 
-<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<svg class="u-position-absolute" width="0" height="0" aria-hidden="true">
   <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></symbol>
   <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></symbol>
   <symbol id="i-bookmark" viewBox="0 0 24 24"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></symbol>
@@ -1277,6 +1002,7 @@ sort by priority, highest first</div>
   <symbol id="i-alert" viewBox="0 0 24 24"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/></symbol>
 </svg>
 
+<script src="frame.js"></script>
 <script src="docpage.js"></script>
 <script>
 "use strict";
@@ -1286,7 +1012,7 @@ function themeRule(name) {
     let rules;
     try { rules = sheet.cssRules; } catch (e) { continue; }
     for (const r of rules) {
-      if (r.selectorText && r.selectorText.replace(/\s/g, "") === ':root[data-look="' + name + '"]') return r.style;
+      if (r.selectorText && r.selectorText.replace(/\s/g, "") === ":root[" + bugabooFrame.look + '="' + name + '"]') return r.style;
     }
   }
   return null;
@@ -1368,13 +1094,13 @@ listBtn.addEventListener("click", () => {
   for (let d = 0; d < 35; d++) {
     const dt = day(d), out = dt.getUTCMonth() !== 9;
     html += '<div class="d' + (out ? " out" : "") + (d === TODAY ? " today" : "") + '"><span class="n">' + dt.getUTCDate() + "</span>" +
-      items.filter(i => i[0] === d).map(i => '<span class="it ' + (i[2] === "msn" ? "msn" : "pill " + i[2]) + '" style="border-radius:4px">' + i[1] + "</span>").join("") + "</div>";
+      items.filter(i => i[0] === d).map(i => '<span class="it u-border-radius-4px ' + (i[2] === "msn" ? "msn" : "pill " + i[2]) + '">' + i[1] + "</span>").join("") + "</div>";
   }
   document.getElementById("cal").innerHTML = html;
   const fmt = d => day(d).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", timeZone: "UTC" });
   const days = [...new Set(items.map(i => i[0]))].filter(d => d >= TODAY).slice(0, 5);
-  document.getElementById("agenda").innerHTML = '<div class="day today">Today · ' + fmt(TODAY) + '</div><div class="lrow muted" style="font-size:12px">Nothing due today.</div>' +
-    days.map(d => '<div class="day">' + fmt(d) + "</div>" + items.filter(i => i[0] === d).map(i => '<div class="lrow"><div class="t" style="font-size:13px">' + i[1] + '</div><div class="m"><span class="btn sm">Change due date …</span></div></div>').join("")).join("");
+  document.getElementById("agenda").innerHTML = '<div class="day today">Today · ' + fmt(TODAY) + '</div><div class="lrow muted u-font-size-12px">Nothing due today.</div>' +
+    days.map(d => '<div class="day">' + fmt(d) + "</div>" + items.filter(i => i[0] === d).map(i => '<div class="lrow"><div class="t u-font-size-13px">' + i[1] + '</div><div class="m"><span class="btn sm">Change due date …</span></div></div>').join("")).join("");
 })();
 
 /* ---------- field permissions demo ---------- */

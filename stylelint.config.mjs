@@ -79,9 +79,10 @@ export default {
       "/^opacity$/": [anyOpacity],
       "/^(?:transition|animation)/": [anyTime],
     },
-    // Fonts: tokens only, and no `font` shorthand that could hide a literal family or size.
+    // Fonts: tokens only (a control may take the family of its parent, which comes from a token),
+    // and no `font` shorthand that could hide a literal family or size.
     "declaration-property-value-allowed-list": {
-      "font-family": [String.raw`/^var\(--[\w-]+\)$/`],
+      "font-family": [String.raw`/^(?:var\(--[\w-]+\)|inherit)$/`],
     },
     "property-disallowed-list": ["font"],
     "declaration-no-important": true,

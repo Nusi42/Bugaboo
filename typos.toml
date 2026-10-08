@@ -15,10 +15,10 @@ THM = "THM"
 # The crate name flate2 (docs/third-party/README.md), not a misspelling of "flat".
 flate2 = "flate2"
 
-# Short CSS class names in the hand-written design pages (docs/02-ux-design.html, docs/mockups);
-# only HTML files get these two words.
+# Short CSS class names of the design pages (docs/02-ux-design.html, docs/mockups, and the rules
+# of design/theme.kdl that style them); only these files get these two words.
 [type.html]
-extend-glob = ["*.html"]
+extend-glob = ["*.html", "theme.kdl", "ux-design.css"]
 
 [type.html.extend-words]
 nd = "nd"

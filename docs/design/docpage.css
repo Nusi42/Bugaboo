@@ -366,3 +366,42 @@ a {
   border-left: var(--doc-space-3) solid var(--accent);
   color: var(--fg-muted);
 }
+
+.logo-fill-accent {
+  fill: var(--accent);
+}
+
+.logo-fill-canvas {
+  fill: var(--bg-canvas);
+}
+
+.logo-stroke-accent {
+  stroke: var(--accent);
+}
+
+.logo-stroke-canvas {
+  stroke: var(--bg-canvas);
+}
+
+.toc-phone .toc {
+  display: block;
+  position: static;
+  max-height: none;
+  padding: 0;
+}
+
+.feedback .sec {
+  vertical-align: 0;
+}
+
+.dtable .align-left {
+  text-align: left;
+}
+
+.dtable .align-center {
+  text-align: center;
+}
+
+.dtable .align-right {
+  text-align: right;
+}

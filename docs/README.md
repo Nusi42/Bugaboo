@@ -21,7 +21,7 @@ Cross-cutting:
 - [EU law and Bugaboo](compliance.md) — plain-language guide to CRA, AI Act, NIS2, Data Act, GDPR and more, for the sold and served models.
 - [`third-party/`](third-party/README.md) — register of every direct third-party dependency (feeds the SBOM and license notices).
 - [`../tools/checks/catalog.toml`](../tools/checks/catalog.toml) — every automated check, once (ADR-0020).
-- `design/` — shared design tokens (`theme.css`), components (`components.css`) and document-page layout (`docpage.css`), all generated from `design/theme.kdl`, and `docpage.js`; used by every design page and mockup.
+- `design/` — shared design tokens (`theme.css`), components (`components.css`), document-page layout (`docpage.css`), the styles of the UX page and the mockup (`ux-design.css`, `mockup.css`) and the names of the page frame (`frame.js`), all generated from `design/theme.kdl`, and `docpage.js`; used by every design page and mockup.
 - `mockups/` — clickable mockups ([live](a published page, not linked here)).
 
 ## Product priorities (in order)

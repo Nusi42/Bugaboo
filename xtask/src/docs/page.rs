@@ -275,7 +275,7 @@ const TEMPLATE: &str = r#"<!-- {{marker}} `cargo xtask docs`. Edit the Markdown 
 <link rel="stylesheet" href="docpage.css">
 
 <header class="top"><div class="top-in">
-  <div class="brand"><svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="17" r="11" style="fill:var(--accent)"/><path d="M16 6v22" style="stroke:var(--bg-canvas)" stroke-width="2"/><circle cx="11.5" cy="14" r="2.2" style="fill:var(--bg-canvas)"/><circle cx="20.5" cy="14" r="2.2" style="fill:var(--bg-canvas)"/><circle cx="12" cy="21.5" r="1.8" style="fill:var(--bg-canvas)"/><circle cx="20" cy="21.5" r="1.8" style="fill:var(--bg-canvas)"/><path d="M12 6.5 9 3M20 6.5 23 3" style="stroke:var(--accent)" stroke-width="2" stroke-linecap="round" fill="none"/></svg>Bugaboo <small>{{small}}</small></div>
+  <div class="brand"><svg viewBox="0 0 32 32" aria-hidden="true"><circle class="logo-fill-accent" cx="16" cy="17" r="11"/><path class="logo-stroke-canvas" d="M16 6v22" stroke-width="2"/><circle class="logo-fill-canvas" cx="11.5" cy="14" r="2.2"/><circle class="logo-fill-canvas" cx="20.5" cy="14" r="2.2"/><circle class="logo-fill-canvas" cx="12" cy="21.5" r="1.8"/><circle class="logo-fill-canvas" cx="20" cy="21.5" r="1.8"/><path class="logo-stroke-accent" d="M12 6.5 9 3M20 6.5 23 3" stroke-width="2" stroke-linecap="round" fill="none"/></svg>Bugaboo <small>{{small}}</small></div>
   <label class="look-pick" for="look">Theme
     <select id="look"><option value="system">Match my device</option><option value="daylight">Daylight</option><option value="paper">Paper</option><option value="dusk">Dusk</option><option value="midnight">Midnight</option></select></label>
 </div></header>
@@ -283,14 +283,15 @@ const TEMPLATE: &str = r#"<!-- {{marker}} `cargo xtask docs`. Edit the Markdown 
 <div class="layout">
   <nav class="toc" aria-label="Contents"><div class="toc-h">Contents</div><div id="toc"></div></nav>
   <main class="doc">
-    <details class="toc-phone"><summary>Contents</summary><nav id="toc-phone" class="toc" style="display:block;position:static;max-height:none;padding:0"></nav></details>
+    <details class="toc-phone"><summary>Contents</summary><nav id="toc-phone" class="toc"></nav></details>
     <h1>{{title}}</h1>
     <div class="status-line">{{status}}<span>{{phase}}</span><span>·</span><span>{{date}}</span></div>
     <p class="lede">{{lede}}</p>
-    <div class="note feedback"><b>How to give feedback</b>Use this page's comment button. Mention the section number shown next to each heading (for example <span class="sec" style="vertical-align:0">{{example}}</span>), or select text and comment on it. Tapping a section number copies it, ready to paste into your comment.</div>
+    <div class="note feedback"><b>How to give feedback</b>Use this page's comment button. Mention the section number shown next to each heading (for example <span class="sec">{{example}}</span>), or select text and comment on it. Tapping a section number copies it, ready to paste into your comment.</div>
 {{body}}
   </main>
 </div>
+<script src="frame.js"></script>
 <script src="docpage.js"></script>
 "#;
 

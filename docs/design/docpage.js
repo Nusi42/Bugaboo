@@ -10,11 +10,11 @@
   } catch {
     /* Storage is blocked: the choice lasts until the page closes. */
   }
-  /* "Match my device" sets no data-look: the generated token CSS then follows the device (and the
-     host's data-theme), so no theme name is repeated here. */
+  /* "Match my device" sets no look attribute: the generated token CSS then follows the device (and the
+     mode attribute of the host), so no theme name is repeated here. */
   function applyLook() {
-    if (look === "system") delete root.dataset.look;
-    else root.dataset.look = look;
+    if (look === "system") root.removeAttribute(bugabooFrame.look);
+    else root.setAttribute(bugabooFrame.look, look);
   }
   const sel = document.querySelector("#look");
   sel.value = look;

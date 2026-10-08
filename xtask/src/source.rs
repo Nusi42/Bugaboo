@@ -43,6 +43,8 @@ pub(crate) enum Kind {
     Web,
     /// Like [`Kind::Web`], and the style sheets too.
     WebAndStyles,
+    /// The HTML pages of the documents and the mockups.
+    DocPages,
 }
 
 impl Kind {
@@ -50,6 +52,7 @@ impl Kind {
         match self {
             Self::Rust => "crates/",
             Self::Web | Self::WebAndStyles => "web/",
+            Self::DocPages => "docs/",
         }
     }
 
@@ -58,6 +61,7 @@ impl Kind {
             Self::Rust => &["rs"],
             Self::Web => &["ts", "tsx"],
             Self::WebAndStyles => &["ts", "tsx", "css", "scss", "sass", "less"],
+            Self::DocPages => &["html"],
         }
     }
 
@@ -66,6 +70,7 @@ impl Kind {
         match self {
             Self::Rust => &["tests"],
             Self::Web | Self::WebAndStyles => &["node_modules", "dist", "fixtures"],
+            Self::DocPages => &[],
         }
     }
 

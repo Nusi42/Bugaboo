@@ -2742,10 +2742,11 @@ docs "components" description="Bugaboo shared components: base elements, buttons
     }
 
     rule "button" "input" "select" "textarea" {
-        font-family "$font"
+        font-family inherit
         font-size inherit
         font-weight inherit
         font-style inherit
+        line-height inherit
         color inherit
     }
 
@@ -3582,5 +3583,5543 @@ docs "docpage" description="Bugaboo document pages: header, contents, section nu
         padding "$doc-space-6 $doc-space-14"
         border-left "$doc-space-3 solid $accent"
         color "$fg-muted"
+    }
+
+    // The logo of the page header, and what the page builder used to write as inline styles.
+    rule ".logo-fill-accent" {
+        fill "$accent"
+    }
+
+    rule ".logo-fill-canvas" {
+        fill "$bg-canvas"
+    }
+
+    rule ".logo-stroke-accent" {
+        stroke "$accent"
+    }
+
+    rule ".logo-stroke-canvas" {
+        stroke "$bg-canvas"
+    }
+
+    // The list of contents inside the page on a phone: it is not the rail of the wide layout.
+    rule ".toc-phone .toc" {
+        display block
+        position static
+        max-height none
+        padding 0
+    }
+
+    rule ".feedback .sec" {
+        vertical-align 0
+    }
+
+    // The alignment of a column of a table.
+    rule ".dtable .align-left" {
+        text-align left
+    }
+
+    rule ".dtable .align-center" {
+        text-align center
+    }
+
+    rule ".dtable .align-right" {
+        text-align right
+    }
+}
+
+docs "ux-design" description="The design page of the user experience: its reading type, the demo frames, the mini screens and the diagrams. Needs theme.css, components.css and docpage.css." {
+    tokens {
+        line-height "doc-lh-1-1" "1.1"
+        line-height "doc-lh-1-3" "1.3"
+        number "doc-stroke-1-2" 1.2
+        number "doc-stroke-2-5" 2.5
+        number "doc-stroke-3-4" 3.4
+        opacity "doc-opacity-0-2" 0.2
+        opacity "doc-opacity-0-4" 0.4
+        size "doc-deg-45" "45deg"
+        size "doc-deg-n2" "-2deg"
+        size "doc-em-0-06" "0.06em"
+        size "doc-font-10" "10px"
+        size "doc-font-10-5" "10.5px"
+        size "doc-font-11-5" "11.5px"
+        size "doc-font-13" "13px"
+        size "doc-font-15" "15px"
+        size "doc-font-16" "16px"
+        size "doc-font-19" "19px"
+        size "doc-font-20" "20px"
+        size "doc-font-30" "30px"
+        size "doc-space-13" "13px"
+        size "doc-space-15" "15px"
+        size "doc-space-150" "150px"
+        size "doc-space-160" "160px"
+        size "doc-space-17" "17px"
+        size "doc-space-170" "170px"
+        size "doc-space-190" "190px"
+        size "doc-space-200" "200px"
+        size "doc-space-220" "220px"
+        size "doc-space-240" "240px"
+        size "doc-space-26" "26px"
+        size "doc-space-260" "260px"
+        size "doc-space-280" "280px"
+        size "doc-space-300" "300px"
+        size "doc-space-31" "31px"
+        size "doc-space-320" "320px"
+        size "doc-space-330" "330px"
+        size "doc-space-340" "340px"
+        size "doc-space-360" "360px"
+        size "doc-space-46" "46px"
+        size "doc-space-460" "460px"
+        size "doc-space-48" "48px"
+        size "doc-space-520" "520px"
+        size "doc-space-560" "560px"
+        size "doc-space-600" "600px"
+        size "doc-space-640" "640px"
+        size "doc-space-70" "70px"
+        size "doc-space-78" "78px"
+        size "doc-space-80" "80px"
+        size "doc-space-90" "90px"
+        size "doc-space-n10" "-10px"
+        size "doc-space-n2" "-2px"
+        size "doc-space-n6" "-6px"
+    }
+
+    rule ".target" {
+        border-left "$doc-space-3 solid $accent"
+        padding "$space-1 0 $space-1 $doc-space-14"
+        margin "$doc-space-20 0"
+        max-width "$doc-measure-body"
+    }
+
+    rule ".doc .principles" {
+        list-style none
+        padding 0
+        display grid
+        grid-template-columns "repeat(auto-fill, minmax($doc-space-260, 1fr))"
+        gap "$space-3"
+        counter-reset p
+    }
+
+    rule ".principles li" {
+        counter-increment p
+        border "$border-width solid $border"
+        border-radius "$r-card"
+        padding "$space-3 $doc-space-14 $space-3 $doc-space-46"
+        position relative
+        background "$bg-raised"
+        margin 0
+        max-width none
+    }
+
+    rule ".principles li::before" {
+        content "counter(p)"
+        position absolute
+        left "$space-3"
+        top "$space-3"
+        width "$space-5"
+        height "$space-5"
+        border-radius "50%"
+        background "$accent-soft"
+        color "$accent-fg"
+        font-weight "$weight-bold"
+        font-size "$doc-font-12"
+        display grid
+        place-items center
+        font-family "$mono"
+    }
+
+    rule ".doc .tree" {
+        list-style none
+        font-size "$fs-sm"
+        border "$border-width solid $border"
+        border-radius "$r-card"
+        padding "$space-3 $doc-space-14"
+        background "$bg-surface"
+        max-width "$doc-space-560"
+    }
+
+    rule ".tree ul" {
+        list-style none
+        padding-left "$doc-space-18"
+        border-left "$border-width dashed $border"
+        margin "$doc-space-2 0 $doc-space-2 $doc-space-7"
+    }
+
+    rule ".tree li" {
+        display block
+        margin "$doc-space-3 0"
+        max-width none
+    }
+
+    rule ".tree .lbl" {
+        display inline-flex
+        align-items center
+        gap "$doc-space-6"
+        font-weight "$doc-weight-semibold"
+    }
+
+    rule ".tree .d" {
+        color "$fg-muted"
+        font-weight "$weight-regular"
+    }
+
+    rule ".demo" {
+        margin "$doc-space-18 0 $doc-space-22"
+        display flex
+        gap "$space-4"
+        flex-wrap wrap
+        align-items flex-start
+    }
+
+    rule ".frame" {
+        border "$border-width solid $border"
+        border-radius "$space-3"
+        background "$bg-canvas"
+        box-shadow "$shadow"
+        overflow hidden
+        min-width 0
+        flex "1 1 $doc-space-520"
+        max-width "100%"
+    }
+
+    rule ".frame-cap" {
+        font-size "$doc-font-11"
+        color "$fg-subtle"
+        text-transform uppercase
+        letter-spacing "$doc-tracking-wide"
+        font-weight "$weight-bold"
+        padding "$doc-space-6 $space-3"
+        border-bottom "$border-width solid $border-subtle"
+        background "$bg-surface"
+        display flex
+        gap "$space-2"
+        align-items center
+    }
+
+    rule ".frame-body" {
+        overflow-x auto
+    }
+
+    rule ".scr" {
+        font-size "$doc-font-13"
+        background "$bg-canvas"
+        color "$fg"
+    }
+
+    rule ".frame-body > .scr" {
+        min-width "$doc-space-640"
+    }
+
+    rule ".frame.phone" {
+        flex "0 0 $doc-space-300"
+        border-radius "$doc-space-28"
+        border "$doc-space-7 solid $border"
+    }
+
+    rule ".frame.phone .frame-body > .scr" {
+        min-width 0
+    }
+
+    rule ".frame.narrow" {
+        flex "1 1 $doc-space-340"
+    }
+
+    rule ".frame.narrow .frame-body > .scr" {
+        min-width 0
+    }
+
+    rule ".cap-note" {
+        font-size "$fs-sm"
+        color "$fg-muted"
+        margin "$doc-space-n10 0 $doc-space-18"
+        max-width "$doc-measure-body"
+    }
+
+    rule ".scr .btn" {
+        padding "$doc-space-5 $doc-space-10"
+        font-size "$doc-font-12-5"
+    }
+
+    rule ".scr .btn.sm" {
+        padding "$doc-space-3 $space-2"
+        font-size "$doc-font-12"
+    }
+
+    rule ".scr .seg button" {
+        padding "$space-1 $doc-space-9"
+        font-size "$doc-font-12"
+    }
+
+    rule ".scr .pill" {
+        font-size "$doc-font-12"
+        padding "$doc-space-1 $space-2"
+    }
+
+    rule ".scr .key" {
+        font-size "$doc-font-12"
+    }
+
+    rule ".scr .chip" {
+        font-size "$doc-font-12"
+        padding "$doc-space-3 $doc-space-3 $doc-space-3 $doc-space-9"
+    }
+
+    rule ".scr .chip.add" {
+        padding "$doc-space-3 $doc-space-9"
+    }
+
+    rule ".app3" {
+        display grid
+        grid-template-columns "$doc-space-150 minmax(0, 1fr) $doc-space-230"
+        min-height "$doc-space-320"
+    }
+
+    rule ".app2" {
+        display grid
+        grid-template-columns "$doc-space-150 minmax(0, 1fr)"
+        min-height "$doc-space-280"
+    }
+
+    rule ".sb" {
+        background "$bg-surface"
+        border-right "$border-width solid $border"
+        padding "$doc-space-10 $space-2"
+        display flex
+        flex-direction column
+        gap "$doc-space-1"
+    }
+
+    rule ".sb .ttl" {
+        display flex
+        align-items center
+        gap "$doc-space-6"
+        font-weight "$weight-bold"
+        padding "$doc-space-2 $doc-space-6 $space-2"
+    }
+
+    rule ".ni" {
+        display flex
+        align-items center
+        gap "$doc-space-7"
+        padding "$doc-space-5 $doc-space-7"
+        border-radius "$r-ctl"
+    }
+
+    rule ".ni.on" {
+        background "$bg-selected"
+        color "$accent-fg"
+        font-weight "$doc-weight-semibold"
+    }
+
+    rule ".ni .cnt" {
+        margin-left auto
+        font-size "$doc-font-10"
+        background "$accent"
+        color "$on-accent"
+        border-radius "$doc-r-pill"
+        padding "0 $doc-space-6"
+        font-weight "$weight-bold"
+    }
+
+    rule ".nl" {
+        font-size "$doc-font-10"
+        text-transform uppercase
+        letter-spacing "$doc-tracking-wide"
+        color "$fg-subtle"
+        padding "$space-2 $doc-space-7 $doc-space-2"
+        font-weight "$weight-bold"
+    }
+
+    rule ".timer-mini" {
+        margin-top auto
+        display flex
+        align-items center
+        gap "$doc-space-6"
+        padding "$doc-space-6 $space-2"
+        border-radius "$r-ctl"
+        background "$accent-soft"
+        color "$accent-fg"
+        font-weight "$doc-weight-semibold"
+        font-size "$doc-font-12"
+    }
+
+    rule ".mainc" {
+        display flex
+        flex-direction column
+        min-width 0
+    }
+
+    rule ".tb" {
+        display flex
+        align-items center
+        gap "$space-2"
+        padding "$space-2 $space-3"
+        border-bottom "$border-width solid $border"
+        flex-wrap wrap
+    }
+
+    rule ".tb .crumb" {
+        color "$fg-muted"
+    }
+
+    rule ".dodont b" {
+        display block
+        font-size "$doc-font-11"
+        text-transform uppercase
+        letter-spacing "$doc-em-0-06"
+        margin-bottom "$space-1"
+    }
+
+    rule ".cards-pick b" {
+        display block
+        font-size "$doc-font-12-5"
+    }
+
+    rule ".tb .crumb b" {
+        color "$fg"
+    }
+
+    rule ".sbar" {
+        display flex
+        gap "$doc-space-6"
+        padding "$space-2 $space-3"
+        border-bottom "$border-width solid $border-subtle"
+        flex-wrap wrap
+        align-items center
+    }
+
+    rule ".r" {
+        display flex
+        align-items center
+        gap "$space-2"
+        padding "$doc-space-7 $space-3"
+        border-bottom "$border-width solid $border-subtle"
+    }
+
+    rule ".r .t" {
+        flex 1
+        min-width 0
+        white-space nowrap
+        overflow hidden
+        text-overflow ellipsis
+        font-weight "$doc-weight-medium"
+    }
+
+    rule ".r.sel" {
+        background "$bg-selected"
+    }
+
+    rule ".r.hd" {
+        background "$bg-surface"
+        font-size "$doc-font-11"
+        text-transform uppercase
+        letter-spacing "$doc-tracking-mid"
+        color "$fg-subtle"
+        font-weight "$weight-bold"
+    }
+
+    rule ".pn" {
+        border-left "$border-width solid $border"
+        padding "$space-3"
+        display flex
+        flex-direction column
+        gap "$doc-space-10"
+        min-width 0
+    }
+
+    rule ".pn h5" {
+        margin 0
+        font-size "$doc-font-15"
+        line-height "$doc-lh-1-3"
+    }
+
+    rule ".mini-fields" {
+        display grid
+        grid-template-columns "auto minmax(0, 1fr)"
+        gap "$space-1 $doc-space-10"
+        font-size "$doc-font-12"
+        align-items center
+    }
+
+    rule ".mini-fields dt" {
+        color "$fg-muted"
+    }
+
+    rule ".mini-fields dd" {
+        margin 0
+        min-width 0
+    }
+
+    rule ".sh" {
+        font-size "$doc-font-10-5"
+        text-transform uppercase
+        letter-spacing "$doc-tracking-wide"
+        color "$fg-muted"
+        font-weight "$weight-bold"
+        margin "$space-1 0 $space-1"
+    }
+
+    rule ".blk" {
+        border "$border-width solid $border"
+        border-radius "$space-2"
+        overflow hidden
+    }
+
+    rule ".blk .r:last-child" {
+        border-bottom 0
+    }
+
+    rule ".rel-kind" {
+        min-width "$doc-space-96"
+        color "$fg-muted"
+        font-size "$doc-font-12"
+    }
+
+    rule ".ph-top" {
+        display flex
+        align-items center
+        gap "$doc-space-6"
+        padding "$doc-space-10 $space-3"
+        border-bottom "$border-width solid $border"
+        font-weight "$doc-weight-semibold"
+    }
+
+    rule ".ph-body" {
+        min-height "$doc-space-300"
+    }
+
+    rule ".bb" {
+        display grid
+        grid-template-columns "repeat(5, 1fr)"
+        border-top "$border-width solid $border"
+        background "$bg-surface"
+    }
+
+    rule ".bb span" {
+        display flex
+        flex-direction column
+        align-items center
+        font-size "$doc-font-10"
+        padding "$doc-space-6 0 $space-2"
+        color "$fg-muted"
+        gap "$doc-space-2"
+    }
+
+    rule ".bb .on" {
+        color "$accent-fg"
+        font-weight "$weight-bold"
+    }
+
+    rule ".bb .new .ico" {
+        background "$accent"
+        color "$on-accent"
+        border-radius "50%"
+        padding "$doc-space-3"
+        width "$doc-space-22"
+        height "$doc-space-22"
+    }
+
+    rule ".actbar" {
+        display grid
+        grid-template-columns "repeat(4, 1fr)"
+        border-top "$border-width solid $border"
+        background "$bg-surface"
+        text-align center
+        font-size "$doc-font-11"
+    }
+
+    rule ".actbar span" {
+        padding "$space-2 0"
+        display flex
+        flex-direction column
+        align-items center
+        gap "$doc-space-2"
+    }
+
+    rule ".lrow" {
+        padding "$doc-space-10 $space-3"
+        border-bottom "$border-width solid $border-subtle"
+    }
+
+    rule ".lrow .t" {
+        font-weight "$doc-weight-semibold"
+        margin "$doc-space-2 0 $space-1"
+    }
+
+    rule ".lrow .m" {
+        display flex
+        gap "$space-2"
+        flex-wrap wrap
+        align-items center
+        font-size "$doc-font-12"
+        color "$fg-muted"
+    }
+
+    rule ".banner" {
+        display flex
+        gap "$space-2"
+        align-items center
+        flex-wrap wrap
+        padding "$space-2 $doc-space-10"
+        border-radius "$space-2"
+        background "$warning-soft"
+        color "$fg"
+        border "$border-width solid $warning"
+        font-size "$doc-font-12"
+    }
+
+    rule ".bubble" {
+        background "$bg-surface"
+        border "$border-width solid $border-subtle"
+        border-radius "$r-card"
+        padding "$doc-space-7 $doc-space-10"
+        font-size "$doc-font-12"
+    }
+
+    rule ".box" {
+        background "$bg-raised"
+        border "$border-width solid $border"
+        border-radius "$r-card"
+        overflow hidden
+    }
+
+    rule ".box-h" {
+        display flex
+        align-items center
+        gap "$doc-space-6"
+        padding "$doc-space-9 $space-3"
+        border-bottom "$border-width solid $border-subtle"
+        font-weight "$weight-bold"
+    }
+
+    rule ".box-h .muted" {
+        margin-left auto
+        font-weight "$weight-regular"
+        font-size "$doc-font-11"
+    }
+
+    rule ".grid2" {
+        display grid
+        grid-template-columns "repeat(2, minmax(0, 1fr))"
+        gap "$space-3"
+        padding "$space-3"
+    }
+
+    rule ".timer-card" {
+        display flex
+        align-items center
+        gap "$doc-space-10"
+        padding "$doc-space-10 $space-3"
+        border "$border-width solid $accent"
+        background "$accent-soft"
+        border-radius "$r-card"
+        margin "$space-3 $space-3 0"
+        flex-wrap wrap
+    }
+
+    rule ".timer-card .clock" {
+        font-family "$mono"
+        font-size "$doc-font-20"
+        font-weight "$doc-weight-semibold"
+        color "$accent-fg"
+    }
+
+    rule ".checklist" {
+        display flex
+        gap "$doc-space-10"
+        flex-wrap wrap
+        align-items center
+        margin "$space-3 $space-3 0"
+        padding "$doc-space-10 $space-3"
+        border "$border-width dashed $border"
+        border-radius "$r-card"
+    }
+
+    rule ".okmark" {
+        width "$doc-space-18"
+        height "$doc-space-18"
+        border-radius "50%"
+        background "$success"
+        color "$bg-canvas"
+        display inline-grid
+        place-items center
+        font-size "$doc-font-11"
+        font-weight "$weight-bold"
+    }
+
+    rule ".bulk" {
+        display flex
+        gap "$doc-space-6"
+        flex-wrap wrap
+        align-items center
+        margin "$doc-space-10 auto"
+        width max-content
+        max-width "calc(100% - $space-5)"
+        background "$bg-raised"
+        border "$border-width solid $border"
+        box-shadow "$shadow"
+        border-radius "$r-card"
+        padding "$doc-space-7 $doc-space-9"
+    }
+
+    rule ".preview-msg" {
+        margin "0 $space-3 $space-3"
+        border "$border-width solid $border"
+        border-radius "$r-card"
+        padding "$doc-space-10 $space-3"
+        background "$bg-raised"
+        font-size "$doc-font-12-5"
+    }
+
+    rule ".adv-box" {
+        font-family "$mono"
+        font-size "$doc-font-12-5"
+        line-height "$lh-loose"
+        border "$border-width solid $border"
+        border-radius "$r-ctl"
+        padding "$space-2 $doc-space-10"
+        background "$bg-raised"
+        white-space pre-wrap
+    }
+
+    rule ".adv-box .err" {
+        text-decoration "underline wavy $danger"
+        text-underline-offset "$doc-space-3"
+    }
+
+    rule ".errline" {
+        color "$danger"
+        font-size "$doc-font-12"
+        display flex
+        gap "$doc-space-6"
+        align-items center
+        margin-top "$doc-space-6"
+    }
+
+    rule ".ask-res" {
+        border "$border-width solid $border"
+        background "$accent-soft"
+        border-radius "$r-ctl"
+        padding "$space-2 $doc-space-10"
+        display flex
+        flex-wrap wrap
+        gap "$space-2"
+        align-items center
+        font-size "$doc-font-12"
+    }
+
+    rule ".ask-res code" {
+        flex 1
+        min-width 0
+        font-family "$mono"
+    }
+
+    rule ".pop-demo" {
+        border "$border-width solid $border"
+        border-radius "$r-card"
+        background "$bg-raised"
+        box-shadow "$shadow"
+        padding "$doc-space-5"
+        min-width "$doc-space-200"
+        font-size "$doc-font-12-5"
+    }
+
+    rule ".pop-demo .h" {
+        font-size "$doc-font-10-5"
+        text-transform uppercase
+        letter-spacing "$doc-tracking-wide"
+        color "$fg-subtle"
+        font-weight "$weight-bold"
+        padding "$doc-space-5 $space-2 $doc-space-3"
+    }
+
+    rule ".pop-demo .it" {
+        display flex
+        gap "$space-2"
+        align-items center
+        padding "$doc-space-6 $space-2"
+        border-radius "$r-ctl"
+    }
+
+    rule ".pop-demo .it.on" {
+        background "$bg-hover"
+    }
+
+    rule ".pop-demo input" {
+        width "100%"
+        padding "$doc-space-6 $space-2"
+        border "$border-width solid $accent"
+        border-radius "$r-ctl"
+        background "$bg-canvas"
+        margin "$doc-space-2 0 $space-1"
+        font-size "$doc-font-12-5"
+    }
+
+    rule ".flow" {
+        display flex
+        gap "$space-3"
+        flex-wrap wrap
+        align-items flex-start
+    }
+
+    rule ".flow .step" {
+        display flex
+        flex-direction column
+        gap "$doc-space-6"
+        flex "1 1 $doc-space-200"
+        min-width 0
+    }
+
+    rule ".scale span" {
+        display flex
+        flex-direction column
+        align-items center
+        gap "$space-1"
+        font-size "$doc-font-11"
+        color "$fg-muted"
+        font-family "$mono"
+    }
+
+    rule ".tbtn span" {
+        padding "$doc-space-2 $doc-space-6"
+        border-radius "$doc-r-small"
+    }
+
+    rule ".flow .step > span" {
+        font-size "$fs-xs"
+        font-weight "$weight-bold"
+        color "$fg-muted"
+    }
+
+    rule ".toast-demo" {
+        display inline-flex
+        gap "$doc-space-10"
+        align-items center
+        background "$fg"
+        color "$bg-canvas"
+        border-radius "$r-card"
+        padding "$space-2 $space-3"
+        font-size "$doc-font-12-5"
+    }
+
+    rule ".toast-demo u" {
+        font-weight "$weight-bold"
+    }
+
+    rule ".dialog-demo" {
+        border "$border-width solid $border"
+        border-radius "$doc-space-14"
+        background "$bg-raised"
+        box-shadow "$shadow"
+        max-width "$doc-space-460"
+        margin "$doc-space-14 auto"
+    }
+
+    rule ".dialog-demo .dh" {
+        display flex
+        align-items center
+        padding "$doc-space-10 $doc-space-14"
+        border-bottom "$border-width solid $border-subtle"
+        font-weight "$weight-bold"
+    }
+
+    rule ".dialog-demo .db" {
+        padding "$space-3 $doc-space-14"
+        display flex
+        flex-direction column
+        gap "$doc-space-10"
+    }
+
+    rule ".dialog-demo .df" {
+        padding "$doc-space-10 $doc-space-14"
+        border-top "$border-width solid $border-subtle"
+        display flex
+        gap "$doc-space-6"
+        justify-content flex-end
+        flex-wrap wrap
+    }
+
+    rule ".perm select" {
+        padding "$space-1 $doc-space-6"
+        border-radius "$r-ctl"
+        border "$border-width solid $border"
+        background "$bg-raised"
+        font-size "$doc-font-12"
+    }
+
+    rule ".scr .field input" ".scr .field select" ".scr .field textarea" {
+        padding "$doc-space-6 $doc-space-9"
+        font-size "$doc-font-12-5"
+    }
+
+    rule ".scr .field textarea" {
+        min-height "$doc-space-56"
+    }
+
+    rule ".board" {
+        display grid
+        grid-template-columns "repeat(4, minmax($doc-space-150, 1fr))"
+        gap "$doc-space-10"
+        padding "$space-3"
+    }
+
+    rule ".col" {
+        background "$bg-surface"
+        border "$border-width solid $border-subtle"
+        border-radius "$r-card"
+        padding-bottom "$space-2"
+        display flex
+        flex-direction column
+        gap "$doc-space-7"
+    }
+
+    rule ".col.fade" {
+        opacity "$doc-opacity-0-4"
+    }
+
+    rule ".col.ok" {
+        outline "$doc-space-2 dashed $accent"
+        outline-offset "$doc-space-n2"
+    }
+
+    rule ".col-h" {
+        display flex
+        align-items center
+        gap "$doc-space-6"
+        padding "$space-2 $doc-space-9 $doc-space-2"
+        font-weight "$doc-weight-semibold"
+    }
+
+    rule ".col-h .lim" {
+        margin-left auto
+        font-size "$doc-font-11"
+        color "$fg-muted"
+    }
+
+    rule ".col-h .lim.over" {
+        color "$warning"
+        font-weight "$weight-bold"
+    }
+
+    rule ".card" {
+        margin "0 $space-2"
+        background "$bg-raised"
+        border "$border-width solid $border"
+        border-radius "$space-2"
+        padding "$space-2"
+        display flex
+        flex-direction column
+        gap "$doc-space-6"
+        font-size "$doc-font-12"
+    }
+
+    rule ".card .t" {
+        font-weight "$doc-weight-medium"
+        font-size "$doc-font-12-5"
+    }
+
+    rule ".card .m" {
+        display flex
+        gap "$doc-space-6"
+        align-items center
+        flex-wrap wrap
+    }
+
+    rule ".card.drag" {
+        transform "rotate($doc-deg-n2)"
+        box-shadow "$shadow"
+        border-color "$accent"
+    }
+
+    rule ".tl" {
+        display grid
+        grid-template-columns "$doc-space-190 1fr"
+        font-size "$doc-font-12"
+    }
+
+    rule ".tl .hdr" {
+        background "$bg-surface"
+        border-bottom "$border-width solid $border"
+        padding "$doc-space-6 $space-2"
+        color "$fg-muted"
+        font-weight "$doc-weight-semibold"
+        font-size "$doc-font-11"
+    }
+
+    rule ".tl .wk" {
+        display grid
+        grid-template-columns "repeat(5, 1fr)"
+        padding 0
+    }
+
+    rule ".tl .wk span" {
+        padding "$doc-space-6 $space-2"
+        border-left "$border-width solid $border-subtle"
+    }
+
+    rule ".tl .nm" {
+        padding "$doc-space-6 $space-2"
+        border-bottom "$border-width solid $border-subtle"
+        display flex
+        gap "$doc-space-6"
+        align-items center
+        white-space nowrap
+        overflow hidden
+    }
+
+    rule ".tl .nm.child" {
+        padding-left "$doc-space-22"
+    }
+
+    rule ".tl .ln" {
+        position relative
+        border-bottom "$border-width solid $border-subtle"
+        min-height "$doc-space-31"
+        background-image "repeating-linear-gradient(to right, transparent 0, transparent calc(20% - $doc-space-1), $border-subtle calc(20% - $doc-space-1), $border-subtle 20%)"
+    }
+
+    rule ".bar" {
+        position absolute
+        top "$doc-space-7"
+        height "$doc-space-17"
+        border-radius "$doc-r-small"
+        background "$st-ip"
+        color "$on-accent"
+        font-size "$doc-font-10"
+        padding "0 $doc-space-5"
+        display flex
+        align-items center
+        font-family "$mono"
+        white-space nowrap
+        overflow hidden
+    }
+
+    rule ".bar.ns" {
+        background "$fg-subtle"
+    }
+
+    rule ".bar.dn" {
+        background "$st-done"
+    }
+
+    rule ".bar.goal" {
+        background "$accent"
+        height "$space-2"
+        top "$space-3"
+    }
+
+    rule ".ms" {
+        position absolute
+        top "$doc-space-9"
+        width "$doc-space-13"
+        height "$doc-space-13"
+        transform "translateX($doc-space-n6) rotate($doc-deg-45)"
+        background "$warning"
+        border-radius "$doc-space-2"
+    }
+
+    rule ".today" {
+        position absolute
+        top 0
+        bottom 0
+        width "$doc-space-2"
+        background "$danger"
+        opacity "$opacity-busy"
+    }
+
+    rule ".dep" {
+        position absolute
+        height "$doc-space-2"
+        background "$fg-muted"
+        top "$doc-space-15"
+    }
+
+    rule ".docs3" {
+        display grid
+        grid-template-columns "$doc-space-150 minmax(0, 1fr) $doc-space-150"
+        min-height "$doc-space-280"
+    }
+
+    rule ".doc-page" {
+        padding "$doc-space-14 $doc-space-18"
+        min-width 0
+    }
+
+    rule ".doc-page h5" {
+        font-size "$doc-font-20"
+        margin "$space-1 0 $space-2"
+    }
+
+    rule ".doc-page p" {
+        font-size "$doc-font-12-5"
+        line-height "$lh-loose"
+        margin "$doc-space-6 0"
+    }
+
+    rule ".tbtn" {
+        display flex
+        gap "$doc-space-2"
+        flex-wrap wrap
+        border "$border-width solid $border"
+        border-radius "$r-ctl"
+        padding "$doc-space-3"
+        background "$bg-surface"
+        width max-content
+        max-width "100%"
+        font-size "$doc-font-11-5"
+    }
+
+    rule ".live" {
+        display inline-flex
+        gap "$doc-space-5"
+        align-items center
+        border "$border-width solid $border"
+        border-radius "$r-ctl"
+        padding "$doc-space-1 $doc-space-6"
+        background "$bg-raised"
+    }
+
+    rule ".dside" {
+        border-left "$border-width solid $border"
+        padding "$space-3 $doc-space-10"
+        font-size "$doc-font-12"
+        display flex
+        flex-direction column
+        gap "$space-3"
+    }
+
+    rule ".lockb" {
+        margin-left auto
+        display inline-flex
+        gap "$doc-space-3"
+        align-items center
+        font-size "$doc-font-10-5"
+        color "$warning"
+    }
+
+    rule ".ts" {
+        border-collapse collapse
+        width "100%"
+        font-size "$doc-font-12"
+    }
+
+    rule ".ts th" ".ts td" {
+        padding "$doc-space-6"
+        border-bottom "$border-width solid $border-subtle"
+        text-align center
+        font-variant-numeric tabular-nums
+    }
+
+    rule ".ts th" {
+        background "$bg-surface"
+        color "$fg-muted"
+        font-size "$doc-font-11"
+    }
+
+    rule ".perm th" {
+        background "$bg-surface"
+        font-size "$doc-font-10-5"
+        color "$fg-muted"
+        text-transform uppercase
+        letter-spacing "$doc-tracking-mid"
+    }
+
+    rule ".perm th" ".perm td" {
+        padding "$space-2 $doc-space-10"
+        border-bottom "$border-width solid $border-subtle"
+        text-align left
+    }
+
+    rule ".ts tfoot td" {
+        font-weight "$weight-bold"
+        background "$bg-surface"
+    }
+
+    rule ".ts td:first-child" ".ts th:first-child" {
+        text-align left
+    }
+
+    rule ".ts .cell" {
+        display inline-block
+        min-width "$doc-space-44"
+        padding "$doc-space-3 $space-1"
+        border "$border-width solid $border-subtle"
+        border-radius "$doc-space-5"
+        font-family "$mono"
+        background "$bg-canvas"
+    }
+
+    rule ".ts .cell.focus" {
+        border-color "$accent"
+        box-shadow "0 0 0 $doc-space-2 $accent-soft"
+    }
+
+    rule ".ts th.today" {
+        color "$accent-fg"
+    }
+
+    rule ".bars" {
+        display flex
+        flex-direction column
+        gap "$doc-space-6"
+        padding "$space-3"
+        font-size "$doc-font-12"
+    }
+
+    rule ".bars div" {
+        display grid
+        grid-template-columns "$doc-space-70 1fr $doc-space-30"
+        gap "$space-2"
+        align-items center
+    }
+
+    rule ".bars i" {
+        display block
+        height "$doc-space-10"
+        border-radius "$doc-space-3"
+    }
+
+    rule ".msg" {
+        max-width "92%"
+        padding "$space-2 $doc-space-10"
+        border-radius "$r-card"
+        line-height "$lh-text"
+        font-size "$doc-font-12-5"
+    }
+
+    rule ".msg.me" {
+        align-self flex-end
+        background "$accent"
+        color "$on-accent"
+    }
+
+    rule ".msg.ai" {
+        align-self flex-start
+        background "$bg-surface"
+        border "$border-width solid $border-subtle"
+    }
+
+    rule ".ai-l" {
+        font-size "$doc-font-10-5"
+        color "$fg-subtle"
+        display flex
+        gap "$space-1"
+        align-items center
+    }
+
+    rule ".prop" {
+        border "$border-width solid $accent"
+        border-radius "$r-card"
+        padding "$doc-space-10"
+        background "$bg-raised"
+        display flex
+        flex-direction column
+        gap "$space-2"
+        font-size "$doc-font-12-5"
+    }
+
+    rule ".prop .old" {
+        text-decoration line-through
+        color "$fg-muted"
+    }
+
+    rule ".src" {
+        font-size "$doc-font-12"
+        background "$bg-surface"
+        border "$border-width solid $border-subtle"
+        border-radius "$r-ctl"
+        padding "$doc-space-6 $doc-space-9"
+    }
+
+    rule ".cards-pick" {
+        display grid
+        grid-template-columns "repeat(auto-fill, minmax($doc-space-150, 1fr))"
+        gap "$space-2"
+        padding "$space-3"
+    }
+
+    rule ".cards-pick div" {
+        border "$border-width solid $border"
+        border-radius "$space-2"
+        padding "$space-2 $doc-space-10"
+        background "$bg-raised"
+        font-size "$doc-font-12"
+    }
+
+    rule ".cards-pick div.on" {
+        border-color "$accent"
+        box-shadow "0 0 0 $doc-space-2 $accent-soft"
+    }
+
+    rule ".perm" {
+        border-collapse collapse
+        width "100%"
+        font-size "$doc-font-12-5"
+    }
+
+    rule ".perm select.hid" {
+        color "$fg-subtle"
+    }
+
+    rule ".perm select.see" {
+        color "$st-ip"
+    }
+
+    rule ".perm select.chg" {
+        color "$success"
+        font-weight "$doc-weight-semibold"
+    }
+
+    rule ".explain" {
+        background "$bg-surface"
+        border "$border-width solid $border-subtle"
+        border-radius "$r-card"
+        padding "$doc-space-10 $space-3"
+        line-height "$lh-loose"
+        font-size "$doc-font-12-5"
+        margin "$space-3"
+    }
+
+    rule ".wfrow" {
+        display flex
+        gap "$space-2"
+        align-items center
+        flex-wrap wrap
+        padding "$doc-space-9 $space-3"
+        border-bottom "$border-width solid $border-subtle"
+    }
+
+    rule ".te" {
+        display grid
+        grid-template-columns "$doc-space-200 minmax(0, 1fr)"
+        min-height "$doc-space-260"
+    }
+
+    rule ".te-l" {
+        border-right "$border-width solid $border"
+        padding "$doc-space-10"
+        font-size "$doc-font-12"
+        display flex
+        flex-direction column
+        gap "$space-1"
+        background "$bg-surface"
+    }
+
+    rule ".te-l .g" {
+        font-weight "$weight-bold"
+        margin-top "$doc-space-6"
+    }
+
+    rule ".te-l .row" {
+        display flex
+        align-items center
+        gap "$doc-space-6"
+    }
+
+    rule ".sw" {
+        width "$doc-space-14"
+        height "$doc-space-14"
+        border-radius "$doc-r-small"
+        border "$border-width solid $border"
+        display inline-block
+        flex none
+    }
+
+    rule ".rd" {
+        margin-left auto
+        font-size "$doc-font-10-5"
+        font-weight "$weight-bold"
+    }
+
+    rule ".rd.ok" {
+        color "$success"
+    }
+
+    rule ".rd.bad" {
+        color "$danger"
+    }
+
+    rule ".te-r" {
+        padding "$space-3"
+        display flex
+        flex-direction column
+        gap "$doc-space-10"
+    }
+
+    rule ".doc .stepper" {
+        list-style none
+        padding 0
+        counter-reset s
+        display flex
+        flex-direction column
+        gap "$space-2"
+    }
+
+    rule ".stepper li" {
+        counter-increment s
+        display grid
+        grid-template-columns "$doc-space-28 minmax(0, 1fr)"
+        gap "$doc-space-10"
+        margin 0
+        align-items start
+    }
+
+    rule ".stepper li::before" {
+        content "counter(s)"
+        width "$doc-space-26"
+        height "$doc-space-26"
+        border-radius "50%"
+        border "$doc-space-2 solid $accent"
+        color "$accent-fg"
+        display grid
+        place-items center
+        font-weight "$weight-bold"
+        font-size "$doc-font-12"
+        font-family "$mono"
+    }
+
+    rule ".signin" {
+        max-width "$doc-space-320"
+        margin "$doc-space-14 auto"
+        display flex
+        flex-direction column
+        gap "$space-2"
+        padding "$space-4"
+        border "$border-width solid $border"
+        border-radius "$doc-space-14"
+        background "$bg-raised"
+    }
+
+    rule ".signin .or" {
+        text-align center
+        font-size "$doc-font-11"
+        color "$fg-subtle"
+    }
+
+    rule ".state" {
+        border "$border-width dashed $border"
+        border-radius "$r-card"
+        padding "$doc-space-14"
+        text-align center
+        font-size "$doc-font-13"
+        flex "1 1 $doc-space-220"
+    }
+
+    rule ".offline" {
+        background "$warning-soft"
+        color "$fg"
+        border-bottom "$border-width solid $warning"
+        padding "$doc-space-6 $doc-space-10"
+        font-size "$doc-font-12"
+    }
+
+    rule ".wd" {
+        display flex
+        align-items center
+        gap "$space-2"
+        flex-wrap wrap
+        padding "$space-2 $doc-space-10"
+        border "$border-width solid $success"
+        background "$success-soft"
+        border-radius "$r-card"
+        font-size "$doc-font-12-5"
+    }
+
+    rule ".ts .cell.warnc" {
+        border-color "$warning"
+        background "$warning-soft"
+    }
+
+    rule ".ts .warnt" {
+        color "$warning"
+    }
+
+    rule ".ts tr.wh td" {
+        background "$bg-surface"
+    }
+
+    rule ".editing-note" {
+        display flex
+        gap "$space-2"
+        align-items center
+        padding "$doc-space-7 $doc-space-10"
+        border "$border-width dashed $accent"
+        background "$accent-soft"
+        border-radius "$space-2"
+        font-size "$doc-font-12-5"
+    }
+
+    rule ".savestate" {
+        display flex
+        gap "$space-2"
+        align-items center
+        font-size "$doc-font-12-5"
+        color "$fg-muted"
+    }
+
+    rule ".ss-dot" {
+        width "$space-2"
+        height "$space-2"
+        border-radius "50%"
+        display inline-block
+    }
+
+    rule ".ss-dot.ip" {
+        background "$st-ip"
+    }
+
+    rule ".ss-dot.ok" {
+        background "$success"
+    }
+
+    rule ".fv" {
+        display grid
+        grid-template-columns "$doc-space-44 $doc-space-170 minmax(0, 1fr)"
+        min-height "$doc-space-330"
+    }
+
+    rule ".fv-icons" {
+        background "$bg-surface"
+        border-right "$border-width solid $border"
+        display flex
+        flex-direction column
+        align-items center
+        gap "$doc-space-6"
+        padding "$doc-space-10 0"
+    }
+
+    rule ".fv-ic" {
+        width "$doc-space-30"
+        height "$doc-space-30"
+        border-radius "$r-ctl"
+        display grid
+        place-items center
+        color "$fg-muted"
+    }
+
+    rule ".fv-ic.on" {
+        background "$bg-selected"
+        color "$accent-fg"
+    }
+
+    rule ".fv-rail" {
+        border-right "$border-width solid $border"
+        background "$bg-surface"
+        font-size "$doc-font-12"
+    }
+
+    rule ".fv-rh" {
+        display flex
+        padding "$space-2 $doc-space-9"
+        border-bottom "$border-width solid $border-subtle"
+    }
+
+    rule ".fv-ri" {
+        display flex
+        flex-direction column
+        gap "$doc-space-1"
+        padding "$doc-space-6 $doc-space-9"
+        border-bottom "$border-width solid $border-subtle"
+    }
+
+    rule ".fv-ri.on" {
+        background "$bg-selected"
+    }
+
+    rule ".fv-main" {
+        display flex
+        flex-direction column
+        min-width 0
+    }
+
+    rule ".fv-h" {
+        display flex
+        gap "$space-2"
+        align-items center
+        padding "$doc-space-7 $space-3"
+        border-bottom "$border-width solid $border-subtle"
+        font-size "$doc-font-12"
+    }
+
+    rule ".fv-body" {
+        display grid
+        grid-template-columns "minmax(0, 1fr) $doc-space-150"
+    }
+
+    rule ".fv-col" {
+        padding "$doc-space-14 $doc-space-18"
+        display flex
+        flex-direction column
+        gap "$doc-space-10"
+        min-width 0
+    }
+
+    rule ".fv-det" {
+        border-left "$border-width solid $border-subtle"
+        padding "$doc-space-14 $doc-space-10"
+    }
+
+    rule ".fv-facts" {
+        display flex
+        flex-wrap wrap
+        gap "$doc-space-6"
+        align-items center
+    }
+
+    rule ".fv-fact" {
+        display inline-flex
+        gap "$doc-space-5"
+        align-items center
+        border "$border-width solid $border"
+        border-radius "$doc-r-pill"
+        padding "$doc-space-1 $space-2"
+        font-size "$doc-font-11-5"
+        background "$bg-raised"
+    }
+
+    rule ".fv-fact .fl" {
+        color "$fg-subtle"
+        font-size "$doc-font-10-5"
+    }
+
+    rule ".map-ctl" {
+        display flex
+        flex-wrap wrap
+        gap "$space-2"
+        align-items center
+        padding "$doc-space-10 $space-3"
+        border-bottom "$border-width solid $border-subtle"
+    }
+
+    rule ".kchip" {
+        display inline-flex
+        align-items center
+        gap "$doc-space-6"
+        border "$border-width solid $border"
+        background "$bg-surface"
+        border-radius "$doc-r-pill"
+        padding "$doc-space-3 $doc-space-10"
+        font-size "$doc-font-12"
+    }
+
+    rule ".kchip[aria-pressed=\"false\"]" {
+        opacity "$opacity-faint"
+        text-decoration line-through
+    }
+
+    rule ".kline" {
+        width "$doc-space-18"
+        height 0
+        border-top "$doc-space-2 solid $fg-muted"
+        display inline-block
+    }
+
+    rule ".map-svg" {
+        display block
+        width "100%"
+        height auto
+        background "$bg-surface"
+    }
+
+    rule ".edge" {
+        fill none
+        stroke-width "$doc-stroke-width"
+        transition "opacity $motion-fast,stroke-width $motion-fast"
+    }
+
+    rule ".k-blocks" {
+        stroke "$warning"
+    }
+
+    rule ".k-causes" {
+        stroke "$danger"
+    }
+
+    rule ".k-dup" {
+        stroke "$fg-subtle"
+        stroke-dasharray 5 4
+    }
+
+    rule ".k-rel" {
+        stroke "$fg-muted"
+    }
+
+    rule ".k-part" {
+        stroke "$accent"
+    }
+
+    rule ".elabel" {
+        font-size "$doc-font-11"
+        fill "$fg-muted"
+        paint-order stroke
+        stroke "$bg-surface"
+        stroke-width "$space-1"
+        stroke-linejoin round
+        font-family "$font"
+    }
+
+    rule ".node" {
+        cursor pointer
+        transition "opacity $motion-fast"
+    }
+
+    rule ".node rect" {
+        fill "$bg-raised"
+        stroke "$border"
+        stroke-width "$doc-stroke-1-2"
+    }
+
+    rule ".node:hover rect" ".node:focus rect" {
+        stroke "$accent"
+        stroke-width "$doc-stroke-width"
+    }
+
+    rule ".node:focus" {
+        outline none
+    }
+
+    rule ".node.center rect" {
+        fill "$accent-soft"
+        stroke "$accent"
+        stroke-width "$doc-stroke-2-5"
+    }
+
+    rule ".nkey" {
+        font-family "$mono"
+        font-size "$doc-font-11"
+        fill "$fg-muted"
+    }
+
+    rule ".ntitle" {
+        font-size "$doc-font-12"
+        fill "$fg"
+        font-weight "$doc-weight-semibold"
+        font-family "$font"
+    }
+
+    rule ".nd-ns" {
+        fill "$st-ns"
+    }
+
+    rule ".nd-ip" {
+        fill "$st-ip"
+    }
+
+    rule ".nd-dn" {
+        fill "$st-done"
+    }
+
+    rule ".map-svg.hl-on .edge:not(.hl)" ".map-svg.hl-on .elabel:not(.hl)" ".map-svg.hl-on .node:not(.hl)" {
+        opacity "$doc-opacity-0-2"
+    }
+
+    rule ".map-svg .edge.hl" {
+        stroke-width "$doc-stroke-3-4"
+    }
+
+    rule ".map-svg.hide-blocks .k-blocks" ".map-svg.hide-blocks .l-blocks" ".map-svg.hide-causes .k-causes" ".map-svg.hide-causes .l-causes" ".map-svg.hide-dup .k-dup" ".map-svg.hide-dup .l-dup" ".map-svg.hide-rel .k-rel" ".map-svg.hide-rel .l-rel" ".map-svg.hide-part .k-part" ".map-svg.hide-part .l-part" {
+        display none
+    }
+
+    rule ".chains" {
+        padding "$space-3"
+        display flex
+        flex-direction column
+        gap "$doc-space-6"
+        font-size "$doc-font-12-5"
+        line-height "$lh-loose"
+    }
+
+    rule ".chains .stp" {
+        font-size "$doc-font-10-5"
+        text-transform uppercase
+        letter-spacing "$doc-tracking-wide"
+        color "$fg-subtle"
+        font-weight "$weight-bold"
+        margin-top "$doc-space-6"
+    }
+
+    rule ".circle-warn" {
+        display flex
+        gap "$space-2"
+        align-items flex-start
+        margin "0 $space-3 $space-3"
+        padding "$space-2 $doc-space-10"
+        border "$border-width solid $warning"
+        background "$warning-soft"
+        border-radius "$space-2"
+        font-size "$doc-font-12"
+    }
+
+    rule ".cal" {
+        display grid
+        grid-template-columns "repeat(7, minmax(0, 1fr))"
+        gap "$doc-space-1"
+        background "$border-subtle"
+        border-top "$border-width solid $border-subtle"
+    }
+
+    rule ".cal .h" {
+        background "$bg-surface"
+        padding "$doc-space-5 $doc-space-6"
+        font-size "$doc-font-10-5"
+        font-weight "$weight-bold"
+        color "$fg-muted"
+    }
+
+    rule ".cal .d" {
+        background "$bg-raised"
+        min-height "$doc-space-78"
+        padding "$space-1"
+        display flex
+        flex-direction column
+        gap "$doc-space-3"
+        min-width 0
+    }
+
+    rule ".cal .d.out" {
+        background "$bg-surface"
+    }
+
+    rule ".dodont .n" {
+        border-left "$space-1 solid $danger"
+    }
+
+    rule ".cal .d .n" {
+        font-size "$doc-font-11"
+        font-weight "$doc-weight-semibold"
+        color "$fg-muted"
+        align-self flex-start
+        padding "0 $doc-space-5"
+    }
+
+    rule ".cal .d.today .n" {
+        background "$accent"
+        color "$on-accent"
+        border-radius "$doc-r-pill"
+    }
+
+    rule ".cal .it" {
+        display block
+        font-size "$doc-font-10-5"
+        padding "$doc-space-1 $doc-space-5"
+        border-radius "$doc-r-small"
+        white-space nowrap
+        overflow hidden
+        text-overflow ellipsis
+    }
+
+    rule ".cal .it.msn" {
+        background "$warning-soft"
+        color "$warning"
+        font-weight "$weight-bold"
+    }
+
+    rule ".cal .it.drag" {
+        outline "$doc-space-2 dashed $accent"
+    }
+
+    rule ".agenda" {
+        display flex
+        flex-direction column
+    }
+
+    rule ".agenda .day" {
+        font-size "$doc-font-11"
+        font-weight "$weight-bold"
+        color "$fg-muted"
+        padding "$space-2 $space-3 $doc-space-2"
+        text-transform uppercase
+        letter-spacing "$doc-em-0-06"
+    }
+
+    rule ".agenda .day.today" {
+        color "$accent-fg"
+    }
+
+    rule ".theme-strip" {
+        display grid
+        grid-template-columns "repeat(auto-fit, minmax($doc-space-220, 1fr))"
+        gap "$space-3"
+        margin "$space-4 0"
+    }
+
+    rule ".tcard" {
+        border "$border-width solid $border"
+        border-radius "$r-card"
+        overflow hidden
+        background "$bg-canvas"
+        color "$fg"
+    }
+
+    rule ".tcard .tc-h" {
+        display flex
+        align-items center
+        justify-content space-between
+        padding "$space-2 $doc-space-10"
+        background "$bg-surface"
+        border-bottom "$border-width solid $border"
+        font-weight "$weight-bold"
+        font-size "$doc-font-13"
+    }
+
+    rule ".tcard .tc-b" {
+        padding "$doc-space-10"
+        display flex
+        flex-direction column
+        gap "$space-2"
+        font-size "$doc-font-12-5"
+    }
+
+    rule ".tcard .tc-b .row" {
+        display flex
+        gap "$doc-space-6"
+        align-items center
+        flex-wrap wrap
+    }
+
+    rule ".swatch" {
+        display inline-flex
+        align-items center
+        gap "$doc-space-6"
+        font-family "$mono"
+        font-size "$doc-font-11-5"
+        white-space nowrap
+    }
+
+    rule ".swatch i" {
+        width "$doc-space-18"
+        height "$doc-space-18"
+        border-radius "$doc-r-small"
+        border "$border-width solid $border"
+        display inline-block
+    }
+
+    rule ".specimen" {
+        border "$border-width solid $border"
+        border-radius "$r-card"
+        padding "$doc-space-14 $space-4"
+        background "$bg-raised"
+        margin "$space-3 0"
+        display flex
+        flex-direction column
+        gap "$doc-space-6"
+    }
+
+    rule ".specimen .big" {
+        font-size "$doc-font-30"
+        font-weight "$weight-bold"
+        line-height "$doc-lh-1-1"
+    }
+
+    rule ".specimen .mono-s" {
+        font-family "$mono"
+        font-size "$doc-font-15"
+    }
+
+    rule ".scale" {
+        display flex
+        gap "$doc-space-10"
+        align-items flex-end
+        flex-wrap wrap
+        margin "$doc-space-10 0"
+    }
+
+    rule ".scale i" {
+        display block
+        background "$accent-soft"
+        border "$border-width solid $accent"
+    }
+
+    rule ".dodont" {
+        display grid
+        grid-template-columns "repeat(auto-fit, minmax($doc-space-240, 1fr))"
+        gap "$doc-space-10"
+        margin "$space-3 0"
+    }
+
+    rule ".dodont div" {
+        border "$border-width solid $border"
+        border-radius "$r-card"
+        padding "$doc-space-10 $space-3"
+        font-size "$fs-sm"
+        background "$bg-raised"
+    }
+
+    rule ".dodont .y" {
+        border-left "$space-1 solid $success"
+    }
+
+    rule ".dodont .y b" {
+        color "$success"
+    }
+
+    rule ".dodont .n b" {
+        color "$danger"
+    }
+
+    rule ".decision" {
+        display flex
+        gap "$doc-space-10"
+        align-items flex-start
+        padding "$doc-space-10 0"
+        border-bottom "$border-width solid $border-subtle"
+        max-width "$doc-measure-note"
+    }
+
+    rule ".decision .okmark" {
+        margin-top "$doc-space-3"
+        flex none
+    }
+
+    rule ".grid2" {
+        media "(max-width: $doc-bp-phone)" {
+            grid-template-columns "minmax(0, 1fr)"
+        }
+    }
+
+    rule ":root:root:root .u-fill-accent" {
+        fill "$accent"
+    }
+
+    rule ":root:root:root .u-stroke-bg-canvas" {
+        stroke "$bg-canvas"
+    }
+
+    rule ":root:root:root .u-fill-bg-canvas" {
+        fill "$bg-canvas"
+    }
+
+    rule ":root:root:root .u-stroke-accent" {
+        stroke "$accent"
+    }
+
+    rule ":root:root:root .u-display-block--position-static--max-height-none--padding-0" {
+        display block
+        position static
+        max-height none
+        padding 0
+    }
+
+    rule ":root:root:root .u-vertical-align-0" {
+        vertical-align 0
+    }
+
+    rule ":root:root:root .u-margin-left-auto" {
+        margin-left auto
+    }
+
+    rule ":root:root:root .u-padding-left-20px" {
+        padding-left "$doc-space-20"
+    }
+
+    rule ":root:root:root .u-display-flex--gap-6px--align-items-center" {
+        display flex
+        gap "$doc-space-6"
+        align-items center
+    }
+
+    rule ":root:root:root .u-flex-1--text-align-center" {
+        flex 1
+        text-align center
+    }
+
+    rule ":root:root:root .u-flex-wrap-nowrap--overflow-hidden" {
+        flex-wrap nowrap
+        overflow hidden
+    }
+
+    rule ":root:root:root .u-flex-none" {
+        flex none
+    }
+
+    rule ":root:root:root .u-flex-1-1-280px--min-width-0" {
+        flex "1 1 $doc-space-280"
+        min-width 0
+    }
+
+    rule ":root:root:root .u-margin-top-0" {
+        margin-top 0
+    }
+
+    rule ":root:root:root .u-margin-left-auto--font-size-11px" {
+        margin-left auto
+        font-size "$doc-font-11"
+    }
+
+    rule ":root:root:root .u-font-size-20px--font-weight-700--line-height-1-25" {
+        font-size "$doc-font-20"
+        font-weight "$weight-bold"
+        line-height "$lh-snug"
+    }
+
+    rule ":root:root:root .u-font-size-13px--line-height-1-65" {
+        font-size "$doc-font-13"
+        line-height "$doc-lh-reading"
+    }
+
+    rule ":root:root:root .u-font-size-16px" {
+        font-size "$doc-font-16"
+    }
+
+    rule ":root:root:root .u-flex-basis-100pc" {
+        flex-basis "100%"
+    }
+
+    rule ":root:root:root .u-flex-1--min-width-160px" {
+        flex 1
+        min-width "$doc-space-160"
+    }
+
+    rule ":root:root:root .u-font-size-11px" {
+        font-size "$doc-font-11"
+    }
+
+    rule ":root:root:root .u-width-18px" {
+        width "$doc-space-18"
+    }
+
+    rule ":root:root:root .u-width-80px" {
+        width "$doc-space-80"
+    }
+
+    rule ":root:root:root .u-width-90px" {
+        width "$doc-space-90"
+    }
+
+    rule ":root:root:root .u-margin-left-6px" {
+        margin-left "$doc-space-6"
+    }
+
+    rule ":root:root:root .u-margin-left-auto--display-flex--gap-6px" {
+        margin-left auto
+        display flex
+        gap "$doc-space-6"
+    }
+
+    rule ":root:root:root .u-padding-12px" {
+        padding "$space-3"
+    }
+
+    rule ":root:root:root .u-padding-12px--display-flex--flex-direction-column--gap-8px" {
+        padding "$space-3"
+        display flex
+        flex-direction column
+        gap "$space-2"
+    }
+
+    rule ":root:root:root .u-display-grid--grid-template-columns-minmax-0-1fr-220px" {
+        display grid
+        grid-template-columns "minmax(0, 1fr) $doc-space-220"
+    }
+
+    rule ":root:root:root .u-f99ad20c" {
+        padding "$doc-space-14"
+        display flex
+        flex-direction column
+        gap "$space-3"
+        min-width 0
+    }
+
+    rule ":root:root:root .u-font-size-19px--margin-0" {
+        font-size "$doc-font-19"
+        margin 0
+    }
+
+    rule ":root:root:root .u-font-size-12-5px--line-height-1-55" {
+        font-size "$doc-font-12-5"
+        line-height "$doc-lh-code"
+    }
+
+    rule ":root:root:root .u-padding-left-0" {
+        padding-left 0
+    }
+
+    rule ":root:root:root .u-font-size-12px" {
+        font-size "$doc-font-12"
+    }
+
+    rule ":root:root:root .u-display-flex--gap-6px--margin-top-8px--flex-wrap-wrap" {
+        display flex
+        gap "$doc-space-6"
+        margin-top "$space-2"
+        flex-wrap wrap
+    }
+
+    rule ":root:root:root .u-display-flex--gap-8px" {
+        display flex
+        gap "$space-2"
+    }
+
+    rule ":root:root:root .u-bbda7eb8" {
+        border-left "$border-width solid $border"
+        padding "$doc-space-14 $space-3"
+        display flex
+        flex-direction column
+        gap "$doc-space-10"
+    }
+
+    rule ":root:root:root .u-padding-1px-5px" {
+        padding "$doc-space-1 $doc-space-5"
+    }
+
+    rule ":root:root:root .u-padding-12px--display-flex--flex-direction-column--gap-10px" {
+        padding "$space-3"
+        display flex
+        flex-direction column
+        gap "$doc-space-10"
+    }
+
+    rule ":root:root:root .u-font-size-16px--line-height-1-3" {
+        font-size "$doc-font-16"
+        line-height "$doc-lh-1-3"
+    }
+
+    rule ":root:root:root .u-flex-1" {
+        flex 1
+    }
+
+    rule ":root:root:root .u-min-width-70px" {
+        min-width "$doc-space-70"
+    }
+
+    rule ":root:root:root .u-padding-0-6px" {
+        padding "0 $doc-space-6"
+    }
+
+    rule ":root:root:root .u-font-size-12-5px--line-height-1-55--color-fg-muted" {
+        font-size "$doc-font-12-5"
+        line-height "$doc-lh-code"
+        color "$fg-muted"
+    }
+
+    rule ":root:root:root .u-display-flex--gap-6px--flex-wrap-wrap" {
+        display flex
+        gap "$doc-space-6"
+        flex-wrap wrap
+    }
+
+    rule ":root:root:root .u-background-bg-surface--border-color-border" {
+        background "$bg-surface"
+        border-color "$border"
+    }
+
+    rule ":root:root:root .u-padding-6px-10px" {
+        padding "$doc-space-6 $doc-space-10"
+    }
+
+    rule ":root:root:root .u-margin-8px-auto" {
+        margin "$space-2 auto"
+    }
+
+    rule ":root:root:root .u-display-grid--grid-template-columns-1fr-1fr--gap-8px" {
+        display grid
+        grid-template-columns "1fr 1fr"
+        gap "$space-2"
+    }
+
+    rule ":root:root:root .u-font-weight-700--background-bg-surface" {
+        font-weight "$weight-bold"
+        background "$bg-surface"
+    }
+
+    rule ":root:root:root .u-left-17pc" {
+        left "17%"
+    }
+
+    rule ":root:root:root .u-left-3pc--width-91pc" {
+        left "3%"
+        width "91%"
+    }
+
+    rule ":root:root:root .u-left-3pc--width-29pc" {
+        left "3%"
+        width "29%"
+    }
+
+    rule ":root:root:root .u-left-34pc--width-34pc" {
+        left "34%"
+        width "34%"
+    }
+
+    rule ":root:root:root .u-left-11pc--width-23pc" {
+        left "11%"
+        width "23%"
+    }
+
+    rule ":root:root:root .u-left-72pc" {
+        left "72%"
+    }
+
+    rule ":root:root:root .u-left-60pc--width-11pc" {
+        left "60%"
+        width "11%"
+    }
+
+    rule ":root:root:root .u-padding-left-20px--font-size-11-5px" {
+        padding-left "$doc-space-20"
+        font-size "$doc-font-11-5"
+    }
+
+    rule ":root:root:root .u-width-12px--height-12px" {
+        width "$space-3"
+        height "$space-3"
+    }
+
+    rule ":root:root:root .u-color-accent-fg" {
+        color "$accent-fg"
+    }
+
+    rule ":root:root:root .u-flex-basis-360px" {
+        flex-basis "$doc-space-360"
+    }
+
+    rule ":root:root:root .u-flex-1--min-width-0" {
+        flex 1
+        min-width 0
+    }
+
+    rule ":root:root:root .u-margin-0" {
+        margin 0
+    }
+
+    rule ":root:root:root .u-font-size-11-5px" {
+        font-size "$doc-font-11-5"
+    }
+
+    rule ":root:root:root .u-margin-10px-auto" {
+        margin "$doc-space-10 auto"
+    }
+
+    rule ":root:root:root .u-font-size-12-5px" {
+        font-size "$doc-font-12-5"
+    }
+
+    rule ":root:root:root .u-padding-10px" {
+        padding "$doc-space-10"
+    }
+
+    rule ":root:root:root .u-margin-8px-0" {
+        margin "$space-2 0"
+    }
+
+    rule ":root:root:root .u-width-30pc--background-danger" {
+        width "30%"
+        background "$danger"
+    }
+
+    rule ":root:root:root .u-width-60pc--background-warning" {
+        width "60%"
+        background "$warning"
+    }
+
+    rule ":root:root:root .u-width-90pc--background-st-ip" {
+        width "90%"
+        background "$st-ip"
+    }
+
+    rule ":root:root:root .u-width-40pc--background-fg-subtle" {
+        width "40%"
+        background "$fg-subtle"
+    }
+
+    rule ":root:root:root .u-padding-12px--display-flex--flex-direction-column--gap-9px" {
+        padding "$space-3"
+        display flex
+        flex-direction column
+        gap "$doc-space-9"
+    }
+
+    rule ":root:root:root .u-8d461e0" {
+        display flex
+        gap "$doc-space-6"
+        align-items center
+        flex-wrap wrap
+        font-size "$doc-font-12"
+    }
+
+    rule ":root:root:root .u-display-flex--gap-6px" {
+        display flex
+        gap "$doc-space-6"
+    }
+
+    rule ":root:root:root .u-flex-1-1-320px--min-width-0" {
+        flex "1 1 $doc-space-320"
+        min-width 0
+    }
+
+    rule ":root:root:root .u-flex-0-1-340px" {
+        flex "0 1 $doc-space-340"
+    }
+
+    rule ":root:root:root .u-text-align-center--font-size-16px" {
+        text-align center
+        font-size "$doc-font-16"
+    }
+
+    rule ":root:root:root .u-justify-content-center" {
+        justify-content center
+    }
+
+    rule ":root:root:root .u-flex-basis-640px" {
+        flex-basis "$doc-space-640"
+    }
+
+    rule ":root:root:root .u-min-width-600px" {
+        min-width "$doc-space-600"
+    }
+
+    rule ":root:root:root .u-font-size-12px--margin-left-6px" {
+        font-size "$doc-font-12"
+        margin-left "$doc-space-6"
+    }
+
+    rule ":root:root:root .u-border-color-warning" {
+        border-color "$warning"
+    }
+
+    rule ":root:root:root .u-border-color-danger" {
+        border-color "$danger"
+    }
+
+    rule ":root:root:root .u-border-top-style-dashed--border-color-fg-subtle" {
+        border-top-style dashed
+        border-color "$fg-subtle"
+    }
+
+    rule ":root:root:root .u-border-color-accent" {
+        border-color "$accent"
+    }
+
+    rule ":root:root:root .u-fill-warning" {
+        fill "$warning"
+    }
+
+    rule ":root:root:root .u-fill-danger" {
+        fill "$danger"
+    }
+
+    rule ":root:root:root .u-fill-fg-subtle" {
+        fill "$fg-subtle"
+    }
+
+    rule ":root:root:root .u-color-warning" {
+        color "$warning"
+    }
+
+    rule ":root:root:root .u-margin-left-auto--font-weight-400" {
+        margin-left auto
+        font-weight "$weight-regular"
+    }
+
+    rule ":root:root:root .u-border-bottom-0" {
+        border-bottom 0
+    }
+
+    rule ":root:root:root .u-background-bg-canvas" {
+        background "$bg-canvas"
+    }
+
+    rule ":root:root:root .u-background-bg-surface" {
+        background "$bg-surface"
+    }
+
+    rule ":root:root:root .u-background-fg" {
+        background "$fg"
+    }
+
+    rule ":root:root:root .u-background-fg-muted" {
+        background "$fg-muted"
+    }
+
+    rule ":root:root:root .u-background-border" {
+        background "$border"
+    }
+
+    rule ":root:root:root .u-color-danger--font-weight-700" {
+        color "$danger"
+        font-weight "$weight-bold"
+    }
+
+    rule ":root:root:root .u-margin-top-8px--display-flex--gap-6px--flex-wrap-wrap" {
+        margin-top "$space-2"
+        display flex
+        gap "$doc-space-6"
+        flex-wrap wrap
+    }
+
+    rule ":root:root:root .u-margin-6px-auto-10px" {
+        margin "$doc-space-6 auto $doc-space-10"
+    }
+
+    rule ":root:root:root .u-font-size-11px--margin-top-8px" {
+        font-size "$doc-font-11"
+        margin-top "$space-2"
+    }
+
+    rule ":root:root:root .u-padding-0--overflow-hidden--text-align-left" {
+        padding 0
+        overflow hidden
+        text-align left
+    }
+
+    rule ":root:root:root .u-padding-10px-12px" {
+        padding "$doc-space-10 $space-3"
+    }
+
+    rule ":root:root:root .u-margin-6px-0-0--font-size-12-5px" {
+        margin "$doc-space-6 0 0"
+        font-size "$doc-font-12-5"
+    }
+
+    rule ":root:root:root .u-font-weight-400--font-size-11px" {
+        font-weight "$weight-regular"
+        font-size "$doc-font-11"
+    }
+
+    rule ":root:root:root .u-width-4px--height-4px" {
+        width "$space-1"
+        height "$space-1"
+    }
+
+    rule ":root:root:root .u-width-8px--height-8px" {
+        width "$space-2"
+        height "$space-2"
+    }
+
+    rule ":root:root:root .u-width-16px--height-16px" {
+        width "$space-4"
+        height "$space-4"
+    }
+
+    rule ":root:root:root .u-width-24px--height-24px" {
+        width "$space-5"
+        height "$space-5"
+    }
+
+    rule ":root:root:root .u-width-32px--height-32px" {
+        width "$space-6"
+        height "$space-6"
+    }
+
+    rule ":root:root:root .u-width-48px--height-48px" {
+        width "$doc-space-48"
+        height "$doc-space-48"
+    }
+
+    rule ":root:root:root .u-display-flex--gap-14px--flex-wrap-wrap--align-items-center" {
+        display flex
+        gap "$doc-space-14"
+        flex-wrap wrap
+        align-items center
+    }
+
+    rule ":root:root:root .u-position-absolute" {
+        position absolute
+    }
+
+    rule ":root:root:root .u-font-size-13px" {
+        font-size "$doc-font-13"
+    }
+
+    rule ":root:root:root .u-border-radius-4px" {
+        border-radius "$doc-r-small"
+    }
+}
+
+docs "mockup" description="The clickable mockup: the layout of the app, its screens and its overlays. Needs theme.css and components.css." {
+    tokens {
+        layer "doc-z-50" 50
+        layer "doc-z-60" 60
+        layer "doc-z-70" 70
+        line-height "doc-lh-1-7" "1.7"
+        number "doc-stroke-2-2" 2.2
+        number "doc-stroke-3-5" 3.5
+        opacity "doc-opacity-0-45" 0.45
+        opacity "doc-opacity-0-55" 0.55
+        size "doc-bp-1279" "1279px"
+        size "doc-bp-899" "899px"
+        size "doc-bp-900" "900px"
+        size "doc-ch-65" "65ch"
+        size "doc-ch-75" "75ch"
+        size "doc-em-0-01" "0.01em"
+        size "doc-em-1-5" "1.5em"
+        size "doc-font-26" "26px"
+        size "doc-safe-bottom" "env(safe-area-inset-bottom,0px)"
+        size "doc-space-104" "104px"
+        size "doc-space-11" "11px"
+        size "doc-space-180" "180px"
+        size "doc-space-236" "236px"
+        size "doc-space-270" "270px"
+        size "doc-space-290" "290px"
+        size "doc-space-38" "38px"
+        size "doc-space-40" "40px"
+        size "doc-space-42" "42px"
+        size "doc-space-440" "440px"
+        size "doc-space-52" "52px"
+        size "doc-space-62" "62px"
+        size "doc-space-620" "620px"
+        size "doc-space-720" "720px"
+        size "doc-space-76" "76px"
+        size "doc-space-760" "760px"
+        size "doc-space-900" "900px"
+        size "doc-space-980" "980px"
+        size "doc-space-n4" "-4px"
+        size "doc-space-n7" "-7px"
+        size "doc-space-n8" "-8px"
+        size "doc-vh-10" "10vh"
+        size "doc-vh-70" "70vh"
+        size "doc-vh-72" "72vh"
+        size "doc-vh-80" "80vh"
+        size "doc-vh-92" "92vh"
+        size "doc-vw-70" "70vw"
+    }
+
+    rule "html" "body" {
+        height "100%"
+    }
+
+    rule ".app" {
+        height "100%"
+        display grid
+        grid-template-columns "$doc-space-236 minmax(0, 1fr) auto"
+        overflow hidden
+        position relative
+    }
+
+    rule ".sidebar" {
+        background "$bg-surface"
+        border-right "$border-width solid $border"
+        display flex
+        flex-direction column
+        min-height 0
+    }
+
+    rule ".brand" {
+        display flex
+        align-items center
+        gap "$doc-space-10"
+        padding "$space-4 $space-4 $space-2"
+        font-weight "$weight-bold"
+        font-size "$fs-md"
+        letter-spacing "$doc-em-0-01"
+    }
+
+    rule ".brand svg" {
+        width "$doc-space-26"
+        height "$doc-space-26"
+    }
+
+    rule ".side-scroll" {
+        flex 1
+        overflow auto
+        padding "$space-1 $doc-space-10 $doc-space-10"
+        display flex
+        flex-direction column
+        gap "$doc-space-2"
+    }
+
+    rule ".side-search" {
+        display flex
+        align-items center
+        gap "$space-2"
+        margin "$doc-space-6 $doc-space-10 $space-2"
+        padding "$space-2 $doc-space-10"
+        border "$border-width solid $border"
+        border-radius "$r-ctl"
+        background "$bg-raised"
+        color "$fg-muted"
+        text-align left
+        width "calc(100% - $doc-space-20)"
+    }
+
+    rule ".side-search kbd" {
+        margin-left auto
+    }
+
+    rule ".nav-item" {
+        display flex
+        align-items center
+        gap "$doc-space-10"
+        padding "$doc-space-7 $doc-space-10"
+        border-radius "$r-ctl"
+        border 0
+        background none
+        text-align left
+        width "100%"
+        color "$fg"
+    }
+
+    rule ".nav-item:hover" {
+        background "$bg-hover"
+    }
+
+    rule ".nav-item[aria-current=\"true\"]" {
+        background "$bg-selected"
+        color "$accent-fg"
+        font-weight "$doc-weight-semibold"
+    }
+
+    rule ".nav-item .count" {
+        margin-left auto
+        font-size "$fs-xs"
+        background "$accent"
+        color "$on-accent"
+        border-radius "$doc-r-pill"
+        padding "0 $doc-space-7"
+        font-weight "$doc-weight-semibold"
+    }
+
+    rule ".nav-label" {
+        font-size "$fs-xs"
+        color "$fg-subtle"
+        text-transform uppercase
+        letter-spacing "$doc-em-0-06"
+        padding "$doc-space-14 $doc-space-10 $space-1"
+        font-weight "$doc-weight-semibold"
+    }
+
+    rule ".nav-sub" {
+        padding-left "$doc-space-30"
+    }
+
+    rule ".side-foot" {
+        border-top "$border-width solid $border"
+        padding "$doc-space-10"
+        display flex
+        flex-direction column
+        gap "$doc-space-6"
+    }
+
+    rule ".timer-chip" {
+        display flex
+        align-items center
+        gap "$space-2"
+        padding "$space-2 $doc-space-10"
+        border-radius "$r-ctl"
+        background "$accent-soft"
+        color "$accent-fg"
+        border 0
+        width "100%"
+        text-align left
+    }
+
+    rule ".timer-chip .t" {
+        margin-left auto
+        font-weight "$doc-weight-semibold"
+    }
+
+    rule ".timer-chip.off" {
+        background transparent
+        color "$fg-muted"
+        border "$border-width dashed $border"
+    }
+
+    rule ".main" {
+        display flex
+        flex-direction column
+        min-width 0
+        min-height 0
+        background "$bg-canvas"
+    }
+
+    rule ".topbar" {
+        display flex
+        align-items center
+        gap "$space-3"
+        padding "$doc-space-10 $doc-space-20"
+        border-bottom "$border-width solid $border"
+        min-height "$doc-space-56"
+        flex-wrap wrap
+    }
+
+    rule ".crumbs" {
+        display flex
+        align-items center
+        gap "$doc-space-6"
+        color "$fg-muted"
+        min-width 0
+        flex 1 1 auto
+    }
+
+    rule ".crumbs b" {
+        color "$fg"
+        font-weight "$doc-weight-semibold"
+        white-space nowrap
+        overflow hidden
+        text-overflow ellipsis
+    }
+
+    rule ".top-actions" {
+        display flex
+        align-items center
+        gap "$space-2"
+        margin-left auto
+    }
+
+    rule "select.look" {
+        padding "$doc-space-6 $space-2"
+        border "$border-width solid $border"
+        border-radius "$r-ctl"
+        background "$bg-raised"
+    }
+
+    rule ".content" {
+        flex 1
+        overflow auto
+        padding "$doc-space-20 $space-5 $doc-space-40"
+        min-height 0
+    }
+
+    rule ".content.flush" {
+        padding 0
+    }
+
+    rule ".searchbar" {
+        display flex
+        align-items flex-start
+        gap "$space-2"
+        padding "$space-3 $space-5"
+        border-bottom "$border-width solid $border-subtle"
+        background "$bg-canvas"
+        flex-wrap wrap
+    }
+
+    rule ".adv" {
+        flex 1
+        min-width 0
+        display flex
+        flex-direction column
+        gap "$doc-space-6"
+    }
+
+    rule ".adv textarea" {
+        width "100%"
+        min-height "$doc-space-62"
+        resize vertical
+        padding "$doc-space-10 $space-3"
+        border "$border-width solid $border"
+        border-radius "$r-ctl"
+        background "$bg-raised"
+        font-family "$mono"
+        font-size "$fs-sm"
+        line-height "$doc-lh-code"
+    }
+
+    rule ".adv .err" {
+        color "$danger"
+        font-size "$fs-sm"
+        display flex
+        gap "$doc-space-6"
+        align-items center
+    }
+
+    rule ".adv .hint" {
+        color "$fg-muted"
+        font-size "$fs-xs"
+    }
+
+    rule ".ask" {
+        display flex
+        gap "$space-2"
+        flex 1
+        min-width 0
+        flex-wrap wrap
+    }
+
+    rule ".ask input" {
+        flex 1
+        min-width "$doc-space-180"
+        padding "$space-2 $space-3"
+        border "$border-width solid $accent"
+        border-radius "$r-ctl"
+        background "$bg-raised"
+    }
+
+    rule ".ask-result" {
+        flex-basis "100%"
+        border "$border-width solid $border"
+        background "$accent-soft"
+        border-radius "$r-ctl"
+        padding "$doc-space-10 $space-3"
+        display flex
+        flex-wrap wrap
+        gap "$space-2"
+        align-items center
+    }
+
+    rule ".ask-result code" {
+        font-family "$mono"
+        font-size "$fs-sm"
+        flex 1
+        min-width 0
+    }
+
+    rule ".tbl" {
+        width "100%"
+        border-collapse collapse
+    }
+
+    rule ".tbl th" {
+        font-size "$fs-xs"
+        text-transform uppercase
+        letter-spacing "$doc-tracking-mid"
+        color "$fg-subtle"
+        text-align left
+        padding "$space-2 $doc-space-10"
+        border-bottom "$border-width solid $border"
+        font-weight "$doc-weight-semibold"
+        white-space nowrap
+    }
+
+    rule ".tbl td" {
+        padding "$doc-space-9 $doc-space-10"
+        border-bottom "$border-width solid $border-subtle"
+        vertical-align middle
+    }
+
+    rule ".tbl tr.row" {
+        cursor pointer
+    }
+
+    rule ".group-h td" {
+        background "$bg-surface"
+        font-weight "$doc-weight-semibold"
+        font-size "$fs-sm"
+        color "$fg-muted"
+    }
+
+    rule ".ts th" ".ts td" {
+        padding "$space-2 $space-2"
+        border-bottom "$border-width solid $border-subtle"
+        text-align center
+        font-variant-numeric tabular-nums
+    }
+
+    rule ".perm th" ".perm td" {
+        padding "$doc-space-10"
+        border-bottom "$border-width solid $border-subtle"
+        text-align left
+    }
+
+    rule ".ts tfoot td" {
+        font-weight "$weight-bold"
+        background "$bg-surface"
+    }
+
+    rule ".perm th" {
+        font-size "$fs-xs"
+        color "$fg-muted"
+        text-transform uppercase
+        letter-spacing "$doc-tracking-mid"
+        background "$bg-surface"
+    }
+
+    rule ".ts th" {
+        font-size "$fs-xs"
+        color "$fg-muted"
+        font-weight "$doc-weight-semibold"
+        background "$bg-surface"
+    }
+
+    rule ".ts td:first-child" ".ts th:first-child" {
+        text-align left
+    }
+
+    rule ".ts tr.wh td" {
+        background "$bg-surface"
+        font-weight "$weight-bold"
+    }
+
+    rule ".tbl tr.row:hover td" {
+        background "$bg-hover"
+    }
+
+    rule ".tbl tr.row.sel td" {
+        background "$bg-selected"
+    }
+
+    rule ".tbl .title" {
+        font-weight "$doc-weight-medium"
+    }
+
+    rule ".cards" {
+        display none
+    }
+
+    rule ".bulkbar" {
+        position sticky
+        bottom "$space-3"
+        margin "$space-3 auto 0"
+        width max-content
+        max-width "100%"
+        display flex
+        flex-wrap wrap
+        gap "$doc-space-6"
+        align-items center
+        background "$bg-raised"
+        border "$border-width solid $border"
+        box-shadow "$shadow"
+        border-radius "$r-card"
+        padding "$space-2 $doc-space-10"
+    }
+
+    rule ".board" {
+        display grid
+        grid-auto-flow column
+        grid-auto-columns "minmax($doc-space-240, 1fr)"
+        gap "$doc-space-14"
+        overflow-x auto
+        padding "$space-4 $space-5 $space-5"
+        min-height "100%"
+        align-items start
+    }
+
+    rule ".col" {
+        background "$bg-surface"
+        border "$border-width solid $border-subtle"
+        border-radius "$r-card"
+        display flex
+        flex-direction column
+        min-height "$doc-space-200"
+    }
+
+    rule ".col.drop-ok" {
+        outline "$doc-space-2 dashed $accent"
+        outline-offset "$doc-space-n2"
+    }
+
+    rule ".col.drop-no" {
+        opacity "$doc-opacity-0-45"
+    }
+
+    rule ".col-h" {
+        display flex
+        align-items center
+        gap "$space-2"
+        padding "$doc-space-10 $space-3"
+        font-weight "$doc-weight-semibold"
+    }
+
+    rule ".col-h .lim" {
+        margin-left auto
+        font-size "$fs-xs"
+        color "$fg-muted"
+        font-weight "$doc-weight-medium"
+    }
+
+    rule ".col-h .lim.over" {
+        color "$warning"
+        font-weight "$weight-bold"
+    }
+
+    rule ".col-b" {
+        display flex
+        flex-direction column
+        gap "$space-2"
+        padding "0 $doc-space-10 $space-3"
+    }
+
+    rule ".card" {
+        background "$bg-raised"
+        border "$border-width solid $border"
+        border-radius "$space-2"
+        padding "$doc-space-10"
+        display flex
+        flex-direction column
+        gap "$space-2"
+        cursor grab
+        box-shadow "0 $border-width $border-width $border-subtle"
+    }
+
+    rule ".card:hover" {
+        border-color "$accent"
+    }
+
+    rule ".card .title" {
+        font-weight "$doc-weight-medium"
+    }
+
+    rule ".card .meta" {
+        display flex
+        align-items center
+        gap "$space-2"
+        flex-wrap wrap
+        font-size "$fs-sm"
+    }
+
+    rule ".card .move" {
+        margin-left auto
+    }
+
+    rule ".board-tabs" {
+        display none
+    }
+
+    rule ".tl-wrap" {
+        overflow-x auto
+        padding "$space-4 $space-5 $space-5"
+    }
+
+    rule ".tl" {
+        min-width "$doc-space-760"
+        display grid
+        grid-template-columns "$doc-space-260 1fr"
+        border "$border-width solid $border"
+        border-radius "$r-card"
+        overflow hidden
+        background "$bg-raised"
+    }
+
+    rule ".tl-h" {
+        display contents
+    }
+
+    rule ".tl-h > div" {
+        background "$bg-surface"
+        border-bottom "$border-width solid $border"
+        padding "$space-2 $doc-space-10"
+        font-size "$fs-xs"
+        color "$fg-muted"
+        font-weight "$doc-weight-semibold"
+    }
+
+    rule ".tl-h > .tl-weeks" {
+        display grid
+        grid-template-columns "repeat(5, 1fr)"
+        padding 0
+    }
+
+    rule ".tl-weeks span" {
+        padding "$space-2 $doc-space-10"
+        border-left "$border-width solid $border-subtle"
+    }
+
+    rule ".tl-name" {
+        padding "$space-2 $doc-space-10"
+        border-bottom "$border-width solid $border-subtle"
+        display flex
+        align-items center
+        gap "$space-2"
+        min-width 0
+        cursor pointer
+    }
+
+    rule ".tl-name:hover" {
+        background "$bg-hover"
+    }
+
+    rule ".tl-name .t" {
+        white-space nowrap
+        overflow hidden
+        text-overflow ellipsis
+    }
+
+    rule ".tl-name.goal" {
+        font-weight "$doc-weight-semibold"
+        background "$bg-surface"
+    }
+
+    rule ".tl-name.child" {
+        padding-left "$doc-space-28"
+    }
+
+    rule ".tl-lane" {
+        position relative
+        border-bottom "$border-width solid $border-subtle"
+        min-height "$doc-space-38"
+        background-image "repeating-linear-gradient(to right, transparent 0, transparent calc(20% - $doc-space-1), $border-subtle calc(20% - $doc-space-1), $border-subtle 20%)"
+    }
+
+    rule ".bar" {
+        position absolute
+        top "$doc-space-9"
+        height "$doc-space-20"
+        border-radius "$doc-space-5"
+        background "$st-ip"
+        color "$on-accent"
+        font-size "$doc-font-11"
+        padding "0 $doc-space-6"
+        display flex
+        align-items center
+        overflow hidden
+        white-space nowrap
+        cursor pointer
+        border 0
+    }
+
+    rule ".bar.ns" {
+        background "$fg-subtle"
+    }
+
+    rule ".bar.done" {
+        background "$st-done"
+    }
+
+    rule ".bar.goal" {
+        background "$accent"
+        height "$doc-space-10"
+        top "$doc-space-14"
+        border-radius "$doc-space-3"
+    }
+
+    rule ".bar.goal .prog" {
+        position absolute
+        inset 0 auto 0 0
+        background "$accent-fg"
+        opacity "$doc-opacity-0-55"
+    }
+
+    rule ".ms" {
+        position absolute
+        top "$doc-space-11"
+        width "$space-4"
+        height "$space-4"
+        transform "translateX($doc-space-n8) rotate($doc-deg-45)"
+        background "$warning"
+        border-radius "$doc-space-2"
+    }
+
+    rule ".today" {
+        position absolute
+        top 0
+        bottom 0
+        width "$doc-space-2"
+        background "$danger"
+        opacity "$opacity-busy"
+        pointer-events none
+    }
+
+    rule ".today-label" {
+        position absolute
+        top "$doc-space-2"
+        font-size "$doc-font-10"
+        color "$danger"
+        font-weight "$weight-bold"
+        transform "translateX($space-1)"
+    }
+
+    rule ".tl-list" {
+        display none
+    }
+
+    rule ".tl-legend" {
+        display flex
+        gap "$space-4"
+        flex-wrap wrap
+        margin-top "$doc-space-10"
+        font-size "$fs-sm"
+        color "$fg-muted"
+        align-items center
+    }
+
+    rule ".tl-legend i" {
+        display inline-block
+        width "$space-3"
+        height "$space-3"
+        border-radius "$doc-space-3"
+        vertical-align "$doc-space-n2"
+        margin-right "$space-1"
+    }
+
+    rule ".panel" {
+        width "$doc-space-440"
+        border-left "$border-width solid $border"
+        background "$bg-canvas"
+        display flex
+        flex-direction column
+        min-height 0
+    }
+
+    rule ".panel[hidden]" {
+        display none
+    }
+
+    rule ".panel-h" {
+        display flex
+        align-items center
+        gap "$space-2"
+        padding "$doc-space-10 $doc-space-14"
+        border-bottom "$border-width solid $border"
+        min-height "$doc-space-56"
+    }
+
+    rule ".panel-tabs" {
+        display flex
+        gap "$space-1"
+    }
+
+    rule ".panel-b" {
+        flex 1
+        overflow auto
+        padding "$doc-space-18 $doc-space-20 $space-6"
+        display flex
+        flex-direction column
+        gap "$doc-space-18"
+        min-height 0
+    }
+
+    rule ".issue-title" {
+        font-size "$fs-lg"
+        font-weight "$weight-bold"
+        line-height "$doc-lh-1-3"
+        border "$border-width solid transparent"
+        border-radius "$r-ctl"
+        padding "$space-1 $doc-space-6"
+        margin "$doc-space-n4 $doc-space-n6"
+        background none
+        width "calc(100% + $space-3)"
+        text-wrap balance
+    }
+
+    rule ".issue-title:hover" {
+        border-color "$border"
+    }
+
+    rule ".fval" {
+        border "$border-width solid transparent"
+        background none
+        border-radius "$r-ctl"
+        padding "$doc-space-5 $doc-space-7"
+        margin-left "$doc-space-n7"
+        text-align left
+        display inline-flex
+        align-items center
+        gap "$doc-space-6"
+        max-width "100%"
+    }
+
+    rule ".fval:hover" {
+        border-color "$border"
+        background "$bg-raised"
+    }
+
+    rule ".fval.add" {
+        color "$fg-subtle"
+    }
+
+    rule ".ro" {
+        display inline-flex
+        align-items center
+        gap "$doc-space-6"
+        padding "$doc-space-5 0"
+    }
+
+    rule ".ro .lock" {
+        color "$fg-subtle"
+    }
+
+    rule ".ro-note" {
+        font-size "$fs-xs"
+        color "$fg-muted"
+        grid-column 2
+        margin-top "$doc-space-n4"
+    }
+
+    rule ".section-h" {
+        font-size "$fs-sm"
+        font-weight "$weight-bold"
+        color "$fg-muted"
+        text-transform uppercase
+        letter-spacing "$doc-em-0-06"
+        margin "0 0 $space-2"
+    }
+
+    rule ".desc" {
+        line-height "$lh-loose"
+        max-width "$doc-ch-65"
+    }
+
+    rule ".desc ol" {
+        padding-left "$doc-space-20"
+        margin "$doc-space-6 0"
+    }
+
+    rule ".subs" {
+        display flex
+        flex-direction column
+        border "$border-width solid $border"
+        border-radius "$r-card"
+        overflow hidden
+    }
+
+    rule ".subs button" {
+        display flex
+        gap "$doc-space-10"
+        align-items center
+        padding "$space-2 $doc-space-10"
+        border 0
+        border-bottom "$border-width solid $border-subtle"
+        background "$bg-raised"
+        text-align left
+    }
+
+    rule ".toast button" {
+        background none
+        border 0
+        color inherit
+        font-weight "$weight-bold"
+        text-decoration underline
+        padding "$space-1 $doc-space-6"
+    }
+
+    rule ".setting-tabs button" {
+        border 0
+        background none
+        padding "$space-2 $space-3"
+        color "$fg-muted"
+        border-bottom "$doc-space-2 solid transparent"
+        white-space nowrap
+    }
+
+    rule ".doc-toolbar button" {
+        border 0
+        background none
+        padding "$space-1 $space-2"
+        border-radius "$doc-r-small"
+        font-size "$fs-sm"
+    }
+
+    rule ".subs button:last-child" {
+        border-bottom 0
+    }
+
+    rule ".subs button:hover" {
+        background "$bg-hover"
+    }
+
+    rule ".activity" {
+        display flex
+        flex-direction column
+        gap "$space-3"
+    }
+
+    rule ".act" {
+        display flex
+        gap "$doc-space-10"
+    }
+
+    rule ".act .body" {
+        flex 1
+        min-width 0
+    }
+
+    rule ".act .bubble" {
+        background "$bg-surface"
+        border "$border-width solid $border-subtle"
+        border-radius "$r-card"
+        padding "$space-2 $space-3"
+        margin-top "$space-1"
+    }
+
+    rule ".act.change" {
+        color "$fg-muted"
+        font-size "$fs-sm"
+        align-items center
+    }
+
+    rule ".comment-box" {
+        display flex
+        gap "$space-2"
+        align-items flex-end
+    }
+
+    rule ".comment-box textarea" {
+        flex 1
+        min-height "$doc-space-42"
+        padding "$doc-space-9 $space-3"
+        border "$border-width solid $border"
+        border-radius "$r-ctl"
+        background "$bg-raised"
+        resize vertical
+    }
+
+    rule ".back-btn" {
+        display none
+    }
+
+    rule ".ai-ctx" {
+        display flex
+        flex-wrap wrap
+        gap "$doc-space-6"
+        align-items center
+        font-size "$fs-sm"
+    }
+
+    rule ".ai-src" {
+        font-size "$fs-sm"
+        background "$bg-surface"
+        border "$border-width solid $border-subtle"
+        border-radius "$r-ctl"
+        padding "$space-2 $doc-space-10"
+        display flex
+        flex-direction column
+        gap "$doc-space-2"
+    }
+
+    rule ".msg" {
+        max-width "92%"
+        padding "$doc-space-10 $space-3"
+        border-radius "$space-3"
+        line-height "$doc-lh-code"
+    }
+
+    rule ".msg.me" {
+        align-self flex-end
+        background "$accent"
+        color "$on-accent"
+        border-bottom-right-radius "$space-1"
+    }
+
+    rule ".msg.ai" {
+        align-self flex-start
+        background "$bg-surface"
+        border "$border-width solid $border-subtle"
+        border-bottom-left-radius "$space-1"
+    }
+
+    rule ".msg ul" {
+        margin "$doc-space-6 0"
+        padding-left "$doc-space-18"
+    }
+
+    rule ".ai-label" {
+        font-size "$fs-xs"
+        color "$fg-subtle"
+        display flex
+        gap "$space-1"
+        align-items center
+    }
+
+    rule ".proposal" {
+        border "$border-width solid $accent"
+        border-radius "$r-card"
+        padding "$space-3"
+        background "$bg-raised"
+        display flex
+        flex-direction column
+        gap "$doc-space-10"
+    }
+
+    rule ".proposal .diff" {
+        display flex
+        align-items center
+        gap "$space-2"
+        flex-wrap wrap
+    }
+
+    rule ".proposal .old" {
+        text-decoration line-through
+        color "$fg-muted"
+    }
+
+    rule ".ai-input" {
+        display flex
+        gap "$space-2"
+        border-top "$border-width solid $border"
+        padding "$space-3 $doc-space-14"
+    }
+
+    rule ".ai-input input" {
+        flex 1
+        min-width 0
+        padding "$doc-space-9 $space-3"
+        border "$border-width solid $border"
+        border-radius "$r-ctl"
+        background "$bg-raised"
+    }
+
+    rule ".page-h" {
+        display flex
+        align-items baseline
+        gap "$space-3"
+        flex-wrap wrap
+        margin "0 0 $doc-space-18"
+    }
+
+    rule ".page-h h1" {
+        font-size "$fs-xl"
+        margin 0
+        text-wrap balance
+    }
+
+    rule ".grid2" {
+        display grid
+        grid-template-columns "repeat(auto-fit, minmax($doc-space-320, 1fr))"
+        gap "$doc-space-18"
+        align-items start
+    }
+
+    rule ".box" {
+        background "$bg-raised"
+        border "$border-width solid $border"
+        border-radius "$r-card"
+        overflow hidden
+    }
+
+    rule ".box-h" {
+        display flex
+        align-items center
+        gap "$space-2"
+        padding "$space-3 $doc-space-14"
+        border-bottom "$border-width solid $border-subtle"
+        font-weight "$weight-bold"
+    }
+
+    rule ".box-h .muted" {
+        font-weight "$weight-regular"
+        margin-left auto
+        font-size "$fs-sm"
+    }
+
+    rule ".box-row" {
+        display flex
+        align-items center
+        gap "$doc-space-10"
+        padding "$doc-space-9 $doc-space-14"
+        border 0
+        border-bottom "$border-width solid $border-subtle"
+        background none
+        width "100%"
+        text-align left
+    }
+
+    rule ".box-row:last-child" {
+        border-bottom 0
+    }
+
+    rule ".box-row:hover" {
+        background "$bg-hover"
+    }
+
+    rule ".box-row .t" {
+        flex 1
+        min-width 0
+        white-space nowrap
+        overflow hidden
+        text-overflow ellipsis
+    }
+
+    rule ".timer-big" {
+        display flex
+        align-items center
+        gap "$doc-space-14"
+        padding "$space-4"
+        background "$accent-soft"
+        border "$border-width solid $accent"
+        border-radius "$r-card"
+        margin-bottom "$doc-space-18"
+        flex-wrap wrap
+    }
+
+    rule ".timer-big .clock" {
+        font-family "$mono"
+        font-size "$doc-font-28"
+        font-weight "$doc-weight-semibold"
+        color "$accent-fg"
+    }
+
+    rule ".checklist" {
+        display flex
+        gap "$doc-space-10"
+        flex-wrap wrap
+        margin-bottom "$doc-space-18"
+        padding "$doc-space-14"
+        border "$border-width dashed $border"
+        border-radius "$r-card"
+    }
+
+    rule ".checklist .step" {
+        display flex
+        align-items center
+        gap "$space-2"
+    }
+
+    rule ".done-mark" {
+        width "$doc-space-20"
+        height "$doc-space-20"
+        border-radius "50%"
+        background "$success"
+        color "$bg-canvas"
+        display grid
+        place-items center
+        font-size "$doc-font-12"
+        font-weight "$weight-bold"
+    }
+
+    rule ".docs" {
+        display grid
+        grid-template-columns "$doc-space-240 minmax(0, 1fr) $doc-space-240"
+        min-height "100%"
+    }
+
+    rule ".doc-tree" {
+        border-right "$border-width solid $border"
+        padding "$doc-space-14 $doc-space-10"
+        background "$bg-surface"
+        display flex
+        flex-direction column
+        gap "$doc-space-2"
+    }
+
+    rule ".doc-tree .nav-item" {
+        font-size "$fs-sm"
+    }
+
+    rule ".doc-page" {
+        padding "$doc-space-28 $doc-space-36 $doc-space-48"
+        min-width 0
+    }
+
+    rule ".doc-page h1" {
+        font-size "$doc-font-30"
+        margin "$space-1 0 $doc-space-6"
+        text-wrap balance
+    }
+
+    rule ".doc-page h2" {
+        font-size "$fs-lg"
+        margin "$space-5 0 $space-2"
+    }
+
+    rule ".doc-page p" ".doc-page li" {
+        max-width "$doc-measure-lede"
+        line-height "$doc-lh-reading"
+    }
+
+    rule ".doc-toolbar" {
+        display flex
+        gap "$space-1"
+        flex-wrap wrap
+        border "$border-width solid $border"
+        border-radius "$r-ctl"
+        padding "$space-1"
+        margin "$space-3 0 $doc-space-20"
+        width max-content
+        max-width "100%"
+        background "$bg-surface"
+    }
+
+    rule ".doc-toolbar button:hover" {
+        background "$bg-hover"
+    }
+
+    rule ".live-chip" {
+        display inline-flex
+        align-items center
+        gap "$doc-space-6"
+        padding "$doc-space-2 $space-2 $doc-space-2 $doc-space-6"
+        border "$border-width solid $border"
+        border-radius "$r-ctl"
+        background "$bg-raised"
+        vertical-align "$doc-space-1"
+        font-size "$fs-sm"
+    }
+
+    rule ".doc-side" {
+        border-left "$border-width solid $border"
+        padding "$space-4 $doc-space-14"
+        display flex
+        flex-direction column
+        gap "$doc-space-18"
+        font-size "$fs-sm"
+    }
+
+    rule ".ver" {
+        display flex
+        gap "$space-2"
+        align-items center
+        padding "$space-1 0"
+    }
+
+    rule ".lockbadge" {
+        display inline-flex
+        gap "$space-1"
+        align-items center
+        font-size "$fs-xs"
+        color "$warning"
+        margin-left auto
+    }
+
+    rule ".ts-wrap" {
+        overflow-x auto
+        border "$border-width solid $border"
+        border-radius "$r-card"
+        background "$bg-raised"
+    }
+
+    rule ".ts" {
+        border-collapse collapse
+        width "100%"
+        min-width "$doc-space-720"
+    }
+
+    rule ".ts th.today" {
+        color "$accent-fg"
+    }
+
+    rule ".ts input" {
+        width "$doc-space-64"
+        padding "$doc-space-6"
+        text-align center
+        border "$border-width solid $border-subtle"
+        border-radius "$r-ctl"
+        background "$bg-canvas"
+        font-family "$mono"
+    }
+
+    rule ".ts input:focus" {
+        border-color "$accent"
+    }
+
+    rule ".ts input.bad" {
+        border-color "$danger"
+        background "$danger-soft"
+    }
+
+    rule ".perm" {
+        border-collapse collapse
+        width "100%"
+        min-width "$doc-space-640"
+    }
+
+    rule ".perm select" {
+        padding "$doc-space-5 $space-2"
+        border-radius "$r-ctl"
+        border "$border-width solid $border"
+        background "$bg-raised"
+        font-size "$fs-sm"
+    }
+
+    rule ".perm select.hid" {
+        color "$fg-subtle"
+    }
+
+    rule ".perm select.see" {
+        color "$st-ip"
+    }
+
+    rule ".perm select.chg" {
+        color "$success"
+        font-weight "$doc-weight-semibold"
+    }
+
+    rule ".explain" {
+        background "$bg-surface"
+        border "$border-width solid $border-subtle"
+        border-radius "$r-card"
+        padding "$space-3 $doc-space-14"
+        line-height "$lh-loose"
+    }
+
+    rule ".wf" {
+        display flex
+        flex-direction column
+        gap "$doc-space-10"
+    }
+
+    rule ".wf-row" {
+        display flex
+        gap "$doc-space-10"
+        align-items center
+        flex-wrap wrap
+        padding "$space-3 $doc-space-14"
+        border "$border-width solid $border"
+        border-radius "$r-card"
+        background "$bg-raised"
+    }
+
+    rule ".wf-row .arrow" {
+        color "$fg-subtle"
+    }
+
+    rule ".themes" {
+        display grid
+        grid-template-columns "repeat(auto-fill, minmax($doc-space-200, 1fr))"
+        gap "$doc-space-14"
+    }
+
+    rule ".theme-card" {
+        border "$doc-space-2 solid $border"
+        border-radius "$r-card"
+        padding 0
+        overflow hidden
+        background none
+        text-align left
+    }
+
+    rule ".theme-card[aria-pressed=\"true\"]" {
+        border-color "$accent"
+    }
+
+    rule ".theme-card .pv" {
+        height "$doc-space-96"
+        display grid
+        grid-template-columns "30% 1fr"
+    }
+
+    rule ".theme-card .pv i" {
+        display block
+    }
+
+    rule ".theme-card .pv .s" {
+        padding "$space-2 $doc-space-6"
+        display flex
+        flex-direction column
+        gap "$doc-space-5"
+    }
+
+    rule ".theme-card .pv .m" {
+        padding "$doc-space-10"
+        display flex
+        flex-direction column
+        gap "$doc-space-6"
+    }
+
+    rule ".theme-card .pv span" {
+        display block
+        height "$doc-space-6"
+        border-radius "$doc-space-3"
+    }
+
+    rule ".theme-card .cap" {
+        padding "$space-2 $doc-space-10"
+        display flex
+        flex-direction column
+        background "$bg-raised"
+    }
+
+    rule ".pop-item small" {
+        color "$fg-muted"
+        margin-left auto
+    }
+
+    rule ".theme-card .cap small" {
+        color "$fg-muted"
+    }
+
+    rule ".setting-tabs" {
+        display flex
+        gap "$space-1"
+        margin-bottom "$doc-space-18"
+        border-bottom "$border-width solid $border"
+        overflow-x auto
+    }
+
+    rule ".setting-tabs button[aria-selected=\"true\"]" {
+        color "$fg"
+        font-weight "$doc-weight-semibold"
+        border-bottom-color "$accent"
+    }
+
+    rule ".help" {
+        font-size "$fs-sm"
+        color "$fg-muted"
+        margin "$doc-space-n6 0 $doc-space-14"
+        max-width "$doc-measure-body"
+    }
+
+    rule ".pop" {
+        position fixed
+        z-index "$doc-z-50"
+        min-width "$doc-space-220"
+        max-width "min($doc-space-320, $doc-popup-width)"
+        max-height "$doc-menu-height"
+        overflow auto
+        background "$bg-raised"
+        border "$border-width solid $border"
+        border-radius "$r-card"
+        box-shadow "$shadow"
+        padding "$doc-space-6"
+    }
+
+    rule ".pop-h" {
+        font-size "$fs-xs"
+        color "$fg-subtle"
+        text-transform uppercase
+        letter-spacing "$doc-em-0-06"
+        padding "$doc-space-6 $doc-space-10 $space-1"
+        font-weight "$doc-weight-semibold"
+    }
+
+    rule ".pop-item" {
+        display flex
+        align-items center
+        gap "$space-2"
+        padding "$space-2 $doc-space-10"
+        border 0
+        background none
+        width "100%"
+        text-align left
+        border-radius "$r-ctl"
+    }
+
+    rule ".pop-item:hover" ".pop-item:focus-visible" {
+        background "$bg-hover"
+    }
+
+    rule ".pop-note" {
+        font-size "$fs-xs"
+        color "$fg-muted"
+        padding "$doc-space-6 $doc-space-10"
+        border-top "$border-width solid $border-subtle"
+        margin-top "$space-1"
+    }
+
+    rule ".scrim" {
+        position fixed
+        inset 0
+        background "color-mix(in srgb, $bg-sunken calc($opacity-scrim*100%), transparent)"
+        z-index "$doc-z-60"
+        display grid
+        place-items start center
+        padding "$doc-vh-10 $space-4 $space-4"
+    }
+
+    rule ".dialog" {
+        background "$bg-raised"
+        border "$border-width solid $border"
+        border-radius "$doc-space-14"
+        box-shadow "$shadow"
+        width "min($doc-space-560, 100%)"
+        max-height "$doc-vh-80"
+        overflow auto
+        display flex
+        flex-direction column
+    }
+
+    rule ".dialog-h" {
+        display flex
+        align-items center
+        gap "$space-2"
+        padding "$doc-space-14 $doc-space-18"
+        border-bottom "$border-width solid $border-subtle"
+    }
+
+    rule ".dialog-h h2" {
+        margin 0
+        font-size "$fs-md"
+    }
+
+    rule ".dialog-b" {
+        padding "$space-4 $doc-space-18"
+        display flex
+        flex-direction column
+        gap "$doc-space-14"
+    }
+
+    rule ".dialog-f" {
+        padding "$space-3 $doc-space-18"
+        border-top "$border-width solid $border-subtle"
+        display flex
+        gap "$space-2"
+        justify-content flex-end
+        flex-wrap wrap
+    }
+
+    rule ".qs-input" {
+        width "100%"
+        padding "$doc-space-14 $doc-space-18"
+        border 0
+        border-bottom "$border-width solid $border"
+        background none
+        font-size "$fs-md"
+    }
+
+    rule ".qs-input:focus" {
+        outline none
+    }
+
+    rule ".toast" {
+        position fixed
+        left "50%"
+        bottom "$space-5"
+        transform "translateX(-50%)"
+        z-index "$doc-z-70"
+        background "$fg"
+        color "$bg-canvas"
+        border-radius "$r-card"
+        padding "$doc-space-10 $space-3 $doc-space-10 $space-4"
+        display flex
+        align-items center
+        gap "$space-3"
+        box-shadow "$shadow"
+        max-width "$doc-popup-width"
+    }
+
+    rule ".mock-note" {
+        font-size "$fs-xs"
+        color "$fg-subtle"
+        padding "$space-2 $space-5"
+        border-top "$border-width solid $border-subtle"
+    }
+
+    rule ".bottombar" {
+        display none
+    }
+
+    rule ".seg" {
+        max-width "100%"
+        overflow-x auto
+    }
+
+    rule ".rel-ph" {
+        min-width "$doc-space-104"
+        font-size "$fs-sm"
+    }
+
+    rule ".pop-find" {
+        width "100%"
+        padding "$space-2 $doc-space-10"
+        border "$border-width solid $border"
+        border-radius "$r-ctl"
+        background "$bg-canvas"
+        margin "$doc-space-2 0 $doc-space-6"
+    }
+
+    rule ".map-head" {
+        display flex
+        gap "$space-3"
+        align-items center
+        flex-wrap wrap
+        padding "$doc-space-14 $space-5 0"
+    }
+
+    rule ".map-wrap" {
+        padding "$doc-space-14 $space-5 $space-5"
+        display flex
+        flex-direction column
+        gap "$space-3"
+    }
+
+    rule ".map-ctl" {
+        display flex
+        flex-wrap wrap
+        gap "$space-2"
+        align-items center
+    }
+
+    rule ".chip.kind-chip" {
+        padding "$space-1 $doc-space-10"
+        gap "$space-2"
+    }
+
+    rule ".kind-chip[aria-pressed=\"false\"]" {
+        opacity "$doc-opacity-0-55"
+    }
+
+    rule ".kind-chip[aria-pressed=\"false\"] .lbl" {
+        text-decoration line-through
+    }
+
+    rule ".sw" {
+        width "$doc-space-20"
+        height 0
+        border-top "$doc-space-3 solid $fg-muted"
+        display inline-block
+    }
+
+    rule ".sw.k-blocks" {
+        border-color "$warning"
+    }
+
+    rule ".sw.k-cause" {
+        border-color "$danger"
+    }
+
+    rule ".sw.k-dup" {
+        border-top-style dashed
+        border-color "$fg-subtle"
+    }
+
+    rule ".sw.k-rel" {
+        border-color "$fg-muted"
+    }
+
+    rule ".sw.k-part" {
+        border-color "$accent"
+    }
+
+    rule ".map-canvas" {
+        border "$border-width solid $border"
+        border-radius "$r-card"
+        background "$bg-surface"
+        overflow auto
+    }
+
+    rule ".map-canvas svg" {
+        display block
+        width "100%"
+        min-width "$doc-space-620"
+        height auto
+        max-height "$doc-vh-72"
+    }
+
+    rule ".edge" {
+        stroke-width "$doc-stroke-width"
+        fill none
+        transition "opacity $motion-fast,stroke-width $motion-fast"
+    }
+
+    rule ".edge.k-blocks" {
+        stroke "$warning"
+    }
+
+    rule ".edge.k-cause" {
+        stroke "$danger"
+    }
+
+    rule ".edge.k-dup" {
+        stroke "$fg-subtle"
+        stroke-dasharray 6 5
+    }
+
+    rule ".edge.k-rel" {
+        stroke "$fg-muted"
+    }
+
+    rule ".edge.k-part" {
+        stroke "$accent"
+    }
+
+    rule ".mk-blocks" {
+        fill "$warning"
+    }
+
+    rule ".mk-cause" {
+        fill "$danger"
+    }
+
+    rule ".mk-dup" {
+        fill "$fg-subtle"
+    }
+
+    rule ".mk-part" {
+        fill "$accent"
+    }
+
+    rule ".elabel" {
+        font-size "$doc-font-12"
+        fill "$fg-muted"
+        paint-order stroke
+        stroke "$bg-surface"
+        stroke-width "$doc-space-5"
+        stroke-linejoin round
+        font-family "$font"
+        transition "opacity $motion-fast"
+    }
+
+    rule ".node" {
+        cursor pointer
+        transition "opacity $motion-fast"
+    }
+
+    rule ".node rect" {
+        fill "$bg-raised"
+        stroke "$border"
+        stroke-width "$doc-stroke-1-2"
+    }
+
+    rule ".node:hover rect" ".node:focus rect" {
+        stroke "$accent"
+        stroke-width "$doc-stroke-2-2"
+    }
+
+    rule ".node:focus" {
+        outline none
+    }
+
+    rule ".node.center rect" {
+        fill "$accent-soft"
+        stroke "$accent"
+        stroke-width "$doc-stroke-2-5"
+    }
+
+    rule ".nkey" {
+        font-family "$mono"
+        font-size "$doc-font-12"
+        fill "$fg-muted"
+    }
+
+    rule ".ntitle" {
+        font-family "$font"
+        font-size "$doc-font-13"
+        font-weight "$doc-weight-semibold"
+        fill "$fg"
+    }
+
+    rule ".nd-ns" {
+        fill "$st-ns"
+    }
+
+    rule ".nd-ip" {
+        fill "$st-ip"
+    }
+
+    rule ".nd-done" {
+        fill "$st-done"
+    }
+
+    rule ".map-canvas.hl-on .edge:not(.hl)" ".map-canvas.hl-on .elabel:not(.hl)" ".map-canvas.hl-on .node:not(.hl)" {
+        opacity "$doc-opacity-0-2"
+    }
+
+    rule ".edge.hl" {
+        stroke-width "$doc-stroke-3-5"
+    }
+
+    rule ".map-info" {
+        margin 0
+        min-height "$doc-em-1-5"
+        line-height "$lh-loose"
+    }
+
+    rule ".chains" {
+        display flex
+        flex-direction column
+        gap "$doc-space-14"
+    }
+
+    rule ".chains h4" {
+        margin "0 0 $doc-space-6"
+        font-size "$fs-sm"
+        color "$fg-muted"
+        text-transform uppercase
+        letter-spacing "$doc-em-0-06"
+    }
+
+    rule ".chains li" {
+        margin "$space-1 0"
+        line-height "$lh-loose"
+    }
+
+    rule ".cal-wrap" {
+        padding "$space-4 $space-5 $space-5"
+        display flex
+        flex-direction column
+        gap "$doc-space-10"
+    }
+
+    rule ".cal-top" {
+        display flex
+        gap "$space-3"
+        align-items baseline
+        flex-wrap wrap
+    }
+
+    rule ".cal" {
+        display grid
+        grid-template-columns "repeat(7, minmax(0, 1fr))"
+        gap "$doc-space-1"
+        background "$border-subtle"
+        border "$border-width solid $border"
+        border-radius "$r-card"
+        overflow hidden
+    }
+
+    rule ".cal-h" {
+        background "$bg-surface"
+        padding "$doc-space-6 $space-2"
+        font-size "$fs-xs"
+        font-weight "$weight-bold"
+        color "$fg-muted"
+    }
+
+    rule ".cal-d" {
+        background "$bg-raised"
+        min-height "$doc-space-96"
+        padding "$doc-space-6"
+        display flex
+        flex-direction column
+        gap "$space-1"
+        min-width 0
+    }
+
+    rule ".cal-d.other" {
+        background "$bg-surface"
+    }
+
+    rule ".cal-d.drop-ok" {
+        outline "$doc-space-2 dashed $accent"
+        outline-offset "$doc-space-n2"
+    }
+
+    rule ".cal-d .n" {
+        font-size "$fs-sm"
+        font-weight "$doc-weight-semibold"
+        color "$fg-muted"
+        align-self flex-start
+        padding "0 $doc-space-6"
+        border-radius "$doc-r-pill"
+    }
+
+    rule ".cal-d.today .n" {
+        background "$accent"
+        color "$on-accent"
+    }
+
+    rule ".cal-i" {
+        display block
+        border 0
+        text-align left
+        font-size "$doc-font-12"
+        padding "$doc-space-3 $doc-space-6"
+        border-radius "$doc-r-small"
+        white-space nowrap
+        overflow hidden
+        text-overflow ellipsis
+        width "100%"
+        cursor grab
+        font-weight "$doc-weight-semibold"
+    }
+
+    rule ".cal-agenda" {
+        display none
+    }
+
+    rule ".editing-note" {
+        display flex
+        gap "$space-2"
+        align-items center
+        padding "$space-2 $doc-space-10"
+        border "$border-width dashed $accent"
+        background "$accent-soft"
+        border-radius "$r-ctl"
+        font-size "$fs-sm"
+    }
+
+    rule ".desc-edit" {
+        width "100%"
+        min-height "$doc-space-150"
+        padding "$doc-space-10 $space-3"
+        border "$border-width solid $accent"
+        border-radius "$r-ctl"
+        background "$bg-raised"
+        line-height "$doc-lh-code"
+        resize vertical
+    }
+
+    rule ".savestate" {
+        display flex
+        gap "$space-2"
+        align-items center
+        font-size "$fs-sm"
+        color "$fg-muted"
+        flex-wrap wrap
+    }
+
+    rule ".ss-dot" {
+        width "$space-2"
+        height "$space-2"
+        border-radius "50%"
+        display inline-block
+        flex none
+    }
+
+    rule ".ss-dot.ip" {
+        background "$st-ip"
+    }
+
+    rule ".ss-dot.ok" {
+        background "$success"
+    }
+
+    rule ".banner" {
+        display flex
+        gap "$space-2"
+        align-items center
+        flex-wrap wrap
+        padding "$space-2 $doc-space-10"
+        border-radius "$r-ctl"
+        background "$warning-soft"
+        border "$border-width solid $warning"
+        color "$fg"
+    }
+
+    rule ".ni-grid" {
+        display grid
+        grid-template-columns "repeat(auto-fit, minmax($doc-space-180, 1fr))"
+        gap "$space-3"
+    }
+
+    rule ".app.focus" {
+        grid-template-columns "$doc-space-64 minmax(0, 1fr) auto"
+    }
+
+    rule ".app.focus .sidebar .brand" {
+        font-size 0
+        justify-content center
+        padding "$space-4 0 $space-2"
+    }
+
+    rule ".app.focus .sidebar .side-search" {
+        font-size 0
+        justify-content center
+        width "$doc-space-44"
+        margin "$doc-space-6 auto $space-2"
+        padding "$space-2"
+    }
+
+    rule ".app.focus .sidebar .side-search kbd" ".app.focus .sidebar .nav-label" ".app.focus .sidebar .nav-item .count" {
+        display none
+    }
+
+    rule ".app.focus .sidebar .nav-item" {
+        font-size 0
+        justify-content center
+        padding "$doc-space-9 0"
+    }
+
+    rule ".app.focus .sidebar .nav-sub" {
+        padding-left 0
+    }
+
+    rule ".wd-chip" {
+        display flex
+        align-items center
+        gap "$space-2"
+        padding "$space-2 $doc-space-10"
+        border-radius "$r-ctl"
+        background "$success-soft"
+        color "$fg"
+        border "$border-width solid $success"
+        width "100%"
+        text-align left
+    }
+
+    rule ".app.focus .sidebar .timer-chip" ".app.focus .sidebar .wd-chip" {
+        font-size 0
+        justify-content center
+        padding "$doc-space-9 0"
+    }
+
+    rule ".wd-chip .t" {
+        margin-left auto
+        font-weight "$doc-weight-semibold"
+    }
+
+    rule ".rail-i .t" {
+        grid-area t
+        font-size "$fs-sm"
+        white-space nowrap
+        overflow hidden
+        text-overflow ellipsis
+    }
+
+    rule ".app.focus .sidebar .timer-chip .t" ".app.focus .sidebar .wd-chip .t" {
+        display none
+    }
+
+    rule ".focus-wrap" {
+        flex 1
+        min-height 0
+        display grid
+        grid-template-columns "$doc-space-270 minmax(0, 1fr)"
+    }
+
+    rule ".focus-wrap.no-rail" {
+        grid-template-columns "minmax(0, 1fr)"
+    }
+
+    rule ".rail" {
+        border-right "$border-width solid $border"
+        overflow auto
+        background "$bg-surface"
+        display flex
+        flex-direction column
+    }
+
+    rule ".rail-h" {
+        display flex
+        align-items center
+        gap "$space-2"
+        padding "$doc-space-10 $doc-space-10 $doc-space-6"
+        position sticky
+        top 0
+        background "$bg-surface"
+    }
+
+    rule ".rail-h .btn" {
+        margin-left auto
+    }
+
+    rule ".rail-i" {
+        display grid
+        grid-template-columns "$doc-space-10 auto"
+        grid-template-areas "\"d k\" \"d t\""
+        gap "$doc-space-2 $space-2"
+        align-items center
+        text-align left
+        border 0
+        background none
+        padding "$space-2 $doc-space-10"
+        border-bottom "$border-width solid $border-subtle"
+    }
+
+    rule ".rail-i:hover" {
+        background "$bg-hover"
+    }
+
+    rule ".rail-i.on" {
+        background "$bg-selected"
+    }
+
+    rule ".rail-i .rd" {
+        grid-area d
+        width "$space-2"
+        height "$space-2"
+        border-radius "50%"
+    }
+
+    rule ".rail-i .rd.nd-ns" {
+        background "$st-ns"
+    }
+
+    rule ".rail-i .rd.nd-ip" {
+        background "$st-ip"
+    }
+
+    rule ".rail-i .rd.nd-done" {
+        background "$st-done"
+    }
+
+    rule ".rail-i .key" {
+        grid-area k
+        font-size "$fs-xs"
+    }
+
+    rule ".fx" {
+        display flex
+        flex-direction column
+        min-width 0
+        min-height 0
+    }
+
+    rule ".fx-h" {
+        display flex
+        align-items center
+        gap "$doc-space-6"
+        padding "$space-2 $doc-space-20"
+        border-bottom "$border-width solid $border-subtle"
+        flex-wrap wrap
+    }
+
+    rule ".fx-body" {
+        flex 1
+        min-height 0
+        overflow hidden
+        display grid
+        grid-template-columns "minmax(0, 1fr) $doc-space-290"
+    }
+
+    rule ".fx-main-scroll" {
+        overflow auto
+        min-height 0
+    }
+
+    rule ".fx-main" {
+        padding "$doc-space-22 $space-6 $doc-space-48"
+        display flex
+        flex-direction column
+        gap "$doc-space-20"
+        max-width "$doc-space-900"
+        width "100%"
+        margin 0 auto
+        min-width 0
+    }
+
+    rule ".fx-main .issue-title" {
+        font-size "$doc-font-26"
+    }
+
+    rule ".fx-main .desc" {
+        font-size "$doc-font-15"
+        line-height "$doc-lh-1-7"
+        max-width "$doc-ch-75"
+    }
+
+    rule ".fx-details" {
+        overflow auto
+        min-height 0
+        padding "$doc-space-22 $doc-space-20"
+        border-left "$border-width solid $border-subtle"
+        background "$bg-canvas"
+    }
+
+    rule ".fx-details .fields" {
+        grid-template-columns "$doc-space-110 minmax(0, 1fr)"
+    }
+
+    rule ".fx-inline-details" {
+        display none
+        border "$border-width solid $border"
+        border-radius "$r-card"
+        padding "$space-3 $doc-space-14"
+        background "$bg-surface"
+    }
+
+    rule ".fx-details-btn" {
+        display none
+    }
+
+    rule ".facts" {
+        display flex
+        flex-wrap wrap
+        gap "$space-2"
+        align-items center
+    }
+
+    rule ".fact" {
+        display inline-flex
+        align-items center
+        gap "$doc-space-6"
+        border "$border-width solid $border"
+        background "$bg-raised"
+        border-radius "$doc-r-pill"
+        padding "$doc-space-3 $doc-space-10"
+        font-size "$fs-sm"
+    }
+
+    rule "button.fact:hover" {
+        border-color "$accent"
+    }
+
+    rule ".fact .fl" {
+        color "$fg-subtle"
+        font-size "$fs-xs"
+    }
+
+    rule ".fx-body" {
+        media "(max-width: $doc-bp-1279)" {
+            grid-template-columns "minmax(0, 1fr)"
+        }
+    }
+
+    rule ".fx-details" {
+        media "(max-width: $doc-bp-1279)" {
+            display none
+        }
+    }
+
+    rule ".fx-details-btn" {
+        media "(max-width: $doc-bp-1279)" {
+            display inline-flex
+        }
+    }
+
+    rule ".fx-body.details-open .fx-inline-details" {
+        media "(max-width: $doc-bp-1279)" {
+            display block
+        }
+    }
+
+    rule ".focus-wrap" {
+        media "(max-width: $doc-bp-1279)" {
+            grid-template-columns "$doc-space-230 minmax(0, 1fr)"
+        }
+    }
+
+    rule ".fx-main" {
+        media "(max-width: $doc-bp-1279)" {
+            padding "$doc-space-18 $doc-space-22 $doc-space-40"
+        }
+    }
+
+    rule ".viewas-bar" {
+        display flex
+        align-items center
+        gap "$space-2"
+        flex-basis "100%"
+        padding "$doc-space-6 $doc-space-10"
+        border-radius "$r-ctl"
+        background "$warning-soft"
+        border "$border-width solid $warning"
+        font-size "$fs-sm"
+    }
+
+    rule ".viewas-bar .btn" {
+        margin-left auto
+    }
+
+    rule ".wd-chip.off" {
+        background transparent
+        border "$border-width dashed $border"
+        color "$fg-muted"
+    }
+
+    rule ".wd-chip.brk" {
+        background "$warning-soft"
+        border-color "$warning"
+    }
+
+    rule ".ts input.warn" {
+        border-color "$warning"
+        background "$warning-soft"
+    }
+
+    rule ".ts .warnt" {
+        color "$warning"
+    }
+
+    rule ".ts select" {
+        padding "$doc-space-5 $doc-space-6"
+        border "$border-width solid $border-subtle"
+        border-radius "$r-ctl"
+        background "$bg-canvas"
+        font-size "$fs-sm"
+    }
+
+    rule ".rule-warn" {
+        display flex
+        gap "$space-2"
+        align-items flex-start
+        padding "$doc-space-10 $space-3"
+        margin "$doc-space-10 0"
+        border "$border-width solid $warning"
+        background "$warning-soft"
+        border-radius "$r-card"
+        font-size "$fs-sm"
+        line-height "$lh-text"
+    }
+
+    rule ".panel" {
+        media "(min-width: $doc-bp-900) and (max-width: $doc-bp-1279)" {
+            position absolute
+            right 0
+            top 0
+            bottom 0
+            z-index "$z-panel"
+            box-shadow "$shadow"
+            width "min($doc-space-440, $doc-vw-70)"
+        }
+    }
+
+    rule ".map-head" {
+        media "(max-width: $doc-bp-899)" {
+            padding "$space-3 $space-4 0"
+        }
+    }
+
+    rule ".map-wrap" ".cal-wrap" {
+        media "(max-width: $doc-bp-899)" {
+            padding "$space-3 $space-4 $doc-space-20"
+        }
+    }
+
+    rule ".cal" {
+        media "(max-width: $doc-bp-899)" {
+            display none
+        }
+    }
+
+    rule ".cal-agenda" {
+        media "(max-width: $doc-bp-899)" {
+            display flex
+            flex-direction column
+            gap "$space-2"
+        }
+    }
+
+    rule ".app" {
+        media "(max-width: $doc-bp-899)" {
+            grid-template-columns "minmax(0, 1fr)"
+            grid-template-rows "minmax(0, 1fr) auto"
+        }
+    }
+
+    rule ".sidebar" {
+        media "(max-width: $doc-bp-899)" {
+            display none
+        }
+    }
+
+    rule ".topbar" {
+        media "(max-width: $doc-bp-899)" {
+            padding "$space-2 $space-4"
+            min-height "$doc-space-52"
+        }
+    }
+
+    rule ".topbar .hide-phone" {
+        media "(max-width: $doc-bp-899)" {
+            display none
+        }
+    }
+
+    rule ".content" {
+        media "(max-width: $doc-bp-899)" {
+            padding "$space-4 $space-4 $space-6"
+        }
+    }
+
+    rule ".searchbar" {
+        media "(max-width: $doc-bp-899)" {
+            padding "$doc-space-10 $space-4"
+        }
+    }
+
+    rule ".chips" {
+        media "(max-width: $doc-bp-899)" {
+            flex-wrap nowrap
+            overflow-x auto
+            padding-bottom "$doc-space-2"
+        }
+    }
+
+    rule ".chip" {
+        media "(max-width: $doc-bp-899)" {
+            flex none
+        }
+    }
+
+    rule ".tbl" {
+        media "(max-width: $doc-bp-899)" {
+            display none
+        }
+    }
+
+    rule ".cards" {
+        media "(max-width: $doc-bp-899)" {
+            display flex
+            flex-direction column
+        }
+    }
+
+    rule ".lrow" {
+        media "(max-width: $doc-bp-899)" {
+            display flex
+            gap "$doc-space-10"
+            padding "$space-3 $doc-space-2"
+            border 0
+            border-bottom "$border-width solid $border-subtle"
+            background none
+            text-align left
+            width "100%"
+        }
+    }
+
+    rule ".lrow .t" {
+        media "(max-width: $doc-bp-899)" {
+            font-weight "$doc-weight-semibold"
+            display block
+            margin "$doc-space-2 0 $space-1"
+        }
+    }
+
+    rule ".lrow .m" {
+        media "(max-width: $doc-bp-899)" {
+            display flex
+            gap "$doc-space-10"
+            flex-wrap wrap
+            align-items center
+            font-size "$fs-sm"
+            color "$fg-muted"
+        }
+    }
+
+    rule ".board" {
+        media "(max-width: $doc-bp-899)" {
+            grid-auto-flow row
+            grid-auto-columns auto
+            padding "0 $space-4 $space-5"
+        }
+    }
+
+    rule ".board .col" {
+        media "(max-width: $doc-bp-899)" {
+            display none
+        }
+    }
+
+    rule ".board .col.show" {
+        media "(max-width: $doc-bp-899)" {
+            display flex
+        }
+    }
+
+    rule ".board-tabs" {
+        media "(max-width: $doc-bp-899)" {
+            display flex
+            gap "$doc-space-6"
+            overflow-x auto
+            padding "$space-3 $space-4 $doc-space-10"
+        }
+    }
+
+    rule ".board-tabs button" {
+        media "(max-width: $doc-bp-899)" {
+            flex none
+        }
+    }
+
+    rule ".tl-wrap" {
+        media "(max-width: $doc-bp-899)" {
+            display none
+        }
+    }
+
+    rule ".tl-list" {
+        media "(max-width: $doc-bp-899)" {
+            display flex
+            flex-direction column
+            gap "$doc-space-14"
+            padding "$space-4"
+        }
+    }
+
+    rule ".tl-day" {
+        media "(max-width: $doc-bp-899)" {
+            font-size "$fs-sm"
+            font-weight "$weight-bold"
+            color "$fg-muted"
+        }
+    }
+
+    rule ".panel" {
+        media "(max-width: $doc-bp-899)" {
+            position fixed
+            inset 0
+            width auto
+            z-index "$z-top"
+            border 0
+            padding-top "$doc-safe-top"
+            padding-bottom "$doc-safe-bottom"
+        }
+    }
+
+    rule ".panel .back-btn" {
+        media "(max-width: $doc-bp-899)" {
+            display inline-flex
+        }
+    }
+
+    rule ".panel .hide-phone" {
+        media "(max-width: $doc-bp-899)" {
+            display none
+        }
+    }
+
+    rule ".fields" {
+        media "(max-width: $doc-bp-899)" {
+            grid-template-columns "$doc-space-110 minmax(0, 1fr)"
+        }
+    }
+
+    rule ".docs" {
+        media "(max-width: $doc-bp-899)" {
+            grid-template-columns "minmax(0, 1fr)"
+        }
+    }
+
+    rule ".doc-tree" {
+        media "(max-width: $doc-bp-899)" {
+            border-right 0
+            border-bottom "$border-width solid $border"
+        }
+    }
+
+    rule ".doc-side" {
+        media "(max-width: $doc-bp-899)" {
+            border-left 0
+            border-top "$border-width solid $border"
+        }
+    }
+
+    rule ".doc-page" {
+        media "(max-width: $doc-bp-899)" {
+            padding "$doc-space-20 $space-4 $space-6"
+        }
+    }
+
+    rule ".bottombar" {
+        media "(max-width: $doc-bp-899)" {
+            display grid
+            grid-template-columns "repeat(5, 1fr)"
+            border-top "$border-width solid $border"
+            background "$bg-surface"
+            padding-bottom "$doc-safe-bottom"
+        }
+    }
+
+    rule ".bottombar button" {
+        media "(max-width: $doc-bp-899)" {
+            border 0
+            background none
+            display flex
+            flex-direction column
+            align-items center
+            gap "$doc-space-2"
+            padding "$space-2 $doc-space-2"
+            font-size "$doc-font-11"
+            color "$fg-muted"
+            min-height "$doc-space-56"
+            justify-content center
+        }
+    }
+
+    rule ".bottombar button[aria-current=\"true\"]" {
+        media "(max-width: $doc-bp-899)" {
+            color "$accent-fg"
+            font-weight "$weight-bold"
+        }
+    }
+
+    rule ".bottombar .new" {
+        media "(max-width: $doc-bp-899)" {
+            color "$accent-fg"
+        }
+    }
+
+    rule ".bottombar .new .ico" {
+        media "(max-width: $doc-bp-899)" {
+            width "$doc-space-26"
+            height "$doc-space-26"
+            background "$accent"
+            color "$on-accent"
+            border-radius "50%"
+            padding "$space-1"
+        }
+    }
+
+    rule ".pop" {
+        media "(max-width: $doc-bp-899)" {
+            left 0
+            right 0
+            top auto
+            bottom 0
+            max-width none
+            border-radius "$space-4 $space-4 0 0"
+            max-height "$doc-vh-70"
+            padding-bottom "calc($doc-space-10 + $doc-safe-bottom)"
+        }
+    }
+
+    rule ".scrim" {
+        media "(max-width: $doc-bp-899)" {
+            place-items end stretch
+            padding 0
+        }
+    }
+
+    rule ".dialog" {
+        media "(max-width: $doc-bp-899)" {
+            width "100%"
+            max-height "$doc-vh-92"
+            border-radius "$space-4 $space-4 0 0"
+        }
+    }
+
+    rule ".toast" {
+        media "(max-width: $doc-bp-899)" {
+            bottom "$doc-space-76"
+        }
+    }
+
+    rule ".mock-note" {
+        media "(max-width: $doc-bp-899)" {
+            padding "$space-2 $space-4"
+        }
+    }
+
+    rule ".board-tabs button[aria-selected=\"true\"]" {
+        border-color "$accent"
+        color "$accent-fg"
+        font-weight "$doc-weight-semibold"
+    }
+
+    rule ".box-row.read" {
+        opacity "$opacity-disabled"
+    }
+
+    rule ":root:root:root .u-display-none" {
+        display none
+    }
+
+    rule ":root:root:root .u-fill-accent" {
+        fill "$accent"
+    }
+
+    rule ":root:root:root .u-stroke-bg-surface" {
+        stroke "$bg-surface"
+    }
+
+    rule ":root:root:root .u-fill-bg-surface" {
+        fill "$bg-surface"
+    }
+
+    rule ":root:root:root .u-stroke-accent" {
+        stroke "$accent"
+    }
+
+    rule ":root:root:root .u-position-absolute" {
+        position absolute
+    }
+
+    rule ":root:root:root .u-background-success" {
+        background "$success"
+    }
+
+    rule ":root:root:root .u-display-flex--align-items-center--gap-6px" {
+        display flex
+        align-items center
+        gap "$doc-space-6"
+    }
+
+    rule ":root:root:root .u-display-flex--gap-6px--flex-wrap-wrap" {
+        display flex
+        gap "$doc-space-6"
+        flex-wrap wrap
+    }
+
+    rule ":root:root:root .u-padding-28px--text-align-center" {
+        padding "$doc-space-28"
+        text-align center
+    }
+
+    rule ":root:root:root .u-margin-0-0-12px" {
+        margin "0 0 $space-3"
+    }
+
+    rule ":root:root:root .u-min-width-0--flex-1" {
+        min-width 0
+        flex 1
+    }
+
+    rule ":root:root:root .u-width-36px" {
+        width "$doc-space-36"
+    }
+
+    rule ":root:root:root .u-font-size-fs-sm--margin-top-12px" {
+        font-size "$fs-sm"
+        margin-top "$space-3"
+    }
+
+    rule ":root:root:root .u-border-0--background-none--padding-0--text-align-left" {
+        border 0
+        background none
+        padding 0
+        text-align left
+    }
+
+    rule ":root:root:root .u-font-size-fs-sm--margin-4px-2px" {
+        font-size "$fs-sm"
+        margin "$space-1 $doc-space-2"
+    }
+
+    rule ":root:root:root .u-width-40pc" {
+        width "40%"
+    }
+
+    rule ":root:root:root .u-background-bg-surface--font-weight-600" {
+        background "$bg-surface"
+        font-weight "$doc-weight-semibold"
+    }
+
+    rule ":root:root:root .u-background-color-bg-surface" {
+        background-color "$bg-surface"
+    }
+
+    rule ":root:root:root .u-background-fg-subtle" {
+        background "$fg-subtle"
+    }
+
+    rule ":root:root:root .u-background-st-ip" {
+        background "$st-ip"
+    }
+
+    rule ":root:root:root .u-background-st-done" {
+        background "$st-done"
+    }
+
+    rule ":root:root:root .u-background-warning--transform-rotate-45deg" {
+        background "$warning"
+        transform "rotate($doc-deg-45)"
+    }
+
+    rule ":root:root:root .u-margin-top-14px" {
+        margin-top "$doc-space-14"
+    }
+
+    rule ":root:root:root .u-margin-0--font-size-fs-sm" {
+        margin 0
+        font-size "$fs-sm"
+    }
+
+    rule ":root:root:root .u-bd4668a6" {
+        border "$border-width solid $border"
+        border-radius "$r-card"
+        padding "$doc-space-10 $space-3"
+        background "$bg-raised"
+    }
+
+    rule ":root:root:root .u-flex-basis-100pc" {
+        flex-basis "100%"
+    }
+
+    rule ":root:root:root .u-flex-1--min-width-180px" {
+        flex 1
+        min-width "$doc-space-180"
+    }
+
+    rule ":root:root:root .u-font-size-fs-sm" {
+        font-size "$fs-sm"
+    }
+
+    rule ":root:root:root .u-9ada02bc" {
+        font-size "$fs-xs"
+        text-transform uppercase
+        letter-spacing "$doc-em-0-06"
+        font-weight "$weight-bold"
+    }
+
+    rule ":root:root:root .u-font-size-fs-sm--margin-top-16px" {
+        font-size "$fs-sm"
+        margin-top "$space-4"
+    }
+
+    rule ":root:root:root .u-margin-top-10px" {
+        margin-top "$doc-space-10"
+    }
+
+    rule ":root:root:root .u-padding-4px-0" {
+        padding "$space-1 0"
+    }
+
+    rule ":root:root:root .u-margin-left-auto" {
+        margin-left auto
+    }
+
+    rule ":root:root:root .u-margin-top-6px" {
+        margin-top "$doc-space-6"
+    }
+
+    rule ":root:root:root .u-margin-top-4px" {
+        margin-top "$space-1"
+    }
+
+    rule ":root:root:root .u-margin-top-0" {
+        margin-top 0
+    }
+
+    rule ":root:root:root .u-margin-top-22px" {
+        margin-top "$doc-space-22"
+    }
+
+    rule ":root:root:root .u-min-width-980px" {
+        min-width "$doc-space-980"
+    }
+
+    rule ":root:root:root .u-padding-0--border-0" {
+        padding 0
+        border 0
+    }
+
+    rule ":root:root:root .u-max-width-180px" {
+        max-width "$doc-space-180"
+    }
+
+    rule ":root:root:root .u-margin-top-12px--display-flex--gap-8px--flex-wrap-wrap" {
+        margin-top "$space-3"
+        display flex
+        gap "$space-2"
+        flex-wrap wrap
+    }
+
+    rule ":root:root:root .u-animation-none" {
+        animation none
+    }
+
+    rule ":root:root:root .u-white-space-normal" {
+        white-space normal
+    }
+
+    rule ":root:root:root .u-font-size-fs-xs" {
+        font-size "$fs-xs"
+    }
+
+    rule ":root:root:root .u-overflow-x-auto" {
+        overflow-x auto
+    }
+
+    rule ":root:root:root .u-margin-22px-0-8px" {
+        margin "$doc-space-22 0 $space-2"
+    }
+
+    rule ":root:root:root .u-margin-top-10px--display-flex--gap-8px--flex-wrap-wrap" {
+        margin-top "$doc-space-10"
+        display flex
+        gap "$space-2"
+        flex-wrap wrap
+    }
+
+    rule ":root:root:root .u-padding-0-6px" {
+        padding "0 $doc-space-6"
+    }
+
+    rule ":root:root:root .u-margin-top-12px" {
+        margin-top "$space-3"
+    }
+
+    rule ":root:root:root .u-display-flex--gap-8px--flex-wrap-wrap" {
+        display flex
+        gap "$space-2"
+        flex-wrap wrap
+    }
+
+    rule ":root:root:root .u-margin-bottom-18px" {
+        margin-bottom "$doc-space-18"
+    }
+
+    rule ":root:root:root .u-margin-0-0-10px" {
+        margin "0 0 $doc-space-10"
+    }
+
+    rule ":root:root:root .u-margin-bottom-20px" {
+        margin-bottom "$doc-space-20"
+    }
+
+    rule ":root:root:root .u-margin-top-16px" {
+        margin-top "$space-4"
+    }
+
+    rule ":root:root:root .u-align-self-flex-start" {
+        align-self flex-start
+    }
+
+    rule ":root:root:root .u-display-flex--gap-8px--align-items-center--flex-wrap-wrap" {
+        display flex
+        gap "$space-2"
+        align-items center
+        flex-wrap wrap
+    }
+
+    rule ":root:root:root .u-flex-1--min-width-0" {
+        flex 1
+        min-width 0
+    }
+
+    rule ":root:root:root .u-margin-0" {
+        margin 0
+    }
+
+    rule ":root:root:root .u-display-flex--gap-8px--margin-top-8px--flex-wrap-wrap" {
+        display flex
+        gap "$space-2"
+        margin-top "$space-2"
+        flex-wrap wrap
+    }
+
+    rule ":root:root:root .u-border-0--background-none" {
+        border 0
+        background none
+    }
+
+    rule ":root:root:root .u-font-size-fs-xs--padding-8px-10px--margin-0" {
+        font-size "$fs-xs"
+        padding "$space-2 $doc-space-10"
+        margin 0
+    }
+
+    rule ":root:root:root .u-background-bg-sunken--color-fg-muted" {
+        background "$bg-sunken"
+        color "$fg-muted"
+    }
+
+    rule ":root:root:root .u-gap-12px" {
+        gap "$space-3"
+    }
+
+    rule ":root:root:root .u-display-flex--gap-8px" {
+        display flex
+        gap "$space-2"
+    }
+
+    rule ":root:root:root .u-white-space-pre-wrap" {
+        white-space pre-wrap
+    }
+
+    rule ":root:root:root .u-display-flex--flex-direction-column--gap-8px" {
+        display flex
+        flex-direction column
+        gap "$space-2"
+    }
+
+    rule ":root:root:root .u-width-100pc" {
+        width "100%"
+    }
+
+    rule ":root:root:root .u-padding-6px" {
+        padding "$doc-space-6"
+    }
+
+    rule ":root:root:root .u-padding-8px-10px--margin-0" {
+        padding "$space-2 $doc-space-10"
+        margin 0
+    }
+
+    rule ":root:root:root .u-10e6c9c8" {
+        display grid
+        grid-template-columns "repeat(auto-fit, minmax($doc-space-160, 1fr))"
+        gap "$space-3"
+    }
+
+    rule ":root:root:root .u-margin-left-8px--font-size-fs-sm" {
+        margin-left "$space-2"
+        font-size "$fs-sm"
+    }
+
+    rule ":root:root:root .u-min-width-520px" {
+        min-width "$doc-space-520"
+    }
+
+    rule ":root:root:root .u-padding-20px--margin-0" {
+        padding "$doc-space-20"
+        margin 0
+    }
+
+    rule ":root:root:root .u-font-size-fs-xs--margin-0" {
+        font-size "$fs-xs"
+        margin 0
+    }
+
+    rule ":root:root:root .u-font-size-fs-md" {
+        font-size "$fs-md"
+    }
+
+    rule ":root:root:root .u-font-size-fs-sm--margin-0" {
+        font-size "$fs-sm"
+        margin 0
+    }
+
+    rule ":root:root:root .u-10e6c246" {
+        display grid
+        grid-template-columns "repeat(auto-fit, minmax($doc-space-160, 1fr))"
+        gap "$doc-space-10"
+    }
+
+    rule ":root:root:root .u-display-flex--gap-4px--padding-4px-6px-8px" {
+        display flex
+        gap "$space-1"
+        padding "$space-1 $doc-space-6 $space-2"
+    }
+
+    rule ":root:root:root .u-268a4e1f" {
+        display grid
+        grid-template-columns "repeat(auto-fit, minmax($doc-space-200, 1fr))"
+        gap "$doc-space-10"
+    }
+
+    rule ":root:root:root .u-dbec227" {
+        white-space pre-wrap
+        border "$border-width solid $border"
+        border-radius "$r-ctl"
+        padding "$space-2"
+    }
+
+    rule ":root:root:root .u-e9f48cc5" {
+        white-space pre-wrap
+        border "$border-width solid $accent"
+        border-radius "$r-ctl"
+        padding "$space-2"
     }
 }

@@ -194,9 +194,11 @@ pub(crate) struct DocSheet {
 }
 
 /// The sheets of the design pages and the files they are written to.
-pub(crate) const DOC_SHEETS: [(&str, &str); 2] = [
+pub(crate) const DOC_SHEETS: [(&str, &str); 4] = [
     ("components", "docs/design/components.css"),
     ("docpage", "docs/design/docpage.css"),
+    ("ux-design", "docs/design/ux-design.css"),
+    ("mockup", "docs/design/mockup.css"),
 ];
 
 pub(crate) struct ThemeFile {

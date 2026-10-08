@@ -24,6 +24,8 @@ pub(crate) const STYLE_SHEET: &str = "web/packages/ui/src/theme.css";
 /// The design pages' copy: the themes and the tokens, without the rules of the components (the
 /// pages have their own, `components.css`).
 const DOCS_SHEET: &str = "docs/design/theme.css";
+/// The names of the page frame for the scripts of the design pages (they cannot import `tokens.ts`).
+const FRAME_SCRIPT: &str = "docs/design/frame.js";
 const TS_OUTPUT: &str = "web/packages/ui/src/tokens.ts";
 const RUST_OUTPUT: &str = "crates/bb-core/src/settings/themes.rs";
 
@@ -34,20 +36,33 @@ const GENERATED_BY: &str =
 pub(crate) fn output_paths() -> Vec<&'static str> {
     let mut paths = vec![STYLE_SHEET, DOCS_SHEET];
     paths.extend(DOC_SHEETS.iter().map(|(_, path)| *path));
+    paths.push(FRAME_SCRIPT);
     paths.push(TS_OUTPUT);
     paths.push(RUST_OUTPUT);
     paths
 }
 
 /// The generated files, from `design/theme.kdl` on disk.
+///
+/// The style sheets go through the formatter (`oxfmt`), like the TypeScript of the API client, so
+/// that they look the way FMT-CSS wants them whatever the rules of the file look like.
 pub(crate) fn outputs(repo: &Repo) -> anyhow::Result<Vec<Generated>> {
-    generate(&ThemeFile::load(repo)?)
+    let mut generated = generate(&ThemeFile::load(repo)?)?;
+    for output in &mut generated {
+        if crate::docs::text::has_extension(output.path, "css")
+            || crate::docs::text::has_extension(output.path, "js")
+        {
+            output.content = super::api::format_with_oxfmt(repo, output.path, &output.content)?;
+        }
+    }
+    Ok(generated)
 }
 
 pub(crate) fn generate(file: &ThemeFile) -> anyhow::Result<Vec<Generated>> {
     let mut generated = vec![
         Generated::new(STYLE_SHEET, css(file)?),
         Generated::new(DOCS_SHEET, docs_theme_css(file)),
+        Generated::new(FRAME_SCRIPT, frame_script(file)),
         Generated::new(TS_OUTPUT, typescript(file)?),
         Generated::new(RUST_OUTPUT, rust(file)),
     ];
@@ -523,6 +538,14 @@ fn camel(name: &str) -> String {
         }
     }
     out
+}
+
+/// `bugabooFrame` for the scripts of the design pages: the attributes of `<html>`.
+fn frame_script(file: &ThemeFile) -> String {
+    format!(
+        "// {GENERATED_BY}\n// The attributes of the page frame (<html>) that the scripts of the design pages use.\nglobalThis.bugabooFrame = {{\n  look: \"{}\",\n  mode: \"{}\",\n  previewLook: \"{}\",\n}};\n",
+        file.frame.look, file.frame.mode, file.frame.preview
+    )
 }
 
 fn typescript(file: &ThemeFile) -> anyhow::Result<String> {
