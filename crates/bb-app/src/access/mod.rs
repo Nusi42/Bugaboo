@@ -294,6 +294,10 @@ async fn held_if_there_in<S: AuthStore>(
 
 /// [`held_if_there_in`], for a rule that holds nobody to a place that is gone.
 ///
+/// It evaluates the person without any access key, so every caller must be a use case that needs
+/// a permission in [`NOT_FOR_KEYS`] (a key never reaches it); the test
+/// `what_the_change_rules_judge_without_the_key_needs_a_permission_keys_never_hold` lists them.
+///
 /// # Errors
 /// [`Refusal::TooMuch`] (as the error of the store) when the place is gone, or the error of the
 /// store.
@@ -316,7 +320,8 @@ pub(crate) async fn held_in<S: AuthStore>(
 /// lead of everything below it. A row of *No access* gives nothing.
 ///
 /// It runs inside the change, after the policy lock, so it judges what is stored now and not
-/// what was stored when the request began.
+/// what was stored when the request began. It evaluates the giver without any access key, so every
+/// caller must be a use case that needs a permission in [`NOT_FOR_KEYS`] (see [`held_in`]).
 ///
 /// # Errors
 /// [`Refusal::TooMuch`] (as the error of the store) when they hold less than the role somewhere

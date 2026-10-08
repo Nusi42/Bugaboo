@@ -288,3 +288,22 @@ proptest! {
         }
     }
 }
+
+/// `held_in` and `ensure_may_give_in` judge a person without their access key, so the use cases
+/// that call them must be ones a key can never do: each needs a permission keys never hold.
+#[test]
+fn what_the_change_rules_judge_without_the_key_needs_a_permission_keys_never_hold() {
+    // The permissions the callers require: roles (create, copy, change, delete, levels), who has
+    // which role, and groups.
+    for permission in [
+        Permission::ManageRoles,
+        Permission::DecideRoles,
+        Permission::DecideWhatRolesSee,
+        Permission::ManageGroups,
+    ] {
+        assert!(
+            NOT_FOR_KEYS.contains(&permission),
+            "{permission:?} is something an access key could do"
+        );
+    }
+}
