@@ -1061,7 +1061,7 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
   ci --&gt; xt</pre>
 <ul>
 <li><strong>One catalogue, one runner.</strong> Each check has an ID (for example <code>ARCH-AUTHZ-ONLY</code>), a plain title, the rule it enforces, the tool, when it runs and which files trigger it. People, agents and CI all run the same code.</li>
-<li><strong>Small and fast.</strong> A check runs only when its files change. Edit-time checks take under 3 seconds per file and commit-time checks under 10 seconds, so nobody is tempted to skip them.</li>
+<li><strong>Small and fast.</strong> A check runs only when its files change. Edit-time checks take under 3 seconds per file and commit-time checks under 10 seconds on a quiet PC, so nobody is tempted to skip them.</li>
 <li><strong>Explains itself.</strong> A failing check prints one sentence: what's wrong, which rule, and where it's written down.</li>
 </ul>
 <h3 id="s10-2"><button class="sec" data-sec>§10.2</button>Groups of checks</h3>
@@ -1088,7 +1088,7 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 <li><strong>Every rule is traceable</strong> (<code>META-RULE-TRACE</code>): each "must" in the coding standards, decision records and these chapters names its check ID or says <em>review</em> with a reason.</li>
 <li><strong>Callers agree</strong> (<code>META-WIRING</code>): lefthook, the Claude Code hooks and CI call only xtask, with the same lists.</li>
 <li><strong>Suppressions are visible</strong> (<code>META-SUPPRESS</code>): every <code>allow</code>, <code>oxlint-disable</code>, ast-grep ignore or "not affected" vulnerability statement needs a reason and an issue ID, and the total can't grow unnoticed. The file types searched are listed in <code>xtask/src/checks/meta_suppress.rs</code>.</li>
-<li><strong>Checks stay fast</strong> (<code>META-SPEED</code>).</li>
+<li><strong>Checks stay fast</strong> (<code>META-SPEED</code>). The 3 and 10 seconds hold on a quiet PC. Several builds often run at once, and wall-clock time alone would then fail a fast check, so the check times a fixed <em>reference workload</em> (a few small processes plus some file and CPU work, like a typical check) right before, during and right after each measurement. The budget is a multiple of that reference: the quiet-PC budget times how much longer the reference took than on a quiet PC (the <em>load factor</em>, never below 1 and never above 20). Each timing is taken up to 3 times and the best attempt counts, which drops one-off spikes. A check that is slow by itself is slow in every attempt and still fails. The failure names the measured time, the allowed time, the reference time and the load factor, so a human can tell real slowness from load. The numbers (budgets, quiet reference, attempts, ceiling) are defined once, in <code>xtask/src/checks/meta_speed.rs</code>.</li>
 </ol>
 <h3 id="s10-4"><button class="sec" data-sec>§10.4</button>Adding a rule</h3>
 <ol>
@@ -1179,7 +1179,7 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 <tr><td><code>META-RULE-TRACE</code></td><td>Every rule in coding standards, ADRs and the architecture (must, shall, has to, may only …) names its check ID or says 'review' with a reason</td><td>architecture §10</td><td>xtask (parses docs for Enforced-by markers)</td><td>commit · ci</td></tr>
 <tr><td><code>META-WIRING</code></td><td>lefthook, Claude Code hooks and CI call exactly the xtask commands they should, and only those; CI actions are pinned to a commit</td><td>ADR-0014</td><td>xtask (reads lefthook.yml, .claude/settings.json, CI workflow)</td><td>commit · ci</td></tr>
 <tr><td><code>META-SUPPRESS</code></td><td>Every suppression (allow, expect, eslint/oxlint/stylelint-disable, @ts-ignore, ast-grep ignore, the allow marker of the secret scan, accepted advisories) has a reason that names an issue or a doc section; the total is compared with tools/checks/suppressions.txt and may only change together with that file</td><td>architecture §10</td><td>xtask (counts and compares with tools/checks/suppressions.txt)</td><td>commit · ci</td></tr>
-<tr><td><code>META-SPEED</code></td><td>Checks stay fast: every edit-time check under 3 s on one file and all commit-time checks under 10 s on a sample of files, measured when this check runs</td><td>architecture §10</td><td>xtask (times the checks itself)</td><td>ci</td></tr>
+<tr><td><code>META-SPEED</code></td><td>Checks stay fast: every edit-time check under 3 s on one file and all commit-time checks under 10 s on a sample of files on a quiet PC; on a busy PC the budgets grow with a reference workload timed alongside, and the best of 3 attempts counts</td><td>architecture §10</td><td>xtask (times the checks itself)</td><td>ci</td></tr>
 </tbody></table></div>
 <p>80 checks, generated from <code>tools/checks/catalog.toml</code>.</p>
 
