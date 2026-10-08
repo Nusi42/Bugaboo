@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Alert } from "@bugaboo/ui";
+import { Alert, alertTone } from "@bugaboo/ui";
 import type { ReactNode } from "react";
 
 import { codeOf, messageOf } from "../../shared/errors.ts";
@@ -28,7 +28,7 @@ export function QueryGate<Data>({ error, data, notFound, children }: QueryGatePr
     return notFound !== undefined && codeOf(error) === "resource.not_found" ? (
       notFound
     ) : (
-      <Alert danger>{messageOf(error)}</Alert>
+      <Alert tone={alertTone.danger}>{messageOf(error)}</Alert>
     );
   }
   if (data === undefined) {

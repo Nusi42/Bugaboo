@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-import { ConfirmDialog, type ConfirmDialogProps } from "@bugaboo/ui";
+import { buttonLook, ConfirmDialog, type ConfirmDialogProps } from "@bugaboo/ui";
 
 import { ConfirmPasswordField } from "./ConfirmPasswordField.tsx";
 
@@ -19,7 +19,7 @@ export function RemoveWithPassword({ onConfirm, ...question }: RemoveWithPasswor
   return (
     <ConfirmDialog
       {...question}
-      danger
+      confirmLook={buttonLook.danger}
       confirmDisabled={empty}
       onClosed={() => {
         setPassword("");

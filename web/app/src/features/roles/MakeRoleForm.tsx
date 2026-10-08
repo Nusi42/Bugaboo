@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Alert, Button, Form, SelectField, TextField } from "@bugaboo/ui";
+import { Alert, alertTone, Form, SelectField, SubmitButton, TextField } from "@bugaboo/ui";
 import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 
@@ -56,11 +56,9 @@ export function MakeRoleForm() {
         onChange={setName}
       />
       <SelectField label={t("roles.start-from")} choices={start} value={from} onChange={setFrom} />
-      {problem === null ? null : <Alert danger>{messageOf(problem)}</Alert>}
+      {problem === null ? null : <Alert tone={alertTone.danger}>{messageOf(problem)}</Alert>}
       <div className={styles.row}>
-        <Button primary submit isPending={empty.isPending || copy.isPending}>
-          {t("roles.make")}
-        </Button>
+        <SubmitButton isPending={empty.isPending || copy.isPending}>{t("roles.make")}</SubmitButton>
       </div>
     </Form>
   );

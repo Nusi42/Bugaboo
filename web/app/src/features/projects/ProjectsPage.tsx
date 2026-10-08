@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Alert, Button, Card } from "@bugaboo/ui";
+import { Alert, alertTone, Button, Card } from "@bugaboo/ui";
 
 import { messageOf } from "../../shared/errors.ts";
 import { usePageTitle } from "../../shared/use-page.ts";
@@ -48,7 +48,7 @@ export function ProjectsPage({ open, onOpen, onClose }: ProjectsPageProps) {
     <div className={styles.stack}>
       <Card heading={t("projects.title")} level={1}>
         <p className={styles.text}>{t("projects.intro")}</p>
-        {list.isError ? <Alert danger>{messageOf(list.error)}</Alert> : null}
+        {list.isError ? <Alert tone={alertTone.danger}>{messageOf(list.error)}</Alert> : null}
         {list.isSuccess && rows.length === 0 ? (
           <p className={styles.muted}>{t("projects.none-yet")}</p>
         ) : (

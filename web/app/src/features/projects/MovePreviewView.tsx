@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Alert } from "@bugaboo/ui";
+import { Alert, alertTone } from "@bugaboo/ui";
 
 import { keyedLiftSentencesOfPreview, keyedSentencesOfPreview } from "./preview-sentences.ts";
 import styles from "./Projects.module.css";
@@ -16,7 +16,7 @@ export function MovePreviewView({ preview }: { readonly preview: Preview }) {
     <section className={styles.preview} aria-label={t("projects.preview-heading")}>
       <h3 className={styles.previewHeading}>{t("projects.preview-heading")}</h3>
       {preview.blocked ? (
-        <Alert danger>
+        <Alert tone={alertTone.danger}>
           <p className={styles.alertLine}>{t("projects.preview-blocked")}</p>
           {lifts.map((line) => (
             <p key={line.key} className={styles.alertLine}>

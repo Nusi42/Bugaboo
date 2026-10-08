@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Button, cx, Icon, iconName, type LayoutMode } from "@bugaboo/ui";
+import { Button, buttonLook, cx, Icon, iconName, iconSize, type LayoutMode } from "@bugaboo/ui";
 import { useCanGoBack, useLocation, useNavigate, useRouter } from "@tanstack/react-router";
 import { Link } from "react-aria-components";
 
@@ -51,7 +51,7 @@ function Trail({ steps }: { readonly steps: readonly TrailStep[] }) {
                   <Link href={step.href} className={cx(styles.up)}>
                     {step.label}
                   </Link>
-                  <Icon name={iconName.next} small />
+                  <Icon name={iconName.next} size={iconSize.small} />
                 </>
               )}
             </li>
@@ -100,7 +100,7 @@ export function TopBar({ layout }: TopBarProps) {
         </Button>
       ) : null}
       {phone && hasUp ? (
-        <Button quiet onPress={goBack}>
+        <Button look={buttonLook.quiet} onPress={goBack}>
           <Icon name={iconName.back} />
           {t("shell.back")}
         </Button>

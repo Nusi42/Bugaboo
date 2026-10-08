@@ -1,6 +1,15 @@
 import type { Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
-import { Alert, autoComplete, Button, ChoiceGroup, TextField } from "@bugaboo/ui";
+import {
+  Alert,
+  alertTone,
+  autoComplete,
+  Button,
+  ChoiceGroup,
+  fieldKind,
+  SubmitButton,
+  TextField,
+} from "@bugaboo/ui";
 
 import { formatDay } from "../../../shared/format.ts";
 import styles from "./AccessKeys.module.css";
@@ -96,18 +105,16 @@ export function Send({ draft, needOne, problem, isPending, onCancel }: SendProps
       <TextField
         label={t("field.confirm-password")}
         description={t("field.confirm-password-help")}
-        password
+        kind={fieldKind.password}
         autoComplete={autoComplete.currentPassword}
         requiredMessage={t("validation.required")}
         value={draft.password}
         onChange={draft.setPassword}
       />
-      {needOne ? <Alert danger>{t("access-keys.pick-one")}</Alert> : null}
-      {problem === null ? null : <Alert danger>{problem}</Alert>}
+      {needOne ? <Alert tone={alertTone.danger}>{t("access-keys.pick-one")}</Alert> : null}
+      {problem === null ? null : <Alert tone={alertTone.danger}>{problem}</Alert>}
       <div className={styles.row}>
-        <Button primary submit isPending={isPending}>
-          {t("access-keys.submit")}
-        </Button>
+        <SubmitButton isPending={isPending}>{t("access-keys.submit")}</SubmitButton>
         <Button onPress={onCancel}>{t("access-keys.cancel")}</Button>
       </div>
     </>

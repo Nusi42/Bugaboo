@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Alert, Button } from "@bugaboo/ui";
+import { Alert, alertTone, Button } from "@bugaboo/ui";
 
 import { messageOf } from "../../shared/errors.ts";
 import { AssignmentRow } from "./AssignmentRow.tsx";
@@ -21,7 +21,7 @@ export function AssignmentList({ project, onRemove, onChangeHere }: AssignmentLi
   const rows = rowsOf(list.data?.pages);
   return (
     <>
-      {list.isError ? <Alert danger>{messageOf(list.error)}</Alert> : null}
+      {list.isError ? <Alert tone={alertTone.danger}>{messageOf(list.error)}</Alert> : null}
       {list.isSuccess && rows.length === 0 ? (
         <p className={styles.muted}>{t("assignments.none")}</p>
       ) : (

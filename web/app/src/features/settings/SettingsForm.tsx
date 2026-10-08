@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Alert, SaveStatus, SearchField, type SaveState } from "@bugaboo/ui";
+import { Alert, alertTone, type SaveState, SaveStatus, SearchField } from "@bugaboo/ui";
 import { useState } from "react";
 
 import { type Setting } from "../../shared/my-settings.ts";
@@ -71,7 +71,7 @@ export function SettingsForm({
           "not-saved": t("save.not-saved"),
         }}
       />
-      {problem === null ? null : <Alert danger>{problem}</Alert>}
+      {problem === null ? null : <Alert tone={alertTone.danger}>{problem}</Alert>}
       {shown.length === 0 ? (
         <p className={styles.help}>{t("setting.ui.nothing")}</p>
       ) : (

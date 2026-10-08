@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Alert, Button } from "@bugaboo/ui";
+import { Alert, alertTone, Button } from "@bugaboo/ui";
 
 import { messageOf } from "../../shared/errors.ts";
 import { membersOf, useMembers, type GroupLine } from "./groups.ts";
@@ -18,7 +18,7 @@ function MemberList({ group, changes }: ListProps) {
   const people = membersOf(members.data?.pages);
   return (
     <div className={styles.stack}>
-      {members.isError ? <Alert danger>{messageOf(members.error)}</Alert> : null}
+      {members.isError ? <Alert tone={alertTone.danger}>{messageOf(members.error)}</Alert> : null}
       {members.isSuccess && people.length === 0 ? (
         <p className={styles.muted}>{t("groups.members-none")}</p>
       ) : (
@@ -61,7 +61,7 @@ export function GroupMembers({ group }: { readonly group: GroupLine }) {
     <>
       {changes.dialog}
       <MemberList group={group} changes={changes} />
-      {changes.problem === null ? null : <Alert danger>{changes.problem}</Alert>}
+      {changes.problem === null ? null : <Alert tone={alertTone.danger}>{changes.problem}</Alert>}
       <MemberPicker group={group} changes={changes} />
     </>
   );

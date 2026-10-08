@@ -2,9 +2,10 @@ import { createContext, useContext, type ReactNode } from "react";
 
 import { Alert } from "./Alert.tsx";
 import { Button } from "./Button.tsx";
-import { pickerLook, type PickerLook } from "./picker-look.ts";
+import { alertTone, pickerLook, type PickerLook } from "./props.ts";
 import { SearchField } from "./SearchField.tsx";
 import styles from "./SearchPicker.module.css";
+import { buttonLook } from "./props.ts";
 
 const LookContext = createContext<PickerLook>(pickerLook.list);
 
@@ -70,10 +71,10 @@ export function SearchPicker({
       <ul className={boxed ? styles.optionsBoxed : styles.options} aria-label={listLabel}>
         <LookContext value={look}>{children}</LookContext>
       </ul>
-      {failed === undefined ? null : <Alert danger>{failed}</Alert>}
+      {failed === undefined ? null : <Alert tone={alertTone.danger}>{failed}</Alert>}
       {nothing === undefined ? null : <p className={styles.muted}>{nothing}</p>}
       {more === undefined ? null : (
-        <Button quiet isPending={more.pending} onPress={more.press}>
+        <Button look={buttonLook.quiet} isPending={more.pending} onPress={more.press}>
           {more.label}
         </Button>
       )}

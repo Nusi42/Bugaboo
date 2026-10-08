@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Alert, Button, CopyButton } from "@bugaboo/ui";
+import { Alert, alertTone, Button, buttonLook, CopyButton } from "@bugaboo/ui";
 
 import styles from "./Account.module.css";
 
@@ -14,7 +14,7 @@ export interface BackupCodesProps {
 export function BackupCodes({ codes, onSaved }: BackupCodesProps) {
   return (
     <div className={styles.stack}>
-      <Alert warning>{t("backup.shown-once")}</Alert>
+      <Alert tone={alertTone.warning}>{t("backup.shown-once")}</Alert>
       <ul className={styles.codes} aria-label={t("backup.list")}>
         {codes.map((code) => (
           <li key={code}>{code}</li>
@@ -26,7 +26,7 @@ export function BackupCodes({ codes, onSaved }: BackupCodesProps) {
           label={t("backup.copy")}
           copiedLabel={t("backup.copied")}
         />
-        <Button primary onPress={onSaved}>
+        <Button look={buttonLook.primary} onPress={onSaved}>
           {t("backup.saved")}
         </Button>
       </div>

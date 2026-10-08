@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Button, Switch } from "@bugaboo/ui";
+import { Button, buttonLook, Switch } from "@bugaboo/ui";
 import { type ReactNode } from "react";
 
 import { type Setting, type SettingValue } from "../../shared/my-settings.ts";
@@ -75,7 +75,7 @@ export function SettingRow({ setting, actions, control }: SettingRowProps) {
       <div className={styles.actions}>
         {setting.own && !lockedBelow ? (
           <Button
-            quiet
+            look={buttonLook.quiet}
             aria-label={t("setting.ui.reset-name", { name: wordsOf(setting.name_key) })}
             onPress={() => {
               actions.onReset(setting.key);

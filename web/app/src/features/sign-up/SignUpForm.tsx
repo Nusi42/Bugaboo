@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Alert, Button, Form } from "@bugaboo/ui";
+import { Alert, alertTone, Form, SubmitButton } from "@bugaboo/ui";
 import { useState } from "react";
 
 import { useAfterSignIn } from "../../shared/after-sign-in.ts";
@@ -31,10 +31,12 @@ export function SignUpForm() {
         }}
         problem={tooWeak ? messageOf(signUp.error) : undefined}
       />
-      {signUp.isError && !tooWeak ? <Alert danger>{messageOf(signUp.error)}</Alert> : null}
-      <Button primary wide submit isPending={signUp.isPending}>
+      {signUp.isError && !tooWeak ? (
+        <Alert tone={alertTone.danger}>{messageOf(signUp.error)}</Alert>
+      ) : null}
+      <SubmitButton wide isPending={signUp.isPending}>
         {t("sign-up.submit")}
-      </Button>
+      </SubmitButton>
     </Form>
   );
 }

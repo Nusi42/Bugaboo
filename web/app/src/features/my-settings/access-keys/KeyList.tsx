@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Alert, Card, SaveStatus, Skeleton } from "@bugaboo/ui";
+import { Alert, alertTone, Card, SaveStatus, Skeleton } from "@bugaboo/ui";
 import { useQuery } from "@tanstack/react-query";
 
 import { messageOf } from "../../../shared/errors.ts";
@@ -17,7 +17,7 @@ export function KeyList() {
   const items: readonly AccessKey[] = keys.data?.items ?? [];
   return (
     <Card heading={t("access-keys.list")}>
-      {keys.isError ? <Alert danger>{messageOf(keys.error)}</Alert> : null}
+      {keys.isError ? <Alert tone={alertTone.danger}>{messageOf(keys.error)}</Alert> : null}
       <div aria-busy={keys.isPending}>
         {keys.isSuccess && items.length === 0 ? (
           <p className={styles.muted}>{t("access-keys.empty")}</p>
@@ -43,8 +43,10 @@ export function KeyList() {
           "not-saved": t("save.not-saved"),
         }}
       />
-      {remove.problem === null ? null : <Alert danger>{remove.problem}</Alert>}
-      {remove.saveState === "saved" ? <Alert success>{t("access-keys.deleted")}</Alert> : null}
+      {remove.problem === null ? null : <Alert tone={alertTone.danger}>{remove.problem}</Alert>}
+      {remove.saveState === "saved" ? (
+        <Alert tone={alertTone.success}>{t("access-keys.deleted")}</Alert>
+      ) : null}
     </Card>
   );
 }

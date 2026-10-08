@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Alert, Button, cx, SearchField } from "@bugaboo/ui";
+import { Alert, alertTone, Button, cx, SearchField } from "@bugaboo/ui";
 import { useState } from "react";
 import {
   Collection,
@@ -89,7 +89,7 @@ export function PeopleList() {
         value={query}
         onChange={setQuery}
       />
-      {people.isError ? <Alert danger>{messageOf(people.error)}</Alert> : null}
+      {people.isError ? <Alert tone={alertTone.danger}>{messageOf(people.error)}</Alert> : null}
       {people.isSuccess && lines.length === 0 ? (
         <p className={styles.muted}>{t("people.nothing")}</p>
       ) : (

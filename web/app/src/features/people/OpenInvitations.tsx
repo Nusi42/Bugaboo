@@ -1,6 +1,6 @@
 import type { Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
-import { Alert, Button, ConfirmDialog } from "@bugaboo/ui";
+import { Alert, alertTone, Button, buttonLook, ConfirmDialog } from "@bugaboo/ui";
 import { useState } from "react";
 
 import { api } from "../../shared/api.ts";
@@ -42,7 +42,7 @@ function InvitationRow({ invitation, onTakenBack }: InvitationRowProps) {
             {t("invitations.expires", { when: formatDateTime(expires) })}
           </span>
         )}
-        {revoke.isError ? <Alert danger>{messageOf(revoke.error)}</Alert> : null}
+        {revoke.isError ? <Alert tone={alertTone.danger}>{messageOf(revoke.error)}</Alert> : null}
       </span>
       <ConfirmDialog
         triggerLabel={t("invitations.take-back")}
@@ -51,7 +51,7 @@ function InvitationRow({ invitation, onTakenBack }: InvitationRowProps) {
         text={t("invitations.take-back-text")}
         confirmLabel={t("invitations.take-back")}
         cancelLabel={t("common.cancel")}
-        danger
+        confirmLook={buttonLook.danger}
         onConfirm={() => {
           revoke.mutate({ params: { path: { invitation_id: id } } });
         }}
@@ -67,14 +67,14 @@ export function OpenInvitations() {
   const items =
     invitations.data?.pages.flatMap((page: Schema<"Page_InvitationItem">) => page.items) ?? [];
   if (invitations.isError) {
-    return <Alert danger>{messageOf(invitations.error)}</Alert>;
+    return <Alert tone={alertTone.danger}>{messageOf(invitations.error)}</Alert>;
   }
   if (invitations.isSuccess && items.length === 0) {
     return <p className={styles.muted}>{t("invitations.none")}</p>;
   }
   return (
     <>
-      {takenBack ? <Alert success>{t("invitations.taken-back")}</Alert> : null}
+      {takenBack ? <Alert tone={alertTone.success}>{t("invitations.taken-back")}</Alert> : null}
       <ul className={styles.list} aria-label={t("invitations.open")}>
         {items.map((invitation) => (
           <InvitationRow

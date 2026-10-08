@@ -1,5 +1,5 @@
 import type { Schema } from "@bugaboo/api-client";
-import { Alert, Form, Skeleton } from "@bugaboo/ui";
+import { Alert, alertTone, Form, Skeleton } from "@bugaboo/ui";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 
@@ -59,7 +59,11 @@ function Fields({ rules, onMade, onCancel }: FieldsProps) {
 export function MakeKeyForm(props: MakeKeyFormProps) {
   const rules = useQuery(rulesOptions());
   if (rules.data === undefined) {
-    return rules.isError ? <Alert danger>{messageOf(rules.error)}</Alert> : <Skeleton />;
+    return rules.isError ? (
+      <Alert tone={alertTone.danger}>{messageOf(rules.error)}</Alert>
+    ) : (
+      <Skeleton />
+    );
   }
   return <Fields {...props} rules={rules.data} />;
 }

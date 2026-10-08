@@ -61,10 +61,26 @@ export {
   type PickerRowProps,
   type SearchPickerProps,
 } from "./SearchPicker.tsx";
-export { pickerLook, type PickerLook } from "./picker-look.ts";
+export {
+  alertTone,
+  buttonLook,
+  buttonType,
+  fieldKind,
+  iconSize,
+  overlayEdge,
+  pickerLook,
+  type AlertTone,
+  type ButtonLook,
+  type ButtonType,
+  type FieldKind,
+  type IconSize,
+  type OverlayEdge,
+  type PickerLook,
+} from "./props.ts";
 export { SearchField, type SearchFieldProps } from "./SearchField.tsx";
 export { SelectField, type SelectChoice, type SelectFieldProps } from "./SelectField.tsx";
 export { Skeleton, type SkeletonProps } from "./Skeleton.tsx";
+export { SubmitButton, type SubmitButtonProps } from "./SubmitButton.tsx";
 export { Switch, type SwitchProps } from "./Switch.tsx";
 export { TextField, type TextFieldProps } from "./TextField.tsx";
 export {

@@ -1,6 +1,6 @@
 import type { Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
-import { Alert, ConfirmDialog } from "@bugaboo/ui";
+import { Alert, alertTone, buttonLook, ConfirmDialog } from "@bugaboo/ui";
 import { useState } from "react";
 
 import { useAskFirst } from "../../shared/ask-first.tsx";
@@ -30,7 +30,7 @@ export function DeleteRole({ id, name, used }: DeleteRoleProps) {
   return (
     <div className={styles.stack}>
       {dialog}
-      {remove.isError ? <Alert danger>{messageOf(remove.error)}</Alert> : null}
+      {remove.isError ? <Alert tone={alertTone.danger}>{messageOf(remove.error)}</Alert> : null}
       <div className={styles.row}>
         <ConfirmDialog
           triggerLabel={t("roles.delete")}
@@ -40,7 +40,7 @@ export function DeleteRole({ id, name, used }: DeleteRoleProps) {
           confirmLabel={t("roles.delete")}
           cancelLabel={t("common.cancel")}
           confirmDisabled={asks && replacement === ""}
-          danger
+          confirmLook={buttonLook.danger}
           onClosed={() => {
             setReplacement("");
           }}

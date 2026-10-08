@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { autoComplete, TextField } from "@bugaboo/ui";
+import { autoComplete, fieldKind, TextField } from "@bugaboo/ui";
 
 export interface ConfirmPasswordFieldProps {
   readonly value: string;
@@ -12,7 +12,7 @@ export function ConfirmPasswordField({ value, onChange }: ConfirmPasswordFieldPr
     <TextField
       label={t("field.confirm-password")}
       description={t("field.confirm-password-help")}
-      password
+      kind={fieldKind.password}
       autoComplete={autoComplete.currentPassword}
       requiredMessage={t("validation.required")}
       value={value}

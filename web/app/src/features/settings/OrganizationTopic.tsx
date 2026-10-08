@@ -1,4 +1,4 @@
-import { Alert } from "@bugaboo/ui";
+import { Alert, alertTone } from "@bugaboo/ui";
 
 import { messageOf } from "../../shared/errors.ts";
 import { useOrganizationSettings } from "./organization.ts";
@@ -13,7 +13,7 @@ export interface OrganizationTopicProps {
 export function OrganizationTopic({ topics }: OrganizationTopicProps) {
   const { settings, failed, edits } = useOrganizationSettings(topics);
   if (failed !== null) {
-    return <Alert danger>{messageOf(failed)}</Alert>;
+    return <Alert tone={alertTone.danger}>{messageOf(failed)}</Alert>;
   }
   if (settings === undefined) {
     return null;

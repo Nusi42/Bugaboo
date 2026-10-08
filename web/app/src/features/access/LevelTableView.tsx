@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Alert, SaveStatus, SelectField, useLayout } from "@bugaboo/ui";
+import { Alert, alertTone, SaveStatus, SelectField, useLayout } from "@bugaboo/ui";
 import { useState, type ReactNode } from "react";
 
 import { messageOf } from "../../shared/errors.ts";
@@ -54,7 +54,7 @@ export function LevelTableView<Subject extends string, Level extends string>({
   const [chosen, setChosen] = useState<string>();
   const { table, failed, edits } = levels;
   if (failed !== null && failed !== undefined) {
-    return <Alert danger>{messageOf(failed)}</Alert>;
+    return <Alert tone={alertTone.danger}>{messageOf(failed)}</Alert>;
   }
   if (table === undefined) {
     return <p className={styles.muted}>{t("common.loading")}</p>;
@@ -64,7 +64,7 @@ export function LevelTableView<Subject extends string, Level extends string>({
   const showChooser = table.roles.length > 0 && (!computer || previewLabel !== undefined);
   return (
     <div className={styles.stack}>
-      {table.truncated ? <Alert warning>{t("access.roles-cut")}</Alert> : null}
+      {table.truncated ? <Alert tone={alertTone.warning}>{t("access.roles-cut")}</Alert> : null}
       {table.roles.length === 0 ? <p className={styles.muted}>{t("access.no-roles")}</p> : null}
       {hasCeiling(table) ? <p className={styles.muted}>{t("access.ceiling")}</p> : null}
       <SaveStatus
@@ -75,7 +75,7 @@ export function LevelTableView<Subject extends string, Level extends string>({
           "not-saved": t("save.not-saved"),
         }}
       />
-      {edits.problem === null ? null : <Alert danger>{edits.problem}</Alert>}
+      {edits.problem === null ? null : <Alert tone={alertTone.danger}>{edits.problem}</Alert>}
       {showChooser ? (
         <SelectField
           label={computer && previewLabel !== undefined ? previewLabel : t("access.role-chooser")}

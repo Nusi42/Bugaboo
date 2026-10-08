@@ -10,6 +10,7 @@ import {
 import { autoComplete, type AutoComplete } from "./autocomplete.ts";
 import styles from "./Field.module.css";
 import { cx } from "./cx.ts";
+import { fieldKind, type FieldKind } from "./props.ts";
 
 /** Words of the HTML standard, not text for people. */
 const inputTypes = { text: "text", password: "password", date: "date" } as const;
@@ -29,14 +30,14 @@ export interface TextFieldProps {
   readonly emailMessage?: string;
   /** A problem the server found with the value: shown under the field. */
   readonly errorMessage?: string | undefined;
-  /** An e-mail address: the keyboard of a phone offers the @ sign, and the value is checked. */
-  readonly email?: boolean;
-  /** A password: the characters are hidden. */
-  readonly password?: boolean;
+  /**
+   * What the field holds. An `email` address: the keyboard of a phone offers the @ sign, and the
+   * value is checked. A `password`: the characters are hidden. `multiline`: more than one line (for
+   * lists). Plain `text` is the default.
+   */
+  readonly kind?: FieldKind;
   /** A day: the browser offers its own calendar. `min` and `max` are days as `2027-03-01`. */
   readonly date?: { readonly min: string; readonly max: string };
-  /** More than one line (for lists). */
-  readonly multiline?: boolean;
   readonly name?: string;
   readonly value: string;
   readonly onChange: (value: string) => void;
@@ -45,11 +46,11 @@ export interface TextFieldProps {
 }
 
 /** The kind of input the browser draws: a day, hidden characters, or plain text. */
-function typeOf(password: boolean, day: boolean): (typeof inputTypes)[keyof typeof inputTypes] {
+function typeOf(kind: FieldKind, day: boolean): (typeof inputTypes)[keyof typeof inputTypes] {
   if (day) {
     return inputTypes.date;
   }
-  return password ? inputTypes.password : inputTypes.text;
+  return kind === fieldKind.password ? inputTypes.password : inputTypes.text;
 }
 
 /**
@@ -59,14 +60,19 @@ function typeOf(password: boolean, day: boolean): (typeof inputTypes)[keyof type
  */
 function problemOf(
   text: string,
-  email: boolean,
+  kind: FieldKind,
   requiredMessage: string | undefined,
   emailMessage: string | undefined,
 ): string | null {
   if (requiredMessage !== undefined && text.trim() === "") {
     return requiredMessage;
   }
-  if (email && emailMessage !== undefined && text.trim() !== "" && !text.includes("@")) {
+  if (
+    kind === fieldKind.email &&
+    emailMessage !== undefined &&
+    text.trim() !== "" &&
+    !text.includes("@")
+  ) {
     return emailMessage;
   }
   return null;
@@ -79,9 +85,7 @@ export function TextField({
   requiredMessage,
   emailMessage,
   errorMessage,
-  email = false,
-  password = false,
-  multiline = false,
+  kind = fieldKind.text,
   date,
   name = "",
   value,
@@ -94,12 +98,12 @@ export function TextField({
       name={name}
       value={value}
       onChange={onChange}
-      type={typeOf(password, date !== undefined)}
-      inputMode={email ? inputModes.email : inputModes.text}
+      type={typeOf(kind, date !== undefined)}
+      inputMode={kind === fieldKind.email ? inputModes.email : inputModes.text}
       autoComplete={fill}
       // Only a problem is passed on: `isInvalid={false}` would switch off the checks of the field.
       {...(errorMessage === undefined ? {} : { isInvalid: true })}
-      validate={(text) => problemOf(text, email, requiredMessage, emailMessage)}
+      validate={(text) => problemOf(text, kind, requiredMessage, emailMessage)}
     >
       <Label className={cx(styles.label)}>{label}</Label>
       {description === undefined ? null : (
@@ -107,7 +111,7 @@ export function TextField({
           {description}
         </Text>
       )}
-      {multiline ? (
+      {kind === fieldKind.multiline ? (
         <TextArea className={cx(styles.input, styles.multiline)} rows={4} />
       ) : (
         <Input

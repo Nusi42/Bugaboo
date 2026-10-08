@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Alert, Button } from "@bugaboo/ui";
+import { Alert, alertTone, Button } from "@bugaboo/ui";
 import { useState } from "react";
 
 import { type SignedIn, useAfterSignIn } from "../../shared/after-sign-in.ts";
@@ -49,7 +49,9 @@ export function PasskeyButton({ label, signIn }: PasskeyButtonProps) {
         {label}
       </Button>
       {trouble?.cancelled === true ? <Alert>{t("passkeys.cancelled")}</Alert> : null}
-      {trouble?.cancelled === false ? <Alert danger>{messageOf(trouble.error)}</Alert> : null}
+      {trouble?.cancelled === false ? (
+        <Alert tone={alertTone.danger}>{messageOf(trouble.error)}</Alert>
+      ) : null}
     </>
   );
 }

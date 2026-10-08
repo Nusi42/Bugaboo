@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { IconButton, iconName, Overlay, type LayoutMode } from "@bugaboo/ui";
+import { IconButton, iconName, type LayoutMode, Overlay, overlayEdge } from "@bugaboo/ui";
 
 import { MoreSheet } from "./MoreSheet.tsx";
 import { closeOverlay, useOverlay } from "./overlay-state.ts";
@@ -20,7 +20,7 @@ export interface ShellOverlaysProps extends Pick<
 function Drawer(props: Omit<ShellOverlaysProps, "layout">) {
   const overlay = useOverlay("menu");
   return (
-    <Overlay {...overlay} label={t("shell.menu")} start>
+    <Overlay {...overlay} label={t("shell.menu")} from={overlayEdge.start}>
       <div className={styles.drawer}>
         <IconButton icon={iconName.close} label={t("common.close")} onPress={closeOverlay} />
         <Sidebar narrow={false} inDrawer onNavigate={closeOverlay} {...props} />

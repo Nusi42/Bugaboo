@@ -1,6 +1,6 @@
 import type { Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
-import { AskDialog } from "@bugaboo/ui";
+import { AskDialog, buttonLook } from "@bugaboo/ui";
 import { useCallback, useState, type ReactNode } from "react";
 
 import { api } from "./api.ts";
@@ -83,7 +83,7 @@ export function useAskFirst(): AskFirst {
       text={t("own.ask-text", { lost: lostText(waiting?.lost ?? []) })}
       confirmLabel={t("own.ask-yes")}
       cancelLabel={t("own.ask-keep")}
-      danger
+      confirmLook={buttonLook.danger}
       onConfirm={() => {
         close(true);
       }}

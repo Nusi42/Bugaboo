@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Button, ChoiceGroup, Form, SelectField, Switch, TextField } from "@bugaboo/ui";
+import { ChoiceGroup, Form, SelectField, SubmitButton, Switch, TextField } from "@bugaboo/ui";
 import { useState } from "react";
 
 import { type Setting, type SettingValue } from "../../shared/my-settings.ts";
@@ -65,9 +65,7 @@ function TypedControl({ setting, onChange }: SettingControlProps) {
           setProblem(undefined);
         }}
       />
-      <Button primary submit>
-        {t("common.save")}
-      </Button>
+      <SubmitButton>{t("common.save")}</SubmitButton>
     </Form>
   );
 }

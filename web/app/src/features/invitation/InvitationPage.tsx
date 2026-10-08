@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Alert, Card, Link } from "@bugaboo/ui";
+import { Alert, alertTone, Card, Link } from "@bugaboo/ui";
 import { useLocation } from "@tanstack/react-router";
 
 import { messageOf } from "../../shared/errors.ts";
@@ -14,7 +14,7 @@ function Invitation({ secret }: { readonly secret: string }) {
   if (invitation.isError) {
     return (
       <Card heading={t("invitation.invalid-title")} level={1}>
-        <Alert danger>{messageOf(invitation.error)}</Alert>
+        <Alert tone={alertTone.danger}>{messageOf(invitation.error)}</Alert>
         <Link href={paths.signIn}>{t("invitation.sign-in")}</Link>
       </Card>
     );
@@ -35,7 +35,7 @@ export function InvitationPage() {
   if (secret === "") {
     return (
       <Card heading={t("invitation.invalid-title")} level={1}>
-        <Alert warning>{t("invitation.incomplete")}</Alert>
+        <Alert tone={alertTone.warning}>{t("invitation.incomplete")}</Alert>
         <Link href={paths.signIn}>{t("invitation.sign-in")}</Link>
       </Card>
     );

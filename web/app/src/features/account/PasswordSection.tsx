@@ -1,10 +1,27 @@
 import { t } from "@bugaboo/messages";
-import { Alert, autoComplete, Button, Card, Form, TextField } from "@bugaboo/ui";
+import {
+  Alert,
+  alertTone,
+  autoComplete,
+  Card,
+  fieldKind,
+  Form,
+  SubmitButton,
+  TextField,
+} from "@bugaboo/ui";
 import { useState } from "react";
 
 import { api } from "../../shared/api.ts";
 import { isPasswordProblem, messageOf } from "../../shared/errors.ts";
 import styles from "./Account.module.css";
+
+/** What came of the last try: a problem that is not a weak password, or the good news. */
+function Outcome({ problem, done }: { readonly problem: string | null; readonly done: boolean }) {
+  if (problem !== null) {
+    return <Alert tone={alertTone.danger}>{problem}</Alert>;
+  }
+  return done ? <Alert tone={alertTone.success}>{t("security.password.changed")}</Alert> : null;
+}
 
 /** *Password*: change it, after typing the one that is used now. */
 export function PasswordSection() {
@@ -26,7 +43,7 @@ export function PasswordSection() {
       >
         <TextField
           label={t("security.password.current")}
-          password
+          kind={fieldKind.password}
           autoComplete={autoComplete.currentPassword}
           requiredMessage={t("validation.required")}
           value={current}
@@ -35,7 +52,7 @@ export function PasswordSection() {
         <TextField
           label={t("security.password.new")}
           description={t("field.password-help")}
-          password
+          kind={fieldKind.password}
           autoComplete={autoComplete.newPassword}
           requiredMessage={t("validation.required")}
           errorMessage={tooWeak ? messageOf(change.error) : undefined}
@@ -45,12 +62,12 @@ export function PasswordSection() {
             setNext(value);
           }}
         />
-        {change.isError && !tooWeak ? <Alert danger>{messageOf(change.error)}</Alert> : null}
-        {change.isSuccess ? <Alert success>{t("security.password.changed")}</Alert> : null}
+        <Outcome
+          problem={change.isError && !tooWeak ? messageOf(change.error) : null}
+          done={change.isSuccess}
+        />
         <div className={styles.row}>
-          <Button primary submit isPending={change.isPending}>
-            {t("security.password.submit")}
-          </Button>
+          <SubmitButton isPending={change.isPending}>{t("security.password.submit")}</SubmitButton>
         </div>
       </Form>
     </Card>

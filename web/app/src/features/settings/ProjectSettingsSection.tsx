@@ -1,4 +1,4 @@
-import { Alert } from "@bugaboo/ui";
+import { Alert, alertTone } from "@bugaboo/ui";
 
 import { messageOf } from "../../shared/errors.ts";
 import { useProjectSettings } from "./project.ts";
@@ -17,7 +17,7 @@ export interface ProjectSettingsSectionProps {
 export function ProjectSettingsSection({ projectId }: ProjectSettingsSectionProps) {
   const { settings, failed, edits } = useProjectSettings(projectId);
   if (failed !== null) {
-    return <Alert danger>{messageOf(failed)}</Alert>;
+    return <Alert tone={alertTone.danger}>{messageOf(failed)}</Alert>;
   }
   if (settings === undefined || settings.settings.length === 0) {
     return null;

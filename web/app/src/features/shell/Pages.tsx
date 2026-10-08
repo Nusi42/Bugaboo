@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Alert, Button, Card, Link } from "@bugaboo/ui";
+import { Alert, alertTone, Button, buttonLook, Card, Link } from "@bugaboo/ui";
 
 import { paths } from "../../shared/paths.ts";
 import { usePageTitle } from "../../shared/use-page.ts";
@@ -33,9 +33,9 @@ export function ErrorPage() {
     <Frame header={<Brand />}>
       <div className={styles.narrow}>
         <Card heading={t("app.name")} level={1}>
-          <Alert danger>{t("error.server.internal")}</Alert>
+          <Alert tone={alertTone.danger}>{t("error.server.internal")}</Alert>
           <Button
-            primary
+            look={buttonLook.primary}
             onPress={() => {
               window.location.reload();
             }}

@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Alert, Card } from "@bugaboo/ui";
+import { Alert, alertTone, Card } from "@bugaboo/ui";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 
@@ -18,12 +18,14 @@ export function PasskeysSection() {
   return (
     <Card heading={t("passkeys.title")}>
       <p className={styles.text}>{t("passkeys.intro")}</p>
-      {available === false ? <Alert warning>{t("passkeys.unavailable")}</Alert> : null}
+      {available === false ? (
+        <Alert tone={alertTone.warning}>{t("passkeys.unavailable")}</Alert>
+      ) : null}
       {available === true && !passkeysSupported() ? (
-        <Alert warning>{t("passkeys.not-supported")}</Alert>
+        <Alert tone={alertTone.warning}>{t("passkeys.not-supported")}</Alert>
       ) : null}
       {available === true && passkeysSupported() ? <AddPasskeyForm /> : null}
-      {removed ? <Alert success>{t("passkeys.removed")}</Alert> : null}
+      {removed ? <Alert tone={alertTone.success}>{t("passkeys.removed")}</Alert> : null}
       <PasskeyList
         passkeys={passkeys}
         onRemoved={() => {

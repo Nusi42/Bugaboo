@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Alert, Button, CopyButton, Form } from "@bugaboo/ui";
+import { Alert, alertTone, CopyButton, Form, SubmitButton } from "@bugaboo/ui";
 import { useState } from "react";
 
 import { api } from "../../shared/api.ts";
@@ -19,7 +19,7 @@ function CreatedLink({ email, linkPath }: CreatedLinkProps) {
   const link = `${window.location.origin}${linkPath}`;
   return (
     <div className={styles.stack}>
-      <Alert success>{t("invitations.created", { email })}</Alert>
+      <Alert tone={alertTone.success}>{t("invitations.created", { email })}</Alert>
       <p className={styles.muted}>{t("invitations.link-help")}</p>
       <code className={styles.link} aria-label={t("invitations.link")}>
         {link}
@@ -52,11 +52,9 @@ export function CreateInvitation() {
         }}
       >
         <EmailField value={email} onChange={setEmail} />
-        {create.isError ? <Alert danger>{messageOf(create.error)}</Alert> : null}
+        {create.isError ? <Alert tone={alertTone.danger}>{messageOf(create.error)}</Alert> : null}
         <div className={styles.row}>
-          <Button primary submit isPending={create.isPending}>
-            {t("invitations.create")}
-          </Button>
+          <SubmitButton isPending={create.isPending}>{t("invitations.create")}</SubmitButton>
         </div>
       </Form>
       {create.data === undefined ? null : (
