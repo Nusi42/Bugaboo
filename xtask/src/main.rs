@@ -37,7 +37,7 @@ use std::io::Read as _;
 use std::path::PathBuf;
 use std::process::ExitCode;
 
-use bb_dev_words::database::DatabaseKind;
+use bb_dev_words::database::{DatabaseKind, parse as parse_database};
 use clap::{Parser, Subcommand};
 
 #[derive(Parser)]
@@ -111,7 +111,7 @@ enum DatasetKind {
         #[arg(long)]
         seed: Option<u64>,
         /// Which database to make it on (default sqlite).
-        #[arg(long, conflicts_with = "check")]
+        #[arg(long, conflicts_with = "check", value_parser = parse_database)]
         database: Option<DatabaseKind>,
         /// The folder for the data folder and the sign-in details (default: the folder that
         /// tools/dev/sample.json names).

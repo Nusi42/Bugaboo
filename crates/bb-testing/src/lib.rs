@@ -33,6 +33,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 pub use bb_dev_words::database::DatabaseKind;
 use bb_dev_words::database::{
     PARITY_RECORD_VARIABLE, TEST_DATABASES_VARIABLE, TEST_POSTGRES_URL_VARIABLE,
+    parse as parse_database,
 };
 use sqlx::postgres::PgPoolOptions;
 use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};
@@ -146,7 +147,7 @@ fn selected(value: Option<&str>) -> Result<Vec<DatabaseKind>, String> {
         .map(str::trim)
         .filter(|name| !name.is_empty())
     {
-        let kind = name.parse::<DatabaseKind>().map_err(|unknown| {
+        let kind = parse_database(name).map_err(|unknown| {
             format!("{TEST_DATABASES_VARIABLE} names the unknown database: {unknown}.")
         })?;
         if !kinds.contains(&kind) {
@@ -281,7 +282,7 @@ where
 }
 
 fn with_context(test_name: &str, kind: DatabaseKind, error: &(dyn Error + Send + Sync)) -> Failure {
-    format!("{test_name} failed on {}: {error}", kind.name()).into()
+    format!("{test_name} failed on {}: {error}", kind.code()).into()
 }
 
 /// A database name that cannot clash with another test run, even in parallel processes. All
@@ -332,7 +333,7 @@ fn sqlite_url(path: &Path) -> String {
 fn record_to(path: &Path, kind: DatabaseKind, test_name: &str) -> TestResult {
     let line = format!(
         "{} {}\n",
-        kind.name(),
+        kind.code(),
         test_name.replace(char::is_whitespace, "_")
     );
     // One write call per line keeps lines whole when test programs run side by side.

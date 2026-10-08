@@ -60,7 +60,7 @@ fn evaluate(files: &[String], has_migrations: bool, record: Option<&str>) -> Vec
         .collect();
     if let (true, Some(record)) = (has_migrations, record) {
         let ran = arch_db_parity::parse(record);
-        for database in DatabaseKind::ALL.map(DatabaseKind::name) {
+        for database in DatabaseKind::ALL.iter().map(|kind| kind.code()) {
             let ok = ran
                 .get(database)
                 .is_some_and(|tests| tests.contains(MIGRATION_TEST));

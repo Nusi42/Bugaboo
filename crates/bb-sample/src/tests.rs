@@ -69,7 +69,7 @@ async fn the_sample_is_the_same_from_the_same_seed_on_both_databases() -> TestRe
             on_this_database,
             built_in_once,
             "the same dump on {}",
-            db.kind().name()
+            db.kind().code()
         );
         // The dump is not empty or trivially equal: it has the people and what happened.
         let dump: Value = serde_json::from_str(&on_this_database)?;

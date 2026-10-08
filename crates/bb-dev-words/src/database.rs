@@ -2,7 +2,8 @@
 //! which of them to use. `cargo xtask db` sets the variables; the harness reads them.
 
 use std::fmt;
-use std::str::FromStr;
+
+use bb_core::words;
 
 /// Names the databases to run on, comma separated.
 pub const TEST_DATABASES_VARIABLE: &str = "BB_TEST_DATABASES";
@@ -11,38 +12,26 @@ pub const TEST_POSTGRES_URL_VARIABLE: &str = "BB_TEST_POSTGRES_URL";
 /// The file that records which test ran on which database (ARCH-DB-PARITY reads it).
 pub const PARITY_RECORD_VARIABLE: &str = "BB_DB_PARITY_FILE";
 
-/// The databases Bugaboo supports.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum DatabaseKind {
-    /// SQLite, the built-in database: a file.
-    Sqlite,
-    /// PostgreSQL.
-    Postgres,
+words! {
+    /// The databases Bugaboo supports, in the order the tools run them. The word is the name used
+    /// on command lines, in `BB_TEST_DATABASES` and in the parity record.
+    pub enum DatabaseKind {
+        /// SQLite, the built-in database: a file.
+        Sqlite => "sqlite",
+        /// PostgreSQL.
+        Postgres => "postgres",
+    }
 }
 
 impl DatabaseKind {
-    /// Every database, in the order the tools run them.
-    pub const ALL: [Self; 2] = [Self::Sqlite, Self::Postgres];
-
-    /// The name used on command lines, in `BB_TEST_DATABASES` and in the parity record.
-    #[must_use]
-    pub const fn name(self) -> &'static str {
-        match self {
-            Self::Sqlite => "sqlite",
-            Self::Postgres => "postgres",
-        }
-    }
-
     /// The names of every database, separated by `separator`.
     #[must_use]
     pub fn names(separator: &str) -> String {
-        Self::ALL.map(Self::name).join(separator)
-    }
-}
-
-impl fmt::Display for DatabaseKind {
-    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
-        formatter.write_str(self.name())
+        Self::ALL
+            .iter()
+            .map(|kind| kind.code())
+            .collect::<Vec<_>>()
+            .join(separator)
     }
 }
 
@@ -63,15 +52,13 @@ impl fmt::Display for UnknownDatabase {
 
 impl std::error::Error for UnknownDatabase {}
 
-impl FromStr for DatabaseKind {
-    type Err = UnknownDatabase;
-
-    fn from_str(name: &str) -> Result<Self, Self::Err> {
-        Self::ALL
-            .into_iter()
-            .find(|kind| kind.name() == name)
-            .ok_or_else(|| UnknownDatabase(name.to_owned()))
-    }
+/// The database with this name, or an error that says what is known (for command lines and
+/// variables, where the plain error of a word would not name the text).
+///
+/// # Errors
+/// Fails when `name` is no database.
+pub fn parse(name: &str) -> Result<DatabaseKind, UnknownDatabase> {
+    DatabaseKind::from_code(name).ok_or_else(|| UnknownDatabase(name.to_owned()))
 }
 
 #[cfg(test)]
@@ -81,14 +68,14 @@ mod tests {
     #[test]
     fn every_database_is_found_by_its_name() {
         for kind in DatabaseKind::ALL {
-            assert_eq!(kind.name().parse(), Ok(kind));
+            assert_eq!(parse(kind.code()), Ok(*kind));
         }
         assert_eq!(DatabaseKind::names(","), "sqlite,postgres");
     }
 
     #[test]
     fn an_unknown_name_is_refused_and_says_what_is_known() {
-        let refused = "mysql".parse::<DatabaseKind>().unwrap_err();
+        let refused = parse("mysql").unwrap_err();
         assert_eq!(
             refused.to_string(),
             "`mysql` is no database; use sqlite or postgres"

@@ -8,7 +8,7 @@ use std::path::PathBuf;
 use std::process::ExitCode;
 
 use bb_core::message::{self, Message, MessageKey};
-use bb_dev_words::database::DatabaseKind;
+use bb_dev_words::database::{DatabaseKind, parse as parse_database};
 use bb_sample::{DEFAULT_SEED, Layout, Options, Organization, Output, SampleError, Target, make};
 use clap::{CommandFactory as _, FromArgMatches as _, Parser};
 use jiff::Timestamp;
@@ -36,7 +36,7 @@ struct Args {
     #[arg(long, help = text(message::CLI_HELP_SAMPLE_START))]
     start: i64,
     // Its help names the environment variable of the layout, so it is set in `arguments`.
-    #[arg(long, default_value_t = DatabaseKind::Sqlite)]
+    #[arg(long, default_value_t = DatabaseKind::Sqlite, value_parser = parse_database)]
     database: DatabaseKind,
     #[arg(long, help = text(message::CLI_HELP_SAMPLE_OUT))]
     out: PathBuf,

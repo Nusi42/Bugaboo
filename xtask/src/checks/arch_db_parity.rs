@@ -70,7 +70,7 @@ pub(crate) fn problems(record: &str) -> Vec<String> {
         ];
     }
     let mut problems = Vec::new();
-    for database in DatabaseKind::ALL.map(DatabaseKind::name) {
+    for database in DatabaseKind::ALL.iter().map(|kind| kind.code()) {
         if !ran.contains_key(database) {
             problems.push(format!(
                 "No test ran on `{database}`. Repository tests must run on {}.",
@@ -79,7 +79,7 @@ pub(crate) fn problems(record: &str) -> Vec<String> {
         }
     }
     let all: BTreeSet<&str> = ran.values().flatten().copied().collect();
-    for database in DatabaseKind::ALL.map(DatabaseKind::name) {
+    for database in DatabaseKind::ALL.iter().map(|kind| kind.code()) {
         let Some(tests) = ran.get(database) else {
             continue;
         };

@@ -503,6 +503,7 @@ dependencies = [
 name = "bb-dev-words"
 version = "0.0.0"
 dependencies = [
+ "bb-core",
  "serde",
  "serde_json",
 ]

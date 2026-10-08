@@ -187,7 +187,7 @@ fn program_command(
         .arg("--start")
         .arg(arguments.start.to_string())
         .arg("--database")
-        .arg(arguments.database.name())
+        .arg(arguments.database.code())
         .arg("--out")
         .arg(arguments.out);
     if let Some(url) = url {

@@ -83,6 +83,7 @@ flowchart TB
   store -. tests only .-> testing
   server -. tests only .-> words
   testing --> devwords
+  devwords --> core
   app -. tests only .-> devwords
   server -. tests only .-> devwords
   sample --> app & store & core & policy & auth & devwords
