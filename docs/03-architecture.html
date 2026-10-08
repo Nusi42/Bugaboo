@@ -2304,6 +2304,9 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 <p><strong>Contrast is checked per theme and per mode</strong> (STY-CONTRAST), the way the sister project's <code>theme_contrast</code> does: every text color on every background in each theme, and with <code>&lt;theme&gt;-more=</code> the 7:1 and 3:1 rules of ADR-0010. The rules for it are the <code>contrast</code> and <code>distinct</code> lines of the same file.</p>
 </li>
 <li>
+<p><strong>One exception, for now: the design pages.</strong> <code>docs/design/components.css</code> and <code>docs/design/docpage.css</code> style the documents and mockups in <code>docs/</code>, not the app, and are still written by hand. They move into the theme file as generated doc parts in C-06 (M2C-F93); until then THEME-ONLY, which covers <code>web/</code>, does not look at them.</p>
+</li>
+<li>
 <p><strong>Moving is done in two steps.</strong> M2C C-01 builds the engine and moves the primitives of <code>packages/ui</code> (Button, IconButton, TextField, Alert, Overlay, Switch, Checkbox, Link, ChoiceGroup, SearchPicker and the field parts). The app features and the other components stand in <code>tools/checks/theme-only-exemptions.toml</code> until M2C C-06 moves them (M2C-F90); the file is then empty.</p>
 </li>
 </ol>
