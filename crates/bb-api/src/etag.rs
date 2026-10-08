@@ -6,14 +6,15 @@
 //! is comes from the route table (`crate::permissions`, the same table that puts the marks into the
 //! API description, [`Classes`]) and from the answer itself:
 //!
-//! - **A secret** (a route the table declares `Secret` and the API description marks `x-secret`, or any
-//!   answer that sets a cookie: a
-//!   new session, an invitation link, the code app, backup codes) is `no-store`, has no `ETag`,
-//!   and is marked [`SecretAnswer`]. The compression of `crate::router` never compresses a marked
-//!   answer, nor one that sets a cookie (BREACH, M2-Q2, architecture §7 "Browser protections").
-//! - **Personal data** (a `GET` route the table declares `NeverStored`, marked `x-never-stored`: who is signed in, the sessions,
-//!   the invitations, the second step, the state of the server) is `no-store` and has no `ETag`:
-//!   a shared computer keeps nothing of it after the person has left.
+//! - **A secret** (a route the table declares `Secret`, marked `x-secret` in the API description,
+//!   or any answer that sets a cookie: a new session, an invitation link, the code app, backup
+//!   codes) is `no-store`, has no `ETag`, and is marked [`SecretAnswer`]. The compression of
+//!   `crate::router` never compresses a marked answer, nor one that sets a cookie (BREACH, M2-Q2,
+//!   architecture §7 "Browser protections").
+//! - **Personal data** (a `GET` route the table declares `NeverStored`, marked `x-never-stored`:
+//!   who is signed in, the sessions, the invitations, the second step, the state of the server) is
+//!   `no-store` and has no `ETag`: a shared computer keeps nothing of it after the person has
+//!   left.
 //! - **Everything else** that is a read (`GET`, `HEAD` answered `200`) gets a weak `ETag` made
 //!   with the seal of this server run from the final answer body, and `Cache-Control: private,
 //!   no-cache`: the browser keeps it but asks again every time, with `If-None-Match`, and a match
@@ -105,7 +106,7 @@ fn classes_of(operations: &[Operation]) -> Classes {
             Answer::NeverStored => {
                 classes.personal.insert(key);
             }
-            Answer::Kept | Answer::Change => {}
+            Answer::Ordinary => {}
         }
     }
     classes
@@ -678,8 +679,8 @@ mod tests {
         let classes = classes_of(&[
             operation(Method::GET, "/a", Answer::NeverStored),
             operation(Method::POST, "/b", Answer::Secret),
-            operation(Method::GET, "/c", Answer::Kept),
-            operation(Method::PUT, "/d", Answer::Change),
+            operation(Method::GET, "/c", Answer::Ordinary),
+            operation(Method::PUT, "/d", Answer::Ordinary),
         ]);
         assert_eq!(classes.kind_of(&Method::GET, "/a"), Kind::PersonalData);
         assert_eq!(classes.kind_of(&Method::HEAD, "/a"), Kind::PersonalData);

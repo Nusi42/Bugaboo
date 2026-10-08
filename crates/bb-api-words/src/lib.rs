@@ -13,7 +13,8 @@
 /// The marks `bb-api` writes into the API description, from the route table (`bb-api`
 /// `permissions::ROUTES`). No handler writes one by hand.
 pub mod marks {
-    /// What a route needs: a key of the permission catalogue, or one of the words in [`crate::needs`].
+    /// What a route needs: a key of the permission catalogue, or one of the words in
+    /// [`crate::needs`].
     pub const PERMISSION: &str = "x-permission";
     /// A route whose answer holds personal data: never stored by a browser or a cache.
     pub const NEVER_STORED: &str = "x-never-stored";

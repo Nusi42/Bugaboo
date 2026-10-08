@@ -9,7 +9,8 @@
 //!   session cookie but not the token of that session in `x-csrf-token`. It is a middleware, not a
 //!   check in each handler, so a route added later is protected without anyone remembering. Only
 //!   the public routes that change something are left out (`crate::permissions::csrf_exempt`, from
-//!   the route table): people who sign in or sign up have no session yet. They are protected by the origin check and carry no secret a forged request could use.
+//!   the route table): people who sign in or sign up have no session yet. They are protected by
+//!   the origin check and carry no secret a forged request could use.
 //! - **Cookies:** a new session sets the session cookie and the CSRF cookie together, in one
 //!   place ([`signed_in`]); both come from the cookie table (`crate::cookies`).
 
@@ -260,7 +261,8 @@ pub(crate) fn answer_authorized<T: Masked + Serialize>(
 }
 
 /// Refuses a change that carries a session cookie without the token of that session. A change
-/// without a session cookie is not signed in (`401`), except on the routes that are open without a token ([`csrf_exempt`]).
+/// without a session cookie is not signed in (`401`), except on the routes that are open without
+/// a token ([`csrf_exempt`]).
 pub(crate) async fn csrf_check(
     State(auth): State<AuthHandle>,
     request: Request,

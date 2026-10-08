@@ -155,7 +155,7 @@ fn add_marks(operation: &mut OperationSpec) {
     match row.kind {
         Answer::NeverStored => marks = marks.add(marks::NEVER_STORED, serde_json::json!(true)),
         Answer::Secret => marks = marks.add(marks::SECRET, serde_json::json!(true)),
-        Answer::Kept | Answer::Change => {}
+        Answer::Ordinary => {}
     }
     operation
         .extensions

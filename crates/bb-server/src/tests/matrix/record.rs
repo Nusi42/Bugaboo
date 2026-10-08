@@ -139,7 +139,7 @@ mod tests {
             method: Method::GET,
             path: "/api/v1/x".to_owned(),
             needs: Declared::Permission(Permission::SeeProjects),
-            kind: Answer::Kept,
+            kind: Answer::Ordinary,
         }
     }
 

@@ -50,18 +50,18 @@ impl Declared {
 /// What a route's answer is, which decides how it may be kept (PERF-03, `crate::etag`).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Answer {
-    /// A read without personal data: a browser may keep it privately and asks again every time
-    /// (`private, no-cache`, with an `ETag`).
-    Kept,
+    /// Nothing special: a read without personal data is kept privately by a browser, which asks
+    /// again every time (`private, no-cache`, with an `ETag`); the answer to a change is never
+    /// kept.
+    Ordinary,
     /// A read with personal data (`x-never-stored`): `no-store`, no tag.
     NeverStored,
     /// An answer that hands out a secret (`x-secret`): `no-store`, no tag, never compressed.
     Secret,
-    /// A change: its answer is never kept.
-    Change,
 }
 
-/// One row of the table: the route with this operation ID needs `needs` and gives an answer of kind `kind`.
+/// One row of the table: the route with this operation ID needs `needs` and gives an answer of
+/// kind `kind`.
 #[derive(Clone, Copy, Debug)]
 pub struct Route {
     /// The operation ID of the route.
@@ -80,44 +80,48 @@ const fn route(id: &'static str, needs: Declared, kind: Answer) -> Route {
 /// test below fails for an entry that names no route, and ARCH-PERMS fails for a route that has no
 /// entry.
 pub const ROUTES: &[Route] = &[
-    route("getStatus", Declared::Public, Answer::Kept),
-    route("getOpenApi", Declared::Public, Answer::Kept),
-    route("getAuthStatus", Declared::Public, Answer::Kept),
-    route("completeSetup", Declared::Public, Answer::Change),
-    route("signIn", Declared::Public, Answer::Change),
-    route("signUp", Declared::Public, Answer::Change),
-    route("signInWithPasskey", Declared::Public, Answer::Change),
-    route("startPasskeySignIn", Declared::Public, Answer::Change),
-    route("lookUpInvitation", Declared::Public, Answer::Change),
-    route("acceptInvitation", Declared::Public, Answer::Change),
+    route("getStatus", Declared::Public, Answer::Ordinary),
+    route("getOpenApi", Declared::Public, Answer::Ordinary),
+    route("getAuthStatus", Declared::Public, Answer::Ordinary),
+    route("completeSetup", Declared::Public, Answer::Ordinary),
+    route("signIn", Declared::Public, Answer::Ordinary),
+    route("signUp", Declared::Public, Answer::Ordinary),
+    route("signInWithPasskey", Declared::Public, Answer::Ordinary),
+    route("startPasskeySignIn", Declared::Public, Answer::Ordinary),
+    route("lookUpInvitation", Declared::Public, Answer::Ordinary),
+    route("acceptInvitation", Declared::Public, Answer::Ordinary),
     route("getMe", Declared::SignedIn, Answer::NeverStored),
-    route("signOut", Declared::SignedIn, Answer::Change),
-    route("signOutEverywhere", Declared::OwnAccount, Answer::Change),
+    route("signOut", Declared::SignedIn, Answer::Ordinary),
+    route("signOutEverywhere", Declared::OwnAccount, Answer::Ordinary),
     route("listSessions", Declared::OwnAccount, Answer::NeverStored),
-    route("endSession", Declared::OwnAccount, Answer::Change),
-    route("changePassword", Declared::OwnAccount, Answer::Change),
+    route("endSession", Declared::OwnAccount, Answer::Ordinary),
+    route("changePassword", Declared::OwnAccount, Answer::Ordinary),
     route("getTwoStep", Declared::OwnAccount, Answer::NeverStored),
     route("startCodeApp", Declared::OwnAccount, Answer::Secret),
     route("confirmCodeApp", Declared::OwnAccount, Answer::Secret),
-    route("removeCodeApp", Declared::OwnAccount, Answer::Change),
+    route("removeCodeApp", Declared::OwnAccount, Answer::Ordinary),
     route("renewBackupCodes", Declared::OwnAccount, Answer::Secret),
-    route("startAddPasskey", Declared::OwnAccount, Answer::Change),
-    route("addPasskey", Declared::OwnAccount, Answer::Change),
-    route("removePasskey", Declared::OwnAccount, Answer::Change),
-    route("finishSignInWithCode", Declared::OwnAccount, Answer::Change),
+    route("startAddPasskey", Declared::OwnAccount, Answer::Ordinary),
+    route("addPasskey", Declared::OwnAccount, Answer::Ordinary),
+    route("removePasskey", Declared::OwnAccount, Answer::Ordinary),
+    route(
+        "finishSignInWithCode",
+        Declared::OwnAccount,
+        Answer::Ordinary,
+    ),
     route(
         "startSecondStepWithPasskey",
         Declared::OwnAccount,
-        Answer::Change,
+        Answer::Ordinary,
     ),
     route(
         "finishSignInWithPasskey",
         Declared::OwnAccount,
-        Answer::Change,
+        Answer::Ordinary,
     ),
     route("listAccessKeys", Declared::OwnAccount, Answer::NeverStored),
     route("makeAccessKey", Declared::OwnAccount, Answer::Secret),
-    route("deleteAccessKey", Declared::OwnAccount, Answer::Change),
+    route("deleteAccessKey", Declared::OwnAccount, Answer::Ordinary),
     route(
         "getAccessKeyRules",
         Declared::OwnAccount,
@@ -146,17 +150,17 @@ pub const ROUTES: &[Route] = &[
     route(
         "revokeInvitation",
         Declared::Permission(Permission::ManageInvitations),
-        Answer::Change,
+        Answer::Ordinary,
     ),
     route(
         "getSignUpPolicy",
         Declared::Permission(Permission::ChangeOrganizationSettings),
-        Answer::Kept,
+        Answer::Ordinary,
     ),
     route(
         "changeSignUpPolicy",
         Declared::Permission(Permission::ChangeOrganizationSettings),
-        Answer::Change,
+        Answer::Ordinary,
     ),
     route(
         "getServerStatus",
@@ -171,22 +175,22 @@ pub const ROUTES: &[Route] = &[
     route(
         "changeOrganizationSetting",
         Declared::Permission(Permission::ChangeOrganizationSettings),
-        Answer::Change,
+        Answer::Ordinary,
     ),
     route(
         "resetOrganizationSetting",
         Declared::Permission(Permission::ChangeOrganizationSettings),
-        Answer::Change,
+        Answer::Ordinary,
     ),
     route(
         "lockOrganizationSetting",
         Declared::Permission(Permission::ChangeOrganizationSettings),
-        Answer::Change,
+        Answer::Ordinary,
     ),
     route(
         "unlockOrganizationSetting",
         Declared::Permission(Permission::ChangeOrganizationSettings),
-        Answer::Change,
+        Answer::Ordinary,
     ),
     route(
         "listProjectSettings",
@@ -196,17 +200,17 @@ pub const ROUTES: &[Route] = &[
     route(
         "changeProjectSetting",
         Declared::Permission(Permission::ChangeProjectSettings),
-        Answer::Change,
+        Answer::Ordinary,
     ),
     route(
         "resetProjectSetting",
         Declared::Permission(Permission::ChangeProjectSettings),
-        Answer::Change,
+        Answer::Ordinary,
     ),
     route("listMySettings", Declared::SignedIn, Answer::NeverStored),
-    route("checkOwnAccessChange", Declared::SignedIn, Answer::Change),
-    route("changeMySetting", Declared::SignedIn, Answer::Change),
-    route("resetMySetting", Declared::SignedIn, Answer::Change),
+    route("checkOwnAccessChange", Declared::SignedIn, Answer::Ordinary),
+    route("changeMySetting", Declared::SignedIn, Answer::Ordinary),
+    route("resetMySetting", Declared::SignedIn, Answer::Ordinary),
     route(
         "listProjects",
         Declared::Permission(Permission::SeeProjects),
@@ -220,27 +224,27 @@ pub const ROUTES: &[Route] = &[
     route(
         "makeProject",
         Declared::Permission(Permission::MakeProjects),
-        Answer::Change,
+        Answer::Ordinary,
     ),
     route(
         "makeSubProject",
         Declared::Permission(Permission::MakeSubProjects),
-        Answer::Change,
+        Answer::Ordinary,
     ),
     route(
         "changeProject",
         Declared::Permission(Permission::ChangeProjectSettings),
-        Answer::Change,
+        Answer::Ordinary,
     ),
     route(
         "previewProjectMove",
         Declared::Permission(Permission::MoveProjects),
-        Answer::Change,
+        Answer::Ordinary,
     ),
     route(
         "moveProject",
         Declared::Permission(Permission::MoveProjects),
-        Answer::Change,
+        Answer::Ordinary,
     ),
     route(
         "listPeople",
@@ -260,7 +264,7 @@ pub const ROUTES: &[Route] = &[
     route(
         "makeGroup",
         Declared::Permission(Permission::ManageGroups),
-        Answer::Change,
+        Answer::Ordinary,
     ),
     route(
         "getGroup",
@@ -270,12 +274,12 @@ pub const ROUTES: &[Route] = &[
     route(
         "renameGroup",
         Declared::Permission(Permission::ManageGroups),
-        Answer::Change,
+        Answer::Ordinary,
     ),
     route(
         "deleteGroup",
         Declared::Permission(Permission::ManageGroups),
-        Answer::Change,
+        Answer::Ordinary,
     ),
     route(
         "listGroupMembers",
@@ -285,12 +289,12 @@ pub const ROUTES: &[Route] = &[
     route(
         "addGroupMember",
         Declared::Permission(Permission::ManageGroups),
-        Answer::Change,
+        Answer::Ordinary,
     ),
     route(
         "removeGroupMember",
         Declared::Permission(Permission::ManageGroups),
-        Answer::Change,
+        Answer::Ordinary,
     ),
     route(
         "listMemberChoices",
@@ -305,7 +309,7 @@ pub const ROUTES: &[Route] = &[
     route(
         "makeRole",
         Declared::Permission(Permission::ManageRoles),
-        Answer::Change,
+        Answer::Ordinary,
     ),
     route(
         "getRole",
@@ -315,22 +319,22 @@ pub const ROUTES: &[Route] = &[
     route(
         "changeRole",
         Declared::Permission(Permission::ManageRoles),
-        Answer::Change,
+        Answer::Ordinary,
     ),
     route(
         "deleteRole",
         Declared::Permission(Permission::ManageRoles),
-        Answer::Change,
+        Answer::Ordinary,
     ),
     route(
         "copyRole",
         Declared::Permission(Permission::ManageRoles),
-        Answer::Change,
+        Answer::Ordinary,
     ),
     route(
         "resetRole",
         Declared::Permission(Permission::ManageRoles),
-        Answer::Change,
+        Answer::Ordinary,
     ),
     route(
         "listPermissions",
@@ -345,12 +349,12 @@ pub const ROUTES: &[Route] = &[
     route(
         "assignRole",
         Declared::Permission(Permission::DecideRoles),
-        Answer::Change,
+        Answer::Ordinary,
     ),
     route(
         "removeAssignment",
         Declared::Permission(Permission::DecideRoles),
-        Answer::Change,
+        Answer::Ordinary,
     ),
     route(
         "listAssignmentChoices",
@@ -365,7 +369,7 @@ pub const ROUTES: &[Route] = &[
     route(
         "assignProjectRole",
         Declared::Permission(Permission::DecideRoles),
-        Answer::Change,
+        Answer::Ordinary,
     ),
     route(
         "listProjectAssignmentChoices",
@@ -380,7 +384,7 @@ pub const ROUTES: &[Route] = &[
     route(
         "changeFieldPermission",
         Declared::Permission(Permission::DecideWhatRolesSee),
-        Answer::Change,
+        Answer::Ordinary,
     ),
     route(
         "getPeopleVisibility",
@@ -390,7 +394,7 @@ pub const ROUTES: &[Route] = &[
     route(
         "changePeopleVisibility",
         Declared::Permission(Permission::DecideWhatRolesSee),
-        Answer::Change,
+        Answer::Ordinary,
     ),
     route(
         "checkAccess",
@@ -457,22 +461,20 @@ mod tests {
     }
 
     #[test]
-    fn perf_03_every_read_decides_whether_it_may_be_kept_and_a_change_never_is() {
+    fn perf_03_only_a_read_is_never_stored_and_every_read_is_ordinary_or_never_stored() {
         for operation in operations() {
             let reads = operation.method == Method::GET;
-            match operation.kind {
-                Answer::Kept | Answer::NeverStored => assert!(
-                    reads,
-                    "{} {} is a change: its answer is not kept",
-                    operation.method, operation.path
-                ),
-                Answer::Change => assert!(
-                    !reads,
-                    "GET {} is a read: it is either kept privately or never stored",
-                    operation.path
-                ),
-                Answer::Secret => {}
-            }
+            assert!(
+                reads || operation.kind != Answer::NeverStored,
+                "{} {} is a change: its answer is never kept anyway",
+                operation.method,
+                operation.path
+            );
+            assert!(
+                !reads || operation.kind != Answer::Secret,
+                "GET {} hands out a secret: a read is ordinary or never stored",
+                operation.path
+            );
         }
     }
 

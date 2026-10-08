@@ -4,17 +4,15 @@
 use std::path::Path;
 
 use axum::Router;
-use axum::body::Body;
-use axum::http::{Request, StatusCode, header};
+use axum::http::StatusCode;
 use bb_api::{Options, router};
 use bb_testing::{Failure, TestResult, each_database};
 use serde_json::Value;
-use tower::ServiceExt as _;
 
 use super::{Serving, Wired, wire};
 use crate::config::{Settings, Sources, resolve};
 use crate::data_folder::DataFolder;
-use crate::sign_in_tests::http::setup_body;
+use crate::sign_in_tests::http::{Browser, called, setup_body};
 
 fn settings(data: &Path, database: Option<&str>) -> Result<Settings, Failure> {
     let mut cli = vec![
@@ -41,26 +39,18 @@ fn app(wired: Wired, data: &Path) -> Router {
     })
 }
 
+/// One request to the router of the start, with the same browser the sign-in tests use: what the
+/// status is and what the body says.
 async fn call(
     app: &Router,
     method: &str,
     path: &str,
     body: Option<Value>,
 ) -> Result<(StatusCode, Value), Failure> {
-    let request = Request::builder()
-        .method(method)
-        .uri(path)
-        .header(header::HOST, "localhost:47200")
-        .header(header::ORIGIN, "http://localhost:47200")
-        .header(header::CONTENT_TYPE, "application/json")
-        .body(body.map_or_else(Body::empty, |value| Body::from(value.to_string())))?;
-    let response = app.clone().oneshot(request).await?;
-    let status = response.status();
-    let bytes = axum::body::to_bytes(response.into_body(), usize::MAX).await?;
-    Ok((
-        status,
-        serde_json::from_slice(&bytes).unwrap_or(Value::Null),
-    ))
+    let reply = Browser::new(app, &called())
+        .send(method, path, body)
+        .await?;
+    Ok((reply.status, reply.body))
 }
 
 #[tokio::test]

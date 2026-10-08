@@ -34,10 +34,10 @@ pub(super) const SESSION: &str = Cookie::Session.name();
 pub(super) const CSRF: &str = Cookie::Csrf.name();
 
 /// What the server answered.
-pub(super) struct Reply {
-    pub(super) status: StatusCode,
-    pub(super) headers: HeaderMap,
-    pub(super) body: Value,
+pub(crate) struct Reply {
+    pub(crate) status: StatusCode,
+    pub(crate) headers: HeaderMap,
+    pub(crate) body: Value,
 }
 
 impl Reply {
@@ -73,7 +73,7 @@ enum Token<'a> {
 }
 
 /// A browser: it keeps cookies and sends the token like the app does.
-pub(super) struct Browser {
+pub(crate) struct Browser {
     app: Router,
     jar: BTreeMap<String, String>,
     called: Arc<Mutex<BTreeSet<String>>>,
@@ -92,7 +92,7 @@ pub(super) fn options(rig: &Rig, limits: LimitsConfig) -> Options {
 }
 
 impl Browser {
-    pub(super) fn new(app: &Router, called: &Arc<Mutex<BTreeSet<String>>>) -> Self {
+    pub(crate) fn new(app: &Router, called: &Arc<Mutex<BTreeSet<String>>>) -> Self {
         Self {
             app: app.clone(),
             jar: BTreeMap::new(),
@@ -191,7 +191,7 @@ impl Browser {
         self.headers.clear();
     }
 
-    pub(super) async fn send(
+    pub(crate) async fn send(
         &mut self,
         method: &str,
         path: &str,
@@ -435,7 +435,7 @@ pub(super) async fn rig_and_app_with(
     Ok((rig, app))
 }
 
-pub(super) fn called() -> Arc<Mutex<BTreeSet<String>>> {
+pub(crate) fn called() -> Arc<Mutex<BTreeSet<String>>> {
     Arc::new(Mutex::new(BTreeSet::new()))
 }
 
