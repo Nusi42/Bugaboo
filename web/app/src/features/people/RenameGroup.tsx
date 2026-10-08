@@ -4,7 +4,7 @@ import { useState } from "react";
 
 import { api } from "../../shared/api.ts";
 import { messageOf } from "../../shared/errors.ts";
-import { refreshAccess } from "../../shared/access-cache.ts";
+import { refreshAccess } from "../../shared/query-keys.ts";
 import type { GroupLine } from "./groups.ts";
 import styles from "./People.module.css";
 

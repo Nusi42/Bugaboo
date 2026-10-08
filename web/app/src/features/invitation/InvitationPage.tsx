@@ -1,32 +1,12 @@
-import { ApiError } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 import { Alert, Card, Link } from "@bugaboo/ui";
-import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "@tanstack/react-router";
 
-import { api } from "../../shared/api.ts";
 import { messageOf } from "../../shared/errors.ts";
 import { paths } from "../../shared/paths.ts";
 import { usePageTitle } from "../../shared/use-page.ts";
 import { AcceptForm } from "./AcceptForm.tsx";
-
-/** Asks the server which address an invitation is for, which also shows whether it still works. */
-function useInvitation(secret: string) {
-  return useQuery({
-    queryKey: ["invitation", secret],
-    queryFn: async () => {
-      const { data } = await api.client.POST("/api/v1/auth/invitation/lookup", {
-        body: { secret },
-      });
-      if (data === undefined) {
-        throw new ApiError(0, undefined);
-      }
-      return data;
-    },
-    // The secret is not kept in memory longer than the page needs it.
-    gcTime: 0,
-  });
-}
+import { useInvitation } from "./use-invitation.ts";
 
 /** What the invitation link leads to: a form, or the reason it does not work. */
 function Invitation({ secret }: { readonly secret: string }) {

@@ -3,7 +3,7 @@ import { Alert, Button, Form, SelectField, TextField } from "@bugaboo/ui";
 import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 
-import { refreshAccess } from "../../shared/access-cache.ts";
+import { refreshAccess } from "../../shared/query-keys.ts";
 import { api } from "../../shared/api.ts";
 import { messageOf } from "../../shared/errors.ts";
 import { roleAddress } from "../../shared/paths.ts";

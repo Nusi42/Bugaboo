@@ -3,8 +3,9 @@ import { Alert, Button, SearchField } from "@bugaboo/ui";
 import { useId, useState } from "react";
 
 import { messageOf } from "../../shared/errors.ts";
+import { pageSize } from "../../shared/paged.ts";
 import styles from "./Projects.module.css";
-import { linesOf, SEARCH_SIZE, useProjectList, type ProjectLine } from "./use-projects.ts";
+import { linesOf, useProjectList, type ProjectLine } from "./use-projects.ts";
 
 /** Words of the HTML standard, not text for people. */
 const radio = "radio";
@@ -81,7 +82,7 @@ function OptionList({ projects, top, value, onChange }: OptionListProps) {
  */
 export function ProjectPicker({ moving, top, value, onChange }: ProjectPickerProps) {
   const [query, setQuery] = useState("");
-  const found = useProjectList({ search: query.trim(), movable: moving }, true, SEARCH_SIZE);
+  const found = useProjectList({ search: query.trim(), movable: moving }, pageSize.short);
   const projects = linesOf(found.data?.pages);
   return (
     <fieldset className={styles.picker}>

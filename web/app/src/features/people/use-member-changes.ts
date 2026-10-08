@@ -7,15 +7,15 @@ import { messageOf } from "../../shared/errors.ts";
 import { removeKeepingFocus } from "../../shared/focus.ts";
 import { undoStore } from "../../shared/optimistic-undo.ts";
 import { rememberChoice } from "../../shared/recent-choices.ts";
-import { refreshAccess } from "../../shared/access-cache.ts";
-import type { GroupLine, PersonLine } from "./groups.ts";
+import { refreshAccess } from "../../shared/query-keys.ts";
+import type { GroupLine, Member } from "./groups.ts";
 
 /** What changing the members of one group gives a screen. */
 export interface MemberChanges {
   /** Puts a person into the group; offers *Undo*. */
-  readonly add: (person: PersonLine) => void;
+  readonly add: (person: Member) => void;
   /** Takes a person out of the group; offers *Undo*. */
-  readonly remove: (person: PersonLine) => void;
+  readonly remove: (person: Member) => void;
   /** The plain message when the server refused, else `null`. */
   readonly problem: string | null;
   /** The question that comes before taking a person out of the group that gives them their own way to manage roles. */
@@ -42,7 +42,7 @@ async function put(group: string, person: string, into: boolean): Promise<void> 
 export function useMemberChanges(group: GroupLine): MemberChanges {
   const [problem, setProblem] = useState<string | null>(null);
   const { ask, dialog } = useAskFirst();
-  const change = (person: PersonLine, into: boolean): void => {
+  const change = (person: Member, into: boolean): void => {
     setProblem(null);
     put(group.id, person.id, into)
       .then(() => {

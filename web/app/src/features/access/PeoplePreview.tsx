@@ -1,22 +1,19 @@
 import { t } from "@bugaboo/messages";
-
 import { Card } from "@bugaboo/ui";
 
+import { roleName, someoneName, type Position } from "../../shared/person.ts";
 import styles from "./Access.module.css";
 import type { LevelTable, PeopleKindKey, PeopleLevelCode } from "./levels.ts";
 
 /** What a person looks like to somebody who sees people at this level: *Ana*, *a Team member*, *Someone*. */
-function who(level: PeopleLevelCode, startOfSentence: boolean): string {
+function who(level: PeopleLevelCode, position: Position): string {
   if (level === "names") {
     return t("people-visibility.who-names");
   }
   if (level === "role-only") {
-    const role = t("starting-role.team-member");
-    return startOfSentence
-      ? t("projects.person-role", { role })
-      : t("access.person-role-inside", { role });
+    return roleName(position, t("starting-role.team-member"));
   }
-  return t("projects.person-someone");
+  return someoneName("start");
 }
 
 /** The level a role has for a kind of people information in the table. */
@@ -48,13 +45,13 @@ export function PeoplePreview({ table, role }: PeoplePreviewProps) {
     <Card heading={t("people-visibility.preview-heading", { role: name })}>
       <ul className={styles.previewLines}>
         <li className={styles.previewLine}>
-          {t("people-visibility.example-assigned", { who: who(assigned, false) })}
+          {t("people-visibility.example-assigned", { who: who(assigned, "inside") })}
         </li>
         <li className={styles.previewLine}>
-          {t("people-visibility.example-comment", { who: who(authors, false) })}
+          {t("people-visibility.example-comment", { who: who(authors, "inside") })}
         </li>
         <li className={styles.previewLine}>
-          {t("people-visibility.example-editing", { who: who(editing, true) })}
+          {t("people-visibility.example-editing", { who: who(editing, "start") })}
         </li>
       </ul>
     </Card>

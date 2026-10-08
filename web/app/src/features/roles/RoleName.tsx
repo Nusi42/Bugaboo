@@ -2,7 +2,7 @@ import { t } from "@bugaboo/messages";
 import { Alert, Button, Form, TextField } from "@bugaboo/ui";
 import { useState } from "react";
 
-import { refreshAccess } from "../../shared/access-cache.ts";
+import { refreshAccess } from "../../shared/query-keys.ts";
 import { api } from "../../shared/api.ts";
 import { messageOf } from "../../shared/errors.ts";
 import styles from "./Roles.module.css";

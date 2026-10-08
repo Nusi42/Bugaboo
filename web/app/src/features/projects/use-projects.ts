@@ -1,8 +1,17 @@
-import { ApiError, type Schema } from "@bugaboo/api-client";
-import { keepPreviousData, useInfiniteQuery, useMutation, useQuery } from "@tanstack/react-query";
+import type { Schema } from "@bugaboo/api-client";
+import { keepPreviousData, skipToken, useMutation, useQuery } from "@tanstack/react-query";
 
 import { api } from "../../shared/api.ts";
+import {
+  dataOf,
+  fieldList,
+  type FieldNames,
+  linesFrom,
+  pageSize,
+  usePaged,
+} from "../../shared/paged.ts";
 import { queryClient } from "../../shared/query-client.ts";
+import { queryKeys } from "../../shared/query-keys.ts";
 
 /** A project in a list, as the server sends it: the fields can be missing. */
 export type ListItem = Schema<"ProjectItem">;
@@ -13,16 +22,14 @@ export type Near = Schema<"ProjectRef">;
 /** What a move would do. */
 export type Preview = Schema<"MovePreviewBody">;
 
-/** How many projects one page holds. */
-const PAGE_SIZE = 100;
-/** How many a search asks for: quick search and the places a project can go show a few. */
-export const SEARCH_SIZE = 20;
-
 /** The fields of a project in a list that the screens need. */
-const LIST_FIELDS = "id,short_name,name,has_sub_projects,parent";
-
-/** The key of everything about projects in the query cache. */
-const projectsKey = ["projects"] as const;
+const LIST_FIELDS = fieldList([
+  "id",
+  "short_name",
+  "name",
+  "has_sub_projects",
+  "parent",
+] satisfies FieldNames<ListItem>);
 
 /** What narrows a list of projects. */
 export interface ProjectFilter {
@@ -60,79 +67,68 @@ export function lineOf(item: ListItem): ProjectLine | undefined {
   };
 }
 
-/** The projects the person sees that the filter names, a page at a time: *Show more* asks for the next. */
-export function useProjectList(filter: ProjectFilter, enabled = true, size = PAGE_SIZE) {
-  return useInfiniteQuery({
-    queryKey: [...projectsKey, "list", filter, size],
-    enabled,
-    initialPageParam: null as string | null,
-    queryFn: async ({ pageParam }: { readonly pageParam: string | null }) => {
-      const { data } = await api.client.GET("/api/v1/projects", {
-        params: {
-          query: {
-            ...filter,
-            fields: LIST_FIELDS,
-            limit: size,
-            ...(pageParam === null ? {} : { cursor: pageParam }),
-          },
-        },
-      });
-      if (data === undefined) {
-        throw new ApiError(0, undefined);
-      }
-      return data;
-    },
-    getNextPageParam: (last: Schema<"Page_ProjectItem">) => last.next_cursor ?? null,
+/**
+ * The projects the person sees that the filter names, a page at a time: *Show more* asks for the
+ * next. A search for a place to choose asks for a short page.
+ */
+export function useProjectList(filter: ProjectFilter, size: number = pageSize.largest) {
+  return usePaged({
+    queryKey: queryKeys.projects.list(filter, size),
+    read: (after) =>
+      api.client.GET("/api/v1/projects", {
+        params: { query: { ...filter, fields: LIST_FIELDS, limit: size, ...after } },
+      }),
   });
 }
 
 /** The lines of the pages read so far. */
 export function linesOf(pages: readonly Schema<"Page_ProjectItem">[] | undefined): ProjectLine[] {
-  return (pages ?? []).flatMap((page) => page.items.flatMap((item) => lineOf(item) ?? []));
+  return linesFrom(pages, lineOf);
 }
 
 /** One project by its address (a short name, also an old one, or an ID). */
 export function useProject(address: string) {
   return useQuery({
-    queryKey: [...projectsKey, "one", address],
+    queryKey: queryKeys.projects.one(address),
     // While another address loads (a project got a new short name), the page keeps showing the
     // project: nothing blinks away and what was typed stays.
     placeholderData: keepPreviousData,
-    queryFn: async () => {
-      const { data } = await api.client.GET("/api/v1/projects/{project}", {
-        params: { path: { project: address } },
-      });
-      if (data === undefined) {
-        throw new ApiError(0, undefined);
-      }
-      return data;
-    },
+    queryFn: async () =>
+      dataOf(
+        await api.client.GET("/api/v1/projects/{project}", {
+          params: { path: { project: address } },
+        }),
+      ),
   });
 }
 
-/** What a move of a project to `to` (an ID, or the top level for `null`) would do. */
-export function useMovePreview(project: string, to: string | null, enabled: boolean) {
+/** Where a project would go: another project (an ID), or the top level (`to: null`). */
+export interface MoveTarget {
+  readonly to: string | null;
+}
+
+/** What a move of a project to `target` would do. With no target picked yet nothing is asked. */
+export function useMovePreview(project: string, target: MoveTarget | null) {
   return useQuery({
-    queryKey: [...projectsKey, "move-preview", project, to],
-    enabled,
+    queryKey: queryKeys.projects.movePreview(project, target?.to ?? null),
     // A preview is a question about now: it is never kept for later.
     gcTime: 0,
-    queryFn: async () => {
-      const { data } = await api.client.POST("/api/v1/projects/{project}/move-preview", {
-        params: { path: { project } },
-        body: { to },
-      });
-      if (data === undefined) {
-        throw new ApiError(0, undefined);
-      }
-      return data;
-    },
+    queryFn:
+      target === null
+        ? skipToken
+        : async () =>
+            dataOf(
+              await api.client.POST("/api/v1/projects/{project}/move-preview", {
+                params: { path: { project } },
+                body: { to: target.to },
+              }),
+            ),
   });
 }
 
 /** A project was made, changed or moved: every list and every project is read again. */
 export function refreshProjects(): void {
-  void queryClient.invalidateQueries({ queryKey: projectsKey });
+  void queryClient.invalidateQueries({ queryKey: queryKeys.projects.all });
 }
 
 /** What is needed to make a project. */
@@ -146,17 +142,14 @@ export function useMakeProject(parent: string | undefined) {
   return useMutation({
     mutationFn: async ({ shortName, name }: NewProject) => {
       const body = { short_name: shortName, name };
-      const { data } =
+      return dataOf(
         parent === undefined
           ? await api.client.POST("/api/v1/projects", { body })
           : await api.client.POST("/api/v1/projects/{project}/sub-projects", {
               params: { path: { project: parent } },
               body,
-            });
-      if (data === undefined) {
-        throw new ApiError(0, undefined);
-      }
-      return data;
+            }),
+      );
     },
     onSuccess: refreshProjects,
   });
@@ -175,18 +168,16 @@ export interface ProjectChanges {
 export function useChangeProject() {
   return useMutation({
     mutationFn: async ({ id, version, name, shortName }: ProjectChanges) => {
-      const { data } = await api.client.PATCH("/api/v1/projects/{project}", {
-        params: { path: { project: id } },
-        body: {
-          version,
-          ...(name === undefined ? {} : { name }),
-          ...(shortName === undefined ? {} : { short_name: shortName }),
-        },
-      });
-      if (data === undefined) {
-        throw new ApiError(0, undefined);
-      }
-      return data;
+      return dataOf(
+        await api.client.PATCH("/api/v1/projects/{project}", {
+          params: { path: { project: id } },
+          body: {
+            version,
+            ...(name === undefined ? {} : { name }),
+            ...(shortName === undefined ? {} : { short_name: shortName }),
+          },
+        }),
+      );
     },
     onSuccess: refreshProjects,
   });
@@ -205,14 +196,12 @@ export interface ProjectMove {
 export function useMoveProject() {
   return useMutation({
     mutationFn: async ({ id, to, preview }: ProjectMove) => {
-      const { data } = await api.client.POST("/api/v1/projects/{project}/move", {
-        params: { path: { project: id } },
-        body: { to, preview },
-      });
-      if (data === undefined) {
-        throw new ApiError(0, undefined);
-      }
-      return data;
+      return dataOf(
+        await api.client.POST("/api/v1/projects/{project}/move", {
+          params: { path: { project: id } },
+          body: { to, preview },
+        }),
+      );
     },
     onSuccess: refreshProjects,
   });
