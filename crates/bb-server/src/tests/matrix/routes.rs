@@ -19,8 +19,10 @@ use std::cell::Cell;
 use std::collections::BTreeMap;
 
 use axum::Router;
+use axum::http::Method;
 use axum::http::StatusCode;
-use bb_api::openapi;
+use bb_api::openapi::{Operation, operations};
+use bb_api::permissions::Declared;
 use bb_app::access::{Permission, StartingRole};
 use bb_app::auth::MakeAccessKey;
 use bb_app::roles::RolesQuery;
@@ -55,49 +57,17 @@ pub(super) enum Expect {
     NotForKeys,
 }
 
-/// What a route needs, as the API description declares it.
-#[derive(Clone, Debug)]
-pub(super) struct Route {
-    pub(super) operation: String,
-    pub(super) method: String,
-    pub(super) path: String,
-    pub(super) declared: String,
-}
-
-/// The routes of the API description with what each declares.
-pub(super) fn routes_of_the_description() -> Result<Vec<Route>, Failure> {
-    let document = serde_json::to_value(openapi::document())?;
-    let mut routes = Vec::new();
-    for (path, item) in document["paths"].as_object().ok_or("no paths")? {
-        for (method, operation) in item.as_object().ok_or("no operations")? {
-            routes.push(Route {
-                operation: operation["operationId"]
-                    .as_str()
-                    .ok_or("no operationId")?
-                    .to_owned(),
-                method: method.to_uppercase(),
-                path: path.clone(),
-                declared: operation["x-permission"]
-                    .as_str()
-                    .ok_or("no x-permission")?
-                    .to_owned(),
-            });
-        }
-    }
-    Ok(routes)
-}
-
 /// What the server must answer `actor` for `route`, from the table of `actors.rs`.
-pub(super) fn expectation(actor: Actor, route: &Route, example: &Example) -> Expect {
-    if route.declared == "public" {
+pub(super) fn expectation(actor: Actor, route: &Operation, example: &Example) -> Expect {
+    if route.needs == Declared::Public {
         return Expect::Allowed;
     }
     // A key never reaches its owner's own sign-in data (ADR-0025, decision 8); `signed-in` is about
     // the session of a browser: who is signed in, signing out.
-    if actor.has_a_key() && matches!(route.declared.as_str(), "signed-in" | "own-account") {
+    if actor.has_a_key() && matches!(route.needs, Declared::SignedIn | Declared::OwnAccount) {
         if example.has(Quirk::KeysActAsThePerson) {
             // The choices of the person: a key reads them and, if it may change, changes them.
-            return if route.method == "GET" || actor.key_may_change() {
+            return if route.method == Method::GET || actor.key_may_change() {
                 Expect::Allowed
             } else {
                 Expect::Forbidden
@@ -108,12 +78,9 @@ pub(super) fn expectation(actor: Actor, route: &Route, example: &Example) -> Exp
     if !actor.signed_in() || example.has(Quirk::FinishesAHalfDoneSignIn) {
         return Expect::NotSignedIn;
     }
-    match route.declared.as_str() {
-        "signed-in" | "own-account" => Expect::Allowed,
-        key => {
-            let Some(permission) = Permission::from_code(key) else {
-                return Expect::Forbidden;
-            };
+    match route.needs {
+        Declared::Public | Declared::SignedIn | Declared::OwnAccount => Expect::Allowed,
+        Declared::Permission(permission) => {
             if example.has(Quirk::FiltersWhatIsSeen) {
                 return Expect::Allowed;
             }
@@ -403,8 +370,8 @@ async fn starting_roles(org: &Org<'_>) -> Result<BTreeMap<String, RoleId>, Failu
 /// What a route that is let through must hold for each actor, besides not being refused: only the
 /// list of projects says anything about its content (M2-F27: *a key for A lists only A and below;
 /// the trail stops at A*).
-fn check_content(actor: Actor, route: &Route, reply: &Reply) -> Result<(), String> {
-    match route.operation.as_str() {
+fn check_content(actor: Actor, route: &Operation, reply: &Reply) -> Result<(), String> {
+    match route.id.as_str() {
         "listProjects" => {
             let names: std::collections::BTreeSet<&str> = reply.body["items"]
                 .as_array()
@@ -446,7 +413,7 @@ fn check_content(actor: Actor, route: &Route, reply: &Reply) -> Result<(), Strin
 /// Runs every route as every actor; the record of what ran.
 async fn run(rig: &Rig, actors: &[Actor]) -> Result<Record, Failure> {
     let fixture = Fixture::start(rig).await?;
-    let routes = routes_of_the_description()?;
+    let routes = operations();
     // Besides the actors of the list, each route is run by the person who holds exactly the
     // permission it declares.
     let mut named = actors.to_vec();
@@ -460,27 +427,27 @@ async fn run(rig: &Rig, actors: &[Actor]) -> Result<Record, Failure> {
         let actor = Actor::Exactly(Some(*permission));
         browsers.insert(actor.key(), fixture.browser(actor).await?);
     }
-    for route in &routes {
+    for route in routes {
         let example = EXAMPLES
             .iter()
-            .find(|example| example.operation == route.operation)
+            .find(|example| example.operation == route.id)
             .ok_or_else(|| {
                 format!(
                     "{} {} ({}) has no example request in examples.rs",
-                    route.method, route.path, route.operation
+                    route.method, route.path, route.id
                 )
             })?;
         let mut route_actors = actors.to_vec();
-        route_actors.push(Actor::exactly(&route.declared));
+        route_actors.push(Actor::exactly(route.needs));
         for actor in &route_actors {
             let browser = browsers
                 .get_mut(&actor.key())
                 .ok_or("no browser for the actor")?;
             let (method, address, body) = request(&fixture, example, *actor, browser).await?;
-            if method != route.method {
+            if method != route.method.as_str() {
                 return Err(format!(
                     "{}: the example is a {method}, the route a {}",
-                    route.operation, route.method
+                    route.id, route.method
                 )
                 .into());
             }
@@ -538,12 +505,9 @@ async fn sec_01_every_route_answers_every_actor_as_the_permission_table_says() -
 }
 
 #[test]
-fn every_route_of_the_description_has_a_row_and_every_row_a_route() -> Result<(), Failure> {
-    let routes = routes_of_the_description()?;
-    let described: std::collections::BTreeSet<&str> = routes
-        .iter()
-        .map(|route| route.operation.as_str())
-        .collect();
+fn every_route_of_the_description_has_a_row_and_every_row_a_route() {
+    let described: std::collections::BTreeSet<&str> =
+        operations().iter().map(|route| route.id.as_str()).collect();
     let rows: std::collections::BTreeSet<&str> =
         EXAMPLES.iter().map(|example| example.operation).collect();
     assert_eq!(
@@ -556,53 +520,51 @@ fn every_route_of_the_description_has_a_row_and_every_row_a_route() -> Result<()
         Vec::<&&str>::new(),
         "rows without a route"
     );
-    Ok(())
 }
 
 #[test]
 fn the_expectation_is_a_refusal_for_a_person_who_lacks_the_permission_and_hides_what_they_may_not_know()
 -> Result<(), Failure> {
-    let routes = routes_of_the_description()?;
     let find = |operation: &str| {
-        routes
+        operations()
             .iter()
-            .find(|route| route.operation == operation)
+            .find(|route| route.id == operation)
             .zip(
                 EXAMPLES
                     .iter()
                     .find(|example| example.operation == operation),
             )
-            .map(|(route, example)| (route.clone(), *example))
+            .map(|(route, example)| (route, *example))
             .ok_or("no such route")
     };
     let (rename, rename_example) = find("changeProject")?;
     let lacks = Actor::Role(StartingRole::Viewer);
     assert_eq!(
-        expectation(lacks, &rename, &rename_example),
+        expectation(lacks, rename, &rename_example),
         Expect::Forbidden
     );
     assert_eq!(
-        expectation(Actor::LeadOnSiblingOnly, &rename, &rename_example),
+        expectation(Actor::LeadOnSiblingOnly, rename, &rename_example),
         Expect::NotFound
     );
     assert_eq!(
-        expectation(Actor::Nobody, &rename, &rename_example),
+        expectation(Actor::Nobody, rename, &rename_example),
         Expect::NotSignedIn
     );
     // Under a *No access* a lead keeps deciding roles, so they know the project: refused, not
     // hidden; but what is inside the project is hidden from them.
     assert_eq!(
-        expectation(Actor::NoAccessUnderLead, &rename, &rename_example),
+        expectation(Actor::NoAccessUnderLead, rename, &rename_example),
         Expect::Forbidden
     );
     let (read, read_example) = find("getProject")?;
     assert_eq!(
-        expectation(Actor::NoAccessUnderLead, &read, &read_example),
+        expectation(Actor::NoAccessUnderLead, read, &read_example),
         Expect::NotFound
     );
     let (list, list_example) = find("listProjects")?;
     assert_eq!(
-        expectation(Actor::NoRole, &list, &list_example),
+        expectation(Actor::NoRole, list, &list_example),
         Expect::Allowed,
         "M2-F30: the list filters what is seen"
     );

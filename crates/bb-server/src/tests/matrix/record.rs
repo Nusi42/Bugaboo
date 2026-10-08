@@ -9,8 +9,11 @@
 use std::collections::BTreeMap;
 use std::fmt::Write as _;
 
+use bb_api::openapi::Operation;
+use bb_api_words::matrix;
+
 use super::actors::Actor;
-use super::routes::{Expect, Route};
+use super::routes::Expect;
 use crate::sign_in_tests::http::Failure;
 
 /// The file, from the folder of this crate.
@@ -21,7 +24,7 @@ const WRITE_VARIABLE: &str = "BB_SEC_MATRIX_RECORD";
 /// What ran.
 pub(super) struct Record {
     actors: Vec<String>,
-    routes: BTreeMap<String, (Route, Vec<(String, Expect)>)>,
+    routes: BTreeMap<String, (Operation, Vec<(String, Expect)>)>,
 }
 
 impl Record {
@@ -33,9 +36,9 @@ impl Record {
     }
 
     /// An actor ran a route and the server answered as `expected`.
-    pub(super) fn ran(&mut self, route: &Route, actor: Actor, expected: Expect) {
+    pub(super) fn ran(&mut self, route: &Operation, actor: Actor, expected: Expect) {
         self.routes
-            .entry(route.operation.clone())
+            .entry(route.id.clone())
             .or_insert_with(|| (route.clone(), Vec::new()))
             .1
             .push((actor.name(), expected));
@@ -59,10 +62,10 @@ impl Record {
             let _ = writeln!(
                 text,
                 "route {} {} {} {} : {}",
-                route.operation,
+                route.id,
                 route.method,
                 route.path,
-                route.declared,
+                route.needs.key(),
                 answers.join(" ")
             );
         }
@@ -111,26 +114,29 @@ impl Record {
 /// How an answer is written in the record.
 const fn word(expected: Expect) -> &'static str {
     match expected {
-        Expect::Allowed => "allowed",
-        Expect::NotSignedIn => "not-signed-in",
-        Expect::Forbidden => "forbidden",
-        Expect::NotFound => "not-found",
-        Expect::NotForKeys => "not-for-keys",
+        Expect::Allowed => matrix::ALLOWED,
+        Expect::NotSignedIn => matrix::NOT_SIGNED_IN,
+        Expect::Forbidden => matrix::FORBIDDEN,
+        Expect::NotFound => matrix::NOT_FOUND,
+        Expect::NotForKeys => matrix::NOT_FOR_KEYS,
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use bb_app::access::StartingRole;
+    use axum::http::Method;
+    use bb_api::permissions::{Answer, Declared};
+    use bb_app::access::{Permission, StartingRole};
 
     use super::*;
 
-    fn route(operation: &str) -> Route {
-        Route {
-            operation: operation.to_owned(),
-            method: "GET".to_owned(),
+    fn route(operation: &str) -> Operation {
+        Operation {
+            id: operation.to_owned(),
+            method: Method::GET,
             path: "/api/v1/x".to_owned(),
-            declared: "see-projects".to_owned(),
+            needs: Declared::Permission(Permission::SeeProjects),
+            kind: Answer::Kept,
         }
     }
 

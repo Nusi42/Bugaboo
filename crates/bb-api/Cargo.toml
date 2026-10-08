@@ -9,6 +9,7 @@ publish.workspace = true
 [dependencies]
 axum = { workspace = true, features = ["http1", "http2", "json", "matched-path", "query", "tokio"] }
 base64ct = { workspace = true }
+bb-api-words = { path = "../bb-api-words" }
 bb-app = { path = "../bb-app" }
 bb-auth = { path = "../bb-auth" }
 bb-core = { path = "../bb-core", features = ["openapi"] }

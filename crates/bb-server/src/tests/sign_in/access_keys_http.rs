@@ -2,8 +2,10 @@
 //! another website cannot, the limit of one key, the same answer for every key that does not work,
 //! and the routes of the owner's own sign-in data that no key opens.
 
-use axum::http::{StatusCode, header};
-use bb_api::{LimitsConfig, openapi};
+use axum::http::{Method, StatusCode, header};
+use bb_api::LimitsConfig;
+use bb_api::openapi::operations;
+use bb_api::permissions::Declared;
 use bb_app::access::Permission;
 use bb_app::auth::{DeleteAccessKey, MakeAccessKey};
 use bb_auth::AccessKeySecret;
@@ -12,7 +14,7 @@ use bb_core::sign_in::SecurityAction;
 use bb_testing::each_database;
 use serde_json::{Value, json};
 
-use super::http::{Browser, called};
+use super::http::{Browser, called, example_path};
 use super::policy_rig::Org;
 use super::rig::{Outcome, PASSWORD, Rig};
 use super::status::{app_with_probe, app_with_probe_and_limits};
@@ -284,49 +286,40 @@ async fn auth_07_no_route_of_the_owners_sign_in_data_opens_for_a_key() -> Outcom
         let key = super::access_keys::key_of(&rig, &org.admin, KeyChoice::Everything).await?;
         let app = app_with_probe(&rig, None);
         let mut script = Browser::new(&app, &called());
-        let document = serde_json::to_value(openapi::document())?;
-        let id = "0197a5e2-7c1f-4b0a-9a3e-2f6d1c8b4a10";
         let mut tried = 0;
-        for (template, item) in document["paths"].as_object().ok_or("no paths")? {
-            for (method, operation) in item.as_object().ok_or("no operations")? {
-                let declared = operation["x-permission"]
-                    .as_str()
-                    .ok_or("no x-permission")?;
-                if !matches!(declared, "own-account" | "signed-in") {
-                    continue;
-                }
-                // *My settings* are the person's choices, not their sign-in data: a key acts as
-                // the person, reads them, and writes them if it may change (tested in
-                // `settings_keys`).
-                if MY_SETTINGS.contains(&operation["operationId"].as_str().unwrap_or_default()) {
-                    continue;
-                }
-                let path = template
-                    .replace("{session_id}", id)
-                    .replace("{passkey_id}", id)
-                    .replace("{access_key_id}", id);
-                let body = (method != "get" && method != "delete").then(|| json!({}));
-                let reply = script
-                    .script(&method.to_uppercase(), &path, body, &key)
-                    .await?;
-                // Never a success, and a request that gets as far as the use case is turned away
-                // as a key where no key may go.
-                assert!(
-                    reply.status.is_client_error(),
-                    "{method} {template}: {}",
-                    reply.status
-                );
-                assert_ne!(reply.code(), "request.wrong_token", "{method} {template}");
-                if method == "get" || method == "delete" {
-                    assert_eq!(
-                        reply.code(),
-                        "auth.access_key_not_allowed",
-                        "{method} {template}"
-                    );
-                    assert_eq!(reply.status, StatusCode::FORBIDDEN);
-                }
-                tried += 1;
+        for operation in operations() {
+            if !matches!(operation.needs, Declared::OwnAccount | Declared::SignedIn) {
+                continue;
             }
+            // *My settings* are the person's choices, not their sign-in data: a key acts as
+            // the person, reads them, and writes them if it may change (tested in
+            // `settings_keys`).
+            if MY_SETTINGS.contains(&operation.id.as_str()) {
+                continue;
+            }
+            let (method, template) = (&operation.method, &operation.path);
+            let reads_or_deletes = *method == Method::GET || *method == Method::DELETE;
+            let body = (!reads_or_deletes).then(|| json!({}));
+            let reply = script
+                .script(method.as_str(), &example_path(template), body, &key)
+                .await?;
+            // Never a success, and a request that gets as far as the use case is turned away
+            // as a key where no key may go.
+            assert!(
+                reply.status.is_client_error(),
+                "{method} {template}: {}",
+                reply.status
+            );
+            assert_ne!(reply.code(), "request.wrong_token", "{method} {template}");
+            if reads_or_deletes {
+                assert_eq!(
+                    reply.code(),
+                    "auth.access_key_not_allowed",
+                    "{method} {template}"
+                );
+                assert_eq!(reply.status, StatusCode::FORBIDDEN);
+            }
+            tried += 1;
         }
         assert!(tried >= 15, "{tried}");
         // The key still works where a key may go, and the owner's own data was not touched.

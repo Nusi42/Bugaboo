@@ -5,6 +5,7 @@
 
 // Dependencies of the library that this test does not use itself (`unused_crate_dependencies`).
 use base64ct as _;
+use bb_api_words as _;
 use bb_app as _;
 use bb_auth as _;
 use bb_core as _;

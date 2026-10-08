@@ -297,7 +297,6 @@ impl From<Snapshot> for ServerStatusBody {
     path = "/api/v1/admin/status",
     operation_id = "getServerStatus",
     tag = "admin",
-    extensions(("x-never-stored" = json!(true))),
     responses((status = 200, description = "The status of the server.", body = ServerStatusBody), NotSignedInAnswer, ForbiddenAnswer)
 )]
 async fn get_server_status(

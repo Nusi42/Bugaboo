@@ -261,7 +261,6 @@ pub(crate) struct RolesFilter {
     path = "/api/v1/roles",
     operation_id = "listRoles",
     tag = "roles",
-    extensions(("x-never-stored" = json!(true))),
     params(ListParams, RolesFilter),
     responses((status = 200, description = "The roles, in the order of roles.", body = Page<RoleItem>), NotSignedInAnswer, ForbiddenAnswer)
 )]
@@ -344,7 +343,6 @@ async fn make_role(
     path = "/api/v1/roles/{role_id}",
     operation_id = "getRole",
     tag = "roles",
-    extensions(("x-never-stored" = json!(true))),
     params(("role_id" = String, Path, description = "The ID of the role.")),
     responses((status = 200, description = "The role.", body = RoleDetailBody), NotSignedInAnswer, ForbiddenAnswer, NotFoundAnswer)
 )]
@@ -540,7 +538,6 @@ async fn reset_role(
     path = "/api/v1/permissions",
     operation_id = "listPermissions",
     tag = "roles",
-    extensions(("x-never-stored" = json!(true))),
     responses((status = 200, description = "The permissions of the catalogue.", body = PermissionsBody), NotSignedInAnswer, ForbiddenAnswer)
 )]
 async fn list_permissions(

@@ -410,6 +410,7 @@ version = "0.0.0"
 dependencies = [
  "axum",
  "base64ct",
+ "bb-api-words",
  "bb-app",
  "bb-auth",
  "bb-core",
@@ -570,6 +571,7 @@ dependencies = [
  "axum",
  "base64ct",
  "bb-api",
+ "bb-api-words",
  "bb-app",
  "bb-auth",
  "bb-core",

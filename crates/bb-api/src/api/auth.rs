@@ -8,8 +8,8 @@
 //! - **CSRF (SEC-12, layer 3):** [`csrf_check`] refuses every change below `/api` that carries a
 //!   session cookie but not the token of that session in `x-csrf-token`. It is a middleware, not a
 //!   check in each handler, so a route added later is protected without anyone remembering. Only
-//!   the routes in [`CSRF_EXEMPT`] are left out: people who sign in or sign up have no session
-//!   yet. They are protected by the origin check and carry no secret a forged request could use.
+//!   the public routes that change something are left out (`crate::permissions::csrf_exempt`, from
+//!   the route table): people who sign in or sign up have no session yet. They are protected by the origin check and carry no secret a forged request could use.
 //! - **Cookies:** a new session sets the session cookie and the CSRF cookie together, in one
 //!   place ([`signed_in`]); both come from the cookie table (`crate::cookies`).
 
@@ -17,7 +17,7 @@ use std::sync::Arc;
 
 use axum::extract::{FromRequestParts, Request, State};
 use axum::http::request::Parts;
-use axum::http::{Method, StatusCode, header};
+use axum::http::{StatusCode, header};
 use axum::middleware::Next;
 use axum::response::{IntoResponse as _, Response};
 use bb_app::auth::{AppError, AuthApi, RequestInfo, Started};
@@ -39,19 +39,7 @@ use crate::cookies::{CSRF_HEADER, Cookie};
 use crate::errors::ApiError;
 use crate::limits::{Limits, limit_sign_in};
 use crate::logging::ClientIp;
-
-/// The change routes that people use before they have a session. Everything else that changes
-/// something needs the token of the session (`csrf_check`). A test keeps this list and the API
-/// description together: every address in it exists, and every other change route is checked.
-pub(crate) const CSRF_EXEMPT: [&str; 7] = [
-    "/api/v1/auth/setup",
-    "/api/v1/auth/sign-in",
-    "/api/v1/auth/sign-up",
-    "/api/v1/auth/passkey/sign-in/options",
-    "/api/v1/auth/passkey/sign-in",
-    "/api/v1/auth/invitation/lookup",
-    "/api/v1/auth/invitation/accept",
-];
+use crate::permissions::csrf_exempt;
 
 /// What the sign-in routes need: the use cases, if the server has a database. Without them
 /// (tests of the other parts of the API) every sign-in route answers that the server cannot
@@ -272,18 +260,14 @@ pub(crate) fn answer_authorized<T: Masked + Serialize>(
 }
 
 /// Refuses a change that carries a session cookie without the token of that session. A change
-/// without a session cookie is not signed in (`401`), except on the routes in [`CSRF_EXEMPT`].
+/// without a session cookie is not signed in (`401`), except on the routes that are open without a token ([`csrf_exempt`]).
 pub(crate) async fn csrf_check(
     State(auth): State<AuthHandle>,
     request: Request,
     next: Next,
 ) -> Response {
-    let changes = !matches!(
-        *request.method(),
-        Method::GET | Method::HEAD | Method::OPTIONS
-    );
     let path = request.uri().path();
-    if !changes || !is_api(path) || CSRF_EXEMPT.contains(&path) {
+    if !super::changes(request.method()) || !is_api(path) || csrf_exempt(request.method(), path) {
         return next.run(request).await;
     }
     // Without a database there is no session to protect; the routes answer "unavailable".
@@ -362,29 +346,4 @@ where
         .merge(super::auth_sign_in::session_routes::<S>())
         .merge(super::auth_factors::session_routes::<S>())
         .merge(super::auth_people::session_routes::<S>())
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn sec_12_the_routes_without_a_token_exist_and_are_posts_of_people_without_a_session() {
-        let document = serde_json::to_value(crate::openapi::document()).unwrap();
-        for path in CSRF_EXEMPT {
-            assert!(
-                document["paths"][path]["post"].is_object(),
-                "{path} is on the list but is not a POST route"
-            );
-            assert!(path.starts_with("/api/v1/auth/"), "{path}");
-        }
-        // Nothing that is open without a token may also need a session in the same list.
-        for path in [
-            "/api/v1/auth/sign-out",
-            "/api/v1/auth/password",
-            "/api/v1/auth/sessions",
-        ] {
-            assert!(!CSRF_EXEMPT.contains(&path), "{path}");
-        }
-    }
 }

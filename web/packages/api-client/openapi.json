@@ -238,7 +238,8 @@
             }
           }
         },
-        "x-permission": "own-account"
+        "x-permission": "own-account",
+        "x-secret": true
       }
     },
     "/api/v1/access-keys/projects": {
@@ -1532,7 +1533,8 @@
             }
           }
         },
-        "x-permission": "manage-invitations"
+        "x-permission": "manage-invitations",
+        "x-secret": true
       }
     },
     "/api/v1/auth/invitations/{invitation_id}": {
@@ -3538,7 +3540,8 @@
             }
           }
         },
-        "x-permission": "own-account"
+        "x-permission": "own-account",
+        "x-secret": true
       }
     },
     "/api/v1/auth/two-step/code-app": {
@@ -3636,7 +3639,8 @@
             }
           }
         },
-        "x-permission": "own-account"
+        "x-permission": "own-account",
+        "x-secret": true
       }
     },
     "/api/v1/auth/two-step/code-app/confirm": {
@@ -3734,7 +3738,8 @@
             }
           }
         },
-        "x-permission": "own-account"
+        "x-permission": "own-account",
+        "x-secret": true
       }
     },
     "/api/v1/auth/two-step/code-app/remove": {
@@ -10191,8 +10196,7 @@
           "codes": {
             "type": "array",
             "items": {
-              "type": "string",
-              "x-secret": true
+              "type": "string"
             },
             "description": "The codes. They are not stored in this form and cannot be shown again."
           }
@@ -10365,18 +10369,15 @@
         "properties": {
           "otpauth_url": {
             "type": "string",
-            "description": "The address the code app reads.",
-            "x-secret": true
+            "description": "The address the code app reads."
           },
           "qr_png_base64": {
             "type": "string",
-            "description": "The QR picture of the address (PNG, base64).",
-            "x-secret": true
+            "description": "The QR picture of the address (PNG, base64)."
           },
           "secret": {
             "type": "string",
-            "description": "The secret as text, for typing it into the app.",
-            "x-secret": true
+            "description": "The secret as text, for typing it into the app."
           }
         }
       },
@@ -10433,8 +10434,7 @@
           },
           "secret": {
             "type": "string",
-            "description": "The whole key, `bb_`, the prefix, `_` and the secret. Send it as\n`Authorization: Bearer <key>`. It is not stored and cannot be shown again.",
-            "x-secret": true
+            "description": "The whole key, `bb_`, the prefix, `_` and the secret. Send it as\n`Authorization: Bearer <key>`. It is not stored and cannot be shown again."
           }
         }
       },
@@ -10449,8 +10449,7 @@
           },
           "link_path": {
             "type": "string",
-            "description": "The page the link opens, with the secret after the `#`. Put the address of this server\nin front. The secret is not stored and cannot be shown again.",
-            "x-secret": true
+            "description": "The page the link opens, with the secret after the `#`. Put the address of this server\nin front. The secret is not stored and cannot be shown again."
           }
         }
       },

@@ -449,7 +449,6 @@ async fn reset(
     path = "/api/v1/settings",
     operation_id = "listOrganizationSettings",
     tag = "settings",
-    extensions(("x-never-stored" = json!(true))),
     params(query::TopicParams),
     responses((status = 200, description = "The settings of the organization with their values.", body = SettingsBody), NotSignedInAnswer, ForbiddenAnswer)
 )]
@@ -615,7 +614,6 @@ async fn unlock_organization_setting(
     path = "/api/v1/projects/{project}/settings",
     operation_id = "listProjectSettings",
     tag = "settings",
-    extensions(("x-never-stored" = json!(true))),
     params(("project" = String, Path, description = "The ID or the short name of the project."), query::TopicParams),
     responses((status = 200, description = "The settings that can be set on a project, with the values that count there.", body = SettingsBody), NotSignedInAnswer, ForbiddenAnswer, NotFoundAnswer)
 )]
@@ -717,7 +715,6 @@ async fn reset_project_setting(
     path = "/api/v1/me/settings",
     operation_id = "listMySettings",
     tag = "settings",
-    extensions(("x-never-stored" = json!(true))),
     params(query::MineParams),
     responses((status = 200, description = "The settings a person can choose for themselves, with the values that count for them.", body = SettingsBody), NotSignedInAnswer, NotFoundAnswer)
 )]

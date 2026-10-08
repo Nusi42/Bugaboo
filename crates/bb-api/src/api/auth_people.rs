@@ -152,7 +152,6 @@ pub(crate) struct CreatedInvitationBody {
     invitation: InvitationBody,
     /// The page the link opens, with the secret after the `#`. Put the address of this server
     /// in front. The secret is not stored and cannot be shown again.
-    #[schema(extensions(("x-secret" = json!(true))))]
     link_path: String,
 }
 
@@ -305,7 +304,6 @@ async fn accept_invitation(
     path = "/api/v1/auth/invitations",
     operation_id = "listInvitations",
     tag = "auth",
-    extensions(("x-never-stored" = json!(true))),
     params(ListParams),
     responses((status = 200, description = "The open invitations, newest first. Only invitations that are still open are listed.", body = Page<InvitationItem>), NotSignedInAnswer, ForbiddenAnswer)
 )]

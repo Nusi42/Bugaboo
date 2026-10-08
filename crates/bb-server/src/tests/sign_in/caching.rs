@@ -5,8 +5,8 @@
 
 use axum::Router;
 use axum::body::Body;
-use axum::http::{Request, StatusCode};
-use bb_api::openapi;
+use axum::http::{Method, Request, StatusCode};
+use bb_api::openapi::operations;
 use bb_app::access::Permission;
 use bb_app::roles::MakeRole;
 use bb_testing::each_database;
@@ -18,15 +18,12 @@ use super::rig::{Outcome, PASSWORD, Rig};
 use super::status::app_with_probe;
 
 /// The addresses of every `GET` route in the API description.
-fn get_routes() -> Result<Vec<String>, Failure> {
-    let document = serde_json::to_value(openapi::document())?;
-    let mut routes = Vec::new();
-    for (path, item) in document["paths"].as_object().ok_or("no paths")? {
-        if item.get("get").is_some() {
-            routes.push(path.clone());
-        }
-    }
-    Ok(routes)
+fn get_routes() -> Vec<String> {
+    operations()
+        .iter()
+        .filter(|operation| operation.method == Method::GET)
+        .map(|operation| operation.path.clone())
+        .collect()
 }
 
 /// A second person (not an administrator): invited by `ada`, signed in.
@@ -107,7 +104,7 @@ async fn perf_03_every_get_answers_an_etag_and_304_on_a_match() -> Outcome {
                 .ok_or("no person")?
                 .to_owned(),
         );
-        let routes = get_routes()?;
+        let routes = get_routes();
         assert!(routes.len() >= 9, "{routes:?}");
         let (mut kept, mut never_stored) = (0, 0);
         for template in &routes {

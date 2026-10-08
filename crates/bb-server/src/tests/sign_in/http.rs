@@ -10,11 +10,11 @@ use std::time::Duration;
 use axum::Router;
 use axum::body::Body;
 use axum::extract::ConnectInfo;
-use axum::http::{HeaderMap, Request, StatusCode, header};
+use axum::http::{HeaderMap, Method, Request, StatusCode, header};
 use base64ct::{Base64UrlUnpadded, Encoding as _};
-use bb_api::{
-    AuthHandle, ClientAddr, LimitsConfig, Options, ProbeHandle, WebSource, openapi, router,
-};
+use bb_api::openapi::operations;
+use bb_api::permissions::{Answer, Declared};
+use bb_api::{AuthHandle, ClientAddr, LimitsConfig, Options, ProbeHandle, WebSource, router};
 use bb_app::auth::AuthStore as _;
 use bb_app::context::Clock as _;
 use bb_auth::TotpSecret;
@@ -281,19 +281,36 @@ impl Browser {
     }
 }
 
-/// The `GET` routes whose answers hold personal data, as the API description marks them.
+/// The `GET` routes whose answers hold personal data, as the route table says them.
 pub(super) fn never_stored_reads() -> &'static BTreeSet<String> {
     static ROUTES: std::sync::OnceLock<BTreeSet<String>> = std::sync::OnceLock::new();
     ROUTES.get_or_init(|| {
-        let document = serde_json::to_value(openapi::document()).unwrap_or_default();
-        document["paths"]
-            .as_object()
-            .into_iter()
-            .flatten()
-            .filter(|(_, item)| item["get"][openapi::NEVER_STORED_MARK] == true)
-            .map(|(route, _)| route.clone())
+        operations()
+            .iter()
+            .filter(|operation| {
+                operation.method == Method::GET && operation.kind == Answer::NeverStored
+            })
+            .map(|operation| operation.path.clone())
             .collect()
     })
+}
+
+/// The ID that stands in for any `{…}` part of a route, when only the layers in front of the route
+/// are of interest.
+const ANY_ID: &str = "0197a5e2-7c1f-4b0a-9a3e-2f6d1c8b4a10";
+
+/// The address of a route written as `template`, with an ID in every `{…}` part (a setting key in
+/// `{key}`).
+pub(super) fn example_path(template: &str) -> String {
+    template
+        .split('/')
+        .map(|part| match part {
+            "{key}" => "some.key",
+            part if part.starts_with('{') => ANY_ID,
+            part => part,
+        })
+        .collect::<Vec<_>>()
+        .join("/")
 }
 
 /// Whether the address is the route written as `template`, whose `{…}` parts stand for any one
@@ -500,48 +517,25 @@ async fn sec_12_every_route_that_changes_something_checks_the_token_except_signi
         browser
             .send("POST", "/api/v1/auth/setup", Some(setup_body(&rig)))
             .await?;
-        // The routes people use before they have a session: no token can exist yet.
-        let open = [
-            "/api/v1/auth/setup",
-            "/api/v1/auth/sign-in",
-            "/api/v1/auth/sign-up",
-            "/api/v1/auth/passkey/sign-in/options",
-            "/api/v1/auth/passkey/sign-in",
-            "/api/v1/auth/invitation/lookup",
-            "/api/v1/auth/invitation/accept",
-        ];
-        let document = serde_json::to_value(openapi::document())?;
-        let paths = document["paths"].as_object().ok_or("no paths")?;
-        let id = "0197a5e2-7c1f-4b0a-9a3e-2f6d1c8b4a10";
         let mut checked = 0;
-        for (template, item) in paths {
-            for method in ["post", "put", "delete", "patch"] {
-                if item.get(method).is_none() {
-                    continue;
-                }
-                let path = template
-                    .replace("{session_id}", id)
-                    .replace("{passkey_id}", id)
-                    .replace("{invitation_id}", id)
-                    .replace("{project}", id)
-                    .replace("{key}", "some.key")
-                    .replace("{access_key_id}", id);
-                let reply = browser
-                    .send_as(
-                        &method.to_uppercase(),
-                        &path,
-                        Some(json!({})),
-                        Token::Nothing,
-                        "http://bugaboo.test",
-                    )
-                    .await?;
-                if open.contains(&template.as_str()) {
-                    assert_ne!(reply.code(), "request.wrong_token", "{method} {template}");
-                } else {
-                    assert_eq!(reply.status, StatusCode::FORBIDDEN, "{method} {template}");
-                    assert_eq!(reply.code(), "request.wrong_token", "{method} {template}");
-                    checked += 1;
-                }
+        for operation in operations().iter().filter(|operation| operation.changes()) {
+            let reply = browser
+                .send_as(
+                    operation.method.as_str(),
+                    &example_path(&operation.path),
+                    Some(json!({})),
+                    Token::Nothing,
+                    "http://bugaboo.test",
+                )
+                .await?;
+            let (method, path) = (&operation.method, &operation.path);
+            // The routes people use before they have a session: no token can exist yet.
+            if operation.needs == Declared::Public {
+                assert_ne!(reply.code(), "request.wrong_token", "{method} {path}");
+            } else {
+                assert_eq!(reply.status, StatusCode::FORBIDDEN, "{method} {path}");
+                assert_eq!(reply.code(), "request.wrong_token", "{method} {path}");
+                checked += 1;
             }
         }
         assert!(checked >= 15, "{checked}");
@@ -1208,25 +1202,17 @@ async fn sessions_and_password(tour: &mut Tour) -> Outcome {
 }
 
 /// The routes of the API description below `prefix`, as `METHOD /path`.
-fn documented_routes(prefix: &str) -> Result<BTreeSet<String>, Failure> {
-    let document = serde_json::to_value(openapi::document())?;
-    let mut documented = BTreeSet::new();
-    for (path, item) in document["paths"].as_object().ok_or("no paths")? {
-        if !path.starts_with(prefix) {
-            continue;
-        }
-        for method in ["get", "post", "put", "delete"] {
-            if item.get(method).is_some() {
-                documented.insert(format!("{} {path}", method.to_uppercase()));
-            }
-        }
-    }
-    Ok(documented)
+fn documented_routes(prefix: &str) -> BTreeSet<String> {
+    operations()
+        .iter()
+        .filter(|operation| operation.path.starts_with(prefix))
+        .map(|operation| format!("{} {}", operation.method, operation.path))
+        .collect()
 }
 
 /// Every route of the API description under /auth was used.
 fn every_route_was_used(tour: &Tour) -> Outcome {
-    let documented = documented_routes("/api/v1/auth/")?;
+    let documented = documented_routes("/api/v1/auth/");
     let used = tour.used.lock().map_err(|_| "poisoned")?.clone();
     assert_eq!(
         documented.difference(&used).collect::<Vec<_>>(),
@@ -1239,16 +1225,17 @@ fn every_route_was_used(tour: &Tour) -> Outcome {
 }
 
 #[test]
-fn the_walk_over_the_routes_of_the_description_sees_every_method_including_patch() -> Outcome {
-    let documented = documented_routes("/api/v1/")?;
-    for patch in [
-        "PATCH /api/v1/projects/{project}",
-        "PATCH /api/v1/groups/{group_id}",
-        "PATCH /api/v1/roles/{role_id}",
-    ] {
-        assert!(documented.contains(patch), "{patch} is missed by the walk");
+fn the_walk_over_the_routes_of_the_description_sees_every_method_including_patch() {
+    let documented = documented_routes("/api/v1/");
+    let patches: Vec<String> = operations()
+        .iter()
+        .filter(|operation| operation.method == Method::PATCH)
+        .map(|operation| format!("PATCH {}", operation.path))
+        .collect();
+    assert!(!patches.is_empty(), "the description has no PATCH route");
+    for patch in patches {
+        assert!(documented.contains(&patch), "{patch} is missed by the walk");
     }
-    Ok(())
 }
 
 /// Every route of the sign-in family, used once the way the browser app will use it. The routes

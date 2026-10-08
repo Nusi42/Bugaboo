@@ -20,7 +20,7 @@ mod listener;
 mod logging;
 pub mod openapi;
 mod paging;
-mod permissions;
+pub mod permissions;
 mod router;
 mod seal;
 pub mod tls;

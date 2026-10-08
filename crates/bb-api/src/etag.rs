@@ -3,14 +3,15 @@
 //!
 //! One middleware, [`cache_rules`], decides for every answer below `/api`, so a route never
 //! writes a cache header and a route added later cannot forget one. Which of three kinds an answer
-//! is comes from the API description (the routes carry the marks, [`Classes`]) and from the answer
-//! itself:
+//! is comes from the route table (`crate::permissions`, the same table that puts the marks into the
+//! API description, [`Classes`]) and from the answer itself:
 //!
-//! - **A secret** (an answer with a field marked `x-secret`, or any answer that sets a cookie: a
+//! - **A secret** (a route the table declares `Secret` and the API description marks `x-secret`, or any
+//!   answer that sets a cookie: a
 //!   new session, an invitation link, the code app, backup codes) is `no-store`, has no `ETag`,
 //!   and is marked [`SecretAnswer`]. The compression of `crate::router` never compresses a marked
 //!   answer, nor one that sets a cookie (BREACH, M2-Q2, architecture §7 "Browser protections").
-//! - **Personal data** (a `GET` route marked `x-never-stored`: who is signed in, the sessions,
+//! - **Personal data** (a `GET` route the table declares `NeverStored`, marked `x-never-stored`: who is signed in, the sessions,
 //!   the invitations, the second step, the state of the server) is `no-store` and has no `ETag`:
 //!   a shared computer keeps nothing of it after the person has left.
 //! - **Everything else** that is a read (`GET`, `HEAD` answered `200`) gets a weak `ETag` made
@@ -33,11 +34,11 @@ use axum::http::{HeaderMap, HeaderName, HeaderValue, Method, StatusCode, header}
 use axum::middleware::Next;
 use axum::response::Response;
 use base64ct::{Base64UrlUnpadded, Encoding as _};
-use serde_json::Value;
 
 use crate::api::is_api;
 use crate::cookies::{Cookie, sets_a_cookie};
-use crate::openapi::{NEVER_STORED_MARK, SECRET_MARK};
+use crate::openapi::Operation;
+use crate::permissions::Answer;
 use crate::seal;
 
 /// The cache rule of an answer a browser may keep and ask about again.
@@ -91,86 +92,29 @@ impl Classes {
     }
 }
 
-/// Every schema below `value`, following references into the document.
-fn schemas_below<'a>(document: &'a Value, value: &'a Value, found: &mut Vec<&'a Value>) {
-    if found.iter().any(|seen| std::ptr::eq(*seen, value)) {
-        return;
-    }
-    found.push(value);
-    if let Some(target) = value
-        .get("$ref")
-        .and_then(Value::as_str)
-        .and_then(|reference| reference.strip_prefix('#'))
-        .and_then(|pointer| document.pointer(pointer))
-    {
-        schemas_below(document, target, found);
-    }
-    if let Some(inner) = value.get("items") {
-        schemas_below(document, inner, found);
-    }
-    for inner in value
-        .get("properties")
-        .and_then(Value::as_object)
-        .into_iter()
-        .flat_map(serde_json::Map::values)
-    {
-        schemas_below(document, inner, found);
-    }
-    for key in ["allOf", "anyOf", "oneOf"] {
-        for inner in value
-            .get(key)
-            .and_then(Value::as_array)
-            .into_iter()
-            .flatten()
-        {
-            schemas_below(document, inner, found);
-        }
-    }
-}
-
-fn is_marked(value: &Value, mark: &str) -> bool {
-    value.get(mark) == Some(&Value::Bool(true))
-}
-
-/// The routes of each kind in an API description: a route is a secret when any schema of its
-/// answers holds a field marked `x-secret`, and personal data when it is marked `x-never-stored`.
-fn classes_of(document: &Value) -> Classes {
+/// The routes of each kind, from the table of `crate::permissions` through the operations of the
+/// API description.
+fn classes_of(operations: &[Operation]) -> Classes {
     let mut classes = Classes::default();
-    let Some(paths) = document.get("paths").and_then(Value::as_object) else {
-        return classes;
-    };
-    for (route, item) in paths {
-        for (method, operation) in item.as_object().into_iter().flatten() {
-            let key = (method.to_uppercase(), route.clone());
-            let mut schemas = Vec::new();
-            for response in operation
-                .get("responses")
-                .and_then(Value::as_object)
-                .into_iter()
-                .flat_map(serde_json::Map::values)
-            {
-                if let Some(schema) = response.pointer("/content/application~1json/schema") {
-                    schemas_below(document, schema, &mut schemas);
-                }
-            }
-            if schemas.iter().any(|schema| is_marked(schema, SECRET_MARK)) {
+    for operation in operations {
+        let key = (operation.method.as_str().to_owned(), operation.path.clone());
+        match operation.kind {
+            Answer::Secret => {
                 classes.secret.insert(key);
-            } else if is_marked(operation, NEVER_STORED_MARK) {
+            }
+            Answer::NeverStored => {
                 classes.personal.insert(key);
             }
+            Answer::Kept | Answer::Change => {}
         }
     }
     classes
 }
 
-/// The kinds of the routes of this API, read from the API description once.
+/// The kinds of the routes of this API, read from the table once.
 fn classes() -> &'static Classes {
     static CLASSES: OnceLock<Classes> = OnceLock::new();
-    CLASSES.get_or_init(|| {
-        serde_json::to_value(crate::openapi::document())
-            .map(|document| classes_of(&document))
-            .unwrap_or_default()
-    })
+    CLASSES.get_or_init(|| classes_of(crate::openapi::operations()))
 }
 
 /// The weak `ETag` of an answer body, or `None` when the seal has no key.
@@ -299,23 +243,13 @@ mod tests {
     use axum::http::Request;
     use axum::middleware::from_fn;
     use axum::routing::{MethodFilter, get, on, post};
-    use serde_json::json;
+    use serde_json::Value;
     use tower::ServiceExt as _;
 
     use super::*;
 
-    /// Reads that may be kept (privately, asked about again): the rest of the `GET` routes hold
-    /// personal data and are marked `x-never-stored`. A new `GET` route is in neither place until
-    /// someone decides which it is.
-    const READS_THAT_MAY_BE_KEPT: [&str; 4] = [
-        "/api/v1/openapi.json",
-        "/api/v1/status",
-        "/api/v1/auth/status",
-        "/api/v1/auth/sign-up-policy",
-    ];
-
-    /// Parts of a field name (or its ending `codes`) that say it holds a secret: such a field must
-    /// carry the mark.
+    /// Parts of a field name (or its ending `codes`) that say it holds a secret: a route whose answer
+    /// has such a field is declared a secret in the table.
     const SECRET_NAMES: [&str; 5] = ["secret", "token", "password", "otpauth", "link_path"];
 
     fn app() -> Router {
@@ -558,41 +492,59 @@ mod tests {
         serde_json::to_value(crate::openapi::document()).unwrap()
     }
 
-    /// Each answer of the API description with the schemas it holds.
-    fn answers(document: &Value) -> Vec<(String, String, Vec<&Value>)> {
-        let mut answers = Vec::new();
-        for (route, item) in document["paths"].as_object().unwrap() {
-            for (method, operation) in item.as_object().unwrap() {
+    /// Every schema below `value`, following references into the document.
+    fn schemas_below<'a>(document: &'a Value, value: &'a Value, found: &mut Vec<&'a Value>) {
+        if found.iter().any(|seen| std::ptr::eq(*seen, value)) {
+            return;
+        }
+        found.push(value);
+        if let Some(target) = value
+            .get("$ref")
+            .and_then(Value::as_str)
+            .and_then(|reference| reference.strip_prefix('#'))
+            .and_then(|pointer| document.pointer(pointer))
+        {
+            schemas_below(document, target, found);
+        }
+        if let Some(inner) = value.get("items") {
+            schemas_below(document, inner, found);
+        }
+        for inner in value
+            .get("properties")
+            .and_then(Value::as_object)
+            .into_iter()
+            .flat_map(serde_json::Map::values)
+        {
+            schemas_below(document, inner, found);
+        }
+        for key in ["allOf", "anyOf", "oneOf"] {
+            for inner in value
+                .get(key)
+                .and_then(Value::as_array)
+                .into_iter()
+                .flatten()
+            {
+                schemas_below(document, inner, found);
+            }
+        }
+    }
+
+    /// Each operation of the table with the schemas its answers hold.
+    fn answers(document: &Value) -> Vec<(&'static Operation, Vec<&Value>)> {
+        crate::openapi::operations()
+            .iter()
+            .map(|operation| {
+                let described =
+                    &document["paths"][&operation.path][operation.method.as_str().to_lowercase()];
                 let mut schemas = Vec::new();
-                for response in operation["responses"].as_object().unwrap().values() {
+                for response in described["responses"].as_object().unwrap().values() {
                     if let Some(schema) = response.pointer("/content/application~1json/schema") {
                         schemas_below(document, schema, &mut schemas);
                     }
                 }
-                answers.push((method.to_uppercase(), route.clone(), schemas));
-            }
-        }
-        answers
-    }
-
-    #[test]
-    fn perf_03_every_route_whose_answer_holds_a_secret_field_is_a_secret() {
-        let document = real_document();
-        let classes = classes_of(&document);
-        let mut marked = 0;
-        for (method, route, schemas) in answers(&document) {
-            if schemas.iter().any(|schema| is_marked(schema, SECRET_MARK)) {
-                marked += 1;
-                assert_eq!(
-                    classes.kind_of(&method.parse().unwrap(), &route),
-                    Kind::Secret,
-                    "{method} {route}"
-                );
-            }
-        }
-        // The invitation link, the code app, its confirmation, the backup codes and a new
-        // access key.
-        assert_eq!(marked, 5);
+                (operation, schemas)
+            })
+            .collect()
     }
 
     /// Asks `app` for `method` and `path` with every kind of compression the server knows, and says
@@ -611,34 +563,30 @@ mod tests {
 
     /// A big JSON answer from every route of the API description, through the rules and the
     /// compression of the server: the answers of the routes that hand out a secret are never
-    /// compressed and the answers of every other route are, so the mark in the description is
-    /// what decides.
+    /// compressed and the answers of every other route are, so the table decides.
     #[tokio::test]
     async fn perf_03_no_route_that_hands_out_a_secret_is_compressed() {
-        let document = real_document();
-        let classes = classes_of(&document);
+        let classes = classes();
         let mut app = Router::new();
         let mut routes = Vec::new();
-        for (route, item) in document["paths"].as_object().unwrap() {
-            for method in item.as_object().unwrap().keys() {
-                let method: Method = method.to_uppercase().parse().unwrap();
-                let filter = MethodFilter::try_from(method.clone()).unwrap();
-                app = app.route(
-                    route,
-                    on(filter, || async {
-                        (
-                            [(header::CONTENT_TYPE, "application/json")],
-                            "x".repeat(4096),
-                        )
-                    }),
-                );
-                let path = route
-                    .split('/')
-                    .map(|part| if part.starts_with('{') { "1" } else { part })
-                    .collect::<Vec<_>>()
-                    .join("/");
-                routes.push((method, route.clone(), path));
-            }
+        for operation in crate::openapi::operations() {
+            let filter = MethodFilter::try_from(operation.method.clone()).unwrap();
+            app = app.route(
+                &operation.path,
+                on(filter, || async {
+                    (
+                        [(header::CONTENT_TYPE, "application/json")],
+                        "x".repeat(4096),
+                    )
+                }),
+            );
+            let path = operation
+                .path
+                .split('/')
+                .map(|part| if part.starts_with('{') { "1" } else { part })
+                .collect::<Vec<_>>()
+                .join("/");
+            routes.push((&operation.method, &operation.path, path));
         }
         let app = app
             .layer(from_fn(cache_rules))
@@ -654,8 +602,8 @@ mod tests {
                 assert_eq!(encoding.as_deref(), Some("br"), "{method} {route}");
             }
         }
-        assert_eq!(secret, 5);
-        assert!(other > 10, "{other}");
+        assert!(secret > 0, "no route hands out a secret");
+        assert!(other > secret, "{other}");
     }
 
     #[tokio::test]
@@ -696,24 +644,22 @@ mod tests {
     }
 
     #[test]
-    fn perf_03_a_field_named_like_a_secret_carries_the_mark() {
+    fn perf_03_a_route_whose_answer_has_a_field_named_like_a_secret_is_declared_a_secret() {
         let document = real_document();
-        for (method, route, schemas) in answers(&document) {
+        for (operation, schemas) in answers(&document) {
             for schema in schemas {
                 let Some(properties) = schema.get("properties").and_then(Value::as_object) else {
                     continue;
                 };
-                for (name, property) in properties {
+                for name in properties.keys() {
                     let lower = name.to_lowercase();
                     let looks_secret = lower.ends_with("codes")
                         || SECRET_NAMES.iter().any(|part| lower.contains(part));
-                    let marked = is_marked(property, SECRET_MARK)
-                        || property
-                            .get("items")
-                            .is_some_and(|items| is_marked(items, SECRET_MARK));
                     assert!(
-                        !looks_secret || marked,
-                        "{method} {route}: the answer field `{name}` looks like a secret but is not marked {SECRET_MARK}"
+                        !looks_secret || operation.kind == Answer::Secret,
+                        "{} {}: the answer field `{name}` looks like a secret but the route is not declared Secret in the table",
+                        operation.method,
+                        operation.path
                     );
                 }
             }
@@ -721,49 +667,25 @@ mod tests {
     }
 
     #[test]
-    fn perf_03_every_read_is_either_kept_privately_or_marked_never_stored() {
-        let document = real_document();
-        let classes = classes_of(&document);
-        let reads: Vec<&String> = document["paths"]
-            .as_object()
-            .unwrap()
-            .iter()
-            .filter(|(_, item)| item.get("get").is_some())
-            .map(|(route, _)| route)
-            .collect();
-        for route in &reads {
-            let personal = classes.kind_of(&Method::GET, route) == Kind::PersonalData;
-            let kept = READS_THAT_MAY_BE_KEPT.contains(&route.as_str());
-            assert!(
-                personal != kept,
-                "GET {route} must be exactly one of: marked {NEVER_STORED_MARK} (it holds personal data) or listed in READS_THAT_MAY_BE_KEPT (it holds none)"
-            );
-        }
-        for route in READS_THAT_MAY_BE_KEPT {
-            assert!(
-                reads.iter().any(|known| known.as_str() == route),
-                "{route} is listed but is not a GET route"
-            );
-        }
-        assert!(classes.personal.len() >= 5, "{:?}", classes.personal);
-    }
-
-    #[test]
-    fn the_description_of_a_route_decides_its_kind() {
-        let document = json!({
-            "paths": {
-                "/a": {"get": {"x-never-stored": true, "responses": {}}},
-                "/b": {"post": {"responses": {"200": {"content": {"application/json": {"schema": {"$ref": "#/components/schemas/B"}}}}}}},
-                "/c": {"get": {"responses": {}}}
-            },
-            "components": {"schemas": {
-                "B": {"type": "object", "properties": {"inner": {"type": "array", "items": {"type": "string", "x-secret": true}}}}
-            }}
-        });
-        let classes = classes_of(&document);
+    fn the_table_decides_the_kind_of_a_route() {
+        let operation = |method: Method, path: &str, kind: Answer| Operation {
+            method,
+            path: path.to_owned(),
+            id: path.to_owned(),
+            needs: crate::permissions::Declared::Public,
+            kind,
+        };
+        let classes = classes_of(&[
+            operation(Method::GET, "/a", Answer::NeverStored),
+            operation(Method::POST, "/b", Answer::Secret),
+            operation(Method::GET, "/c", Answer::Kept),
+            operation(Method::PUT, "/d", Answer::Change),
+        ]);
         assert_eq!(classes.kind_of(&Method::GET, "/a"), Kind::PersonalData);
+        assert_eq!(classes.kind_of(&Method::HEAD, "/a"), Kind::PersonalData);
         assert_eq!(classes.kind_of(&Method::POST, "/b"), Kind::Secret);
         assert_eq!(classes.kind_of(&Method::GET, "/c"), Kind::Ordinary);
+        assert_eq!(classes.kind_of(&Method::PUT, "/d"), Kind::Ordinary);
         assert_eq!(classes.kind_of(&Method::GET, "/b"), Kind::Ordinary);
     }
 }
