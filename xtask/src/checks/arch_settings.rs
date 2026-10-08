@@ -21,7 +21,7 @@ use crate::repo::Repo;
 use crate::rust_source::{Source, read_product_sources, without_tests};
 
 /// The only place settings are declared.
-const REGISTRY_FOLDER: &str = "crates/bb-core/src/settings/";
+pub(crate) const REGISTRY_FOLDER: &str = "crates/bb-core/src/settings/";
 /// The file of the registry, which the browser client's keys, choices and defaults are made from.
 pub(crate) const CATALOG_PATH: &str = "crates/bb-core/src/settings/catalog.rs";
 /// Where the migrations are: they name the keys of their time as text, on purpose.

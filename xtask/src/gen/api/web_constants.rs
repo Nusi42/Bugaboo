@@ -10,7 +10,7 @@ use std::fmt::Write as _;
 use anyhow::{Context as _, bail};
 
 use super::TS_HEADER;
-use crate::checks::arch_settings::CATALOG_PATH;
+use crate::checks::arch_settings::{CATALOG_PATH, REGISTRY_FOLDER};
 use crate::rust_source::Source;
 
 const PAGING_SOURCE: &str = "crates/bb-core/src/paging.rs";
@@ -78,7 +78,7 @@ fn declaration<'a>(
         match field.name.to_string().as_str() {
             "key" => key = literal(&field.value).map(|(text, _)| text),
             "default" => default = literal(&field.value).map(|(_, typescript)| typescript),
-            "format" => choices = choices_of(&field.value),
+            "format" => choices = choices_of(&field.value)?,
             _ => {}
         }
     }
@@ -108,21 +108,35 @@ fn literal(expr: &syn::Expr) -> Option<(String, String)> {
     }
 }
 
-/// `Format::Choices(NAME)` as `NAME`.
-fn choices_of(expr: &syn::Expr) -> Option<String> {
+/// `Format::Choices(NAME)` as `NAME`; nothing for any other format. A format that says `Choices`
+/// but not as `Choices(NAME)` is an error: its choices would be left out of the browser's list
+/// without a word.
+fn choices_of(expr: &syn::Expr) -> syn::Result<Option<String>> {
     let syn::Expr::Call(call) = expr else {
-        return None;
+        return Ok(None);
     };
     let syn::Expr::Path(function) = &*call.func else {
-        return None;
+        return Ok(None);
     };
-    if function.path.segments.last()?.ident != "Choices" {
-        return None;
+    if function
+        .path
+        .segments
+        .last()
+        .is_none_or(|segment| segment.ident != "Choices")
+    {
+        return Ok(None);
     }
-    let Some(syn::Expr::Path(name)) = call.args.first() else {
-        return None;
-    };
-    Some(name.path.segments.last()?.ident.to_string())
+    match call.args.first() {
+        Some(syn::Expr::Path(name)) if call.args.len() == 1 => Ok(name
+            .path
+            .segments
+            .last()
+            .map(|segment| segment.ident.to_string())),
+        _ => Err(syn::Error::new(
+            call.paren_token.span.open(),
+            "`Choices(…)` must name one list of choices, like `Choices(MODE_CHOICES)`",
+        )),
+    }
 }
 
 /// The values of `const NAME: &[Choice] = &[Choice::new("value", label), …];`.
@@ -150,8 +164,8 @@ type ChoiceLists = BTreeMap<String, Vec<String>>;
 
 /// The settings of the registry in the order of the file, and the lists of choices by name. The
 /// settings that exist only for tests (`pub mod for_tests`) are left out.
-fn read_registry(text: &str) -> anyhow::Result<(Vec<SettingDecl>, ChoiceLists)> {
-    let file = syn::parse_file(text).with_context(|| format!("{CATALOG_PATH} is not Rust"))?;
+fn read_registry(path: &str, text: &str) -> anyhow::Result<(Vec<SettingDecl>, ChoiceLists)> {
+    let file = syn::parse_file(text).with_context(|| format!("{path} is not Rust"))?;
     let mut settings = Vec::new();
     let mut lists = BTreeMap::new();
     for item in &file.items {
@@ -172,14 +186,11 @@ fn read_registry(text: &str) -> anyhow::Result<(Vec<SettingDecl>, ChoiceLists)> 
                 let declarations: Declarations = item
                     .mac
                     .parse_body()
-                    .with_context(|| format!("{CATALOG_PATH}: a `settings! {{ … }}` body"))?;
+                    .with_context(|| format!("{path}: a `settings! {{ … }}` body"))?;
                 settings.extend(declarations.0);
             }
             _ => {}
         }
-    }
-    if settings.is_empty() {
-        bail!("{CATALOG_PATH} declares no setting");
     }
     Ok((settings, lists))
 }
@@ -204,10 +215,24 @@ fn camel_case(key: &str) -> String {
 /// The keys, the choices and the defaults of the registry as constants for the browser client. The
 /// settings that exist only for tests are left out.
 pub(super) fn setting_keys(sources: &[Source]) -> anyhow::Result<String> {
-    let Some((_, text)) = sources.iter().find(|(path, _)| path == CATALOG_PATH) else {
+    let mut settings = Vec::new();
+    let mut lists = ChoiceLists::new();
+    let mut seen = false;
+    for (path, text) in sources
+        .iter()
+        .filter(|(path, _)| path.starts_with(REGISTRY_FOLDER) && path.ends_with("/catalog.rs"))
+    {
+        seen = true;
+        let (found, choices) = read_registry(path, text)?;
+        settings.extend(found);
+        lists.extend(choices);
+    }
+    if !seen {
         bail!("{CATALOG_PATH} is missing");
-    };
-    let (settings, lists) = read_registry(text)?;
+    }
+    if settings.is_empty() {
+        bail!("{REGISTRY_FOLDER} declares no setting");
+    }
     let mut out = format!(
         "{TS_HEADER}/** The key of every setting of the registry (ADR-0018), by the name the app uses for it. */
 export const settingKeys = {{
@@ -369,6 +394,30 @@ pub mod for_tests {
         assert!(text.contains("appearanceMode: \"device\","), "{text}");
         assert!(text.contains("appearanceLessMotion: false,"), "{text}");
         assert!(text.contains("authDays: 90,"), "{text}");
+    }
+
+    #[test]
+    fn a_format_of_choices_that_cannot_be_read_is_an_error() {
+        let broken = (
+            CATALOG_PATH.to_owned(),
+            CATALOG.replace(
+                "Format::Choices(MODE_CHOICES)",
+                "Format::Choices(MODE, EXTRA)",
+            ),
+        );
+        assert!(setting_keys(&[broken]).is_err());
+    }
+
+    #[test]
+    fn every_catalog_of_the_registry_is_read() {
+        let second = (
+            format!("{REGISTRY_FOLDER}more/catalog.rs"),
+            "settings! {\n    MORE: Bool = {\n        key: \"more.note\",\n        default: true,\n    }\n}\n"
+                .to_owned(),
+        );
+        let text = setting_keys(&[catalog(), second]).unwrap();
+        assert!(text.contains("moreNote: \"more.note\","), "{text}");
+        assert!(text.contains("moreNote: true,"), "{text}");
     }
 
     #[test]
