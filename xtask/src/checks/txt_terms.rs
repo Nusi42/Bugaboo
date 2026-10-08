@@ -33,8 +33,6 @@
 //! matches anything fails, so the file cannot go stale.
 
 use std::collections::BTreeSet;
-use std::fs;
-use std::path::{Path, PathBuf};
 
 use anyhow::Context as _;
 use globset::{Glob, GlobMatcher};
@@ -43,6 +41,8 @@ use serde_json::Value;
 
 use super::{Check, Context, Finding};
 use super::{api_spec, exemptions};
+use crate::repo::Repo;
+use crate::source::read_text;
 
 mod readable;
 
@@ -63,7 +63,8 @@ impl Check for TxtTerms {
     }
 
     fn run(&self, context: &Context<'_>) -> anyhow::Result<Vec<Finding>> {
-        scan(context.repo.root())
+        let files = context.everything().selected(self.id())?;
+        scan(context.repo, &files)
     }
 }
 
@@ -132,10 +133,10 @@ impl exemptions::Exemption for Allow {
     }
 }
 
-/// Reads the glossary and the three places under `root` and reports every banned word.
-pub(crate) fn scan(root: &Path) -> anyhow::Result<Vec<Finding>> {
-    let glossary = fs::read_to_string(root.join(GLOSSARY))
-        .with_context(|| format!("could not read {GLOSSARY}"))?;
+/// Reads the glossary and the three places among `files` (the files the catalogue entry covers)
+/// and reports every banned word.
+pub(crate) fn scan(repo: &Repo, files: &[String]) -> anyhow::Result<Vec<Finding>> {
+    let glossary = read_text(repo, GLOSSARY)?;
     let terms = banned_terms(&glossary);
     let mut findings = Vec::new();
     if terms.is_empty() {
@@ -144,23 +145,33 @@ pub(crate) fn scan(root: &Path) -> anyhow::Result<Vec<Finding>> {
             "No table has a \"Don't say\" column with words in it, so nothing can be checked.",
         ));
     }
-    let exemptions = match fs::read_to_string(root.join(EXEMPTIONS_PATH)) {
-        Ok(text) => exemptions::parse(&text, EXEMPTIONS_PATH)?,
-        Err(_) => Exemptions::default(),
+    let exemptions = if files.iter().any(|file| file == EXEMPTIONS_PATH) {
+        exemptions::load(repo, EXEMPTIONS_PATH)?
+    } else {
+        Exemptions::default()
     };
-    let sources = sources(root)?;
+    let sources = sources(repo, files)?;
     findings.extend(evaluate(&terms, &sources, &exemptions)?);
     Ok(findings)
 }
 
+/// The files among `files` in `folder` with this ending.
+fn in_folder<'a>(
+    files: &'a [String],
+    folder: &'a str,
+    ending: &'a str,
+) -> impl Iterator<Item = &'a String> {
+    files.iter().filter(move |file| {
+        file.strip_prefix(folder)
+            .is_some_and(|rest| rest.starts_with('/') && file.ends_with(ending))
+    })
+}
+
 /// Every text people read, with its place.
-fn sources(root: &Path) -> anyhow::Result<Vec<Source>> {
+fn sources(repo: &Repo, files: &[String]) -> anyhow::Result<Vec<Source>> {
     let mut sources = Vec::new();
-    let mut catalogs = files(&root.join(MESSAGES_FOLDER), "json")?;
-    catalogs.sort();
-    for path in catalogs {
-        let name = relative(root, &path);
-        let text = fs::read_to_string(&path).with_context(|| format!("could not read {name}"))?;
+    for name in in_folder(files, MESSAGES_FOLDER, ".json") {
+        let text = read_text(repo, name)?;
         let pairs: serde_json::Map<String, Value> =
             serde_json::from_str(&text).with_context(|| format!("{name} is not a JSON object"))?;
         for (key, value) in pairs {
@@ -176,21 +187,18 @@ fn sources(root: &Path) -> anyhow::Result<Vec<Source>> {
             }
         }
     }
-    let mut pages = files(&root.join(USER_DOCS_FOLDER), "md")?;
-    pages.sort();
-    for path in pages {
-        let name = relative(root, &path);
-        let text = fs::read_to_string(&path).with_context(|| format!("could not read {name}"))?;
+    for name in in_folder(files, USER_DOCS_FOLDER, ".md") {
+        let text = read_text(repo, name)?;
         sources.push(Source {
             place: Place {
                 key: name.clone(),
-                shown: name,
+                shown: name.clone(),
             },
             kind: Kind::Text,
             text: readable::prose(&text),
         });
     }
-    for name in readable::api_names(&api_spec::load_at(root)?) {
+    for name in readable::api_names(&api_spec::load(repo)?) {
         let (key, shown) = readable::api_place(&name);
         sources.push(Source {
             place: Place { key, shown },
@@ -199,36 +207,6 @@ fn sources(root: &Path) -> anyhow::Result<Vec<Source>> {
         });
     }
     Ok(sources)
-}
-
-/// The path of `file` below `root`, with `/` between the parts.
-fn relative(root: &Path, file: &Path) -> String {
-    file.strip_prefix(root)
-        .unwrap_or(file)
-        .components()
-        .map(|part| part.as_os_str().to_string_lossy().into_owned())
-        .collect::<Vec<_>>()
-        .join("/")
-}
-
-/// The files with this ending in `folder` and below it. A folder that is not there has none.
-fn files(folder: &Path, ending: &str) -> anyhow::Result<Vec<PathBuf>> {
-    let mut found = Vec::new();
-    let Ok(entries) = fs::read_dir(folder) else {
-        return Ok(found);
-    };
-    for entry in entries {
-        let path = entry?.path();
-        if path.is_dir() {
-            found.extend(files(&path, ending)?);
-        } else if path
-            .extension()
-            .is_some_and(|extension| extension == ending)
-        {
-            found.push(path);
-        }
-    }
-    Ok(found)
 }
 
 /// The banned words of every table with a *Don't say* column.
@@ -538,7 +516,10 @@ fn evaluate(
 
 #[cfg(test)]
 mod tests {
+    use std::path::{Path, PathBuf};
+
     use super::*;
+    use crate::catalog::Catalog;
 
     const GLOSSARY_TEXT: &str = "\
 | Say | Meaning | Don't say |
@@ -869,6 +850,21 @@ login
         assert_eq!(check("Please login."), 2);
     }
 
+    /// The findings of the check on a repository folder, with the files the catalogue entry of the
+    /// real repository selects in it.
+    fn scan_folder(folder: PathBuf) -> Vec<Finding> {
+        let real = Repo::discover().unwrap();
+        let catalog = Catalog::load(&real).unwrap();
+        let repo = Repo::at(folder);
+        let context = Context {
+            repo: &repo,
+            catalog: &catalog,
+            files: None,
+        };
+        let files = context.selected("TXT-TERMS").unwrap();
+        scan(&repo, &files).unwrap()
+    }
+
     fn fixture(side: &str) -> PathBuf {
         Path::new(env!("CARGO_MANIFEST_DIR"))
             .parent()
@@ -879,7 +875,7 @@ login
 
     #[test]
     fn bad_example() {
-        let findings = scan(&fixture("bad")).unwrap();
+        let findings = scan_folder(fixture("bad"));
         let places: Vec<String> = findings
             .iter()
             .filter_map(|finding| finding.location.clone())
@@ -901,7 +897,7 @@ login
 
     #[test]
     fn good_example() {
-        let findings = scan(&fixture("good")).unwrap();
+        let findings = scan_folder(fixture("good"));
         let shown: Vec<String> = findings
             .iter()
             .map(|finding| format!("{:?} {}", finding.location, finding.message))
@@ -914,7 +910,7 @@ login
         let root = Path::new(env!("CARGO_MANIFEST_DIR"))
             .parent()
             .map_or_else(|| PathBuf::from("."), Path::to_path_buf);
-        let findings = scan(&root).unwrap();
+        let findings = scan_folder(root);
         let shown: Vec<String> = findings
             .iter()
             .map(|finding| format!("{:?} {}", finding.location, finding.message))

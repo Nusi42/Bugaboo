@@ -2,14 +2,13 @@
 //! at the routes and their answers. Every check asks here; none reads or walks the document by
 //! itself.
 
-use std::path::Path;
-
 use anyhow::Context as _;
 use serde_json::Value;
 
 use super::Finding;
 use crate::generate::api::SPEC_PATH;
 use crate::repo::Repo;
+use crate::source::read_text;
 
 /// The methods an OpenAPI path item can hold an operation under.
 const METHODS: [&str; 8] = [
@@ -18,12 +17,7 @@ const METHODS: [&str; 8] = [
 
 /// Reads the API description of the repository.
 pub(super) fn load(repo: &Repo) -> anyhow::Result<Value> {
-    load_at(repo.root())
-}
-
-/// Reads the API description of the repository (or fixture) whose folder is `root`.
-pub(super) fn load_at(root: &Path) -> anyhow::Result<Value> {
-    let text = std::fs::read_to_string(root.join(SPEC_PATH))
+    let text = read_text(repo, SPEC_PATH)
         .with_context(|| format!("could not read {SPEC_PATH}; run `cargo xtask gen api`"))?;
     parse(&text)
 }
@@ -65,12 +59,23 @@ impl<'a> Operation<'a> {
     }
 }
 
+/// The paths of the description with their items, in the order of the document. `None` when the
+/// document has no `paths` at all.
+pub(super) fn paths(spec: &Value) -> Option<Vec<(&str, &Value)>> {
+    let paths = spec.get("paths").and_then(Value::as_object)?;
+    Some(
+        paths
+            .iter()
+            .map(|(path, item)| (path.as_str(), item))
+            .collect(),
+    )
+}
+
 /// Every operation of the description, in the order of the document. `None` when the document has
 /// no `paths` at all.
 pub(super) fn operations(spec: &Value) -> Option<Vec<Operation<'_>>> {
-    let paths = spec.get("paths").and_then(Value::as_object)?;
     let mut found = Vec::new();
-    for (path, item) in paths {
+    for (path, item) in paths(spec)? {
         for method in METHODS {
             if let Some(body) = item.get(method) {
                 found.push(Operation {
@@ -107,13 +112,27 @@ pub(super) fn answer_schemas<'a>(spec: &'a Value, operation: &'a Value) -> Vec<&
         .collect()
 }
 
-/// The names under `components.schemas`.
-pub(super) fn schema_names(spec: &Value) -> Vec<&str> {
+/// The schemas under `components.schemas`, each with its name.
+pub(super) fn schemas(spec: &Value) -> Vec<(&str, &Value)> {
     spec.pointer("/components/schemas")
         .and_then(Value::as_object)
         .into_iter()
-        .flat_map(serde_json::Map::keys)
-        .map(String::as_str)
+        .flatten()
+        .map(|(name, schema)| (name.as_str(), schema))
+        .collect()
+}
+
+/// The names under `components.schemas`.
+pub(super) fn schema_names(spec: &Value) -> Vec<&str> {
+    schemas(spec).into_iter().map(|(name, _)| name).collect()
+}
+
+/// The parameters under `components.parameters`.
+pub(super) fn shared_parameters(spec: &Value) -> Vec<&Value> {
+    spec.pointer("/components/parameters")
+        .and_then(Value::as_object)
+        .into_iter()
+        .flat_map(serde_json::Map::values)
         .collect()
 }
 

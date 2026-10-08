@@ -4,6 +4,7 @@
 
 use serde_json::Value;
 
+use crate::checks::api_spec;
 use crate::generate::api::SPEC_PATH;
 
 /// A message without what is code: the names of placeholders (`{path}`) and the keywords of
@@ -170,37 +171,25 @@ pub(super) fn api_names(spec: &Value) -> Vec<ApiName> {
             text: text.to_owned(),
         });
     };
-    if let Some(paths) = spec.get("paths").and_then(Value::as_object) {
-        for (path, item) in paths {
-            add("path", path.clone(), path);
-            for operation in item.as_object().into_iter().flat_map(|item| item.values()) {
-                if let Some(id) = operation.get("operationId").and_then(Value::as_str) {
-                    add("operation", id.to_owned(), id);
-                }
-                parameters(operation, &mut |name| {
-                    add("parameter", name.to_owned(), name);
-                });
-            }
+    for (path, _) in api_spec::paths(spec).into_iter().flatten() {
+        add("path", path.to_owned(), path);
+    }
+    for operation in api_spec::operations(spec).into_iter().flatten() {
+        if let Some(id) = operation.text("operationId") {
+            add("operation", id.to_owned(), id);
+        }
+        parameters(operation.body, &mut |name| {
+            add("parameter", name.to_owned(), name);
+        });
+    }
+    for parameter in api_spec::shared_parameters(spec) {
+        if let Some(name) = parameter.get("name").and_then(Value::as_str) {
+            add("parameter", name.to_owned(), name);
         }
     }
-    if let Some(shared) = spec
-        .pointer("/components/parameters")
-        .and_then(Value::as_object)
-    {
-        for parameter in shared.values() {
-            if let Some(name) = parameter.get("name").and_then(Value::as_str) {
-                add("parameter", name.to_owned(), name);
-            }
-        }
-    }
-    if let Some(schemas) = spec
-        .pointer("/components/schemas")
-        .and_then(Value::as_object)
-    {
-        for (name, schema) in schemas {
-            add("schema", name.clone(), name);
-            walk_schema(name, schema, &mut add);
-        }
+    for (name, schema) in api_spec::schemas(spec) {
+        add("schema", name.to_owned(), name);
+        walk_schema(name, schema, &mut add);
     }
     names
 }

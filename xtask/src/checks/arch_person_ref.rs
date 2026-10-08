@@ -366,9 +366,8 @@ fn answer_schemas(spec: &Value) -> BTreeSet<String> {
             .and_then(Value::as_str)
             .and_then(|reference| reference.strip_prefix("#/components/schemas/"))
             && reached.insert(name.to_owned())
-            && let Some(found) = spec.pointer(&format!("/components/schemas/{name}"))
         {
-            open.push(found);
+            open.push(api_spec::resolve(spec, schema));
         }
         if let Some(object) = schema.as_object() {
             open.extend(
