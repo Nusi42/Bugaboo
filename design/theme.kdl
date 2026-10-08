@@ -1343,3 +1343,56 @@ part "account.qr" {
     background "$bg-raised"
     image-rendering pixelated
 }
+
+// ───────────── Settings ─────────────
+
+part "settings.row" {
+    display flex
+    flex-direction column
+    gap "$space-2"
+    padding "$space-3"
+    border "$border-width solid $border-subtle"
+    border-radius "$r-ctl"
+    background "$bg-surface"
+    min-width 0
+}
+
+part "settings.name" {
+    margin 0
+    font-size "$fs-md"
+    font-weight "$weight-bold"
+    color "$fg"
+}
+
+part "settings.source" {
+    margin 0
+    color "$fg-muted"
+    font-size "$fs-sm"
+}
+
+part "settings.locked" {
+    display flex
+    flex-direction column
+    gap "$space-1"
+    margin 0
+    padding "$space-3"
+    border "$border-width solid $border"
+    border-radius "$r-ctl"
+    background "$bg-sunken"
+}
+
+part "settings.locked-title" {
+    font-weight "$weight-bold"
+    color "$fg"
+}
+
+part "settings.locked-value" {
+    color "$fg"
+}
+
+part "settings.edit" {
+    display flex
+    flex-direction column
+    gap "$space-2"
+    max-width "$size-form"
+}

@@ -243,6 +243,13 @@ export const part = {
   accountCodes: "account.codes",
   accountKey: "account.key",
   accountQr: "account.qr",
+  settingsRow: "settings.row",
+  settingsName: "settings.name",
+  settingsSource: "settings.source",
+  settingsLocked: "settings.locked",
+  settingsLockedTitle: "settings.locked-title",
+  settingsLockedValue: "settings.locked-value",
+  settingsEdit: "settings.edit",
 } as const;
 export type PartName = (typeof part)[keyof typeof part];
 
@@ -316,4 +323,11 @@ export const partWords = {
   "account.codes": { variant: [], state: [] },
   "account.key": { variant: [], state: [] },
   "account.qr": { variant: [], state: [] },
+  "settings.row": { variant: [], state: [] },
+  "settings.name": { variant: [], state: [] },
+  "settings.source": { variant: [], state: [] },
+  "settings.locked": { variant: [], state: [] },
+  "settings.locked-title": { variant: [], state: [] },
+  "settings.locked-value": { variant: [], state: [] },
+  "settings.edit": { variant: [], state: [] },
 } as const;
