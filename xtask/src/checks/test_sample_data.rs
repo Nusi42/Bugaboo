@@ -40,7 +40,8 @@ use serde::Deserialize;
 use serde_json::Value;
 
 use super::{Check, Context, Finding};
-use crate::dataset::{Layout, OrganizationNames};
+use crate::dataset::load_layout;
+use bb_dev_words::sample::{Layout, OrganizationNames};
 
 /// The list of names, written for Bugaboo. `bb-sample` reads the same file.
 pub(crate) const NAMES_FILE: &str = "crates/bb-sample/data/names.toml";
@@ -72,7 +73,7 @@ impl Check for TestSampleData {
 
     fn run(&self, context: &Context<'_>) -> anyhow::Result<Vec<Finding>> {
         let mut findings = Vec::new();
-        Layout::load(context.repo.root())?;
+        load_layout(context.repo.root())?;
         let names = fs::read_to_string(context.repo.path(NAMES_FILE))
             .with_context(|| format!("could not read {NAMES_FILE}"))?;
         if let Err(problem) = NameList::parse(&names) {
@@ -422,7 +423,7 @@ mod tests {
     const FIXTURES: &str = "../tools/checks/fixtures/TEST-SAMPLE-DATA";
 
     fn layout() -> Layout {
-        Layout::load(Path::new(env!("CARGO_MANIFEST_DIR")).parent().unwrap()).unwrap()
+        load_layout(Path::new(env!("CARGO_MANIFEST_DIR")).parent().unwrap()).unwrap()
     }
 
     fn names() -> NameList {

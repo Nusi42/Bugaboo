@@ -384,7 +384,7 @@ export default { server: { port: ports.web, strictPort: true } };
     fn ports_outside_our_range_or_inside_each_other_fail() {
         let file = |first: u64, stride: u64, blocks: u64, offsets: &str| {
             format!(
-                r#"{{"first":{first},"stride":{stride},"blocks":{blocks},"offsets":{offsets}}}"#
+                r#"{{"first":{first},"stride":{stride},"blocks":{blocks},"blockVariable":"V","workFolderPrefix":"w","offsets":{offsets}}}"#
             )
         };
         let good = file(47200, 100, 9, r#"{"web":1,"server":0}"#);

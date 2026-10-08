@@ -10,7 +10,7 @@ use std::fmt::Write as _;
 use anyhow::{Context as _, bail};
 use syn::{Attribute, Expr, Fields, Item, Lit, Meta};
 
-use super::{Generated, write_all};
+use super::Generated;
 use crate::repo::Repo;
 use crate::source::{Kind, Source, read_sources};
 
@@ -66,10 +66,6 @@ pub(crate) struct Model {
     /// The names in the `entities!` list.
     pub(crate) listed: Vec<String>,
     pub(crate) vocabulary: Vocabulary,
-}
-
-pub(crate) fn run(repo: &Repo) -> anyhow::Result<Vec<String>> {
-    write_all(repo, &generate(repo)?)
 }
 
 pub(crate) fn generate(repo: &Repo) -> anyhow::Result<Vec<Generated>> {

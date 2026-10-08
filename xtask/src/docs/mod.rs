@@ -9,7 +9,7 @@ pub(crate) mod source;
 pub(crate) mod text;
 
 use crate::catalog::Catalog;
-use crate::generate::{Generated, write_all};
+use crate::generate::Generated;
 use crate::repo::Repo;
 
 /// Every generated file carries this text in its first lines, so people and META-COVERAGE can
@@ -27,9 +27,4 @@ pub(crate) fn generate(repo: &Repo, catalog: &Catalog) -> anyhow::Result<Vec<Gen
         Generated::new(page::ARCHITECTURE_PATH, page::architecture(repo, catalog)?),
         Generated::new(page::MILESTONES_PATH, page::milestones(repo)?),
     ])
-}
-
-/// Writes the pages that changed; returns their paths.
-pub(crate) fn write(repo: &Repo, catalog: &Catalog) -> anyhow::Result<Vec<String>> {
-    write_all(repo, &generate(repo, catalog)?)
 }

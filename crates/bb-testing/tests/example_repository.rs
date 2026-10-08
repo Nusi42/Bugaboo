@@ -8,6 +8,7 @@
 use bb_testing::{Pool, TestResult, each_database};
 use sqlx::Row as _;
 // Used by the harness, not by this test program; named here so the unused-dependency lint stays on.
+use bb_dev_words as _;
 use tempfile as _;
 
 /// Runs the same expression on whichever typed pool the database has.

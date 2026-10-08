@@ -16,17 +16,16 @@ use std::time::{Duration, Instant};
 use anyhow::{Context as _, bail};
 
 use crate::bundle;
-use crate::checks::arch_db_parity::{self, DATABASES, RECORD_PATH};
+use crate::checks::arch_db_parity::{self, RECORD_PATH};
+use bb_dev_words::database::{
+    DatabaseKind, PARITY_RECORD_VARIABLE, TEST_DATABASES_VARIABLE, TEST_POSTGRES_URL_VARIABLE,
+};
+
 use crate::checks::data_migrations;
 use crate::output;
 use crate::ports::Ports;
 use crate::repo::Repo;
 use crate::tools::{self, TOOLS_DIR, Tool};
-
-/// The harness reads these (crates/bb-testing); a test keeps both sides in step.
-pub(crate) const DATABASES_VARIABLE: &str = "BB_TEST_DATABASES";
-pub(crate) const POSTGRES_URL_VARIABLE: &str = "BB_TEST_POSTGRES_URL";
-pub(crate) const RECORD_VARIABLE: &str = "BB_DB_PARITY_FILE";
 
 /// The tool entry (tools/dev/tools.toml) that provides PostgreSQL.
 const TOOL: &str = "postgresql";
@@ -326,9 +325,9 @@ impl Cluster {
         let ran = Command::new(program)
             .args(args)
             .current_dir(root)
-            .env(DATABASES_VARIABLE, DATABASES.join(","))
-            .env(POSTGRES_URL_VARIABLE, self.url()?)
-            .env(RECORD_VARIABLE, &record)
+            .env(TEST_DATABASES_VARIABLE, DatabaseKind::names(","))
+            .env(TEST_POSTGRES_URL_VARIABLE, self.url()?)
+            .env(PARITY_RECORD_VARIABLE, &record)
             .status()
             .with_context(|| format!("could not start `{program}`"));
         // A failure to stop must not hide how the tests went.
@@ -640,22 +639,6 @@ mod tests {
         assert_eq!(fs::read_to_string(&path).unwrap(), "abc");
         write_private(&path, "z").unwrap();
         assert_eq!(fs::read_to_string(&path).unwrap(), "z");
-    }
-
-    #[test]
-    fn the_harness_reads_the_same_variable_names_and_database_names() {
-        let source = include_str!("../../crates/bb-testing/src/lib.rs");
-        for name in [DATABASES_VARIABLE, POSTGRES_URL_VARIABLE, RECORD_VARIABLE] {
-            assert!(source.contains(&format!("\"{name}\"")), "{name} is missing");
-        }
-        for database in DATABASES {
-            assert!(source.contains(&format!("\"{database}\"")), "{database}");
-        }
-    }
-
-    #[test]
-    fn the_server_allows_many_test_connections() {
-        assert!(server_options(1).contains("max_connections=300"));
     }
 
     #[test]

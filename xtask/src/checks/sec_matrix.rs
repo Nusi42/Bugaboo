@@ -249,8 +249,10 @@ fn evaluate(spec: &Value, record: Option<&str>, examples: &str) -> Vec<Finding> 
     let Some(record) = record else {
         return vec![Finding::at(
             RECORD_PATH,
-            "The record of the matrix is missing. Run the matrix and write it: \
-             `BB_SEC_MATRIX_RECORD=write cargo xtask db run -- cargo test -p bb-server sec_01_every_route`.",
+            format!(
+                "The record of the matrix is missing. Run the matrix and write it: `{}`.",
+                words::write_command()
+            ),
         )];
     };
     let (actors, lines) = parse(record);

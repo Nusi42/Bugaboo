@@ -7,6 +7,7 @@ rust-version.workspace = true
 publish.workspace = true
 
 [dependencies]
+bb-dev-words = { path = "../bb-dev-words" }
 sqlx = { workspace = true, features = ["sqlite", "postgres", "runtime-tokio", "tls-rustls"] }
 tempfile = { workspace = true }
 tokio = { workspace = true, features = ["rt"] }

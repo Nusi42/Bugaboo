@@ -1,21 +1,41 @@
-//! What the files and the environment variable of the sample are called: read from
-//! `tools/dev/sample.json`, which `xtask` and the end-to-end tests read too, so there is one
-//! place that says it. The program reads the text that was built into it.
+//! `tools/dev/sample.json`: where the sample organization is made, what its files are called and
+//! what its groups, projects and custom roles are called. `xtask` (which makes the folders and
+//! checks the dump), the program `bb-sample` (which makes the organization) and the end-to-end
+//! tests (`web/app/e2e/support/sample.ts`) read the same file; nothing else names a folder, a
+//! file, the variable, a group, a project or a role of the sample.
 
 use std::collections::BTreeMap;
+use std::fmt;
 
 use serde::Deserialize;
 
-use crate::error::SampleError;
-
-/// The text of the file that is part of this program.
+/// The text of the file, built into the program that needs it without a file on disk.
 const BUNDLED: &str = include_str!("../../../tools/dev/sample.json");
 
-/// The names the sample files go by (the folders `xtask` makes it in are `xtask`'s business and
-/// are in the file too).
+/// The file is not usable.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct LayoutError(String);
+
+impl fmt::Display for LayoutError {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        formatter.write_str(&self.0)
+    }
+}
+
+impl std::error::Error for LayoutError {}
+
+/// The whole file. The folders are relative to the work folder and use `/` as separator.
 #[derive(Clone, Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Layout {
+    /// Where the sample is made on SQLite when no folder is given.
+    pub out: String,
+    /// The same on PostgreSQL.
+    pub out_postgres: String,
+    /// Where `cargo xtask dev --sample` keeps its sample.
+    pub dev_out: String,
+    /// Where `--check` makes its runs, one folder each.
+    pub check_out: String,
     /// The data folder inside the output folder.
     pub data_folder: String,
     /// The file with the passwords, inside the output folder: the only one that holds a secret.
@@ -70,16 +90,16 @@ impl OrganizationNames {
     /// The name of the group with this key.
     ///
     /// # Errors
-    /// [`SampleError::Layout`] when `sample.json` has no such group.
-    pub fn group(&self, key: &str) -> Result<&str, SampleError> {
+    /// [`LayoutError`] when the file has no such group.
+    pub fn group(&self, key: &str) -> Result<&str, LayoutError> {
         named(&self.groups, "groups", key)
     }
 
     /// The name of the custom role with this key.
     ///
     /// # Errors
-    /// [`SampleError::Layout`] when `sample.json` has no such role.
-    pub fn role(&self, key: &str) -> Result<&str, SampleError> {
+    /// [`LayoutError`] when the file has no such role.
+    pub fn role(&self, key: &str) -> Result<&str, LayoutError> {
         named(&self.roles, "roles", key)
     }
 }
@@ -88,30 +108,34 @@ fn named<'a>(
     names: &'a BTreeMap<String, String>,
     kind: &str,
     key: &str,
-) -> Result<&'a str, SampleError> {
+) -> Result<&'a str, LayoutError> {
     names
         .get(key)
         .map(String::as_str)
-        .ok_or_else(|| SampleError::Layout(format!("{kind}.{key} is missing")))
+        .ok_or_else(|| LayoutError(format!("{kind}.{key} is missing")))
 }
 
 impl Layout {
     /// The layout that is part of this program.
     ///
     /// # Errors
-    /// [`SampleError::Layout`] when the file is not usable (a test keeps it usable).
-    pub fn bundled() -> Result<Self, SampleError> {
+    /// [`LayoutError`] when the file is not usable (a test keeps it usable).
+    pub fn bundled() -> Result<Self, LayoutError> {
         Self::parse(BUNDLED)
     }
 
     /// A layout from the text of a `sample.json` file.
     ///
     /// # Errors
-    /// [`SampleError::Layout`] when the text lacks a name or has an empty one.
-    pub fn parse(text: &str) -> Result<Self, SampleError> {
+    /// [`LayoutError`] when the text lacks a name or has an empty one.
+    pub fn parse(text: &str) -> Result<Self, LayoutError> {
         let layout: Self =
-            serde_json::from_str(text).map_err(|error| SampleError::Layout(error.to_string()))?;
+            serde_json::from_str(text).map_err(|error| LayoutError(error.to_string()))?;
         let names = [
+            &layout.out,
+            &layout.out_postgres,
+            &layout.dev_out,
+            &layout.check_out,
             &layout.data_folder,
             &layout.sign_in_file,
             &layout.dump_file,
@@ -137,7 +161,7 @@ impl Layout {
                 .into_iter()
                 .any(|(short, name)| short.trim().is_empty() || name.trim().is_empty())
         {
-            return Err(SampleError::Layout("a name is empty".to_owned()));
+            return Err(LayoutError("a name is empty".to_owned()));
         }
         Ok(layout)
     }
@@ -159,9 +183,9 @@ mod tests {
 
     #[test]
     fn a_layout_with_a_missing_or_empty_name_is_refused() {
-        assert!(matches!(Layout::parse("{}"), Err(SampleError::Layout(_))));
+        assert!(Layout::parse("{}").is_err());
         let layout = Layout::bundled().unwrap();
         let empty = BUNDLED.replace(&format!("\"{}\"", layout.sign_in_file), "\" \"");
-        assert!(matches!(Layout::parse(&empty), Err(SampleError::Layout(_))));
+        assert!(Layout::parse(&empty).is_err());
     }
 }

@@ -499,6 +499,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "bb-dev-words"
+version = "0.0.0"
+dependencies = [
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "bb-files"
 version = "0.0.0"
 
@@ -547,6 +555,7 @@ dependencies = [
  "bb-app",
  "bb-auth",
  "bb-core",
+ "bb-dev-words",
  "bb-store",
  "bb-testing",
  "clap",
@@ -624,6 +633,7 @@ dependencies = [
 name = "bb-testing"
 version = "0.0.0"
 dependencies = [
+ "bb-dev-words",
  "sqlx",
  "tempfile",
  "tokio",
@@ -4764,6 +4774,7 @@ version = "0.0.0"
 dependencies = [
  "anyhow",
  "bb-api-words",
+ "bb-dev-words",
  "bb-policy",
  "brotli",
  "clap",

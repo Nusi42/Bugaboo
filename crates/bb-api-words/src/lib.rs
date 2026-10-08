@@ -40,6 +40,23 @@ pub mod sec_matrix {
     /// the API.
     pub const RECORD_PATH: &str = "tools/checks/sec-matrix-record.txt";
 
+    /// The environment variable that makes the matrix test write the record instead of comparing
+    /// with it, and the value it needs.
+    pub const WRITE_VARIABLE: &str = "BB_SEC_MATRIX_RECORD";
+    /// The value of [`WRITE_VARIABLE`] that writes.
+    pub const WRITE_VALUE: &str = "write";
+
+    /// The start of the name of the test that runs the matrix.
+    const MATRIX_TEST: &str = "sec_01_every_route";
+
+    /// The command that writes the record again, after a route or an actor is added.
+    #[must_use]
+    pub fn write_command() -> String {
+        format!(
+            "{WRITE_VARIABLE}={WRITE_VALUE} cargo xtask db run -- cargo test -p bb-server {MATRIX_TEST}"
+        )
+    }
+
     /// Nobody is signed in.
     pub const NOBODY: &str = "nobody";
     /// A person without a role.

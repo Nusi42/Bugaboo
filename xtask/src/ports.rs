@@ -9,10 +9,6 @@ use serde::Deserialize;
 
 /// Where the ports live (ADR-0023).
 pub(crate) const PORTS_FILE: &str = "tools/dev/ports.json";
-/// Names the block of ports of a folder that is not called `bugaboo.winN`.
-const BLOCK_VARIABLE: &str = "BUGABOO_PORT_BLOCK";
-/// The work folders are called `bugaboo.winN` (ADR-0024); the N is the block.
-const WORK_FOLDER: &str = "bugaboo.win";
 /// All our ports: the blocks of every work folder (ADR-0023). Free on the development PC and
 /// below the dynamic range of Windows (49152 and up).
 pub(crate) const ALLOWED: std::ops::RangeInclusive<u32> = 47200..=48099;
@@ -21,10 +17,16 @@ pub(crate) const ALLOWED: std::ops::RangeInclusive<u32> = 47200..=48099;
 /// port inside a block. The block of a work folder is `bugaboo.winN` -> N; any other folder uses
 /// block 1.
 #[derive(Debug, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
 pub(crate) struct Layout {
     pub(crate) first: u32,
     pub(crate) stride: u32,
     pub(crate) blocks: u32,
+    /// Names the block of ports of a folder that is not called `bugaboo.winN`.
+    pub(crate) block_variable: String,
+    /// The work folders are called `bugaboo.winN` (ADR-0024): this prefix and the N, which is the
+    /// block.
+    pub(crate) work_folder_prefix: String,
     pub(crate) offsets: BTreeMap<String, u32>,
 }
 
@@ -35,37 +37,39 @@ pub(crate) struct Ports {
     pub(crate) web: u16,
 }
 
-/// The block of ports for the folder `folder_name`: the one `override_value` (the value of
-/// `BUGABOO_PORT_BLOCK`) names, else the N of `bugaboo.winN`, else block 1 (CI, a fresh clone).
-pub(crate) fn block_of(
-    folder_name: &str,
-    override_value: Option<&str>,
-    blocks: u32,
-) -> anyhow::Result<u32> {
-    let wrong = |source: String| {
-        anyhow::anyhow!(
-            "{source} has no block of ports: {PORTS_FILE} gives blocks 1 to {blocks}. Set              {BLOCK_VARIABLE} to one of them."
-        )
-    };
-    let valid = |number: Option<u32>, source: String| match number {
-        Some(number) if (1..=blocks).contains(&number) => Ok(number),
-        _ => Err(wrong(source)),
-    };
-    if let Some(value) = override_value.filter(|value| !value.is_empty()) {
-        return valid(value.parse().ok(), format!("{BLOCK_VARIABLE}={value}"));
-    }
-    let number = folder_name
-        .strip_prefix(WORK_FOLDER)
-        .filter(|rest| !rest.is_empty() && rest.chars().all(|c| c.is_ascii_digit()));
-    match number {
-        None => Ok(1),
-        Some(rest) => valid(rest.parse().ok(), format!("The folder {folder_name}")),
-    }
-}
-
 impl Layout {
     pub(crate) fn parse(json: &str) -> anyhow::Result<Self> {
         serde_json::from_str(json).with_context(|| format!("{PORTS_FILE} is not valid"))
+    }
+
+    /// The block of ports for the folder `folder_name`: the one `override_value` (the value of
+    /// the block variable) names, else the N of `bugaboo.winN`, else block 1 (CI, a fresh clone).
+    pub(crate) fn block_of(
+        &self,
+        folder_name: &str,
+        override_value: Option<&str>,
+    ) -> anyhow::Result<u32> {
+        let blocks = self.blocks;
+        let variable = &self.block_variable;
+        let wrong = |source: String| {
+            anyhow::anyhow!(
+                "{source} has no block of ports: {PORTS_FILE} gives blocks 1 to {blocks}. Set {variable} to one of them."
+            )
+        };
+        let valid = |number: Option<u32>, source: String| match number {
+            Some(number) if (1..=blocks).contains(&number) => Ok(number),
+            _ => Err(wrong(source)),
+        };
+        if let Some(value) = override_value.filter(|value| !value.is_empty()) {
+            return valid(value.parse().ok(), format!("{variable}={value}"));
+        }
+        let number = folder_name
+            .strip_prefix(self.work_folder_prefix.as_str())
+            .filter(|rest| !rest.is_empty() && rest.chars().all(|c| c.is_ascii_digit()));
+        match number {
+            None => Ok(1),
+            Some(rest) => valid(rest.parse().ok(), format!("The folder {folder_name}")),
+        }
     }
 
     /// The port called `key` in block `block` (counted from 1).
@@ -88,11 +92,8 @@ impl Layout {
             .file_name()
             .map(|name| name.to_string_lossy().into_owned())
             .unwrap_or_default();
-        let block = block_of(
-            &name,
-            std::env::var(BLOCK_VARIABLE).ok().as_deref(),
-            layout.blocks,
-        )?;
+        let block =
+            layout.block_of(&name, std::env::var(&layout.block_variable).ok().as_deref())?;
         Ok((layout, block))
     }
 }
@@ -118,6 +119,7 @@ mod tests {
     use super::*;
 
     const LAYOUT: &str = r#"{"$comment":"x","first":47200,"stride":100,"blocks":9,
+        "blockVariable":"BUGABOO_PORT_BLOCK","workFolderPrefix":"bugaboo.win",
         "offsets":{"server":0,"web":1,"postgres":40}}"#;
 
     fn layout() -> Layout {
@@ -127,7 +129,7 @@ mod tests {
     #[test]
     fn dev_ports_every_work_folder_has_a_block_of_its_own() {
         let layout = layout();
-        let block = |name: &str| block_of(name, None, layout.blocks).unwrap();
+        let block = |name: &str| layout.block_of(name, None).unwrap();
         assert_eq!(layout.port(block("bugaboo.win1"), "server").unwrap(), 47200);
         assert_eq!(layout.port(block("bugaboo.win2"), "server").unwrap(), 47300);
         assert_eq!(layout.port(block("bugaboo.win3"), "server").unwrap(), 47400);
@@ -151,24 +153,27 @@ mod tests {
             "bugaboo.winx",
             "my-bugaboo.win3",
         ] {
-            assert_eq!(block_of(name, None, 9).unwrap(), 1, "{name}");
+            assert_eq!(layout().block_of(name, None).unwrap(), 1, "{name}");
         }
     }
 
     #[test]
     fn dev_ports_the_variable_names_another_block() {
-        assert_eq!(block_of("checkout", Some("5"), 9).unwrap(), 5);
+        assert_eq!(layout().block_of("checkout", Some("5")).unwrap(), 5);
         // It wins over the name of the folder; an empty value is no value.
-        assert_eq!(block_of("bugaboo.win2", Some("7"), 9).unwrap(), 7);
-        assert_eq!(block_of("bugaboo.win2", Some(""), 9).unwrap(), 2);
+        assert_eq!(layout().block_of("bugaboo.win2", Some("7")).unwrap(), 7);
+        assert_eq!(layout().block_of("bugaboo.win2", Some("")).unwrap(), 2);
         // A block that does not exist is an error that names the variable.
         for wrong in ["0", "10", "two", "-1"] {
-            let error = block_of("checkout", Some(wrong), 9).unwrap_err();
-            assert!(format!("{error:#}").contains(BLOCK_VARIABLE), "{wrong}");
+            let error = layout().block_of("checkout", Some(wrong)).unwrap_err();
+            assert!(
+                format!("{error:#}").contains(&layout().block_variable),
+                "{wrong}"
+            );
         }
-        let error = block_of("bugaboo.win10", None, 9).unwrap_err();
+        let error = layout().block_of("bugaboo.win10", None).unwrap_err();
         assert!(format!("{error:#}").contains("bugaboo.win10"));
-        assert!(block_of("bugaboo.win0", None, 9).is_err());
+        assert!(layout().block_of("bugaboo.win0", None).is_err());
     }
 
     #[test]

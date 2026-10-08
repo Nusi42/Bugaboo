@@ -9,13 +9,12 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
 
+use bb_dev_words::database::DatabaseKind;
+
 use super::{Check, Context, Finding};
 
 /// Where the harness writes what ran, relative to the repository root.
 pub(crate) const RECORD_PATH: &str = "target/db-parity.txt";
-
-/// The databases every repository test has to run on, as the harness names them.
-pub(crate) const DATABASES: [&str; 2] = ["sqlite", "postgres"];
 
 pub(crate) struct ArchDbParity;
 
@@ -71,16 +70,16 @@ pub(crate) fn problems(record: &str) -> Vec<String> {
         ];
     }
     let mut problems = Vec::new();
-    for database in DATABASES {
+    for database in DatabaseKind::ALL.map(DatabaseKind::name) {
         if !ran.contains_key(database) {
             problems.push(format!(
                 "No test ran on `{database}`. Repository tests must run on {}.",
-                DATABASES.join(" and ")
+                DatabaseKind::names(" and ")
             ));
         }
     }
     let all: BTreeSet<&str> = ran.values().flatten().copied().collect();
-    for database in DATABASES {
+    for database in DatabaseKind::ALL.map(DatabaseKind::name) {
         let Some(tests) = ran.get(database) else {
             continue;
         };

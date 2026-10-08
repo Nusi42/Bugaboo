@@ -28,8 +28,8 @@ use bb_core::project::ShortName;
 
 use crate::error::{SampleError, Step};
 use crate::generate::{Later, World};
-use crate::layout::{Layout, OrganizationNames};
 use crate::roster::{Role, SamplePerson};
+use bb_dev_words::sample::{Layout, OrganizationNames};
 
 /// A role the plan gives: one of the six starting roles, or a custom role of the sample (by the
 /// key it has in `tools/dev/sample.json`).

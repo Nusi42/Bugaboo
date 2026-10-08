@@ -4,7 +4,9 @@
 //! sources of truth), and, once `bb-store` has a migrations module, its `migrations` test has run
 //! on both databases according to the parity record (see ARCH-DB-PARITY).
 
-use super::arch_db_parity::{self, DATABASES, RECORD_PATH};
+use bb_dev_words::database::DatabaseKind;
+
+use super::arch_db_parity::{self, RECORD_PATH};
 use super::{Check, Context, Finding};
 use crate::repo::Repo;
 
@@ -58,7 +60,7 @@ fn evaluate(files: &[String], has_migrations: bool, record: Option<&str>) -> Vec
         .collect();
     if let (true, Some(record)) = (has_migrations, record) {
         let ran = arch_db_parity::parse(record);
-        for database in DATABASES {
+        for database in DatabaseKind::ALL.map(DatabaseKind::name) {
             let ok = ran
                 .get(database)
                 .is_some_and(|tests| tests.contains(MIGRATION_TEST));

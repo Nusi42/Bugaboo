@@ -22,10 +22,10 @@ use std::process::{Command, Stdio};
 
 use anyhow::{Context as _, bail};
 
+use super::Generated;
 use super::messages::{SOURCE_LOCALE_PATH, parse_pairs};
 use super::messages_rust::constant_name;
 use super::privacy::table;
-use super::{Generated, write_all};
 use crate::checks::arch_settings::{CATALOG_PATH, TEST_SETTINGS_MARK, declared_keys};
 use crate::repo::Repo;
 use crate::source::{Kind, Source, read_sources};
@@ -57,10 +57,6 @@ pub(crate) fn output_paths() -> Vec<&'static str> {
         SETTING_KEYS_PATH,
         COOKIES_PAGE,
     ]
-}
-
-pub(crate) fn run(repo: &Repo) -> anyhow::Result<Vec<String>> {
-    write_all(repo, &generate(repo)?)
 }
 
 pub(crate) fn generate(repo: &Repo) -> anyhow::Result<Vec<Generated>> {

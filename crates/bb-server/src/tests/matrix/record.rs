@@ -4,7 +4,7 @@
 //! The test compares what it ran with `tools/checks/sec-matrix-record.txt`; the check SEC-MATRIX
 //! (xtask) holds that file against the API description, so a route that the file does not cover
 //! fails there even before the tests run. To write the file again after adding a route or an
-//! actor: `BB_SEC_MATRIX_RECORD=write cargo xtask db run -- cargo test -p bb-server sec_01_every_route`.
+//! actor: the command of [`words::write_command`].
 
 use bb_testing::Failure;
 use std::collections::BTreeMap;
@@ -18,8 +18,6 @@ use super::routes::Expect;
 
 /// The root of the repository, from the folder of this crate.
 const REPOSITORY_ROOT: &str = "../..";
-/// Set to `write` to write the file instead of comparing with it.
-const WRITE_VARIABLE: &str = "BB_SEC_MATRIX_RECORD";
 
 /// What ran.
 pub(super) struct Record {
@@ -46,12 +44,13 @@ impl Record {
 
     /// The text of the file.
     pub(super) fn text(&self) -> String {
-        let mut text = String::from(
+        let mut text = format!(
             "# What the permission matrix covered (SEC-MATRIX): every route of the API description\n\
              # for every actor, with what the server answered. Written by the test\n\
              # `sec_01_every_route_answers_every_actor_as_the_permission_table_says`, which fails when\n\
              # this file differs from what ran. After adding a route or an actor, write it again:\n\
-             # BB_SEC_MATRIX_RECORD=write cargo xtask db run -- cargo test -p bb-server sec_01_every_route\n",
+             # {}\n",
+            words::write_command()
         );
         let _ = writeln!(text, "actors {}", self.actors.join(" "));
         for (route, ran) in self.routes.values() {
@@ -82,7 +81,7 @@ impl Record {
             .join(REPOSITORY_ROOT)
             .join(file);
         let text = self.text();
-        if std::env::var(WRITE_VARIABLE).as_deref() == Ok("write") {
+        if std::env::var(words::WRITE_VARIABLE).as_deref() == Ok(words::WRITE_VALUE) {
             std::fs::write(&path, &text)?;
             return Ok(());
         }
@@ -108,7 +107,9 @@ impl Record {
         );
         Err(format!(
             "the record {file} differs from what the matrix ran ({place}). Write it again with \
-             {WRITE_VARIABLE}=write."
+             {}={}.",
+            words::WRITE_VARIABLE,
+            words::WRITE_VALUE
         )
         .into())
     }

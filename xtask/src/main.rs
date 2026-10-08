@@ -36,6 +36,7 @@ use std::io::Read as _;
 use std::path::PathBuf;
 use std::process::ExitCode;
 
+use bb_dev_words::database::DatabaseKind;
 use clap::{Parser, Subcommand};
 
 #[derive(Parser)]
@@ -93,24 +94,14 @@ enum Command {
     List,
     /// Install the pinned external tools into `.tools/` (tools/dev/tools.toml).
     Setup,
-    /// Write files that are generated from a single source.
+    /// Write files that are generated from a single source .
     Gen {
-        #[command(subcommand)]
-        target: GenTarget,
+        /// What to generate.
+        #[arg(value_parser = generate::possible_values())]
+        target: String,
     },
 }
 
-#[derive(Subcommand)]
-enum GenTarget {
-    /// CSS variables and TypeScript names from design/tokens.json.
-    Tokens,
-    /// Typed message keys from messages/en.json.
-    Messages,
-    /// The personal-data page docs/privacy/personal-data.md from the marks in the code.
-    Privacy,
-    /// The API description, the browser client's types and the cookie list, from bb-api.
-    Api,
-}
 #[derive(Subcommand)]
 enum DatasetKind {
     /// 50 fictional people, made through the real use cases, the same every time from a seed.
@@ -119,8 +110,8 @@ enum DatasetKind {
         #[arg(long)]
         seed: Option<u64>,
         /// Which database to make it on (default sqlite).
-        #[arg(long, value_enum, conflicts_with = "check")]
-        database: Option<DatabaseChoice>,
+        #[arg(long, conflicts_with = "check")]
+        database: Option<DatabaseKind>,
         /// The folder for the data folder and the sign-in details (default: the folder that
         /// tools/dev/sample.json names).
         #[arg(long, conflicts_with = "check")]
@@ -130,13 +121,6 @@ enum DatasetKind {
         #[arg(long)]
         check: bool,
     },
-}
-
-/// The databases the sample can be made on.
-#[derive(Clone, Copy, clap::ValueEnum)]
-enum DatabaseChoice {
-    Sqlite,
-    Postgres,
 }
 
 #[derive(Subcommand)]
@@ -210,9 +194,7 @@ fn run() -> anyhow::Result<ExitCode> {
     let registry = checks::registry();
     match cli.command {
         Command::Docs => {
-            for path in docs::write(&repo, &catalog)? {
-                output::wrote(&path);
-            }
+            output::generated(&generate::write_named(&repo, &catalog, generate::DOCS)?);
             Ok(ExitCode::SUCCESS)
         }
         Command::Suppressions => {
@@ -233,13 +215,7 @@ fn run() -> anyhow::Result<ExitCode> {
             Ok(ExitCode::SUCCESS)
         }
         Command::Gen { target } => {
-            let written = match target {
-                GenTarget::Tokens => generate::tokens::run(&repo)?,
-                GenTarget::Messages => generate::messages::run(&repo)?,
-                GenTarget::Privacy => generate::privacy::run(&repo)?,
-                GenTarget::Api => generate::api::run(&repo)?,
-            };
-            output::generated(&written);
+            output::generated(&generate::write_named(&repo, &catalog, &target)?);
             Ok(ExitCode::SUCCESS)
         }
         Command::Dev { sample } => Ok(steps::exit_code(dev::run(repo.root(), sample)?)),
@@ -254,10 +230,7 @@ fn run() -> anyhow::Result<ExitCode> {
         } => {
             let request = dataset::Request {
                 seed,
-                database: match database.unwrap_or(DatabaseChoice::Sqlite) {
-                    DatabaseChoice::Sqlite => dataset::DatabaseKind::Sqlite,
-                    DatabaseChoice::Postgres => dataset::DatabaseKind::Postgres,
-                },
+                database: database.unwrap_or(DatabaseKind::Sqlite),
                 out,
                 check,
             };
