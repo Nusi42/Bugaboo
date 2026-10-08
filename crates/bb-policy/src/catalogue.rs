@@ -114,50 +114,6 @@ mod tests {
 
     use super::*;
 
-    /// The word with a capital, as the table writes the kind.
-    fn capital(word: &str) -> String {
-        let mut letters = word.chars();
-        letters
-            .next()
-            .map(|first| first.to_uppercase().chain(letters).collect())
-            .unwrap_or_default()
-    }
-
-    /// The table "The permission catalogue" of architecture §7 is the only other place that
-    /// holds the topic, the place and the kind of each permission: the test reads it from the
-    /// page, in the order of the catalogue, so there is no third copy.
-    #[test]
-    fn the_catalogue_is_the_table_of_architecture_7() {
-        let architecture = include_str!("../../../docs/architecture/07-cross-cutting.md");
-        let rows: Vec<Vec<&str>> = architecture
-            .split("### The permission catalogue")
-            .nth(1)
-            .unwrap()
-            .lines()
-            .skip_while(|line| !line.starts_with('|'))
-            .take_while(|line| line.starts_with('|'))
-            .skip(2)
-            .map(|line| line.trim_matches('|').split('|').map(str::trim).collect())
-            .collect();
-        assert_eq!(rows.len(), Permission::ALL.len(), "a row per permission");
-        for (permission, row) in Permission::ALL.iter().zip(&rows) {
-            let sentence = Message::from(permission.sentence()).render();
-            assert_eq!(
-                row.iter()
-                    .map(|cell| cell.replace(['`', '*'], ""))
-                    .collect::<Vec<_>>(),
-                [
-                    permission.code().to_owned(),
-                    Message::from(permission.topic().name()).render(),
-                    permission.counts().code().to_owned(),
-                    capital(permission.kind().code()),
-                    sentence.replace('*', "")
-                ],
-                "{permission}"
-            );
-        }
-    }
-
     #[test]
     fn the_keys_are_technical_names_and_unique() {
         let mut seen = HashSet::new();

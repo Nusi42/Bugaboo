@@ -4,8 +4,8 @@
 //! A system use case makes editable copies from it once, at the first start (never a migration);
 //! after that the definition is read only by *Reset to the starting permissions*. The permissions,
 //! field levels, *Who sees people* levels and the order are the tables of architecture §7
-//! (*Starting roles*); the tests below read those tables from the architecture page, so a change of
-//! one without the other fails.
+//! (*Starting roles*) and are written into the page from this code by `cargo xtask gen roles`
+//! (DOC-GENERATED fails when the page differs), so there is no second copy to keep in step.
 
 use bb_core::access::{FieldLevel, PeopleLevel};
 use bb_core::fields::Field;
@@ -137,118 +137,6 @@ mod tests {
     use std::collections::HashSet;
 
     use super::*;
-
-    /// The tables of "Starting roles" in architecture §7 are the only other place that holds the
-    /// starting values: the tests read them from the page, so no third copy exists. Rows are in
-    /// the order of the catalogues ([`Permission::ALL`], [`Field::ALL`], [`PeopleKind::ALL`]),
-    /// the columns in the starting order.
-    const ARCHITECTURE: &str = include_str!("../../../docs/architecture/07-cross-cutting.md");
-
-    /// The cells of the data rows (without the label) of the `at`th table of the section.
-    fn table(at: usize) -> Vec<Vec<String>> {
-        let section = ARCHITECTURE
-            .split("### Starting roles")
-            .nth(1)
-            .and_then(|rest| rest.split("### The field catalogue").next())
-            .unwrap();
-        let mut tables: Vec<Vec<Vec<String>>> = Vec::new();
-        let mut inside = false;
-        for line in section.lines() {
-            if !line.starts_with('|') {
-                inside = false;
-                continue;
-            }
-            if !inside {
-                tables.push(Vec::new());
-                inside = true;
-            }
-            let cells: Vec<String> = line
-                .trim_matches('|')
-                .split('|')
-                .skip(1)
-                .map(|cell| cell.trim().to_owned())
-                .collect();
-            if let Some(rows) = tables.last_mut()
-                && !cells.iter().all(|cell| cell.starts_with(['-', ':']))
-            {
-                rows.push(cells);
-            }
-        }
-        let mut rows = tables.swap_remove(at);
-        rows.remove(0);
-        rows
-    }
-
-    /// What `letter` says: a level of a field.
-    fn level(letter: &str) -> FieldLevel {
-        match letter {
-            "C" => FieldLevel::CanChange,
-            "S" => FieldLevel::CanSee,
-            _ => FieldLevel::Hidden,
-        }
-    }
-
-    /// What `letter` says: how people of a kind are seen.
-    fn people(letter: &str) -> PeopleLevel {
-        match letter {
-            "N" => PeopleLevel::Names,
-            "R" => PeopleLevel::RoleOnly,
-            _ => PeopleLevel::Hidden,
-        }
-    }
-
-    #[test]
-    fn m2_q5_the_permissions_are_the_table_of_architecture_7() {
-        let rows = table(0);
-        // One row per permission, then the switch for two-step sign-in.
-        assert_eq!(
-            rows.len(),
-            Permission::ALL.len() + 1,
-            "a row per permission"
-        );
-        for (permission, ticks) in Permission::ALL.iter().zip(&rows) {
-            for (role, tick) in StartingRole::ALL.iter().zip(ticks) {
-                assert_eq!(
-                    role.permissions().contains(permission),
-                    tick == "✓",
-                    "{permission} for {role}"
-                );
-            }
-        }
-        for (role, cell) in StartingRole::ALL.iter().zip(&rows[Permission::ALL.len()]) {
-            assert_eq!(role.two_step(), cell != "off", "two-step for {role}");
-        }
-    }
-
-    #[test]
-    fn m2_q5_the_field_levels_are_the_table_of_architecture_7() {
-        let rows = table(1);
-        assert_eq!(rows.len(), Field::ALL.len());
-        for (field, letters) in Field::ALL.iter().zip(&rows) {
-            for (role, letter) in StartingRole::ALL.iter().zip(letters) {
-                assert_eq!(
-                    role.field_level(*field),
-                    level(letter),
-                    "{field} for {role}"
-                );
-            }
-        }
-    }
-
-    #[test]
-    fn m2_q5_the_people_levels_are_the_table_of_architecture_7() {
-        let rows = table(2);
-        assert_eq!(rows.len(), PeopleKind::ALL.len());
-        for (kind, letters) in PeopleKind::ALL.iter().zip(&rows) {
-            for (role, letter) in StartingRole::ALL.iter().zip(letters) {
-                assert_eq!(
-                    role.people_level(*kind),
-                    people(letter),
-                    "{kind} for {role}"
-                );
-            }
-        }
-    }
 
     #[test]
     fn the_roles_come_in_the_starting_order_with_their_own_keys_and_names() {

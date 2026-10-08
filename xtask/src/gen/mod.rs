@@ -9,6 +9,7 @@ pub(crate) mod icu;
 pub(crate) mod messages;
 pub(crate) mod messages_rust;
 pub(crate) mod privacy;
+pub(crate) mod roles;
 pub(crate) mod token_file;
 pub(crate) mod tokens;
 
@@ -49,7 +50,7 @@ pub(crate) const DOCS: &str = "docs";
 /// Every generator, once. A generated file in the repository is written by one of these;
 /// DOC-GENERATED compares all of them with the disk, `cargo xtask gen <name>` writes one, and
 /// META-COVERAGE counts their paths as generated.
-pub(crate) const GENERATORS: [Generator; 5] = [
+pub(crate) const GENERATORS: [Generator; 6] = [
     Generator {
         name: DOCS,
         help: "The commentable HTML pages from the Markdown sources and the check catalogue.",
@@ -73,6 +74,12 @@ pub(crate) const GENERATORS: [Generator; 5] = [
         help: "The personal-data page docs/privacy/personal-data.md from the marks in the code.",
         paths: || vec![privacy::OUTPUT],
         generate: |repo, _| privacy::generate(repo),
+    },
+    Generator {
+        name: "roles",
+        help: "The tables of permissions and starting roles in architecture section 7, from bb-policy.",
+        paths: || vec![roles::PAGE],
+        generate: |repo, _| roles::generate(repo),
     },
     Generator {
         name: "api",
