@@ -2,11 +2,11 @@
 //! (M2-F06, SEC-12), but not for a session that is only waiting for its second step.
 
 use axum::http::StatusCode;
-use bb_testing::each_database;
+use bb_testing::{TestResult, each_database};
 use serde_json::json;
 
 use super::http::{Browser, called, setup_body, sign_in_body, totp};
-use super::rig::{Outcome, PASSWORD, Rig};
+use super::rig::{PASSWORD, Rig};
 use super::status::app_with_probe;
 
 const SESSION: &str = "__Host-bb_session";
@@ -38,7 +38,7 @@ fn assert_untouched(reply: &super::http::Reply, what: &str) {
 }
 
 #[tokio::test]
-async fn m2_f06_a_session_that_ran_out_is_answered_with_the_cookies_cleared() -> Outcome {
+async fn m2_f06_a_session_that_ran_out_is_answered_with_the_cookies_cleared() -> TestResult {
     each_database("m2_f06_session_ran_out", async |db| {
         let rig = Rig::start(db, 10).await?;
         let app = app_with_probe(&rig, None);
@@ -62,7 +62,7 @@ async fn m2_f06_a_session_that_ran_out_is_answered_with_the_cookies_cleared() ->
 }
 
 #[tokio::test]
-async fn m2_f06_a_cookie_that_opens_no_session_is_cleared_too() -> Outcome {
+async fn m2_f06_a_cookie_that_opens_no_session_is_cleared_too() -> TestResult {
     each_database("m2_f06_cookie_opens_nothing", async |db| {
         let rig = Rig::start(db, 10).await?;
         let app = app_with_probe(&rig, None);
@@ -97,7 +97,7 @@ async fn m2_f06_a_cookie_that_opens_no_session_is_cleared_too() -> Outcome {
 }
 
 #[tokio::test]
-async fn m2_f06_a_session_that_waits_for_its_second_step_is_not_cleared() -> Outcome {
+async fn m2_f06_a_session_that_waits_for_its_second_step_is_not_cleared() -> TestResult {
     each_database("m2_f06_pending_is_kept", async |db| {
         let rig = Rig::start(db, 10).await?;
         let app = app_with_probe(&rig, None);

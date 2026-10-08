@@ -4,16 +4,17 @@
 
 use axum::http::StatusCode;
 use bb_app::access::Permission;
-use bb_testing::each_database;
+use bb_testing::{TestResult, each_database};
 use serde_json::{Value, json};
 
 use super::caching::invited_person;
 use super::http::{Browser, called, setup_body};
-use super::rig::{Outcome, Rig};
+use super::rig::Rig;
 use super::status::app_with_probe;
 
 #[tokio::test]
-async fn sec_01_who_is_signed_in_answers_the_permissions_for_the_whole_organization() -> Outcome {
+async fn sec_01_who_is_signed_in_answers_the_permissions_for_the_whole_organization() -> TestResult
+{
     each_database("sec_01_me_permissions", async |db| {
         let rig = Rig::start(db, 10).await?;
         let app = app_with_probe(&rig, None);

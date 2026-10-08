@@ -7,16 +7,17 @@ use axum::http::StatusCode;
 use bb_app::access::{Permission, StartingRole};
 use bb_app::roles::{Given, Subject};
 use bb_core::access::AppliesTo;
-use bb_testing::each_database;
+use bb_testing::{TestResult, each_database};
 use serde_json::json;
 
 use super::access_screens::{CHECK, FIELDS, PEOPLE, at, browser_of, cell, named, role};
 use super::policy_rig::Org;
-use super::rig::{Outcome, Rig};
+use super::rig::Rig;
 use super::status::app_with_probe;
 
 #[tokio::test]
-async fn sec_03_a_level_from_a_project_the_lead_cannot_see_is_not_named_in_the_tables() -> Outcome {
+async fn sec_03_a_level_from_a_project_the_lead_cannot_see_is_not_named_in_the_tables() -> TestResult
+{
     each_database("sec_03_hidden_origin", async |db| {
         let rig = Rig::start(db, 10).await?;
         let org = Org::start(&rig).await?;
@@ -70,7 +71,7 @@ async fn sec_03_a_level_from_a_project_the_lead_cannot_see_is_not_named_in_the_t
 
 #[tokio::test]
 async fn sec_04_a_project_without_a_setting_shows_the_role_own_level_and_yours_is_the_persons_own()
--> Outcome {
+-> TestResult {
     each_database("sec_04_role_own_and_yours", async |db| {
         let rig = Rig::start(db, 10).await?;
         let org = Org::start(&rig).await?;
@@ -133,7 +134,7 @@ async fn sec_04_a_project_without_a_setting_shows_the_role_own_level_and_yours_i
 
 #[tokio::test]
 async fn sec_04_a_level_set_on_a_project_never_gives_more_than_the_person_holds_in_its_sub_projects()
--> Outcome {
+-> TestResult {
     each_database("sec_04_levels_reach_below", async |db| {
         let rig = Rig::start(db, 10).await?;
         let org = Org::start(&rig).await?;
@@ -206,7 +207,7 @@ async fn sec_04_a_level_set_on_a_project_never_gives_more_than_the_person_holds_
 
 #[tokio::test]
 async fn sec_03_a_checker_without_a_management_permission_chooses_only_people_with_a_role_there()
--> Outcome {
+-> TestResult {
     each_database("sec_03_picker_roles_only", async |db| {
         let rig = Rig::start(db, 10).await?;
         let org = Org::start(&rig).await?;

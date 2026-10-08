@@ -11,11 +11,11 @@ use bb_app::roles::ChangeRole;
 use bb_core::ErrorCode;
 use bb_core::access_key::KeyChoice;
 use bb_core::sign_in::SecurityAction;
-use bb_testing::each_database;
+use bb_testing::{TestResult, each_database};
 
 use super::access_keys::{bob, check, key_of, made};
 use super::policy_rig::Org;
-use super::rig::{Outcome, PASSWORD, Rig, refused};
+use super::rig::{PASSWORD, Rig, refused};
 use super::second_step_by_role::invitations;
 
 async fn invite(rig: &Rig, credential: &str) -> Result<(), AppError> {
@@ -77,7 +77,7 @@ async fn change_a_role(
 }
 
 #[tokio::test]
-async fn auth_07_a_key_never_invites_people_or_changes_roles_whatever_its_choice() -> Outcome {
+async fn auth_07_a_key_never_invites_people_or_changes_roles_whatever_its_choice() -> TestResult {
     each_database("auth_07_keys_never_invite_or_change_roles", async |db| {
         let rig = Rig::start(db, 50).await?;
         let org = Org::start(&rig).await?;
@@ -127,7 +127,7 @@ async fn auth_07_a_key_never_invites_people_or_changes_roles_whatever_its_choice
 }
 
 #[tokio::test]
-async fn auth_07_single_permissions_of_a_key_never_include_those_a_key_never_holds() -> Outcome {
+async fn auth_07_single_permissions_of_a_key_never_include_those_a_key_never_holds() -> TestResult {
     each_database(
         "auth_07_single_permissions_exclude_the_never_ones",
         async |db| {
@@ -173,7 +173,8 @@ async fn auth_07_single_permissions_of_a_key_never_include_those_a_key_never_hol
 }
 
 #[tokio::test]
-async fn auth_07_sign_out_everywhere_ends_the_keys_and_a_password_change_leaves_them() -> Outcome {
+async fn auth_07_sign_out_everywhere_ends_the_keys_and_a_password_change_leaves_them() -> TestResult
+{
     each_database("auth_07_sign_out_everywhere_ends_keys", async |db| {
         let rig = Rig::start(db, 50).await?;
         let org = Org::start(&rig).await?;

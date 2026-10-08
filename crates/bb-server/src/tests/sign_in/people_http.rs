@@ -4,11 +4,11 @@
 
 use axum::Router;
 use axum::http::StatusCode;
-use bb_testing::each_database;
+use bb_testing::{Failure, TestResult, each_database};
 use serde_json::{Value, json};
 
-use super::http::{Browser, Failure, Reply, called, rig_and_app, setup_body};
-use super::rig::{Outcome, PASSWORD};
+use super::http::{Browser, Reply, called, rig_and_app, setup_body};
+use super::rig::PASSWORD;
 
 /// What a test body of this family gets: the server, the router and the administrator, signed in.
 pub(super) struct Organization {
@@ -101,7 +101,7 @@ impl Organization {
 
 #[tokio::test]
 async fn sec_02_the_people_list_names_people_and_gives_addresses_to_people_who_manage_people()
--> Outcome {
+-> TestResult {
     each_database("sec_02_http_people_list", async |db| {
         let mut org = start(db).await?;
         let (mut bob, bob_id) = org.person("Bob Builder", "bob@example.test").await?;
@@ -190,7 +190,7 @@ async fn sec_02_the_people_list_names_people_and_gives_addresses_to_people_who_m
 
 #[tokio::test]
 async fn sec_02_the_page_of_a_person_lists_their_groups_and_the_roles_the_viewer_decides_about()
--> Outcome {
+-> TestResult {
     each_database("sec_02_http_person_page", async |db| {
         let mut org = start(db).await?;
         let (_bob, bob_id) = org.person("Bob Builder", "bob@example.test").await?;
@@ -284,7 +284,7 @@ async fn sec_02_the_page_of_a_person_lists_their_groups_and_the_roles_the_viewer
 }
 
 #[tokio::test]
-async fn sec_02_groups_are_made_and_renamed_over_http() -> Outcome {
+async fn sec_02_groups_are_made_and_renamed_over_http() -> TestResult {
     each_database("sec_02_http_groups_made", async |db| {
         let mut org = start(db).await?;
         let group = org
@@ -323,7 +323,7 @@ async fn sec_02_groups_are_made_and_renamed_over_http() -> Outcome {
 }
 
 #[tokio::test]
-async fn sec_02_the_people_of_a_group_are_listed_picked_and_taken_out_over_http() -> Outcome {
+async fn sec_02_the_people_of_a_group_are_listed_picked_and_taken_out_over_http() -> TestResult {
     each_database("sec_02_http_group_members", async |db| {
         let mut org = start(db).await?;
         let (_bob, bob_id) = org.person("Bob Builder", "bob@example.test").await?;
@@ -418,7 +418,7 @@ async fn sec_02_the_people_of_a_group_are_listed_picked_and_taken_out_over_http(
 }
 
 #[tokio::test]
-async fn sec_02_the_picker_of_a_group_names_people_and_says_who_is_in_already() -> Outcome {
+async fn sec_02_the_picker_of_a_group_names_people_and_says_who_is_in_already() -> TestResult {
     each_database("sec_02_http_group_picker", async |db| {
         let mut org = start(db).await?;
         let (_bob, bob_id) = org.person("Bob Builder", "bob@example.test").await?;
@@ -462,7 +462,7 @@ async fn sec_02_the_picker_of_a_group_names_people_and_says_who_is_in_already() 
 }
 
 #[tokio::test]
-async fn sec_02_a_person_who_may_not_manage_groups_is_refused_on_every_group_route() -> Outcome {
+async fn sec_02_a_person_who_may_not_manage_groups_is_refused_on_every_group_route() -> TestResult {
     each_database("sec_02_http_groups_refused", async |db| {
         let mut org = start(db).await?;
         let (mut bob, bob_id) = org.person("Bob Builder", "bob@example.test").await?;

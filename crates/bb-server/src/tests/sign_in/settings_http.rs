@@ -3,18 +3,15 @@
 //! and the one place where a locked setting says why.
 
 use axum::http::StatusCode;
-use bb_testing::each_database;
+use bb_testing::{Failure, TestResult, each_database};
 use serde_json::{Value, json};
 
 use super::caching::invited_person;
 use super::http::{Browser, called, setup_body};
-use super::rig::{Outcome, Rig};
+use super::rig::Rig;
 use super::status::app_with_probe;
 
-fn setting<'a>(
-    list: &'a Value,
-    key: &str,
-) -> Result<&'a Value, Box<dyn std::error::Error + Send + Sync>> {
+fn setting<'a>(list: &'a Value, key: &str) -> Result<&'a Value, Failure> {
     list["settings"]
         .as_array()
         .and_then(|settings| settings.iter().find(|setting| setting["key"] == key))
@@ -23,7 +20,7 @@ fn setting<'a>(
 
 #[tokio::test]
 async fn cfg_04_my_settings_over_http_say_what_each_setting_is_and_where_its_value_comes_from()
--> Outcome {
+-> TestResult {
     each_database("cfg_04_http_my_settings", async |db| {
         let rig = Rig::start(db, 10).await?;
         let app = app_with_probe(&rig, None);
@@ -132,7 +129,8 @@ async fn cfg_04_my_settings_over_http_say_what_each_setting_is_and_where_its_val
 }
 
 #[tokio::test]
-async fn cfg_06_an_administrator_locks_a_setting_and_a_person_is_told_why_over_http() -> Outcome {
+async fn cfg_06_an_administrator_locks_a_setting_and_a_person_is_told_why_over_http() -> TestResult
+{
     each_database("cfg_06_http_lock", async |db| {
         let rig = Rig::start(db, 10).await?;
         let app = app_with_probe(&rig, None);
@@ -228,7 +226,7 @@ async fn cfg_06_an_administrator_locks_a_setting_and_a_person_is_told_why_over_h
 }
 
 #[tokio::test]
-async fn cfg_06_a_project_the_person_cannot_see_is_not_found_over_http() -> Outcome {
+async fn cfg_06_a_project_the_person_cannot_see_is_not_found_over_http() -> TestResult {
     each_database("cfg_06_http_project", async |db| {
         let rig = Rig::start(db, 10).await?;
         let app = app_with_probe(&rig, None);

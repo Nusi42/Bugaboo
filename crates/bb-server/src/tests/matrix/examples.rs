@@ -10,11 +10,12 @@
 //! M5 search, M8 assistant and AI apps, M9 exports); this one is the API.
 
 use bb_app::auth::CreateInvitation;
+use bb_testing::Failure;
 use serde_json::{Value, json};
 
 use super::actors::{Actor, Project};
 use super::routes::Fixture;
-use crate::sign_in_tests::http::{Browser, Failure};
+use crate::sign_in_tests::http::Browser;
 use crate::sign_in_tests::rig::{OTHER_PASSWORD, PASSWORD, Rig};
 
 /// What a route does at the edges the API description does not say.

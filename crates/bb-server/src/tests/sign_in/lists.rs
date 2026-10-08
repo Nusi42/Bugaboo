@@ -1,14 +1,13 @@
 //! Lists over HTTP: who is asking is judged before what they ask (PERF-02, SEC-06).
 
 use axum::http::StatusCode;
-use bb_testing::each_database;
+use bb_testing::{TestResult, each_database};
 
 use super::caching::invited_person;
 use super::http::{Browser, called, rig_and_app, setup_body};
-use super::rig::Outcome;
 
 #[tokio::test]
-async fn perf_02_a_list_judges_who_asks_before_it_judges_the_query() -> Outcome {
+async fn perf_02_a_list_judges_who_asks_before_it_judges_the_query() -> TestResult {
     each_database("perf_02_http_list_order", async |db| {
         let (rig, app) = rig_and_app(db, 10).await?;
         let mut ada = Browser::new(&app, &called());

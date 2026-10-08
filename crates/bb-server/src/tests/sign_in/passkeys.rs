@@ -11,14 +11,12 @@ use bb_app::auth::{
 use bb_core::ErrorCode;
 use bb_core::id::UserId;
 use bb_core::sign_in::SecurityAction;
-use bb_testing::each_database;
+use bb_testing::{Failure, TestResult, each_database};
 use serde_json::Value;
 use webauthn_authenticator_rs::prelude::{Url, WebauthnAuthenticator as _};
 use webauthn_authenticator_rs::softpasskey::SoftPasskey;
 
-use super::rig::{Outcome, PASSWORD, PUBLIC_URL, Rig, refused};
-
-type Failure = Box<dyn std::error::Error + Send + Sync>;
+use super::rig::{PASSWORD, PUBLIC_URL, Rig, refused};
 
 fn origin() -> Result<Url, Failure> {
     Ok(Url::parse(PUBLIC_URL)?)
@@ -111,7 +109,7 @@ async fn bobs_device(rig: &Rig, admin_session: &str) -> Result<(SoftPasskey, Vec
 }
 
 #[tokio::test]
-async fn auth_02_a_passkey_is_added_listed_and_removed_with_the_password() -> Outcome {
+async fn auth_02_a_passkey_is_added_listed_and_removed_with_the_password() -> TestResult {
     each_database("auth_02_manage_passkeys", async |db| {
         let rig = Rig::start(db, 10).await?;
         let admin = rig.admin("ada@example.test").await?;
@@ -188,7 +186,7 @@ async fn auth_02_a_passkey_is_added_listed_and_removed_with_the_password() -> Ou
 }
 
 #[tokio::test]
-async fn auth_02_a_passkey_finishes_signing_in_after_the_password() -> Outcome {
+async fn auth_02_a_passkey_finishes_signing_in_after_the_password() -> TestResult {
     each_database("auth_02_passkey_second_step", async |db| {
         let rig = Rig::start(db, 10).await?;
         let admin = rig.admin("ada@example.test").await?;
@@ -281,7 +279,7 @@ async fn auth_02_a_passkey_finishes_signing_in_after_the_password() -> Outcome {
 }
 
 #[tokio::test]
-async fn auth_02_a_passkey_signs_in_on_its_own() -> Outcome {
+async fn auth_02_a_passkey_signs_in_on_its_own() -> TestResult {
     each_database("auth_02_passkey_alone", async |db| {
         let rig = Rig::start(db, 10).await?;
         let admin = rig.admin("ada@example.test").await?;
@@ -372,7 +370,7 @@ async fn auth_02_a_passkey_signs_in_on_its_own() -> Outcome {
 }
 
 #[tokio::test]
-async fn auth_02_without_a_host_name_in_the_public_address_passkeys_are_off() -> Outcome {
+async fn auth_02_without_a_host_name_in_the_public_address_passkeys_are_off() -> TestResult {
     each_database("auth_02_passkeys_off", async |db| {
         let rig = Rig::start_with(db, 10, false).await?;
         let status = rig.api().status(Rig::info(), StatusQuery).await?;
@@ -400,7 +398,7 @@ async fn auth_02_without_a_host_name_in_the_public_address_passkeys_are_off() ->
 }
 
 #[tokio::test]
-async fn sec_12_a_stolen_session_cannot_add_a_passkey_without_the_password() -> Outcome {
+async fn sec_12_a_stolen_session_cannot_add_a_passkey_without_the_password() -> TestResult {
     each_database("sec_12_passkey_needs_password", async |db| {
         let rig = Rig::start(db, 10).await?;
         let admin = rig.admin("ada@example.test").await?;

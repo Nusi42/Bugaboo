@@ -13,10 +13,10 @@ use bb_core::ErrorCode;
 use bb_core::access::AppliesTo;
 use bb_core::id::ProjectId;
 use bb_core::sign_in::SecurityAction;
-use bb_testing::each_database;
+use bb_testing::{TestResult, each_database};
 
 use super::policy_rig::{Member, Org};
-use super::rig::{Outcome, Rig, refused};
+use super::rig::{Rig, refused};
 
 /// What a lead of a project may do.
 pub(super) const LEAD: [Permission; 5] = [
@@ -174,7 +174,7 @@ pub(super) fn names(page: &ProjectPage) -> Vec<String> {
 }
 
 #[tokio::test]
-async fn prj_01_projects_nest_to_any_depth_and_short_names_are_unique() -> Outcome {
+async fn prj_01_projects_nest_to_any_depth_and_short_names_are_unique() -> TestResult {
     each_database("prj_01_nesting", async |db| {
         let rig = Rig::start(db, 10).await?;
         let org = Org::start(&rig).await?;
@@ -222,7 +222,7 @@ async fn prj_01_projects_nest_to_any_depth_and_short_names_are_unique() -> Outco
 }
 
 #[tokio::test]
-async fn prj_01_a_short_name_breaks_no_rule_of_m2_q4_when_a_project_is_made() -> Outcome {
+async fn prj_01_a_short_name_breaks_no_rule_of_m2_q4_when_a_project_is_made() -> TestResult {
     each_database("prj_01_short_name_rules", async |db| {
         let rig = Rig::start(db, 10).await?;
         let org = Org::start(&rig).await?;
@@ -244,7 +244,7 @@ async fn prj_01_a_short_name_breaks_no_rule_of_m2_q4_when_a_project_is_made() ->
 }
 
 #[tokio::test]
-async fn prj_01_an_old_short_name_redirects() -> Outcome {
+async fn prj_01_an_old_short_name_redirects() -> TestResult {
     each_database("prj_01_old_short_name", async |db| {
         let rig = Rig::start(db, 10).await?;
         let org = Org::start(&rig).await?;
@@ -296,7 +296,7 @@ async fn prj_01_an_old_short_name_redirects() -> Outcome {
 }
 
 #[tokio::test]
-async fn prj_01_a_taken_short_name_is_told_only_to_people_who_may_make_projects() -> Outcome {
+async fn prj_01_a_taken_short_name_is_told_only_to_people_who_may_make_projects() -> TestResult {
     each_database("prj_01_taken_short_name", async |db| {
         let rig = Rig::start(db, 10).await?;
         let org = Org::start(&rig).await?;
@@ -343,7 +343,7 @@ async fn prj_01_a_taken_short_name_is_told_only_to_people_who_may_make_projects(
 }
 
 #[tokio::test]
-async fn prj_01_a_hidden_project_answers_not_found_like_a_missing_one() -> Outcome {
+async fn prj_01_a_hidden_project_answers_not_found_like_a_missing_one() -> TestResult {
     each_database("prj_01_hidden_not_found", async |db| {
         let rig = Rig::start(db, 10).await?;
         let org = Org::start(&rig).await?;
@@ -431,7 +431,7 @@ async fn prj_01_a_hidden_project_answers_not_found_like_a_missing_one() -> Outco
 }
 
 #[tokio::test]
-async fn prj_01_a_visible_sub_project_of_a_hidden_project_does_not_name_it() -> Outcome {
+async fn prj_01_a_visible_sub_project_of_a_hidden_project_does_not_name_it() -> TestResult {
     each_database("prj_01_hidden_parent", async |db| {
         let rig = Rig::start(db, 10).await?;
         let org = Org::start(&rig).await?;
@@ -507,7 +507,7 @@ async fn prj_01_a_visible_sub_project_of_a_hidden_project_does_not_name_it() -> 
 }
 
 #[tokio::test]
-async fn prj_03_the_move_preview_names_who_gains_and_loses_access() -> Outcome {
+async fn prj_03_the_move_preview_names_who_gains_and_loses_access() -> TestResult {
     each_database("prj_03_preview", async |db| {
         let rig = Rig::start(db, 10).await?;
         let org = Org::start(&rig).await?;
@@ -604,7 +604,7 @@ async fn prj_03_the_move_preview_names_who_gains_and_loses_access() -> Outcome {
 }
 
 #[tokio::test]
-async fn prj_03_a_project_cannot_move_below_itself() -> Outcome {
+async fn prj_03_a_project_cannot_move_below_itself() -> TestResult {
     each_database("prj_03_below_itself", async |db| {
         let rig = Rig::start(db, 10).await?;
         let org = Org::start(&rig).await?;
@@ -637,7 +637,7 @@ async fn prj_03_a_project_cannot_move_below_itself() -> Outcome {
 }
 
 #[tokio::test]
-async fn prj_03_moving_needs_the_right_in_the_old_and_the_new_parent() -> Outcome {
+async fn prj_03_moving_needs_the_right_in_the_old_and_the_new_parent() -> TestResult {
     each_database("prj_03_both_parents", async |db| {
         let rig = Rig::start(db, 10).await?;
         let org = Org::start(&rig).await?;
@@ -675,7 +675,7 @@ async fn prj_03_moving_needs_the_right_in_the_old_and_the_new_parent() -> Outcom
 }
 
 #[tokio::test]
-async fn prj_03_a_move_after_the_tree_changed_asks_again() -> Outcome {
+async fn prj_03_a_move_after_the_tree_changed_asks_again() -> TestResult {
     each_database("prj_03_stale_preview", async |db| {
         let rig = Rig::start(db, 10).await?;
         let org = Org::start(&rig).await?;
@@ -717,7 +717,7 @@ async fn prj_03_a_move_after_the_tree_changed_asks_again() -> Outcome {
 }
 
 #[tokio::test]
-async fn prj_03_a_move_cannot_let_somebody_lift_a_no_access_they_are_subject_to() -> Outcome {
+async fn prj_03_a_move_cannot_let_somebody_lift_a_no_access_they_are_subject_to() -> TestResult {
     each_database("prj_03_lift", async |db| {
         let rig = Rig::start(db, 10).await?;
         let org = Org::start(&rig).await?;
@@ -791,7 +791,7 @@ async fn prj_03_a_move_cannot_let_somebody_lift_a_no_access_they_are_subject_to(
 }
 
 /// The administrator takes away every *No access* that is on the project itself.
-async fn take_no_access_away(org: &Org<'_>, project: ProjectId) -> Outcome {
+async fn take_no_access_away(org: &Org<'_>, project: ProjectId) -> TestResult {
     let rows = api(org)
         .assignments(
             Rig::info(),
@@ -823,7 +823,7 @@ async fn take_no_access_away(org: &Org<'_>, project: ProjectId) -> Outcome {
 }
 
 #[tokio::test]
-async fn prj_03_a_move_out_from_under_a_no_access_is_named_in_the_preview() -> Outcome {
+async fn prj_03_a_move_out_from_under_a_no_access_is_named_in_the_preview() -> TestResult {
     each_database("prj_03_out_from_under", async |db| {
         let rig = Rig::start(db, 10).await?;
         let org = Org::start(&rig).await?;
@@ -847,7 +847,7 @@ async fn prj_03_a_move_out_from_under_a_no_access_is_named_in_the_preview() -> O
 }
 
 #[tokio::test]
-async fn priv_13_no_project_answer_holds_a_count() -> Outcome {
+async fn priv_13_no_project_answer_holds_a_count() -> TestResult {
     each_database("priv_13_no_counts", async |db| {
         let rig = Rig::start(db, 10).await?;
         let org = Org::start(&rig).await?;
@@ -938,7 +938,7 @@ fn assert_no_count(value: &serde_json::Value, path: &str) {
 }
 
 #[tokio::test]
-async fn prj_01_changes_write_their_event_and_entry_of_the_log() -> Outcome {
+async fn prj_01_changes_write_their_event_and_entry_of_the_log() -> TestResult {
     each_database("prj_01_event_and_log", async |db| {
         let rig = Rig::start(db, 10).await?;
         let org = Org::start(&rig).await?;

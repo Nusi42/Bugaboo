@@ -7,9 +7,9 @@ use bb_app::auth::{
 };
 use bb_core::ErrorCode;
 use bb_core::sign_in::SecurityAction;
-use bb_testing::each_database;
+use bb_testing::{Failure, TestResult, each_database};
 
-use super::rig::{Outcome, PASSWORD, Rig, refused};
+use super::rig::{PASSWORD, Rig, refused};
 
 async fn action_count(rig: &Rig, action: SecurityAction) -> Result<usize, bb_store::StoreError> {
     Ok(rig
@@ -22,7 +22,7 @@ async fn action_count(rig: &Rig, action: SecurityAction) -> Result<usize, bb_sto
 }
 
 #[tokio::test]
-async fn auth_09_a_new_setup_code_is_made_at_every_start_and_only_the_newest_works() -> Outcome {
+async fn auth_09_a_new_setup_code_is_made_at_every_start_and_only_the_newest_works() -> TestResult {
     each_database("auth_09_setup_code_per_start", async |db| {
         let rig = Rig::start(db, 10).await?;
         let first = rig.setup_code.clone();
@@ -52,7 +52,7 @@ async fn auth_09_a_new_setup_code_is_made_at_every_start_and_only_the_newest_wor
 }
 
 #[tokio::test]
-async fn auth_09_a_wrong_setup_code_is_refused_counted_and_written_to_the_log() -> Outcome {
+async fn auth_09_a_wrong_setup_code_is_refused_counted_and_written_to_the_log() -> TestResult {
     each_database("auth_09_wrong_setup_code", async |db| {
         let rig = Rig::start(db, 3).await?;
         for typed in ["not a code", "0000-0000-0000-0000", ""] {
@@ -84,7 +84,7 @@ async fn auth_09_a_wrong_setup_code_is_refused_counted_and_written_to_the_log() 
 
 #[tokio::test]
 async fn auth_09_the_setup_code_makes_an_administrator_once_and_setup_is_closed_afterwards()
--> Outcome {
+-> TestResult {
     each_database("auth_09_setup_closes", async |db| {
         let rig = Rig::start(db, 10).await?;
         let status = rig.api().status(Rig::info(), StatusQuery).await?;
@@ -156,7 +156,7 @@ async fn auth_09_the_setup_code_makes_an_administrator_once_and_setup_is_closed_
 }
 
 #[tokio::test]
-async fn auth_09_two_requests_with_the_same_setup_code_make_one_administrator() -> Outcome {
+async fn auth_09_two_requests_with_the_same_setup_code_make_one_administrator() -> TestResult {
     each_database("auth_09_setup_race", async |db| {
         let rig = Rig::start(db, 10).await?;
         let (first, second) =
@@ -170,7 +170,7 @@ async fn auth_09_two_requests_with_the_same_setup_code_make_one_administrator() 
 }
 
 #[tokio::test]
-async fn auth_01_an_unknown_address_and_a_wrong_password_get_the_same_answer() -> Outcome {
+async fn auth_01_an_unknown_address_and_a_wrong_password_get_the_same_answer() -> TestResult {
     each_database("auth_01_same_answer", async |db| {
         let rig = Rig::start(db, 10).await?;
         rig.admin("ada@example.test").await?;
@@ -200,7 +200,7 @@ async fn auth_01_an_unknown_address_and_a_wrong_password_get_the_same_answer() -
 }
 
 #[tokio::test]
-async fn sec_14_only_failed_tries_count_and_a_success_clears_them() -> Outcome {
+async fn sec_14_only_failed_tries_count_and_a_success_clears_them() -> TestResult {
     each_database("sec_14_failures_only", async |db| {
         let rig = Rig::start(db, 3).await?;
         rig.admin("ada@example.test").await?;
@@ -243,7 +243,7 @@ async fn sec_14_only_failed_tries_count_and_a_success_clears_them() -> Outcome {
 }
 
 #[tokio::test]
-async fn auth_01_a_hash_made_with_other_parameters_is_renewed_at_the_next_sign_in() -> Outcome {
+async fn auth_01_a_hash_made_with_other_parameters_is_renewed_at_the_next_sign_in() -> TestResult {
     each_database("auth_01_rehash", async |db| {
         use argon2::password_hash::PasswordHasher as _;
         use argon2::{Algorithm, Argon2, Params, Version};
@@ -327,7 +327,7 @@ fn tally(
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
-async fn sec_14_parallel_wrong_tries_at_one_account_get_no_more_than_the_allowance() -> Outcome {
+async fn sec_14_parallel_wrong_tries_at_one_account_get_no_more_than_the_allowance() -> TestResult {
     each_database("sec_14_parallel_account", async |db| {
         let rig = Rig::start(db, 3).await?;
         rig.admin("ada@example.test").await?;
@@ -359,7 +359,7 @@ async fn sec_14_parallel_wrong_tries_at_one_account_get_no_more_than_the_allowan
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
-async fn sec_14_a_success_gives_the_try_back_also_when_tries_run_at_the_same_time() -> Outcome {
+async fn sec_14_a_success_gives_the_try_back_also_when_tries_run_at_the_same_time() -> TestResult {
     each_database("sec_14_parallel_success", async |db| {
         let rig = Rig::start(db, 3).await?;
         rig.admin("ada@example.test").await?;
@@ -394,7 +394,7 @@ async fn sec_14_a_success_gives_the_try_back_also_when_tries_run_at_the_same_tim
 }
 
 #[tokio::test]
-async fn sec_12_signing_in_again_ends_the_session_the_browser_still_had() -> Outcome {
+async fn sec_12_signing_in_again_ends_the_session_the_browser_still_had() -> TestResult {
     each_database("sec_12_previous_session", async |db| {
         let rig = Rig::start(db, 10).await?;
         let first = rig.admin("ada@example.test").await?;
@@ -442,18 +442,17 @@ async fn sec_12_signing_in_again_ends_the_session_the_browser_still_had() -> Out
 }
 
 #[tokio::test]
-async fn auth_09_wrong_setup_codes_are_counted_per_network_not_for_everybody() -> Outcome {
+async fn auth_09_wrong_setup_codes_are_counted_per_network_not_for_everybody() -> TestResult {
     each_database("auth_09_setup_per_network", async |db| {
         let rig = Rig::start(db, 3).await?;
-        let from =
-            |network: &str| -> Result<RequestInfo, Box<dyn std::error::Error + Send + Sync>> {
-                Ok(RequestInfo {
-                    network: Some(bb_core::network::NetworkPrefix::from_address(
-                        network.parse()?,
-                    )),
-                    device: bb_auth::Device::default(),
-                })
-            };
+        let from = |network: &str| -> Result<RequestInfo, Failure> {
+            Ok(RequestInfo {
+                network: Some(bb_core::network::NetworkPrefix::from_address(
+                    network.parse()?,
+                )),
+                device: bb_auth::Device::default(),
+            })
+        };
         let setup = |code: String| CompleteSetup {
             code,
             display_name: "Ada".to_owned(),
@@ -487,7 +486,7 @@ async fn auth_09_wrong_setup_codes_are_counted_per_network_not_for_everybody() -
 }
 
 #[tokio::test]
-async fn sec_14_a_failure_of_the_server_does_not_use_up_the_tries_at_setup() -> Outcome {
+async fn sec_14_a_failure_of_the_server_does_not_use_up_the_tries_at_setup() -> TestResult {
     each_database("sec_14_internal_setup", async |db| {
         let rig = Rig::start(db, 3).await?;
         let setup = |code: &str| CompleteSetup {

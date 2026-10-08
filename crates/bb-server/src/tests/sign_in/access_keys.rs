@@ -24,11 +24,11 @@ use bb_core::network::NetworkPrefix;
 use bb_core::sign_in::SecurityAction;
 use bb_core::technical::TechnicalName;
 use bb_store::Verification;
-use bb_testing::each_database;
+use bb_testing::{TestResult, each_database};
 use jiff::Timestamp;
 
 use super::policy_rig::{Member, Org, Run};
-use super::rig::{Outcome, PASSWORD, Rig, refused};
+use super::rig::{PASSWORD, Rig, refused};
 
 const DAY: i64 = 24 * 3600;
 
@@ -183,7 +183,7 @@ async fn keys_of(rig: &Rig, owner: &Member) -> Run<Vec<AccessKeyView>> {
 }
 
 #[tokio::test]
-async fn auth_07_a_key_is_shown_once_and_only_its_hash_is_stored() -> Outcome {
+async fn auth_07_a_key_is_shown_once_and_only_its_hash_is_stored() -> TestResult {
     each_database("auth_07_shown_once", async |db| {
         let rig = Rig::start(db, 10).await?;
         let org = Org::start(&rig).await?;
@@ -239,7 +239,7 @@ async fn auth_07_a_key_is_shown_once_and_only_its_hash_is_stored() -> Outcome {
 }
 
 #[tokio::test]
-async fn auth_07_a_key_does_what_its_choice_allows_and_never_more_than_its_owner() -> Outcome {
+async fn auth_07_a_key_does_what_its_choice_allows_and_never_more_than_its_owner() -> TestResult {
     each_database("auth_07_choice_and_owner", async |db| {
         let rig = Rig::start(db, 10).await?;
         let org = Org::start(&rig).await?;
@@ -337,7 +337,7 @@ async fn auth_07_a_key_does_what_its_choice_allows_and_never_more_than_its_owner
 }
 
 #[tokio::test]
-async fn auth_07_a_key_for_projects_counts_in_them_and_their_sub_projects_only() -> Outcome {
+async fn auth_07_a_key_for_projects_counts_in_them_and_their_sub_projects_only() -> TestResult {
     each_database("auth_07_key_projects", async |db| {
         let rig = Rig::start(db, 10).await?;
         let org = Org::start(&rig).await?;
@@ -375,7 +375,7 @@ async fn auth_07_a_key_for_projects_counts_in_them_and_their_sub_projects_only()
 }
 
 #[tokio::test]
-async fn auth_07_a_key_follows_its_owner_losing_a_role_at_once() -> Outcome {
+async fn auth_07_a_key_follows_its_owner_losing_a_role_at_once() -> TestResult {
     each_database("auth_07_follows_owner", async |db| {
         let rig = Rig::start(db, 10).await?;
         let org = Org::start(&rig).await?;
@@ -408,7 +408,7 @@ async fn auth_07_a_key_follows_its_owner_losing_a_role_at_once() -> Outcome {
 }
 
 #[tokio::test]
-async fn auth_07_an_expired_a_deleted_and_an_unknown_key_get_the_same_answer() -> Outcome {
+async fn auth_07_an_expired_a_deleted_and_an_unknown_key_get_the_same_answer() -> TestResult {
     each_database("auth_07_same_answer", async |db| {
         let rig = Rig::start(db, 50).await?;
         let org = Org::start(&rig).await?;
@@ -453,7 +453,7 @@ async fn auth_07_an_expired_a_deleted_and_an_unknown_key_get_the_same_answer() -
 }
 
 #[tokio::test]
-async fn auth_07_the_prefix_of_a_key_has_to_be_the_stored_one() -> Outcome {
+async fn auth_07_the_prefix_of_a_key_has_to_be_the_stored_one() -> TestResult {
     each_database("auth_07_prefix_is_compared", async |db| {
         let rig = Rig::start(db, 50).await?;
         let org = Org::start(&rig).await?;
@@ -578,7 +578,7 @@ async fn the_sign_in_data_turns_the_key_away(rig: &Rig, key: &str) -> Run<()> {
 }
 
 #[tokio::test]
-async fn auth_07_a_key_cannot_change_the_owners_sign_in_data() -> Outcome {
+async fn auth_07_a_key_cannot_change_the_owners_sign_in_data() -> TestResult {
     each_database("auth_07_sign_in_data", async |db| {
         let rig = Rig::start(db, 50).await?;
         let org = Org::start(&rig).await?;
@@ -608,7 +608,7 @@ async fn auth_07_a_key_cannot_change_the_owners_sign_in_data() -> Outcome {
 }
 
 #[tokio::test]
-async fn auth_07_making_a_key_checks_the_password_the_name_and_the_choice() -> Outcome {
+async fn auth_07_making_a_key_checks_the_password_the_name_and_the_choice() -> TestResult {
     each_database("auth_07_make_rules", async |db| {
         let rig = Rig::start(db, 50).await?;
         let org = Org::start(&rig).await?;
@@ -683,7 +683,7 @@ async fn auth_07_making_a_key_checks_the_password_the_name_and_the_choice() -> O
 
 #[tokio::test]
 async fn auth_07_a_key_lives_90_days_unless_a_date_is_picked_and_never_beyond_the_longest_time()
--> Outcome {
+-> TestResult {
     each_database("auth_07_make_dates", async |db| {
         let rig = Rig::start(db, 50).await?;
         let org = Org::start(&rig).await?;
@@ -759,7 +759,7 @@ async fn auth_07_a_key_lives_90_days_unless_a_date_is_picked_and_never_beyond_th
 }
 
 #[tokio::test]
-async fn auth_07_only_the_owner_lists_and_deletes_a_key_and_a_deleted_key_is_gone() -> Outcome {
+async fn auth_07_only_the_owner_lists_and_deletes_a_key_and_a_deleted_key_is_gone() -> TestResult {
     each_database("auth_07_owner_only", async |db| {
         let rig = Rig::start(db, 50).await?;
         let org = Org::start(&rig).await?;
@@ -799,7 +799,7 @@ async fn auth_07_only_the_owner_lists_and_deletes_a_key_and_a_deleted_key_is_gon
 }
 
 #[tokio::test]
-async fn sec_15_making_and_deleting_keys_is_in_the_security_log() -> Outcome {
+async fn sec_15_making_and_deleting_keys_is_in_the_security_log() -> TestResult {
     each_database("sec_15_keys_in_the_log", async |db| {
         let rig = Rig::start(db, 50).await?;
         let org = Org::start(&rig).await?;
@@ -891,7 +891,8 @@ async fn sec_15_making_and_deleting_keys_is_in_the_security_log() -> Outcome {
 }
 
 #[tokio::test]
-async fn sec_14_guessing_keys_is_limited_per_network_and_a_working_key_costs_nothing() -> Outcome {
+async fn sec_14_guessing_keys_is_limited_per_network_and_a_working_key_costs_nothing() -> TestResult
+{
     each_database("sec_14_guessing_keys", async |db| {
         // Three failed tries per network and minute.
         let rig = Rig::start(db, 3).await?;
@@ -926,7 +927,7 @@ async fn sec_14_guessing_keys_is_limited_per_network_and_a_working_key_costs_not
 }
 
 #[tokio::test]
-async fn auth_07_the_last_use_of_a_key_is_kept_to_the_minute() -> Outcome {
+async fn auth_07_the_last_use_of_a_key_is_kept_to_the_minute() -> TestResult {
     each_database("auth_07_last_use", async |db| {
         let rig = Rig::start(db, 50).await?;
         let org = Org::start(&rig).await?;
@@ -987,7 +988,7 @@ async fn choices(rig: &Rig, who: &Member, limit: u32) -> Run<Vec<Vec<String>>> {
 }
 
 #[tokio::test]
-async fn auth_07_a_person_chooses_the_projects_of_a_key_from_those_they_know_about() -> Outcome {
+async fn auth_07_a_person_chooses_the_projects_of_a_key_from_those_they_know_about() -> TestResult {
     each_database("auth_07_project_choices", async |db| {
         let rig = Rig::start(db, 50).await?;
         let org = Org::start(&rig).await?;
@@ -1047,7 +1048,8 @@ async fn auth_07_a_person_chooses_the_projects_of_a_key_from_those_they_know_abo
 }
 
 #[tokio::test]
-async fn auth_07_the_rules_of_a_key_name_its_days_and_the_permissions_to_choose_from() -> Outcome {
+async fn auth_07_the_rules_of_a_key_name_its_days_and_the_permissions_to_choose_from() -> TestResult
+{
     each_database("auth_07_key_rules", async |db| {
         let rig = Rig::start(db, 50).await?;
         let org = Org::start(&rig).await?;

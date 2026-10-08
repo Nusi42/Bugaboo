@@ -6,6 +6,7 @@
 //! fails there even before the tests run. To write the file again after adding a route or an
 //! actor: `BB_SEC_MATRIX_RECORD=write cargo xtask db run -- cargo test -p bb-server sec_01_every_route`.
 
+use bb_testing::Failure;
 use std::collections::BTreeMap;
 use std::fmt::Write as _;
 
@@ -14,7 +15,6 @@ use bb_api_words::matrix;
 
 use super::actors::Actor;
 use super::routes::Expect;
-use crate::sign_in_tests::http::Failure;
 
 /// The file, from the folder of this crate.
 const FILE: &str = "../../tools/checks/sec-matrix-record.txt";

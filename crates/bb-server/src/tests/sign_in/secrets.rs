@@ -14,9 +14,9 @@ use bb_core::event::{EntityKind, EntityRef};
 use bb_core::id::EntityId;
 use bb_core::technical::TechnicalName;
 use bb_store::Verification;
-use bb_testing::each_database;
+use bb_testing::{TestResult, each_database};
 
-use super::rig::{OTHER_PASSWORD, Outcome, PASSWORD, Rig, secret_of};
+use super::rig::{OTHER_PASSWORD, PASSWORD, Rig, secret_of};
 
 async fn events(rig: &Rig) -> Result<usize, bb_store::StoreError> {
     let consumer =
@@ -39,21 +39,21 @@ impl<'a> Counter<'a> {
     }
 
     /// The command that just ran added exactly one event.
-    async fn one_more(&mut self, what: &str) -> Outcome {
+    async fn one_more(&mut self, what: &str) -> TestResult {
         self.seen += 1;
         assert_eq!(events(self.rig).await?, self.seen, "{what}");
         Ok(())
     }
 
     /// Nothing was added (a failure or a read).
-    async fn no_more(&self, what: &str) -> Outcome {
+    async fn no_more(&self, what: &str) -> TestResult {
         assert_eq!(events(self.rig).await?, self.seen, "{what}");
         Ok(())
     }
 }
 
 #[tokio::test]
-async fn adr_0007_accounts_sessions_and_invitations_append_one_event_per_change() -> Outcome {
+async fn adr_0007_accounts_sessions_and_invitations_append_one_event_per_change() -> TestResult {
     each_database("adr_0007_sign_in_events", async |db| {
         let rig = Rig::start(db, 10).await?;
         let mut count = Counter::start(&rig).await?;
@@ -112,7 +112,7 @@ async fn adr_0007_accounts_sessions_and_invitations_append_one_event_per_change(
 }
 
 #[tokio::test]
-async fn adr_0007_the_code_app_appends_one_event_per_change() -> Outcome {
+async fn adr_0007_the_code_app_appends_one_event_per_change() -> TestResult {
     each_database("adr_0007_code_app_events", async |db| {
         let rig = Rig::start(db, 10).await?;
         let admin = rig.admin("ada@example.test").await?;
@@ -155,7 +155,7 @@ async fn adr_0007_the_code_app_appends_one_event_per_change() -> Outcome {
 }
 
 #[tokio::test]
-async fn sec_16_no_secret_is_written_to_an_event_or_to_the_security_log() -> Outcome {
+async fn sec_16_no_secret_is_written_to_an_event_or_to_the_security_log() -> TestResult {
     each_database("sec_16_no_secret_in_events", async |db| {
         let rig = Rig::start(db, 10).await?;
         let admin = rig.admin("ada@example.test").await?;
@@ -244,7 +244,7 @@ async fn sec_16_no_secret_is_written_to_an_event_or_to_the_security_log() -> Out
 }
 
 #[tokio::test]
-async fn sec_15_the_security_log_of_signing_in_verifies_and_names_what_happened() -> Outcome {
+async fn sec_15_the_security_log_of_signing_in_verifies_and_names_what_happened() -> TestResult {
     each_database("sec_15_sign_in_log", async |db| {
         let rig = Rig::start(db, 10).await?;
         rig.admin("ada@example.test").await?;
@@ -287,7 +287,7 @@ async fn sec_15_the_security_log_of_signing_in_verifies_and_names_what_happened(
 }
 
 #[tokio::test]
-async fn adr_0007_events_about_a_fixed_thing_name_the_same_record() -> Outcome {
+async fn adr_0007_events_about_a_fixed_thing_name_the_same_record() -> TestResult {
     each_database("adr_0007_fixed_entity", async |db| {
         let rig = Rig::start(db, 10).await?;
         let admin = rig.admin("ada@example.test").await?;

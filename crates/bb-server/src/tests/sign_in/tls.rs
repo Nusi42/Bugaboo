@@ -12,7 +12,7 @@ use bb_api::{
     AuthHandle, HSTS_MAX_AGE_SELF_SIGNED, Incoming, LimitsConfig, ListenerOptions, Options,
     ProbeHandle, WebSource, serve,
 };
-use bb_testing::each_database;
+use bb_testing::{Failure, TestResult, each_database};
 use h2::client::SendRequest;
 use rustls::pki_types::pem::PemObject as _;
 use rustls::pki_types::{CertificateDer, ServerName};
@@ -22,9 +22,7 @@ use tokio::net::{TcpListener, TcpStream};
 use tokio::sync::oneshot;
 use tokio_rustls::TlsConnector;
 
-use super::rig::{Outcome, PASSWORD, Rig};
-
-type Failure = Box<dyn std::error::Error + Send + Sync>;
+use super::rig::{PASSWORD, Rig};
 
 /// A browser on one HTTP/2 connection.
 struct Client {
@@ -193,7 +191,7 @@ async fn start(rig: &Rig) -> Result<Running, Failure> {
 }
 
 /// The first start: the page asks what to show, then the setup code makes the administrator.
-async fn first_start(client: &mut Client, rig: &Rig, own: &str) -> Outcome {
+async fn first_start(client: &mut Client, rig: &Rig, own: &str) -> TestResult {
     let api = "/api/v1/auth";
     let status = client
         .call("GET", &format!("{api}/status"), None, None, None)
@@ -243,7 +241,7 @@ async fn first_start(client: &mut Client, rig: &Rig, own: &str) -> Outcome {
 
 /// A change from another site, one without the token, and one with a forged token are refused;
 /// the right one signs out.
-async fn changes_need_origin_and_token(client: &mut Client, own: &str) -> Outcome {
+async fn changes_need_origin_and_token(client: &mut Client, own: &str) -> TestResult {
     let sign_out = "/api/v1/auth/sign-out";
     let elsewhere = client
         .call("POST", sign_out, None, Some("https://evil.test"), None)
@@ -271,7 +269,7 @@ async fn changes_need_origin_and_token(client: &mut Client, own: &str) -> Outcom
 }
 
 #[tokio::test(flavor = "multi_thread")]
-async fn sec_12_over_tls_and_http2_a_person_sets_up_signs_out_and_signs_in_again() -> Outcome {
+async fn sec_12_over_tls_and_http2_a_person_sets_up_signs_out_and_signs_in_again() -> TestResult {
     each_database("sec_12_tls_http2_sign_in", async |db| {
         let rig = Rig::start(db, 10).await?;
         let running = start(&rig).await?;

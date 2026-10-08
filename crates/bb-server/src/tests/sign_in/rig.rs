@@ -19,7 +19,7 @@ use bb_core::event::{Actor, Channel, DomainEvent, EntityKind, EntityRef};
 use bb_core::id::{EntityId, EventId, UserId};
 use bb_core::settings::SettingValue;
 use bb_store::{AuthStorage, Database, LogSeal, SettingChange};
-use bb_testing::{TestDatabase, TestResult};
+use bb_testing::{Failure, TestDatabase};
 use jiff::Timestamp;
 
 /// The public address the passkeys of the tests belong to.
@@ -62,10 +62,7 @@ pub(super) struct Rig {
 
 impl Rig {
     /// A server with `failures` failed tries allowed per account and minute.
-    pub(super) async fn start(
-        db: &TestDatabase,
-        failures: u32,
-    ) -> Result<Self, Box<dyn std::error::Error + Send + Sync>> {
+    pub(super) async fn start(db: &TestDatabase, failures: u32) -> Result<Self, Failure> {
         Self::start_with(db, failures, true).await
     }
 
@@ -74,7 +71,7 @@ impl Rig {
         db: &TestDatabase,
         failures: u32,
         passkeys: bool,
-    ) -> Result<Self, Box<dyn std::error::Error + Send + Sync>> {
+    ) -> Result<Self, Failure> {
         let rig = Self::build(db, failures, passkeys, true).await?;
         if rig.setup_code.is_empty() {
             return Err("no setup code on a new database".into());
@@ -83,17 +80,13 @@ impl Rig {
     }
 
     /// A server on a database that somebody set up already (an upgraded one): no setup code.
-    pub(super) async fn start_upgraded(
-        db: &TestDatabase,
-    ) -> Result<Self, Box<dyn std::error::Error + Send + Sync>> {
+    pub(super) async fn start_upgraded(db: &TestDatabase) -> Result<Self, Failure> {
         Self::build(db, 10, true, true).await
     }
 
     /// A server on a new database that has not had its first start: no starting roles, no setup
     /// code. The test makes the first start itself (two servers starting together).
-    pub(super) async fn start_unstarted(
-        db: &TestDatabase,
-    ) -> Result<Self, Box<dyn std::error::Error + Send + Sync>> {
+    pub(super) async fn start_unstarted(db: &TestDatabase) -> Result<Self, Failure> {
         Self::build(db, 10, true, false).await
     }
 
@@ -102,7 +95,7 @@ impl Rig {
         failures: u32,
         passkeys: bool,
         first_start: bool,
-    ) -> Result<Self, Box<dyn std::error::Error + Send + Sync>> {
+    ) -> Result<Self, Failure> {
         let database = Database::connect(db.url()).await?;
         database.migrate(Timestamp::from_second(START)?).await?;
         let folder = tempfile::tempdir()?;
@@ -160,7 +153,7 @@ impl Rig {
         &self,
         key: &str,
         value: i64,
-    ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    ) -> Result<(), Failure> {
         self.put_setting(key, SettingValue::Integer(value)).await
     }
 
@@ -169,15 +162,11 @@ impl Rig {
         &self,
         key: &str,
         value: bool,
-    ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    ) -> Result<(), Failure> {
         self.put_setting(key, SettingValue::Bool(value)).await
     }
 
-    async fn put_setting(
-        &self,
-        key: &str,
-        value: SettingValue,
-    ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    async fn put_setting(&self, key: &str, value: SettingValue) -> Result<(), Failure> {
         let mut ids = SystemIds;
         let event = DomainEvent {
             id: EventId::generate(&mut ids)?,
@@ -276,10 +265,7 @@ impl Rig {
     }
 
     /// What the person behind a session may do for the whole organization.
-    pub(super) async fn permissions(
-        &self,
-        session: &str,
-    ) -> Result<Vec<Permission>, Box<dyn std::error::Error + Send + Sync>> {
+    pub(super) async fn permissions(&self, session: &str) -> Result<Vec<Permission>, Failure> {
         let me = self
             .api()
             .authenticate(
@@ -294,18 +280,13 @@ impl Rig {
     }
 
     /// How many people can manage roles for the whole organization (setup is open while it is 0).
-    pub(super) async fn role_managers(
-        &self,
-    ) -> Result<usize, Box<dyn std::error::Error + Send + Sync>> {
+    pub(super) async fn role_managers(&self) -> Result<usize, Failure> {
         let state = self.storage.organization_state().await?;
         Ok(bb_app::access::guards::role_managers(&state).len())
     }
 
     /// The person with this address.
-    pub(super) async fn person_id(
-        &self,
-        email: &str,
-    ) -> Result<UserId, Box<dyn std::error::Error + Send + Sync>> {
+    pub(super) async fn person_id(&self, email: &str) -> Result<UserId, Failure> {
         let account = self
             .storage
             .account_by_email(email)
@@ -334,6 +315,3 @@ pub(super) fn refused<T>(result: Result<T, AppError>) -> Option<ErrorCode> {
     );
     error.code()
 }
-
-/// Runs a test body that returns a plain error.
-pub(super) type Outcome = TestResult;

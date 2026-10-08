@@ -18,15 +18,13 @@ use bb_api::{AuthHandle, ClientAddr, LimitsConfig, Options, ProbeHandle, WebSour
 use bb_app::auth::AuthStore as _;
 use bb_app::context::Clock as _;
 use bb_auth::TotpSecret;
-use bb_testing::{TestDatabase, each_database};
+use bb_testing::{Failure, TestDatabase, TestResult, each_database};
 use serde_json::{Value, json};
 use tower::ServiceExt as _;
 use webauthn_authenticator_rs::prelude::{Url, WebauthnAuthenticator as _};
 use webauthn_authenticator_rs::softpasskey::SoftPasskey;
 
-use super::rig::{OTHER_PASSWORD, Outcome, PASSWORD, PUBLIC_URL, Rig};
-
-pub(super) type Failure = Box<dyn std::error::Error + Send + Sync>;
+use super::rig::{OTHER_PASSWORD, PASSWORD, PUBLIC_URL, Rig};
 
 /// The third number of the next browser's address (a network is the first three numbers).
 static NEXT_HOST: AtomicU8 = AtomicU8::new(1);
@@ -375,7 +373,7 @@ pub(super) fn sign_in_body(email: &str, password: &str) -> Value {
 }
 
 #[tokio::test]
-async fn sec_12_signing_in_sets_the_session_cookie_and_the_csrf_cookie() -> Outcome {
+async fn sec_12_signing_in_sets_the_session_cookie_and_the_csrf_cookie() -> TestResult {
     each_database("sec_12_http_cookies", async |db| {
         let (rig, app) = rig_and_app(db, 10).await?;
         let mut browser = Browser::new(&app, &called());
@@ -433,7 +431,7 @@ async fn sec_12_signing_in_sets_the_session_cookie_and_the_csrf_cookie() -> Outc
 }
 
 #[tokio::test]
-async fn sec_12_a_change_needs_the_token_of_its_own_session() -> Outcome {
+async fn sec_12_a_change_needs_the_token_of_its_own_session() -> TestResult {
     each_database("sec_12_http_csrf", async |db| {
         let (rig, app) = rig_and_app(db, 10).await?;
         let mut browser = Browser::new(&app, &called());
@@ -510,7 +508,7 @@ async fn sec_12_a_change_needs_the_token_of_its_own_session() -> Outcome {
 
 #[tokio::test]
 async fn sec_12_every_route_that_changes_something_checks_the_token_except_signing_in_and_up()
--> Outcome {
+-> TestResult {
     each_database("sec_12_http_every_route", async |db| {
         let (rig, app) = rig_and_app(db, 10).await?;
         let mut browser = Browser::new(&app, &called());
@@ -545,8 +543,8 @@ async fn sec_12_every_route_that_changes_something_checks_the_token_except_signi
 }
 
 #[tokio::test]
-async fn sec_14_failed_sign_ins_are_turned_away_with_a_wait_and_the_answers_look_alike() -> Outcome
-{
+async fn sec_14_failed_sign_ins_are_turned_away_with_a_wait_and_the_answers_look_alike()
+-> TestResult {
     each_database("sec_14_http_limit", async |db| {
         let (rig, app) = rig_and_app(db, 3).await?;
         let mut browser = Browser::new(&app, &called());
@@ -606,7 +604,7 @@ async fn sec_14_failed_sign_ins_are_turned_away_with_a_wait_and_the_answers_look
 }
 
 #[tokio::test]
-async fn sec_14_failures_of_one_network_are_limited_whatever_the_account() -> Outcome {
+async fn sec_14_failures_of_one_network_are_limited_whatever_the_account() -> TestResult {
     each_database("sec_14_http_network_failures", async |db| {
         let (rig, app) = rig_and_app(db, 3).await?;
         Browser::new(&app, &called())
@@ -663,7 +661,7 @@ async fn sec_14_failures_of_one_network_are_limited_whatever_the_account() -> Ou
 }
 
 #[tokio::test]
-async fn sec_14_one_network_is_limited_in_its_tries_whatever_the_account() -> Outcome {
+async fn sec_14_one_network_is_limited_in_its_tries_whatever_the_account() -> TestResult {
     each_database("sec_14_http_network_limit", async |db| {
         let rig = Rig::start(db, 100).await?;
         let app = router(options(
@@ -715,7 +713,8 @@ async fn sec_14_one_network_is_limited_in_its_tries_whatever_the_account() -> Ou
 }
 
 #[tokio::test]
-async fn auth_01_without_a_database_the_sign_in_routes_say_so_and_nothing_else_breaks() -> Outcome {
+async fn auth_01_without_a_database_the_sign_in_routes_say_so_and_nothing_else_breaks() -> TestResult
+{
     each_database("auth_01_http_unavailable", async |db| {
         let rig = Rig::start(db, 10).await?;
         let app = router(options(&rig, LimitsConfig::default(), false));
@@ -772,7 +771,7 @@ struct Tour {
 
 const API: &str = "/api/v1/auth";
 
-async fn first_start(tour: &mut Tour) -> Outcome {
+async fn first_start(tour: &mut Tour) -> TestResult {
     let rig = &tour.rig;
     let ada = &mut tour.ada;
     let api = API;
@@ -801,7 +800,7 @@ async fn first_start(tour: &mut Tour) -> Outcome {
     Ok(())
 }
 
-async fn invitations(tour: &mut Tour) -> Outcome {
+async fn invitations(tour: &mut Tour) -> TestResult {
     let app = &tour.app;
     let used = &tour.used;
     let ada = &mut tour.ada;
@@ -872,7 +871,7 @@ async fn invitations(tour: &mut Tour) -> Outcome {
     Ok(())
 }
 
-async fn sign_up(tour: &mut Tour) -> Outcome {
+async fn sign_up(tour: &mut Tour) -> TestResult {
     let app = &tour.app;
     let used = &tour.used;
     let ada = &mut tour.ada;
@@ -921,7 +920,7 @@ async fn sign_up(tour: &mut Tour) -> Outcome {
     Ok(())
 }
 
-async fn code_app(tour: &mut Tour) -> Outcome {
+async fn code_app(tour: &mut Tour) -> TestResult {
     let rig = &tour.rig;
     let app = &tour.app;
     let used = &tour.used;
@@ -1010,7 +1009,7 @@ async fn code_app(tour: &mut Tour) -> Outcome {
     Ok(())
 }
 
-async fn passkeys(tour: &mut Tour) -> Outcome {
+async fn passkeys(tour: &mut Tour) -> TestResult {
     let ada = &mut tour.ada;
     let api = API;
     // Passkeys: add, use as the second step, sign in with one alone, remove.
@@ -1041,7 +1040,7 @@ async fn passkeys(tour: &mut Tour) -> Outcome {
 }
 
 /// A passkey as the second step, one alone, and removing it.
-async fn use_passkeys(tour: &mut Tour, device: &mut SoftPasskey, passkey_id: &str) -> Outcome {
+async fn use_passkeys(tour: &mut Tour, device: &mut SoftPasskey, passkey_id: &str) -> TestResult {
     let rig = &tour.rig;
     let app = &tour.app;
     let used = &tour.used;
@@ -1128,7 +1127,7 @@ async fn use_passkeys(tour: &mut Tour, device: &mut SoftPasskey, passkey_id: &st
     Ok(())
 }
 
-async fn sessions_and_password(tour: &mut Tour) -> Outcome {
+async fn sessions_and_password(tour: &mut Tour) -> TestResult {
     let app = &tour.app;
     let used = &tour.used;
     let ada = &mut tour.ada;
@@ -1211,7 +1210,7 @@ fn documented_routes(prefix: &str) -> BTreeSet<String> {
 }
 
 /// Every route of the API description under /auth was used.
-fn every_route_was_used(tour: &Tour) -> Outcome {
+fn every_route_was_used(tour: &Tour) -> TestResult {
     let documented = documented_routes("/api/v1/auth/");
     let used = tour.used.lock().map_err(|_| "poisoned")?.clone();
     assert_eq!(
@@ -1242,7 +1241,7 @@ fn the_walk_over_the_routes_of_the_description_sees_every_method_including_patch
 /// that were used are compared with the API description at the end, so a new route that no
 /// test uses fails here.
 #[tokio::test]
-async fn auth_01_every_route_of_signing_in_works_over_http() -> Outcome {
+async fn auth_01_every_route_of_signing_in_works_over_http() -> TestResult {
     each_database("auth_01_http_every_route", async |db| {
         let (rig, app) = rig_and_app(db, 10).await?;
         let used = called();
@@ -1265,7 +1264,7 @@ async fn auth_01_every_route_of_signing_in_works_over_http() -> Outcome {
 }
 
 #[tokio::test]
-async fn perf_02_the_invitation_list_takes_fields_cursor_and_limit_over_http() -> Outcome {
+async fn perf_02_the_invitation_list_takes_fields_cursor_and_limit_over_http() -> TestResult {
     each_database("perf_02_http_invitation_list", async |db| {
         let (rig, app) = rig_and_app(db, 10).await?;
         let mut ada = Browser::new(&app, &called());
@@ -1345,7 +1344,7 @@ async fn perf_02_the_invitation_list_takes_fields_cursor_and_limit_over_http() -
 
 #[tokio::test]
 async fn sec_12_a_password_alone_shows_nothing_about_the_person_until_the_second_step_is_done()
--> Outcome {
+-> TestResult {
     each_database("sec_12_http_hidden_person", async |db| {
         let (rig, app) = rig_and_app(db, 10).await?;
         let used = called();
@@ -1397,7 +1396,7 @@ async fn sec_12_a_password_alone_shows_nothing_about_the_person_until_the_second
 }
 
 #[tokio::test]
-async fn perf_02_the_lists_with_a_hard_cap_say_whether_they_were_cut() -> Outcome {
+async fn perf_02_the_lists_with_a_hard_cap_say_whether_they_were_cut() -> TestResult {
     each_database("perf_02_http_capped_lists", async |db| {
         let (rig, app) = rig_and_app(db, 10).await?;
         let mut ada = Browser::new(&app, &called());

@@ -8,15 +8,13 @@ use axum::Router;
 use axum::body::Body;
 use axum::http::{Request, StatusCode, header};
 use bb_api::{LimitsConfig, Options, WebSource, router};
-use bb_testing::{TestResult, each_database};
+use bb_testing::{Failure, TestResult, each_database};
 use serde_json::{Value, json};
 use tower::ServiceExt as _;
 
 use super::{Serving, Wired, wire};
 use crate::config::{Settings, Sources, resolve};
 use crate::data_folder::DataFolder;
-
-type Failure = Box<dyn std::error::Error + Send + Sync>;
 
 fn settings(data: &Path, database: Option<&str>) -> Result<Settings, Failure> {
     let mut cli = vec![

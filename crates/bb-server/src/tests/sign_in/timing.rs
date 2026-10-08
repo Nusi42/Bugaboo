@@ -8,9 +8,9 @@
 
 use std::time::{Duration, Instant};
 
-use bb_testing::each_database;
+use bb_testing::{TestResult, each_database};
 
-use super::rig::{Outcome, PASSWORD, Rig};
+use super::rig::{PASSWORD, Rig};
 
 /// How many tries of each kind. Odd, so the middle is one measurement.
 const TRIES: usize = 15;
@@ -21,7 +21,7 @@ fn middle(mut times: Vec<Duration>) -> Duration {
 }
 
 #[tokio::test(flavor = "multi_thread")]
-async fn auth_01_an_unknown_account_takes_as_long_as_a_wrong_password() -> Outcome {
+async fn auth_01_an_unknown_account_takes_as_long_as_a_wrong_password() -> TestResult {
     each_database("auth_01_timing", async |db| {
         // No limit gets in the way of the measurement.
         let rig = Rig::start(db, 100_000).await?;

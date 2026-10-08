@@ -15,10 +15,10 @@ use bb_core::ErrorCode;
 use bb_core::id::ProjectId;
 use bb_core::settings::SettingValue;
 use bb_core::sign_in::SecurityAction;
-use bb_testing::each_database;
+use bb_testing::{TestResult, each_database};
 
 use super::policy_rig::{Member, Org, Run};
-use super::rig::{Outcome, PASSWORD, Rig, refused};
+use super::rig::{PASSWORD, Rig, refused};
 
 pub(super) fn text(value: &str) -> SettingValue {
     SettingValue::Text(value.to_owned())
@@ -155,7 +155,7 @@ pub(super) async fn people(org: &Org<'_>) -> Run<People> {
 
 #[tokio::test]
 async fn cfg_06_a_project_value_is_inherited_by_sub_projects_and_a_person_value_wins_for_the_person()
--> Outcome {
+-> TestResult {
     each_database("cfg_06_inherited_use_cases", async |db| {
         let rig = Rig::start(db, 10).await?;
         let org = Org::start(&rig).await?;
@@ -205,7 +205,7 @@ async fn cfg_06_a_project_value_is_inherited_by_sub_projects_and_a_person_value_
 }
 
 #[tokio::test]
-async fn cfg_06_a_locked_organization_value_wins_and_lower_values_are_refused() -> Outcome {
+async fn cfg_06_a_locked_organization_value_wins_and_lower_values_are_refused() -> TestResult {
     each_database("cfg_06_locked_use_cases", async |db| {
         let rig = Rig::start(db, 10).await?;
         let org = Org::start(&rig).await?;
@@ -266,7 +266,7 @@ async fn cfg_06_a_locked_organization_value_wins_and_lower_values_are_refused() 
 }
 
 #[tokio::test]
-async fn cfg_06_resetting_a_locked_organization_value_keeps_the_lock() -> Outcome {
+async fn cfg_06_resetting_a_locked_organization_value_keeps_the_lock() -> TestResult {
     each_database("cfg_06_reset_keeps_lock", async |db| {
         let rig = Rig::start(db, 10).await?;
         let org = Org::start(&rig).await?;
@@ -292,7 +292,7 @@ async fn cfg_06_resetting_a_locked_organization_value_keeps_the_lock() -> Outcom
 }
 
 #[tokio::test]
-async fn cfg_06_reset_to_default_removes_only_that_layer() -> Outcome {
+async fn cfg_06_reset_to_default_removes_only_that_layer() -> TestResult {
     each_database("cfg_06_reset_use_cases", async |db| {
         let rig = Rig::start(db, 10).await?;
         let org = Org::start(&rig).await?;
@@ -353,7 +353,7 @@ async fn cfg_06_reset_to_default_removes_only_that_layer() -> Outcome {
 
 #[tokio::test]
 async fn cfg_06_only_administrators_change_organization_values_and_each_person_only_their_own()
--> Outcome {
+-> TestResult {
     each_database("cfg_06_who_may_change", async |db| {
         let rig = Rig::start(db, 10).await?;
         let org = Org::start(&rig).await?;
@@ -377,7 +377,7 @@ async fn cfg_06_only_administrators_change_organization_values_and_each_person_o
 }
 
 #[tokio::test]
-async fn cfg_06_only_project_leads_change_the_values_of_their_project() -> Outcome {
+async fn cfg_06_only_project_leads_change_the_values_of_their_project() -> TestResult {
     each_database("cfg_06_who_may_change_project", async |db| {
         let rig = Rig::start(db, 10).await?;
         let org = Org::start(&rig).await?;
@@ -438,7 +438,7 @@ async fn cfg_06_only_project_leads_change_the_values_of_their_project() -> Outco
 }
 
 #[tokio::test]
-async fn cfg_06_each_person_changes_only_their_own_values() -> Outcome {
+async fn cfg_06_each_person_changes_only_their_own_values() -> TestResult {
     each_database("cfg_06_who_may_change_person", async |db| {
         let rig = Rig::start(db, 10).await?;
         let org = Org::start(&rig).await?;
@@ -531,8 +531,8 @@ async fn cfg_06_each_person_changes_only_their_own_values() -> Outcome {
 }
 
 #[tokio::test]
-async fn cfg_04_my_settings_are_kept_for_the_person_and_follow_them_to_another_browser() -> Outcome
-{
+async fn cfg_04_my_settings_are_kept_for_the_person_and_follow_them_to_another_browser()
+-> TestResult {
     each_database("cfg_04_follows_the_person", async |db| {
         let rig = Rig::start(db, 10).await?;
         let org = Org::start(&rig).await?;
@@ -597,7 +597,7 @@ async fn cfg_04_my_settings_are_kept_for_the_person_and_follow_them_to_another_b
 }
 
 #[tokio::test]
-async fn cfg_06_a_change_of_a_setting_that_touches_security_is_in_the_security_log() -> Outcome {
+async fn cfg_06_a_change_of_a_setting_that_touches_security_is_in_the_security_log() -> TestResult {
     each_database("cfg_06_security_log", async |db| {
         let rig = Rig::start(db, 10).await?;
         let org = Org::start(&rig).await?;
@@ -646,7 +646,7 @@ async fn cfg_06_a_change_of_a_setting_that_touches_security_is_in_the_security_l
 }
 
 #[tokio::test]
-async fn cfg_06_the_changes_of_a_setting_are_events_about_that_setting() -> Outcome {
+async fn cfg_06_the_changes_of_a_setting_are_events_about_that_setting() -> TestResult {
     each_database("cfg_06_events", async |db| {
         let rig = Rig::start(db, 10).await?;
         let org = Org::start(&rig).await?;

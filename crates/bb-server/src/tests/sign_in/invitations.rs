@@ -8,9 +8,9 @@ use bb_app::auth::{
 use bb_auth::{Purpose, SecretToken};
 use bb_core::ErrorCode;
 use bb_core::sign_in::SecurityAction;
-use bb_testing::each_database;
+use bb_testing::{TestResult, each_database};
 
-use super::rig::{OTHER_PASSWORD, Outcome, PASSWORD, Rig, refused, secret_of};
+use super::rig::{OTHER_PASSWORD, PASSWORD, Rig, refused, secret_of};
 
 const WEEK: i64 = 7 * 24 * 3600;
 
@@ -71,7 +71,7 @@ async fn action_count(rig: &Rig, action: SecurityAction) -> Result<usize, bb_sto
 }
 
 #[tokio::test]
-async fn auth_06_an_administrator_invites_and_the_link_works_once() -> Outcome {
+async fn auth_06_an_administrator_invites_and_the_link_works_once() -> TestResult {
     each_database("auth_06_invite", async |db| {
         let rig = Rig::start(db, 10).await?;
         let admin = rig.admin("ada@example.test").await?;
@@ -156,7 +156,7 @@ async fn auth_06_an_administrator_invites_and_the_link_works_once() -> Outcome {
 }
 
 #[tokio::test]
-async fn auth_06_only_administrators_manage_invitations() -> Outcome {
+async fn auth_06_only_administrators_manage_invitations() -> TestResult {
     each_database("auth_06_admin_only", async |db| {
         let rig = Rig::start(db, 10).await?;
         let admin = rig.admin("ada@example.test").await?;
@@ -238,7 +238,7 @@ async fn auth_06_only_administrators_manage_invitations() -> Outcome {
 }
 
 #[tokio::test]
-async fn auth_06_an_invitation_runs_out_after_seven_days() -> Outcome {
+async fn auth_06_an_invitation_runs_out_after_seven_days() -> TestResult {
     each_database("auth_06_expiry", async |db| {
         let rig = Rig::start(db, 10).await?;
         let admin = rig.admin("ada@example.test").await?;
@@ -280,7 +280,7 @@ async fn auth_06_an_invitation_runs_out_after_seven_days() -> Outcome {
 }
 
 #[tokio::test]
-async fn auth_06_two_people_with_the_same_link_make_one_account() -> Outcome {
+async fn auth_06_two_people_with_the_same_link_make_one_account() -> TestResult {
     each_database("auth_06_race", async |db| {
         let rig = Rig::start(db, 10).await?;
         let admin = rig.admin("ada@example.test").await?;
@@ -353,7 +353,8 @@ async fn change_policy(
 }
 
 #[tokio::test]
-async fn auth_06_signing_up_is_off_by_default_and_only_administrators_change_the_rule() -> Outcome {
+async fn auth_06_signing_up_is_off_by_default_and_only_administrators_change_the_rule() -> TestResult
+{
     each_database("auth_06_sign_up_rule", async |db| {
         let rig = Rig::start(db, 10).await?;
         let admin = rig.admin("ada@example.test").await?;
@@ -415,7 +416,7 @@ async fn auth_06_signing_up_is_off_by_default_and_only_administrators_change_the
 }
 
 #[tokio::test]
-async fn auth_06_signing_up_follows_the_rule_of_the_administrator() -> Outcome {
+async fn auth_06_signing_up_follows_the_rule_of_the_administrator() -> TestResult {
     each_database("auth_06_sign_up_follows_rule", async |db| {
         let rig = Rig::start(db, 10).await?;
         let admin = rig.admin("ada@example.test").await?;
@@ -499,7 +500,7 @@ async fn page(
 }
 
 #[tokio::test]
-async fn perf_02_invitations_are_listed_page_by_page_without_a_hidden_cap() -> Outcome {
+async fn perf_02_invitations_are_listed_page_by_page_without_a_hidden_cap() -> TestResult {
     each_database("perf_02_invitation_pages", async |db| {
         let rig = Rig::start(db, 10).await?;
         let admin = rig.admin("ada@example.test").await?;

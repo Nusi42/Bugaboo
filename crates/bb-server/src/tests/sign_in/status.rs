@@ -9,12 +9,12 @@ use bb_api::tls::ServedCertificate;
 use bb_api::{LimitsConfig, ProbeHandle, router};
 use bb_app::status::{DatabaseKind, LogBreak, LogState, ServerProbe as _};
 use bb_store::Database;
-use bb_testing::each_database;
+use bb_testing::{Failure, TestResult, each_database};
 use serde_json::json;
 use tower::ServiceExt as _;
 
 use super::http::{Browser, called, options, setup_body};
-use super::rig::{Outcome, PASSWORD, Rig};
+use super::rig::{PASSWORD, Rig};
 use crate::probe::{LogChecking, Probe};
 
 const STATUS: &str = "/api/v1/admin/status";
@@ -55,7 +55,7 @@ pub(super) fn app_with_probe_and_limits(
 }
 
 #[tokio::test]
-async fn ops_08_only_administrators_see_the_status_of_the_server() -> Outcome {
+async fn ops_08_only_administrators_see_the_status_of_the_server() -> TestResult {
     each_database("ops_08_status_access", async |db| {
         let rig = Rig::start(db, 10).await?;
         let app = app_with_probe(&rig, None);
@@ -110,7 +110,7 @@ async fn ops_08_only_administrators_see_the_status_of_the_server() -> Outcome {
 }
 
 #[tokio::test]
-async fn ops_08_the_status_shows_the_result_of_checking_the_security_log() -> Outcome {
+async fn ops_08_the_status_shows_the_result_of_checking_the_security_log() -> TestResult {
     each_database("ops_08_status_security_log", async |db| {
         let rig = Rig::start(db, 10).await?;
         let app = app_with_probe(&rig, None);
@@ -138,7 +138,7 @@ async fn ops_08_the_status_shows_the_result_of_checking_the_security_log() -> Ou
 }
 
 #[tokio::test]
-async fn ops_08_the_status_shows_the_end_of_the_certificate_it_serves_now() -> Outcome {
+async fn ops_08_the_status_shows_the_end_of_the_certificate_it_serves_now() -> TestResult {
     each_database("ops_08_status_certificate", async |db| {
         let rig = Rig::start(db, 10).await?;
         let folder = tempfile::tempdir()?;
@@ -152,7 +152,7 @@ async fn ops_08_the_status_shows_the_end_of_the_certificate_it_serves_now() -> O
         let mut ada = Browser::new(&app, &called());
         ada.send("POST", "/api/v1/auth/setup", Some(setup_body(&rig)))
             .await?;
-        let ends = async |ada: &mut Browser| -> Result<jiff::Timestamp, Box<dyn std::error::Error + Send + Sync>> {
+        let ends = async |ada: &mut Browser| -> Result<jiff::Timestamp, Failure> {
             let reply = ada.send("GET", STATUS, None).await?;
             Ok(reply.body["certificate"]["expires_at"]
                 .as_str()
@@ -175,7 +175,7 @@ async fn ops_08_the_status_shows_the_end_of_the_certificate_it_serves_now() -> O
 }
 
 #[tokio::test]
-async fn ops_08_ready_means_the_database_answers() -> Outcome {
+async fn ops_08_ready_means_the_database_answers() -> TestResult {
     each_database("ops_08_ready_database", async |db| {
         let rig = Rig::start(db, 10).await?;
         let app = app_with_probe(&rig, None);
@@ -184,10 +184,7 @@ async fn ops_08_ready_means_the_database_answers() -> Outcome {
             let response = app.clone().oneshot(request).await?;
             let status = response.status();
             let bytes = axum::body::to_bytes(response.into_body(), usize::MAX).await?;
-            Ok::<_, Box<dyn std::error::Error + Send + Sync>>((
-                status,
-                String::from_utf8(bytes.to_vec())?,
-            ))
+            Ok::<_, Failure>((status, String::from_utf8(bytes.to_vec())?))
         };
         let (status, body) = ready().await?;
         assert_eq!(status, StatusCode::OK);
@@ -222,7 +219,7 @@ fn probe_of(rig: &Rig, checking: LogChecking) -> Probe {
 }
 
 /// How many entries the status shows, and the place of the last one.
-fn log_of(state: &LogState) -> Result<(u64, i64), Box<dyn std::error::Error + Send + Sync>> {
+fn log_of(state: &LogState) -> Result<(u64, i64), Failure> {
     match state {
         LogState::Valid {
             entries,
@@ -235,7 +232,7 @@ fn log_of(state: &LogState) -> Result<(u64, i64), Box<dyn std::error::Error + Se
 
 #[tokio::test]
 async fn ops_08_the_status_page_follows_the_log_and_reuses_its_answer_until_something_is_written()
--> Outcome {
+-> TestResult {
     each_database("ops_08_status_incremental", async |db| {
         let rig = Rig::start(db, 10).await?;
         let kept = probe_of(
@@ -293,7 +290,7 @@ async fn ops_08_the_status_page_follows_the_log_and_reuses_its_answer_until_some
 }
 
 #[tokio::test]
-async fn sec_15_the_status_page_warns_when_a_log_entry_could_not_be_written() -> Outcome {
+async fn sec_15_the_status_page_warns_when_a_log_entry_could_not_be_written() -> TestResult {
     each_database("sec_15_status_failed_write", async |db| {
         let rig = Rig::start(db, 10).await?;
         let app = app_with_probe(&rig, None);
@@ -330,7 +327,7 @@ async fn sec_15_the_status_page_warns_when_a_log_entry_could_not_be_written() ->
 }
 
 #[tokio::test]
-async fn sec_15_the_status_page_warns_when_the_anchor_is_ahead() -> Outcome {
+async fn sec_15_the_status_page_warns_when_the_anchor_is_ahead() -> TestResult {
     each_database("sec_15_status_anchor_ahead", async |db| {
         let rig = Rig::start(db, 10).await?;
         rig.admin("ada@example.test").await?;
@@ -381,7 +378,7 @@ async fn sec_15_the_status_page_warns_when_the_anchor_is_ahead() -> Outcome {
 }
 
 /// Gives every account on this computer a right to read `folder`.
-fn open_up(folder: &std::path::Path) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+fn open_up(folder: &std::path::Path) -> Result<(), Failure> {
     #[cfg(unix)]
     {
         use std::os::unix::fs::PermissionsExt as _;
@@ -399,7 +396,7 @@ fn open_up(folder: &std::path::Path) -> Result<(), Box<dyn std::error::Error + S
 }
 
 #[tokio::test]
-async fn sec_16_the_status_page_shows_what_of_the_data_folder_is_too_open() -> Outcome {
+async fn sec_16_the_status_page_shows_what_of_the_data_folder_is_too_open() -> TestResult {
     each_database("sec_16_status_data_folder", async |db| {
         let rig = Rig::start(db, 10).await?;
         let data = crate::data_folder::DataFolder::prepare(&rig.folder.path().join("data"))?;
@@ -448,7 +445,8 @@ async fn sec_16_the_status_page_shows_what_of_the_data_folder_is_too_open() -> O
 }
 
 #[tokio::test]
-async fn sec_16_the_status_page_says_unknown_when_the_data_folder_cannot_be_looked_at() -> Outcome {
+async fn sec_16_the_status_page_says_unknown_when_the_data_folder_cannot_be_looked_at() -> TestResult
+{
     each_database("sec_16_status_unknown", async |db| {
         let rig = Rig::start(db, 10).await?;
         // The folder is not there to look at: the page must not say that all is well.

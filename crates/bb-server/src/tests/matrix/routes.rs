@@ -28,7 +28,7 @@ use bb_app::auth::MakeAccessKey;
 use bb_app::roles::RolesQuery;
 use bb_core::access_key::KeyChoice;
 use bb_core::id::{ProjectId, RoleId};
-use bb_testing::each_database;
+use bb_testing::{Failure, TestResult, each_database};
 use serde_json::json;
 
 use super::actors::{
@@ -37,9 +37,9 @@ use super::actors::{
 };
 use super::examples::{EXAMPLES, Example, Quirk, request};
 use super::record::Record;
-use crate::sign_in_tests::http::{Browser, Failure, Reply, called};
+use crate::sign_in_tests::http::{Browser, Reply, called};
 use crate::sign_in_tests::policy_rig::{Member, Org};
-use crate::sign_in_tests::rig::{Outcome, PASSWORD, Rig};
+use crate::sign_in_tests::rig::{PASSWORD, Rig};
 use crate::sign_in_tests::status::app_with_probe;
 
 /// What the server must answer.
@@ -494,7 +494,7 @@ async fn run(rig: &Rig, actors: &[Actor]) -> Result<Record, Failure> {
 }
 
 #[tokio::test]
-async fn sec_01_every_route_answers_every_actor_as_the_permission_table_says() -> Outcome {
+async fn sec_01_every_route_answers_every_actor_as_the_permission_table_says() -> TestResult {
     each_database("sec_matrix_every_route_every_actor", async |db| {
         let rig = Rig::start(db, 1000).await?;
         let record = run(&rig, &actors()).await?;

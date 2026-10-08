@@ -12,11 +12,12 @@ use bb_app::roles::{
 };
 use bb_core::access::AppliesTo;
 use bb_core::id::{GroupId, ProjectId, RoleId, UserId};
+use bb_testing::Failure;
 
 use super::rig::Rig;
 
 /// What a test body returns: any error.
-pub(super) type Run<T> = Result<T, Box<dyn std::error::Error + Send + Sync>>;
+pub(super) type Run<T> = Result<T, Failure>;
 
 /// A person of the test organization: who they are and the secret of their session.
 #[derive(Clone)]

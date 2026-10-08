@@ -4,7 +4,7 @@ use std::collections::VecDeque;
 use std::net::IpAddr;
 use std::path::Path;
 
-use bb_testing::TestResult;
+use bb_testing::{Failure, TestResult};
 use clap::Parser as _;
 
 use super::*;
@@ -68,7 +68,7 @@ fn all_free(_: IpAddr, _: u16) -> bool {
     true
 }
 
-fn written(target: &Path) -> Result<Settings, Box<dyn std::error::Error + Send + Sync>> {
+fn written(target: &Path) -> Result<Settings, Failure> {
     let text = std::fs::read_to_string(target)?;
     Ok(resolve(&Sources {
         file: Some((target, &text)),

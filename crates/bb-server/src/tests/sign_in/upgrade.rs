@@ -9,14 +9,14 @@ use bb_core::id::UserId;
 use bb_core::settings::SettingValue;
 use bb_core::sign_in::SecurityAction;
 use bb_store::{Database, M1Person, M3Setting, Scopes};
-use bb_testing::each_database;
+use bb_testing::{TestResult, each_database};
 use jiff::Timestamp;
 use zeroize::Zeroizing;
 
-use super::rig::{Outcome, PASSWORD, Rig};
+use super::rig::{PASSWORD, Rig};
 
 #[tokio::test]
-async fn sec_08_m1_administrators_become_administrators_and_nobody_else_does() -> Outcome {
+async fn sec_08_m1_administrators_become_administrators_and_nobody_else_does() -> TestResult {
     each_database("sec_08_m1_upgrade", async |db| {
         // The database as M1 left it: migrations 1 and 2, two administrators and one more person.
         let old = Database::connect(db.url()).await?;
@@ -109,7 +109,7 @@ async fn sec_08_m1_administrators_become_administrators_and_nobody_else_does() -
 
 /// The words a person's choice of theme had before the mode and the two themes replaced it.
 #[tokio::test]
-async fn cfg_04_the_theme_of_m1_becomes_the_mode_and_the_light_and_the_dark_theme() -> Outcome {
+async fn cfg_04_the_theme_of_m1_becomes_the_mode_and_the_light_and_the_dark_theme() -> TestResult {
     each_database("cfg_04_theme_carried_over", async |db| {
         let old = Database::connect(db.url()).await?;
         old.migrate_up_to(2, Timestamp::UNIX_EPOCH).await?;

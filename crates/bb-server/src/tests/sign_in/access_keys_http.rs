@@ -11,12 +11,12 @@ use bb_app::auth::{DeleteAccessKey, MakeAccessKey};
 use bb_auth::AccessKeySecret;
 use bb_core::access_key::KeyChoice;
 use bb_core::sign_in::SecurityAction;
-use bb_testing::each_database;
+use bb_testing::{Failure, TestResult, each_database};
 use serde_json::{Value, json};
 
 use super::http::{Browser, called, example_path};
 use super::policy_rig::Org;
-use super::rig::{Outcome, PASSWORD, Rig};
+use super::rig::{PASSWORD, Rig};
 use super::status::{app_with_probe, app_with_probe_and_limits};
 
 /// A route that a key may use (it needs *See status*, a permission keys may hold) ...
@@ -38,7 +38,7 @@ fn alike(reply: &super::http::Reply) -> (u16, String, String) {
 }
 
 #[tokio::test]
-async fn auth_07_a_script_with_a_key_needs_no_origin_no_token_and_no_cookie() -> Outcome {
+async fn auth_07_a_script_with_a_key_needs_no_origin_no_token_and_no_cookie() -> TestResult {
     each_database("auth_07_script_http", async |db| {
         let rig = Rig::start(db, 50).await?;
         let org = Org::start(&rig).await?;
@@ -100,7 +100,7 @@ async fn auth_07_a_script_with_a_key_needs_no_origin_no_token_and_no_cookie() ->
 }
 
 #[tokio::test]
-async fn sec_06_a_page_of_another_website_cannot_send_a_key() -> Outcome {
+async fn sec_06_a_page_of_another_website_cannot_send_a_key() -> TestResult {
     each_database("sec_06_no_cors_for_keys", async |db| {
         let rig = Rig::start(db, 50).await?;
         let org = Org::start(&rig).await?;
@@ -171,7 +171,7 @@ fn reply_headers(reply: &super::http::Reply) -> Vec<String> {
 }
 
 #[tokio::test]
-async fn sec_14_a_key_has_its_own_limit() -> Outcome {
+async fn sec_14_a_key_has_its_own_limit() -> TestResult {
     each_database("sec_14_key_limit", async |db| {
         let rig = Rig::start(db, 50).await?;
         let org = Org::start(&rig).await?;
@@ -221,8 +221,8 @@ async fn sec_14_a_key_has_its_own_limit() -> Outcome {
 }
 
 #[tokio::test]
-async fn auth_07_an_expired_a_deleted_and_an_unknown_key_get_the_same_answer_over_http() -> Outcome
-{
+async fn auth_07_an_expired_a_deleted_and_an_unknown_key_get_the_same_answer_over_http()
+-> TestResult {
     each_database("auth_07_same_answer_http", async |db| {
         let rig = Rig::start(db, 50).await?;
         let org = Org::start(&rig).await?;
@@ -279,7 +279,7 @@ async fn auth_07_an_expired_a_deleted_and_an_unknown_key_get_the_same_answer_ove
 const MY_SETTINGS: [&str; 3] = ["listMySettings", "changeMySetting", "resetMySetting"];
 
 #[tokio::test]
-async fn auth_07_no_route_of_the_owners_sign_in_data_opens_for_a_key() -> Outcome {
+async fn auth_07_no_route_of_the_owners_sign_in_data_opens_for_a_key() -> TestResult {
     each_database("auth_07_sign_in_data_http", async |db| {
         let rig = Rig::start(db, 50).await?;
         let org = Org::start(&rig).await?;
@@ -340,7 +340,7 @@ async fn auth_07_no_route_of_the_owners_sign_in_data_opens_for_a_key() -> Outcom
 }
 
 /// Ada, signed in in a browser of her own.
-async fn ada_in_a_browser(app: &axum::Router) -> Result<Browser, super::http::Failure> {
+async fn ada_in_a_browser(app: &axum::Router) -> Result<Browser, Failure> {
     let mut ada = Browser::new(app, &called());
     ada.send(
         "POST",
@@ -352,7 +352,7 @@ async fn ada_in_a_browser(app: &axum::Router) -> Result<Browser, super::http::Fa
 }
 
 /// The rules of this organization for a key and the projects to choose from, as the page asks.
-async fn rules_and_projects(ada: &mut Browser) -> Result<(), super::http::Failure> {
+async fn rules_and_projects(ada: &mut Browser) -> Result<(), Failure> {
     let rules = ada.send("GET", "/api/v1/access-keys/rules", None).await?;
     assert_eq!(rules.body["default_days"], 90);
     assert_eq!(rules.body["longest_days"], 365);
@@ -367,7 +367,7 @@ async fn rules_and_projects(ada: &mut Browser) -> Result<(), super::http::Failur
 }
 
 #[tokio::test]
-async fn auth_07_a_person_makes_lists_and_deletes_keys_over_http() -> Outcome {
+async fn auth_07_a_person_makes_lists_and_deletes_keys_over_http() -> TestResult {
     each_database("auth_07_keys_over_http", async |db| {
         let rig = Rig::start(db, 50).await?;
         Org::start(&rig).await?;
@@ -473,8 +473,8 @@ async fn auth_07_a_person_makes_lists_and_deletes_keys_over_http() -> Outcome {
 }
 
 #[tokio::test]
-async fn auth_07_a_key_is_judged_before_the_body_or_the_address_of_the_request_is_read() -> Outcome
-{
+async fn auth_07_a_key_is_judged_before_the_body_or_the_address_of_the_request_is_read()
+-> TestResult {
     each_database("auth_07_actor_before_body", async |db| {
         let rig = Rig::start(db, 50).await?;
         let org = Org::start(&rig).await?;
@@ -508,7 +508,7 @@ async fn auth_07_a_key_is_judged_before_the_body_or_the_address_of_the_request_i
 }
 
 #[tokio::test]
-async fn auth_07_a_key_that_may_see_the_status_reads_it_and_no_other_key_does() -> Outcome {
+async fn auth_07_a_key_that_may_see_the_status_reads_it_and_no_other_key_does() -> TestResult {
     each_database("auth_07_status_by_key", async |db| {
         let rig = Rig::start(db, 50).await?;
         let org = Org::start(&rig).await?;

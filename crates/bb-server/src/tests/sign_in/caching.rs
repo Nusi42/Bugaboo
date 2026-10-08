@@ -9,12 +9,12 @@ use axum::http::{Method, Request, StatusCode};
 use bb_api::openapi::operations;
 use bb_app::access::Permission;
 use bb_app::roles::MakeRole;
-use bb_testing::each_database;
+use bb_testing::{Failure, TestResult, each_database};
 use serde_json::json;
 use tower::ServiceExt as _;
 
-use super::http::{Browser, Failure, called, never_stored_reads, setup_body, totp};
-use super::rig::{Outcome, PASSWORD, Rig};
+use super::http::{Browser, called, never_stored_reads, setup_body, totp};
+use super::rig::{PASSWORD, Rig};
 use super::status::app_with_probe;
 
 /// The addresses of every `GET` route in the API description.
@@ -57,7 +57,7 @@ pub(super) async fn invited_person(
 }
 
 #[tokio::test]
-async fn perf_03_every_get_answers_an_etag_and_304_on_a_match() -> Outcome {
+async fn perf_03_every_get_answers_an_etag_and_304_on_a_match() -> TestResult {
     each_database("perf_03_http_etags", async |db| {
         let rig = Rig::start(db, 10).await?;
         let app = app_with_probe(&rig, None);
@@ -169,7 +169,7 @@ async fn perf_03_every_get_answers_an_etag_and_304_on_a_match() -> Outcome {
 }
 
 #[tokio::test]
-async fn perf_03_a_read_asked_about_again_is_not_modified_when_nothing_changed() -> Outcome {
+async fn perf_03_a_read_asked_about_again_is_not_modified_when_nothing_changed() -> TestResult {
     each_database("perf_03_http_not_modified", async |db| {
         let rig = Rig::start(db, 10).await?;
         let app = app_with_probe(&rig, None);
@@ -202,7 +202,7 @@ async fn perf_03_a_read_asked_about_again_is_not_modified_when_nothing_changed()
 }
 
 #[tokio::test]
-async fn perf_03_answers_with_personal_data_are_never_stored_for_anybody() -> Outcome {
+async fn perf_03_answers_with_personal_data_are_never_stored_for_anybody() -> TestResult {
     each_database("perf_03_http_personal_data", async |db| {
         let rig = Rig::start(db, 10).await?;
         let app = app_with_probe(&rig, None);
@@ -233,7 +233,7 @@ async fn perf_03_answers_with_personal_data_are_never_stored_for_anybody() -> Ou
 }
 
 #[tokio::test]
-async fn perf_03_answers_with_a_secret_are_not_stored_or_compressed() -> Outcome {
+async fn perf_03_answers_with_a_secret_are_not_stored_or_compressed() -> TestResult {
     each_database("perf_03_http_secret_answers", async |db| {
         let rig = Rig::start(db, 10).await?;
         let app = app_with_probe(&rig, None);
@@ -304,7 +304,7 @@ async fn perf_03_answers_with_a_secret_are_not_stored_or_compressed() -> Outcome
 }
 
 #[tokio::test]
-async fn sec_12_signing_out_clears_what_the_browser_cached() -> Outcome {
+async fn sec_12_signing_out_clears_what_the_browser_cached() -> TestResult {
     each_database("sec_12_http_clear_cache", async |db| {
         let rig = Rig::start(db, 10).await?;
         let app = app_with_probe(&rig, None);
@@ -339,7 +339,7 @@ async fn sec_12_signing_out_clears_what_the_browser_cached() -> Outcome {
 }
 
 #[tokio::test]
-async fn sec_12_ending_the_own_session_is_signing_out_but_ending_another_is_not() -> Outcome {
+async fn sec_12_ending_the_own_session_is_signing_out_but_ending_another_is_not() -> TestResult {
     each_database("sec_12_http_end_own_session", async |db| {
         let rig = Rig::start(db, 10).await?;
         let app = app_with_probe(&rig, None);

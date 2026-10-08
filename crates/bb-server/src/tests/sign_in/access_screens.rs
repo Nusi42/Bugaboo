@@ -8,12 +8,12 @@ use bb_app::access::{Permission, StartingRole};
 use bb_app::auth::{AcceptInvitation, CreateInvitation};
 use bb_app::roles::{ChangeRole, RolesQuery};
 use bb_core::id::{ProjectId, RoleId};
-use bb_testing::each_database;
+use bb_testing::{Failure, TestResult, each_database};
 use serde_json::{Value, json};
 
-use super::http::{Browser, Failure, called};
+use super::http::{Browser, called};
 use super::policy_rig::{Member, Org};
-use super::rig::{Outcome, PASSWORD, Rig, secret_of};
+use super::rig::{PASSWORD, Rig, secret_of};
 use super::status::app_with_probe;
 
 pub(super) const FIELDS: &str = "/api/v1/field-permissions";
@@ -121,7 +121,7 @@ pub(super) fn at(project: ProjectId) -> String {
 
 #[tokio::test]
 async fn sec_04_a_field_level_set_on_a_project_applies_to_its_sub_projects_and_can_be_changed_below()
--> Outcome {
+-> TestResult {
     each_database("sec_04_levels_over_http", async |db| {
         let rig = Rig::start(db, 10).await?;
         let org = Org::start(&rig).await?;
@@ -237,8 +237,8 @@ async fn sec_04_a_field_level_set_on_a_project_applies_to_its_sub_projects_and_c
 }
 
 #[tokio::test]
-async fn sec_04_who_may_change_a_level_is_judged_in_the_place_and_never_above_their_own() -> Outcome
-{
+async fn sec_04_who_may_change_a_level_is_judged_in_the_place_and_never_above_their_own()
+-> TestResult {
     each_database("sec_04_levels_who_may", async |db| {
         let rig = Rig::start(db, 10).await?;
         let org = Org::start(&rig).await?;
@@ -311,7 +311,7 @@ async fn sec_04_who_may_change_a_level_is_judged_in_the_place_and_never_above_th
 }
 
 #[tokio::test]
-async fn sec_04_nobody_sets_a_level_above_their_own_over_http() -> Outcome {
+async fn sec_04_nobody_sets_a_level_above_their_own_over_http() -> TestResult {
     each_database("sec_04_levels_above_own", async |db| {
         let rig = Rig::start(db, 10).await?;
         let org = Org::start(&rig).await?;
@@ -391,7 +391,7 @@ async fn sec_04_nobody_sets_a_level_above_their_own_over_http() -> Outcome {
 
 #[tokio::test]
 async fn priv_12_who_sees_people_is_set_per_role_and_kind_and_inherited_like_field_levels()
--> Outcome {
+-> TestResult {
     each_database("priv_12_kinds_over_http", async |db| {
         let rig = Rig::start(db, 10).await?;
         let org = Org::start(&rig).await?;
@@ -471,7 +471,7 @@ async fn priv_12_who_sees_people_is_set_per_role_and_kind_and_inherited_like_fie
 
 #[tokio::test]
 async fn priv_12_a_guest_sees_role_only_or_someone_as_set_and_no_name_reaches_their_browser()
--> Outcome {
+-> TestResult {
     each_database("priv_12_guest_over_http", async |db| {
         let rig = Rig::start(db, 10).await?;
         let org = Org::start(&rig).await?;
@@ -576,8 +576,8 @@ async fn priv_12_a_guest_sees_role_only_or_someone_as_set_and_no_name_reaches_th
 }
 
 #[tokio::test]
-async fn sec_06_a_hidden_field_is_missing_from_every_m2_answer_and_cannot_be_asked_for() -> Outcome
-{
+async fn sec_06_a_hidden_field_is_missing_from_every_m2_answer_and_cannot_be_asked_for()
+-> TestResult {
     each_database("sec_06_hidden_field_over_http", async |db| {
         let rig = Rig::start(db, 10).await?;
         let org = Org::start(&rig).await?;
@@ -638,7 +638,7 @@ async fn sec_06_a_hidden_field_is_missing_from_every_m2_answer_and_cannot_be_ask
 
 #[tokio::test]
 async fn sec_03_check_access_over_http_names_no_project_the_checker_cannot_see_and_agrees_with_the_engine()
--> Outcome {
+-> TestResult {
     each_database("sec_03_check_over_http", async |db| {
         let rig = Rig::start(db, 10).await?;
         let org = Org::start(&rig).await?;
@@ -741,7 +741,7 @@ async fn sec_03_check_access_over_http_names_no_project_the_checker_cannot_see_a
 
 #[tokio::test]
 async fn sec_03_the_people_to_check_are_listed_by_name_a_page_at_a_time_and_found_by_words()
--> Outcome {
+-> TestResult {
     each_database("sec_03_people_to_check", async |db| {
         let rig = Rig::start(db, 10).await?;
         let org = Org::start(&rig).await?;
