@@ -1,11 +1,10 @@
 import { t } from "@bugaboo/messages";
-import { Card } from "@bugaboo/ui";
+import { Card, partOf, part } from "@bugaboo/ui";
 import type { ReactNode } from "react";
 
 import { mayOpenProjectPage, projectPages, type ProjectPage } from "../../shared/project-pages.ts";
 import { ProjectTabs, type OneProject } from "../projects/index.ts";
 import { NotFoundPage } from "../shell/index.ts";
-import styles from "./Access.module.css";
 import { CheckAccessView } from "./CheckAccessView.tsx";
 import { FieldPermissionsTable, PeopleVisibilityTable } from "./tables.tsx";
 
@@ -24,11 +23,11 @@ function ProjectFrame({ project, page, heading, intro, children }: ProjectFrameP
     return <NotFoundPage />;
   }
   return (
-    <div className={styles.stack}>
+    <div {...partOf(part.stack)}>
       <ProjectTabs project={project} />
       <Card heading={heading} level={1}>
-        <div className={styles.stack}>
-          <p className={styles.intro}>{intro}</p>
+        <div {...partOf(part.stack)}>
+          <p {...partOf(part.muted)}>{intro}</p>
           {children}
         </div>
       </Card>

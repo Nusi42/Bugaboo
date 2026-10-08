@@ -1,9 +1,8 @@
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, SaveStatus, SelectField, useLayout } from "@bugaboo/ui";
+import { Alert, alertTone, SaveStatus, SelectField, useLayout, partOf, part } from "@bugaboo/ui";
 import { useState, type ReactNode } from "react";
 
 import { QueryGate } from "../shell/index.ts";
-import styles from "./Access.module.css";
 import { LevelsMatrix, type LevelsViewProps } from "./LevelsMatrix.tsx";
 import { rank, type LevelTable } from "./levels.ts";
 import { RoleLevels } from "./RoleLevels.tsx";
@@ -61,10 +60,10 @@ function TableBody<Subject extends string, Level extends string>({
 }: TableBodyProps<Subject, Level>) {
   const showChooser = table.roles.length > 0 && (!computer || previewLabel !== undefined);
   return (
-    <div className={styles.stack}>
+    <div {...partOf(part.stack)}>
       {table.truncated ? <Alert tone={alertTone.warning}>{t("access.roles-cut")}</Alert> : null}
-      {table.roles.length === 0 ? <p className={styles.muted}>{t("access.no-roles")}</p> : null}
-      {hasCeiling(table) ? <p className={styles.muted}>{t("access.ceiling")}</p> : null}
+      {table.roles.length === 0 ? <p {...partOf(part.muted)}>{t("access.no-roles")}</p> : null}
+      {hasCeiling(table) ? <p {...partOf(part.muted)}>{t("access.ceiling")}</p> : null}
       <SaveStatus
         state={edits.saveState}
         labels={{

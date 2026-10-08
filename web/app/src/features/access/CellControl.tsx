@@ -1,7 +1,6 @@
 import { t } from "@bugaboo/messages";
-import { Button, buttonLook, SelectField } from "@bugaboo/ui";
+import { Button, buttonLook, SelectField, partOf, part } from "@bugaboo/ui";
 
-import styles from "./Access.module.css";
 import { mayPick, type Cell } from "./levels.ts";
 import { originText } from "./origin-text.ts";
 
@@ -39,7 +38,7 @@ export function CellControl<Level extends string>({
 }: CellControlProps<Level>) {
   const origin = originText(cell.origin);
   return (
-    <div className={styles.cell}>
+    <div {...partOf(part.accessCell)}>
       <SelectField
         label={label}
         hideLabel={hideLabel}

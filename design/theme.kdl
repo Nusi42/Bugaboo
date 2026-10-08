@@ -1396,3 +1396,167 @@ part "settings.edit" {
     gap "$space-2"
     max-width "$size-form"
 }
+
+// ───────────── Access ─────────────
+
+// The matrix: a table of roles by fields that scrolls by itself when the roles do not fit.
+part "access.scroll" {
+    // The names of the lists that only screen readers read are positioned boxes: this keeps them in the region.
+    position relative
+    overflow-x auto
+    border "$border-width solid $border-subtle"
+    border-radius "$r-ctl"
+    background "$bg-surface"
+}
+
+part "access.scroll:focus-visible" {
+    outline "$ring-width solid $accent"
+    outline-offset 0
+}
+
+part "access.matrix" {
+    border-collapse separate
+    border-spacing 0
+    width "100%"
+}
+
+part "access.matrix-cell" {
+    padding "$space-2 $space-3"
+    border-bottom "$border-width solid $border-subtle"
+    text-align start
+    vertical-align top
+}
+
+// The column heads stay at the top, the row heads (the name of the field) at the start.
+part "access.matrix-cell[variant=head]" {
+    position sticky
+    top 0
+    background "$bg-sunken"
+    color "$fg"
+    font-weight "$weight-bold"
+    min-width "calc($size-target * 3)"
+}
+
+part "access.matrix-cell[variant=row]" {
+    position sticky
+    inset-inline-start 0
+    background "$bg-surface"
+    color "$fg"
+    font-weight "$weight-bold"
+    min-width "calc($size-target * 3)"
+}
+
+part "access.matrix-cell[variant=head]:first-child" {
+    inset-inline-start 0
+    z-index "$z-raised"
+}
+
+part "access.matrix-row:last-child access.matrix-cell" {
+    border-bottom 0
+}
+
+part "access.list-item" {
+    display flex
+    flex-direction column
+    gap "$space-2"
+    padding "$space-3"
+    border "$border-width solid $border-subtle"
+    border-radius "$r-ctl"
+    background "$bg-surface"
+    min-width 0
+}
+
+part "access.cell" {
+    display flex
+    flex-direction column
+    align-items flex-start
+    gap "$space-1"
+    min-width 0
+}
+
+part "access.cell > field" {
+    width "100%"
+}
+
+part "access.preview" {
+    display flex
+    flex-direction column
+    gap "$space-2"
+    padding "$space-3"
+    border "$border-width solid $border"
+    border-radius "$r-ctl"
+    background "$bg-sunken"
+}
+
+part "access.preview-heading" {
+    margin 0
+    font-size "$fs-md"
+    font-weight "$weight-bold"
+    color "$fg"
+}
+
+part "access.preview-lines" {
+    display flex
+    flex-direction column
+    gap "$space-1"
+    margin 0
+    padding 0
+    list-style none
+}
+
+part "access.preview-line" {
+    font-size "$fs-md"
+    color "$fg"
+}
+
+part "access.answer" {
+    display flex
+    flex-direction column
+    gap "$space-1"
+    padding "$space-3"
+    border "$border-width solid $border-subtle"
+    border-radius "$r-ctl"
+    background "$bg-surface"
+    min-width 0
+    overflow-wrap anywhere
+}
+
+part "access.answer-head" {
+    display flex
+    flex-wrap wrap
+    align-items baseline
+    gap "$space-1 $space-3"
+}
+
+part "access.answer-name" {
+    margin 0
+    font-size "$fs-md"
+    font-weight "$weight-bold"
+    color "$fg"
+}
+
+part "access.verdict" {
+    margin-inline-end "$space-1"
+}
+
+part "access.verdict[variant=yes]" {
+    color "$success"
+}
+
+part "access.verdict[variant=no]" {
+    color "$danger"
+}
+
+part "access.reasons" {
+    margin 0
+    color "$fg"
+    font-size "$fs-base"
+    line-height "$lh-text"
+}
+
+part "access.topic" {
+    margin 0
+    font-size "$fs-md"
+    font-weight "$weight-bold"
+    color "$fg"
+}

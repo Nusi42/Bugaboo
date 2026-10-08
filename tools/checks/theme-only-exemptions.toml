@@ -6,10 +6,6 @@
 # shrinks as the components move and is empty when package C-06 is done.
 
 [[exempt]]
-path = "web/app/src/features/access/"
-reason = "The access feature still has CSS Modules and class names; package C-06 moves it onto part rules (M2C-F90)."
-
-[[exempt]]
 path = "web/app/src/features/my-settings/"
 reason = "The my-settings feature still has CSS Modules and class names; package C-06 moves it onto part rules (M2C-F90)."
 
