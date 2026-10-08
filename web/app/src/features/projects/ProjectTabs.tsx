@@ -2,8 +2,9 @@ import { t } from "@bugaboo/messages";
 import { Link } from "@bugaboo/ui";
 import { useLocation } from "@tanstack/react-router";
 
+import { projectPageAddress } from "../../shared/project-pages.ts";
 import styles from "./Projects.module.css";
-import { tabAddress, tabName, tabsOf } from "./settings-tabs.ts";
+import { tabsOf } from "./settings-tabs.ts";
 import type { OneProject } from "./use-projects.ts";
 
 /**
@@ -22,11 +23,11 @@ export function ProjectTabs({ project }: { readonly project: OneProject }) {
     <nav aria-label={t("projects.tabs")}>
       <ul className={styles.tabs}>
         {tabs.map((tab) => {
-          const address = tabAddress(tab, shortName);
+          const address = projectPageAddress(tab, shortName);
           return (
-            <li key={tab}>
+            <li key={tab.path}>
               <Link href={address} current={pathname === address}>
-                {t(tabName(tab))}
+                {t(tab.tab ?? tab.name)}
               </Link>
             </li>
           );

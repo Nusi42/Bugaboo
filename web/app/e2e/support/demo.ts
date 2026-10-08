@@ -1,7 +1,7 @@
 import { t } from "@bugaboo/messages";
 import { expect, type Locator, type Page } from "@playwright/test";
 
-import { paths, projectPageAddress } from "../../src/shared/paths.ts";
+import { paths, addressInProject } from "../../src/shared/paths.ts";
 import { expectGoodInEveryLook } from "./checks.ts";
 import { layoutOf } from "./layout.ts";
 import { inOrder } from "./sequence.ts";
@@ -67,7 +67,7 @@ export async function seesOnlyTheTreeOf(page: Page, shortName: string): Promise<
 /** The pages of the administrators, and a project the person has no part in, do not exist for them. */
 export async function findsNoneOf(page: Page, own: string, other: string): Promise<void> {
   await inOrder(
-    [paths.people, paths.roles, projectPageAddress(paths.projectFields, own), `/p/${other}`].map(
+    [paths.people, paths.roles, addressInProject(paths.projectFields, own), `/p/${other}`].map(
       (address) => async () => {
         await page.goto(address);
         await expect(

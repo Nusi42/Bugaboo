@@ -1,10 +1,10 @@
 import { Card } from "@bugaboo/ui";
 
+import { projectPages } from "../../shared/project-pages.ts";
 import { ProjectFacts } from "./ProjectFacts.tsx";
 import { ProjectGate } from "./ProjectGate.tsx";
 import styles from "./Projects.module.css";
 import { SubProjects } from "./SubProjects.tsx";
-import { projectPage } from "./use-project-page.ts";
 import type { OneProject } from "./use-projects.ts";
 
 /** The page itself, once the project is known. */
@@ -27,7 +27,7 @@ function Overview({ project }: { readonly project: OneProject }) {
  */
 export function ProjectOverviewPage({ address }: { readonly address: string }) {
   return (
-    <ProjectGate address={address} kind={projectPage.overview}>
+    <ProjectGate address={address} page={projectPages.overview}>
       {(project) => <Overview project={project} />}
     </ProjectGate>
   );

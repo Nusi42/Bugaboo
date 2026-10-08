@@ -1,35 +1,13 @@
 import { t } from "@bugaboo/messages";
-import { Alert, Button, Card, Link } from "@bugaboo/ui";
+import { Alert, Button, Card } from "@bugaboo/ui";
 
 import { messageOf } from "../../shared/errors.ts";
-import { projectAddress, projectSettingsAddress } from "../../shared/paths.ts";
 import { usePageTitle } from "../../shared/use-page.ts";
 import { ListEditor, type ListRow } from "../shell/index.ts";
-import { ChangeProjectForm } from "./ChangeProjectForm.tsx";
 import { MakeProjectForm } from "./MakeProjectForm.tsx";
+import { ProjectEditor } from "./ProjectEditor.tsx";
 import styles from "./Projects.module.css";
-import { linesOf, useProject, useProjectList, type ProjectLine } from "./use-projects.ts";
-
-/** The editor of one project in the side panel: its name and short name, and the way to its pages. */
-function ProjectEditor({ shortName }: { readonly shortName: string }) {
-  const project = useProject(shortName);
-  if (project.isError) {
-    return <Alert danger>{messageOf(project.error)}</Alert>;
-  }
-  if (project.isPending) {
-    return <p className={styles.muted}>{t("common.loading")}</p>;
-  }
-  const changer = project.data.permissions.includes("change-project-settings");
-  return (
-    <>
-      {changer ? <ChangeProjectForm key={project.data.project.id} project={project.data} /> : null}
-      <div className={styles.row}>
-        <Link href={projectAddress(shortName)}>{t("projects.open")}</Link>
-        <Link href={projectSettingsAddress(shortName)}>{t("projects.settings-link")}</Link>
-      </div>
-    </>
-  );
-}
+import { linesOf, useProjectList, type ProjectLine } from "./use-projects.ts";
 
 /** Where a project sits and its short name, after its name in the list. */
 function Details({ project }: { readonly project: ProjectLine }) {

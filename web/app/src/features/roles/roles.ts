@@ -12,9 +12,6 @@ import {
 } from "../../shared/paged.ts";
 import { queryKeys } from "../../shared/query-keys.ts";
 
-/** One permission of the catalogue, by its key. */
-export type PermissionKey = Schema<"Permission">;
-
 /** A role that has what a line of a list needs (the fields can be missing in an answer). */
 export interface RoleLine {
   readonly id: string;

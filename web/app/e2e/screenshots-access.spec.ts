@@ -1,7 +1,7 @@
 import { t } from "@bugaboo/messages";
 import { type Page } from "@playwright/test";
 
-import { paths, projectPageAddress } from "../src/shared/paths.ts";
+import { paths, addressInProject } from "../src/shared/paths.ts";
 import { ada, bob, cleo, makeAdmin } from "./support/accounts.ts";
 import {
   ana,
@@ -104,12 +104,12 @@ test("what roles see at phone width", async ({ page, server }) => {
   await page.setViewportSize(PHONE);
   await signIn(page, ada);
 
-  await page.goto(projectPageAddress(paths.projectFields, "ACME"));
+  await page.goto(addressInProject(paths.projectFields, "ACME"));
   const list = await levelList(page, t("issue-field.cost-center"), roleName.contributor);
   await expect(list).toHaveValue("hidden");
   await shot(page, "60-field-permissions");
 
-  await page.goto(projectPageAddress(paths.projectFields, "WEB"));
+  await page.goto(addressInProject(paths.projectFields, "WEB"));
   const below = await levelList(page, t("issue-field.cost-center"), roleName.contributor);
   await expect(below).toHaveValue("hidden");
   await shot(page, "61-field-permissions-inherited");
@@ -163,7 +163,7 @@ test("check access of a lead who cannot see the parent project at phone width", 
   });
   const page = await context.newPage();
   await signIn(page, lea);
-  await page.goto(projectPageAddress(paths.projectCheckAccess, "WEB"));
+  await page.goto(addressInProject(paths.projectCheckAccess, "WEB"));
   await check(page, null, ana.name);
   await expect(page.getByText(t("access.hidden-project")).first()).toBeVisible();
   await shot(page, "66-check-access-hidden-project");
@@ -174,7 +174,7 @@ test("a level that is set and taken away at phone width", async ({ page }) => {
   test.setTimeout(180_000);
   await page.setViewportSize(PHONE);
   await signIn(page, ada);
-  await page.goto(projectPageAddress(paths.projectFields, "WEB"));
+  await page.goto(addressInProject(paths.projectFields, "WEB"));
   const list = await levelList(page, t("issue-field.cost-center"), roleName.contributor);
   await pickLevel(list, page, t("field-level.can-see"));
   await shot(page, "67-field-permissions-changed-below");
@@ -184,7 +184,7 @@ test("the matrix of field permissions on a computer", async ({ page }) => {
   test.setTimeout(180_000);
   await page.setViewportSize(COMPUTER);
   await signIn(page, ada);
-  await page.goto(projectPageAddress(paths.projectFields, "ACME"));
+  await page.goto(addressInProject(paths.projectFields, "ACME"));
   await expect(
     page.getByLabel(
       t("access.cell-label", { subject: t("issue-field.cost-center"), role: roleName.contributor }),

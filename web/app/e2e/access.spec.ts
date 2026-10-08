@@ -1,7 +1,7 @@
 import { t } from "@bugaboo/messages";
 import { type Page } from "@playwright/test";
 
-import { paths, projectPageAddress } from "../src/shared/paths.ts";
+import { paths, addressInProject } from "../src/shared/paths.ts";
 import { ada, bob, cleo, makeAdmin } from "./support/accounts.ts";
 import {
   ana,
@@ -71,7 +71,7 @@ test("sec_04 hiding Cost center from Contributors in a project reaches its sub-p
   // DOCS, inside WEB, inherits it as well.
   await open(
     page,
-    projectPageAddress(paths.projectFields, "DOCS"),
+    addressInProject(paths.projectFields, "DOCS"),
     t("field-permissions.project-title", { project: "Documents" }),
   );
   const inDocs = await levelList(page, costCenter, roleName.contributor);
@@ -81,7 +81,7 @@ test("sec_04 hiding Cost center from Contributors in a project reaches its sub-p
 /** A Contributor starts with *Can see* on Cost center; hide it in ACME. */
 async function hideInAcme(page: Page): Promise<void> {
   const acme = t("field-permissions.project-title", { project: "Acme Corporation" });
-  await open(page, projectPageAddress(paths.projectFields, "ACME"), acme);
+  await open(page, addressInProject(paths.projectFields, "ACME"), acme);
   const inAcme = await levelList(page, costCenter, roleName.contributor);
   await expect(inAcme).toHaveValue("can-see");
   await pickLevel(inAcme, page, t("field-level.hidden"));
@@ -92,7 +92,7 @@ async function hideInAcme(page: Page): Promise<void> {
 async function changeBelow(page: Page): Promise<void> {
   await open(
     page,
-    projectPageAddress(paths.projectFields, "WEB"),
+    addressInProject(paths.projectFields, "WEB"),
     t("field-permissions.project-title", { project: "Website" }),
   );
   const inWeb = await levelList(page, costCenter, roleName.contributor);
@@ -220,7 +220,7 @@ test("sec_03 a lead who cannot see the project a role comes from reads a project
   await signIn(page, lea);
   await open(
     page,
-    projectPageAddress(paths.projectCheckAccess, "WEB"),
+    addressInProject(paths.projectCheckAccess, "WEB"),
     t("check-access.project-title", { project: "Website" }),
   );
   await check(page, null, ana.name);
@@ -240,9 +240,9 @@ test("sec_01 a Contributor and a Guest find none of these pages", async ({ brows
     paths.fieldPermissions,
     paths.peopleVisibility,
     paths.checkAccess,
-    projectPageAddress(paths.projectFields, "ACME"),
-    projectPageAddress(paths.projectPeople, "ACME"),
-    projectPageAddress(paths.projectCheckAccess, "ACME"),
+    addressInProject(paths.projectFields, "ACME"),
+    addressInProject(paths.projectPeople, "ACME"),
+    addressInProject(paths.projectCheckAccess, "ACME"),
   ];
   await inOrder(
     [bob, cleo].map((person) => async () => {
@@ -268,7 +268,7 @@ test("ux_04 the matrix, the preview and the answer are good in the four themes",
   await signIn(page, ada);
   await open(
     page,
-    projectPageAddress(paths.projectFields, "WEB"),
+    addressInProject(paths.projectFields, "WEB"),
     t("field-permissions.project-title", { project: "Website" }),
   );
   await levelList(page, costCenter, roleName.contributor);

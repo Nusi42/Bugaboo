@@ -5,10 +5,8 @@ import {
   paths,
   personAddress,
   projectAddress,
-  projectPageAddress,
-  projectRolesAddress,
-  projectSettingsAddress,
   roleAddress,
+  addressInProject,
 } from "../src/shared/paths.ts";
 import { ada, addCodeApp, bob, invite, makeAdmin, makePerson } from "./support/accounts.ts";
 import {
@@ -152,27 +150,27 @@ const visits: readonly Visit[] = [
   { address: paths.project, open: signedIn(projectAddress("WEB")), guest: false },
   {
     address: paths.projectSettings,
-    open: signedIn(projectSettingsAddress("WEB")),
+    open: signedIn(addressInProject(paths.projectSettings, "WEB")),
     guest: false,
   },
   {
     address: paths.projectRoles,
-    open: signedIn(projectRolesAddress("WEB")),
+    open: signedIn(addressInProject(paths.projectRoles, "WEB")),
     guest: false,
   },
   {
     address: paths.projectFields,
-    open: signedIn(projectPageAddress(paths.projectFields, "WEB")),
+    open: signedIn(addressInProject(paths.projectFields, "WEB")),
     guest: false,
   },
   {
     address: paths.projectPeople,
-    open: signedIn(projectPageAddress(paths.projectPeople, "WEB")),
+    open: signedIn(addressInProject(paths.projectPeople, "WEB")),
     guest: false,
   },
   {
     address: paths.projectCheckAccess,
-    open: signedIn(projectPageAddress(paths.projectCheckAccess, "WEB")),
+    open: signedIn(addressInProject(paths.projectCheckAccess, "WEB")),
     guest: false,
   },
   { address: paths.frames, open: signedIn(paths.frames), guest: false },

@@ -1,9 +1,10 @@
 import { t } from "@bugaboo/messages";
 
 import {
+  addressInProject,
   groupAddress,
+  paths,
   personAddress,
-  projectRolesAddress,
   roleAddress,
 } from "../src/shared/paths.ts";
 import { ada, bob, cleo, makeAdmin, makePerson } from "./support/accounts.ts";
@@ -81,7 +82,7 @@ test("the pages of people, groups and roles", async ({ page }) => {
   await shoot(page, "53-role", MILESTONE);
 
   // Website: the rows of Acme come down to it, and the group gets No access here.
-  await page.goto(projectRolesAddress("WEB"));
+  await page.goto(addressInProject(paths.projectRoles, "WEB"));
   const rows = page.getByRole("list", { name: t("assignments.list"), exact: true });
   await expect(rows.getByRole("listitem").first()).toBeVisible();
   await page.getByRole("radio", { name: t("assignments.kind-group"), exact: true }).check();

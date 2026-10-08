@@ -1,6 +1,6 @@
+import { projectPages } from "../../shared/project-pages.ts";
 import { ProjectGate } from "./ProjectGate.tsx";
 import { ProjectSettings } from "./ProjectSettings.tsx";
-import { projectPage } from "./use-project-page.ts";
 
 /**
  * *Project settings*, `/p/WEB/settings` (PRJ-01, PRJ-03): the name and short name of a project and
@@ -10,7 +10,7 @@ import { projectPage } from "./use-project-page.ts";
  */
 export function ProjectSettingsPage({ address }: { readonly address: string }) {
   return (
-    <ProjectGate address={address} kind={projectPage.settings}>
+    <ProjectGate address={address} page={projectPages.settings}>
       {(project) => <ProjectSettings project={project} address={address} />}
     </ProjectGate>
   );

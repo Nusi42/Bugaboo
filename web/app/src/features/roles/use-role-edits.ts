@@ -4,7 +4,7 @@ import { api } from "../../shared/api.ts";
 import { queryClient } from "../../shared/query-client.ts";
 import { queryKeys } from "../../shared/query-keys.ts";
 import { useOptimisticMutation, type OptimisticMutation } from "../../shared/use-optimistic.ts";
-import type { PermissionKey } from "./roles.ts";
+import type { PermissionKey } from "../../shared/permissions.ts";
 
 type Detail = Schema<"RoleDetailBody">;
 

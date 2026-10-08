@@ -1,7 +1,7 @@
 import { t } from "@bugaboo/messages";
 import { type Locator, type Page } from "@playwright/test";
 
-import { projectRolesAddress, roleAddress } from "../src/shared/paths.ts";
+import { addressInProject, paths, roleAddress } from "../src/shared/paths.ts";
 import { ada, bob, cleo, makeAdmin, makePerson } from "./support/accounts.ts";
 import { expectGoodInEveryLook } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
@@ -119,7 +119,7 @@ test("sec_02 a group gets the role on a project and the sub-project shows the ro
   page,
 }) => {
   await signIn(page, ada);
-  await page.goto(projectRolesAddress("ACME"));
+  await page.goto(addressInProject(paths.projectRoles, "ACME"));
   await expect(
     page.getByRole("heading", { level: 1, name: t("assignments.title-project", { name: "Acme" }) }),
   ).toBeVisible();
@@ -132,7 +132,7 @@ test("sec_02 a group gets the role on a project and the sub-project shows the ro
     rows.getByText(`Reviewer · ${t("roles.applies.project-and-sub-projects")}`),
   ).toBeVisible();
   // On the sub-project the same row comes from Acme, and is changed for this project.
-  await page.goto(projectRolesAddress("WEB"));
+  await page.goto(addressInProject(paths.projectRoles, "WEB"));
   const inherited = page.getByRole("list", { name: t("assignments.list"), exact: true });
   const backend = inherited
     .getByRole("listitem")
@@ -206,7 +206,7 @@ test("sec_08 a role in use is deleted with the role that takes its place", async
   const list = page.getByRole("list", { name: t("roles.list"), exact: true });
   await expect(list.getByRole("link", { name: "Reviewer", exact: true })).toHaveCount(0);
   // The group keeps its row on the project, now with the role that took the place.
-  await page.goto(projectRolesAddress("ACME"));
+  await page.goto(addressInProject(paths.projectRoles, "ACME"));
   const rows = page.getByRole("list", { name: t("assignments.list"), exact: true });
   await expect(
     rows.getByText(`Guest · ${t("roles.applies.project-and-sub-projects")}`),
@@ -234,7 +234,7 @@ test("sec_02 a Project lead sees who has which role in their project and nothing
   await expect(page).toHaveURL(/\/p\/ACME\/settings\/roles$/u);
   await expect(page.getByRole("list", { name: t("assignments.list"), exact: true })).toBeVisible();
   // Another project, and the organization's pages, are not there for a Project lead.
-  await page.goto(projectRolesAddress("LAB"));
+  await page.goto(addressInProject(paths.projectRoles, "LAB"));
   await expect(
     page.getByRole("heading", { level: 1, name: t("page.not-found.title") }),
   ).toBeVisible();

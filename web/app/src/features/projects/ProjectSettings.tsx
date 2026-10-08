@@ -2,7 +2,7 @@ import { t } from "@bugaboo/messages";
 import { Card, Link } from "@bugaboo/ui";
 import { useNavigate } from "@tanstack/react-router";
 
-import { paths, projectAddress } from "../../shared/paths.ts";
+import { paths, projectAddress, routeParam } from "../../shared/paths.ts";
 import { ChangeProjectForm } from "./ChangeProjectForm.tsx";
 import { MoveProject } from "./MoveProject.tsx";
 import { OtherTab } from "./OtherTab.tsx";
@@ -42,7 +42,7 @@ export function ProjectSettings({
               if (saved !== address) {
                 void navigate({
                   to: paths.projectSettings,
-                  params: { project: saved },
+                  params: { [routeParam.project]: saved },
                   replace: true,
                 });
               }

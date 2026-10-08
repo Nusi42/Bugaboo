@@ -1,7 +1,7 @@
+import { addressInProject, paths } from "../src/shared/paths.ts";
 import { t } from "@bugaboo/messages";
 import { type Page } from "@playwright/test";
 
-import { projectRolesAddress } from "../src/shared/paths.ts";
 import { ada, bob, cleo, makeAdmin, makePerson } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
@@ -126,7 +126,7 @@ test("sec_08 taking yourself out of the group that gives you the way asks first"
 
 test("sec_08 No access on yourself in a project you lead asks first", async ({ page }) => {
   await signIn(page, cleo);
-  await page.goto(projectRolesAddress("ACME"));
+  await page.goto(addressInProject(paths.projectRoles, "ACME"));
   const rows = page.getByRole("list", { name: t("assignments.list"), exact: true });
   await expect(rows.getByRole("listitem").first()).toBeVisible();
   const before = await rows.getByRole("listitem").count();
