@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Card, useLayout } from "@bugaboo/ui";
+import { Card, useLayout, partOf, part } from "@bugaboo/ui";
 import { Navigate, Outlet, useLocation } from "@tanstack/react-router";
 import { useId } from "react";
 
@@ -7,7 +7,6 @@ import { usePermissions } from "../../shared/use-me.ts";
 import { usePageTitle } from "../../shared/use-page.ts";
 import { NavLink } from "./NavItem.tsx";
 import { placeAt, topicGroups, type Place, type TopicGroup } from "../../shared/places.ts";
-import styles from "./SettingsFrame.module.css";
 
 export interface SettingsFrameProps {
   /** The settings screen: `/me` or `/settings`. */
@@ -29,13 +28,13 @@ function headingId(prefix: string, group: TopicGroup): string {
 function Topics({ groups, pathname }: TopicsProps) {
   const names = useId();
   return (
-    <ul className={styles.groups}>
+    <ul {...partOf(part.settingsFrameGroups)}>
       {groups.map((group) => (
-        <li key={group.heading} className={styles.group}>
-          <span id={headingId(names, group)} className={styles.heading}>
+        <li key={group.heading} {...partOf(part.settingsFrameGroup)}>
+          <span id={headingId(names, group)} {...partOf(part.settingsFrameHeading)}>
             {t(group.heading)}
           </span>
-          <ul className={styles.topics} aria-labelledby={headingId(names, group)}>
+          <ul {...partOf(part.settingsFrameTopics)} aria-labelledby={headingId(names, group)}>
             {group.topics.map((topic) => (
               <li key={topic.path}>
                 <NavLink
@@ -93,11 +92,11 @@ export function SettingsFrame({ parent }: SettingsFrameProps) {
   return phone ? (
     <Outlet />
   ) : (
-    <div className={styles.frame}>
-      <nav aria-label={heading} className={styles.menu}>
+    <div {...partOf(part.settingsFrame)}>
+      <nav aria-label={heading} {...partOf(part.settingsFrameMenu)}>
         <Topics groups={groups} pathname={pathname} />
       </nav>
-      <div className={styles.content}>
+      <div {...partOf(part.settingsFrameContent)}>
         <Outlet />
       </div>
     </div>

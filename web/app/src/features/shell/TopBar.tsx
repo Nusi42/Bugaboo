@@ -1,5 +1,14 @@
 import { t } from "@bugaboo/messages";
-import { Button, buttonLook, cx, Icon, iconName, iconSize, type LayoutMode } from "@bugaboo/ui";
+import {
+  Button,
+  buttonLook,
+  Icon,
+  iconName,
+  iconSize,
+  type LayoutMode,
+  partOf,
+  part,
+} from "@bugaboo/ui";
 import { useCanGoBack, useLocation, useNavigate, useRouter } from "@tanstack/react-router";
 import { Link } from "react-aria-components";
 
@@ -8,7 +17,6 @@ import { openOverlay } from "./overlay-state.ts";
 import { pageTrails, type TrailStep } from "./page-trail.ts";
 import { placeAt, trailTo } from "../../shared/places.ts";
 import { useRegistry } from "./registry.ts";
-import styles from "./TopBar.module.css";
 
 /** Words of the ARIA standard, not text for people. */
 const currentPage = "page";
@@ -36,19 +44,19 @@ function useGoBack(trail: readonly TrailStep[] | undefined): () => void {
 /** Where you are, as links up: `My settings › Appearance`, or the projects above a project. */
 function Trail({ steps }: { readonly steps: readonly TrailStep[] }) {
   return (
-    <nav aria-label={t("shell.trail")} className={styles.trail}>
-      <ol className={styles.crumbs}>
+    <nav aria-label={t("shell.trail")} {...partOf(part.topBarTrail)}>
+      <ol {...partOf(part.topBarCrumbs)}>
         {steps.map((step, index) => {
           const last = index === steps.length - 1;
           return (
-            <li key={step.href} className={styles.crumb}>
+            <li key={step.href} {...partOf(part.topBarCrumb)}>
               {last ? (
-                <span aria-current={currentPage} className={styles.here}>
+                <span aria-current={currentPage} {...partOf(part.topBarHere)}>
                   {step.label}
                 </span>
               ) : (
                 <>
-                  <Link href={step.href} className={cx(styles.up)}>
+                  <Link href={step.href} {...partOf(part.topBarUp)}>
                     {step.label}
                   </Link>
                   <Icon name={iconName.next} size={iconSize.small} />
@@ -88,7 +96,7 @@ export function TopBar({ layout }: TopBarProps) {
   // A page with a trail of its own has a screen above it, which *Back* leads to.
   const hasUp = set === undefined ? place?.parent !== null && place !== undefined : true;
   return (
-    <header className={styles.bar}>
+    <header {...partOf(part.topBar)}>
       {layout === "tablet" ? (
         <Button
           onPress={() => {
@@ -106,7 +114,7 @@ export function TopBar({ layout }: TopBarProps) {
         </Button>
       ) : null}
       {phone ? (
-        <span className={styles.title}>{steps.at(-1)?.label ?? t("app.name")}</span>
+        <span {...partOf(part.topBarTitle)}>{steps.at(-1)?.label ?? t("app.name")}</span>
       ) : (
         <Trail steps={steps} />
       )}

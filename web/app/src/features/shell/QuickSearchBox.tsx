@@ -1,10 +1,9 @@
 import { t } from "@bugaboo/messages";
-import { IconButton, iconName, SearchField } from "@bugaboo/ui";
+import { IconButton, iconName, SearchField, partOf, part } from "@bugaboo/ui";
 import { useEffect, useRef, useState } from "react";
 import { Autocomplete } from "react-aria-components";
 
 import { closeOverlay } from "./overlay-state.ts";
-import styles from "./QuickSearch.module.css";
 import { QuickResults } from "./QuickResults.tsx";
 import { useQuickResults } from "./use-quick-results.ts";
 
@@ -19,9 +18,9 @@ export function QuickSearchBox() {
   }, []);
   return (
     <Autocomplete inputValue={query} onInputChange={setQuery}>
-      <div className={styles.search}>
-        <div className={styles.head}>
-          <div ref={field} className={styles.field}>
+      <div {...partOf(part.quickSearch)}>
+        <div {...partOf(part.quickSearchHead)}>
+          <div ref={field} {...partOf(part.quickSearchField)}>
             <SearchField
               label={t("search.label")}
               placeholder={t("search.placeholder")}
@@ -33,7 +32,7 @@ export function QuickSearchBox() {
           <IconButton icon={iconName.close} label={t("common.close")} onPress={closeOverlay} />
         </div>
         <QuickResults found={found} />
-        {found.failed ? <p className={styles.quiet}>{t("search.partial")}</p> : null}
+        {found.failed ? <p {...partOf(part.quickSearchQuiet)}>{t("search.partial")}</p> : null}
       </div>
     </Autocomplete>
   );

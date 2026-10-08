@@ -4,7 +4,3 @@
 # (`web/packages/ui/src/Card.` covers `Card.tsx` and `Card.module.css`). Its reason names the
 # follow-up that moves it. An entry that covers no file that breaks the rule fails, so the list
 # shrinks as the components move and is empty when package C-06 is done.
-
-[[exempt]]
-path = "web/app/src/features/shell/"
-reason = "The shell feature still has CSS Modules and class names; package C-06 moves it onto part rules (M2C-F90)."

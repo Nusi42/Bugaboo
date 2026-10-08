@@ -1,10 +1,9 @@
 import { t } from "@bugaboo/messages";
-import { cx, Icon, iconName, type IconName } from "@bugaboo/ui";
+import { Icon, iconName, type IconName, partOf, part } from "@bugaboo/ui";
 import { useLocation } from "@tanstack/react-router";
 import { Button, Link } from "react-aria-components";
 
 import { paths } from "../../shared/paths.ts";
-import styles from "./BottomBar.module.css";
 import { openOverlay, useOverlayOpen } from "./overlay-state.ts";
 import { placeAt } from "../../shared/places.ts";
 
@@ -21,7 +20,7 @@ function Tab({ icon, label }: TabProps) {
   return (
     <>
       <Icon name={icon} />
-      <span className={styles.label}>{label}</span>
+      <span {...partOf(part.bottomBarLabel)}>{label}</span>
     </>
   );
 }
@@ -35,12 +34,12 @@ export function BottomBar() {
   const home = placeAt(paths.home);
   const moreOpen = useOverlayOpen("more");
   return (
-    <nav className={styles.bar} aria-label={t("shell.menu")}>
-      <ul className={styles.tabs}>
+    <nav {...partOf(part.bottomBar)} aria-label={t("shell.menu")}>
+      <ul {...partOf(part.bottomBarTabs)}>
         {home === undefined ? null : (
-          <li className={styles.tab}>
+          <li {...partOf(part.bottomBarTab)}>
             <Link
-              className={cx(styles.item)}
+              {...partOf(part.bottomBarItem)}
               href={home.path}
               {...(pathname === home.path ? { "aria-current": currentPage } : {})}
             >
@@ -48,9 +47,9 @@ export function BottomBar() {
             </Link>
           </li>
         )}
-        <li className={styles.tab}>
+        <li {...partOf(part.bottomBarTab)}>
           <Button
-            className={cx(styles.item)}
+            {...partOf(part.bottomBarItem)}
             onPress={() => {
               openOverlay("search");
             }}
@@ -58,9 +57,9 @@ export function BottomBar() {
             <Tab icon={iconName.search} label={t("shell.search")} />
           </Button>
         </li>
-        <li className={styles.tab}>
+        <li {...partOf(part.bottomBarTab)}>
           <Button
-            className={cx(styles.item)}
+            {...partOf(part.bottomBarItem)}
             aria-expanded={moreOpen}
             onPress={() => {
               openOverlay("more");

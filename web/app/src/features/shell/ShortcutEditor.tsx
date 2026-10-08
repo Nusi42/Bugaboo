@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, Button, buttonLook } from "@bugaboo/ui";
+import { Alert, alertTone, Button, buttonLook, partOf, part } from "@bugaboo/ui";
 import { useState } from "react";
 
 import {
@@ -16,7 +16,6 @@ import { setShortcutKeys } from "../../shared/use-shortcuts.ts";
 import { describeKeys } from "./key-words.ts";
 import { KeyCaptureField } from "./KeyCaptureField.tsx";
 import { Keys } from "./Keys.tsx";
-import styles from "./ShortcutEditor.module.css";
 
 export interface ShortcutEditorProps {
   readonly id: ShortcutId;
@@ -26,8 +25,8 @@ export interface ShortcutEditorProps {
 /** The keys of one shortcut, each alternative drawn as keys. */
 function KeyRow({ label, keys }: { readonly label: string; readonly keys: readonly string[] }) {
   return (
-    <p className={styles.row}>
-      <span className={styles.label}>{label}</span>
+    <p {...partOf(part.shortcutEditorRow)}>
+      <span {...partOf(part.shortcutEditorLabel)}>{label}</span>
       {keys.map((sequence) => (
         <Keys key={sequence} sequence={sequence} />
       ))}
@@ -88,7 +87,7 @@ export function ShortcutEditor({ id, overrides }: ShortcutEditorProps) {
     <>
       <KeyRow label={t("shortcuts.now")} keys={keysOf(id, overrides)} />
       <KeyRow label={t("shortcuts.usual")} keys={definition.keys} />
-      <div className={styles.capture}>
+      <div {...partOf(part.shortcutEditorCapture)}>
         <KeyCaptureField
           value={recorded}
           onChange={(sequence) => {
@@ -98,7 +97,7 @@ export function ShortcutEditor({ id, overrides }: ShortcutEditorProps) {
         />
       </div>
       <Problems conflict={conflict} invalid={invalid} reserved={reserved} saved={saved} />
-      <div className={styles.actions}>
+      <div {...partOf(part.row)}>
         <Button
           look={buttonLook.primary}
           isDisabled={recorded === "" || conflict !== null || invalid || reserved}

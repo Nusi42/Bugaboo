@@ -1,9 +1,8 @@
 import { t } from "@bugaboo/messages";
-import { Button, buttonLook, Card } from "@bugaboo/ui";
+import { Button, buttonLook, Card, partOf, part } from "@bugaboo/ui";
 
 import { usePageTitle } from "../../shared/use-page.ts";
 import { FocusView } from "./FocusView.tsx";
-import styles from "./FramesPage.module.css";
 import { ListEditor, type ListRow } from "./ListEditor.tsx";
 import { useExamples, type Example } from "./use-examples.ts";
 
@@ -28,7 +27,7 @@ interface SlimListProps {
 /** The slim list of the focus view: the items around the open one. */
 function SlimList({ items, open, onOpen }: SlimListProps) {
   return (
-    <ul className={styles.slim} aria-label={t("frames.list")}>
+    <ul {...partOf(part.framesPageSlim)} aria-label={t("frames.list")}>
       {items.map((example) => (
         <li key={example.id}>
           <Button
@@ -57,7 +56,7 @@ function ExampleActions({
   readonly onRemove: () => void;
 }) {
   return (
-    <span className={styles.actions}>
+    <span {...partOf(part.framesPageActions)}>
       <Button aria-label={t("frames.open-focus", { name: example.name })} onPress={onFocus}>
         {t("frames.focus-view")}
       </Button>
@@ -89,8 +88,8 @@ function Focused({
       onBack={onClose}
       onStep={step}
     >
-      <h2 className={styles.itemTitle}>{current?.name}</h2>
-      <p className={styles.text}>{t("frames.focus-text")}</p>
+      <h2 {...partOf(part.framesPageItemTitle)}>{current?.name}</h2>
+      <p {...partOf(part.text)}>{t("frames.focus-text")}</p>
     </FocusView>
   );
 }
@@ -117,12 +116,12 @@ export function FramesPage({ show, item, onOpen, onClose }: FramesPageProps) {
         }}
       />
     ),
-    editor: <p className={styles.text}>{t("frames.panel-text")}</p>,
+    editor: <p {...partOf(part.text)}>{t("frames.panel-text")}</p>,
   }));
   const focused = show === "focus" && items.some((example) => example.id === item);
   return (
     <Card heading={t("frames.title")} level={1}>
-      <p className={styles.text}>{t("frames.intro")}</p>
+      <p {...partOf(part.text)}>{t("frames.intro")}</p>
       {focused && item !== undefined ? (
         <Focused
           items={items}

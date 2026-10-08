@@ -1,9 +1,8 @@
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone } from "@bugaboo/ui";
+import { Alert, alertTone, partOf, part } from "@bugaboo/ui";
 import type { ReactNode } from "react";
 
 import { codeOf, messageOf } from "../../shared/errors.ts";
-import styles from "./Shell.module.css";
 
 export interface QueryGateProps<Data> {
   /** Why the query failed, if it did (`query.error`). */
@@ -40,7 +39,7 @@ export function QueryGate<Data>({
     );
   }
   if (data === undefined) {
-    return loading === undefined ? <p className={styles.muted}>{t("common.loading")}</p> : loading;
+    return loading === undefined ? <p {...partOf(part.muted)}>{t("common.loading")}</p> : loading;
   }
   return children(data);
 }

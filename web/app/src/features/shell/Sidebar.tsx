@@ -1,7 +1,7 @@
 import { t } from "@bugaboo/messages";
+import { partOf, part } from "@bugaboo/ui";
 
 import { Sections } from "./Sections.tsx";
-import styles from "./Sidebar.module.css";
 import { Bottom, Person, type PersonProps } from "./SidebarBottom.tsx";
 import { Top } from "./SidebarTop.tsx";
 
@@ -33,12 +33,12 @@ export function Sidebar({
 }: SidebarProps) {
   return (
     <nav
-      className={styles.sidebar}
-      data-narrow={narrow ? "" : undefined}
-      data-drawer={inDrawer ? "" : undefined}
+      {...partOf(part.sidebar, { variants: [narrow && "narrow", inDrawer && "drawer"] })}
       aria-label={t("shell.menu")}
     >
-      <span className={narrow ? styles.brandNarrow : styles.brand}>{t("app.name")}</span>
+      <span {...partOf(part.sidebarBrand, { variants: [narrow && "narrow"] })}>
+        {t("app.name")}
+      </span>
       <Top narrow={narrow} onNavigate={onNavigate} />
       <Sections narrow={narrow} onNavigate={onNavigate} />
       <Bottom

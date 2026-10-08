@@ -1,9 +1,8 @@
-import { useLayout } from "@bugaboo/ui";
+import { useLayout, partOf, part } from "@bugaboo/ui";
 import { useState, type ReactNode } from "react";
 
 import { useShortcuts } from "../../shared/use-shortcuts.ts";
 import { FocusBar } from "./FocusBar.tsx";
-import styles from "./FocusView.module.css";
 import { useNarrowSidebarWhile } from "./sidebar-state.ts";
 import { escapeInField, useEscape } from "./use-escape.ts";
 import { useTakeFocus } from "./use-take-focus.ts";
@@ -42,10 +41,10 @@ export function FocusView({ list, onBack, onStep, children }: FocusViewProps) {
   const phone = layout === "phone";
   const listState = phone ? "none" : listHidden ? "hidden" : "shown";
   return (
-    <div ref={view} className={styles.view}>
-      {listState === "shown" ? <div className={styles.list}>{list}</div> : null}
-      <div ref={main} tabIndex={-1} className={styles.main}>
-        <div className={styles.bar}>
+    <div ref={view} {...partOf(part.focusView)}>
+      {listState === "shown" ? <div {...partOf(part.focusViewList)}>{list}</div> : null}
+      <div ref={main} tabIndex={-1} {...partOf(part.focusViewMain)}>
+        <div {...partOf(part.focusViewBar)}>
           <FocusBar
             onBack={onBack}
             onStep={onStep}

@@ -1,11 +1,18 @@
 import { t } from "@bugaboo/messages";
-import { IconButton, iconName, type LayoutMode, Overlay, overlayEdge } from "@bugaboo/ui";
+import {
+  IconButton,
+  iconName,
+  type LayoutMode,
+  Overlay,
+  overlayEdge,
+  partOf,
+  part,
+} from "@bugaboo/ui";
 
 import { MoreSheet } from "./MoreSheet.tsx";
 import { closeOverlay, useOverlay } from "./overlay-state.ts";
 import { QuickSearch } from "./QuickSearch.tsx";
 import { ShortcutHelp } from "./ShortcutHelp.tsx";
-import styles from "./ShellOverlays.module.css";
 import { Sidebar, type SidebarProps } from "./Sidebar.tsx";
 import { UndoHost } from "./UndoHost.tsx";
 
@@ -21,7 +28,7 @@ function Drawer(props: Omit<ShellOverlaysProps, "layout">) {
   const overlay = useOverlay("menu");
   return (
     <Overlay {...overlay} label={t("shell.menu")} from={overlayEdge.start}>
-      <div className={styles.drawer}>
+      <div {...partOf(part.shellOverlays)}>
         <IconButton icon={iconName.close} label={t("common.close")} onPress={closeOverlay} />
         <Sidebar narrow={false} inDrawer onNavigate={closeOverlay} {...props} />
       </div>
