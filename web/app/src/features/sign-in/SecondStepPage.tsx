@@ -1,12 +1,11 @@
 import { t } from "@bugaboo/messages";
-import { Card, Link, OrDivider } from "@bugaboo/ui";
+import { Card, Link, OrDivider, partOf, part } from "@bugaboo/ui";
 import { useSearch } from "@tanstack/react-router";
 
 import { paths } from "../../shared/paths.ts";
 import { usePageTitle } from "../../shared/use-page.ts";
 import { CodeForm } from "./CodeForm.tsx";
 import { PasskeySecondStep } from "./PasskeySecondStep.tsx";
-import styles from "./SignIn.module.css";
 
 /** *One more step* after the password: a code, or a passkey. */
 export function SecondStepPage() {
@@ -15,16 +14,16 @@ export function SecondStepPage() {
   usePageTitle(t("second-step.title"));
   return (
     <Card heading={t("second-step.title")} level={1}>
-      <p className={styles.text}>{t("second-step.intro")}</p>
+      <p {...partOf(part.text)}>{t("second-step.intro")}</p>
       {app ? <CodeForm /> : null}
       {app && passkey ? <OrDivider label={t("sign-in.or")} /> : null}
       {passkey ? (
         <>
-          <p className={styles.hint}>{t("second-step.passkey-help")}</p>
+          <p {...partOf(part.muted)}>{t("second-step.passkey-help")}</p>
           <PasskeySecondStep />
         </>
       ) : null}
-      <p className={styles.hint}>
+      <p {...partOf(part.muted)}>
         <Link href={paths.signIn}>{t("second-step.back")}</Link>
       </p>
     </Card>

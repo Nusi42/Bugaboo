@@ -1233,3 +1233,18 @@ part "setup.progress" {
     color "$fg-muted"
     font-size "$fs-base"
 }
+
+// ───────────── Sign-in ─────────────
+
+part "sign-in.reasons" {
+    display flex
+    flex-direction column
+    gap "$space-3"
+}
+
+part "sign-in.links" {
+    display flex
+    flex-wrap wrap
+    justify-content space-between
+    gap "$space-2 $space-4"
+}

@@ -1468,3 +1468,16 @@ body {
   color: var(--fg-muted);
   font-size: var(--fs-base);
 }
+
+[data-part="sign-in.reasons"] {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+[data-part="sign-in.links"] {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-4);
+}

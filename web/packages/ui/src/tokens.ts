@@ -231,6 +231,8 @@ export const part = {
   confirmTitle: "confirm.title",
   confirmActions: "confirm.actions",
   setupProgress: "setup.progress",
+  signInReasons: "sign-in.reasons",
+  signInLinks: "sign-in.links",
 } as const;
 export type PartName = (typeof part)[keyof typeof part];
 
@@ -292,4 +294,6 @@ export const partWords = {
   "confirm.title": { variant: [], state: [] },
   "confirm.actions": { variant: [], state: [] },
   "setup.progress": { variant: [], state: [] },
+  "sign-in.reasons": { variant: [], state: [] },
+  "sign-in.links": { variant: [], state: [] },
 } as const;
