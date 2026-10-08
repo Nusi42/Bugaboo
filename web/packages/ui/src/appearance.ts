@@ -69,7 +69,10 @@ export function parseAppearance(text: string | null): Appearance {
   let saved: unknown = null;
   try {
     saved = text === null ? null : JSON.parse(text);
-  } catch {
+  } catch (error) {
+    if (!(error instanceof SyntaxError)) {
+      throw error;
+    }
     saved = null;
   }
   const read = (key: string): unknown =>

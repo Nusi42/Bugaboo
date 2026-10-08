@@ -1,4 +1,4 @@
-import { settingKeys, type Schema, type SettingKey } from "@bugaboo/api-client";
+import { ApiError, settingKeys, type Schema, type SettingKey } from "@bugaboo/api-client";
 
 import { api } from "./api.ts";
 import { queryClient } from "./query-client.ts";
@@ -27,7 +27,10 @@ export function mySettingsOptions() {
 export async function loadMySettings(): Promise<void> {
   try {
     await queryClient.query({ ...mySettingsOptions(), staleTime: "static" });
-  } catch {
+  } catch (error) {
+    if (!(error instanceof ApiError)) {
+      throw error;
+    }
     // The pages ask again, and a lost sign-in is told to the person by the cache itself.
   }
 }

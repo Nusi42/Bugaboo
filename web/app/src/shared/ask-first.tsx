@@ -1,4 +1,4 @@
-import type { Schema } from "@bugaboo/api-client";
+import { ApiError, type Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 import { AskDialog, buttonLook } from "@bugaboo/ui";
 import { useCallback, useState, type ReactNode } from "react";
@@ -23,7 +23,10 @@ async function whatItTakes(change: OwnChange): Promise<readonly PermissionKey[]>
       change.kind === "change-role" ? { ...change, permissions: [...change.permissions] } : change;
     const { data } = await api.client.POST("/api/v1/own-access/check-change", { body });
     return data?.loses ?? [];
-  } catch {
+  } catch (error) {
+    if (!(error instanceof ApiError)) {
+      throw error;
+    }
     // The change itself reports its own failure, so a question that could not be asked is no reason to hold it back.
     return [];
   }

@@ -41,8 +41,12 @@ export const deviceRegion: Region = {
 export function isKnownTimeZone(name: string): boolean {
   try {
     return new Intl.DateTimeFormat("en", { timeZone: name }).resolvedOptions().timeZone !== "";
-  } catch {
-    return false;
+  } catch (error) {
+    // `Intl` refuses a name it does not know with a RangeError; any other failure is a real one.
+    if (error instanceof RangeError) {
+      return false;
+    }
+    throw error;
   }
 }
 

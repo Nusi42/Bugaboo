@@ -47,8 +47,11 @@ export function readStoredJson(key: StorageKey, store: StoreGetter = browserStor
   }
   try {
     return JSON.parse(text);
-  } catch {
-    return undefined;
+  } catch (error) {
+    if (error instanceof SyntaxError) {
+      return undefined;
+    }
+    throw error;
   }
 }
 

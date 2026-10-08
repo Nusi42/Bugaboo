@@ -1,4 +1,4 @@
-import { settingDefaults, settingKeys } from "@bugaboo/api-client";
+import { ApiError, settingDefaults, settingKeys } from "@bugaboo/api-client";
 
 import { mySettingsOptions, type MySettings } from "./my-settings.ts";
 import { queryClient } from "./query-client.ts";
@@ -23,7 +23,10 @@ export function startPageOf(settings?: MySettings): string {
 export async function loadStartPage(): Promise<string> {
   try {
     return startPageOf(await queryClient.query(mySettingsOptions()));
-  } catch {
+  } catch (error) {
+    if (!(error instanceof ApiError)) {
+      throw error;
+    }
     return settingDefaults.startPage;
   }
 }

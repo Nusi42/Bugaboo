@@ -164,7 +164,10 @@ export function parseOverrides(text: string | null): ShortcutOverrides {
   let saved: unknown = null;
   try {
     saved = text === null ? null : JSON.parse(text);
-  } catch {
+  } catch (error) {
+    if (!(error instanceof SyntaxError)) {
+      throw error;
+    }
     saved = null;
   }
   if (typeof saved !== "object" || saved === null) {
