@@ -16,6 +16,7 @@ import {
 } from "./support/flows.ts";
 import { paths } from "../src/shared/paths.ts";
 import { storageKey } from "../../packages/ui/src/storage.ts";
+import { variants } from "../../packages/ui/src/tokens.ts";
 
 // *My settings* (CFG-04, THM-02) and the settings of the organization (CFG-06) with a real server:
 // what a person chooses is kept on the server, follows them to another browser, is gone from the
@@ -96,8 +97,14 @@ test("cfg_04 what a person chooses in My settings follows them to another browse
   await other.emulateMedia({ colorScheme: "light" });
   await signIn(other, ada);
   await expectLook(other, "midnight");
-  await expect(other.locator("html")).toHaveAttribute("data-motion", "less");
-  await expect(other.locator("html")).toHaveAttribute("data-text", "larger");
+  await expect(other.locator("html")).toHaveAttribute(
+    variants["less-motion"].attribute,
+    variants["less-motion"].value,
+  );
+  await expect(other.locator("html")).toHaveAttribute(
+    variants["larger-text"].attribute,
+    variants["larger-text"].value,
+  );
   await other.goto(paths.region);
   await expect(other.getByLabel(t("setting.region.time-zone.name"), { exact: true })).toHaveValue(
     "Pacific/Auckland",

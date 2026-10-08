@@ -14,6 +14,7 @@ import {
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { inOrder } from "./support/sequence.ts";
+import { variants } from "../../packages/ui/src/tokens.ts";
 import { paths } from "../src/shared/paths.ts";
 
 test.use({
@@ -106,10 +107,13 @@ test("thm_06 Less motion turns motion off, and so does the setting of the device
   await openAppearance(page);
   expect(await tokenValue(page, "--motion-base")).toBe(".2s");
   await setSwitch(page, t("appearance.less-motion"), true);
-  await expect(page.locator("html")).toHaveAttribute("data-motion", "less");
+  await expect(page.locator("html")).toHaveAttribute(
+    variants["less-motion"].attribute,
+    variants["less-motion"].value,
+  );
   expect(await tokenValue(page, "--motion-base")).toBe("0s");
   await setSwitch(page, t("appearance.less-motion"), false);
-  await expect(page.locator("html")).not.toHaveAttribute("data-motion", /./u);
+  await expect(page.locator("html")).not.toHaveAttribute(variants["less-motion"].attribute, /./u);
   await page.emulateMedia({ reducedMotion: "reduce" });
   expect(await tokenValue(page, "--motion-base")).toBe("0s");
 });
@@ -123,13 +127,22 @@ test("thm_06 Larger text makes the text bigger and Compact makes the spacing sma
   await setSwitch(page, t("appearance.larger-text"), true);
   await expect.poll(() => headingSize(page)).toBeGreaterThan(normal);
   await page.getByRole("radio", { name: t("appearance.spacing.compact"), exact: true }).check();
-  await expect(page.locator("html")).toHaveAttribute("data-spacing", "compact");
+  await expect(page.locator("html")).toHaveAttribute(
+    variants["compact"].attribute,
+    variants["compact"].value,
+  );
   expect(await tokenValue(page, "--space-4")).not.toBe(gap);
   // Both choices are on the server before the page is loaded again.
   await expect(page.getByRole("status").filter({ hasText: t("save.saved") })).toBeVisible();
   await page.reload();
-  await expect(page.locator("html")).toHaveAttribute("data-text", "larger");
-  await expect(page.locator("html")).toHaveAttribute("data-spacing", "compact");
+  await expect(page.locator("html")).toHaveAttribute(
+    variants["larger-text"].attribute,
+    variants["larger-text"].value,
+  );
+  await expect(page.locator("html")).toHaveAttribute(
+    variants["compact"].attribute,
+    variants["compact"].value,
+  );
   await expectNoSidewaysScroll(page);
   await expectNoOverlap(page);
 });
