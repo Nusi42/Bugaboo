@@ -9,7 +9,9 @@ use bb_core::sign_in::{SecurityAction, SessionStage, StoredPasskey, TwoStep};
 use bb_core::text::LABEL_MAX;
 use serde_json::json;
 
-use super::ctx::{AppError, Ctx, Stops, by, change_failed, changed, entity, internal, set_to};
+use super::ctx::Ctx;
+use super::error::{AppError, Stops, change_failed, internal};
+use super::events::{by, changed, entity, set_to};
 use super::store::AuthStore;
 use super::types::{
     AddPasskey, BackupCodes, CodeAppSetup, ConfirmCodeApp, Done, MAX_PASSKEYS_LISTED,

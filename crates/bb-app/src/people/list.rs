@@ -23,7 +23,7 @@ use serde::Serialize;
 
 use super::GroupView;
 use crate::access::{Actor, ProjectLabel};
-use crate::auth::{AppError, AuthStore, Ctx, PeoplePosition, if_there, internal};
+use crate::auth::{AppError, AuthStore, Ctx, PeoplePosition, SearchIn, if_there, internal};
 use crate::roles::RoleRef;
 
 /// List the people, a page at a time.
@@ -311,7 +311,12 @@ pub async fn people<S: AuthStore>(
     let after = ctx.people_position(input.cursor.as_deref()).await?;
     let page = Cut::of(
         ctx.store()
-            .people_page(input.search.as_deref(), true, after.as_ref(), read_len(len))
+            .people_page(
+                input.search.as_deref(),
+                SearchIn::NamesAndAddresses,
+                after.as_ref(),
+                read_len(len),
+            )
             .await
             .map_err(|error| internal::<S>(&error))?,
         len,
@@ -426,7 +431,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         let after = self.people_position(cursor).await?;
         let page = Cut::of(
             self.store()
-                .people_page(search, false, after.as_ref(), read_len(len))
+                .people_page(search, SearchIn::Names, after.as_ref(), read_len(len))
                 .await
                 .map_err(|error| internal::<S>(&error))?,
             len,

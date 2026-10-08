@@ -20,9 +20,10 @@ use jiff::Timestamp;
 use serde_json::json;
 use zeroize::Zeroizing;
 
-use super::ctx::{
-    AppError, Ctx, Stops, by, change_failed, changed, entity, internal, person_key, set_to,
-};
+use super::ctx::Ctx;
+use super::error::{AppError, Stops, change_failed, internal};
+use super::events::{by, changed, entity, set_to};
+use super::limit::person_key;
 use super::store::{Account, AuthStore};
 use super::types::{
     AuthStatus, AuthenticateQuery, Authenticated, Done, EndSession, MAX_SESSIONS_LISTED,
@@ -141,7 +142,7 @@ pub(crate) async fn purge<S: AuthStore>(
         transaction,
         before(now, settings.session_idle_minutes.saturating_mul(60)),
         before(now, settings.session_absolute_hours.saturating_mul(3600)),
-        before(now, super::ctx::PENDING_SECONDS),
+        before(now, super::request_session::PENDING_SECONDS),
     )
     .await
     .map(|_| ())

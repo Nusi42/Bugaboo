@@ -9,7 +9,7 @@
 use std::collections::BTreeSet;
 
 use bb_app::access::{PolicyStore as _, StartingRole};
-use bb_app::auth::AuthStore as _;
+use bb_app::auth::{AccountStore as _, SecondStepStore as _};
 use bb_core::event::{Actor, DomainEvent, EntityRef};
 use bb_core::id::UserId;
 use bb_core::technical::TechnicalName;

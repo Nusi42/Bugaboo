@@ -8,7 +8,7 @@
 use bb_core::ErrorCode;
 use bb_core::access::{AppliesTo, FieldLevel, PeopleLevel};
 use bb_core::fields::Field;
-use bb_core::id::AssignmentId;
+use bb_core::id::{AssignmentId, ProjectId};
 use bb_core::people_kinds::PeopleKind;
 use bb_policy::{
     AccessReport, Authorized, LevelDecision, LevelSource, LevelSubject, Masked, PeopleContext,
@@ -217,24 +217,43 @@ impl<S: AuthStore> Ctx<'_, S> {
         })
     }
 
+    /// Where a level was set, as the person who asks may name it. `named` keeps the projects
+    /// already named for this answer, so a table that names one project often asks once.
+    pub(crate) async fn level_place(
+        &self,
+        actor: &Actor,
+        source: LevelSource,
+        named: &mut Vec<(ProjectId, ProjectLabel)>,
+    ) -> Result<LevelPlace, AppError> {
+        Ok(match source {
+            LevelSource::Project(project) => {
+                let known = named.iter().find(|(known, _)| *known == project);
+                let label = if let Some((_, label)) = known {
+                    label.clone()
+                } else {
+                    let label = self.project_label(actor, project).await?;
+                    named.push((project, label.clone()));
+                    label
+                };
+                LevelPlace::Project { project: label }
+            }
+            LevelSource::RoleOwn => LevelPlace::RoleOwn,
+            LevelSource::Unset => LevelPlace::Unset,
+        })
+    }
+
     async fn level_answer<K: LevelSubject>(
         &self,
         checker: &Actor,
         decision: &LevelDecision<K>,
+        named: &mut Vec<(ProjectId, ProjectLabel)>,
     ) -> Result<LevelAnswer<K, K::Level>, AppError> {
         let mut roles = Vec::with_capacity(decision.roles.len());
         for says in &decision.roles {
-            let set = match says.source {
-                LevelSource::Project(project) => LevelPlace::Project {
-                    project: self.project_label(checker, project).await?,
-                },
-                LevelSource::RoleOwn => LevelPlace::RoleOwn,
-                LevelSource::Unset => LevelPlace::Unset,
-            };
             roles.push(RoleSays {
                 role: self.role_ref(says.role).await?,
                 level: says.level,
-                set,
+                set: self.level_place(checker, says.source, named).await?,
             });
         }
         Ok(LevelAnswer {
@@ -263,13 +282,14 @@ impl<S: AuthStore> Ctx<'_, S> {
                 reasons,
             });
         }
+        let mut named = Vec::new();
         let mut fields = Vec::with_capacity(report.fields.len());
         for decision in &report.fields {
-            fields.push(self.level_answer(checker, decision).await?);
+            fields.push(self.level_answer(checker, decision, &mut named).await?);
         }
         let mut kinds = Vec::with_capacity(report.kinds.len());
         for decision in &report.kinds {
-            kinds.push(self.level_answer(checker, decision).await?);
+            kinds.push(self.level_answer(checker, decision, &mut named).await?);
         }
         Ok(AccessAnswer {
             person,

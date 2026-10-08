@@ -1,6 +1,7 @@
 //! Signing in over HTTP: the cookies, the token against forged requests (SEC-12), the limits
 //! (SEC-14), the answers that never say whether an account exists, and every route once.
 
+use bb_app::auth::SecondStepStore as _;
 use std::collections::{BTreeMap, BTreeSet};
 use std::net::SocketAddr;
 use std::sync::atomic::{AtomicU8, Ordering};
@@ -15,7 +16,6 @@ use base64ct::{Base64UrlUnpadded, Encoding as _};
 use bb_api::{
     AuthHandle, ClientAddr, LimitsConfig, Options, ProbeHandle, WebSource, openapi, router,
 };
-use bb_app::auth::AuthStore as _;
 use bb_app::context::Clock as _;
 use bb_auth::TotpSecret;
 use bb_testing::{TestDatabase, each_database};

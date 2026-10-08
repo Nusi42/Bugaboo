@@ -29,7 +29,9 @@ use bb_policy::{Authorized, Choice, Narrowing, Permission, Place};
 use jiff::Timestamp;
 use serde_json::json;
 
-use super::ctx::{AppError, Ctx, Stops, by, change_failed, entity, internal, set_to};
+use super::ctx::Ctx;
+use super::error::{AppError, Stops, change_failed, internal};
+use super::events::{by, entity, set_to};
 use super::store::{AccessKeyRecord, AuthStore};
 use super::types::{
     AccessKeyPage, AccessKeyRules, AccessKeyRulesQuery, AccessKeyView, AccessKeysQuery,
@@ -384,7 +386,7 @@ pub async fn delete_access_key<S: AuthStore>(
     let event = ctx.event(
         by(owner),
         entity(RecordKind::AccessKey, id),
-        vec![super::ctx::changed("access_key")],
+        vec![super::events::changed("access_key")],
     )?;
     ctx.store()
         .record_change(&event, move |transaction| {

@@ -1,8 +1,9 @@
 //! Invitations and signing up on one's own (AUTH-06).
 
 use bb_app::access::Authorized;
+use bb_app::auth::InvitationStore as _;
 use bb_app::auth::{
-    AcceptInvitation, AuthStore as _, ChangeSignUpPolicy, CreateInvitation, InvitationLookupQuery,
+    AcceptInvitation, ChangeSignUpPolicy, CreateInvitation, InvitationLookupQuery,
     InvitationsQuery, RevokeInvitation, SignUp, SignUpPolicy, SignUpPolicyQuery, StatusQuery,
 };
 use bb_auth::{Purpose, SecretToken};

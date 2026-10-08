@@ -13,7 +13,7 @@ use bb_policy::{Authorized, Masked, PeopleContext, Permission, PersonRef};
 use serde::Serialize;
 
 use super::Place;
-use crate::auth::{AppError, AuthStore, Ctx, PeoplePosition, internal};
+use crate::auth::{AppError, AuthStore, Ctx, PeoplePosition, SearchIn, internal};
 use crate::people::write_cursor;
 
 /// List the people to choose from for *Check access*.
@@ -87,7 +87,7 @@ pub async fn people_to_check<S: AuthStore>(
             .store()
             .people_page(
                 input.search.as_deref(),
-                false,
+                SearchIn::Names,
                 after.as_ref(),
                 read_len(wanted),
             )

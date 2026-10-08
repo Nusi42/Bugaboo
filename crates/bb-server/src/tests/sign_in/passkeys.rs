@@ -3,8 +3,9 @@
 //! checks without a browser.
 
 use base64ct::{Base64UrlUnpadded, Encoding as _};
+use bb_app::auth::SecondStepStore as _;
 use bb_app::auth::{
-    AddPasskey, AuthStore as _, AuthenticateQuery, PasskeyRegistrationQuery, PasskeySecondStep,
+    AddPasskey, AuthenticateQuery, PasskeyRegistrationQuery, PasskeySecondStep,
     PasskeySecondStepQuery, PasskeySignIn, PasskeySignInQuery, RemovePasskey, StatusQuery,
     TwoStepQuery,
 };

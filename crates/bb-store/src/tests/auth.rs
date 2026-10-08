@@ -2,11 +2,17 @@
 //! transaction of a change (unique addresses, purging sessions, one-time codes and invitations,
 //! the encrypted code app secret).
 
+use bb_app::auth::{AccountStore, InvitationStore, SecondStepStore, SessionStore};
 use bb_core::id::IdSource;
+use bb_core::sign_in::{SetupCode, TwoStep};
 use bb_testing::{TestDatabase, TestResult, each_database};
 
 use super::*;
 use crate::test_support::{at, event, ids, open};
+use bb_core::id::{InvitationId, SessionId, UserId};
+use bb_core::network::NetworkPrefix;
+use bb_core::person::Person;
+use bb_core::sign_in::{Invitation, SessionStage, SignInSession};
 
 struct Fixture {
     storage: AuthStorage,

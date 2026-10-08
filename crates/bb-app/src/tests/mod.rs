@@ -5,6 +5,7 @@
 mod events;
 mod failures;
 mod fake;
+mod fake_auth;
 mod fake_policy;
 mod fake_projects;
 mod fake_settings;

@@ -19,7 +19,7 @@ use serde::Serialize;
 
 use super::{Actor, PlaceLevels, ProjectLabel, RoleRecord};
 use crate::auth::{AppError, AuthStore, Ctx, internal};
-use crate::roles::RoleRef;
+use crate::roles::{LevelPlace, RoleRef};
 
 /// The most roles a table holds, the columns of the matrix. More roles than this are cut off and
 /// the answer says so (`truncated`).
@@ -137,22 +137,11 @@ impl<S: AuthStore> Ctx<'_, S> {
     ) -> Result<LevelOrigin, AppError> {
         Ok(match source {
             LevelSource::Project(above) if Some(above) == place => LevelOrigin::SetHere,
-            LevelSource::Project(above) => {
-                let known = named
-                    .iter()
-                    .find(|(project, _)| *project == above)
-                    .map(|(_, label)| label.clone());
-                let label = if let Some(label) = known {
-                    label
-                } else {
-                    let label = self.project_label(actor, above).await?;
-                    named.push((above, label.clone()));
-                    label
-                };
-                LevelOrigin::Inherited { from: label }
-            }
-            LevelSource::RoleOwn => LevelOrigin::RoleOwn,
-            LevelSource::Unset => LevelOrigin::Unset,
+            other => match self.level_place(actor, other, named).await? {
+                LevelPlace::Project { project } => LevelOrigin::Inherited { from: project },
+                LevelPlace::RoleOwn => LevelOrigin::RoleOwn,
+                LevelPlace::Unset => LevelOrigin::Unset,
+            },
         })
     }
 

@@ -1,9 +1,9 @@
 //! Two-step sign-in with a code app and backup codes (AUTH-03).
 
+use bb_app::auth::SecondStepStore as _;
 use bb_app::auth::{
-    AppError, AuthApi as _, AuthStore as _, AuthenticateQuery, ConfirmCodeApp, PasskeySecondStep,
-    RemoveCodeApp, RenewBackupCodes, SecondStep, SessionsQuery, StartCodeApp, Started,
-    TwoStepQuery,
+    AppError, AuthApi as _, AuthenticateQuery, ConfirmCodeApp, PasskeySecondStep, RemoveCodeApp,
+    RenewBackupCodes, SecondStep, SessionsQuery, StartCodeApp, Started, TwoStepQuery,
 };
 use bb_app::context::Clock as _;
 use bb_auth::TotpSecret;

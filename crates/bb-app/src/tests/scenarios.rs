@@ -19,7 +19,7 @@ use super::fake::FakeStore;
 use super::world::{OTHER_PASSWORD, PASSWORD, PUBLIC_URL, World};
 use crate::access::{MakeStartingRoles, Permission, make_starting_roles};
 use crate::auth::{
-    AddPasskey, AuthStore as _, ChangePassword, ChangeSignUpPolicy, CompleteSetup, ConfirmCodeApp,
+    AddPasskey, ChangePassword, ChangeSignUpPolicy, CompleteSetup, ConfirmCodeApp,
     CreateInvitation, DeleteAccessKey, EndSession, IssueSetupCode, MakeAccessKey,
     PasskeyRegistrationQuery, PasskeySecondStep, PasskeySecondStepQuery, PasskeySignIn,
     PasskeySignInQuery, RemoveCodeApp, RemovePasskey, RenewBackupCodes, RevokeInvitation,
@@ -31,7 +31,7 @@ use crate::auth::{
     revoke_invitation, second_step, sessions, sign_in, sign_out, sign_out_everywhere, sign_up,
     start_code_app,
 };
-use crate::auth::{delete_access_key, make_access_key};
+use crate::auth::{SecondStepStore as _, delete_access_key, make_access_key};
 use crate::people::{
     AddGroupMember, DeleteGroup, MakeGroup, RemoveGroupMember, RenameGroup, add_group_member,
     delete_group, make_group, remove_group_member, rename_group,
