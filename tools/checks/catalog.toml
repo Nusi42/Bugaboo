@@ -216,7 +216,7 @@ title = "The look lives in design/theme.kdl only: no style=, no className, no CS
 rule = "ADR-0026, coding-standards §4"
 tool = "xtask (the TypeScript and CSS files of the app; the components that have not moved yet stand in tools/checks/theme-only-exemptions.toml, each with its follow-up)"
 when = ["edit", "commit", "ci"]
-files = ["web/**/*.{ts,tsx,css}", "tools/checks/theme-only-exemptions.toml"]
+files = ["web/**/*.{ts,tsx,css,scss,sass,less}", "tools/checks/theme-only-exemptions.toml"]
 status = "active"
 
 [[check]]

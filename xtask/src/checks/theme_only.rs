@@ -2,15 +2,19 @@
 //!
 //! In the browser app and its packages there is
 //!
-//! - no `style=` (and no `.style.` or `setAttribute("style", …)`): a value set from code bypasses
+//! - no `style=` and no other way to put a style or a class on the page from code (`.style`,
+//!   `setAttribute("style" or "class", …)`, `classList`, `<style>`, `createElement("style")`,
+//!   `CSSStyleSheet`, `insertRule`, `adoptedStyleSheets`, `attributeStyleMap`, a `style: {…}`
+//!   object): a value set from code bypasses
 //!   the tokens, and a style that is put on the page at run time needs a hole in the content
 //!   security policy (`style-src 'self'`);
 //! - no `className`: a component does not name classes. It puts `data-part`, `data-variant` and
 //!   `data-state` on its elements (`partOf`), and React Aria's own `data-*` state attributes are
 //!   styled by the rules of the theme file. React Aria's default class names are allowed because
 //!   nothing writes them;
-//! - no CSS file but the one that `cargo xtask gen theme` writes, so no `*.module.css`, and no
-//!   `import` of one.
+//! - no style file but the one that `cargo xtask gen theme` writes (no `*.module.css`, `.scss`,
+//!   `.sass`, `.less`), and no
+//!   `import`, `import()` or `require` of one, with or without `?inline` or `?raw` after the name.
 //!
 //! The components that have not been moved yet stand in `tools/checks/theme-only-exemptions.toml`,
 //! each with the follow-up that moves it. An entry whose files no longer break the rule fails, so
@@ -31,8 +35,27 @@ use crate::source::{Kind, Source};
 /// The components that still use classes or CSS, each with the follow-up that moves it.
 const EXEMPTIONS_PATH: &str = "tools/checks/theme-only-exemptions.toml";
 
-/// Ways to put a style on an element from code.
-const INLINE: [&str; 3] = [" style=", ".style.", "setAttribute(\"style\""];
+/// Ways to put a style on an element, or a style sheet on the page, from code: the text to find
+/// and what it is.
+const FROM_CODE: [(&str, &str); 11] = [
+    (" style=", "`style=`"),
+    (".style.", "`.style.`"),
+    (".style =", "`.style =`"),
+    (".style=", "`.style=`"),
+    (".style[", "`.style[`"),
+    ("<style", "a `<style` element"),
+    ("classList", "`classList`"),
+    ("CSSStyleSheet", "a `CSSStyleSheet`"),
+    ("insertRule", "`insertRule`"),
+    ("adoptedStyleSheets", "`adoptedStyleSheets`"),
+    ("attributeStyleMap", "`attributeStyleMap`"),
+];
+
+/// The attributes that `setAttribute` and `createElement` may not be given.
+const STYLE_ATTRIBUTES: [&str; 2] = ["style", "class"];
+
+/// The endings of the style sheets of every kind.
+const STYLE_FILES: [&str; 4] = ["css", "scss", "sass", "less"];
 
 pub(crate) struct ThemeOnly;
 
@@ -102,14 +125,43 @@ fn evaluate(sources: &[Source], exemptions: &[Exempt]) -> Vec<Finding> {
             used.mark(index);
         }
     }
+    findings.extend(shape_findings(exemptions));
     findings.extend(exemptions::judge(EXEMPTIONS_PATH, exemptions, &used));
     findings.extend(exemptions::follow_up_findings(EXEMPTIONS_PATH, exemptions));
     findings
 }
 
+/// An exemption covers one feature folder (`web/app/src/features/people/`) or one component by
+/// the start of its file name (`web/packages/ui/src/Card.`), never `web/` or a folder with many
+/// features in it, which would hide every new file.
+fn shape_findings(exemptions: &[Exempt]) -> Vec<Finding> {
+    exemptions
+        .iter()
+        .filter(|exempt| !is_one_component(&exempt.path))
+        .map(|exempt| {
+            Finding::at(
+                EXEMPTIONS_PATH,
+                format!(
+                    "The entry `{}` covers more than one feature or component. Name one feature folder (…/features/<name>/) or one file or file name start (…/Card.).",
+                    exempt.path
+                ),
+            )
+        })
+        .collect()
+}
+
+fn is_one_component(path: &str) -> bool {
+    let parts: Vec<&str> = path.split('/').collect();
+    match parts.as_slice() {
+        [.., "features", name, ""] => !name.is_empty(),
+        [.., last] => path.starts_with("web/") && parts.len() >= 3 && last.contains('.'),
+        [] => false,
+    }
+}
+
 /// What breaks the rule in one file.
 fn scan(path: &str, text: &str) -> Vec<Finding> {
-    if has_extension(path, "css") {
+    if STYLE_FILES.iter().any(|ending| has_extension(path, ending)) {
         return vec![Finding::at(
             path,
             format!(
@@ -128,11 +180,21 @@ fn scan(path: &str, text: &str) -> Vec<Finding> {
 }
 
 fn problem_in(code: &str) -> Option<String> {
-    if let Some(way) = INLINE.iter().find(|way| code.contains(**way)) {
+    if let Some((_, what)) = FROM_CODE.iter().find(|(text, _)| code.contains(text)) {
         return Some(format!(
-            "`{}` puts a style on an element from code. Write a `part` rule with tokens in design/theme.kdl; a style the choices of the person cannot reach is a bug (ADR-0026).",
-            way.trim()
+            "{what} puts a style or a class on the page from code. Write a `part` rule with tokens in design/theme.kdl; a style the choices of the person cannot reach is a bug (ADR-0026)."
         ));
+    }
+    if let Some(call) = names_style_attribute(code) {
+        return Some(format!(
+            "`{call}` puts a style or a class on the page from code. Write a `part` rule with tokens in design/theme.kdl (ADR-0026)."
+        ));
+    }
+    if has_style_object(code) {
+        return Some(
+            "A `style:` object handed to an element. Write a `part` rule with tokens in design/theme.kdl (ADR-0026)."
+                .to_owned(),
+        );
     }
     if contains_word(code, "className") {
         return Some(
@@ -157,21 +219,58 @@ fn contains_word(code: &str, word: &str) -> bool {
     })
 }
 
-/// Whether the line imports a `.css` file other than the generated sheet.
+/// `setAttribute("style", …)`, `setAttribute('class', …)` and `createElement("style")`, written
+/// with any of the three quotes and spaces after the bracket: the call that was found.
+fn names_style_attribute(code: &str) -> Option<String> {
+    ["setAttribute(", "createElement("].iter().find_map(|call| {
+        code.match_indices(call).find_map(|(at, _)| {
+            let rest = code[at + call.len()..].trim_start();
+            let quote = rest
+                .chars()
+                .next()
+                .filter(|c| matches!(c, '"' | '\'' | '`'))?;
+            let name = rest[1..].split(quote).next()?;
+            let bad = if *call == "createElement(" {
+                name == "style"
+            } else {
+                STYLE_ATTRIBUTES.contains(&name)
+            };
+            bad.then(|| format!("{call}{quote}{name}{quote}…"))
+        })
+    })
+}
+
+/// A `style: {` or `style: [`: an object of styles given to an element (a `style:` that holds
+/// anything else, like the option of `Intl.ListFormat`, is not one).
+fn has_style_object(code: &str) -> bool {
+    code.match_indices("style").any(|(at, word)| {
+        let before = code[..at].chars().next_back();
+        let after = code[at + word.len()..].trim_start();
+        !before.is_some_and(|c| c.is_alphanumeric() || c == '_' || c == '.')
+            && after
+                .strip_prefix(':')
+                .is_some_and(|value| value.trim_start().starts_with(['{', '[']))
+    })
+}
+
+/// Whether the line imports (or `import()`s, or `require`s) a style sheet other than the generated
+/// one, whatever follows the file name (`?inline`, `?raw`, `#hash`).
 fn imports_css(code: &str) -> bool {
     let trimmed = code.trim_start();
-    if !trimmed.starts_with("import") {
+    let loads = trimmed.starts_with("import")
+        || trimmed.starts_with("export")
+        || code.contains("import(")
+        || code.contains("require(");
+    if !loads {
         return false;
     }
     let sheet = Path::new(STYLE_SHEET)
         .file_name()
         .and_then(|name| name.to_str())
         .unwrap_or_default();
-    trimmed.split(['"', '\'']).any(|part| {
-        Path::new(part)
-            .extension()
-            .is_some_and(|ending| ending == "css")
-            && !part.ends_with(sheet)
+    code.split(['"', '\'', '`']).any(|part| {
+        let file = part.split(['?', '#']).next().unwrap_or(part);
+        STYLE_FILES.iter().any(|ending| has_extension(file, ending)) && !file.ends_with(sheet)
     })
 }
 
@@ -185,6 +284,80 @@ mod tests {
             .into_iter()
             .map(|finding| finding.message)
             .collect()
+    }
+
+    #[test]
+    fn bad_example_the_other_ways_to_put_a_style_on_the_page() {
+        for bad in [
+            "node.classList.add(\"x\");",
+            "node.setAttribute('style', value);",
+            "node.setAttribute( \"class\", value);",
+            "node.setAttribute(`style`, value);",
+            "node.style = value;",
+            "node.style=value;",
+            "const top = node.style[name];",
+            "const sheet = new CSSStyleSheet();",
+            "sheet.insertRule(rule);",
+            "document.adoptedStyleSheets = [sheet];",
+            "const tag = document.createElement(\"style\");",
+            "node.attributeStyleMap.set(\"color\", x);",
+            "const props = { style: { color: x } };",
+            "return <style>{css}</style>;",
+            "import sheet from \"./a.css?inline\";",
+            "import raw from \"./a.css?raw\";",
+            "const sheet = await import(\"./a.css\");",
+            "import \"./a.scss\";",
+            "import \"./a.sass\";",
+            "import \"./a.less\";",
+            "const css = require(\"./a.css\");",
+        ] {
+            assert!(!run("web/app/src/a.ts", bad).is_empty(), "{bad}");
+        }
+        for path in [
+            "web/app/src/a.scss",
+            "web/app/src/a.sass",
+            "web/app/src/a.less",
+        ] {
+            assert!(!run(path, "a { b: c }").is_empty(), "{path}");
+        }
+    }
+
+    #[test]
+    fn good_example_things_that_only_look_like_a_style() {
+        for good in [
+            "new Intl.ListFormat(locale, { style: \"long\" })",
+            "const lifestyle = 1;",
+            "node.setAttribute(\"data-part\", name);",
+            "document.createElement(\"div\");",
+            "import \"@bugaboo/ui/theme.css?v=1\";",
+            "const rule = insert(rule);",
+        ] {
+            let found = run("web/app/src/a.ts", good);
+            assert!(found.is_empty(), "{good}: {found:?}");
+        }
+    }
+
+    #[test]
+    fn an_exemption_must_name_one_feature_or_one_component() {
+        let exempt = |path: &str| Exempt {
+            path: path.to_owned(),
+            reason: "Moves with its feature (M2C-F90), package C-06.".to_owned(),
+        };
+        for bad in [
+            "web/",
+            "web/app/",
+            "web/app/src/features/",
+            "web/packages/ui/src/",
+        ] {
+            assert_eq!(shape_findings(&[exempt(bad)]).len(), 1, "{bad}");
+        }
+        for good in [
+            "web/app/src/features/people/",
+            "web/packages/ui/src/Card.",
+            "web/packages/ui/src/Card.tsx",
+        ] {
+            assert!(shape_findings(&[exempt(good)]).is_empty(), "{good}");
+        }
     }
 
     #[test]
