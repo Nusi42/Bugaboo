@@ -1,3 +1,4 @@
+import { settingChoices } from "@bugaboo/api-client";
 import { describe, expect, it } from "vitest";
 
 import {
@@ -9,6 +10,7 @@ import {
   type Appearance,
   type ChoiceStore,
 } from "./appearance.ts";
+import { darkThemeIds, defaultDarkTheme, defaultLightTheme, lightThemeIds } from "./tokens.ts";
 
 const blocked = (): never => {
   throw new Error("blocked");
@@ -102,5 +104,14 @@ describe("thm_06 spacing, text size and motion", () => {
     });
     applyChoices(defaultAppearance, page);
     expect(attributes.size).toBe(0);
+  });
+});
+
+describe("thm_01 the themes of the settings registry are the themes of the token file", () => {
+  it("lists the same light and dark themes, and starts with the same two", () => {
+    expect(settingChoices.appearanceLightTheme).toEqual(lightThemeIds);
+    expect(settingChoices.appearanceDarkTheme).toEqual(darkThemeIds);
+    expect(defaultAppearance.light).toBe(defaultLightTheme);
+    expect(defaultAppearance.dark).toBe(defaultDarkTheme);
   });
 });

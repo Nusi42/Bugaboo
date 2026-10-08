@@ -12,22 +12,15 @@ import { settingKeys } from "@bugaboo/api-client";
 
 import { changeMySettings, reportNotSaved } from "./change-my-settings.ts";
 import { codeOf } from "./errors.ts";
-import {
-  appearanceForShell,
-  appearanceOf,
-  changesForAppearance,
-  currentMySettings,
-  mySettingsKey,
-  regionOf,
-  shortcutKeysOf,
-  type MySettings,
-} from "./my-settings.ts";
+import { appearanceForShell, appearanceOf, changesForAppearance } from "./appearance-setting.ts";
+import { currentMySettings, mySettingsKey, type MySettings } from "./my-settings.ts";
 import { queryClient } from "./query-client.ts";
-import { deviceRegion, setRegion } from "./region.ts";
+import { deviceRegion, regionOf, setRegion } from "./region.ts";
 import {
   currentKeysSource,
   forgetStoredKeys,
   setShortcutKeysSource,
+  shortcutKeysOf,
   type ShortcutKeysSource,
 } from "./shortcuts-source.ts";
 import { type ShortcutOverrides } from "./shortcuts.ts";

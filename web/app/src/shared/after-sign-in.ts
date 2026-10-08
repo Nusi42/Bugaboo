@@ -1,7 +1,7 @@
 import type { Schema } from "@bugaboo/api-client";
 import { useNavigate, useRouter } from "@tanstack/react-router";
 
-import { loadStartPage } from "./my-settings.ts";
+import { loadStartPage } from "./start-page-setting.ts";
 import { paths } from "./paths.ts";
 import { forgetDeviceChoices } from "./personal-sources.ts";
 import { forgetPerson } from "./session.ts";

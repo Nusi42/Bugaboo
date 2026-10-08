@@ -1,3 +1,5 @@
+import { settingChoices, settingDefaults, type SettingChoice } from "@bugaboo/api-client";
+
 import {
   applyTheme,
   defaultThemeChoice,
@@ -8,8 +10,9 @@ import {
 } from "./theme.ts";
 import { darkThemeIds, lightThemeIds, variants, type ThemeId } from "./tokens.ts";
 
-export const spacingChoices = ["comfortable", "compact"] as const;
-export type SpacingChoice = (typeof spacingChoices)[number];
+/** The choices of *Spacing*, as the settings registry lists them. */
+export const spacingChoices = settingChoices.appearanceSpacing;
+export type SpacingChoice = SettingChoice<"appearanceSpacing">;
 
 export type LightThemeId = (typeof lightThemeIds)[number];
 export type DarkThemeId = (typeof darkThemeIds)[number];
@@ -31,11 +34,11 @@ export interface Appearance {
 
 export const defaultAppearance: Appearance = {
   theme: defaultThemeChoice,
-  light: "daylight",
-  dark: "dusk",
-  spacing: "comfortable",
-  lessMotion: false,
-  largerText: false,
+  light: settingDefaults.appearanceLightTheme,
+  dark: settingDefaults.appearanceDarkTheme,
+  spacing: settingDefaults.appearanceSpacing,
+  lessMotion: settingDefaults.appearanceLessMotion,
+  largerText: settingDefaults.appearanceLargerText,
 };
 
 function isLight(value: unknown): value is LightThemeId {
