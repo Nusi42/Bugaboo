@@ -388,3 +388,11 @@ pub(super) fn refused<T>(result: Result<T, AppError>) -> Option<ErrorCode> {
     );
     error.code()
 }
+
+/// The same for a helper that boxed the error of the use case on the way out.
+pub(super) fn refused_boxed<T>(result: Result<T, Failure>) -> Option<ErrorCode> {
+    refused(result.map_err(|error| match error.downcast::<AppError>() {
+        Ok(app) => *app,
+        Err(other) => panic!("{other:?} is not a refusal of a use case"),
+    }))
+}

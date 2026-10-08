@@ -16,7 +16,7 @@ use serde_json::Value;
 use webauthn_authenticator_rs::prelude::{Url, WebauthnAuthenticator as _};
 use webauthn_authenticator_rs::softpasskey::SoftPasskey;
 
-use super::rig::{PASSWORD, PUBLIC_URL, Rig, refused};
+use super::rig::{PASSWORD, PUBLIC_URL, Rig, refused, refused_boxed};
 
 fn origin() -> Result<Url, Failure> {
     Ok(Url::parse(PUBLIC_URL)?)
@@ -133,15 +133,11 @@ async fn auth_02_a_passkey_is_added_listed_and_removed_with_the_password() -> Te
         // A name that is empty or too long is refused.
         for label in ["", "   ", &"x".repeat(65)] {
             let result = add(&rig, session, &mut SoftPasskey::new(true), label).await;
-            let code = result.err().and_then(|error| {
-                error
-                    .downcast_ref::<bb_app::auth::AppError>()
-                    .and_then(|error| match error {
-                        bb_app::auth::AppError::Refused(code) => Some(*code),
-                        _ => None,
-                    })
-            });
-            assert_eq!(code, Some(ErrorCode::InvalidRequest), "{label:?}");
+            assert_eq!(
+                refused_boxed(result),
+                Some(ErrorCode::InvalidRequest),
+                "{label:?}"
+            );
         }
 
         let remove = |password: &str, id| {
