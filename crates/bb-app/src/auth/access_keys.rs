@@ -20,7 +20,7 @@ use std::collections::BTreeSet;
 
 use bb_auth::{AccessKeySecret, same_digest};
 use bb_core::ErrorCode;
-use bb_core::access_key::{AccessKey, KeyChoice, MOST_KEYS, MOST_PROJECTS, NAME_MAX};
+use bb_core::access_key::{AccessKey, KeyChoice, MOST_KEYS, MOST_PROJECTS};
 use bb_core::event::DomainEvent;
 use bb_core::id::{AccessKeyId, ProjectId, UserId};
 use bb_core::sign_in::{SecurityAction, SessionStage};
@@ -36,6 +36,7 @@ use super::types::{
     RequireSessionQuery, SeeServerStatusQuery,
 };
 use crate::access::{Actor, KeyInUse};
+use crate::input::clean_name;
 
 /// The purpose under which guessing keys is counted per network (`Ctx::reserve_network`).
 const GUESSING: &str = "access-key";
@@ -196,15 +197,6 @@ impl<S: AuthStore> Ctx<'_, S> {
             expired: record.key.expires_at <= self.now(),
         })
     }
-}
-
-/// The name as it is kept: trimmed, not empty, not too long, no control characters.
-fn clean_name(name: &str) -> Result<String, AppError> {
-    let name = name.trim();
-    if name.is_empty() || name.chars().count() > NAME_MAX || name.chars().any(char::is_control) {
-        return Err(ErrorCode::InvalidRequest.into());
-    }
-    Ok(name.to_owned())
 }
 
 /// When a key made now stops working: the date the person picked, or the default number of days;

@@ -20,9 +20,7 @@ use super::store::AuthStore;
 use super::types::{
     AcceptInvitation, ChangePassword, CompleteSetup, IssueSetupCode, SignUp, Started,
 };
-
-/// The longest display name, in characters.
-const DISPLAY_NAME_MAX: usize = 100;
+use crate::input::clean_name;
 
 /// The password as a new password: the rules of AUTH-01, as the error a person can read.
 pub(crate) fn check_new_password(password: &str) -> Result<(), AppError> {
@@ -33,18 +31,6 @@ pub(crate) fn check_new_password(password: &str) -> Result<(), AppError> {
             PasswordProblem::TooLong => ErrorCode::InvalidRequest,
         })
     })
-}
-
-/// The name as it is kept: trimmed, not empty, not too long, no control characters.
-pub(crate) fn clean_display_name(name: &str) -> Result<String, AppError> {
-    let name = name.trim();
-    if name.is_empty()
-        || name.chars().count() > DISPLAY_NAME_MAX
-        || name.chars().any(char::is_control)
-    {
-        return Err(ErrorCode::InvalidRequest.into());
-    }
-    Ok(name.to_owned())
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
@@ -152,7 +138,7 @@ pub async fn complete_setup<S: AuthStore>(
     // The code is right: whatever is wrong with the rest is no guess at the code.
     ctx.slot_succeeded(slot);
     let email = EmailAddress::parse(&input.email).ok_or(ErrorCode::InvalidRequest)?;
-    let display_name = clean_display_name(&input.display_name)?;
+    let display_name = clean_name(&input.display_name)?;
     check_new_password(&input.password)?;
     let hash = ctx
         .services
@@ -234,7 +220,7 @@ pub async fn sign_up<S: AuthStore>(ctx: &Ctx<'_, S>, input: SignUp) -> Result<St
         ctx.note(SecurityAction::SignUpRefused, None, None).await;
         return Err(refused());
     }
-    let display_name = clean_display_name(&input.display_name)?;
+    let display_name = clean_name(&input.display_name)?;
     check_new_password(&input.password)?;
     let hash = ctx
         .services
@@ -308,7 +294,7 @@ pub async fn accept_invitation<S: AuthStore>(
         return Err(invalid());
     };
     let email = EmailAddress::parse(&invitation.email).ok_or_else(invalid)?;
-    let display_name = clean_display_name(&input.display_name)?;
+    let display_name = clean_name(&input.display_name)?;
     check_new_password(&input.password)?;
     let hash = ctx
         .services

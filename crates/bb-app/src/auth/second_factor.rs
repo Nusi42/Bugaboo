@@ -5,6 +5,7 @@ use bb_auth::{ChallengeId, HumanCode, Purpose, TotpSecret};
 use bb_core::ErrorCode;
 use bb_core::id::PasskeyId;
 use bb_core::sign_in::{SecurityAction, SessionStage, StoredPasskey, TwoStep};
+use bb_core::text::LABEL_MAX;
 use serde_json::json;
 
 use super::ctx::{AppError, Ctx, by, change_failed, changed, entity, internal, set_to};
@@ -15,13 +16,12 @@ use super::types::{
     PasskeySignInQuery, PasskeyView, RemoveCodeApp, RemovePasskey, RenewBackupCodes, StartCodeApp,
     Started, TwoStepQuery, TwoStepStatus,
 };
+use crate::input::clean_text;
 
 /// How many backup codes a person gets.
 pub const BACKUP_CODE_COUNT: usize = 10;
 /// How many passkeys one person can have.
 pub const MAX_PASSKEYS: usize = 20;
-/// The longest name of a passkey, in characters.
-const MAX_LABEL_CHARS: usize = 64;
 
 fn view(passkey: &StoredPasskey) -> PasskeyView {
     PasskeyView {
@@ -446,13 +446,7 @@ pub async fn add_passkey<S: AuthStore>(
     let record = ctx.active_to_set_up(&input.session_token).await?;
     ctx.confirm_password(&record.person, input.password).await?;
     let person = record.person.id;
-    let label = input.label.trim().to_owned();
-    if label.is_empty()
-        || label.chars().count() > MAX_LABEL_CHARS
-        || label.chars().any(char::is_control)
-    {
-        return Err(ErrorCode::InvalidRequest.into());
-    }
+    let label = clean_text(&input.label, LABEL_MAX)?;
     let (existing, _) = ctx.credentials(person).await?;
     if existing.len() >= MAX_PASSKEYS {
         return Err(ErrorCode::InvalidRequest.into());

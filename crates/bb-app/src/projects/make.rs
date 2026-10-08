@@ -10,7 +10,7 @@ use serde_json::json;
 use super::Why;
 use super::types::{MakeProject, ProjectView};
 use crate::auth::{AppError, AuthStore, Ctx, by, entity, internal, set_to};
-use crate::people::clean_name;
+use crate::input::clean_name;
 
 /// Makes a project. Top level takes *Make projects*; a sub-project takes *Make sub-projects* in
 /// its parent.

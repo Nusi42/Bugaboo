@@ -17,9 +17,6 @@ pub const MOST_PROJECTS: usize = 50;
 /// The most keys one person can have at the same time (also the most the list of keys shows).
 pub const MOST_KEYS: usize = 100;
 
-/// The longest name of a key, in characters.
-pub const NAME_MAX: usize = 100;
-
 words! {
     /// *What it may do* (M2-Q6): the three plain choices, or single permissions under *More
     /// options*.

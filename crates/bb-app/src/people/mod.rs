@@ -34,18 +34,7 @@ use crate::access::{ensure_may_give_in, ensure_may_lift_in};
 use crate::auth::{
     AppError, AuthStore, Ctx, Done, by, change_failed, changed, entity, internal, set_to,
 };
-
-/// The longest name of a group, in characters.
-const NAME_MAX: usize = 100;
-
-/// A name as it is kept: trimmed, not empty, not too long, no control characters.
-pub(crate) fn clean_name(name: &str) -> Result<String, AppError> {
-    let name = name.trim();
-    if name.is_empty() || name.chars().count() > NAME_MAX || name.chars().any(char::is_control) {
-        return Err(ErrorCode::InvalidRequest.into());
-    }
-    Ok(name.to_owned())
-}
+use crate::input::clean_name;
 
 /// Make a group.
 pub struct MakeGroup {

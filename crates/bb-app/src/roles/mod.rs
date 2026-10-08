@@ -38,7 +38,8 @@ pub use types::*;
 
 use crate::access::{RoleRecord, held_in};
 use crate::auth::{AppError, AuthStore, Ctx, Done, by, changed, entity, internal, set_to};
-use crate::people::{clean_name, stopped};
+use crate::input::clean_name;
+use crate::people::stopped;
 
 /// The keys of the permissions in a set: what an event and a view say.
 fn keys(permissions: &BTreeSet<Permission>) -> Vec<&'static str> {

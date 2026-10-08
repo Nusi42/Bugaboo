@@ -13,7 +13,8 @@ use serde_json::json;
 use super::{RoleView, keys, view};
 use crate::access::{RoleRecord, held_in};
 use crate::auth::{AppError, AuthStore, Ctx, by, entity, internal, set_to};
-use crate::people::{clean_name, stopped};
+use crate::input::clean_name;
+use crate::people::stopped;
 
 /// Make a role that is a copy of another.
 pub struct CopyRole {

@@ -14,7 +14,7 @@ use super::Why;
 use super::types::{ChangeProject, ProjectView};
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, by, entity, internal};
-use crate::people::clean_name;
+use crate::input::clean_name;
 
 /// What a change of a project asks for, checked against what the person may do and what is stored.
 struct Plan {
