@@ -5,40 +5,13 @@
 use bb_app::auth::{AccountStore, InvitationStore, SecondStepStore, SessionStore};
 use bb_core::id::IdSource;
 use bb_core::sign_in::{SetupCode, TwoStep};
-use bb_testing::{TestDatabase, TestResult, each_database};
+use bb_testing::{TestResult, each_database};
 
 use super::*;
-use crate::test_support::{at, event, ids, open};
+use crate::test_support::{at, event, fixture, ids, person};
 use bb_core::id::{InvitationId, SessionId, UserId};
 use bb_core::network::NetworkPrefix;
-use bb_core::person::Person;
 use bb_core::sign_in::{Invitation, SessionStage, SignInSession};
-
-struct Fixture {
-    storage: AuthStorage,
-    _folder: tempfile::TempDir,
-}
-
-async fn fixture(db: &TestDatabase) -> Result<Fixture, Box<dyn std::error::Error + Send + Sync>> {
-    let database = open(db).await?;
-    let folder = tempfile::tempdir()?;
-    std::fs::create_dir_all(folder.path().join("logs"))?;
-    let keys = Arc::new(database.open_keys(&folder.path().join("keys")).await?);
-    let seal = LogSeal::new(&keys, folder.path().join("logs").join("head.log"));
-    Ok(Fixture {
-        storage: AuthStorage::new(database, keys, seal),
-        _folder: folder,
-    })
-}
-
-fn person(source: &mut impl IdSource, email: &str) -> Person {
-    Person {
-        id: UserId::generate(source),
-        display_name: "Test Person".to_owned(),
-        email: email.to_owned(),
-        created_at: at(0),
-    }
-}
 
 fn session(
     source: &mut impl IdSource,

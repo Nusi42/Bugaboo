@@ -43,9 +43,7 @@ mod headers {
 
     fn app_folder() -> tempfile::TempDir {
         let dir = tempfile::tempdir().unwrap();
-        std::fs::write(dir.path().join("index.html"), "<h1>Bugaboo</h1>").unwrap();
-        std::fs::create_dir(dir.path().join("assets")).unwrap();
-        std::fs::write(dir.path().join("assets/app-1a2b.js"), "export {};").unwrap();
+        Options::write_test_app(dir.path()).unwrap();
         dir
     }
 

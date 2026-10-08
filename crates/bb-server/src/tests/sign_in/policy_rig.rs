@@ -69,6 +69,15 @@ impl<'a> Org<'a> {
             .map_err(Into::into)
     }
 
+    /// The role *Checker*: it sees the projects and checks what other people can do.
+    pub(super) async fn checker(&self) -> Run<RoleView> {
+        self.role(
+            "Checker",
+            &[Permission::SeeProjects, Permission::CheckAccess],
+        )
+        .await
+    }
+
     /// A role made by somebody; the answer, or why it was refused.
     pub(super) async fn make_role(
         &self,

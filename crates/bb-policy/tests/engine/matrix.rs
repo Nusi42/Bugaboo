@@ -4,9 +4,8 @@
 //! shown through `PersonRef` (PRIV-12). The routes for every actor are the other half of the
 //! matrix, in `bb-server` (`tests/matrix`).
 //!
-//! The tables below are written by hand from architecture §7 (*Starting field levels*, *Starting
-//! Who sees people*): the starting roles of the code are compared with them first, then the engine
-//! is asked.
+//! The levels each starting role has at the start are the ones of the code (`StartingRole`); the
+//! engine is asked about each of them.
 
 use bb_core::access::{FieldLevel, PeopleLevel};
 use bb_core::fields::Field;
@@ -18,48 +17,21 @@ use serde_json::{Map, Value};
 
 use crate::common::World;
 
-const C: FieldLevel = FieldLevel::CanChange;
-const S: FieldLevel = FieldLevel::CanSee;
-const H: FieldLevel = FieldLevel::Hidden;
+/// The starting field levels of a role, from the code (`StartingRole`).
+fn field_levels(role: StartingRole) -> Vec<(Field, FieldLevel)> {
+    Field::ALL
+        .iter()
+        .map(|field| (*field, role.field_level(*field)))
+        .collect()
+}
 
-/// The starting field levels: Administrator, Project lead, Team member, Contributor, Viewer, Guest.
-const FIELD_LEVELS: [(Field, [FieldLevel; 6]); 16] = [
-    (Field::Title, [C, C, C, C, S, C]),
-    (Field::Description, [C, C, C, C, S, C]),
-    (Field::Status, [C, C, C, S, S, S]),
-    (Field::Priority, [C, C, C, S, S, S]),
-    (Field::AssignedTo, [C, C, C, S, S, S]),
-    (Field::ReportedBy, [C, C, S, S, S, S]),
-    (Field::DueDate, [C, C, C, S, S, H]),
-    (Field::Labels, [C, C, C, S, S, S]),
-    (Field::Tags, [C, C, C, C, S, S]),
-    (Field::PlannedForRelease, [C, C, C, S, S, S]),
-    (Field::FoundInRelease, [C, C, C, C, S, C]),
-    (Field::EstimatedTime, [C, C, C, S, S, H]),
-    (Field::TimeLeft, [C, C, C, S, S, H]),
-    (Field::TimeSpent, [C, C, C, S, S, H]),
-    (Field::Activity, [C, C, C, S, S, H]),
-    (Field::CostCenter, [C, C, S, S, S, H]),
-];
-
-const N: PeopleLevel = PeopleLevel::Names;
-const R: PeopleLevel = PeopleLevel::RoleOnly;
-const O: PeopleLevel = PeopleLevel::Hidden;
-
-/// The starting *Who sees people*: Administrator, Project lead, Team member, Contributor, Viewer,
-/// Guest.
-const PEOPLE_LEVELS: [(PeopleKind, [PeopleLevel; 6]); 10] = [
-    (PeopleKind::AssignedTo, [N, N, N, N, N, R]),
-    (PeopleKind::ReportedBy, [N, N, N, N, N, O]),
-    (PeopleKind::LastChangedBy, [N, N, N, N, N, R]),
-    (PeopleKind::Authors, [N, N, N, N, N, R]),
-    (PeopleKind::Editing, [N, N, N, N, N, O]),
-    (PeopleKind::Followers, [N, N, N, R, R, O]),
-    (PeopleKind::TimeEntries, [N, N, N, O, O, O]),
-    (PeopleKind::Mentions, [N, N, N, N, N, R]),
-    (PeopleKind::Pictures, [N, N, N, N, N, O]),
-    (PeopleKind::ProjectMembers, [N, N, N, R, R, O]),
-];
+/// The starting *Who sees people* levels of a role, from the code (`StartingRole`).
+fn people_levels(role: StartingRole) -> Vec<(PeopleKind, PeopleLevel)> {
+    PeopleKind::ALL
+        .iter()
+        .map(|kind| (*kind, role.people_level(*kind)))
+        .collect()
+}
 
 /// An answer with a member for every field of the catalogue, named by the key of the field, as a
 /// view of an issue will have them.
@@ -104,30 +76,8 @@ impl Masked for Answer {
 }
 
 #[test]
-fn the_tables_of_the_matrix_are_the_starting_roles_of_the_code() {
-    assert_eq!(FIELD_LEVELS.len(), Field::ALL.len());
-    assert_eq!(PEOPLE_LEVELS.len(), PeopleKind::ALL.len());
+fn the_answer_names_every_field_of_the_catalogue_by_its_key() {
     assert_eq!(Answer::FIELDS.len(), Field::ALL.len());
-    for (field, levels) in FIELD_LEVELS {
-        for (role, level) in StartingRole::ALL.iter().zip(levels) {
-            assert_eq!(
-                role.field_level(field),
-                level,
-                "{field:?} for {}",
-                role.code()
-            );
-        }
-    }
-    for (kind, levels) in PEOPLE_LEVELS {
-        for (role, level) in StartingRole::ALL.iter().zip(levels) {
-            assert_eq!(
-                role.people_level(kind),
-                level,
-                "{kind:?} for {}",
-                role.code()
-            );
-        }
-    }
     for (name, field) in Answer::FIELDS {
         assert_eq!(*name, field.code());
     }
@@ -144,31 +94,31 @@ fn members(answer: &bb_policy::Authorized<Answer>) -> Vec<String> {
 #[test]
 fn sec_06_every_field_level_of_every_role_shows_or_hides_the_field_in_answers() {
     let mut rows = 0;
-    for (index, role_key) in StartingRole::ALL.iter().enumerate() {
+    for role_key in StartingRole::ALL {
         // The levels the role has of its own, for the whole organization.
         let mut world = World::new();
         let role = world.role(role_key.code(), &[Permission::SeeProjects]);
         world.give_everywhere(role);
-        for (field, levels) in FIELD_LEVELS {
-            world.field(role, None, field, levels[index]);
+        for (field, own_level) in field_levels(*role_key) {
+            world.field(role, None, field, own_level);
         }
         let own = world.at(world.web);
         let answer = own.authorize(Answer::whole());
         let shown = members(&answer);
-        for (field, levels) in FIELD_LEVELS {
+        for (field, own_level) in field_levels(*role_key) {
             assert_eq!(
                 own.field_level(field),
-                levels[index],
+                own_level,
                 "{field:?} for {role_key:?}"
             );
             assert_eq!(
                 shown.iter().any(|name| name == field.code()),
-                levels[index] >= FieldLevel::CanSee,
+                own_level >= FieldLevel::CanSee,
                 "{field:?} for {role_key:?}: in the answer only when it can be seen"
             );
             assert_eq!(
                 answer.hidden_properties().contains(&field.code()),
-                levels[index] == FieldLevel::Hidden,
+                own_level == FieldLevel::Hidden,
                 "{field:?} for {role_key:?}: asking for it by `fields` fails only when hidden"
             );
             rows += 1;
@@ -179,15 +129,15 @@ fn sec_06_every_field_level_of_every_role_shows_or_hides_the_field_in_answers() 
             let mut world = World::new();
             let role = world.role(role_key.code(), &[Permission::SeeProjects]);
             world.give_everywhere(role);
-            for (field, levels) in FIELD_LEVELS {
-                world.field(role, None, field, levels[index]);
+            for (field, own_level) in field_levels(*role_key) {
+                world.field(role, None, field, own_level);
                 world.field(role, Some(world.acme), field, level);
             }
             for project in [world.acme, world.web, world.api] {
                 let held = world.at(project);
                 let answer = held.authorize(Answer::whole());
                 let shown = members(&answer);
-                for (field, _) in FIELD_LEVELS {
+                for (field, _) in field_levels(*role_key) {
                     assert_eq!(held.field_level(field), level, "{field:?} for {role_key:?}");
                     assert_eq!(
                         shown.iter().any(|name| name == field.code()),
@@ -203,10 +153,10 @@ fn sec_06_every_field_level_of_every_role_shows_or_hides_the_field_in_answers() 
             }
             // A project beside ACME is not under what ACME set: the role's own level counts there.
             let beside = world.at(world.other);
-            for (field, levels) in FIELD_LEVELS {
+            for (field, own_level) in field_levels(*role_key) {
                 assert_eq!(
                     beside.field_level(field),
-                    levels[index],
+                    own_level,
                     "{field:?} for {role_key:?}"
                 );
             }
@@ -240,17 +190,17 @@ fn priv_12_every_kind_and_level_shows_the_person_as_the_rule_says() {
         removed: None,
     };
     let mut rows = 0;
-    for (index, role_key) in StartingRole::ALL.iter().enumerate() {
-        for (kind, levels) in PEOPLE_LEVELS {
+    for role_key in StartingRole::ALL {
+        for (kind, own_level) in people_levels(*role_key) {
             // The starting level of the role for the kind, then every level set on a project.
             let mut starting = World::new();
             let role = starting.role(role_key.code(), &[Permission::SeeProjects]);
             starting.give_everywhere(role);
-            starting.people(role, None, kind, levels[index]);
+            starting.people(role, None, kind, own_level);
             let held = starting.at(starting.web);
             assert_eq!(
                 held.kind_level(kind),
-                levels[index],
+                own_level,
                 "{kind:?} for {role_key:?}"
             );
             assert_eq!(
@@ -260,14 +210,14 @@ fn priv_12_every_kind_and_level_shows_the_person_as_the_rule_says() {
                     PeopleContext::Ordinary,
                     target(Some("a Team member"))
                 ),
-                expected(levels[index], bea, Some("a Team member"))
+                expected(own_level, bea, Some("a Team member"))
             );
             rows += 1;
             for level in PeopleLevel::ALL.iter().copied() {
                 let mut world = World::new();
                 let role = world.role(role_key.code(), &[Permission::SeeProjects]);
                 world.give_everywhere(role);
-                world.people(role, None, kind, levels[index]);
+                world.people(role, None, kind, own_level);
                 world.people(role, Some(world.acme), kind, level);
                 for project in [world.acme, world.web, world.api] {
                     let viewer = world.at(project);

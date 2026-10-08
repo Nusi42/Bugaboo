@@ -4,7 +4,6 @@
 //! organization switch (AUTH-03).
 
 use std::collections::BTreeSet;
-use std::sync::Arc;
 
 use bb_app::access::PolicyStore as _;
 use bb_app::auth::{AccessKeyStore, AccountStore, AuthStore, SecondStepStore};
@@ -14,30 +13,12 @@ use bb_core::id::{AssignmentId, GroupId, IdSource, RoleId};
 use bb_core::person::Person;
 use bb_core::settings::{AUTH_ACCESS_KEY_LONGEST_DAYS, SECURITY_TWO_STEP_REQUIRED, SettingValue};
 use bb_core::sign_in::{StoredPasskey, TwoStep};
-use bb_testing::{Failure, TestDatabase, TestResult, each_database};
+use bb_testing::{Failure, TestResult, each_database};
 
 use super::*;
-use crate::anchor::LogSeal;
 use crate::auth::AuthStorage;
 use crate::settings::SettingChange;
-use crate::test_support::{at, event, ids, open};
-
-struct Fixture {
-    storage: AuthStorage,
-    _folder: tempfile::TempDir,
-}
-
-async fn fixture(db: &TestDatabase) -> Result<Fixture, Box<dyn std::error::Error + Send + Sync>> {
-    let database = open(db).await?;
-    let folder = tempfile::tempdir()?;
-    std::fs::create_dir_all(folder.path().join("logs"))?;
-    let keys = Arc::new(database.open_keys(&folder.path().join("keys")).await?);
-    let seal = LogSeal::new(&keys, folder.path().join("logs").join("head.log"));
-    Ok(Fixture {
-        storage: AuthStorage::new(database, keys, seal),
-        _folder: folder,
-    })
-}
+use crate::test_support::{at, event, fixture, ids, person};
 
 /// Runs `write` as a change with its event, the way a use case does.
 async fn change<T: Send>(
@@ -54,12 +35,7 @@ async fn a_person(
     source: &mut impl IdSource,
     email: &str,
 ) -> Result<Person, StoreError> {
-    let person = Person {
-        id: UserId::generate(source),
-        display_name: "Test Person".to_owned(),
-        email: email.to_owned(),
-        created_at: at(0),
-    };
+    let person = person(source, email);
     let stored = person.clone();
     change(storage, source, move |tx| {
         Box::pin(async move { AuthStorage::insert_person(tx, &stored, "hash", at(0)).await })

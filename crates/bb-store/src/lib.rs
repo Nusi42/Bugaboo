@@ -48,12 +48,15 @@ pub use testing::M1Person;
 /// Helpers for the tests of this crate: they run on both databases through the harness.
 #[cfg(test)]
 mod test_support {
+    use std::sync::Arc;
+
     use bb_core::event::{Actor, Channel, DomainEvent, EntityKind, EntityRef, FieldChange};
     use bb_core::id::{EntityId, EventId, IdSource, SequentialIds, UserId};
+    use bb_core::person::Person;
     use bb_testing::TestDatabase;
     use jiff::Timestamp;
 
-    use crate::Database;
+    use crate::{AuthStorage, Database, LogSeal};
 
     /// A moment `seconds` after 2026-01-01.
     pub(crate) fn at(seconds: i64) -> Timestamp {
@@ -84,6 +87,37 @@ mod test_support {
             }],
             reason: Some("Reported".to_owned()),
         }
+    }
+
+    /// A person for the tests, with the e-mail address.
+    pub(crate) fn person(ids: &mut impl IdSource, email: &str) -> Person {
+        Person {
+            id: UserId::generate(ids),
+            display_name: "Test Person".to_owned(),
+            email: email.to_owned(),
+            created_at: at(0),
+        }
+    }
+
+    /// The storage of the sign-in data on a database of the test, with its keys and its log seal
+    /// in a folder that goes away with it.
+    pub(crate) struct Fixture {
+        pub(crate) storage: AuthStorage,
+        _folder: tempfile::TempDir,
+    }
+
+    pub(crate) async fn fixture(
+        db: &TestDatabase,
+    ) -> Result<Fixture, Box<dyn std::error::Error + Send + Sync>> {
+        let database = open(db).await?;
+        let folder = tempfile::tempdir()?;
+        std::fs::create_dir_all(folder.path().join("logs"))?;
+        let keys = Arc::new(database.open_keys(&folder.path().join("keys")).await?);
+        let seal = LogSeal::new(&keys, folder.path().join("logs").join("head.log"));
+        Ok(Fixture {
+            storage: AuthStorage::new(database, keys, seal),
+            _folder: folder,
+        })
     }
 
     /// Opens the database of the test through the real `connect` and migrates it.

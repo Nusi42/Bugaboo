@@ -12,8 +12,8 @@ use bb_auth::{
     looks_like_access_key,
 };
 use bb_core::ErrorCode;
-use bb_core::event::RecordKind;
-use bb_core::id::UserId;
+use bb_core::event::{DomainEvent, RecordKind};
+use bb_core::id::{SessionId, UserId};
 use bb_core::sign_in::{SecurityAction, SessionStage};
 use bb_policy::{Authorized, Evaluation, Permission, Place};
 use jiff::Timestamp;
@@ -81,6 +81,25 @@ pub async fn authenticate<S: AuthStore>(
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
+    /// The event of the end of one session of `person`.
+    fn session_ended_event(&self, person: UserId, id: SessionId) -> Result<DomainEvent, AppError> {
+        self.event(
+            by(person),
+            entity(RecordKind::Session, id),
+            vec![changed("session")],
+        )
+    }
+
+    /// Writes the end of one session of `person` into the security log.
+    async fn note_session_ended(&self, person: UserId, id: SessionId) {
+        self.note(
+            SecurityAction::SessionEnded,
+            Some(person),
+            Some(entity(RecordKind::Session, id)),
+        )
+        .await;
+    }
+
     /// Whether the person has to set up a second step before anything else (M1-F45, AUTH-03):
     /// the organization asks it of everybody or any role they hold anywhere has the switch, and
     /// they have no code app and no passkey. Asked at every
@@ -497,24 +516,14 @@ pub async fn sign_out<S: AuthStore>(ctx: &Ctx<'_, S>, input: SignOut) -> Result<
         return Ok(Done);
     };
     let (person, id) = (record.person.id, record.session.id);
-    let event = ctx.event(
-        by(person),
-        entity(RecordKind::Session, id),
-        vec![changed("session")],
-    )?;
-    let store = ctx.store();
-    store
+    let event = ctx.session_ended_event(person, id)?;
+    ctx.store()
         .record_change(&event, move |transaction| {
             Box::pin(async move { S::delete_session(transaction, id).await.map(|_| ()) })
         })
         .await
         .map_err(|error| change_failed::<S>(&error, Stops::NONE))?;
-    ctx.note(
-        SecurityAction::SessionEnded,
-        Some(person),
-        Some(entity(RecordKind::Session, id)),
-    )
-    .await;
+    ctx.note_session_ended(person, id).await;
     Ok(Done)
 }
 
@@ -581,24 +590,14 @@ pub async fn end_session<S: AuthStore>(
     if !owned {
         return Err(ErrorCode::NotFound.into());
     }
-    let event = ctx.event(
-        by(person),
-        entity(RecordKind::Session, id),
-        vec![changed("session")],
-    )?;
-    let store = ctx.store();
-    store
+    let event = ctx.session_ended_event(person, id)?;
+    ctx.store()
         .record_change(&event, move |transaction| {
             Box::pin(async move { S::delete_session(transaction, id).await.map(|_| ()) })
         })
         .await
         .map_err(|error| change_failed::<S>(&error, Stops::NONE))?;
-    ctx.note(
-        SecurityAction::SessionEnded,
-        Some(person),
-        Some(entity(RecordKind::Session, id)),
-    )
-    .await;
+    ctx.note_session_ended(person, id).await;
     Ok(SessionEnded {
         own: record.session.id == id,
     })

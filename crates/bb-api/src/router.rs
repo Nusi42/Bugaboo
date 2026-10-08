@@ -97,6 +97,16 @@ impl Options {
             probe: ProbeHandle::none(),
         }
     }
+
+    /// Writes a small browser app into `folder`: a start page and one script with a hashed name.
+    ///
+    /// # Errors
+    /// Fails when a file cannot be written.
+    pub fn write_test_app(folder: &std::path::Path) -> io::Result<()> {
+        std::fs::write(folder.join("index.html"), "<h1>Bugaboo</h1>")?;
+        std::fs::create_dir(folder.join("assets"))?;
+        std::fs::write(folder.join("assets/app-1a2b.js"), "export {};")
+    }
 }
 
 #[derive(Clone)]
@@ -430,9 +440,7 @@ mod tests {
 
     fn app_folder() -> tempfile::TempDir {
         let dir = tempfile::tempdir().unwrap();
-        std::fs::write(dir.path().join("index.html"), "<h1>Bugaboo</h1>").unwrap();
-        std::fs::create_dir(dir.path().join("assets")).unwrap();
-        std::fs::write(dir.path().join("assets/app-1a2b.js"), "export {};").unwrap();
+        Options::write_test_app(dir.path()).unwrap();
         std::fs::write(dir.path().join("robots.txt"), "x").unwrap();
         std::fs::write(dir.path().join("my file.txt"), "spaced").unwrap();
         dir

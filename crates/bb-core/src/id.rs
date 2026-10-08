@@ -69,6 +69,15 @@ impl SequentialIds {
 }
 
 #[cfg(any(test, feature = "fake-ids"))]
+impl SequentialIds {
+    /// `N` things made one after another with `make` (`|ids| ProjectId::generate(ids)`), for the
+    /// tests that need a handful of IDs of a kind.
+    pub fn make<const N: usize, T>(&mut self, mut make: impl FnMut(&mut Self) -> T) -> [T; N] {
+        std::array::from_fn(|_| make(self))
+    }
+}
+
+#[cfg(any(test, feature = "fake-ids"))]
 impl IdSource for SequentialIds {
     fn now(&mut self) -> Timestamp {
         self.counter += 1;
