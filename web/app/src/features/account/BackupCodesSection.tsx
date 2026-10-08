@@ -1,11 +1,10 @@
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, Button, buttonType, Card, Form } from "@bugaboo/ui";
+import { Alert, alertTone, Button, buttonType, Card, Form, partOf, part } from "@bugaboo/ui";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 
 import { api } from "../../shared/api.ts";
 import { messageOf } from "../../shared/errors.ts";
-import styles from "./Account.module.css";
 import { BackupCodes } from "./BackupCodes.tsx";
 import { ConfirmPasswordField } from "./ConfirmPasswordField.tsx";
 import { refreshTwoStep, twoStepOptions } from "./two-step.ts";
@@ -25,8 +24,8 @@ export function BackupCodesSection() {
   }
   return (
     <Card heading={t("backup.title")}>
-      <p className={styles.text}>{t("backup.intro")}</p>
-      <p className={styles.text}>{t("backup.left", { count: twoStep.backup_codes_left })}</p>
+      <p {...partOf(part.text)}>{t("backup.intro")}</p>
+      <p {...partOf(part.text)}>{t("backup.left", { count: twoStep.backup_codes_left })}</p>
       {renew.data === undefined ? null : (
         <BackupCodes codes={renew.data.codes} onSaved={renew.reset} />
       )}
@@ -36,9 +35,9 @@ export function BackupCodesSection() {
         }}
       >
         <ConfirmPasswordField value={password} onChange={setPassword} />
-        <p className={styles.muted}>{t("backup.renew-help")}</p>
+        <p {...partOf(part.muted)}>{t("backup.renew-help")}</p>
         {renew.isError ? <Alert tone={alertTone.danger}>{messageOf(renew.error)}</Alert> : null}
-        <div className={styles.row}>
+        <div {...partOf(part.row)}>
           <Button type={buttonType.submit} isPending={renew.isPending}>
             {t("backup.renew")}
           </Button>

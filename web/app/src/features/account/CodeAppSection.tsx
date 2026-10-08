@@ -1,9 +1,8 @@
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, Card } from "@bugaboo/ui";
+import { Alert, alertTone, Card, partOf, part } from "@bugaboo/ui";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 
-import styles from "./Account.module.css";
 import { BackupCodes } from "./BackupCodes.tsx";
 import { CodeAppSetup } from "./CodeAppSetup.tsx";
 import { SwitchOff } from "./SwitchOff.tsx";
@@ -16,7 +15,7 @@ export function CodeAppSection() {
   const [turnedOff, setTurnedOff] = useState(false);
   return (
     <Card heading={t("code-app.title")}>
-      <p className={styles.text}>{t("code-app.intro")}</p>
+      <p {...partOf(part.text)}>{t("code-app.intro")}</p>
       {codes === null ? null : (
         <>
           <Alert tone={alertTone.success}>{t("code-app.switched-on")}</Alert>
@@ -37,7 +36,7 @@ export function CodeAppSection() {
         />
       ) : (
         <>
-          <p className={styles.text}>{t("code-app.off")}</p>
+          <p {...partOf(part.text)}>{t("code-app.off")}</p>
           <CodeAppSetup onSwitchedOn={setCodes} />
         </>
       )}

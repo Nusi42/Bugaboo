@@ -1282,3 +1282,64 @@ part "admin.detail" {
     font-size "$fs-md"
     line-height "$lh-body"
 }
+
+// ───────────── Account ─────────────
+
+part "account.item" {
+    display flex
+    flex-wrap wrap
+    align-items center
+    justify-content space-between
+    gap "$space-3"
+    padding "$space-3"
+    border "$border-width solid $border-subtle"
+    border-radius "$r-ctl"
+    background "$bg-surface"
+}
+
+part "account.item-text" {
+    display flex
+    flex-direction column
+    gap "$space-1"
+    min-width 0
+    overflow-wrap anywhere
+}
+
+part "account.item-title" {
+    font-weight "$weight-bold"
+}
+
+part "account.codes" {
+    display grid
+    grid-template-columns "repeat(auto-fill, minmax(min(100%, $size-code), 1fr))"
+    gap "$space-2"
+    margin 0
+    padding "$space-3"
+    border "$border-width solid $border"
+    border-radius "$r-ctl"
+    background "$bg-sunken"
+    font-family "$mono"
+    font-size "$fs-md"
+    list-style none
+}
+
+part "account.key" {
+    display block
+    padding "$space-3"
+    border "$border-width solid $border"
+    border-radius "$r-ctl"
+    background "$bg-sunken"
+    font-family "$mono"
+    font-size "$fs-md"
+    overflow-wrap anywhere
+}
+
+part "account.qr" {
+    align-self center
+    width "$size-qr"
+    height "$size-qr"
+    max-width "100%"
+    border "$border-width solid $border"
+    background "$bg-raised"
+    image-rendering pixelated
+}

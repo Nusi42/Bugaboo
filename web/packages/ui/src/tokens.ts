@@ -237,6 +237,12 @@ export const part = {
   adminFact: "admin.fact",
   adminTerm: "admin.term",
   adminDetail: "admin.detail",
+  accountItem: "account.item",
+  accountItemText: "account.item-text",
+  accountItemTitle: "account.item-title",
+  accountCodes: "account.codes",
+  accountKey: "account.key",
+  accountQr: "account.qr",
 } as const;
 export type PartName = (typeof part)[keyof typeof part];
 
@@ -304,4 +310,10 @@ export const partWords = {
   "admin.fact": { variant: [], state: [] },
   "admin.term": { variant: [], state: [] },
   "admin.detail": { variant: [], state: [] },
+  "account.item": { variant: [], state: [] },
+  "account.item-text": { variant: [], state: [] },
+  "account.item-title": { variant: [], state: [] },
+  "account.codes": { variant: [], state: [] },
+  "account.key": { variant: [], state: [] },
+  "account.qr": { variant: [], state: [] },
 } as const;

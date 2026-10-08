@@ -1,11 +1,10 @@
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, Card } from "@bugaboo/ui";
+import { Alert, alertTone, Card, partOf, part } from "@bugaboo/ui";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 
 import { passkeysSupported } from "../../shared/passkey.ts";
 import { statusOptions } from "../../shared/session.ts";
-import styles from "./Account.module.css";
 import { AddPasskeyForm } from "./AddPasskeyForm.tsx";
 import { PasskeyList } from "./PasskeyList.tsx";
 import { twoStepOptions } from "./two-step.ts";
@@ -17,7 +16,7 @@ export function PasskeysSection() {
   const [removed, setRemoved] = useState(false);
   return (
     <Card heading={t("passkeys.title")}>
-      <p className={styles.text}>{t("passkeys.intro")}</p>
+      <p {...partOf(part.text)}>{t("passkeys.intro")}</p>
       {available === false ? (
         <Alert tone={alertTone.warning}>{t("passkeys.unavailable")}</Alert>
       ) : null}
