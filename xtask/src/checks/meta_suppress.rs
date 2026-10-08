@@ -74,9 +74,7 @@ impl Check for MetaSuppress {
     fn run(&self, context: &Context<'_>) -> anyhow::Result<Vec<Finding>> {
         let scan = scan_repo(context.repo)?;
         let mut findings = scan.findings;
-        let on_disk = fs::read_to_string(context.repo.path(LIST_PATH))
-            .ok()
-            .map(|text| normalize(&text));
+        let on_disk = read_text(context.repo, LIST_PATH).ok();
         findings.extend(compare_list(&render_list(&scan.counts), on_disk.as_deref()));
         Ok(findings)
     }

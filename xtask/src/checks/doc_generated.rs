@@ -2,7 +2,7 @@
 
 use super::{Check, Context, Finding};
 use crate::generate;
-use crate::source::normalize;
+use crate::source::{normalize, read_text};
 
 pub(crate) struct DocGenerated;
 
@@ -15,7 +15,7 @@ impl Check for DocGenerated {
         let mut findings = Vec::new();
         for generator in &generate::GENERATORS {
             for file in (generator.generate)(context.repo, context.catalog)? {
-                let on_disk = std::fs::read_to_string(context.repo.path(file.path)).ok();
+                let on_disk = read_text(context.repo, file.path).ok();
                 findings.extend(compare(
                     generator.name,
                     file.path,

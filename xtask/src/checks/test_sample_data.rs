@@ -41,6 +41,7 @@ use serde_json::Value;
 
 use super::{Check, Context, Finding};
 use crate::dataset::load_layout;
+use crate::source::read_text;
 use bb_core::text::CROCKFORD;
 use bb_dev_words::sample::{Layout, OrganizationNames};
 
@@ -75,12 +76,11 @@ impl Check for TestSampleData {
     fn run(&self, context: &Context<'_>) -> anyhow::Result<Vec<Finding>> {
         let mut findings = Vec::new();
         load_layout(context.repo.root())?;
-        let names = fs::read_to_string(context.repo.path(NAMES_FILE))
-            .with_context(|| format!("could not read {NAMES_FILE}"))?;
+        let names = read_text(context.repo, NAMES_FILE)?;
         if let Err(problem) = NameList::parse(&names) {
             findings.push(Finding::at(NAMES_FILE, problem));
         }
-        let ci = fs::read_to_string(context.repo.path(CI_SOURCE)).unwrap_or_default();
+        let ci = read_text(context.repo, CI_SOURCE).unwrap_or_default();
         if !ci.contains(CI_STEP) {
             findings.push(Finding::at(
                 CI_SOURCE,

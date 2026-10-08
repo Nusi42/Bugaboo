@@ -6,12 +6,10 @@
 //! cookie writes anywhere else: a `Set-Cookie` header in Rust, a cookie library, or a write to
 //! `document.cookie` in the browser app.
 
-use anyhow::Context as _;
-
 use super::web_source::code_of;
 use super::{Check, Context, Finding};
 use crate::generate::api::{CookieTable, parse_cookies};
-use crate::generate::messages::{SOURCE_LOCALE_PATH, parse_pairs};
+use crate::generate::messages::{SOURCE_LOCALE_PATH, source_pairs};
 use crate::generate::messages_rust::constant_name;
 use crate::rust_source::{strip_comments, without_tests};
 use crate::source::{Kind, Source};
@@ -41,9 +39,7 @@ impl Check for SecCookies {
     fn run(&self, context: &Context<'_>) -> anyhow::Result<Vec<Finding>> {
         let rust = context.sources(self.id(), Kind::Rust)?;
         let web = context.sources(self.id(), Kind::Web)?;
-        let catalog = std::fs::read_to_string(context.repo.path(SOURCE_LOCALE_PATH))
-            .with_context(|| format!("could not read {SOURCE_LOCALE_PATH}"))?;
-        let constants = parse_pairs(&catalog)?
+        let constants = source_pairs(context.repo)?
             .iter()
             .map(|(key, _)| constant_name(key))
             .collect::<Vec<_>>();

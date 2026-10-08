@@ -1,8 +1,6 @@
 //! DEV-PORTS: no default framework ports; every port comes from `tools/dev/ports.json` and is
 //! strict (ADR-0023).
 
-use std::fs;
-
 use super::{Check, Context, Finding};
 use crate::ports::{ALLOWED, Layout, PORTS_FILE};
 use crate::source::read_text;
@@ -22,7 +20,7 @@ impl Check for DevPorts {
 
     fn run(&self, context: &Context<'_>) -> anyhow::Result<Vec<Finding>> {
         let mut findings = Vec::new();
-        match fs::read_to_string(context.repo.path(PORTS_FILE)) {
+        match read_text(context.repo, PORTS_FILE) {
             Ok(text) => findings.extend(check_ports_file(&text)),
             Err(_) => findings.push(Finding::at(PORTS_FILE, "The ports file is missing.")),
         }
@@ -269,7 +267,7 @@ export default { server: { port: ports.web, strictPort: true }, preview: { port:
     fn good_example() {
         assert!(check_config("web/app/vite.config.ts", GOOD).is_empty());
         let repo = Repo::discover().unwrap();
-        let ports = fs::read_to_string(repo.path(PORTS_FILE)).unwrap();
+        let ports = read_text(&repo, PORTS_FILE).unwrap();
         assert!(check_ports_file(&ports).is_empty());
     }
 

@@ -5,14 +5,12 @@
 //! `a --> b` and `a -.-> b` mean "a may depend on b", `a --> b & c` lists several targets.
 
 use std::collections::BTreeSet;
-use std::fs;
-
-use anyhow::Context as _;
 
 use super::{Check, Context, Finding};
 use crate::docs::building_blocks::{Map, parse_module_map};
 use crate::docs::source::BUILDING_BLOCKS as MAP_DOC;
 use crate::metadata::{self, Package};
+use crate::source::read_text;
 
 /// Tooling crates that live in the workspace but are not part of the module map.
 const OUTSIDE_THE_MAP: &[&str] = &["xtask"];
@@ -29,8 +27,7 @@ impl Check for ArchDeps {
 
     fn run(&self, context: &Context<'_>) -> anyhow::Result<Vec<Finding>> {
         let root = context.repo.root();
-        let text = fs::read_to_string(root.join(MAP_DOC))
-            .with_context(|| format!("could not read {MAP_DOC}"))?;
+        let text = read_text(context.repo, MAP_DOC)?;
         let map = parse_module_map(&text)?;
         Ok(evaluate(&metadata::load(root)?, &map))
     }
@@ -174,7 +171,7 @@ mod tests {
         let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
             .parent()
             .unwrap();
-        let text = fs::read_to_string(root.join(MAP_DOC)).unwrap();
+        let text = std::fs::read_to_string(root.join(MAP_DOC)).unwrap();
         let findings = evaluate(&metadata::load(root).unwrap(), &parse_map(&text).unwrap());
         let messages: Vec<&String> = findings.iter().map(|f| &f.message).collect();
         assert!(findings.is_empty(), "{messages:?}");

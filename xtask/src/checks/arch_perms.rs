@@ -17,7 +17,6 @@
 
 use std::collections::BTreeSet;
 
-use anyhow::Context as _;
 use serde::Deserialize;
 use serde_json::Value;
 
@@ -28,7 +27,7 @@ use bb_policy::Permission;
 use super::api_spec;
 use super::exemptions;
 use super::{Check, Context, Finding};
-use crate::generate::messages::SOURCE_LOCALE_PATH;
+use crate::generate::messages::{SOURCE_LOCALE_PATH, source_pairs};
 
 /// Where the permissions are declared; only shown in messages.
 const CATALOGUE_PATH: &str = "crates/bb-policy/src/catalogue.rs";
@@ -43,17 +42,11 @@ impl Check for ArchPerms {
     }
 
     fn run(&self, context: &Context<'_>) -> anyhow::Result<Vec<Finding>> {
-        let read = |path: &str, hint: &str| {
-            std::fs::read_to_string(context.repo.path(path))
-                .with_context(|| format!("could not read {path}{hint}"))
-        };
         let spec = api_spec::load(context.repo)?;
-        let messages: Value = serde_json::from_str(&read(SOURCE_LOCALE_PATH, "")?)
-            .with_context(|| format!("{SOURCE_LOCALE_PATH} is not valid JSON"))?;
-        let message_keys: BTreeSet<String> = messages
-            .as_object()
-            .map(|object| object.keys().cloned().collect())
-            .unwrap_or_default();
+        let message_keys: BTreeSet<String> = source_pairs(context.repo)?
+            .into_iter()
+            .map(|(key, _)| key)
+            .collect();
         let exemptions: Exemptions = exemptions::load(context.repo, EXEMPTIONS_PATH)?;
         Ok(evaluate(
             &spec,

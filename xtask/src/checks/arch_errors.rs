@@ -16,7 +16,6 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
-use anyhow::Context as _;
 use bb_core::ErrorCode;
 use serde_json::Value;
 
@@ -24,7 +23,7 @@ use super::api_spec;
 use super::{Check, Context, Finding};
 use crate::generate::api::SPEC_PATH;
 use crate::generate::icu::placeholders;
-use crate::generate::messages::{SOURCE_LOCALE_PATH, parse_pairs};
+use crate::generate::messages::{SOURCE_LOCALE_PATH, source_pairs};
 use crate::rust_source::without_tests;
 use crate::source::{Kind, Source};
 
@@ -58,9 +57,7 @@ impl Check for ArchErrors {
 
     fn run(&self, context: &Context<'_>) -> anyhow::Result<Vec<Finding>> {
         let sources = context.sources(self.id(), Kind::Rust)?;
-        let catalog = std::fs::read_to_string(context.repo.path(SOURCE_LOCALE_PATH))
-            .with_context(|| format!("could not read {SOURCE_LOCALE_PATH}"))?;
-        let messages = parse_pairs(&catalog)?;
+        let messages = source_pairs(context.repo)?;
         let spec = api_spec::load(context.repo)?;
         Ok(evaluate(&table(), &sources, &messages, &spec))
     }
@@ -560,9 +557,8 @@ mod tests {
     fn the_error_codes_of_this_repository_pass() {
         let repo = crate::repo::Repo::discover().unwrap();
         let sources = crate::source::read_sources(&repo, None, Kind::Rust).unwrap();
-        let text = std::fs::read_to_string(repo.path(SOURCE_LOCALE_PATH)).unwrap();
         let spec = api_spec::load(&repo).unwrap();
-        let found = evaluate(&table(), &sources, &parse_pairs(&text).unwrap(), &spec);
+        let found = evaluate(&table(), &sources, &source_pairs(&repo).unwrap(), &spec);
         assert!(
             found.is_empty(),
             "{:?}",

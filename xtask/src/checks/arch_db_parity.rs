@@ -7,11 +7,11 @@
 //! sure `cargo xtask ci` runs the Rust tests through `db run`, where the record is checked.
 
 use std::collections::{BTreeMap, BTreeSet};
-use std::fs;
 
 use bb_dev_words::database::DatabaseKind;
 
 use super::{Check, Context, Finding};
+use crate::source::read_text;
 
 /// Where the harness writes what ran, relative to the repository root.
 pub(crate) const RECORD_PATH: &str = "target/db-parity.txt";
@@ -24,8 +24,7 @@ impl Check for ArchDbParity {
     }
 
     fn run(&self, context: &Context<'_>) -> anyhow::Result<Vec<Finding>> {
-        let path = context.repo.path(CI_SOURCE);
-        let text = fs::read_to_string(&path).unwrap_or_default();
+        let text = read_text(context.repo, CI_SOURCE).unwrap_or_default();
         Ok(wiring_problem(&text)
             .map(|message| Finding::at(CI_SOURCE, message))
             .into_iter()
