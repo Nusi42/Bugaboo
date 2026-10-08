@@ -29,7 +29,6 @@ use bb_app::roles::RolesQuery;
 use bb_core::access_key::KeyChoice;
 use bb_core::id::{ProjectId, RoleId};
 use bb_testing::{Failure, TestResult, each_database};
-use serde_json::json;
 
 use super::actors::{
     Actor, Project, Where, actors, everything_seen, held_exactly, short_name, standing,
@@ -247,13 +246,7 @@ impl<'a> Fixture<'a> {
             return Ok(browser);
         }
         if let Some((_, email)) = self.people.iter().find(|(known, _)| *known == actor) {
-            let signed_in = browser
-                .send(
-                    "POST",
-                    "/api/v1/auth/sign-in",
-                    Some(json!({"email": email, "password": PASSWORD})),
-                )
-                .await?;
+            let signed_in = browser.sign_in(email, PASSWORD).await?;
             if signed_in.status != StatusCode::OK {
                 return Err(
                     format!("{} could not sign in: {}", actor.name(), signed_in.code()).into(),

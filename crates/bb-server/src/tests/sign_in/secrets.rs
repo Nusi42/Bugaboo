@@ -16,6 +16,7 @@ use bb_core::technical::TechnicalName;
 use bb_store::Verification;
 use bb_testing::{TestResult, each_database};
 
+use super::http::ADA_EMAIL;
 use super::rig::{OTHER_PASSWORD, PASSWORD, Rig, secret_of};
 
 async fn events(rig: &Rig) -> Result<usize, bb_store::StoreError> {
@@ -57,18 +58,14 @@ async fn adr_0007_accounts_sessions_and_invitations_append_one_event_per_change(
     each_database("adr_0007_sign_in_events", async |db| {
         let rig = Rig::start(db).await?;
         let mut count = Counter::start(&rig).await?;
-        let admin = rig.admin("ada@example.test").await?;
+        let admin = rig.admin(ADA_EMAIL).await?;
         count.one_more("setup").await?;
         let session = admin.session_token.clone();
-        rig.sign_in("ada@example.test", PASSWORD).await?;
+        rig.sign_in(ADA_EMAIL, PASSWORD).await?;
         count.one_more("sign in").await?;
 
         // Reading and failing change nothing, so they add nothing.
-        assert!(
-            rig.sign_in("ada@example.test", "Wrong-Password-1")
-                .await
-                .is_err()
-        );
+        assert!(rig.sign_in(ADA_EMAIL, "Wrong-Password-1").await.is_err());
         let query = SessionsQuery {
             session_token: session.clone(),
         };
@@ -115,7 +112,7 @@ async fn adr_0007_accounts_sessions_and_invitations_append_one_event_per_change(
 async fn adr_0007_the_code_app_appends_one_event_per_change() -> TestResult {
     each_database("adr_0007_code_app_events", async |db| {
         let rig = Rig::start(db).await?;
-        let admin = rig.admin("ada@example.test").await?;
+        let admin = rig.admin(ADA_EMAIL).await?;
         let session = admin.session_token.clone();
         let mut count = Counter::start(&rig).await?;
         let start = StartCodeApp {
@@ -158,7 +155,7 @@ async fn adr_0007_the_code_app_appends_one_event_per_change() -> TestResult {
 async fn sec_16_no_secret_is_written_to_an_event_or_to_the_security_log() -> TestResult {
     each_database("sec_16_no_secret_in_events", async |db| {
         let rig = Rig::start(db).await?;
-        let admin = rig.admin("ada@example.test").await?;
+        let admin = rig.admin(ADA_EMAIL).await?;
         let session = admin.session_token.clone();
         let setup = rig
             .api()
@@ -198,11 +195,11 @@ async fn sec_16_no_secret_is_written_to_an_event_or_to_the_security_log() -> Tes
             )
             .await?
             .into_value();
-        let _ = rig.sign_in("ada@example.test", "Wrong-Password-1").await;
-        let _ = rig.sign_in("ada@example.test", PASSWORD).await?;
+        let _ = rig.sign_in(ADA_EMAIL, "Wrong-Password-1").await;
+        let _ = rig.sign_in(ADA_EMAIL, PASSWORD).await?;
         let hash = rig
             .storage
-            .account_by_email("ada@example.test")
+            .account_by_email(ADA_EMAIL)
             .await?
             .and_then(|account| account.password_hash)
             .ok_or("no hash")?;
@@ -247,10 +244,10 @@ async fn sec_16_no_secret_is_written_to_an_event_or_to_the_security_log() -> Tes
 async fn sec_15_the_security_log_of_signing_in_verifies_and_names_what_happened() -> TestResult {
     each_database("sec_15_sign_in_log", async |db| {
         let rig = Rig::start(db).await?;
-        rig.admin("ada@example.test").await?;
-        let _ = rig.sign_in("ada@example.test", "Wrong-Password-1").await;
+        rig.admin(ADA_EMAIL).await?;
+        let _ = rig.sign_in(ADA_EMAIL, "Wrong-Password-1").await;
         let _ = rig.sign_in("nobody@example.test", PASSWORD).await;
-        rig.sign_in("ada@example.test", PASSWORD).await?;
+        rig.sign_in(ADA_EMAIL, PASSWORD).await?;
         let entries = rig.database.security_log_entries(0, 100).await?;
         let actions: Vec<&str> = entries.iter().map(|entry| entry.action.as_str()).collect();
         assert_eq!(
@@ -290,7 +287,7 @@ async fn sec_15_the_security_log_of_signing_in_verifies_and_names_what_happened(
 async fn adr_0007_events_about_a_fixed_thing_name_the_same_record() -> TestResult {
     each_database("adr_0007_fixed_entity", async |db| {
         let rig = Rig::start(db).await?;
-        let admin = rig.admin("ada@example.test").await?;
+        let admin = rig.admin(ADA_EMAIL).await?;
         for enabled in [true, false] {
             let change = ChangeSignUpPolicy {
                 session_token: admin.session_token.clone(),

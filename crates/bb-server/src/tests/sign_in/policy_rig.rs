@@ -14,6 +14,7 @@ use bb_core::access::AppliesTo;
 use bb_core::id::{GroupId, ProjectId, RoleId, UserId};
 use bb_testing::Failure;
 
+use super::http::ADA_EMAIL;
 use super::rig::Rig;
 
 /// What a test body returns: any error.
@@ -36,7 +37,7 @@ pub(super) struct Org<'a> {
 impl<'a> Org<'a> {
     /// The first start and the first administrator, Ada.
     pub(super) async fn start(rig: &'a Rig) -> Run<Org<'a>> {
-        let started: Started = rig.admin("ada@example.test").await?;
+        let started: Started = rig.admin(ADA_EMAIL).await?;
         Ok(Self {
             rig,
             admin: Member {

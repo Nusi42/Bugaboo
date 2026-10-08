@@ -7,7 +7,7 @@ use bb_app::access::Permission;
 use bb_testing::{TestResult, each_database};
 use serde_json::{Value, json};
 
-use super::http::Browser;
+use super::http::{ADA_EMAIL, Browser};
 use super::rig::Rig;
 use super::status::app_with_probe;
 
@@ -20,7 +20,7 @@ async fn sec_01_who_is_signed_in_answers_the_permissions_for_the_whole_organizat
         let mut ada = Browser::signed_in(&app, &rig).await?;
         let me = ada.send("GET", "/api/v1/auth/me", None).await?;
         assert_eq!(me.status, StatusCode::OK);
-        assert_eq!(me.body["email"], "ada@example.test");
+        assert_eq!(me.body["email"], ADA_EMAIL);
         assert!(me.body.get("administrator").is_none(), "the flag is gone");
         let held: Vec<&str> = me.body["permissions"]
             .as_array()

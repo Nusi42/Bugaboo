@@ -10,6 +10,7 @@ use bb_core::network::NetworkPrefix;
 use bb_testing::{Failure, TestResult, each_database};
 
 use super::access_keys::key_of;
+use super::http::ADA_EMAIL;
 use super::policy_rig::Org;
 use super::rig::{Rig, Tries, refused};
 
@@ -20,7 +21,7 @@ async fn probe_from(rig: &Rig, network: &str, credential: &str) -> Result<(), Ap
         ..RequestInfo::default()
     };
     let ada = rig
-        .person_id("ada@example.test")
+        .person_id(ADA_EMAIL)
         .await
         .map_err(|error| AppError::Internal(error.to_string()))?;
     rig.api()

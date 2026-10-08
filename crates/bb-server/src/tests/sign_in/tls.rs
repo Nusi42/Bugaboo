@@ -20,7 +20,7 @@ use tokio::net::{TcpListener, TcpStream};
 use tokio::sync::oneshot;
 use tokio_rustls::TlsConnector;
 
-use super::http::{CSRF, SESSION};
+use super::http::{ADA_EMAIL, CSRF, SESSION};
 use super::rig::{PASSWORD, Rig};
 
 /// A browser on one HTTP/2 connection.
@@ -199,7 +199,7 @@ async fn first_start(client: &mut Client, rig: &Rig, own: &str) -> TestResult {
     let setup = json!({
         "code": rig.setup_code,
         "display_name": "Ada Admin",
-        "email": "ada@example.test",
+        "email": ADA_EMAIL,
         "password": PASSWORD,
     });
     let made = client
@@ -231,7 +231,7 @@ async fn first_start(client: &mut Client, rig: &Rig, own: &str) -> TestResult {
     let me = client
         .call("GET", &format!("{api}/me"), None, None, None)
         .await?;
-    assert_eq!(me.body["email"], "ada@example.test");
+    assert_eq!(me.body["email"], ADA_EMAIL);
     Ok(())
 }
 
@@ -283,7 +283,7 @@ async fn sec_12_over_tls_and_http2_a_person_sets_up_signs_out_and_signs_in_again
             .call(
                 "POST",
                 &format!("{api}/sign-in"),
-                Some(json!({"email": "ada@example.test", "password": "Wrong-Password-1"})),
+                Some(json!({"email": ADA_EMAIL, "password": "Wrong-Password-1"})),
                 Some(&own),
                 None,
             )
@@ -293,7 +293,7 @@ async fn sec_12_over_tls_and_http2_a_person_sets_up_signs_out_and_signs_in_again
             .call(
                 "POST",
                 &format!("{api}/sign-in"),
-                Some(json!({"email": "ada@example.test", "password": PASSWORD})),
+                Some(json!({"email": ADA_EMAIL, "password": PASSWORD})),
                 Some(&own),
                 None,
             )
@@ -303,7 +303,7 @@ async fn sec_12_over_tls_and_http2_a_person_sets_up_signs_out_and_signs_in_again
         let me = client
             .call("GET", &format!("{api}/me"), None, None, None)
             .await?;
-        assert_eq!(me.body["email"], "ada@example.test");
+        assert_eq!(me.body["email"], ADA_EMAIL);
 
         let _ = running.stop.send(());
         running.server.await??;

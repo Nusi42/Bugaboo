@@ -16,6 +16,7 @@ use serde_json::Value;
 use webauthn_authenticator_rs::prelude::{Url, WebauthnAuthenticator as _};
 use webauthn_authenticator_rs::softpasskey::SoftPasskey;
 
+use super::http::ADA_EMAIL;
 use super::rig::{PASSWORD, PUBLIC_URL, Rig, refused, refused_boxed};
 
 fn origin() -> Result<Url, Failure> {
@@ -112,7 +113,7 @@ async fn bobs_device(rig: &Rig, admin_session: &str) -> Result<(SoftPasskey, Vec
 async fn auth_02_a_passkey_is_added_listed_and_removed_with_the_password() -> TestResult {
     each_database("auth_02_manage_passkeys", async |db| {
         let rig = Rig::start(db).await?;
-        let admin = rig.admin("ada@example.test").await?;
+        let admin = rig.admin(ADA_EMAIL).await?;
         let session = admin.session_token.as_str();
         let mut laptop = SoftPasskey::new(true);
         let added = add(&rig, session, &mut laptop, "  Work laptop ").await?;
@@ -185,12 +186,12 @@ async fn auth_02_a_passkey_is_added_listed_and_removed_with_the_password() -> Te
 async fn auth_02_a_passkey_finishes_signing_in_after_the_password() -> TestResult {
     each_database("auth_02_passkey_second_step", async |db| {
         let rig = Rig::start(db).await?;
-        let admin = rig.admin("ada@example.test").await?;
+        let admin = rig.admin(ADA_EMAIL).await?;
         let mut laptop = SoftPasskey::new(true);
         add(&rig, &admin.session_token, &mut laptop, "Laptop").await?;
         let (mut stranger, strangers_id) = bobs_device(&rig, &admin.session_token).await?;
 
-        let pending = rig.sign_in("ada@example.test", PASSWORD).await?;
+        let pending = rig.sign_in(ADA_EMAIL, PASSWORD).await?;
         let methods = pending
             .second_step_needed
             .ok_or("a second step is needed")?;
@@ -278,7 +279,7 @@ async fn auth_02_a_passkey_finishes_signing_in_after_the_password() -> TestResul
 async fn auth_02_a_passkey_signs_in_on_its_own() -> TestResult {
     each_database("auth_02_passkey_alone", async |db| {
         let rig = Rig::start(db).await?;
-        let admin = rig.admin("ada@example.test").await?;
+        let admin = rig.admin(ADA_EMAIL).await?;
         let person = admin.person.id;
         let mut laptop = SoftPasskey::new(true);
         add(&rig, &admin.session_token, &mut laptop, "Laptop").await?;
@@ -376,7 +377,7 @@ async fn auth_02_without_a_host_name_in_the_public_address_passkeys_are_off() ->
             .passkey_sign_in_options(Rig::info(), PasskeySignInQuery)
             .await;
         assert_eq!(refused(options), Some(ErrorCode::PasskeyRejected));
-        let admin = rig.admin("ada@example.test").await?;
+        let admin = rig.admin(ADA_EMAIL).await?;
         let registration = rig
             .api()
             .passkey_registration_options(
@@ -397,7 +398,7 @@ async fn auth_02_without_a_host_name_in_the_public_address_passkeys_are_off() ->
 async fn sec_12_a_stolen_session_cannot_add_a_passkey_without_the_password() -> TestResult {
     each_database("sec_12_passkey_needs_password", async |db| {
         let rig = Rig::start(db).await?;
-        let admin = rig.admin("ada@example.test").await?;
+        let admin = rig.admin(ADA_EMAIL).await?;
         let stolen = admin.session_token.clone();
         let options = |password: &str| {
             rig.api().passkey_registration_options(

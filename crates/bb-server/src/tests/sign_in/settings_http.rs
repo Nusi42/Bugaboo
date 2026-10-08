@@ -6,7 +6,7 @@ use axum::http::StatusCode;
 use bb_testing::{Failure, TestResult, each_database};
 use serde_json::{Value, json};
 
-use super::http::{Browser, called};
+use super::http::{ADA_EMAIL, Browser, called};
 use super::rig::Rig;
 use super::status::app_with_probe;
 
@@ -228,7 +228,7 @@ async fn cfg_06_a_project_the_person_cannot_see_is_not_found_over_http() -> Test
         let mut ada = Browser::signed_in(&app, &rig).await?;
         let mut bob = ada.invite("bob@example.test", "Bob").await?;
         let admin = rig
-            .sign_in("ada@example.test", super::rig::PASSWORD)
+            .sign_in(ADA_EMAIL, super::rig::PASSWORD)
             .await?
             .session_token;
         let acme = rig

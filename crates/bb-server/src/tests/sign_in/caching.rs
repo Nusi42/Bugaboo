@@ -12,7 +12,7 @@ use bb_testing::{TestResult, each_database};
 use serde_json::json;
 use tower::ServiceExt as _;
 
-use super::http::{Browser, called, never_stored_reads, totp};
+use super::http::{ADA_EMAIL, Browser, called, never_stored_reads, totp};
 use super::rig::{PASSWORD, Rig};
 use super::status::app_with_probe;
 
@@ -33,10 +33,7 @@ async fn perf_03_every_get_answers_an_etag_and_304_on_a_match() -> TestResult {
         let mut ada = Browser::signed_in(&app, &rig).await?;
 
         // A role and a project for the routes that name one.
-        let admin = rig
-            .sign_in("ada@example.test", PASSWORD)
-            .await?
-            .session_token;
+        let admin = rig.sign_in(ADA_EMAIL, PASSWORD).await?.session_token;
         let role = rig
             .api()
             .make_role(
@@ -222,7 +219,7 @@ async fn perf_03_answers_with_a_secret_are_not_stored_or_compressed() -> TestRes
                 "POST",
                 "/api/v1/auth/two-step/code-app/confirm",
                 Some(json!({
-                    "code": totp(&rig, "ada@example.test").await?,
+                    "code": totp(&rig, ADA_EMAIL).await?,
                     "password": PASSWORD,
                 })),
             )
@@ -244,13 +241,7 @@ async fn perf_03_answers_with_a_secret_are_not_stored_or_compressed() -> TestRes
         // field, but the session it starts is one).
         let mut again = Browser::new(&app, &called());
         again.set_header("accept-encoding", "br, gzip, deflate, zstd");
-        let signed_in = again
-            .send(
-                "POST",
-                "/api/v1/auth/sign-in",
-                Some(json!({"email": "ada@example.test", "password": PASSWORD})),
-            )
-            .await?;
+        let signed_in = again.sign_in(ADA_EMAIL, PASSWORD).await?;
         assert!(!signed_in.cookies().is_empty());
         assert_eq!(signed_in.header("content-encoding"), "");
         // The control: this very server does compress a big answer that holds no secret (the API
@@ -283,13 +274,7 @@ async fn sec_12_signing_out_clears_what_the_browser_cached() -> TestResult {
 
         // The same for signing out everywhere.
         let mut again = Browser::new(&app, &called());
-        again
-            .send(
-                "POST",
-                "/api/v1/auth/sign-in",
-                Some(json!({"email": "ada@example.test", "password": PASSWORD})),
-            )
-            .await?;
+        again.sign_in(ADA_EMAIL, PASSWORD).await?;
         let everywhere = again.send("DELETE", "/api/v1/auth/sessions", None).await?;
         assert_eq!(everywhere.status, StatusCode::NO_CONTENT);
         assert_eq!(everywhere.header("clear-site-data"), "\"cache\"");
@@ -305,13 +290,7 @@ async fn sec_12_ending_the_own_session_is_signing_out_but_ending_another_is_not(
         let app = app_with_probe(&rig, None);
         let mut laptop = Browser::signed_in(&app, &rig).await?;
         let mut phone = Browser::new(&app, &called());
-        phone
-            .send(
-                "POST",
-                "/api/v1/auth/sign-in",
-                Some(json!({"email": "ada@example.test", "password": PASSWORD})),
-            )
-            .await?;
+        phone.sign_in(ADA_EMAIL, PASSWORD).await?;
         let listed = laptop.send("GET", "/api/v1/auth/sessions", None).await?;
         let sessions = listed.body["sessions"].as_array().ok_or("no sessions")?;
         let id_of = |current: bool| {

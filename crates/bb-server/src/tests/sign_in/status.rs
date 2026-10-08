@@ -10,10 +10,9 @@ use bb_api::{LimitsConfig, ProbeHandle, router};
 use bb_app::status::{DatabaseKind, LogBreak, LogState, ServerProbe as _};
 use bb_store::Database;
 use bb_testing::{Failure, TestResult, each_database};
-use serde_json::json;
 use tower::ServiceExt as _;
 
-use super::http::{Browser, called, options};
+use super::http::{ADA_EMAIL, Browser, called, options};
 use super::rig::{PASSWORD, Rig};
 use crate::probe::{LogChecking, Probe};
 
@@ -226,7 +225,7 @@ async fn ops_08_the_status_page_follows_the_log_and_reuses_its_answer_until_some
                 ..LogChecking::default()
             },
         );
-        rig.admin("ada@example.test").await?;
+        rig.admin(ADA_EMAIL).await?;
 
         // The first visit reads the whole log; entries and place agree.
         let (first, head) = log_of(&kept.snapshot().await.security_log)?;
@@ -235,7 +234,7 @@ async fn ops_08_the_status_page_follows_the_log_and_reuses_its_answer_until_some
 
         // Every write by the server makes the answer old, and the next visit shows the new
         // entries: the count and the place of the last entry follow the log.
-        rig.sign_in("ada@example.test", PASSWORD).await?;
+        rig.sign_in(ADA_EMAIL, PASSWORD).await?;
         let (second, head) = log_of(&kept.snapshot().await.security_log)?;
         assert!(second > first);
         assert_eq!(i64::try_from(second)?, head);
@@ -259,7 +258,7 @@ async fn ops_08_the_status_page_follows_the_log_and_reuses_its_answer_until_some
         // with the next write of the server.
         let (third, _) = log_of(&always.snapshot().await.security_log)?;
         assert_eq!(third, second + 1);
-        rig.sign_in("ada@example.test", PASSWORD).await?;
+        rig.sign_in(ADA_EMAIL, PASSWORD).await?;
         assert!(log_of(&kept.snapshot().await.security_log)?.0 > third);
         Ok(())
     })
@@ -283,13 +282,7 @@ async fn sec_15_the_status_page_warns_when_a_log_entry_could_not_be_written() ->
         // Signing in goes on (the decision of M1: a log that cannot be written does not lock
         // everybody out) ...
         let mut again = Browser::new(&app, &called());
-        let signed = again
-            .send(
-                "POST",
-                "/api/v1/auth/sign-in",
-                Some(json!({"email": "ada@example.test", "password": PASSWORD})),
-            )
-            .await?;
+        let signed = again.sign_in(ADA_EMAIL, PASSWORD).await?;
         assert_eq!(signed.status, StatusCode::OK);
 
         // ... and the status page counts what could not be written.
@@ -305,8 +298,8 @@ async fn sec_15_the_status_page_warns_when_a_log_entry_could_not_be_written() ->
 async fn sec_15_the_status_page_warns_when_the_anchor_is_ahead() -> TestResult {
     each_database("sec_15_status_anchor_ahead", async |db| {
         let rig = Rig::start(db).await?;
-        rig.admin("ada@example.test").await?;
-        rig.sign_in("ada@example.test", PASSWORD).await?;
+        rig.admin(ADA_EMAIL).await?;
+        rig.sign_in(ADA_EMAIL, PASSWORD).await?;
 
         // A database that was restored from an older state: it has fewer entries than the anchor
         // file (a new one with none, here), and the same keys and anchor file.
@@ -338,12 +331,7 @@ async fn sec_15_the_status_page_warns_when_the_anchor_is_ahead() -> TestResult {
         options.probe = ProbeHandle::new(Arc::new(probe));
         let app = router(options);
         let mut ada = Browser::new(&app, &called());
-        ada.send(
-            "POST",
-            "/api/v1/auth/sign-in",
-            Some(json!({"email": "ada@example.test", "password": PASSWORD})),
-        )
-        .await?;
+        ada.sign_in(ADA_EMAIL, PASSWORD).await?;
         let reply = ada.send("GET", STATUS, None).await?;
         assert_eq!(reply.body["security_log"]["result"], "broken");
         assert_eq!(reply.body["security_log"]["reason"], "behind");

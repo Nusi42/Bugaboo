@@ -5,7 +5,7 @@ use axum::http::StatusCode;
 use bb_testing::{TestResult, each_database};
 use serde_json::json;
 
-use super::http::{Browser, CSRF, SESSION, called, totp};
+use super::http::{ADA_EMAIL, Browser, CSRF, SESSION, called, totp};
 use super::rig::{PASSWORD, Rig};
 use super::status::app_with_probe;
 
@@ -74,7 +74,7 @@ async fn m2_f06_a_cookie_that_opens_no_session_is_cleared_too() -> TestResult {
         // A session that ended by signing out elsewhere is the same.
         let mut ada = Browser::signed_in(&app, &rig).await?;
         let mut other = Browser::new(&app, &called());
-        other.sign_in("ada@example.test", PASSWORD).await?;
+        other.sign_in(ADA_EMAIL, PASSWORD).await?;
         ada.send("DELETE", "/api/v1/auth/sessions", None).await?;
         let reply = other.send("GET", "/api/v1/auth/me", None).await?;
         assert_cleared(&reply, "a session that was ended from another device");
@@ -98,12 +98,12 @@ async fn m2_f06_a_session_that_waits_for_its_second_step_is_not_cleared() -> Tes
         ada.send(
             "POST",
             "/api/v1/auth/two-step/code-app/confirm",
-            Some(json!({"code": totp(&rig, "ada@example.test").await?, "password": PASSWORD})),
+            Some(json!({"code": totp(&rig, ADA_EMAIL).await?, "password": PASSWORD})),
         )
         .await?;
         rig.clock.advance(30);
         let mut laptop = Browser::new(&app, &called());
-        laptop.sign_in("ada@example.test", PASSWORD).await?;
+        laptop.sign_in(ADA_EMAIL, PASSWORD).await?;
         // The password step is not a session yet: asking who is signed in is turned away, and
         // the cookie is kept, or the person could never finish signing in.
         let asked = laptop.send("GET", "/api/v1/auth/me", None).await?;
@@ -115,7 +115,7 @@ async fn m2_f06_a_session_that_waits_for_its_second_step_is_not_cleared() -> Tes
             .send(
                 "POST",
                 "/api/v1/auth/second-step",
-                Some(json!({"code": totp(&rig, "ada@example.test").await?})),
+                Some(json!({"code": totp(&rig, ADA_EMAIL).await?})),
             )
             .await?;
         assert_eq!(finished.status, StatusCode::OK);

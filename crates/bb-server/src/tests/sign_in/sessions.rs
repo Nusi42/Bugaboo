@@ -11,6 +11,7 @@ use bb_core::network::NetworkPrefix;
 use bb_core::sign_in::SecurityAction;
 use bb_testing::{TestResult, each_database};
 
+use super::http::ADA_EMAIL;
 use super::rig::{OTHER_PASSWORD, PASSWORD, Rig, Tries, refused};
 
 const FIREFOX: &str =
@@ -32,8 +33,8 @@ async fn signed_in(rig: &Rig, token: &str) -> bool {
 async fn sec_12_signing_out_ends_that_session_and_only_that_one() -> TestResult {
     each_database("sec_12_sign_out", async |db| {
         let rig = Rig::start(db).await?;
-        let first = rig.admin("ada@example.test").await?;
-        let second = rig.sign_in("ada@example.test", PASSWORD).await?;
+        let first = rig.admin(ADA_EMAIL).await?;
+        let second = rig.sign_in(ADA_EMAIL, PASSWORD).await?;
         rig.api()
             .sign_out(
                 Rig::info(),
@@ -65,7 +66,7 @@ async fn sec_12_signing_out_ends_that_session_and_only_that_one() -> TestResult 
 async fn sec_12_people_list_their_sessions_and_end_any_of_them() -> TestResult {
     each_database("sec_12_session_list", async |db| {
         let rig = Rig::start(db).await?;
-        let admin = rig.admin("ada@example.test").await?;
+        let admin = rig.admin(ADA_EMAIL).await?;
         let bob = rig.person(&admin.session_token, "bob@example.test").await?;
         let from_firefox = RequestInfo {
             network: Some(NetworkPrefix::from_address("203.0.113.9".parse()?)),
@@ -76,7 +77,7 @@ async fn sec_12_people_list_their_sessions_and_end_any_of_them() -> TestResult {
             .sign_in(
                 from_firefox,
                 SignIn {
-                    email: "ada@example.test".to_owned(),
+                    email: ADA_EMAIL.to_owned(),
                     password: PASSWORD.to_owned(),
                     previous_session: None,
                 },
@@ -145,9 +146,9 @@ async fn sec_12_people_list_their_sessions_and_end_any_of_them() -> TestResult {
 async fn sec_12_signing_out_everywhere_ends_every_session_of_the_person() -> TestResult {
     each_database("sec_12_sign_out_everywhere", async |db| {
         let rig = Rig::start(db).await?;
-        let admin = rig.admin("ada@example.test").await?;
+        let admin = rig.admin(ADA_EMAIL).await?;
         let bob = rig.person(&admin.session_token, "bob@example.test").await?;
-        let second = rig.sign_in("ada@example.test", PASSWORD).await?;
+        let second = rig.sign_in(ADA_EMAIL, PASSWORD).await?;
         rig.api()
             .sign_out_everywhere(
                 Rig::info(),
@@ -180,8 +181,8 @@ async fn sec_12_signing_out_everywhere_ends_every_session_of_the_person() -> Tes
 async fn sec_12_a_session_ends_after_it_was_idle_too_long_and_use_keeps_it_alive() -> TestResult {
     each_database("sec_12_idle_timeout", async |db| {
         let rig = Rig::start(db).await?;
-        let kept = rig.admin("ada@example.test").await?;
-        let left = rig.sign_in("ada@example.test", PASSWORD).await?;
+        let kept = rig.admin(ADA_EMAIL).await?;
+        let left = rig.sign_in(ADA_EMAIL, PASSWORD).await?;
         // The default idle time is 30 minutes. Twenty minutes, used each time, is no pause.
         for _ in 0..4 {
             rig.clock.advance(20 * 60);
@@ -200,7 +201,7 @@ async fn sec_12_a_session_ends_after_it_was_idle_too_long_and_use_keeps_it_alive
 async fn sec_12_a_session_ends_after_the_absolute_time_however_busy_the_person_is() -> TestResult {
     each_database("sec_12_absolute_timeout", async |db| {
         let rig = Rig::start(db).await?;
-        let started = rig.admin("ada@example.test").await?;
+        let started = rig.admin(ADA_EMAIL).await?;
         // The default is 24 hours. Used every 20 minutes, the session lives until then.
         for _ in 0..71 {
             rig.clock.advance(20 * 60);
@@ -209,7 +210,7 @@ async fn sec_12_a_session_ends_after_the_absolute_time_however_busy_the_person_i
         rig.clock.advance(20 * 60 + 60);
         assert!(!signed_in(&rig, &started.session_token).await);
         // Signing in again gives a new session.
-        assert!(rig.sign_in("ada@example.test", PASSWORD).await.is_ok());
+        assert!(rig.sign_in(ADA_EMAIL, PASSWORD).await.is_ok());
         Ok(())
     })
     .await
@@ -219,8 +220,8 @@ async fn sec_12_a_session_ends_after_the_absolute_time_however_busy_the_person_i
 async fn sec_12_every_session_has_its_own_secret_and_its_own_csrf_token() -> TestResult {
     each_database("sec_12_tokens", async |db| {
         let rig = Rig::start(db).await?;
-        let first = rig.admin("ada@example.test").await?;
-        let second = rig.sign_in("ada@example.test", PASSWORD).await?;
+        let first = rig.admin(ADA_EMAIL).await?;
+        let second = rig.sign_in(ADA_EMAIL, PASSWORD).await?;
         assert_ne!(first.session_token, second.session_token);
         assert_ne!(first.csrf_token, second.csrf_token);
         let matches = |session: &str, token: &str| rig.services.csrf_matches(session, token);
@@ -243,8 +244,8 @@ async fn sec_12_every_session_has_its_own_secret_and_its_own_csrf_token() -> Tes
 async fn sec_12_changing_the_password_ends_other_sessions_and_gives_a_new_secret() -> TestResult {
     each_database("sec_12_change_password", async |db| {
         let rig = Rig::start(db).await?;
-        let first = rig.admin("ada@example.test").await?;
-        let other = rig.sign_in("ada@example.test", PASSWORD).await?;
+        let first = rig.admin(ADA_EMAIL).await?;
+        let other = rig.sign_in(ADA_EMAIL, PASSWORD).await?;
         let change = |current: &str, new: &str| {
             rig.api().change_password(
                 Rig::info(),
@@ -276,10 +277,10 @@ async fn sec_12_changing_the_password_ends_other_sessions_and_gives_a_new_secret
         assert!(!signed_in(&rig, &first.session_token).await);
         assert!(!signed_in(&rig, &other.session_token).await);
         assert_eq!(
-            rig.sign_in("ada@example.test", PASSWORD).await.unwrap_err(),
+            rig.sign_in(ADA_EMAIL, PASSWORD).await.unwrap_err(),
             AppError::Refused(ErrorCode::WrongCredentials)
         );
-        rig.sign_in("ada@example.test", OTHER_PASSWORD).await?;
+        rig.sign_in(ADA_EMAIL, OTHER_PASSWORD).await?;
         assert!(
             rig.database
                 .security_log_entries(0, 100)
@@ -296,7 +297,7 @@ async fn sec_12_changing_the_password_ends_other_sessions_and_gives_a_new_secret
 async fn perf_02_the_list_of_sessions_has_a_cap_and_says_when_it_cut() -> TestResult {
     each_database("perf_02_sessions_cap", async |db| {
         let rig = Rig::start_with(db, Tries::Unreached).await?;
-        let first = rig.admin("ada@example.test").await?;
+        let first = rig.admin(ADA_EMAIL).await?;
         let list = |token: &str| {
             rig.api().sessions(
                 Rig::info(),
@@ -312,10 +313,7 @@ async fn perf_02_the_list_of_sessions_has_a_cap_and_says_when_it_cut() -> TestRe
             // Sessions that start in the same second share a time and their order would be left
             // to the random end of their IDs; one second apart, the newest is the newest.
             rig.clock.advance(1);
-            newest = rig
-                .sign_in("ada@example.test", PASSWORD)
-                .await?
-                .session_token;
+            newest = rig.sign_in(ADA_EMAIL, PASSWORD).await?.session_token;
         }
         // 55 sessions: the list holds the 50 newest and says that it is not everything.
         let many = list(&newest).await?;

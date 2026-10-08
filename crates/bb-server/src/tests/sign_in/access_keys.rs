@@ -27,6 +27,7 @@ use bb_store::Verification;
 use bb_testing::{TestResult, each_database};
 use jiff::Timestamp;
 
+use super::http::ADA_EMAIL;
 use super::policy_rig::{Member, Org, Run};
 use super::rig::{PASSWORD, Rig, Tries, refused};
 
@@ -121,7 +122,7 @@ pub(super) async fn check(
 /// keys use to see whether a key works: *Check access* for the administrator.
 pub(super) async fn probe(rig: &Rig, credential: &str) -> Result<(), AppError> {
     let ada = rig
-        .person_id("ada@example.test")
+        .person_id(ADA_EMAIL)
         .await
         .map_err(|error| AppError::Internal(error.to_string()))?;
     check(rig, credential, ada, None).await

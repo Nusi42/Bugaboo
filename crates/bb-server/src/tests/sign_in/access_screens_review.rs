@@ -10,7 +10,8 @@ use bb_core::access::AppliesTo;
 use bb_testing::{TestResult, each_database};
 use serde_json::json;
 
-use super::access_screens::{CHECK, FIELDS, PEOPLE, at, browser_of, cell, named, role};
+use super::access_screens::{CHECK, FIELDS, PEOPLE, at, cell, named, role};
+use super::http::{ADA_EMAIL, Browser};
 use super::policy_rig::Org;
 use super::rig::Rig;
 use super::status::app_with_probe;
@@ -28,7 +29,7 @@ async fn sec_03_a_level_from_a_project_the_lead_cannot_see_is_not_named_in_the_t
         let contributor = role(&org, StartingRole::Contributor).await?;
         let lea = org.person().await?;
         org.give(&lea, lead, web).await?;
-        let mut ada = browser_of(&app, "ada@example.test").await?;
+        let mut ada = Browser::signed_in_as(&app, ADA_EMAIL).await?;
         for (table, subject, level) in [
             (FIELDS, "cost-center", "hidden"),
             (PEOPLE, "followers", "hidden"),
@@ -42,7 +43,7 @@ async fn sec_03_a_level_from_a_project_the_lead_cannot_see_is_not_named_in_the_t
                 .await?;
             assert_eq!(set.status, StatusCode::NO_CONTENT, "{}", set.body);
         }
-        let mut lea_browser = browser_of(&app, "person1@example.test").await?;
+        let mut lea_browser = Browser::signed_in_as(&app, "person1@example.test").await?;
         for (table, subject) in [(FIELDS, "cost-center"), (PEOPLE, "followers")] {
             let reply = lea_browser
                 .send("GET", &format!("{table}{}", at(web)), None)
@@ -78,7 +79,7 @@ async fn sec_04_a_project_without_a_setting_shows_the_role_own_level_and_yours_i
         let app = app_with_probe(&rig, None);
         let acme = org.project(None, "ACME").await?.id;
         let contributor = role(&org, StartingRole::Contributor).await?;
-        let mut ada = browser_of(&app, "ada@example.test").await?;
+        let mut ada = Browser::signed_in_as(&app, ADA_EMAIL).await?;
         // Nothing is set for ACME: a Contributor has the role's own level, *Can see*.
         let fields = ada
             .send("GET", &format!("{FIELDS}{}", at(acme)), None)
@@ -112,7 +113,7 @@ async fn sec_04_a_project_without_a_setting_shows_the_role_own_level_and_yours_i
         }
         let dee = org.person().await?;
         org.give(&dee, decider.id, acme).await?;
-        let mut dee_browser = browser_of(&app, "person1@example.test").await?;
+        let mut dee_browser = Browser::signed_in_as(&app, "person1@example.test").await?;
         let kinds = dee_browser
             .send("GET", &format!("{PEOPLE}{}", at(acme)), None)
             .await?;
@@ -150,7 +151,7 @@ async fn sec_04_a_level_set_on_a_project_never_gives_more_than_the_person_holds_
             )
             .await?;
         let editor = org.role("Editor", &[Permission::SeeProjects]).await?;
-        let mut ada = browser_of(&app, "ada@example.test").await?;
+        let mut ada = Browser::signed_in_as(&app, ADA_EMAIL).await?;
         // The Decider holds *Can see* and *Role only*; the Editor *Can change* and *Names*.
         for (table, subject, low, high, who) in [
             (FIELDS, "title", "can-see", "can-change", decider.id),
@@ -180,7 +181,7 @@ async fn sec_04_a_level_set_on_a_project_never_gives_more_than_the_person_holds_
             AppliesTo::Project,
         )
         .await?;
-        let mut lea_browser = browser_of(&app, "person1@example.test").await?;
+        let mut lea_browser = Browser::signed_in_as(&app, "person1@example.test").await?;
         for (table, subject, low, high) in [
             (FIELDS, "title", "can-see", "can-change"),
             (PEOPLE, "assigned-to", "role-only", "names"),
@@ -221,7 +222,7 @@ async fn sec_03_a_checker_without_a_management_permission_chooses_only_people_wi
             )
             .await?;
         let looker = org.role("Looker", &[Permission::SeeProjects]).await?;
-        let mut ada = browser_of(&app, "ada@example.test").await?;
+        let mut ada = Browser::signed_in_as(&app, ADA_EMAIL).await?;
         // Project members are shown by name to the Checker, so only the rule of the list is at work.
         let set = ada
             .send(
@@ -236,7 +237,7 @@ async fn sec_03_a_checker_without_a_management_permission_chooses_only_people_wi
         let cleo = named(&org, "Cleo Coder", "cleo@example.test").await?;
         org.give(&lea, checker.id, web).await?;
         org.give(&bea, looker.id, acme).await?;
-        let mut lea_browser = browser_of(&app, "lea@example.test").await?;
+        let mut lea_browser = Browser::signed_in_as(&app, "lea@example.test").await?;
         let names = |reply: &super::http::Reply| -> Vec<String> {
             reply.body["items"]
                 .as_array()

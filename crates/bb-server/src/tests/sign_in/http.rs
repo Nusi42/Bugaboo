@@ -115,6 +115,14 @@ impl Browser {
         Ok(browser)
     }
 
+    /// A browser of the person with this address (and the password of the tests), signed in.
+    pub(super) async fn signed_in_as(app: &Router, email: &str) -> Result<Self, Failure> {
+        let mut browser = Self::new(app, &called());
+        let reply = browser.sign_in(email, PASSWORD).await?;
+        assert_eq!(reply.status, StatusCode::OK, "{}", reply.body);
+        Ok(browser)
+    }
+
     /// Makes the first administrator (Ada) with the setup code of `rig`; this browser is signed in
     /// as her, and the answer is returned.
     pub(super) async fn set_up(&mut self, rig: &Rig) -> Result<Reply, Failure> {
@@ -399,12 +407,15 @@ fn assert_cache_rules(method: &str, path: &str, reply: &Reply) {
     }
 }
 
+/// The address of the first administrator (Ada), whom the setup call makes.
+pub(crate) const ADA_EMAIL: &str = "ada@example.test";
+
 /// The body that makes the first administrator with this setup code.
 pub(crate) fn setup_body(code: &str) -> Value {
     json!({
         "code": code,
         "display_name": "Ada Admin",
-        "email": "ada@example.test",
+        "email": ADA_EMAIL,
         "password": PASSWORD,
     })
 }
@@ -439,7 +450,7 @@ async fn sec_12_signing_in_sets_the_session_cookie_and_the_csrf_cookie() -> Test
         let mut browser = Browser::new(&app, &called());
         let reply = browser.set_up(&rig).await?;
         assert_eq!(reply.status, StatusCode::OK);
-        assert_eq!(reply.body["person"]["email"], "ada@example.test");
+        assert_eq!(reply.body["person"]["email"], ADA_EMAIL);
         assert!(
             reply.body["person"].get("administrator").is_none(),
             "the flag is gone"
@@ -475,7 +486,7 @@ async fn sec_12_signing_in_sets_the_session_cookie_and_the_csrf_cookie() -> Test
         // The cookie is bound to the session and the browser asks for who it is with it.
         let me = browser.send("GET", "/api/v1/auth/me", None).await?;
         assert_eq!(me.status, StatusCode::OK);
-        assert_eq!(me.body["email"], "ada@example.test");
+        assert_eq!(me.body["email"], ADA_EMAIL);
         assert_eq!(me.header("cache-control"), "no-store");
         Ok(())
     })
@@ -488,7 +499,7 @@ async fn sec_12_a_change_needs_the_token_of_its_own_session() -> TestResult {
         let (rig, app) = rig_and_app(db).await?;
         let mut browser = Browser::signed_in(&app, &rig).await?;
         let mut other = Browser::new(&app, &called());
-        other.sign_in("ada@example.test", PASSWORD).await?;
+        other.sign_in(ADA_EMAIL, PASSWORD).await?;
         let others_token = other.jar[CSRF].clone();
         let own_token = browser.jar[CSRF].clone();
         let origin = "http://bugaboo.test";
@@ -590,19 +601,9 @@ async fn sec_14_failed_sign_ins_are_turned_away_with_a_wait_and_the_answers_look
         let _browser = Browser::signed_in(&app, &rig).await?;
         // Every try comes from another network, so only the account is limited here.
         let fresh = || Browser::new(&app, &called());
-        let wrong = fresh()
-            .send(
-                "POST",
-                "/api/v1/auth/sign-in",
-                Some(sign_in_body("ada@example.test", "Wrong-Password-1")),
-            )
-            .await?;
+        let wrong = fresh().sign_in(ADA_EMAIL, "Wrong-Password-1").await?;
         let unknown = fresh()
-            .send(
-                "POST",
-                "/api/v1/auth/sign-in",
-                Some(sign_in_body("nobody@example.test", "Wrong-Password-1")),
-            )
+            .sign_in("nobody@example.test", "Wrong-Password-1")
             .await?;
         // Same status, same code, same message: nothing says whether the account exists.
         assert_eq!(wrong.status, StatusCode::UNAUTHORIZED);
@@ -614,22 +615,10 @@ async fn sec_14_failed_sign_ins_are_turned_away_with_a_wait_and_the_answers_look
 
         // Ada's account has two more tries; then even her right password waits.
         for _ in 0..2 {
-            let reply = fresh()
-                .send(
-                    "POST",
-                    "/api/v1/auth/sign-in",
-                    Some(sign_in_body("ada@example.test", "Wrong-Password-1")),
-                )
-                .await?;
+            let reply = fresh().sign_in(ADA_EMAIL, "Wrong-Password-1").await?;
             assert_eq!(reply.status, StatusCode::UNAUTHORIZED);
         }
-        let reply = fresh()
-            .send(
-                "POST",
-                "/api/v1/auth/sign-in",
-                Some(sign_in_body("ada@example.test", PASSWORD)),
-            )
-            .await?;
+        let reply = fresh().sign_in(ADA_EMAIL, PASSWORD).await?;
         assert_eq!(reply.status, StatusCode::TOO_MANY_REQUESTS);
         assert_eq!(reply.code(), "rate_limit.exceeded");
         let wait: u64 = reply.header("retry-after").parse()?;
@@ -649,27 +638,20 @@ async fn sec_14_failures_of_one_network_are_limited_whatever_the_account() -> Te
         // Three wrong tries at three different accounts use up the network.
         for number in 0..3 {
             let reply = guesser
-                .send(
-                    "POST",
-                    "/api/v1/auth/sign-in",
-                    Some(sign_in_body(
-                        &format!("person{number}@example.test"),
-                        "Wrong-Password-1",
-                    )),
-                )
+                .sign_in(&format!("person{number}@example.test"), "Wrong-Password-1")
                 .await?;
             assert_eq!(reply.status, StatusCode::UNAUTHORIZED);
         }
         // Now even a right password from this network waits ...
-        let reply = guesser.sign_in("ada@example.test", PASSWORD).await?;
+        let reply = guesser.sign_in(ADA_EMAIL, PASSWORD).await?;
         assert_eq!(reply.status, StatusCode::TOO_MANY_REQUESTS);
         // ... and another network is not affected.
         let mut other = Browser::new(&app, &called());
-        let reply = other.sign_in("ada@example.test", PASSWORD).await?;
+        let reply = other.sign_in(ADA_EMAIL, PASSWORD).await?;
         assert_eq!(reply.status, StatusCode::OK);
         // Many successes from one network never count: they give their try back.
         for _ in 0..5 {
-            let reply = other.sign_in("ada@example.test", PASSWORD).await?;
+            let reply = other.sign_in(ADA_EMAIL, PASSWORD).await?;
             assert_eq!(reply.status, StatusCode::OK);
         }
         Ok(())
@@ -693,14 +675,7 @@ async fn sec_14_one_network_is_limited_in_its_tries_whatever_the_account() -> Te
         let mut statuses = Vec::new();
         for number in 0..6 {
             let reply = browser
-                .send(
-                    "POST",
-                    "/api/v1/auth/sign-in",
-                    Some(sign_in_body(
-                        &format!("person{number}@example.test"),
-                        PASSWORD,
-                    )),
-                )
+                .sign_in(&format!("person{number}@example.test"), PASSWORD)
                 .await?;
             statuses.push(reply.status);
         }
@@ -960,7 +935,7 @@ async fn code_app(tour: &mut Tour) -> TestResult {
             "POST",
             "/api/v1/auth/two-step/code-app/confirm",
             &format!("{api}/two-step/code-app/confirm"),
-            Some(json!({"code": totp(rig, "ada@example.test").await?, "password": PASSWORD})),
+            Some(json!({"code": totp(rig, ADA_EMAIL).await?, "password": PASSWORD})),
         )
         .await?;
     assert_eq!(reply.body["codes"].as_array().map(Vec::len), Some(10));
@@ -980,7 +955,7 @@ async fn code_app(tour: &mut Tour) -> TestResult {
         .send(
             "POST",
             &format!("{api}/sign-in"),
-            Some(sign_in_body("ada@example.test", PASSWORD)),
+            Some(sign_in_body(ADA_EMAIL, PASSWORD)),
         )
         .await?;
     assert_eq!(
@@ -994,7 +969,7 @@ async fn code_app(tour: &mut Tour) -> TestResult {
             "POST",
             "/api/v1/auth/second-step",
             &format!("{api}/second-step"),
-            Some(json!({"code": totp(rig, "ada@example.test").await?})),
+            Some(json!({"code": totp(rig, ADA_EMAIL).await?})),
         )
         .await?;
     assert!(ok(&reply));
@@ -1066,7 +1041,7 @@ async fn use_passkeys(tour: &mut Tour, device: &mut SoftPasskey, passkey_id: &st
         .send(
             "POST",
             &format!("{api}/sign-in"),
-            Some(sign_in_body("ada@example.test", PASSWORD)),
+            Some(sign_in_body(ADA_EMAIL, PASSWORD)),
         )
         .await?;
     let reply = phone
@@ -1105,7 +1080,7 @@ async fn use_passkeys(tour: &mut Tour, device: &mut SoftPasskey, passkey_id: &st
         )
         .await?;
     let challenge = text(&reply, "/challenge_id")?;
-    let person = rig.person_id("ada@example.test").await?;
+    let person = rig.person_id(ADA_EMAIL).await?;
     let stored = rig.storage.passkeys_of(person).await?;
     let mut options = reply.body["options"].clone();
     options["publicKey"]["allowCredentials"] = json!([{
@@ -1198,7 +1173,7 @@ async fn sessions_and_password(tour: &mut Tour) -> TestResult {
             "POST",
             "/api/v1/auth/sign-in",
             &format!("{api}/sign-in"),
-            Some(sign_in_body("ada@example.test", OTHER_PASSWORD)),
+            Some(sign_in_body(ADA_EMAIL, OTHER_PASSWORD)),
         )
         .await?;
     assert!(ok(&reply));
@@ -1373,28 +1348,28 @@ async fn sec_12_a_password_alone_shows_nothing_about_the_person_until_the_second
             .send(
                 "POST",
                 "/api/v1/auth/two-step/code-app/confirm",
-                Some(json!({"code": totp(&rig, "ada@example.test").await?, "password": PASSWORD})),
+                Some(json!({"code": totp(&rig, ADA_EMAIL).await?, "password": PASSWORD})),
             )
             .await?;
         assert!(ok(&confirmed));
         rig.clock.advance(30);
         let mut laptop = Browser::new(&app, &used);
-        let password_only = laptop.sign_in("ada@example.test", PASSWORD).await?;
+        let password_only = laptop.sign_in(ADA_EMAIL, PASSWORD).await?;
         assert_eq!(password_only.status, StatusCode::OK);
         assert_eq!(password_only.body["person"], Value::Null);
         assert!(password_only.body["second_step"].is_object());
         let shown = password_only.body.to_string();
-        for private in ["Ada Admin", "ada@example.test", "administrator"] {
+        for private in ["Ada Admin", ADA_EMAIL, "administrator"] {
             assert!(!shown.contains(private), "{private}");
         }
         let finished = laptop
             .send(
                 "POST",
                 "/api/v1/auth/second-step",
-                Some(json!({"code": totp(&rig, "ada@example.test").await?})),
+                Some(json!({"code": totp(&rig, ADA_EMAIL).await?})),
             )
             .await?;
-        assert_eq!(finished.body["person"]["email"], "ada@example.test");
+        assert_eq!(finished.body["person"]["email"], ADA_EMAIL);
         assert_eq!(finished.body["second_step"], Value::Null);
         Ok(())
     })

@@ -14,7 +14,7 @@ use bb_core::sign_in::SecurityAction;
 use bb_testing::{Failure, TestResult, each_database};
 use serde_json::{Value, json};
 
-use super::http::{Browser, called, example_path};
+use super::http::{ADA_EMAIL, Browser, called, example_path};
 use super::policy_rig::Org;
 use super::rig::{PASSWORD, Rig, Tries};
 use super::status::{app_with_probe, app_with_probe_and_limits};
@@ -79,7 +79,7 @@ async fn auth_07_a_script_with_a_key_needs_no_origin_no_token_and_no_cookie() ->
         // A browser with a session: its cookie rules apply even when it sends a key too. No
         // token, no change.
         let mut page = Browser::new(&app, &called());
-        page.sign_in("ada@example.test", PASSWORD).await?;
+        page.sign_in(ADA_EMAIL, PASSWORD).await?;
         page.set_header("authorization", &format!("Bearer {key}"));
         let no_token = page
             .send_without_token(
@@ -191,7 +191,7 @@ async fn sec_14_a_key_has_its_own_limit() -> TestResult {
         let other = script.script("GET", KEY_ROUTE, None, &second).await?;
         assert_eq!(other.status, StatusCode::OK);
         let mut ada = Browser::new(&app, &called());
-        ada.sign_in("ada@example.test", PASSWORD).await?;
+        ada.sign_in(ADA_EMAIL, PASSWORD).await?;
         for _ in 0..5 {
             assert_eq!(
                 ada.send("GET", KEY_ROUTE, None).await?.status,
@@ -316,9 +316,9 @@ async fn auth_07_no_route_of_the_owners_sign_in_data_opens_for_a_key() -> TestRe
         let listed = script.script("GET", KEY_ROUTE, None, &key).await?;
         assert_eq!(listed.status, StatusCode::OK);
         let mut ada = Browser::new(&app, &called());
-        ada.sign_in("ada@example.test", PASSWORD).await?;
+        ada.sign_in(ADA_EMAIL, PASSWORD).await?;
         let me: Value = ada.send("GET", "/api/v1/auth/me", None).await?.body;
-        assert_eq!(me["email"], "ada@example.test");
+        assert_eq!(me["email"], ADA_EMAIL);
         Ok(())
     })
     .await
@@ -327,7 +327,7 @@ async fn auth_07_no_route_of_the_owners_sign_in_data_opens_for_a_key() -> TestRe
 /// Ada, signed in in a browser of her own.
 async fn ada_in_a_browser(app: &axum::Router) -> Result<Browser, Failure> {
     let mut ada = Browser::new(app, &called());
-    ada.sign_in("ada@example.test", PASSWORD).await?;
+    ada.sign_in(ADA_EMAIL, PASSWORD).await?;
     Ok(ada)
 }
 
