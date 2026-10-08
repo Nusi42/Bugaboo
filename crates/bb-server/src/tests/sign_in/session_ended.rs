@@ -2,15 +2,12 @@
 //! (M2-F06, SEC-12), but not for a session that is only waiting for its second step.
 
 use axum::http::StatusCode;
-use bb_testing::each_database;
+use bb_testing::{TestResult, each_database};
 use serde_json::json;
 
-use super::http::{Browser, called, setup_body, sign_in_body, totp};
-use super::rig::{Outcome, PASSWORD, Rig};
+use super::http::{ADA_EMAIL, Browser, CSRF, SESSION, called, totp};
+use super::rig::{PASSWORD, Rig};
 use super::status::app_with_probe;
-
-const SESSION: &str = "__Host-bb_session";
-const CSRF: &str = "__Host-bb_csrf";
 
 /// The answer clears both cookies and tells the browser to forget what it cached.
 fn assert_cleared(reply: &super::http::Reply, what: &str) {
@@ -38,13 +35,11 @@ fn assert_untouched(reply: &super::http::Reply, what: &str) {
 }
 
 #[tokio::test]
-async fn m2_f06_a_session_that_ran_out_is_answered_with_the_cookies_cleared() -> Outcome {
+async fn m2_f06_a_session_that_ran_out_is_answered_with_the_cookies_cleared() -> TestResult {
     each_database("m2_f06_session_ran_out", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let app = app_with_probe(&rig, None);
-        let mut ada = Browser::new(&app, &called());
-        ada.send("POST", "/api/v1/auth/setup", Some(setup_body(&rig)))
-            .await?;
+        let mut ada = Browser::signed_in(&app, &rig).await?;
         assert_eq!(
             ada.send("GET", "/api/v1/auth/me", None).await?.status,
             StatusCode::OK
@@ -62,9 +57,9 @@ async fn m2_f06_a_session_that_ran_out_is_answered_with_the_cookies_cleared() ->
 }
 
 #[tokio::test]
-async fn m2_f06_a_cookie_that_opens_no_session_is_cleared_too() -> Outcome {
+async fn m2_f06_a_cookie_that_opens_no_session_is_cleared_too() -> TestResult {
     each_database("m2_f06_cookie_opens_nothing", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let app = app_with_probe(&rig, None);
         // A secret that looks like one and belongs to no session (ended, or never was).
         let mut stale = Browser::new(&app, &called());
@@ -77,17 +72,9 @@ async fn m2_f06_a_cookie_that_opens_no_session_is_cleared_too() -> Outcome {
         let reply = garbage.send("GET", "/api/v1/auth/me", None).await?;
         assert_cleared(&reply, "a cookie that is no secret");
         // A session that ended by signing out elsewhere is the same.
-        let mut ada = Browser::new(&app, &called());
-        ada.send("POST", "/api/v1/auth/setup", Some(setup_body(&rig)))
-            .await?;
+        let mut ada = Browser::signed_in(&app, &rig).await?;
         let mut other = Browser::new(&app, &called());
-        other
-            .send(
-                "POST",
-                "/api/v1/auth/sign-in",
-                Some(sign_in_body("ada@example.test", PASSWORD)),
-            )
-            .await?;
+        other.sign_in(ADA_EMAIL, PASSWORD).await?;
         ada.send("DELETE", "/api/v1/auth/sessions", None).await?;
         let reply = other.send("GET", "/api/v1/auth/me", None).await?;
         assert_cleared(&reply, "a session that was ended from another device");
@@ -97,13 +84,11 @@ async fn m2_f06_a_cookie_that_opens_no_session_is_cleared_too() -> Outcome {
 }
 
 #[tokio::test]
-async fn m2_f06_a_session_that_waits_for_its_second_step_is_not_cleared() -> Outcome {
+async fn m2_f06_a_session_that_waits_for_its_second_step_is_not_cleared() -> TestResult {
     each_database("m2_f06_pending_is_kept", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let app = app_with_probe(&rig, None);
-        let mut ada = Browser::new(&app, &called());
-        ada.send("POST", "/api/v1/auth/setup", Some(setup_body(&rig)))
-            .await?;
+        let mut ada = Browser::signed_in(&app, &rig).await?;
         ada.send(
             "POST",
             "/api/v1/auth/two-step/code-app",
@@ -113,18 +98,12 @@ async fn m2_f06_a_session_that_waits_for_its_second_step_is_not_cleared() -> Out
         ada.send(
             "POST",
             "/api/v1/auth/two-step/code-app/confirm",
-            Some(json!({"code": totp(&rig, "ada@example.test").await?, "password": PASSWORD})),
+            Some(json!({"code": totp(&rig, ADA_EMAIL).await?, "password": PASSWORD})),
         )
         .await?;
         rig.clock.advance(30);
         let mut laptop = Browser::new(&app, &called());
-        laptop
-            .send(
-                "POST",
-                "/api/v1/auth/sign-in",
-                Some(sign_in_body("ada@example.test", PASSWORD)),
-            )
-            .await?;
+        laptop.sign_in(ADA_EMAIL, PASSWORD).await?;
         // The password step is not a session yet: asking who is signed in is turned away, and
         // the cookie is kept, or the person could never finish signing in.
         let asked = laptop.send("GET", "/api/v1/auth/me", None).await?;
@@ -136,7 +115,7 @@ async fn m2_f06_a_session_that_waits_for_its_second_step_is_not_cleared() -> Out
             .send(
                 "POST",
                 "/api/v1/auth/second-step",
-                Some(json!({"code": totp(&rig, "ada@example.test").await?})),
+                Some(json!({"code": totp(&rig, ADA_EMAIL).await?})),
             )
             .await?;
         assert_eq!(finished.status, StatusCode::OK);

@@ -21,14 +21,13 @@ use anyhow::Context as _;
 use serde::Deserialize;
 use serde_json::Value;
 
+use bb_api_words::marks::PERMISSION as MARK;
+use bb_api_words::needs::WITHOUT_CATALOGUE as WORDS;
+
 use super::arch_lean::names_a_follow_up;
 use super::{Check, Context, Finding};
 use crate::generate::api::SPEC_PATH;
 
-/// The mark of an operation that says what it needs.
-const MARK: &str = "x-permission";
-/// What a route may declare besides a permission of the catalogue.
-const WORDS: [&str; 3] = ["public", "signed-in", "own-account"];
 /// The methods of an item of `paths` that are operations.
 const METHODS: [&str; 8] = [
     "get", "put", "post", "delete", "options", "head", "patch", "trace",

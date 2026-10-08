@@ -8,7 +8,7 @@ use std::path::Path;
 use bb_app::projects::ProjectStore as _;
 use bb_app::roles::{CheckAccessQuery, check_access};
 use bb_core::sign_in::SecurityAction;
-use bb_testing::{TestResult, each_database};
+use bb_testing::{Failure, TestResult, each_database};
 use jiff::Timestamp;
 use serde_json::Value;
 
@@ -26,8 +26,6 @@ fn options(seed: u64) -> Options {
         start: Timestamp::from_second(START).unwrap(),
     }
 }
-
-type Failure = Box<dyn std::error::Error + Send + Sync>;
 
 /// Makes the sample of `seed` in the folder, on the built-in database.
 async fn built_in(seed: u64, folder: &Path) -> Result<Sample, Failure> {

@@ -3,8 +3,9 @@
 //! only: a key can never make, list or delete keys, which keeps a stolen key from outliving its
 //! owner's decision (`bb_app::auth`, `Ctx::active`).
 //!
-//! Making a key asks for the password again and answers the secret once: that answer is marked
-//! `x-secret`, so it is never stored and never compressed (`crate::etag`, WP-02).
+//! Making a key asks for the password again and answers the secret once: that answer is a
+//! secret in the route table (`crate::permissions`), so it is never stored and never compressed
+//! (`crate::etag`, WP-02).
 
 use axum::extract::State;
 use axum::response::Response;
@@ -192,7 +193,6 @@ pub(crate) struct CreatedAccessKeyBody {
     key: AccessKeyBody,
     /// The whole key, `bb_`, the prefix, `_` and the secret. Send it as
     /// `Authorization: Bearer <key>`. It is not stored and cannot be shown again.
-    #[schema(extensions(("x-secret" = json!(true))))]
     secret: String,
 }
 
@@ -250,7 +250,6 @@ pub(crate) struct MakeKeyBody {
     path = "/api/v1/access-keys",
     operation_id = "listAccessKeys",
     tag = "access-keys",
-    extensions(("x-never-stored" = json!(true))),
     params(ListParams),
     responses((status = 200, description = "The keys of the person, newest first.", body = Page<AccessKeyItem>), NotSignedInAnswer, ForbiddenAnswer)
 )]
@@ -390,7 +389,6 @@ async fn delete_access_key(
     path = "/api/v1/access-keys/rules",
     operation_id = "getAccessKeyRules",
     tag = "access-keys",
-    extensions(("x-never-stored" = json!(true))),
     responses((status = 200, description = "The default and the longest time a key lives, in days.", body = AccessKeyRulesBody), NotSignedInAnswer, ForbiddenAnswer)
 )]
 async fn get_access_key_rules(
@@ -457,7 +455,6 @@ impl From<&ProjectChoice> for ProjectChoiceItem {
     path = "/api/v1/access-keys/projects",
     operation_id = "listProjectChoices",
     tag = "access-keys",
-    extensions(("x-never-stored" = json!(true))),
     params(ListParams),
     responses((status = 200, description = "The projects the person may know about, by short name.", body = Page<ProjectChoiceItem>), NotSignedInAnswer, ForbiddenAnswer)
 )]

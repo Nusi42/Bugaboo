@@ -1,0 +1,10 @@
+[package]
+name = "bb-api-words"
+description = "The words of the API description that code, tests and checks share: marks, what a route needs, and the names of the permission matrix. No dependencies."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[lints]
+workspace = true

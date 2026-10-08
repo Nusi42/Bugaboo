@@ -10,15 +10,13 @@ use bb_auth::TotpSecret;
 use bb_core::ErrorCode;
 use bb_core::id::UserId;
 use bb_core::sign_in::SecurityAction;
-use bb_testing::each_database;
+use bb_testing::{Failure, TestResult, each_database};
 
-use super::rig::{Outcome, PASSWORD, Rig, refused};
+use super::http::ADA_EMAIL;
+use super::rig::{PASSWORD, Rig, Tries, refused};
 
 /// What the code app of the person shows right now.
-async fn code_now(
-    rig: &Rig,
-    person: UserId,
-) -> Result<String, Box<dyn std::error::Error + Send + Sync>> {
+async fn code_now(rig: &Rig, person: UserId) -> Result<String, Failure> {
     let secret = rig
         .storage
         .totp_secret(person)
@@ -28,11 +26,7 @@ async fn code_now(
 }
 
 /// Sets the code app up for the person behind `session`, and returns the backup codes.
-async fn set_up(
-    rig: &Rig,
-    person: UserId,
-    session: &str,
-) -> Result<Vec<String>, Box<dyn std::error::Error + Send + Sync>> {
+async fn set_up(rig: &Rig, person: UserId, session: &str) -> Result<Vec<String>, Failure> {
     rig.api()
         .start_code_app(
             Rig::info(),
@@ -79,11 +73,11 @@ async fn action_count(rig: &Rig, action: SecurityAction) -> Result<usize, bb_sto
 }
 
 #[tokio::test]
-async fn auth_03_the_code_app_is_set_up_with_a_qr_picture_and_asked_for_once_confirmed() -> Outcome
-{
+async fn auth_03_the_code_app_is_set_up_with_a_qr_picture_and_asked_for_once_confirmed()
+-> TestResult {
     each_database("auth_03_set_up", async |db| {
-        let rig = Rig::start(db, 10).await?;
-        let admin = rig.admin("ada@example.test").await?;
+        let rig = Rig::start(db).await?;
+        let admin = rig.admin(ADA_EMAIL).await?;
         let person = admin.person.id;
         let setup = rig
             .api()
@@ -113,7 +107,7 @@ async fn auth_03_the_code_app_is_set_up_with_a_qr_picture_and_asked_for_once_con
         };
         assert!(!status(&admin.session_token).await?.code_app);
         assert!(
-            rig.sign_in("ada@example.test", PASSWORD)
+            rig.sign_in(ADA_EMAIL, PASSWORD)
                 .await?
                 .second_step_needed
                 .is_none()
@@ -175,14 +169,14 @@ async fn auth_03_the_code_app_is_set_up_with_a_qr_picture_and_asked_for_once_con
 }
 
 #[tokio::test]
-async fn auth_03_signing_in_with_a_code_opens_a_new_session_and_a_code_works_once() -> Outcome {
+async fn auth_03_signing_in_with_a_code_opens_a_new_session_and_a_code_works_once() -> TestResult {
     each_database("auth_03_code", async |db| {
-        let rig = Rig::start(db, 10).await?;
-        let admin = rig.admin("ada@example.test").await?;
+        let rig = Rig::start(db).await?;
+        let admin = rig.admin(ADA_EMAIL).await?;
         let person = admin.person.id;
         set_up(&rig, person, &admin.session_token).await?;
 
-        let pending = rig.sign_in("ada@example.test", PASSWORD).await?;
+        let pending = rig.sign_in(ADA_EMAIL, PASSWORD).await?;
         let methods = pending
             .second_step_needed
             .ok_or("a second step is needed")?;
@@ -233,7 +227,7 @@ async fn auth_03_signing_in_with_a_code_opens_a_new_session_and_a_code_works_onc
         // The secret of the password step is gone, and the same code cannot be used again.
         let old = second_step(&rig, &pending, &code).await;
         assert_eq!(refused(old), Some(ErrorCode::NotSignedIn));
-        let other = rig.sign_in("ada@example.test", PASSWORD).await?;
+        let other = rig.sign_in(ADA_EMAIL, PASSWORD).await?;
         let twice = second_step(&rig, &other, &code).await;
         assert_eq!(refused(twice), Some(ErrorCode::WrongSecondStepCode));
         assert!(action_count(&rig, SecurityAction::SecondStepSucceeded).await? >= 1);
@@ -244,18 +238,18 @@ async fn auth_03_signing_in_with_a_code_opens_a_new_session_and_a_code_works_onc
 }
 
 #[tokio::test]
-async fn auth_03_a_backup_code_works_once_and_new_ones_replace_the_old() -> Outcome {
+async fn auth_03_a_backup_code_works_once_and_new_ones_replace_the_old() -> TestResult {
     each_database("auth_03_backup_codes", async |db| {
-        let rig = Rig::start(db, 10).await?;
-        let admin = rig.admin("ada@example.test").await?;
+        let rig = Rig::start(db).await?;
+        let admin = rig.admin(ADA_EMAIL).await?;
         let person = admin.person.id;
         let codes = set_up(&rig, person, &admin.session_token).await?;
 
-        let pending = rig.sign_in("ada@example.test", PASSWORD).await?;
+        let pending = rig.sign_in(ADA_EMAIL, PASSWORD).await?;
         // Typed in capitals and without hyphens, as a person might.
         let typed = codes[0].to_uppercase().replace('-', " ");
         second_step(&rig, &pending, &typed).await?;
-        let again = rig.sign_in("ada@example.test", PASSWORD).await?;
+        let again = rig.sign_in(ADA_EMAIL, PASSWORD).await?;
         let reused = second_step(&rig, &again, &codes[0]).await;
         assert_eq!(refused(reused), Some(ErrorCode::WrongSecondStepCode));
         let left = rig
@@ -287,7 +281,7 @@ async fn auth_03_a_backup_code_works_once_and_new_ones_replace_the_old() -> Outc
         );
         let fresh = renew(PASSWORD).await?;
         assert_eq!(fresh.0.len(), 10);
-        let pending = rig.sign_in("ada@example.test", PASSWORD).await?;
+        let pending = rig.sign_in(ADA_EMAIL, PASSWORD).await?;
         let old = second_step(&rig, &pending, &codes[1]).await;
         assert_eq!(refused(old), Some(ErrorCode::WrongSecondStepCode));
         second_step(&rig, &pending, &fresh.0[1]).await?;
@@ -302,19 +296,19 @@ async fn auth_03_a_backup_code_works_once_and_new_ones_replace_the_old() -> Outc
 
 /// A fully signed-in session of Ada (password, then a backup code is not needed: the person
 /// signs in with the code of the code app one step later).
-async fn pending_session(rig: &Rig) -> Result<String, Box<dyn std::error::Error + Send + Sync>> {
-    let person = rig.person_id("ada@example.test").await?;
+async fn pending_session(rig: &Rig) -> Result<String, Failure> {
+    let person = rig.person_id(ADA_EMAIL).await?;
     rig.clock.advance(30);
-    let pending = rig.sign_in("ada@example.test", PASSWORD).await?;
+    let pending = rig.sign_in(ADA_EMAIL, PASSWORD).await?;
     let opened = second_step(rig, &pending, &code_now(rig, person).await?).await?;
     Ok(opened.session_token)
 }
 
 #[tokio::test]
-async fn auth_03_the_code_app_is_switched_off_with_the_password() -> Outcome {
+async fn auth_03_the_code_app_is_switched_off_with_the_password() -> TestResult {
     each_database("auth_03_switch_off", async |db| {
-        let rig = Rig::start(db, 10).await?;
-        let admin = rig.admin("ada@example.test").await?;
+        let rig = Rig::start(db).await?;
+        let admin = rig.admin(ADA_EMAIL).await?;
         let person = admin.person.id;
         set_up(&rig, person, &admin.session_token).await?;
         let remove = |password: &str| {
@@ -336,7 +330,7 @@ async fn auth_03_the_code_app_is_switched_off_with_the_password() -> Outcome {
         assert!(rig.storage.totp_secret(person).await?.is_none());
         assert_eq!(rig.storage.backup_codes_left(person).await?, 0);
         assert!(
-            rig.sign_in("ada@example.test", PASSWORD)
+            rig.sign_in(ADA_EMAIL, PASSWORD)
                 .await?
                 .second_step_needed
                 .is_none()
@@ -363,14 +357,14 @@ async fn auth_03_the_code_app_is_switched_off_with_the_password() -> Outcome {
 }
 
 #[tokio::test]
-async fn sec_14_wrong_second_step_codes_are_limited_per_person() -> Outcome {
+async fn sec_14_wrong_second_step_codes_are_limited_per_person() -> TestResult {
     each_database("sec_14_second_step_limit", async |db| {
-        let rig = Rig::start(db, 3).await?;
-        let admin = rig.admin("ada@example.test").await?;
+        let rig = Rig::start_with(db, Tries::Few).await?;
+        let admin = rig.admin(ADA_EMAIL).await?;
         let person = admin.person.id;
         set_up(&rig, person, &admin.session_token).await?;
         rig.clock.advance(30);
-        let pending = rig.sign_in("ada@example.test", PASSWORD).await?;
+        let pending = rig.sign_in(ADA_EMAIL, PASSWORD).await?;
         for _ in 0..3 {
             let result = second_step(&rig, &pending, "000000").await;
             assert_eq!(refused(result), Some(ErrorCode::WrongSecondStepCode));
@@ -386,13 +380,13 @@ async fn sec_14_wrong_second_step_codes_are_limited_per_person() -> Outcome {
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
 async fn sec_14_parallel_wrong_codes_at_one_half_finished_sign_in_get_no_more_than_the_allowance()
--> Outcome {
+-> TestResult {
     each_database("sec_14_parallel_second_step", async |db| {
-        let rig = Rig::start(db, 3).await?;
-        let admin = rig.admin("ada@example.test").await?;
+        let rig = Rig::start_with(db, Tries::Few).await?;
+        let admin = rig.admin(ADA_EMAIL).await?;
         set_up(&rig, admin.person.id, &admin.session_token).await?;
         rig.clock.advance(30);
-        let pending = rig.sign_in("ada@example.test", PASSWORD).await?;
+        let pending = rig.sign_in(ADA_EMAIL, PASSWORD).await?;
         let mut tasks = Vec::new();
         for _ in 0..20 {
             let api = rig.services.clone();
@@ -424,10 +418,10 @@ async fn sec_14_parallel_wrong_codes_at_one_half_finished_sign_in_get_no_more_th
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
 async fn sec_14_parallel_wrong_passwords_before_a_sensitive_change_get_no_more_than_the_allowance()
--> Outcome {
+-> TestResult {
     each_database("sec_14_parallel_password_again", async |db| {
-        let rig = Rig::start(db, 3).await?;
-        let admin = rig.admin("ada@example.test").await?;
+        let rig = Rig::start_with(db, Tries::Few).await?;
+        let admin = rig.admin(ADA_EMAIL).await?;
         let mut tasks = Vec::new();
         for _ in 0..20 {
             let api = rig.services.clone();
@@ -458,14 +452,14 @@ async fn sec_14_parallel_wrong_passwords_before_a_sensitive_change_get_no_more_t
 }
 
 #[tokio::test]
-async fn sec_14_ten_wrong_codes_end_the_half_finished_sign_in_and_are_written_down() -> Outcome {
+async fn sec_14_ten_wrong_codes_end_the_half_finished_sign_in_and_are_written_down() -> TestResult {
     each_database("sec_14_second_step_given_up", async |db| {
         // The window allows many tries here, so only the count of wrong codes ends the sign-in.
-        let rig = Rig::start(db, 1000).await?;
-        let admin = rig.admin("ada@example.test").await?;
+        let rig = Rig::start_with(db, Tries::Unreached).await?;
+        let admin = rig.admin(ADA_EMAIL).await?;
         set_up(&rig, admin.person.id, &admin.session_token).await?;
         rig.clock.advance(30);
-        let pending = rig.sign_in("ada@example.test", PASSWORD).await?;
+        let pending = rig.sign_in(ADA_EMAIL, PASSWORD).await?;
         for number in 1..=10 {
             let result = second_step(&rig, &pending, "000000").await;
             assert_eq!(
@@ -482,7 +476,7 @@ async fn sec_14_ten_wrong_codes_end_the_half_finished_sign_in_and_are_written_do
             1
         );
         // The password starts a new sign-in, whose count starts at zero.
-        let again = rig.sign_in("ada@example.test", PASSWORD).await?;
+        let again = rig.sign_in(ADA_EMAIL, PASSWORD).await?;
         for _ in 0..9 {
             assert!(second_step(&rig, &again, "000000").await.is_err());
         }
@@ -499,7 +493,7 @@ async fn confirm_with(
     person: UserId,
     session: &str,
     password: &str,
-) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+) -> Result<(), Failure> {
     rig.api()
         .confirm_code_app(
             Rig::info(),
@@ -514,10 +508,10 @@ async fn confirm_with(
 }
 
 #[tokio::test]
-async fn sec_12_a_stolen_session_cannot_add_a_code_app_without_the_password() -> Outcome {
+async fn sec_12_a_stolen_session_cannot_add_a_code_app_without_the_password() -> TestResult {
     each_database("sec_12_code_app_needs_password", async |db| {
-        let rig = Rig::start(db, 10).await?;
-        let admin = rig.admin("ada@example.test").await?;
+        let rig = Rig::start(db).await?;
+        let admin = rig.admin(ADA_EMAIL).await?;
         let person = admin.person.id;
         let stolen = admin.session_token.clone();
         // Starting it asks for the password.
@@ -572,7 +566,7 @@ pub(super) async fn broken<T>(
     rig: &Rig,
     table: &str,
     run: impl Future<Output = T>,
-) -> Result<T, Box<dyn std::error::Error + Send + Sync>> {
+) -> Result<T, Failure> {
     let off = format!("{table}_off");
     rig.database.rename_table_for_tests(table, &off).await?;
     let result = run.await;
@@ -585,14 +579,14 @@ fn is_internal<T>(result: &Result<T, AppError>) -> bool {
 }
 
 #[tokio::test]
-async fn sec_14_a_failure_of_the_server_does_not_use_up_the_tries_of_a_person() -> Outcome {
+async fn sec_14_a_failure_of_the_server_does_not_use_up_the_tries_of_a_person() -> TestResult {
     each_database("sec_14_internal_gives_the_try_back", async |db| {
-        let rig = Rig::start(db, 3).await?;
-        let admin = rig.admin("ada@example.test").await?;
+        let rig = Rig::start_with(db, Tries::Few).await?;
+        let admin = rig.admin(ADA_EMAIL).await?;
         let person = admin.person.id;
         set_up(&rig, person, &admin.session_token).await?;
         rig.clock.advance(30);
-        let pending = rig.sign_in("ada@example.test", PASSWORD).await?;
+        let pending = rig.sign_in(ADA_EMAIL, PASSWORD).await?;
 
         // The second step: the code app cannot be read, five times. None of it is a failed try.
         let results = broken(&rig, "two_step", async {
@@ -644,19 +638,15 @@ async fn sec_14_a_failure_of_the_server_does_not_use_up_the_tries_of_a_person() 
 
 #[tokio::test]
 async fn sec_14_a_failure_of_the_server_does_not_use_up_the_tries_at_sign_in_and_before_a_change()
--> Outcome {
+-> TestResult {
     each_database("sec_14_internal_sign_in_and_password_again", async |db| {
-        let rig = Rig::start(db, 3).await?;
-        let admin = rig.admin("ada@example.test").await?;
+        let rig = Rig::start_with(db, Tries::Few).await?;
+        let admin = rig.admin(ADA_EMAIL).await?;
         // The passwords cannot be read: signing in and typing the password again both fail.
         let results = broken(&rig, "password_login", async {
             let mut results = Vec::new();
             for _ in 0..5 {
-                results.push(
-                    rig.sign_in("ada@example.test", "Wrong-Password-1")
-                        .await
-                        .map(|_| ()),
-                );
+                results.push(rig.sign_in(ADA_EMAIL, "Wrong-Password-1").await.map(|_| ()));
                 results.push(
                     rig.api()
                         .start_code_app(
@@ -676,11 +666,11 @@ async fn sec_14_a_failure_of_the_server_does_not_use_up_the_tries_at_sign_in_and
         assert!(results.iter().all(is_internal), "{results:?}");
         for _ in 0..3 {
             assert_eq!(
-                refused(rig.sign_in("ada@example.test", "Wrong-Password-1").await),
+                refused(rig.sign_in(ADA_EMAIL, "Wrong-Password-1").await),
                 Some(ErrorCode::WrongCredentials)
             );
         }
-        let fourth = rig.sign_in("ada@example.test", PASSWORD).await;
+        let fourth = rig.sign_in(ADA_EMAIL, PASSWORD).await;
         assert!(
             matches!(fourth, Err(AppError::Limited { .. })),
             "{fourth:?}"
@@ -705,16 +695,16 @@ async fn sec_14_a_failure_of_the_server_does_not_use_up_the_tries_at_sign_in_and
 }
 
 #[tokio::test]
-async fn sec_14_only_a_finished_second_step_clears_the_wrong_codes_of_a_person() -> Outcome {
+async fn sec_14_only_a_finished_second_step_clears_the_wrong_codes_of_a_person() -> TestResult {
     each_database(
         "sec_14_person_key_only_cleared_by_second_step",
         async |db| {
-            let rig = Rig::start(db, 3).await?;
-            let admin = rig.admin("ada@example.test").await?;
+            let rig = Rig::start_with(db, Tries::Few).await?;
+            let admin = rig.admin(ADA_EMAIL).await?;
             let person = admin.person.id;
             set_up(&rig, person, &admin.session_token).await?;
             rig.clock.advance(30);
-            let pending = rig.sign_in("ada@example.test", PASSWORD).await?;
+            let pending = rig.sign_in(ADA_EMAIL, PASSWORD).await?;
             for _ in 0..2 {
                 assert!(second_step(&rig, &pending, "000000").await.is_err());
             }

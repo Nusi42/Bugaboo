@@ -38,7 +38,6 @@ impl Masked for SecondStepGapBody {}
     path = "/api/v1/roles/{role_id}/second-step-gap",
     operation_id = "getSecondStepGap",
     tag = "auth",
-    extensions(("x-never-stored" = json!(true))),
     params(("role_id" = String, Path, description = "The ID of the role.")),
     responses((status = 200, description = "How many people with the role have no second step yet.", body = SecondStepGapBody), NotSignedInAnswer, ForbiddenAnswer, NotFoundAnswer)
 )]

@@ -337,7 +337,6 @@ async fn sign_out(
     path = "/api/v1/auth/me",
     operation_id = "getMe",
     tag = "auth",
-    extensions(("x-never-stored" = json!(true))),
     responses((status = 200, description = "The signed-in person and what they may do for the whole organization.", body = MeBody), NotSignedInAnswer)
 )]
 async fn get_me(
@@ -365,7 +364,6 @@ async fn get_me(
     path = "/api/v1/auth/sessions",
     operation_id = "listSessions",
     tag = "auth",
-    extensions(("x-never-stored" = json!(true))),
     responses((status = 200, description = "Where the person is signed in.", body = SessionsBody), NotSignedInAnswer)
 )]
 async fn list_sessions(

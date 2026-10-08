@@ -71,13 +71,10 @@ pub(crate) struct TwoStepBody {
 #[derive(Serialize, ToSchema)]
 pub(crate) struct CodeAppBody {
     /// The address the code app reads.
-    #[schema(extensions(("x-secret" = json!(true))))]
     otpauth_url: String,
     /// The QR picture of the address (PNG, base64).
-    #[schema(extensions(("x-secret" = json!(true))))]
     qr_png_base64: String,
     /// The secret as text, for typing it into the app.
-    #[schema(extensions(("x-secret" = json!(true))))]
     secret: String,
 }
 
@@ -85,7 +82,6 @@ pub(crate) struct CodeAppBody {
 #[derive(Serialize, ToSchema)]
 pub(crate) struct BackupCodesBody {
     /// The codes. They are not stored in this form and cannot be shown again.
-    #[schema(extensions(("x-secret" = json!(true))))]
     codes: Vec<String>,
 }
 
@@ -118,7 +114,6 @@ pub(crate) struct AddPasskeyBody {
     path = "/api/v1/auth/two-step",
     operation_id = "getTwoStep",
     tag = "auth",
-    extensions(("x-never-stored" = json!(true))),
     responses((status = 200, description = "The second step of the person.", body = TwoStepBody), NotSignedInAnswer)
 )]
 async fn get_two_step(

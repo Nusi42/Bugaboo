@@ -8,6 +8,8 @@ publish.workspace = true
 
 [dependencies]
 anyhow = { workspace = true }
+bb-api-words = { path = "../crates/bb-api-words" }
+bb-policy = { path = "../crates/bb-policy" }
 brotli = { workspace = true }
 clap = { workspace = true }
 ctrlc = { workspace = true }

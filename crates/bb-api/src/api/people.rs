@@ -95,7 +95,6 @@ impl Masked for PersonDetailBody {}
     path = "/api/v1/people",
     operation_id = "listPeople",
     tag = "people",
-    extensions(("x-never-stored" = json!(true))),
     params(ListParams, PeopleFilter),
     responses((status = 200, description = "The people, by name.", body = Page<PersonItem>), NotSignedInAnswer, ForbiddenAnswer)
 )]
@@ -145,7 +144,6 @@ async fn list_people(
     path = "/api/v1/people/{person_id}",
     operation_id = "getPerson",
     tag = "people",
-    extensions(("x-never-stored" = json!(true))),
     params(("person_id" = String, Path, description = "The ID of the person.")),
     responses((status = 200, description = "The person.", body = PersonDetailBody), NotSignedInAnswer, ForbiddenAnswer, NotFoundAnswer)
 )]

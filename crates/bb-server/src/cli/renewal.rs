@@ -71,9 +71,9 @@ mod tests {
     use tokio::net::{TcpListener, TcpStream};
     use tokio_rustls::TlsConnector;
 
-    use super::*;
+    use bb_testing::Failure;
 
-    type Failure = Box<dyn std::error::Error + Send + Sync>;
+    use super::*;
 
     const DAY: i64 = 86_400;
 

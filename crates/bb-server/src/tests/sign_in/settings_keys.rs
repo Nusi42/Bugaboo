@@ -8,11 +8,11 @@ use bb_app::settings::{SettingsQuery, SettingsScope};
 use bb_core::ErrorCode;
 use bb_core::access_key::KeyChoice;
 use bb_core::id::ProjectId;
-use bb_testing::each_database;
+use bb_testing::{TestResult, each_database};
 
 use super::access_keys::make;
 use super::policy_rig::{Member, Org, Run};
-use super::rig::{Outcome, Rig, refused};
+use super::rig::{Rig, refused};
 use super::settings::{NOTE, change, lock, people, reset, text};
 
 const LOOK: &str = "appearance.mode";
@@ -49,9 +49,9 @@ async fn list_mine(rig: &Rig, who: &Member) -> Result<usize, AppError> {
 }
 
 #[tokio::test]
-async fn auth_07_a_key_that_can_only_look_reads_my_settings_and_changes_none() -> Outcome {
+async fn auth_07_a_key_that_can_only_look_reads_my_settings_and_changes_none() -> TestResult {
     each_database("auth_07_keys_my_settings", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let org = Org::start(&rig).await?;
         let team = people(&org).await?;
         let person = &team.viewer;
@@ -76,9 +76,9 @@ async fn auth_07_a_key_that_can_only_look_reads_my_settings_and_changes_none() -
 }
 
 #[tokio::test]
-async fn auth_07_no_key_reaches_the_settings_of_the_organization() -> Outcome {
+async fn auth_07_no_key_reaches_the_settings_of_the_organization() -> TestResult {
     each_database("auth_07_keys_organization_settings", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let org = Org::start(&rig).await?;
         let ada = &org.admin;
         // The administrator can, with the session.
@@ -126,9 +126,9 @@ async fn auth_07_no_key_reaches_the_settings_of_the_organization() -> Outcome {
 }
 
 #[tokio::test]
-async fn auth_07_a_key_limited_to_a_project_cannot_change_the_settings_of_another() -> Outcome {
+async fn auth_07_a_key_limited_to_a_project_cannot_change_the_settings_of_another() -> TestResult {
     each_database("auth_07_keys_project_settings", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let org = Org::start(&rig).await?;
         let team = people(&org).await?;
         let other = org.project(None, "OTHER").await?.id;

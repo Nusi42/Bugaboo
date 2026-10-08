@@ -12,7 +12,7 @@ use bb_core::ErrorCode;
 use bb_core::access::{AppliesTo, FieldLevel};
 use bb_core::fields::Field;
 use bb_core::id::ProjectId;
-use bb_testing::each_database;
+use bb_testing::{TestResult, each_database};
 
 use super::policy_rig::{Org, Run, decision};
 use super::rig::{Rig, refused};
@@ -41,10 +41,9 @@ async fn tree(org: &Org<'_>) -> Run<Tree> {
 }
 
 #[tokio::test]
-async fn sec_01_a_person_without_a_role_can_do_nothing_and_sees_no_project() -> super::rig::Outcome
-{
+async fn sec_01_a_person_without_a_role_can_do_nothing_and_sees_no_project() -> TestResult {
     each_database("sec_01_default_deny", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let org = Org::start(&rig).await?;
         let projects = tree(&org).await?;
         let bea = org.person().await?;
@@ -101,9 +100,9 @@ fn unknown_project() -> ProjectId {
 
 #[tokio::test]
 async fn sec_03_a_role_on_a_project_applies_to_its_sub_projects_unless_given_for_this_project_only()
--> super::rig::Outcome {
+-> TestResult {
     each_database("sec_03_inheritance", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let org = Org::start(&rig).await?;
         let projects = tree(&org).await?;
         let (bea, cy) = (org.person().await?, org.person().await?);
@@ -146,9 +145,9 @@ async fn sec_03_a_role_on_a_project_applies_to_its_sub_projects_unless_given_for
 }
 
 #[tokio::test]
-async fn sec_03_no_access_on_a_sub_project_wins_over_a_role_from_above() -> super::rig::Outcome {
+async fn sec_03_no_access_on_a_sub_project_wins_over_a_role_from_above() -> TestResult {
     each_database("sec_03_no_access", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let org = Org::start(&rig).await?;
         let projects = tree(&org).await?;
         let bea = org.person().await?;
@@ -180,9 +179,9 @@ async fn sec_03_no_access_on_a_sub_project_wins_over_a_role_from_above() -> supe
 }
 
 #[tokio::test]
-async fn sec_03_the_same_project_rules_of_m2_q1_person_before_group() -> super::rig::Outcome {
+async fn sec_03_the_same_project_rules_of_m2_q1_person_before_group() -> TestResult {
     each_database("sec_03_same_project", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let org = Org::start(&rig).await?;
         let projects = tree(&org).await?;
         let member = org.role("Looker", &VIEW).await?;
@@ -239,10 +238,9 @@ async fn sec_03_the_same_project_rules_of_m2_q1_person_before_group() -> super::
 }
 
 #[tokio::test]
-async fn sec_03_a_person_or_group_never_has_a_role_and_no_access_on_one_project()
--> super::rig::Outcome {
+async fn sec_03_a_person_or_group_never_has_a_role_and_no_access_on_one_project() -> TestResult {
     each_database("sec_03_conflict", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let org = Org::start(&rig).await?;
         let projects = tree(&org).await?;
         let bea = org.person().await?;
@@ -277,10 +275,9 @@ async fn sec_03_a_person_or_group_never_has_a_role_and_no_access_on_one_project(
 }
 
 #[tokio::test]
-async fn sec_03_no_access_cannot_lock_out_the_people_who_decide_roles_above() -> super::rig::Outcome
-{
+async fn sec_03_no_access_cannot_lock_out_the_people_who_decide_roles_above() -> TestResult {
     each_database("sec_03_no_lock_out", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let org = Org::start(&rig).await?;
         let projects = tree(&org).await?;
         let lea = org.person().await?;
@@ -348,9 +345,9 @@ async fn sec_03_no_access_cannot_lock_out_the_people_who_decide_roles_above() ->
 }
 
 #[tokio::test]
-async fn sec_03_a_role_taken_away_counts_from_the_next_request() -> super::rig::Outcome {
+async fn sec_03_a_role_taken_away_counts_from_the_next_request() -> TestResult {
     each_database("sec_03_next_request", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let org = Org::start(&rig).await?;
         let projects = tree(&org).await?;
         let lea = org.person().await?;
@@ -397,9 +394,9 @@ async fn sec_03_a_role_taken_away_counts_from_the_next_request() -> super::rig::
 }
 
 #[tokio::test]
-async fn sec_03_check_access_names_no_project_the_checker_cannot_see() -> super::rig::Outcome {
+async fn sec_03_check_access_names_no_project_the_checker_cannot_see() -> TestResult {
     each_database("sec_03_check_access_names", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let org = Org::start(&rig).await?;
         let projects = tree(&org).await?;
         let (lea, bea) = (org.person().await?, org.person().await?);
@@ -435,9 +432,9 @@ async fn sec_03_check_access_names_no_project_the_checker_cannot_see() -> super:
 
 #[tokio::test]
 async fn sec_04_the_highest_field_level_of_the_roles_wins_and_projects_inherit_their_own()
--> super::rig::Outcome {
+-> TestResult {
     each_database("sec_04_field_levels", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let org = Org::start(&rig).await?;
         let projects = tree(&org).await?;
         let bea = org.person().await?;
@@ -542,9 +539,9 @@ async fn sec_04_the_highest_field_level_of_the_roles_wins_and_projects_inherit_t
 }
 
 #[tokio::test]
-async fn sec_04_nobody_sets_a_level_above_their_own() -> super::rig::Outcome {
+async fn sec_04_nobody_sets_a_level_above_their_own() -> TestResult {
     each_database("sec_04_levels_no_escalation", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let org = Org::start(&rig).await?;
         let projects = tree(&org).await?;
         let (mia, bea) = (org.person().await?, org.person().await?);
@@ -603,9 +600,9 @@ async fn sec_04_nobody_sets_a_level_above_their_own() -> super::rig::Outcome {
 
 #[tokio::test]
 async fn priv_12_people_in_the_management_screens_are_shown_by_name_to_those_who_manage()
--> super::rig::Outcome {
+-> TestResult {
     each_database("priv_12_management_names", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let org = Org::start(&rig).await?;
         let team = org.group("Team").await?;
         let bea = org.person().await?;

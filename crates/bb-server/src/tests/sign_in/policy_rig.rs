@@ -12,11 +12,13 @@ use bb_app::roles::{
 };
 use bb_core::access::AppliesTo;
 use bb_core::id::{GroupId, ProjectId, RoleId, UserId};
+use bb_testing::Failure;
 
+use super::http::ADA_EMAIL;
 use super::rig::Rig;
 
 /// What a test body returns: any error.
-pub(super) type Run<T> = Result<T, Box<dyn std::error::Error + Send + Sync>>;
+pub(super) type Run<T> = Result<T, Failure>;
 
 /// A person of the test organization: who they are and the secret of their session.
 #[derive(Clone)]
@@ -35,7 +37,7 @@ pub(super) struct Org<'a> {
 impl<'a> Org<'a> {
     /// The first start and the first administrator, Ada.
     pub(super) async fn start(rig: &'a Rig) -> Run<Org<'a>> {
-        let started: Started = rig.admin("ada@example.test").await?;
+        let started: Started = rig.admin(ADA_EMAIL).await?;
         Ok(Self {
             rig,
             admin: Member {

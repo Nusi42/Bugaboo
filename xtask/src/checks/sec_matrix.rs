@@ -21,45 +21,30 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use anyhow::Context as _;
+use bb_api_words::sec_matrix::{self as words, RECORD_PATH};
+use bb_api_words::{marks, needs};
+use bb_policy::StartingRole;
 use serde_json::Value;
 
 use super::{Check, Context, Finding};
 use crate::generate::api::SPEC_PATH;
 
-/// The record of what the matrix covered.
-const RECORD_PATH: &str = "tools/checks/sec-matrix-record.txt";
 /// The table of example requests.
 const EXAMPLES_PATH: &str = "crates/bb-server/src/tests/matrix/examples.rs";
 /// How a row of the table starts: a plain route, or one with quirks.
 const ROW_STARTS: [&str; 2] = ["Example::route(\"", "Example::with(\""];
-/// The actors every record has.
-const ACTORS: [&str; 13] = [
-    "nobody",
-    "no-role",
-    "role-administrator",
-    "role-project-lead",
-    "role-team-member",
-    "role-contributor",
-    "role-viewer",
-    "role-guest",
-    "lead-on-parent",
-    "lead-on-sibling-only",
-    "no-access-on-target",
-    "no-access-under-lead",
-    "exactly-the-permission",
-];
-/// The actors with an access key, wanted once the description has a route that makes a key.
-const KEY_ACTORS: [&str; 2] = ["key-see-only", "key-for-another-project"];
 /// The route that makes an access key.
 const KEY_ROUTE: &str = "makeAccessKey";
-/// What an answer is called in the record.
-const ANSWERS: [&str; 5] = [
-    "allowed",
-    "not-signed-in",
-    "forbidden",
-    "not-found",
-    "not-for-keys",
-];
+
+/// The actors every record has: the fixed ones and one for each starting role.
+fn every_actor() -> Vec<String> {
+    let roles = StartingRole::ALL.map(|role| words::role_actor(role.key()));
+    words::FIXED_ACTORS
+        .iter()
+        .map(|actor| (*actor).to_owned())
+        .chain(roles)
+        .collect()
+}
 
 pub(crate) struct SecMatrix;
 
@@ -110,7 +95,7 @@ fn routes(spec: &Value) -> Vec<Route> {
                     operation: operation_id,
                     method: method.to_uppercase(),
                     path: path.clone(),
-                    declared: text("x-permission").unwrap_or_default(),
+                    declared: text(marks::PERMISSION).unwrap_or_default(),
                 });
             }
         }
@@ -183,14 +168,13 @@ fn rows(examples: &str) -> BTreeSet<String> {
 fn actor_findings(actors: &[String], routes: &[Route]) -> Vec<Finding> {
     let mut findings = Vec::new();
     let has_keys = routes.iter().any(|route| route.operation == KEY_ROUTE);
-    let wanted: Vec<&str> = if has_keys {
-        ACTORS.iter().chain(&KEY_ACTORS).copied().collect()
-    } else {
-        ACTORS.to_vec()
-    };
+    let mut wanted = every_actor();
+    if has_keys {
+        wanted.extend(words::KEY_ACTORS.map(str::to_owned));
+    }
     for actor in wanted {
-        if !actors.iter().any(|known| known == actor) {
-            let why = if KEY_ACTORS.contains(&actor) {
+        if !actors.contains(&actor) {
+            let why = if words::KEY_ACTORS.contains(&actor.as_str()) {
                 " The API description has access keys, so a key is an actor of the matrix \
                  (M2-F27): a *See only* key and a key for another project."
             } else {
@@ -243,18 +227,18 @@ fn route_findings(
                 RECORD_PATH,
                 format!("{place} was not run as `{actor}`."),
             )),
-            Some(answer) if !ANSWERS.contains(&answer.as_str()) => found.push(Finding::at(
+            Some(answer) if !words::ANSWERS.contains(&answer.as_str()) => found.push(Finding::at(
                 RECORD_PATH,
                 format!("{place} as `{actor}`: `{answer}` is no answer the matrix knows."),
             )),
             Some(_) => {}
         }
     }
-    let nobody = line.answers.get("nobody").map(String::as_str);
-    let expected = if route.declared == "public" {
-        "allowed"
+    let nobody = line.answers.get(words::NOBODY).map(String::as_str);
+    let expected = if route.declared == needs::PUBLIC {
+        words::ALLOWED
     } else {
-        "not-signed-in"
+        words::NOT_SIGNED_IN
     };
     if nobody.is_some_and(|answer| answer != expected) {
         found.push(Finding::at(
@@ -321,14 +305,29 @@ mod tests {
 
     fn spec() -> Value {
         json!({"paths": {
-            "/api/v1/status": {"get": {"operationId": "getStatus", "x-permission": "public"}},
-            "/api/v1/projects": {"get": {"operationId": "listProjects", "x-permission": "see-projects"}}
+            "/api/v1/status": {"get": described("getStatus", needs::PUBLIC)},
+            "/api/v1/projects": {"get": described("listProjects", "see-projects")}
         }})
     }
 
-    fn actors_line(extra: &[&str]) -> String {
-        let mut all: Vec<&str> = ACTORS.to_vec();
+    /// An operation of the description with what it declares.
+    fn described(operation: &str, declared: &str) -> Value {
+        let mut fields = serde_json::Map::new();
+        fields.insert("operationId".to_owned(), operation.into());
+        fields.insert(marks::PERMISSION.to_owned(), declared.into());
+        Value::Object(fields)
+    }
+
+    /// Every actor of a record, and these besides.
+    fn actors_with<'a>(extra: &[&'a str], every: &'a [String]) -> Vec<&'a str> {
+        let mut all: Vec<&str> = every.iter().map(String::as_str).collect();
         all.extend(extra);
+        all
+    }
+
+    fn actors_line(extra: &[&str]) -> String {
+        let every = every_actor();
+        let all = actors_with(extra, &every);
         format!("actors {}\n", all.join(" "))
     }
 
@@ -339,22 +338,22 @@ mod tests {
         declared: &str,
         extra: &[&str],
     ) -> String {
-        let nobody = if declared == "public" {
-            "allowed"
+        let nobody = if declared == needs::PUBLIC {
+            words::ALLOWED
         } else {
-            "not-signed-in"
+            words::NOT_SIGNED_IN
         };
-        let mut all: Vec<&str> = ACTORS.to_vec();
-        all.extend(extra);
+        let every = every_actor();
+        let all = actors_with(extra, &every);
         let answers: Vec<String> = all
             .iter()
             .map(|actor| {
                 format!(
                     "{actor}={}",
-                    if *actor == "nobody" {
+                    if *actor == words::NOBODY {
                         nobody
                     } else {
-                        "allowed"
+                        words::ALLOWED
                     }
                 )
             })
@@ -369,7 +368,7 @@ mod tests {
         format!(
             "# written by the matrix\n{}{}{}",
             actors_line(extra),
-            route_line("getStatus", "GET", "/api/v1/status", "public", extra),
+            route_line("getStatus", "GET", "/api/v1/status", needs::PUBLIC, extra),
             route_line(
                 "listProjects",
                 "GET",
@@ -454,7 +453,7 @@ mod tests {
         let stale = format!(
             "{}{}",
             record(&[]),
-            route_line("gone", "GET", "/gone", "public", &[])
+            route_line("gone", "GET", "/gone", needs::PUBLIC, &[])
         );
         let found = messages(&spec(), Some(&stale), EXAMPLES);
         assert!(found.iter().any(|m| m.contains("`gone`")), "{found:?}");
@@ -492,13 +491,19 @@ mod tests {
     fn good_example_the_actors_with_a_key_are_wanted_once_the_description_has_keys() {
         let mut with_keys = spec();
         with_keys["paths"]["/api/v1/access-keys"] =
-            json!({"post": {"operationId": KEY_ROUTE, "x-permission": "own-account"}});
+            json!({"post": described(KEY_ROUTE, needs::OWN_ACCOUNT)});
         let examples = format!("{EXAMPLES}Example::route(\"{KEY_ROUTE}\"),\n");
         // Without the actors the check says so ...
         let record_without = format!(
             "{}{}",
             record(&[]),
-            route_line(KEY_ROUTE, "POST", "/api/v1/access-keys", "own-account", &[])
+            route_line(
+                KEY_ROUTE,
+                "POST",
+                "/api/v1/access-keys",
+                needs::OWN_ACCOUNT,
+                &[]
+            )
         );
         let found = messages(&with_keys, Some(&record_without), &examples);
         assert_eq!(
@@ -509,13 +514,13 @@ mod tests {
         // ... and with them it passes.
         let with = format!(
             "{}{}",
-            record(&KEY_ACTORS),
+            record(&words::KEY_ACTORS),
             route_line(
                 KEY_ROUTE,
                 "POST",
                 "/api/v1/access-keys",
-                "own-account",
-                &KEY_ACTORS
+                needs::OWN_ACCOUNT,
+                &words::KEY_ACTORS
             )
         );
         let found = messages(&with_keys, Some(&with), &examples);

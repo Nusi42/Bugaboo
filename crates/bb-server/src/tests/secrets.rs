@@ -6,14 +6,12 @@ use std::path::Path;
 use bb_core::sign_in::SecurityAction;
 use bb_core::technical::TechnicalName;
 use bb_store::NewSecurityLogEntry;
-use bb_testing::TestResult;
+use bb_testing::{Failure, TestResult};
 use jiff::Timestamp;
 
 use super::*;
 use crate::config::{Sources, resolve};
 use crate::wiring::{Serving, wire};
-
-type Failure = Box<dyn std::error::Error + Send + Sync>;
 
 /// An installation with a built-in database and a security log with two entries.
 async fn installation(root: &Path) -> Result<(StoreArgs, DataFolder), Failure> {

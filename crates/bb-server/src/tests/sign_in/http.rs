@@ -5,40 +5,39 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::net::SocketAddr;
 use std::sync::atomic::{AtomicU8, Ordering};
 use std::sync::{Arc, Mutex};
-use std::time::Duration;
 
 use axum::Router;
 use axum::body::Body;
 use axum::extract::ConnectInfo;
-use axum::http::{HeaderMap, Request, StatusCode, header};
+use axum::http::{HeaderMap, Method, Request, StatusCode, header};
 use base64ct::{Base64UrlUnpadded, Encoding as _};
-use bb_api::{
-    AuthHandle, ClientAddr, LimitsConfig, Options, ProbeHandle, WebSource, openapi, router,
-};
+use bb_api::cookies::{CSRF_HEADER, Cookie};
+use bb_api::openapi::operations;
+use bb_api::permissions::{Answer, Declared};
+use bb_api::{AuthHandle, ClientAddr, LimitsConfig, Options, router};
 use bb_app::auth::AuthStore as _;
 use bb_app::context::Clock as _;
 use bb_auth::TotpSecret;
-use bb_testing::{TestDatabase, each_database};
+use bb_testing::{Failure, TestDatabase, TestResult, each_database};
 use serde_json::{Value, json};
 use tower::ServiceExt as _;
 use webauthn_authenticator_rs::prelude::{Url, WebauthnAuthenticator as _};
 use webauthn_authenticator_rs::softpasskey::SoftPasskey;
 
-use super::rig::{OTHER_PASSWORD, Outcome, PASSWORD, PUBLIC_URL, Rig};
-
-pub(super) type Failure = Box<dyn std::error::Error + Send + Sync>;
+use super::rig::{OTHER_PASSWORD, PASSWORD, PUBLIC_URL, Rig, Tries};
 
 /// The third number of the next browser's address (a network is the first three numbers).
 static NEXT_HOST: AtomicU8 = AtomicU8::new(1);
 
-const SESSION: &str = "__Host-bb_session";
-const CSRF: &str = "__Host-bb_csrf";
+/// The names of the cookies of a session, from the one cookie table of `bb-api`.
+pub(super) const SESSION: &str = Cookie::Session.name();
+pub(super) const CSRF: &str = Cookie::Csrf.name();
 
 /// What the server answered.
-pub(super) struct Reply {
-    pub(super) status: StatusCode,
-    pub(super) headers: HeaderMap,
-    pub(super) body: Value,
+pub(crate) struct Reply {
+    pub(crate) status: StatusCode,
+    pub(crate) headers: HeaderMap,
+    pub(crate) body: Value,
 }
 
 impl Reply {
@@ -74,7 +73,7 @@ enum Token<'a> {
 }
 
 /// A browser: it keeps cookies and sends the token like the app does.
-pub(super) struct Browser {
+pub(crate) struct Browser {
     app: Router,
     jar: BTreeMap<String, String>,
     called: Arc<Mutex<BTreeSet<String>>>,
@@ -83,25 +82,17 @@ pub(super) struct Browser {
     headers: Vec<(&'static str, String)>,
 }
 
-pub(super) fn options(rig: &Rig, limits: LimitsConfig, auth: bool) -> Options {
+/// The options of a router that signs people in with the services of `rig`.
+pub(super) fn options(rig: &Rig, limits: LimitsConfig) -> Options {
     Options {
-        web: WebSource::Folder("no/such/folder".into()),
-        hsts_max_age: None,
-        header_timeout: Duration::from_secs(30),
-        data_folder: std::env::temp_dir(),
-        trusted_proxies: vec![],
         limits,
-        auth: if auth {
-            AuthHandle::new(rig.services.clone())
-        } else {
-            AuthHandle::none()
-        },
-        probe: ProbeHandle::none(),
+        auth: AuthHandle::new(rig.services.clone()),
+        ..Options::for_tests()
     }
 }
 
 impl Browser {
-    pub(super) fn new(app: &Router, called: &Arc<Mutex<BTreeSet<String>>>) -> Self {
+    pub(crate) fn new(app: &Router, called: &Arc<Mutex<BTreeSet<String>>>) -> Self {
         Self {
             app: app.clone(),
             jar: BTreeMap::new(),
@@ -114,6 +105,74 @@ impl Browser {
                 50_000,
             )),
         }
+    }
+
+    /// A browser that made the first administrator (Ada) with the setup code of `rig` and is signed
+    /// in as her.
+    pub(super) async fn signed_in(app: &Router, rig: &Rig) -> Result<Self, Failure> {
+        let mut browser = Self::new(app, &called());
+        browser.set_up(rig).await?;
+        Ok(browser)
+    }
+
+    /// A browser of the person with this address (and the password of the tests), signed in.
+    pub(super) async fn signed_in_as(app: &Router, email: &str) -> Result<Self, Failure> {
+        let mut browser = Self::new(app, &called());
+        let reply = browser.sign_in(email, PASSWORD).await?;
+        assert_eq!(reply.status, StatusCode::OK, "{}", reply.body);
+        Ok(browser)
+    }
+
+    /// Makes the first administrator (Ada) with the setup code of `rig`; this browser is signed in
+    /// as her, and the answer is returned.
+    pub(super) async fn set_up(&mut self, rig: &Rig) -> Result<Reply, Failure> {
+        self.send(
+            "POST",
+            "/api/v1/auth/setup",
+            Some(setup_body(&rig.setup_code)),
+        )
+        .await
+    }
+
+    /// Signs in with e-mail address and password, as the sign-in page does; the answer is returned.
+    pub(super) async fn sign_in(&mut self, email: &str, password: &str) -> Result<Reply, Failure> {
+        self.send(
+            "POST",
+            "/api/v1/auth/sign-in",
+            Some(sign_in_body(email, password)),
+        )
+        .await
+    }
+
+    /// Invites the person with this address and name (this browser's person must be allowed to),
+    /// and returns the browser of the person who accepted: signed in, not an administrator.
+    pub(super) async fn invite(
+        &mut self,
+        email: &str,
+        display_name: &str,
+    ) -> Result<Self, Failure> {
+        let invitation = self
+            .send(
+                "POST",
+                "/api/v1/auth/invitations",
+                Some(json!({ "email": email })),
+            )
+            .await?;
+        let secret = invitation.body["link_path"]
+            .as_str()
+            .and_then(|path| path.split_once('#'))
+            .map(|(_, secret)| secret.to_owned())
+            .ok_or("no link")?;
+        let mut person = Self::new(&self.app, &self.called);
+        let accepted = person
+            .send(
+                "POST",
+                "/api/v1/auth/invitation/accept",
+                Some(json!({"secret": secret, "display_name": display_name, "password": PASSWORD})),
+            )
+            .await?;
+        assert_eq!(accepted.status, StatusCode::OK, "{}", accepted.body);
+        Ok(person)
     }
 
     /// From now on every request carries this header (`If-None-Match`, `Accept-Encoding`).
@@ -132,7 +191,7 @@ impl Browser {
         self.headers.clear();
     }
 
-    pub(super) async fn send(
+    pub(crate) async fn send(
         &mut self,
         method: &str,
         path: &str,
@@ -190,11 +249,11 @@ impl Browser {
         match token {
             Token::FromCookie => {
                 if let Some(value) = self.jar.get(CSRF) {
-                    request = request.header("x-csrf-token", value);
+                    request = request.header(CSRF_HEADER, value);
                 }
             }
             Token::Nothing => {}
-            Token::Is(value) => request = request.header("x-csrf-token", value),
+            Token::Is(value) => request = request.header(CSRF_HEADER, value),
         }
         self.finish(request, method, path, body).await
     }
@@ -281,19 +340,36 @@ impl Browser {
     }
 }
 
-/// The `GET` routes whose answers hold personal data, as the API description marks them.
+/// The `GET` routes whose answers hold personal data, as the route table says them.
 pub(super) fn never_stored_reads() -> &'static BTreeSet<String> {
     static ROUTES: std::sync::OnceLock<BTreeSet<String>> = std::sync::OnceLock::new();
     ROUTES.get_or_init(|| {
-        let document = serde_json::to_value(openapi::document()).unwrap_or_default();
-        document["paths"]
-            .as_object()
-            .into_iter()
-            .flatten()
-            .filter(|(_, item)| item["get"][openapi::NEVER_STORED_MARK] == true)
-            .map(|(route, _)| route.clone())
+        operations()
+            .iter()
+            .filter(|operation| {
+                operation.method == Method::GET && operation.kind == Answer::NeverStored
+            })
+            .map(|operation| operation.path.clone())
             .collect()
     })
+}
+
+/// The ID that stands in for any `{…}` part of a route, when only the layers in front of the route
+/// are of interest.
+const ANY_ID: &str = "0197a5e2-7c1f-4b0a-9a3e-2f6d1c8b4a10";
+
+/// The address of a route written as `template`, with an ID in every `{…}` part (a setting key in
+/// `{key}`).
+pub(super) fn example_path(template: &str) -> String {
+    template
+        .split('/')
+        .map(|part| match part {
+            "{key}" => "some.key",
+            part if part.starts_with('{') => ANY_ID,
+            part => part,
+        })
+        .collect::<Vec<_>>()
+        .join("/")
 }
 
 /// Whether the address is the route written as `template`, whose `{…}` parts stand for any one
@@ -331,25 +407,35 @@ fn assert_cache_rules(method: &str, path: &str, reply: &Reply) {
     }
 }
 
-pub(super) fn setup_body(rig: &Rig) -> Value {
+/// The address of the first administrator (Ada), whom the setup call makes.
+pub(crate) const ADA_EMAIL: &str = "ada@example.test";
+
+/// The body that makes the first administrator with this setup code.
+pub(crate) fn setup_body(code: &str) -> Value {
     json!({
-        "code": rig.setup_code,
+        "code": code,
         "display_name": "Ada Admin",
-        "email": "ada@example.test",
+        "email": ADA_EMAIL,
         "password": PASSWORD,
     })
 }
 
-pub(super) async fn rig_and_app(
+/// A rig with the default number of tries and its router.
+pub(super) async fn rig_and_app(db: &TestDatabase) -> Result<(Rig, Router), Failure> {
+    rig_and_app_with(db, Tries::Default).await
+}
+
+/// A rig that allows `tries` failed tries, and its router.
+pub(super) async fn rig_and_app_with(
     db: &TestDatabase,
-    failures: u32,
+    tries: Tries,
 ) -> Result<(Rig, Router), Failure> {
-    let rig = Rig::start(db, failures).await?;
-    let app = router(options(&rig, LimitsConfig::default(), true));
+    let rig = Rig::start_with(db, tries).await?;
+    let app = router(options(&rig, LimitsConfig::default()));
     Ok((rig, app))
 }
 
-pub(super) fn called() -> Arc<Mutex<BTreeSet<String>>> {
+pub(crate) fn called() -> Arc<Mutex<BTreeSet<String>>> {
     Arc::new(Mutex::new(BTreeSet::new()))
 }
 
@@ -358,15 +444,13 @@ pub(super) fn sign_in_body(email: &str, password: &str) -> Value {
 }
 
 #[tokio::test]
-async fn sec_12_signing_in_sets_the_session_cookie_and_the_csrf_cookie() -> Outcome {
+async fn sec_12_signing_in_sets_the_session_cookie_and_the_csrf_cookie() -> TestResult {
     each_database("sec_12_http_cookies", async |db| {
-        let (rig, app) = rig_and_app(db, 10).await?;
+        let (rig, app) = rig_and_app(db).await?;
         let mut browser = Browser::new(&app, &called());
-        let reply = browser
-            .send("POST", "/api/v1/auth/setup", Some(setup_body(&rig)))
-            .await?;
+        let reply = browser.set_up(&rig).await?;
         assert_eq!(reply.status, StatusCode::OK);
-        assert_eq!(reply.body["person"]["email"], "ada@example.test");
+        assert_eq!(reply.body["person"]["email"], ADA_EMAIL);
         assert!(
             reply.body["person"].get("administrator").is_none(),
             "the flag is gone"
@@ -395,20 +479,14 @@ async fn sec_12_signing_in_sets_the_session_cookie_and_the_csrf_cookie() -> Outc
         assert_eq!(browser.jar[SESSION].len(), 43);
         // Both cookies come again with the next sign-in, new.
         let mut second = Browser::new(&app, &called());
-        let again = second
-            .send(
-                "POST",
-                "/api/v1/auth/sign-in",
-                Some(sign_in_body("ADA@example.test", PASSWORD)),
-            )
-            .await?;
+        let again = second.sign_in("ADA@example.test", PASSWORD).await?;
         assert_eq!(again.status, StatusCode::OK);
         assert_ne!(second.jar[SESSION], browser.jar[SESSION]);
         assert_ne!(second.jar[CSRF], browser.jar[CSRF]);
         // The cookie is bound to the session and the browser asks for who it is with it.
         let me = browser.send("GET", "/api/v1/auth/me", None).await?;
         assert_eq!(me.status, StatusCode::OK);
-        assert_eq!(me.body["email"], "ada@example.test");
+        assert_eq!(me.body["email"], ADA_EMAIL);
         assert_eq!(me.header("cache-control"), "no-store");
         Ok(())
     })
@@ -416,21 +494,12 @@ async fn sec_12_signing_in_sets_the_session_cookie_and_the_csrf_cookie() -> Outc
 }
 
 #[tokio::test]
-async fn sec_12_a_change_needs_the_token_of_its_own_session() -> Outcome {
+async fn sec_12_a_change_needs_the_token_of_its_own_session() -> TestResult {
     each_database("sec_12_http_csrf", async |db| {
-        let (rig, app) = rig_and_app(db, 10).await?;
-        let mut browser = Browser::new(&app, &called());
-        browser
-            .send("POST", "/api/v1/auth/setup", Some(setup_body(&rig)))
-            .await?;
+        let (rig, app) = rig_and_app(db).await?;
+        let mut browser = Browser::signed_in(&app, &rig).await?;
         let mut other = Browser::new(&app, &called());
-        other
-            .send(
-                "POST",
-                "/api/v1/auth/sign-in",
-                Some(sign_in_body("ada@example.test", PASSWORD)),
-            )
-            .await?;
+        other.sign_in(ADA_EMAIL, PASSWORD).await?;
         let others_token = other.jar[CSRF].clone();
         let own_token = browser.jar[CSRF].clone();
         let origin = "http://bugaboo.test";
@@ -493,55 +562,29 @@ async fn sec_12_a_change_needs_the_token_of_its_own_session() -> Outcome {
 
 #[tokio::test]
 async fn sec_12_every_route_that_changes_something_checks_the_token_except_signing_in_and_up()
--> Outcome {
+-> TestResult {
     each_database("sec_12_http_every_route", async |db| {
-        let (rig, app) = rig_and_app(db, 10).await?;
-        let mut browser = Browser::new(&app, &called());
-        browser
-            .send("POST", "/api/v1/auth/setup", Some(setup_body(&rig)))
-            .await?;
-        // The routes people use before they have a session: no token can exist yet.
-        let open = [
-            "/api/v1/auth/setup",
-            "/api/v1/auth/sign-in",
-            "/api/v1/auth/sign-up",
-            "/api/v1/auth/passkey/sign-in/options",
-            "/api/v1/auth/passkey/sign-in",
-            "/api/v1/auth/invitation/lookup",
-            "/api/v1/auth/invitation/accept",
-        ];
-        let document = serde_json::to_value(openapi::document())?;
-        let paths = document["paths"].as_object().ok_or("no paths")?;
-        let id = "0197a5e2-7c1f-4b0a-9a3e-2f6d1c8b4a10";
+        let (rig, app) = rig_and_app(db).await?;
+        let mut browser = Browser::signed_in(&app, &rig).await?;
         let mut checked = 0;
-        for (template, item) in paths {
-            for method in ["post", "put", "delete", "patch"] {
-                if item.get(method).is_none() {
-                    continue;
-                }
-                let path = template
-                    .replace("{session_id}", id)
-                    .replace("{passkey_id}", id)
-                    .replace("{invitation_id}", id)
-                    .replace("{project}", id)
-                    .replace("{key}", "some.key")
-                    .replace("{access_key_id}", id);
-                let reply = browser
-                    .send_as(
-                        &method.to_uppercase(),
-                        &path,
-                        Some(json!({})),
-                        Token::Nothing,
-                        "http://bugaboo.test",
-                    )
-                    .await?;
-                if open.contains(&template.as_str()) {
-                    assert_ne!(reply.code(), "request.wrong_token", "{method} {template}");
-                } else {
-                    assert_eq!(reply.status, StatusCode::FORBIDDEN, "{method} {template}");
-                    assert_eq!(reply.code(), "request.wrong_token", "{method} {template}");
-                    checked += 1;
-                }
+        for operation in operations().iter().filter(|operation| operation.changes()) {
+            let reply = browser
+                .send_as(
+                    operation.method.as_str(),
+                    &example_path(&operation.path),
+                    Some(json!({})),
+                    Token::Nothing,
+                    "http://bugaboo.test",
+                )
+                .await?;
+            let (method, path) = (&operation.method, &operation.path);
+            // The routes people use before they have a session: no token can exist yet.
+            if operation.needs == Declared::Public {
+                assert_ne!(reply.code(), "request.wrong_token", "{method} {path}");
+            } else {
+                assert_eq!(reply.status, StatusCode::FORBIDDEN, "{method} {path}");
+                assert_eq!(reply.code(), "request.wrong_token", "{method} {path}");
+                checked += 1;
             }
         }
         assert!(checked >= 15, "{checked}");
@@ -551,29 +594,16 @@ async fn sec_12_every_route_that_changes_something_checks_the_token_except_signi
 }
 
 #[tokio::test]
-async fn sec_14_failed_sign_ins_are_turned_away_with_a_wait_and_the_answers_look_alike() -> Outcome
-{
+async fn sec_14_failed_sign_ins_are_turned_away_with_a_wait_and_the_answers_look_alike()
+-> TestResult {
     each_database("sec_14_http_limit", async |db| {
-        let (rig, app) = rig_and_app(db, 3).await?;
-        let mut browser = Browser::new(&app, &called());
-        browser
-            .send("POST", "/api/v1/auth/setup", Some(setup_body(&rig)))
-            .await?;
+        let (rig, app) = rig_and_app_with(db, Tries::Few).await?;
+        let _browser = Browser::signed_in(&app, &rig).await?;
         // Every try comes from another network, so only the account is limited here.
         let fresh = || Browser::new(&app, &called());
-        let wrong = fresh()
-            .send(
-                "POST",
-                "/api/v1/auth/sign-in",
-                Some(sign_in_body("ada@example.test", "Wrong-Password-1")),
-            )
-            .await?;
+        let wrong = fresh().sign_in(ADA_EMAIL, "Wrong-Password-1").await?;
         let unknown = fresh()
-            .send(
-                "POST",
-                "/api/v1/auth/sign-in",
-                Some(sign_in_body("nobody@example.test", "Wrong-Password-1")),
-            )
+            .sign_in("nobody@example.test", "Wrong-Password-1")
             .await?;
         // Same status, same code, same message: nothing says whether the account exists.
         assert_eq!(wrong.status, StatusCode::UNAUTHORIZED);
@@ -585,22 +615,10 @@ async fn sec_14_failed_sign_ins_are_turned_away_with_a_wait_and_the_answers_look
 
         // Ada's account has two more tries; then even her right password waits.
         for _ in 0..2 {
-            let reply = fresh()
-                .send(
-                    "POST",
-                    "/api/v1/auth/sign-in",
-                    Some(sign_in_body("ada@example.test", "Wrong-Password-1")),
-                )
-                .await?;
+            let reply = fresh().sign_in(ADA_EMAIL, "Wrong-Password-1").await?;
             assert_eq!(reply.status, StatusCode::UNAUTHORIZED);
         }
-        let reply = fresh()
-            .send(
-                "POST",
-                "/api/v1/auth/sign-in",
-                Some(sign_in_body("ada@example.test", PASSWORD)),
-            )
-            .await?;
+        let reply = fresh().sign_in(ADA_EMAIL, PASSWORD).await?;
         assert_eq!(reply.status, StatusCode::TOO_MANY_REQUESTS);
         assert_eq!(reply.code(), "rate_limit.exceeded");
         let wait: u64 = reply.header("retry-after").parse()?;
@@ -612,55 +630,28 @@ async fn sec_14_failed_sign_ins_are_turned_away_with_a_wait_and_the_answers_look
 }
 
 #[tokio::test]
-async fn sec_14_failures_of_one_network_are_limited_whatever_the_account() -> Outcome {
+async fn sec_14_failures_of_one_network_are_limited_whatever_the_account() -> TestResult {
     each_database("sec_14_http_network_failures", async |db| {
-        let (rig, app) = rig_and_app(db, 3).await?;
-        Browser::new(&app, &called())
-            .send("POST", "/api/v1/auth/setup", Some(setup_body(&rig)))
-            .await?;
+        let (rig, app) = rig_and_app_with(db, Tries::Few).await?;
+        Browser::new(&app, &called()).set_up(&rig).await?;
         let mut guesser = Browser::new(&app, &called());
         // Three wrong tries at three different accounts use up the network.
         for number in 0..3 {
             let reply = guesser
-                .send(
-                    "POST",
-                    "/api/v1/auth/sign-in",
-                    Some(sign_in_body(
-                        &format!("person{number}@example.test"),
-                        "Wrong-Password-1",
-                    )),
-                )
+                .sign_in(&format!("person{number}@example.test"), "Wrong-Password-1")
                 .await?;
             assert_eq!(reply.status, StatusCode::UNAUTHORIZED);
         }
         // Now even a right password from this network waits ...
-        let reply = guesser
-            .send(
-                "POST",
-                "/api/v1/auth/sign-in",
-                Some(sign_in_body("ada@example.test", PASSWORD)),
-            )
-            .await?;
+        let reply = guesser.sign_in(ADA_EMAIL, PASSWORD).await?;
         assert_eq!(reply.status, StatusCode::TOO_MANY_REQUESTS);
         // ... and another network is not affected.
         let mut other = Browser::new(&app, &called());
-        let reply = other
-            .send(
-                "POST",
-                "/api/v1/auth/sign-in",
-                Some(sign_in_body("ada@example.test", PASSWORD)),
-            )
-            .await?;
+        let reply = other.sign_in(ADA_EMAIL, PASSWORD).await?;
         assert_eq!(reply.status, StatusCode::OK);
         // Many successes from one network never count: they give their try back.
         for _ in 0..5 {
-            let reply = other
-                .send(
-                    "POST",
-                    "/api/v1/auth/sign-in",
-                    Some(sign_in_body("ada@example.test", PASSWORD)),
-                )
-                .await?;
+            let reply = other.sign_in(ADA_EMAIL, PASSWORD).await?;
             assert_eq!(reply.status, StatusCode::OK);
         }
         Ok(())
@@ -669,9 +660,9 @@ async fn sec_14_failures_of_one_network_are_limited_whatever_the_account() -> Ou
 }
 
 #[tokio::test]
-async fn sec_14_one_network_is_limited_in_its_tries_whatever_the_account() -> Outcome {
+async fn sec_14_one_network_is_limited_in_its_tries_whatever_the_account() -> TestResult {
     each_database("sec_14_http_network_limit", async |db| {
-        let rig = Rig::start(db, 100).await?;
+        let rig = Rig::start_with(db, Tries::Unreached).await?;
         let app = router(options(
             &rig,
             LimitsConfig {
@@ -679,20 +670,12 @@ async fn sec_14_one_network_is_limited_in_its_tries_whatever_the_account() -> Ou
                 sign_in_attempts_per_minute: 4,
                 ..LimitsConfig::default()
             },
-            true,
         ));
         let mut browser = Browser::new(&app, &called());
         let mut statuses = Vec::new();
         for number in 0..6 {
             let reply = browser
-                .send(
-                    "POST",
-                    "/api/v1/auth/sign-in",
-                    Some(sign_in_body(
-                        &format!("person{number}@example.test"),
-                        PASSWORD,
-                    )),
-                )
+                .sign_in(&format!("person{number}@example.test"), PASSWORD)
                 .await?;
             statuses.push(reply.status);
         }
@@ -721,10 +704,10 @@ async fn sec_14_one_network_is_limited_in_its_tries_whatever_the_account() -> Ou
 }
 
 #[tokio::test]
-async fn auth_01_without_a_database_the_sign_in_routes_say_so_and_nothing_else_breaks() -> Outcome {
-    each_database("auth_01_http_unavailable", async |db| {
-        let rig = Rig::start(db, 10).await?;
-        let app = router(options(&rig, LimitsConfig::default(), false));
+async fn auth_01_without_a_database_the_sign_in_routes_say_so_and_nothing_else_breaks() -> TestResult
+{
+    each_database("auth_01_http_unavailable", async |_db| {
+        let app = router(Options::for_tests());
         let mut browser = Browser::new(&app, &called());
         let reply = browser.send("GET", "/api/v1/auth/status", None).await?;
         assert_eq!(reply.status, StatusCode::SERVICE_UNAVAILABLE);
@@ -778,7 +761,7 @@ struct Tour {
 
 const API: &str = "/api/v1/auth";
 
-async fn first_start(tour: &mut Tour) -> Outcome {
+async fn first_start(tour: &mut Tour) -> TestResult {
     let rig = &tour.rig;
     let ada = &mut tour.ada;
     let api = API;
@@ -795,7 +778,7 @@ async fn first_start(tour: &mut Tour) -> Outcome {
             "POST",
             "/api/v1/auth/setup",
             &format!("{api}/setup"),
-            Some(setup_body(rig)),
+            Some(setup_body(&rig.setup_code)),
         )
         .await?;
     assert!(ok(&reply));
@@ -807,7 +790,7 @@ async fn first_start(tour: &mut Tour) -> Outcome {
     Ok(())
 }
 
-async fn invitations(tour: &mut Tour) -> Outcome {
+async fn invitations(tour: &mut Tour) -> TestResult {
     let app = &tour.app;
     let used = &tour.used;
     let ada = &mut tour.ada;
@@ -878,7 +861,7 @@ async fn invitations(tour: &mut Tour) -> Outcome {
     Ok(())
 }
 
-async fn sign_up(tour: &mut Tour) -> Outcome {
+async fn sign_up(tour: &mut Tour) -> TestResult {
     let app = &tour.app;
     let used = &tour.used;
     let ada = &mut tour.ada;
@@ -927,7 +910,7 @@ async fn sign_up(tour: &mut Tour) -> Outcome {
     Ok(())
 }
 
-async fn code_app(tour: &mut Tour) -> Outcome {
+async fn code_app(tour: &mut Tour) -> TestResult {
     let rig = &tour.rig;
     let app = &tour.app;
     let used = &tour.used;
@@ -952,7 +935,7 @@ async fn code_app(tour: &mut Tour) -> Outcome {
             "POST",
             "/api/v1/auth/two-step/code-app/confirm",
             &format!("{api}/two-step/code-app/confirm"),
-            Some(json!({"code": totp(rig, "ada@example.test").await?, "password": PASSWORD})),
+            Some(json!({"code": totp(rig, ADA_EMAIL).await?, "password": PASSWORD})),
         )
         .await?;
     assert_eq!(reply.body["codes"].as_array().map(Vec::len), Some(10));
@@ -972,7 +955,7 @@ async fn code_app(tour: &mut Tour) -> Outcome {
         .send(
             "POST",
             &format!("{api}/sign-in"),
-            Some(sign_in_body("ada@example.test", PASSWORD)),
+            Some(sign_in_body(ADA_EMAIL, PASSWORD)),
         )
         .await?;
     assert_eq!(
@@ -986,7 +969,7 @@ async fn code_app(tour: &mut Tour) -> Outcome {
             "POST",
             "/api/v1/auth/second-step",
             &format!("{api}/second-step"),
-            Some(json!({"code": totp(rig, "ada@example.test").await?})),
+            Some(json!({"code": totp(rig, ADA_EMAIL).await?})),
         )
         .await?;
     assert!(ok(&reply));
@@ -1016,7 +999,7 @@ async fn code_app(tour: &mut Tour) -> Outcome {
     Ok(())
 }
 
-async fn passkeys(tour: &mut Tour) -> Outcome {
+async fn passkeys(tour: &mut Tour) -> TestResult {
     let ada = &mut tour.ada;
     let api = API;
     // Passkeys: add, use as the second step, sign in with one alone, remove.
@@ -1047,7 +1030,7 @@ async fn passkeys(tour: &mut Tour) -> Outcome {
 }
 
 /// A passkey as the second step, one alone, and removing it.
-async fn use_passkeys(tour: &mut Tour, device: &mut SoftPasskey, passkey_id: &str) -> Outcome {
+async fn use_passkeys(tour: &mut Tour, device: &mut SoftPasskey, passkey_id: &str) -> TestResult {
     let rig = &tour.rig;
     let app = &tour.app;
     let used = &tour.used;
@@ -1058,7 +1041,7 @@ async fn use_passkeys(tour: &mut Tour, device: &mut SoftPasskey, passkey_id: &st
         .send(
             "POST",
             &format!("{api}/sign-in"),
-            Some(sign_in_body("ada@example.test", PASSWORD)),
+            Some(sign_in_body(ADA_EMAIL, PASSWORD)),
         )
         .await?;
     let reply = phone
@@ -1097,7 +1080,7 @@ async fn use_passkeys(tour: &mut Tour, device: &mut SoftPasskey, passkey_id: &st
         )
         .await?;
     let challenge = text(&reply, "/challenge_id")?;
-    let person = rig.person_id("ada@example.test").await?;
+    let person = rig.person_id(ADA_EMAIL).await?;
     let stored = rig.storage.passkeys_of(person).await?;
     let mut options = reply.body["options"].clone();
     options["publicKey"]["allowCredentials"] = json!([{
@@ -1134,7 +1117,7 @@ async fn use_passkeys(tour: &mut Tour, device: &mut SoftPasskey, passkey_id: &st
     Ok(())
 }
 
-async fn sessions_and_password(tour: &mut Tour) -> Outcome {
+async fn sessions_and_password(tour: &mut Tour) -> TestResult {
     let app = &tour.app;
     let used = &tour.used;
     let ada = &mut tour.ada;
@@ -1190,7 +1173,7 @@ async fn sessions_and_password(tour: &mut Tour) -> Outcome {
             "POST",
             "/api/v1/auth/sign-in",
             &format!("{api}/sign-in"),
-            Some(sign_in_body("ada@example.test", OTHER_PASSWORD)),
+            Some(sign_in_body(ADA_EMAIL, OTHER_PASSWORD)),
         )
         .await?;
     assert!(ok(&reply));
@@ -1207,23 +1190,19 @@ async fn sessions_and_password(tour: &mut Tour) -> Outcome {
     Ok(())
 }
 
+/// The routes of the API description below `prefix`, as `METHOD /path`.
+fn documented_routes(prefix: &str) -> BTreeSet<String> {
+    operations()
+        .iter()
+        .filter(|operation| operation.path.starts_with(prefix))
+        .map(|operation| format!("{} {}", operation.method, operation.path))
+        .collect()
+}
+
 /// Every route of the API description under /auth was used.
-fn every_route_was_used(tour: &Tour) -> Outcome {
-    let used = &tour.used;
-    // Every route of the API description under /auth was used.
-    let document = serde_json::to_value(openapi::document())?;
-    let mut documented = BTreeSet::new();
-    for (path, item) in document["paths"].as_object().ok_or("no paths")? {
-        if !path.starts_with("/api/v1/auth/") {
-            continue;
-        }
-        for method in ["get", "post", "put", "delete"] {
-            if item.get(method).is_some() {
-                documented.insert(format!("{} {path}", method.to_uppercase()));
-            }
-        }
-    }
-    let used = used.lock().map_err(|_| "poisoned")?.clone();
+fn every_route_was_used(tour: &Tour) -> TestResult {
+    let documented = documented_routes("/api/v1/auth/");
+    let used = tour.used.lock().map_err(|_| "poisoned")?.clone();
     assert_eq!(
         documented.difference(&used).collect::<Vec<_>>(),
         Vec::<&String>::new(),
@@ -1234,13 +1213,27 @@ fn every_route_was_used(tour: &Tour) -> Outcome {
     Ok(())
 }
 
+#[test]
+fn the_walk_over_the_routes_of_the_description_sees_every_method_including_patch() {
+    let documented = documented_routes("/api/v1/");
+    let patches: Vec<String> = operations()
+        .iter()
+        .filter(|operation| operation.method == Method::PATCH)
+        .map(|operation| format!("PATCH {}", operation.path))
+        .collect();
+    assert!(!patches.is_empty(), "the description has no PATCH route");
+    for patch in patches {
+        assert!(documented.contains(&patch), "{patch} is missed by the walk");
+    }
+}
+
 /// Every route of the sign-in family, used once the way the browser app will use it. The routes
 /// that were used are compared with the API description at the end, so a new route that no
 /// test uses fails here.
 #[tokio::test]
-async fn auth_01_every_route_of_signing_in_works_over_http() -> Outcome {
+async fn auth_01_every_route_of_signing_in_works_over_http() -> TestResult {
     each_database("auth_01_http_every_route", async |db| {
-        let (rig, app) = rig_and_app(db, 10).await?;
+        let (rig, app) = rig_and_app(db).await?;
         let used = called();
         let ada = Browser::new(&app, &used);
         let mut tour = Tour {
@@ -1261,12 +1254,10 @@ async fn auth_01_every_route_of_signing_in_works_over_http() -> Outcome {
 }
 
 #[tokio::test]
-async fn perf_02_the_invitation_list_takes_fields_cursor_and_limit_over_http() -> Outcome {
+async fn perf_02_the_invitation_list_takes_fields_cursor_and_limit_over_http() -> TestResult {
     each_database("perf_02_http_invitation_list", async |db| {
-        let (rig, app) = rig_and_app(db, 10).await?;
-        let mut ada = Browser::new(&app, &called());
-        ada.send("POST", "/api/v1/auth/setup", Some(setup_body(&rig)))
-            .await?;
+        let (rig, app) = rig_and_app(db).await?;
+        let mut ada = Browser::signed_in(&app, &rig).await?;
         for number in 0..3 {
             let reply = ada
                 .send(
@@ -1341,13 +1332,12 @@ async fn perf_02_the_invitation_list_takes_fields_cursor_and_limit_over_http() -
 
 #[tokio::test]
 async fn sec_12_a_password_alone_shows_nothing_about_the_person_until_the_second_step_is_done()
--> Outcome {
+-> TestResult {
     each_database("sec_12_http_hidden_person", async |db| {
-        let (rig, app) = rig_and_app(db, 10).await?;
+        let (rig, app) = rig_and_app(db).await?;
         let used = called();
         let mut ada = Browser::new(&app, &used);
-        ada.send("POST", "/api/v1/auth/setup", Some(setup_body(&rig)))
-            .await?;
+        ada.set_up(&rig).await?;
         ada.send(
             "POST",
             "/api/v1/auth/two-step/code-app",
@@ -1358,34 +1348,28 @@ async fn sec_12_a_password_alone_shows_nothing_about_the_person_until_the_second
             .send(
                 "POST",
                 "/api/v1/auth/two-step/code-app/confirm",
-                Some(json!({"code": totp(&rig, "ada@example.test").await?, "password": PASSWORD})),
+                Some(json!({"code": totp(&rig, ADA_EMAIL).await?, "password": PASSWORD})),
             )
             .await?;
         assert!(ok(&confirmed));
         rig.clock.advance(30);
         let mut laptop = Browser::new(&app, &used);
-        let password_only = laptop
-            .send(
-                "POST",
-                "/api/v1/auth/sign-in",
-                Some(sign_in_body("ada@example.test", PASSWORD)),
-            )
-            .await?;
+        let password_only = laptop.sign_in(ADA_EMAIL, PASSWORD).await?;
         assert_eq!(password_only.status, StatusCode::OK);
         assert_eq!(password_only.body["person"], Value::Null);
         assert!(password_only.body["second_step"].is_object());
         let shown = password_only.body.to_string();
-        for private in ["Ada Admin", "ada@example.test", "administrator"] {
+        for private in ["Ada Admin", ADA_EMAIL, "administrator"] {
             assert!(!shown.contains(private), "{private}");
         }
         let finished = laptop
             .send(
                 "POST",
                 "/api/v1/auth/second-step",
-                Some(json!({"code": totp(&rig, "ada@example.test").await?})),
+                Some(json!({"code": totp(&rig, ADA_EMAIL).await?})),
             )
             .await?;
-        assert_eq!(finished.body["person"]["email"], "ada@example.test");
+        assert_eq!(finished.body["person"]["email"], ADA_EMAIL);
         assert_eq!(finished.body["second_step"], Value::Null);
         Ok(())
     })
@@ -1393,12 +1377,10 @@ async fn sec_12_a_password_alone_shows_nothing_about_the_person_until_the_second
 }
 
 #[tokio::test]
-async fn perf_02_the_lists_with_a_hard_cap_say_whether_they_were_cut() -> Outcome {
+async fn perf_02_the_lists_with_a_hard_cap_say_whether_they_were_cut() -> TestResult {
     each_database("perf_02_http_capped_lists", async |db| {
-        let (rig, app) = rig_and_app(db, 10).await?;
-        let mut ada = Browser::new(&app, &called());
-        ada.send("POST", "/api/v1/auth/setup", Some(setup_body(&rig)))
-            .await?;
+        let (rig, app) = rig_and_app(db).await?;
+        let mut ada = Browser::signed_in(&app, &rig).await?;
         let sessions = ada.send("GET", "/api/v1/auth/sessions", None).await?;
         assert_eq!(sessions.body["truncated"], false);
         let two_step = ada.send("GET", "/api/v1/auth/two-step", None).await?;

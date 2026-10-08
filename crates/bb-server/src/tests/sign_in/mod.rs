@@ -18,7 +18,7 @@ mod access_screens;
 mod access_screens_review;
 mod assignments_http;
 mod caching;
-mod http;
+pub(crate) mod http;
 mod invitations;
 mod lists;
 // The permission matrix (SEC-MATRIX, WP-10) lives in `tests/matrix` and uses the server and the
@@ -37,7 +37,7 @@ mod projects;
 mod projects_agree;
 mod projects_http;
 mod projects_review;
-mod rig;
+pub(crate) mod rig;
 mod roles_http;
 mod second_step;
 mod second_step_by_role;

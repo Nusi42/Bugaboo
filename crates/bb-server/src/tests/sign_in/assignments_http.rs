@@ -3,11 +3,10 @@
 //! above, *No access*, who is told what, and the last administrator.
 
 use axum::http::StatusCode;
-use bb_testing::each_database;
+use bb_testing::{Failure, TestResult, each_database};
 use serde_json::json;
 
 use super::people_http::start;
-use super::rig::Outcome;
 
 /// The short names of the projects in a list, in the order they come.
 fn short_names(list: &serde_json::Value) -> Vec<&str> {
@@ -21,7 +20,7 @@ fn short_names(list: &serde_json::Value) -> Vec<&str> {
 
 #[tokio::test]
 async fn sec_02_people_and_groups_get_roles_on_the_whole_organization_a_project_or_a_project_and_its_sub_projects()
--> Outcome {
+-> TestResult {
     each_database("sec_02_http_where_it_counts", async |db| {
         let mut org = start(db).await?;
         let viewer = org.role_named("Viewer").await?;
@@ -81,7 +80,7 @@ async fn sec_02_people_and_groups_get_roles_on_the_whole_organization_a_project_
         )
         .await?;
 
-        let sees = async |person: &mut super::http::Browser, search: &str| -> Result<bool, super::http::Failure> {
+        let sees = async |person: &mut super::http::Browser, search: &str| -> Result<bool, Failure> {
             let list = person
                 .send("GET", &format!("/api/v1/projects?search={search}"), None)
                 .await?;
@@ -111,7 +110,7 @@ async fn sec_02_people_and_groups_get_roles_on_the_whole_organization_a_project_
 }
 
 #[tokio::test]
-async fn sec_02_the_rows_of_a_place_say_where_they_count() -> Outcome {
+async fn sec_02_the_rows_of_a_place_say_where_they_count() -> TestResult {
     each_database("sec_02_http_rows_say_where", async |db| {
         let mut org = start(db).await?;
         let viewer = org.role_named("Viewer").await?;
@@ -180,7 +179,7 @@ async fn sec_02_the_rows_of_a_place_say_where_they_count() -> Outcome {
 
 #[tokio::test]
 async fn sec_03_a_row_from_above_is_listed_as_inherited_and_a_no_access_below_it_hides_the_project()
--> Outcome {
+-> TestResult {
     each_database("sec_03_http_inherited_and_no_access", async |db| {
         let mut org = start(db).await?;
         let viewer = org.role_named("Viewer").await?;
@@ -264,7 +263,7 @@ async fn sec_03_a_row_from_above_is_listed_as_inherited_and_a_no_access_below_it
 }
 
 #[tokio::test]
-async fn sec_08_nobody_removes_the_last_way_to_manage_roles_over_http() -> Outcome {
+async fn sec_08_nobody_removes_the_last_way_to_manage_roles_over_http() -> TestResult {
     each_database("sec_08_http_last_administrator", async |db| {
         let mut org = start(db).await?;
         let rows = org.ada.send("GET", "/api/v1/assignments", None).await?;
@@ -299,7 +298,7 @@ async fn sec_08_nobody_removes_the_last_way_to_manage_roles_over_http() -> Outco
 }
 
 #[tokio::test]
-async fn priv_13_used_by_counts_only_what_the_viewer_may_see() -> Outcome {
+async fn priv_13_used_by_counts_only_what_the_viewer_may_see() -> TestResult {
     each_database("priv_13_http_used_by", async |db| {
         let mut org = start(db).await?;
         let acme = org
@@ -378,7 +377,7 @@ async fn priv_13_used_by_counts_only_what_the_viewer_may_see() -> Outcome {
 }
 
 #[tokio::test]
-async fn sec_02_a_project_lead_decides_who_has_which_role_only_in_their_projects() -> Outcome {
+async fn sec_02_a_project_lead_decides_who_has_which_role_only_in_their_projects() -> TestResult {
     each_database("sec_02_http_project_lead", async |db| {
         let mut org = start(db).await?;
         let lead_role = org.role_named("Project lead").await?;
@@ -454,7 +453,7 @@ async fn sec_02_a_project_lead_decides_who_has_which_role_only_in_their_projects
 }
 
 #[tokio::test]
-async fn sec_02_the_choices_of_the_form_are_by_name_and_walk_page_by_page() -> Outcome {
+async fn sec_02_the_choices_of_the_form_are_by_name_and_walk_page_by_page() -> TestResult {
     each_database("sec_02_http_choices", async |db| {
         let mut org = start(db).await?;
         for (name, email) in [
@@ -536,7 +535,7 @@ fn names_in(list: &serde_json::Value) -> Vec<&str> {
 }
 
 #[tokio::test]
-async fn sec_02_the_choices_of_roles_hold_only_the_roles_the_person_may_give() -> Outcome {
+async fn sec_02_the_choices_of_roles_hold_only_the_roles_the_person_may_give() -> TestResult {
     each_database("sec_02_http_role_choices", async |db| {
         let mut org = start(db).await?;
         let (mut cleo, cleo_id) = org.person("Cleo Coder", "cleo@example.test").await?;
@@ -591,7 +590,7 @@ async fn sec_02_the_choices_of_roles_hold_only_the_roles_the_person_may_give() -
 }
 
 #[tokio::test]
-async fn sec_03_the_rows_of_a_place_are_listed_a_page_at_a_time() -> Outcome {
+async fn sec_03_the_rows_of_a_place_are_listed_a_page_at_a_time() -> TestResult {
     each_database("sec_03_http_rows_paging", async |db| {
         let mut org = start(db).await?;
         let viewer = org.role_named("Viewer").await?;

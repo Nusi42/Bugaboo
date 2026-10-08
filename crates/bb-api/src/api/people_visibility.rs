@@ -46,7 +46,6 @@ pub(crate) struct PeopleCellPath {
     path = "/api/v1/people-visibility",
     operation_id = "getPeopleVisibility",
     tag = "access",
-    extensions(("x-never-stored" = json!(true))),
     params(PlaceParams),
     responses((status = 200, description = "How roles see people.", body = LevelTableBody<PeopleKind, PeopleLevel>), NotSignedInAnswer, ForbiddenAnswer, NotFoundAnswer)
 )]

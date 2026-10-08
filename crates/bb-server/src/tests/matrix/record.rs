@@ -6,22 +6,25 @@
 //! fails there even before the tests run. To write the file again after adding a route or an
 //! actor: `BB_SEC_MATRIX_RECORD=write cargo xtask db run -- cargo test -p bb-server sec_01_every_route`.
 
+use bb_testing::Failure;
 use std::collections::BTreeMap;
 use std::fmt::Write as _;
 
-use super::actors::Actor;
-use super::routes::{Expect, Route};
-use crate::sign_in_tests::http::Failure;
+use bb_api::openapi::Operation;
+use bb_api_words::sec_matrix as words;
 
-/// The file, from the folder of this crate.
-const FILE: &str = "../../tools/checks/sec-matrix-record.txt";
+use super::actors::Actor;
+use super::routes::Expect;
+
+/// The root of the repository, from the folder of this crate.
+const REPOSITORY_ROOT: &str = "../..";
 /// Set to `write` to write the file instead of comparing with it.
 const WRITE_VARIABLE: &str = "BB_SEC_MATRIX_RECORD";
 
 /// What ran.
 pub(super) struct Record {
     actors: Vec<String>,
-    routes: BTreeMap<String, (Route, Vec<(String, Expect)>)>,
+    routes: BTreeMap<String, (Operation, Vec<(String, Expect)>)>,
 }
 
 impl Record {
@@ -33,9 +36,9 @@ impl Record {
     }
 
     /// An actor ran a route and the server answered as `expected`.
-    pub(super) fn ran(&mut self, route: &Route, actor: Actor, expected: Expect) {
+    pub(super) fn ran(&mut self, route: &Operation, actor: Actor, expected: Expect) {
         self.routes
-            .entry(route.operation.clone())
+            .entry(route.id.clone())
             .or_insert_with(|| (route.clone(), Vec::new()))
             .1
             .push((actor.name(), expected));
@@ -59,10 +62,10 @@ impl Record {
             let _ = writeln!(
                 text,
                 "route {} {} {} {} : {}",
-                route.operation,
+                route.id,
                 route.method,
                 route.path,
-                route.declared,
+                route.needs.key(),
                 answers.join(" ")
             );
         }
@@ -74,14 +77,17 @@ impl Record {
     /// # Errors
     /// The file is missing, or differs from what ran.
     pub(super) fn matches_the_repository(&self) -> Result<(), Failure> {
-        let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join(FILE);
+        let file = words::RECORD_PATH;
+        let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join(REPOSITORY_ROOT)
+            .join(file);
         let text = self.text();
         if std::env::var(WRITE_VARIABLE).as_deref() == Ok("write") {
             std::fs::write(&path, &text)?;
             return Ok(());
         }
         let stored = std::fs::read_to_string(&path)
-            .map_err(|error| format!("could not read the record {FILE}: {error}"))?
+            .map_err(|error| format!("could not read the record {file}: {error}"))?
             .replace("\r\n", "\n");
         if stored == text {
             return Ok(());
@@ -101,7 +107,7 @@ impl Record {
             },
         );
         Err(format!(
-            "the record {FILE} differs from what the matrix ran ({place}). Write it again with \
+            "the record {file} differs from what the matrix ran ({place}). Write it again with \
              {WRITE_VARIABLE}=write."
         )
         .into())
@@ -111,26 +117,29 @@ impl Record {
 /// How an answer is written in the record.
 const fn word(expected: Expect) -> &'static str {
     match expected {
-        Expect::Allowed => "allowed",
-        Expect::NotSignedIn => "not-signed-in",
-        Expect::Forbidden => "forbidden",
-        Expect::NotFound => "not-found",
-        Expect::NotForKeys => "not-for-keys",
+        Expect::Allowed => words::ALLOWED,
+        Expect::NotSignedIn => words::NOT_SIGNED_IN,
+        Expect::Forbidden => words::FORBIDDEN,
+        Expect::NotFound => words::NOT_FOUND,
+        Expect::NotForKeys => words::NOT_FOR_KEYS,
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use bb_app::access::StartingRole;
+    use axum::http::Method;
+    use bb_api::permissions::{Answer, Declared};
+    use bb_app::access::{Permission, StartingRole};
 
     use super::*;
 
-    fn route(operation: &str) -> Route {
-        Route {
-            operation: operation.to_owned(),
-            method: "GET".to_owned(),
+    fn route(operation: &str) -> Operation {
+        Operation {
+            id: operation.to_owned(),
+            method: Method::GET,
             path: "/api/v1/x".to_owned(),
-            declared: "see-projects".to_owned(),
+            needs: Declared::Permission(Permission::SeeProjects),
+            kind: Answer::Ordinary,
         }
     }
 

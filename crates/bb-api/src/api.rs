@@ -201,16 +201,17 @@ pub(crate) fn rules(router: Router, limits: Arc<Limits>, auth: AuthHandle) -> Ro
         .layer(from_fn(errors::add_request_id))
 }
 
-/// Refuses a request that changes something (any method but GET, HEAD and OPTIONS) below `/api`
+/// Whether a request with this method changes something: any method but GET, HEAD and OPTIONS.
+pub(crate) fn changes(method: &Method) -> bool {
+    !matches!(*method, Method::GET | Method::HEAD | Method::OPTIONS)
+}
+
+/// Refuses a request that changes something (see [`changes`]) below `/api`
 /// unless it comes from the server's own origin: `Origin` names the same host as `Host`, or, when
 /// the browser sent no `Origin`, `Sec-Fetch-Site` is `same-origin`. With neither the request is
 /// refused (fail closed). This is the second layer after `SameSite` cookies and the CSRF token.
 async fn origin_check(request: Request, next: Next) -> Response {
-    let unsafe_method = !matches!(
-        *request.method(),
-        Method::GET | Method::HEAD | Method::OPTIONS
-    );
-    if unsafe_method
+    if changes(request.method())
         && is_api(request.uri().path())
         && !is_key_request(request.headers())
         && !is_same_origin(&request)

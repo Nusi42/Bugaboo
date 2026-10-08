@@ -20,6 +20,7 @@ bugaboo/
 │   ├── bb-notify/          in-app, e-mail and webhook delivery
 │   ├── bb-jobs/            background job runner and schedules
 │   ├── bb-api/             HTTP: routes, OpenAPI, security headers, rate limits, static app
+│   ├── bb-api-words/       the words of the API description that code, tests and checks share (no dependencies)
 │   ├── bb-wasm/            WebAssembly bindings for searchlang, markdown, validation
 │   ├── bb-testing/         test harness: runs one test body on SQLite and PostgreSQL (dev dependency only)
 │   ├── bb-sample/          sample-organization generator, developer tool (not shipped before OPS-12)
@@ -45,6 +46,7 @@ bugaboo/
 flowchart TB
   server["bb-server<br/>binary, wiring"]
   api["bb-api<br/>HTTP + OpenAPI"]
+  words["bb-api-words<br/>shared API words"]
   mcp["bb-mcp"]
   app["bb-app<br/>use cases + ports"]
   policy["bb-policy"]
@@ -63,7 +65,7 @@ flowchart TB
   sample["bb-sample<br/>sample organization"]
 
   server --> api & jobs & store & files & ai & notify & auth & app & core
-  api --> app & auth & mcp & core & policy
+  api --> app & auth & mcp & core & policy & words
   mcp --> app & ai
   jobs --> app
   app --> policy & core & search & md & auth
@@ -77,6 +79,7 @@ flowchart TB
   store --> search & policy & core
   wasm --> search & md
   store -. tests only .-> testing
+  server -. tests only .-> words
   sample --> app & store & core & policy & auth
 ```
 
@@ -87,6 +90,7 @@ flowchart TB
 3. Only `bb-policy` can create `Authorized<T>`. Its constructor is private to the crate.
 4. Only `bb-api` and `bb-mcp` speak HTTP. Only `bb-server` wires adapters to ports, and from M2 WP-06 on also the developer program `bb-sample` (`cargo xtask check only ARCH-HTTP-EDGE`).
 5. The browser app talks to the server only through `@bugaboo/api-client` (`cargo xtask check only ARCH-WEB-API`), and has no hand-written types for what the server sends (`LINT-API-TYPES`).
+6. A crate may name itself as a dev-dependency to switch on its own `testing` feature for its integration tests (`bb-api` does, for `Options::for_tests`); that is no edge between two crates (`cargo xtask check only ARCH-DEPS`).
 
 ## The core modules
 
@@ -137,7 +141,11 @@ Test-support crate, used only as a **dev dependency** (`[dev-dependencies]`) and
 
 ### bb-api
 
-axum router; extractors that turn a session cookie, access key or OAuth token into an **actor**; CSRF and origin checks; security headers and CSP; rate limits (`limits`); the one cookie module (`cookies`); `?fields=` projections; cursor pagination; ETags; problem+json errors (`errors`: `ApiError`, `ApiJson`); OpenAPI generation from the handlers' `#[utoipa::path]` descriptions (`openapi`, served at `/api/v1/openapi.json`, printed by `bugaboo openapi`, written to `web/packages/api-client/openapi.json` by `cargo xtask gen api`); the embedded static app.
+axum router; extractors that turn a session cookie, access key or OAuth token into an **actor**; CSRF and origin checks; security headers and CSP; rate limits (`limits`); the one cookie module (`cookies`); `?fields=` projections; cursor pagination; ETags; problem+json errors (`errors`: `ApiError`, `ApiJson`); the one route table (`permissions::ROUTES`: what each route needs, whether its answer may be kept, is never stored or is a secret; it writes the marks `x-permission`, `x-never-stored` and `x-secret`, and it decides which changes are open without a CSRF token); OpenAPI generation from the handlers' `#[utoipa::path]` descriptions (`openapi`, served at `/api/v1/openapi.json`, printed by `bugaboo openapi`, written to `web/packages/api-client/openapi.json` by `cargo xtask gen api`); the embedded static app.
+
+### bb-api-words
+
+The words of the API description that more than one program needs, written once: the marks `bb-api` puts on a route (`x-permission`, `x-never-stored`, `x-secret`), the three words for a route that needs no permission of the catalogue (`public`, `signed-in`, `own-account`), and the actor and answer names of the permission matrix (SEC-MATRIX). It has no dependencies and does no work, so `bb-api` (writes the words), the server tests (read them) and `xtask` (its checks read the generated description) can import it. The table that says which route gets which mark is `bb-api`'s `permissions::ROUTES`.
 
 ### bb-ai and bb-mcp
 
@@ -145,7 +153,7 @@ One **tool registry** (search issues, get issue, create, change status, comment,
 
 ### bb-sample
 
-The sample-organization generator (architecture §11): a library and a small program that `cargo xtask dataset sample` runs as a process, so `xtask` keeps depending on no product crate. It makes the organization through the same use cases the API calls, deterministic from a seed, on SQLite and PostgreSQL. It is a developer tool: not linked into `bugaboo` until *Try it out* (OPS-12), and never shipped before then.
+The sample-organization generator (architecture §11): a library and a small program that `cargo xtask dataset sample` runs as a process, so `xtask` does not link the store or the use cases (it imports only `bb-api-words` and `bb-policy`, for the names its checks hold the code against). It makes the organization through the same use cases the API calls, deterministic from a seed, on SQLite and PostgreSQL. It is a developer tool: not linked into `bugaboo` until *Try it out* (OPS-12), and never shipped before then.
 
 - **May depend on:** `bb-app`, `bb-store`, `bb-core`, `bb-policy`, `bb-auth` (and `bb-testing` as a dev dependency only). Nothing depends on it except, from OPS-12 on, `bb-server`.
 - **It wires an adapter:** like `bb-server`, it builds the store and hands it to the use cases, so dependency rule 4 names it as the second crate that may wire adapters to ports; ARCH-HTTP-EDGE's list of wiring crates (`bb-server`, `bb-sample`) is in `xtask/src/checks/arch_http_edge.rs`.

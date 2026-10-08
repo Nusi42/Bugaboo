@@ -15,6 +15,8 @@
 
 use std::collections::BTreeSet;
 
+use bb_api::permissions::Declared;
+use bb_api_words::sec_matrix as words;
 use bb_app::access::{Permission, StartingRole};
 
 /// The projects of the matrix.
@@ -87,8 +89,11 @@ impl Actor {
     pub(super) const WITH_A_KEY: [Self; 2] = [Self::KeySeeOnly, Self::KeyForAnotherProject];
 
     /// The actor that holds exactly what a route declares.
-    pub(super) fn exactly(declared: &str) -> Self {
-        Self::Exactly(Permission::from_code(declared))
+    pub(super) const fn exactly(declared: Declared) -> Self {
+        match declared {
+            Declared::Permission(permission) => Self::Exactly(Some(permission)),
+            Declared::Public | Declared::SignedIn | Declared::OwnAccount => Self::Exactly(None),
+        }
     }
 
     /// What tells the actors apart, also the ones that share a name in the record.
@@ -103,16 +108,16 @@ impl Actor {
     /// The name in the record of what the matrix covered.
     pub(super) fn name(self) -> String {
         match self {
-            Self::Exactly(_) => "exactly-the-permission".to_owned(),
-            Self::Nobody => "nobody".to_owned(),
-            Self::NoRole => "no-role".to_owned(),
-            Self::Role(role) => format!("role-{}", role.key()),
-            Self::LeadOnParent => "lead-on-parent".to_owned(),
-            Self::LeadOnSiblingOnly => "lead-on-sibling-only".to_owned(),
-            Self::NoAccessOnTarget => "no-access-on-target".to_owned(),
-            Self::NoAccessUnderLead => "no-access-under-lead".to_owned(),
-            Self::KeySeeOnly => "key-see-only".to_owned(),
-            Self::KeyForAnotherProject => "key-for-another-project".to_owned(),
+            Self::Exactly(_) => words::EXACTLY_THE_PERMISSION.to_owned(),
+            Self::Nobody => words::NOBODY.to_owned(),
+            Self::NoRole => words::NO_ROLE.to_owned(),
+            Self::Role(role) => words::role_actor(role.key()),
+            Self::LeadOnParent => words::LEAD_ON_PARENT.to_owned(),
+            Self::LeadOnSiblingOnly => words::LEAD_ON_SIBLING_ONLY.to_owned(),
+            Self::NoAccessOnTarget => words::NO_ACCESS_ON_TARGET.to_owned(),
+            Self::NoAccessUnderLead => words::NO_ACCESS_UNDER_LEAD.to_owned(),
+            Self::KeySeeOnly => words::KEY_SEE_ONLY.to_owned(),
+            Self::KeyForAnotherProject => words::KEY_FOR_ANOTHER_PROJECT.to_owned(),
         }
     }
 
@@ -371,6 +376,23 @@ mod tests {
             assert!(actors().contains(&keyed));
             assert!(keyed.has_a_key() && names.contains(&keyed.name()));
         }
+    }
+
+    #[test]
+    fn the_actors_are_the_ones_the_words_crate_names() {
+        let names: BTreeSet<String> = actors()
+            .into_iter()
+            .chain([Actor::Exactly(None)])
+            .map(Actor::name)
+            .collect();
+        let roles = StartingRole::ALL.map(|role| words::role_actor(role.key()));
+        let expected: BTreeSet<String> = words::FIXED_ACTORS
+            .iter()
+            .chain(&words::KEY_ACTORS)
+            .map(|name| (*name).to_owned())
+            .chain(roles)
+            .collect();
+        assert_eq!(names, expected);
     }
 
     #[test]

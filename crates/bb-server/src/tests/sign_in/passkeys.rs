@@ -11,14 +11,13 @@ use bb_app::auth::{
 use bb_core::ErrorCode;
 use bb_core::id::UserId;
 use bb_core::sign_in::SecurityAction;
-use bb_testing::each_database;
+use bb_testing::{Failure, TestResult, each_database};
 use serde_json::Value;
 use webauthn_authenticator_rs::prelude::{Url, WebauthnAuthenticator as _};
 use webauthn_authenticator_rs::softpasskey::SoftPasskey;
 
-use super::rig::{Outcome, PASSWORD, PUBLIC_URL, Rig, refused};
-
-type Failure = Box<dyn std::error::Error + Send + Sync>;
+use super::http::ADA_EMAIL;
+use super::rig::{PASSWORD, PUBLIC_URL, Rig, refused, refused_boxed};
 
 fn origin() -> Result<Url, Failure> {
     Ok(Url::parse(PUBLIC_URL)?)
@@ -111,10 +110,10 @@ async fn bobs_device(rig: &Rig, admin_session: &str) -> Result<(SoftPasskey, Vec
 }
 
 #[tokio::test]
-async fn auth_02_a_passkey_is_added_listed_and_removed_with_the_password() -> Outcome {
+async fn auth_02_a_passkey_is_added_listed_and_removed_with_the_password() -> TestResult {
     each_database("auth_02_manage_passkeys", async |db| {
-        let rig = Rig::start(db, 10).await?;
-        let admin = rig.admin("ada@example.test").await?;
+        let rig = Rig::start(db).await?;
+        let admin = rig.admin(ADA_EMAIL).await?;
         let session = admin.session_token.as_str();
         let mut laptop = SoftPasskey::new(true);
         let added = add(&rig, session, &mut laptop, "  Work laptop ").await?;
@@ -135,15 +134,11 @@ async fn auth_02_a_passkey_is_added_listed_and_removed_with_the_password() -> Ou
         // A name that is empty or too long is refused.
         for label in ["", "   ", &"x".repeat(65)] {
             let result = add(&rig, session, &mut SoftPasskey::new(true), label).await;
-            let code = result.err().and_then(|error| {
-                error
-                    .downcast_ref::<bb_app::auth::AppError>()
-                    .and_then(|error| match error {
-                        bb_app::auth::AppError::Refused(code) => Some(*code),
-                        _ => None,
-                    })
-            });
-            assert_eq!(code, Some(ErrorCode::InvalidRequest), "{label:?}");
+            assert_eq!(
+                refused_boxed(result),
+                Some(ErrorCode::InvalidRequest),
+                "{label:?}"
+            );
         }
 
         let remove = |password: &str, id| {
@@ -188,15 +183,15 @@ async fn auth_02_a_passkey_is_added_listed_and_removed_with_the_password() -> Ou
 }
 
 #[tokio::test]
-async fn auth_02_a_passkey_finishes_signing_in_after_the_password() -> Outcome {
+async fn auth_02_a_passkey_finishes_signing_in_after_the_password() -> TestResult {
     each_database("auth_02_passkey_second_step", async |db| {
-        let rig = Rig::start(db, 10).await?;
-        let admin = rig.admin("ada@example.test").await?;
+        let rig = Rig::start(db).await?;
+        let admin = rig.admin(ADA_EMAIL).await?;
         let mut laptop = SoftPasskey::new(true);
         add(&rig, &admin.session_token, &mut laptop, "Laptop").await?;
         let (mut stranger, strangers_id) = bobs_device(&rig, &admin.session_token).await?;
 
-        let pending = rig.sign_in("ada@example.test", PASSWORD).await?;
+        let pending = rig.sign_in(ADA_EMAIL, PASSWORD).await?;
         let methods = pending
             .second_step_needed
             .ok_or("a second step is needed")?;
@@ -281,10 +276,10 @@ async fn auth_02_a_passkey_finishes_signing_in_after_the_password() -> Outcome {
 }
 
 #[tokio::test]
-async fn auth_02_a_passkey_signs_in_on_its_own() -> Outcome {
+async fn auth_02_a_passkey_signs_in_on_its_own() -> TestResult {
     each_database("auth_02_passkey_alone", async |db| {
-        let rig = Rig::start(db, 10).await?;
-        let admin = rig.admin("ada@example.test").await?;
+        let rig = Rig::start(db).await?;
+        let admin = rig.admin(ADA_EMAIL).await?;
         let person = admin.person.id;
         let mut laptop = SoftPasskey::new(true);
         add(&rig, &admin.session_token, &mut laptop, "Laptop").await?;
@@ -372,9 +367,9 @@ async fn auth_02_a_passkey_signs_in_on_its_own() -> Outcome {
 }
 
 #[tokio::test]
-async fn auth_02_without_a_host_name_in_the_public_address_passkeys_are_off() -> Outcome {
+async fn auth_02_without_a_host_name_in_the_public_address_passkeys_are_off() -> TestResult {
     each_database("auth_02_passkeys_off", async |db| {
-        let rig = Rig::start_with(db, 10, false).await?;
+        let rig = Rig::start_without_passkeys(db).await?;
         let status = rig.api().status(Rig::info(), StatusQuery).await?;
         assert!(!status.passkeys_available);
         let options = rig
@@ -382,7 +377,7 @@ async fn auth_02_without_a_host_name_in_the_public_address_passkeys_are_off() ->
             .passkey_sign_in_options(Rig::info(), PasskeySignInQuery)
             .await;
         assert_eq!(refused(options), Some(ErrorCode::PasskeyRejected));
-        let admin = rig.admin("ada@example.test").await?;
+        let admin = rig.admin(ADA_EMAIL).await?;
         let registration = rig
             .api()
             .passkey_registration_options(
@@ -400,10 +395,10 @@ async fn auth_02_without_a_host_name_in_the_public_address_passkeys_are_off() ->
 }
 
 #[tokio::test]
-async fn sec_12_a_stolen_session_cannot_add_a_passkey_without_the_password() -> Outcome {
+async fn sec_12_a_stolen_session_cannot_add_a_passkey_without_the_password() -> TestResult {
     each_database("sec_12_passkey_needs_password", async |db| {
-        let rig = Rig::start(db, 10).await?;
-        let admin = rig.admin("ada@example.test").await?;
+        let rig = Rig::start(db).await?;
+        let admin = rig.admin(ADA_EMAIL).await?;
         let stolen = admin.session_token.clone();
         let options = |password: &str| {
             rig.api().passkey_registration_options(
