@@ -145,9 +145,12 @@ fn choice_values(item: &syn::ItemConst) -> Option<Vec<String>> {
         .collect()
 }
 
+/// The lists of choices by the name of the constant that holds them.
+type ChoiceLists = BTreeMap<String, Vec<String>>;
+
 /// The settings of the registry in the order of the file, and the lists of choices by name. The
 /// settings that exist only for tests (`pub mod for_tests`) are left out.
-fn read_registry(text: &str) -> anyhow::Result<(Vec<SettingDecl>, BTreeMap<String, Vec<String>>)> {
+fn read_registry(text: &str) -> anyhow::Result<(Vec<SettingDecl>, ChoiceLists)> {
     let file = syn::parse_file(text).with_context(|| format!("{CATALOG_PATH} is not Rust"))?;
     let mut settings = Vec::new();
     let mut lists = BTreeMap::new();
