@@ -485,7 +485,7 @@ impl<S: AuthStore> Ctx<'_, S> {
                 Box::pin(async move { S::delete_session(transaction, id).await.map(|_| ()) })
             })
             .await
-            .map_err(|error| change_failed::<S>(&error, None))?;
+            .map_err(|error| change_failed::<S>(&error, Stops::NONE))?;
         // Forgotten only now: when the sign-in could not be ended, the next try counts on.
         self.services.limiter.forget(&key);
         self.note(
@@ -714,19 +714,52 @@ pub(crate) fn internal<S: AuthStore>(error: &S::Error) -> AppError {
     AppError::Internal(S::describe(error))
 }
 
-/// The answer for a change that failed. A change that stopped itself (a check inside the
-/// transaction failed) or hit a duplicate key (two people at once) is told apart by the caller
-/// through `refused`; everything else is an internal failure.
-pub(crate) fn change_failed<S: AuthStore>(
-    error: &S::Error,
-    refused: Option<ErrorCode>,
-) -> AppError {
-    if let Some(code) = refused
-        && (S::is_aborted(error) || S::is_duplicate(error))
-    {
-        return AppError::Refused(code);
+/// What a change that did not go through says when it stopped itself (a check inside the
+/// transaction failed) and when it hit a duplicate key (two people at once). A rule of the policy
+/// engine that stopped it needs no word here: it answers for itself.
+#[derive(Clone, Copy, Debug)]
+pub(crate) struct Stops {
+    aborted: Option<ErrorCode>,
+    duplicate: Option<ErrorCode>,
+}
+
+impl Stops {
+    /// The change cannot stop itself or hit a duplicate: either is an internal failure.
+    pub(crate) const NONE: Self = Self {
+        aborted: None,
+        duplicate: None,
+    };
+
+    /// What a change that stopped itself says, and what one that hit a duplicate key says.
+    pub(crate) const fn new(aborted: ErrorCode, duplicate: ErrorCode) -> Self {
+        Self {
+            aborted: Some(aborted),
+            duplicate: Some(duplicate),
+        }
     }
-    internal::<S>(error)
+
+    /// Both say the same.
+    pub(crate) const fn both(code: ErrorCode) -> Self {
+        Self::new(code, code)
+    }
+}
+
+/// The answer for a change that failed: the rule of the policy engine that refused it, what
+/// `stops` says for a change that stopped itself or hit a duplicate key, and for anything else an
+/// internal failure (the cause goes to the log). The one place that reads the kinds of failure of
+/// a change.
+pub(crate) fn change_failed<S: AuthStore>(error: &S::Error, stops: Stops) -> AppError {
+    if let Some(refusal) = S::as_refusal(error) {
+        return refusal.into();
+    }
+    let code = if S::is_aborted(error) {
+        stops.aborted
+    } else if S::is_duplicate(error) {
+        stops.duplicate
+    } else {
+        None
+    };
+    code.map_or_else(|| internal::<S>(error), AppError::Refused)
 }
 
 /// The record `id` of a kind, for events and the security log.

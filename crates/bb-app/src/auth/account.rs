@@ -14,7 +14,7 @@ use serde_json::json;
 use zeroize::Zeroizing;
 
 use super::ctx::{
-    AppError, Ctx, by, change_failed, changed, entity, fixed_entity, internal, set_to,
+    AppError, Ctx, Stops, by, change_failed, changed, entity, fixed_entity, internal, set_to,
 };
 use super::store::AuthStore;
 use super::types::{
@@ -90,7 +90,7 @@ pub async fn issue_setup_code<S: AuthStore>(
             })
         })
         .await
-        .map_err(|error| change_failed::<S>(&error, None))?;
+        .map_err(|error| change_failed::<S>(&error, Stops::NONE))?;
     Ok(code)
 }
 
@@ -181,7 +181,7 @@ pub async fn complete_setup<S: AuthStore>(
             })
         })
         .await
-        .map_err(|error| change_failed::<S>(&error, Some(ErrorCode::WrongSetupCode)))?;
+        .map_err(|error| change_failed::<S>(&error, Stops::both(ErrorCode::WrongSetupCode)))?;
     // The code is dead from here on: the file that holds it goes now, not at the next start. The
     // start-up clean-up stays as a safety net for a file that cannot be removed now.
     if let Some(file) = &ctx.services.setup_code_file
@@ -251,7 +251,7 @@ pub async fn sign_up<S: AuthStore>(ctx: &Ctx<'_, S>, input: SignUp) -> Result<St
         })
         .await;
     if let Err(error) = result {
-        let error = change_failed::<S>(&error, Some(ErrorCode::SignUpRefused));
+        let error = change_failed::<S>(&error, Stops::both(ErrorCode::SignUpRefused));
         if matches!(error, AppError::Refused(_)) {
             ctx.note(SecurityAction::SignUpRefused, None, None).await;
         }
@@ -333,7 +333,7 @@ pub async fn accept_invitation<S: AuthStore>(
         })
         .await;
     if let Err(error) = result {
-        let error = change_failed::<S>(&error, Some(ErrorCode::InvitationInvalid));
+        let error = change_failed::<S>(&error, Stops::both(ErrorCode::InvitationInvalid));
         if matches!(error, AppError::Refused(_)) {
             ctx.note(SecurityAction::InvitationRefused, None, None)
                 .await;
@@ -385,7 +385,7 @@ pub async fn change_password<S: AuthStore>(
             })
         })
         .await
-        .map_err(|error| change_failed::<S>(&error, None))?;
+        .map_err(|error| change_failed::<S>(&error, Stops::NONE))?;
     ctx.note(SecurityAction::PasswordChanged, Some(person.id), None)
         .await;
     ctx.started(&new, &person, &settings, None)

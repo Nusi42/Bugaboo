@@ -9,8 +9,8 @@ use bb_core::fields::Field;
 use bb_core::id::{AssignmentId, GroupId, ProjectId, RoleId, SequentialIds, UserId};
 use bb_core::people_kinds::PeopleKind;
 use bb_policy::{
-    Choice, Evaluation, FieldRule, Inputs, Kind, Narrowing, PeopleRule, Permission, Place, Reason,
-    RoleData, Row, Who, evaluate,
+    Choice, Evaluation, FieldRule, Inputs, Kind, LevelRules, Narrowing, PeopleRule, Permission,
+    Place, Reason, RoleData, Row, Who, evaluate,
 };
 use proptest::prelude::*;
 
@@ -178,34 +178,35 @@ fn inputs(tree: &Tree, spec: &Spec, extra: Option<&RowSpec>) -> Inputs {
             two_step: false,
         })
         .collect();
-    let field_rules = spec
-        .rules
-        .iter()
-        .map(|rule| FieldRule {
-            project: rule.project.map(|at| tree.projects[at]),
-            role: tree.roles[rule.role],
-            field: Field::ALL[rule.field],
-            level: FieldLevel::ALL[rule.level],
-        })
-        .collect();
-    let people_rules = spec
-        .rules
-        .iter()
-        .map(|rule| PeopleRule {
-            project: rule.project.map(|at| tree.projects[at]),
-            role: tree.roles[rule.role],
-            kind: PeopleKind::ALL[rule.field % PeopleKind::ALL.len()],
-            level: PeopleLevel::ALL[rule.level],
-        })
-        .collect();
+    let levels = LevelRules {
+        fields: spec
+            .rules
+            .iter()
+            .map(|rule| FieldRule {
+                project: rule.project.map(|at| tree.projects[at]),
+                role: tree.roles[rule.role],
+                subject: Field::ALL[rule.field],
+                level: FieldLevel::ALL[rule.level],
+            })
+            .collect(),
+        people: spec
+            .rules
+            .iter()
+            .map(|rule| PeopleRule {
+                project: rule.project.map(|at| tree.projects[at]),
+                role: tree.roles[rule.role],
+                subject: PeopleKind::ALL[rule.field % PeopleKind::ALL.len()],
+                level: PeopleLevel::ALL[rule.level],
+            })
+            .collect(),
+    };
     Inputs {
         person: tree.person,
         place,
         chain,
         rows,
         roles,
-        field_rules,
-        people_rules,
+        rules: levels,
     }
 }
 

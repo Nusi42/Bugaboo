@@ -196,7 +196,7 @@ impl Sample {
                 places.push(None);
             }
             for place in places {
-                for (field, level) in storage.field_levels(record.role.id, place).await? {
+                for (field, level) in storage.levels::<Field>(record.role.id, place).await? {
                     levels.push(DumpLevel {
                         role: record.role.name.clone(),
                         project: read.names.project(place),
@@ -205,7 +205,7 @@ impl Sample {
                         level: level.code(),
                     });
                 }
-                for (kind, level) in storage.people_levels(record.role.id, place).await? {
+                for (kind, level) in storage.levels::<PeopleKind>(record.role.id, place).await? {
                     levels.push(DumpLevel {
                         role: record.role.name.clone(),
                         project: read.names.project(place),

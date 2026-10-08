@@ -25,7 +25,7 @@ use sea_query::{Expr, ExprTrait as _, OnConflict, Order, Query};
 use crate::auth::AuthStorage;
 use crate::db::{Database, Row, Transaction, to_micros};
 use crate::error::{SettingProblem, StoreError};
-use crate::policy::chain_of;
+use crate::projects::chain_of;
 use crate::schema::{PersonSettingRow, SettingRow as Columns};
 
 /// A value to store.

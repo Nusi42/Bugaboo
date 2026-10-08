@@ -43,7 +43,7 @@ use crate::projects::{
 use crate::roles::{
     AssignRole, ChangeRole, CopyRole, DeleteRole, Given, MakeRole, RemoveAssignment, ResetRole,
     SetFieldLevel, SetPeopleLevel, Subject, assign_role, change_role, copy_role, delete_role,
-    make_role, remove_assignment, reset_role, set_field_level, set_people_level,
+    make_role, remove_assignment, reset_role, set_level,
 };
 use crate::settings::{
     ChangeSetting, LockSetting, ResetSetting, SettingsScope, change_setting, lock_setting,
@@ -926,7 +926,7 @@ pub(crate) async fn set_field_level_scenario(world: &World) -> Added {
     let role = a_role(world, "Own").await?;
     measured(
         &world.store,
-        set_field_level(
+        set_level(
             &world.ctx(),
             SetFieldLevel {
                 session_token: token(world),
@@ -944,7 +944,7 @@ pub(crate) async fn set_people_level_scenario(world: &World) -> Added {
     let role = a_role(world, "Own").await?;
     measured(
         &world.store,
-        set_people_level(
+        set_level(
             &world.ctx(),
             SetPeopleLevel {
                 session_token: token(world),

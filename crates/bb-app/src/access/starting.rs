@@ -17,7 +17,7 @@ use bb_policy::StartingRole;
 use serde_json::json;
 
 use crate::auth::{
-    AppError, AuthStore, Ctx, change_failed, changed, entity, fixed_entity, internal, set_to,
+    AppError, AuthStore, Ctx, Stops, change_failed, changed, entity, fixed_entity, internal, set_to,
 };
 
 /// Makes the starting roles if they were not made yet, and gives the people who were
@@ -145,7 +145,7 @@ pub async fn make_starting_roles<S: AuthStore>(
                 .await;
             }
             Err(error) if S::is_aborted(&error) => {}
-            Err(error) => return Err(change_failed::<S>(&error, None)),
+            Err(error) => return Err(change_failed::<S>(&error, Stops::NONE)),
         }
     }
     give_the_old_administrators_their_role(ctx).await
@@ -189,7 +189,7 @@ async fn role_of<S: AuthStore>(
             })
         })
         .await
-        .map_err(|error| change_failed::<S>(&error, None))?;
+        .map_err(|error| change_failed::<S>(&error, Stops::NONE))?;
     ctx.note(
         SecurityAction::RoleMade,
         None,
@@ -249,7 +249,7 @@ async fn give_the_old_administrators_their_role<S: AuthStore>(
                 })
             })
             .await
-            .map_err(|error| change_failed::<S>(&error, None))?;
+            .map_err(|error| change_failed::<S>(&error, Stops::NONE))?;
         ctx.note(
             SecurityAction::AssignmentMade,
             None,

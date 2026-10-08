@@ -11,8 +11,8 @@ use bb_core::fields::Field;
 use bb_core::id::{AssignmentId, RoleId};
 use bb_core::people_kinds::PeopleKind;
 use bb_policy::{
-    AccessReport, Authorized, LevelDecision, LevelSource, Masked, PeopleContext, Permission,
-    PersonRef, Place, Reason, ReasonRow, Who,
+    AccessReport, Authorized, LevelDecision, LevelSource, LevelSubject, Masked, PeopleContext,
+    Permission, PersonRef, Place, Reason, ReasonRow, Who,
 };
 use serde::Serialize;
 
@@ -240,11 +240,11 @@ impl<S: AuthStore> Ctx<'_, S> {
         })
     }
 
-    async fn level_answer<K: Copy, L: Copy>(
+    async fn level_answer<K: LevelSubject>(
         &self,
         checker: &Actor,
-        decision: &LevelDecision<K, L>,
-    ) -> Result<LevelAnswer<K, L>, AppError> {
+        decision: &LevelDecision<K>,
+    ) -> Result<LevelAnswer<K, K::Level>, AppError> {
         let mut roles = Vec::with_capacity(decision.roles.len());
         for says in &decision.roles {
             let set = match says.source {

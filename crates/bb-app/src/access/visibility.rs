@@ -12,10 +12,12 @@ use bb_core::access::{FieldLevel, PeopleLevel};
 use bb_core::fields::Field;
 use bb_core::id::{ProjectId, RoleId};
 use bb_core::people_kinds::PeopleKind;
-use bb_policy::{Authorized, LevelSource, Masked, Permission, Place, nearest_rule};
+use bb_policy::{
+    Authorized, Evaluation, LevelSource, LevelSubject, Masked, Permission, Place, level_of_role,
+};
 use serde::Serialize;
 
-use super::{Actor, LevelRules, ProjectLabel, RoleRecord};
+use super::{Actor, PlaceLevels, ProjectLabel, RoleRecord};
 use crate::auth::{AppError, AuthStore, Ctx, internal};
 use crate::roles::RoleRef;
 
@@ -98,9 +100,6 @@ pub type FieldPermissions = LevelTable<Field, FieldLevel>;
 /// *Who sees people*: kinds of people information by roles.
 pub type PeopleVisibility = LevelTable<PeopleKind, PeopleLevel>;
 
-/// One level a role has set: the role, the project (`None` for its own) and the subject.
-type Rule<K, L> = (RoleId, Option<ProjectId>, K, L);
-
 impl<S: AuthStore> Ctx<'_, S> {
     /// The roles for the columns, in the order of roles, and whether some were cut off.
     async fn columns(&self) -> Result<(Vec<RoleRecord>, bool), AppError> {
@@ -120,7 +119,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         &self,
         roles: &[RoleRecord],
         project: Option<ProjectId>,
-    ) -> Result<LevelRules, AppError> {
+    ) -> Result<PlaceLevels, AppError> {
         self.store()
             .level_rules(roles.iter().map(|record| record.role.id).collect(), project)
             .await
@@ -159,35 +158,27 @@ impl<S: AuthStore> Ctx<'_, S> {
 
     /// The table: for each subject and role the nearest level of the walk the engine makes (steps
     /// 7 and 8 of the evaluation), and where it was set.
-    async fn level_table<K: Copy + PartialEq, L: Copy>(
+    async fn level_table<K: LevelSubject>(
         &self,
         actor: &Actor,
-        wanted: Wanted<'_, K, L>,
-    ) -> Result<LevelTable<K, L>, AppError> {
+        wanted: Wanted<'_>,
+    ) -> Result<LevelTable<K, K::Level>, AppError> {
         let Wanted {
             project,
             roles,
             truncated,
-            chain,
-            rules,
-            subjects,
-            closed,
-            yours,
+            levels,
+            access,
         } = wanted;
         let mut named: Vec<(ProjectId, ProjectLabel)> = Vec::new();
-        let mut rows = Vec::with_capacity(subjects.len());
-        for (subject, yours) in subjects.iter().zip(yours) {
+        let mut rows = Vec::with_capacity(K::ALL.len());
+        for subject in K::ALL.iter().copied() {
             let mut cells = Vec::with_capacity(roles.len());
             for record in roles {
                 let role = record.role.id;
-                let found = nearest_rule(
-                    chain,
-                    rules
-                        .iter()
-                        .filter(|(of, _, known, _)| *of == role && known == subject)
-                        .map(|(_, at, _, level)| (*at, *level)),
-                );
-                let (source, level) = found.unwrap_or((LevelSource::Unset, closed));
+                let (source, level) =
+                    level_of_role(&levels.chain, levels.rules.of::<K>(), role, subject)
+                        .unwrap_or((LevelSource::Unset, K::CLOSED));
                 cells.push(LevelCell {
                     role,
                     level,
@@ -195,8 +186,8 @@ impl<S: AuthStore> Ctx<'_, S> {
                 });
             }
             rows.push(LevelRow {
-                subject: *subject,
-                yours: *yours,
+                subject,
+                yours: access.level(subject),
                 cells,
             });
         }
@@ -213,20 +204,44 @@ impl<S: AuthStore> Ctx<'_, S> {
             rows,
         })
     }
+
+    /// The table of one kind of level at a place, for the roles in the columns: what the person
+    /// who asks sees of *Decide what roles see* there.
+    async fn permissions_table<K: LevelSubject>(
+        &self,
+        actor: &Actor,
+        project: Option<ProjectId>,
+    ) -> Result<Authorized<LevelTable<K, K::Level>>, AppError> {
+        let access = self
+            .require(actor, Permission::DecideWhatRolesSee, Place::from(project))
+            .await?;
+        let (roles, truncated) = self.columns().await?;
+        let levels = self.rules_of(&roles, project).await?;
+        let table = self
+            .level_table(
+                actor,
+                Wanted {
+                    project,
+                    roles: &roles,
+                    truncated,
+                    levels: &levels,
+                    access: &access,
+                },
+            )
+            .await?;
+        Ok(access.authorize(table))
+    }
 }
 
 /// What [`Ctx::level_table`] makes a table from.
-struct Wanted<'a, K, L> {
+struct Wanted<'a> {
     project: Option<ProjectId>,
     roles: &'a [RoleRecord],
     truncated: bool,
-    /// The projects from the top down to the place.
-    chain: &'a [ProjectId],
-    rules: &'a [Rule<K, L>],
-    subjects: &'a [K],
-    closed: L,
-    /// What the person who asks may set, for each subject in the same order.
-    yours: &'a [L],
+    /// The levels the roles have set, and the projects from the top down to the place.
+    levels: &'a PlaceLevels,
+    /// The levels of the person who asks, which they may set at most.
+    access: &'a Evaluation,
 }
 
 /// The field permissions of the whole organization (the level each role has of its own) or of a
@@ -240,39 +255,7 @@ pub async fn field_permissions<S: AuthStore>(
     input: FieldPermissionsQuery,
 ) -> Result<Authorized<FieldPermissions>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
-    let access = ctx
-        .require(
-            &actor,
-            Permission::DecideWhatRolesSee,
-            Place::from(input.project),
-        )
-        .await?;
-    let (roles, truncated) = ctx.columns().await?;
-    let read = ctx.rules_of(&roles, input.project).await?;
-    let set: Vec<_> = read
-        .fields
-        .iter()
-        .map(|rule| (rule.role, rule.project, rule.field, rule.level))
-        .collect();
-    let table = ctx
-        .level_table(
-            &actor,
-            Wanted {
-                project: input.project,
-                roles: &roles,
-                truncated,
-                chain: &read.chain,
-                rules: &set,
-                subjects: Field::ALL,
-                closed: FieldLevel::Hidden,
-                yours: &Field::ALL
-                    .iter()
-                    .map(|field| access.field_level(*field))
-                    .collect::<Vec<_>>(),
-            },
-        )
-        .await?;
-    Ok(access.authorize(table))
+    ctx.permissions_table(&actor, input.project).await
 }
 
 /// *Who sees people* of the whole organization (the level each role has of its own) or of a
@@ -285,37 +268,5 @@ pub async fn people_visibility<S: AuthStore>(
     input: PeopleVisibilityQuery,
 ) -> Result<Authorized<PeopleVisibility>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
-    let access = ctx
-        .require(
-            &actor,
-            Permission::DecideWhatRolesSee,
-            Place::from(input.project),
-        )
-        .await?;
-    let (roles, truncated) = ctx.columns().await?;
-    let read = ctx.rules_of(&roles, input.project).await?;
-    let set: Vec<_> = read
-        .people
-        .iter()
-        .map(|rule| (rule.role, rule.project, rule.kind, rule.level))
-        .collect();
-    let table = ctx
-        .level_table(
-            &actor,
-            Wanted {
-                project: input.project,
-                roles: &roles,
-                truncated,
-                chain: &read.chain,
-                rules: &set,
-                subjects: PeopleKind::ALL,
-                closed: PeopleLevel::Hidden,
-                yours: &PeopleKind::ALL
-                    .iter()
-                    .map(|kind| access.kind_level(*kind))
-                    .collect::<Vec<_>>(),
-            },
-        )
-        .await?;
-    Ok(access.authorize(table))
+    ctx.permissions_table(&actor, input.project).await
 }

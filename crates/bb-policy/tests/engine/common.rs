@@ -11,7 +11,8 @@ use bb_core::fields::Field;
 use bb_core::id::{AssignmentId, GroupId, ProjectId, RoleId, SequentialIds, UserId};
 use bb_core::people_kinds::PeopleKind;
 use bb_policy::{
-    Evaluation, FieldRule, Inputs, PeopleRule, Permission, Place, RoleData, Row, Who, evaluate,
+    Evaluation, FieldRule, Inputs, LevelRules, PeopleRule, Permission, Place, RoleData, Row, Who,
+    evaluate,
 };
 
 pub(crate) struct World {
@@ -22,8 +23,7 @@ pub(crate) struct World {
     pub(crate) other: ProjectId,
     pub(crate) roles: Vec<RoleData>,
     pub(crate) rows: Vec<Row>,
-    pub(crate) field_rules: Vec<FieldRule>,
-    pub(crate) people_rules: Vec<PeopleRule>,
+    pub(crate) rules: LevelRules,
     ids: SequentialIds,
 }
 
@@ -38,8 +38,7 @@ impl World {
             other: ProjectId::generate(&mut ids).unwrap(),
             roles: Vec::new(),
             rows: Vec::new(),
-            field_rules: Vec::new(),
-            people_rules: Vec::new(),
+            rules: LevelRules::default(),
             ids,
         }
     }
@@ -154,10 +153,10 @@ impl World {
         field: Field,
         level: FieldLevel,
     ) {
-        self.field_rules.push(FieldRule {
+        self.rules.add(FieldRule {
             project,
             role,
-            field,
+            subject: field,
             level,
         });
     }
@@ -169,10 +168,10 @@ impl World {
         kind: PeopleKind,
         level: PeopleLevel,
     ) {
-        self.people_rules.push(PeopleRule {
+        self.rules.add(PeopleRule {
             project,
             role,
-            kind,
+            subject: kind,
             level,
         });
     }
@@ -187,8 +186,7 @@ impl World {
             },
             rows: self.rows.clone(),
             roles: self.roles.clone(),
-            field_rules: self.field_rules.clone(),
-            people_rules: self.people_rules.clone(),
+            rules: self.rules.clone(),
         }
     }
 

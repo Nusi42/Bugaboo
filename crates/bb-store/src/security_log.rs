@@ -113,7 +113,7 @@ impl Database {
             .values([
                 Expr::val(entry.seq),
                 Expr::val(to_micros(entry.time)),
-                Expr::val(entry.person.map(|person| person.stored())),
+                Expr::val(entry.person.map(UserId::stored)),
                 Expr::val(entry.action.as_str()),
                 Expr::val(entry.subject.as_ref().map(|subject| subject.kind.as_str())),
                 Expr::val(entry.subject.as_ref().map(|subject| subject.id.stored())),

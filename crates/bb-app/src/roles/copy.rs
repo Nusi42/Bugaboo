@@ -5,7 +5,9 @@
 use bb_core::ErrorCode;
 use bb_core::access::Role;
 use bb_core::event::RecordKind;
+use bb_core::fields::Field;
 use bb_core::id::RoleId;
+use bb_core::people_kinds::PeopleKind;
 use bb_core::sign_in::SecurityAction;
 use bb_policy::guards::{Refusal, ensure_no_escalation};
 use bb_policy::{Authorized, Permission, Place};
@@ -13,9 +15,8 @@ use serde_json::json;
 
 use super::{RoleView, keys, view};
 use crate::access::{RoleRecord, held_in};
-use crate::auth::{AppError, AuthStore, Ctx, by, entity, internal, set_to};
+use crate::auth::{AppError, AuthStore, Ctx, Stops, by, change_failed, entity, internal, set_to};
 use crate::input::clean_name;
-use crate::people::stopped;
 
 /// Make a role that is a copy of another.
 pub struct CopyRole {
@@ -48,12 +49,12 @@ pub async fn copy_role<S: AuthStore>(
     let source = ctx.role_or_missing(input.role).await?;
     let fields = ctx
         .store()
-        .field_levels(source.role.id, None)
+        .levels::<Field>(source.role.id, None)
         .await
         .map_err(|error| internal::<S>(&error))?;
     let people = ctx
         .store()
-        .people_levels(source.role.id, None)
+        .levels::<PeopleKind>(source.role.id, None)
         .await
         .map_err(|error| internal::<S>(&error))?;
     let position = ctx
@@ -118,7 +119,12 @@ pub async fn copy_role<S: AuthStore>(
             })
         })
         .await
-        .map_err(|error| stopped::<S>(&error, ErrorCode::NotFound, ErrorCode::NameTaken))?;
+        .map_err(|error| {
+            change_failed::<S>(
+                &error,
+                Stops::new(ErrorCode::NotFound, ErrorCode::NameTaken),
+            )
+        })?;
     ctx.note(
         SecurityAction::RoleMade,
         Some(actor.person.id),

@@ -8,13 +8,14 @@
 //! named to the person who checks is the use case's business (a project they cannot see is
 //! *a project you can't see*).
 
-use bb_core::access::{AppliesTo, FieldLevel, PeopleLevel};
+use bb_core::access::AppliesTo;
 use bb_core::fields::Field;
 use bb_core::id::{AssignmentId, ProjectId, RoleId};
 use bb_core::people_kinds::PeopleKind;
 
 use crate::catalogue::Permission;
-use crate::evaluate::{Evaluation, Place, RoleLevel, Row, RowStatus, RowTrace, Who};
+use crate::evaluate::{Evaluation, Place, Row, RowStatus, RowTrace, Who};
+use crate::levels::{LevelSubject, RoleLevel};
 
 /// One row of *Who has which role* that played a part, as data.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -108,13 +109,13 @@ pub struct PermissionDecision {
 
 /// What one role said about a field or a kind, and the result.
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct LevelDecision<K, L> {
+pub struct LevelDecision<K: LevelSubject> {
     /// The field or the kind.
     pub subject: K,
     /// The level the person has. Equal to the evaluation's own answer.
-    pub level: L,
+    pub level: K::Level,
     /// The level each role that counts here says, and where it was set.
-    pub roles: Vec<RoleLevel<L>>,
+    pub roles: Vec<RoleLevel<K::Level>>,
     /// An access key lowered the level to *Can see*.
     pub capped_by_key: bool,
 }
@@ -127,9 +128,9 @@ pub struct AccessReport {
     /// Every permission with *yes* or *no*.
     pub permissions: Vec<PermissionDecision>,
     /// Every field with its level.
-    pub fields: Vec<LevelDecision<Field, FieldLevel>>,
+    pub fields: Vec<LevelDecision<Field>>,
     /// Every kind of people information with its level.
-    pub kinds: Vec<LevelDecision<PeopleKind, PeopleLevel>>,
+    pub kinds: Vec<LevelDecision<PeopleKind>>,
 }
 
 impl Evaluation {
@@ -202,36 +203,18 @@ impl Evaluation {
         }
     }
 
-    /// The level of a field with what each role said.
+    /// The level of a field or of a kind of people information with what each role said.
     #[must_use]
-    pub fn explain_field(&self, field: Field) -> LevelDecision<Field, FieldLevel> {
-        let roles = self.field_sources.get(&field).cloned().unwrap_or_default();
+    pub fn explain_level<K: LevelSubject>(&self, subject: K) -> LevelDecision<K> {
+        let roles = K::levels_in(self).roles(subject);
         let from_roles = roles
             .iter()
             .map(|role| role.level)
             .max()
-            .unwrap_or(FieldLevel::Hidden);
-        let level = self.field_level(field);
+            .unwrap_or(K::CLOSED);
+        let level = self.level(subject);
         LevelDecision {
-            subject: field,
-            level,
-            roles,
-            capped_by_key: level < from_roles,
-        }
-    }
-
-    /// The level of a kind of people information with what each role said.
-    #[must_use]
-    pub fn explain_kind(&self, kind: PeopleKind) -> LevelDecision<PeopleKind, PeopleLevel> {
-        let roles = self.people_sources.get(&kind).cloned().unwrap_or_default();
-        let from_roles = roles
-            .iter()
-            .map(|role| role.level)
-            .max()
-            .unwrap_or(PeopleLevel::Hidden);
-        let level = self.kind_level(kind);
-        LevelDecision {
-            subject: kind,
+            subject,
             level,
             roles,
             capped_by_key: level < from_roles,
@@ -252,11 +235,11 @@ impl Evaluation {
                 .collect(),
             fields: Field::ALL
                 .iter()
-                .map(|field| self.explain_field(*field))
+                .map(|field| self.explain_level(*field))
                 .collect(),
             kinds: PeopleKind::ALL
                 .iter()
-                .map(|kind| self.explain_kind(*kind))
+                .map(|kind| self.explain_level(*kind))
                 .collect(),
         }
     }

@@ -9,7 +9,7 @@ use bb_core::sign_in::{SecurityAction, SessionStage, StoredPasskey, TwoStep};
 use bb_core::text::LABEL_MAX;
 use serde_json::json;
 
-use super::ctx::{AppError, Ctx, by, change_failed, changed, entity, internal, set_to};
+use super::ctx::{AppError, Ctx, Stops, by, change_failed, changed, entity, internal, set_to};
 use super::store::AuthStore;
 use super::types::{
     AddPasskey, BackupCodes, CodeAppSetup, ConfirmCodeApp, Done, MAX_PASSKEYS_LISTED,
@@ -201,7 +201,7 @@ pub async fn passkey_sign_in<S: AuthStore>(
             })
         })
         .await
-        .map_err(|error| change_failed::<S>(&error, None))?;
+        .map_err(|error| change_failed::<S>(&error, Stops::NONE))?;
     ctx.note(
         SecurityAction::PasskeySignInSucceeded,
         Some(person.id),
@@ -255,7 +255,7 @@ pub async fn start_code_app<S: AuthStore>(
             Box::pin(async move { S::upsert_two_step(transaction, &step).await })
         })
         .await
-        .map_err(|error| change_failed::<S>(&error, None))?;
+        .map_err(|error| change_failed::<S>(&error, Stops::NONE))?;
     let enrolment = secret.enrolment(&ctx.services.product_name, &person.email)?;
     Ok(CodeAppSetup {
         otpauth_url: (*enrolment.otpauth_url).clone(),
@@ -329,7 +329,7 @@ pub async fn confirm_code_app<S: AuthStore>(
             })
         })
         .await
-        .map_err(|error| change_failed::<S>(&error, Some(ErrorCode::WrongSecondStepCode)));
+        .map_err(|error| change_failed::<S>(&error, Stops::both(ErrorCode::WrongSecondStepCode)));
     ctx.unless_internal(&slot, written)?;
     ctx.slot_succeeded(slot);
     ctx.note(SecurityAction::TwoStepEnabled, Some(person), None)
@@ -359,7 +359,7 @@ pub async fn remove_code_app<S: AuthStore>(
             Box::pin(async move { S::delete_two_step(transaction, person).await })
         })
         .await
-        .map_err(|error| change_failed::<S>(&error, None))?;
+        .map_err(|error| change_failed::<S>(&error, Stops::NONE))?;
     ctx.store()
         .delete_totp_secret(person)
         .await
@@ -401,7 +401,7 @@ pub async fn renew_backup_codes<S: AuthStore>(
             Box::pin(async move { S::replace_backup_codes(transaction, person, &hashes).await })
         })
         .await
-        .map_err(|error| change_failed::<S>(&error, None))?;
+        .map_err(|error| change_failed::<S>(&error, Stops::NONE))?;
     ctx.note(SecurityAction::BackupCodesRenewed, Some(person), None)
         .await;
     Ok(BackupCodes(shown))
@@ -478,7 +478,7 @@ pub async fn add_passkey<S: AuthStore>(
             Box::pin(async move { S::insert_passkey(transaction, &stored).await })
         })
         .await
-        .map_err(|error| change_failed::<S>(&error, Some(ErrorCode::PasskeyRejected)))?;
+        .map_err(|error| change_failed::<S>(&error, Stops::both(ErrorCode::PasskeyRejected)))?;
     ctx.note(
         SecurityAction::PasskeyAdded,
         Some(person),
@@ -518,7 +518,7 @@ pub async fn remove_passkey<S: AuthStore>(
             })
         })
         .await
-        .map_err(|error| change_failed::<S>(&error, Some(ErrorCode::NotFound)))?;
+        .map_err(|error| change_failed::<S>(&error, Stops::both(ErrorCode::NotFound)))?;
     ctx.note(
         SecurityAction::PasskeyRemoved,
         Some(person),

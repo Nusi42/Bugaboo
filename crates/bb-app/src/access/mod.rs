@@ -31,7 +31,7 @@ pub use bb_policy::{
 pub use candidates::{PeopleToCheckPage, PeopleToCheckQuery, people_to_check};
 pub use own_loss::{OwnChange, OwnLoss, OwnLossQuery, own_loss};
 pub use starting::{MakeStartingRoles, make_starting_roles};
-pub use store::{LevelRules, PolicyStore, RoleRecord};
+pub use store::{PlaceLevels, PolicyStore, RoleRecord};
 pub use visibility::{
     FieldPermissions, FieldPermissionsQuery, LevelCell, LevelOrigin, LevelRow, LevelTable,
     PeopleVisibility, PeopleVisibilityQuery, ROLES_MAX, field_permissions, people_visibility,
@@ -40,6 +40,7 @@ pub use visibility::{
 use serde::Serialize;
 
 use crate::auth::{AppError, AuthStore, Ctx, internal};
+use crate::projects::sub_projects_in;
 
 /// Who asks: the signed-in person behind a session, or the owner of the access key a script
 /// came with.
@@ -326,7 +327,7 @@ pub(crate) async fn ensure_may_give_in<S: AuthStore>(
     let reaches_below = row.applies_to == AppliesTo::ProjectAndSubProjects;
     if let (Some(project), true) = (row.project, reaches_below) {
         places.extend(
-            S::sub_projects_in(transaction, project)
+            sub_projects_in::<S>(transaction, project)
                 .await?
                 .into_iter()
                 .map(Place::Project),

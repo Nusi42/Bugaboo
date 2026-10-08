@@ -415,18 +415,18 @@ fn build(spec: &Spec) -> Option<(World, Vec<UserId>, ProjectId, Option<ProjectId
         world.row(who, row.role.map(|role| roles[role]), project, applies_to);
     }
     for (project, role, field, level) in &spec.rules {
-        world.policy.field_rules.push(FieldRule {
+        world.policy.rules.add(FieldRule {
             project: project.map(|project| projects[project]),
             role: roles[*role],
-            field: Field::ALL[*field],
+            subject: Field::ALL[*field],
             level: FieldLevel::ALL[*level],
         });
     }
     for (project, role, kind, level) in &spec.people_rules {
-        world.policy.people_rules.push(PeopleRule {
+        world.policy.rules.add(PeopleRule {
             project: project.map(|project| projects[project]),
             role: roles[*role],
-            kind: PeopleKind::ALL[*kind],
+            subject: PeopleKind::ALL[*kind],
             level: PeopleLevel::ALL[*level],
         });
     }

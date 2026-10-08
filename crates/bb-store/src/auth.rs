@@ -85,6 +85,15 @@ impl ChangeStore for AuthStorage {
     ) -> impl Future<Output = Result<T, StoreError>> + Send + 'a {
         ChangeStore::record_change(&self.database, event, change)
     }
+
+    fn read_snapshot<'a, T: Send + 'a>(
+        &'a self,
+        read: impl for<'t> FnOnce(&'t mut Transaction) -> BoxFuture<'t, Result<T, StoreError>>
+        + Send
+        + 'a,
+    ) -> impl Future<Output = Result<T, StoreError>> + Send + 'a {
+        ChangeStore::read_snapshot(&self.database, read)
+    }
 }
 
 fn digest(bytes: &[u8]) -> Result<Digest, StoreError> {

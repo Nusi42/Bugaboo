@@ -14,8 +14,8 @@ use bb_core::id::{AccessKeyId, AssignmentId, ProjectId, RoleId, SequentialIds, U
 use bb_core::people_kinds::PeopleKind;
 use bb_core::security_log::Digest;
 use bb_policy::{
-    FieldRule, Inputs, Kind, NOT_FOR_KEYS, PeopleRule, Permission, Place, RoleData, Row, Who,
-    evaluate,
+    FieldRule, Inputs, Kind, LevelRules, NOT_FOR_KEYS, PeopleRule, Permission, Place, RoleData,
+    Row, Who, evaluate,
 };
 use jiff::Timestamp;
 use proptest::prelude::*;
@@ -120,30 +120,32 @@ fn owner_inputs(world: &World, masks: [u16; 2], rows: &[RowSpec], place: usize) 
         .collect();
     // Every role may change every field and see every kind of people information, so a key that
     // only sees has something to be capped from.
-    let field_rules = world
-        .roles
-        .iter()
-        .flat_map(|role| {
-            Field::ALL.iter().map(|field| FieldRule {
-                project: None,
-                role: *role,
-                field: *field,
-                level: FieldLevel::CanChange,
+    let levels = LevelRules {
+        fields: world
+            .roles
+            .iter()
+            .flat_map(|role| {
+                Field::ALL.iter().map(|field| FieldRule {
+                    project: None,
+                    role: *role,
+                    subject: *field,
+                    level: FieldLevel::CanChange,
+                })
             })
-        })
-        .collect();
-    let people_rules = world
-        .roles
-        .iter()
-        .flat_map(|role| {
-            PeopleKind::ALL.iter().map(|kind| PeopleRule {
-                project: None,
-                role: *role,
-                kind: *kind,
-                level: PeopleLevel::Names,
+            .collect(),
+        people: world
+            .roles
+            .iter()
+            .flat_map(|role| {
+                PeopleKind::ALL.iter().map(|kind| PeopleRule {
+                    project: None,
+                    role: *role,
+                    subject: *kind,
+                    level: PeopleLevel::Names,
+                })
             })
-        })
-        .collect();
+            .collect(),
+    };
     Inputs {
         person: world.person,
         place: match place {
@@ -156,8 +158,7 @@ fn owner_inputs(world: &World, masks: [u16; 2], rows: &[RowSpec], place: usize) 
         },
         rows,
         roles,
-        field_rules,
-        people_rules,
+        rules: levels,
     }
 }
 

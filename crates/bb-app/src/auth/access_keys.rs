@@ -28,7 +28,7 @@ use bb_policy::{Authorized, Choice, Narrowing, Permission, Place};
 use jiff::Timestamp;
 use serde_json::json;
 
-use super::ctx::{AppError, Ctx, by, change_failed, entity, internal, set_to};
+use super::ctx::{AppError, Ctx, Stops, by, change_failed, entity, internal, set_to};
 use super::store::{AccessKeyRecord, AuthStore};
 use super::types::{
     AccessKeyPage, AccessKeyRules, AccessKeyRulesQuery, AccessKeyView, AccessKeysQuery,
@@ -353,7 +353,7 @@ pub async fn make_access_key<S: AuthStore>(
         match result {
             Ok(()) => break (secret, stored),
             Err(error) if S::is_duplicate(&error) && !clashed => clashed = true,
-            Err(error) => return Err(change_failed::<S>(&error, None)),
+            Err(error) => return Err(change_failed::<S>(&error, Stops::NONE)),
         }
     };
     ctx.note(
@@ -396,7 +396,7 @@ pub async fn delete_access_key<S: AuthStore>(
             })
         })
         .await
-        .map_err(|error| change_failed::<S>(&error, Some(ErrorCode::NotFound)))?;
+        .map_err(|error| change_failed::<S>(&error, Stops::both(ErrorCode::NotFound)))?;
     ctx.note(
         SecurityAction::AccessKeyDeleted,
         Some(owner),

@@ -28,7 +28,7 @@ use serde_json::json;
 pub use assignments::{assign_role, assignments, remove_assignment};
 pub use check::*;
 pub use copy::{CopyRole, copy_role};
-pub use levels::{role_levels, set_field_level, set_people_level};
+pub use levels::{role_levels, set_level};
 pub use screens::{
     PermissionCatalogue, PermissionView, PermissionsQuery, RoleDetail, RoleQuery,
     assignment_choices, permissions, role,
@@ -36,9 +36,10 @@ pub use screens::{
 pub use types::*;
 
 use crate::access::{RoleRecord, held_in};
-use crate::auth::{AppError, AuthStore, Ctx, Done, by, changed, entity, internal, set_to};
+use crate::auth::{
+    AppError, AuthStore, Ctx, Done, Stops, by, change_failed, changed, entity, internal, set_to,
+};
 use crate::input::clean_name;
-use crate::people::stopped;
 
 /// The keys of the permissions in a set: what an event and a view say.
 fn keys(permissions: &BTreeSet<Permission>) -> Vec<&'static str> {
@@ -138,7 +139,12 @@ pub async fn make_role<S: AuthStore>(
             })
         })
         .await
-        .map_err(|error| stopped::<S>(&error, ErrorCode::NotFound, ErrorCode::NameTaken))?;
+        .map_err(|error| {
+            change_failed::<S>(
+                &error,
+                Stops::new(ErrorCode::NotFound, ErrorCode::NameTaken),
+            )
+        })?;
     ctx.note(
         SecurityAction::RoleMade,
         Some(actor.person.id),
@@ -226,7 +232,12 @@ pub async fn change_role<S: AuthStore>(
             })
         })
         .await
-        .map_err(|error| stopped::<S>(&error, ErrorCode::NotFound, ErrorCode::NameTaken))?;
+        .map_err(|error| {
+            change_failed::<S>(
+                &error,
+                Stops::new(ErrorCode::NotFound, ErrorCode::NameTaken),
+            )
+        })?;
     ctx.note(
         SecurityAction::RoleChanged,
         Some(actor.person.id),
@@ -306,7 +317,9 @@ pub async fn delete_role<S: AuthStore>(
             })
         })
         .await
-        .map_err(|error| stopped::<S>(&error, ErrorCode::NotFound, ErrorCode::NotFound))?;
+        .map_err(|error| {
+            change_failed::<S>(&error, Stops::new(ErrorCode::NotFound, ErrorCode::NotFound))
+        })?;
     // Every row that the replacement made is a permission change of its own (ADR-0025, decision 9).
     for row in &made {
         ctx.note(
@@ -409,7 +422,9 @@ pub async fn reset_role<S: AuthStore>(
             })
         })
         .await
-        .map_err(|error| stopped::<S>(&error, ErrorCode::NotFound, ErrorCode::NotFound))?;
+        .map_err(|error| {
+            change_failed::<S>(&error, Stops::new(ErrorCode::NotFound, ErrorCode::NotFound))
+        })?;
     ctx.note(
         SecurityAction::RoleReset,
         Some(actor.person.id),

@@ -7,105 +7,21 @@ use bb_core::id::{AssignmentId, GroupId, ProjectId, RoleId, UserId};
 use bb_core::people_kinds::PeopleKind;
 use bb_core::project::{Project, ShortName};
 use bb_policy::guards::{Holder, OrganizationState};
-use bb_policy::{FieldRule, Inputs, PeopleRule, Permission, Place, RoleData, Row, Who};
+use bb_policy::{Inputs, LevelRule, LevelRules, LevelSubject, Permission, Place, RoleData, Tree};
 use jiff::Timestamp;
 
 use super::fake::{FakeError, FakeStore, State, Tx};
-use crate::access::{LevelRules, PolicyStore, RoleRecord};
+use super::fake_projects::policy_of;
+use crate::access::{PlaceLevels, PolicyStore, RoleRecord};
+use crate::ports::ChangeStore as _;
 
-/// The projects from the top down to `project`; `None` when it does not exist.
-pub(super) fn chain_of(state: &State, project: ProjectId) -> Option<Vec<ProjectId>> {
-    let mut chain = vec![project];
-    let mut current = state.projects.iter().find(|known| known.id == project)?;
-    while let Some(parent) = current.parent {
-        current = state.projects.iter().find(|known| known.id == parent)?;
-        chain.push(parent);
-    }
-    chain.reverse();
-    Some(chain)
-}
-
-pub(super) fn role_data(record: &RoleRecord) -> RoleData {
-    RoleData {
-        id: record.role.id,
-        name: record.role.name.clone(),
-        position: record.role.position,
-        permissions: record.permissions.clone(),
-        two_step: record.role.two_step,
-    }
-}
-
+/// Everything the engine needs for `person` at `place`: the very question the store answers.
 fn inputs_of(state: &State, person: UserId, place: Place) -> Option<Inputs> {
     let chain = match place {
         Place::Organization => Vec::new(),
-        Place::Project(project) => chain_of(state, project)?,
+        Place::Project(project) => Tree::of(&state.projects).chain(project)?,
     };
-    let groups: Vec<GroupId> = state
-        .members
-        .iter()
-        .filter(|member| member.person == person)
-        .map(|member| member.group)
-        .collect();
-    let rows: Vec<Row> = state
-        .assignments
-        .iter()
-        .filter(|row| {
-            let ours = row.person == Some(person)
-                || row.group.is_some_and(|group| groups.contains(&group));
-            let here = row.project.is_none_or(|project| chain.contains(&project));
-            ours && here
-        })
-        .filter_map(|row| {
-            Some(Row {
-                id: row.id,
-                who: if row.person == Some(person) {
-                    Who::Person
-                } else {
-                    Who::Group(row.group?)
-                },
-                role: row.role,
-                project: row.project,
-                applies_to: row.applies_to,
-            })
-        })
-        .collect();
-    let role_ids: Vec<RoleId> = rows.iter().filter_map(|row| row.role).collect();
-    let roles: Vec<RoleData> = state
-        .roles
-        .iter()
-        .filter(|record| role_ids.contains(&record.role.id))
-        .map(role_data)
-        .collect();
-    let here = |project: Option<ProjectId>| project.is_none_or(|project| chain.contains(&project));
-    Some(Inputs {
-        person,
-        place,
-        chain: chain.clone(),
-        rows,
-        roles,
-        field_rules: state
-            .field_levels
-            .iter()
-            .filter(|(role, project, _, _)| role_ids.contains(role) && here(*project))
-            .map(|(role, project, field, level)| FieldRule {
-                project: *project,
-                role: *role,
-                field: *field,
-                level: *level,
-            })
-            .collect(),
-        people_rules: state
-            .people_levels
-            .iter()
-            .filter(|(role, project, _, _)| role_ids.contains(role) && here(*project))
-            .map(|(role, project, kind, level)| PeopleRule {
-                project: *project,
-                role: *role,
-                kind: *kind,
-                level: *level,
-            })
-            .collect(),
-    })
+    Some(policy_of(state, None).inputs_for(person, place, chain))
 }
 
 fn organization_state_of(state: &State) -> OrganizationState {
@@ -128,7 +44,7 @@ fn organization_state_of(state: &State) -> OrganizationState {
             .roles
             .iter()
             .filter(|record| rows.iter().any(|(_, role)| *role == record.role.id))
-            .map(role_data)
+            .map(RoleData::from)
             .collect(),
         rows,
         members: state
@@ -145,18 +61,10 @@ impl PolicyStore for FakeStore {
         person: UserId,
         place: Place,
     ) -> Result<Option<Inputs>, FakeError> {
-        let mut shared = self.lock();
-        shared.policy_loads += 1;
-        shared.reads += 1;
-        Ok(inputs_of(&shared.state, person, place))
-    }
-
-    async fn organization_state(&self) -> Result<OrganizationState, FakeError> {
-        Ok(self.read(organization_state_of))
-    }
-
-    async fn starting_roles_made(&self) -> Result<bool, FakeError> {
-        Ok(self.read(|state| state.starting_roles_made))
+        // Counted for the tests that check an evaluation is made once per request.
+        self.lock().policy_loads += 1;
+        self.read_snapshot(move |tx| Box::pin(Self::policy_inputs_in(tx, person, place)))
+            .await
     }
 
     async fn legacy_administrators(&self) -> Result<Vec<UserId>, FakeError> {
@@ -171,50 +79,18 @@ impl PolicyStore for FakeStore {
         }))
     }
 
-    async fn role(&self, id: RoleId) -> Result<Option<RoleRecord>, FakeError> {
-        Ok(self.read(|state| {
-            state
-                .roles
-                .iter()
-                .find(|record| record.role.id == id)
-                .cloned()
-        }))
-    }
-
     async fn level_rules(
         &self,
         roles: Vec<RoleId>,
         project: Option<ProjectId>,
-    ) -> Result<Option<LevelRules>, FakeError> {
+    ) -> Result<Option<PlaceLevels>, FakeError> {
         Ok(self.read(|state| {
             let chain = match project {
                 None => Vec::new(),
-                Some(project) => chain_of(state, project)?,
+                Some(project) => Tree::of(&state.projects).chain(project)?,
             };
-            let here = |place: Option<ProjectId>| place.is_none_or(|place| chain.contains(&place));
-            Some(LevelRules {
-                fields: state
-                    .field_levels
-                    .iter()
-                    .filter(|(role, place, _, _)| roles.contains(role) && here(*place))
-                    .map(|(role, place, field, level)| FieldRule {
-                        project: *place,
-                        role: *role,
-                        field: *field,
-                        level: *level,
-                    })
-                    .collect(),
-                people: state
-                    .people_levels
-                    .iter()
-                    .filter(|(role, place, _, _)| roles.contains(role) && here(*place))
-                    .map(|(role, place, kind, level)| PeopleRule {
-                        project: *place,
-                        role: *role,
-                        kind: *kind,
-                        level: *level,
-                    })
-                    .collect(),
+            Some(PlaceLevels {
+                rules: state.rules.at(&roles.into_iter().collect(), &chain),
                 chain,
             })
         }))
@@ -243,48 +119,12 @@ impl PolicyStore for FakeStore {
         }))
     }
 
-    async fn assignments_on(
-        &self,
-        project: Option<ProjectId>,
-    ) -> Result<Vec<Assignment>, FakeError> {
-        Ok(self.read(|state| {
-            state
-                .assignments
-                .iter()
-                .filter(|row| row.project == project)
-                .cloned()
-                .collect()
-        }))
-    }
-
-    async fn assignments_of_group(&self, group: GroupId) -> Result<Vec<Assignment>, FakeError> {
-        Ok(self.read(|state| {
-            state
-                .assignments
-                .iter()
-                .filter(|row| row.group == Some(group))
-                .cloned()
-                .collect()
-        }))
-    }
-
     async fn assignments_of_person(&self, person: UserId) -> Result<Vec<Assignment>, FakeError> {
         Ok(self.read(|state| {
             state
                 .assignments
                 .iter()
                 .filter(|row| row.person == Some(person))
-                .cloned()
-                .collect()
-        }))
-    }
-
-    async fn assignments_of_role(&self, role: RoleId) -> Result<Vec<Assignment>, FakeError> {
-        Ok(self.read(|state| {
-            state
-                .assignments
-                .iter()
-                .filter(|row| row.role == Some(role))
                 .cloned()
                 .collect()
         }))
@@ -312,18 +152,8 @@ impl PolicyStore for FakeStore {
         Ok(self.read(|state| state.assignments.iter().find(|row| row.id == id).cloned()))
     }
 
-    async fn project(&self, id: ProjectId) -> Result<Option<Project>, FakeError> {
-        Ok(self.read(|state| {
-            state
-                .projects
-                .iter()
-                .find(|project| project.id == id)
-                .cloned()
-        }))
-    }
-
     async fn project_chain(&self, id: ProjectId) -> Result<Option<Vec<ProjectId>>, FakeError> {
-        Ok(self.read(|state| chain_of(state, id)))
+        Ok(self.read(|state| Tree::of(&state.projects).chain(id)))
     }
 
     async fn project_by_short_name(&self, name: &ShortName) -> Result<Option<Project>, FakeError> {
@@ -336,32 +166,18 @@ impl PolicyStore for FakeStore {
         }))
     }
 
-    async fn field_levels(
+    async fn levels<K: LevelSubject>(
         &self,
         role: RoleId,
         project: Option<ProjectId>,
-    ) -> Result<Vec<(Field, FieldLevel)>, FakeError> {
+    ) -> Result<Vec<(K, K::Level)>, FakeError> {
         Ok(self.read(|state| {
             state
-                .field_levels
+                .rules
+                .of::<K>()
                 .iter()
-                .filter(|(owner, place, _, _)| *owner == role && *place == project)
-                .map(|(_, _, field, level)| (*field, *level))
-                .collect()
-        }))
-    }
-
-    async fn people_levels(
-        &self,
-        role: RoleId,
-        project: Option<ProjectId>,
-    ) -> Result<Vec<(PeopleKind, PeopleLevel)>, FakeError> {
-        Ok(self.read(|state| {
-            state
-                .people_levels
-                .iter()
-                .filter(|(owner, place, _, _)| *owner == role && *place == project)
-                .map(|(_, _, kind, level)| (*kind, *level))
+                .filter(|rule| rule.role == role && rule.project == project)
+                .map(|rule| (rule.subject, rule.level))
                 .collect()
         }))
     }
@@ -430,23 +246,13 @@ impl PolicyStore for FakeStore {
             .cloned())
     }
 
-    async fn sub_projects_in(tx: &mut Tx, project: ProjectId) -> Result<Vec<ProjectId>, FakeError> {
-        let mut found: Vec<ProjectId> = Vec::new();
-        let mut next = vec![project];
-        while let Some(current) = next.pop() {
-            for child in tx
-                .state
-                .projects
-                .iter()
-                .filter(|known| known.parent == Some(current))
-            {
-                if child.id != project && !found.contains(&child.id) {
-                    found.push(child.id);
-                    next.push(child.id);
-                }
-            }
-        }
-        Ok(found)
+    async fn project_in(tx: &mut Tx, id: ProjectId) -> Result<Option<Project>, FakeError> {
+        Ok(tx
+            .state
+            .projects
+            .iter()
+            .find(|project| project.id == id)
+            .cloned())
     }
 
     async fn starting_roles_made_in(tx: &mut Tx) -> Result<bool, FakeError> {
@@ -484,12 +290,7 @@ impl PolicyStore for FakeStore {
             role: role.clone(),
             permissions: permissions.iter().copied().collect(),
         });
-        for (field, level) in fields {
-            tx.state.field_levels.push((role.id, None, *field, *level));
-        }
-        for (kind, level) in people {
-            tx.state.people_levels.push((role.id, None, *kind, *level));
-        }
+        add_own_levels(&mut tx.state.rules, role.id, fields, people);
         Ok(())
     }
 
@@ -543,17 +344,14 @@ impl PolicyStore for FakeStore {
         people: &[(PeopleKind, PeopleLevel)],
     ) -> Result<(), FakeError> {
         tx.state
-            .field_levels
-            .retain(|(role, project, _, _)| !(*role == id && project.is_none()));
+            .rules
+            .fields
+            .retain(|rule| !(rule.role == id && rule.project.is_none()));
         tx.state
-            .people_levels
-            .retain(|(role, project, _, _)| !(*role == id && project.is_none()));
-        for (field, level) in fields {
-            tx.state.field_levels.push((id, None, *field, *level));
-        }
-        for (kind, level) in people {
-            tx.state.people_levels.push((id, None, *kind, *level));
-        }
+            .rules
+            .people
+            .retain(|rule| !(rule.role == id && rule.project.is_none()));
+        add_own_levels(&mut tx.state.rules, id, fields, people);
         Ok(())
     }
 
@@ -561,8 +359,8 @@ impl PolicyStore for FakeStore {
         let before = tx.state.roles.len();
         tx.state.roles.retain(|record| record.role.id != id);
         tx.state.assignments.retain(|row| row.role != Some(id));
-        tx.state.field_levels.retain(|(role, _, _, _)| *role != id);
-        tx.state.people_levels.retain(|(role, _, _, _)| *role != id);
+        tx.state.rules.fields.retain(|rule| rule.role != id);
+        tx.state.rules.people.retain(|rule| rule.role != id);
         Ok(tx.state.roles.len() < before)
     }
 
@@ -634,34 +432,24 @@ impl PolicyStore for FakeStore {
         Ok(tx.state.assignments.len() < before)
     }
 
-    async fn put_field_level(
+    async fn put_level<K: LevelSubject>(
         tx: &mut Tx,
         role: RoleId,
         project: Option<ProjectId>,
-        field: Field,
-        level: Option<FieldLevel>,
+        subject: K,
+        level: Option<K::Level>,
     ) -> Result<(), FakeError> {
-        tx.state.field_levels.retain(|(owner, place, known, _)| {
-            !(*owner == role && *place == project && *known == field)
+        let rules = K::rules_in_mut(&mut tx.state.rules);
+        rules.retain(|rule| {
+            !(rule.role == role && rule.project == project && rule.subject == subject)
         });
         if let Some(level) = level {
-            tx.state.field_levels.push((role, project, field, level));
-        }
-        Ok(())
-    }
-
-    async fn put_people_level(
-        tx: &mut Tx,
-        role: RoleId,
-        project: Option<ProjectId>,
-        kind: PeopleKind,
-        level: Option<PeopleLevel>,
-    ) -> Result<(), FakeError> {
-        tx.state.people_levels.retain(|(owner, place, known, _)| {
-            !(*owner == role && *place == project && *known == kind)
-        });
-        if let Some(level) = level {
-            tx.state.people_levels.push((role, project, kind, level));
+            rules.push(LevelRule {
+                project,
+                role,
+                subject,
+                level,
+            });
         }
         Ok(())
     }
@@ -677,5 +465,30 @@ impl PolicyStore for FakeStore {
         }
         tx.state.projects.push(project.clone());
         Ok(())
+    }
+}
+
+/// Adds the levels a role has of its own.
+fn add_own_levels(
+    rules: &mut LevelRules,
+    role: RoleId,
+    fields: &[(Field, FieldLevel)],
+    people: &[(PeopleKind, PeopleLevel)],
+) {
+    for (subject, level) in fields {
+        rules.add(LevelRule {
+            project: None,
+            role,
+            subject: *subject,
+            level: *level,
+        });
+    }
+    for (subject, level) in people {
+        rules.add(LevelRule {
+            project: None,
+            role,
+            subject: *subject,
+            level: *level,
+        });
     }
 }

@@ -12,8 +12,8 @@ use jiff::Timestamp;
 use serde_json::json;
 
 use super::ctx::{
-    AppError, Ctx, INVITATION_SECONDS, by, change_failed, changed, entity, fixed_entity, internal,
-    set_to,
+    AppError, Ctx, INVITATION_SECONDS, Stops, by, change_failed, changed, entity, fixed_entity,
+    internal, set_to,
 };
 use super::store::AuthStore;
 use super::types::{
@@ -78,7 +78,7 @@ pub async fn create_invitation<S: AuthStore>(
             Box::pin(async move { S::insert_invitation(transaction, &stored).await })
         })
         .await
-        .map_err(|error| change_failed::<S>(&error, None))?;
+        .map_err(|error| change_failed::<S>(&error, Stops::NONE))?;
     ctx.note(
         SecurityAction::InvitationCreated,
         Some(actor.person.id),
@@ -120,7 +120,7 @@ pub async fn revoke_invitation<S: AuthStore>(
             })
         })
         .await
-        .map_err(|error| change_failed::<S>(&error, Some(ErrorCode::NotFound)))?;
+        .map_err(|error| change_failed::<S>(&error, Stops::both(ErrorCode::NotFound)))?;
     ctx.note(
         SecurityAction::InvitationRevoked,
         Some(actor.person.id),
@@ -297,7 +297,7 @@ pub async fn change_sign_up_policy<S: AuthStore>(
             })
         })
         .await
-        .map_err(|error| change_failed::<S>(&error, None))?;
+        .map_err(|error| change_failed::<S>(&error, Stops::NONE))?;
     ctx.note(
         SecurityAction::SignUpPolicyChanged,
         Some(actor.person.id),

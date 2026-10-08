@@ -9,14 +9,16 @@
 //! gets, so a list, a preview and a request can never disagree about who may see what.
 
 use std::collections::{BTreeMap, BTreeSet};
+use std::sync::Arc;
 
 use bb_core::access::{Assignment, GroupMember};
+use bb_core::fields::Field;
 use bb_core::id::{GroupId, ProjectId, RoleId, UserId};
-use bb_core::project::DEPTH_MAX;
+use bb_core::people_kinds::PeopleKind;
+use bb_core::project::{DEPTH_MAX, Project};
 
-use crate::evaluate::{
-    Evaluation, FieldRule, Inputs, PeopleRule, Place, RoleData, Row, Who, evaluate,
-};
+use crate::evaluate::{Evaluation, Inputs, Place, RoleData, Row, Who, evaluate};
+use crate::levels::LevelRules;
 use crate::narrowing::Narrowing;
 
 /// The tree of projects: the parent of each project, or `None` at the top level.
@@ -32,6 +34,16 @@ impl Tree {
         Self {
             parents: links.into_iter().collect(),
         }
+    }
+
+    /// The tree of these stored projects.
+    #[must_use]
+    pub fn of<'a>(projects: impl IntoIterator<Item = &'a Project>) -> Self {
+        Self::new(
+            projects
+                .into_iter()
+                .map(|project| (project.id, project.parent)),
+        )
     }
 
     /// Whether the project is in the tree.
@@ -129,10 +141,9 @@ pub struct Policy {
     pub members: Vec<GroupMember>,
     /// The roles the rows name.
     pub roles: Vec<RoleData>,
-    /// The field levels of the roles, for the whole organization and for projects.
-    pub field_rules: Vec<FieldRule>,
-    /// The people levels of the roles, for the whole organization and for projects.
-    pub people_rules: Vec<PeopleRule>,
+    /// The field levels and the people levels of the roles, for the whole organization and for
+    /// projects.
+    pub rules: LevelRules,
 }
 
 impl Policy {
@@ -188,21 +199,19 @@ impl Policy {
     /// the projects below inherit.
     #[must_use]
     pub fn people_affected_by(&self, projects: &BTreeSet<ProjectId>) -> BTreeSet<UserId> {
+        let on_projects =
+            |project: Option<ProjectId>| project.is_some_and(|project| projects.contains(&project));
         let ruled: BTreeSet<RoleId> = self
-            .field_rules
+            .rules
+            .of::<Field>()
             .iter()
-            .filter(|rule| {
-                rule.project
-                    .is_some_and(|project| projects.contains(&project))
-            })
+            .filter(|rule| on_projects(rule.project))
             .map(|rule| rule.role)
             .chain(
-                self.people_rules
+                self.rules
+                    .of::<PeopleKind>()
                     .iter()
-                    .filter(|rule| {
-                        rule.project
-                            .is_some_and(|project| projects.contains(&project))
-                    })
+                    .filter(|rule| on_projects(rule.project))
                     .map(|rule| rule.role),
             )
             .collect();
@@ -217,6 +226,47 @@ impl Policy {
     #[must_use]
     pub fn people(&self) -> BTreeSet<UserId> {
         self.holders(|_| true)
+    }
+
+    /// Everything the engine needs to decide for `person` at `place`, whose projects from the top
+    /// down are `chain`: their rows (their own and their groups') on the organization and on the
+    /// projects of the chain, the roles those name, and the levels of those roles. The one
+    /// definition of "which rows and rules apply at a place"; the store loads its data and asks
+    /// it, and so does the test store.
+    #[must_use]
+    pub fn inputs_for(&self, person: UserId, place: Place, chain: Vec<ProjectId>) -> Inputs {
+        self.inputs_from_rows(person, &self.rows_of(person), place, chain)
+    }
+
+    /// [`Policy::inputs_for`] with the rows of the person made once by [`Policy::rows_of`], for a
+    /// person who is asked about many places.
+    #[must_use]
+    pub fn inputs_from_rows(
+        &self,
+        person: UserId,
+        rows: &[Row],
+        place: Place,
+        chain: Vec<ProjectId>,
+    ) -> Inputs {
+        let rows: Vec<Row> = rows
+            .iter()
+            .filter(|row| row.project.is_none_or(|project| chain.contains(&project)))
+            .copied()
+            .collect();
+        let role_ids: BTreeSet<RoleId> = rows.iter().filter_map(|row| row.role).collect();
+        Inputs {
+            person,
+            place,
+            rows,
+            roles: self
+                .roles
+                .iter()
+                .filter(|role| role_ids.contains(&role.id))
+                .cloned()
+                .collect(),
+            rules: self.rules.at(&role_ids, &chain),
+            chain,
+        }
     }
 
     /// What `person` may do at `place` in `tree`, from the rows `rows` (made by
@@ -234,38 +284,7 @@ impl Policy {
             Place::Organization => Vec::new(),
             Place::Project(project) => tree.chain(project)?,
         };
-        let rows: Vec<Row> = rows
-            .iter()
-            .filter(|row| row.project.is_none_or(|project| chain.contains(&project)))
-            .copied()
-            .collect();
-        let role_ids: BTreeSet<RoleId> = rows.iter().filter_map(|row| row.role).collect();
-        let here =
-            |project: Option<ProjectId>| project.is_none_or(|project| chain.contains(&project));
-        Some(evaluate(&Inputs {
-            person,
-            place,
-            chain: chain.clone(),
-            rows,
-            roles: self
-                .roles
-                .iter()
-                .filter(|role| role_ids.contains(&role.id))
-                .cloned()
-                .collect(),
-            field_rules: self
-                .field_rules
-                .iter()
-                .filter(|rule| role_ids.contains(&rule.role) && here(rule.project))
-                .copied()
-                .collect(),
-            people_rules: self
-                .people_rules
-                .iter()
-                .filter(|rule| role_ids.contains(&rule.role) && here(rule.project))
-                .copied()
-                .collect(),
-        }))
+        Some(evaluate(&self.inputs_from_rows(person, rows, place, chain)))
     }
 
     /// What `person` may do at `place` in `tree`.
@@ -285,12 +304,9 @@ impl Policy {
         key: Option<&Narrowing>,
         tree: &Tree,
         place: Place,
-    ) -> Option<Evaluation> {
-        let held = self.evaluate_at(person, tree, place)?;
-        Some(match key {
-            Some(key) => held.narrowed(key),
-            None => held,
-        })
+    ) -> Option<Arc<Evaluation>> {
+        self.evaluate_at(person, tree, place)
+            .map(|held| Arc::new(held).narrowed_by(key))
     }
 
     /// The projects of the tree that `person` sees, in the order of their IDs.
@@ -313,10 +329,7 @@ impl Policy {
         tree.projects()
             .filter(|project| {
                 self.evaluate_with(person, &rows, tree, Place::Project(*project))
-                    .is_some_and(|found| match key {
-                        Some(key) => found.narrowed(key).sees_project(),
-                        None => found.sees_project(),
-                    })
+                    .is_some_and(|found| Arc::new(found).narrowed_by(key).sees_project())
             })
             .collect()
     }

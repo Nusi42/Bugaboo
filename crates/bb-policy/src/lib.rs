@@ -14,6 +14,7 @@ mod catalogue;
 mod evaluate;
 mod explain;
 pub mod guards;
+mod levels;
 mod mask;
 mod moves;
 mod narrowing;
@@ -23,10 +24,13 @@ mod tree;
 
 pub use catalogue::{Counts, Kind, NOT_FOR_KEYS, Permission, Topic};
 pub use evaluate::{
-    Evaluation, FieldRule, HeldRole, Inputs, LevelSource, PeopleRule, Place, RoleData, RoleLevel,
-    Row, RowStatus, RowTrace, Who, evaluate, nearest_rule,
+    Evaluation, HeldRole, Inputs, Place, RoleData, Row, RowStatus, RowTrace, Who, evaluate,
 };
 pub use explain::{AccessReport, LevelDecision, PermissionDecision, Reason, ReasonRow};
+pub use levels::{
+    FieldRule, LevelKind, LevelRule, LevelRules, LevelSource, LevelSubject, Levels, PeopleRule,
+    RoleLevel, level_of_role, nearest_rule,
+};
 pub use mask::{Authorized, FieldMask, Masked, drop_hidden, mask_member};
 pub use moves::{Access, Change, Lift, Preview, preview_move};
 pub use narrowing::{Choice, Narrowing};

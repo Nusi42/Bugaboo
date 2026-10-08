@@ -186,6 +186,18 @@ impl bb_app::ports::ChangeStore for Database {
             change(transaction).await
         })
     }
+
+    async fn read_snapshot<'a, T: Send + 'a>(
+        &'a self,
+        read: impl for<'t> FnOnce(
+            &'t mut Transaction,
+        ) -> bb_app::ports::BoxFuture<'t, Result<T, StoreError>>
+        + Send
+        + 'a,
+    ) -> Result<T, StoreError> {
+        let mut transaction = self.begin_read().await?;
+        read(&mut transaction).await
+    }
 }
 
 async fn transaction_has_no_row(

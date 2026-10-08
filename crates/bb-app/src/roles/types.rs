@@ -6,7 +6,7 @@ use bb_core::access::{AppliesTo, FieldLevel, PeopleLevel};
 use bb_core::fields::Field;
 use bb_core::id::{AssignmentId, GroupId, ProjectId, RoleId, UserId};
 use bb_core::people_kinds::PeopleKind;
-use bb_policy::{Masked, Permission, PersonRef};
+use bb_policy::{LevelSubject, Masked, Permission, PersonRef};
 use jiff::Timestamp;
 use serde::Serialize;
 
@@ -127,6 +127,59 @@ pub struct SetPeopleLevel {
     pub kind: PeopleKind,
     /// The level.
     pub level: Option<PeopleLevel>,
+}
+
+/// One level to set (`Some`) or take away (`None`): the same for a field and for a kind of people
+/// information, over [`LevelSubject`].
+pub struct SetLevel<K: LevelSubject> {
+    /// The secret of the session of the request.
+    pub session_token: String,
+    /// The role.
+    pub role: RoleId,
+    /// The project, or `None` for the role's own level.
+    pub project: Option<ProjectId>,
+    /// The field or the kind of people information.
+    pub subject: K,
+    /// The level.
+    pub level: Option<K::Level>,
+}
+
+/// A request that sets one level: [`SetFieldLevel`] or [`SetPeopleLevel`]. What the HTTP layer
+/// fills in is named after what it sets; the use case [`crate::roles::set_level`] takes both.
+pub trait LevelRequest {
+    /// Field or kind of people information.
+    type Subject: LevelSubject;
+
+    /// The level to set, in the one shape the use case works with.
+    fn into_change(self) -> SetLevel<Self::Subject>;
+}
+
+impl LevelRequest for SetFieldLevel {
+    type Subject = Field;
+
+    fn into_change(self) -> SetLevel<Field> {
+        SetLevel {
+            session_token: self.session_token,
+            role: self.role,
+            project: self.project,
+            subject: self.field,
+            level: self.level,
+        }
+    }
+}
+
+impl LevelRequest for SetPeopleLevel {
+    type Subject = PeopleKind;
+
+    fn into_change(self) -> SetLevel<PeopleKind> {
+        SetLevel {
+            session_token: self.session_token,
+            role: self.role,
+            project: self.project,
+            subject: self.kind,
+            level: self.level,
+        }
+    }
 }
 
 /// List the roles, for the whole organization or for choosing one on a project.

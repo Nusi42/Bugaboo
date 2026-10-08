@@ -19,6 +19,19 @@ pub use ::serde as __serde;
 #[doc(hidden)]
 pub use std::fmt as __fmt;
 
+/// What every enum declared with `words!` offers, so code that works for any vocabulary is written
+/// once (the levels of `bb-policy` and the tables of `bb-store` are generic over it).
+pub trait Word: Copy + fmt::Debug + std::hash::Hash + Ord + Send + Sync + 'static {
+    /// Every variant, in the order they are declared.
+    const ALL: &'static [Self];
+
+    /// The word of this variant.
+    fn code(self) -> &'static str;
+
+    /// The variant with this word, if there is one.
+    fn from_code(code: &str) -> Option<Self>;
+}
+
 /// The text is not one of the words.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct UnknownWord;
@@ -99,6 +112,18 @@ macro_rules! words {
                     Some(variant) => variant,
                     None => Self::ALL[0],
                 }
+            }
+        }
+
+        impl $crate::words::Word for $name {
+            const ALL: &'static [Self] = <$name>::ALL;
+
+            fn code(self) -> &'static str {
+                <$name>::code(self)
+            }
+
+            fn from_code(code: &str) -> Option<Self> {
+                <$name>::from_code(code)
             }
         }
 

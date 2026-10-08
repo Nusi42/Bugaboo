@@ -9,11 +9,9 @@
 use std::fmt;
 use std::sync::{Arc, Mutex, MutexGuard};
 
-use bb_core::access::{Assignment, FieldLevel, Group, GroupMember, PeopleLevel};
+use bb_core::access::{Assignment, Group, GroupMember};
 use bb_core::event::DomainEvent;
-use bb_core::fields::Field;
-use bb_core::id::{AccessKeyId, InvitationId, PasskeyId, ProjectId, RoleId, SessionId, UserId};
-use bb_core::people_kinds::PeopleKind;
+use bb_core::id::{AccessKeyId, InvitationId, PasskeyId, RoleId, SessionId, UserId};
 use bb_core::person::Person;
 use bb_core::project::{Project, ProjectAlias};
 use bb_core::security_log::Digest;
@@ -25,6 +23,7 @@ use bb_core::settings::{
 use bb_core::sign_in::{
     Invitation, SessionStage, SetupCode, SignInSession, StoredPasskey, TwoStep,
 };
+use bb_policy::LevelRules;
 use bb_policy::guards::Refusal;
 use jiff::Timestamp;
 use zeroize::Zeroizing;
@@ -82,8 +81,7 @@ pub(crate) struct State {
     pub(crate) starting_roles_made: bool,
     pub(crate) legacy_administrators: Vec<UserId>,
     pub(crate) roles: Vec<RoleRecord>,
-    pub(crate) field_levels: Vec<(RoleId, Option<ProjectId>, Field, FieldLevel)>,
-    pub(crate) people_levels: Vec<(RoleId, Option<ProjectId>, PeopleKind, PeopleLevel)>,
+    pub(crate) rules: LevelRules,
     pub(crate) groups: Vec<Group>,
     pub(crate) members: Vec<GroupMember>,
     pub(crate) assignments: Vec<Assignment>,
@@ -185,6 +183,18 @@ impl ChangeStore for FakeStore {
         shared.state = tx.state;
         shared.events.push(event.clone());
         Ok(result)
+    }
+
+    async fn read_snapshot<'a, T: Send + 'a>(
+        &'a self,
+        read: impl for<'t> FnOnce(&'t mut Tx) -> BoxFuture<'t, Result<T, FakeError>> + Send + 'a,
+    ) -> Result<T, FakeError> {
+        let state = {
+            let mut shared = self.lock();
+            shared.reads += 1;
+            shared.state.clone()
+        };
+        read(&mut Tx { state }).await
     }
 }
 

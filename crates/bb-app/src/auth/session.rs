@@ -20,8 +20,10 @@ use jiff::Timestamp;
 use serde_json::json;
 use zeroize::Zeroizing;
 
-use super::ctx::{AppError, Ctx, by, change_failed, changed, entity, internal, person_key, set_to};
-use super::store::AuthStore;
+use super::ctx::{
+    AppError, Ctx, Stops, by, change_failed, changed, entity, internal, person_key, set_to,
+};
+use super::store::{Account, AuthStore};
 use super::types::{
     AuthStatus, AuthenticateQuery, Authenticated, Done, EndSession, MAX_SESSIONS_LISTED,
     PasskeySecondStep, PersonView, SecondStep, SecondStepGap, SecondStepGapQuery,
@@ -145,6 +147,43 @@ pub(crate) async fn purge<S: AuthStore>(
     .map(|_| ())
 }
 
+impl<S: AuthStore> Ctx<'_, S> {
+    /// The account of an address and whether the password is its own. An address that is no
+    /// address and a password that can never be one are answered like a wrong password, after
+    /// the same work.
+    async fn check_credentials(
+        &self,
+        email: &str,
+        password: &Zeroizing<String>,
+    ) -> Result<(Option<Account>, Verdict), AppError> {
+        let account = match EmailAddress::parse(email) {
+            Some(address) => self
+                .store()
+                .account_by_email(address.as_str())
+                .await
+                .map_err(|error| internal::<S>(&error))?,
+            None => None,
+        };
+        // Text that can never be a password is refused before any work is done; this tells
+        // nothing about the account.
+        let verdict = if password.chars().count() > MAX_LENGTH {
+            Verdict {
+                matches: false,
+                needs_rehash: false,
+            }
+        } else {
+            let stored = account
+                .as_ref()
+                .and_then(|account| account.password_hash.clone());
+            self.services
+                .hasher
+                .verify(password.clone(), stored)
+                .await?
+        };
+        Ok((account, verdict))
+    }
+}
+
 /// Signs in with e-mail address and password. When the person has a second step, the session
 /// that is made can do nothing but finish it.
 ///
@@ -168,31 +207,7 @@ pub async fn sign_in<S: AuthStore>(ctx: &Ctx<'_, S>, input: SignIn) -> Result<St
     );
     let slot = ctx.reserve(key)?;
     let password = Zeroizing::new(password);
-    let checked = async {
-        let account = match EmailAddress::parse(&email) {
-            Some(address) => ctx
-                .store()
-                .account_by_email(address.as_str())
-                .await
-                .map_err(|error| internal::<S>(&error))?,
-            None => None,
-        };
-        // Text that can never be a password is refused before any work is done; this tells
-        // nothing about the account.
-        let verdict = if password.chars().count() > MAX_LENGTH {
-            Verdict {
-                matches: false,
-                needs_rehash: false,
-            }
-        } else {
-            let stored = account
-                .as_ref()
-                .and_then(|account| account.password_hash.clone());
-            ctx.services.hasher.verify(password.clone(), stored).await?
-        };
-        Ok::<_, AppError>((account, verdict))
-    }
-    .await;
+    let checked = ctx.check_credentials(&email, &password).await;
     let (account, verdict) = ctx.unless_internal(&slot, checked)?;
     let Some(account) = account.filter(|_| verdict.matches) else {
         ctx.slot_failed(slot, None).await;
@@ -241,7 +256,7 @@ pub async fn sign_in<S: AuthStore>(ctx: &Ctx<'_, S>, input: SignIn) -> Result<St
             })
         })
         .await
-        .map_err(|error| change_failed::<S>(&error, None))?;
+        .map_err(|error| change_failed::<S>(&error, Stops::NONE))?;
     let action = if methods.is_some() {
         SecurityAction::SignInSecondStepNeeded
     } else {
@@ -353,7 +368,7 @@ pub async fn second_step<S: AuthStore>(
         })
         .await;
     if let Err(error) = result {
-        let error = change_failed::<S>(&error, Some(ErrorCode::WrongSecondStepCode));
+        let error = change_failed::<S>(&error, Stops::both(ErrorCode::WrongSecondStepCode));
         if matches!(error, AppError::Refused(_)) {
             ctx.second_step_failed(slot, &pending, SecurityAction::SecondStepFailed)
                 .await?;
@@ -447,7 +462,7 @@ pub async fn passkey_second_step<S: AuthStore>(
             })
         })
         .await
-        .map_err(|error| change_failed::<S>(&error, None));
+        .map_err(|error| change_failed::<S>(&error, Stops::NONE));
     ctx.unless_internal(&slot, changed_session)?;
     ctx.second_step_done(slot, &pending);
     ctx.note(
@@ -492,7 +507,7 @@ pub async fn sign_out<S: AuthStore>(ctx: &Ctx<'_, S>, input: SignOut) -> Result<
             Box::pin(async move { S::delete_session(transaction, id).await.map(|_| ()) })
         })
         .await
-        .map_err(|error| change_failed::<S>(&error, None))?;
+        .map_err(|error| change_failed::<S>(&error, Stops::NONE))?;
     ctx.note(
         SecurityAction::SessionEnded,
         Some(person),
@@ -529,7 +544,7 @@ pub async fn sign_out_everywhere<S: AuthStore>(
             })
         })
         .await
-        .map_err(|error| change_failed::<S>(&error, None))?;
+        .map_err(|error| change_failed::<S>(&error, Stops::NONE))?;
     ctx.note(SecurityAction::SessionsEndedAll, Some(person), None)
         .await;
     for key in keys {
@@ -576,7 +591,7 @@ pub async fn end_session<S: AuthStore>(
             Box::pin(async move { S::delete_session(transaction, id).await.map(|_| ()) })
         })
         .await
-        .map_err(|error| change_failed::<S>(&error, None))?;
+        .map_err(|error| change_failed::<S>(&error, Stops::NONE))?;
     ctx.note(
         SecurityAction::SessionEnded,
         Some(person),

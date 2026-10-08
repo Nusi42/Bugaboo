@@ -16,8 +16,10 @@ use super::types::{
     Subject, WhoView,
 };
 use crate::access::{Actor, ensure_may_give_in};
-use crate::auth::{AppError, AuthStore, Ctx, Done, by, entity, internal, set_to};
-use crate::people::{GroupView, stopped};
+use crate::auth::{
+    AppError, AuthStore, Ctx, Done, Stops, by, change_failed, entity, internal, set_to,
+};
+use crate::people::GroupView;
 
 /// Whether `new` and `old` are for the same person or group.
 pub(super) fn same_subject(new: &Assignment, old: &Assignment) -> bool {
@@ -186,13 +188,7 @@ pub async fn assign_role<S: AuthStore>(
             })
         })
         .await
-        .map_err(|error| {
-            stopped::<S>(
-                &error,
-                ErrorCode::AssignmentConflict,
-                ErrorCode::AssignmentConflict,
-            )
-        })?;
+        .map_err(|error| change_failed::<S>(&error, Stops::both(ErrorCode::AssignmentConflict)))?;
     ctx.note(
         SecurityAction::AssignmentMade,
         Some(actor.person.id),
@@ -256,7 +252,9 @@ pub async fn remove_assignment<S: AuthStore>(
             })
         })
         .await
-        .map_err(|error| stopped::<S>(&error, ErrorCode::NotFound, ErrorCode::NotFound))?;
+        .map_err(|error| {
+            change_failed::<S>(&error, Stops::new(ErrorCode::NotFound, ErrorCode::NotFound))
+        })?;
     ctx.note(
         SecurityAction::AssignmentRemoved,
         Some(actor.person.id),

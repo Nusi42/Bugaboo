@@ -299,7 +299,7 @@ mod tests {
     use bb_core::fields::Field;
     use bb_core::id::{AssignmentId, ProjectId, RoleId, SequentialIds, UserId};
     use bb_policy::{
-        Evaluation, FieldRule, Inputs, Place, RoleData, Row as PolicyRow, Who, evaluate,
+        Evaluation, FieldRule, Inputs, LevelRules, Place, RoleData, Row as PolicyRow, Who, evaluate,
     };
 
     use super::*;
@@ -366,20 +366,22 @@ mod tests {
                 permissions: std::collections::BTreeSet::new(),
                 two_step: false,
             }],
-            field_rules: Field::ALL
-                .iter()
-                .map(|field| FieldRule {
-                    project: None,
-                    role,
-                    field: *field,
-                    level: if Some(*field) == hidden {
-                        FieldLevel::Hidden
-                    } else {
-                        FieldLevel::CanChange
-                    },
-                })
-                .collect(),
-            people_rules: Vec::new(),
+            rules: LevelRules {
+                fields: Field::ALL
+                    .iter()
+                    .map(|field| FieldRule {
+                        project: None,
+                        role,
+                        subject: *field,
+                        level: if Some(*field) == hidden {
+                            FieldLevel::Hidden
+                        } else {
+                            FieldLevel::CanChange
+                        },
+                    })
+                    .collect(),
+                people: Vec::new(),
+            },
         })
     }
 

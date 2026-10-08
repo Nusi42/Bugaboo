@@ -81,7 +81,7 @@ fn sec_04_a_project_sets_its_own_level_and_sub_projects_inherit_until_one_sets_i
         FieldLevel::CanChange,
         "inherited from WEB, the nearest parent that set one"
     );
-    let decision = world.at(world.api).explain_field(Field::CostCenter);
+    let decision = world.at(world.api).explain_level(Field::CostCenter);
     assert_eq!(decision.level, FieldLevel::CanChange);
     assert_eq!(decision.roles.len(), 1);
     assert_eq!(decision.roles[0].level, FieldLevel::CanChange);

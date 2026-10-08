@@ -35,7 +35,7 @@ use serde_json::{Value, json};
 pub use store::SettingsStore;
 
 use crate::access::{Actor, ProjectLabel};
-use crate::auth::{AppError, AuthStore, Ctx, by, change_failed, fixed_entity, internal};
+use crate::auth::{AppError, AuthStore, Ctx, Stops, by, change_failed, fixed_entity, internal};
 
 /// Where the settings of a request are: the organization, a project, or the person who asks.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -462,7 +462,7 @@ pub async fn change_setting<S: AuthStore>(
             })
         })
         .await
-        .map_err(|error| change_failed::<S>(&error, Some(ErrorCode::SettingLocked)))?;
+        .map_err(|error| change_failed::<S>(&error, Stops::both(ErrorCode::SettingLocked)))?;
     ctx.note_security(&actor, definition, SecurityAction::SettingChanged, entity)
         .await;
     let view = ctx.view_after(&actor, scope, definition).await?;
@@ -515,7 +515,7 @@ pub async fn reset_setting<S: AuthStore>(
             })
         })
         .await
-        .map_err(|error| change_failed::<S>(&error, None))?;
+        .map_err(|error| change_failed::<S>(&error, Stops::NONE))?;
     ctx.note_security(&actor, definition, SecurityAction::SettingReset, entity)
         .await;
     let view = ctx.view_after(&actor, scope, definition).await?;
@@ -571,7 +571,7 @@ pub async fn lock_setting<S: AuthStore>(
             Box::pin(async move { S::put_setting_lock(transaction, store_key, locked, now).await })
         })
         .await
-        .map_err(|error| change_failed::<S>(&error, None))?;
+        .map_err(|error| change_failed::<S>(&error, Stops::NONE))?;
     let action = if locked {
         SecurityAction::SettingLocked
     } else {

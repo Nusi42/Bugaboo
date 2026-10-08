@@ -33,7 +33,7 @@ use serde_json::json;
 
 use crate::access::{ensure_may_give_in, ensure_may_lift_in};
 use crate::auth::{
-    AppError, AuthStore, Ctx, Done, by, change_failed, changed, entity, internal, set_to,
+    AppError, AuthStore, Ctx, Done, Stops, by, change_failed, changed, entity, internal, set_to,
 };
 use crate::input::clean_name;
 
@@ -201,7 +201,7 @@ pub async fn make_group<S: AuthStore>(
             Box::pin(async move { S::insert_group(transaction, &stored).await })
         })
         .await
-        .map_err(|error| change_failed::<S>(&error, Some(ErrorCode::NameTaken)))?;
+        .map_err(|error| change_failed::<S>(&error, Stops::both(ErrorCode::NameTaken)))?;
     ctx.note(
         SecurityAction::GroupMade,
         Some(actor.person.id),
@@ -248,7 +248,12 @@ pub async fn rename_group<S: AuthStore>(
             })
         })
         .await
-        .map_err(|error| stopped::<S>(&error, ErrorCode::NotFound, ErrorCode::NameTaken))?;
+        .map_err(|error| {
+            change_failed::<S>(
+                &error,
+                Stops::new(ErrorCode::NotFound, ErrorCode::NameTaken),
+            )
+        })?;
     ctx.note(
         SecurityAction::GroupRenamed,
         Some(actor.person.id),
@@ -292,7 +297,9 @@ pub async fn delete_group<S: AuthStore>(
             })
         })
         .await
-        .map_err(|error| stopped::<S>(&error, ErrorCode::NotFound, ErrorCode::NotFound))?;
+        .map_err(|error| {
+            change_failed::<S>(&error, Stops::new(ErrorCode::NotFound, ErrorCode::NotFound))
+        })?;
     ctx.note(
         SecurityAction::GroupDeleted,
         Some(actor.person.id),
@@ -300,25 +307,6 @@ pub async fn delete_group<S: AuthStore>(
     )
     .await;
     Ok(Done)
-}
-
-/// What a change that stopped itself says: the rule of the policy engine that refused it, that the
-/// record it meant is gone, or that its name is taken.
-pub(crate) fn stopped<S: AuthStore>(
-    error: &S::Error,
-    aborted: ErrorCode,
-    duplicate: ErrorCode,
-) -> AppError {
-    if let Some(refusal) = S::as_refusal(error) {
-        return refusal.into();
-    }
-    if S::is_aborted(error) {
-        return AppError::Refused(aborted);
-    }
-    if S::is_duplicate(error) {
-        return AppError::Refused(duplicate);
-    }
-    internal::<S>(error)
 }
 
 /// Puts a person into a group.
@@ -368,7 +356,12 @@ pub async fn add_group_member<S: AuthStore>(
             })
         })
         .await
-        .map_err(|error| stopped::<S>(&error, ErrorCode::NotFound, ErrorCode::InvalidRequest))?;
+        .map_err(|error| {
+            change_failed::<S>(
+                &error,
+                Stops::new(ErrorCode::NotFound, ErrorCode::InvalidRequest),
+            )
+        })?;
     ctx.note(
         SecurityAction::GroupMemberAdded,
         Some(actor.person.id),
@@ -414,7 +407,9 @@ pub async fn remove_group_member<S: AuthStore>(
             })
         })
         .await
-        .map_err(|error| stopped::<S>(&error, ErrorCode::NotFound, ErrorCode::NotFound))?;
+        .map_err(|error| {
+            change_failed::<S>(&error, Stops::new(ErrorCode::NotFound, ErrorCode::NotFound))
+        })?;
     ctx.note(
         SecurityAction::GroupMemberRemoved,
         Some(actor.person.id),

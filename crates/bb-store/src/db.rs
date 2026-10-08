@@ -6,6 +6,7 @@
 //! This is the only file that may wrap query text in `AssertSqlSafe`, and the only one that
 //! names the sqlx query functions (ARCH-SQL-EDGE).
 
+use std::future::Future;
 use std::str::FromStr as _;
 use std::time::Duration;
 
@@ -237,23 +238,7 @@ impl Database {
         &self,
         statement: impl Into<Statement<'a>>,
     ) -> Result<u64, StoreError> {
-        let statement = statement.into();
-        match &self.pool {
-            Pool::Sqlite(pool) => {
-                let (sql, values) = statement.build(Dialect::Sqlite);
-                Ok(sqlx::query_with(AssertSqlSafe(sql), values)
-                    .execute(pool)
-                    .await?
-                    .rows_affected())
-            }
-            Pool::Postgres(pool) => {
-                let (sql, values) = statement.build(Dialect::Postgres);
-                Ok(sqlx::query_with(AssertSqlSafe(sql), values)
-                    .execute(pool)
-                    .await?
-                    .rows_affected())
-            }
-        }
+        Connection::Pool(&self.pool).execute(statement.into()).await
     }
 
     /// Reads all rows of a query.
@@ -261,23 +246,9 @@ impl Database {
         &self,
         statement: impl Into<Statement<'a>>,
     ) -> Result<Vec<Row>, StoreError> {
-        let statement = statement.into();
-        match &self.pool {
-            Pool::Sqlite(pool) => {
-                let (sql, values) = statement.build(Dialect::Sqlite);
-                let rows = sqlx::query_with(AssertSqlSafe(sql), values)
-                    .fetch_all(pool)
-                    .await?;
-                Ok(rows.into_iter().map(Row::Sqlite).collect())
-            }
-            Pool::Postgres(pool) => {
-                let (sql, values) = statement.build(Dialect::Postgres);
-                let rows = sqlx::query_with(AssertSqlSafe(sql), values)
-                    .fetch_all(pool)
-                    .await?;
-                Ok(rows.into_iter().map(Row::Postgres).collect())
-            }
-        }
+        Connection::Pool(&self.pool)
+            .fetch_all(statement.into())
+            .await
     }
 
     /// Reads the first row of a query, if there is one.
@@ -286,6 +257,98 @@ impl Database {
         statement: impl Into<Statement<'a>>,
     ) -> Result<Option<Row>, StoreError> {
         Ok(self.fetch_all(statement).await?.into_iter().next())
+    }
+}
+
+/// Something that runs the statements of a read: the pool (one statement, no snapshot) or a
+/// transaction (a snapshot, or a change that is open). A read is written once over this, so there
+/// is no pool version and no transaction version of it.
+pub(crate) trait Reader: Send {
+    /// Reads all rows of a query.
+    fn fetch_all(
+        &mut self,
+        select: &SelectStatement,
+    ) -> impl Future<Output = Result<Vec<Row>, StoreError>> + Send;
+
+    /// Reads the first row of a query, if there is one.
+    fn fetch_optional(
+        &mut self,
+        select: &SelectStatement,
+    ) -> impl Future<Output = Result<Option<Row>, StoreError>> + Send {
+        async move { Ok(self.fetch_all(select).await?.into_iter().next()) }
+    }
+}
+
+impl Reader for &Database {
+    fn fetch_all(
+        &mut self,
+        select: &SelectStatement,
+    ) -> impl Future<Output = Result<Vec<Row>, StoreError>> + Send {
+        Database::fetch_all(self, select)
+    }
+}
+
+impl Reader for Transaction {
+    fn fetch_all(
+        &mut self,
+        select: &SelectStatement,
+    ) -> impl Future<Output = Result<Vec<Row>, StoreError>> + Send {
+        Self::fetch_all(self, select)
+    }
+}
+
+/// Where a statement runs: on the pool, or inside a transaction. The two ways to run a
+/// statement are written once, here, for both databases.
+enum Connection<'c> {
+    Pool(&'c Pool),
+    Transaction(&'c mut TxInner),
+}
+
+impl Connection<'_> {
+    /// Runs a statement and tells how many rows it changed.
+    async fn execute(self, statement: Statement<'_>) -> Result<u64, StoreError> {
+        macro_rules! run {
+            ($dialect:expr, $executor:expr) => {{
+                let (sql, values) = statement.build($dialect);
+                Ok(sqlx::query_with(AssertSqlSafe(sql), values)
+                    .execute($executor)
+                    .await?
+                    .rows_affected())
+            }};
+        }
+        match self {
+            Self::Pool(Pool::Sqlite(pool)) => run!(Dialect::Sqlite, pool),
+            Self::Pool(Pool::Postgres(pool)) => run!(Dialect::Postgres, pool),
+            Self::Transaction(TxInner::Sqlite(transaction)) => {
+                run!(Dialect::Sqlite, &mut **transaction)
+            }
+            Self::Transaction(TxInner::Postgres(transaction)) => {
+                run!(Dialect::Postgres, &mut **transaction)
+            }
+        }
+    }
+
+    /// Runs a statement and reads all rows it answers (also a statement with `RETURNING`).
+    async fn fetch_all(self, statement: Statement<'_>) -> Result<Vec<Row>, StoreError> {
+        macro_rules! run {
+            ($dialect:expr, $executor:expr, $row:path) => {{
+                let (sql, values) = statement.build($dialect);
+                let rows = sqlx::query_with(AssertSqlSafe(sql), values)
+                    .fetch_all($executor)
+                    .await?;
+                Ok(rows.into_iter().map($row).collect())
+            }};
+        }
+        match self {
+            Self::Pool(Pool::Sqlite(pool)) => run!(Dialect::Sqlite, pool, Row::Sqlite),
+            Self::Pool(Pool::Postgres(pool)) => run!(Dialect::Postgres, pool, Row::Postgres),
+            Self::Transaction(TxInner::Sqlite(transaction)) => {
+                run!(Dialect::Sqlite, &mut **transaction, Row::Sqlite)
+            }
+            Self::Transaction(TxInner::Postgres(transaction)) => {
+                run!(Dialect::Postgres, &mut **transaction, Row::Postgres)
+            }
+        }
     }
 }
 
@@ -323,23 +386,9 @@ impl Transaction {
         &mut self,
         statement: impl Into<Statement<'a>>,
     ) -> Result<u64, StoreError> {
-        let statement = statement.into();
-        match &mut self.inner {
-            TxInner::Sqlite(transaction) => {
-                let (sql, values) = statement.build(Dialect::Sqlite);
-                Ok(sqlx::query_with(AssertSqlSafe(sql), values)
-                    .execute(&mut **transaction)
-                    .await?
-                    .rows_affected())
-            }
-            TxInner::Postgres(transaction) => {
-                let (sql, values) = statement.build(Dialect::Postgres);
-                Ok(sqlx::query_with(AssertSqlSafe(sql), values)
-                    .execute(&mut **transaction)
-                    .await?
-                    .rows_affected())
-            }
-        }
+        Connection::Transaction(&mut self.inner)
+            .execute(statement.into())
+            .await
     }
 
     /// Reads all rows of a query inside the transaction (also statements with `RETURNING`).
@@ -347,23 +396,9 @@ impl Transaction {
         &mut self,
         statement: impl Into<Statement<'a>>,
     ) -> Result<Vec<Row>, StoreError> {
-        let statement = statement.into();
-        match &mut self.inner {
-            TxInner::Sqlite(transaction) => {
-                let (sql, values) = statement.build(Dialect::Sqlite);
-                let rows = sqlx::query_with(AssertSqlSafe(sql), values)
-                    .fetch_all(&mut **transaction)
-                    .await?;
-                Ok(rows.into_iter().map(Row::Sqlite).collect())
-            }
-            TxInner::Postgres(transaction) => {
-                let (sql, values) = statement.build(Dialect::Postgres);
-                let rows = sqlx::query_with(AssertSqlSafe(sql), values)
-                    .fetch_all(&mut **transaction)
-                    .await?;
-                Ok(rows.into_iter().map(Row::Postgres).collect())
-            }
-        }
+        Connection::Transaction(&mut self.inner)
+            .fetch_all(statement.into())
+            .await
     }
 
     /// Reads the first row of a query inside the transaction, if there is one.

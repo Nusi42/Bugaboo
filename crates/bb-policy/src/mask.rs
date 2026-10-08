@@ -60,7 +60,7 @@ impl Evaluation {
     #[must_use]
     pub fn field_mask(&self) -> FieldMask {
         FieldMask {
-            levels: self.fields.clone(),
+            levels: self.fields.all().clone(),
         }
     }
 
