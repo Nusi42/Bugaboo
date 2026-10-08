@@ -6,7 +6,8 @@ use std::collections::BTreeSet;
 use super::arch_map_sync;
 use super::{Check, Context, Finding};
 use crate::docs::building_blocks::{Layout, parse_module_map};
-use crate::docs::source::{BUILDING_BLOCKS, read_text};
+use crate::docs::source::BUILDING_BLOCKS;
+use crate::source::read_text;
 
 pub(crate) struct MetaNewModule;
 

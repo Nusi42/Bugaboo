@@ -117,6 +117,11 @@ fn home() -> PathBuf {
         .map_or_else(|| PathBuf::from("."), Path::to_path_buf)
 }
 
+/// The folder setup keeps the downloaded archives in.
+pub(crate) fn cache_dir(root: &Path) -> PathBuf {
+    root.join(TOOLS_DIR).join("cache")
+}
+
 /// The folder setup installs binaries into.
 pub(crate) fn bin_dir(root: &Path) -> PathBuf {
     root.join(TOOLS_DIR).join("bin")

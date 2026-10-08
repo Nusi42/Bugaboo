@@ -278,7 +278,7 @@ mod tests {
         for output in generate(&repo, &text).unwrap() {
             let on_disk = std::fs::read_to_string(repo.path(output.path)).unwrap();
             assert_eq!(
-                on_disk.replace("\r\n", "\n"),
+                crate::source::normalize(&on_disk),
                 output.content,
                 "{} is stale; run `cargo xtask gen messages`",
                 output.path

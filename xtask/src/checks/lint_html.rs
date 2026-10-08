@@ -5,14 +5,8 @@
 
 use std::path::Path;
 
-use super::node_tool::{Selection, run};
+use super::node_tool::run;
 use super::{Check, Context, Finding};
-
-const SELECTION: Selection = Selection {
-    folders: &["docs/mockups"],
-    files: &["docs/02-ux-design.html", "web/app/index.html"],
-    endings: &[".html"],
-};
 
 /// The strict config for the browser app, and the looser one for the documentation pages.
 const APP_CONFIG: &str = "htmlvalidate.config.mjs";
@@ -26,8 +20,8 @@ impl Check for LintHtml {
     }
 
     fn run(&self, context: &Context<'_>) -> anyhow::Result<Vec<Finding>> {
-        let (app, docs): (Vec<String>, Vec<String>) = SELECTION
-            .pick(context)
+        let (app, docs): (Vec<String>, Vec<String>) = context
+            .selected(self.id())?
             .into_iter()
             .partition(|file| file.starts_with("web/"));
         let root = context.repo.root();

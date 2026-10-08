@@ -21,10 +21,12 @@ mod hook;
 mod location;
 mod metadata;
 mod output;
+mod ports;
 mod repo;
 mod runner;
 mod rust_source;
 mod setup;
+mod source;
 mod steps;
 #[cfg(test)]
 mod testutil;
@@ -224,7 +226,10 @@ fn run() -> anyhow::Result<ExitCode> {
         }
         Command::Setup => {
             setup::run(&repo)?;
-            output::info("All tools are installed in .tools/.");
+            output::info(&format!(
+                "All tools are installed in {}/.",
+                tools::TOOLS_DIR
+            ));
             Ok(ExitCode::SUCCESS)
         }
         Command::Gen { target } => {

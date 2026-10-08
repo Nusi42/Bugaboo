@@ -4,10 +4,9 @@
 use std::collections::{HashMap, HashSet};
 
 use super::{Check, Context, Finding};
-use crate::docs::source::{
-    FEATURE_LIST, MILESTONE_PACKAGES_DIR, MILESTONES, read_text, sorted_files,
-};
+use crate::docs::source::{FEATURE_LIST, MILESTONE_PACKAGES_DIR, MILESTONES, sorted_files};
 use crate::docs::text;
+use crate::source::read_text;
 
 /// The last milestone that delivers MVP ("M") features; later ones deliver 1.0 ("V1") features.
 const LAST_MVP_MILESTONE: u32 = 9;

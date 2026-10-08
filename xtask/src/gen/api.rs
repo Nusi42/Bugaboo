@@ -28,7 +28,7 @@ use super::privacy::table;
 use super::{Generated, write_all};
 use crate::checks::arch_settings::{CATALOG_PATH, TEST_SETTINGS_MARK, declared_keys};
 use crate::repo::Repo;
-use crate::rust_source::{Source, read_product_sources};
+use crate::source::{Kind, Source, read_sources};
 use crate::tools;
 
 /// The OpenAPI document, relative to the repository root.
@@ -65,7 +65,7 @@ pub(crate) fn run(repo: &Repo) -> anyhow::Result<Vec<String>> {
 
 pub(crate) fn generate(repo: &Repo) -> anyhow::Result<Vec<Generated>> {
     let spec = openapi_text(repo)?;
-    let sources = read_product_sources(repo)?;
+    let sources = read_sources(repo, None, Kind::Rust)?;
     let cookies = read_cookies(&sources)?;
     let catalog = std::fs::read_to_string(repo.path(SOURCE_LOCALE_PATH))
         .with_context(|| format!("could not read {SOURCE_LOCALE_PATH}"))?;

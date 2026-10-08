@@ -6,14 +6,11 @@
 //! suite, so a new page cannot be added without being checked; the suite itself runs in
 //! `cargo xtask ci` (the browser end-to-end tests).
 
-use std::fs;
-
-use anyhow::Context as _;
-
 use super::web_source::code_of;
 use super::{Check, Context, Finding};
 use crate::docs::source::sorted_files;
 use crate::docs::text::has_extension;
+use crate::source::read_text;
 
 const PATHS_FILE: &str = "web/app/src/shared/paths.ts";
 const SUITE_FOLDER: &str = "web/app/e2e";
@@ -28,20 +25,14 @@ impl Check for TestA11y {
 
     fn run(&self, context: &Context<'_>) -> anyhow::Result<Vec<Finding>> {
         let repo = context.repo;
-        let paths = fs::read_to_string(repo.path(PATHS_FILE))
-            .with_context(|| format!("could not read {PATHS_FILE}"))?;
+        let paths = read_text(repo, PATHS_FILE)?;
         let mut suite = String::new();
         for name in sorted_files(repo, SUITE_FOLDER, |name| has_extension(name, "ts"))? {
             if name.starts_with(SUITE_PREFIX) && name.ends_with(".spec.ts") {
-                suite.push_str(&fs::read_to_string(
-                    repo.path(&format!("{SUITE_FOLDER}/{name}")),
-                )?);
+                suite.push_str(&read_text(repo, &format!("{SUITE_FOLDER}/{name}"))?);
             }
         }
-        Ok(evaluate(
-            &paths.replace("\r\n", "\n"),
-            &suite.replace("\r\n", "\n"),
-        ))
+        Ok(evaluate(&paths, &suite))
     }
 }
 
@@ -155,7 +146,7 @@ visit(paths.longer); // paths.home and paths.signIn
     #[test]
     fn the_real_paths_are_read() {
         let repo = crate::repo::Repo::discover().unwrap();
-        let text = fs::read_to_string(repo.path(PATHS_FILE)).unwrap();
+        let text = read_text(&repo, PATHS_FILE).unwrap();
         let names: Vec<String> = entries(&text).into_iter().map(|(name, _)| name).collect();
         assert!(names.contains(&"home".to_owned()));
         assert!(names.contains(&"appearance".to_owned()));

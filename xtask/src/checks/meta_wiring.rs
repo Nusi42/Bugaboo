@@ -4,8 +4,9 @@
 //! The files do not have to exist yet: a missing file passes.
 
 use super::{Check, Context, Finding};
-use crate::docs::source::{read_text, sorted_files};
+use crate::docs::source::sorted_files;
 use crate::docs::text::has_extension;
+use crate::source::read_text;
 
 const LEFTHOOK_FILES: [&str; 2] = ["lefthook.yml", "lefthook.yaml"];
 const CLAUDE_SETTINGS: &str = ".claude/settings.json";

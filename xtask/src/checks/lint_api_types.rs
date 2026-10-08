@@ -9,9 +9,10 @@ use std::collections::BTreeSet;
 
 use anyhow::Context as _;
 
-use super::web_source::{WebSource, code_of, read_web_sources};
+use super::web_source::code_of;
 use super::{Check, Context, Finding};
 use crate::generate::api::SPEC_PATH;
+use crate::source::{Kind, Source};
 
 /// The app; the client package itself is where the types live.
 const APP: &str = "web/app/";
@@ -29,7 +30,7 @@ impl Check for LintApiTypes {
         let spec = std::fs::read_to_string(context.repo.path(SPEC_PATH))
             .with_context(|| format!("could not read {SPEC_PATH}; run `cargo xtask gen api`"))?;
         let schemas = schema_names(&spec)?;
-        Ok(evaluate(&read_web_sources(context.repo)?, &schemas))
+        Ok(evaluate(&context.sources(self.id(), Kind::Web)?, &schemas))
     }
 }
 
@@ -44,7 +45,7 @@ fn schema_names(spec: &str) -> anyhow::Result<BTreeSet<String>> {
         .unwrap_or_default())
 }
 
-fn evaluate(sources: &[WebSource], schemas: &BTreeSet<String>) -> Vec<Finding> {
+fn evaluate(sources: &[Source], schemas: &BTreeSet<String>) -> Vec<Finding> {
     let mut findings = Vec::new();
     for (path, text) in sources.iter().filter(|(path, _)| path.starts_with(APP)) {
         for (index, line) in text.lines().enumerate() {

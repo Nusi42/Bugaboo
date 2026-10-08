@@ -7,12 +7,11 @@ use anyhow::{Context as _, bail};
 
 use super::GENERATED_MARKER;
 use super::markdown::{self, Heading, Links};
-use super::source::{
-    ARCHITECTURE_README, MILESTONES, chapter_files, read_adrs, read_chapters, read_text,
-};
+use super::source::{ARCHITECTURE_README, MILESTONES, chapter_files, read_adrs, read_chapters};
 use super::text::escape_text;
 use crate::catalog::Catalog;
 use crate::repo::Repo;
+use crate::source::read_text;
 
 pub(super) const ARCHITECTURE_PATH: &str = "docs/03-architecture.html";
 pub(super) const MILESTONES_PATH: &str = "docs/04-milestones.html";

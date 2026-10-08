@@ -15,7 +15,9 @@
 //! change is a part of one), so a new command cannot be left untested.
 
 use super::{Check, Context, Finding};
-use crate::rust_source::{Source, read_product_sources, strip, without_tests};
+use crate::rust_source::{strip, without_tests};
+use crate::source::read_text;
+use crate::source::{Kind, Source, contains_word};
 
 /// Where the use cases and the port live.
 const USE_CASES_FOLDER: &str = "crates/bb-app/src/";
@@ -36,11 +38,9 @@ impl Check for ArchEvents {
     }
 
     fn run(&self, context: &Context<'_>) -> anyhow::Result<Vec<Finding>> {
-        let table = std::fs::read_to_string(context.repo.path(TABLE_FILE))
-            .ok()
-            .map(|text| text.replace("\r\n", "\n"));
+        let table = read_text(context.repo, TABLE_FILE).ok();
         Ok(evaluate(
-            &read_product_sources(context.repo)?,
+            &context.sources(self.id(), Kind::Rust)?,
             table.as_deref(),
         ))
     }
@@ -89,12 +89,6 @@ fn parameter_types(parameters: &str) -> Vec<String> {
                 .map(|(_, ty)| ty.trim().to_owned())
         })
         .collect()
-}
-
-/// Whether `ty` mentions the word `word`.
-fn mentions(ty: &str, word: &str) -> bool {
-    ty.split(|c: char| !(c.is_alphanumeric() || c == '_'))
-        .any(|part| part == word)
 }
 
 /// Whether the type is a query type: the last name in it ends in `Query`.
@@ -147,7 +141,9 @@ fn evaluate(sources: &[Source], table: Option<&str>) -> Vec<Finding> {
                 continue;
             };
             let types = parameter_types(parameters);
-            if !types.iter().any(|ty| mentions(ty, "Ctx")) || types.iter().any(|ty| is_query(ty)) {
+            if !types.iter().any(|ty| contains_word(ty, "Ctx"))
+                || types.iter().any(|ty| is_query(ty))
+            {
                 continue;
             }
             let after = &rest[open + parameters.len()..];
@@ -299,9 +295,9 @@ mod tests {
     #[test]
     fn the_use_cases_of_this_repository_pass() {
         let repo = crate::repo::Repo::discover().unwrap();
-        let sources = read_product_sources(&repo).unwrap();
-        let table = std::fs::read_to_string(repo.path(TABLE_FILE)).unwrap();
-        let messages: Vec<String> = evaluate(&sources, Some(&table.replace("\r\n", "\n")))
+        let sources = crate::source::read_sources(&repo, None, Kind::Rust).unwrap();
+        let table = read_text(&repo, TABLE_FILE).unwrap();
+        let messages: Vec<String> = evaluate(&sources, Some(&table))
             .into_iter()
             .map(|finding| finding.message)
             .collect();

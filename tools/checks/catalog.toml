@@ -83,7 +83,7 @@ title = "oxlint finds no problems, including type-aware rules (TypeScript 7)"
 rule = "coding-standards §4"
 tool = "oxlint + oxlint-tsgolint"
 when = ["edit", "commit", "ci"]
-files = ["web/**/*.{ts,tsx}", "docs/design/*.js", "*.{mjs,ts}"]
+files = ["web/**/*.{ts,tsx,js,mjs}", "docs/design/*.js", "*.{mjs,ts}"]
 status = "active"
 
 [[check]]
@@ -110,7 +110,7 @@ title = "TypeScript type check passes"
 rule = "coding-standards §4"
 tool = "tsc (TypeScript 7) --noEmit"
 when = ["push", "ci"]
-files = ["web/**/*.{ts,tsx}"]
+files = ["web/**/*.{ts,tsx}", "web/**/tsconfig.json"]
 status = "active"
 
 [[check]]
@@ -665,7 +665,9 @@ files = [
   "web/**/playwright.config.*",
   "tools/dev/ports.json",
   "package.json",
+  "web/**/package.json",
   "crates/**/*.rs",
+  "xtask/**/*.rs",
   "**/*.toml",
 ]
 status = "active"

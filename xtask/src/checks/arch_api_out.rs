@@ -26,7 +26,8 @@ use anyhow::Context as _;
 use serde::Deserialize;
 
 use super::{Check, Context, Finding};
-use crate::rust_source::{Source, read_product_sources, strip, without_tests};
+use crate::rust_source::{strip, without_tests};
+use crate::source::{Kind, Source, is_word_char, name_uses};
 
 /// The crates whose answers leave the program.
 const FOLDERS: [&str; 2] = ["crates/bb-api/src/", "crates/bb-mcp/src/"];
@@ -52,7 +53,7 @@ impl Check for ArchApiOut {
         let exemptions: Exemptions =
             toml::from_str(&text).with_context(|| format!("{EXEMPTIONS_PATH} is not valid"))?;
         Ok(evaluate(
-            &read_product_sources(context.repo)?,
+            &context.sources(self.id(), Kind::Rust)?,
             &exemptions.exempt,
         ))
     }
@@ -83,11 +84,6 @@ struct Function {
     /// The code of the function (signature and body), comments and texts blanked.
     code: String,
     operation: Option<String>,
-}
-
-/// Whether `c` can be part of a name.
-fn is_name(c: char) -> bool {
-    c.is_alphanumeric() || c == '_'
 }
 
 /// The text up to the bracket that closes the first `open` in `text`, brackets included.
@@ -136,11 +132,11 @@ fn functions(original: &str, code: &str) -> Vec<Function> {
     let original_lines: Vec<&str> = original.lines().collect();
     let mut found = Vec::new();
     for (at, _) in code.match_indices("fn ") {
-        if code[..at].chars().next_back().is_some_and(is_name) {
+        if code[..at].chars().next_back().is_some_and(is_word_char) {
             continue;
         }
         let rest = &code[at + 3..];
-        let name: String = rest.chars().take_while(|c| is_name(*c)).collect();
+        let name: String = rest.chars().take_while(|c| is_word_char(*c)).collect();
         if name.is_empty() {
             continue;
         }
@@ -181,16 +177,11 @@ fn functions(original: &str, code: &str) -> Vec<Function> {
 /// The places in `code` where `word` is called or named as a whole name, not as the method of a
 /// value (after a dot), not as a definition (after `fn`) and not as part of a longer name.
 fn calls<'a>(code: &'a str, word: &'a str) -> impl Iterator<Item = usize> + 'a {
-    code.match_indices(word).filter_map(move |(at, _)| {
-        let before = &code[..at];
-        let after = code[at + word.len()..].chars().next();
-        let boundary = !before
+    name_uses(code, word).filter(move |at| {
+        code[at + word.len()..]
             .chars()
-            .next_back()
-            .is_some_and(|c| is_name(c) || c == '.');
-        let defines = before.trim_end().ends_with("fn");
-        (boundary && after.is_some_and(|c| c == '(' || c == '<' || c == ':') && !defines)
-            .then_some(at)
+            .next()
+            .is_some_and(|c| matches!(c, '(' | '<' | ':'))
     })
 }
 

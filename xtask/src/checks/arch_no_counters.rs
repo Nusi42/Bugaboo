@@ -28,7 +28,8 @@ use serde_json::Value;
 
 use super::{Check, Context, Finding};
 use crate::generate::api::SPEC_PATH;
-use crate::rust_source::{Source, read_product_sources, squeezed, strip, without_tests};
+use crate::rust_source::{squeezed, strip, without_tests};
+use crate::source::{Kind, Source};
 
 /// Where the exceptions are written down, each with its reason.
 const EXEMPTIONS_PATH: &str = "tools/checks/counter-exemptions.toml";
@@ -77,7 +78,7 @@ impl Check for ArchNoCounters {
             .with_context(|| format!("could not read {EXEMPTIONS_PATH}"))?;
         let exemptions: Exemptions = toml::from_str(&exemptions)
             .with_context(|| format!("{EXEMPTIONS_PATH} is not valid"))?;
-        let sources = read_product_sources(context.repo)?;
+        let sources = context.sources(self.id(), Kind::Rust)?;
         let mut findings = evaluate_spec(&spec, &exemptions.exempt);
         findings.extend(evaluate_code(&sources, &exemptions.counting));
         Ok(findings)

@@ -13,8 +13,8 @@ use serde::Deserialize;
 
 use super::{Check, Context, Finding};
 use crate::catalog::Entry;
-use crate::docs::source::read_text;
 use crate::generate::all_paths;
+use crate::source::read_text;
 
 /// Where the exemptions live, relative to the repository root.
 const EXEMPTIONS_PATH: &str = "tools/checks/coverage-exemptions.toml";

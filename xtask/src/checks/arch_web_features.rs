@@ -8,8 +8,9 @@
 //!   not the other way round.
 //! * The shared packages (`web/packages/`) never depend on the app.
 
-use super::web_source::{WebSource, code_of, read_web_sources};
+use super::web_source::code_of;
 use super::{Check, Context, Finding};
+use crate::source::{Kind, Source};
 
 const FEATURES: &str = "web/app/src/features/";
 const SHARED: &str = "web/app/src/shared/";
@@ -26,11 +27,11 @@ impl Check for ArchWebFeatures {
     }
 
     fn run(&self, context: &Context<'_>) -> anyhow::Result<Vec<Finding>> {
-        Ok(evaluate(&read_web_sources(context.repo)?))
+        Ok(evaluate(&context.sources(self.id(), Kind::Web)?))
     }
 }
 
-fn evaluate(sources: &[WebSource]) -> Vec<Finding> {
+fn evaluate(sources: &[Source]) -> Vec<Finding> {
     sources
         .iter()
         .flat_map(|(path, text)| scan(path, text))

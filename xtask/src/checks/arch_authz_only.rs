@@ -30,7 +30,8 @@
 //! `#[cfg(test)]` (but code after a test module does).
 
 use super::{Check, Context, Finding};
-use crate::rust_source::{Source, read_product_sources, squeezed, strip, without_tests};
+use crate::rust_source::{squeezed, strip, without_tests};
+use crate::source::{Kind, Source, contains_word, name_uses, read_text};
 
 /// The only crate that makes `Authorized<T>`.
 const POLICY_FOLDER: &str = "crates/bb-policy/";
@@ -89,12 +90,12 @@ impl Check for ArchAuthzOnly {
     }
 
     fn run(&self, context: &Context<'_>) -> anyhow::Result<Vec<Finding>> {
-        let sources = read_product_sources(context.repo)?;
+        let sources = context.sources(self.id(), Kind::Rust)?;
         let mut manifests = Vec::new();
         for file in context.repo.all_files()? {
             if file == "Cargo.toml" || file.ends_with("/Cargo.toml") {
-                let text = std::fs::read_to_string(context.repo.path(&file))?;
-                manifests.push((file, text.replace("\r\n", "\n")));
+                let text = read_text(context.repo, &file)?;
+                manifests.push((file, text));
             }
         }
         let mut findings = evaluate(&sources);
@@ -105,27 +106,13 @@ impl Check for ArchAuthzOnly {
 
 /// Whether `line` names the type as a whole word.
 fn names_the_type(line: &str) -> bool {
-    line.match_indices(TYPE).any(|(at, _)| {
-        let before = line[..at].chars().next_back();
-        let after = line[at + TYPE.len()..].chars().next();
-        !before.is_some_and(|c| c.is_alphanumeric() || c == '_')
-            && !after.is_some_and(|c| c.is_alphanumeric() || c == '_')
-    })
+    contains_word(line, TYPE)
 }
 
 /// Whether `word` stands in the line as a whole identifier, and is not a method of a value (after
 /// a dot) or the name of a function that is defined there (after `fn`).
 fn names_word(line: &str, word: &str) -> bool {
-    line.match_indices(word).any(|(at, _)| {
-        let before = &line[..at];
-        let after = line[at + word.len()..].chars().next();
-        !before
-            .chars()
-            .next_back()
-            .is_some_and(|c| c.is_alphanumeric() || c == '_' || c == '.')
-            && !after.is_some_and(|c| c.is_alphanumeric() || c == '_')
-            && !before.trim_end().ends_with("fn")
-    })
+    name_uses(line, word).next().is_some()
 }
 
 /// What makes a line a way to build the type: a definition, a struct literal, a constructor call.

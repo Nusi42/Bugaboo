@@ -3,7 +3,7 @@
 use std::path::Path;
 
 use super::{Check, Context, Finding};
-use crate::tools;
+use crate::tools::{self, TOOLS_DIR};
 
 pub(crate) struct FmtMd;
 
@@ -30,7 +30,9 @@ fn check_files(root: &Path, files: Option<&[String]>) -> anyhow::Result<Vec<Find
     let output = tools::run_installed("rumdl", &args, root)?;
     Ok(tools::findings_from(
         output,
-        "Markdown style problems. Fix them in the file (`.tools/bin/rumdl check --fix` fixes many).",
+        &format!(
+            "Markdown style problems. Fix them in the file (`{TOOLS_DIR}/bin/rumdl check --fix` fixes many)."
+        ),
     ))
 }
 

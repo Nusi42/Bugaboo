@@ -1,13 +1,7 @@
 //! FMT-CSS: CSS is formatted by oxfmt, which covers CSS, so Biome is not needed (ADR-0014).
 
-use super::node_tool::{Selection, unformatted};
+use super::node_tool::unformatted;
 use super::{Check, Context, Finding};
-
-const SELECTION: Selection = Selection {
-    folders: &[""],
-    files: &[],
-    endings: &[".css"],
-};
 
 pub(crate) struct FmtCss;
 
@@ -17,7 +11,7 @@ impl Check for FmtCss {
     }
 
     fn run(&self, context: &Context<'_>) -> anyhow::Result<Vec<Finding>> {
-        unformatted(context.repo.root(), &SELECTION.pick(context))
+        unformatted(context.repo.root(), &context.selected(self.id())?)
     }
 }
 

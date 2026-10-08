@@ -6,7 +6,6 @@
 use std::path::Path;
 
 use super::{Check, Context, Finding};
-use crate::repo::Repo;
 use crate::tools;
 
 pub(crate) struct LintLinks;
@@ -17,23 +16,8 @@ impl Check for LintLinks {
     }
 
     fn run(&self, context: &Context<'_>) -> anyhow::Result<Vec<Finding>> {
-        let files = match context.files_for(self.id())? {
-            Some(files) => files,
-            None => markdown_files(context.repo)?,
-        };
-        check_files(context.repo.root(), &files)
+        check_files(context.repo.root(), &context.selected(self.id())?)
     }
-}
-
-fn markdown_files(repo: &Repo) -> anyhow::Result<Vec<String>> {
-    let mut files = repo.all_files()?;
-    files.retain(|file| {
-        Path::new(file)
-            .extension()
-            .is_some_and(|ext| ext.eq_ignore_ascii_case("md"))
-            && repo.path(file).is_file()
-    });
-    Ok(files)
 }
 
 fn check_files(root: &Path, files: &[String]) -> anyhow::Result<Vec<Finding>> {

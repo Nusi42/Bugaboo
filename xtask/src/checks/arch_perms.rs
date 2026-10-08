@@ -27,6 +27,7 @@ use bb_api_words::needs::WITHOUT_CATALOGUE as WORDS;
 use super::arch_lean::names_a_follow_up;
 use super::{Check, Context, Finding};
 use crate::generate::api::SPEC_PATH;
+use crate::source::normalize;
 
 /// The methods of an item of `paths` that are operations.
 const METHODS: [&str; 8] = [
@@ -53,7 +54,7 @@ impl Check for ArchPerms {
         };
         let spec: Value = serde_json::from_str(&read(SPEC_PATH, "; run `cargo xtask gen api`")?)
             .with_context(|| format!("{SPEC_PATH} is not valid JSON"))?;
-        let source = read(CATALOGUE_PATH, "")?.replace("\r\n", "\n");
+        let source = normalize(&read(CATALOGUE_PATH, "")?);
         let catalogue = read_catalogue(&source);
         let messages: Value = serde_json::from_str(&read(MESSAGES_PATH, "")?)
             .with_context(|| format!("{MESSAGES_PATH} is not valid JSON"))?;

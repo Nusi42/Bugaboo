@@ -24,7 +24,8 @@ use serde_json::Value;
 
 use super::{Check, Context, Finding};
 use crate::generate::api::SPEC_PATH;
-use crate::rust_source::{Source, read_product_sources, strip, without_tests};
+use crate::rust_source::{strip, without_tests};
+use crate::source::{Kind, Source, contains_word, word_positions};
 
 /// Where the exemptions are written down, each with its reason.
 const EXEMPTIONS_PATH: &str = "tools/checks/person-ref-exemptions.toml";
@@ -51,7 +52,7 @@ impl Check for ArchPersonRef {
     }
 
     fn run(&self, context: &Context<'_>) -> anyhow::Result<Vec<Finding>> {
-        let sources = read_product_sources(context.repo)?;
+        let sources = context.sources(self.id(), Kind::Rust)?;
         let text = std::fs::read_to_string(context.repo.path(SPEC_PATH))
             .with_context(|| format!("could not read {SPEC_PATH}; run `cargo xtask gen api`"))?;
         let spec: Value = serde_json::from_str(&text)
@@ -93,10 +94,13 @@ struct Found {
 fn serialized_fields(path: &str, text: &str) -> Vec<Found> {
     let without = without_tests(text);
     let original: Vec<char> = without.chars().collect();
-    let code: Vec<char> = strip(&without).chars().collect();
+    let stripped = strip(&without);
+    let code: Vec<char> = stripped.chars().collect();
     let mut found = Vec::new();
     for keyword in ["struct", "enum"] {
-        for at in word_positions(&code, keyword) {
+        for byte in word_positions(&stripped, keyword) {
+            // The code below counts characters, not bytes.
+            let at = stripped[..byte].chars().count();
             let Some((name, open)) = item_head(&code, at + keyword.len()) else {
                 continue;
             };
@@ -145,23 +149,6 @@ fn serialized_fields(path: &str, text: &str) -> Vec<Found> {
         }
     }
     found
-}
-
-/// The places where `word` stands as a whole word.
-fn word_positions(code: &[char], word: &str) -> Vec<usize> {
-    let word: Vec<char> = word.chars().collect();
-    let is_word = |c: char| c.is_alphanumeric() || c == '_';
-    (0..(code.len() + 1).saturating_sub(word.len()))
-        .filter(|at| {
-            code[*at..*at + word.len()] == word[..]
-                && !at
-                    .checked_sub(1)
-                    .is_some_and(|before| is_word(code[before]))
-                && !code
-                    .get(*at + word.len())
-                    .is_some_and(|after| is_word(*after))
-        })
-        .collect()
 }
 
 /// The name of the item after its keyword, and the place of the brace that opens its body; `None`
@@ -238,7 +225,7 @@ fn derives_serialize(code: &[char], keyword_at: usize) -> bool {
                 return false;
             };
             let attribute: String = code[start..end].iter().collect();
-            if attribute.contains("derive(") && word_in(&attribute, "Serialize") {
+            if attribute.contains("derive(") && contains_word(&attribute, "Serialize") {
                 return true;
             }
             // Over the `#` before the bracket.
@@ -247,12 +234,6 @@ fn derives_serialize(code: &[char], keyword_at: usize) -> bool {
         }
         return false;
     }
-}
-
-/// Whether `word` is in the text as a whole word.
-fn word_in(text: &str, word: &str) -> bool {
-    let chars: Vec<char> = text.chars().collect();
-    !word_positions(&chars, word).is_empty()
 }
 
 /// The place of the bracket that closes the one at `open`.

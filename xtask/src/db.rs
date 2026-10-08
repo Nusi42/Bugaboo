@@ -18,8 +18,8 @@ use anyhow::{Context as _, bail};
 use crate::bundle;
 use crate::checks::arch_db_parity::{self, DATABASES, RECORD_PATH};
 use crate::checks::data_migrations;
-use crate::dev::Ports;
 use crate::output;
+use crate::ports::Ports;
 use crate::repo::Repo;
 use crate::tools::{self, TOOLS_DIR, Tool};
 

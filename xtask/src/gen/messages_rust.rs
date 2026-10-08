@@ -140,7 +140,7 @@ fn format(repo: &Repo, source: &str) -> anyhow::Result<String> {
             String::from_utf8_lossy(&output.stderr).trim()
         );
     }
-    Ok(String::from_utf8(output.stdout)?.replace("\r\n", "\n"))
+    Ok(crate::source::normalize(&String::from_utf8(output.stdout)?))
 }
 
 #[cfg(test)]

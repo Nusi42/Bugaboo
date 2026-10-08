@@ -13,26 +13,15 @@ impl Check for LintCi {
     }
 
     fn run(&self, context: &Context<'_>) -> anyhow::Result<Vec<Finding>> {
-        let files = match context.files_for(self.id())? {
-            Some(files) => files,
-            None => context.repo.all_files()?,
-        };
-        check_files(context.repo.root(), &files)
+        check_files(context.repo.root(), &context.selected(self.id())?)
     }
-}
-
-fn is_workflow(file: &str) -> bool {
-    file.starts_with(".github/workflows/")
-        && Path::new(file)
-            .extension()
-            .is_some_and(|ext| ext.eq_ignore_ascii_case("yml") || ext.eq_ignore_ascii_case("yaml"))
 }
 
 fn check_files(root: &Path, files: &[String]) -> anyhow::Result<Vec<Finding>> {
     let workflows: Vec<&str> = files
         .iter()
         .map(String::as_str)
-        .filter(|file| is_workflow(file) && root.join(file).is_file())
+        .filter(|file| root.join(file).is_file())
         .collect();
     if workflows.is_empty() {
         return Ok(Vec::new());

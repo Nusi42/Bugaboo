@@ -18,7 +18,8 @@
 
 use super::{Check, Context, Finding};
 use crate::metadata::{self, Package};
-use crate::rust_source::{Source, read_product_sources};
+use crate::rust_source::strip_comments;
+use crate::source::{Kind, Source};
 
 /// Libraries that talk to a database, build queries for one, or pool connections to one.
 const DATABASE_LIBRARIES: &[&str] = &[
@@ -107,7 +108,7 @@ impl Check for ArchSqlEdge {
 
     fn run(&self, context: &Context<'_>) -> anyhow::Result<Vec<Finding>> {
         let packages = metadata::load(context.repo.root())?;
-        let sources = read_product_sources(context.repo)?;
+        let sources = context.sources(self.id(), Kind::Rust)?;
         let mut findings = evaluate_dependencies(&packages);
         findings.extend(evaluate_sources(&sources));
         Ok(findings)
@@ -138,11 +139,6 @@ fn evaluate_dependencies(packages: &[Package]) -> Vec<Finding> {
         }
     }
     findings
-}
-
-/// Whether the line is only a comment.
-fn is_comment(line: &str) -> bool {
-    line.trim_start().starts_with("//")
 }
 
 /// The text of a call from its opening parenthesis to the closing one (quotes are respected, so
@@ -246,7 +242,9 @@ fn only_harness_statements(statements: &[&str]) -> bool {
 
 fn evaluate_sources(sources: &[Source]) -> Vec<Finding> {
     let mut findings = Vec::new();
-    for (path, text) in sources {
+    for (path, original) in sources {
+        // A comment about a call is not a call; the texts stay (the statements are in them).
+        let text = &strip_comments(original);
         if path != QUERY_FILE {
             findings.extend(query_function_findings(path, text));
         }
@@ -267,7 +265,7 @@ fn query_function_findings(path: &str, text: &str) -> Vec<Finding> {
         // Importing a name is not calling it; the harness imports `AssertSqlSafe` for its two
         // statements.
         let imports = line.trim_start().starts_with("use ");
-        if !is_comment(line) && !imports {
+        if !imports {
             for name in QUERY_FUNCTIONS {
                 for (column, _) in line.match_indices(name) {
                     let at = offset + column;
@@ -299,10 +297,6 @@ fn sql_text_findings(path: &str, text: &str) -> Vec<Finding> {
     let mut findings = Vec::new();
     for builder in TEXT_BUILDERS {
         for (at, _) in text.match_indices(builder) {
-            let line_start = text[..at].rfind('\n').map_or(0, |newline| newline + 1);
-            if is_comment(&text[line_start..]) {
-                continue;
-            }
             let call = call_text(&text[at + builder.len() - 1..]);
             let statements = sql_statements(call);
             if statements.is_empty()
@@ -444,7 +438,7 @@ mod tests {
     #[test]
     fn the_product_code_of_this_repository_passes() {
         let repo = crate::repo::Repo::discover().unwrap();
-        let sources = read_product_sources(&repo).unwrap();
+        let sources = crate::source::read_sources(&repo, None, Kind::Rust).unwrap();
         assert_eq!(report(&sources), "");
         let packages = metadata::load(repo.root()).unwrap();
         let messages: Vec<String> = evaluate_dependencies(&packages)

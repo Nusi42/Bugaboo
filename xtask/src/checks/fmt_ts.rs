@@ -1,13 +1,7 @@
 //! FMT-TS: TypeScript, JavaScript and JSON are formatted by oxfmt (coding-standards §4).
 
-use super::node_tool::{Selection, unformatted};
+use super::node_tool::unformatted;
 use super::{Check, Context, Finding};
-
-const SELECTION: Selection = Selection {
-    folders: &[".", "web", "tools", "design", "messages", "docs/design"],
-    files: &[],
-    endings: &[".ts", ".tsx", ".js", ".mjs", ".json"],
-};
 
 pub(crate) struct FmtTs;
 
@@ -17,7 +11,7 @@ impl Check for FmtTs {
     }
 
     fn run(&self, context: &Context<'_>) -> anyhow::Result<Vec<Finding>> {
-        unformatted(context.repo.root(), &SELECTION.pick(context))
+        unformatted(context.repo.root(), &context.selected(self.id())?)
     }
 }
 

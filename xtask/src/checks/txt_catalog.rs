@@ -7,23 +7,16 @@
 //! (`SERVER_NOT_FOUND`, `server_port_busy`); a `t("…")` call with an unknown key is missing.
 
 use std::collections::{BTreeMap, HashSet};
-use std::fs;
 
-use super::node_tool::Selection;
 use super::{Check, Context, Finding};
+use crate::docs::text::has_extension;
 use crate::generate::icu::{Placeholders, placeholders};
 use crate::generate::messages::{SOURCE_LOCALE_PATH, parse_pairs};
 use crate::generate::messages_rust::{constant_name, function_name};
-use crate::rust_source::without_tests;
+use crate::rust_source::{strip_comments, without_tests};
+use crate::source::read_text;
 
-const MESSAGES_FOLDER: &str = "messages";
-
-/// Code that may use keys.
-const CODE: Selection = Selection {
-    folders: &["web", "crates"],
-    files: &[],
-    endings: &[".ts", ".tsx", ".rs"],
-};
+const MESSAGES_FOLDER: &str = "messages/";
 
 /// Test files check behavior; their strings must not keep a key alive.
 const TEST_MARKERS: [&str; 6] = [
@@ -49,34 +42,18 @@ impl Check for TxtCatalog {
     }
 
     fn run(&self, context: &Context<'_>) -> anyhow::Result<Vec<Finding>> {
-        let root = context.repo.root();
-        let mut locales = Vec::new();
-        for entry in fs::read_dir(root.join(MESSAGES_FOLDER))? {
-            let path = entry?.path();
-            if path
-                .extension()
-                .is_some_and(|extension| extension == "json")
-            {
-                let name = format!(
-                    "{MESSAGES_FOLDER}/{}",
-                    path.file_name()
-                        .map(|n| n.to_string_lossy())
-                        .unwrap_or_default()
-                );
-                locales.push((name, fs::read_to_string(&path)?));
-            }
-        }
-        locales.sort_by(|a, b| a.0.cmp(&b.0));
         // Whatever changed, the whole repository is read: one unused key depends on all code.
+        let mut locales = Vec::new();
         let mut sources = Vec::new();
-        let everything = Context {
-            repo: context.repo,
-            catalog: context.catalog,
-            files: None,
-        };
-        for path in CODE.pick(&everything) {
-            let text = fs::read_to_string(root.join(&path))?;
-            sources.push(Source { path, text });
+        for path in context.everything().selected(self.id())? {
+            let text = read_text(context.repo, &path)?;
+            if path.starts_with(MESSAGES_FOLDER) {
+                if has_extension(&path, "json") {
+                    locales.push((path, text));
+                }
+            } else {
+                sources.push(Source { path, text });
+            }
         }
         Ok(evaluate(&locales, &sources))
     }
@@ -271,11 +248,7 @@ fn called_keys(code: &str) -> Vec<String> {
 /// The Rust code that ships: without the unit tests at the end of the file and without comment
 /// lines, so a key that only a test or a comment mentions still counts as unused.
 fn product_code(text: &str) -> String {
-    without_tests(text)
-        .lines()
-        .filter(|line| !line.trim_start().starts_with("//"))
-        .collect::<Vec<_>>()
-        .join("\n")
+    strip_comments(&without_tests(text))
 }
 
 /// The words of Rust code: everything made of letters, digits and underscores.

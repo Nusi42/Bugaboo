@@ -15,7 +15,7 @@
 use std::collections::BTreeMap;
 
 use super::{Check, Context, Finding};
-use crate::docs::source::read_text;
+use crate::source::read_text;
 
 const SOURCE: &str = "crates/bb-api/src/headers.rs";
 

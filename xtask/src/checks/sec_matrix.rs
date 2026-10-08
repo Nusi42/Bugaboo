@@ -28,6 +28,7 @@ use serde_json::Value;
 
 use super::{Check, Context, Finding};
 use crate::generate::api::SPEC_PATH;
+use crate::source::read_text;
 
 /// The table of example requests.
 const EXAMPLES_PATH: &str = "crates/bb-server/src/tests/matrix/examples.rs";
@@ -56,11 +57,7 @@ impl Check for SecMatrix {
     }
 
     fn run(&self, context: &Context<'_>) -> anyhow::Result<Vec<Finding>> {
-        let read = |path: &str| {
-            std::fs::read_to_string(context.repo.path(path))
-                .map(|text| text.replace("\r\n", "\n"))
-                .with_context(|| format!("could not read {path}"))
-        };
+        let read = |path: &str| read_text(context.repo, path);
         let spec: Value = serde_json::from_str(&read(SPEC_PATH)?)
             .with_context(|| format!("{SPEC_PATH} is not valid JSON"))?;
         let record = read(RECORD_PATH).ok();
@@ -396,7 +393,7 @@ mod tests {
             .join("../tools/checks/fixtures/SEC-MATRIX")
             .join(kind)
             .join(name);
-        std::fs::read_to_string(path).unwrap().replace("\r\n", "\n")
+        crate::source::normalize(&std::fs::read_to_string(path).unwrap())
     }
 
     #[test]

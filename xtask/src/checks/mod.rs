@@ -71,8 +71,11 @@ mod txt_literal;
 mod txt_terms;
 mod web_source;
 
-use crate::catalog::Catalog;
+use anyhow::Context as _;
+
+use crate::catalog::{CATALOG_PATH, Catalog, Entry};
 use crate::repo::Repo;
+use crate::source::{self, Kind, Source, read_sources};
 
 /// One problem a check found.
 pub(crate) struct Finding {
@@ -116,6 +119,34 @@ impl Context<'_> {
         let mut wanted = entry.matching(files)?;
         wanted.retain(|file| self.repo.path(file).is_file());
         Ok(Some(wanted))
+    }
+
+    /// The same, as if the whole repository were checked: for the checks that one changed file can
+    /// break in another.
+    pub(crate) fn everything(&self) -> Self {
+        Self {
+            repo: self.repo,
+            catalog: self.catalog,
+            files: None,
+        }
+    }
+
+    /// The catalogue entry of the check that is running.
+    fn entry(&self, id: &str) -> anyhow::Result<&Entry> {
+        self.catalog
+            .get(id)
+            .with_context(|| format!("{id} is not in {CATALOG_PATH}"))
+    }
+
+    /// The files a tool runs on: what the check's `files` globs cover among the triggering files,
+    /// or among all files when the whole repository is checked.
+    pub(crate) fn selected(&self, id: &str) -> anyhow::Result<Vec<String>> {
+        source::selected(self.repo, self.entry(id)?, self.files)
+    }
+
+    /// The code of `kind` that the check's `files` globs cover, always from the whole repository.
+    pub(crate) fn sources(&self, id: &str, kind: Kind) -> anyhow::Result<Vec<Source>> {
+        read_sources(self.repo, Some(self.entry(id)?), kind)
     }
 }
 

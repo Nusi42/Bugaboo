@@ -1,36 +1,29 @@
-//! Reading the Rust source of the product crates, for the checks and generators that look at
-//! code instead of running a tool on it.
+//! Reading Rust code as code: what is left of the text when its comments (and, for most
+//! checks, its strings) are blanked out. Reading the files is [`crate::source`].
 
-use std::path::Path;
-
-use anyhow::Context as _;
-
-use crate::repo::Repo;
-
-/// One Rust source file: its repository-relative path and its text.
-pub(crate) type Source = (String, String);
-
-/// Every Rust file of the product crates, except integration tests and their examples.
-pub(crate) fn read_product_sources(repo: &Repo) -> anyhow::Result<Vec<Source>> {
-    let mut sources = Vec::new();
-    for file in repo.all_files()? {
-        let is_product_code = file.starts_with("crates/")
-            && Path::new(&file)
-                .extension()
-                .is_some_and(|extension| extension == "rs")
-            && !file.split('/').any(|part| part == "tests");
-        if is_product_code {
-            let text = std::fs::read_to_string(repo.path(&file))
-                .with_context(|| format!("could not read {file}"))?;
-            sources.push((file, text.replace("\r\n", "\n")));
-        }
-    }
-    Ok(sources)
+/// What [`blank_out`] does with strings.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Strings {
+    Blank,
+    Keep,
 }
 
 /// The code with comments and the insides of strings and character literals replaced by spaces
 /// (new lines stay, so line numbers still fit).
 pub(crate) fn strip(text: &str) -> String {
+    blank_out(text, Strings::Blank)
+}
+
+/// The code with comments and character literals replaced by spaces, and strings kept (the checks
+/// that look at the words of a string need them). A raw string is kept as an ordinary string:
+/// its `r#` and `#` become spaces and a quote or backslash inside it a space, so one scan of
+/// strings reads both. Positions and new lines stay.
+pub(crate) fn strip_comments(text: &str) -> String {
+    blank_out(text, Strings::Keep)
+}
+
+fn blank_out(text: &str, strings: Strings) -> String {
+    let keep = strings == Strings::Keep;
     let chars: Vec<char> = text.chars().collect();
     let mut out = String::with_capacity(text.len());
     let blank = |c: char| if c == '\n' { '\n' } else { ' ' };
@@ -70,33 +63,42 @@ pub(crate) fn strip(text: &str) -> String {
             let end_marker: Vec<char> = std::iter::once('"')
                 .chain(std::iter::repeat_n('#', hashes))
                 .collect();
-            out.push(' ');
+            let quote = if keep { '"' } else { ' ' };
+            out.push_str(&" ".repeat(1 + hashes));
+            out.push(quote);
             at += 1 + hashes + 1;
-            out.push_str(&" ".repeat(hashes + 1));
             while at < chars.len()
                 && chars[at..]
                     .iter()
                     .take(end_marker.len())
                     .ne(end_marker.iter())
             {
-                out.push(blank(chars[at]));
+                let inner = chars[at];
+                out.push(if keep && !matches!(inner, '"' | '\\') {
+                    inner
+                } else {
+                    blank(inner)
+                });
                 at += 1;
             }
             let rest = end_marker.len().min(chars.len() - at);
-            out.push_str(&" ".repeat(rest));
+            if rest > 0 {
+                out.push(quote);
+                out.push_str(&" ".repeat(rest - 1));
+            }
             at += rest;
         } else if c == '"' {
-            out.push(' ');
+            out.push(if keep { '"' } else { ' ' });
             at += 1;
             while at < chars.len() && chars[at] != '"' {
                 if chars[at] == '\\' && at + 1 < chars.len() {
-                    out.push(' ');
+                    out.push(if keep { '\\' } else { ' ' });
                     at += 1;
                 }
-                out.push(blank(chars[at]));
+                out.push(if keep { chars[at] } else { blank(chars[at]) });
                 at += 1;
             }
-            out.push(' ');
+            out.push(if keep { '"' } else { ' ' });
             at += 1;
         } else if c == '\'' && is_char_literal(&chars, at) {
             out.push(' ');
@@ -283,5 +285,18 @@ fn also() {}
         }
         assert!(code.contains("keep"));
         assert_eq!(code.lines().count(), 2, "new lines stay");
+    }
+
+    #[test]
+    fn comments_go_but_strings_stay_and_raw_strings_read_as_ordinary_ones() {
+        let text = "let a = \"keep // this\"; // gone
+/* gone */ let b = r#\"raw \"x\" y\"#;
+let c = 'q';";
+        let code = strip_comments(text);
+        assert!(code.contains("\"keep // this\""), "{code:?}");
+        assert!(!code.contains("gone") && !code.contains("'q'"), "{code:?}");
+        assert!(code.contains("\"raw  x  y\""), "{code:?}");
+        assert_eq!(code.len(), text.len(), "positions stay");
+        assert_eq!(code.lines().count(), text.lines().count());
     }
 }

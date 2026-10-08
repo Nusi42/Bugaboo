@@ -22,7 +22,8 @@ use crate::generate::api::SPEC_PATH;
 use crate::generate::icu::placeholders;
 use crate::generate::messages::{SOURCE_LOCALE_PATH, parse_pairs};
 use crate::generate::messages_rust::constant_name;
-use crate::rust_source::{Source, read_product_sources, without_tests};
+use crate::rust_source::without_tests;
+use crate::source::{Kind, Source};
 
 /// The table of codes.
 const TABLE_PATH: &str = "crates/bb-core/src/error_code.rs";
@@ -56,7 +57,7 @@ impl Check for ArchErrors {
     }
 
     fn run(&self, context: &Context<'_>) -> anyhow::Result<Vec<Finding>> {
-        let sources = read_product_sources(context.repo)?;
+        let sources = context.sources(self.id(), Kind::Rust)?;
         let catalog = std::fs::read_to_string(context.repo.path(SOURCE_LOCALE_PATH))
             .with_context(|| format!("could not read {SOURCE_LOCALE_PATH}"))?;
         let messages = parse_pairs(&catalog)?;
@@ -623,7 +624,7 @@ mod tests {
     #[test]
     fn the_error_table_of_this_repository_passes() {
         let repo = crate::repo::Repo::discover().unwrap();
-        let sources = read_product_sources(&repo).unwrap();
+        let sources = crate::source::read_sources(&repo, None, Kind::Rust).unwrap();
         let text = std::fs::read_to_string(repo.path(SOURCE_LOCALE_PATH)).unwrap();
         let spec = std::fs::read_to_string(repo.path(SPEC_PATH)).ok();
         let found = evaluate(&sources, &parse_pairs(&text).unwrap(), spec.as_deref());

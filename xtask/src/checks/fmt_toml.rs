@@ -3,7 +3,7 @@
 use std::path::Path;
 
 use super::{Check, Context, Finding};
-use crate::tools;
+use crate::tools::{self, TOOLS_DIR};
 
 pub(crate) struct FmtToml;
 
@@ -46,7 +46,9 @@ fn check_files(root: &Path, files: Option<&[String]>) -> anyhow::Result<Vec<Find
     });
     Ok(tools::findings_from(
         output,
-        "TOML files are not formatted. Run `.tools/bin/taplo fmt --config taplo.toml`.",
+        &format!(
+            "TOML files are not formatted. Run `{TOOLS_DIR}/bin/taplo fmt --config taplo.toml`."
+        ),
     ))
 }
 

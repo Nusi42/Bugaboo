@@ -6,6 +6,7 @@ use anyhow::Context as _;
 
 use super::text::has_extension;
 use crate::repo::Repo;
+use crate::source::read_text;
 
 pub(crate) const ARCHITECTURE_DIR: &str = "docs/architecture";
 pub(crate) const ADR_DIR: &str = "docs/adr";
@@ -15,19 +16,6 @@ pub(crate) const MILESTONES: &str = "docs/04-milestones.md";
 pub(crate) const CODING_STANDARDS: &str = "docs/coding-standards.md";
 pub(crate) const BUILDING_BLOCKS: &str = "docs/architecture/04-building-blocks.md";
 pub(crate) const ARCHITECTURE_README: &str = "docs/architecture/README.md";
-
-/// Gives text `\n` line endings, wherever it was read from.
-pub(crate) fn normalize(text: &str) -> String {
-    text.replace("\r\n", "\n")
-}
-
-/// Reads a text file (path relative to the repository root) with `\n` line endings.
-pub(crate) fn read_text(repo: &Repo, relative: &str) -> anyhow::Result<String> {
-    let path = repo.path(relative);
-    let text =
-        fs::read_to_string(&path).with_context(|| format!("could not read {}", path.display()))?;
-    Ok(normalize(&text))
-}
 
 /// The names of the files in a folder (relative to the repository root) whose name passes
 /// `wanted`, sorted.
@@ -101,10 +89,5 @@ mod tests {
         assert!(!starts_with_digits("README.md", 2));
         assert!(starts_with_digits("0020-architecture-checks.md", 4));
         assert!(!starts_with_digits("04-x.md", 4));
-    }
-
-    #[test]
-    fn line_endings_are_normalised() {
-        assert_eq!(normalize("a\r\nb\n"), "a\nb\n");
     }
 }

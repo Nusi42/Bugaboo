@@ -1,8 +1,8 @@
 //! DOC-GENERATED: generated files are up to date (SSOT, coding-standards §1).
 
 use super::{Check, Context, Finding};
-use crate::docs::source::normalize;
 use crate::generate;
+use crate::source::normalize;
 
 pub(crate) struct DocGenerated;
 
