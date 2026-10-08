@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Alert, autoComplete, Button, Card, Form, TextField } from "@bugaboo/ui";
+import { Alert, alertTone, autoComplete, Card, Form, SubmitButton, TextField } from "@bugaboo/ui";
 
 import styles from "./Setup.module.css";
 
@@ -26,10 +26,8 @@ export function CodeStep({ code, onChange, problem, onNext }: CodeStepProps) {
           value={code}
           onChange={onChange}
         />
-        {problem === null ? null : <Alert danger>{problem}</Alert>}
-        <Button primary wide submit>
-          {t("common.continue")}
-        </Button>
+        {problem === null ? null : <Alert tone={alertTone.danger}>{problem}</Alert>}
+        <SubmitButton wide>{t("common.continue")}</SubmitButton>
       </Form>
     </Card>
   );

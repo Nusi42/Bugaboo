@@ -1,6 +1,6 @@
 import { t } from "@bugaboo/messages";
 import type { Schema } from "@bugaboo/api-client";
-import { Alert } from "@bugaboo/ui";
+import { Alert, alertTone } from "@bugaboo/ui";
 
 import { api } from "../../shared/api.ts";
 import { messageOf } from "../../shared/errors.ts";
@@ -37,7 +37,7 @@ function PasskeyRow({ passkey, onRemoved }: PasskeyRowProps) {
             ? t("passkeys.never-used")
             : t("passkeys.last-used", { when: formatDateTime(used) })}
         </span>
-        {remove.isError ? <Alert danger>{messageOf(remove.error)}</Alert> : null}
+        {remove.isError ? <Alert tone={alertTone.danger}>{messageOf(remove.error)}</Alert> : null}
       </span>
       <RemoveWithPassword
         triggerLabel={t("passkeys.remove")}

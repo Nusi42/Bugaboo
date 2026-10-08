@@ -71,7 +71,7 @@ fn declaration<'a>(
         match field.name.to_string().as_str() {
             "key" => key = literal(&field.value).map(|(text, _)| text),
             "default" => default = literal(&field.value).map(|(_, typescript)| typescript),
-            "format" => choices = choices_of(&field.value),
+            "format" => choices = choices_of(&field.value)?,
             _ => {}
         }
     }
@@ -101,21 +101,35 @@ fn literal(expr: &syn::Expr) -> Option<(String, String)> {
     }
 }
 
-/// `Format::Choices(NAME)` as `NAME`.
-fn choices_of(expr: &syn::Expr) -> Option<String> {
+/// `Format::Choices(NAME)` as `NAME`; nothing for any other format. A format that says `Choices`
+/// but not as `Choices(NAME)` is an error: its choices would be left out of the browser's list
+/// without a word.
+fn choices_of(expr: &syn::Expr) -> syn::Result<Option<String>> {
     let syn::Expr::Call(call) = expr else {
-        return None;
+        return Ok(None);
     };
     let syn::Expr::Path(function) = &*call.func else {
-        return None;
+        return Ok(None);
     };
-    if function.path.segments.last()?.ident != "Choices" {
-        return None;
+    if function
+        .path
+        .segments
+        .last()
+        .is_none_or(|segment| segment.ident != "Choices")
+    {
+        return Ok(None);
     }
-    let Some(syn::Expr::Path(name)) = call.args.first() else {
-        return None;
-    };
-    Some(name.path.segments.last()?.ident.to_string())
+    match call.args.first() {
+        Some(syn::Expr::Path(name)) if call.args.len() == 1 => Ok(name
+            .path
+            .segments
+            .last()
+            .map(|segment| segment.ident.to_string())),
+        _ => Err(syn::Error::new(
+            call.paren_token.span.open(),
+            "`Choices(…)` must name one list of choices, like `Choices(MODE_CHOICES)`",
+        )),
+    }
 }
 
 /// The values of `const NAME: &[Choice] = &[Choice::new("value", label), …];`.
@@ -190,15 +204,15 @@ fn read_all(text: &str) -> anyhow::Result<(Vec<(SettingDecl, bool)>, ChoiceLists
 /// settings that exist only for tests (`pub mod for_tests`) are left out.
 ///
 /// # Errors
-/// The text is not Rust, a declaration has no `key` or no plain `default`, or there is no setting.
+/// The text is not Rust, a declaration has no `key` or no plain `default`, or a format of choices
+/// does not name its list.
 pub(crate) fn read_registry(text: &str) -> anyhow::Result<(Vec<SettingDecl>, ChoiceLists)> {
     let (found, lists) = read_all(text)?;
-    let settings: Vec<SettingDecl> = found
+    let settings = found
         .into_iter()
         .filter(|(_, nested)| !nested)
         .map(|(decl, _)| decl)
         .collect();
-    anyhow::ensure!(!settings.is_empty(), "the registry declares no setting");
     Ok((settings, lists))
 }
 
@@ -267,6 +281,13 @@ pub mod for_tests {
         assert!(read_registry(no_default).is_err());
         assert!(declared_keys(no_default).is_err());
         assert!(read_registry("settings! {").is_err());
-        assert!(read_registry("fn nothing() {}").is_err());
+        assert!(read_registry("fn nothing() {}").unwrap().0.is_empty());
+    }
+
+    #[test]
+    fn bad_example_a_format_of_choices_that_names_no_single_list_fails() {
+        let broken = REGISTRY.replace("Format::Choices(MODE_CHOICES)", "Format::Choices(A, B)");
+        assert!(read_registry(&broken).is_err());
+        assert!(declared_keys(&broken).is_err());
     }
 }

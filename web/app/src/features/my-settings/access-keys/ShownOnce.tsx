@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Alert, Button, Card, CopyButton } from "@bugaboo/ui";
+import { Alert, alertTone, Button, buttonLook, Card, CopyButton } from "@bugaboo/ui";
 
 import styles from "./AccessKeys.module.css";
 
@@ -15,7 +15,7 @@ export function ShownOnce({ secret, onDone }: ShownOnceProps) {
   return (
     <Card heading={t("access-keys.shown-title")}>
       <div className={styles.stack}>
-        <Alert warning>{t("access-keys.shown-once")}</Alert>
+        <Alert tone={alertTone.warning}>{t("access-keys.shown-once")}</Alert>
         <p className={styles.muted}>{t("access-keys.key-label")}</p>
         <code className={styles.key}>{secret}</code>
         <div className={styles.row}>
@@ -24,7 +24,7 @@ export function ShownOnce({ secret, onDone }: ShownOnceProps) {
             label={t("access-keys.copy")}
             copiedLabel={t("access-keys.copied")}
           />
-          <Button primary onPress={onDone}>
+          <Button look={buttonLook.primary} onPress={onDone}>
             {t("access-keys.done")}
           </Button>
         </div>

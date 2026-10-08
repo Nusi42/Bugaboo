@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Alert, Button, Card, Form } from "@bugaboo/ui";
+import { Alert, alertTone, Button, buttonType, Card, Form } from "@bugaboo/ui";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 
@@ -37,9 +37,9 @@ export function BackupCodesSection() {
       >
         <ConfirmPasswordField value={password} onChange={setPassword} />
         <p className={styles.muted}>{t("backup.renew-help")}</p>
-        {renew.isError ? <Alert danger>{messageOf(renew.error)}</Alert> : null}
+        {renew.isError ? <Alert tone={alertTone.danger}>{messageOf(renew.error)}</Alert> : null}
         <div className={styles.row}>
-          <Button submit isPending={renew.isPending}>
+          <Button type={buttonType.submit} isPending={renew.isPending}>
             {t("backup.renew")}
           </Button>
         </div>

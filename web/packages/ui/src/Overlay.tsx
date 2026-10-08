@@ -3,18 +3,18 @@ import { Dialog, Modal, ModalOverlay } from "react-aria-components";
 
 import { cx } from "./cx.ts";
 import styles from "./Overlay.module.css";
+import { overlayEdge, type OverlayEdge } from "./props.ts";
 
 export interface OverlayProps {
   readonly isOpen: boolean;
   readonly onOpenChange: (isOpen: boolean) => void;
   /** The name of what opens, for screen readers: "Quick search", "Main menu". */
   readonly label: string;
-  /** Opens from the bottom edge: a sheet on a phone. */
-  readonly bottom?: boolean;
-  /** Opens from the left edge: the menu of a tablet. */
-  readonly start?: boolean;
-  /** Opens from the top edge. Without any of these it opens over the middle. */
-  readonly top?: boolean;
+  /**
+   * Where it opens from: the `bottom` edge (a sheet on a phone), the `start` edge (the menu of a
+   * tablet), the `top` edge, or over the middle (the default).
+   */
+  readonly from?: OverlayEdge;
   readonly children: ReactNode;
 }
 
@@ -27,12 +27,10 @@ export function Overlay({
   isOpen,
   onOpenChange,
   label,
-  bottom = false,
-  start = false,
-  top = false,
+  from = overlayEdge.center,
   children,
 }: OverlayProps) {
-  const placement = styles[bottom ? "bottom" : start ? "start" : top ? "top" : "center"];
+  const placement = styles[from];
   return (
     <ModalOverlay
       isOpen={isOpen}

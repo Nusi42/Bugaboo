@@ -15,7 +15,6 @@ export {
   themeOf,
   type Appearance,
   type AppearanceSource,
-  type ChoiceStore,
   type DarkThemeId,
   type LightThemeId,
   type PageAttributes,
@@ -40,10 +39,49 @@ export { layoutForWidth, layoutModes, useLayout, type LayoutMode } from "./layou
 export { Link, type LinkProps } from "./Link.tsx";
 export { OrDivider, type OrDividerProps } from "./OrDivider.tsx";
 export { Overlay, type OverlayProps } from "./Overlay.tsx";
+export {
+  browserStorage,
+  forgetStored,
+  parseJson,
+  readStored,
+  readStoredJson,
+  storageKey,
+  writeStored,
+  type KeyStore,
+  type StorageKey,
+  type StoreGetter,
+} from "./storage.ts";
 export { SaveStatus, type SaveState, type SaveStatusProps } from "./SaveStatus.tsx";
+export {
+  PickerHint,
+  PickerOption,
+  PickerRow,
+  SearchPicker,
+  type PickerMore,
+  type PickerOptionProps,
+  type PickerRowProps,
+  type SearchPickerProps,
+} from "./SearchPicker.tsx";
+export {
+  alertTone,
+  buttonLook,
+  buttonType,
+  fieldKind,
+  iconSize,
+  overlayEdge,
+  pickerLook,
+  type AlertTone,
+  type ButtonLook,
+  type ButtonType,
+  type FieldKind,
+  type IconSize,
+  type OverlayEdge,
+  type PickerLook,
+} from "./props.ts";
 export { SearchField, type SearchFieldProps } from "./SearchField.tsx";
 export { SelectField, type SelectChoice, type SelectFieldProps } from "./SelectField.tsx";
 export { Skeleton, type SkeletonProps } from "./Skeleton.tsx";
+export { SubmitButton, type SubmitButtonProps } from "./SubmitButton.tsx";
 export { Switch, type SwitchProps } from "./Switch.tsx";
 export { TextField, type TextFieldProps } from "./TextField.tsx";
 export {

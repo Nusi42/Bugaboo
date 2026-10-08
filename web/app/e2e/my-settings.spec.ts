@@ -4,7 +4,17 @@ import { type Locator, type Page } from "@playwright/test";
 import { ada, bob, forgetChoices, makeAdmin, makePerson } from "./support/accounts.ts";
 import { expectGoodInEveryLook } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
-import { anotherBrowser, sendPassword, signIn, signOut } from "./support/flows.ts";
+import {
+  addressEndingAt,
+  anotherBrowser,
+  keepOnDevice,
+  sendPassword,
+  signIn,
+  signOut,
+  storedText,
+} from "./support/flows.ts";
+import { paths } from "../src/shared/paths.ts";
+import { storageKey } from "../../packages/ui/src/storage.ts";
 
 // *My settings* (CFG-04, THM-02) and the settings of the organization (CFG-06) with a real server:
 // what a person chooses is kept on the server, follows them to another browser, is gone from the
@@ -48,7 +58,7 @@ async function saved(page: Page): Promise<void> {
 
 /** Chooses *Always dark* and the theme Midnight, as a person does on *Appearance*. */
 async function chooseMidnight(page: Page): Promise<void> {
-  await page.goto("/me/appearance");
+  await page.goto(paths.appearance);
   await choose(page.getByRole("radio", { name: t("appearance.mode.dark"), exact: true }));
   const group = page.getByRole("group", { name: t("appearance.dark"), exact: true });
   await choose(group.getByRole("radio", { name: t("theme.midnight"), exact: true }));
@@ -58,7 +68,7 @@ async function chooseMidnight(page: Page): Promise<void> {
 
 /** Chooses a time zone on *Region*. */
 async function chooseTimeZone(page: Page, zone: string): Promise<void> {
-  await page.goto("/me/region");
+  await page.goto(paths.region);
   await page
     .getByRole("combobox", { name: t("setting.region.time-zone.name"), exact: true })
     .selectOption(zone);
@@ -67,7 +77,7 @@ async function chooseTimeZone(page: Page, zone: string): Promise<void> {
 
 /** Gives *Go home* the keys `g i` on *Keyboard shortcuts*. */
 async function chooseKeys(page: Page): Promise<void> {
-  await page.goto("/me/shortcuts");
+  await page.goto(paths.shortcuts);
   await page.getByRole("button", { name: t("shortcut.go-home"), exact: true }).click();
   const panel = page.getByRole("complementary", { name: t("shortcut.go-home"), exact: true });
   await panel.getByRole("textbox", { name: t("shortcuts.new-keys"), exact: true }).click();
@@ -99,16 +109,16 @@ test("cfg_04 what a person chooses in My settings follows them to another browse
   await expect(other.locator("html")).toHaveAttribute("data-look", "midnight");
   await expect(other.locator("html")).toHaveAttribute("data-motion", "less");
   await expect(other.locator("html")).toHaveAttribute("data-text", "larger");
-  await other.goto("/me/region");
+  await other.goto(paths.region);
   await expect(other.getByLabel(t("setting.region.time-zone.name"), { exact: true })).toHaveValue(
     "Pacific/Auckland",
   );
   // The keys of the shortcut are the ones the person chose.
-  await other.goto("/me/appearance");
+  await other.goto(paths.appearance);
   await expect(other.getByRole("heading", { level: 1, name: t("appearance.title") })).toBeVisible();
   await other.keyboard.press("g");
   await other.keyboard.press("i");
-  await expect(other).toHaveURL(/\/$/u);
+  await expect(other).toHaveURL(addressEndingAt(paths.home));
   await other.close();
 });
 
@@ -118,9 +128,10 @@ test("cfg_04 after signing out nothing of the person's choices is left in the br
   await page.emulateMedia({ colorScheme: "light" });
   await signIn(page, ada);
   await chooseMidnight(page);
+  // The copy for the first frame is kept while the person is signed in: the check below can see it.
+  expect(await storedText(page)).toContain(storageKey.firstFrame);
   await signOut(page);
-  const kept = await page.evaluate(() => Object.keys(localStorage).join(","));
-  expect(kept).not.toContain("first-frame");
+  expect(await storedText(page)).not.toContain(storageKey.firstFrame);
   // The sign-in page is the device's: light on a light device.
   await expect(page.locator("html")).toHaveAttribute("data-look", "daylight");
   // The next person gets their own look, not the last person's.
@@ -131,37 +142,29 @@ test("cfg_04 after signing out nothing of the person's choices is left in the br
   await expect(page.locator("html")).toHaveAttribute("data-look", "daylight");
 });
 
-/** What this browser keeps in its storage, as `key=value` lines. */
-function storedText(page: Page): Promise<string> {
-  return page.evaluate(() => {
-    const lines: string[] = [];
-    for (const store of [localStorage, sessionStorage]) {
-      for (const key of Object.keys(store)) {
-        lines.push(`${key}=${store.getItem(key) ?? ""}`);
-      }
-    }
-    return lines.join(", ");
-  });
-}
-
 test("cfg_04 the storage of the browser holds nothing of the person while they are signed in or after", async ({
   page,
 }) => {
   await page.emulateMedia({ colorScheme: "light" });
   // What the device kept before the choices lived on the server (the look and the keys of the
   // pages before sign-in) is removed at sign-in.
-  await page.goto("/sign-in");
-  await page.evaluate(() => {
-    localStorage.setItem("bugaboo.appearance", JSON.stringify({ mode: "dark" }));
-    localStorage.setItem("bugaboo.shortcut-keys", JSON.stringify({ "go-home": ["g x"] }));
-  });
+  await page.goto(paths.signIn);
+  await keepOnDevice(page, [
+    [storageKey.appearance, JSON.stringify({ mode: "dark" })],
+    [storageKey.shortcutKeys, JSON.stringify({ "go-home": ["g x"] })],
+  ]);
+  // The check below can see what the device kept.
+  const before = await storedText(page);
+  expect(before).toContain(storageKey.appearance);
+  expect(before).toContain(storageKey.shortcutKeys);
   await signIn(page, ada);
   await chooseMidnight(page);
   await chooseTimeZone(page, "Pacific/Auckland");
   await chooseKeys(page);
   const whileSignedIn = await storedText(page);
-  expect(whileSignedIn).not.toContain("bugaboo.appearance");
-  expect(whileSignedIn).not.toContain("bugaboo.shortcut-keys");
+  expect(whileSignedIn).toContain(storageKey.firstFrame);
+  expect(whileSignedIn).not.toContain(storageKey.appearance);
+  expect(whileSignedIn).not.toContain(storageKey.shortcutKeys);
   expect(whileSignedIn).not.toContain("Pacific/Auckland");
   await signOut(page);
   // Nothing of the person is left in either storage.
@@ -169,7 +172,7 @@ test("cfg_04 the storage of the browser holds nothing of the person while they a
   for (const word of ["midnight", "Pacific/Auckland", "go-home", "g i", ada.email, ada.name]) {
     expect(left).not.toContain(word);
   }
-  expect(left).not.toContain("first-frame");
+  expect(left).not.toContain(storageKey.firstFrame);
 });
 
 test("cfg_06 an administrator locks the theme and a person sees Set by your organization", async ({
@@ -179,7 +182,7 @@ test("cfg_06 an administrator locks the theme and a person sees Set by your orga
 }) => {
   await page.emulateMedia({ colorScheme: "light" });
   await signIn(page, ada);
-  await page.goto("/settings/themes");
+  await page.goto(paths.themes);
   const row = page.getByRole("listitem").filter({
     has: page.getByRole("group", { name: t("theme.legend"), exact: true }),
   });
@@ -192,7 +195,7 @@ test("cfg_06 an administrator locks the theme and a person sees Set by your orga
   const person = await anotherBrowser(browser, server);
   await person.emulateMedia({ colorScheme: "light" });
   await signIn(person, bob);
-  await person.goto("/me/appearance");
+  await person.goto(paths.appearance);
   // The organization's theme counts, the choice is read only and the page says why.
   await expect(person.locator("html")).toHaveAttribute("data-look", "dusk");
   await expect(person.getByText(t("setting.ui.locked"), { exact: true }).first()).toBeVisible();
@@ -214,41 +217,41 @@ test("cfg_06 an administrator locks the theme and a person sees Set by your orga
 
 test("cfg_04 the start page is the page a person chose, after signing in", async ({ page }) => {
   await signIn(page, bob);
-  await page.goto("/me/start-page");
+  await page.goto(paths.startPage);
   await page
     .getByRole("combobox", { name: t("nav.start-page"), exact: true })
     .selectOption({ label: `${t("nav.region")} (${t("nav.my-settings")})` });
   await saved(page);
   await signOut(page);
   await sendPassword(page, bob);
-  await expect(page).toHaveURL(/\/me\/region$/u);
+  await expect(page).toHaveURL(addressEndingAt(paths.region));
   await expect(page.getByRole("heading", { level: 1, name: t("nav.region") })).toBeVisible();
 });
 
 test("cfg_04 times follow the region the person chose", async ({ page }) => {
   await signIn(page, ada);
-  await page.goto("/me/region");
+  await page.goto(paths.region);
   await choose(
     page.getByRole("radio", { name: t("setting.region.date-format.year-month-day"), exact: true }),
   );
   await saved(page);
-  await page.goto("/me/sessions");
+  await page.goto(paths.sessions);
   await expect(page.getByText(/\d{4}-\d{2}-\d{2}, /u).first()).toBeVisible();
   // Reset to default brings the usual writing back.
-  await page.goto("/me/region");
+  await page.goto(paths.region);
   await page
     .getByRole("button", {
       name: t("setting.ui.reset-name", { name: t("setting.region.date-format.name") }),
     })
     .click();
   await saved(page);
-  await page.goto("/me/sessions");
+  await page.goto(paths.sessions);
   await expect(page.getByText(/\d{4}-\d{2}-\d{2}, /u)).toHaveCount(0);
 });
 
 test("cfg_06 the sign-in rules are drawn from the registry and saved at once", async ({ page }) => {
   await signIn(page, ada);
-  await page.goto("/settings/sign-in-rules");
+  await page.goto(paths.signInRules);
   const idle = t("setting.security.session-idle-minutes.name");
   // The two settings of access keys are on the page too, each with the bounds it accepts.
   const days = t("setting.ui.between", { least: 1, most: 365 });

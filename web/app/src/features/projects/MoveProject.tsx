@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Alert, ConfirmDialog } from "@bugaboo/ui";
+import { Alert, alertTone, ConfirmDialog } from "@bugaboo/ui";
 import { useState } from "react";
 
 import { messageOf } from "../../shared/errors.ts";
@@ -13,9 +13,9 @@ const topToo = "into-projects-or-top";
 
 /** What the preview of the picked place is: being worked out, refused, or what would change. */
 function PreviewOf({ project, to }: { readonly project: string; readonly to: string | null }) {
-  const preview = useMovePreview(project, to, true);
+  const preview = useMovePreview(project, { to });
   if (preview.isError) {
-    return <Alert danger>{messageOf(preview.error)}</Alert>;
+    return <Alert tone={alertTone.danger}>{messageOf(preview.error)}</Alert>;
   }
   if (preview.isPending) {
     return <p className={styles.muted}>{t("projects.preview-loading")}</p>;
@@ -31,9 +31,9 @@ function Outcome(props: {
 }) {
   const { failed, moved, name } = props;
   if (failed !== null) {
-    return <Alert danger>{failed}</Alert>;
+    return <Alert tone={alertTone.danger}>{failed}</Alert>;
   }
-  return moved ? <Alert success>{t("projects.moved", { name })}</Alert> : null;
+  return moved ? <Alert tone={alertTone.success}>{t("projects.moved", { name })}</Alert> : null;
 }
 
 /**
@@ -47,7 +47,7 @@ export function MoveProject({ project }: { readonly project: OneProject }) {
   const [picked, setPicked] = useState<{ readonly to: string | null } | null>(null);
   const [moved, setMoved] = useState(false);
   const to = picked === null ? null : picked.to;
-  const preview = useMovePreview(id, to, picked !== null);
+  const preview = useMovePreview(id, picked);
   const move = useMoveProject();
   const ready = picked !== null && preview.isSuccess && !preview.data.blocked;
   return (

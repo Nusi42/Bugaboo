@@ -147,60 +147,6 @@
   color: var(--fg);
 }
 
-/* Check access. */
-.options {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.option {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  min-height: var(--size-target);
-  padding: var(--space-1) var(--space-3);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--r-ctl);
-  background: var(--bg-surface);
-  cursor: pointer;
-}
-
-.option input {
-  flex: none;
-}
-
-.optionName {
-  font-weight: 700;
-  color: var(--fg);
-  overflow-wrap: anywhere;
-}
-
-.optionHint {
-  color: var(--fg-muted);
-  font-size: var(--fs-sm);
-}
-
-.fieldset {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-  margin: 0;
-  padding: 0;
-  border: 0;
-  min-width: 0;
-}
-
-.legend {
-  padding: 0;
-  font-size: var(--fs-md);
-  font-weight: 700;
-  color: var(--fg);
-}
-
 .answers {
   display: flex;
   flex-direction: column;

@@ -1,4 +1,4 @@
-import { Alert, type LayoutMode } from "@bugaboo/ui";
+import { Alert, alertTone, type LayoutMode } from "@bugaboo/ui";
 import { Outlet } from "@tanstack/react-router";
 
 import { messageOf } from "../../shared/errors.ts";
@@ -23,7 +23,9 @@ export function ShellColumn({ layout, signOutProblem }: ShellColumnProps) {
       <TopBar layout={layout} />
       <main id={CONTENT_ID} className={styles.main} tabIndex={-1} {...scrollRestoration}>
         <div className={styles.inner}>
-          {signOutProblem === null ? null : <Alert danger>{messageOf(signOutProblem)}</Alert>}
+          {signOutProblem === null ? null : (
+            <Alert tone={alertTone.danger}>{messageOf(signOutProblem)}</Alert>
+          )}
           <Outlet />
         </div>
       </main>

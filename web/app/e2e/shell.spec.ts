@@ -4,8 +4,9 @@ import { type Locator, type Page } from "@playwright/test";
 import { ada, cleo, makeAdmin, makePerson } from "./support/accounts.ts";
 import { expectGoodInEveryLook } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
-import { holdOnly, openFromMenu, openMenu, signIn } from "./support/flows.ts";
+import { addressEndingAt, holdOnly, openFromMenu, openMenu, signIn } from "./support/flows.ts";
 import { onThisLayout } from "./support/layout.ts";
+import { paths } from "../src/shared/paths.ts";
 
 test.use({
   preparation: {
@@ -66,7 +67,7 @@ async function tabletFrame(page: Page): Promise<void> {
   await mainMenu(page)
     .getByRole("link", { name: t("nav.my-settings"), exact: true })
     .click();
-  await expect(page).toHaveURL(/\/me\/appearance$/u);
+  await expect(page).toHaveURL(addressEndingAt(paths.appearance));
   await expect(mainMenu(page)).toHaveCount(0);
 }
 
@@ -102,22 +103,22 @@ async function trailOnLargeScreens(page: Page): Promise<void> {
   await expect(trail.getByRole("link", { name: t("nav.my-settings") })).toBeVisible();
   await expect(trail.getByText(t("nav.security"))).toHaveAttribute("aria-current", "page");
   await trail.getByRole("link", { name: t("nav.my-settings") }).click();
-  await expect(page).toHaveURL(/\/me\/appearance$/u);
+  await expect(page).toHaveURL(addressEndingAt(paths.appearance));
 }
 
 async function backOnPhone(page: Page): Promise<void> {
   await expect(page.getByRole("button", { name: t("shell.back"), exact: true })).toBeVisible();
   // Back goes to where the person came from: the list of topics.
   await page.getByRole("button", { name: t("shell.back"), exact: true }).click();
-  await expect(page).toHaveURL(/\/me$/u);
+  await expect(page).toHaveURL(addressEndingAt(paths.mySettings));
   await expect(page.getByRole("heading", { level: 1, name: t("nav.my-settings") })).toBeVisible();
   // The phone's own back gesture does the same with the history.
   await page.getByRole("link", { name: t("nav.security"), exact: true }).click();
-  await expect(page).toHaveURL(/\/me\/security$/u);
+  await expect(page).toHaveURL(addressEndingAt(paths.security));
   await page.goBack();
-  await expect(page).toHaveURL(/\/me$/u);
+  await expect(page).toHaveURL(addressEndingAt(paths.mySettings));
   // Home has nothing to go back to: no Back button.
-  await page.goto("/");
+  await page.goto(paths.home);
   await expect(page.getByRole("button", { name: t("shell.back"), exact: true })).toHaveCount(0);
 }
 
@@ -142,7 +143,7 @@ async function topicsOnLargeScreens(page: Page): Promise<void> {
     .getByRole("link", { name: t("nav.my-settings"), exact: true })
     .first()
     .click();
-  await expect(page).toHaveURL(/\/me\/appearance$/u);
+  await expect(page).toHaveURL(addressEndingAt(paths.appearance));
   await expect(topics(page, t("nav.my-settings"))).toHaveText([
     t("nav.appearance"),
     t("nav.region"),
@@ -161,7 +162,7 @@ async function topicsOnPhone(page: Page): Promise<void> {
     .getByRole("link", { name: t("nav.my-settings") })
     .click();
   // One screen at a time: the topics are the page of the settings, and a topic is a page of its own.
-  await expect(page).toHaveURL(/\/me$/u);
+  await expect(page).toHaveURL(addressEndingAt(paths.mySettings));
   await expect(page.getByRole("heading", { level: 1, name: t("nav.my-settings") })).toBeVisible();
   await expect(topics(page, t("nav.my-settings"))).toHaveText([
     t("nav.appearance"),
@@ -214,7 +215,7 @@ test("ux_01 Organization settings lists the topics that exist, by heading", asyn
     t("nav.status"),
   ]);
   await topics(page, t("nav.organization-settings")).last().click();
-  await expect(page).toHaveURL(/\/settings\/status$/u);
+  await expect(page).toHaveURL(addressEndingAt(paths.status));
   await expectGoodInEveryLook(page);
 });
 
@@ -223,11 +224,11 @@ test("ux_01 an address of the settings that does not exist shows the page that i
 }) => {
   await signIn(page, cleo);
   // A person who may not invite people finds nothing at the address, like at one that is not there.
-  await page.goto("/settings/people");
+  await page.goto(paths.people);
   await expect(
     page.getByRole("heading", { level: 1, name: t("page.not-found.title") }),
   ).toBeVisible();
-  await page.goto("/me/nothing-here");
+  await page.goto(`${paths.mySettings}/nothing-here`);
   await expect(
     page.getByRole("heading", { level: 1, name: t("page.not-found.title") }),
   ).toBeVisible();
@@ -250,10 +251,10 @@ test("ux_01 the tab says the name of the topic once, also when a topic is opened
   page,
 }) => {
   await signIn(page, ada);
-  await page.goto("/me/appearance");
+  await page.goto(paths.appearance);
   await expect(page).toHaveTitle(`${t("appearance.title")} · ${t("app.name")}`);
-  await page.goto("/me/shortcuts");
+  await page.goto(paths.shortcuts);
   await expect(page).toHaveTitle(`${t("shortcut.title")} · ${t("app.name")}`);
-  await page.goto("/me/security");
+  await page.goto(paths.security);
   await expect(page).toHaveTitle(`${t("security.title")} · ${t("app.name")}`);
 });

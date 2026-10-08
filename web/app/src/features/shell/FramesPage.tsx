@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Button, Card } from "@bugaboo/ui";
+import { Button, buttonLook, Card } from "@bugaboo/ui";
 
 import { usePageTitle } from "../../shared/use-page.ts";
 import { FocusView } from "./FocusView.tsx";
@@ -32,7 +32,7 @@ function SlimList({ items, open, onOpen }: SlimListProps) {
       {items.map((example) => (
         <li key={example.id}>
           <Button
-            quiet={example.id !== open}
+            look={example.id === open ? buttonLook.plain : buttonLook.quiet}
             current={example.id === open}
             onPress={() => {
               onOpen(example.id);

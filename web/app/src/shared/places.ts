@@ -1,14 +1,15 @@
 import type { MessageKey } from "@bugaboo/messages";
-import { iconName } from "@bugaboo/ui";
+import { iconName } from "@bugaboo/ui/icons";
 
-import { paths } from "../../shared/paths.ts";
-import type { Permissions } from "../../shared/permissions.ts";
-import type { Path, Place } from "./place.ts";
+import { paths, type Path } from "./paths.ts";
+import type { Permissions } from "./permissions.ts";
+import type { Place } from "./place.ts";
 import { projectPlaces } from "./project-places.ts";
 
 export type { Place } from "./place.ts";
 
-export const places: readonly Place[] = [
+/** The screens of the person themselves: the start page and *My settings*. */
+const ownPlaces: readonly Place[] = [
   { path: paths.home, name: "nav.home", icon: iconName.home, parent: null, listed: true },
   {
     path: paths.mySettings,
@@ -73,25 +74,10 @@ export const places: readonly Place[] = [
     group: "nav.group.sign-in",
     listed: true,
   },
-  {
-    path: paths.organizationSettings,
-    name: "nav.organization-settings",
-    icon: iconName.organization,
-    parent: paths.home,
-    anyOf: [
-      "manage-people",
-      "manage-invitations",
-      "manage-groups",
-      "manage-roles",
-      "decide-roles",
-      "see-status",
-      "change-organization-settings",
-      "make-projects",
-      "decide-what-roles-see",
-      "check-access",
-    ],
-    listed: true,
-  },
+];
+
+/** The topics of *Organization settings*, and the screens reached from them. */
+const organizationTopics: readonly Place[] = [
   {
     path: paths.people,
     name: "nav.people",
@@ -200,6 +186,31 @@ export const places: readonly Place[] = [
     group: "nav.group.system",
     listed: true,
   },
+];
+
+/**
+ * *Organization settings* opens for a person who may open at least one of its topics, so it asks
+ * for the permissions of its topics and no others (one rule, not a second list to keep in step).
+ */
+const organizationSettings: Place = {
+  path: paths.organizationSettings,
+  name: "nav.organization-settings",
+  icon: iconName.organization,
+  parent: paths.home,
+  anyOf: [
+    ...new Set(
+      organizationTopics
+        .filter((topic) => topic.parent === paths.organizationSettings)
+        .flatMap((topic) => topic.anyOf ?? []),
+    ),
+  ],
+  listed: true,
+};
+
+export const places: readonly Place[] = [
+  ...ownPlaces,
+  organizationSettings,
+  ...organizationTopics,
   ...projectPlaces,
   {
     path: paths.frames,

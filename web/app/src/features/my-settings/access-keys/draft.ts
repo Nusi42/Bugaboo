@@ -1,10 +1,7 @@
-import type { Schema } from "@bugaboo/api-client";
 import { useState } from "react";
 
+import type { PermissionKey } from "../../../shared/permissions.ts";
 import type { PlainChoice } from "./choice.ts";
-
-/** One permission of the catalogue, as the API names it. */
-export type PermissionKey = Schema<"Permission">;
 
 /** What the person has filled in so far, and how to change each part. */
 export interface Draft {

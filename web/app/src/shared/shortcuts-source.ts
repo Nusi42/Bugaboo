@@ -1,4 +1,49 @@
-import { parseOverrides, type ShortcutOverrides } from "./shortcuts.ts";
+import { settingDefaults, settingKeys } from "@bugaboo/api-client";
+import {
+  browserStorage,
+  forgetStored,
+  parseJson,
+  readStored,
+  storageKey,
+  type StoreGetter,
+  writeStored,
+} from "@bugaboo/ui";
+
+import type { MySettings } from "./my-settings.ts";
+import { textOf } from "./setting-values.ts";
+import {
+  isReservedKeys,
+  isValidSequence,
+  shortcutIdOf,
+  type ShortcutId,
+  type ShortcutOverrides,
+} from "./shortcuts.ts";
+
+/** The overrides in a saved text; anything that is not a valid choice is left out. */
+export function parseOverrides(text: string | null): ShortcutOverrides {
+  const saved = parseJson(text);
+  if (typeof saved !== "object" || saved === null) {
+    return {};
+  }
+  const result: Partial<Record<ShortcutId, readonly string[]>> = {};
+  for (const [name, keys] of Object.entries(saved)) {
+    const id = shortcutIdOf(name);
+    if (id !== undefined && Array.isArray(keys) && keys.length > 0) {
+      const valid = keys.filter(
+        (key): key is string => typeof key === "string" && isValidSequence(key),
+      );
+      if (valid.length === keys.length && !valid.some((one) => isReservedKeys(one))) {
+        result[id] = valid;
+      }
+    }
+  }
+  return result;
+}
+
+/** The keys the person chose for shortcuts. */
+export function shortcutKeysOf(settings?: MySettings): ShortcutOverrides {
+  return parseOverrides(textOf(settings, settingKeys.shortcutsKeys, settingDefaults.shortcutsKeys));
+}
 
 /**
  * Where a person's own shortcut keys come from and go to. The app reads them from one source only,
@@ -12,39 +57,21 @@ export interface ShortcutKeysSource {
   readonly subscribe: (listener: () => void) => () => void;
 }
 
-/** The storage of the browser, as far as the shortcut keys need it. */
-export interface KeysStore {
-  readonly getItem: (key: string) => string | null;
-  readonly setItem: (key: string, value: string) => void;
-}
-
-const storageKey = "bugaboo.shortcut-keys";
-
 /**
  * The keys kept on this device. Storage is passed as a getter because merely touching
  * `localStorage` can throw (blocked site data); then the keys last until the page is closed.
  */
-export function storageKeysSource(getStore: () => KeysStore): ShortcutKeysSource {
+export function storageKeysSource(getStore: StoreGetter = browserStorage): ShortcutKeysSource {
   const listeners = new Set<() => void>();
   let current: ShortcutOverrides | null = null;
   return {
     read: () => {
-      if (current === null) {
-        try {
-          current = parseOverrides(getStore().getItem(storageKey));
-        } catch {
-          current = {};
-        }
-      }
+      current ??= parseOverrides(readStored(storageKey.shortcutKeys, getStore));
       return current;
     },
     write: (next) => {
       current = next;
-      try {
-        getStore().setItem(storageKey, JSON.stringify(next));
-      } catch {
-        // The keys then only last until the page is closed.
-      }
+      writeStored(storageKey.shortcutKeys, JSON.stringify(next), getStore);
       for (const listener of listeners) {
         listener();
       }
@@ -60,14 +87,10 @@ export function storageKeysSource(getStore: () => KeysStore): ShortcutKeysSource
 
 /** Removes the keys this device kept (the ones of the pages before sign-in). */
 export function forgetStoredKeys(): void {
-  try {
-    localStorage.removeItem(storageKey);
-  } catch {
-    // Nothing was kept that could be removed.
-  }
+  forgetStored(storageKey.shortcutKeys);
 }
 
-let source: ShortcutKeysSource = storageKeysSource(() => localStorage);
+let source: ShortcutKeysSource = storageKeysSource();
 
 /** WP-07 calls this with a source that keeps the keys with the person's other settings. */
 export function setShortcutKeysSource(next: ShortcutKeysSource): void {

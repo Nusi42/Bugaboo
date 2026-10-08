@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Alert, Button, Card, Link } from "@bugaboo/ui";
+import { Alert, alertTone, Button, buttonLook, Card, Link } from "@bugaboo/ui";
 import { useState } from "react";
 
 import { messageOf } from "../../shared/errors.ts";
@@ -47,14 +47,14 @@ export function SubProjects({ project }: { readonly project: OneProject }) {
   const empty = list.isSuccess && linesOf(list.data.pages).length === 0;
   return (
     <Card heading={t("projects.sub-projects")}>
-      {list.isError ? <Alert danger>{messageOf(list.error)}</Alert> : null}
+      {list.isError ? <Alert tone={alertTone.danger}>{messageOf(list.error)}</Alert> : null}
       {empty ? <p className={styles.text}>{t("projects.sub-projects-empty")}</p> : null}
       {empty ? null : <SubProjectList project={id} />}
       {empty && !mayMake ? <p className={styles.muted}>{t("projects.sub-projects-ask")}</p> : null}
       {mayMake && !making ? (
         <div className={styles.row}>
           <Button
-            primary={empty}
+            look={empty ? buttonLook.primary : buttonLook.plain}
             onPress={() => {
               setMaking(true);
             }}

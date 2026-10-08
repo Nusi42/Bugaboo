@@ -4,9 +4,11 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
+    "./icons": "./src/icons.ts",
     "./tokens.css": "./src/tokens.css"
   },
   "dependencies": {
+    "@bugaboo/api-client": "*",
     "lucide-react": "1.52.0",
     "react-aria-components": "1.21.1"
   },

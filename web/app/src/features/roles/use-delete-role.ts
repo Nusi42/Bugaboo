@@ -1,6 +1,6 @@
 import { useNavigate } from "@tanstack/react-router";
 
-import { refreshAccess } from "../../shared/access-cache.ts";
+import { refreshAccess } from "../../shared/query-keys.ts";
 import { api } from "../../shared/api.ts";
 import { paths } from "../../shared/paths.ts";
 

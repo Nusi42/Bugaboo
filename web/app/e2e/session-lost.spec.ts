@@ -4,6 +4,7 @@ import { t } from "@bugaboo/messages";
 import { ada, makeAdmin } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
 import {
+  addressWith,
   anotherBrowser,
   expectHome,
   fillSignIn,
@@ -12,6 +13,7 @@ import {
   signIn,
   signOut,
 } from "./support/flows.ts";
+import { paths } from "../src/shared/paths.ts";
 
 test.use({
   preparation: {
@@ -57,7 +59,7 @@ test("m1_f51 an answer that says nobody is signed in takes the person to the sig
     .getByRole("alertdialog")
     .getByRole("button", { name: t("sessions.everywhere") })
     .click();
-  await expect(other).toHaveURL(/\/sign-in/u);
+  await expect(other).toHaveURL(addressWith(paths.signIn));
   await other.context().close();
 
   // A phone asks for the projects of its menu as soon as the menu opens, a computer when the page

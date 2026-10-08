@@ -1,13 +1,14 @@
 import type { Schema } from "@bugaboo/api-client";
 
 import { api } from "../../../shared/api.ts";
+import { fieldList, pageSize } from "../../../shared/paged.ts";
 import { queryClient } from "../../../shared/query-client.ts";
 
 /** An access key as the list shows it. */
 export type AccessKey = Schema<"AccessKeyItem">;
 
 /** The fields the list asks for: the fields it shows, and no more (PERF-02). */
-const LISTED_FIELDS = [
+const LISTED_FIELDS = fieldList<AccessKey>([
   "id",
   "name",
   "prefix",
@@ -17,15 +18,12 @@ const LISTED_FIELDS = [
   "expires_at",
   "last_used_at",
   "expired",
-].join(",");
-
-/** The most keys a person can have is also the most a page holds, so one page is the whole list. */
-const WHOLE_LIST = 100;
+]);
 
 /** The access keys of the person, newest first. */
 export function keysOptions() {
   return api.query.queryOptions("get", "/api/v1/access-keys", {
-    params: { query: { fields: LISTED_FIELDS, limit: WHOLE_LIST } },
+    params: { query: { fields: LISTED_FIELDS, limit: pageSize.largest } },
   });
 }
 
@@ -37,7 +35,7 @@ export function rulesOptions() {
 /** The projects the person can limit a key to. */
 export function projectsOptions() {
   return api.query.queryOptions("get", "/api/v1/access-keys/projects", {
-    params: { query: { limit: WHOLE_LIST } },
+    params: { query: { limit: pageSize.largest } },
   });
 }
 

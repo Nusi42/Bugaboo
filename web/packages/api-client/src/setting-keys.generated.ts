@@ -26,3 +26,43 @@ export const settingKeys = {
 
 /** The key of a setting of the registry. */
 export type SettingKey = (typeof settingKeys)[keyof typeof settingKeys];
+
+/** The choices of every setting that holds one of a list, in the order of the registry. */
+export const settingChoices = {
+  appearanceMode: ["device", "light", "dark"],
+  appearanceLightTheme: ["daylight", "paper"],
+  appearanceDarkTheme: ["dusk", "midnight"],
+  appearanceSpacing: ["comfortable", "compact"],
+  appearanceIssueView: ["focus", "panel"],
+  regionDateFormat: ["device", "day-month-year", "month-day-year", "year-month-day"],
+  regionNumberFormat: ["device", "point", "comma", "space"],
+  regionFirstDay: ["device", "monday", "sunday", "saturday"],
+} as const;
+
+/** What a person who chose nothing gets, for every setting of the registry. */
+export const settingDefaults = {
+  appearanceMode: "device",
+  appearanceLightTheme: "daylight",
+  appearanceDarkTheme: "dusk",
+  appearanceSpacing: "comfortable",
+  appearanceLessMotion: false,
+  appearanceLargerText: false,
+  appearanceIssueView: "focus",
+  regionTimeZone: "device",
+  regionDateFormat: "device",
+  regionNumberFormat: "device",
+  regionFirstDay: "device",
+  startPage: "/",
+  shortcutsKeys: "{}",
+  securitySessionIdleMinutes: 30,
+  securitySessionAbsoluteHours: 24,
+  authSignUpEnabled: false,
+  authSignUpDomains: "",
+  securityTwoStepRequired: false,
+  authAccessKeyDefaultDays: 90,
+  authAccessKeyLongestDays: 365,
+} as const;
+
+/** One of the choices of a setting, like `"device"` for `appearanceMode`. */
+export type SettingChoice<Name extends keyof typeof settingChoices> =
+  (typeof settingChoices)[Name][number];

@@ -1,6 +1,6 @@
 import type { Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
-import { Alert, Button, ConfirmDialog } from "@bugaboo/ui";
+import { Alert, alertTone, Button, buttonLook, ConfirmDialog } from "@bugaboo/ui";
 import { useState } from "react";
 
 import { api } from "../../shared/api.ts";
@@ -8,6 +8,7 @@ import { messageOf } from "../../shared/errors.ts";
 import { formatDateTime } from "../../shared/format.ts";
 import styles from "./People.module.css";
 import { refreshInvitations, useOpenInvitations } from "./invitations.ts";
+import { linesFrom } from "../../shared/paged.ts";
 
 type Invitation = Schema<"InvitationItem">;
 
@@ -42,7 +43,7 @@ function InvitationRow({ invitation, onTakenBack }: InvitationRowProps) {
             {t("invitations.expires", { when: formatDateTime(expires) })}
           </span>
         )}
-        {revoke.isError ? <Alert danger>{messageOf(revoke.error)}</Alert> : null}
+        {revoke.isError ? <Alert tone={alertTone.danger}>{messageOf(revoke.error)}</Alert> : null}
       </span>
       <ConfirmDialog
         triggerLabel={t("invitations.take-back")}
@@ -51,7 +52,7 @@ function InvitationRow({ invitation, onTakenBack }: InvitationRowProps) {
         text={t("invitations.take-back-text")}
         confirmLabel={t("invitations.take-back")}
         cancelLabel={t("common.cancel")}
-        danger
+        confirmLook={buttonLook.danger}
         onConfirm={() => {
           revoke.mutate({ params: { path: { invitation_id: id } } });
         }}
@@ -64,17 +65,16 @@ function InvitationRow({ invitation, onTakenBack }: InvitationRowProps) {
 export function OpenInvitations() {
   const invitations = useOpenInvitations();
   const [takenBack, setTakenBack] = useState(false);
-  const items =
-    invitations.data?.pages.flatMap((page: Schema<"Page_InvitationItem">) => page.items) ?? [];
+  const items = linesFrom(invitations.data?.pages, (item) => item);
   if (invitations.isError) {
-    return <Alert danger>{messageOf(invitations.error)}</Alert>;
+    return <Alert tone={alertTone.danger}>{messageOf(invitations.error)}</Alert>;
   }
   if (invitations.isSuccess && items.length === 0) {
     return <p className={styles.muted}>{t("invitations.none")}</p>;
   }
   return (
     <>
-      {takenBack ? <Alert success>{t("invitations.taken-back")}</Alert> : null}
+      {takenBack ? <Alert tone={alertTone.success}>{t("invitations.taken-back")}</Alert> : null}
       <ul className={styles.list} aria-label={t("invitations.open")}>
         {items.map((invitation) => (
           <InvitationRow

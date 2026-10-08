@@ -1,17 +1,14 @@
-import { ApiError, type Schema } from "@bugaboo/api-client";
-import { useInfiniteQuery } from "@tanstack/react-query";
+import type { Schema } from "@bugaboo/api-client";
 
-import { assignmentsKey } from "../../shared/access-cache.ts";
 import type { WhereItCounts, RowPlace } from "../../shared/access-words.ts";
 import { api } from "../../shared/api.ts";
-
-/** How many rows, and how many choices, one page holds. */
-const ROWS_SIZE = 100;
-const CHOICES_SIZE = 20;
+import { fieldList, linesFrom, pageSize, usePaged } from "../../shared/paged.ts";
+import { namedPerson, type SubjectKind } from "../../shared/person.ts";
+import { queryKeys } from "../../shared/query-keys.ts";
 
 /** Whom a row is for. */
 export interface Subject {
-  readonly kind: "person" | "group";
+  readonly kind: SubjectKind;
   readonly id: string;
   readonly name: string;
 }
@@ -30,9 +27,10 @@ export interface RowLine {
 
 /** The subject of a row: a person shown by name, or a group. Nothing for a person who is not named. */
 function subjectOf(item: Schema<"AssignmentItem">): Subject | undefined {
-  const { person, group } = item;
-  if (person !== undefined && person !== null && person.shown === "name") {
-    return { kind: "person", id: person.id, name: person.name };
+  const { group } = item;
+  const person = namedPerson(item.person);
+  if (person !== undefined) {
+    return { kind: "person", ...person };
   }
   return group === undefined || group === null
     ? undefined
@@ -59,33 +57,26 @@ export function rowLineOf(item: Schema<"AssignmentItem">): RowLine | undefined {
 
 /** The rows in the pages read so far. */
 export function rowsOf(pages: readonly Schema<"Page_AssignmentItem">[] | undefined): RowLine[] {
-  return (pages ?? []).flatMap((page) => page.items.flatMap((item) => rowLineOf(item) ?? []));
+  return linesFrom(pages, rowLineOf);
 }
 
 /** The rows of the whole organization (`null`) or of a project (its ID), with the rows from above. */
 export function useAssignments(project: string | null) {
-  return useInfiniteQuery({
-    queryKey: [...assignmentsKey, "list", project],
-    initialPageParam: null as string | null,
-    queryFn: async ({ pageParam }: { readonly pageParam: string | null }) => {
-      const query = { limit: ROWS_SIZE, ...(pageParam === null ? {} : { cursor: pageParam }) };
-      const { data } =
-        project === null
-          ? await api.client.GET("/api/v1/assignments", { params: { query } })
-          : await api.client.GET("/api/v1/projects/{project}/assignments", {
-              params: { path: { project }, query },
-            });
-      if (data === undefined) {
-        throw new ApiError(0, undefined);
-      }
-      return data;
+  return usePaged({
+    queryKey: queryKeys.assignments.list(project),
+    read: (after) => {
+      const query = { limit: pageSize.largest, ...after };
+      return project === null
+        ? api.client.GET("/api/v1/assignments", { params: { query } })
+        : api.client.GET("/api/v1/projects/{project}/assignments", {
+            params: { path: { project }, query },
+          });
     },
-    getNextPageParam: (last: Schema<"Page_AssignmentItem">) => last.next_cursor ?? null,
   });
 }
 
 /** What a form of *Who has which role* chooses from. */
-export type ChoiceKind = "person" | "group" | "role";
+export type ChoiceKind = SubjectKind | "role";
 
 /** One thing to choose: a person, a group or a role. */
 export interface Choice {
@@ -95,39 +86,30 @@ export interface Choice {
 
 /** The choices in the pages read so far. */
 export function choicesOf(pages: readonly Schema<"Page_ChoiceItem">[] | undefined): Choice[] {
-  return (pages ?? []).flatMap((page) =>
-    page.items.flatMap((item) =>
-      item.id === undefined || item.id === null || item.name === undefined || item.name === null
-        ? []
-        : [{ id: item.id, name: item.name }],
-    ),
+  return linesFrom(pages, (item) =>
+    item.id === undefined || item.id === null || item.name === undefined || item.name === null
+      ? undefined
+      : { id: item.id, name: item.name },
   );
 }
 
 /** The people, groups or roles a row can be made from, found by name, a page at a time. */
 export function useChoices(kind: ChoiceKind, project: string | null, search: string) {
-  return useInfiniteQuery({
-    queryKey: [...assignmentsKey, "choices", kind, project, search],
-    initialPageParam: null as string | null,
-    queryFn: async ({ pageParam }: { readonly pageParam: string | null }) => {
+  return usePaged({
+    queryKey: queryKeys.assignments.choices(kind, project, search),
+    read: (after) => {
       const query = {
         kind,
-        fields: "id,name",
-        limit: kind === "role" ? ROWS_SIZE : CHOICES_SIZE,
+        fields: fieldList<Schema<"ChoiceItem">>(["id", "name"]),
+        limit: kind === "role" ? pageSize.largest : pageSize.short,
         ...(search === "" ? {} : { search }),
-        ...(pageParam === null ? {} : { cursor: pageParam }),
+        ...after,
       };
-      const { data } =
-        project === null
-          ? await api.client.GET("/api/v1/assignment-choices", { params: { query } })
-          : await api.client.GET("/api/v1/projects/{project}/assignment-choices", {
-              params: { path: { project }, query },
-            });
-      if (data === undefined) {
-        throw new ApiError(0, undefined);
-      }
-      return data;
+      return project === null
+        ? api.client.GET("/api/v1/assignment-choices", { params: { query } })
+        : api.client.GET("/api/v1/projects/{project}/assignment-choices", {
+            params: { path: { project }, query },
+          });
     },
-    getNextPageParam: (last: Schema<"Page_ChoiceItem">) => last.next_cursor ?? null,
   });
 }

@@ -1,7 +1,7 @@
 import { t } from "@bugaboo/messages";
 import { useState, type ReactNode } from "react";
 
-import { refreshAccess } from "../../shared/access-cache.ts";
+import { refreshAccess } from "../../shared/query-keys.ts";
 import { appliesToText, roleText } from "../../shared/access-words.ts";
 import { api } from "../../shared/api.ts";
 import { useAskFirst } from "../../shared/ask-first.tsx";

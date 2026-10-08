@@ -23,8 +23,8 @@ use crate::rust_source::without_tests;
 use crate::source::{Kind, Source};
 
 /// The only place settings are declared.
-const REGISTRY_FOLDER: &str = "crates/bb-core/src/settings/";
-/// The file of the registry, which the browser client's list of keys is made from.
+pub(crate) const REGISTRY_FOLDER: &str = "crates/bb-core/src/settings/";
+/// The file of the registry, which the browser client's keys, choices and defaults are made from.
 pub(crate) const CATALOG_PATH: &str = "crates/bb-core/src/settings/catalog.rs";
 /// Where the migrations are: they name the keys of their time as text, on purpose.
 const MIGRATIONS_FOLDER: &str = "crates/bb-store/src/migrations/";

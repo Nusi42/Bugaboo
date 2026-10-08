@@ -1,6 +1,7 @@
-import { createRoute, lazyRouteComponent, useParams } from "@tanstack/react-router";
+import { createRoute, lazyRouteComponent } from "@tanstack/react-router";
 
-import { paths } from "../shared/paths.ts";
+import { paths, routeParam } from "../shared/paths.ts";
+import { useAddressPart } from "./address-part.ts";
 import { appRoute } from "./layouts.tsx";
 
 const ProjectOverviewScreen = lazyRouteComponent(
@@ -12,20 +13,12 @@ const ProjectSettingsScreen = lazyRouteComponent(
   "ProjectSettingsPage",
 );
 
-/** The short name (or ID) in the address of a project page, if the address has one. */
-export function useProjectOfAddress(): string | undefined {
-  const params: unknown = useParams({ strict: false });
-  const project: unknown =
-    typeof params === "object" && params !== null ? Reflect.get(params, "project") : undefined;
-  return typeof project === "string" ? project : undefined;
-}
-
 /** The overview of a project, `/p/WEB`. The project decides who sees it: nobody else finds it. */
 export const projectRoute = createRoute({
   getParentRoute: () => appRoute,
   path: paths.project,
   component: function Project() {
-    const project = useProjectOfAddress();
+    const project = useAddressPart(routeParam.project);
     return project === undefined ? null : <ProjectOverviewScreen address={project} />;
   },
 });
@@ -35,7 +28,7 @@ export const projectSettingsRoute = createRoute({
   getParentRoute: () => appRoute,
   path: paths.projectSettings,
   component: function ProjectSettings() {
-    const project = useProjectOfAddress();
+    const project = useAddressPart(routeParam.project);
     return project === undefined ? null : <ProjectSettingsScreen address={project} />;
   },
 });

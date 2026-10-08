@@ -1,8 +1,9 @@
+import { dataOf, type Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 import { expect, type Locator, type Page } from "@playwright/test";
 
-import { ada, makePerson, type Person } from "./accounts.ts";
-import { type ApiSession, openSession } from "./api.ts";
+import { ada, makePerson, ownId, type Person, signInThroughApi } from "./accounts.ts";
+import { type ApiSession } from "./api.ts";
 import { type Instance } from "./server.ts";
 import { layoutOf } from "./layout.ts";
 import { inOrder } from "./sequence.ts";
@@ -24,43 +25,73 @@ export const roleName = {
   administrator: t("starting-role.administrator"),
   projectLead: t("starting-role.project-lead"),
   teamMember: t("starting-role.team-member"),
+  viewer: t("starting-role.viewer"),
   contributor: t("starting-role.contributor"),
   guest: t("starting-role.guest"),
 } as const;
 
-/** Whether something the server sent is a role of the table: a name and an ID. */
-function isRole(value: unknown): value is { readonly id: string; readonly name: string } {
-  return (
-    typeof value === "object" &&
-    value !== null &&
-    typeof Reflect.get(value, "id") === "string" &&
-    typeof Reflect.get(value, "name") === "string"
-  );
+/** The IDs of the roles of the organization by name, as an administrator lists them. */
+export async function roleIds(admin: ApiSession): Promise<ReadonlyMap<string, string>> {
+  const table = dataOf(await admin.client.GET("/api/v1/field-permissions"));
+  return new Map(table.roles.map((role) => [role.name, role.id]));
 }
 
 /** The ID of a role of the organization, found by its name, as an administrator lists them. */
 export async function roleId(admin: ApiSession, name: string): Promise<string> {
-  const table = await admin.get("/api/v1/field-permissions");
-  const roles: unknown = table["roles"];
-  const found = Array.isArray(roles)
-    ? roles.filter((role) => isRole(role)).find((role) => role.name === name)
-    : undefined;
+  const found = (await roleIds(admin)).get(name);
   if (found === undefined) {
     throw new TypeError(`The organization has no role called ${name}.`);
   }
-  return found.id;
+  return found;
+}
+
+/** Makes a group through the API and returns its ID. */
+export async function makeGroup(admin: ApiSession, name: string): Promise<string> {
+  return dataOf(await admin.client.POST("/api/v1/groups", { body: { name } })).id;
+}
+
+/** Puts a person into a group, through the API. */
+export async function addToGroup(admin: ApiSession, group: string, person: string): Promise<void> {
+  await admin.client.PUT("/api/v1/groups/{group_id}/members/{person_id}", {
+    params: { path: { group_id: group, person_id: person } },
+  });
+}
+
+/** Sets the level of a role for a field, in the whole organization or in a project (an ID). */
+export async function setFieldLevel(
+  admin: ApiSession,
+  where: { readonly role: string; readonly field: Schema<"Field">; readonly project?: string },
+  level: Schema<"FieldLevel"> | null,
+): Promise<void> {
+  await admin.client.PUT("/api/v1/field-permissions/{role}/{field}", {
+    params: {
+      path: { role: where.role, field: where.field },
+      ...(where.project === undefined ? {} : { query: { project: where.project } }),
+    },
+    body: { level },
+  });
+}
+
+/** Sets how a role sees people of one kind, in the whole organization. */
+export async function setPeopleLevel(
+  admin: ApiSession,
+  where: { readonly role: string; readonly kind: Schema<"PeopleKind"> },
+  level: Schema<"PeopleLevel">,
+): Promise<void> {
+  await admin.client.PUT("/api/v1/people-visibility/{role}/{kind}", {
+    params: { path: { role: where.role, kind: where.kind } },
+    body: { level },
+  });
 }
 
 /** Takes away what a project set for a field and a role, so the level from above counts again. */
-export async function forgetFieldLevel(
+export function forgetFieldLevel(
   admin: ApiSession,
   project: string,
   role: string,
-  field: string,
+  field: Schema<"Field">,
 ): Promise<void> {
-  await admin.put(`/api/v1/field-permissions/${role}/${field}?project=${project}`, {
-    level: null,
-  });
+  return setFieldLevel(admin, { role, field, project }, null);
 }
 
 /**
@@ -87,34 +118,56 @@ export function around(list: Locator): Locator {
 }
 
 /** An administrator at the other end of the API, signed in with the password of the first start. */
-export async function signedInAdmin(server: Instance): Promise<ApiSession> {
-  const session = await openSession(server.url);
-  await session.post("/api/v1/auth/sign-in", { email: ada.email, password: ada.password });
-  return session;
+export function signedInAdmin(server: Instance): Promise<ApiSession> {
+  return signInThroughApi(server, ada);
 }
 
-/** The ID of the person behind a session. */
-export async function ownId(session: ApiSession): Promise<string> {
-  return String((await session.get("/api/v1/auth/me"))["id"]);
-}
+/** Whom a row of *Who has which role* is for: a person or a group (by ID). */
+type Who = { readonly person: string } | { readonly group: string };
 
 /**
- * Gives a person a role the way *Who has which role* does: for the whole organization, or on a
- * project (given by its short name) and its sub-projects (M2-F92).
+ * Gives a role, by its ID, the way *Who has which role* does: for the whole organization, or on a
+ * project (given by its short name), by default with its sub-projects (M2-F92).
  */
+async function give(
+  admin: ApiSession,
+  who: Who,
+  role: string,
+  project: string | null,
+  appliesTo: Schema<"AppliesToBody">,
+): Promise<void> {
+  await (project === null
+    ? admin.client.POST("/api/v1/assignments", { body: { who, role } })
+    : admin.client.POST("/api/v1/projects/{project}/assignments", {
+        params: { path: { project: await projectIdOf(admin, project) } },
+        body: { who, role, applies_to: appliesTo },
+      }));
+}
+
+/** Gives a person a role, by its name: for the whole organization, or on a project and its sub-projects. */
 export async function giveRole(
   admin: ApiSession,
   person: string,
   role: string,
   project: string | null,
+  appliesTo: Schema<"AppliesToBody"> = "project-and-sub-projects",
 ): Promise<void> {
-  const row = { who: { person }, role: await roleId(admin, role) };
-  await (project === null
-    ? admin.post("/api/v1/assignments", row)
-    : admin.post(`/api/v1/projects/${await projectIdOf(admin, project)}/assignments`, {
-        ...row,
-        applies_to: "project-and-sub-projects",
-      }));
+  await give(admin, { person }, await roleId(admin, role), project, appliesTo);
+}
+
+/** Gives a person a role that is known by its ID (a role made a moment ago, among very many). */
+export function giveRoleById(admin: ApiSession, person: string, role: string): Promise<void> {
+  return give(admin, { person }, role, null, "project-and-sub-projects");
+}
+
+/** Gives a group a role, by its name: for the whole organization, or on a project and its sub-projects. */
+export async function giveGroupRole(
+  admin: ApiSession,
+  group: string,
+  role: string,
+  project: string | null,
+): Promise<void> {
+  await give(admin, { group }, await roleId(admin, role), project, "project-and-sub-projects");
 }
 
 /** A person who is made, and the role they are given on a project and its sub-projects. */
@@ -141,12 +194,27 @@ export async function makePeopleWithRoles(
 
 /** The ID of a project, found by its address (a short name). */
 export async function projectIdOf(admin: ApiSession, shortName: string): Promise<string> {
-  const found = await admin.get(`/api/v1/projects/${shortName}`);
-  const project: unknown = found["project"];
-  const id: unknown =
-    typeof project === "object" && project !== null ? Reflect.get(project, "id") : undefined;
-  if (typeof id !== "string") {
-    throw new TypeError(`There is no project ${shortName}.`);
+  const found = dataOf(
+    await admin.client.GET("/api/v1/projects/{project}", {
+      params: { path: { project: shortName } },
+    }),
+  );
+  return found.project.id;
+}
+
+/**
+ * Chooses whom to check, and where when `place` is named, on the page of *Check access*: the
+ * search finds them and the radio button picks them.
+ */
+export async function check(
+  page: Page,
+  place: string | null,
+  person: { readonly name: string },
+): Promise<void> {
+  if (place !== null) {
+    await page.getByLabel(t("check-access.place-search")).fill(place);
+    await page.getByRole("radio", { name: new RegExp(place, "u") }).check();
   }
-  return id;
+  await page.getByLabel(t("check-access.person-search")).fill(person.name);
+  await page.getByRole("radio", { name: person.name }).check();
 }

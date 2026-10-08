@@ -1,14 +1,14 @@
+import { mayOpenProjectPage, projectPages } from "../../shared/project-pages.ts";
 import { AssignmentsSection } from "../roles/index.ts";
 import { NotFoundPage } from "../shell/index.ts";
 import { ProjectGate } from "./ProjectGate.tsx";
 import { ProjectTabs } from "./ProjectTabs.tsx";
 import styles from "./Projects.module.css";
-import { projectPage } from "./use-project-page.ts";
 import type { OneProject } from "./use-projects.ts";
 
 /** The page once the project is known: the tabs, then *Who has which role* in the project. */
 function Roles({ project }: { readonly project: OneProject }) {
-  if (!project.permissions.includes("decide-roles")) {
+  if (!mayOpenProjectPage(projectPages.roles, project)) {
     return <NotFoundPage />;
   }
   const { id, name } = project.project;
@@ -27,7 +27,7 @@ function Roles({ project }: { readonly project: OneProject }) {
  */
 export function ProjectRolesPage({ address }: { readonly address: string }) {
   return (
-    <ProjectGate address={address} kind={projectPage.roles}>
+    <ProjectGate address={address} page={projectPages.roles}>
       {(project) => <Roles project={project} />}
     </ProjectGate>
   );

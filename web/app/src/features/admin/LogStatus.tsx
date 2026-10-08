@@ -1,6 +1,6 @@
 import type { Schema } from "@bugaboo/api-client";
 import { t, type MessageKey } from "@bugaboo/messages";
-import { Alert } from "@bugaboo/ui";
+import { Alert, alertTone } from "@bugaboo/ui";
 
 import styles from "./Admin.module.css";
 import { hasWriteFailures, isUnanchored } from "./status.ts";
@@ -25,7 +25,7 @@ function Result({ log }: { readonly log: SecurityLog }) {
     const reason =
       log.reason === null || log.reason === undefined ? undefined : reasonMessages[log.reason];
     return (
-      <Alert danger>
+      <Alert tone={alertTone.danger}>
         {t("security-log.broken", {
           seq: log.broken_at ?? 0,
           reason: reason === undefined ? "" : t(reason),
@@ -34,7 +34,7 @@ function Result({ log }: { readonly log: SecurityLog }) {
     );
   }
   if (log.result === "unreadable") {
-    return <Alert danger>{t("security-log.unreadable")}</Alert>;
+    return <Alert tone={alertTone.danger}>{t("security-log.unreadable")}</Alert>;
   }
   return (
     <div className={styles.detail}>
@@ -42,7 +42,9 @@ function Result({ log }: { readonly log: SecurityLog }) {
       {log.head_seq === null || log.head_seq === undefined ? null : (
         <span>{t("security-log.head", { seq: log.head_seq, hash: log.head_hash ?? "" })}</span>
       )}
-      {isUnanchored(log) ? <Alert warning>{t("security-log.unanchored")}</Alert> : null}
+      {isUnanchored(log) ? (
+        <Alert tone={alertTone.warning}>{t("security-log.unanchored")}</Alert>
+      ) : null}
     </div>
   );
 }
@@ -57,7 +59,9 @@ export function LogStatus({ log }: { readonly log: SecurityLog }) {
     <div className={styles.detail}>
       <Result log={log} />
       {hasWriteFailures(log) ? (
-        <Alert warning>{t("status.log-failures", { count: log.write_failures })}</Alert>
+        <Alert tone={alertTone.warning}>
+          {t("status.log-failures", { count: log.write_failures })}
+        </Alert>
       ) : null}
     </div>
   );

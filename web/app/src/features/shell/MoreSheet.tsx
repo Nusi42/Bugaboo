@@ -1,11 +1,11 @@
 import { t } from "@bugaboo/messages";
-import { IconButton, iconName, Overlay } from "@bugaboo/ui";
+import { IconButton, iconName, Overlay, overlayEdge } from "@bugaboo/ui";
 
 import { paths } from "../../shared/paths.ts";
 import styles from "./MoreSheet.module.css";
 import { NavButton, NavLink } from "./NavItem.tsx";
 import { closeOverlay, openOverlay, useOverlay } from "./overlay-state.ts";
-import { placeAt } from "./places.ts";
+import { placeAt } from "../../shared/places.ts";
 import { useSidebarSections } from "./sidebar-sections.ts";
 
 export interface MoreSheetProps {
@@ -45,7 +45,7 @@ export function MoreSheet({ organizationSettings, name, onSignOut, signingOut }:
   const overlay = useOverlay("more");
   const sections = useSidebarSections();
   return (
-    <Overlay {...overlay} label={t("shell.more")} bottom>
+    <Overlay {...overlay} label={t("shell.more")} from={overlayEdge.bottom}>
       <div className={styles.sheet}>
         <div className={styles.head}>
           <h2 className={styles.title}>{t("shell.more")}</h2>

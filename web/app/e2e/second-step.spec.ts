@@ -5,7 +5,17 @@ import { addCodeApp, bob, makeAdmin, makePerson, type TwoStep } from "./support/
 import { addVirtualAuthenticator } from "./support/authenticator.ts";
 import { expectGoodInEveryTheme } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
-import { addPasskey, expectHome, openFromMenu, sendPassword, signOut } from "./support/flows.ts";
+import {
+  addPasskey,
+  addressEndingAt,
+  addressWith,
+  expectHome,
+  openFromMenu,
+  sendPassword,
+  sendSecondStepCode,
+  signOut,
+} from "./support/flows.ts";
+import { paths } from "../src/shared/paths.ts";
 
 /** Bob has a code app, set up through the API before the first test. */
 let twoStep: TwoStep;
@@ -23,36 +33,30 @@ test.use({
 });
 test.describe.configure({ mode: "serial" });
 
-/** Types a code on the second step and sends it. */
-async function sendCode(page: Page, code: string): Promise<void> {
-  await page.getByLabel(t("second-step.code")).fill(code);
-  await page.getByRole("button", { name: t("second-step.submit") }).click();
-}
-
 /** Signs in with the password and a code from the code app. */
 async function signInWithCode(page: Page): Promise<void> {
   await sendPassword(page, bob);
-  await sendCode(page, await twoStep.app.next());
+  await sendSecondStepCode(page, await twoStep.app.next());
   await expectHome(page, bob);
 }
 
 test("auth_03 the password alone does not open the account", async ({ page }) => {
   await sendPassword(page, bob);
-  await expect(page).toHaveURL(/\/sign-in\/second-step/u);
+  await expect(page).toHaveURL(addressWith(paths.secondStep));
   await expect(page.getByRole("heading", { level: 1, name: t("second-step.title") })).toBeVisible();
   await expect(page.getByText(t("second-step.code-help"))).toBeVisible();
   await expect(page.getByRole("button", { name: t("second-step.passkey") })).toHaveCount(0);
   // Nothing of the account shows before the second step is done.
-  await page.goto("/");
-  await expect(page).toHaveURL(/\/sign-in$/u);
+  await page.goto(paths.home);
+  await expect(page).toHaveURL(addressEndingAt(paths.signIn));
 });
 
 test("auth_03 a wrong code is explained and the person can try again", async ({ page }) => {
   await sendPassword(page, bob);
-  await sendCode(page, "000000");
+  await sendSecondStepCode(page, "000000");
   await expect(page.getByText(t("error.auth.wrong-second-step-code"))).toBeVisible();
-  await expect(page).toHaveURL(/\/sign-in\/second-step/u);
-  await sendCode(page, await twoStep.app.next());
+  await expect(page).toHaveURL(addressWith(paths.secondStep));
+  await sendSecondStepCode(page, await twoStep.app.next());
   await expectHome(page, bob);
 });
 
@@ -64,12 +68,12 @@ test("auth_03 a code from the code app finishes signing in", async ({ page }) =>
 test("auth_03 a backup code works once", async ({ page }) => {
   const backup = String(twoStep.backupCodes.at(0));
   await sendPassword(page, bob);
-  await sendCode(page, backup);
+  await sendSecondStepCode(page, backup);
   await expectHome(page, bob);
   await signOut(page);
 
   await sendPassword(page, bob);
-  await sendCode(page, backup);
+  await sendSecondStepCode(page, backup);
   await expect(page.getByText(t("error.auth.wrong-second-step-code"))).toBeVisible();
 });
 

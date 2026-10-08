@@ -1,20 +1,18 @@
 import { settingKeys, type SettingKey } from "@bugaboo/api-client";
 import { describe, expect, it } from "vitest";
 
+import { appearanceForShell, appearanceOf, changesForAppearance } from "./appearance-setting.ts";
 import {
-  appearanceForShell,
-  appearanceOf,
-  changesForAppearance,
   isSettingKey,
-  regionOf,
   settingOf,
-  shortcutKeysOf,
-  startPageOf,
-  withChange,
   type MySettings,
   type Setting,
   type SettingValue,
 } from "./my-settings.ts";
+import { regionOf } from "./region.ts";
+import { withChange } from "./setting-change.ts";
+import { shortcutKeysOf } from "./shortcuts-source.ts";
+import { startPageOf } from "./start-page-setting.ts";
 
 /** A setting as the server answers it, with only what these tests look at. */
 function setting(key: SettingKey, value: SettingValue, own = true): Setting {

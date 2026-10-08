@@ -15,11 +15,11 @@ import {
   isReservedKeys,
   isValidSequence,
   keysOf,
-  parseOverrides,
   shortcutDefinitions,
   type ShortcutId,
   type ShortcutOverrides,
 } from "./shortcuts.ts";
+import { parseOverrides } from "./shortcuts-source.ts";
 
 /** A key press on the page, outside any field. */
 function press(key: string, extra: Partial<PressLike> = {}): PressLike {

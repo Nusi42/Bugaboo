@@ -1,9 +1,10 @@
 import { t } from "@bugaboo/messages";
 
 import { expect, test } from "./support/fixtures.ts";
-import { expectHome, sendPassword } from "./support/flows.ts";
+import { addressWith, expectHome, sendPassword, sendSecondStepCode } from "./support/flows.ts";
 import { samplePeople, sampleTeamMember, sampleWithCodeApp } from "./support/sample.ts";
 import { codeApp } from "./support/totp.ts";
+import { paths } from "../src/shared/paths.ts";
 
 test.use({ sample: true });
 test.describe.configure({ mode: "serial" });
@@ -28,8 +29,7 @@ test("sample a person with a code app is asked for a code and gets in with it", 
 }) => {
   const { person, secret } = sampleWithCodeApp();
   await sendPassword(page, person);
-  await expect(page).toHaveURL(/\/sign-in\/second-step/u);
-  await page.getByLabel(t("second-step.code")).fill(await codeApp(secret).next());
-  await page.getByRole("button", { name: t("second-step.submit") }).click();
+  await expect(page).toHaveURL(addressWith(paths.secondStep));
+  await sendSecondStepCode(page, await codeApp(secret).next());
   await expectHome(page, person);
 });

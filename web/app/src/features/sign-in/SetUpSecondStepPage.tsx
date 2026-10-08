@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Alert, Button, Card } from "@bugaboo/ui";
+import { Alert, alertTone, Button, buttonLook, Card } from "@bugaboo/ui";
 import { useNavigate } from "@tanstack/react-router";
 
 import { messageOf } from "../../shared/errors.ts";
@@ -27,10 +27,10 @@ export function SetUpSecondStepPage() {
         <p className={styles.text}>{t("set-up-second-step.how")}</p>
         {ready ? (
           <>
-            <Alert success>{t("set-up-second-step.ready")}</Alert>
+            <Alert tone={alertTone.success}>{t("set-up-second-step.ready")}</Alert>
             <div>
               <Button
-                primary
+                look={buttonLook.primary}
                 onPress={() => {
                   // The app asks the server again who this is: the way is open now.
                   forgetPerson();
@@ -42,7 +42,7 @@ export function SetUpSecondStepPage() {
             </div>
           </>
         ) : null}
-        {out.error === null ? null : <Alert danger>{messageOf(out.error)}</Alert>}
+        {out.error === null ? null : <Alert tone={alertTone.danger}>{messageOf(out.error)}</Alert>}
         <div>
           <Button onPress={out.signOut} isPending={out.isPending}>
             {t("nav.sign-out")}

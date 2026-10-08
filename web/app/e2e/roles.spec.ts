@@ -1,13 +1,14 @@
 import { t } from "@bugaboo/messages";
 import { type Locator, type Page } from "@playwright/test";
 
-import { projectRolesAddress, roleAddress } from "../src/shared/paths.ts";
-import { ada, bob, cleo, makeAdmin, makePerson } from "./support/accounts.ts";
+import { addressInProject, paths, projectAddress, roleAddress } from "../src/shared/paths.ts";
+import { ada, bob, cleo, makeAdmin, makePerson, ownId } from "./support/accounts.ts";
 import { expectGoodInEveryLook } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
-import { openFromMenu, signIn } from "./support/flows.ts";
+import { addressEndingAt, openFromMenu, signIn } from "./support/flows.ts";
 import { twoStepOf } from "./support/roles.ts";
 import { makeProject } from "./support/projects.ts";
+import { addToGroup, giveRole, makeGroup, roleIds, roleName } from "./support/access.ts";
 
 // Roles & permissions and Who has which role (SEC-02, SEC-03, SEC-08, WP-11): a role is made from a
 // copy and changed, a group gets it on a project, the row comes down to a sub-project and is changed
@@ -21,27 +22,17 @@ test.use({
     run: async (server) => {
       const admin = await makeAdmin(server);
       const bobSession = await makePerson(server, admin, bob);
-      const bobId = String((await bobSession.get("/api/v1/auth/me"))["id"]);
+      const bobId = await ownId(bobSession);
       await bobSession.dispose();
       const lead = await makePerson(server, admin, cleo);
-      const cleoId = String((await lead.get("/api/v1/auth/me"))["id"]);
+      const cleoId = await ownId(lead);
       await lead.dispose();
       const acme = await makeProject(admin, "ACME", "Acme");
       await makeProject(admin, "WEB", "Website", acme);
       await makeProject(admin, "LAB", "Lab");
-      const group = String((await admin.post("/api/v1/groups", { name: "Backend" }))["id"]);
-      await admin.put(`/api/v1/groups/${group}/members/${bobId}`, {});
-      const listed = (await admin.get("/api/v1/roles"))["items"];
-      const found = new Map<string, string>();
-      for (const item of Array.isArray(listed) ? listed : []) {
-        found.set(String(Reflect.get(item, "name")), String(Reflect.get(item, "id")));
-      }
-      roles = found;
-      await admin.post(`/api/v1/projects/${acme}/assignments`, {
-        who: { person: cleoId },
-        role: found.get("Project lead"),
-        applies_to: "project-and-sub-projects",
-      });
+      await addToGroup(admin, await makeGroup(admin, "Backend"), bobId);
+      roles = await roleIds(admin);
+      await giveRole(admin, cleoId, roleName.projectLead, "ACME");
       await admin.dispose();
     },
   },
@@ -119,7 +110,7 @@ test("sec_02 a group gets the role on a project and the sub-project shows the ro
   page,
 }) => {
   await signIn(page, ada);
-  await page.goto(projectRolesAddress("ACME"));
+  await page.goto(addressInProject(paths.projectRoles, "ACME"));
   await expect(
     page.getByRole("heading", { level: 1, name: t("assignments.title-project", { name: "Acme" }) }),
   ).toBeVisible();
@@ -132,7 +123,7 @@ test("sec_02 a group gets the role on a project and the sub-project shows the ro
     rows.getByText(`Reviewer · ${t("roles.applies.project-and-sub-projects")}`),
   ).toBeVisible();
   // On the sub-project the same row comes from Acme, and is changed for this project.
-  await page.goto(projectRolesAddress("WEB"));
+  await page.goto(addressInProject(paths.projectRoles, "WEB"));
   const inherited = page.getByRole("list", { name: t("assignments.list"), exact: true });
   const backend = inherited
     .getByRole("listitem")
@@ -160,9 +151,9 @@ test("sec_02 a group gets the role on a project and the sub-project shows the ro
 
 test("sec_03 a person with No access on a project finds it hidden", async ({ page }) => {
   await signIn(page, bob);
-  await page.goto("/p/ACME");
+  await page.goto(projectAddress("ACME"));
   await expect(page.getByRole("heading", { level: 1, name: "Acme" })).toBeVisible();
-  await page.goto("/p/WEB");
+  await page.goto(projectAddress("WEB"));
   await expect(
     page.getByRole("heading", { level: 1, name: t("page.not-found.title") }),
   ).toBeVisible();
@@ -206,7 +197,7 @@ test("sec_08 a role in use is deleted with the role that takes its place", async
   const list = page.getByRole("list", { name: t("roles.list"), exact: true });
   await expect(list.getByRole("link", { name: "Reviewer", exact: true })).toHaveCount(0);
   // The group keeps its row on the project, now with the role that took the place.
-  await page.goto(projectRolesAddress("ACME"));
+  await page.goto(addressInProject(paths.projectRoles, "ACME"));
   const rows = page.getByRole("list", { name: t("assignments.list"), exact: true });
   await expect(
     rows.getByText(`Guest · ${t("roles.applies.project-and-sub-projects")}`),
@@ -229,16 +220,16 @@ test("sec_02 a Project lead sees who has which role in their project and nothing
   page,
 }) => {
   await signIn(page, cleo);
-  await page.goto("/p/ACME");
+  await page.goto(projectAddress("ACME"));
   await page.getByRole("link", { name: t("roles.project-link"), exact: true }).click();
-  await expect(page).toHaveURL(/\/p\/ACME\/settings\/roles$/u);
+  await expect(page).toHaveURL(addressEndingAt(addressInProject(paths.projectRoles, "ACME")));
   await expect(page.getByRole("list", { name: t("assignments.list"), exact: true })).toBeVisible();
   // Another project, and the organization's pages, are not there for a Project lead.
-  await page.goto(projectRolesAddress("LAB"));
+  await page.goto(addressInProject(paths.projectRoles, "LAB"));
   await expect(
     page.getByRole("heading", { level: 1, name: t("page.not-found.title") }),
   ).toBeVisible();
-  await page.goto("/settings/roles");
+  await page.goto(paths.roles);
   await expect(
     page.getByRole("heading", { level: 1, name: t("page.not-found.title") }),
   ).toBeVisible();

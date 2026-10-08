@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Alert, Card, SaveStatus, Skeleton } from "@bugaboo/ui";
+import { Alert, alertTone, Card, SaveStatus, Skeleton } from "@bugaboo/ui";
 
 import { messageOf } from "../../shared/errors.ts";
 import { usePageTitle } from "../../shared/use-page.ts";
@@ -17,7 +17,7 @@ export function SessionsPage() {
   return (
     <Card heading={t("sessions.title")} level={1}>
       <p className={styles.text}>{t("sessions.intro")}</p>
-      {sessions.isError ? <Alert danger>{messageOf(sessions.error)}</Alert> : null}
+      {sessions.isError ? <Alert tone={alertTone.danger}>{messageOf(sessions.error)}</Alert> : null}
       <div aria-busy={sessions.isPending}>
         <ul className={styles.list} aria-label={t("sessions.list")}>
           {sessions.data?.sessions.map((session) => (
@@ -40,8 +40,10 @@ export function SessionsPage() {
           "not-saved": t("save.not-saved"),
         }}
       />
-      {end.problem === null ? null : <Alert danger>{end.problem}</Alert>}
-      {end.saveState === "saved" ? <Alert success>{t("sessions.ended")}</Alert> : null}
+      {end.problem === null ? null : <Alert tone={alertTone.danger}>{end.problem}</Alert>}
+      {end.saveState === "saved" ? (
+        <Alert tone={alertTone.success}>{t("sessions.ended")}</Alert>
+      ) : null}
       {sessions.data?.truncated === true ? <Alert>{t("sessions.cut-off")}</Alert> : null}
       <SignOutEverywhere />
     </Card>

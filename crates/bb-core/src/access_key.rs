@@ -17,6 +17,9 @@ pub const MOST_PROJECTS: usize = 50;
 /// The most keys one person can have at the same time (also the most the list of keys shows).
 pub const MOST_KEYS: usize = 100;
 
+// The list of keys is read in one page (the browser asks for the largest page and shows all of it).
+const _: () = assert!(MOST_KEYS <= crate::paging::PAGE_SIZE_MAX as usize);
+
 words! {
     /// *What it may do* (M2-Q6): the three plain choices, or single permissions under *More
     /// options*.

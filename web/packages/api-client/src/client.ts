@@ -15,7 +15,7 @@ export interface ClientOptions {
   /** Sends a request; the browser's `fetch` by default. */
   readonly fetch?: (request: Request) => Promise<Response>;
   /** The current CSRF token, or `undefined` when there is none (not signed in). */
-  readonly csrfToken?: () => string | undefined;
+  readonly csrfToken?: () => string | undefined | Promise<string | undefined>;
 }
 
 /** Reads a cookie from a cookie header text, for the CSRF token. */
@@ -46,11 +46,11 @@ async function errorOf(response: Response): Promise<ApiError> {
 }
 
 /** Adds the CSRF token to requests that change something, and raises {@link ApiError}s. */
-function rules(csrfToken: () => string | undefined): Middleware {
+function rules(csrfToken: NonNullable<ClientOptions["csrfToken"]>): Middleware {
   return {
-    onRequest({ request }) {
+    async onRequest({ request }) {
       if (!SAFE_METHODS.has(request.method)) {
-        const token = csrfToken();
+        const token = await csrfToken();
         if (token !== undefined) {
           request.headers.set(CSRF_HEADER, token);
         }
@@ -85,4 +85,4 @@ export function createApi<Paths extends object = paths>(options: Readonly<Client
   return { client, query: createQueryClient(client) };
 }
 
-export type Api = ReturnType<typeof createApi>;
+export type Api = ReturnType<typeof createApi<paths>>;

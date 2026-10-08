@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Alert, autoComplete, Button, Form, TextField } from "@bugaboo/ui";
+import { Alert, alertTone, autoComplete, Form, SubmitButton, TextField } from "@bugaboo/ui";
 import { useState } from "react";
 
 import { api } from "../../shared/api.ts";
@@ -33,10 +33,12 @@ export function CodeForm() {
           setCode(value);
         }}
       />
-      {finish.isError && !wrongCode ? <Alert danger>{messageOf(finish.error)}</Alert> : null}
-      <Button primary wide submit isPending={finish.isPending}>
+      {finish.isError && !wrongCode ? (
+        <Alert tone={alertTone.danger}>{messageOf(finish.error)}</Alert>
+      ) : null}
+      <SubmitButton wide isPending={finish.isPending}>
         {t("second-step.submit")}
-      </Button>
+      </SubmitButton>
     </Form>
   );
 }

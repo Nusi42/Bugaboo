@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Button, Card } from "@bugaboo/ui";
+import { Button, buttonLook, Card } from "@bugaboo/ui";
 import { useState } from "react";
 
 import { usePageTitle } from "../../../shared/use-page.ts";
@@ -28,7 +28,7 @@ export function AccessKeysPage() {
         {making.step === "idle" ? (
           <div className={styles.row}>
             <Button
-              primary
+              look={buttonLook.primary}
               onPress={() => {
                 setMaking({ step: "form" });
               }}

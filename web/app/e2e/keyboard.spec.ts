@@ -5,7 +5,8 @@ import { shortcutDefinitions } from "../src/shared/shortcuts.ts";
 import { ada, forgetChoices, makeAdmin } from "./support/accounts.ts";
 import { expectGoodInEveryLook } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
-import { signIn } from "./support/flows.ts";
+import { addressEndingAt, signIn } from "./support/flows.ts";
+import { paths } from "../src/shared/paths.ts";
 
 test.use({
   preparation: {
@@ -55,29 +56,29 @@ test("ux_05 g h goes to the start page, and every shortcut has a visible button"
   page,
 }) => {
   await signIn(page, ada);
-  await page.goto("/me/appearance");
+  await page.goto(paths.appearance);
   await expect(page.getByRole("heading", { level: 1, name: t("appearance.title") })).toBeVisible();
   await page.keyboard.press("g");
   await page.keyboard.press("h");
-  await expect(page).toHaveURL(/\/$/u);
+  await expect(page).toHaveURL(addressEndingAt(paths.home));
   // The visible controls the registry names for the shortcuts of every screen.
   await expect(page.getByRole("link", { name: t("nav.home"), exact: true }).first()).toBeVisible();
 });
 
 test("ux_05 a shortcut does nothing while a text field has the focus", async ({ page }) => {
   await signIn(page, ada);
-  await page.goto("/me/shortcuts");
+  await page.goto(paths.shortcuts);
   const search = page.getByRole("searchbox", { name: t("shortcuts.search"), exact: true });
   await search.focus();
   await page.keyboard.type("gh?j");
   await expect(search).toHaveValue("gh?j");
-  await expect(page).toHaveURL(/\/me\/shortcuts$/u);
+  await expect(page).toHaveURL(addressEndingAt(paths.shortcuts));
   await expect(list(page)).toHaveCount(0);
 });
 
 /** Opens the editor of one shortcut in the side panel. */
 async function openEditor(page: Page, name: string) {
-  await page.goto("/me/shortcuts");
+  await page.goto(paths.shortcuts);
   await page.getByRole("button", { name, exact: true }).click();
   return page.getByRole("complementary", { name, exact: true });
 }
@@ -126,7 +127,7 @@ test("ux_05 keys that another shortcut uses are refused with a sentence that nam
 
 test("ux_05 the shortcuts are searchable, and the open one is in the address", async ({ page }) => {
   await signIn(page, ada);
-  await page.goto("/me/shortcuts");
+  await page.goto(paths.shortcuts);
   const search = page.getByRole("searchbox", { name: t("shortcuts.search"), exact: true });
   await search.fill("zzz");
   await expect(page.getByText(t("shortcuts.nothing"))).toBeVisible();
@@ -135,7 +136,7 @@ test("ux_05 the shortcuts are searchable, and the open one is in the address", a
   await expect(page).toHaveURL(/[?]edit=list-next$/u);
   await expect(page.getByRole("complementary", { name: t("shortcut.list-next") })).toBeVisible();
   // An address with the shortcut in it opens the panel straight away.
-  await page.goto("/me/shortcuts?edit=go-home");
+  await page.goto(`${paths.shortcuts}?edit=go-home`);
   await expect(page.getByRole("complementary", { name: t("shortcut.go-home") })).toBeVisible();
 });
 

@@ -6,7 +6,7 @@ import { useSignOut } from "../../shared/use-sign-out.ts";
 import { useMe } from "../../shared/use-me.ts";
 import { useShortcutHost, useShortcuts } from "../../shared/use-shortcuts.ts";
 import { closeOverlay, openOverlay } from "./overlay-state.ts";
-import { mayOpen } from "./places.ts";
+import { mayOpen } from "../../shared/places.ts";
 import type { SidebarProps } from "./Sidebar.tsx";
 
 /** What the sidebar, the menu of a tablet and the sheet of a phone need to know about the person. */

@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { autoComplete, TextField } from "@bugaboo/ui";
+import { autoComplete, fieldKind, TextField } from "@bugaboo/ui";
 
 export interface FieldProps {
   readonly value: string;
@@ -25,7 +25,7 @@ export function EmailField({ value, onChange }: FieldProps) {
   return (
     <TextField
       label={t("field.email")}
-      email
+      kind={fieldKind.email}
       autoComplete={autoComplete.email}
       requiredMessage={t("validation.required")}
       emailMessage={t("validation.email")}
@@ -46,7 +46,7 @@ export function NewPasswordField({ value, onChange, problem }: NewPasswordFieldP
     <TextField
       label={t("field.password")}
       description={t("field.password-help")}
-      password
+      kind={fieldKind.password}
       autoComplete={autoComplete.newPassword}
       requiredMessage={t("validation.required")}
       errorMessage={problem}

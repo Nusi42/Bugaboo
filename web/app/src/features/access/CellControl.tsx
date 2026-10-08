@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Button, SelectField } from "@bugaboo/ui";
+import { Button, buttonLook, SelectField } from "@bugaboo/ui";
 
 import styles from "./Access.module.css";
 import { mayPick, type Cell } from "./levels.ts";
@@ -54,7 +54,7 @@ export function CellControl<Level extends string>({
       />
       {inProject && cell.origin.kind === "set_here" ? (
         <Button
-          quiet
+          look={buttonLook.quiet}
           aria-label={t("access.reset-label", { subject: subjectName, role: roleName })}
           onPress={() => {
             onChange(null);

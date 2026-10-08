@@ -4,7 +4,9 @@ import { type Page } from "@playwright/test";
 import { ada, forgetChoices, makeAdmin } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
-import { screenshotFolder, shoot } from "./support/screenshots.ts";
+import { screenshotFolder, shot, shotWhole } from "./support/screenshots.ts";
+import { paths } from "../src/shared/paths.ts";
+import { viewports } from "../../tooling/viewports.ts";
 
 // The screens of the app shell for the maintainer's review of M2, at phone width and, for the frames
 // that only exist on larger screens, at the width of a tablet and a computer, each in a light and
@@ -23,102 +25,62 @@ test.use({
   },
 });
 
-/** A phone, a tablet and a computer. */
-const sizes = {
-  phone: { width: 400, height: 860 },
-  tablet: { width: 900, height: 1000 },
-  computer: { width: 1280, height: 800 },
-} as const;
-
-/** How long a sheet or a menu takes to slide in; the picture is taken when it has stopped. */
-const SLIDING_MS = 500;
-
 /** Takes the open screen in both looks. */
-async function shot(page: Page, name: string): Promise<void> {
-  await page.waitForTimeout(SLIDING_MS);
-  await shoot(page, name, MILESTONE);
-}
-
 async function phoneScreens(page: Page): Promise<void> {
-  await page.setViewportSize(sizes.phone);
-  await page.goto("/");
+  await page.setViewportSize(viewports.phoneForPictures);
+  await page.goto(paths.home);
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
-  await shot(page, "01-shell-phone");
+  await shot(page, "01-shell-phone", MILESTONE);
   await page.getByRole("button", { name: t("shell.more"), exact: true }).click();
   await expect(page.getByRole("dialog", { name: t("shell.more") })).toBeVisible();
-  await shot(page, "02-more-sheet-phone");
+  await shot(page, "02-more-sheet-phone", MILESTONE);
   await page.keyboard.press("Escape");
-  await page.goto("/me");
+  await page.goto(paths.mySettings);
   await expect(page.getByRole("heading", { level: 1, name: t("nav.my-settings") })).toBeVisible();
-  await shot(page, "03-my-settings-phone");
-  await page.goto("/me/appearance");
+  await shot(page, "03-my-settings-phone", MILESTONE);
+  await page.goto(paths.appearance);
   await expect(page.getByRole("heading", { level: 1, name: t("appearance.title") })).toBeVisible();
-  await shot(page, "04-appearance-phone");
-  await page.goto("/me/shortcuts");
+  await shot(page, "04-appearance-phone", MILESTONE);
+  await page.goto(paths.shortcuts);
   await expect(page.getByRole("heading", { level: 1, name: t("shortcut.title") })).toBeVisible();
-  await shot(page, "05-keyboard-shortcuts-phone");
-  await page.goto("/me/shortcuts?edit=go-home");
+  await shot(page, "05-keyboard-shortcuts-phone", MILESTONE);
+  await page.goto(`${paths.shortcuts}?edit=go-home`);
   await expect(page.getByRole("complementary", { name: t("shortcut.go-home") })).toBeVisible();
-  await shot(page, "06-shortcut-editor-phone");
+  await shot(page, "06-shortcut-editor-phone", MILESTONE);
 }
 
 async function quickScreens(page: Page): Promise<void> {
-  await page.goto("/");
+  await page.goto(paths.home);
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
   await page.keyboard.press("Control+k");
   await page.getByRole("searchbox", { name: t("search.label"), exact: true }).fill("a");
   await expect(page.getByRole("option").first()).toBeVisible();
-  await shot(page, "07-quick-search-phone");
+  await shot(page, "07-quick-search-phone", MILESTONE);
   await page.keyboard.press("Escape");
   await page.keyboard.press("?");
   await expect(page.getByRole("dialog", { name: t("shortcut.title") })).toBeVisible();
-  await shot(page, "08-shortcut-list-phone");
+  await shot(page, "08-shortcut-list-phone", MILESTONE);
   await page.keyboard.press("Escape");
 }
 
 async function frameScreens(page: Page): Promise<void> {
-  await page.goto("/frames?show=panel&item=first");
+  await page.goto(`${paths.frames}?show=panel&item=first`);
   await expect(page.getByRole("complementary", { name: t("frames.item-1") })).toBeVisible();
-  await shot(page, "09-side-panel-phone");
-  await page.goto("/frames?show=focus&item=second");
+  await shot(page, "09-side-panel-phone", MILESTONE);
+  await page.goto(`${paths.frames}?show=focus&item=second`);
   await expect(page.getByRole("heading", { level: 2, name: t("frames.item-2") })).toBeVisible();
-  await shot(page, "10-focus-view-phone");
-  await page.goto("/frames");
+  await shot(page, "10-focus-view-phone", MILESTONE);
+  await page.goto(paths.frames);
   await page
     .getByRole("button", { name: t("frames.remove-name", { name: t("frames.item-3") }) })
     .click();
   await expect(page.getByRole("button", { name: t("common.undo") })).toBeVisible();
-  await shot(page, "11-undo-phone");
-}
-
-/** The tallest a picture of one whole page may be. */
-const TALLEST_PAGE = 8000;
-
-/**
- * Takes the whole page in both looks. The content of the app scrolls inside the shell, so a
- * picture of the window shows only the first screenful: the window is made as tall as the
- * longest scrolling area needs, then put back.
- */
-async function wholePage(page: Page, name: string): Promise<void> {
-  const before = page.viewportSize() ?? sizes.phone;
-  const missing = await page.evaluate(() => {
-    let most = 0;
-    for (const element of document.querySelectorAll("*")) {
-      most = Math.max(most, element.scrollHeight - element.clientHeight);
-    }
-    return most;
-  });
-  await page.setViewportSize({
-    width: before.width,
-    height: Math.min(before.height + missing, TALLEST_PAGE),
-  });
-  await shot(page, name);
-  await page.setViewportSize(before);
+  await shot(page, "11-undo-phone", MILESTONE);
 }
 
 /** Gives *Go home* the keys `g i`, so the list of keys has one of the person's own to show. */
 async function chooseGoHomeKeys(page: Page): Promise<void> {
-  await page.goto("/me/shortcuts");
+  await page.goto(paths.shortcuts);
   await page.getByRole("button", { name: t("shortcut.go-home"), exact: true }).click();
   const panel = page.getByRole("complementary", { name: t("shortcut.go-home"), exact: true });
   await panel.getByRole("textbox", { name: t("shortcuts.new-keys"), exact: true }).click();
@@ -130,53 +92,53 @@ async function chooseGoHomeKeys(page: Page): Promise<void> {
 
 /** The pages of *My settings* and the organization's settings that WP-07 added, at phone width. */
 async function settingsScreens(page: Page): Promise<void> {
-  await page.setViewportSize(sizes.phone);
-  await page.goto("/me/region");
+  await page.setViewportSize(viewports.phoneForPictures);
+  await page.goto(paths.region);
   await expect(page.getByRole("heading", { level: 1, name: t("nav.region") })).toBeVisible();
-  await wholePage(page, "20-region-phone");
-  await page.goto("/me/start-page");
+  await shotWhole(page, "20-region-phone", MILESTONE);
+  await page.goto(paths.startPage);
   await expect(page.getByRole("heading", { level: 1, name: t("nav.start-page") })).toBeVisible();
-  await wholePage(page, "21-start-page-phone");
-  await page.goto("/me/appearance");
+  await shotWhole(page, "21-start-page-phone", MILESTONE);
+  await page.goto(paths.appearance);
   await expect(page.getByRole("heading", { level: 1, name: t("appearance.title") })).toBeVisible();
-  await wholePage(page, "22-appearance-samples-phone");
-  await page.goto("/settings/sign-in-rules");
+  await shotWhole(page, "22-appearance-samples-phone", MILESTONE);
+  await page.goto(paths.signInRules);
   await expect(page.getByRole("heading", { level: 1, name: t("nav.sign-in-rules") })).toBeVisible();
-  await wholePage(page, "23-sign-in-rules-phone");
+  await shotWhole(page, "23-sign-in-rules-phone", MILESTONE);
   // The administrator locks the theme; the page of a person then says why it cannot be changed.
-  await page.goto("/settings/themes");
+  await page.goto(paths.themes);
   const row = page.getByRole("listitem").filter({
     has: page.getByRole("group", { name: t("theme.legend"), exact: true }),
   });
   await row.getByText(t("setting.ui.lock"), { exact: true }).click();
   await expect(row.getByRole("switch", { name: t("setting.ui.lock") })).toBeChecked();
   await expect(page.getByRole("status").filter({ hasText: t("save.saved") })).toBeVisible();
-  await wholePage(page, "24-themes-lock-phone");
-  await page.goto("/me/appearance");
+  await shotWhole(page, "24-themes-lock-phone", MILESTONE);
+  await page.goto(paths.appearance);
   await expect(page.getByText(t("setting.ui.locked"), { exact: true }).first()).toBeVisible();
-  await wholePage(page, "25-appearance-locked-phone");
+  await shotWhole(page, "25-appearance-locked-phone", MILESTONE);
   await chooseGoHomeKeys(page);
-  await page.goto("/me/shortcuts");
+  await page.goto(paths.shortcuts);
   await expect(page.getByRole("heading", { level: 1, name: t("shortcut.title") })).toBeVisible();
-  await wholePage(page, "26-keyboard-shortcuts-kept-phone");
+  await shotWhole(page, "26-keyboard-shortcuts-kept-phone", MILESTONE);
 }
 
 async function largerScreens(page: Page): Promise<void> {
-  await page.setViewportSize(sizes.computer);
-  await page.goto("/me/appearance");
+  await page.setViewportSize(viewports.computer);
+  await page.goto(paths.appearance);
   await expect(page.getByRole("heading", { level: 1, name: t("appearance.title") })).toBeVisible();
-  await shot(page, "12-shell-computer");
-  await page.goto("/frames?show=focus&item=second");
+  await shot(page, "12-shell-computer", MILESTONE);
+  await page.goto(`${paths.frames}?show=focus&item=second`);
   await expect(page.getByRole("heading", { level: 2, name: t("frames.item-2") })).toBeVisible();
-  await shot(page, "13-focus-view-computer");
-  await page.goto("/frames?show=panel&item=first");
+  await shot(page, "13-focus-view-computer", MILESTONE);
+  await page.goto(`${paths.frames}?show=panel&item=first`);
   await expect(page.getByRole("complementary", { name: t("frames.item-1") })).toBeVisible();
-  await shot(page, "14-side-panel-computer");
-  await page.setViewportSize(sizes.tablet);
-  await page.goto("/me/appearance");
+  await shot(page, "14-side-panel-computer", MILESTONE);
+  await page.setViewportSize(viewports.tablet);
+  await page.goto(paths.appearance);
   await page.getByRole("button", { name: t("shell.menu-button"), exact: true }).click();
   await expect(page.getByRole("navigation", { name: t("shell.menu") })).toBeVisible();
-  await shot(page, "15-menu-tablet");
+  await shot(page, "15-menu-tablet", MILESTONE);
 }
 
 test("the screens of the app shell", async ({ page, server }) => {

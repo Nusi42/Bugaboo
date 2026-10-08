@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Alert, Button, Form } from "@bugaboo/ui";
+import { Alert, alertTone, Form, SubmitButton } from "@bugaboo/ui";
 import { useState } from "react";
 
 import { useAfterSignIn } from "../../shared/after-sign-in.ts";
@@ -43,10 +43,12 @@ export function AcceptForm({ secret, email }: AcceptFormProps) {
         }}
         problem={tooWeak ? messageOf(accept.error) : undefined}
       />
-      {accept.isError && !tooWeak ? <Alert danger>{messageOf(accept.error)}</Alert> : null}
-      <Button primary wide submit isPending={accept.isPending}>
+      {accept.isError && !tooWeak ? (
+        <Alert tone={alertTone.danger}>{messageOf(accept.error)}</Alert>
+      ) : null}
+      <SubmitButton wide isPending={accept.isPending}>
         {t("invitation.submit")}
-      </Button>
+      </SubmitButton>
     </Form>
   );
 }

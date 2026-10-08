@@ -6,6 +6,7 @@ import { Icon } from "./Icon.tsx";
 import { iconName } from "./icons.ts";
 import { IconButton } from "./IconButton.tsx";
 import styles from "./SearchField.module.css";
+import { iconSize } from "./props.ts";
 
 export interface SearchFieldProps {
   /** The visible name of the box, already in the person's language. */
@@ -24,7 +25,7 @@ export function SearchField({ label, value, onChange, clearLabel, placeholder }:
     <AriaSearchField className={cx(styles.search)} value={value} onChange={onChange}>
       <Label className={cx(fieldStyles.label)}>{label}</Label>
       <div className={styles.box}>
-        <Icon name={iconName.search} small />
+        <Icon name={iconName.search} size={iconSize.small} />
         <Input
           className={cx(styles.input)}
           {...(placeholder === undefined ? {} : { placeholder })}

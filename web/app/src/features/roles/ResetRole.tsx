@@ -1,7 +1,7 @@
 import { t } from "@bugaboo/messages";
-import { Alert, ConfirmDialog } from "@bugaboo/ui";
+import { Alert, alertTone, ConfirmDialog } from "@bugaboo/ui";
 
-import { refreshAccess } from "../../shared/access-cache.ts";
+import { refreshAccess } from "../../shared/query-keys.ts";
 import { api } from "../../shared/api.ts";
 import { messageOf } from "../../shared/errors.ts";
 import styles from "./Roles.module.css";
@@ -22,8 +22,10 @@ export function ResetRole({ id, name }: ResetRoleProps) {
   return (
     <div className={styles.stack}>
       <p className={styles.muted}>{t("roles.reset-help")}</p>
-      {reset.isError ? <Alert danger>{messageOf(reset.error)}</Alert> : null}
-      {reset.isSuccess ? <Alert success>{t("roles.reset-done", { name })}</Alert> : null}
+      {reset.isError ? <Alert tone={alertTone.danger}>{messageOf(reset.error)}</Alert> : null}
+      {reset.isSuccess ? (
+        <Alert tone={alertTone.success}>{t("roles.reset-done", { name })}</Alert>
+      ) : null}
       <div className={styles.row}>
         <ConfirmDialog
           triggerLabel={t("roles.reset")}

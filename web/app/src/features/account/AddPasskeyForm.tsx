@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Alert, Button, Form, TextField } from "@bugaboo/ui";
+import { Alert, alertTone, Form, SubmitButton, TextField } from "@bugaboo/ui";
 import { useState } from "react";
 
 import { messageOf } from "../../shared/errors.ts";
@@ -28,13 +28,13 @@ export function AddPasskeyForm() {
       />
       <ConfirmPasswordField value={password} onChange={setPassword} />
       {outcome?.kind === "added" ? (
-        <Alert success>{t("passkeys.added", { name: outcome.label })}</Alert>
+        <Alert tone={alertTone.success}>{t("passkeys.added", { name: outcome.label })}</Alert>
       ) : null}
       {outcome?.kind === "cancelled" ? <Alert>{t("passkeys.cancelled")}</Alert> : null}
-      {outcome?.kind === "failed" ? <Alert danger>{messageOf(outcome.error)}</Alert> : null}
-      <Button primary submit isPending={busy}>
-        {t("passkeys.add")}
-      </Button>
+      {outcome?.kind === "failed" ? (
+        <Alert tone={alertTone.danger}>{messageOf(outcome.error)}</Alert>
+      ) : null}
+      <SubmitButton isPending={busy}>{t("passkeys.add")}</SubmitButton>
     </Form>
   );
 }

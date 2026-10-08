@@ -1,3 +1,4 @@
+import { dataOf } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 import { type Locator, type Page } from "@playwright/test";
 import { expect } from "@playwright/test";
@@ -36,11 +37,16 @@ export async function makeProject(
   name: string,
   inside?: string,
 ): Promise<string> {
-  const made = await admin.post(
-    inside === undefined ? "/api/v1/projects" : `/api/v1/projects/${inside}/sub-projects`,
-    { short_name: shortName, name },
+  const body = { short_name: shortName, name };
+  const made = dataOf(
+    inside === undefined
+      ? await admin.client.POST("/api/v1/projects", { body })
+      : await admin.client.POST("/api/v1/projects/{project}/sub-projects", {
+          params: { path: { project: inside } },
+          body,
+        }),
   );
-  return String(made["id"]);
+  return made.id;
 }
 
 /** Opens *Move* on the settings page at `address`, picks the top level and waits for the preview. */
