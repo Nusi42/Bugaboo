@@ -128,6 +128,25 @@ async function hideNames(page: Page): Promise<void> {
   const who = t("projects.person-someone");
   await expect(sentence(page, t("people-visibility.example-assigned", { who }))).toBeVisible();
   await good(page, "03-hide-names");
+  await seeFromTheSideOfAGuest(page);
+}
+
+/** The same change from a second view: *Check access* for a Guest of the Website says *Hidden*. */
+async function seeFromTheSideOfAGuest(page: Page): Promise<void> {
+  const website = sampleProjectName("WEB");
+  await open(
+    page,
+    projectPageAddress(paths.projectCheckAccess, "WEB"),
+    t("check-access.project-title", { project: website }),
+  );
+  await check(page, null, sampleGuestIn("WEB"));
+  const level = t("check-access.level.role-project", {
+    role: roleName.guest,
+    level: t("people-level.hidden"),
+    project: website,
+  });
+  await expect(sentence(page, level)).toBeVisible();
+  await expect(page.getByText(t("people-kind.assigned-to"), { exact: true }).first()).toBeVisible();
 }
 
 /** Step 4: Ana's access on the Website, with the reasons, and what is hidden from her now. */
@@ -154,7 +173,9 @@ async function checkAnasAccess(page: Page): Promise<void> {
   });
   await expect(sentence(page, reason)).toBeVisible();
   // Cost center is hidden from her now, and the answer says which role sets that and where.
-  await page.getByRole("button", { name: t("check-access.show-every-field") }).click();
+  // The answer opens grouped: the fields with the same level and reason are told together, and
+  // Cost center, which the Website sets for itself, stands apart.
+  await expect(sentence(page, t("check-access.all-other-fields"))).toBeVisible();
   const level = t("check-access.level.role-project", {
     role: roleName.contributor,
     level: t("field-level.hidden"),

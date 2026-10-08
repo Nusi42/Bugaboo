@@ -21,8 +21,9 @@ function picture(step: string, page: Page): string {
 
 /** The screen is good in the four themes (it has no accessibility problem) and is in the pictures. */
 export async function good(page: Page, step: string): Promise<void> {
-  await expectGoodInEveryLook(page);
+  // The pictures first: the check puts every theme on the page, and leaves the last one there.
   await shootWhole(page, picture(step, page), DEMO);
+  await expectGoodInEveryLook(page);
 }
 
 /** Opens a page and waits for its heading. */

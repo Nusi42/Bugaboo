@@ -163,9 +163,14 @@ fn needles_of(text: &str) -> Vec<Vec<u8>> {
             needles.push(secret.as_bytes().to_vec());
             needles.extend(base32_decode(secret).filter(|raw| !raw.is_empty()));
         }
-        // The access key of the few people who have one.
+        // The access key of the few people who have one: `bb_<prefix>_<secret>`. A file may keep
+        // the secret alone (the part after the second `_`), or the 32 bytes it stands for.
         if let Some(key) = columns.get(5).filter(|key| !key.is_empty()) {
             needles.push(key.as_bytes().to_vec());
+            if let Some(secret) = key.rsplit_once('_').map(|(_, secret)| secret) {
+                needles.push(secret.as_bytes().to_vec());
+                needles.extend(crockford_decode(secret).filter(|raw| !raw.is_empty()));
+            }
         }
     }
     needles
@@ -174,13 +179,26 @@ fn needles_of(text: &str) -> Vec<Vec<u8>> {
 /// The bytes a base 32 text (RFC 4648, as code apps take it) stands for; `None` for any other
 /// character.
 fn base32_decode(text: &str) -> Option<Vec<u8>> {
-    const ALPHABET: &[u8; 32] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+    decode_base32(
+        text.trim_end_matches('='),
+        b"ABCDEFGHIJKLMNOPQRSTUVWXYZ234567",
+    )
+}
+
+/// The bytes the secret of an access key stands for: Crockford's base 32 in lower case, as
+/// `bb-auth` writes it; `None` for any other character.
+fn crockford_decode(text: &str) -> Option<Vec<u8>> {
+    decode_base32(text, b"0123456789abcdefghjkmnpqrstvwxyz")
+}
+
+/// The bytes a base 32 text stands for, written with the 32 symbols of `alphabet`.
+fn decode_base32(text: &str, alphabet: &[u8; 32]) -> Option<Vec<u8>> {
     let mut bytes = Vec::new();
     let (mut bits, mut count) = (0_u32, 0_u32);
-    for symbol in text.trim_end_matches('=').bytes() {
-        let value = ALPHABET
+    for symbol in text.bytes() {
+        let value = alphabet
             .iter()
-            .position(|known| *known == symbol.to_ascii_uppercase())?;
+            .position(|known| known.eq_ignore_ascii_case(&symbol))?;
         bits = (bits << 5) | u32::try_from(value).ok()?;
         count += 5;
         if count >= 8 {
@@ -606,7 +624,7 @@ mod tests {
 
     #[test]
     fn the_needles_are_the_password_the_code_app_and_the_access_key_columns_only() {
-        let text = "# header\nana@bugaboo.example\tPW-ONE\tcontributor\tAna Moreno\nben@bugaboo.example\tPW-TWO\tteam_member\tBen Hale\tMZXW6YTBOI\n";
+        let text = "# header\nana@bugaboo.example\tPW-ONE\tcontributor\tAna Moreno\nben@bugaboo.example\tPW-TWO\tteam_member\tBen Hale\tMZXW6YTBOI\ncleo@bugaboo.example\tPW-THREE\tteam_member\tCleo Coder\t\tbb_k7q2x9mf_cpnqj\n";
         let needles = needles_of(text);
         assert_eq!(
             needles,
@@ -614,7 +632,12 @@ mod tests {
                 b"PW-ONE".to_vec(),
                 b"PW-TWO".to_vec(),
                 b"MZXW6YTBOI".to_vec(),
-                b"foobar".to_vec()
+                b"foobar".to_vec(),
+                b"PW-THREE".to_vec(),
+                b"bb_k7q2x9mf_cpnqj".to_vec(),
+                b"cpnqj".to_vec(),
+                // The 25 bits of the five symbols are three bytes and a spare bit.
+                vec![0x65, 0xAB, 0x79],
             ]
         );
     }
@@ -644,6 +667,47 @@ mod tests {
             found.iter().any(|p| p.contains("data/keys.bin holds")),
             "{found:?}"
         );
+    }
+
+    #[test]
+    fn bad_example_the_secret_part_or_the_bytes_of_an_access_key_in_a_file() {
+        // `bb_<prefix>_<secret>`: a file may keep the secret alone, or the 32 bytes it stands for.
+        // 52 symbols of the alphabet, made here and not written out: the secret scan would
+        // (rightly) take a written key for a real one.
+        let alphabet = b"0123456789abcdefghjkmnpqrstvwxyz";
+        let secret: String = (0..51)
+            .map(|at| char::from(alphabet[(at * 7 + 3) % 32]))
+            .chain(['0'])
+            .collect();
+        let sign_in = format!(
+            "ana@bugaboo.example\tPW-ONE\tcontributor\tAna Moreno\t\tbb_FIXTURE1_{secret}\n"
+        );
+        let bytes = crockford_decode(&secret).unwrap();
+        assert_eq!(bytes.len(), 32);
+        for (file, content) in [
+            ("data/log.txt", format!("key part {secret}").into_bytes()),
+            ("data/keys.bin", [b"header ".as_slice(), &bytes].concat()),
+        ] {
+            let leaking = Run {
+                label: "only".to_owned(),
+                sign_in_file: layout().sign_in_file,
+                dump: "{}".to_owned(),
+                needles: needles_of(&sign_in),
+                scanned: vec![(file.to_owned(), content)],
+            };
+            let found = problems(&names(), &organization(), &[leaking]);
+            assert!(
+                found.iter().any(|p| p.contains(&format!("{file} holds"))),
+                "{file}: {found:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn the_secret_of_an_access_key_is_decoded_the_way_bb_auth_writes_it() {
+        // Crockford's base 32 in lower case: no i, l, o or u.
+        assert_eq!(crockford_decode("cpnqj").unwrap(), [0x65, 0xAB, 0x79]);
+        assert!(crockford_decode("cpnuj").is_none());
     }
 
     #[test]
