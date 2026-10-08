@@ -165,14 +165,8 @@ impl Access {
             sees: found.sees_project(),
             roles: found.roles().iter().map(|role| role.name.clone()).collect(),
             permissions: found.permissions().clone(),
-            fields: Field::ALL
-                .iter()
-                .map(|field| (*field, found.field_level(*field)))
-                .collect(),
-            people: PeopleKind::ALL
-                .iter()
-                .map(|kind| (*kind, found.kind_level(*kind)))
-                .collect(),
+            fields: found.fields.all().clone(),
+            people: found.people.all().clone(),
             held_back: found.trace().iter().any(|row| row.row.role.is_none()),
         }
     }
