@@ -6,14 +6,27 @@
 //! hash is stored; with 80 bits of randomness a plain salted-by-purpose SHA-256 is enough.
 
 use bb_core::security_log::Digest;
+use bb_core::text::CROCKFORD;
 use zeroize::Zeroizing;
 
 use crate::error::{AuthError, random};
 use crate::token::Purpose;
 
-/// The symbols of a code: digits and letters without `i`, `l`, `o` and `u`. Access keys write
+/// The symbols of a code: digits and letters without `i`, `l`, `o` and `u` (the alphabet of
+/// [`CROCKFORD`] in lower case, which is how codes are stored and compared). Access keys write
 /// their prefix and their secret in the same symbols (`access_key.rs`).
-pub(crate) const ALPHABET: &[u8; 32] = b"0123456789abcdefghjkmnpqrstvwxyz";
+pub(crate) const ALPHABET: &[u8; 32] = &lower_case(CROCKFORD);
+
+/// The symbols in lower case, made when the program is built.
+const fn lower_case(symbols: &[u8; 32]) -> [u8; 32] {
+    let mut lower = *symbols;
+    let mut at = 0;
+    while at < lower.len() {
+        lower[at] = lower[at].to_ascii_lowercase();
+        at += 1;
+    }
+    lower
+}
 /// How many symbols a code has.
 const SYMBOLS: usize = 16;
 /// How many symbols stand together before a hyphen.

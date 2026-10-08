@@ -41,6 +41,7 @@ use serde_json::Value;
 
 use super::{Check, Context, Finding};
 use crate::dataset::load_layout;
+use bb_core::text::CROCKFORD;
 use bb_dev_words::sample::{Layout, OrganizationNames};
 
 /// The list of names, written for Bugaboo. `bb-sample` reads the same file.
@@ -186,10 +187,10 @@ fn base32_decode(text: &str) -> Option<Vec<u8>> {
     )
 }
 
-/// The bytes the secret of an access key stands for: Crockford's base 32 in lower case, as
-/// `bb-auth` writes it; `None` for any other character.
+/// The bytes the secret of an access key stands for: Crockford's base 32 (`bb-auth` writes it in
+/// lower case, which the decoding does not tell apart); `None` for any other character.
 fn crockford_decode(text: &str) -> Option<Vec<u8>> {
-    decode_base32(text, b"0123456789abcdefghjkmnpqrstvwxyz")
+    decode_base32(text, CROCKFORD)
 }
 
 /// The bytes a base 32 text stands for, written with the 32 symbols of `alphabet`.
@@ -675,9 +676,8 @@ mod tests {
         // `bb_<prefix>_<secret>`: a file may keep the secret alone, or the 32 bytes it stands for.
         // 52 symbols of the alphabet, made here and not written out: the secret scan would
         // (rightly) take a written key for a real one.
-        let alphabet = b"0123456789abcdefghjkmnpqrstvwxyz";
         let secret: String = (0..51)
-            .map(|at| char::from(alphabet[(at * 7 + 3) % 32]))
+            .map(|at| char::from(CROCKFORD[(at * 7 + 3) % 32]).to_ascii_lowercase())
             .chain(['0'])
             .collect();
         let sign_in = format!(
