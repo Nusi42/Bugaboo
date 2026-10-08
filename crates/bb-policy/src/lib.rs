@@ -18,6 +18,7 @@ mod levels;
 mod mask;
 mod moves;
 mod narrowing;
+mod parts;
 mod people;
 mod starting;
 mod tree;
