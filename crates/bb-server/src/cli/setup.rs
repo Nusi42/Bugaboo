@@ -17,7 +17,8 @@ use clap::Args;
 
 use super::{program_folder, text};
 use crate::config::{
-    self, ConfigError, DEFAULT_ADDRESS, DEFAULT_DATA_DIR, DEFAULT_FILE, DEFAULT_TLS_MODE, Sources,
+    self, ConfigError, DEFAULT_ADDRESS, DEFAULT_DATA_DIR, DEFAULT_FILE, DEFAULT_TLS_MODE,
+    SettingName, Sources, TlsModeName,
 };
 use crate::output;
 
@@ -128,16 +129,16 @@ impl Answers {
     }
 
     /// The answers as start-up settings, in the order they are written to the file.
-    fn settings(&self) -> Vec<(&'static str, String)> {
+    fn settings(&self) -> Vec<(SettingName, String)> {
         [
-            ("data_dir", &self.data_dir),
-            ("address", &self.address),
-            ("port", &self.port),
-            ("tls_mode", &self.tls_mode),
-            ("tls_cert", &self.tls_cert),
-            ("tls_key", &self.tls_key),
-            ("public_url", &self.public_url),
-            ("database_url", &self.database_url),
+            (SettingName::DataDir, &self.data_dir),
+            (SettingName::Address, &self.address),
+            (SettingName::Port, &self.port),
+            (SettingName::TlsMode, &self.tls_mode),
+            (SettingName::TlsCert, &self.tls_cert),
+            (SettingName::TlsKey, &self.tls_key),
+            (SettingName::PublicUrl, &self.public_url),
+            (SettingName::DatabaseUrl, &self.database_url),
         ]
         .into_iter()
         // An empty answer is an answer that is no setting: the built-in database.
@@ -199,7 +200,7 @@ fn execute(
         terminal.say(
             &message::setup_database_url_password(
                 target.display(),
-                config::env_name("database_url"),
+                config::env_name(SettingName::DatabaseUrl),
             )
             .render(),
         );
@@ -283,7 +284,7 @@ fn applies(question: Question, answers: &Answers) -> bool {
         Question::TlsCert | Question::TlsKey => answers
             .tls_mode
             .as_deref()
-            .is_some_and(|mode| mode.trim().eq_ignore_ascii_case("files")),
+            .is_some_and(|mode| mode.trim().eq_ignore_ascii_case(TlsModeName::Files.code())),
         // A server that listens on the network cannot guess the address people type.
         Question::PublicUrl => !answers.address_is_local(),
         _ => true,
@@ -360,12 +361,12 @@ fn answer(
 /// answered.
 fn malformed(question: Question, reply: &str) -> Option<ConfigError> {
     let name = match question {
-        Question::DataDir => "data_dir",
-        Question::Address => "address",
-        Question::Port => "port",
-        Question::Tls => "tls_mode",
-        Question::PublicUrl => "public_url",
-        Question::Database => "database_url",
+        Question::DataDir => SettingName::DataDir,
+        Question::Address => SettingName::Address,
+        Question::Port => SettingName::Port,
+        Question::Tls => SettingName::TlsMode,
+        Question::PublicUrl => SettingName::PublicUrl,
+        Question::Database => SettingName::DatabaseUrl,
         Question::TlsCert | Question::TlsKey => return None,
     };
     let reply = given(question, reply);
@@ -373,7 +374,7 @@ fn malformed(question: Question, reply: &str) -> Option<ConfigError> {
         return None;
     }
     // Everything else the settings need is filled in with something that is valid.
-    let mut settings = vec![("port", "1".to_owned())];
+    let mut settings = vec![(SettingName::Port, "1".to_owned())];
     settings.retain(|(setting, _)| *setting != name);
     settings.push((name, reply));
     let error = config::resolve(&Sources {
@@ -445,7 +446,7 @@ fn default_for(
         ),
         Question::Address => Some(DEFAULT_ADDRESS.to_owned()),
         Question::Port => suggested_port(answers, port_is_free).map(|port| port.to_string()),
-        Question::Tls => Some(DEFAULT_TLS_MODE.to_owned()),
+        Question::Tls => Some(DEFAULT_TLS_MODE.code().to_owned()),
         Question::Database => Some(Message::from(message::SETUP_DATABASE_BUILT_IN).render()),
         Question::TlsCert | Question::TlsKey | Question::PublicUrl => None,
     }
@@ -464,14 +465,14 @@ fn suggested_port(answers: &Answers, port_is_free: &dyn Fn(IpAddr, u16) -> bool)
 /// Writes the settings file: all at once (a new file next to it replaces the old one) and, where
 /// the system has such a thing, readable by its owner only, because a database address can hold
 /// a password.
-fn save(path: &Path, settings: &[(&'static str, String)]) -> anyhow::Result<()> {
+fn save(path: &Path, settings: &[(SettingName, String)]) -> anyhow::Result<()> {
     let mut table = toml::Table::new();
     for (name, value) in settings {
         let entry = match (*name, value.parse::<i64>()) {
-            ("port", Ok(number)) => toml::Value::Integer(number),
+            (SettingName::Port, Ok(number)) => toml::Value::Integer(number),
             _ => toml::Value::String(value.trim().to_owned()),
         };
-        table.insert((*name).to_owned(), entry);
+        table.insert(name.code().to_owned(), entry);
     }
     let contents = toml::to_string(&table).context("the settings could not be written")?;
     if let Some(folder) = path

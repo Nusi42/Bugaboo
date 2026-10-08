@@ -10,17 +10,17 @@ use bb_testing::{Failure, TestResult, each_database};
 use serde_json::Value;
 
 use super::{Serving, Wired, wire};
-use crate::config::{Settings, Sources, resolve};
+use crate::config::{SettingName, Settings, Sources, resolve};
 use crate::data_folder::DataFolder;
 use crate::sign_in_tests::http::{Browser, called, setup_body};
 
 fn settings(data: &Path, database: Option<&str>) -> Result<Settings, Failure> {
     let mut cli = vec![
-        ("port", "47200".to_owned()),
-        ("data_dir", data.to_string_lossy().into_owned()),
+        (SettingName::Port, "47200".to_owned()),
+        (SettingName::DataDir, data.to_string_lossy().into_owned()),
     ];
     if let Some(url) = database {
-        cli.push(("database_url", url.to_owned()));
+        cli.push((SettingName::DatabaseUrl, url.to_owned()));
     }
     Ok(resolve(&Sources {
         file: None,

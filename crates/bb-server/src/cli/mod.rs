@@ -21,7 +21,7 @@ use std::process::ExitCode;
 use bb_core::message::{self, Message, MessageKey};
 use clap::{Args, Parser, Subcommand};
 
-use crate::config::{self, ConfigError, DEFAULT_FILE, FILE_ENV, Settings, Sources};
+use crate::config::{self, ConfigError, DEFAULT_FILE, FILE_ENV, SettingName, Settings, Sources};
 use crate::output;
 
 /// The text of a message without placeholders, for the help texts of the command line.
@@ -112,12 +112,12 @@ pub(crate) struct ServeArgs {
 
 impl ServeArgs {
     /// The settings given on the command line, by setting name.
-    fn settings(&self) -> Vec<(&'static str, String)> {
+    fn settings(&self) -> Vec<(SettingName, String)> {
         given([
-            ("port", &self.port),
-            ("address", &self.address),
-            ("data_dir", &self.data_dir),
-            ("tls_mode", &self.tls),
+            (SettingName::Port, &self.port),
+            (SettingName::Address, &self.address),
+            (SettingName::DataDir, &self.data_dir),
+            (SettingName::TlsMode, &self.tls),
         ])
     }
 }
@@ -151,17 +151,17 @@ pub(crate) struct StoreArgs {
 }
 
 impl StoreArgs {
-    fn settings(&self) -> Vec<(&'static str, String)> {
+    fn settings(&self) -> Vec<(SettingName, String)> {
         given([
-            ("data_dir", &self.data_dir),
-            ("database_url", &self.database_url),
+            (SettingName::DataDir, &self.data_dir),
+            (SettingName::DatabaseUrl, &self.database_url),
         ])
     }
 }
 
 fn given<const N: usize>(
-    options: [(&'static str, &Option<String>); N],
-) -> Vec<(&'static str, String)> {
+    options: [(SettingName, &Option<String>); N],
+) -> Vec<(SettingName, String)> {
     options
         .into_iter()
         .filter_map(|(name, value)| value.clone().map(|value| (name, value)))
@@ -204,19 +204,20 @@ pub(crate) async fn run() -> ExitCode {
 /// command line holds none. Other people on the computer can read the command line (in the list
 /// of running programs), so the warning names the places that are safe: the settings file and the
 /// environment variable. It never repeats the address.
-fn password_warning(given: &[(&'static str, String)], file: &str) -> Option<String> {
+fn password_warning(given: &[(SettingName, String)], file: &str) -> Option<String> {
     given
         .iter()
-        .any(|(name, value)| *name == "database_url" && config::has_password(value))
+        .any(|(name, value)| *name == SettingName::DatabaseUrl && config::has_password(value))
         .then(|| {
-            message::cli_database_url_password(file, config::env_name("database_url")).render()
+            message::cli_database_url_password(file, config::env_name(SettingName::DatabaseUrl))
+                .render()
         })
 }
 
 /// The settings of a command: the settings file, the environment and the options given.
 fn load_settings(
     config: Option<&Path>,
-    given: &[(&'static str, String)],
+    given: &[(SettingName, String)],
     listening: bool,
 ) -> Result<Settings, ConfigError> {
     let named = config
@@ -284,7 +285,10 @@ mod tests {
         };
         assert_eq!(
             args.settings(),
-            [("port", "1".to_owned()), ("tls_mode", "off".to_owned())]
+            [
+                (SettingName::Port, "1".to_owned()),
+                (SettingName::TlsMode, "off".to_owned())
+            ]
         );
     }
 
@@ -316,12 +320,12 @@ mod tests {
             data_dir: Some("data".to_owned()),
             ..StoreArgs::default()
         };
-        assert_eq!(args.settings(), [("data_dir", "data".to_owned())]);
+        assert_eq!(args.settings(), [(SettingName::DataDir, "data".to_owned())]);
     }
 
     #[test]
     fn ops_10_a_database_url_with_a_password_on_the_command_line_warns() {
-        let given = |url: &str| vec![("database_url", url.to_owned())];
+        let given = |url: &str| vec![(SettingName::DatabaseUrl, url.to_owned())];
         let warning = password_warning(
             &given("postgres://bugaboo:Hunter2-Secret@db.example.test/bugaboo"),
             "bugaboo.toml",
@@ -351,6 +355,6 @@ mod tests {
                 "{quiet}"
             );
         }
-        assert!(password_warning(&[("port", "1".to_owned())], "bugaboo.toml").is_none());
+        assert!(password_warning(&[(SettingName::Port, "1".to_owned())], "bugaboo.toml").is_none());
     }
 }
