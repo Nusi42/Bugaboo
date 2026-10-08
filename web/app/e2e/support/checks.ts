@@ -37,7 +37,7 @@ export async function chooseTheme(page: Page, theme: Theme): Promise<void> {
  * the server for the person, and the page shows the theme once it is saved.
  */
 export async function pickTheme(page: Page, theme: Theme): Promise<void> {
-  const dark = theme.id === "dusk" || theme.id === "midnight";
+  const dark = settingChoices.appearanceDarkTheme.some((id) => id === theme.id);
   await page
     .getByRole("radio", {
       name: t(dark ? "appearance.mode.dark" : "appearance.mode.light"),
