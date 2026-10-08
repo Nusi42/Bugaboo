@@ -1,10 +1,9 @@
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, Form, SubmitButton } from "@bugaboo/ui";
+import { Alert, alertTone, Form, SubmitButton, partOf, part } from "@bugaboo/ui";
 import { useState } from "react";
 
 import { messageOf } from "../../shared/errors.ts";
 import { ProjectNameField, ShortNameField } from "./ProjectFields.tsx";
-import styles from "./Projects.module.css";
 import { useMakeProject } from "./use-projects.ts";
 
 export interface MakeProjectFormProps {
@@ -39,7 +38,7 @@ export function MakeProjectForm({ inside }: MakeProjectFormProps) {
       {made === null ? null : (
         <Alert tone={alertTone.success}>{t("projects.made", { name: made })}</Alert>
       )}
-      <div className={styles.row}>
+      <div {...partOf(part.row)}>
         <SubmitButton isPending={make.isPending}>{t("projects.make")}</SubmitButton>
       </div>
     </Form>

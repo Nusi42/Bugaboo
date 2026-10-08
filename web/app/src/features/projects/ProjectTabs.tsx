@@ -1,9 +1,8 @@
 import { t } from "@bugaboo/messages";
-import { Link } from "@bugaboo/ui";
+import { Link, partOf, part } from "@bugaboo/ui";
 import { useLocation } from "@tanstack/react-router";
 
 import { projectPageAddress } from "../../shared/project-pages.ts";
-import styles from "./Projects.module.css";
 import { tabsOf } from "./settings-tabs.ts";
 import type { OneProject } from "./use-projects.ts";
 
@@ -21,7 +20,7 @@ export function ProjectTabs({ project }: { readonly project: OneProject }) {
   }
   return (
     <nav aria-label={t("projects.tabs")}>
-      <ul className={styles.tabs}>
+      <ul {...partOf(part.projectsTabs)}>
         {tabs.map((tab) => {
           const address = projectPageAddress(tab, shortName);
           return (

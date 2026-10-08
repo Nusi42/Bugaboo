@@ -1,11 +1,10 @@
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, Button, buttonLook, Card, Link } from "@bugaboo/ui";
+import { Alert, alertTone, Button, buttonLook, Card, Link, partOf, part } from "@bugaboo/ui";
 import { useState } from "react";
 
 import { messageOf } from "../../shared/errors.ts";
 import { projectAddress } from "../../shared/paths.ts";
 import { MakeProjectForm } from "./MakeProjectForm.tsx";
-import styles from "./Projects.module.css";
 import { linesOf, useProjectList, type OneProject } from "./use-projects.ts";
 
 /** The sub-projects the person sees, a page at a time. */
@@ -13,11 +12,11 @@ function SubProjectList({ project }: { readonly project: string }) {
   const list = useProjectList({ inside: project });
   return (
     <>
-      <ul className={styles.items} aria-label={t("projects.sub-projects")}>
+      <ul {...partOf(part.projectsItems)} aria-label={t("projects.sub-projects")}>
         {linesOf(list.data?.pages).map((line) => (
-          <li key={line.id} className={styles.item}>
+          <li key={line.id} {...partOf(part.projectsItem)}>
             <Link href={projectAddress(line.shortName)}>{line.name}</Link>
-            <span className={styles.muted}>{line.shortName}</span>
+            <span {...partOf(part.muted)}>{line.shortName}</span>
           </li>
         ))}
       </ul>
@@ -48,11 +47,11 @@ export function SubProjects({ project }: { readonly project: OneProject }) {
   return (
     <Card heading={t("projects.sub-projects")}>
       {list.isError ? <Alert tone={alertTone.danger}>{messageOf(list.error)}</Alert> : null}
-      {empty ? <p className={styles.text}>{t("projects.sub-projects-empty")}</p> : null}
+      {empty ? <p {...partOf(part.text)}>{t("projects.sub-projects-empty")}</p> : null}
       {empty ? null : <SubProjectList project={id} />}
-      {empty && !mayMake ? <p className={styles.muted}>{t("projects.sub-projects-ask")}</p> : null}
+      {empty && !mayMake ? <p {...partOf(part.muted)}>{t("projects.sub-projects-ask")}</p> : null}
       {mayMake && !making ? (
-        <div className={styles.row}>
+        <div {...partOf(part.row)}>
           <Button
             look={empty ? buttonLook.primary : buttonLook.plain}
             onPress={() => {

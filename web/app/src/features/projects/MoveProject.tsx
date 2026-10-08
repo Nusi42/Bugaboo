@@ -1,11 +1,10 @@
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, ConfirmDialog } from "@bugaboo/ui";
+import { Alert, alertTone, ConfirmDialog, partOf, part } from "@bugaboo/ui";
 import { useState } from "react";
 
 import { messageOf } from "../../shared/errors.ts";
 import { MovePreviewView } from "./MovePreviewView.tsx";
 import { ProjectPicker } from "./ProjectPicker.tsx";
-import styles from "./Projects.module.css";
 import { useMovePreview, useMoveProject, type OneProject } from "./use-projects.ts";
 
 /** The word of the API for a person who may also move a project to the top level. */
@@ -18,7 +17,7 @@ function PreviewOf({ project, to }: { readonly project: string; readonly to: str
     return <Alert tone={alertTone.danger}>{messageOf(preview.error)}</Alert>;
   }
   if (preview.isPending) {
-    return <p className={styles.muted}>{t("projects.preview-loading")}</p>;
+    return <p {...partOf(part.muted)}>{t("projects.preview-loading")}</p>;
   }
   return <MovePreviewView preview={preview.data} />;
 }
@@ -51,10 +50,10 @@ export function MoveProject({ project }: { readonly project: OneProject }) {
   const move = useMoveProject();
   const ready = picked !== null && preview.isSuccess && !preview.data.blocked;
   return (
-    <div className={styles.stack}>
-      <p className={styles.text}>{t("projects.move-text", { name })}</p>
+    <div {...partOf(part.stack)}>
+      <p {...partOf(part.text)}>{t("projects.move-text", { name })}</p>
       <Outcome failed={move.isError ? messageOf(move.error) : null} moved={moved} name={name} />
-      <div className={styles.row}>
+      <div {...partOf(part.row)}>
         <ConfirmDialog
           triggerLabel={t("projects.move-button")}
           title={t("projects.move-dialog-title", { name })}

@@ -1,8 +1,7 @@
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone } from "@bugaboo/ui";
+import { Alert, alertTone, partOf, part } from "@bugaboo/ui";
 
 import { keyedLiftSentencesOfPreview, keyedSentencesOfPreview } from "./preview-sentences.ts";
-import styles from "./Projects.module.css";
 import type { Preview } from "./use-projects.ts";
 
 /**
@@ -13,32 +12,32 @@ export function MovePreviewView({ preview }: { readonly preview: Preview }) {
   const sentences = keyedSentencesOfPreview(preview);
   const lifts = keyedLiftSentencesOfPreview(preview);
   return (
-    <section className={styles.preview} aria-label={t("projects.preview-heading")}>
-      <h3 className={styles.previewHeading}>{t("projects.preview-heading")}</h3>
+    <section {...partOf(part.projectsPreview)} aria-label={t("projects.preview-heading")}>
+      <h3 {...partOf(part.projectsPreviewHeading)}>{t("projects.preview-heading")}</h3>
       {preview.blocked ? (
         <Alert tone={alertTone.danger}>
-          <p className={styles.alertLine}>{t("projects.preview-blocked")}</p>
+          <p {...partOf(part.projectsAlertLine)}>{t("projects.preview-blocked")}</p>
           {lifts.map((line) => (
-            <p key={line.key} className={styles.alertLine}>
+            <p key={line.key} {...partOf(part.projectsAlertLine)}>
               {line.text}
             </p>
           ))}
           {preview.blocked_out_of_sight ? (
-            <p className={styles.alertLine}>{t("projects.preview-blocked-out-of-sight")}</p>
+            <p {...partOf(part.projectsAlertLine)}>{t("projects.preview-blocked-out-of-sight")}</p>
           ) : null}
         </Alert>
       ) : null}
       {sentences.length === 0 && !preview.blocked ? (
-        <p className={styles.muted}>{t("projects.preview-nothing")}</p>
+        <p {...partOf(part.muted)}>{t("projects.preview-nothing")}</p>
       ) : (
-        <ul className={styles.sentences} aria-label={t("projects.preview-list")}>
+        <ul {...partOf(part.projectsSentences)} aria-label={t("projects.preview-list")}>
           {sentences.map((line) => (
             <li key={line.key}>{line.text}</li>
           ))}
         </ul>
       )}
-      {preview.truncated ? <p className={styles.muted}>{t("projects.preview-truncated")}</p> : null}
-      <p className={styles.muted}>{t("projects.preview-hidden-note")}</p>
+      {preview.truncated ? <p {...partOf(part.muted)}>{t("projects.preview-truncated")}</p> : null}
+      <p {...partOf(part.muted)}>{t("projects.preview-hidden-note")}</p>
     </section>
   );
 }

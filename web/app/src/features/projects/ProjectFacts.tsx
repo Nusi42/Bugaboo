@@ -1,8 +1,7 @@
 import { t } from "@bugaboo/messages";
-import { Link } from "@bugaboo/ui";
+import { Link, partOf, part } from "@bugaboo/ui";
 
 import { projectPageAddress, projectPages } from "../../shared/project-pages.ts";
-import styles from "./Projects.module.css";
 import { tabsOf } from "./settings-tabs.ts";
 import type { OneProject } from "./use-projects.ts";
 
@@ -10,14 +9,14 @@ import type { OneProject } from "./use-projects.ts";
 function Facts({ project }: { readonly project: OneProject }) {
   const parent = project.trail.at(-1);
   return (
-    <dl className={styles.facts}>
-      <div className={styles.fact}>
-        <dt className={styles.term}>{t("projects.overview-short-name")}</dt>
-        <dd className={styles.definition}>{project.project.short_name}</dd>
+    <dl {...partOf(part.projectsFacts)}>
+      <div {...partOf(part.projectsFact)}>
+        <dt {...partOf(part.projectsTerm)}>{t("projects.overview-short-name")}</dt>
+        <dd {...partOf(part.projectsDefinition)}>{project.project.short_name}</dd>
       </div>
-      <div className={styles.fact}>
-        <dt className={styles.term}>{t("projects.overview-inside")}</dt>
-        <dd className={styles.definition}>
+      <div {...partOf(part.projectsFact)}>
+        <dt {...partOf(part.projectsTerm)}>{t("projects.overview-inside")}</dt>
+        <dd {...partOf(part.projectsDefinition)}>
           {parent === undefined ? t("projects.overview-top") : parent.name}
         </dd>
       </div>
@@ -31,7 +30,7 @@ function ProjectLinks({ project }: { readonly project: OneProject }) {
   const [first] = tabs;
   const shortName = project.project.short_name;
   return (
-    <div className={styles.row}>
+    <div {...partOf(part.row)}>
       {first === undefined ? null : (
         <Link href={projectPageAddress(first, shortName)}>{t("projects.settings-link")}</Link>
       )}

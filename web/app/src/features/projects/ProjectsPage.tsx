@@ -1,12 +1,11 @@
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, Button, Card } from "@bugaboo/ui";
+import { Alert, alertTone, Button, Card, partOf, part } from "@bugaboo/ui";
 
 import { messageOf } from "../../shared/errors.ts";
 import { usePageTitle } from "../../shared/use-page.ts";
 import { ListEditor, type ListRow } from "../shell/index.ts";
 import { MakeProjectForm } from "./MakeProjectForm.tsx";
 import { ProjectEditor } from "./ProjectEditor.tsx";
-import styles from "./Projects.module.css";
 import { linesOf, useProjectList, type ProjectLine } from "./use-projects.ts";
 
 /** Where a project sits and its short name, after its name in the list. */
@@ -16,9 +15,9 @@ function Details({ project }: { readonly project: ProjectLine }) {
       ? t("projects.at-the-top")
       : t("projects.inside", { name: project.parent.name });
   return (
-    <span className={styles.details}>
+    <span {...partOf(part.projectsDetails)}>
       <span>{project.shortName}</span>
-      <span className={styles.muted}>{place}</span>
+      <span {...partOf(part.muted)}>{place}</span>
     </span>
   );
 }
@@ -45,12 +44,12 @@ export function ProjectsPage({ open, onOpen, onClose }: ProjectsPageProps) {
     editor: <ProjectEditor shortName={project.shortName} />,
   }));
   return (
-    <div className={styles.stack}>
+    <div {...partOf(part.stack)}>
       <Card heading={t("projects.title")} level={1}>
-        <p className={styles.text}>{t("projects.intro")}</p>
+        <p {...partOf(part.text)}>{t("projects.intro")}</p>
         {list.isError ? <Alert tone={alertTone.danger}>{messageOf(list.error)}</Alert> : null}
         {list.isSuccess && rows.length === 0 ? (
-          <p className={styles.muted}>{t("projects.none-yet")}</p>
+          <p {...partOf(part.muted)}>{t("projects.none-yet")}</p>
         ) : (
           <ListEditor
             rows={rows}
@@ -73,7 +72,7 @@ export function ProjectsPage({ open, onOpen, onClose }: ProjectsPageProps) {
         ) : null}
       </Card>
       <Card heading={t("projects.make-title")}>
-        <p className={styles.text}>{t("projects.make-intro")}</p>
+        <p {...partOf(part.text)}>{t("projects.make-intro")}</p>
         <MakeProjectForm />
       </Card>
     </div>
