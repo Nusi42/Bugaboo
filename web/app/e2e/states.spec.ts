@@ -2,11 +2,11 @@ import { type Locator, type Page } from "@playwright/test";
 
 import { part } from "../../packages/ui/src/tokens.ts";
 import { paths } from "../src/shared/paths.ts";
-import { ada, makeAdmin } from "./support/accounts.ts";
+import { ada, forgetChoices, makeAdmin } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { layoutOf } from "./support/layout.ts";
-import { copyViewerRole, openRoleWithTickedBox } from "./support/roles.ts";
+import { openRoleWithTickedBox } from "./support/roles.ts";
 import { focusByKeyboard, inEveryLook, partOn, resolved } from "./support/styles.ts";
 
 // How the parts look when they are pointed at, pressed, given the focus or chosen, with more
@@ -20,6 +20,10 @@ test.use({
       await (await makeAdmin(server)).dispose();
     },
   },
+});
+
+test.beforeEach(async ({ server }) => {
+  await forgetChoices(server);
 });
 
 /** The ring of the theme file: a solid line of the ring width, in this color. */
@@ -175,18 +179,22 @@ test("thm_06 with more contrast the parts draw their lines and text with the str
   expect(await resolved(page, "border-top-color", "var(--border)")).not.toBe(usual);
 });
 
-test("thm_20 under forced colors the ring, the link and the marked choice use the device colors", async ({
+test("thm_20 under forced colors the ring, the chosen choice and the thumb use the device colors", async ({
   page,
 }) => {
   await page.emulateMedia({ forcedColors: "active" });
   await openAppearance(page);
   const choice = partOn(page, part.choiceGroupInput).first();
   await choice.check();
-  await focusByKeyboard(page, choice);
-  await inEveryLook(page, () => expectRing(page, labelOf(choice), "Highlight"));
-  await copyViewerRole(page, "Reviewer forced");
-  const link = partOn(page, part.link).first();
-  await inEveryLook(page, () => expectCss(page, link, "color", "LinkText"));
+  const sample = partOn(page, part.switch).first();
+  // The focus is on the switch, so the line around the chosen choice is not the ring of the focus
+  // but the mark that forced colors need (fills are dropped).
+  await focusByKeyboard(page, sample.locator("input"));
+  await inEveryLook(page, async () => {
+    await expectRing(page, partOn(sample, part.switchTrack), "Highlight");
+    await expectRing(page, labelOf(choice), "Highlight");
+    await expectCss(page, partOn(sample, part.switchThumb), "background-color", "ButtonText");
+  });
 });
 
 test.describe("on a computer the open item of the menu is marked under forced colors", () => {
