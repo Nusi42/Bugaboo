@@ -1,0 +1,132 @@
+import { mkdirSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
+
+import { t } from "@bugaboo/messages";
+import { type Browser, type BrowserContext, expect, type Page } from "@playwright/test";
+
+import { pickTheme, type Theme } from "./checks.ts";
+import { type Instance } from "./server.ts";
+import { type ShowcaseIds, type Who } from "./showcase-sample.ts";
+import { screenshotFolder, shotWholeAs } from "./screenshots.ts";
+import { viewports } from "../../../tooling/viewports.ts";
+
+/** The folder of the showcase pictures inside the screenshot folder. */
+export const SHOWCASE = "showcase";
+
+/**
+ * The windows of the showcase, by the name in the file names: a small phone and a computer
+ * (`web/tooling/viewports.ts` holds the sizes).
+ */
+export const devices = {
+  phone: viewports.phone,
+  computer: viewports.computer,
+} as const;
+
+/** A window of the showcase. */
+export type Device = keyof typeof devices;
+
+/** The windows of the showcase, in the order of the file names. */
+export const deviceNames: readonly Device[] = ["phone", "computer"];
+
+/** What the gallery needs to know about one picture. */
+export interface Picture {
+  /** The name of the file, without the folder. */
+  readonly file: string;
+  /** The short name of the screen, as in the file name (`people`). */
+  readonly screen: string;
+  /** One plain sentence that says what the picture shows. */
+  readonly title: string;
+  readonly theme: Theme["id"];
+  readonly device: Device;
+}
+
+/** The list of the pictures, for the gallery. */
+const INDEX = "index.json";
+
+/** The pictures taken so far by this run. */
+const taken = new Map<string, Picture>();
+
+/** Opens a browser of its own for a window of the showcase: a phone has a touch screen. */
+export function openDevice(
+  browser: Browser,
+  server: Instance,
+  device: Device,
+): Promise<BrowserContext> {
+  return browser.newContext({
+    baseURL: server.url,
+    ignoreHTTPSErrors: true,
+    viewport: devices[device],
+    hasTouch: device === "phone",
+  });
+}
+
+/** The two digits in front of a file name, which keep the pictures in the order of the tour. */
+function numbered(order: number): string {
+  return String(order).padStart(2, "0");
+}
+
+/** What is needed to name and describe a picture of an open screen. */
+export interface Shot {
+  /** The place of the screen in the tour, from 1. */
+  readonly order: number;
+  readonly screen: string;
+  readonly title: string;
+  readonly theme: Theme;
+  readonly device: Device;
+}
+
+/** Takes the whole open screen in the theme it shows, and remembers it for the gallery. */
+export async function takePicture(page: Page, shot: Shot): Promise<void> {
+  const name = `${numbered(shot.order)}-${shot.screen}-${shot.device}`;
+  await shotWholeAs(page, name, SHOWCASE, shot.theme.id);
+  const file = `${name}-${shot.theme.id}.png`;
+  taken.set(file, {
+    file,
+    screen: shot.screen,
+    title: shot.title,
+    theme: shot.theme.id,
+    device: shot.device,
+  });
+}
+
+/**
+ * Chooses a theme in *My settings › Appearance*, as a person does, and waits until the choice is
+ * kept: the chooser on the screen then matches the pictures taken after it.
+ */
+export async function showTheme(page: Page, theme: Theme, appearance: string): Promise<void> {
+  await page.goto(appearance);
+  await expect(page.getByRole("heading", { level: 1, name: t("appearance.title") })).toBeVisible();
+  await pickTheme(page, theme);
+  await expect(page.locator("html")).toHaveAttribute("data-look", theme.id);
+  await expect(page.getByRole("status").filter({ hasText: t("save.saved") })).toBeVisible();
+}
+
+/** Writes the list of the pictures taken so far for the gallery, in the order of the file names. */
+export function writeIndex(): void {
+  if (screenshotFolder === undefined) {
+    return;
+  }
+  const folder = join(screenshotFolder, SHOWCASE);
+  mkdirSync(folder, { recursive: true });
+  const pictures = [...taken.values()].toSorted((a, b) => a.file.localeCompare(b.file));
+  writeFileSync(join(folder, INDEX), `${JSON.stringify(pictures, null, 2)}\n`);
+}
+
+/** What a screen needs to open itself. */
+export interface Needs {
+  readonly page: Page;
+  readonly ids: ShowcaseIds;
+}
+
+/** One screen of the tour. The tour shows them in the order of the table of screens. */
+export interface Screen {
+  /** The name in the file name. */
+  readonly slug: string;
+  /** One plain sentence for the gallery. */
+  readonly title: string;
+  readonly who: Who;
+  /** Only in this window; the screen is in both windows when it is left out. */
+  readonly only?: Device;
+  /** Opens the screen, as a person gets there. */
+  readonly open: (needs: Needs) => Promise<void>;
+}
