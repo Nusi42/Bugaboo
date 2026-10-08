@@ -106,16 +106,7 @@ pub(crate) fn named(name: &str) -> anyhow::Result<&'static Generator> {
         .with_context(|| format!("there is no generator called `{name}`"))
 }
 
-/// Every generated file in the repository.
-pub(crate) fn all(repo: &Repo, catalog: &Catalog) -> anyhow::Result<Vec<Generated>> {
-    let mut files = Vec::new();
-    for generator in &GENERATORS {
-        files.extend((generator.generate)(repo, catalog)?);
-    }
-    Ok(files)
-}
-
-/// The paths of everything [`all`] produces, without producing it.
+/// The paths of everything the generators produce, without producing it.
 pub(crate) fn all_paths() -> Vec<&'static str> {
     GENERATORS
         .iter()
