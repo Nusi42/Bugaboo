@@ -4,7 +4,8 @@ import { type Page } from "@playwright/test";
 import { ada, cleo, makeAdmin, makePerson } from "./support/accounts.ts";
 import { expectGoodInEveryLook } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
-import { signIn } from "./support/flows.ts";
+import { addressEndingAt, signIn } from "./support/flows.ts";
+import { paths } from "../src/shared/paths.ts";
 
 test.use({
   preparation: {
@@ -38,7 +39,7 @@ test("cfg_08 Ctrl+K opens quick search, finds a page and goes there", async ({ p
   await expectGoodInEveryLook(page);
   await page.keyboard.press("ArrowDown");
   await page.keyboard.press("Enter");
-  await expect(page).toHaveURL(/\/me\/appearance$/u);
+  await expect(page).toHaveURL(addressEndingAt(paths.appearance));
   await expect(dialog(page)).toHaveCount(0);
   // The focus is on the heading of the page that opened, not left behind in the closed dialog.
   await expect(page.getByRole("heading", { level: 1, name: t("appearance.title") })).toBeFocused();
@@ -94,7 +95,7 @@ test("cfg_08 quick search lists only the pages the person may open", async ({ pa
 
 test("cfg_08 Ctrl+K opens quick search also while a text field has the focus", async ({ page }) => {
   await signIn(page, ada);
-  await page.goto("/me/shortcuts");
+  await page.goto(paths.shortcuts);
   const search = page.getByRole("searchbox", { name: t("shortcuts.search"), exact: true });
   await search.focus();
   await page.keyboard.press("Control+k");

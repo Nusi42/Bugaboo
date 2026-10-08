@@ -6,12 +6,17 @@ import { addVirtualAuthenticator } from "./support/authenticator.ts";
 import { expect, test } from "./support/fixtures.ts";
 import {
   addPasskey,
+  addressEndingAt,
+  enterSetupCode,
   expectHome,
   fillSignIn,
   openFromMenu,
+  sendSecondStepCode,
+  sendSetupAccount,
   setUpCodeApp,
   signOut,
 } from "./support/flows.ts";
+import { paths } from "../src/shared/paths.ts";
 
 // The exit demo of M1 (docs/04-milestones.md): set up with the setup code, make the administrator
 // with a passkey, add the code app, sign out, sign in with password and code. The security log
@@ -44,14 +49,10 @@ test("the exit demo: setup, passkey, code app, sign out, sign in, and the log sh
   await addVirtualAuthenticator(page);
 
   // 1. The setup code makes the first administrator, who adds a passkey in the same setup.
-  await page.goto("/");
-  await expect(page).toHaveURL(/\/setup$/u);
-  await page.getByLabel(t("first-run.code.label")).fill(server.setupCode());
-  await page.getByRole("button", { name: t("common.continue") }).click();
-  await page.getByLabel(t("field.name")).fill(ada.name);
-  await page.getByLabel(t("field.email")).fill(ada.email);
-  await page.getByLabel(t("field.password"), { exact: true }).fill(ada.password);
-  await page.getByRole("button", { name: t("first-run.account.submit") }).click();
+  await page.goto(paths.home);
+  await expect(page).toHaveURL(addressEndingAt(paths.setup));
+  await enterSetupCode(page, server.setupCode());
+  await sendSetupAccount(page, ada);
   await addPasskey(page, "Demo laptop", ada.password);
   await page.getByRole("button", { name: t("first-run.safer.finish") }).click();
   await page.getByRole("button", { name: t("first-run.done.go") }).click();
@@ -67,8 +68,7 @@ test("the exit demo: setup, passkey, code app, sign out, sign in, and the log sh
   await signOut(page);
   await fillSignIn(page, ada);
   await expect(page.getByRole("heading", { level: 1, name: t("second-step.title") })).toBeVisible();
-  await page.getByLabel(t("second-step.code")).fill(await app.next());
-  await page.getByRole("button", { name: t("second-step.submit") }).click();
+  await sendSecondStepCode(page, await app.next());
   await expectHome(page, ada);
   await expectLogIntact(page, entriesAfter.signedInAgain);
 

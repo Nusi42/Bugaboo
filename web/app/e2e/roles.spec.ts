@@ -1,11 +1,11 @@
 import { t } from "@bugaboo/messages";
 import { type Locator, type Page } from "@playwright/test";
 
-import { addressInProject, paths, roleAddress } from "../src/shared/paths.ts";
+import { addressInProject, paths, projectAddress, roleAddress } from "../src/shared/paths.ts";
 import { ada, bob, cleo, makeAdmin, makePerson, ownId } from "./support/accounts.ts";
 import { expectGoodInEveryLook } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
-import { openFromMenu, signIn } from "./support/flows.ts";
+import { addressEndingAt, openFromMenu, signIn } from "./support/flows.ts";
 import { twoStepOf } from "./support/roles.ts";
 import { makeProject } from "./support/projects.ts";
 import { addToGroup, giveRole, makeGroup, roleIds, roleName } from "./support/access.ts";
@@ -151,9 +151,9 @@ test("sec_02 a group gets the role on a project and the sub-project shows the ro
 
 test("sec_03 a person with No access on a project finds it hidden", async ({ page }) => {
   await signIn(page, bob);
-  await page.goto("/p/ACME");
+  await page.goto(projectAddress("ACME"));
   await expect(page.getByRole("heading", { level: 1, name: "Acme" })).toBeVisible();
-  await page.goto("/p/WEB");
+  await page.goto(projectAddress("WEB"));
   await expect(
     page.getByRole("heading", { level: 1, name: t("page.not-found.title") }),
   ).toBeVisible();
@@ -220,16 +220,16 @@ test("sec_02 a Project lead sees who has which role in their project and nothing
   page,
 }) => {
   await signIn(page, cleo);
-  await page.goto("/p/ACME");
+  await page.goto(projectAddress("ACME"));
   await page.getByRole("link", { name: t("roles.project-link"), exact: true }).click();
-  await expect(page).toHaveURL(/\/p\/ACME\/settings\/roles$/u);
+  await expect(page).toHaveURL(addressEndingAt(addressInProject(paths.projectRoles, "ACME")));
   await expect(page.getByRole("list", { name: t("assignments.list"), exact: true })).toBeVisible();
   // Another project, and the organization's pages, are not there for a Project lead.
   await page.goto(addressInProject(paths.projectRoles, "LAB"));
   await expect(
     page.getByRole("heading", { level: 1, name: t("page.not-found.title") }),
   ).toBeVisible();
-  await page.goto("/settings/roles");
+  await page.goto(paths.roles);
   await expect(
     page.getByRole("heading", { level: 1, name: t("page.not-found.title") }),
   ).toBeVisible();

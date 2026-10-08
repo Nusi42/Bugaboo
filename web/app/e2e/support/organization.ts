@@ -85,13 +85,3 @@ export async function pressTwoStepSwitch(
   await expect(page.getByText(t("save.saved"), { exact: true })).toBeVisible();
   await context.close();
 }
-
-/** Sets who may sign up on their own, through the API. */
-export async function setSignUpPolicy(
-  admin: ApiSession,
-  policy: { readonly enabled: boolean; readonly domains: readonly string[] },
-): Promise<void> {
-  await admin.client.PUT("/api/v1/auth/sign-up-policy", {
-    body: { enabled: policy.enabled, domains: [...policy.domains] },
-  });
-}

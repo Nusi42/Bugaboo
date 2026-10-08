@@ -55,7 +55,7 @@ test("sec_08 taking away the row of a group you are in asks first, and keeping i
   page,
 }) => {
   await signIn(page, ada);
-  await page.goto("/settings/roles");
+  await page.goto(paths.roles);
   const rows = page.getByRole("list", { name: t("assignments.list"), exact: true });
   await rows
     .getByRole("button", {
@@ -97,7 +97,7 @@ test("sec_08 taking yourself out of the group that gives you the way asks first"
   page,
 }) => {
   await signIn(page, ada);
-  await page.goto("/settings/groups");
+  await page.goto(paths.groups);
   await page.getByRole("button", { name: "Admins", exact: true }).click();
   const panel = page.getByRole("complementary", { name: "Admins" });
   await panel.getByRole("button", { name: t("groups.remove-name", { name: ada.name }) }).click();

@@ -20,13 +20,17 @@ import {
   roleIds,
   roleName,
 } from "./support/access.ts";
+import { viewports } from "../../tooling/viewports.ts";
 
 // The pages of People, groups and roles for the maintainer's review (M2 WP-11), at phone width, in a
 // light and a dark look. They are only taken when `BB_SCREENSHOT_DIR` names the folder:
 //   BB_SCREENSHOT_DIR=... npx playwright test screenshots-people.spec --project=phone
 test.skip(screenshotFolder === undefined, "Set BB_SCREENSHOT_DIR to take the screenshots.");
 /** Tall, so that the page, which scrolls inside the frame of the app, is whole in the picture. */
-test.use({ viewport: { width: 400, height: 1700 }, deviceScaleFactor: 2 });
+test.use({
+  viewport: { width: viewports.phoneForPictures.width, height: 1700 },
+  deviceScaleFactor: 2,
+});
 
 const MILESTONE = "M2";
 let bobId = "";
@@ -59,7 +63,7 @@ test("the pages of people, groups and roles", async ({ page }) => {
   test.setTimeout(300_000);
   await signIn(page, ada);
 
-  await page.goto("/settings/people");
+  await page.goto(paths.people);
   await expect(page.getByRole("heading", { level: 1, name: t("nav.people") })).toBeVisible();
   await expect(page.getByRole("option", { name: /^Bob Builder/u })).toBeVisible();
   await shoot(page, "50-people", MILESTONE);

@@ -103,3 +103,18 @@ export async function shootWhole(page: Page, name: string, milestone: string): P
     await page.setViewportSize(original);
   }
 }
+
+/** How long a sheet, a menu or a list takes to settle; the picture is taken when it has stopped. */
+const SETTLING_FOR_SHOT_MS = 500;
+
+/** Waits for the screen to settle, then takes it in both looks. */
+export async function shot(page: Page, name: string, milestone: string): Promise<void> {
+  await page.waitForTimeout(SETTLING_FOR_SHOT_MS);
+  await shoot(page, name, milestone);
+}
+
+/** The same with the window grown to the height of the page, then put back. */
+export async function shotWhole(page: Page, name: string, milestone: string): Promise<void> {
+  await page.waitForTimeout(SETTLING_FOR_SHOT_MS);
+  await shootWhole(page, name, milestone);
+}

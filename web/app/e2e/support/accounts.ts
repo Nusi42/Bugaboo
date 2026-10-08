@@ -144,3 +144,13 @@ export async function addCodeApp(session: ApiSession, password: string): Promise
 export async function ownId(session: ApiSession): Promise<string> {
   return dataOf(await session.client.GET("/api/v1/auth/me")).id;
 }
+
+/** Sets who may sign up on their own, through the API. */
+export async function setSignUpPolicy(
+  admin: ApiSession,
+  policy: { readonly enabled: boolean; readonly domains: readonly string[] },
+): Promise<void> {
+  await admin.client.PUT("/api/v1/auth/sign-up-policy", {
+    body: { enabled: policy.enabled, domains: [...policy.domains] },
+  });
+}

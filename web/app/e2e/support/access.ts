@@ -201,3 +201,20 @@ export async function projectIdOf(admin: ApiSession, shortName: string): Promise
   );
   return found.project.id;
 }
+
+/**
+ * Chooses whom to check, and where when `place` is named, on the page of *Check access*: the
+ * search finds them and the radio button picks them.
+ */
+export async function check(
+  page: Page,
+  place: string | null,
+  person: { readonly name: string },
+): Promise<void> {
+  if (place !== null) {
+    await page.getByLabel(t("check-access.place-search")).fill(place);
+    await page.getByRole("radio", { name: new RegExp(place, "u") }).check();
+  }
+  await page.getByLabel(t("check-access.person-search")).fill(person.name);
+  await page.getByRole("radio", { name: person.name }).check();
+}

@@ -6,7 +6,9 @@ import { ada, cleo, makeAdmin, makePerson } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { setOrganizationSwitch } from "./support/organization.ts";
 import { sendPassword, signIn, signOut } from "./support/flows.ts";
-import { screenshotFolder, shoot } from "./support/screenshots.ts";
+import { screenshotFolder, shot } from "./support/screenshots.ts";
+import { paths } from "../src/shared/paths.ts";
+import { viewports } from "../../tooling/viewports.ts";
 
 // The screens of access keys and of the second step that is asked for, for the maintainer's review of
 // M2, at phone width in a light and a dark look. They are only taken when `BB_SCREENSHOT_DIR`
@@ -14,11 +16,6 @@ import { screenshotFolder, shoot } from "./support/screenshots.ts";
 //   BB_SCREENSHOT_DIR=... npx playwright test screenshots-access-keys.spec --project=phone
 test.skip(screenshotFolder === undefined, "Set BB_SCREENSHOT_DIR to take the screenshots.");
 const MILESTONE = "M2";
-/** A phone, as in the other screenshots of M2. */
-const PHONE = { width: 400, height: 860 } as const;
-/** How long a sheet or a menu takes to settle; the picture is taken when it has stopped. */
-const SETTLING_MS = 500;
-
 test.use({
   preparation: {
     run: async (server) => {
@@ -42,32 +39,27 @@ test.use({
 });
 
 /** Takes the open screen in both looks. */
-async function shot(page: Page, name: string): Promise<void> {
-  await page.waitForTimeout(SETTLING_MS);
-  await shoot(page, name, MILESTONE);
-}
-
 async function theKeysAndTheForm(page: Page): Promise<void> {
-  await page.goto("/me/access-keys");
+  await page.goto(paths.accessKeys);
   await expect(page.getByRole("heading", { level: 1, name: t("access-keys.title") })).toBeVisible();
   await expect(page.getByText("Nightly report")).toBeVisible();
-  await shot(page, "40-access-keys");
+  await shot(page, "40-access-keys", MILESTONE);
 
   await page.getByRole("button", { name: t("access-keys.make"), exact: true }).click();
   const form = page.getByRole("region", { name: t("access-keys.make"), exact: true });
   await form.getByLabel(t("access-keys.name")).fill("Backup script");
   await form.getByRole("radio", { name: t("access-keys.choice.see-and-change") }).check();
   await form.getByLabel(t("field.confirm-password"), { exact: true }).fill(ada.password);
-  await shot(page, "41-make-access-key");
+  await shot(page, "41-make-access-key", MILESTONE);
 
   await form.getByRole("button", { name: t("access-keys.submit") }).click();
   await expect(page.getByRole("region", { name: t("access-keys.shown-title") })).toBeVisible();
-  await shot(page, "42-access-key-shown");
+  await shot(page, "42-access-key-shown", MILESTONE);
 }
 
 test("the screens of access keys and of the second step", async ({ page, server }) => {
   test.setTimeout(120_000);
-  await page.setViewportSize(PHONE);
+  await page.setViewportSize(viewports.phoneForPictures);
   await signIn(page, ada);
   await theKeysAndTheForm(page);
   await signOut(page);
@@ -78,6 +70,6 @@ test("the screens of access keys and of the second step", async ({ page, server 
   await expect(
     page.getByRole("heading", { level: 1, name: t("set-up-second-step.title") }),
   ).toBeVisible();
-  await shot(page, "43-set-up-second-step");
+  await shot(page, "43-set-up-second-step", MILESTONE);
   await setOrganizationSwitch(server, settingKeys.securityTwoStepRequired, false);
 });

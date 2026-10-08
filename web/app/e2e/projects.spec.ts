@@ -3,8 +3,9 @@ import { t } from "@bugaboo/messages";
 import { ada, makeAdmin } from "./support/accounts.ts";
 import { expectGoodInEveryLook } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
-import { openFromMenu, signIn } from "./support/flows.ts";
+import { addressEndingAt, openFromMenu, signIn } from "./support/flows.ts";
 import { fillMake, openOverview, tree, treeLink } from "./support/projects.ts";
+import { addressInProject, paths, projectAddress } from "../src/shared/paths.ts";
 
 // Projects (PRJ-01, PRJ-02): making projects and sub-projects, the tree of the sidebar (the *More*
 // sheet on a phone), the settings page of the organization, the overview and the settings of a
@@ -34,7 +35,7 @@ test("prj_01 an administrator makes a project in the organization settings and f
   await expect(page.getByRole("complementary", { name: "Website" })).toBeVisible();
   await expect(page.getByRole("link", { name: t("projects.open") })).toHaveAttribute(
     "href",
-    "/p/WEB",
+    projectAddress("WEB"),
   );
   await expect(await treeLink(page, "Website")).toBeVisible();
 });
@@ -42,7 +43,7 @@ test("prj_01 an administrator makes a project in the organization settings and f
 test("prj_01 a project is opened from the tree and gets a sub-project", async ({ page }) => {
   await signIn(page, ada);
   await (await treeLink(page, "Website")).click();
-  await expect(page).toHaveURL(/\/p\/WEB$/u);
+  await expect(page).toHaveURL(addressEndingAt(projectAddress("WEB")));
   await expect(page.getByRole("heading", { level: 1, name: "Website" })).toBeVisible();
   await expect(page.getByText(t("projects.sub-projects-empty"))).toBeVisible();
   // The one next step of an empty project: make a sub-project.
@@ -71,9 +72,13 @@ test("prj_01 the overview and the settings of a project are good in every theme"
   page,
 }) => {
   await signIn(page, ada);
-  await openOverview(page, "/p/WEB", "Website");
+  await openOverview(page, projectAddress("WEB"), "Website");
   await expectGoodInEveryLook(page);
-  await openOverview(page, "/p/WEB/settings", t("projects.settings-title", { name: "Website" }));
+  await openOverview(
+    page,
+    addressInProject(paths.projectSettings, "WEB"),
+    t("projects.settings-title", { name: "Website" }),
+  );
   await expectGoodInEveryLook(page);
 });
 
@@ -81,14 +86,14 @@ test("prj_01 an old short name opens the project and the address becomes the new
   page,
 }) => {
   await signIn(page, ada);
-  await page.goto("/p/WEB/settings");
+  await page.goto(addressInProject(paths.projectSettings, "WEB"));
   await page.getByLabel(t("projects.field-short-name"), { exact: true }).fill("site");
   await page.getByRole("button", { name: t("common.save"), exact: true }).click();
   await expect(page.getByText(t("projects.saved"))).toBeVisible();
-  await expect(page).toHaveURL(/\/p\/SITE\/settings$/u);
+  await expect(page).toHaveURL(addressEndingAt(addressInProject(paths.projectSettings, "SITE")));
   // The old address still works and is replaced by the new one.
-  await page.goto("/p/WEB");
-  await expect(page).toHaveURL(/\/p\/SITE$/u);
+  await page.goto(projectAddress("WEB"));
+  await expect(page).toHaveURL(addressEndingAt(projectAddress("SITE")));
   await expect(page.getByRole("heading", { level: 1, name: "Website" })).toBeVisible();
 });
 
@@ -107,5 +112,5 @@ test("prj_01 quick search finds a project by its name", async ({ page }) => {
   await page.keyboard.press("Control+k");
   await page.getByRole("searchbox", { name: t("search.label"), exact: true }).fill("docu");
   await page.getByRole("option", { name: /Documents/u }).click();
-  await expect(page).toHaveURL(/\/p\/DOCS$/u);
+  await expect(page).toHaveURL(addressEndingAt(projectAddress("DOCS")));
 });

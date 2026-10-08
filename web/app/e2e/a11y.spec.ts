@@ -9,12 +9,21 @@ import {
   roleAddress,
   addressInProject,
 } from "../src/shared/paths.ts";
-import { ada, addCodeApp, bob, invite, makeAdmin, makePerson, ownId } from "./support/accounts.ts";
+import {
+  ada,
+  addCodeApp,
+  bob,
+  invite,
+  makeAdmin,
+  makePerson,
+  ownId,
+  setSignUpPolicy,
+} from "./support/accounts.ts";
 import {
   expectGoodInEveryLook,
   expectGoodInEveryTheme as expectGoodInEveryThemeOnPage,
 } from "./support/checks.ts";
-import { setOrganizationSwitch, setSignUpPolicy } from "./support/organization.ts";
+import { setOrganizationSwitch } from "./support/organization.ts";
 import { makeProject } from "./support/projects.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { sendPassword, signIn } from "./support/flows.ts";

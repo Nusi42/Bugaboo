@@ -4,7 +4,8 @@ import { type Page } from "@playwright/test";
 import { ada, bob, cleo, makeAdmin, makePerson } from "./support/accounts.ts";
 import { expectGoodInEveryLook } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
-import { openFromMenu, signIn } from "./support/flows.ts";
+import { addressEndingAt, openFromMenu, signIn } from "./support/flows.ts";
+import { paths } from "../src/shared/paths.ts";
 
 // People and Groups (SEC-02, PRIV-12, WP-11): the list of people (a searchable list that draws only
 // the rows on screen), the invitations that moved here, the page of a person, and the groups with
@@ -45,7 +46,7 @@ test("sec_02 an administrator finds the people, searches them and opens one", as
   await expect(page.getByText(t("person.groups-none", { name: cleo.name }))).toBeVisible();
   await expect(page.getByText(t("person.roles-none", { name: cleo.name }))).toBeVisible();
   await page.getByRole("link", { name: t("person.back") }).click();
-  await expect(page).toHaveURL(/\/settings\/people$/u);
+  await expect(page).toHaveURL(addressEndingAt(paths.people));
 });
 
 test("sec_02 the invitations are part of People and an invitation is made there", async ({
@@ -113,7 +114,7 @@ test("sec_02 a group is made, people are put into it and taken out with Undo", a
 
 test("sec_02 a group is deleted after a dialog that says what happens", async ({ page }) => {
   await signIn(page, ada);
-  await page.goto("/settings/groups");
+  await page.goto(paths.groups);
   await page.getByRole("button", { name: "Backend", exact: true }).click();
   const panel = page.getByRole("complementary", { name: "Backend" });
   await panel.getByRole("button", { name: t("groups.delete-name", { name: "Backend" }) }).click();

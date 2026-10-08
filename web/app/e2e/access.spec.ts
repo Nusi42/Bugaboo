@@ -1,11 +1,12 @@
 import { t } from "@bugaboo/messages";
 import { type Page } from "@playwright/test";
 
-import { paths, addressInProject } from "../src/shared/paths.ts";
+import { addressInProject, paths } from "../src/shared/paths.ts";
 import { ada, bob, cleo, makeAdmin } from "./support/accounts.ts";
 import {
   ana,
   around,
+  check,
   forgetFieldLevel,
   lea,
   levelList,
@@ -118,7 +119,7 @@ async function changeBelow(page: Page): Promise<void> {
 
 test("sec_04 the settings of a project lead to what roles see there", async ({ page }) => {
   await signIn(page, ada);
-  await page.goto("/p/ACME/settings");
+  await page.goto(addressInProject(paths.projectSettings, "ACME"));
   await page.getByRole("link", { name: t("nav.field-permissions"), exact: true }).click();
   await expect(
     page.getByRole("heading", {
@@ -166,22 +167,12 @@ test("priv_12 hiding who is assigned from Guests shows them Someone, and the scr
   ).toBeVisible();
 });
 
-/** Chooses where to look and whom to check in the page of *Check access* that is open. */
-async function check(page: Page, place: string | null, person: string): Promise<void> {
-  if (place !== null) {
-    await page.getByLabel(t("check-access.place-search")).fill(place);
-    await page.getByRole("radio", { name: new RegExp(place, "u") }).check();
-  }
-  await page.getByLabel(t("check-access.person-search")).fill(person);
-  await page.getByRole("radio", { name: person }).check();
-}
-
 test("sec_03 checking Ana's access in Website reads as a sentence with its reasons", async ({
   page,
 }) => {
   await signIn(page, ada);
   await open(page, paths.checkAccess, t("nav.check-access"));
-  await check(page, "Website", ana.name);
+  await check(page, "Website", ana);
   await expect(
     page.getByRole("heading", {
       name: t("check-access.result-heading", { person: ana.name, place: "Website" }),
@@ -224,7 +215,7 @@ test("sec_03 a lead who cannot see the project a role comes from reads a project
     addressInProject(paths.projectCheckAccess, "WEB"),
     t("check-access.project-title", { project: "Website" }),
   );
-  await check(page, null, ana.name);
+  await check(page, null, ana);
   await expect(
     page.getByText(
       t("check-access.reason.inherited-project", {
@@ -278,7 +269,7 @@ test("ux_04 the matrix, the preview and the answer are good in the four themes",
   await levelList(page, t("people-kind.assigned-to"), roleName.guest);
   await expectGoodInEveryLook(page);
   await open(page, paths.checkAccess, t("nav.check-access"));
-  await check(page, "Website", ana.name);
+  await check(page, "Website", ana);
   await expect(page.getByText(t("check-access.fields-heading"), { exact: true })).toBeVisible();
   await expectGoodInEveryLook(page);
 });

@@ -4,8 +4,9 @@ import { type Page } from "@playwright/test";
 import { ada, makeAdmin } from "./support/accounts.ts";
 import { expectGoodInEveryLook } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
-import { signIn } from "./support/flows.ts";
+import { addressEndingAt, signIn } from "./support/flows.ts";
 import { onThisLayout } from "./support/layout.ts";
+import { paths } from "../src/shared/paths.ts";
 
 test.use({
   preparation: {
@@ -36,7 +37,7 @@ test("ux_01 a simple item opens in the side panel, Esc closes it and the focus g
   await expectGoodInEveryLook(page);
   await page.keyboard.press("Escape");
   await expect(panel).toHaveCount(0);
-  await expect(page).toHaveURL(/\/frames$/u);
+  await expect(page).toHaveURL(addressEndingAt(paths.frames));
   await expect(opener).toBeFocused();
 });
 

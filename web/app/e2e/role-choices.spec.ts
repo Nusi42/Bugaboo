@@ -6,6 +6,7 @@ import { signIn } from "./support/flows.ts";
 import { inOrder } from "./support/sequence.ts";
 import { dataOf } from "@bugaboo/api-client";
 import { giveRoleById } from "./support/access.ts";
+import { paths } from "../src/shared/paths.ts";
 
 // The roles the form of *Give a role* offers (SEC-02, WP-11 review): every one of them, however
 // many there are, and only those the person may give.
@@ -47,7 +48,7 @@ test.describe.configure({ mode: "serial" });
 
 test("sec_02 the last of many roles can be given", async ({ page }) => {
   await signIn(page, ada);
-  await page.goto("/settings/roles");
+  await page.goto(paths.roles);
   await page.getByRole("radio", { name: cleo.name, exact: true }).check();
   await page.getByLabel(t("assignments.role"), { exact: true }).selectOption({ label: LAST });
   await page.getByRole("button", { name: t("assignments.give"), exact: true }).click();
@@ -57,7 +58,7 @@ test("sec_02 the last of many roles can be given", async ({ page }) => {
 
 test("sec_02 a person who holds less is offered only the roles they may give", async ({ page }) => {
   await signIn(page, cleo);
-  await page.goto("/settings/roles");
+  await page.goto(paths.roles);
   const choose = page.getByLabel(t("assignments.role"), { exact: true });
   await expect(choose.locator("option", { hasText: "Decider" })).toHaveCount(1);
   await expect(choose.locator("option", { hasText: "Administrator" })).toHaveCount(0);

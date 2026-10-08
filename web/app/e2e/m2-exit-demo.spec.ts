@@ -2,9 +2,8 @@ import { t } from "@bugaboo/messages";
 import { type Page } from "@playwright/test";
 
 import { paths, projectAddress, addressInProject } from "../src/shared/paths.ts";
-import { around, levelList, pickLevel, roleName } from "./support/access.ts";
+import { around, check, levelList, pickLevel, roleName } from "./support/access.ts";
 import {
-  check,
   closeTheSheet,
   findsNoneOf,
   good,

@@ -2,7 +2,8 @@ import { t } from "@bugaboo/messages";
 
 import { ada, makeAdmin } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
-import { sendPassword } from "./support/flows.ts";
+import { addressEndingAt, sendPassword } from "./support/flows.ts";
+import { paths } from "../src/shared/paths.ts";
 
 test.use({
   // Three wrong tries are allowed per minute: the fourth has to wait.
@@ -30,5 +31,5 @@ test("sec_14 too many wrong passwords make the person wait, even for the right p
   // The account waits, even for its right password: nobody can guess their way in by trying on.
   await sendPassword(page, ada);
   await expect(page.getByRole("alert")).toHaveText(t("error.rate-limit.exceeded"));
-  await expect(page).toHaveURL(/\/sign-in$/u);
+  await expect(page).toHaveURL(addressEndingAt(paths.signIn));
 });

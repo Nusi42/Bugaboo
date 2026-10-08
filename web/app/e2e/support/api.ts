@@ -31,12 +31,14 @@ export type StorageState = Awaited<ReturnType<APIRequestContext["storageState"]>
 async function send(
   context: APIRequestContext,
   asked: Request,
+  origin: string,
   onCookie: (setCookie: string) => void,
 ): Promise<Response> {
   const body = await asked.text();
   const answer = await context.fetch(asked.url, {
     method: asked.method,
-    headers: Object.fromEntries(asked.headers),
+    // The server only takes changes that come from its own pages.
+    headers: { origin, ...Object.fromEntries(asked.headers) },
     ...(body === "" ? {} : { data: body }),
     maxRedirects: 0,
   });
@@ -58,20 +60,27 @@ export async function openSession(origin: string): Promise<ApiSession> {
     await request.newContext({
       baseURL: origin,
       ignoreHTTPSErrors: true,
-      // The server only takes changes that come from its own pages.
-      extraHTTPHeaders: { origin },
     }),
     origin,
   );
 }
 
-/** The session of a context that exists already, like the one of a browser that is signed in. */
-export function sessionOver(context: APIRequestContext, origin: string): ApiSession {
+/**
+ * The session of a context that exists already, like the one of a browser that is signed in: the
+ * token that browser holds is the one the client sends from then on.
+ */
+export async function sessionOver(context: APIRequestContext, origin: string): Promise<ApiSession> {
+  const { cookies } = await context.storageState();
   let token: string | undefined;
+  for (const cookie of cookies) {
+    if (cookie.name === CSRF_COOKIE) {
+      token = cookie.value;
+    }
+  }
   const { client } = createApi({
     baseUrl: origin,
     fetch: (asked) =>
-      send(context, asked, (setCookie) => {
+      send(context, asked, origin, (setCookie) => {
         token = readCookie(CSRF_COOKIE, setCookie) ?? token;
       }),
     csrfToken: () => token,
