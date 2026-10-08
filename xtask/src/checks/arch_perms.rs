@@ -26,7 +26,7 @@ use bb_api_words::needs::WITHOUT_CATALOGUE as WORDS;
 use bb_policy::Permission;
 
 use super::api_spec;
-use super::exemptions::{self, names_a_follow_up};
+use super::exemptions;
 use super::{Check, Context, Finding};
 use crate::generate::messages::SOURCE_LOCALE_PATH;
 
@@ -208,13 +208,8 @@ fn exemption_findings(
         if !seen.insert(key) {
             stale(format!("`{key}` is named twice."));
         }
-        if !names_a_follow_up(&exemption.reason) {
-            stale(format!(
-                "The entry of `{key}` must give a reason that names the follow-up that tracks it \
-                 (like M2-F60)."
-            ));
-        }
     }
+    findings.extend(exemptions::follow_up_findings(EXEMPTIONS_PATH, exemptions));
     findings
 }
 

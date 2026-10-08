@@ -82,8 +82,26 @@ pub(super) fn judge<E: Exemption>(path: &str, entries: &[E], used: &Used) -> Vec
     findings
 }
 
+/// The entries whose reason does not name the follow-up that removes what they allow (like
+/// `M2C-F40`): for the files whose entries only stand for now.
+pub(super) fn follow_up_findings<E: Exemption>(path: &str, entries: &[E]) -> Vec<Finding> {
+    entries
+        .iter()
+        .filter(|entry| !names_a_follow_up(entry.reason()))
+        .map(|entry| {
+            Finding::at(
+                path,
+                format!(
+                    "The entry `{}` must give a reason that names the follow-up that tracks it (like M2C-F40).",
+                    entry.name()
+                ),
+            )
+        })
+        .collect()
+}
+
 /// Whether the reason names a follow-up like `M1-F44`.
-pub(super) fn names_a_follow_up(reason: &str) -> bool {
+fn names_a_follow_up(reason: &str) -> bool {
     reason
         .split(|c: char| !c.is_ascii_alphanumeric() && c != '-')
         .any(is_follow_up)
@@ -149,6 +167,14 @@ mod tests {
         assert_eq!(messages.len(), 2, "{messages:?}");
         assert!(messages[0].contains("`short` needs a reason"));
         assert!(messages[1].contains("`stale` matches nothing"));
+    }
+
+    #[test]
+    fn bad_example_an_entry_whose_reason_names_no_follow_up_fails() {
+        let entries = [Entry("a", "Stands for now, see M2C-F40."), Entry("b", LONG)];
+        let found = follow_up_findings("x.toml", &entries);
+        assert_eq!(found.len(), 1);
+        assert!(found[0].message.contains("`b` must give a reason"));
     }
 
     #[test]

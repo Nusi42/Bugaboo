@@ -18,7 +18,7 @@ use anyhow::Context as _;
 use serde::Deserialize;
 use serde_json::{Value, json};
 
-use super::exemptions::{self, Exemption as _, Used, names_a_follow_up};
+use super::exemptions::{self, Used};
 use super::node_tool::run;
 use super::{Check, Context, Finding};
 use crate::generate::all_paths;
@@ -235,17 +235,7 @@ fn judge(clones: &[Copied], exemptions: &[Exempt]) -> Vec<Finding> {
         ));
     }
     findings.extend(exemptions::judge(EXEMPTIONS_PATH, exemptions, &used));
-    for exempt in exemptions {
-        if !names_a_follow_up(&exempt.reason) {
-            findings.push(Finding::at(
-                EXEMPTIONS_PATH,
-                format!(
-                    "The entry `{}` must give a reason that names the follow-up that removes the copy (like M2C-F40).",
-                    exempt.name()
-                ),
-            ));
-        }
-    }
+    findings.extend(exemptions::follow_up_findings(EXEMPTIONS_PATH, exemptions));
     findings
 }
 

@@ -24,7 +24,7 @@ use serde::Deserialize;
 use serde_json::Value;
 
 use super::api_spec::{self, resolve};
-use super::exemptions::{self, Used, names_a_follow_up};
+use super::exemptions::{self, Used};
 use super::{Check, Context, Finding};
 
 /// The parameter that says which fields an answer holds.
@@ -344,12 +344,6 @@ fn evaluate(spec: &Value, exemptions: &[Exemption]) -> Vec<Finding> {
             if let Some(index) = exemption {
                 let exemption = &exemptions[index];
                 used.mark(index);
-                if !names_a_follow_up(&exemption.reason) {
-                    findings.push(Finding::at(
-                        EXEMPTIONS_PATH,
-                        format!("The exemption of `{property}` in {place} must give a reason that names the follow-up that tracks it (like M1-F44)."),
-                    ));
-                }
                 let flag = schema.pointer(&format!("/properties/{CAP_FLAG}/type"));
                 if !exemption.whole_value && flag.and_then(Value::as_str) != Some("boolean") {
                     findings.push(Finding::at(
@@ -369,6 +363,7 @@ fn evaluate(spec: &Value, exemptions: &[Exemption]) -> Vec<Finding> {
         }
     }
     findings.extend(exemptions::judge(EXEMPTIONS_PATH, exemptions, &used));
+    findings.extend(exemptions::follow_up_findings(EXEMPTIONS_PATH, exemptions));
     findings
 }
 
