@@ -174,10 +174,8 @@ fn split_words(selector: &str) -> anyhow::Result<Vec<String>> {
         match c {
             '(' => closers.push(')'),
             '[' => closers.push(']'),
-            ')' | ']' => {
-                if closers.pop() != Some(c) {
-                    bail!("a bracket `{c}` does not close the bracket that is open");
-                }
+            ')' | ']' if closers.pop() != Some(c) => {
+                bail!("a bracket `{c}` does not close the bracket that is open");
             }
             _ => {}
         }
