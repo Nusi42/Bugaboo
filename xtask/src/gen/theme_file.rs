@@ -324,11 +324,25 @@ impl Builder {
             }
             "contrast" => self.contrast = Some(ContrastSpec::parse(node)?),
             "distinct" => self.distinct = Some(DistinctSpec::parse(node)?),
-            "mixin" => self.mixins.push(Mixin {
-                name: node.only_arg()?,
-                items: items(node)?,
-            }),
-            "keyframes" => self.keyframes.push(keyframes(node)?),
+            "mixin" => {
+                let name = node.only_arg()?;
+                if self.mixins.iter().any(|mixin| mixin.name == name) {
+                    return Err(node.problem(format!("the mixin `{name}` is defined twice")));
+                }
+                self.mixins.push(Mixin {
+                    name,
+                    items: items(node)?,
+                });
+            }
+            "keyframes" => {
+                let frames = keyframes(node)?;
+                if self.keyframes.iter().any(|known| known.name == frames.name) {
+                    return Err(
+                        node.problem(format!("the keyframes `{}` are defined twice", frames.name))
+                    );
+                }
+                self.keyframes.push(frames);
+            }
             "base" => self.rules.push(rule(node, RuleKind::Base)?),
             "part" => self.rules.push(rule(node, RuleKind::Part)?),
             other => bail!("line {}: unknown line `{other}`", node.line()),
@@ -394,7 +408,17 @@ impl Builder {
         } else {
             value
         };
+        check_text(node, &value)?;
         if key == "forced" {
+            if token.kind == TokenKind::Color
+                && !SYSTEM_COLORS
+                    .iter()
+                    .any(|color| color.eq_ignore_ascii_case(&value))
+            {
+                return Err(node.problem(format!(
+                    "`forced={value}` must be a CSS system color (Highlight, ButtonText, …)"
+                )));
+            }
             token.forced = Some(value);
         } else if self.themes.iter().any(|theme| theme.name == key) {
             token.themes.push((key.to_owned(), value));
@@ -639,6 +663,42 @@ fn is_property(name: &str) -> bool {
         && letters.all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-')
 }
 
+/// What would end a value and start another rule or comment in the style sheet.
+const BREAKOUT: [&str; 6] = ["{", "}", ";", "/*", "*/", "<"];
+
+/// The system colors of CSS, the only values that `forced=` of a color may have.
+const SYSTEM_COLORS: [&str; 19] = [
+    "AccentColor",
+    "AccentColorText",
+    "ActiveText",
+    "ButtonBorder",
+    "ButtonFace",
+    "ButtonText",
+    "Canvas",
+    "CanvasText",
+    "Field",
+    "FieldText",
+    "GrayText",
+    "Highlight",
+    "HighlightText",
+    "LinkText",
+    "Mark",
+    "MarkText",
+    "SelectedItem",
+    "SelectedItemText",
+    "VisitedText",
+];
+
+/// A value, and a media query, may not hold what lets it break out of its rule.
+fn check_text(node: Node<'_>, value: &str) -> anyhow::Result<()> {
+    match BREAKOUT.iter().find(|bad| value.contains(**bad)) {
+        Some(bad) => Err(node.problem(format!(
+            "the value `{value}` holds `{bad}`, which could end the rule and start another"
+        ))),
+        None => Ok(()),
+    }
+}
+
 fn declaration(node: Node<'_>) -> anyhow::Result<Declaration> {
     if !is_property(node.name()) {
         return Err(node.problem("is not a CSS property"));
@@ -647,9 +707,11 @@ fn declaration(node: Node<'_>) -> anyhow::Result<Declaration> {
     if words.is_empty() {
         return Err(node.problem("needs a value"));
     }
+    let value = words.join(" ");
+    check_text(node, &value)?;
     Ok(Declaration {
         property: node.name().to_owned(),
-        value: words.join(" "),
+        value,
         line: node.line(),
     })
 }
@@ -672,6 +734,7 @@ fn items(node: Node<'_>) -> anyhow::Result<Vec<Item>> {
 }
 
 fn media(node: Node<'_>, query: String) -> anyhow::Result<Item> {
+    check_text(node, &query)?;
     Ok(Item::Media {
         query,
         items: items(node)?,
@@ -730,6 +793,47 @@ mod tests {
         assert_eq!(file.themes.len(), 4);
         assert_eq!(file.default_light, "daylight");
         assert!(file.token("accent").is_some());
+    }
+
+    /// The theme file of the repository with `extra` at the end: the error, or nothing.
+    fn problem_with(extra: &str) -> Option<String> {
+        let repo = Repo::discover().unwrap();
+        let text = crate::source::read_text(&repo, THEME_PATH).unwrap();
+        ThemeFile::parse(&format!("{text}\n{extra}\n"))
+            .err()
+            .map(|error| format!("{error:#}"))
+    }
+
+    #[test]
+    fn bad_example_a_value_that_could_break_out_of_its_rule() {
+        for bad in [
+            "part \"zz\" {\n  color \"red; } * { display: none\"\n}",
+            "part \"zz\" {\n  color \"red}\"\n}",
+            "part \"zz\" {\n  color \"red /* x\"\n}",
+            "part \"zz\" {\n  background \"url(<x>)\"\n}",
+            "part \"zz\" {\n  media \"(min-width: 1px) { a { b: c } }\" {\n    color red\n  }\n}",
+            "keyframes \"zz\" {\n  from {\n    opacity \"0; }\"\n  }\n}",
+        ] {
+            let error = problem_with(bad).unwrap_or_default();
+            assert!(error.contains("could end the rule"), "{bad}: {error}");
+        }
+    }
+
+    #[test]
+    fn bad_example_duplicates_and_forced_values_that_are_no_system_color() {
+        let mixin = "mixin \"m\" {\n  color red\n}\n";
+        let error = problem_with(&format!("{mixin}{mixin}")).unwrap_or_default();
+        assert!(error.contains("defined twice"), "{error}");
+        let frames = "keyframes \"k\" {\n  from {\n    opacity 0\n  }\n}\n";
+        let error = problem_with(&format!("{frames}{frames}")).unwrap_or_default();
+        assert!(error.contains("defined twice"), "{error}");
+        let text = crate::source::read_text(&Repo::discover().unwrap(), THEME_PATH).unwrap();
+        let bad = text.replace("forced=\"Highlight\"", "forced=\"#ff0000\"");
+        let error = ThemeFile::parse(&bad)
+            .err()
+            .map(|error| format!("{error:#}"))
+            .unwrap_or_default();
+        assert!(error.contains("must be a CSS system color"), "{error}");
     }
 
     #[test]
