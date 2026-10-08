@@ -15,7 +15,9 @@ pub(crate) struct Document {
 
 impl Document {
     pub(crate) fn parse(text: &str) -> anyhow::Result<Self> {
-        let parsed: KdlDocument = text.parse().map_err(|error| anyhow!("{error}"))?;
+        let parsed: KdlDocument = text
+            .parse()
+            .map_err(|error: kdl::KdlError| parse_problem(text, &error))?;
         Ok(Self {
             text: text.to_owned(),
             parsed,
@@ -25,6 +27,40 @@ impl Document {
     /// The nodes of the top level, in file order.
     pub(crate) fn nodes(&self) -> Vec<Node<'_>> {
         nodes_of(&self.parsed, &self.text)
+    }
+}
+
+/// The line and the column (both from 1) of a byte of the text.
+fn place(text: &str, offset: usize) -> (usize, usize) {
+    let before = text.get(..offset.min(text.len())).unwrap_or_default();
+    let line = before.matches('\n').count() + 1;
+    let column = before
+        .rsplit('\n')
+        .next()
+        .map_or(0, |last| last.chars().count())
+        + 1;
+    (line, column)
+}
+
+/// What the KDL parser found wrong, each problem with its line and column.
+fn parse_problem(text: &str, error: &kdl::KdlError) -> anyhow::Error {
+    let found: Vec<String> = error
+        .diagnostics
+        .iter()
+        .map(|diagnostic| {
+            let (line, column) = place(text, diagnostic.span.offset());
+            let what = diagnostic
+                .message
+                .as_deref()
+                .or(diagnostic.label.as_deref())
+                .unwrap_or("not valid KDL");
+            format!("line {line}, column {column}: {what}")
+        })
+        .collect();
+    if found.is_empty() {
+        anyhow!("line 1, column 1: not valid KDL")
+    } else {
+        anyhow!("{}", found.join("; "))
     }
 }
 
@@ -173,6 +209,13 @@ mod tests {
         assert_eq!(child.line(), 2);
         assert_eq!(child.only_arg().unwrap(), "1.5");
         assert!(node.child("c").is_err());
+    }
+
+    #[test]
+    fn bad_example_a_document_that_is_not_kdl_says_where() {
+        let error = Document::parse("a \"x\"\nb {\n  c \"y\n}\n").err().unwrap();
+        let text = error.to_string();
+        assert!(text.contains("line 3, column"), "{text}");
     }
 
     #[test]
