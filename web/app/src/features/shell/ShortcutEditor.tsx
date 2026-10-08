@@ -97,7 +97,7 @@ export function ShortcutEditor({ id, overrides }: ShortcutEditorProps) {
         />
       </div>
       <Problems conflict={conflict} invalid={invalid} reserved={reserved} saved={saved} />
-      <div {...partOf(part.row)}>
+      <div {...partOf(part.row, { variants: ["stretch"] })}>
         <Button
           look={buttonLook.primary}
           isDisabled={recorded === "" || conflict !== null || invalid || reserved}

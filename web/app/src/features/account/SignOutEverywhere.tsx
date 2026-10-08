@@ -19,7 +19,7 @@ export function SignOutEverywhere() {
       {everywhere.isError ? (
         <Alert tone={alertTone.danger}>{messageOf(everywhere.error)}</Alert>
       ) : null}
-      <div {...partOf(part.row)}>
+      <div {...partOf(part.row, { variants: ["stretch"] })}>
         <ConfirmDialog
           triggerLabel={t("sessions.everywhere")}
           title={t("sessions.everywhere-title")}

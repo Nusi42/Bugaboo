@@ -37,7 +37,7 @@ export function BackupCodesSection() {
         <ConfirmPasswordField value={password} onChange={setPassword} />
         <p {...partOf(part.muted)}>{t("backup.renew-help")}</p>
         {renew.isError ? <Alert tone={alertTone.danger}>{messageOf(renew.error)}</Alert> : null}
-        <div {...partOf(part.row)}>
+        <div {...partOf(part.row, { variants: ["stretch"] })}>
           <Button type={buttonType.submit} isPending={renew.isPending}>
             {t("backup.renew")}
           </Button>

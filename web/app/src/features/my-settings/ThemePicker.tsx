@@ -27,7 +27,7 @@ export function ThemePicker({ legend, choices, value, onChange }: ThemePickerPro
   return (
     <fieldset {...partOf(part.themePickerGroup)}>
       <legend {...partOf(part.themePickerLegend)}>{legend}</legend>
-      <div {...partOf(part.row)}>
+      <div {...partOf(part.row, { variants: ["stretch"] })}>
         {choices.map((choice) => (
           <label key={choice.value} {...partOf(part.themePickerChoice)}>
             <input

@@ -82,7 +82,7 @@ export function SettingsForm({
       {shown.length === 0 ? (
         <p {...partOf(part.muted)}>{t("setting.ui.nothing")}</p>
       ) : (
-        <ul {...partOf(part.list)}>
+        <ul {...partOf(part.list, { variants: ["loose"] })}>
           {shown.map((setting) => (
             <SettingRow
               key={setting.key}

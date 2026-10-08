@@ -39,7 +39,7 @@ export function StatusPage() {
       {status.isError ? <Alert tone={alertTone.danger}>{messageOf(status.error)}</Alert> : null}
       {status.data === undefined ? null : <Summary state={status.data} />}
       {status.data === undefined ? null : <StatusRows state={status.data} />}
-      <div {...partOf(part.row)}>
+      <div {...partOf(part.row, { variants: ["stretch"] })}>
         <Button
           isPending={status.isFetching}
           onPress={() => {

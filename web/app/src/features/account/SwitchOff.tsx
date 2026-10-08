@@ -23,7 +23,7 @@ export function SwitchOff({ onSwitchedOff }: SwitchOffProps) {
     <>
       <p {...partOf(part.text)}>{t("code-app.on")}</p>
       {remove.isError ? <Alert tone={alertTone.danger}>{messageOf(remove.error)}</Alert> : null}
-      <div {...partOf(part.row)}>
+      <div {...partOf(part.row, { variants: ["stretch"] })}>
         <RemoveWithPassword
           triggerLabel={t("code-app.turn-off")}
           title={t("code-app.turn-off-title")}

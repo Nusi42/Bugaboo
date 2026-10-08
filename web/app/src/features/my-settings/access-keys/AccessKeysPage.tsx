@@ -25,7 +25,7 @@ export function AccessKeysPage() {
       <Card heading={t("access-keys.title")} level={1}>
         <p {...partOf(part.text)}>{t("access-keys.intro")}</p>
         {making.step === "idle" ? (
-          <div {...partOf(part.row)}>
+          <div {...partOf(part.row, { variants: ["stretch"] })}>
             <Button
               look={buttonLook.primary}
               onPress={() => {

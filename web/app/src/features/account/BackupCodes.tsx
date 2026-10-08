@@ -18,7 +18,7 @@ export function BackupCodes({ codes, onSaved }: BackupCodesProps) {
           <li key={code}>{code}</li>
         ))}
       </ul>
-      <div {...partOf(part.row)}>
+      <div {...partOf(part.row, { variants: ["stretch"] })}>
         <CopyButton
           text={codes.join("\n")}
           label={t("backup.copy")}

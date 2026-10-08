@@ -67,7 +67,7 @@ export function PasswordSection() {
           problem={change.isError && !tooWeak ? messageOf(change.error) : null}
           done={change.isSuccess}
         />
-        <div {...partOf(part.row)}>
+        <div {...partOf(part.row, { variants: ["stretch"] })}>
           <SubmitButton isPending={change.isPending}>{t("security.password.submit")}</SubmitButton>
         </div>
       </Form>
