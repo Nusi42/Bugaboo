@@ -1,11 +1,10 @@
 import { t } from "@bugaboo/messages";
-import { Card } from "@bugaboo/ui";
+import { Card, partOf, part } from "@bugaboo/ui";
 
 import { paths } from "../../shared/paths.ts";
 import { useMe, usePermissions } from "../../shared/use-me.ts";
 import { usePageTitle } from "../../shared/use-page.ts";
 import { mayOpen } from "../shell/index.ts";
-import styles from "./Home.module.css";
 
 /** The start page of somebody who is signed in. The rest of Bugaboo arrives with later versions. */
 export function HomePage() {
@@ -15,9 +14,9 @@ export function HomePage() {
   usePageTitle(title);
   return (
     <Card heading={title} level={1}>
-      <p className={styles.text}>{t("home.intro")}</p>
+      <p {...partOf(part.text)}>{t("home.intro")}</p>
       {mayOpen(paths.organizationSettings, permissions) ? (
-        <p className={styles.text}>{t("home.admin")}</p>
+        <p {...partOf(part.text)}>{t("home.admin")}</p>
       ) : null}
     </Card>
   );

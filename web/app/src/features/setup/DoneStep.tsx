@@ -1,16 +1,15 @@
 import { t } from "@bugaboo/messages";
-import { Button, buttonLook, Card } from "@bugaboo/ui";
+import { Button, buttonLook, Card, partOf, part } from "@bugaboo/ui";
 import { useNavigate } from "@tanstack/react-router";
 
 import { paths } from "../../shared/paths.ts";
-import styles from "./Setup.module.css";
 
 /** The last step: the account is ready. */
 export function DoneStep() {
   const navigate = useNavigate();
   return (
     <Card heading={t("first-run.done.title")} level={1}>
-      <p className={styles.text}>{t("first-run.done.text")}</p>
+      <p {...partOf(part.text)}>{t("first-run.done.text")}</p>
       <Button
         look={buttonLook.primary}
         wide

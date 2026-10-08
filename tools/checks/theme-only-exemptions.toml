@@ -18,10 +18,6 @@ path = "web/app/src/features/admin/"
 reason = "The admin feature still has CSS Modules and class names; package C-06 moves it onto part rules (M2C-F90)."
 
 [[exempt]]
-path = "web/app/src/features/home/"
-reason = "The home feature still has CSS Modules and class names; package C-06 moves it onto part rules (M2C-F90)."
-
-[[exempt]]
 path = "web/app/src/features/my-settings/"
 reason = "The my-settings feature still has CSS Modules and class names; package C-06 moves it onto part rules (M2C-F90)."
 
@@ -40,10 +36,6 @@ reason = "The roles feature still has CSS Modules and class names; package C-06 
 [[exempt]]
 path = "web/app/src/features/settings/"
 reason = "The settings feature still has CSS Modules and class names; package C-06 moves it onto part rules (M2C-F90)."
-
-[[exempt]]
-path = "web/app/src/features/setup/"
-reason = "The setup feature still has CSS Modules and class names; package C-06 moves it onto part rules (M2C-F90)."
 
 [[exempt]]
 path = "web/app/src/features/shell/"

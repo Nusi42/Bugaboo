@@ -1,8 +1,7 @@
 import { t } from "@bugaboo/messages";
-import { Button, buttonLook, Card } from "@bugaboo/ui";
+import { Button, buttonLook, Card, partOf, part } from "@bugaboo/ui";
 
 import { CodeAppSection, PasskeysSection } from "../account/index.ts";
-import styles from "./Setup.module.css";
 
 export interface SaferStepProps {
   readonly onFinish: () => void;
@@ -13,7 +12,7 @@ export function SaferStep({ onFinish }: SaferStepProps) {
   return (
     <>
       <Card heading={t("first-run.safer.title")} level={1}>
-        <p className={styles.text}>{t("first-run.safer.intro")}</p>
+        <p {...partOf(part.text)}>{t("first-run.safer.intro")}</p>
       </Card>
       <PasskeysSection />
       <CodeAppSection />

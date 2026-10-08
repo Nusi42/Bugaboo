@@ -1462,3 +1462,9 @@ body {
   flex: 1;
   justify-content: center;
 }
+
+[data-part="setup.progress"] {
+  margin: 0;
+  color: var(--fg-muted);
+  font-size: var(--fs-base);
+}

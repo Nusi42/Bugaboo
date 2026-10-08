@@ -230,6 +230,7 @@ export const part = {
   confirmDialog: "confirm.dialog",
   confirmTitle: "confirm.title",
   confirmActions: "confirm.actions",
+  setupProgress: "setup.progress",
 } as const;
 export type PartName = (typeof part)[keyof typeof part];
 
@@ -290,4 +291,5 @@ export const partWords = {
   "confirm.dialog": { variant: [], state: [] },
   "confirm.title": { variant: [], state: [] },
   "confirm.actions": { variant: [], state: [] },
+  "setup.progress": { variant: [], state: [] },
 } as const;

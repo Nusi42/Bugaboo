@@ -7,7 +7,7 @@ import { AccountStep } from "./AccountStep.tsx";
 import { CodeStep } from "./CodeStep.tsx";
 import { DoneStep } from "./DoneStep.tsx";
 import { SaferStep } from "./SaferStep.tsx";
-import styles from "./Setup.module.css";
+import { partOf, part } from "@bugaboo/ui";
 
 const steps = ["code", "account", "safer", "done"] as const;
 type Step = (typeof steps)[number];
@@ -31,8 +31,8 @@ export function SetupPage() {
   const [codeProblem, setCodeProblem] = useState<string | null>(null);
   const container = useFocusHeading(step);
   return (
-    <div className={styles.stack} ref={container}>
-      <p className={styles.progress}>
+    <div {...partOf(part.stack)} ref={container}>
+      <p {...partOf(part.setupProgress)}>
         {t("first-run.step-of", {
           step: steps.indexOf(step) + 1,
           total: steps.length,

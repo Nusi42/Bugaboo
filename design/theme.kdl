@@ -1225,3 +1225,11 @@ part "confirm.modal[variant=full] confirm.dialog" {
     flex 1
     justify-content center
 }
+
+// ───────────── Setup ─────────────
+
+part "setup.progress" {
+    margin 0
+    color "$fg-muted"
+    font-size "$fs-base"
+}

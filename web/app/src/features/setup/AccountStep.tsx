@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, Card, Form, SubmitButton } from "@bugaboo/ui";
+import { Alert, alertTone, Card, Form, SubmitButton, partOf, part } from "@bugaboo/ui";
 import { useState } from "react";
 
 import { type SignedIn } from "../../shared/after-sign-in.ts";
@@ -8,7 +8,6 @@ import { codeOf, isPasswordProblem, messageOf } from "../../shared/errors.ts";
 import { EmailField, NameField, NewPasswordField } from "../../shared/fields.tsx";
 import { queryClient } from "../../shared/query-client.ts";
 import { forgetPerson, statusOptions } from "../../shared/session.ts";
-import styles from "./Setup.module.css";
 
 export interface AccountStepProps {
   /** The setup code from the first step. */
@@ -41,7 +40,7 @@ export function AccountStep({ code, onCreated, onWrongCode }: AccountStepProps) 
   const tooWeak = isPasswordProblem(setup.error);
   return (
     <Card heading={t("first-run.account.title")} level={1}>
-      <p className={styles.text}>{t("first-run.account.intro")}</p>
+      <p {...partOf(part.text)}>{t("first-run.account.intro")}</p>
       <Form
         onSubmit={() => {
           setup.mutate({
