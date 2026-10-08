@@ -5,8 +5,10 @@
 //! files that a generator writes (`generate::all_paths`), and finds a block of tokens that stands
 //! twice. The imports (`use …;`, `import …;`) are left out of the comparison: a list of what a file
 //! needs is no knowledge that is kept twice. A block is a finding unless the two files are named
-//! in `tools/checks/dry-exemptions.toml` with a reason that names the follow-up that removes the
-//! copy; an entry that no copy needs any more fails, so the file shrinks as the copies go.
+//! in `tools/checks/dry-exemptions.toml` with the fingerprint of the block (the finding prints it)
+//! and a reason that names the follow-up that removes the copy; so an entry covers that block and
+//! no other that the two files may come to share. An entry that no copy needs any more fails, so
+//! the file shrinks as the copies go.
 //!
 //! The size of a block (`minTokens`, `minLines`) is in `.jscpd.json`, the one place that says it.
 //! The run is part of `cargo xtask ci` only, as the catalogue says: it reads every source file.
@@ -17,6 +19,7 @@ use std::path::Path;
 use anyhow::Context as _;
 use serde::Deserialize;
 use serde_json::{Value, json};
+use sha2::{Digest as _, Sha256};
 
 use super::exemptions::{self, Used};
 use super::node_tool::run;
@@ -69,12 +72,18 @@ struct Exemptions {
 #[derive(Deserialize)]
 struct Exempt {
     files: [String; 2],
+    /// The fingerprint of the block ([`fingerprint`]): the entry covers this block of the two
+    /// files, not every block they may share.
+    block: String,
     reason: String,
 }
 
 impl exemptions::Exemption for Exempt {
     fn name(&self) -> String {
-        format!("{} and {}", self.files[0], self.files[1])
+        format!(
+            "{} and {} (block {})",
+            self.files[0], self.files[1], self.block
+        )
     }
 
     fn reason(&self) -> &str {
@@ -93,6 +102,8 @@ struct Copied {
     second: (String, usize),
     lines: usize,
     tokens: usize,
+    /// Which block it is: [`fingerprint`] of its text.
+    block: String,
 }
 
 /// The report of the tool.
@@ -109,6 +120,8 @@ struct Found {
     second: Place,
     lines: usize,
     tokens: usize,
+    /// The text of the block, as the first file has it.
+    fragment: String,
 }
 
 #[derive(Deserialize)]
@@ -199,8 +212,23 @@ fn clones_in(report: &str, root: &Path) -> anyhow::Result<Vec<Copied>> {
             second: (relative(&found.second.name), found.second.start),
             lines: found.lines,
             tokens: found.tokens,
+            block: fingerprint(&found.fragment),
         })
         .collect())
+}
+
+/// Names a block: the first six bytes of the SHA-256 of its text without white space, as a decimal
+/// number (letters would be read as words by the spell check).
+fn fingerprint(fragment: &str) -> String {
+    let compact: String = fragment
+        .chars()
+        .filter(|character| !character.is_whitespace())
+        .collect();
+    let digest = Sha256::digest(compact.as_bytes());
+    let number = digest[..6]
+        .iter()
+        .fold(0_u64, |number, byte| (number << 8) | u64::from(*byte));
+    number.to_string()
 }
 
 /// A path as the checks write it: `/` between the parts, and without the prefix that Windows puts
@@ -218,7 +246,7 @@ fn judge(clones: &[Copied], exemptions: &[Exempt]) -> Vec<Finding> {
     for clone in clones {
         let index = exemptions.iter().position(|exempt| {
             let named = |file: &str| exempt.files.iter().any(|name| name == file);
-            named(&clone.first.0) && named(&clone.second.0)
+            named(&clone.first.0) && named(&clone.second.0) && exempt.block == clone.block
         });
         if let Some(index) = index {
             used.mark(index);
@@ -229,8 +257,8 @@ fn judge(clones: &[Copied], exemptions: &[Exempt]) -> Vec<Finding> {
             format!(
                 "{} lines ({} tokens) are the same as in {}:{}. Make the shared part one function, \
                  type or component and use it in both places (coding-standards §1, DRY). Only a \
-                 copy that a follow-up removes is named in {EXEMPTIONS_PATH}, with its reason.",
-                clone.lines, clone.tokens, clone.second.0, clone.second.1
+                 copy that a follow-up removes is named in {EXEMPTIONS_PATH}, with its block `{}` and its reason.",
+                clone.lines, clone.tokens, clone.second.0, clone.second.1, clone.block
             ),
         ));
     }
@@ -386,18 +414,22 @@ use std::rc::Rc;
         assert!(found.is_empty(), "{found:?}");
     }
 
+    const BLOCK: &str = "123456789012";
+
     fn clone_of(first: &str, second: &str) -> Copied {
         Copied {
             first: (first.to_owned(), 1),
             second: (second.to_owned(), 1),
             lines: 12,
             tokens: 120,
+            block: BLOCK.to_owned(),
         }
     }
 
     fn exempt(first: &str, second: &str, reason: &str) -> Exempt {
         Exempt {
             files: [first.to_owned(), second.to_owned()],
+            block: BLOCK.to_owned(),
             reason: reason.to_owned(),
         }
     }
@@ -413,6 +445,24 @@ use std::rc::Rc;
                 .iter()
                 .any(|f| f.message.contains("is no copy any more"))
         );
+    }
+
+    #[test]
+    fn an_entry_covers_its_block_and_not_another_one_of_the_same_two_files() {
+        let reason = "Both go when the picker is one component (M2C-F40).";
+        let mut other = clone_of("web/a.ts", "web/b.ts");
+        other.block = "999999999999".to_owned();
+        let entry = exempt("web/a.ts", "web/b.ts", reason);
+        let findings = judge(&[clone_of("web/a.ts", "web/b.ts"), other], &[entry]);
+        assert_eq!(findings.len(), 1, "{}", findings.len());
+        assert!(findings[0].message.contains("block `999999999999`"));
+    }
+
+    #[test]
+    fn the_fingerprint_ignores_white_space_and_tells_blocks_apart() {
+        assert_eq!(fingerprint("a  b\n c"), fingerprint("a b c"));
+        assert_ne!(fingerprint("a b c"), fingerprint("a b d"));
+        assert!(fingerprint("x").chars().all(|c| c.is_ascii_digit()));
     }
 
     #[test]
@@ -433,7 +483,7 @@ use std::rc::Rc;
     #[test]
     fn the_paths_of_a_report_are_those_of_the_repository() {
         let report = r#"{"duplicates":[{"firstFile":{"name":"\\\\?\\C:\\work\\repo\\crates\\a\\src\\lib.rs","start":3},
-            "secondFile":{"name":"C:/work/repo/web/x.ts","start":9},"lines":12,"tokens":120}]}"#;
+            "secondFile":{"name":"C:/work/repo/web/x.ts","start":9},"lines":12,"tokens":120,"fragment":"a b"}]}"#;
         let found = clones_in(report, Path::new("C:\\work\\repo")).unwrap();
         assert_eq!(found[0].first, ("crates/a/src/lib.rs".to_owned(), 3));
         assert_eq!(found[0].second, ("web/x.ts".to_owned(), 9));

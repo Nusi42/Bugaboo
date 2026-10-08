@@ -143,7 +143,7 @@ Every check is listed **once**, in [`tools/checks/catalog.toml`](../tools/checks
 2. **Git hooks** (lefthook): fast checks on staged files at commit, the wider set on push, the commit-message check.
 3. **CI**: everything, plus nightly benchmarks and release-only checks (SBOM, notices). While the repository is local, CI is `cargo xtask ci` on the development PC (Windows and WSL); GitHub Actions runs the same command once the repository moves to GitHub.
 
-**Tools:** rustfmt and clippy for Rust; oxfmt and oxlint with type-aware tsgolint (built on TypeScript 7) for TypeScript; stylelint for CSS; taplo, rumdl, typos, lychee and actionlint for the rest; jscpd for copied blocks of Rust and TypeScript (LINT-DRY: a block of 100 tokens and 10 lines is the size, in `.jscpd.json`, and a copy that stands for now is named with its follow-up in `tools/checks/dry-exemptions.toml`); ast-grep for pattern rules across languages.
+**Tools:** rustfmt and clippy for Rust; oxfmt and oxlint with type-aware tsgolint (built on TypeScript 7) for TypeScript; stylelint for CSS; taplo, rumdl, typos, lychee and actionlint for the rest; jscpd for copied blocks of Rust and TypeScript (LINT-DRY: a block of 100 tokens and 10 lines is the size, in `.jscpd.json`, and a copy that stands for now is named with the fingerprint of its block and its follow-up in `tools/checks/dry-exemptions.toml`); ast-grep for pattern rules across languages.
 
 **Checks for the checks** (META) make sure each check is implemented and tested, every file type is covered (a new kind of file needs a new check), new modules are declared, every rule names its check, and suppressions don't grow unnoticed. See [architecture §10](architecture/10-checks.md).
 
