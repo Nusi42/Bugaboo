@@ -183,5 +183,5 @@ pub(crate) async fn organization_state_in(
     transaction: &mut Transaction,
 ) -> Result<OrganizationState, StoreError> {
     let policy = load_policy(transaction, Wanted::Organization).await?;
-    Ok(OrganizationState::of(&policy))
+    OrganizationState::of(&policy).map_err(|_| StoreError::Corrupt("a row for nobody"))
 }

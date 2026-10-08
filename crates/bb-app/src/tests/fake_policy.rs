@@ -24,8 +24,9 @@ fn inputs_of(state: &State, person: UserId, place: Place) -> Option<Inputs> {
     Some(policy_of(state, None).inputs_for(person, place, chain))
 }
 
-fn organization_state_of(state: &State) -> OrganizationState {
-    OrganizationState::of(&policy_of(state, None))
+fn organization_state_of(state: &State) -> Result<OrganizationState, FakeError> {
+    // A row for nobody is broken data, here as in the store.
+    OrganizationState::of(&policy_of(state, None)).map_err(|_| FakeError::Failed)
 }
 
 impl PolicyStore for FakeStore {
@@ -166,7 +167,7 @@ impl PolicyStore for FakeStore {
     }
 
     async fn organization_state_in(tx: &mut Tx) -> Result<OrganizationState, FakeError> {
-        Ok(organization_state_of(&tx.state))
+        organization_state_of(&tx.state)
     }
 
     async fn policy_inputs_in(

@@ -3,12 +3,14 @@
 
 use std::collections::BTreeSet;
 
-use bb_core::id::{GroupId, RoleId, SequentialIds, UserId};
+use bb_core::access::{AppliesTo, Assignment};
+use bb_core::id::{AssignmentId, GroupId, RoleId, SequentialIds, UserId};
 use bb_policy::guards::{
-    Holder, OrganizationState, Refusal, anybody_manages_roles, ensure_a_manager_remains,
-    ensure_no_escalation, role_managers,
+    Holder, OrganizationState, Refusal, RowForNobody, anybody_manages_roles,
+    ensure_a_manager_remains, ensure_no_escalation, role_managers,
 };
-use bb_policy::{Permission, RoleData};
+use bb_policy::{Permission, Policy, RoleData};
+use jiff::Timestamp;
 
 use crate::common::World;
 
@@ -217,4 +219,63 @@ fn sec_08_somebody_who_only_manages_roles_does_not_keep_the_organization_open() 
         ensure_a_manager_remains(&org.state, &after),
         Err(Refusal::WouldLockOut)
     );
+}
+
+fn row(
+    ids: &mut SequentialIds,
+    person: Option<UserId>,
+    group: Option<GroupId>,
+    role: RoleId,
+) -> Assignment {
+    Assignment {
+        id: AssignmentId::generate(ids).unwrap(),
+        person,
+        group,
+        role: Some(role),
+        project: None,
+        applies_to: AppliesTo::Organization,
+        given_at: Timestamp::UNIX_EPOCH,
+    }
+}
+
+#[test]
+fn sec_08_the_organization_state_is_made_from_rows_and_a_row_for_nobody_is_refused() {
+    let mut ids = SequentialIds::default();
+    let admin = role(&mut ids, "Administrator", Permission::ALL);
+    let ana = UserId::generate(&mut ids);
+    let group = GroupId::generate(&mut ids).unwrap();
+    let mut policy = Policy::default();
+    policy.roles.push(admin.clone());
+    policy
+        .assignments
+        .push(row(&mut ids, Some(ana), None, admin.id));
+    policy
+        .assignments
+        .push(row(&mut ids, None, Some(group), admin.id));
+    let state = OrganizationState::of(&policy).unwrap();
+    assert_eq!(
+        state.rows,
+        [
+            (Holder::Person(ana), admin.id),
+            (Holder::Group(group), admin.id)
+        ]
+    );
+    assert_eq!(state.roles, std::slice::from_ref(&admin));
+    assert_eq!(state.members, []);
+
+    // A row for nobody is broken data: an error, never a row that is left out. Even when it is
+    // for a project, or gives *No access*, so it would not count.
+    for broken in [
+        row(&mut ids, None, None, admin.id),
+        Assignment {
+            project: Some(bb_core::id::ProjectId::generate(&mut ids).unwrap()),
+            role: None,
+            ..row(&mut ids, None, None, admin.id)
+        },
+    ] {
+        assert_eq!(Holder::try_from(&broken), Err(RowForNobody));
+        let mut policy = policy.clone();
+        policy.assignments.push(broken);
+        assert_eq!(OrganizationState::of(&policy), Err(RowForNobody));
+    }
 }

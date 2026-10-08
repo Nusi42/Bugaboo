@@ -7,7 +7,7 @@ use bb_core::event::{FieldChange, RecordKind};
 use bb_core::id::{AssignmentId, ProjectId};
 use bb_core::people_kinds::PeopleKind;
 use bb_core::sign_in::SecurityAction;
-use bb_policy::guards::ensure_a_manager_remains;
+use bb_policy::guards::{Holder, ensure_a_manager_remains};
 use bb_policy::{Authorized, PeopleContext, Permission, Place, row_reaches};
 use serde_json::json;
 
@@ -36,8 +36,10 @@ impl<S: AuthStore> Ctx<'_, S> {
         row: &Assignment,
         place: Option<ProjectId>,
     ) -> Result<AssignmentView, AppError> {
-        let who = match (row.person, row.group) {
-            (Some(person), _) => WhoView::Person {
+        let holder =
+            Holder::try_from(row).map_err(|error| AppError::Internal(error.to_string()))?;
+        let who = match holder {
+            Holder::Person(person) => WhoView::Person {
                 person: self
                     .person_ref(
                         viewer,
@@ -47,10 +49,9 @@ impl<S: AuthStore> Ctx<'_, S> {
                     )
                     .await?,
             },
-            (None, Some(group)) => WhoView::Group {
+            Holder::Group(group) => WhoView::Group {
                 group: self.group_view(group).await?,
             },
-            (None, None) => return Err(AppError::Internal("a row for nobody".into())),
         };
         let role = match row.role {
             Some(id) => Some(self.role_ref(id).await?),

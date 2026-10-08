@@ -11,7 +11,9 @@
 //!   `sec_02_nobody_gives_a_role_with_more_than_they_hold_there`.
 
 use std::collections::{BTreeMap, BTreeSet};
+use std::fmt;
 
+use bb_core::access::Assignment;
 use bb_core::id::{GroupId, RoleId, UserId};
 
 use crate::catalogue::{Counts, Permission};
@@ -54,26 +56,51 @@ pub struct OrganizationState {
     pub members: Vec<(GroupId, UserId)>,
 }
 
+/// A stored row of *Who has which role* that is for neither a person nor a group: the data is
+/// broken, and no rule may guess what it meant.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct RowForNobody;
+
+impl fmt::Display for RowForNobody {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        formatter.write_str("a row for nobody")
+    }
+}
+
+impl std::error::Error for RowForNobody {}
+
+/// The one step from a stored row to who it is for: a person by their own row, else a group, and
+/// a row for neither is refused.
+impl TryFrom<&Assignment> for Holder {
+    type Error = RowForNobody;
+
+    fn try_from(row: &Assignment) -> Result<Self, Self::Error> {
+        match (row.person, row.group) {
+            (Some(person), _) => Ok(Self::Person(person)),
+            (None, Some(group)) => Ok(Self::Group(group)),
+            (None, None) => Err(RowForNobody),
+        }
+    }
+}
+
 impl OrganizationState {
     /// The state of an organization as the policy has it: the rows on the whole organization that
-    /// give a role (a row for nobody holds nothing), the roles those name, and the members of the
-    /// groups that hold one. The one definition, whether the policy came from the store or from a
-    /// test double.
-    #[must_use]
-    pub fn of(policy: &Policy) -> Self {
-        let rows: Vec<(Holder, RoleId)> = policy
+    /// give a role, the roles those name, and the members of the groups that hold one. The one
+    /// definition, whether the policy came from the store or from a test double. Every row of the
+    /// policy is checked first, so a row for nobody is an error wherever it is.
+    ///
+    /// # Errors
+    /// [`RowForNobody`] when a row is for neither a person nor a group.
+    pub fn of(policy: &Policy) -> Result<Self, RowForNobody> {
+        let holders = policy
             .assignments
             .iter()
-            .filter(|row| row.project.is_none())
-            .filter_map(|row| {
-                let role = row.role?;
-                let holder = match (row.person, row.group) {
-                    (Some(person), _) => Holder::Person(person),
-                    (None, Some(group)) => Holder::Group(group),
-                    (None, None) => return None,
-                };
-                Some((holder, role))
-            })
+            .map(|row| Holder::try_from(row).map(|holder| (row, holder)))
+            .collect::<Result<Vec<_>, _>>()?;
+        let rows: Vec<(Holder, RoleId)> = holders
+            .into_iter()
+            .filter(|(row, _)| row.project.is_none())
+            .filter_map(|(row, holder)| Some((holder, row.role?)))
             .collect();
         let groups: BTreeSet<GroupId> = rows
             .iter()
@@ -82,7 +109,7 @@ impl OrganizationState {
                 Holder::Person(_) => None,
             })
             .collect();
-        Self {
+        Ok(Self {
             roles: policy
                 .roles
                 .iter()
@@ -96,7 +123,7 @@ impl OrganizationState {
                 .map(|member| (member.group, member.person))
                 .collect(),
             rows,
-        }
+        })
     }
 }
 
