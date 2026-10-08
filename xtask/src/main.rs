@@ -24,6 +24,7 @@ mod output;
 mod ports;
 mod repo;
 mod runner;
+mod rust_registry;
 mod rust_source;
 mod setup;
 mod source;

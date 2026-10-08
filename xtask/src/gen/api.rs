@@ -26,8 +26,9 @@ use super::Generated;
 use super::messages::{SOURCE_LOCALE_PATH, parse_pairs};
 use super::messages_rust::constant_name;
 use super::privacy::table;
-use crate::checks::arch_settings::{CATALOG_PATH, TEST_SETTINGS_MARK, declared_keys};
+use crate::checks::arch_settings::CATALOG_PATH;
 use crate::repo::Repo;
+use crate::rust_registry::read_registry;
 use crate::source::{Kind, Source, read_sources};
 use crate::tools;
 
@@ -299,11 +300,8 @@ fn setting_keys(sources: &[Source]) -> anyhow::Result<String> {
     let Some((_, text)) = sources.iter().find(|(path, _)| path == CATALOG_PATH) else {
         bail!("{CATALOG_PATH} is missing");
     };
-    let registry = text.split(TEST_SETTINGS_MARK).next().unwrap_or(text);
-    let keys = declared_keys(registry);
-    if keys.is_empty() {
-        bail!("{CATALOG_PATH} declares no setting");
-    }
+    let (settings, _) = read_registry(text).with_context(|| CATALOG_PATH.to_owned())?;
+    let keys: Vec<String> = settings.into_iter().map(|setting| setting.key).collect();
     let mut out = format!(
         "{TS_HEADER}/** The key of every setting of the registry (ADR-0018), by the name the app uses for it. */
 export const settingKeys = {{
@@ -382,10 +380,16 @@ mod tests {
             "settings! {
     A: Text = {
         key: \"appearance.mode\",
+        default: \"device\",
     }
 }
 pub mod for_tests {
-    key: \"test.note\",
+    settings! {
+        B: Text = {
+            key: \"test.note\",
+            default: \"x\",
+        }
+    }
 }
 "
             .to_owned(),

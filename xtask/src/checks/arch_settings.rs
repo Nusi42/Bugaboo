@@ -17,6 +17,7 @@
 use std::collections::BTreeSet;
 
 use super::{Check, Context, Finding};
+use crate::rust_registry::declared_keys;
 use crate::rust_source::strip_comments;
 use crate::rust_source::without_tests;
 use crate::source::{Kind, Source};
@@ -25,8 +26,6 @@ use crate::source::{Kind, Source};
 const REGISTRY_FOLDER: &str = "crates/bb-core/src/settings/";
 /// The file of the registry, which the browser client's list of keys is made from.
 pub(crate) const CATALOG_PATH: &str = "crates/bb-core/src/settings/catalog.rs";
-/// Where the settings that exist only for tests start in the catalog.
-pub(crate) const TEST_SETTINGS_MARK: &str = "pub mod for_tests";
 /// Where the migrations are: they name the keys of their time as text, on purpose.
 const MIGRATIONS_FOLDER: &str = "crates/bb-store/src/migrations/";
 
@@ -129,13 +128,21 @@ fn evaluate(sources: &[Source]) -> Vec<Finding> {
         .iter()
         .filter(|(path, _)| path.starts_with(REGISTRY_FOLDER) && path.ends_with("/catalog.rs"))
     {
-        for key in declared_keys(text) {
-            if !keys.insert(key.clone()) {
-                findings.push(Finding::at(
-                    path,
-                    format!("The setting `{key}` is declared twice."),
-                ));
+        match declared_keys(text) {
+            Ok(found) => {
+                for key in found {
+                    if !keys.insert(key.clone()) {
+                        findings.push(Finding::at(
+                            path,
+                            format!("The setting `{key}` is declared twice."),
+                        ));
+                    }
+                }
             }
+            Err(error) => findings.push(Finding::at(
+                path,
+                format!("The registry cannot be read: {error:#}"),
+            )),
         }
     }
     for (path, text) in sources.iter().filter(|(path, _)| {
@@ -170,17 +177,6 @@ fn declares(line: &str) -> bool {
     line.contains("settings! {") || line.contains("settings!{")
 }
 
-/// The keys in `key: "…",` lines of a declaration.
-pub(crate) fn declared_keys(text: &str) -> Vec<String> {
-    text.lines()
-        .filter_map(|line| {
-            let rest = line.trim().strip_prefix("key:")?.trim();
-            let rest = rest.strip_prefix('"')?;
-            Some(rest[..rest.find('"')?].to_owned())
-        })
-        .collect()
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -197,8 +193,7 @@ mod tests {
             .join("\n")
     }
 
-    const DECLARATION: &str =
-        "settings! {\n    THEME: Text = {\n        key: \"appearance.theme\",\n    }\n}\n";
+    const DECLARATION: &str = "settings! {\n    THEME: Text = {\n        key: \"appearance.theme\",\n        default: \"device\",\n    }\n}\n";
 
     #[test]
     fn good_example() {
