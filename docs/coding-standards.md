@@ -46,6 +46,32 @@ Every piece of knowledge has exactly one authoritative home. Everything else is
 
 ---
 
+### Review gate (mandatory, existing and new code)
+
+SSOT, DRY and ODR are a merge gate, not a wish (review: a person or reviewer agent judges
+knowledge, not text). Every review of a work package checks the whole diff **and the code it
+touches** against this list, and a finding blocks the merge until it is fixed:
+
+- **A second definition** of a type, constant, limit, enum, error code, route, permission,
+  setting key, message key, file or folder name, port, or rule that already exists somewhere
+  (ODR). Re-export or import it instead.
+- **A copy of logic** that already exists (the same decision, walk, parse, format or check
+  written a second time), even when the text differs (DRY). Extract or reuse the one helper.
+- **Knowledge kept in two places by hand** and held together only by a test that compares
+  them (SSOT). Generate one from the other, or read both from one file.
+- **A magic number or string** that names a rule (a limit, a size, a timeout, a key) instead
+  of a named constant from its single home.
+- **Common bad patterns:** a function that does several unrelated things; a long parameter
+  list instead of a type; boolean flags that select behaviour; stringly typed values where a
+  type or enum exists; dead or commented-out code; a catch-all that hides errors; copy-paste
+  tests that should be one table-driven test.
+
+Existing code is held to the same rule: a reviewer who finds such a problem in code a package
+touches records it as a finding, and the clean-up milestone step removes what is already
+there. LINT-DRY (§7) catches copied blocks automatically; the rest is review.
+
+---
+
 ## 2. General
 
 - **Comments explain *why*, not *what*.** Names should make the *what* obvious.

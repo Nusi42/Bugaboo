@@ -41,7 +41,7 @@ flowchart LR
 2. **Build:** the builder reads `CLAUDE.md`, the glossary, the coding standards and the relevant decision records; writes the acceptance tests; implements until they pass. Edit-time checks (Claude Code hooks) catch problems after every file.
 3. **Self-check:** `cargo xtask check staged` and the package's tests are green before the branch is pushed.
 4. **CI:** `cargo xtask ci` in `bugaboo.win1`, on Windows and in WSL, both databases.
-5. **Review:** at least one reviewer agent with a fresh context reads the diff against the work package, the decision records and the security rules. Packages that touch sign-in, permissions, files, search, AI or personal data always get the security review as well. UI packages get a UX review from screenshots (four themes × computer and phone) compared with the UX design.
+5. **Review:** at least one reviewer agent with a fresh context reads the diff against the work package, the decision records and the security rules. Packages that touch sign-in, permissions, files, search, AI or personal data always get the security review as well. UI packages get a UX review from screenshots (four themes × computer and phone) compared with the UX design. Every review applies the SSOT/DRY/ODR review gate of coding-standards §1 to the diff and the code it touches; a finding there blocks the merge.
 6. **Fix and merge:** findings go back to the builder; the lead merges the builder's `WINn` branch into `WIN1`, runs `cargo xtask ci` again, and fast-forwards `main` in the master repository. `main` is always green.
 
 ### Definition of done (every work package)
@@ -52,6 +52,7 @@ flowchart LR
 - Every user-facing text in the message catalog, in plain words from the glossary.
 - New stored fields have personal-data marks; new dependencies have register entries.
 - User docs updated for anything people see; architecture or decision records updated for boundary changes.
+- No second definition, copied logic or hand-kept duplicate knowledge (SSOT, DRY, ODR review gate, coding-standards §1); LINT-DRY green.
 - Reviewed by a reviewer agent; findings fixed.
 - Screenshots in four themes on computer and phone for every changed screen.
 
