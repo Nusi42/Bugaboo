@@ -110,3 +110,11 @@ opt-level = 3
 
 [profile.dev.package.blake2]
 opt-level = 3
+
+# The theme file is read by three checks in one run, and the KDL of nine thousand lines took half a
+# second to read in an unoptimised build each time.
+[profile.dev.package.kdl]
+opt-level = 3
+
+[profile.dev.package.winnow]
+opt-level = 3
