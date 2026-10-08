@@ -234,7 +234,6 @@ pub(crate) fn project_id(text: &str) -> Result<ProjectId, ApiError> {
     path = "/api/v1/projects",
     operation_id = "listProjects",
     tag = "projects",
-    extensions(("x-never-stored" = json!(true))),
     params(ListParams, ProjectFilter),
     responses((status = 200, description = "The projects, by name.", body = Page<ProjectItem>), NotSignedInAnswer, NotFoundAnswer)
 )]
@@ -295,7 +294,6 @@ async fn list_projects(
     path = "/api/v1/projects/{project}",
     operation_id = "getProject",
     tag = "projects",
-    extensions(("x-never-stored" = json!(true))),
     params(("project" = String, Path, description = "The ID of the project, or its short name.")),
     responses((status = 200, description = "The project.", body = ProjectDetailBody), NotSignedInAnswer, NotFoundAnswer)
 )]

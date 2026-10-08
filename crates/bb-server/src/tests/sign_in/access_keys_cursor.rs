@@ -4,10 +4,10 @@
 
 use bb_app::access::Permission;
 use bb_app::auth::ProjectChoicesQuery;
-use bb_testing::each_database;
+use bb_testing::{TestResult, each_database};
 
 use super::policy_rig::{Member, Org, Run};
-use super::rig::{Outcome, Rig};
+use super::rig::{Rig, Tries};
 
 /// How many projects there are: more than a page of the list looks at (500), all of them
 /// unknown to the people of the test, except the one the reader is given.
@@ -65,9 +65,9 @@ fn assert_nothing_hidden(found: &[(Vec<String>, Option<String>)]) {
 
 #[tokio::test]
 async fn auth_07_the_cursor_of_the_projects_for_a_key_holds_no_name_of_a_project_hidden_from_the_person()
--> Outcome {
+-> TestResult {
     each_database("auth_07_choices_cursor_holds_nothing_hidden", async |db| {
-        let rig = Rig::start(db, 50).await?;
+        let rig = Rig::start_with(db, Tries::Roomy).await?;
         let org = Org::start(&rig).await?;
         for number in 0..PROJECTS {
             org.project(None, &format!("H{number:03}")).await?;

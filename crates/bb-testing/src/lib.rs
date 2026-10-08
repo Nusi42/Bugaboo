@@ -41,8 +41,11 @@ const POSTGRES_URL_VARIABLE: &str = "BB_TEST_POSTGRES_URL";
 /// The file that records which test ran on which database.
 const RECORD_VARIABLE: &str = "BB_DB_PARITY_FILE";
 
+/// The error of a test body or a test helper: any error, so `?` works on all of them.
+pub type Failure = Box<dyn Error + Send + Sync>;
+
 /// What a test body returns.
-pub type TestResult = Result<(), Box<dyn Error + Send + Sync>>;
+pub type TestResult = Result<(), Failure>;
 
 /// The databases Bugaboo supports.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -306,11 +309,7 @@ where
     result
 }
 
-fn with_context(
-    test_name: &str,
-    kind: DatabaseKind,
-    error: &(dyn Error + Send + Sync),
-) -> Box<dyn Error + Send + Sync> {
+fn with_context(test_name: &str, kind: DatabaseKind, error: &(dyn Error + Send + Sync)) -> Failure {
     format!("{test_name} failed on {}: {error}", kind.name()).into()
 }
 

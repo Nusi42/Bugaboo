@@ -3,76 +3,37 @@
 //! The rules for every single request (what may be kept, what never is) are also checked on all
 //! requests of all tests that use a `Browser` (`http::assert_cache_rules`).
 
-use axum::Router;
 use axum::body::Body;
-use axum::http::{Request, StatusCode};
-use bb_api::openapi;
+use axum::http::{Method, Request, StatusCode};
+use bb_api::openapi::operations;
 use bb_app::access::Permission;
 use bb_app::roles::MakeRole;
-use bb_testing::each_database;
+use bb_testing::{TestResult, each_database};
 use serde_json::json;
 use tower::ServiceExt as _;
 
-use super::http::{Browser, Failure, called, never_stored_reads, setup_body, totp};
-use super::rig::{Outcome, PASSWORD, Rig};
+use super::http::{ADA_EMAIL, Browser, called, never_stored_reads, totp};
+use super::rig::{PASSWORD, Rig};
 use super::status::app_with_probe;
 
 /// The addresses of every `GET` route in the API description.
-fn get_routes() -> Result<Vec<String>, Failure> {
-    let document = serde_json::to_value(openapi::document())?;
-    let mut routes = Vec::new();
-    for (path, item) in document["paths"].as_object().ok_or("no paths")? {
-        if item.get("get").is_some() {
-            routes.push(path.clone());
-        }
-    }
-    Ok(routes)
-}
-
-/// A second person (not an administrator): invited by `ada`, signed in.
-pub(super) async fn invited_person(
-    ada: &mut Browser,
-    app: &Router,
-    email: &str,
-) -> Result<Browser, Failure> {
-    let invitation = ada
-        .send(
-            "POST",
-            "/api/v1/auth/invitations",
-            Some(json!({ "email": email })),
-        )
-        .await?;
-    let secret = invitation.body["link_path"]
-        .as_str()
-        .and_then(|path| path.split_once('#'))
-        .map(|(_, secret)| secret.to_owned())
-        .ok_or("no link")?;
-    let mut person = Browser::new(app, &called());
-    let accepted = person
-        .send(
-            "POST",
-            "/api/v1/auth/invitation/accept",
-            Some(json!({"secret": secret, "display_name": "Bob", "password": PASSWORD})),
-        )
-        .await?;
-    assert_eq!(accepted.status, StatusCode::OK);
-    Ok(person)
+fn get_routes() -> Vec<String> {
+    operations()
+        .iter()
+        .filter(|operation| operation.method == Method::GET)
+        .map(|operation| operation.path.clone())
+        .collect()
 }
 
 #[tokio::test]
-async fn perf_03_every_get_answers_an_etag_and_304_on_a_match() -> Outcome {
+async fn perf_03_every_get_answers_an_etag_and_304_on_a_match() -> TestResult {
     each_database("perf_03_http_etags", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let app = app_with_probe(&rig, None);
-        let mut ada = Browser::new(&app, &called());
-        ada.send("POST", "/api/v1/auth/setup", Some(setup_body(&rig)))
-            .await?;
+        let mut ada = Browser::signed_in(&app, &rig).await?;
 
         // A role and a project for the routes that name one.
-        let admin = rig
-            .sign_in("ada@example.test", PASSWORD)
-            .await?
-            .session_token;
+        let admin = rig.sign_in(ADA_EMAIL, PASSWORD).await?.session_token;
         let role = rig
             .api()
             .make_role(
@@ -107,7 +68,7 @@ async fn perf_03_every_get_answers_an_etag_and_304_on_a_match() -> Outcome {
                 .ok_or("no person")?
                 .to_owned(),
         );
-        let routes = get_routes()?;
+        let routes = get_routes();
         assert!(routes.len() >= 9, "{routes:?}");
         let (mut kept, mut never_stored) = (0, 0);
         for template in &routes {
@@ -172,13 +133,11 @@ async fn perf_03_every_get_answers_an_etag_and_304_on_a_match() -> Outcome {
 }
 
 #[tokio::test]
-async fn perf_03_a_read_asked_about_again_is_not_modified_when_nothing_changed() -> Outcome {
+async fn perf_03_a_read_asked_about_again_is_not_modified_when_nothing_changed() -> TestResult {
     each_database("perf_03_http_not_modified", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let app = app_with_probe(&rig, None);
-        let mut ada = Browser::new(&app, &called());
-        ada.send("POST", "/api/v1/auth/setup", Some(setup_body(&rig)))
-            .await?;
+        let mut ada = Browser::signed_in(&app, &rig).await?;
         let path = "/api/v1/auth/sign-up-policy";
         let first = ada.send("GET", path, None).await?;
         let tag = first.header("etag").to_owned();
@@ -205,14 +164,12 @@ async fn perf_03_a_read_asked_about_again_is_not_modified_when_nothing_changed()
 }
 
 #[tokio::test]
-async fn perf_03_answers_with_personal_data_are_never_stored_for_anybody() -> Outcome {
+async fn perf_03_answers_with_personal_data_are_never_stored_for_anybody() -> TestResult {
     each_database("perf_03_http_personal_data", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let app = app_with_probe(&rig, None);
-        let mut ada = Browser::new(&app, &called());
-        ada.send("POST", "/api/v1/auth/setup", Some(setup_body(&rig)))
-            .await?;
-        let mut bob = invited_person(&mut ada, &app, "bob@example.test").await?;
+        let mut ada = Browser::signed_in(&app, &rig).await?;
+        let mut bob = ada.invite("bob@example.test", "Bob").await?;
         for person in [&mut ada, &mut bob] {
             for path in [
                 "/api/v1/auth/me",
@@ -236,17 +193,16 @@ async fn perf_03_answers_with_personal_data_are_never_stored_for_anybody() -> Ou
 }
 
 #[tokio::test]
-async fn perf_03_answers_with_a_secret_are_not_stored_or_compressed() -> Outcome {
+async fn perf_03_answers_with_a_secret_are_not_stored_or_compressed() -> TestResult {
     each_database("perf_03_http_secret_answers", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let app = app_with_probe(&rig, None);
         let mut ada = Browser::new(&app, &called());
         // The browser accepts every kind of compression it knows.
         ada.set_header("accept-encoding", "br, gzip, deflate, zstd");
 
         let secret_answers = [
-            ada.send("POST", "/api/v1/auth/setup", Some(setup_body(&rig)))
-                .await?,
+            ada.set_up(&rig).await?,
             ada.send(
                 "POST",
                 "/api/v1/auth/invitations",
@@ -263,7 +219,7 @@ async fn perf_03_answers_with_a_secret_are_not_stored_or_compressed() -> Outcome
                 "POST",
                 "/api/v1/auth/two-step/code-app/confirm",
                 Some(json!({
-                    "code": totp(&rig, "ada@example.test").await?,
+                    "code": totp(&rig, ADA_EMAIL).await?,
                     "password": PASSWORD,
                 })),
             )
@@ -285,13 +241,7 @@ async fn perf_03_answers_with_a_secret_are_not_stored_or_compressed() -> Outcome
         // field, but the session it starts is one).
         let mut again = Browser::new(&app, &called());
         again.set_header("accept-encoding", "br, gzip, deflate, zstd");
-        let signed_in = again
-            .send(
-                "POST",
-                "/api/v1/auth/sign-in",
-                Some(json!({"email": "ada@example.test", "password": PASSWORD})),
-            )
-            .await?;
+        let signed_in = again.sign_in(ADA_EMAIL, PASSWORD).await?;
         assert!(!signed_in.cookies().is_empty());
         assert_eq!(signed_in.header("content-encoding"), "");
         // The control: this very server does compress a big answer that holds no secret (the API
@@ -307,14 +257,12 @@ async fn perf_03_answers_with_a_secret_are_not_stored_or_compressed() -> Outcome
 }
 
 #[tokio::test]
-async fn sec_12_signing_out_clears_what_the_browser_cached() -> Outcome {
+async fn sec_12_signing_out_clears_what_the_browser_cached() -> TestResult {
     each_database("sec_12_http_clear_cache", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let app = app_with_probe(&rig, None);
         let mut ada = Browser::new(&app, &called());
-        let signed_in = ada
-            .send("POST", "/api/v1/auth/setup", Some(setup_body(&rig)))
-            .await?;
+        let signed_in = ada.set_up(&rig).await?;
         // Signing in does not clear anything.
         assert_eq!(signed_in.header("clear-site-data"), "");
 
@@ -326,13 +274,7 @@ async fn sec_12_signing_out_clears_what_the_browser_cached() -> Outcome {
 
         // The same for signing out everywhere.
         let mut again = Browser::new(&app, &called());
-        again
-            .send(
-                "POST",
-                "/api/v1/auth/sign-in",
-                Some(json!({"email": "ada@example.test", "password": PASSWORD})),
-            )
-            .await?;
+        again.sign_in(ADA_EMAIL, PASSWORD).await?;
         let everywhere = again.send("DELETE", "/api/v1/auth/sessions", None).await?;
         assert_eq!(everywhere.status, StatusCode::NO_CONTENT);
         assert_eq!(everywhere.header("clear-site-data"), "\"cache\"");
@@ -342,22 +284,13 @@ async fn sec_12_signing_out_clears_what_the_browser_cached() -> Outcome {
 }
 
 #[tokio::test]
-async fn sec_12_ending_the_own_session_is_signing_out_but_ending_another_is_not() -> Outcome {
+async fn sec_12_ending_the_own_session_is_signing_out_but_ending_another_is_not() -> TestResult {
     each_database("sec_12_http_end_own_session", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let app = app_with_probe(&rig, None);
-        let mut laptop = Browser::new(&app, &called());
-        laptop
-            .send("POST", "/api/v1/auth/setup", Some(setup_body(&rig)))
-            .await?;
+        let mut laptop = Browser::signed_in(&app, &rig).await?;
         let mut phone = Browser::new(&app, &called());
-        phone
-            .send(
-                "POST",
-                "/api/v1/auth/sign-in",
-                Some(json!({"email": "ada@example.test", "password": PASSWORD})),
-            )
-            .await?;
+        phone.sign_in(ADA_EMAIL, PASSWORD).await?;
         let listed = laptop.send("GET", "/api/v1/auth/sessions", None).await?;
         let sessions = listed.body["sessions"].as_array().ok_or("no sessions")?;
         let id_of = |current: bool| {

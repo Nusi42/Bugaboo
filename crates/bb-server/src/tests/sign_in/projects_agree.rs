@@ -11,11 +11,11 @@ use bb_core::access::{AppliesTo, FieldLevel, PeopleLevel};
 use bb_core::fields::Field;
 use bb_core::id::ProjectId;
 use bb_core::people_kinds::PeopleKind;
-use bb_testing::each_database;
+use bb_testing::{Failure, TestResult, each_database};
 
 use super::policy_rig::{Member, Org};
 use super::projects::{LEAD, VIEW, make};
-use super::rig::{Outcome, Rig};
+use super::rig::Rig;
 
 /// What a request decides for a person at a project: the permissions that count, the level of
 /// every field and of every kind of people information, from `Check access`.
@@ -52,7 +52,7 @@ async fn decided(org: &Org<'_>, person: &Member, project: ProjectId) -> Result<D
 
 /// An organization with a tree eleven deep, with groups, *No access* and levels, and the people
 /// who hold them (the administrator first).
-async fn scenario(org: &Org<'_>) -> Result<Vec<Member>, Box<dyn std::error::Error + Send + Sync>> {
+async fn scenario(org: &Org<'_>) -> Result<Vec<Member>, Failure> {
     let admin = org.admin.clone();
     // A tree ten deep, with a branch inside its third project.
     let mut chain: Vec<ProjectId> = Vec::new();
@@ -147,13 +147,13 @@ async fn scenario(org: &Org<'_>) -> Result<Vec<Member>, Box<dyn std::error::Erro
 
 #[tokio::test]
 async fn prj_02_the_list_the_preview_and_a_request_decide_alike_for_every_person_and_project()
--> Outcome {
+-> TestResult {
     each_database("prj_02_engines_agree", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let org = Org::start(&rig).await?;
         let people = scenario(&org).await?;
         let projects = rig.storage.project_tree().await?;
-        let tree = Tree::new(projects.iter().map(|project| (project.id, project.parent)));
+        let tree = Tree::of(&projects);
         let policy = rig.storage.policy_all().await?;
         let mut compared = 0;
         for person in &people {

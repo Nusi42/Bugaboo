@@ -267,7 +267,6 @@ async fn list_choices(
     path = "/api/v1/assignments",
     operation_id = "listAssignments",
     tag = "roles",
-    extensions(("x-never-stored" = json!(true))),
     params(ListParams),
     responses((status = 200, description = "The rows for the whole organization.", body = Page<AssignmentItem>), NotSignedInAnswer, ForbiddenAnswer)
 )]
@@ -328,7 +327,6 @@ async fn assign_role(
     path = "/api/v1/projects/{project}/assignments",
     operation_id = "listProjectAssignments",
     tag = "roles",
-    extensions(("x-never-stored" = json!(true))),
     params(("project" = String, Path, description = "The ID of the project."), ListParams),
     responses((status = 200, description = "The rows, those on the project first.", body = Page<AssignmentItem>), NotSignedInAnswer, ForbiddenAnswer, NotFoundAnswer)
 )]
@@ -432,7 +430,6 @@ async fn remove_assignment(
     path = "/api/v1/assignment-choices",
     operation_id = "listAssignmentChoices",
     tag = "roles",
-    extensions(("x-never-stored" = json!(true))),
     params(ListParams, ChoicesFilter),
     responses((status = 200, description = "What to choose from.", body = Page<ChoiceItem>), NotSignedInAnswer, ForbiddenAnswer)
 )]
@@ -454,7 +451,6 @@ async fn list_assignment_choices(
     path = "/api/v1/projects/{project}/assignment-choices",
     operation_id = "listProjectAssignmentChoices",
     tag = "roles",
-    extensions(("x-never-stored" = json!(true))),
     params(("project" = String, Path, description = "The ID of the project."), ListParams, ChoicesFilter),
     responses((status = 200, description = "What to choose from.", body = Page<ChoiceItem>), NotSignedInAnswer, ForbiddenAnswer, NotFoundAnswer)
 )]

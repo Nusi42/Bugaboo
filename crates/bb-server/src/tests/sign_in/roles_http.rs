@@ -3,11 +3,10 @@
 
 use axum::http::StatusCode;
 use bb_app::access::Permission;
-use bb_testing::each_database;
+use bb_testing::{TestResult, each_database};
 use serde_json::{Value, json};
 
 use super::people_http::{id_of, ids_of, start};
-use super::rig::Outcome;
 
 /// The permissions in an answer, as their keys.
 fn permissions_of(role: &Value) -> Vec<&str> {
@@ -20,7 +19,8 @@ fn permissions_of(role: &Value) -> Vec<&str> {
 }
 
 #[tokio::test]
-async fn sec_08_the_permission_catalogue_names_every_permission_and_where_it_counts() -> Outcome {
+async fn sec_08_the_permission_catalogue_names_every_permission_and_where_it_counts() -> TestResult
+{
     each_database("sec_08_http_catalogue", async |db| {
         let mut org = start(db).await?;
         let reply = org.ada.send("GET", "/api/v1/permissions", None).await?;
@@ -52,7 +52,7 @@ async fn sec_08_the_permission_catalogue_names_every_permission_and_where_it_cou
 }
 
 #[tokio::test]
-async fn sec_08_a_role_is_made_from_a_copy_changed_and_deleted_over_http() -> Outcome {
+async fn sec_08_a_role_is_made_from_a_copy_changed_and_deleted_over_http() -> TestResult {
     each_database("sec_08_http_copy_role", async |db| {
         let mut org = start(db).await?;
         let viewer = org.role_named("Viewer").await?;
@@ -118,7 +118,7 @@ async fn sec_08_a_role_is_made_from_a_copy_changed_and_deleted_over_http() -> Ou
 }
 
 #[tokio::test]
-async fn sec_08_a_role_is_changed_and_deleted_over_http() -> Outcome {
+async fn sec_08_a_role_is_changed_and_deleted_over_http() -> TestResult {
     each_database("sec_08_http_change_role", async |db| {
         let mut org = start(db).await?;
         let viewer = org.role_named("Viewer").await?;
@@ -192,7 +192,7 @@ async fn sec_08_a_role_is_changed_and_deleted_over_http() -> Outcome {
 }
 
 #[tokio::test]
-async fn sec_08_a_changed_starting_role_can_be_reset() -> Outcome {
+async fn sec_08_a_changed_starting_role_can_be_reset() -> TestResult {
     each_database("sec_08_http_reset_role", async |db| {
         let mut org = start(db).await?;
         let viewer = org.role_named("Viewer").await?;
@@ -232,7 +232,7 @@ async fn sec_08_a_changed_starting_role_can_be_reset() -> Outcome {
 }
 
 #[tokio::test]
-async fn sec_08_a_role_in_use_is_deleted_only_with_a_replacement() -> Outcome {
+async fn sec_08_a_role_in_use_is_deleted_only_with_a_replacement() -> TestResult {
     each_database("sec_08_http_delete_in_use", async |db| {
         let mut org = start(db).await?;
         let (mut bob, bob_id) = org.person("Bob Builder", "bob@example.test").await?;
@@ -342,7 +342,7 @@ async fn sec_08_a_role_in_use_is_deleted_only_with_a_replacement() -> Outcome {
 }
 
 #[tokio::test]
-async fn sec_08_nobody_gives_a_replacement_with_more_than_they_hold() -> Outcome {
+async fn sec_08_nobody_gives_a_replacement_with_more_than_they_hold() -> TestResult {
     each_database("sec_08_http_replacement_escalation", async |db| {
         let mut org = start(db).await?;
         let (_bob, bob_id) = org.person("Bob Builder", "bob@example.test").await?;

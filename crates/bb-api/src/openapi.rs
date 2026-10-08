@@ -8,10 +8,12 @@
 
 use std::sync::OnceLock;
 
+use axum::http::Method;
 use axum::http::header::{ETAG, RETRY_AFTER};
+use bb_api_words::marks;
 use bb_core::{ErrorCode, Problem, error_code::PROBLEM_CONTENT_TYPE};
 use utoipa::openapi::extensions::Extensions;
-use utoipa::openapi::path::{Operation, PathItem};
+use utoipa::openapi::path::{Operation as OperationSpec, PathItem};
 use utoipa::openapi::response::{ResponseBuilder, ResponsesBuilder};
 use utoipa::openapi::security::{ApiKey, ApiKeyValue, Http, HttpAuthScheme, SecurityScheme};
 use utoipa::openapi::{ContentBuilder, HeaderBuilder, ObjectBuilder, Ref, RefOr, Type};
@@ -19,17 +21,7 @@ use utoipa::{Modify, OpenApi};
 
 use crate::api::{AuthHandle, ProbeHandle};
 use crate::cookies::{CSRF_HEADER, Cookie};
-
-/// The mark of a field that holds a secret, set with `extensions` on the field of the answer type
-/// (`crate::etag` reads it from the description).
-pub const SECRET_MARK: &str = "x-secret";
-/// The mark of a route whose answer holds personal data and is never stored, set with
-/// `extensions` on the route.
-pub const NEVER_STORED_MARK: &str = "x-never-stored";
-
-/// The mark of a route that says what it needs: a key of the permission catalogue, or `public`,
-/// `signed-in` or `own-account` (`crate::permissions`, M1-F32).
-pub const PERMISSION_MARK: &str = "x-permission";
+use crate::permissions::{Answer, Declared};
 
 /// The name of the security scheme for the session cookie.
 const SESSION_SCHEME: &str = "sessionCookie";
@@ -136,9 +128,9 @@ impl Modify for StandardParts {
             SecurityScheme::ApiKey(ApiKey::Header(ApiKeyValue::new(CSRF_HEADER))),
         );
         for item in openapi.paths.paths.values_mut() {
-            for operation in operations(item) {
+            for (_, operation) in each_operation(item) {
                 add_standard_answers(operation);
-                add_permission(operation);
+                add_marks(operation);
             }
             if let Some(read) = item.get.as_mut() {
                 add_read_answers(read);
@@ -147,43 +139,104 @@ impl Modify for StandardParts {
     }
 }
 
-/// What the route needs, as `x-permission` (M1-F32): the declaration of `crate::permissions` for
-/// the operation ID. A route that is not declared gets no mark, and the test of that file fails.
-fn add_permission(operation: &mut Operation) {
-    let Some(declared) = operation
+/// What the route needs and what kind of answer it gives, as `x-permission`, `x-never-stored` and
+/// `x-secret` (M1-F32, PERF-03): the row of `crate::permissions` for the operation ID, the only
+/// place that decides. A route that has no row gets no mark, and ARCH-PERMS fails for it.
+fn add_marks(operation: &mut OperationSpec) {
+    let Some(row) = operation
         .operation_id
         .as_deref()
         .and_then(crate::permissions::declared)
     else {
         return;
     };
-    let mark = Extensions::builder()
-        .add(PERMISSION_MARK, serde_json::json!(declared.key()))
-        .build();
+    let mut marks =
+        Extensions::builder().add(marks::PERMISSION, serde_json::json!(row.needs.key()));
+    match row.kind {
+        Answer::NeverStored => marks = marks.add(marks::NEVER_STORED, serde_json::json!(true)),
+        Answer::Secret => marks = marks.add(marks::SECRET, serde_json::json!(true)),
+        Answer::Ordinary => {}
+    }
     operation
         .extensions
         .get_or_insert_with(Extensions::default)
-        .merge(mark);
+        .merge(marks.build());
 }
 
-fn operations(item: &mut PathItem) -> impl Iterator<Item = &mut Operation> {
+/// The operations of one address with the name of their method, the one list of methods.
+fn each_operation(item: &mut PathItem) -> impl Iterator<Item = (Method, &mut OperationSpec)> {
     [
-        &mut item.get,
-        &mut item.put,
-        &mut item.post,
-        &mut item.delete,
-        &mut item.options,
-        &mut item.head,
-        &mut item.patch,
-        &mut item.trace,
+        (Method::GET, &mut item.get),
+        (Method::PUT, &mut item.put),
+        (Method::POST, &mut item.post),
+        (Method::DELETE, &mut item.delete),
+        (Method::OPTIONS, &mut item.options),
+        (Method::HEAD, &mut item.head),
+        (Method::PATCH, &mut item.patch),
+        (Method::TRACE, &mut item.trace),
     ]
     .into_iter()
-    .filter_map(Option::as_mut)
+    .filter_map(|(method, operation)| operation.as_mut().map(|operation| (method, operation)))
+}
+
+/// One operation of the API description: a method on an address, with what the table of
+/// `crate::permissions` says about its route.
+#[derive(Clone, Debug)]
+pub struct Operation {
+    /// The method (`GET`, `PATCH`, …).
+    pub method: Method,
+    /// The address as the description writes it, with `{…}` for the parts that vary.
+    pub path: String,
+    /// The operation ID (`listProjects`).
+    pub id: String,
+    /// What the route needs.
+    pub needs: Declared,
+    /// What kind of answer it gives.
+    pub kind: Answer,
+}
+
+impl Operation {
+    /// Whether the operation changes something (any method but `GET`, `HEAD` and `OPTIONS`).
+    #[must_use]
+    pub fn changes(&self) -> bool {
+        crate::api::changes(&self.method)
+    }
+}
+
+/// Every operation of the API description that has a row in the table, in the order of address
+/// and method. This is the one walk over the routes: tests and checks that go through the routes
+/// use it, so a method nobody thought of (`PATCH`) is not left out. A route without a row is not
+/// in it; ARCH-PERMS fails for that route.
+#[must_use]
+pub fn operations() -> &'static [Operation] {
+    static OPERATIONS: OnceLock<Vec<Operation>> = OnceLock::new();
+    OPERATIONS.get_or_init(|| {
+        let mut document = document();
+        let mut found = Vec::new();
+        for (path, item) in &mut document.paths.paths {
+            for (method, operation) in each_operation(item) {
+                let row = operation
+                    .operation_id
+                    .as_deref()
+                    .and_then(crate::permissions::declared);
+                if let Some(row) = row {
+                    found.push(Operation {
+                        method,
+                        path: path.clone(),
+                        id: row.id.to_owned(),
+                        needs: row.needs,
+                        kind: row.kind,
+                    });
+                }
+            }
+        }
+        found
+    })
 }
 
 /// The `ETag` header of an answer and the `304` answer to a read that already has it (PERF-03,
 /// `crate::etag`); ARCH-LEAN requires both on every `GET`.
-fn add_read_answers(operation: &mut Operation) {
+fn add_read_answers(operation: &mut OperationSpec) {
     let etag = || {
         HeaderBuilder::new()
             .description(Some(
@@ -207,7 +260,7 @@ fn add_read_answers(operation: &mut Operation) {
 }
 
 /// Any request can be refused for going over a limit, or fail inside the server.
-fn add_standard_answers(operation: &mut Operation) {
+fn add_standard_answers(operation: &mut OperationSpec) {
     let problem = || {
         ContentBuilder::new()
             .schema(Some(Ref::from_schema_name("Problem")))

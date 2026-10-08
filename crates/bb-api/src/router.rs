@@ -50,6 +50,8 @@ const JSON_TYPES: [&str; 2] = ["application/json", "application/problem+json"];
 /// The compression quality, written once in a file that the budget check of the first page
 /// (PERF-BUNDLE) reads too, so the size it measures is the size this server sends.
 const COMPRESSION_SETTINGS: &str = include_str!("../../../tools/dev/compression.json");
+/// How long a client may take to send the headers of a request when nothing else is set.
+pub const DEFAULT_HEADER_TIMEOUT: Duration = Duration::from_secs(30);
 /// Running requests get this long to finish when the server stops.
 const SHUTDOWN_GRACE: Duration = Duration::from_secs(10);
 
@@ -75,6 +77,26 @@ pub struct Options {
     /// How the server measures itself, for the status page and `/health/ready`;
     /// `ProbeHandle::none()` when there is no database yet.
     pub probe: ProbeHandle,
+}
+
+#[cfg(feature = "testing")]
+impl Options {
+    /// Options for a router in a test: no browser app, plain HTTP, no trusted proxy, the default
+    /// limits and no database behind the sign-in routes. A test changes what it needs with
+    /// `Options { web, ..Options::for_tests() }`.
+    #[must_use]
+    pub fn for_tests() -> Self {
+        Self {
+            web: WebSource::Folder("no/such/folder".into()),
+            hsts_max_age: None,
+            header_timeout: DEFAULT_HEADER_TIMEOUT,
+            data_folder: std::env::temp_dir(),
+            trusted_proxies: vec![],
+            limits: LimitsConfig::default(),
+            auth: AuthHandle::none(),
+            probe: ProbeHandle::none(),
+        }
+    }
 }
 
 #[derive(Clone)]
@@ -424,13 +446,7 @@ mod tests {
     fn options(web: WebSource) -> Options {
         Options {
             web,
-            hsts_max_age: None,
-            header_timeout: Duration::from_secs(30),
-            data_folder: std::env::temp_dir(),
-            trusted_proxies: vec![],
-            limits: LimitsConfig::default(),
-            auth: AuthHandle::none(),
-            probe: ProbeHandle::none(),
+            ..Options::for_tests()
         }
     }
 

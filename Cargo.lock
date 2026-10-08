@@ -410,6 +410,8 @@ version = "0.0.0"
 dependencies = [
  "axum",
  "base64ct",
+ "bb-api",
+ "bb-api-words",
  "bb-app",
  "bb-auth",
  "bb-core",
@@ -437,6 +439,10 @@ dependencies = [
  "utoipa",
  "utoipa-axum",
 ]
+
+[[package]]
+name = "bb-api-words"
+version = "0.0.0"
 
 [[package]]
 name = "bb-app"
@@ -566,6 +572,7 @@ dependencies = [
  "axum",
  "base64ct",
  "bb-api",
+ "bb-api-words",
  "bb-app",
  "bb-auth",
  "bb-core",
@@ -4756,6 +4763,8 @@ name = "xtask"
 version = "0.0.0"
 dependencies = [
  "anyhow",
+ "bb-api-words",
+ "bb-policy",
  "brotli",
  "clap",
  "ctrlc",

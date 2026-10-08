@@ -7,11 +7,12 @@ use bb_auth::AccessKeySecret;
 use bb_core::ErrorCode;
 use bb_core::access_key::KeyChoice;
 use bb_core::network::NetworkPrefix;
-use bb_testing::each_database;
+use bb_testing::{Failure, TestResult, each_database};
 
 use super::access_keys::key_of;
+use super::http::ADA_EMAIL;
 use super::policy_rig::Org;
-use super::rig::{Outcome, Rig, refused};
+use super::rig::{Rig, Tries, refused};
 
 /// A request from a network, with whatever the caller holds: *Check access* for the administrator.
 async fn probe_from(rig: &Rig, network: &str, credential: &str) -> Result<(), AppError> {
@@ -20,7 +21,7 @@ async fn probe_from(rig: &Rig, network: &str, credential: &str) -> Result<(), Ap
         ..RequestInfo::default()
     };
     let ada = rig
-        .person_id("ada@example.test")
+        .person_id(ADA_EMAIL)
         .await
         .map_err(|error| AppError::Internal(error.to_string()))?;
     rig.api()
@@ -36,19 +37,21 @@ async fn probe_from(rig: &Rig, network: &str, credential: &str) -> Result<(), Ap
         .map(|_| ())
 }
 
-fn a_guess() -> Result<String, Box<dyn std::error::Error + Send + Sync>> {
+fn a_guess() -> Result<String, Failure> {
     Ok(AccessKeySecret::generate()?.encode().as_str().to_owned())
 }
 
 const HERE: &str = "203.0.113.0";
 
+/// Two failed tries per network and minute: a limit that parallel use would pass at once if every
+/// request counted as a try while it is looked at.
+const TWO_TRIES: Tries = Tries::Exactly(2);
+
 #[tokio::test]
-async fn sec_14_keys_that_work_are_never_turned_away_when_they_are_used_at_the_same_time() -> Outcome
-{
+async fn sec_14_keys_that_work_are_never_turned_away_when_they_are_used_at_the_same_time()
+-> TestResult {
     each_database("sec_14_parallel_working_keys", async |db| {
-        // Two failed tries per network and minute: a limit that parallel use would pass at once if
-        // every request counted as a try while it is looked at.
-        let rig = Rig::start(db, 2).await?;
+        let rig = Rig::start_with(db, TWO_TRIES).await?;
         let org = Org::start(&rig).await?;
         let key = key_of(&rig, &org.admin, KeyChoice::Everything).await?;
         let call = || probe_from(&rig, HERE, &key);
@@ -75,9 +78,9 @@ async fn sec_14_keys_that_work_are_never_turned_away_when_they_are_used_at_the_s
 
 #[tokio::test]
 async fn sec_14_a_network_over_its_limit_is_made_to_wait_but_a_key_that_works_still_passes()
--> Outcome {
+-> TestResult {
     each_database("sec_14_over_the_limit_a_working_key_passes", async |db| {
-        let rig = Rig::start(db, 3).await?;
+        let rig = Rig::start_with(db, Tries::Few).await?;
         let org = Org::start(&rig).await?;
         let key = key_of(&rig, &org.admin, KeyChoice::Everything).await?;
         // A neighbour on the same network guesses until the network is over its limit.

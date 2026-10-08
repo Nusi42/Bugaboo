@@ -190,7 +190,6 @@ pub(crate) struct FieldCellPath {
     path = "/api/v1/field-permissions",
     operation_id = "getFieldPermissions",
     tag = "access",
-    extensions(("x-never-stored" = json!(true))),
     params(PlaceParams),
     responses((status = 200, description = "The field permissions.", body = LevelTableBody<Field, FieldLevel>), NotSignedInAnswer, ForbiddenAnswer, NotFoundAnswer)
 )]

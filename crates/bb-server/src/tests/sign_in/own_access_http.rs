@@ -3,12 +3,11 @@
 //! row that gives it is theirs or their group's.
 
 use axum::http::StatusCode;
-use bb_testing::each_database;
+use bb_testing::{Failure, TestResult, each_database};
 use serde_json::{Value, json};
 
-use super::http::{Browser, Failure};
+use super::http::Browser;
 use super::people_http::{Organization, start};
-use super::rig::Outcome;
 
 const CHECK: &str = "/api/v1/own-access/check-change";
 const BOTH: [&str; 2] = ["decide-roles", "manage-roles"];
@@ -103,7 +102,7 @@ async fn admins_through_a_group(org: &mut Organization) -> Result<Admins, Failur
 
 #[tokio::test]
 async fn sec_08_taking_a_row_of_a_group_you_are_in_is_told_to_take_your_way_to_manage_roles()
--> Outcome {
+-> TestResult {
     each_database("sec_08_own_loss_rows", async |db| {
         let mut org = start(db).await?;
         let mut admins = admins_through_a_group(&mut org).await?;
@@ -147,7 +146,7 @@ async fn sec_08_taking_a_row_of_a_group_you_are_in_is_told_to_take_your_way_to_m
 }
 
 #[tokio::test]
-async fn sec_08_leaving_or_deleting_a_group_that_gives_you_the_way_is_told() -> Outcome {
+async fn sec_08_leaving_or_deleting_a_group_that_gives_you_the_way_is_told() -> TestResult {
     each_database("sec_08_own_loss_groups", async |db| {
         let mut org = start(db).await?;
         let admins = admins_through_a_group(&mut org).await?;
@@ -185,7 +184,7 @@ async fn sec_08_leaving_or_deleting_a_group_that_gives_you_the_way_is_told() -> 
 
 #[tokio::test]
 async fn sec_08_no_access_on_yourself_or_your_group_is_told_when_it_takes_the_way_to_decide()
--> Outcome {
+-> TestResult {
     each_database("sec_08_own_loss_no_access", async |db| {
         let mut org = start(db).await?;
         let lead = org.role_named("Project lead").await?;
@@ -220,8 +219,8 @@ async fn sec_08_no_access_on_yourself_or_your_group_is_told_when_it_takes_the_wa
 }
 
 #[tokio::test]
-async fn sec_08_changing_or_deleting_a_role_you_hold_is_told_when_it_takes_the_way_away() -> Outcome
-{
+async fn sec_08_changing_or_deleting_a_role_you_hold_is_told_when_it_takes_the_way_away()
+-> TestResult {
     each_database("sec_08_own_loss_roles", async |db| {
         let mut org = start(db).await?;
         let administrator = org.role_named("Administrator").await?;
@@ -282,7 +281,7 @@ async fn sec_08_changing_or_deleting_a_role_you_hold_is_told_when_it_takes_the_w
 
 #[tokio::test]
 async fn sec_08_a_person_who_may_not_make_the_change_is_told_it_takes_nothing_and_nothing_more()
--> Outcome {
+-> TestResult {
     each_database("sec_08_own_loss_silent", async |db| {
         let mut org = start(db).await?;
         let admins = admins_through_a_group(&mut org).await?;

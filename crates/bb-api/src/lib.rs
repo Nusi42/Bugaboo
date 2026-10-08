@@ -20,7 +20,7 @@ mod listener;
 mod logging;
 pub mod openapi;
 mod paging;
-mod permissions;
+pub mod permissions;
 mod router;
 mod seal;
 pub mod tls;
@@ -29,7 +29,9 @@ mod web;
 pub use api::{AuthHandle, BODY_LIMIT_BYTES, ProbeHandle, TIME_LIMIT, VERSION_PATH};
 pub use errors::{ApiError, ApiJson};
 pub use failures::{DEFAULT_SIGN_IN_FAILURES_PER_MINUTE, FailureLimits, MAX_WAIT};
-pub use headers::{HSTS_MAX_AGE_SELF_SIGNED, HSTS_MAX_AGE_TRUSTED};
+pub use headers::{
+    HSTS_MAX_AGE_SELF_SIGNED, HSTS_MAX_AGE_TRUSTED, HSTS_NAME, SECURITY_HEADERS, hsts_value,
+};
 pub use limits::{
     DEFAULT_ACCESS_KEY_REQUESTS_PER_MINUTE, DEFAULT_REQUESTS_PER_MINUTE,
     DEFAULT_SIGN_IN_ATTEMPTS_PER_MINUTE, Limits, LimitsConfig,
@@ -37,10 +39,12 @@ pub use limits::{
 pub use listener::{
     Accepted, ClientAddr, Connection, DEFAULT_MAX_CONNECTIONS, Incoming, ListenerOptions,
 };
-pub use router::{Options, router, serve};
+pub use router::{DEFAULT_HEADER_TIMEOUT, Options, router, serve};
 pub use web::WebSource;
 
 // Used by the integration tests in `tests/` only (`unused_crate_dependencies`).
+#[cfg(test)]
+use bb_api as _;
 #[cfg(test)]
 use h2 as _;
 #[cfg(test)]

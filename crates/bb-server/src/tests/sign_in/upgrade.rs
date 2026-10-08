@@ -9,14 +9,15 @@ use bb_core::id::UserId;
 use bb_core::settings::SettingValue;
 use bb_core::sign_in::SecurityAction;
 use bb_store::{Database, M1Person, M3Setting, Scopes};
-use bb_testing::each_database;
+use bb_testing::{TestResult, each_database};
 use jiff::Timestamp;
 use zeroize::Zeroizing;
 
-use super::rig::{Outcome, PASSWORD, Rig};
+use super::http::ADA_EMAIL;
+use super::rig::{PASSWORD, Rig};
 
 #[tokio::test]
-async fn sec_08_m1_administrators_become_administrators_and_nobody_else_does() -> Outcome {
+async fn sec_08_m1_administrators_become_administrators_and_nobody_else_does() -> TestResult {
     each_database("sec_08_m1_upgrade", async |db| {
         // The database as M1 left it: migrations 1 and 2, two administrators and one more person.
         let old = Database::connect(db.url()).await?;
@@ -31,7 +32,7 @@ async fn sec_08_m1_administrators_become_administrators_and_nobody_else_does() -
                 M1Person {
                     id: ada,
                     display_name: "Ada Admin",
-                    email: "ada@example.test",
+                    email: ADA_EMAIL,
                     password_hash: &hash,
                     administrator: true,
                 },
@@ -71,7 +72,7 @@ async fn sec_08_m1_administrators_become_administrators_and_nobody_else_does() -
         assert!(rig.setup_code.is_empty());
 
         // They sign in as before and open Organization settings: they hold what its screens ask for.
-        for email in ["ada@example.test", "cy@example.test"] {
+        for email in [ADA_EMAIL, "cy@example.test"] {
             let started = rig.sign_in(email, PASSWORD).await?;
             let held = rig.permissions(&started.session_token).await?;
             for permission in [
@@ -109,7 +110,7 @@ async fn sec_08_m1_administrators_become_administrators_and_nobody_else_does() -
 
 /// The words a person's choice of theme had before the mode and the two themes replaced it.
 #[tokio::test]
-async fn cfg_04_the_theme_of_m1_becomes_the_mode_and_the_light_and_the_dark_theme() -> Outcome {
+async fn cfg_04_the_theme_of_m1_becomes_the_mode_and_the_light_and_the_dark_theme() -> TestResult {
     each_database("cfg_04_theme_carried_over", async |db| {
         let old = Database::connect(db.url()).await?;
         old.migrate_up_to(2, Timestamp::UNIX_EPOCH).await?;
@@ -123,7 +124,7 @@ async fn cfg_04_the_theme_of_m1_becomes_the_mode_and_the_light_and_the_dark_them
                 id: id(*n),
                 display_name: name,
                 email: [
-                    "ada@example.test",
+                    ADA_EMAIL,
                     "bea@example.test",
                     "cy@example.test",
                     "di@example.test",

@@ -27,7 +27,7 @@ use windows_service::service_manager::{ServiceManager, ServiceManagerAccess};
 
 use super::{Found, NAME, refused, tell_about_setup_code};
 use crate::cli::{ConfigArgs, load_settings, serve};
-use crate::data_folder::{DataFolder, check_for_service};
+use crate::data_folder::{ADMINISTRATORS_SID, DataFolder, check_for_service};
 use crate::{log, output};
 
 /// The Windows error numbers that are answered with a plain sentence.
@@ -36,8 +36,6 @@ const SERVICE_DOES_NOT_EXIST: i32 = 1060;
 const NOT_RUN_BY_SERVICE_MANAGER: i32 = 1063;
 const SERVICE_EXISTS: i32 = 1073;
 
-/// The built-in group of administrators, by its fixed SID (names change with the language).
-const ADMINISTRATORS: &str = "*S-1-5-32-544";
 /// How long a service gets to stop before the uninstall gives up.
 const STOP_WAIT: Duration = Duration::from_secs(30);
 const STOP_POLL: Duration = Duration::from_millis(250);
@@ -94,7 +92,7 @@ fn grant(data_dir: &std::path::Path) -> anyhow::Result<()> {
     let icacls = PathBuf::from(system).join("System32").join("icacls.exe");
     for permission in [
         format!("{}:(OI)(CI)F", account()),
-        format!("{ADMINISTRATORS}:(OI)(CI)R"),
+        format!("*{ADMINISTRATORS_SID}:(OI)(CI)R"),
     ] {
         let output = std::process::Command::new(&icacls)
             .arg(data_dir)

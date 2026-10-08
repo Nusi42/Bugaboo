@@ -210,7 +210,6 @@ pub(crate) fn choice_page(
     path = "/api/v1/groups",
     operation_id = "listGroups",
     tag = "groups",
-    extensions(("x-never-stored" = json!(true))),
     params(ListParams),
     responses((status = 200, description = "The groups, by name.", body = Page<GroupItem>), NotSignedInAnswer, ForbiddenAnswer)
 )]
@@ -288,7 +287,6 @@ async fn make_group(
     path = "/api/v1/groups/{group_id}",
     operation_id = "getGroup",
     tag = "groups",
-    extensions(("x-never-stored" = json!(true))),
     params(("group_id" = String, Path, description = "The ID of the group.")),
     responses((status = 200, description = "The group.", body = GroupDetailBody), NotSignedInAnswer, ForbiddenAnswer, NotFoundAnswer)
 )]
@@ -395,7 +393,6 @@ async fn delete_group(
     path = "/api/v1/groups/{group_id}/members",
     operation_id = "listGroupMembers",
     tag = "groups",
-    extensions(("x-never-stored" = json!(true))),
     params(("group_id" = String, Path, description = "The ID of the group."), ListParams),
     responses((status = 200, description = "The people in the group.", body = Page<MemberItem>), NotSignedInAnswer, ForbiddenAnswer, NotFoundAnswer)
 )]
@@ -522,7 +519,6 @@ async fn remove_group_member(
     path = "/api/v1/groups/{group_id}/member-choices",
     operation_id = "listMemberChoices",
     tag = "groups",
-    extensions(("x-never-stored" = json!(true))),
     params(("group_id" = String, Path, description = "The ID of the group."), ListParams, ChoiceFilter),
     responses((status = 200, description = "The people to choose from.", body = Page<ChoiceItem>), NotSignedInAnswer, ForbiddenAnswer, NotFoundAnswer)
 )]

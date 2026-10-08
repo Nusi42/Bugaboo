@@ -2,7 +2,7 @@
 //! makes the sample organization (architecture §11), or checks that it is made the same every
 //! time (TEST-SAMPLE-DATA).
 //!
-//! xtask runs the `bb-sample` program as a process, so xtask itself depends on no product crate.
+//! xtask runs the `bb-sample` program as a process, so xtask itself does not link the store or the use cases.
 //! The program never reads the clock: this file hands it the start moment (now; a fixed moment
 //! for `--check`, so the runs are comparable).
 

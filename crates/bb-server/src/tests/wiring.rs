@@ -2,21 +2,17 @@
 //! setup code of the first start is made (AUTH-09, SEC-16, M1-F19, M1-F24).
 
 use std::path::Path;
-use std::time::Duration;
 
 use axum::Router;
-use axum::body::Body;
-use axum::http::{Request, StatusCode, header};
-use bb_api::{LimitsConfig, Options, WebSource, router};
-use bb_testing::{TestResult, each_database};
-use serde_json::{Value, json};
-use tower::ServiceExt as _;
+use axum::http::StatusCode;
+use bb_api::{Options, router};
+use bb_testing::{Failure, TestResult, each_database};
+use serde_json::Value;
 
 use super::{Serving, Wired, wire};
 use crate::config::{Settings, Sources, resolve};
 use crate::data_folder::DataFolder;
-
-type Failure = Box<dyn std::error::Error + Send + Sync>;
+use crate::sign_in_tests::http::{Browser, called, setup_body};
 
 fn settings(data: &Path, database: Option<&str>) -> Result<Settings, Failure> {
     let mut cli = vec![
@@ -36,46 +32,25 @@ fn settings(data: &Path, database: Option<&str>) -> Result<Settings, Failure> {
 
 fn app(wired: Wired, data: &Path) -> Router {
     router(Options {
-        web: WebSource::Folder("no/such/folder".into()),
-        hsts_max_age: None,
-        header_timeout: Duration::from_secs(30),
         data_folder: data.to_path_buf(),
-        trusted_proxies: vec![],
-        limits: LimitsConfig::default(),
         auth: wired.auth,
         probe: wired.probe,
+        ..Options::for_tests()
     })
 }
 
+/// One request to the router of the start, with the same browser the sign-in tests use: what the
+/// status is and what the body says.
 async fn call(
     app: &Router,
     method: &str,
     path: &str,
     body: Option<Value>,
 ) -> Result<(StatusCode, Value), Failure> {
-    let request = Request::builder()
-        .method(method)
-        .uri(path)
-        .header(header::HOST, "localhost:47200")
-        .header(header::ORIGIN, "http://localhost:47200")
-        .header(header::CONTENT_TYPE, "application/json")
-        .body(body.map_or_else(Body::empty, |value| Body::from(value.to_string())))?;
-    let response = app.clone().oneshot(request).await?;
-    let status = response.status();
-    let bytes = axum::body::to_bytes(response.into_body(), usize::MAX).await?;
-    Ok((
-        status,
-        serde_json::from_slice(&bytes).unwrap_or(Value::Null),
-    ))
-}
-
-fn setup_body(code: &str) -> Value {
-    json!({
-        "code": code,
-        "display_name": "Ada Admin",
-        "email": "ada@example.test",
-        "password": "Tr4mpoline-Quiet-Harbor-81",
-    })
+    let reply = Browser::new(app, &called())
+        .send(method, path, body)
+        .await?;
+    Ok((reply.status, reply.body))
 }
 
 #[tokio::test]

@@ -3,6 +3,7 @@
 
 // Dependencies of the library that this test does not use itself (`unused_crate_dependencies`).
 use base64ct as _;
+use bb_api_words as _;
 use bb_app as _;
 use bb_auth as _;
 use bb_core as _;
@@ -34,7 +35,7 @@ mod logs {
     use axum::body::Body;
     use axum::extract::ConnectInfo;
     use axum::http::Request;
-    use bb_api::{ClientAddr, Options, WebSource, router};
+    use bb_api::{ClientAddr, Options, router};
     use tower::ServiceExt as _;
 
     #[derive(Clone, Default)]
@@ -62,16 +63,7 @@ mod logs {
             .finish();
         let _guard = tracing::subscriber::set_default(subscriber);
 
-        let app = router(Options {
-            web: WebSource::Folder("no/such/folder".into()),
-            hsts_max_age: None,
-            header_timeout: std::time::Duration::from_secs(30),
-            data_folder: std::env::temp_dir(),
-            trusted_proxies: vec![],
-            limits: bb_api::LimitsConfig::default(),
-            auth: bb_api::AuthHandle::none(),
-            probe: bb_api::ProbeHandle::none(),
-        });
+        let app = router(Options::for_tests());
         let mut request = Request::get("/users/jane.doe@example.org/profile?name=Jane+Doe")
             .header("authorization", "Bearer secret-token-123")
             .header("cookie", "session=abc123")

@@ -8,9 +8,10 @@
 
 use std::time::{Duration, Instant};
 
-use bb_testing::each_database;
+use bb_testing::{TestResult, each_database};
 
-use super::rig::{Outcome, PASSWORD, Rig};
+use super::http::ADA_EMAIL;
+use super::rig::{PASSWORD, Rig, Tries};
 
 /// How many tries of each kind. Odd, so the middle is one measurement.
 const TRIES: usize = 15;
@@ -21,25 +22,21 @@ fn middle(mut times: Vec<Duration>) -> Duration {
 }
 
 #[tokio::test(flavor = "multi_thread")]
-async fn auth_01_an_unknown_account_takes_as_long_as_a_wrong_password() -> Outcome {
+async fn auth_01_an_unknown_account_takes_as_long_as_a_wrong_password() -> TestResult {
     each_database("auth_01_timing", async |db| {
         // No limit gets in the way of the measurement.
-        let rig = Rig::start(db, 100_000).await?;
-        rig.admin("ada@example.test").await?;
+        let rig = Rig::start_with(db, Tries::Unreached).await?;
+        rig.admin(ADA_EMAIL).await?;
         // A first round warms up the thread pool and the memory of the hashing.
         for _ in 0..3 {
-            let _ = rig.sign_in("ada@example.test", "Wrong-Password-1").await;
+            let _ = rig.sign_in(ADA_EMAIL, "Wrong-Password-1").await;
             let _ = rig.sign_in("warmup@example.test", "Wrong-Password-1").await;
         }
         let mut known = Vec::new();
         let mut unknown = Vec::new();
         for number in 0..TRIES {
             let start = Instant::now();
-            assert!(
-                rig.sign_in("ada@example.test", "Wrong-Password-1")
-                    .await
-                    .is_err()
-            );
+            assert!(rig.sign_in(ADA_EMAIL, "Wrong-Password-1").await.is_err());
             known.push(start.elapsed());
             let start = Instant::now();
             assert!(

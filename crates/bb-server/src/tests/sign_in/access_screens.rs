@@ -2,18 +2,17 @@
 //! SEC-06, SEC-03, PRIV-12, PRIV-13, UX §5.2): what the screens read and set, with the refusals a
 //! person gets, and what never reaches a browser that may not see it.
 
-use axum::Router;
 use axum::http::StatusCode;
 use bb_app::access::{Permission, StartingRole};
 use bb_app::auth::{AcceptInvitation, CreateInvitation};
 use bb_app::roles::{ChangeRole, RolesQuery};
 use bb_core::id::{ProjectId, RoleId};
-use bb_testing::each_database;
+use bb_testing::{Failure, TestResult, each_database};
 use serde_json::{Value, json};
 
-use super::http::{Browser, Failure, called};
+use super::http::{ADA_EMAIL, Browser, called};
 use super::policy_rig::{Member, Org};
-use super::rig::{Outcome, PASSWORD, Rig, secret_of};
+use super::rig::{PASSWORD, Rig, secret_of};
 use super::status::app_with_probe;
 
 pub(super) const FIELDS: &str = "/api/v1/field-permissions";
@@ -82,20 +81,6 @@ pub(super) async fn named(org: &Org<'_>, name: &str, email: &str) -> Result<Memb
     })
 }
 
-/// A browser of the person with this address, signed in.
-pub(super) async fn browser_of(app: &Router, email: &str) -> Result<Browser, Failure> {
-    let mut browser = Browser::new(app, &called());
-    let signed_in = browser
-        .send(
-            "POST",
-            "/api/v1/auth/sign-in",
-            Some(json!({"email": email, "password": PASSWORD})),
-        )
-        .await?;
-    assert_eq!(signed_in.status, StatusCode::OK, "{}", signed_in.body);
-    Ok(browser)
-}
-
 /// The cell of a table: the row of the subject, the cell of the role.
 pub(super) fn cell<'a>(
     table: &'a Value,
@@ -121,16 +106,16 @@ pub(super) fn at(project: ProjectId) -> String {
 
 #[tokio::test]
 async fn sec_04_a_field_level_set_on_a_project_applies_to_its_sub_projects_and_can_be_changed_below()
--> Outcome {
+-> TestResult {
     each_database("sec_04_levels_over_http", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let org = Org::start(&rig).await?;
         let app = app_with_probe(&rig, None);
         let acme = org.project(None, "ACME").await?.id;
         let web = org.project(Some(acme), "WEB").await?.id;
         let api = org.project(Some(web), "API").await?.id;
         let contributor = role(&org, StartingRole::Contributor).await?;
-        let mut ada = browser_of(&app, "ada@example.test").await?;
+        let mut ada = Browser::signed_in_as(&app, ADA_EMAIL).await?;
         let cell_of =
             async |ada: &mut Browser, place: Option<ProjectId>| -> Result<Value, Failure> {
                 let path = place.map_or_else(
@@ -237,10 +222,10 @@ async fn sec_04_a_field_level_set_on_a_project_applies_to_its_sub_projects_and_c
 }
 
 #[tokio::test]
-async fn sec_04_who_may_change_a_level_is_judged_in_the_place_and_never_above_their_own() -> Outcome
-{
+async fn sec_04_who_may_change_a_level_is_judged_in_the_place_and_never_above_their_own()
+-> TestResult {
     each_database("sec_04_levels_who_may", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let org = Org::start(&rig).await?;
         let app = app_with_probe(&rig, None);
         let acme = org.project(None, "ACME").await?.id;
@@ -250,7 +235,7 @@ async fn sec_04_who_may_change_a_level_is_judged_in_the_place_and_never_above_th
         let contributor = role(&org, StartingRole::Contributor).await?;
         let lea = org.person().await?;
         org.give(&lea, lead_role, acme).await?;
-        let mut lea_browser = browser_of(&app, "person1@example.test").await?;
+        let mut lea_browser = Browser::signed_in_as(&app, "person1@example.test").await?;
         let cell_path = |project: Option<ProjectId>| {
             format!(
                 "{FIELDS}/{contributor}/cost-center{}",
@@ -311,9 +296,9 @@ async fn sec_04_who_may_change_a_level_is_judged_in_the_place_and_never_above_th
 }
 
 #[tokio::test]
-async fn sec_04_nobody_sets_a_level_above_their_own_over_http() -> Outcome {
+async fn sec_04_nobody_sets_a_level_above_their_own_over_http() -> TestResult {
     each_database("sec_04_levels_above_own", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let org = Org::start(&rig).await?;
         let app = app_with_probe(&rig, None);
         let acme = org.project(None, "ACME").await?.id;
@@ -326,7 +311,7 @@ async fn sec_04_nobody_sets_a_level_above_their_own_over_http() -> Outcome {
                 &[Permission::SeeProjects, Permission::DecideWhatRolesSee],
             )
             .await?;
-        let mut ada = browser_of(&app, "ada@example.test").await?;
+        let mut ada = Browser::signed_in_as(&app, ADA_EMAIL).await?;
         let own = ada
             .send(
                 "PUT",
@@ -337,7 +322,7 @@ async fn sec_04_nobody_sets_a_level_above_their_own_over_http() -> Outcome {
         assert_eq!(own.status, StatusCode::NO_CONTENT);
         let dee = org.person().await?;
         org.give(&dee, narrow.id, acme).await?;
-        let mut dee_browser = browser_of(&app, "person1@example.test").await?;
+        let mut dee_browser = Browser::signed_in_as(&app, "person1@example.test").await?;
         let table = dee_browser
             .send("GET", &format!("{FIELDS}{}", at(acme)), None)
             .await?;
@@ -391,15 +376,15 @@ async fn sec_04_nobody_sets_a_level_above_their_own_over_http() -> Outcome {
 
 #[tokio::test]
 async fn priv_12_who_sees_people_is_set_per_role_and_kind_and_inherited_like_field_levels()
--> Outcome {
+-> TestResult {
     each_database("priv_12_kinds_over_http", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let org = Org::start(&rig).await?;
         let app = app_with_probe(&rig, None);
         let acme = org.project(None, "ACME").await?.id;
         let web = org.project(Some(acme), "WEB").await?.id;
         let guest = role(&org, StartingRole::Guest).await?;
-        let mut ada = browser_of(&app, "ada@example.test").await?;
+        let mut ada = Browser::signed_in_as(&app, ADA_EMAIL).await?;
         let table = ada.send("GET", PEOPLE, None).await?;
         assert_eq!(table.status, StatusCode::OK, "{}", table.body);
         // The ten kinds, as the architecture lists them, in the order of the catalogue; three
@@ -471,9 +456,9 @@ async fn priv_12_who_sees_people_is_set_per_role_and_kind_and_inherited_like_fie
 
 #[tokio::test]
 async fn priv_12_a_guest_sees_role_only_or_someone_as_set_and_no_name_reaches_their_browser()
--> Outcome {
+-> TestResult {
     each_database("priv_12_guest_over_http", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let org = Org::start(&rig).await?;
         let app = app_with_probe(&rig, None);
         let acme = org.project(None, "ACME").await?.id;
@@ -498,8 +483,8 @@ async fn priv_12_a_guest_sees_role_only_or_someone_as_set_and_no_name_reaches_th
         let bea = named(&org, "Bea Baker", "bea@example.test").await?;
         org.give(&gus, guest, acme).await?;
         org.give(&bea, contributor, acme).await?;
-        let mut ada = browser_of(&app, "ada@example.test").await?;
-        let mut gus_browser = browser_of(&app, "gus@example.test").await?;
+        let mut ada = Browser::signed_in_as(&app, ADA_EMAIL).await?;
+        let mut gus_browser = Browser::signed_in_as(&app, "gus@example.test").await?;
         let secrets = ["Bea", "Baker", "bea@example.test", &bea.id.to_string()];
         let looks_at_bea = async |browser: &mut Browser| -> Result<Value, Failure> {
             let reply = browser
@@ -576,10 +561,10 @@ async fn priv_12_a_guest_sees_role_only_or_someone_as_set_and_no_name_reaches_th
 }
 
 #[tokio::test]
-async fn sec_06_a_hidden_field_is_missing_from_every_m2_answer_and_cannot_be_asked_for() -> Outcome
-{
+async fn sec_06_a_hidden_field_is_missing_from_every_m2_answer_and_cannot_be_asked_for()
+-> TestResult {
     each_database("sec_06_hidden_field_over_http", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let org = Org::start(&rig).await?;
         let app = app_with_probe(&rig, None);
         let acme = org.project(None, "ACME").await?.id;
@@ -591,7 +576,7 @@ async fn sec_06_a_hidden_field_is_missing_from_every_m2_answer_and_cannot_be_ask
             .await?;
         let cleo = org.person().await?;
         org.give(&cleo, checker.id, acme).await?;
-        let mut cleo_browser = browser_of(&app, "person1@example.test").await?;
+        let mut cleo_browser = Browser::signed_in_as(&app, "person1@example.test").await?;
         // A new role holds no level: every field is hidden for Cleo.
         let answer = cleo_browser
             .send(
@@ -638,9 +623,9 @@ async fn sec_06_a_hidden_field_is_missing_from_every_m2_answer_and_cannot_be_ask
 
 #[tokio::test]
 async fn sec_03_check_access_over_http_names_no_project_the_checker_cannot_see_and_agrees_with_the_engine()
--> Outcome {
+-> TestResult {
     each_database("sec_03_check_over_http", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let org = Org::start(&rig).await?;
         let app = app_with_probe(&rig, None);
         let acme = org.project(None, "ACME").await?.id;
@@ -657,7 +642,7 @@ async fn sec_03_check_access_over_http_names_no_project_the_checker_cannot_see_a
         // Lea checks in WEB; Bea has her role from ACME, a project Lea cannot see.
         org.give(&lea, checker.id, web).await?;
         org.give(&bea, looker.id, acme).await?;
-        let mut lea_browser = browser_of(&app, "person1@example.test").await?;
+        let mut lea_browser = Browser::signed_in_as(&app, "person1@example.test").await?;
         let reply = lea_browser
             .send(
                 "GET",
@@ -699,7 +684,7 @@ async fn sec_03_check_access_over_http_names_no_project_the_checker_cannot_see_a
             );
         }
         // The administrator sees the project's name.
-        let mut ada = browser_of(&app, "ada@example.test").await?;
+        let mut ada = Browser::signed_in_as(&app, ADA_EMAIL).await?;
         let all = ada
             .send(
                 "GET",
@@ -709,7 +694,7 @@ async fn sec_03_check_access_over_http_names_no_project_the_checker_cannot_see_a
             .await?;
         assert!(all.body.to_string().contains("ACME"));
         // Somebody who may not check, a project that is not there and a person that is not there.
-        let mut bea_browser = browser_of(&app, "person2@example.test").await?;
+        let mut bea_browser = Browser::signed_in_as(&app, "person2@example.test").await?;
         let refused = bea_browser
             .send(
                 "GET",
@@ -741,9 +726,9 @@ async fn sec_03_check_access_over_http_names_no_project_the_checker_cannot_see_a
 
 #[tokio::test]
 async fn sec_03_the_people_to_check_are_listed_by_name_a_page_at_a_time_and_found_by_words()
--> Outcome {
+-> TestResult {
     each_database("sec_03_people_to_check", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let org = Org::start(&rig).await?;
         let app = app_with_probe(&rig, None);
         for (name, email) in [
@@ -753,7 +738,7 @@ async fn sec_03_the_people_to_check_are_listed_by_name_a_page_at_a_time_and_foun
         ] {
             named(&org, name, email).await?;
         }
-        let mut ada = browser_of(&app, "ada@example.test").await?;
+        let mut ada = Browser::signed_in_as(&app, ADA_EMAIL).await?;
         let names = |reply: &super::http::Reply| -> Vec<String> {
             reply.body["items"]
                 .as_array()

@@ -16,11 +16,11 @@ use bb_core::ErrorCode;
 use bb_core::access::AppliesTo;
 use bb_core::access_key::KeyChoice;
 use bb_core::id::{AccessKeyId, RoleId, UserId};
-use bb_testing::each_database;
+use bb_testing::{TestResult, each_database};
 use webauthn_authenticator_rs::softpasskey::SoftPasskey;
 
 use super::policy_rig::{Member, Org, Run};
-use super::rig::{Outcome, PASSWORD, Rig, refused};
+use super::rig::{PASSWORD, Rig, Tries, refused};
 
 const REQUIRED: Option<ErrorCode> = Some(ErrorCode::SecondStepRequired);
 
@@ -203,10 +203,10 @@ async fn only_setting_up_is_open(rig: &Rig, bob: &Member) -> Run<()> {
 }
 
 #[tokio::test]
-async fn auth_03_a_role_that_requires_two_step_sign_in_makes_its_people_set_it_up_first() -> Outcome
-{
+async fn auth_03_a_role_that_requires_two_step_sign_in_makes_its_people_set_it_up_first()
+-> TestResult {
     each_database("auth_03_role_requires_two_step", async |db| {
-        let rig = Rig::start(db, 50).await?;
+        let rig = Rig::start_with(db, Tries::Roomy).await?;
         let org = Org::start(&rig).await?;
         let role = inviter(&org, false).await?;
         let bob = org.person().await?;
@@ -267,9 +267,9 @@ async fn auth_03_a_role_that_requires_two_step_sign_in_makes_its_people_set_it_u
 }
 
 #[tokio::test]
-async fn auth_03_a_passkey_is_a_second_step_too() -> Outcome {
+async fn auth_03_a_passkey_is_a_second_step_too() -> TestResult {
     each_database("auth_03_passkey_ends_the_requirement", async |db| {
-        let rig = Rig::start(db, 50).await?;
+        let rig = Rig::start_with(db, Tries::Roomy).await?;
         let org = Org::start(&rig).await?;
         let role = inviter(&org, true).await?;
         let bob = org.person().await?;
@@ -283,9 +283,9 @@ async fn auth_03_a_passkey_is_a_second_step_too() -> Outcome {
 }
 
 #[tokio::test]
-async fn auth_03_a_role_held_through_a_group_or_on_a_project_counts_too() -> Outcome {
+async fn auth_03_a_role_held_through_a_group_or_on_a_project_counts_too() -> TestResult {
     each_database("auth_03_group_and_project_roles", async |db| {
-        let rig = Rig::start(db, 50).await?;
+        let rig = Rig::start_with(db, Tries::Roomy).await?;
         let org = Org::start(&rig).await?;
         let role = inviter(&org, true).await?;
         // Through a group, for the whole organization.
@@ -334,9 +334,9 @@ async fn auth_03_a_role_held_through_a_group_or_on_a_project_counts_too() -> Out
 }
 
 #[tokio::test]
-async fn auth_03_the_organization_switch_asks_everybody_for_a_second_step() -> Outcome {
+async fn auth_03_the_organization_switch_asks_everybody_for_a_second_step() -> TestResult {
     each_database("auth_03_organization_switch", async |db| {
-        let rig = Rig::start(db, 50).await?;
+        let rig = Rig::start_with(db, Tries::Roomy).await?;
         let org = Org::start(&rig).await?;
         let role = inviter(&org, false).await?;
         let bob = org.person().await?;
@@ -364,9 +364,9 @@ async fn auth_03_the_organization_switch_asks_everybody_for_a_second_step() -> O
 
 #[tokio::test]
 async fn auth_03_the_administrator_sees_how_many_people_of_a_role_still_have_no_second_step()
--> Outcome {
+-> TestResult {
     each_database("auth_03_second_step_gap", async |db| {
-        let rig = Rig::start(db, 50).await?;
+        let rig = Rig::start_with(db, Tries::Roomy).await?;
         let org = Org::start(&rig).await?;
         let role = inviter(&org, false).await?;
         let (bob, carol, dora) = (

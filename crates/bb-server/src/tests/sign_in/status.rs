@@ -9,12 +9,11 @@ use bb_api::tls::ServedCertificate;
 use bb_api::{LimitsConfig, ProbeHandle, router};
 use bb_app::status::{DatabaseKind, LogBreak, LogState, ServerProbe as _};
 use bb_store::Database;
-use bb_testing::each_database;
-use serde_json::json;
+use bb_testing::{Failure, TestResult, each_database};
 use tower::ServiceExt as _;
 
-use super::http::{Browser, called, options, setup_body};
-use super::rig::{Outcome, PASSWORD, Rig};
+use super::http::{ADA_EMAIL, Browser, called, options};
+use super::rig::{PASSWORD, Rig};
 use crate::probe::{LogChecking, Probe};
 
 const STATUS: &str = "/api/v1/admin/status";
@@ -33,7 +32,7 @@ pub(super) fn app_with_probe_and_limits(
     certificate: Option<Arc<ServedCertificate>>,
     limits: LimitsConfig,
 ) -> axum::Router {
-    let mut options = options(rig, limits, true);
+    let mut options = options(rig, limits);
     // These tests change the log or its anchor file from outside and look again at once, so the
     // page keeps no answer.
     options.probe = ProbeHandle::new(Arc::new(
@@ -55,9 +54,9 @@ pub(super) fn app_with_probe_and_limits(
 }
 
 #[tokio::test]
-async fn ops_08_only_administrators_see_the_status_of_the_server() -> Outcome {
+async fn ops_08_only_administrators_see_the_status_of_the_server() -> TestResult {
     each_database("ops_08_status_access", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let app = app_with_probe(&rig, None);
         let used = called();
 
@@ -69,27 +68,8 @@ async fn ops_08_only_administrators_see_the_status_of_the_server() -> Outcome {
 
         // A person who is not an administrator: forbidden.
         let mut ada = Browser::new(&app, &used);
-        ada.send("POST", "/api/v1/auth/setup", Some(setup_body(&rig)))
-            .await?;
-        let invitation = ada
-            .send(
-                "POST",
-                "/api/v1/auth/invitations",
-                Some(json!({"email": "bob@example.test"})),
-            )
-            .await?;
-        let secret = invitation.body["link_path"]
-            .as_str()
-            .and_then(|path| path.split_once('#'))
-            .map(|(_, secret)| secret.to_owned())
-            .ok_or("no link")?;
-        let mut bob = Browser::new(&app, &used);
-        bob.send(
-            "POST",
-            "/api/v1/auth/invitation/accept",
-            Some(json!({"secret": secret, "display_name": "Bob", "password": PASSWORD})),
-        )
-        .await?;
+        ada.set_up(&rig).await?;
+        let mut bob = ada.invite("bob@example.test", "Bob").await?;
         let reply = bob.send("GET", STATUS, None).await?;
         assert_eq!(reply.status, StatusCode::FORBIDDEN);
         assert_eq!(reply.code(), "access.forbidden");
@@ -110,13 +90,11 @@ async fn ops_08_only_administrators_see_the_status_of_the_server() -> Outcome {
 }
 
 #[tokio::test]
-async fn ops_08_the_status_shows_the_result_of_checking_the_security_log() -> Outcome {
+async fn ops_08_the_status_shows_the_result_of_checking_the_security_log() -> TestResult {
     each_database("ops_08_status_security_log", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let app = app_with_probe(&rig, None);
-        let mut ada = Browser::new(&app, &called());
-        ada.send("POST", "/api/v1/auth/setup", Some(setup_body(&rig)))
-            .await?;
+        let mut ada = Browser::signed_in(&app, &rig).await?;
 
         // Setting up wrote entries, and the anchor file vouches for the end of the log.
         let reply = ada.send("GET", STATUS, None).await?;
@@ -138,9 +116,9 @@ async fn ops_08_the_status_shows_the_result_of_checking_the_security_log() -> Ou
 }
 
 #[tokio::test]
-async fn ops_08_the_status_shows_the_end_of_the_certificate_it_serves_now() -> Outcome {
+async fn ops_08_the_status_shows_the_end_of_the_certificate_it_serves_now() -> TestResult {
     each_database("ops_08_status_certificate", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let folder = tempfile::tempdir()?;
         let served = Arc::new(bb_api::tls::serve_certificate(
             &bb_api::tls::TlsSource::SelfSigned {
@@ -149,10 +127,8 @@ async fn ops_08_the_status_shows_the_end_of_the_certificate_it_serves_now() -> O
             },
         )?);
         let app = app_with_probe(&rig, Some(Arc::clone(&served)));
-        let mut ada = Browser::new(&app, &called());
-        ada.send("POST", "/api/v1/auth/setup", Some(setup_body(&rig)))
-            .await?;
-        let ends = async |ada: &mut Browser| -> Result<jiff::Timestamp, Box<dyn std::error::Error + Send + Sync>> {
+        let mut ada = Browser::signed_in(&app, &rig).await?;
+        let ends = async |ada: &mut Browser| -> Result<jiff::Timestamp, Failure> {
             let reply = ada.send("GET", STATUS, None).await?;
             Ok(reply.body["certificate"]["expires_at"]
                 .as_str()
@@ -175,19 +151,16 @@ async fn ops_08_the_status_shows_the_end_of_the_certificate_it_serves_now() -> O
 }
 
 #[tokio::test]
-async fn ops_08_ready_means_the_database_answers() -> Outcome {
+async fn ops_08_ready_means_the_database_answers() -> TestResult {
     each_database("ops_08_ready_database", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let app = app_with_probe(&rig, None);
         let ready = || async {
             let request = Request::get("/health/ready").body(Body::empty())?;
             let response = app.clone().oneshot(request).await?;
             let status = response.status();
             let bytes = axum::body::to_bytes(response.into_body(), usize::MAX).await?;
-            Ok::<_, Box<dyn std::error::Error + Send + Sync>>((
-                status,
-                String::from_utf8(bytes.to_vec())?,
-            ))
+            Ok::<_, Failure>((status, String::from_utf8(bytes.to_vec())?))
         };
         let (status, body) = ready().await?;
         assert_eq!(status, StatusCode::OK);
@@ -222,7 +195,7 @@ fn probe_of(rig: &Rig, checking: LogChecking) -> Probe {
 }
 
 /// How many entries the status shows, and the place of the last one.
-fn log_of(state: &LogState) -> Result<(u64, i64), Box<dyn std::error::Error + Send + Sync>> {
+fn log_of(state: &LogState) -> Result<(u64, i64), Failure> {
     match state {
         LogState::Valid {
             entries,
@@ -235,9 +208,9 @@ fn log_of(state: &LogState) -> Result<(u64, i64), Box<dyn std::error::Error + Se
 
 #[tokio::test]
 async fn ops_08_the_status_page_follows_the_log_and_reuses_its_answer_until_something_is_written()
--> Outcome {
+-> TestResult {
     each_database("ops_08_status_incremental", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let kept = probe_of(
             &rig,
             LogChecking {
@@ -252,7 +225,7 @@ async fn ops_08_the_status_page_follows_the_log_and_reuses_its_answer_until_some
                 ..LogChecking::default()
             },
         );
-        rig.admin("ada@example.test").await?;
+        rig.admin(ADA_EMAIL).await?;
 
         // The first visit reads the whole log; entries and place agree.
         let (first, head) = log_of(&kept.snapshot().await.security_log)?;
@@ -261,7 +234,7 @@ async fn ops_08_the_status_page_follows_the_log_and_reuses_its_answer_until_some
 
         // Every write by the server makes the answer old, and the next visit shows the new
         // entries: the count and the place of the last entry follow the log.
-        rig.sign_in("ada@example.test", PASSWORD).await?;
+        rig.sign_in(ADA_EMAIL, PASSWORD).await?;
         let (second, head) = log_of(&kept.snapshot().await.security_log)?;
         assert!(second > first);
         assert_eq!(i64::try_from(second)?, head);
@@ -285,7 +258,7 @@ async fn ops_08_the_status_page_follows_the_log_and_reuses_its_answer_until_some
         // with the next write of the server.
         let (third, _) = log_of(&always.snapshot().await.security_log)?;
         assert_eq!(third, second + 1);
-        rig.sign_in("ada@example.test", PASSWORD).await?;
+        rig.sign_in(ADA_EMAIL, PASSWORD).await?;
         assert!(log_of(&kept.snapshot().await.security_log)?.0 > third);
         Ok(())
     })
@@ -293,13 +266,11 @@ async fn ops_08_the_status_page_follows_the_log_and_reuses_its_answer_until_some
 }
 
 #[tokio::test]
-async fn sec_15_the_status_page_warns_when_a_log_entry_could_not_be_written() -> Outcome {
+async fn sec_15_the_status_page_warns_when_a_log_entry_could_not_be_written() -> TestResult {
     each_database("sec_15_status_failed_write", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let app = app_with_probe(&rig, None);
-        let mut ada = Browser::new(&app, &called());
-        ada.send("POST", "/api/v1/auth/setup", Some(setup_body(&rig)))
-            .await?;
+        let mut ada = Browser::signed_in(&app, &rig).await?;
         let reply = ada.send("GET", STATUS, None).await?;
         assert_eq!(reply.body["security_log"]["write_failures"], 0);
 
@@ -311,13 +282,7 @@ async fn sec_15_the_status_page_warns_when_a_log_entry_could_not_be_written() ->
         // Signing in goes on (the decision of M1: a log that cannot be written does not lock
         // everybody out) ...
         let mut again = Browser::new(&app, &called());
-        let signed = again
-            .send(
-                "POST",
-                "/api/v1/auth/sign-in",
-                Some(json!({"email": "ada@example.test", "password": PASSWORD})),
-            )
-            .await?;
+        let signed = again.sign_in(ADA_EMAIL, PASSWORD).await?;
         assert_eq!(signed.status, StatusCode::OK);
 
         // ... and the status page counts what could not be written.
@@ -330,11 +295,11 @@ async fn sec_15_the_status_page_warns_when_a_log_entry_could_not_be_written() ->
 }
 
 #[tokio::test]
-async fn sec_15_the_status_page_warns_when_the_anchor_is_ahead() -> Outcome {
+async fn sec_15_the_status_page_warns_when_the_anchor_is_ahead() -> TestResult {
     each_database("sec_15_status_anchor_ahead", async |db| {
-        let rig = Rig::start(db, 10).await?;
-        rig.admin("ada@example.test").await?;
-        rig.sign_in("ada@example.test", PASSWORD).await?;
+        let rig = Rig::start(db).await?;
+        rig.admin(ADA_EMAIL).await?;
+        rig.sign_in(ADA_EMAIL, PASSWORD).await?;
 
         // A database that was restored from an older state: it has fewer entries than the anchor
         // file (a new one with none, here), and the same keys and anchor file.
@@ -362,16 +327,11 @@ async fn sec_15_the_status_page_warns_when_the_anchor_is_ahead() -> Outcome {
         );
 
         // The page says so, with the reason the person can act on.
-        let mut options = options(&rig, LimitsConfig::default(), true);
+        let mut options = options(&rig, LimitsConfig::default());
         options.probe = ProbeHandle::new(Arc::new(probe));
         let app = router(options);
         let mut ada = Browser::new(&app, &called());
-        ada.send(
-            "POST",
-            "/api/v1/auth/sign-in",
-            Some(json!({"email": "ada@example.test", "password": PASSWORD})),
-        )
-        .await?;
+        ada.sign_in(ADA_EMAIL, PASSWORD).await?;
         let reply = ada.send("GET", STATUS, None).await?;
         assert_eq!(reply.body["security_log"]["result"], "broken");
         assert_eq!(reply.body["security_log"]["reason"], "behind");
@@ -381,7 +341,7 @@ async fn sec_15_the_status_page_warns_when_the_anchor_is_ahead() -> Outcome {
 }
 
 /// Gives every account on this computer a right to read `folder`.
-fn open_up(folder: &std::path::Path) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+fn open_up(folder: &std::path::Path) -> Result<(), Failure> {
     #[cfg(unix)]
     {
         use std::os::unix::fs::PermissionsExt as _;
@@ -399,11 +359,11 @@ fn open_up(folder: &std::path::Path) -> Result<(), Box<dyn std::error::Error + S
 }
 
 #[tokio::test]
-async fn sec_16_the_status_page_shows_what_of_the_data_folder_is_too_open() -> Outcome {
+async fn sec_16_the_status_page_shows_what_of_the_data_folder_is_too_open() -> TestResult {
     each_database("sec_16_status_data_folder", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let data = crate::data_folder::DataFolder::prepare(&rig.folder.path().join("data"))?;
-        let mut options = options(&rig, LimitsConfig::default(), true);
+        let mut options = options(&rig, LimitsConfig::default());
         options.probe = ProbeHandle::new(Arc::new(
             Probe::new(
                 rig.database.clone(),
@@ -419,9 +379,7 @@ async fn sec_16_the_status_page_shows_what_of_the_data_folder_is_too_open() -> O
             }),
         ));
         let app = router(options);
-        let mut ada = Browser::new(&app, &called());
-        ada.send("POST", "/api/v1/auth/setup", Some(setup_body(&rig)))
-            .await?;
+        let mut ada = Browser::signed_in(&app, &rig).await?;
 
         // A folder that Bugaboo made: nothing is too open.
         let reply = ada.send("GET", STATUS, None).await?;
@@ -448,9 +406,10 @@ async fn sec_16_the_status_page_shows_what_of_the_data_folder_is_too_open() -> O
 }
 
 #[tokio::test]
-async fn sec_16_the_status_page_says_unknown_when_the_data_folder_cannot_be_looked_at() -> Outcome {
+async fn sec_16_the_status_page_says_unknown_when_the_data_folder_cannot_be_looked_at() -> TestResult
+{
     each_database("sec_16_status_unknown", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         // The folder is not there to look at: the page must not say that all is well.
         let probe = Probe::new(
             rig.database.clone(),
@@ -462,12 +421,10 @@ async fn sec_16_the_status_page_says_unknown_when_the_data_folder_cannot_be_look
         );
         let rights = probe.snapshot().await.data_folder;
         assert_eq!(rights, bb_app::status::DataFolderRights::unknown());
-        let mut options = options(&rig, LimitsConfig::default(), true);
+        let mut options = options(&rig, LimitsConfig::default());
         options.probe = ProbeHandle::new(Arc::new(probe));
         let app = router(options);
-        let mut ada = Browser::new(&app, &called());
-        ada.send("POST", "/api/v1/auth/setup", Some(setup_body(&rig)))
-            .await?;
+        let mut ada = Browser::signed_in(&app, &rig).await?;
         let reply = ada.send("GET", STATUS, None).await?;
         for part in ["folder", "database", "files", "backups", "setup_code_file"] {
             assert_eq!(reply.body["data_folder_open"][part], "unknown", "{part}");

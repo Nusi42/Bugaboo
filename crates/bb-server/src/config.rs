@@ -12,8 +12,9 @@ use std::path::{Path, PathBuf};
 use std::time::Duration;
 
 use bb_api::{
-    DEFAULT_ACCESS_KEY_REQUESTS_PER_MINUTE, DEFAULT_MAX_CONNECTIONS, DEFAULT_REQUESTS_PER_MINUTE,
-    DEFAULT_SIGN_IN_ATTEMPTS_PER_MINUTE, DEFAULT_SIGN_IN_FAILURES_PER_MINUTE, LimitsConfig,
+    DEFAULT_ACCESS_KEY_REQUESTS_PER_MINUTE, DEFAULT_HEADER_TIMEOUT, DEFAULT_MAX_CONNECTIONS,
+    DEFAULT_REQUESTS_PER_MINUTE, DEFAULT_SIGN_IN_ATTEMPTS_PER_MINUTE,
+    DEFAULT_SIGN_IN_FAILURES_PER_MINUTE, LimitsConfig,
 };
 
 use bb_core::message::{self, Message};
@@ -51,7 +52,6 @@ pub(crate) const DEFAULT_ADDRESS: &str = "127.0.0.1";
 pub(crate) const DEFAULT_DATA_DIR: &str = "bugaboo-data";
 pub(crate) const DEFAULT_TLS_MODE: &str = "self-signed";
 const DEFAULT_LOG_LEVEL: &str = "info";
-const DEFAULT_HEADER_TIMEOUT_SECONDS: u64 = 30;
 
 /// How the server gets its HTTPS certificate (SEC-10).
 #[derive(Debug, PartialEq, Eq)]
@@ -343,7 +343,7 @@ fn settings_from(
     let header_seconds = whole_number(
         values,
         "header_timeout_seconds",
-        DEFAULT_HEADER_TIMEOUT_SECONDS,
+        DEFAULT_HEADER_TIMEOUT.as_secs(),
     )?;
 
     let limits = LimitsConfig {
@@ -546,7 +546,7 @@ mod tests {
         assert_eq!(settings.tls, TlsMode::SelfSigned);
         assert_eq!(settings.data_dir, Path::new("exe").join(DEFAULT_DATA_DIR));
         assert_eq!(settings.max_connections, DEFAULT_MAX_CONNECTIONS);
-        assert_eq!(settings.header_timeout, Duration::from_secs(30));
+        assert_eq!(settings.header_timeout, DEFAULT_HEADER_TIMEOUT);
         assert!(settings.trusted_proxies.is_empty());
         assert_eq!(settings.log_level, LogLevel::Info);
     }

@@ -8,12 +8,12 @@
 use bb_app::people::{AddGroupMember, MakeGroup};
 use bb_app::roles::{AssignRole, Given, MakeRole, Subject};
 use bb_core::access::AppliesTo;
+use bb_testing::Failure;
 use serde_json::json;
 
 use super::actors::Project;
 use super::examples::Request;
 use super::routes::Fixture;
-use crate::sign_in_tests::http::Failure;
 use crate::sign_in_tests::rig::Rig;
 
 /// A group, made by the administrator of the matrix.

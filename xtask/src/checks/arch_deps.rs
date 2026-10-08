@@ -68,6 +68,11 @@ fn evaluate(packages: &[Package], map: &Map) -> Vec<Finding> {
                 }
                 continue;
             }
+            // A crate may name itself as a dev-dependency to switch on its own `testing` feature
+            // for its integration tests. That is no edge between two crates.
+            if dependency.name == name && dependency.kind.as_deref() == Some("dev") {
+                continue;
+            }
             // Only edges between workspace members count; crates.io names are not ours.
             if members.contains(dependency.name.as_str()) && !allowed.contains(&dependency.name) {
                 findings.push(Finding::at(
@@ -199,6 +204,24 @@ mod tests {
         assert_eq!(evaluate(&packages, &parse_map(MAP).unwrap()).len(), 1);
         packages.retain(|p| p.name != "bb-macros" && p.name != "bb-extra");
         assert_eq!(evaluate(&packages, &parse_map(MAP).unwrap()).len(), 1);
+    }
+
+    #[test]
+    fn good_example_a_crate_switches_on_its_own_test_feature_as_a_dev_dependency() {
+        let mut own = package("bb-app", &["bb-app"]);
+        own.dependencies[0].kind = Some("dev".to_owned());
+        let mut packages = crates(&[]);
+        packages.retain(|p| p.name != "bb-app");
+        packages.push(own);
+        assert!(evaluate(&packages, &parse_map(MAP).unwrap()).is_empty());
+    }
+
+    #[test]
+    fn bad_example_a_crate_depending_on_itself_outside_dev_dependencies() {
+        let packages = crates(&[("bb-app", &["bb-app"])]);
+        let findings = evaluate(&packages, &parse_map(MAP).unwrap());
+        assert_eq!(findings.len(), 1);
+        assert!(findings[0].message.contains("bb-app"));
     }
 
     #[test]

@@ -326,7 +326,6 @@ pub(crate) struct PeopleSearch {
     path = "/api/v1/check-access/people/{person}",
     operation_id = "checkAccess",
     tag = "access",
-    extensions(("x-never-stored" = json!(true))),
     params(("person" = String, Path, description = "The ID of the person to check."), PlaceParams),
     responses((status = 200, description = "What the person can do, and why.", body = CheckAccessBody), NotSignedInAnswer, ForbiddenAnswer, NotFoundAnswer)
 )]
@@ -364,7 +363,6 @@ async fn check_access(
     path = "/api/v1/check-access/people",
     operation_id = "listPeopleToCheck",
     tag = "access",
-    extensions(("x-never-stored" = json!(true))),
     params(ListParams, PlaceParams, PeopleSearch),
     responses((status = 200, description = "The people, by name.", body = Page<PersonRef>), NotSignedInAnswer, ForbiddenAnswer, NotFoundAnswer)
 )]

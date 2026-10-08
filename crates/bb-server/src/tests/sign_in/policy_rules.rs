@@ -16,10 +16,10 @@ use bb_core::id::{AssignmentId, RoleId};
 use bb_core::people_kinds::PeopleKind;
 use bb_core::sign_in::SecurityAction;
 use bb_store::Verification;
-use bb_testing::each_database;
+use bb_testing::{TestResult, each_database};
 
 use super::policy_rig::{Member, Org, Run};
-use super::rig::{Outcome, Rig, refused};
+use super::rig::{Rig, refused};
 
 /// The roles, as the administrator lists them.
 async fn roles(org: &Org<'_>) -> Run<Vec<RoleView>> {
@@ -106,9 +106,9 @@ async fn change(
 }
 
 #[tokio::test]
-async fn sec_08_starting_roles_are_made_once_and_can_be_changed_and_reset() -> Outcome {
+async fn sec_08_starting_roles_are_made_once_and_can_be_changed_and_reset() -> TestResult {
     each_database("sec_08_starting_roles", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let org = Org::start(&rig).await?;
         // The six roles of architecture 7, in the starting order, as editable copies.
         let made = roles(&org).await?;
@@ -213,9 +213,10 @@ async fn sec_08_starting_roles_are_made_once_and_can_be_changed_and_reset() -> O
 }
 
 #[tokio::test]
-async fn sec_08_a_new_role_has_no_levels_everything_is_hidden_until_somebody_decides() -> Outcome {
+async fn sec_08_a_new_role_has_no_levels_everything_is_hidden_until_somebody_decides() -> TestResult
+{
     each_database("sec_08_new_role_hidden", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let org = Org::start(&rig).await?;
         let own = org.role("Own", &[Permission::SeeProjects]).await?;
         let levels = org
@@ -270,9 +271,9 @@ async fn sec_08_a_new_role_has_no_levels_everything_is_hidden_until_somebody_dec
 }
 
 #[tokio::test]
-async fn sec_08_nobody_adds_a_permission_they_do_not_hold_to_a_role() -> Outcome {
+async fn sec_08_nobody_adds_a_permission_they_do_not_hold_to_a_role() -> TestResult {
     each_database("sec_08_role_escalation", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let org = Org::start(&rig).await?;
         let mara = org.person().await?;
         let keeper = org
@@ -336,9 +337,9 @@ async fn sec_08_nobody_adds_a_permission_they_do_not_hold_to_a_role() -> Outcome
 }
 
 #[tokio::test]
-async fn sec_02_nobody_gives_a_role_with_more_than_they_hold_there() -> Outcome {
+async fn sec_02_nobody_gives_a_role_with_more_than_they_hold_there() -> TestResult {
     each_database("sec_02_give_escalation", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let org = Org::start(&rig).await?;
         let acme = org.project(None, "ACME").await?.id;
         let lea = org.person().await?;
@@ -404,9 +405,9 @@ async fn sec_02_nobody_gives_a_role_with_more_than_they_hold_there() -> Outcome 
 }
 
 #[tokio::test]
-async fn sec_02_nobody_puts_a_person_into_a_group_that_holds_more_than_they_hold() -> Outcome {
+async fn sec_02_nobody_puts_a_person_into_a_group_that_holds_more_than_they_hold() -> TestResult {
     each_database("sec_02_group_escalation", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let org = Org::start(&rig).await?;
         let (kim, bea) = (org.person().await?, org.person().await?);
         let keeper = org
@@ -449,9 +450,9 @@ async fn sec_02_nobody_puts_a_person_into_a_group_that_holds_more_than_they_hold
 }
 
 #[tokio::test]
-async fn sec_08_nobody_can_remove_the_last_way_to_manage_roles() -> Outcome {
+async fn sec_08_nobody_can_remove_the_last_way_to_manage_roles() -> TestResult {
     each_database("sec_08_last_administrator", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let org = Org::start(&rig).await?;
         let administrator = role_named(&org, "Administrator").await?;
         let remove = |by: &Member, assignment| {
@@ -554,9 +555,9 @@ async fn sec_08_nobody_can_remove_the_last_way_to_manage_roles() -> Outcome {
 }
 
 #[tokio::test]
-async fn sec_08_the_two_halves_of_managing_roles_can_come_from_two_roles() -> Outcome {
+async fn sec_08_the_two_halves_of_managing_roles_can_come_from_two_roles() -> TestResult {
     each_database("sec_08_two_roles", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let org = Org::start(&rig).await?;
         let (one, two) = (
             org.role(
@@ -629,7 +630,7 @@ impl Journal<'_> {
     }
 
     /// The change since `before` added one event and one entry of the log named `action`.
-    async fn one_more(&self, action: SecurityAction, before: Mark) -> Outcome {
+    async fn one_more(&self, action: SecurityAction, before: Mark) -> TestResult {
         assert_eq!(self.events().await?, before.0 + 1, "{action:?}: one event");
         assert_eq!(
             self.entries(action).await?,
@@ -855,9 +856,9 @@ async fn rows_and_levels(
 }
 
 #[tokio::test]
-async fn sec_15_every_change_of_permissions_is_in_the_security_log() -> Outcome {
+async fn sec_15_every_change_of_permissions_is_in_the_security_log() -> TestResult {
     each_database("sec_15_permission_log", async |db| {
-        let rig = Rig::start(db, 10).await?;
+        let rig = Rig::start(db).await?;
         let org = Org::start(&rig).await?;
         let journal = Journal { rig: &rig };
         let bea = org.person().await?;
