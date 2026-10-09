@@ -242,10 +242,10 @@ status = "active"
 id = "ARCH-PURE"
 title = "bb-core, bb-searchlang and bb-markdown do no I/O (no tokio, sqlx, std::fs, std::net)"
 rule = "architecture §4, ADR-0005, ADR-0011"
-tool = "xtask (dependency bans) + ast-grep"
+tool = "xtask (reads the dependencies of the three crates and their code that ships: no async runtime, database, HTTP, random source, file, network, clock, environment, thread or process)"
 when = ["edit", "push", "ci"]
 files = ["crates/bb-core/**", "crates/bb-searchlang/**", "crates/bb-markdown/**"]
-status = "planned"
+status = "active"
 
 [[check]]
 id = "ARCH-WASM"
@@ -498,17 +498,19 @@ files = [
   "crates/bb-markdown/**",
   "crates/bb-api/src/headers.rs",
   "web/**/*.{ts,tsx}",
+  "web/**/package.json",
+  "package.json",
 ]
-status = "planned"
+status = "active"
 
 [[check]]
 id = "SEC-PATTERNS"
-title = "No unwrap/expect/panic in production code, no dangerouslySetInnerHTML, eval or new Function"
+title = "No unwrap/expect/panic/todo/dbg in code that ships, no eval, new Function, document.write, timer with a string or dangerouslySetInnerHTML"
 rule = "coding-standards §3, §4"
-tool = "ast-grep"
+tool = "xtask (reads the Rust code that ships, without comments, strings and #[cfg(test)] code, and the browser code)"
 when = ["edit", "commit", "ci"]
 files = ["crates/**/*.rs", "xtask/**/*.rs", "web/**/*.{ts,tsx}"]
-status = "planned"
+status = "active"
 
 [[check]]
 id = "SEC-MATRIX"

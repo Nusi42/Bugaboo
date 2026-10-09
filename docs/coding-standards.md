@@ -90,7 +90,8 @@ there. LINT-DRY (§7) catches copied blocks automatically; the rest is review.
 - `#![forbid(unsafe_code)]` in every crate except where an ADR approves an exception.
 - Clippy with warnings treated as errors, plus selected `pedantic` lints.
 - No `unwrap()`, `expect()`, `panic!`, `dbg!` or `println!` outside tests and CLI output. Use
-  structured `tracing` for logs.
+  structured `tracing` for logs. Enforced by: SEC-PATTERNS (`unwrap`, `expect`, `panic!`, `todo!`,
+  `unimplemented!`, `dbg!`), LINT-RUST (`println!`).
 - Use newtypes for IDs and units (`IssueId`, `Minutes`), never bare `i64` or `String`.
 - **Authorization is in the type system:** data can only leave the domain layer wrapped in
   a type that proves the policy engine checked it. Code that bypasses the check must not
@@ -119,8 +120,16 @@ there. LINT-DRY (§7) catches copied blocks automatically; the rest is review.
   no `className`, no CSS file but the one that `cargo xtask gen theme` writes. A component emits
   `data-part`, `data-variant` and `data-state` (`partOf`), plus React Aria's own `data-*`
   attributes. Enforced by: THEME-ONLY.
-- No `dangerouslySetInnerHTML`, `eval`, `new Function`, or inline event-handler strings
-  (these would break the CSP).
+- No `dangerouslySetInnerHTML`, `eval`, `new Function`, `document.write`, a timer given a
+  string, or inline event-handler strings (these would break the CSP). Enforced by: SEC-PATTERNS.
+- **Text written by people is rendered by `bb-markdown` and nothing else** (SEC-13, ADR-0011). No
+  other crate depends on a Markdown or HTML library (`pulldown-cmark`, `ammonia`, …), the browser
+  has no second renderer (no `marked`, `markdown-it`, `DOMPurify`, …), and HTML is set from a
+  string in one file only, the Trusted Types policy of `MarkdownView` (`innerHTML`,
+  `insertAdjacentHTML`, `DOMParser` and the like are written nowhere else). The name of that
+  policy is the one the content security policy allows. The sanitizer corpus
+  (`crates/bb-markdown/tests/corpus`) is rendered by the server's build and by the WebAssembly
+  build, with the same result. Enforced by: SEC-RICHTEXT.
 
 ## 5. Dependencies & documentation
 
