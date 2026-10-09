@@ -576,7 +576,7 @@ mod tests {
     #[test]
     fn an_exempt_file_is_free_of_private_words_but_not_of_paths() {
         let temp = TempDir::new("private-exempt");
-        let path = format!("{}:{}Users{}ana{}x", "C", "\\", "\\", "\\");
+        let path = format!("{}:{}Users{}mira{}x", "C", "\\", "\\", "\\");
         temp.write("list.txt", format!("zanzibar\n{path}\n"));
         let exempt = [Exempt {
             path: "list.txt".to_owned(),

@@ -1,8 +1,8 @@
-C:\Users\ana\Documents\notes.txt
-C:\Users\ana\Documents
-D:\users\ana\work
-C:/Users/ana/Documents
-/c/Users/ana/Documents
-/home/ana/projects
-/Users/ana/projects
-cd "/home/ana/work/"
+C:\Users\mira\Documents\notes.txt
+C:\Users\mira\Documents
+D:\users\mira\work
+C:/Users/mira/Documents
+/c/Users/mira/Documents
+/home/mira/projects
+/Users/mira/projects
+cd "/home/mira/work/"
