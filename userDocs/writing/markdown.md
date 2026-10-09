@@ -32,10 +32,10 @@ An issue ID such as `WEB-142` or `WEB-K7Q2X` and a mention such as `@ana` are re
 ## Web addresses and images
 
 - A web address starts with `https://`, `http://` or `mailto:`, or is a page of this server such as `/p/WEB`. It opens in a new tab. Other kinds of address, such as the ones that start with `javascript:` or `data:`, are not made into links; the words stay as text.
-- An image shows only when it is a picture of this server, or when its host is on the list that an administrator keeps under *Organization settings › Security › Hosts that images may come from*. The list is empty at first. For any other image, the words and the address stay, as a web address you can press.
+- An image shows when it is a picture of this server. Pictures from other hosts do not show yet: the list that an administrator keeps under *Organization settings › System › Security* is there, and showing them follows in a later version. For any other image, the words and the address stay, as a web address you can press.
 
 ## What does not work, on purpose
 
 Raw HTML is shown as text. If you paste `<script>alert(1)</script>`, you and everybody else see those characters, and nothing runs. The same goes for styles, forms and frames. This keeps everybody safe, also when a text comes from someone else.
 
-Very long texts are cut after 200,000 characters, and blocks inside blocks (quotes in quotes) keep their shape only down to 16 levels.
+Very long texts are cut, quotes inside quotes keep their shape only a limited number of levels down, and a text with a very great number of issue IDs and mentions marks only the first ones.

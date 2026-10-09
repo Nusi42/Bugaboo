@@ -14,13 +14,13 @@ Issue descriptions, comments and documents are Markdown written by people, so th
 
 - One allow list (SSOT), in the writer; no client-side HTML rendering library.
 - Nothing is parsed back and cleaned, so there is no gap between what the writer meant and what a sanitizer's HTML parser reads (mutation XSS has no place to start).
-- The WebAssembly module stays small: pulldown-cmark alone is about 80 KB with Brotli, the budget of the module is 150 KB (architecture §8, PERF-04).
+- The WebAssembly module stays small: the budget of the module is in `tools/checks/perf-bundle.toml` (architecture §8, PERF-04), and the search language shares it.
 - The browser shows the HTML with one Trusted Types policy, `bugaboo-markdown`, in the one component `MarkdownView` (SEC-RICHTEXT).
 - The document editor (Tiptap) stores Markdown; its schema is limited to what `bb-markdown` renders.
 
 ## Change (M3 WP-02)
 
-The first plan was to sanitize with **ammonia** after pulldown-cmark's own HTML. Measured on the real module: ammonia brings an HTML parser (html5ever), the URL library with its tables for international domain names, and their data, about **250 KB more with Brotli**, so the module would be about 340 KB against the budget of 150 KB, which the search language (M5) has to share. Writing the HTML from the events needs none of that, is easier to read as one allow list, and keeps the security property: the output holds only what the writer can write. The corpus test (SEC-13) and the property tests check the output for tags, attributes and addresses that the allow list does not have.
+The first plan was to sanitize with **ammonia** after pulldown-cmark's own HTML. Measured on the real module: ammonia brings an HTML parser (html5ever), the URL library with its tables for international domain names, and their data, about **250 KB more with Brotli**, so the module would be about four times the size of the parser alone, far over its budget, which the search language (M5) has to share. Writing the HTML from the events needs none of that, is easier to read as one allow list, and keeps the security property: the output holds only what the writer can write. The corpus test (SEC-13) and the property tests check the output for tags, attributes and addresses that the allow list does not have.
 
 ## Alternatives considered
 

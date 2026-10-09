@@ -1,0 +1,10 @@
+# M3 follow-ups
+
+Points found while building M3 that were accepted for later. Each names where it will be done. The IDs (`M3-F01` …) are what the review refers to. WP-01 uses F01 and up, WP-02 F10 and up, WP-03 F20 and up, WP-04 F30 and up, WP-05 F40 and up, WP-06 F50 and up, WP-07 F60 and up, WP-08 F70 and up, WP-09 F80 and up, WP-10 F90 and up, WP-11 F100 and up.
+
+| ID | What | Why later | Planned in |
+|----|------|-----------|------------|
+| M3-F01 | The eleven M3 permissions are in the catalogue (WP-01) before any route asks for them, so each is named in `tools/checks/permission-exemptions.toml` | WP-01 adds every permission with its starting values in one change, so the starting roles and the role page are right from the start; the routes come with their packages | The package that adds a permission's first route removes its line: WP-03 (`see-issues`, `make-issues`, `change-issues`, `change-own-issues`, `delete-issues`, `manage-issue-types`), WP-04 (`edit-anyway`), WP-05 (`manage-fields`), WP-07 (`comment`), WP-08 (`move-issues`, `manage-labels`) |
+| M3-F10 | Images from the hosts in `content.image-hosts` cannot be shown yet: the content security policy sends the fixed `img-src 'self' data:`, so a browser blocks them. A per-organization policy needs the header made per answer from the setting | It changes the one header table that SEC-HEADERS holds, and the cache rules of every answer; no text with an outside image exists before the issue page | WP-06 |
+| M3-F11 | The preview of the editor is given no image hosts. A route that every signed-in person may read must give the list, already split with the registry's `list_items` (the browser never splits it again) | A new route needs its permission mark and its SEC-MATRIX entry; the editor is only on the frames page until the issue page uses it | WP-06 |
+| M3-F12 | `SafeHtml` is made by the WebAssembly renderer only. The API client makes one for a field the server renders (a description, a comment) once such a field exists | No answer holds rendered text before issues | WP-06, WP-07 |
