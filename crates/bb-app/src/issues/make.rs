@@ -5,7 +5,6 @@ use std::sync::Arc;
 
 use bb_core::ErrorCode;
 use bb_core::event::RecordKind;
-use bb_core::fields::Field;
 use bb_core::id::{IssueId, UserId};
 use bb_core::issue::{Issue, IssueAssignee, Priority, Status};
 use bb_core::issue_key::IssueCode;
@@ -13,7 +12,7 @@ use bb_core::project::Project;
 use bb_policy::{Authorized, Evaluation, Permission, Place};
 use serde_json::json;
 
-use super::fields::{clean_description, clean_title, ensure_may_change, member};
+use super::fields::{Given, clean_description, clean_title, ensure_may_change, member};
 use super::ids::{code_plan_in, new_code_in};
 use super::types::{IssueView, MakeIssue};
 use crate::access::Actor;
@@ -67,6 +66,9 @@ impl<S: AuthStore> Ctx<'_, S> {
         if !access.sees_project() {
             return Err(AppError::Refused(ErrorCode::NotFound));
         }
+        // The mask first: a person who may not set a field is refused alike for any value, so
+        // the answer tells nothing about the value (a person ID that exists, a text too long).
+        ensure_may_change(&access.field_mask(), &Given::from(input).fields())?;
         let title = clean_title(&input.title)?;
         let description = input
             .description
@@ -77,18 +79,6 @@ impl<S: AuthStore> Ctx<'_, S> {
             Some(people) => self.clean_assignees(people).await?,
             None => Vec::new(),
         };
-        let mut touched = vec![Field::Title];
-        for (given, field) in [
-            (description.is_some(), Field::Description),
-            (input.status.is_some(), Field::Status),
-            (input.priority.is_some(), Field::Priority),
-            (!assignees.is_empty(), Field::AssignedTo),
-        ] {
-            if given {
-                touched.push(field);
-            }
-        }
-        ensure_may_change(&access.field_mask(), &touched)?;
         let issue_type = self
             .store()
             .issue_type(input.issue_type)

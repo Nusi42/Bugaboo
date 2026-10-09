@@ -9,7 +9,7 @@ use bb_core::issue::{Issue, IssueAssignee};
 use bb_policy::{Authorized, Evaluation, Place};
 use serde_json::{Value, json};
 
-use super::fields::{clean_description, clean_title, ensure_may_change, member};
+use super::fields::{Given, clean_description, clean_title, ensure_may_change, member};
 use super::types::{ChangeIssue, IssueView};
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, by, entity, internal};
@@ -83,22 +83,13 @@ impl Plan {
     }
 }
 
-/// The fields of the catalogue that the request names, changed or not. Each has to be one the
-/// person may change: judging only the values that differ would answer 200 or 403 depending on
-/// the value a field has now, which tells a person who may not see the field what it holds.
-/// Changing the issue type needs the right to change the issue (*Change issues*, or *Change own
-/// issues* on an issue the person reported) and no field of its own.
+/// The fields of the catalogue that the request names, changed or not (`Given`). Each has to be
+/// one the person may change: judging only the values that differ would answer 200 or 403
+/// depending on the value a field has now, which tells a person who may not see the field what it
+/// holds. Changing the issue type needs the right to change the issue (*Change issues*, or
+/// *Change own issues* on an issue the person reported) and no field of its own.
 fn named(input: &ChangeIssue) -> Vec<Field> {
-    [
-        (input.title.is_some(), Field::Title),
-        (input.description.is_some(), Field::Description),
-        (input.status.is_some(), Field::Status),
-        (input.priority.is_some(), Field::Priority),
-        (input.assigned_to.is_some(), Field::AssignedTo),
-    ]
-    .into_iter()
-    .filter_map(|(given, field)| given.then_some(field))
-    .collect()
+    Given::from(input).fields()
 }
 
 impl<S: AuthStore> Ctx<'_, S> {

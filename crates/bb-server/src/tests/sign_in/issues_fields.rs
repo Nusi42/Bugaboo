@@ -207,6 +207,7 @@ async fn changer(
                 Permission::SeeProjects,
                 Permission::SeeIssues,
                 Permission::ChangeIssues,
+                Permission::MakeIssues,
             ],
         )
         .await?;
@@ -359,6 +360,45 @@ async fn priv_13_no_issue_answer_holds_a_count() -> TestResult {
         assert!(answers[0].body["next_cursor"].is_string());
         assert!(answers[1].body["next_cursor"].is_null());
         assert_eq!(answers[1].body["items"].as_array().map(Vec::len), Some(1));
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn sec_04_making_an_issue_refuses_a_field_one_may_not_set_whatever_its_value() -> TestResult {
+    each_database("sec_04_make_mask_first", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, _ada) = Site::start(&rig, &app).await?;
+        let (_, tim) = site.person(StartingRole::TeamMember, "tim").await?;
+        let mut who = changer(&site, &rig, "maker@example.test", FieldLevel::CanSee).await?;
+        let too_long = "x".repeat(bb_core::text::LONG_TEXT_MAX + 1);
+        let nobody = "01900000-0000-4000-8000-000000000000";
+        // A valid value, an invalid value and an empty list: the same answer for each, so the
+        // answer tells nothing about the value (does this person exist, is this text too long).
+        let cases = [
+            ("description", json!("Fine")),
+            ("description", json!(too_long)),
+            ("assigned_to", json!([tim.to_string()])),
+            ("assigned_to", json!([nobody])),
+            ("assigned_to", json!([])),
+            ("status", json!("done")),
+            ("priority", json!("high")),
+        ];
+        for (member, value) in cases {
+            let mut body = site.new_issue("Not for them");
+            body[member] = value.clone();
+            let reply = who
+                .send("POST", &format!("{PROJECTS}/ACME/issues"), Some(body))
+                .await?;
+            assert_eq!(
+                (reply.status, reply.code()),
+                (StatusCode::FORBIDDEN, "access.forbidden"),
+                "{member}: {value}"
+            );
+        }
+        // The title alone is theirs to set.
+        ok(&site.make(&mut who, "Only a title").await?)?;
         Ok(())
     })
     .await

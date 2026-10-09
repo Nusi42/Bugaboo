@@ -305,3 +305,120 @@ async fn iss_01a_a_change_of_the_mode_writes_one_event_for_each_issue_it_renews(
     })
     .await
 }
+
+/// Changes the title of an issue five times, each time from the version it finds; the statuses.
+async fn retitle(browser: &mut Browser, path: &str) -> Result<Vec<StatusCode>, Failure> {
+    let mut seen = Vec::new();
+    for round in 0..5 {
+        let now = browser.send("GET", path, None).await?;
+        let Some(version) = now.body["issue"]["version"].as_i64() else {
+            seen.push(now.status);
+            continue;
+        };
+        let changed = browser
+            .send(
+                "PATCH",
+                path,
+                Some(json!({"version": version, "title": format!("Round {round}")})),
+            )
+            .await?;
+        seen.push(changed.status);
+    }
+    Ok(seen)
+}
+
+#[tokio::test]
+async fn iss_01a_makes_and_changes_at_the_moment_of_a_mode_change_finish_in_one_mode() -> TestResult
+{
+    each_database("iss_01a_concurrent_mode_change", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let mut paths = Vec::new();
+        for number in 0..4 {
+            let made = site.make(&mut ada, &format!("Before {number}")).await?;
+            paths.push(format!("{ISSUES}/{}", key_of(ok(&made)?)?));
+        }
+        // Four people change an issue each, four make issues, and the mode changes, all at once.
+        let email = super::http::ADA_EMAIL;
+        let (mut c0, mut c1, mut c2, mut c3) = (
+            Browser::signed_in_as(&app, email).await?,
+            Browser::signed_in_as(&app, email).await?,
+            Browser::signed_in_as(&app, email).await?,
+            Browser::signed_in_as(&app, email).await?,
+        );
+        let (mut m0, mut m1, mut m2, mut m3) = (
+            Browser::signed_in_as(&app, email).await?,
+            Browser::signed_in_as(&app, email).await?,
+            Browser::signed_in_as(&app, email).await?,
+            Browser::signed_in_as(&app, email).await?,
+        );
+        let (r0, r1, r2, r3, k0, k1, k2, k3, switched) = tokio::join!(
+            retitle(&mut c0, &paths[0]),
+            retitle(&mut c1, &paths[1]),
+            retitle(&mut c2, &paths[2]),
+            retitle(&mut c3, &paths[3]),
+            site.make(&mut m0, "During 0"),
+            site.make(&mut m1, "During 1"),
+            site.make(&mut m2, "During 2"),
+            site.make(&mut m3, "During 3"),
+            mode(&mut ada, Some("counting")),
+        );
+        switched?;
+        let mut statuses = Vec::new();
+        for rounds in [r0, r1, r2, r3] {
+            statuses.extend(rounds?);
+        }
+        // Nobody got an error of the server: a change may be stopped by a newer version, no more.
+        for status in statuses {
+            assert!(
+                [StatusCode::OK, StatusCode::CONFLICT, StatusCode::NOT_FOUND].contains(&status),
+                "{status}"
+            );
+        }
+        for made in [k0, k1, k2, k3] {
+            assert_eq!(made?.status, StatusCode::OK);
+        }
+        // Every issue ends with a counting number, and no number twice.
+        let list = ada
+            .send("GET", "/api/v1/projects/ACME/issues?fields=key", None)
+            .await?;
+        let items = ok(&list)?["items"].as_array().ok_or("no items")?;
+        assert_eq!(items.len(), 8);
+        let mut numbers = BTreeSet::new();
+        for item in items {
+            let number: u32 = code_of(&item["key"])?.parse()?;
+            assert!(numbers.insert(number), "{number} twice");
+        }
+        assert_eq!(numbers, (1..=8).collect::<BTreeSet<u32>>());
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn iss_01a_a_second_switch_to_counting_continues_the_counter() -> TestResult {
+    each_database("iss_01a_second_switch", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let first = key_of(ok(&site.make(&mut ada, "First").await?)?)?;
+        mode(&mut ada, Some("counting")).await?;
+        let opened = ada.send("GET", &format!("{ISSUES}/ACME-1"), None).await?;
+        assert_eq!(ok(&opened)?["issue"]["title"], "First");
+        let second = site.make(&mut ada, "Second").await?;
+        assert_eq!(ok(&second)?["key"], "ACME-2");
+        mode(&mut ada, None).await?;
+        mode(&mut ada, Some("counting")).await?;
+        // The counter continues; the first issue keeps being found by every ID it ever had.
+        let third = site.make(&mut ada, "Third").await?;
+        let number: u32 = code_of(&ok(&third)?["key"])?.parse()?;
+        assert!(number >= 3, "{number}");
+        for address in ["ACME-1", &first] {
+            let found = ada
+                .send("GET", &format!("{ISSUES}/{address}"), None)
+                .await?;
+            assert_eq!(ok(&found)?["issue"]["title"], "First", "{address}");
+        }
+        Ok(())
+    })
+    .await
+}
