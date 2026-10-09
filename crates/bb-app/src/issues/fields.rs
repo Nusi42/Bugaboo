@@ -70,15 +70,30 @@ pub(crate) const CHANGEABLE: [Field; 5] = [
     Field::AssignedTo,
 ];
 
-/// The names of the members of an issue in its events, which *History* reads: defined once, here.
+/// The names of the members of an issue and of an issue type in their events, which *History*
+/// reads: defined once, here. A field of the catalogue has the word of the catalogue
+/// (`Field::code`), so History filters by one mapping.
 pub(crate) mod member {
+    use bb_core::fields::Field;
+
     pub(crate) const PROJECT: &str = "project";
     pub(crate) const ISSUE_TYPE: &str = "issue_type";
-    pub(crate) const TITLE: &str = "title";
-    pub(crate) const DESCRIPTION: &str = "description";
-    pub(crate) const STATUS: &str = "status";
-    pub(crate) const PRIORITY: &str = "priority";
-    pub(crate) const REPORTED_BY: &str = "reported_by";
-    pub(crate) const ASSIGNED_TO: &str = "assigned_to";
+    /// The readable ID of the issue.
+    pub(crate) const KEY: &str = "key";
+    pub(crate) const TITLE: &str = Field::Title.code();
+    pub(crate) const DESCRIPTION: &str = Field::Description.code();
+    pub(crate) const STATUS: &str = Field::Status.code();
+    pub(crate) const PRIORITY: &str = Field::Priority.code();
+    pub(crate) const REPORTED_BY: &str = Field::ReportedBy.code();
+    pub(crate) const ASSIGNED_TO: &str = Field::AssignedTo.code();
     pub(crate) const DELETED_AT: &str = "deleted_at";
+
+    /// The members of an issue type.
+    pub(crate) mod issue_type {
+        pub(crate) const NAME: &str = "name";
+        pub(crate) const ICON: &str = "icon";
+        pub(crate) const RETIRED: &str = "retired";
+        /// The list of the types the first start made.
+        pub(crate) const STARTING: &str = "issue_types";
+    }
 }

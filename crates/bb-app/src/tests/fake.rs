@@ -111,6 +111,8 @@ pub(crate) struct FakeStore {
 /// The open "transaction" of a change: a copy of the state.
 pub(crate) struct Tx {
     pub(crate) state: State,
+    /// The events of what a change did besides what its own event says.
+    pub(crate) follow_ups: Vec<DomainEvent>,
 }
 
 impl FakeStore {
@@ -180,11 +182,15 @@ impl ChangeStore for FakeStore {
             }
             shared.state.clone()
         };
-        let mut tx = Tx { state };
+        let mut tx = Tx {
+            state,
+            follow_ups: Vec::new(),
+        };
         let result = change(&mut tx).await?;
         let mut shared = self.lock();
         shared.state = tx.state;
         shared.events.push(event.clone());
+        shared.events.extend(tx.follow_ups);
         Ok(result)
     }
 
@@ -197,6 +203,10 @@ impl ChangeStore for FakeStore {
             shared.reads += 1;
             shared.state.clone()
         };
-        read(&mut Tx { state }).await
+        read(&mut Tx {
+            state,
+            follow_ups: Vec::new(),
+        })
+        .await
     }
 }

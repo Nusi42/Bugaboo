@@ -9,9 +9,11 @@
 //! project has it (or had it) already. When the mode of a project changes, every issue of it
 //! gets a code of the new mode in the same change, and the old code stays with the issue.
 
+use bb_core::event::{FieldChange, RecordKind};
 use bb_core::id::{IdSource, ProjectId};
 use bb_core::issue::IssueAlias;
-use bb_core::issue_key::{IdMode, IssueCode, code_length, longest_code};
+use bb_core::issue_key::{IdMode, IssueCode, IssueKey, code_length, longest_code};
+use bb_core::project::ShortName;
 use bb_core::settings::{
     ISSUES_ID_LENGTH, ISSUES_ID_MODE, Layers, Scope, SettingDefinition, SettingValue,
 };
@@ -19,7 +21,12 @@ use bb_core::text::CodeDraws;
 use bb_policy::Tree;
 use jiff::Timestamp;
 
-use crate::auth::{AppError, AuthStore, Ctx, internal};
+use super::fields::member;
+use crate::auth::{AuthStore, EventMaker, entity};
+
+/// How many numbers a counting project tries before it gives up (which would mean the codes of the
+/// project are not what the rules make them).
+const COUNTING_TRIES: usize = 1000;
 
 /// How the next codes of a project are given out.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -35,12 +42,15 @@ impl CodePlan {
     /// counts as the default mode (the registry accepts nothing else, so this is a stored value
     /// that was made by hand).
     pub(crate) fn of(layers: &Layers) -> Self {
+        let parse = |text: String| IdMode::from_code(&text);
         let value = layers.resolve(ISSUES_ID_MODE.definition()).value;
         let mode = ISSUES_ID_MODE
             .resolve(Some(&value))
             .ok()
-            .and_then(|text| IdMode::from_code(&text))
-            .unwrap_or(IdMode::Random);
+            .and_then(parse)
+            .or_else(|| ISSUES_ID_MODE.default_value().ok().and_then(parse))
+            // The default of the registry is one of the modes: this is never reached.
+            .unwrap_or(IdMode::ALL[0]);
         let length = ISSUES_ID_LENGTH
             .resolve(Some(&layers.resolve(ISSUES_ID_LENGTH.definition()).value))
             .unwrap_or_default();
@@ -63,9 +73,18 @@ pub(crate) async fn new_code_in<S: AuthStore>(
     source: &mut impl IdSource,
 ) -> Result<IssueCode, S::Error> {
     match plan.mode {
-        IdMode::Counting => Ok(IssueCode::counting(
-            S::next_counting_number(transaction, project).await?,
-        )),
+        IdMode::Counting => {
+            // The next number, unless the code is taken (it cannot be: a random code holds a
+            // letter and a number is given out once; a code that is taken is skipped all the same).
+            for _ in 0..COUNTING_TRIES {
+                let code =
+                    IssueCode::counting(S::next_counting_number(transaction, project).await?);
+                if !S::issue_code_taken_in(transaction, project, code.clone()).await? {
+                    return Ok(code);
+                }
+            }
+            Err(S::aborted())
+        }
         IdMode::Random => {
             for symbols in CodeDraws::new(source, plan.length, longest_code()) {
                 let Some(code) = IssueCode::random(&symbols) else {
@@ -81,9 +100,11 @@ pub(crate) async fn new_code_in<S: AuthStore>(
 }
 
 /// A project whose issues get a new code of a new mode.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) struct Renewal {
     pub(crate) project: ProjectId,
+    /// Its short name now, which starts the old and the new ID in the event.
+    pub(crate) short_name: ShortName,
     pub(crate) plan: CodePlan,
 }
 
@@ -125,65 +146,77 @@ fn after(
     }
 }
 
-impl<S: AuthStore> Ctx<'_, S> {
-    /// How the codes of `project` are given out now.
-    pub(crate) async fn code_plan(&self, project: ProjectId) -> Result<CodePlan, AppError> {
-        let layers = self
-            .store()
-            .setting_layers(Some(project), None)
-            .await
-            .map_err(|error| internal::<S>(&error))?;
-        Ok(CodePlan::of(&layers))
-    }
-
-    /// The projects whose issues get new codes when `change` is made to the setting
-    /// `definition` on `scope`: only the mode of a project changes any, and then the project
-    /// itself and the projects inside it that follow it do, each with a code of its new mode.
-    pub(crate) async fn mode_renewals(
-        &self,
-        scope: Scope,
-        definition: &SettingDefinition,
-        change: &ModeChange,
-    ) -> Result<Vec<Renewal>, AppError> {
-        let Scope::Project(on) = scope else {
-            return Ok(Vec::new());
-        };
-        if definition.key() != ISSUES_ID_MODE.definition().key() {
-            return Ok(Vec::new());
-        }
-        let projects = self
-            .store()
-            .project_tree()
-            .await
-            .map_err(|error| internal::<S>(&error))?;
-        let mut renewals = Vec::new();
-        for project in Tree::of(&projects).subtree(on) {
-            let layers = self
-                .store()
-                .setting_layers(Some(project), None)
-                .await
-                .map_err(|error| internal::<S>(&error))?;
-            let (before, to) = (
-                CodePlan::of(&layers),
-                CodePlan::of(&after(&layers, on, ISSUES_ID_MODE.definition(), change)),
-            );
-            if before.mode != to.mode {
-                renewals.push(Renewal { project, plan: to });
-            }
-        }
-        Ok(renewals)
-    }
+/// How the codes of `project` are given out, read inside the change that gives them out, after
+/// the lock on the codes of the project.
+///
+/// # Errors
+/// The error of the store.
+pub(crate) async fn code_plan_in<S: AuthStore>(
+    transaction: &mut S::Transaction,
+    project: ProjectId,
+) -> Result<CodePlan, S::Error> {
+    let layers = S::setting_layers_in(transaction, Some(project), None).await?;
+    Ok(CodePlan::of(&layers))
 }
 
-/// Gives every issue of the project a code of the new mode and keeps the old code with the issue
-/// (`issue_alias`), inside the change that changed the mode.
+/// The projects whose issues get new codes when `change` is made to the setting with this `key` on
+/// `scope`, judged inside the change: only the mode of a project changes any, and then the
+/// project itself and the projects inside it that follow it do, each with a code of its new mode.
+/// The codes of all of them are locked first (in the order of their IDs), so a change that makes
+/// an issue meanwhile sees the old mode or the new one, never a mix, and two changes of the mode
+/// do not renew twice.
+///
+/// # Errors
+/// The error of the store.
+pub(crate) async fn plan_renewals_in<S: AuthStore>(
+    transaction: &mut S::Transaction,
+    scope: Scope,
+    key: &str,
+    change: &ModeChange,
+) -> Result<Vec<Renewal>, S::Error> {
+    let Scope::Project(on) = scope else {
+        return Ok(Vec::new());
+    };
+    if key != ISSUES_ID_MODE.definition().key() {
+        return Ok(Vec::new());
+    }
+    let projects = S::project_tree_in(transaction).await?;
+    let mut affected = Tree::of(&projects).subtree(on);
+    affected.sort();
+    for project in &affected {
+        S::lock_issue_codes(transaction, *project).await?;
+    }
+    let mut renewals = Vec::new();
+    for project in affected {
+        let layers = S::setting_layers_in(transaction, Some(project), None).await?;
+        let (before, to) = (
+            CodePlan::of(&layers),
+            CodePlan::of(&after(&layers, on, ISSUES_ID_MODE.definition(), change)),
+        );
+        if let Some(found) = projects.iter().find(|found| found.id == project)
+            && before.mode != to.mode
+        {
+            renewals.push(Renewal {
+                project,
+                short_name: found.short_name.clone(),
+                plan: to,
+            });
+        }
+    }
+    Ok(renewals)
+}
+
+/// Gives every issue of the project, also those in the trash, a code of the new mode, keeps the
+/// old code with the issue (`issue_alias`) and writes an event for each issue (its ID changed, by
+/// the person who changed the mode), inside the change that changed the mode.
 ///
 /// # Errors
 /// The error of the store.
 pub(crate) async fn renew_in<S: AuthStore>(
     transaction: &mut S::Transaction,
-    renewal: Renewal,
+    renewal: &Renewal,
     source: &mut impl IdSource,
+    events: &EventMaker,
     at: Timestamp,
 ) -> Result<(), S::Error> {
     for (issue, old) in S::issue_codes_in(transaction, renewal.project).await? {
@@ -193,12 +226,26 @@ pub(crate) async fn renew_in<S: AuthStore>(
             transaction,
             &IssueAlias {
                 project: renewal.project,
-                code: old,
+                code: old.clone(),
                 issue,
                 retired_at: at,
             },
         )
         .await?;
+        let key = |code: IssueCode| {
+            serde_json::json!(IssueKey::new(renewal.short_name.clone(), code).to_string())
+        };
+        let event = events
+            .make(
+                entity(RecordKind::Issue, issue),
+                vec![FieldChange {
+                    field: member::KEY.to_owned(),
+                    before: Some(key(old)),
+                    after: Some(key(code)),
+                }],
+            )
+            .map_err(|_| S::aborted())?;
+        S::append_follow_up_event(transaction, &event).await?;
     }
     Ok(())
 }

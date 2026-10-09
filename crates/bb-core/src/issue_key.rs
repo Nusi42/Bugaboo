@@ -84,9 +84,12 @@ pub fn longest_code() -> usize {
     code_length(i64::MAX)
 }
 
+/// A random code always holds a letter, so it can never be read as a counting number: the two
+/// kinds of code cannot meet, and a counting number never takes the code of a random ID.
 fn is_random(text: &str) -> bool {
     (shortest_code()..=longest_code()).contains(&text.len())
         && text.bytes().all(|byte| CROCKFORD.contains(&byte))
+        && text.bytes().any(|byte| byte.is_ascii_uppercase())
 }
 
 impl IssueCode {
@@ -241,13 +244,15 @@ mod tests {
             for _ in 0..wanted {
                 // What a project does for every new issue: the first draw it has not given out.
                 let drawn = CodeDraws::new(&mut source, shortest_code(), longest_code())
-                    .find(|symbols| !given.contains(symbols));
+                    .find(|symbols| IssueCode::random(symbols).is_some() && !given.contains(symbols));
                 // Draws that all clash give no code at all, never a code twice.
                 let Some(symbols) = drawn else { break };
                 let code = IssueCode::random(&symbols).expect("a drawn code is a random code");
                 prop_assert!(symbols.bytes().all(|symbol| CROCKFORD.contains(&symbol)));
                 prop_assert!((shortest_code()..=longest_code()).contains(&symbols.len()));
                 prop_assert!(!symbols.contains(['I', 'L', 'O', 'U']));
+                // Never a counting number: a random code holds a letter.
+                prop_assert!(symbols.parse::<u64>().is_err(), "{symbols} reads as a number");
                 prop_assert!(given.insert(code.to_string()), "{code} was given out twice");
             }
         }
@@ -262,7 +267,7 @@ mod tests {
             "K7Q2",
             "K7Q2X",
             "ABCDEFGH",
-            "0123",
+            "0123A",
         ] {
             assert!(IssueCode::new(good).is_ok(), "{good}");
         }
@@ -270,6 +275,7 @@ mod tests {
             "",
             "0",
             "012",
+            "0123",
             "1000000000000000000",
             "K7Q",
             "K7Q2XABCD",
@@ -285,6 +291,9 @@ mod tests {
             assert_eq!(IssueCode::new(bad), Err(InvalidIssueCode), "{bad:?}");
         }
         assert_eq!(IssueCode::counting(142).as_str(), "142");
+        // Digits only is a counting number or nothing: never a random code.
+        assert!(IssueCode::random("4821").is_none());
+        assert!(IssueCode::random("48A1").is_some());
     }
 
     #[test]
@@ -323,7 +332,10 @@ mod tests {
         assert_eq!(draws.len(), 3 * crate::text::TRIES_PER_LENGTH);
         for (at, code) in draws.iter().enumerate() {
             assert_eq!(code.len(), 4 + at / crate::text::TRIES_PER_LENGTH);
-            assert!(IssueCode::random(code).is_some(), "{code}");
+            // A draw of digits only is no random code (it would be a counting number): the caller
+            // draws again.
+            let has_letter = code.bytes().any(|byte| byte.is_ascii_uppercase());
+            assert_eq!(IssueCode::random(code).is_some(), has_letter, "{code}");
         }
     }
 }

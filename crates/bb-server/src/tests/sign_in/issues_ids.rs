@@ -6,7 +6,9 @@ use std::collections::BTreeSet;
 use axum::http::StatusCode;
 use bb_app::auth::AuthApi as _;
 use bb_app::issues::MakeIssue;
+use bb_core::event::{Actor, EntityKind, RecordKind};
 use bb_core::issue_key::IssueKey;
+use bb_core::technical::TechnicalName;
 use bb_core::text::CROCKFORD;
 use bb_testing::{Failure, TestResult, each_database};
 use serde_json::{Value, json};
@@ -29,6 +31,11 @@ async fn mode(ada: &mut Browser, value: Option<&str>) -> Result<(), Failure> {
     };
     ok(&reply)?;
     Ok(())
+}
+
+/// The readable ID in an answer.
+fn key_of(reply: &Value) -> Result<String, Failure> {
+    Ok(reply["key"].as_str().ok_or("no issue ID")?.to_owned())
 }
 
 /// The code of an issue ID (`ACME-142` is `142`).
@@ -207,6 +214,93 @@ async fn iss_01a_random_ids_made_in_a_project_never_repeat() -> TestResult {
             )
             .await?;
         assert_eq!(too_long.code(), "request.invalid");
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn iss_01a_a_trashed_issue_is_renewed_too_and_never_blocks_making_issues() -> TestResult {
+    each_database("iss_01a_trashed_renewed", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let kept = key_of(ok(&site.make(&mut ada, "Kept").await?)?)?;
+        let trashed = key_of(ok(&site.make(&mut ada, "Trashed").await?)?)?;
+        let gone = ada
+            .send("DELETE", &format!("{ISSUES}/{trashed}"), None)
+            .await?;
+        assert_eq!(gone.status, StatusCode::NO_CONTENT);
+        mode(&mut ada, Some("counting")).await?;
+        // The issue in the trash got a number as well, so no number it holds is given again.
+        let fresh = site.make(&mut ada, "Fresh").await?;
+        assert_eq!(ok(&fresh)?["key"], "ACME-3");
+        // Taken out of the trash by the code it had, it comes back under its number.
+        let back = ada
+            .send("POST", &format!("{ISSUES}/{trashed}/restore"), None)
+            .await?;
+        let number = code_of(&ok(&back)?["key"])?;
+        assert!(["1", "2"].contains(&number.as_str()), "{number}");
+        assert_eq!(back.body["title"], "Trashed");
+        let by_old = ada.send("GET", &format!("{ISSUES}/{kept}"), None).await?;
+        assert_eq!(ok(&by_old)?["issue"]["title"], "Kept");
+        // A random code, drawn when the project goes back to random, never looks like a number,
+        // so it cannot meet a counting code of the past.
+        mode(&mut ada, None).await?;
+        let random = site.make(&mut ada, "Random again").await?;
+        let code = code_of(&ok(&random)?["key"])?;
+        assert!(code.parse::<u64>().is_err(), "{code}");
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn iss_01a_a_change_of_the_mode_writes_one_event_for_each_issue_it_renews() -> TestResult {
+    each_database("iss_01a_renewal_events", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let mut before = BTreeSet::new();
+        for title in ["One", "Two", "Three"] {
+            before.insert(key_of(ok(&site.make(&mut ada, title).await?)?)?);
+        }
+        // One of them is in the trash: it is renewed as well.
+        let trashed = before.iter().next().ok_or("no issue")?.clone();
+        ada.send("DELETE", &format!("{ISSUES}/{trashed}"), None)
+            .await?;
+        let consumer = TechnicalName::new("test-reader")?;
+        let seen = rig.database.outbox_after(&consumer, 100_000).await?.len();
+        mode(&mut ada, Some("counting")).await?;
+        let events = rig.database.outbox_after(&consumer, 100_000).await?;
+        let renewals: Vec<_> = events
+            .iter()
+            .skip(seen)
+            .map(|(_, event)| event)
+            .filter(|event| event.entity.kind == EntityKind::from(RecordKind::Issue))
+            .collect();
+        assert_eq!(renewals.len(), 3, "one for each issue");
+        let mut was = BTreeSet::new();
+        for event in &renewals {
+            assert_eq!(event.actor, Actor::Person(site.org.admin.id));
+            let [change] = event.changes.as_slice() else {
+                return Err("one change for each event".into());
+            };
+            assert_eq!(change.field, "key");
+            was.insert(
+                change
+                    .before
+                    .as_ref()
+                    .and_then(Value::as_str)
+                    .ok_or("no old")?
+                    .to_owned(),
+            );
+            let now = change
+                .after
+                .as_ref()
+                .and_then(Value::as_str)
+                .ok_or("no new")?;
+            assert!(now.starts_with("ACME-") && !before.contains(now), "{now}");
+        }
+        assert_eq!(was, before);
         Ok(())
     })
     .await

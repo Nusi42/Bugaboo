@@ -128,42 +128,132 @@ async fn iss_01_a_hidden_issue_answers_not_found_like_a_missing_one() -> TestRes
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
         let made = site.make(&mut ada, "A secret").await?;
-        let key = key_of(ok(&made)?)?;
+        let random_key = key_of(ok(&made)?)?;
+        let internal = ok(&made)?["id"].as_str().ok_or("no id")?.to_owned();
+        let trashed = key_of(ok(&site.make(&mut ada, "In the trash").await?)?)?;
+        let deleted = ada
+            .send("DELETE", &format!("{ISSUES}/{trashed}"), None)
+            .await?;
+        assert_eq!(deleted.status, StatusCode::NO_CONTENT);
+        // The project counts from now on: the issue has a number, and its random ID is an old one.
+        let switched = ada
+            .send(
+                "PUT",
+                "/api/v1/projects/ACME/settings/issues.id-mode",
+                Some(json!({"value": "counting"})),
+            )
+            .await?;
+        ok(&switched)?;
+        let counted = ada
+            .send("GET", &format!("{ISSUES}/{random_key}"), None)
+            .await?;
+        let counting_key = key_of(&ok(&counted)?["issue"])?;
+        assert_ne!(counting_key, random_key);
+        let in_trash_now = ada
+            .send("GET", &format!("{ISSUES}/{trashed}"), None)
+            .await?;
+        assert_eq!(in_trash_now.code(), "resource.not_found", "trashed is gone");
         let missing = format!("{ISSUES}/ACME-ZZZZZ");
         let elsewhere = format!("{ISSUES}/NOPE-ZZZZZ");
+        let no_such_id = format!("{ISSUES}/{}", "01900000-0000-7000-8000-000000000000");
         // A Guest sees the project and no issue of others; a person with no role sees nothing.
         let (mut gus, _) = site.person(StartingRole::Guest, "gus").await?;
         let nobody_email = "nobody@example.test";
         rig.person(&site.org.admin.session, nobody_email).await?;
         let mut nobody = super::http::Browser::signed_in_as(&app, nobody_email).await?;
+        // Every way to name the hidden issue: the key now, the old random key, the internal ID,
+        // and the issue in the trash (by the key it had when it was trashed).
+        let hidden_paths = [
+            format!("{ISSUES}/{counting_key}"),
+            format!("{ISSUES}/{random_key}"),
+            format!("{ISSUES}/{internal}"),
+            format!("{ISSUES}/{trashed}"),
+        ];
         for browser in [&mut gus, &mut nobody] {
-            for method in ["GET", "DELETE"] {
-                let hidden = browser
-                    .send(method, &format!("{ISSUES}/{key}"), None)
-                    .await?;
-                let gone = browser.send(method, &missing, None).await?;
-                let far = browser.send(method, &elsewhere, None).await?;
-                assert_eq!(
-                    (hidden.status, hidden.code()),
-                    (StatusCode::NOT_FOUND, "resource.not_found"),
-                    "{method}"
-                );
+            for path in &hidden_paths {
+                for method in ["GET", "DELETE"] {
+                    let hidden = browser.send(method, path, None).await?;
+                    let gone = browser.send(method, &missing, None).await?;
+                    let far = browser.send(method, &elsewhere, None).await?;
+                    let unknown_id = browser.send(method, &no_such_id, None).await?;
+                    assert_eq!(
+                        (hidden.status, hidden.code()),
+                        (StatusCode::NOT_FOUND, "resource.not_found"),
+                        "{method} {path}"
+                    );
+                    assert_eq!(without_request_id(&hidden), without_request_id(&gone));
+                    assert_eq!(without_request_id(&hidden), without_request_id(&far));
+                    assert_eq!(without_request_id(&hidden), without_request_id(&unknown_id));
+                }
+                let change = json!({"version": 1, "title": "Hello"});
+                let hidden = browser.send("PATCH", path, Some(change.clone())).await?;
+                let gone = browser.send("PATCH", &missing, Some(change)).await?;
+                assert_eq!(hidden.code(), "resource.not_found", "PATCH {path}");
                 assert_eq!(without_request_id(&hidden), without_request_id(&gone));
-                assert_eq!(without_request_id(&hidden), without_request_id(&far));
+                let restore = browser
+                    .send("POST", &format!("{path}/restore"), None)
+                    .await?;
+                let none = browser
+                    .send("POST", &format!("{missing}/restore"), None)
+                    .await?;
+                assert_eq!(restore.code(), "resource.not_found", "restore {path}");
+                assert_eq!(without_request_id(&restore), without_request_id(&none));
             }
-            let change = json!({"version": 1, "title": "Hello"});
-            let hidden = browser
-                .send("PATCH", &format!("{ISSUES}/{key}"), Some(change.clone()))
-                .await?;
-            let gone = browser.send("PATCH", &missing, Some(change)).await?;
-            assert_eq!(hidden.code(), "resource.not_found");
-            assert_eq!(without_request_id(&hidden), without_request_id(&gone));
         }
+        // The hidden issues are still there for the person who may see them.
+        assert_eq!(
+            ada.send("GET", &format!("{ISSUES}/{internal}"), None)
+                .await?
+                .status,
+            StatusCode::OK
+        );
         // The project of a person with no role does not exist for them either.
         let listed = nobody
             .send("GET", &format!("{PROJECTS}/ACME/issues"), None)
             .await?;
         assert_eq!(listed.code(), "resource.not_found");
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn iss_01_who_may_change_their_own_issues_may_change_its_type_but_not_that_of_others()
+-> TestResult {
+    each_database("iss_01_own_issue_type", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let (mut cora, _) = site.person(StartingRole::Contributor, "cora").await?;
+        let types = ada.send("GET", TYPES, None).await?;
+        let task = types.body["items"][1]["id"]
+            .as_str()
+            .ok_or("no task")?
+            .to_owned();
+        // Changing the type takes the right to change the issue and no field of its own
+        // (`Evaluation::may_change_issue`): *Change own issues* is enough on one's own.
+        let own = site.make(&mut cora, "Mine").await?;
+        let own_path = format!("{ISSUES}/{}", key_of(ok(&own)?)?);
+        let moved = cora
+            .send(
+                "PATCH",
+                &own_path,
+                Some(json!({"version": 1, "issue_type": task})),
+            )
+            .await?;
+        assert_eq!(ok(&moved)?["issue_type"]["name"], "Task");
+        let theirs = site.make(&mut ada, "Ada's").await?;
+        let their_path = format!("{ISSUES}/{}", key_of(ok(&theirs)?)?);
+        let refused = cora
+            .send(
+                "PATCH",
+                &their_path,
+                Some(json!({"version": 1, "issue_type": task})),
+            )
+            .await?;
+        assert_eq!(
+            (refused.status, refused.code()),
+            (StatusCode::FORBIDDEN, "access.forbidden")
+        );
         Ok(())
     })
     .await
@@ -206,7 +296,7 @@ async fn iss_01_a_guest_sees_only_the_issues_they_reported() -> TestResult {
 }
 
 #[tokio::test]
-async fn iss_01_a_stale_version_is_refused_with_who_changed_it() -> TestResult {
+async fn iss_01_a_stale_version_is_refused() -> TestResult {
     each_database("iss_01_stale_version", async |db| {
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;

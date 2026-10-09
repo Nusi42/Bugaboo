@@ -6,6 +6,7 @@
 
 use std::future::Future;
 
+use bb_core::event::DomainEvent;
 use bb_core::id::{IssueId, IssueTypeId, ProjectId, UserId};
 use bb_core::issue::{Issue, IssueAlias, IssueAssignee, IssueIcon, IssueType};
 use bb_core::issue_key::IssueCode;
@@ -36,7 +37,7 @@ pub trait IssueStore: ProjectStore + 'static {
         fn issue_code_taken(project: ProjectId, code: IssueCode) -> bool = issue_code_taken_in;
         /// The people an issue is assigned to, in the order they were put there.
         fn assignees(issue: IssueId) -> Vec<IssueAssignee> = assignees_in;
-        /// The issues of a project that are not in the trash, with their IDs and codes.
+        /// Every issue of a project, also those in the trash, with their IDs and codes.
         fn issue_codes(project: ProjectId) -> Vec<(IssueId, IssueCode)> = issue_codes_in;
     }
 
@@ -86,5 +87,13 @@ pub trait IssueStore: ProjectStore + 'static {
         fn set_issue_code(id: IssueId, code: &IssueCode) -> ();
         /// Keeps an old code with its issue.
         fn insert_issue_alias(alias: &IssueAlias) -> ();
+        /// Waits for every other change that gives out or renews the codes of this project, until
+        /// the end of this change: the mode and the codes of a project are judged and written by
+        /// one change at a time.
+        fn lock_issue_codes(project: ProjectId) -> ();
+        /// Appends the event of something this change did besides what its own event says (an
+        /// issue got a new code because the mode of its project changed), in the same
+        /// transaction.
+        fn append_follow_up_event(event: &DomainEvent) -> ();
     }
 }

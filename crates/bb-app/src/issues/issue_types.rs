@@ -15,6 +15,7 @@ use bb_core::paging::window;
 use bb_policy::{Authorized, Permission, Place};
 use serde_json::json;
 
+use super::fields::member;
 use super::types::{ChangeIssueType, IssueTypePage, IssueTypeView, IssueTypesQuery, MakeIssueType};
 use crate::auth::{
     AppError, AuthStore, Ctx, Stops, by, change_failed, entity, fixed_entity, internal, set_to,
@@ -97,8 +98,8 @@ pub async fn make_issue_type<S: AuthStore>(
         by(actor.person.id),
         entity(RecordKind::IssueType, issue_type.id),
         vec![
-            set_to("name", json!(issue_type.name)),
-            set_to("icon", json!(issue_type.icon.code())),
+            set_to(member::issue_type::NAME, json!(issue_type.name)),
+            set_to(member::issue_type::ICON, json!(issue_type.icon.code())),
         ],
     )?;
     let why = Why::default();
@@ -165,21 +166,21 @@ pub async fn change_issue_type<S: AuthStore>(
     let mut differences = Vec::new();
     if name != current.name {
         differences.push(FieldChange {
-            field: "name".to_owned(),
+            field: member::issue_type::NAME.to_owned(),
             before: Some(json!(current.name)),
             after: Some(json!(name)),
         });
     }
     if icon != current.icon {
         differences.push(FieldChange {
-            field: "icon".to_owned(),
+            field: member::issue_type::ICON.to_owned(),
             before: Some(json!(current.icon.code())),
             after: Some(json!(icon.code())),
         });
     }
     if retired_at.is_some() != current.retired_at.is_some() {
         differences.push(FieldChange {
-            field: "retired".to_owned(),
+            field: member::issue_type::RETIRED.to_owned(),
             before: Some(json!(current.retired_at.is_some())),
             after: Some(json!(retired_at.is_some())),
         });
@@ -267,7 +268,10 @@ pub async fn make_starting_issue_types<S: AuthStore>(
     let event = ctx.event(
         Actor::System,
         fixed_entity(RecordKind::IssueType, "starting")?,
-        vec![set_to("issue_types", serde_json::Value::Array(names))],
+        vec![set_to(
+            member::issue_type::STARTING,
+            serde_json::Value::Array(names),
+        )],
     )?;
     let result = ctx
         .store()

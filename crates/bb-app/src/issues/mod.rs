@@ -36,4 +36,4 @@ pub use read::{issue, issues};
 pub use store::{IssueFound, IssueStore};
 pub use types::*;
 
-pub(crate) use ids::{ModeChange, renew_in};
+pub(crate) use ids::{ModeChange, plan_renewals_in, renew_in};

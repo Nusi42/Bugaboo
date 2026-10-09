@@ -1,6 +1,7 @@
 //! The issues part of the in-memory store: issue types, issues, the people they are assigned to
 //! and the codes of their readable IDs.
 
+use bb_core::event::DomainEvent;
 use bb_core::id::{IssueId, IssueTypeId, ProjectId, UserId};
 use bb_core::issue::{Issue, IssueAlias, IssueAssignee, IssueIcon, IssueType};
 use bb_core::issue_key::IssueCode;
@@ -88,7 +89,7 @@ impl IssueStore for FakeStore {
             .state
             .issues
             .iter()
-            .filter(|issue| issue.project == project && issue.deleted_at.is_none())
+            .filter(|issue| issue.project == project)
             .map(|issue| (issue.id, issue.code.clone()))
             .collect();
         found.sort_by_key(|(id, _)| *id);
@@ -245,6 +246,15 @@ impl IssueStore for FakeStore {
             found.code = code.clone();
             found.version += 1;
         }
+        Ok(())
+    }
+
+    async fn lock_issue_codes(_tx: &mut Tx, _project: ProjectId) -> Result<(), FakeError> {
+        Ok(())
+    }
+
+    async fn append_follow_up_event(tx: &mut Tx, event: &DomainEvent) -> Result<(), FakeError> {
+        tx.follow_ups.push(event.clone());
         Ok(())
     }
 

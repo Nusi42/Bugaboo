@@ -213,7 +213,7 @@ async fn transaction_has_no_row(
 }
 
 /// Appends the event and its outbox entry inside the transaction of the change.
-async fn append_event(
+pub(crate) async fn append_event(
     transaction: &mut Transaction,
     event: &DomainEvent,
 ) -> Result<(), StoreError> {

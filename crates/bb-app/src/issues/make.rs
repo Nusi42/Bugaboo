@@ -14,7 +14,7 @@ use bb_policy::{Authorized, Evaluation, Permission, Place};
 use serde_json::json;
 
 use super::fields::{clean_description, clean_title, ensure_may_change, member};
-use super::ids::{CodePlan, new_code_in};
+use super::ids::{code_plan_in, new_code_in};
 use super::types::{IssueView, MakeIssue};
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, by, entity, internal, set_to};
@@ -30,7 +30,6 @@ struct NewIssue {
     project: Project,
     issue: Issue,
     assignees: Vec<UserId>,
-    plan: CodePlan,
 }
 
 impl NewIssue {
@@ -99,7 +98,6 @@ impl<S: AuthStore> Ctx<'_, S> {
         if issue_type.retired_at.is_some() {
             return Err(ErrorCode::IssueTypeRetired.into());
         }
-        let plan = self.code_plan(project.id).await?;
         let now = self.now();
         let status = input.status.unwrap_or(Status::NEW);
         let issue = Issue {
@@ -126,7 +124,6 @@ impl<S: AuthStore> Ctx<'_, S> {
                 project,
                 issue,
                 assignees,
-                plan,
             },
         ))
     }
@@ -174,7 +171,7 @@ pub async fn make_issue<S: AuthStore>(
         tried += 1;
         let why = Why::default();
         let (stopped, mut source) = (why.clone(), ctx.owned_ids());
-        let (issue, people, plan) = (new.issue.clone(), people.clone(), new.plan);
+        let (issue, people) = (new.issue.clone(), people.clone());
         let result = ctx
             .store()
             .record_change(&event, move |transaction| {
@@ -188,6 +185,10 @@ pub async fn make_issue<S: AuthStore>(
                     if retired {
                         return Err(stopped.stop::<S>(ErrorCode::IssueTypeRetired));
                     }
+                    // The mode and the code are judged after the lock on the codes of the
+                    // project, so a change of the mode meanwhile is seen whole or not at all.
+                    S::lock_issue_codes(transaction, issue.project).await?;
+                    let plan = code_plan_in::<S>(transaction, issue.project).await?;
                     let code =
                         new_code_in::<S>(transaction, issue.project, plan, &mut source).await?;
                     let issue = Issue { code, ..issue };

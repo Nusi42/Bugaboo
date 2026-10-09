@@ -5,7 +5,7 @@
 
 [[engine-only]]
 permission = "change-own-issues"
-reason = "Decided inside the route that declares change-issues (PATCH /api/v1/issues/{issue}): a person with only this permission changes the issues they reported (Evaluation::may_change_issue); tracked by M3-F01."
+reason = "Judged by Evaluation::may_change_issue inside the route that declares change-issues (PATCH /api/v1/issues/{issue}): a person with only this permission changes the issues they reported. It has no route of its own and stays here for good (M3-F01)."
 
 [[engine-only]]
 permission = "edit-anyway"
