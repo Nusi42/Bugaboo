@@ -1,17 +1,20 @@
 //! SEC-PRIVATE: nothing private about the owner in Git (coding-standards §2).
 //!
-//! What it looks for, in every file (its name and its text, whatever way the text is encoded) and
-//! in every commit message and tag message:
+//! What it looks for, in every file (its name and its text, whatever way the text is encoded; in a
+//! file that is no text, the printable runs of bytes, like the tool `strings`), in the names of
+//! branches and tags, in every commit message and tag message, and in what the commits that are
+//! not pushed yet add:
 //!
-//! 1. a user-profile path with an account name (`X:\Users\<name>\`, `X:/Users/<name>/`, a share
-//!    like `\\host\c$\Users\<name>`, `\Users\<name>`, `/c/Users/<name>/`, `/home/<name>`,
-//!    `/Users/<name>`, also URL-encoded); `%USERPROFILE%` and `~` are the allowed forms, and so are
-//!    the placeholders and made-up names of [`GENERIC_ACCOUNTS`]. The account of the machine the
-//!    check runs on is never generic, however short;
-//! 2. a Claude session ID or link: the memory-note key with a value (any case, quoted or not), the
-//!    keys `sessionId` and `session_id` with a UUID, a session link with an ID, and `session_`
-//!    followed by a long ID (letters and digits, 20 or more); in a commit message also any session
-//!    trailer line;
+//! 1. a user-profile path with an account name (`X:\Users\<name>\`, `X:/Users/<name>/`,
+//!    `X:\Documents and Settings\<name>`, a share like `\\host\c$\Users\<name>` or
+//!    `\\wsl$\<distro>\home\<name>`, `\Users\<name>`, `/c/Users/<name>/`, `/home/<name>`,
+//!    `/var/home/<name>`, `/Users/<name>`, also URL-encoded); `%USERPROFILE%` and `~` are the
+//!    allowed forms, and so are the placeholders and made-up names of [`GENERIC_ACCOUNTS`]. The
+//!    account of the machine the check runs on is never generic, however short;
+//! 2. a Claude session ID or link: the memory-note key with a value (any case, quoted or not, after
+//!    `:` or `=`), the keys `sessionId`, `session_id` and `session-id` with a UUID, a session link
+//!    with an ID, and `session_` followed by a long ID (letters and digits, 20 or more; any case);
+//!    in a commit message also any session trailer line;
 //! 3. a private word: the values of `USERNAME`, `COMPUTERNAME`, `USER` and `HOSTNAME` of the
 //!    machine the check runs on, and the words of the optional list
 //!    `~/.config/bugaboo/private-words.txt` (one per line; blank lines and `#` lines ignored; the
@@ -22,7 +25,8 @@
 //!    paths still knows them.
 //!
 //! The check never prints a private word: a finding names the place (file and line, or commit and
-//! line) and the rule only. Files in `tools/checks/private-exemptions.toml` are exempt from the
+//! line) and the rule only, and a name that holds a private word, an account or an ID is shown with
+//! that part replaced by `***`. Files in `tools/checks/private-exemptions.toml` are exempt from the
 //! rule on private words in their text (not from the others), each with a reason: they are data
 //! the project does not write. The failing examples of this check are the one place it does not
 //! look at.
@@ -42,13 +46,16 @@ use super::git_commit_msg;
 use super::meta_wiring::CLAUDE_FOLDER;
 use super::{Check, Context, Finding};
 use crate::repo::Repo;
-use crate::source::{FIXTURES_FOLDER, decode_text, is_word_char};
+use crate::source::{FIXTURES_FOLDER, decode_text, is_word_char, printable_runs};
+
+/// A part of a text: byte positions from and to.
+type Span = (usize, usize);
 
 /// The key Claude Code adds to every memory note it saves; `cargo xtask hook post-edit` removes
 /// the line again.
 pub(crate) const MEMORY_SESSION_KEY: &str = "originSessionId";
 /// Other keys that hold a session ID, which then has the form of a UUID.
-const UUID_SESSION_KEYS: [&str; 2] = ["sessionId", "session_id"];
+const UUID_SESSION_KEYS: [&str; 3] = ["sessionId", "session_id", "session-id"];
 /// The folder of the memory notes, below [`CLAUDE_FOLDER`].
 const MEMORY_FOLDER: &str = "memory";
 
@@ -62,6 +69,15 @@ const MIN_ID_LEN: usize = 8;
 const LONG_ID_LEN: usize = 20;
 /// The lengths of the groups of a UUID.
 const UUID_GROUPS: [usize; 5] = [8, 4, 4, 4, 12];
+/// What replaces the private part of a name in a finding.
+const MASK: &str = "***";
+
+/// The folders of a profile, in lower case, and the spelling a bare path has to have.
+const PROFILE_FOLDERS: [(&str, &str); 3] = [
+    ("users", "Users"),
+    ("home", "home"),
+    ("documents and settings", "Documents and Settings"),
+];
 
 /// The variables that name the account and the computer.
 const NAME_VARIABLES: [&str; 4] = ["USERNAME", "COMPUTERNAME", "USER", "HOSTNAME"];
@@ -224,16 +240,34 @@ impl PrivateWords {
         (Self::from_sources(variable, list.as_deref()), problem)
     }
 
-    /// Whether a word is in the lower-case line, as a whole: a word ends where a letter ends.
-    fn found_in(&self, lower_line: &str) -> bool {
-        self.words.iter().any(|word| {
-            lower_line.match_indices(word.as_str()).any(|(at, _)| {
-                let before = lower_line[..at].chars().next_back();
-                let after = lower_line[at + word.len()..].chars().next();
-                !before.is_some_and(|c| c.is_ascii_alphabetic())
+    /// Where the words stand in the text, in any case, as whole words: a word ends where a
+    /// letter ends.
+    fn word_spans(&self, text: &str) -> Vec<Span> {
+        // The text in lower case, each character with the place of the character it came from.
+        let mut lowered: Vec<(char, usize, usize)> = Vec::new();
+        let mut positions = text.char_indices().peekable();
+        while let Some((start, c)) = positions.next() {
+            let end = positions.peek().map_or(text.len(), |next| next.0);
+            lowered.extend(c.to_lowercase().map(|lower| (lower, start, end)));
+        }
+        let mut spans = Vec::new();
+        for word in &self.words {
+            let word: Vec<char> = word.chars().collect();
+            for from in 0..lowered.len().saturating_sub(word.len().saturating_sub(1)) {
+                let found = &lowered[from..from + word.len()];
+                if word.is_empty() || found.iter().zip(&word).any(|(a, b)| a.0 != *b) {
+                    continue;
+                }
+                let before = from.checked_sub(1).map(|at| lowered[at].0);
+                let after = lowered.get(from + word.len()).map(|next| next.0);
+                if !before.is_some_and(|c| c.is_ascii_alphabetic())
                     && !after.is_some_and(|c| c.is_ascii_alphabetic())
-            })
-        })
+                {
+                    spans.push((found[0].1, found[word.len() - 1].2));
+                }
+            }
+        }
+        spans
     }
 
     /// Whether this account is the machine's own or on the private list.
@@ -242,35 +276,39 @@ impl PrivateWords {
     }
 }
 
-/// Whether the text `rest` (after `Users` or `home`) is a separator run followed by the name of an
-/// account that is not a placeholder.
-fn account_follows(rest: &str, words: &PrivateWords) -> bool {
+/// The place of the name of an account when the text `rest` (after `Users` or `home`) is a
+/// separator run followed by an account that is not a placeholder.
+fn account_follows(rest: &str, words: &PrivateWords) -> Option<Span> {
     let after_separators = rest.trim_start_matches(SEPARATORS);
     if after_separators.len() == rest.len() {
-        return false;
+        return None;
     }
+    let skip = rest.len() - after_separators.len();
     let name: String = after_separators
         .chars()
         .take_while(|c| c.is_alphanumeric() || matches!(c, '_' | '.' | '-'))
-        .collect::<String>()
-        .to_lowercase();
-    name.chars().next().is_some_and(char::is_alphanumeric)
-        && (!GENERIC_ACCOUNTS.contains(&name.as_str()) || words.is_own(&name))
+        .collect();
+    let lower = name.to_lowercase();
+    (name.chars().next().is_some_and(char::is_alphanumeric)
+        && (!GENERIC_ACCOUNTS.contains(&lower.as_str()) || words.is_own(&lower)))
+    .then_some((skip, skip + name.len()))
 }
 
-/// Whether the keyword at `at` in `line` starts a profile path.
+/// The place of the account when the folder at `at` in `line` starts a profile path.
 fn profile_path_at(
     line: &str,
     at: usize,
     keyword: &str,
     exact: &str,
     words: &PrivateWords,
-) -> bool {
+) -> Option<Span> {
     let before = &line[..at];
     let prefix = before.trim_end_matches(SEPARATORS);
-    if prefix.len() == before.len() || !account_follows(&line[at + keyword.len()..], words) {
-        return false;
+    if prefix.len() == before.len() {
+        return None;
     }
+    let start = at + keyword.len();
+    let (from, to) = account_follows(&line[start..], words)?;
     let drive = prefix
         .strip_suffix(':')
         .and_then(|p| p.chars().next_back())
@@ -279,16 +317,25 @@ fn profile_path_at(
         .strip_suffix(|c: char| c.is_ascii_alphabetic())
         .is_some_and(|p| p.ends_with('/'));
     let admin_share = prefix.ends_with('$');
+    // `\\wsl$\Ubuntu\home\…`, `\\host\share\Users\…`: a network path.
+    let network = prefix
+        .rsplit(|c: char| c.is_whitespace() || QUOTES.contains(&c))
+        .next()
+        .is_some_and(|token| token.starts_with("\\\\"));
+    let var_home = keyword == "home" && prefix.ends_with("/var");
     let alone = prefix.is_empty()
         || prefix.ends_with(|c: char| !is_word_char(c) && !matches!(c, '/' | '.' | '~'));
-    // `C:\Users\…`, `/c/Users/…`, `\\host\c$\Users\…` and `\Users\…` are certain. A bare
-    // `/Users/…` or `/home/…` has to be the exact word at the start of a path, not the end of a
-    // longer one.
-    drive
+    // `C:\Users\…`, `/c/Users/…`, `\\host\c$\Users\…`, `\\wsl$\…\home\…`, `/var/home/…` and
+    // `\Users\…` are certain. A bare `/Users/…` or `/home/…` has to be the exact word at the start
+    // of a path, not the end of a longer one.
+    let certain = drive
         || mounted
         || admin_share
+        || network
+        || var_home
         || (before.ends_with('\\') && alone)
-        || (&line[at..at + keyword.len()] == exact && before.ends_with('/') && alone)
+        || (&line[at..start] == exact && before.ends_with('/') && alone);
+    certain.then_some((start + from, start + to))
 }
 
 /// The text with the characters of a path that URLs write as `%5C`, `%2F` and `%3A` decoded.
@@ -302,24 +349,27 @@ fn decode_url_path(line: &str) -> String {
     text
 }
 
-/// Whether `line` holds a user-profile path with an account name.
-fn has_profile_path(line: &str, words: &PrivateWords) -> bool {
-    let decoded = decode_url_path(line);
-    [line, decoded.as_str()].iter().any(|line| {
-        let lower = line.to_ascii_lowercase();
-        [("users", "Users"), ("home", "home")]
-            .iter()
-            .any(|(keyword, exact)| {
-                lower
-                    .match_indices(keyword)
-                    .any(|(at, _)| profile_path_at(line, at, keyword, exact, words))
-            })
-    })
+/// Where the accounts of profile paths stand in the text.
+fn path_spans(text: &str, words: &PrivateWords) -> Vec<Span> {
+    let lower = text.to_ascii_lowercase();
+    PROFILE_FOLDERS
+        .iter()
+        .flat_map(|(keyword, exact)| {
+            lower
+                .match_indices(keyword)
+                .filter_map(|(at, _)| profile_path_at(text, at, keyword, exact, words))
+        })
+        .collect()
 }
 
-/// The values that stand after `key` and a colon in `line` (the key in any case, with or without
-/// quotes, spaces around the colon).
-fn values_after_key<'a>(line: &'a str, key: &str) -> Vec<&'a str> {
+/// Whether `line` holds a user-profile path with an account name, also when it is URL-encoded.
+fn has_profile_path(line: &str, words: &PrivateWords) -> bool {
+    !path_spans(line, words).is_empty() || !path_spans(&decode_url_path(line), words).is_empty()
+}
+
+/// Where the values stand that follow `key` and a colon or an equals sign in `line` (the key in any
+/// case, with or without quotes, spaces around the sign).
+fn value_starts(line: &str, key: &str) -> Vec<usize> {
     let lower = line.to_ascii_lowercase();
     lower
         .match_indices(&key.to_ascii_lowercase())
@@ -327,8 +377,9 @@ fn values_after_key<'a>(line: &'a str, key: &str) -> Vec<&'a str> {
             let rest = line[at + key.len()..]
                 .trim_start_matches(QUOTES)
                 .trim_start()
-                .strip_prefix(':')?;
-            Some(rest.trim_start().trim_start_matches(QUOTES))
+                .strip_prefix([':', '='])?;
+            let value = rest.trim_start().trim_start_matches(QUOTES);
+            Some(line.len() - value.len())
         })
         .collect()
 }
@@ -349,29 +400,44 @@ fn starts_with_uuid(text: &str) -> bool {
     })
 }
 
-/// Whether `line` holds a session ID or link.
-fn has_session_id(line: &str) -> bool {
-    let key = values_after_key(line, MEMORY_SESSION_KEY)
-        .iter()
-        .any(|value| id_len(value) >= MIN_ID_LEN);
-    let uuid = UUID_SESSION_KEYS.iter().any(|name| {
-        values_after_key(line, name)
-            .iter()
-            .any(|value| starts_with_uuid(value))
-    });
-    let in_url = line
-        .match_indices(SESSION_LINK)
-        .any(|(at, _)| id_len(&line[at + SESSION_LINK.len()..]) >= MIN_ID_LEN);
-    let long = line.match_indices(SESSION_PREFIX).any(|(at, _)| {
-        let run: String = line[at + SESSION_PREFIX.len()..]
+/// Where the session IDs stand in the line.
+fn session_spans(line: &str) -> Vec<Span> {
+    let mut spans = Vec::new();
+    for start in value_starts(line, MEMORY_SESSION_KEY) {
+        let length = id_len(&line[start..]);
+        if length >= MIN_ID_LEN {
+            spans.push((start, start + length));
+        }
+    }
+    for key in UUID_SESSION_KEYS {
+        for start in value_starts(line, key) {
+            if starts_with_uuid(&line[start..]) {
+                spans.push((start, start + id_len(&line[start..])));
+            }
+        }
+    }
+    let lower = line.to_ascii_lowercase();
+    for (at, _) in lower.match_indices(SESSION_LINK) {
+        let start = at + SESSION_LINK.len();
+        let length = id_len(&line[start..]);
+        if length >= MIN_ID_LEN {
+            spans.push((start, start + length));
+        }
+    }
+    for (at, _) in lower.match_indices(SESSION_PREFIX) {
+        let start = at + SESSION_PREFIX.len();
+        let run: String = line[start..]
             .chars()
             .take_while(char::is_ascii_alphanumeric)
             .collect();
-        run.len() >= LONG_ID_LEN
+        if run.len() >= LONG_ID_LEN
             && run.chars().any(|c| c.is_ascii_digit())
             && run.chars().any(|c| c.is_ascii_alphabetic())
-    });
-    key || uuid || in_url || long
+        {
+            spans.push((start, start + run.len()));
+        }
+    }
+    spans
 }
 
 /// Whether the line is a session trailer (`Claude-Session` and a colon, spaces allowed between;
@@ -390,13 +456,13 @@ fn rules_of(line: &str, words: &PrivateWords, in_message: bool, names: bool) -> 
     if has_profile_path(line, words) {
         rules.push(Rule::ProfilePath);
     }
-    if has_session_id(line) {
+    if !session_spans(line).is_empty() {
         rules.push(Rule::SessionId);
     }
     if in_message && is_session_trailer(line) {
         rules.push(Rule::SessionTrailer);
     }
-    if names && words.found_in(&line.to_lowercase()) {
+    if names && !words.word_spans(line).is_empty() {
         rules.push(Rule::PrivateWord);
     }
     rules
@@ -417,6 +483,33 @@ fn scan_text(
                 .map(move |rule| (index + 1, rule))
         })
         .collect()
+}
+
+/// A name (of a file, a branch or a tag) as a finding may show it: the private words, accounts
+/// and IDs in it replaced by [`MASK`].
+fn masked(name: &str, words: &PrivateWords) -> String {
+    let decoded = decode_url_path(name);
+    let text = if path_spans(name, words).is_empty() && !path_spans(&decoded, words).is_empty() {
+        decoded.as_str()
+    } else {
+        name
+    };
+    let mut spans = words.word_spans(text);
+    spans.extend(session_spans(text));
+    spans.extend(path_spans(text, words));
+    spans.sort_unstable();
+    let mut shown = String::new();
+    let mut done = 0;
+    for (from, to) in spans {
+        if to <= done {
+            continue;
+        }
+        shown.push_str(&text[done..from.max(done)]);
+        shown.push_str(MASK);
+        done = to;
+    }
+    shown.push_str(&text[done..]);
+    shown
 }
 
 #[derive(Deserialize)]
@@ -440,6 +533,11 @@ impl Exemption for Exempt {
     fn reason(&self) -> &str {
         &self.reason
     }
+}
+
+/// Whether the file may hold private words in its text.
+fn is_exempt(exempt: &[Exempt], file: &str) -> bool {
+    exempt.iter().any(|entry| entry.path == file)
 }
 
 pub(crate) struct SecPrivate;
@@ -487,10 +585,10 @@ impl Check for SecPrivate {
         let skipped = Self::failing_examples();
         files.retain(|file| !file.starts_with(&skipped));
         findings.extend(scan_files(repo.root(), &files, &words, &exempt.exempt));
-        // Commit messages belong to the history, which a staged run does not look at (the
-        // commit-msg hook checks the message being written).
+        // The history belongs to a run on the whole repository; a staged run looks at files only
+        // (the commit-msg hook checks the message being written).
         if context.files.is_none() {
-            findings.extend(scan_history(repo, &words)?);
+            findings.extend(scan_history(repo, &words, &exempt.exempt, &skipped)?);
         }
         Ok(findings)
     }
@@ -500,7 +598,23 @@ fn finding(place: &str, line: usize, rule: Rule) -> Finding {
     Finding::at(format!("{place}:{line}"), rule.message())
 }
 
-/// The names of the files, and the text of the files that are text.
+/// One finding for each rule in the set, at a place that has no line.
+fn findings_without_line(place: &str, rules: BTreeSet<Rule>) -> impl Iterator<Item = Finding> {
+    let place = place.to_owned();
+    rules
+        .into_iter()
+        .map(move |rule| Finding::at(place.clone(), rule.message()))
+}
+
+/// The rules a text breaks, without the lines.
+fn rules_in(text: &str, words: &PrivateWords, names: bool) -> BTreeSet<Rule> {
+    scan_text(text, words, false, names)
+        .into_iter()
+        .map(|(_, rule)| rule)
+        .collect()
+}
+
+/// The names of the files, and their text (or the printable runs of a file that is no text).
 fn scan_files(
     root: &Path,
     files: &[String],
@@ -509,23 +623,27 @@ fn scan_files(
 ) -> Vec<Finding> {
     let mut findings = Vec::new();
     for file in files {
-        findings.extend(
-            scan_text(file, words, false, true)
-                .into_iter()
-                .map(|(_, rule)| Finding::at(format!("{file} (its name)"), rule.message())),
-        );
-        let Some(text) = fs::read(root.join(file))
-            .ok()
-            .and_then(|bytes| decode_text(&bytes))
-        else {
+        let shown = masked(file, words);
+        findings.extend(findings_without_line(
+            &format!("{shown} (its name)"),
+            rules_in(file, words, true),
+        ));
+        let Ok(bytes) = fs::read(root.join(file)) else {
             continue;
         };
-        let names = !exempt.iter().any(|entry| &entry.path == file);
-        findings.extend(
-            scan_text(&text, words, false, names)
-                .into_iter()
-                .map(|(line, rule)| finding(file, line, rule)),
-        );
+        let names = !is_exempt(exempt, file);
+        if let Some(text) = decode_text(&bytes) {
+            findings.extend(
+                scan_text(&text, words, false, names)
+                    .into_iter()
+                    .map(|(line, rule)| finding(&shown, line, rule)),
+            );
+        } else {
+            findings.extend(findings_without_line(
+                &format!("{shown} (a file that is no text)"),
+                rules_in(&printable_runs(&bytes), words, names),
+            ));
+        }
     }
     findings
 }
@@ -539,9 +657,15 @@ fn records(listing: &[u8]) -> Vec<String> {
         .collect()
 }
 
-/// The messages of the commits on every branch, on every tag and on `HEAD`, and the messages of
-/// the annotated tags: whatever a push can send.
-fn scan_history(repo: &Repo, words: &PrivateWords) -> anyhow::Result<Vec<Finding>> {
+/// What a push can send: the messages of the commits on every branch, on every tag and on `HEAD`,
+/// the messages of annotated tags, the names of branches and tags, and what the commits that are
+/// not on a remote yet add to the files.
+fn scan_history(
+    repo: &Repo,
+    words: &PrivateWords,
+    exempt: &[Exempt],
+    skipped: &str,
+) -> anyhow::Result<Vec<Finding>> {
     if repo
         .git_bytes(&["rev-parse", "--verify", "--quiet", "HEAD"])
         .is_err()
@@ -560,6 +684,8 @@ fn scan_history(repo: &Repo, words: &PrivateWords) -> anyhow::Result<Vec<Finding
         "--format=%(objecttype)%1f%(refname:short)%1f%(contents)%1e",
         "refs/tags",
     ])?;
+    let branches =
+        repo.git_bytes(&["for-each-ref", "--format=%(refname:short)%1e", "refs/heads"])?;
     let mut findings = Vec::new();
     for record in records(&commits) {
         if let Some((hash, message)) = record.split_once('\u{1f}') {
@@ -570,10 +696,31 @@ fn scan_history(repo: &Repo, words: &PrivateWords) -> anyhow::Result<Vec<Finding
         let mut parts = record.splitn(3, '\u{1f}');
         if let (Some("tag"), Some(name), Some(message)) = (parts.next(), parts.next(), parts.next())
         {
-            findings.extend(scan_message(&format!("tag {name}"), message, words));
+            let place = format!("tag {}", masked(name, words));
+            findings.extend(scan_message(&place, message, words));
         }
     }
+    let tag_names = tags_names(&tags);
+    for (kind, name) in records(&branches)
+        .iter()
+        .map(|name| ("branch", name.as_str()))
+        .chain(tag_names.iter().map(|name| ("tag", name.as_str())))
+    {
+        findings.extend(findings_without_line(
+            &format!("{kind} {} (its name)", masked(name, words)),
+            rules_in(name, words, true),
+        ));
+    }
+    findings.extend(scan_unpushed_changes(repo, words, exempt, skipped)?);
     Ok(findings)
+}
+
+/// The names of all tags (annotated or not) in the listing of tags.
+fn tags_names(tags: &[u8]) -> Vec<String> {
+    records(tags)
+        .iter()
+        .filter_map(|record| record.split('\u{1f}').nth(1).map(str::to_owned))
+        .collect()
 }
 
 fn scan_message(place: &str, message: &str, words: &PrivateWords) -> Vec<Finding> {
@@ -581,6 +728,83 @@ fn scan_message(place: &str, message: &str, words: &PrivateWords) -> Vec<Finding
         .into_iter()
         .map(|(line, rule)| finding(place, line, rule))
         .collect()
+}
+
+/// What the commits that are not on the remote add to the files: the commits after the upstream
+/// of this branch, or, without an upstream (a new branch, a clone), the commits no remote branch
+/// has. A file that was committed with private data and cleaned in a later commit is found here.
+fn scan_unpushed_changes(
+    repo: &Repo,
+    words: &PrivateWords,
+    exempt: &[Exempt],
+    skipped: &str,
+) -> anyhow::Result<Vec<Finding>> {
+    let range: &[&str] = if repo
+        .git_bytes(&["rev-parse", "--verify", "--quiet", "@{u}"])
+        .is_ok()
+    {
+        &["@{u}..HEAD"]
+    } else {
+        &["HEAD", "--not", "--remotes"]
+    };
+    let mut args = vec![
+        "-c",
+        "core.quotepath=false",
+        "log",
+        "-p",
+        "-U0",
+        "--no-color",
+        "--no-ext-diff",
+        "--format=%x1e%h",
+    ];
+    args.extend(range);
+    let diff = repo.git_bytes(&args)?;
+    Ok(scan_diff(
+        &String::from_utf8_lossy(&diff),
+        words,
+        exempt,
+        skipped,
+    ))
+}
+
+/// The lines a `git log -p -U0` listing adds, in the files that are read.
+fn scan_diff(diff: &str, words: &PrivateWords, exempt: &[Exempt], skipped: &str) -> Vec<Finding> {
+    let mut findings = Vec::new();
+    let mut hash = "";
+    let mut path: Option<&str> = None;
+    let mut in_header = false;
+    let mut line_number = 0_usize;
+    for line in diff.lines() {
+        if let Some(short) = line.strip_prefix('\u{1e}') {
+            (hash, path, in_header) = (short, None, false);
+        } else if line.starts_with("diff --git ") {
+            (path, in_header) = (None, true);
+        } else if let Some(hunk) = line.strip_prefix("@@ ") {
+            in_header = false;
+            // `-old,count +new,count @@`: the line the added lines start at.
+            line_number = hunk
+                .split(" +")
+                .nth(1)
+                .and_then(|new| new.split([',', ' ']).next())
+                .and_then(|start| start.parse().ok())
+                .unwrap_or(0);
+        } else if in_header {
+            if let Some(file) = line.strip_prefix("+++ b/") {
+                path = Some(file);
+            }
+        } else if let (Some(added), Some(file)) = (line.strip_prefix('+'), path) {
+            if !file.starts_with(skipped) {
+                let place = format!("commit {hash}, {}", masked(file, words));
+                findings.extend(
+                    rules_of(added, words, false, !is_exempt(exempt, file))
+                        .into_iter()
+                        .map(|rule| finding(&place, line_number, rule)),
+                );
+            }
+            line_number += 1;
+        }
+    }
+    findings
 }
 
 /// What is private in a commit message file written by Git (the diff of `git commit -v` is not
@@ -618,7 +842,7 @@ fn is_session_line(line: &str) -> bool {
     start
         .get(..MEMORY_SESSION_KEY.len())
         .is_some_and(|key| key.eq_ignore_ascii_case(MEMORY_SESSION_KEY))
-        && !values_after_key(line, MEMORY_SESSION_KEY).is_empty()
+        && !value_starts(line, MEMORY_SESSION_KEY).is_empty()
 }
 
 /// Removes the session line from a memory note after an edit. Returns whether it changed the file.
@@ -673,6 +897,10 @@ mod tests {
             .collect();
         found.dedup();
         found
+    }
+
+    fn has_word(words: &PrivateWords, text: &str) -> bool {
+        !words.word_spans(text).is_empty()
     }
 
     /// Every line of the fixture breaks exactly the one rule.
@@ -734,13 +962,13 @@ mod tests {
             "ZANZIBAR",
             "MÜLLER and müller",
         ] {
-            assert!(words.found_in(&found.to_lowercase()), "{found}");
+            assert!(has_word(&words, found), "{found}");
         }
         // `ab` is too short and `Admin` is generic: neither is a word.
-        assert!(!words.found_in("ab admin"));
+        assert!(!has_word(&words, "ab admin"));
         // Whole words only: a letter before or after continues the word.
         for missed in ["zanzibarish", "azanzibar", "my quuxcorps"] {
-            assert!(!words.found_in(missed), "{missed}");
+            assert!(!has_word(&words, missed), "{missed}");
         }
     }
 
@@ -766,30 +994,124 @@ mod tests {
             .chain("zanzibar\r\n".encode_utf16().flat_map(u16::to_le_bytes))
             .collect();
         temp.write("wide.txt", utf16);
-        temp.write("latin.txt", b"M\xFCller lives with zanzibar\n");
-        let files: Vec<String> = ["notes.txt", "zanzibar-notes.md", "wide.txt", "latin.txt"]
-            .map(str::to_owned)
-            .into();
+        // Windows-1252, as German Excel writes it: `Müller` is a word of the private list.
+        temp.write("latin.txt", b"M\xFCller lives here\n");
+        // UTF-16 without a mark, and a file that is no text with a name inside.
+        let bare: Vec<u8> = "zanzibar\r\n"
+            .encode_utf16()
+            .flat_map(u16::to_le_bytes)
+            .collect();
+        temp.write("bare.txt", bare.clone());
+        let mut binary = b"\x89PNG\r\n\x1a\n\0\0\0\rIHDR".to_vec();
+        binary.extend(&bare);
+        temp.write("picture.png", binary);
+        let files: Vec<String> = [
+            "notes.txt",
+            "zanzibar-notes.md",
+            "wide.txt",
+            "latin.txt",
+            "bare.txt",
+            "picture.png",
+        ]
+        .map(str::to_owned)
+        .into();
         let findings = scan_files(temp.path(), &files, &machine(), &[]);
         let places: Vec<_> = findings
             .iter()
             .filter_map(|finding| finding.location.clone())
             .collect();
+        // A name that holds the word is shown masked, in its own finding and in the others.
         assert_eq!(
             places,
             [
                 "notes.txt:2",
-                "zanzibar-notes.md (its name)",
+                "***-notes.md (its name)",
                 "wide.txt:1",
-                "latin.txt:1"
+                "latin.txt:1",
+                "bare.txt:1",
+                "picture.png (a file that is no text)",
             ]
             .map(str::to_owned)
         );
-        // The word is never in what is said.
+        assert_nothing_private_is_said(&findings);
+    }
+
+    /// No finding holds one of the words of the made-up machine.
+    fn assert_nothing_private_is_said(findings: &[Finding]) {
+        for finding in findings {
+            let said = format!(
+                "{} {}",
+                finding.location.as_deref().unwrap_or_default(),
+                finding.message
+            )
+            .to_lowercase();
+            for word in ["zanzibar", "quux", "müller"] {
+                assert!(!said.contains(word), "{said}");
+            }
+        }
+    }
+
+    #[test]
+    fn names_of_branches_tags_and_files_are_masked_in_every_finding() {
+        let temp = repo_with_commit("private-masked", "chore: fine");
+        temp.write("zanzibar-file.txt", "zanzibar\n");
+        assert!(temp.git(&["branch", "quuxcorp-work"]));
+        assert!(temp.git(&["tag", "-a", "zanzibar-1", "-m", "Claude-Session: made-up"]));
+        let repo = Repo::at(temp.path().to_path_buf());
+        let mut findings = scan_files(
+            temp.path(),
+            &["zanzibar-file.txt".to_owned()],
+            &machine(),
+            &[],
+        );
+        findings.extend(scan_history(&repo, &machine(), &[], "").unwrap());
+        let places: Vec<_> = findings
+            .iter()
+            .filter_map(|finding| finding.location.clone())
+            .collect();
+        for wanted in [
+            "***-file.txt (its name)",
+            "***-file.txt:1",
+            "branch ***-work (its name)",
+            "tag ***-1 (its name)",
+            "tag ***-1:1",
+        ] {
+            assert!(
+                places.iter().any(|place| place.starts_with(wanted)),
+                "{wanted}: {places:?}"
+            );
+        }
+        assert_nothing_private_is_said(&findings);
+    }
+
+    #[test]
+    fn what_a_commit_that_is_not_pushed_adds_is_read_even_if_a_later_one_removes_it() {
+        let temp = repo_with_commit("private-unpushed", "chore: fine");
+        let path = format!("{}:{}Users{}mira{}x", "C", "\\", "\\", "\\");
+        temp.write("notes.txt", format!("fine\n{path}\n"));
+        assert!(temp.git(&["add", "."]));
+        assert!(temp.git(&["commit", "--quiet", "-m", "chore: add"]));
+        temp.write("notes.txt", "fine\n");
+        assert!(temp.git(&["commit", "--quiet", "-a", "-m", "chore: clean"]));
+        // The tree is clean; the history is not.
+        let places = run_check(&temp, None);
+        assert_eq!(places.len(), 1, "{places:?}");
+        assert!(places[0].ends_with(", notes.txt:2"), "{places:?}");
+        // Once the commits are on a remote, they are the remote's business: only the new ones count.
+        let remote = TempDir::new("private-remote");
+        assert!(remote.git(&["init", "--quiet", "--bare"]));
+        let url = remote.path().to_string_lossy().into_owned();
+        assert!(temp.git(&["remote", "add", "origin", &url]));
+        assert!(temp.git(&["push", "--quiet", "-u", "origin", "HEAD"]));
+        assert!(run_check(&temp, None).is_empty());
+        temp.write("more.txt", format!("{path}\n"));
+        assert!(temp.git(&["add", "."]));
+        assert!(temp.git(&["commit", "--quiet", "-m", "chore: more"]));
+        let places = run_check(&temp, None);
+        assert_eq!(places.len(), 2, "{places:?}");
         assert!(
-            findings
-                .iter()
-                .all(|finding| !finding.message.to_lowercase().contains("zanzibar"))
+            places.iter().any(|place| place.ends_with(", more.txt:1")),
+            "{places:?}"
         );
     }
 
@@ -813,11 +1135,11 @@ mod tests {
         let none = |_: &str| None;
         // No list: nothing to say.
         let (words, problem) = PrivateWords::from_home(Some(temp.path()), none);
-        assert!(problem.is_none() && !words.found_in("quuxcorp"));
+        assert!(problem.is_none() && !has_word(&words, "quuxcorp"));
         // A UTF-8 mark on the first line does not hide the first word.
         temp.write(WORDS_FILE, b"\xEF\xBB\xBFQuuxcorp\n");
         let (words, problem) = PrivateWords::from_home(Some(temp.path()), none);
-        assert!(problem.is_none() && words.found_in("quuxcorp"));
+        assert!(problem.is_none() && has_word(&words, "quuxcorp"));
         // So does a UTF-16 list.
         let utf16: Vec<u8> = [0xFF, 0xFE]
             .into_iter()
@@ -825,7 +1147,7 @@ mod tests {
             .collect();
         temp.write(WORDS_FILE, utf16);
         let (words, _) = PrivateWords::from_home(Some(temp.path()), none);
-        assert!(words.found_in("quuxcorp"));
+        assert!(has_word(&words, "quuxcorp"));
         // A list that cannot be used is a problem, and the problem names no word.
         temp.write(WORDS_FILE, b"Quux\0corp\n");
         let (_, problem) = PrivateWords::from_home(Some(temp.path()), none);
@@ -929,6 +1251,8 @@ mod tests {
             "-".repeat(24)
         );
         assert!(at(&diff).is_empty());
+        // Nor after it when Git is set to another comment character.
+        assert!(at(&diff.replace("# ", "; ")).is_empty());
     }
 
     #[test]

@@ -27,10 +27,10 @@ pub(crate) fn normalize(text: &str) -> String {
 }
 
 /// The text in the bytes of a file, with `\n` line endings, or `None` for a file that is no text
-/// (it holds NUL bytes). UTF-16 with a byte order mark (what PowerShell writes with `>`) is
-/// decoded, a UTF-8 mark is dropped, and any other bytes (Latin-1 for example) are read as far as
-/// they are UTF-8, so a name in plain letters is found in them too. Every check that looks into a
-/// file of unknown kind reads it here.
+/// (it holds NUL bytes that are no UTF-16). UTF-16 with or without a byte order mark (what
+/// PowerShell writes with `>`) is decoded, a UTF-8 mark is dropped, and bytes that are no UTF-8
+/// are read as Windows-1252 (what German Excel writes, and Latin-1 for the most part), so `Müller`
+/// is found in them too. Every check that looks into a file of unknown kind reads it here.
 pub(crate) fn decode_text(bytes: &[u8]) -> Option<String> {
     let utf16 = |rest: &[u8], unit: fn([u8; 2]) -> u16| {
         let units: Vec<u16> = rest
@@ -42,11 +42,80 @@ pub(crate) fn decode_text(bytes: &[u8]) -> Option<String> {
     let text = match bytes {
         [0xFF, 0xFE, rest @ ..] => utf16(rest, u16::from_le_bytes),
         [0xFE, 0xFF, rest @ ..] => utf16(rest, u16::from_be_bytes),
+        _ if is_utf16_without_mark(bytes, true) => utf16(bytes, u16::from_le_bytes),
+        _ if is_utf16_without_mark(bytes, false) => utf16(bytes, u16::from_be_bytes),
         _ if bytes.contains(&0) => return None,
         [0xEF, 0xBB, 0xBF, rest @ ..] => String::from_utf8_lossy(rest).into_owned(),
-        _ => String::from_utf8_lossy(bytes).into_owned(),
+        _ => std::str::from_utf8(bytes).map_or_else(
+            |_| bytes.iter().map(|b| windows_1252(*b)).collect(),
+            str::to_owned,
+        ),
     };
     Some(normalize(&text))
+}
+
+/// The characters of Windows-1252 for the bytes 0x80 to 0x9F; the five bytes it leaves open stay
+/// the control characters of Latin-1.
+const WINDOWS_1252_HIGH: [char; 32] = [
+    '€', '\u{81}', '‚', 'ƒ', '„', '…', '†', '‡', 'ˆ', '‰', 'Š', '‹', 'Œ', '\u{8D}', 'Ž', '\u{8F}',
+    '\u{90}', '‘', '’', '“', '”', '•', '–', '—', '˜', '™', 'š', '›', 'œ', '\u{9D}', 'ž', 'Ÿ',
+];
+
+fn windows_1252(byte: u8) -> char {
+    match byte {
+        0x80..=0x9F => WINDOWS_1252_HIGH[usize::from(byte - 0x80)],
+        _ => char::from(byte),
+    }
+}
+
+/// Whether the bytes look like UTF-16 text without a mark: letters of one half of every pair are
+/// NUL (the second byte of each pair for little endian), and the other half never is.
+fn is_utf16_without_mark(bytes: &[u8], little_endian: bool) -> bool {
+    let pairs = bytes.len() / 2;
+    let (zeros, others) = bytes
+        .chunks_exact(2)
+        .map(|pair| {
+            if little_endian {
+                (pair[1], pair[0])
+            } else {
+                (pair[0], pair[1])
+            }
+        })
+        .fold((0_usize, 0_usize), |(zeros, others), (high, low)| {
+            (
+                zeros + usize::from(high == 0),
+                others + usize::from(low == 0),
+            )
+        });
+    pairs >= 2 && zeros * 3 >= pairs && others == 0
+}
+
+/// The shortest run of characters that [`printable_runs`] reports.
+const MIN_RUN: usize = 4;
+
+/// The runs of printable ASCII in the bytes of a file that is no text, one per line, and the runs
+/// of UTF-16 letters (an ASCII letter and a NUL byte): what the tool `strings` finds.
+pub(crate) fn printable_runs(bytes: &[u8]) -> String {
+    let printable = |byte: u8| (0x20..=0x7E).contains(&byte) || byte == b'\t';
+    let mut runs: Vec<String> = Vec::new();
+    for (start, step) in [(0, 1), (0, 2), (1, 2)] {
+        let mut run = String::new();
+        for at in (start..bytes.len()).step_by(step) {
+            let wide_ok = step == 1 || bytes.get(at + 1) == Some(&0);
+            if printable(bytes[at]) && wide_ok {
+                run.push(char::from(bytes[at]));
+            } else {
+                if run.len() >= MIN_RUN {
+                    runs.push(std::mem::take(&mut run));
+                }
+                run.clear();
+            }
+        }
+        if run.len() >= MIN_RUN {
+            runs.push(run);
+        }
+    }
+    runs.join("\n")
 }
 
 /// Reads a text file (path relative to the repository root) with `\n` line endings.
@@ -206,6 +275,45 @@ mod tests {
         assert_eq!(uses("fn  answer(x)"), 0);
         assert_eq!(uses("answer_all(x)"), 0);
         assert_eq!(uses("a.b(); answer(x)"), 1);
+    }
+
+    fn utf16(text: &str, mark: &[u8], unit: fn(u16) -> [u8; 2]) -> Vec<u8> {
+        mark.iter()
+            .copied()
+            .chain(text.encode_utf16().flat_map(unit))
+            .collect()
+    }
+
+    #[test]
+    fn text_is_decoded_whatever_way_it_was_written() {
+        let marked = utf16("a\r\nb", &[0xFF, 0xFE], u16::to_le_bytes);
+        assert_eq!(decode_text(&marked).as_deref(), Some("a\nb"));
+        let big = utf16("ab", &[0xFE, 0xFF], u16::to_be_bytes);
+        assert_eq!(decode_text(&big).as_deref(), Some("ab"));
+        // UTF-16 without a mark, little and big endian.
+        let bare = utf16("hello world", &[], u16::to_le_bytes);
+        assert_eq!(decode_text(&bare).as_deref(), Some("hello world"));
+        let bare_big = utf16("hello world", &[], u16::to_be_bytes);
+        assert_eq!(decode_text(&bare_big).as_deref(), Some("hello world"));
+        assert_eq!(decode_text(b"\xEF\xBB\xBFab").as_deref(), Some("ab"));
+        // Windows-1252 (German Excel): the umlaut and the euro sign come out right.
+        assert_eq!(
+            decode_text(b"M\xFCller \x80").as_deref(),
+            Some("M\u{FC}ller \u{20AC}")
+        );
+        assert_eq!(decode_text(b"PNG\0data"), None);
+    }
+
+    #[test]
+    fn the_printable_runs_of_a_file_that_is_no_text_are_found() {
+        let mut bytes = b"\x89PNG\0\x01ab\x02Hello there\0\x03".to_vec();
+        bytes.extend(utf16("wide text", &[], u16::to_le_bytes));
+        bytes.extend(b"\0\x01");
+        let runs = printable_runs(&bytes);
+        assert!(runs.contains("Hello there"), "{runs}");
+        assert!(runs.contains("wide text"), "{runs}");
+        // Runs shorter than four characters are noise.
+        assert!(!runs.lines().any(|run| run == "ab"), "{runs}");
     }
 
     #[test]

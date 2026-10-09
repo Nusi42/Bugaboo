@@ -2,11 +2,15 @@ C:\Users\mira\Documents\notes.txt
 C:\\Users\\mira\\Documents
 D:\users\mira\work
 C:/Users/mira/Documents
+C:\Documents and Settings\mira\Desktop
 /c/Users/mira/Documents
 /home/mira/projects
+/var/home/mira/projects
 /Users/mira/projects
 cd "/home/mira/work/"
 \\host\c$\Users\mira\x
+\\wsl$\Ubuntu\home\mira\x
+\\wsl.localhost\Ubuntu\home\mira\x
 \Users\mira\x
 C%3A%5CUsers%5Cmira%5Cx
 "/home/mira"

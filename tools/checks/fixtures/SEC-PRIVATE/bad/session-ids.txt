@@ -1,7 +1,11 @@
 originSessionId: 0123abcd-4567-89ef-0123-456789abcdef
 "originSessionId": "0123abcd-4567-89ef-0123-456789abcdef"
+originSessionId=0123abcd-4567-89ef-0123
 ORIGINSESSIONID : 0123abcd-4567-89ef-0123
 {"sessionId":"0123abcd-4567-89ef-0123-456789abcdef"}
 "session_id": "0123abcd-4567-89ef-0123-456789abcdef"
+"session-id": "0123abcd-4567-89ef-0123-456789abcdef"
+https://x.test/?sessionId=0123abcd-4567-89ef-0123-456789abcdef
 see https://claude.ai/code/session_0123456789ABCDEF
 the id is session_01AbCdEfGhIjKlMnOpQrStUv
+the id is SESSION_01AbCdEfGhIjKlMnOpQrStUv

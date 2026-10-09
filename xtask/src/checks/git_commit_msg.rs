@@ -67,13 +67,24 @@ pub(crate) fn check_file(file: &Path) -> anyhow::Result<Vec<String>> {
     Ok(problems(subject_of(&text)))
 }
 
-/// The line Git writes before the diff of `git commit -v`; it and what follows are not the message.
-const SCISSORS: &str = "# ------------------------ >8 ------------------------";
+/// What Git writes after the comment character to mark where the diff of `git commit -v` starts;
+/// it and what follows are not the message.
+const SCISSORS: &str = " ------------------------ >8 ------------------------";
 
 /// The text of a message file up to the scissors line. Comment lines stay: a hook that reads the
-/// message must not depend on the comment character Git is set to use.
+/// message must not depend on the comment character Git is set to use, so any one character
+/// before the scissors counts as the comment character.
 pub(crate) fn before_scissors(text: &str) -> &str {
-    text.find(SCISSORS).map_or(text, |at| &text[..at])
+    let mut start = 0;
+    for line in text.split_inclusive('\n') {
+        let mut chars = line.trim_end().chars();
+        let comment = chars.next().is_some_and(|c| !c.is_alphanumeric());
+        if comment && chars.as_str() == SCISSORS {
+            return &text[..start];
+        }
+        start += line.len();
+    }
+    text
 }
 
 /// The first line that is not a comment (Git adds `#` lines to the message file).

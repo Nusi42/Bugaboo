@@ -159,20 +159,11 @@ impl Repo {
     }
 
     fn git_lines(&self, args: &[&str]) -> anyhow::Result<Vec<String>> {
-        let out = Command::new("git")
-            .args(["-c", "core.quotepath=false"])
-            .args(args)
-            .current_dir(&self.root)
-            .output()
-            .context("could not run git; is it installed and on the PATH?")?;
-        if !out.status.success() {
-            bail!(
-                "git {} failed: {}",
-                args.join(" "),
-                String::from_utf8_lossy(&out.stderr).trim()
-            );
-        }
-        Ok(String::from_utf8_lossy(&out.stdout)
+        let all: Vec<&str> = ["-c", "core.quotepath=false"]
+            .into_iter()
+            .chain(args.iter().copied())
+            .collect();
+        Ok(String::from_utf8_lossy(&self.git_bytes(&all)?)
             .lines()
             .map(str::trim)
             .filter(|line| !line.is_empty())
