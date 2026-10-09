@@ -3,3 +3,4 @@
 dist = "."
 manifest = "manifest.json"
 budget_bytes = 2000
+wasm_budget_bytes = 2000

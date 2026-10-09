@@ -11649,6 +11649,7 @@
           "role.in_use",
           "assignment.conflict",
           "setting.locked",
+          "setting.hosts_not_bare",
           "project.move_lifts_no_access",
           "project.move_into_itself",
           "project.too_deep",
@@ -11719,7 +11720,7 @@
       "FormatBody": {
         "type": "string",
         "description": "What kind of text a text setting holds.",
-        "enum": ["free", "choice", "time_zone", "page_address", "shortcut_keys"]
+        "enum": ["free", "choice", "time_zone", "page_address", "shortcut_keys", "hosts"]
       },
       "GroupBody": {
         "type": "object",

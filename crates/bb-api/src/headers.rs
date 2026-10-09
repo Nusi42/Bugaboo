@@ -13,9 +13,13 @@ use tower_http::set_header::SetResponseHeaderLayer;
 pub const SECURITY_HEADERS: [(&str, &str); 6] = [
     (
         "content-security-policy",
-        "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; \
-         font-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; \
-         form-action 'self'; require-trusted-types-for 'script'",
+        concat!(
+            "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self'; \
+             img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-ancestors 'none'; \
+             base-uri 'none'; form-action 'self'; require-trusted-types-for 'script'; \
+             trusted-types ",
+            bb_api_words::trusted_types_policy!()
+        ),
     ),
     ("x-content-type-options", "nosniff"),
     ("referrer-policy", "same-origin"),
@@ -63,4 +67,31 @@ pub(crate) fn apply(router: Router, hsts_max_age: Option<u64>) -> Router {
             Err(_) => router,
         }
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn policy() -> &'static str {
+        SECURITY_HEADERS
+            .iter()
+            .find(|(name, _)| name.starts_with("content-security"))
+            .map_or("", |(_, value)| *value)
+    }
+
+    #[test]
+    fn sec_13_the_csp_allows_exactly_the_one_trusted_types_policy() {
+        let directives: Vec<&str> = policy().split(';').map(str::trim).collect();
+        let allowed: Vec<&&str> = directives
+            .iter()
+            .filter(|directive| directive.starts_with("trusted-types"))
+            .collect();
+        let expected = format!("trusted-types {}", bb_api_words::trusted_types::POLICY);
+        // One directive, with the one name and nothing after it; it is the last of the policy.
+        assert_eq!(allowed, [&expected.as_str()]);
+        assert!(policy().ends_with(&expected));
+        assert!(!policy().contains("allow-duplicates"));
+        assert!(directives.contains(&"require-trusted-types-for 'script'"));
+    }
 }

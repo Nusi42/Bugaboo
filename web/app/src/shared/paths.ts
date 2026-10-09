@@ -27,6 +27,7 @@ export const paths = {
   roles: "/settings/roles",
   role: "/settings/roles/$role",
   signInRules: "/settings/sign-in-rules",
+  organizationSecurity: "/settings/security",
   themes: "/settings/themes",
   status: "/settings/status",
   projects: "/settings/projects",

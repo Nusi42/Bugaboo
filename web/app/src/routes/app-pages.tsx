@@ -2,7 +2,7 @@ import { createRoute, lazyRouteComponent, useNavigate, useSearch } from "@tansta
 
 import { HomePage } from "../features/home/index.ts";
 import { AppearancePage, RegionPage } from "../features/my-settings/index.ts";
-import { SignInRulesPage, ThemesPage } from "../features/settings/index.ts";
+import { SecurityPage, SignInRulesPage, ThemesPage } from "../features/settings/index.ts";
 import { type FramesShow } from "../features/shell/index.ts";
 import { paths } from "../shared/paths.ts";
 import { shortcutIdOf, type ShortcutId } from "../shared/shortcuts.ts";
@@ -133,6 +133,18 @@ export const statusRoute = createRoute({
     return (
       <OnlyWith path={paths.status}>
         <StatusScreen />
+      </OnlyWith>
+    );
+  },
+});
+
+export const organizationSecurityRoute = createRoute({
+  getParentRoute: () => organizationSettingsRoute,
+  path: paths.organizationSecurity,
+  component: function OrganizationSecurity() {
+    return (
+      <OnlyWith path={paths.organizationSecurity}>
+        <SecurityPage />
       </OnlyWith>
     );
   },

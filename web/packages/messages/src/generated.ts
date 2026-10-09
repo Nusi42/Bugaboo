@@ -58,6 +58,9 @@ export const messages = {
     "The most days an access key can live, whatever date the person picks. Between 1 and 365 days.",
   "setting.auth.sign-up-enabled.help":
     "Let people make an account on their own, without an invitation. Bugaboo cannot check that an address belongs to the person until e-mail is available, so use this only on a network you trust.",
+  "setting.content.image-hosts.name": "Hosts that images may come from",
+  "setting.content.image-hosts.help":
+    "The hosts that may show images in descriptions and comments, as a list separated by commas, like images.example.com. Write only the host name, without https:// and without a path. Leave the list empty to show no image from other hosts.",
   "setting.auth.sign-up-domains.help":
     "The e-mail domains that may sign up on their own, as a list separated by commas, like example.com. Leave the list empty to let every address sign up while signing up is on, so write your domains in first.",
   "setting.ui.search": "Search settings",
@@ -83,11 +86,13 @@ export const messages = {
   "setting.page.start-page-intro": "Choose the page Bugaboo opens after you sign in.",
   "setting.page.sign-in-rules-intro":
     "How long people stay signed in, and the rules for signing in. They apply to everybody.",
+  "setting.page.security-intro": "What the text that people write may show.",
   "setting.page.themes-intro":
     "The organization's choice of look. People can choose their own, unless you lock a setting.",
   "nav.region": "Region",
   "nav.start-page": "Start page",
   "nav.sign-in-rules": "Sign-in rules",
+  "nav.organization-security": "Security",
   "nav.themes": "Themes",
   "nav.group.look-org": "Look",
   "setting.appearance.mode.help":
@@ -502,6 +507,23 @@ export const messages = {
   "frames.focus-text":
     "This is the focus view. The open item takes the main area and the list stays slim on the left.",
   "frames.nothing": "No example items are left.",
+  "frames.text-title": "Text with formatting",
+  "frames.text-intro":
+    "Descriptions, comments and long text are written in Markdown. Write, then open Preview to see what others will see.",
+  "frames.text-label": "Description",
+  "markdown.write": "Write",
+  "markdown.preview": "Preview",
+  "markdown.toolbar": "Formatting",
+  "markdown.bold": "Bold",
+  "markdown.italic": "Italic",
+  "markdown.list": "List",
+  "markdown.link": "Link",
+  "markdown.code": "Code",
+  "markdown.quote": "Quote",
+  "markdown.link-text": "link text",
+  "markdown.preview-empty": "There is nothing to preview yet.",
+  "markdown.preview-failed":
+    "The preview could not be loaded. Check your connection and try again.",
   "save.saving": "Saving…",
   "save.saved": "Saved",
   "save.not-saved": "Not saved yet",
@@ -532,6 +554,8 @@ export const messages = {
   "error.access.cannot-lift":
     "This group has No access in a project that you cannot decide in. Taking people out of it, or deleting it, would lift that No access, so ask somebody who decides there.",
   "error.access.too-much": "You can only add or give what you can do yourself in this place.",
+  "error.setting.hosts-not-bare":
+    "Write only the host names, like images.example.com, without https:// and without a path.",
   "error.setting.locked": "An administrator locked this setting, so it can't be changed here.",
   "error.assignment.conflict":
     "This person or group already has a role here, so it cannot also have No access here, and the other way round. Take the other row away first.",

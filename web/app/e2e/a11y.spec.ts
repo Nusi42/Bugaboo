@@ -148,6 +148,11 @@ const visits: readonly Visit[] = [
   { address: paths.role, open: signedInAt(() => roleAddress(someRole)), guest: false },
   { address: paths.signInRules, open: signedIn(paths.signInRules), guest: false },
   { address: paths.themes, open: signedIn(paths.themes), guest: false },
+  {
+    address: paths.organizationSecurity,
+    open: signedIn(paths.organizationSecurity),
+    guest: false,
+  },
   { address: paths.status, open: signedIn(paths.status), guest: false },
   { address: paths.projects, open: signedIn(paths.projects), guest: false },
   { address: paths.fieldPermissions, open: signedIn(paths.fieldPermissions), guest: false },

@@ -61,3 +61,11 @@ reason = "Three-line Windows batch file that only refuses builds in the master (
 [[exempt]]
 path = "crates/bb-auth/data/breached-passwords.txt"
 reason = "Data, not code: a sorted list of leaked passwords; the unit tests in bb-auth check that it is sorted and has no short lines (AUTH-01)."
+
+[[exempt]]
+path = "crates/bb-markdown/tests/corpus/*.html"
+reason = "The exact HTML the renderer must write for the corpus case of the same name (SEC-13); the corpus test compares byte for byte, so no formatter may touch it."
+
+[[exempt]]
+path = "crates/bb-markdown/tests/corpus/*.hosts"
+reason = "The allowed image hosts of the corpus case of the same name, one per line; read by the corpus test."

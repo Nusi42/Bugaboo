@@ -187,6 +187,15 @@ const organizationTopics: readonly Place[] = [
     listed: true,
   },
   {
+    path: paths.organizationSecurity,
+    name: "nav.organization-security",
+    icon: iconName.security,
+    parent: paths.organizationSettings,
+    anyOf: ["change-organization-settings"],
+    group: "nav.group.system",
+    listed: true,
+  },
+  {
     path: paths.status,
     name: "nav.status",
     icon: iconName.status,

@@ -9,6 +9,7 @@ End-user and administrator documentation. It is written alongside the work on Bu
 - [Issues](issues/README.md): making and changing issues, [issue IDs](issues/issue-ids.md) and [issue types](issues/issue-types.md)
 - [People, groups and roles](people/README.md): the list of people and the invitations, groups, roles and permissions, and who has which role
 - [What roles see](permissions/README.md): field permissions, who sees people, and check access
+- [Writing text](writing/README.md): the marks, the buttons and the preview for descriptions and comments
 - [Your first sign-in](sign-in/first-sign-in.md)
 - [Signing in](sign-in/sign-in.md): password, passkey, second step, where you're signed in, invitations
 - [Access keys](access-keys/README.md): keys for your scripts and apps, and [using a key in a script](access-keys/use-a-key.md)

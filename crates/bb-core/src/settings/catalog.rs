@@ -274,6 +274,20 @@ settings! {
         list: (100, 253),
     }
 
+    /// The hosts that images in text may come from (SEC-13, a list separated by commas). Images of
+    /// this server are always shown; the list is empty at first, so no image comes from outside.
+    CONTENT_IMAGE_HOSTS: Text = {
+        key: "content.image-hosts",
+        name: message::SETTING_CONTENT_IMAGE_HOSTS_NAME,
+        default: "",
+        levels: [Organization],
+        changed_by: Administrators,
+        help: message::SETTING_CONTENT_IMAGE_HOSTS_HELP,
+        lockable: false,
+        list: (50, 253),
+        format: Format::Hosts,
+    }
+
     /// Whether everyone has to use two-step sign-in.
     SECURITY_TWO_STEP_REQUIRED: Bool = {
         key: "security.two-step-required",

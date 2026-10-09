@@ -8,3 +8,10 @@ publish.workspace = true
 
 [lints]
 workspace = true
+
+[dependencies]
+pulldown-cmark = { workspace = true }
+
+[dev-dependencies]
+html5ever = { workspace = true }
+proptest = { workspace = true }
