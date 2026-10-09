@@ -13,3 +13,16 @@ code-blocks = false
 # Agent memory files (ADR-0024 amendment) follow Claude Code's own format: YAML front matter and a
 # one-line-per-memory index, never a title heading.
 ".claude/memory/*.md" = ["MD041"]
+# The sanitizer corpus (SEC-13) is hostile text on purpose: raw HTML, bad links, tabs, a missing
+# title, images without a description. Each file must stay as written; the renderer test reads it.
+"crates/bb-markdown/tests/corpus/*.md" = [
+  "MD010",
+  "MD033",
+  "MD034",
+  "MD040",
+  "MD041",
+  "MD045",
+  "MD057",
+  "MD059",
+  "MD076",
+]

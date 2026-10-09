@@ -57,6 +57,7 @@ jiff = { version = "0.2.37", default-features = false, features = ["serde", "std
 kdl = { version = "=6.7.1", default-features = false, features = ["span"] }
 mime_guess = "2.0.5"
 proc-macro2 = "1.0.107"
+pulldown-cmark = { version = "0.13.4", default-features = false }
 proptest = "1.11.0"
 quote = "1.0.47"
 h2 = "0.4.19"
@@ -89,6 +90,7 @@ tower-http = "0.7.1"
 trybuild = "1.0.121"
 zeroize = "1.9.0"
 uuid = { version = "1.27.0", default-features = false }
+wasm-bindgen = "0.2.129"
 windows-service = "0.8.1"
 tracing = "0.1.44"
 webauthn-authenticator-rs = { version = "=0.6.1-dev", default-features = false, features = [
@@ -118,3 +120,13 @@ opt-level = 3
 
 [profile.dev.package.winnow]
 opt-level = 3
+
+# The module the browser loads (`cargo xtask wasm`): small first, because it is sent to every
+# browser that opens a preview (PERF-04, budget in tools/checks/perf-bundle.toml).
+[profile.wasm]
+inherits = "release"
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
