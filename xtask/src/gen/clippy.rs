@@ -7,6 +7,8 @@
 //! root `clippy.toml` (the settings of every crate) and the one list below (what reaches the
 //! world), so no file is edited by hand and no two can differ.
 
+use std::fmt::Write as _;
+
 use anyhow::Context as _;
 
 use super::Generated;
@@ -103,9 +105,10 @@ pub(crate) fn output_paths() -> Vec<&'static str> {
 fn entries(key: &str, list: &[(&str, &str)]) -> String {
     let mut text = format!("{key} = [\n");
     for (path, world) in list {
-        text.push_str(&format!(
-            "  {{ path = \"{path}\", reason = \"ARCH-PURE: this crate does no I/O and never reaches {world}; the caller passes it in\" }},\n"
-        ));
+        let _ = writeln!(
+            text,
+            "  {{ path = \"{path}\", reason = \"ARCH-PURE: this crate does no I/O and never reaches {world}; the caller passes it in\" }},"
+        );
     }
     text.push_str("]\n");
     text
