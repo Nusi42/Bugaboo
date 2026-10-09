@@ -1,4 +1,4 @@
-import { trustedTypesPolicyName, type SafeHtml } from "@bugaboo/api-client";
+import { isSafeHtml, trustedTypesPolicyName, type SafeHtml } from "@bugaboo/api-client";
 import { useLayoutEffect, useRef, type RefObject } from "react";
 
 /*
@@ -50,7 +50,7 @@ function trustedHtml(html: string): string {
  */
 export function useHtml(safe: SafeHtml): RefObject<HTMLDivElement | null> {
   const box = useRef<HTMLDivElement>(null);
-  const html = safe.html;
+  const html = isSafeHtml(safe) ? safe.html : "";
   useLayoutEffect(() => {
     if (box.current !== null) {
       box.current.innerHTML = trustedHtml(html);

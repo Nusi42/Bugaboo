@@ -731,6 +731,10 @@ pub const ERROR_SERVER_INTERNAL: MessageKey = MessageKey::new("error.server.inte
 /// The message `error.server.unavailable`.
 pub const ERROR_SERVER_UNAVAILABLE: MessageKey = MessageKey::new("error.server.unavailable");
 
+/// The message `error.setting.hosts-not-bare`.
+pub const ERROR_SETTING_HOSTS_NOT_BARE: MessageKey =
+    MessageKey::new("error.setting.hosts-not-bare");
+
 /// The message `error.setting.locked`.
 pub const ERROR_SETTING_LOCKED: MessageKey = MessageKey::new("error.setting.locked");
 
@@ -2174,9 +2178,6 @@ pub const SETTING_START_PAGE_HELP: MessageKey = MessageKey::new("setting.start.p
 
 /// The message `setting.start.page.name`.
 pub const SETTING_START_PAGE_NAME: MessageKey = MessageKey::new("setting.start.page.name");
-
-/// The message `setting.ui.hosts-bare`.
-pub const SETTING_UI_HOSTS_BARE: MessageKey = MessageKey::new("setting.ui.hosts-bare");
 
 /// The message `setting.ui.lock`.
 pub const SETTING_UI_LOCK: MessageKey = MessageKey::new("setting.ui.lock");
@@ -5514,6 +5515,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "Bugaboo is not available right now. Please try again in a moment.",
     ),
     (
+        "error.setting.hosts-not-bare",
+        "Write only the host names, like images.example.com, without https:// and without a path.",
+    ),
+    (
         "error.setting.locked",
         "An administrator locked this setting, so it can't be changed here.",
     ),
@@ -6776,10 +6781,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "setting.ui.example-number",
         "A number looks like this: {number}",
-    ),
-    (
-        "setting.ui.hosts-bare",
-        "Write only the host names, like images.example.com, without https:// and without a path.",
     ),
     ("setting.ui.lock", "Lock for everyone"),
     (

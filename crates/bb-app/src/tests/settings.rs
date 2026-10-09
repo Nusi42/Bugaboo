@@ -150,6 +150,32 @@ async fn cfg_06_a_value_the_setting_does_not_accept_is_refused_and_nothing_is_wr
 }
 
 #[tokio::test]
+async fn sec_13_a_list_of_hosts_with_an_address_in_it_is_refused_in_plain_words() -> Outcome {
+    let world = World::new().await?;
+    for value in ["https://images.example.com", "images.example.com/path"] {
+        let code = refused(
+            change(
+                &world,
+                SettingsScope::Organization,
+                "content.image-hosts",
+                text(value),
+            )
+            .await,
+        );
+        assert_eq!(code, ErrorCode::SettingHostsNotBare, "{value}");
+    }
+    let fine = change(
+        &world,
+        SettingsScope::Organization,
+        "content.image-hosts",
+        text("images.example.com"),
+    )
+    .await;
+    assert!(fine.is_ok());
+    Ok(())
+}
+
+#[tokio::test]
 async fn cfg_06_a_setting_that_does_not_exist_or_not_on_that_level_is_refused() -> Outcome {
     let world = World::new().await?;
     let unknown = change(

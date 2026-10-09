@@ -1723,6 +1723,7 @@ export interface components {
       | "role.in_use"
       | "assignment.conflict"
       | "setting.locked"
+      | "setting.hosts_not_bare"
       | "project.move_lifts_no_access"
       | "project.move_into_itself"
       | "project.too_deep"

@@ -25,8 +25,8 @@ use bb_core::ErrorCode;
 use bb_core::event::{EntityRef, FieldChange, RecordKind};
 use bb_core::id::ProjectId;
 use bb_core::settings::{
-    ChangedBy, Layers, Level, OrganizationValue, Scope, SettingDefinition, SettingValue, Source,
-    find, list_items, registry,
+    ChangedBy, Format, Layers, Level, OrganizationValue, Scope, SettingDefinition, SettingValue,
+    Source, find, list_items, registry,
 };
 use bb_core::sign_in::SecurityAction;
 use bb_policy::{Authorized, Evaluation, Permission, Place};
@@ -437,8 +437,19 @@ pub async fn change_setting<S: AuthStore>(
     let definition = definition_of(&input.key)?;
     let scope = ctx.scope_of(&actor, &input.scope).await?;
     let evaluation = ctx.may_change(&actor, scope, definition).await?;
-    if !definition.has_type_of(&input.value) || !definition.accepts(&input.value) {
+    if !definition.has_type_of(&input.value) {
         return Err(ErrorCode::InvalidRequest.into());
+    }
+    if !definition.accepts(&input.value) {
+        // A list of hosts with an address in it has an answer of its own, in plain words.
+        let bare_hosts_refused = definition.format() == Format::Hosts
+            && matches!(&input.value, SettingValue::Text(text) if !definition.format().accepts(text));
+        return Err(if bare_hosts_refused {
+            ErrorCode::SettingHostsNotBare
+        } else {
+            ErrorCode::InvalidRequest
+        }
+        .into());
     }
     let layers = ctx.layers_of(scope, None).await?;
     if scope != Scope::Organization && layers.resolve(definition).locked {

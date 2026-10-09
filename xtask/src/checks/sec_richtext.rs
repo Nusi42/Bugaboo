@@ -15,7 +15,8 @@
 //!   `parseHTMLUnsafe`, `srcdoc`, `createContextualFragment`, `DOMParser` or
 //!   `dangerouslySetInnerHTML` anywhere else;
 //! - what `MarkdownView` takes is `SafeHtml`, and only the WebAssembly renderer and the API client
-//!   make one (`markSafeHtml(` is called nowhere else);
+//!   make one (`markSafeHtml` is named nowhere else, also not in an import, and `as SafeHtml` is
+//!   written nowhere else);
 //! - the name of the Trusted Types policy is written once (`bb-api-words`): the content security
 //!   policy takes it from there, and the browser code from the generated client, never as a text;
 //! - the corpus tests exist: the native one in `bb-markdown` and the one that runs the same files
@@ -102,7 +103,9 @@ const HTML_SETTERS: [&str; 9] = [
     "dangerouslySetInnerHTML",
 ];
 /// The call that says a string is HTML that `bb-markdown` made, and the code that may call it.
-const MARK_SAFE: &str = "markSafeHtml(";
+const MARK_SAFE: &str = "markSafeHtml";
+/// A cast is the other way to make one.
+const CAST_SAFE: &str = "as SafeHtml";
 const MARK_SAFE_FOLDERS: [&str; 2] = ["web/packages/wasm/src/", "web/packages/api-client/src/"];
 /// The name of the policy in the browser code: imported from the generated client, never defined.
 const POLICY_NAME: &str = "trustedTypesPolicyName";
@@ -116,7 +119,12 @@ const TRUSTED_TYPES_ALLOWED: &str = "trusted-types \"";
 const POLICY_MACRO_CALL: &str = "bb_api_words::trusted_types_policy!()";
 
 /// What must be in a file: the corpus tests, and the folder of the corpus they read.
-const MUST_HAVE: [(&str, &str, &str); 4] = [
+const MUST_HAVE: [(&str, &str, &str); 5] = [
+    (
+        "crates/bb-api/src/headers.rs",
+        "fn sec_13_the_csp_allows_exactly_the_one_trusted_types_policy",
+        "the test that holds the built content security policy to exactly one policy",
+    ),
     (
         "crates/bb-markdown/tests/render.rs",
         "fn sec_13_the_sanitizer_corpus_renders_every_attack_as_text",
@@ -268,11 +276,12 @@ fn safe_html_findings(sources: &[Source]) -> Vec<Finding> {
                 .any(|folder| path.starts_with(folder))
     }) {
         for (number, line) in text.lines().enumerate() {
-            if code_of(line).contains(MARK_SAFE) {
+            let code = code_of(line);
+            if code.contains(MARK_SAFE) || code.contains(CAST_SAFE) {
                 findings.push(Finding::at(
                     format!("{path}:{}", number + 1),
                     format!(
-                        "`{MARK_SAFE}…)` says a string is HTML that `bb-markdown` made. Only the WebAssembly renderer and the API client may (SEC-RICHTEXT); ask them for a `SafeHtml` instead."
+                        "`{MARK_SAFE}` and `{CAST_SAFE}` say a string is HTML that `bb-markdown` made. Only the WebAssembly renderer and the API client may (SEC-RICHTEXT); ask them for a `SafeHtml` instead."
                     ),
                 ));
             }
@@ -306,7 +315,9 @@ fn policy_findings(policy_source: &str, headers_source: &str) -> Vec<Finding> {
         .is_some_and(|(_, after)| {
             after
                 .trim_start_matches([',', ' ', '\n'])
-                .starts_with(POLICY_MACRO_CALL)
+                .strip_prefix(POLICY_MACRO_CALL)
+                // The macro is the last part: nothing but the end of the `concat!` follows it.
+                .is_some_and(|rest| rest.trim_start().starts_with(')'))
         });
     if !directive_is_exact {
         findings.push(Finding::at(
@@ -340,7 +351,8 @@ mod tests {
 
     const POLICY: &str =
         "import { trustedTypesPolicyName } from \"@bugaboo/api-client\";\nelement.innerHTML = x;\n";
-    const HEADERS: &str = "require-trusted-types-for 'script'; \\\n trusted-types \",\n bb_api_words::trusted_types_policy!()";
+    const HEADERS: &str = "require-trusted-types-for 'script'; \\\n trusted-types \",\n bb_api_words::trusted_types_policy!()
+ )";
 
     #[test]
     fn good_example_the_renderer_the_policy_and_the_tests() {
@@ -444,6 +456,16 @@ mod tests {
             safe_html_findings(&source("web/app/src/a.tsx", "const h = markSafeHtml(x);")).len(),
             1
         );
+        for line in [
+            "import { markSafeHtml as m } from \"@bugaboo/api-client\";",
+            "const h = ({ html: s }) as SafeHtml;",
+        ] {
+            assert_eq!(
+                safe_html_findings(&source("web/app/src/a.tsx", line)).len(),
+                1,
+                "{line}"
+            );
+        }
     }
 
     #[test]
@@ -461,6 +483,7 @@ mod tests {
         for header in [
             "require-trusted-types-for 'script'; trusted-types bugaboo-markdown",
             "require-trusted-types-for 'script'; trusted-types \", other",
+            "require-trusted-types-for 'script'; trusted-types \", bb_api_words::trusted_types_policy!(), \" other 'allow-duplicates'",
         ] {
             assert_eq!(policy_findings(POLICY, header).len(), 1, "{header}");
         }

@@ -87,3 +87,12 @@ test("sec_13 Security shows the hosts that images in text may come from", async 
   await expect(hosts).toHaveValue("");
   await expectGoodInEveryLook(page);
 });
+
+test("sec_13 a host list with an address in it is refused in plain words", async ({ page }) => {
+  await signIn(page, ada);
+  await page.goto(paths.organizationSecurity);
+  const hosts = page.getByRole("textbox", { name: t("setting.content.image-hosts.name") });
+  await hosts.fill("https://images.example.com");
+  await page.getByRole("button", { name: t("common.save"), exact: true }).click();
+  await expect(page.getByText(t("error.setting.hosts-not-bare"))).toBeVisible();
+});

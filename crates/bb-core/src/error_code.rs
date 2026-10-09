@@ -80,6 +80,8 @@ error_codes! {
     AssignmentConflict => ("assignment.conflict", 409),
     /// An administrator locked the setting, so nobody lower down may change it (CFG-06).
     SettingLocked => ("setting.locked", 409),
+    /// A list of hosts has an address or a path in it, not only host names (SEC-13).
+    SettingHostsNotBare => ("setting.hosts_not_bare", 400),
     /// A move would let somebody take away a *No access* that applies to them (WP-08, M2-F23).
     MoveLiftsNoAccess => ("project.move_lifts_no_access", 409),
     /// A project cannot go inside itself or one of its own sub-projects.
