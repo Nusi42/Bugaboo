@@ -1015,5 +1015,22 @@
   "check-access.all-other-kinds": "All other kinds of people information",
   "check-access.show-every-field": "Show every field",
   "check-access.show-every-kind": "Show every kind",
-  "check-access.group-the-same": "Group those with the same reason"
+  "check-access.group-the-same": "Group those with the same reason",
+  "issue-type.bug": "Bug",
+  "issue-type.task": "Task",
+  "issue-type.feature": "Feature",
+  "issue-type.goal": "Goal",
+  "status.open": "Open",
+  "status.in-progress": "In progress",
+  "status.done": "Done",
+  "status-group.not-started": "Not started",
+  "status-group.in-progress": "In progress",
+  "status-group.done": "Done",
+  "priority.low": "Low",
+  "priority.normal": "Normal",
+  "priority.high": "High",
+  "priority.critical": "Critical",
+  "issue-id-mode.random": "Random IDs",
+  "issue-id-mode.counting": "Counting IDs",
+  "error.issue.type-retired": "That issue type is retired, so no new issues can be made with it. Choose another type."
 }

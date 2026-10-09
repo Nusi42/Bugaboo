@@ -267,6 +267,11 @@ define_ordered_id! {
 }
 
 define_ordered_id! {
+    /// The ID of an issue type (ISS-02).
+    IssueTypeId
+}
+
+define_ordered_id! {
     /// The ID of a domain event (ADR-0007).
     EventId
 }
@@ -335,6 +340,7 @@ into_entity_id!(
     RoleId,
     AssignmentId,
     IssueId,
+    IssueTypeId,
     EventId,
     JobId,
     SessionId,

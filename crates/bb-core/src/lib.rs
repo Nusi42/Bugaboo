@@ -16,6 +16,8 @@ pub mod event;
 pub mod fields;
 pub mod hex;
 pub mod id;
+pub mod issue;
+pub mod issue_key;
 pub mod job;
 pub mod message;
 pub mod migration;

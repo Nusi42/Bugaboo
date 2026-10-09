@@ -15,6 +15,9 @@ use bb_core::fields::Field;
 use serde::{Serialize, Serializer};
 use serde_json::Value;
 
+/// The serialized form that [`Masked::mask`] works on; `#[derive(Masked)]` names it by this path.
+pub type MaskedValue = Value;
+
 use crate::evaluate::Evaluation;
 
 /// What the person who asked may do with each field of the catalogue (the highest level of their
@@ -127,6 +130,16 @@ impl<T: Masked> Masked for Vec<T> {
                 T::mask(item, mask);
             }
         }
+    }
+
+    fn hidden_properties(mask: &FieldMask) -> Vec<&'static str> {
+        T::hidden_properties(mask)
+    }
+}
+
+impl<T: Masked> Masked for Box<T> {
+    fn mask(value: &mut Value, mask: &FieldMask) {
+        T::mask(value, mask);
     }
 
     fn hidden_properties(mask: &FieldMask) -> Vec<&'static str> {

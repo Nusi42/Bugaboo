@@ -1024,6 +1024,11 @@ export const messages = {
   "check-access.show-every-field": "Show every field",
   "check-access.show-every-kind": "Show every kind",
   "check-access.group-the-same": "Group those with the same reason",
+  "status.open": "Open",
+  "status.in-progress": "In progress",
+  "status.done": "Done",
+  "error.issue.type-retired":
+    "That issue type is retired, so no new issues can be made with it. Choose another type.",
 } as const;
 
 export type MessageKey = keyof typeof messages;

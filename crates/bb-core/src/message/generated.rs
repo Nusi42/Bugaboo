@@ -673,6 +673,9 @@ pub const ERROR_AUTH_WRONG_SETUP_CODE: MessageKey = MessageKey::new("error.auth.
 /// The message `error.edit.version-changed`.
 pub const ERROR_EDIT_VERSION_CHANGED: MessageKey = MessageKey::new("error.edit.version-changed");
 
+/// The message `error.issue.type-retired`.
+pub const ERROR_ISSUE_TYPE_RETIRED: MessageKey = MessageKey::new("error.issue.type-retired");
+
 /// The message `error.name.taken`.
 pub const ERROR_NAME_TAKEN: MessageKey = MessageKey::new("error.name.taken");
 
@@ -1052,6 +1055,24 @@ pub const ISSUE_FIELD_TIME_SPENT: MessageKey = MessageKey::new("issue-field.time
 /// The message `issue-field.title`.
 pub const ISSUE_FIELD_TITLE: MessageKey = MessageKey::new("issue-field.title");
 
+/// The message `issue-id-mode.counting`.
+pub const ISSUE_ID_MODE_COUNTING: MessageKey = MessageKey::new("issue-id-mode.counting");
+
+/// The message `issue-id-mode.random`.
+pub const ISSUE_ID_MODE_RANDOM: MessageKey = MessageKey::new("issue-id-mode.random");
+
+/// The message `issue-type.bug`.
+pub const ISSUE_TYPE_BUG: MessageKey = MessageKey::new("issue-type.bug");
+
+/// The message `issue-type.feature`.
+pub const ISSUE_TYPE_FEATURE: MessageKey = MessageKey::new("issue-type.feature");
+
+/// The message `issue-type.goal`.
+pub const ISSUE_TYPE_GOAL: MessageKey = MessageKey::new("issue-type.goal");
+
+/// The message `issue-type.task`.
+pub const ISSUE_TYPE_TASK: MessageKey = MessageKey::new("issue-type.task");
+
 /// The message `keys.database-placeholder`.
 pub const KEYS_DATABASE_PLACEHOLDER: MessageKey = MessageKey::new("keys.database-placeholder");
 
@@ -1403,6 +1424,18 @@ pub const PERSON_ROLES_WHERE: MessageKey = MessageKey::new("person.roles-where")
 
 /// The message `person.since`.
 pub const PERSON_SINCE: MessageKey = MessageKey::new("person.since");
+
+/// The message `priority.critical`.
+pub const PRIORITY_CRITICAL: MessageKey = MessageKey::new("priority.critical");
+
+/// The message `priority.high`.
+pub const PRIORITY_HIGH: MessageKey = MessageKey::new("priority.high");
+
+/// The message `priority.low`.
+pub const PRIORITY_LOW: MessageKey = MessageKey::new("priority.low");
+
+/// The message `priority.normal`.
+pub const PRIORITY_NORMAL: MessageKey = MessageKey::new("priority.normal");
 
 /// The message `projects.at-the-top`.
 pub const PROJECTS_AT_THE_TOP: MessageKey = MessageKey::new("projects.at-the-top");
@@ -2446,6 +2479,15 @@ pub const STARTING_ROLE_TEAM_MEMBER: MessageKey = MessageKey::new("starting-role
 /// The message `starting-role.viewer`.
 pub const STARTING_ROLE_VIEWER: MessageKey = MessageKey::new("starting-role.viewer");
 
+/// The message `status-group.done`.
+pub const STATUS_GROUP_DONE: MessageKey = MessageKey::new("status-group.done");
+
+/// The message `status-group.in-progress`.
+pub const STATUS_GROUP_IN_PROGRESS: MessageKey = MessageKey::new("status-group.in-progress");
+
+/// The message `status-group.not-started`.
+pub const STATUS_GROUP_NOT_STARTED: MessageKey = MessageKey::new("status-group.not-started");
+
 /// The message `status.certificate`.
 pub const STATUS_CERTIFICATE: MessageKey = MessageKey::new("status.certificate");
 
@@ -2482,11 +2524,20 @@ pub const STATUS_DATABASE_POSTGRES: MessageKey = MessageKey::new("status.databas
 /// The message `status.database.sqlite`.
 pub const STATUS_DATABASE_SQLITE: MessageKey = MessageKey::new("status.database.sqlite");
 
+/// The message `status.done`.
+pub const STATUS_DONE: MessageKey = MessageKey::new("status.done");
+
+/// The message `status.in-progress`.
+pub const STATUS_IN_PROGRESS: MessageKey = MessageKey::new("status.in-progress");
+
 /// The message `status.intro`.
 pub const STATUS_INTRO: MessageKey = MessageKey::new("status.intro");
 
 /// The message `status.log`.
 pub const STATUS_LOG: MessageKey = MessageKey::new("status.log");
+
+/// The message `status.open`.
+pub const STATUS_OPEN: MessageKey = MessageKey::new("status.open");
 
 /// The message `status.refresh`.
 pub const STATUS_REFRESH: MessageKey = MessageKey::new("status.refresh");
@@ -5428,6 +5479,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "Someone changed this while you were working. Use Compare and save to keep your changes.",
     ),
     (
+        "error.issue.type-retired",
+        "That issue type is retired, so no new issues can be made with it. Choose another type.",
+    ),
+    (
         "error.name.taken",
         "That name is already used. Choose another one.",
     ),
@@ -5715,6 +5770,12 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("issue-field.time-left", "Time left"),
     ("issue-field.time-spent", "Time spent"),
     ("issue-field.title", "Title"),
+    ("issue-id-mode.counting", "Counting IDs"),
+    ("issue-id-mode.random", "Random IDs"),
+    ("issue-type.bug", "Bug"),
+    ("issue-type.feature", "Feature"),
+    ("issue-type.goal", "Goal"),
+    ("issue-type.task", "Task"),
     (
         "keys.database-placeholder",
         "--database-url <the address of your database>",
@@ -5997,6 +6058,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "You see the roles in the whole organization and in the projects where you decide who has which role. Change them in Roles & permissions and in the settings of a project.",
     ),
     ("person.since", "Account made"),
+    ("priority.critical", "Critical"),
+    ("priority.high", "High"),
+    ("priority.low", "Low"),
+    ("priority.normal", "Normal"),
     ("projects.at-the-top", "At the top level"),
     ("projects.edit-title", "Name and short name"),
     ("projects.field-name", "Name"),
@@ -6948,6 +7013,9 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("starting-role.project-lead", "Project lead"),
     ("starting-role.team-member", "Team member"),
     ("starting-role.viewer", "Viewer"),
+    ("status-group.done", "Done"),
+    ("status-group.in-progress", "In progress"),
+    ("status-group.not-started", "Not started"),
     ("status.certificate", "HTTPS certificate"),
     (
         "status.certificate.expired",
@@ -6987,12 +7055,15 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("status.database.ok", "Working."),
     ("status.database.postgres", "A PostgreSQL server"),
     ("status.database.sqlite", "A SQLite file"),
+    ("status.done", "Done"),
+    ("status.in-progress", "In progress"),
     ("status.intro", "How this Bugaboo server is doing."),
     ("status.log", "Security log"),
     (
         "status.log-failures",
         "{count, plural, one {# entry} other {# entries}} of the security log could not be written since the server started. Check that the disk is not full and that the account that runs Bugaboo can write in the data folder, then look at the server log.",
     ),
+    ("status.open", "Open"),
     ("status.refresh", "Check again"),
     ("status.running", "Running for"),
     ("status.started", "Started {when}"),

@@ -10,3 +10,9 @@ fn arch_authz_only_authorized_cannot_be_made_outside_the_policy_crate() {
     cases.compile_fail("tests/ui/authorized_by_constructor.rs");
     cases.compile_fail("tests/ui/evaluation_by_hand.rs");
 }
+
+#[test]
+fn sec_04_a_view_cannot_hold_a_member_that_does_not_say_how_it_is_masked() {
+    let cases = trybuild::TestCases::new();
+    cases.compile_fail("tests/ui/masked_member_not_declared.rs");
+}

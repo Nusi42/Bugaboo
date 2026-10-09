@@ -1,0 +1,351 @@
+//! Issues, issue types and statuses (ISS-01, ISS-02, ADR-0027 decision 5).
+//!
+//! An issue has an internal ID that never changes and a readable ID (`issue_key.rs`) that can.
+//! Until workflows come (M4) every issue type uses the **starting workflow**, defined here once:
+//! *Open*, *In progress* and *Done*, each in a status group, and every status can follow every
+//! other. Entering the group *Done* sets the closed date; leaving it clears it.
+
+use jiff::Timestamp;
+
+use crate::id::{IssueId, IssueTypeId, ProjectId, UserId};
+use crate::issue_key::IssueCode;
+use crate::message::{self, MessageKey};
+use crate::personal::Entity;
+
+words! {
+    /// The group a status belongs to. Searches, boards and progress ask for the group, so a
+    /// workflow can name its statuses as it likes.
+    pub enum StatusGroup {
+        /// Work that nobody started.
+        NotStarted => "not-started",
+        /// Work that is going on.
+        InProgress => "in-progress",
+        /// Work that is finished.
+        Done => "done",
+    }
+    messages name = "status-group."
+}
+
+words_in_api!(StatusGroup, "The group of a status.");
+
+words! {
+    /// A status of the starting workflow (ADR-0027 decision 5). The word is the key that is
+    /// stored; M4's workflow editor keeps these keys when it makes the starting workflow the first
+    /// workflow of the organization.
+    pub enum Status {
+        /// Nobody started it.
+        Open => "open",
+        /// Somebody is working on it.
+        InProgress => "in-progress",
+        /// It is finished.
+        Done => "done",
+    }
+    messages name = "status."
+}
+
+words_in_api!(Status, "A status of the starting workflow.");
+
+impl Status {
+    /// The status of a new issue.
+    pub const NEW: Self = Self::Open;
+
+    /// The group the status belongs to.
+    #[must_use]
+    pub const fn group(self) -> StatusGroup {
+        match self {
+            Self::Open => StatusGroup::NotStarted,
+            Self::InProgress => StatusGroup::InProgress,
+            Self::Done => StatusGroup::Done,
+        }
+    }
+
+    /// The closed date after the status changes from `self` to `new` at `now`, given the date it
+    /// had: entering the group *Done* sets it, leaving the group clears it, staying in the group
+    /// keeps the date it had.
+    #[must_use]
+    pub fn closed_after(
+        self,
+        new: Self,
+        closed_at: Option<Timestamp>,
+        now: Timestamp,
+    ) -> Option<Timestamp> {
+        match (
+            self.group() == StatusGroup::Done,
+            new.group() == StatusGroup::Done,
+        ) {
+            (false, true) => Some(now),
+            (true, false) => None,
+            (true, true) => closed_at.or(Some(now)),
+            (false, false) => None,
+        }
+    }
+}
+
+words! {
+    /// How important an issue is, from the least to the most.
+    pub enum Priority {
+        /// It can wait.
+        Low => "low",
+        /// The usual.
+        Normal => "normal",
+        /// It should come soon.
+        High => "high",
+        /// It cannot wait.
+        Critical => "critical",
+    }
+    messages name = "priority."
+}
+
+words_in_api!(Priority, "How important an issue is.");
+
+impl Priority {
+    /// The priority of a new issue.
+    pub const NEW: Self = Self::Normal;
+}
+
+words! {
+    /// The icon of an issue type: one of a fixed list of Lucide icons (UX §7.5), so every icon
+    /// that can be stored is one the app ships. The word is the kebab-case name in Lucide.
+    pub enum IssueIcon {
+        /// A bug.
+        Bug => "bug",
+        /// A task that is ticked off.
+        SquareCheck => "square-check",
+        /// Something new.
+        Sparkles => "sparkles",
+        /// A goal.
+        Flag => "flag",
+        /// A target.
+        Target => "target",
+        /// An idea.
+        Lightbulb => "lightbulb",
+        /// A launch.
+        Rocket => "rocket",
+        /// A repair.
+        Wrench => "wrench",
+        /// Reading and writing.
+        BookOpen => "book-open",
+        /// Safety.
+        Shield => "shield",
+        /// Speed.
+        Zap => "zap",
+        /// A question.
+        CircleHelp => "circle-help",
+        /// Something that matters.
+        Star => "star",
+        /// Something to keep.
+        Bookmark => "bookmark",
+        /// Building.
+        Hammer => "hammer",
+        /// Heat.
+        Flame => "flame",
+    }
+}
+
+words_in_api!(
+    IssueIcon,
+    "The icon of an issue type, by its name in Lucide."
+);
+
+/// An issue type that is made at the first start (ISS-02): its name is the message, so it is
+/// written in the language of the catalog and can then be renamed.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct StartingIssueType {
+    /// The message that is the name.
+    pub name: MessageKey,
+    /// Its icon.
+    pub icon: IssueIcon,
+}
+
+/// The issue types of the first start, in order: *Bug, Task, Feature, Goal*. The one definition;
+/// after the first start the types are rows that can be changed, and this list is not read again.
+pub const STARTING_ISSUE_TYPES: [StartingIssueType; 4] = [
+    StartingIssueType {
+        name: message::ISSUE_TYPE_BUG,
+        icon: IssueIcon::Bug,
+    },
+    StartingIssueType {
+        name: message::ISSUE_TYPE_TASK,
+        icon: IssueIcon::SquareCheck,
+    },
+    StartingIssueType {
+        name: message::ISSUE_TYPE_FEATURE,
+        icon: IssueIcon::Sparkles,
+    },
+    StartingIssueType {
+        name: message::ISSUE_TYPE_GOAL,
+        icon: IssueIcon::Flag,
+    },
+];
+
+/// A kind of issue (ISS-02): *Bug*, *Task*, *Feature*, *Goal*, or one the organization made. It
+/// is the same in every project. Its fields and layout come with WP-05 and WP-09.
+#[derive(Clone, Debug, PartialEq, Eq, Entity)]
+pub struct IssueType {
+    /// The ID of the type.
+    #[not_personal]
+    pub id: IssueTypeId,
+    /// What it is called. Free text that could name a person.
+    #[personal(category = "content", basis = "legitimate_interests")]
+    pub name: String,
+    /// Its icon.
+    #[not_personal]
+    pub icon: IssueIcon,
+    /// The place in the order the types are offered in.
+    #[not_personal]
+    pub position: i64,
+    /// When it was retired: no new issues of this type, while the old ones keep it.
+    #[not_personal]
+    pub retired_at: Option<Timestamp>,
+    /// Counts up with every change, for the check that nobody changed it meanwhile (ADR-0019).
+    #[not_personal]
+    pub version: i64,
+}
+
+/// An issue (ISS-01): a bug, a task, an idea, anything that is tracked.
+#[derive(Clone, Debug, PartialEq, Eq, Entity)]
+pub struct Issue {
+    /// The internal ID, which never changes.
+    #[not_personal]
+    pub id: IssueId,
+    /// The project it is in.
+    #[not_personal]
+    pub project: ProjectId,
+    /// Its issue type.
+    #[not_personal]
+    pub issue_type: IssueTypeId,
+    /// The code of its readable ID now; the short name of its project comes before it.
+    #[not_personal]
+    pub code: IssueCode,
+    /// What it is about. Free text that could name a person.
+    #[personal(category = "content", basis = "contract")]
+    pub title: String,
+    /// The long text, in Markdown. Free text that could name a person.
+    #[personal(category = "content", basis = "contract")]
+    pub description: String,
+    /// Where it stands in the workflow.
+    #[not_personal]
+    pub status: Status,
+    /// How important it is.
+    #[not_personal]
+    pub priority: Priority,
+    /// Who made it.
+    #[personal(category = "activity", basis = "contract")]
+    pub reported_by: UserId,
+    /// When it was made.
+    #[not_personal]
+    pub created_at: Timestamp,
+    /// When it was last changed.
+    #[not_personal]
+    pub updated_at: Timestamp,
+    /// When it entered the status group *Done*, while it is in it.
+    #[not_personal]
+    pub closed_at: Option<Timestamp>,
+    /// When it was deleted into the trash, while it is there.
+    #[not_personal]
+    pub deleted_at: Option<Timestamp>,
+    /// Counts up with every change, for the check that nobody changed it meanwhile (ADR-0019).
+    #[not_personal]
+    pub version: i64,
+}
+
+/// One person an issue is assigned to; an issue can be assigned to several people.
+#[derive(Clone, Debug, PartialEq, Eq, Entity)]
+pub struct IssueAssignee {
+    /// The issue.
+    #[not_personal]
+    pub issue: IssueId,
+    /// Who works on it.
+    #[personal(category = "activity", basis = "contract")]
+    pub person: UserId,
+    /// When the person was assigned.
+    #[not_personal]
+    pub added_at: Timestamp,
+}
+
+/// An old code of an issue (ADR-0021): the issue got a new readable ID (the mode of the project
+/// changed, or it moved), and the old one keeps opening it. Nobody else can take the code: it is
+/// unique in its project together with the current codes.
+#[derive(Clone, Debug, PartialEq, Eq, Entity)]
+pub struct IssueAlias {
+    /// The project the code was in. That project's short name, now or an old one, starts the old
+    /// issue ID.
+    #[not_personal]
+    pub project: ProjectId,
+    /// The old code.
+    #[not_personal]
+    pub code: IssueCode,
+    /// The issue it opens.
+    #[not_personal]
+    pub issue: IssueId,
+    /// When the issue stopped using it.
+    #[not_personal]
+    pub retired_at: Timestamp,
+}
+
+/// The number of the last counting code a project gave out (ADR-0021). The only counter in the
+/// product: the next issue of a project that counts has the number after it, and a number is
+/// never given out twice, not even after the mode changed and changed back.
+#[derive(Clone, Debug, PartialEq, Eq, Entity)]
+pub struct IssueCounter {
+    /// The project.
+    #[not_personal]
+    pub project: ProjectId,
+    /// The last number given out.
+    #[not_personal]
+    pub last: i64,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn at(second: i64) -> Timestamp {
+        Timestamp::from_second(second).unwrap()
+    }
+
+    #[test]
+    fn adr_0027_the_starting_workflow_has_three_statuses_in_three_groups() {
+        let groups: Vec<StatusGroup> = Status::ALL.iter().map(|status| status.group()).collect();
+        assert_eq!(groups, StatusGroup::ALL);
+        assert_eq!(Status::NEW.group(), StatusGroup::NotStarted);
+    }
+
+    #[test]
+    fn adr_0027_the_closed_date_follows_the_done_group() {
+        let (opened, closed) = (at(1), at(5));
+        // Entering Done sets it; leaving clears it; moving inside the group keeps the old date.
+        assert_eq!(
+            Status::Open.closed_after(Status::Done, None, closed),
+            Some(closed)
+        );
+        assert_eq!(
+            Status::InProgress.closed_after(Status::Done, None, closed),
+            Some(closed)
+        );
+        assert_eq!(
+            Status::Done.closed_after(Status::Open, Some(opened), closed),
+            None
+        );
+        assert_eq!(
+            Status::Done.closed_after(Status::Done, Some(opened), closed),
+            Some(opened)
+        );
+        assert_eq!(
+            Status::Open.closed_after(Status::InProgress, None, closed),
+            None
+        );
+    }
+
+    #[test]
+    fn iss_02_the_four_starting_types_are_bug_task_feature_and_goal_with_their_own_icons() {
+        let names: Vec<&str> = STARTING_ISSUE_TYPES
+            .iter()
+            .map(|starting| starting.name.template())
+            .collect();
+        assert_eq!(names, ["Bug", "Task", "Feature", "Goal"]);
+        let mut icons: Vec<IssueIcon> = STARTING_ISSUE_TYPES.iter().map(|t| t.icon).collect();
+        icons.dedup();
+        assert_eq!(icons.len(), STARTING_ISSUE_TYPES.len());
+    }
+}

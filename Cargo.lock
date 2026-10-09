@@ -544,6 +544,7 @@ name = "bb-policy"
 version = "0.0.0"
 dependencies = [
  "bb-core",
+ "bb-macros",
  "jiff",
  "proptest",
  "serde",
