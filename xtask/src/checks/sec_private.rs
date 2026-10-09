@@ -15,7 +15,9 @@
 //!    `:` or `=`), the keys `sessionId`, `session_id` and `session-id` with a UUID, a session link
 //!    with an ID, and `session_` followed by a long ID (letters and digits, 20 or more; any case);
 //!    in a commit message also any session trailer line;
-//! 3. a private word: the values of `USERNAME`, `COMPUTERNAME`, `USER` and `HOSTNAME` of the
+//! 3. a link to a published page (an artifact on claude.ai) with an ID: the owner keeps those
+//!    links outside the repository;
+//! 4. a private word: the values of `USERNAME`, `COMPUTERNAME`, `USER` and `HOSTNAME` of the
 //!    machine the check runs on, and the words of the optional list
 //!    `~/.config/bugaboo/private-words.txt` (one per line; blank lines and `#` lines ignored; the
 //!    list lives outside the repository). A word matches in any case, and ends where a letter
@@ -60,6 +62,8 @@ const UUID_SESSION_KEYS: [&str; 3] = ["sessionId", "session_id", "session-id"];
 const MEMORY_FOLDER: &str = "memory";
 
 const SESSION_LINK: &str = "claude.ai/code/session_";
+/// The links to a published page; an ID follows.
+const PAGE_LINKS: [&str; 2] = ["claude.ai/artifact/", "claude.ai/code/artifact/"];
 const SESSION_PREFIX: &str = "session_";
 /// The trailer Claude Code can ask for at the end of a commit message, in lower case.
 const COMMIT_TRAILER: &str = "claude-session";
@@ -136,6 +140,7 @@ pub(crate) enum Rule {
     ProfilePath,
     SessionId,
     SessionTrailer,
+    PageLink,
     PrivateWord,
 }
 
@@ -151,6 +156,9 @@ impl Rule {
             }
             Self::SessionTrailer => {
                 "has a session trailer. A commit ends with the Co-Authored-By line only."
+            }
+            Self::PageLink => {
+                "has a link to a published page. Keep it in the owner's list outside Git and                  name the page instead."
             }
             Self::PrivateWord => {
                 "has a private word (the account or computer name of this machine, or a word of \
@@ -416,14 +424,8 @@ fn session_spans(line: &str) -> Vec<Span> {
             }
         }
     }
+    spans.extend(id_spans_after(line, SESSION_LINK));
     let lower = line.to_ascii_lowercase();
-    for (at, _) in lower.match_indices(SESSION_LINK) {
-        let start = at + SESSION_LINK.len();
-        let length = id_len(&line[start..]);
-        if length >= MIN_ID_LEN {
-            spans.push((start, start + length));
-        }
-    }
     for (at, _) in lower.match_indices(SESSION_PREFIX) {
         let start = at + SESSION_PREFIX.len();
         let run: String = line[start..]
@@ -438,6 +440,27 @@ fn session_spans(line: &str) -> Vec<Span> {
         }
     }
     spans
+}
+
+/// Where the IDs stand that follow `prefix` (in lower case) in the line, in any case.
+fn id_spans_after(line: &str, prefix: &str) -> Vec<Span> {
+    let lower = line.to_ascii_lowercase();
+    lower
+        .match_indices(prefix)
+        .filter_map(|(at, _)| {
+            let start = at + prefix.len();
+            let length = id_len(&line[start..]);
+            (length >= MIN_ID_LEN).then_some((start, start + length))
+        })
+        .collect()
+}
+
+/// Where the IDs of published pages stand in the line.
+fn page_link_spans(line: &str) -> Vec<Span> {
+    PAGE_LINKS
+        .iter()
+        .flat_map(|link| id_spans_after(line, link))
+        .collect()
 }
 
 /// Whether the line is a session trailer (`Claude-Session` and a colon, spaces allowed between;
@@ -461,6 +484,9 @@ fn rules_of(line: &str, words: &PrivateWords, in_message: bool, names: bool) -> 
     }
     if in_message && is_session_trailer(line) {
         rules.push(Rule::SessionTrailer);
+    }
+    if !page_link_spans(line).is_empty() {
+        rules.push(Rule::PageLink);
     }
     if names && !words.word_spans(line).is_empty() {
         rules.push(Rule::PrivateWord);
@@ -496,6 +522,7 @@ fn masked(name: &str, words: &PrivateWords) -> String {
     };
     let mut spans = words.word_spans(text);
     spans.extend(session_spans(text));
+    spans.extend(page_link_spans(text));
     spans.extend(path_spans(text, words));
     spans.sort_unstable();
     let mut shown = String::new();
@@ -975,6 +1002,11 @@ mod tests {
     #[test]
     fn bad_example_session_ids() {
         assert_every_line_breaks("session-ids.txt", Rule::SessionId);
+    }
+
+    #[test]
+    fn bad_example_page_links() {
+        assert_every_line_breaks("page-links.txt", Rule::PageLink);
     }
 
     #[test]

@@ -16,3 +16,6 @@ a session_store and claude.ai/code/session_ (link)
 "sessionId": "not-a-uuid"
 "session-id": "none"
 zanzibarish is another word
+the claude.ai/artifact links live outside Git
+claude.ai/artifact/{id} and claude.ai/code/artifact/{uuid}
+claude.ai/artifact/short

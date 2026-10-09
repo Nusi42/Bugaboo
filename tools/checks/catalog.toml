@@ -480,7 +480,7 @@ status = "active"
 
 [[check]]
 id = "SEC-PRIVATE"
-title = "Nothing private about the owner in Git: no profile paths with an account name, no session IDs or links, no account or computer names"
+title = "Nothing private about the owner in Git: no profile paths with an account name, no session IDs or links, no links to published pages, no account or computer names"
 rule = "coding-standards §2"
 tool = "xtask (every file, name and text, the examples of other checks too; commit-msg hook: `check commit-msg <file>`; push and CI: also the messages of every branch, tag and HEAD, annotated tag messages, ref names, and what the commits not on a remote add; reads the optional list ~/.config/bugaboo/private-words.txt; exemptions in tools/checks/private-exemptions.toml)"
 when = ["commit", "push", "ci"]
