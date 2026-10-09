@@ -2,12 +2,14 @@
 //! §3, §4).
 //!
 //! In the Rust code that ships (comments, strings and `#[cfg(test)]` code do not count): no
-//! `unwrap()`, `expect(`, `panic!`, `todo!`, `unimplemented!` or `dbg!`. Errors are typed values
+//! `unwrap()`, `expect(`, `unwrap_err()`, `expect_err(`, `panic!`, `unreachable!`, `todo!`,
+//! `unimplemented!` or `dbg!`. Errors are typed values
 //! and the caller decides (clippy says the same in its own words; this check holds it without a
 //! suppression).
 //!
-//! In the browser code: no `eval(`, `new Function(`, `document.write(`, a timer given a string, and
-//! no `dangerouslySetInnerHTML`. Setting HTML from a string at all belongs to SEC-RICHTEXT.
+//! In the browser code: no `eval(`, `new Function(`, `document.write(` and no timer given a string.
+//! Setting HTML from a string (`innerHTML`, `dangerouslySetInnerHTML`, …) belongs
+//! to SEC-RICHTEXT, which names the one place that may.
 
 use super::web_source::code_of;
 use super::{Check, Context, Finding};
@@ -15,7 +17,7 @@ use crate::rust_source::{is_test_module_file, strip, without_tests};
 use crate::source::{Kind, Source, word_positions};
 
 /// What must not be written in Rust code that ships, with what to do instead.
-const RUST_PATTERNS: [(&str, &str); 6] = [
+const RUST_PATTERNS: [(&str, &str); 9] = [
     (
         ".unwrap()",
         "return the error (`?`) or handle the empty case",
@@ -26,6 +28,18 @@ const RUST_PATTERNS: [(&str, &str); 6] = [
     ),
     ("panic!(", "return a typed error"),
     ("todo!(", "write the code, or leave it out of the change"),
+    (
+        "unreachable!(",
+        "return a typed error, or make the case impossible in the types",
+    ),
+    (
+        ".unwrap_err()",
+        "return the error (`?`) or handle the empty case",
+    ),
+    (
+        ".expect_err(",
+        "return the error (`?`) or handle the empty case",
+    ),
     (
         "unimplemented!(",
         "write the code, or leave it out of the change",
@@ -96,17 +110,10 @@ fn web_findings(sources: &[Source]) -> Vec<Finding> {
     for (path, text) in sources {
         for (number, line) in text.lines().enumerate() {
             let code = code_of(line);
-            let danger = if runs_text_as_code(code) || string_timer(code) {
-                Some("runs text as code")
-            } else if code.contains("dangerouslySetInnerHTML") {
-                Some("sets HTML from a string (SEC-RICHTEXT names the one place that may)")
-            } else {
-                None
-            };
-            if let Some(danger) = danger {
+            if runs_text_as_code(code) || string_timer(code) {
                 findings.push(Finding::at(
                     format!("{path}:{}", number + 1),
-                    format!("This {danger} (coding-standards §4). Write the thing as code."),
+                    "This runs text as code (coding-standards §4). Write the thing as code.",
                 ));
             }
         }
@@ -147,7 +154,6 @@ mod tests {
             "const f = new Function(\"return 1\");",
             "document.write(html);",
             "setTimeout(\"alert(1)\", 10);",
-            "<div dangerouslySetInnerHTML={{ __html: html }} />",
         ] {
             assert_eq!(
                 web_findings(&source("web/app/src/a.tsx", line)).len(),

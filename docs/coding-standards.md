@@ -120,14 +120,17 @@ there. LINT-DRY (§7) catches copied blocks automatically; the rest is review.
   no `className`, no CSS file but the one that `cargo xtask gen theme` writes. A component emits
   `data-part`, `data-variant` and `data-state` (`partOf`), plus React Aria's own `data-*`
   attributes. Enforced by: THEME-ONLY.
-- No `dangerouslySetInnerHTML`, `eval`, `new Function`, `document.write`, a timer given a
-  string, or inline event-handler strings (these would break the CSP). Enforced by: SEC-PATTERNS.
+- No `eval`, `new Function`, `document.write`, a timer given a string, or inline event-handler
+  strings (these would break the CSP). Enforced by: SEC-PATTERNS. Setting HTML from a string is
+  the next rule.
 - **Text written by people is rendered by `bb-markdown` and nothing else** (SEC-13, ADR-0011). No
   other crate depends on a Markdown or HTML library (`pulldown-cmark`, `ammonia`, …), the browser
   has no second renderer (no `marked`, `markdown-it`, `DOMPurify`, …), and HTML is set from a
   string in one file only, the Trusted Types policy of `MarkdownView` (`innerHTML`,
-  `insertAdjacentHTML`, `DOMParser` and the like are written nowhere else). The name of that
-  policy is the one the content security policy allows. The sanitizer corpus
+  `dangerouslySetInnerHTML`, `insertAdjacentHTML`, `DOMParser` and the like are written nowhere
+  else), and `MarkdownView` takes only `SafeHtml`, which only the WebAssembly renderer and the API
+  client make. The name of that policy is written once, in `bb-api-words`: the content security
+  policy takes it from there, and the browser from the generated client. The sanitizer corpus
   (`crates/bb-markdown/tests/corpus`) is rendered by the server's build and by the WebAssembly
   build, with the same result. Enforced by: SEC-RICHTEXT.
 

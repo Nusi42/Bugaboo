@@ -15,13 +15,11 @@ use serde::Deserialize;
 
 use super::{Check, Context, Finding};
 use crate::tools::{self, TOOLS_PATH};
-use crate::wasm::{CRATE as MODULE_CRATE, TARGET};
+use crate::wasm::{BINDGEN as LIBRARY, CRATE as MODULE_CRATE, TARGET};
 
 /// The crates that must build for the browser.
 const CRATES: [&str; 4] = ["bb-core", "bb-searchlang", "bb-markdown", MODULE_CRATE];
 
-/// The library of the bridge, and the tool that goes with it.
-const LIBRARY: &str = "wasm-bindgen";
 /// The lockfile.
 const LOCK_PATH: &str = "Cargo.lock";
 
