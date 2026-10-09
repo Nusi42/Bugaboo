@@ -247,6 +247,47 @@ pub const ROUTES: &[Route] = &[
         Answer::Ordinary,
     ),
     route(
+        "listIssues",
+        Declared::Permission(Permission::SeeIssues),
+        Answer::NeverStored,
+    ),
+    route(
+        "makeIssue",
+        Declared::Permission(Permission::MakeIssues),
+        Answer::Ordinary,
+    ),
+    route(
+        "getIssue",
+        Declared::Permission(Permission::SeeIssues),
+        Answer::NeverStored,
+    ),
+    route(
+        "changeIssue",
+        Declared::Permission(Permission::ChangeIssues),
+        Answer::Ordinary,
+    ),
+    route(
+        "deleteIssue",
+        Declared::Permission(Permission::DeleteIssues),
+        Answer::Ordinary,
+    ),
+    route(
+        "restoreIssue",
+        Declared::Permission(Permission::DeleteIssues),
+        Answer::Ordinary,
+    ),
+    route("listIssueTypes", Declared::SignedIn, Answer::Ordinary),
+    route(
+        "makeIssueType",
+        Declared::Permission(Permission::ManageIssueTypes),
+        Answer::Ordinary,
+    ),
+    route(
+        "changeIssueType",
+        Declared::Permission(Permission::ManageIssueTypes),
+        Answer::Ordinary,
+    ),
+    route(
         "listPeople",
         Declared::Permission(Permission::ManagePeople),
         Answer::NeverStored,

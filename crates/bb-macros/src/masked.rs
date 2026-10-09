@@ -11,10 +11,10 @@ use syn::spanned::Spanned as _;
 use syn::{Attribute, Data, DeriveInput, Fields, Ident, LitStr};
 
 /// What the author said about one member of the view.
-struct Member {
+struct Member<'a> {
     /// The name of the member in the JSON: the name of the Rust field.
     name: String,
-    ty: syn::Type,
+    ty: &'a syn::Type,
     /// The field of the catalogue the member holds, as its word.
     field: Option<LitStr>,
     /// The member is a view of its own, or a list of them, that masks itself.
@@ -50,7 +50,7 @@ pub(crate) fn expand(input: &DeriveInput) -> syn::Result<TokenStream> {
         let (field_word, nested) = read_member(ident, &field.attrs)?;
         members.push(Member {
             name: ident.to_string(),
-            ty: field.ty.clone(),
+            ty: &field.ty,
             field: field_word,
             nested,
         });
@@ -79,18 +79,21 @@ pub(crate) fn expand(input: &DeriveInput) -> syn::Result<TokenStream> {
 }
 
 /// The derive reads the names of the members from the struct, so a rename would make it mask the
-/// wrong member.
+/// wrong member. The one `serde` attribute that does not change a name is allowed: a member that
+/// is left out when it has no value (`skip_serializing_if`).
 fn refuse_serde(attrs: &[Attribute]) -> syn::Result<()> {
-    attrs
-        .iter()
-        .find(|attr| attr.path().is_ident("serde"))
-        .map_or(Ok(()), |attr| {
-            Err(syn::Error::new(
-                attr.span(),
-                "`Masked` uses the names of the fields as the members of the JSON, so the view \
-                 cannot have `#[serde(...)]` attributes; name the field as the member",
-            ))
-        })
+    for attr in attrs.iter().filter(|attr| attr.path().is_ident("serde")) {
+        attr.parse_nested_meta(|meta| {
+            if meta.path.is_ident("skip_serializing_if") {
+                meta.value()?.parse::<LitStr>().map(drop)
+            } else {
+                Err(meta.error(
+                    "`Masked` uses the names of the fields as the members of the JSON, so the                      view cannot rename or move them with `#[serde(...)]`; name the field as the                      member (only `skip_serializing_if` is allowed)",
+                ))
+            }
+        })?;
+    }
+    Ok(())
 }
 
 fn read_member(ident: &Ident, attrs: &[Attribute]) -> syn::Result<(Option<LitStr>, bool)> {

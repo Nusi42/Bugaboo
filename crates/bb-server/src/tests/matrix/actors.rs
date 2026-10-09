@@ -183,10 +183,31 @@ const KIND_SEE: [Permission; 4] = [
 pub(super) fn held_exactly(permission: Permission) -> Vec<Permission> {
     if ORGANIZATION_ONLY.contains(&permission) || permission == Permission::SeeProjects {
         vec![permission]
+    } else if ACTS_ON_ISSUES_SEEN.contains(&permission) {
+        // Whoever changes or deletes an issue sees it first: the route of an issue answers
+        // `resource.not_found` to a person who does not.
+        vec![permission, Permission::SeeProjects, Permission::SeeIssues]
     } else {
         vec![permission, Permission::SeeProjects]
     }
 }
+
+/// The permissions that act on an issue the person sees: the person of `Actor::Exactly` holds
+/// *See issues* beside them, as they hold *See projects* beside a permission of a project.
+const ACTS_ON_ISSUES_SEEN: [Permission; 3] = [
+    Permission::ChangeIssues,
+    Permission::ChangeOwnIssues,
+    Permission::DeleteIssues,
+];
+
+/// The permissions whose route sets fields of an issue: a role that is new has no level for any
+/// field (everything is hidden), so the person of `Actor::Exactly` gets the level *Can change* for
+/// every field, and the route is let in for the permission alone.
+pub(super) const SETS_ISSUE_FIELDS: [Permission; 3] = [
+    Permission::MakeIssues,
+    Permission::ChangeIssues,
+    Permission::ChangeOwnIssues,
+];
 
 /// The permissions of a starting role, from the table of architecture §7.
 fn role_permissions(role: StartingRole) -> BTreeSet<Permission> {

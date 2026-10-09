@@ -1,24 +1,136 @@
 //! *Make an issue* (ISS-01): in a project, with the code of its readable ID given out inside the
 //! change (ISS-01a).
 
+use std::sync::Arc;
+
 use bb_core::ErrorCode;
 use bb_core::event::RecordKind;
 use bb_core::fields::Field;
-use bb_core::id::IssueId;
+use bb_core::id::{IssueId, UserId};
 use bb_core::issue::{Issue, IssueAssignee, Priority, Status};
 use bb_core::issue_key::IssueCode;
-use bb_policy::{Authorized, Permission, Place};
+use bb_core::project::Project;
+use bb_policy::{Authorized, Evaluation, Permission, Place};
 use serde_json::json;
 
 use super::fields::{clean_description, clean_title, ensure_may_change};
-use super::ids::new_code_in;
+use super::ids::{CodePlan, new_code_in};
 use super::types::{IssueView, MakeIssue};
+use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, by, entity, internal, set_to};
 use crate::projects::Why;
 
 /// How often a change is tried again when two writers drew the same random code at the same
 /// moment (the second one hits the unique key of the project's codes and draws another).
 const ATTEMPTS: usize = 3;
+
+/// An issue that a person may make, ready to be stored: everything but the code of its readable
+/// ID, which is given out inside the change.
+struct NewIssue {
+    project: Project,
+    issue: Issue,
+    assignees: Vec<UserId>,
+    plan: CodePlan,
+}
+
+impl NewIssue {
+    /// The rows of the people the issue is assigned to.
+    fn people(&self) -> Vec<IssueAssignee> {
+        self.assignees
+            .iter()
+            .map(|person| IssueAssignee {
+                issue: self.issue.id,
+                person: *person,
+                added_at: self.issue.created_at,
+            })
+            .collect()
+    }
+}
+
+impl<S: AuthStore> Ctx<'_, S> {
+    /// What the person asks for, when they may ask it: they may make issues in the project, the
+    /// fields they set are ones they may change (the title always), and the type is one that
+    /// takes new issues.
+    async fn plan_new_issue(
+        &self,
+        actor: &Actor,
+        input: &MakeIssue,
+    ) -> Result<(Arc<Evaluation>, NewIssue), AppError> {
+        let project = self
+            .find_project(&input.project)
+            .await?
+            .map(|found| found.project)
+            .ok_or(AppError::Refused(ErrorCode::NotFound))?;
+        let access = self
+            .require(actor, Permission::MakeIssues, Place::Project(project.id))
+            .await?;
+        // A project the person does not see is not there for them, whatever they may make in it.
+        if !access.sees_project() {
+            return Err(AppError::Refused(ErrorCode::NotFound));
+        }
+        let title = clean_title(&input.title)?;
+        let description = input
+            .description
+            .as_deref()
+            .map(clean_description)
+            .transpose()?;
+        let assignees = match &input.assigned_to {
+            Some(people) => self.clean_assignees(people).await?,
+            None => Vec::new(),
+        };
+        let mut touched = vec![Field::Title];
+        for (given, field) in [
+            (description.is_some(), Field::Description),
+            (input.status.is_some(), Field::Status),
+            (input.priority.is_some(), Field::Priority),
+            (!assignees.is_empty(), Field::AssignedTo),
+        ] {
+            if given {
+                touched.push(field);
+            }
+        }
+        ensure_may_change(&access.field_mask(), &touched)?;
+        let issue_type = self
+            .store()
+            .issue_type(input.issue_type)
+            .await
+            .map_err(|error| internal::<S>(&error))?
+            .ok_or(AppError::Refused(ErrorCode::NotFound))?;
+        if issue_type.retired_at.is_some() {
+            return Err(ErrorCode::IssueTypeRetired.into());
+        }
+        let plan = self.code_plan(project.id).await?;
+        let now = self.now();
+        let status = input.status.unwrap_or(Status::NEW);
+        let issue = Issue {
+            id: IssueId::generate(&mut self.ids())
+                .map_err(|error| AppError::Internal(error.to_string()))?,
+            project: project.id,
+            issue_type: issue_type.id,
+            // The code is given out inside the change.
+            code: IssueCode::counting(1),
+            title,
+            description: description.unwrap_or_default(),
+            status,
+            priority: input.priority.unwrap_or(Priority::NEW),
+            reported_by: actor.person.id,
+            created_at: now,
+            updated_at: now,
+            closed_at: Status::NEW.closed_after(status, None, now),
+            deleted_at: None,
+            version: 1,
+        };
+        Ok((
+            access,
+            NewIssue {
+                project,
+                issue,
+                assignees,
+                plan,
+            },
+        ))
+    }
+}
 
 /// Makes an issue in a project. The person needs *Make issues* there; the fields they set must be
 /// ones they may change (the title always).
@@ -33,94 +145,23 @@ pub async fn make_issue<S: AuthStore>(
     input: MakeIssue,
 ) -> Result<Authorized<IssueView>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
-    let project = ctx
-        .find_project(&input.project)
-        .await?
-        .map(|found| found.project)
-        .ok_or(AppError::Refused(ErrorCode::NotFound))?;
-    let access = ctx
-        .require(&actor, Permission::MakeIssues, Place::Project(project.id))
-        .await?;
-    // A project the person does not see is not there for them, whatever they may make in it.
-    if !access.sees_project() {
-        return Err(AppError::Refused(ErrorCode::NotFound));
-    }
-    let title = clean_title(&input.title)?;
-    let description = input
-        .description
-        .as_deref()
-        .map(clean_description)
-        .transpose()?;
-    let assignees = match &input.assigned_to {
-        Some(people) => ctx.clean_assignees(people).await?,
-        None => Vec::new(),
-    };
-    let mut touched = vec![Field::Title];
-    for (given, field) in [
-        (description.is_some(), Field::Description),
-        (input.status.is_some(), Field::Status),
-        (input.priority.is_some(), Field::Priority),
-        (!assignees.is_empty(), Field::AssignedTo),
-    ] {
-        if given {
-            touched.push(field);
-        }
-    }
-    ensure_may_change(&access.field_mask(), &touched)?;
-    let issue_type = ctx
-        .store()
-        .issue_type(input.issue_type)
-        .await
-        .map_err(|error| internal::<S>(&error))?
-        .ok_or(AppError::Refused(ErrorCode::NotFound))?;
-    if issue_type.retired_at.is_some() {
-        return Err(ErrorCode::IssueTypeRetired.into());
-    }
-    let plan = ctx.code_plan(project.id).await?;
-    let now = ctx.now();
-    let status = input.status.unwrap_or(Status::NEW);
-    let id =
-        IssueId::generate(&mut ctx.ids()).map_err(|error| AppError::Internal(error.to_string()))?;
-    let issue = Issue {
-        id,
-        project: project.id,
-        issue_type: issue_type.id,
-        // The code is given out inside the change.
-        code: IssueCode::counting(1),
-        title,
-        description: description.unwrap_or_default(),
-        status,
-        priority: input.priority.unwrap_or(Priority::NEW),
-        reported_by: actor.person.id,
-        created_at: now,
-        updated_at: now,
-        closed_at: Status::NEW.closed_after(status, None, now),
-        deleted_at: None,
-        version: 1,
-    };
-    let people: Vec<IssueAssignee> = assignees
-        .iter()
-        .map(|person| IssueAssignee {
-            issue: id,
-            person: *person,
-            added_at: now,
-        })
-        .collect();
+    let (access, new) = ctx.plan_new_issue(&actor, &input).await?;
+    let (id, people) = (new.issue.id, new.people());
     let event = ctx.event(
         by(actor.person.id),
         entity(RecordKind::Issue, id),
         vec![
-            set_to("project", json!(project.id.to_string())),
-            set_to("issue_type", json!(issue.issue_type.to_string())),
-            set_to("title", json!(issue.title)),
-            set_to("description", json!(issue.description)),
-            set_to("status", json!(issue.status.code())),
-            set_to("priority", json!(issue.priority.code())),
+            set_to("project", json!(new.project.id.to_string())),
+            set_to("issue_type", json!(new.issue.issue_type.to_string())),
+            set_to("title", json!(new.issue.title)),
+            set_to("description", json!(new.issue.description)),
+            set_to("status", json!(new.issue.status.code())),
+            set_to("priority", json!(new.issue.priority.code())),
             set_to("reported_by", json!(actor.person.id.to_string())),
             set_to(
                 "assigned_to",
                 json!(
-                    assignees
+                    new.assignees
                         .iter()
                         .map(ToString::to_string)
                         .collect::<Vec<_>>()
@@ -133,7 +174,7 @@ pub async fn make_issue<S: AuthStore>(
         tried += 1;
         let why = Why::default();
         let (stopped, mut source) = (why.clone(), ctx.owned_ids());
-        let (issue, people) = (issue.clone(), people.clone());
+        let (issue, people, plan) = (new.issue.clone(), people.clone(), new.plan);
         let result = ctx
             .store()
             .record_change(&event, move |transaction| {
@@ -166,7 +207,7 @@ pub async fn make_issue<S: AuthStore>(
         .await
         .map_err(|error| internal::<S>(&error))?
         .ok_or_else(|| AppError::Internal("a new issue is not there".into()))?;
-    let mut views = ctx.issue_views(access.clone(), project).await?;
-    let view = ctx.issue_view(&mut views, &stored, &assignees).await?;
+    let mut views = ctx.issue_views(access.clone(), new.project).await?;
+    let view = ctx.issue_view(&mut views, &stored, &new.assignees).await?;
     Ok(access.authorize(view))
 }

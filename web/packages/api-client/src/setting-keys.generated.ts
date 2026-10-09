@@ -22,6 +22,8 @@ export const settingKeys = {
   securityTwoStepRequired: "security.two-step-required",
   authAccessKeyDefaultDays: "auth.access-key-default-days",
   authAccessKeyLongestDays: "auth.access-key-longest-days",
+  issuesIdMode: "issues.id-mode",
+  issuesIdLength: "issues.id-length",
 } as const;
 
 /** The key of a setting of the registry. */
@@ -37,6 +39,7 @@ export const settingChoices = {
   regionDateFormat: ["device", "day-month-year", "month-day-year", "year-month-day"],
   regionNumberFormat: ["device", "point", "comma", "space"],
   regionFirstDay: ["device", "monday", "sunday", "saturday"],
+  issuesIdMode: ["random", "counting"],
 } as const;
 
 /** What a person who chose nothing gets, for every setting of the registry. */
@@ -61,6 +64,8 @@ export const settingDefaults = {
   securityTwoStepRequired: false,
   authAccessKeyDefaultDays: 90,
   authAccessKeyLongestDays: 365,
+  issuesIdMode: "random",
+  issuesIdLength: 5,
 } as const;
 
 /** One of the choices of a setting, like `"device"` for `appearanceMode`. */

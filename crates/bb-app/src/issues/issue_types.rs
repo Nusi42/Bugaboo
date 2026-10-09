@@ -54,7 +54,6 @@ pub async fn issue_types<S: AuthStore>(
             .map(IssueTypeView::from)
             .collect(),
         next_cursor: page.next,
-        may_manage: held.allows(Permission::ManageIssueTypes),
     }))
 }
 
@@ -163,45 +162,45 @@ pub async fn change_issue_type<S: AuthStore>(
         Some(true) => current.retired_at.or(Some(now)),
         Some(false) => None,
     };
-    let mut changes = Vec::new();
+    let mut differences = Vec::new();
     if name != current.name {
-        changes.push(FieldChange {
+        differences.push(FieldChange {
             field: "name".to_owned(),
             before: Some(json!(current.name)),
             after: Some(json!(name)),
         });
     }
     if icon != current.icon {
-        changes.push(FieldChange {
+        differences.push(FieldChange {
             field: "icon".to_owned(),
             before: Some(json!(current.icon.code())),
             after: Some(json!(icon.code())),
         });
     }
     if retired_at.is_some() != current.retired_at.is_some() {
-        changes.push(FieldChange {
+        differences.push(FieldChange {
             field: "retired".to_owned(),
             before: Some(json!(current.retired_at.is_some())),
             after: Some(json!(retired_at.is_some())),
         });
     }
-    let changed = IssueType {
+    let after = IssueType {
         name,
         icon,
         retired_at,
         version: current.version + 1,
         ..current.clone()
     };
-    if changes.is_empty() {
+    if differences.is_empty() {
         return Ok(held.authorize(IssueTypeView::from(&current)));
     }
     let event = ctx.event(
         by(actor.person.id),
         entity(RecordKind::IssueType, current.id),
-        changes,
+        differences,
     )?;
     let why = Why::default();
-    let (stopped, written, version) = (why.clone(), changed.clone(), current.version);
+    let (stopped, written, version) = (why.clone(), after.clone(), current.version);
     ctx.store()
         .record_change(&event, move |transaction| {
             Box::pin(async move {
@@ -228,7 +227,7 @@ pub async fn change_issue_type<S: AuthStore>(
         })
         .await
         .map_err(|error| why.answer::<S>(&error, ErrorCode::VersionChanged))?;
-    Ok(held.authorize(IssueTypeView::from(&changed)))
+    Ok(held.authorize(IssueTypeView::from(&after)))
 }
 
 /// Makes the issue types of the first start if there are none yet: *Bug, Task, Feature, Goal*,

@@ -494,6 +494,7 @@ version = "0.0.0"
 dependencies = [
  "bb-macros",
  "jiff",
+ "proptest",
  "serde",
  "serde_json",
  "trybuild",

@@ -1,0 +1,254 @@
+//! What issue answers hold and leave out (SEC-04, SEC-06, PRIV-13): a field a role may not see is in
+//! no answer and cannot be asked for, and no answer holds a count.
+
+use axum::http::StatusCode;
+use bb_app::access::{Masked, Permission, StartingRole};
+use bb_app::issues::IssueView;
+use bb_app::roles::SetFieldLevel;
+use bb_core::access::FieldLevel;
+use bb_core::fields::Field;
+use bb_testing::{Failure, TestResult, each_database};
+use serde_json::{Value, json};
+
+use super::http::{Browser, rig_and_app};
+use super::issues_site::{ISSUES, PROJECTS, Site, ok};
+use super::policy_rig::Member;
+use super::rig::Rig;
+
+/// The members of an issue that hold a field of the catalogue, with the field.
+fn field_members() -> &'static [(&'static str, Field)] {
+    <IssueView as Masked>::FIELDS
+}
+
+/// A person with a role of their own that sees only the title of an issue: no other field has a
+/// level, so every other field is hidden from them.
+async fn title_only_reader(site: &Site<'_>, rig: &Rig) -> Result<Browser, Failure> {
+    let role = site
+        .org
+        .role(
+            "Title reader",
+            &[Permission::SeeProjects, Permission::SeeIssues],
+        )
+        .await?;
+    rig.api()
+        .set_field_level(
+            Rig::info(),
+            SetFieldLevel {
+                session_token: site.org.admin.session.clone(),
+                role: role.id,
+                project: None,
+                field: Field::Title,
+                level: Some(FieldLevel::CanSee),
+            },
+        )
+        .await?;
+    let email = "reader@example.test";
+    let started = rig.person(&site.org.admin.session, email).await?;
+    let member = Member {
+        id: started.person.id,
+        session: started.session_token,
+    };
+    site.org.give_everywhere(&member, role.id).await?;
+    Browser::signed_in_as(site.app, email).await
+}
+
+/// What the hidden members of an issue are for a person who holds this level of every field.
+fn hidden_names(level: impl Fn(Field) -> FieldLevel) -> Vec<&'static str> {
+    field_members()
+        .iter()
+        .filter(|(_, field)| level(*field) == FieldLevel::Hidden)
+        .map(|(name, _)| *name)
+        .collect()
+}
+
+/// What a reader of the issue `key` sees of it and may ask for, given the members that are hidden
+/// from them.
+async fn check_reader(
+    name: &str,
+    reader: &mut Browser,
+    hidden: &[&str],
+    key: &str,
+) -> Result<(), Failure> {
+    let detail = reader.send("GET", &format!("{ISSUES}/{key}"), None).await?;
+    let issue = &ok(&detail)?["issue"];
+    // `closed_at` is there only while the issue is closed, which this one is not.
+    for (member, _) in field_members() {
+        if hidden.contains(member) {
+            assert!(
+                issue.get(*member).is_none(),
+                "{name}: `{member}` in the issue"
+            );
+        } else if *member != "closed_at" {
+            assert!(
+                issue.get(*member).is_some(),
+                "{name}: `{member}` not in the issue"
+            );
+        }
+    }
+    let unknown = reader
+        .send(
+            "GET",
+            &format!("{PROJECTS}/ACME/issues?fields=nothing"),
+            None,
+        )
+        .await?;
+    for member in hidden {
+        let asked = reader
+            .send(
+                "GET",
+                &format!("{PROJECTS}/ACME/issues?fields={member}"),
+                None,
+            )
+            .await?;
+        assert_eq!(
+            (asked.status, asked.code()),
+            (StatusCode::BAD_REQUEST, "request.unknown_field"),
+            "{name}: `{member}` can be asked for"
+        );
+        assert_eq!(asked.body["code"], unknown.body["code"]);
+    }
+    // The members that may be seen are in the list when asked for.
+    for (member, _) in field_members()
+        .iter()
+        .filter(|(m, _)| !hidden.contains(m) && *m != "closed_at")
+    {
+        let list = reader
+            .send(
+                "GET",
+                &format!("{PROJECTS}/ACME/issues?fields={member}"),
+                None,
+            )
+            .await?;
+        assert_eq!(
+            list.status,
+            StatusCode::OK,
+            "{name}: `{member}`: {}",
+            list.body
+        );
+        assert!(
+            list.body["items"][0].get(*member).is_some(),
+            "{name}: `{member}`"
+        );
+    }
+    Ok(())
+}
+
+#[tokio::test]
+async fn sec_06_issue_answers_refuse_every_field_the_role_may_not_see() -> TestResult {
+    each_database("sec_06_issue_fields", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let (_, tim) = site.person(StartingRole::TeamMember, "tim").await?;
+        let made = ada
+            .send(
+                "POST",
+                &format!("{PROJECTS}/ACME/issues"),
+                Some(json!({
+                    "issue_type": site.bug,
+                    "title": "Seen by everyone",
+                    "description": "Hidden from some",
+                    "priority": "high",
+                    "assigned_to": [tim.to_string()],
+                })),
+            )
+            .await?;
+        let key = ok(&made)?["key"].as_str().ok_or("no key")?.to_owned();
+        let mut readers = vec![(
+            "title reader".to_owned(),
+            title_only_reader(&site, &rig).await?,
+        )];
+        let mut starting = Vec::new();
+        for role in StartingRole::ALL
+            .iter()
+            .copied()
+            .filter(|role| *role != StartingRole::Guest)
+        {
+            let (browser, _) = site
+                .person(role, &format!("{}-reader", role.code()))
+                .await?;
+            starting.push((role, browser));
+        }
+        for (role, browser) in starting {
+            readers.push((role.code().to_owned(), browser));
+        }
+        for (name, mut reader) in readers {
+            let hidden: Vec<&str> = if name == "title reader" {
+                hidden_names(|field| {
+                    if field == Field::Title {
+                        FieldLevel::CanSee
+                    } else {
+                        FieldLevel::Hidden
+                    }
+                })
+            } else {
+                let role = StartingRole::from_code(&name).ok_or("no such role")?;
+                hidden_names(|field| role.field_level(field))
+            };
+            check_reader(&name, &mut reader, &hidden, &key).await?;
+        }
+        Ok(())
+    })
+    .await
+}
+
+/// Every key of every object in the answer.
+fn keys(value: &Value, found: &mut Vec<String>) {
+    match value {
+        Value::Object(members) => {
+            for (key, inner) in members {
+                found.push(key.clone());
+                keys(inner, found);
+            }
+        }
+        Value::Array(items) => items.iter().for_each(|item| keys(item, found)),
+        _ => {}
+    }
+}
+
+#[tokio::test]
+async fn priv_13_no_issue_answer_holds_a_count() -> TestResult {
+    each_database("priv_13_no_counts", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let (mut gus, _) = site.person(StartingRole::Guest, "gus").await?;
+        for title in ["One", "Two", "Three"] {
+            ok(&site.make(&mut ada, title).await?)?;
+        }
+        ok(&site.make(&mut gus, "Gus's").await?)?;
+        let key = ok(&site.make(&mut ada, "Four").await?)?["key"]
+            .as_str()
+            .ok_or("no key")?
+            .to_owned();
+        let all_fields = "id,key,project,issue_type,title,description,status,status_group,priority,reported_by,assigned_to,created_at,updated_at,closed_at,version";
+        let answers = [
+            ada.send(
+                "GET",
+                &format!("{PROJECTS}/ACME/issues?limit=2&fields={all_fields}"),
+                None,
+            )
+            .await?,
+            gus.send("GET", &format!("{PROJECTS}/ACME/issues"), None).await?,
+            ada.send("GET", &format!("{ISSUES}/{key}"), None).await?,
+            ada.send("GET", "/api/v1/issue-types", None).await?,
+        ];
+        let numbers = ["count", "total", "size", "length", "number", "sum"];
+        for answer in &answers {
+            assert_eq!(answer.status, StatusCode::OK, "{}", answer.body);
+            let mut found = Vec::new();
+            keys(&answer.body, &mut found);
+            for key in found {
+                assert!(
+                    !numbers.iter().any(|word| key.contains(word)),
+                    "`{key}` counts something: {}",
+                    answer.body
+                );
+            }
+        }
+        // A page says only whether there is a next one: a cursor, never how many are left.
+        assert!(answers[0].body["next_cursor"].is_string());
+        assert!(answers[1].body["next_cursor"].is_null());
+        assert_eq!(answers[1].body["items"].as_array().map(Vec::len), Some(1));
+        Ok(())
+    })
+    .await
+}

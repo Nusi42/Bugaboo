@@ -25,14 +25,16 @@ use bb_api::openapi::{Operation, operations};
 use bb_api::permissions::Declared;
 use bb_app::access::{Permission, StartingRole};
 use bb_app::auth::MakeAccessKey;
-use bb_app::roles::RolesQuery;
+use bb_app::roles::SetFieldLevel;
+use bb_core::access::FieldLevel;
 use bb_core::access_key::KeyChoice;
+use bb_core::fields::Field;
 use bb_core::id::{ProjectId, RoleId};
 use bb_testing::{Failure, TestResult, each_database};
 
 use super::actors::{
-    Actor, Project, Where, actors, everything_seen, held_exactly, short_name, standing,
-    top_of_the_tree,
+    Actor, Project, SETS_ISSUE_FIELDS, Where, actors, everything_seen, held_exactly, short_name,
+    standing, top_of_the_tree,
 };
 use super::examples::{EXAMPLES, Example, Quirk, request};
 use super::record::Record;
@@ -83,12 +85,29 @@ pub(super) fn expectation(actor: Actor, route: &Operation, example: &Example) ->
             if example.has(Quirk::FiltersWhatIsSeen) {
                 return Expect::Allowed;
             }
-            let at = if route.path.contains("{project}") || example.has(Quirk::AtTheTargetProject) {
+            let in_the_target = route.path.contains("{project}")
+                || example.has(Quirk::AtTheTargetProject)
+                || example.has(Quirk::AnIssueOfTheTarget);
+            let at = if in_the_target {
                 Where::Target
             } else {
                 Where::Organization
             };
             let held = standing(actor, at);
+            if example.has(Quirk::ListsTheIssuesSeen) {
+                return if held.sees() {
+                    Expect::Allowed
+                } else {
+                    Expect::NotFound
+                };
+            }
+            if example.has(Quirk::AnIssueOfTheTarget)
+                && !(held.sees() && held.permissions.contains(&Permission::SeeIssues))
+            {
+                // An issue that somebody else reported and that the person may not see is not there
+                // for them.
+                return Expect::NotFound;
+            }
             if at == Where::Target && example.has(Quirk::HidesUnseen) && !held.sees() {
                 // What is inside a project is not told to a person who does not see it.
                 Expect::NotFound
@@ -198,7 +217,7 @@ impl<'a> Fixture<'a> {
             (short_name(Project::Target), target),
             (short_name(Project::Sibling), sibling),
         ]);
-        let roles = starting_roles(&org).await?;
+        let roles = org.starting_roles().await?;
         let places = [parent, target, sibling];
         let mut people = Vec::new();
         let mut keys = Vec::new();
@@ -280,6 +299,24 @@ async fn hold(
                 )
                 .await?;
             org.give_everywhere(member, only.id).await?;
+            if SETS_ISSUE_FIELDS.contains(&permission) {
+                // A new role sees no field: the route could not be let in for the permission alone.
+                for field in Field::ALL {
+                    rig.api()
+                        .set_field_level(
+                            Rig::info(),
+                            SetFieldLevel {
+                                session_token: org.admin.session.clone(),
+                                role: only.id,
+                                project: None,
+                                field: *field,
+                                level: Some(FieldLevel::CanChange),
+                            },
+                        )
+                        .await
+                        .map_err(|error| error.to_string())?;
+                }
+            }
         }
         Actor::Role(starting) => {
             org.give_everywhere(member, role(starting)).await?;
@@ -334,32 +371,6 @@ async fn hold(
     }
     Ok(None)
 }
-
-/// The starting roles of the organization by their key (`administrator`, …).
-async fn starting_roles(org: &Org<'_>) -> Result<BTreeMap<String, RoleId>, Failure> {
-    let list = org
-        .rig
-        .api()
-        .roles(
-            Rig::info(),
-            RolesQuery {
-                session_token: org.admin.session.clone(),
-                place: None,
-                cursor: None,
-                limit: bb_core::paging::PAGE_SIZE_MAX,
-                giveable: false,
-            },
-        )
-        .await
-        .map_err(|error| error.to_string())?
-        .into_value();
-    Ok(list
-        .roles
-        .into_iter()
-        .filter_map(|role| role.starting.map(|key| (key, role.id)))
-        .collect())
-}
-
 /// What a route that is let through must hold for each actor, besides not being refused: only the
 /// list of projects says anything about its content (M2-F27: *a key for A lists only A and below;
 /// the trail stops at A*).

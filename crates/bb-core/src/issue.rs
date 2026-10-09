@@ -77,9 +77,9 @@ impl Status {
             new.group() == StatusGroup::Done,
         ) {
             (false, true) => Some(now),
-            (true, false) => None,
             (true, true) => closed_at.or(Some(now)),
-            (false, false) => None,
+            // Not in the group after the change: there is no closed date.
+            (_, false) => None,
         }
     }
 }

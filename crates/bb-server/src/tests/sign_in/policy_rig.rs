@@ -2,13 +2,15 @@
 //! would call: an administrator, other people without a role, roles, projects, groups and rows of
 //! *Who has which role*.
 
+use std::collections::BTreeMap;
+
 use bb_app::access::Permission;
 use bb_app::auth::{AppError, Started};
 use bb_app::people::{AddGroupMember, MakeGroup};
 use bb_app::projects::{MakeProject, ProjectView};
 use bb_app::roles::{
     AccessAnswer, AssignRole, AssignmentView, CheckAccessQuery, Given, MakeRole, PermissionAnswer,
-    RoleView, Subject,
+    RoleView, RolesQuery, Subject,
 };
 use bb_core::access::AppliesTo;
 use bb_core::id::{GroupId, ProjectId, RoleId, UserId};
@@ -46,6 +48,30 @@ impl<'a> Org<'a> {
             },
             people: std::cell::Cell::new(0),
         })
+    }
+
+    /// The roles of the first start by their starting key (`administrator`, `guest`, ...).
+    pub(super) async fn starting_roles(&self) -> Run<BTreeMap<String, RoleId>> {
+        let list = self
+            .rig
+            .api()
+            .roles(
+                Rig::info(),
+                RolesQuery {
+                    session_token: self.admin.session.clone(),
+                    place: None,
+                    cursor: None,
+                    limit: bb_core::paging::PAGE_SIZE_MAX,
+                    giveable: false,
+                },
+            )
+            .await?
+            .into_value();
+        Ok(list
+            .roles
+            .into_iter()
+            .filter_map(|role| role.starting.map(|key| (key, role.id)))
+            .collect())
     }
 
     /// A new person without any role, signed in.

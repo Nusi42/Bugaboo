@@ -202,9 +202,56 @@ impl fmt::Display for IssueKey {
 
 #[cfg(test)]
 mod tests {
+    use std::collections::HashSet;
+
+    use jiff::Timestamp;
+    use proptest::prelude::*;
+
     use super::*;
-    use crate::id::SequentialIds;
+    use crate::id::{IdSource, SequentialIds};
     use crate::text::CodeDraws;
+
+    /// A source of random bytes that hands out the blocks it was given, over and over: with few
+    /// different blocks, the draws clash a lot.
+    struct Blocks {
+        blocks: Vec<[u8; 16]>,
+        at: usize,
+    }
+
+    impl IdSource for Blocks {
+        fn now(&mut self) -> Timestamp {
+            Timestamp::UNIX_EPOCH
+        }
+
+        fn random(&mut self) -> [u8; 16] {
+            let block = self.blocks[self.at % self.blocks.len()];
+            self.at += 1;
+            block
+        }
+    }
+
+    proptest! {
+        #[test]
+        fn iss_01a_random_ids_use_the_readable_alphabet_and_never_repeat(
+            blocks in prop::collection::vec(prop::array::uniform16(0_u8..6), 1..40),
+            wanted in 1_usize..30,
+        ) {
+            let mut source = Blocks { blocks, at: 0 };
+            let mut given: HashSet<String> = HashSet::new();
+            for _ in 0..wanted {
+                // What a project does for every new issue: the first draw it has not given out.
+                let drawn = CodeDraws::new(&mut source, shortest_code(), longest_code())
+                    .find(|symbols| !given.contains(symbols));
+                // Draws that all clash give no code at all, never a code twice.
+                let Some(symbols) = drawn else { break };
+                let code = IssueCode::random(&symbols).expect("a drawn code is a random code");
+                prop_assert!(symbols.bytes().all(|symbol| CROCKFORD.contains(&symbol)));
+                prop_assert!((shortest_code()..=longest_code()).contains(&symbols.len()));
+                prop_assert!(!symbols.contains(['I', 'L', 'O', 'U']));
+                prop_assert!(given.insert(code.to_string()), "{code} was given out twice");
+            }
+        }
+    }
 
     #[test]
     fn iss_01a_a_code_is_a_counting_number_or_a_readable_random_code() {

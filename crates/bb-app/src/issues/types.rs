@@ -281,7 +281,4 @@ pub struct IssueTypePage {
     /// The cursor of the next page, if there is one.
     #[masked(open)]
     pub next_cursor: Option<String>,
-    /// Whether the person may make and change issue types.
-    #[masked(open)]
-    pub may_manage: bool,
 }

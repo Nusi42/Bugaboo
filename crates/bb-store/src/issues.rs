@@ -68,8 +68,8 @@ fn issue_select() -> SelectStatement {
     select
 }
 
-fn read_code(text: String) -> Result<IssueCode, StoreError> {
-    IssueCode::new(&text).map_err(|_| StoreError::Corrupt("an issue code"))
+fn read_code(text: &str) -> Result<IssueCode, StoreError> {
+    IssueCode::new(text).map_err(|_| StoreError::Corrupt("an issue code"))
 }
 
 fn read_issue(row: &Row) -> Result<Issue, StoreError> {
@@ -77,7 +77,7 @@ fn read_issue(row: &Row) -> Result<Issue, StoreError> {
         id: row.id::<IssueId>(IssueRow::Id)?,
         project: row.id::<ProjectId>(IssueRow::Project)?,
         issue_type: row.id::<IssueTypeId>(IssueRow::IssueType)?,
-        code: read_code(row.get(IssueRow::Code)?)?,
+        code: read_code(&row.get::<String>(IssueRow::Code)?)?,
         title: row.get(IssueRow::Title)?,
         description: row.get(IssueRow::Description)?,
         status: Status::from_code(&row.get::<String>(IssueRow::Status)?)
@@ -285,7 +285,7 @@ impl IssueStore for AuthStorage {
             .map(|row| {
                 Ok((
                     row.id::<IssueId>(IssueRow::Id)?,
-                    read_code(row.get(IssueRow::Code)?)?,
+                    read_code(&row.get::<String>(IssueRow::Code)?)?,
                 ))
             })
             .collect()
