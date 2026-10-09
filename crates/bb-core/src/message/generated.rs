@@ -2073,6 +2073,20 @@ pub const SETTING_AUTH_SIGN_UP_ENABLED_HELP: MessageKey =
 pub const SETTING_AUTH_SIGN_UP_ENABLED_NAME: MessageKey =
     MessageKey::new("setting.auth.sign-up-enabled.name");
 
+/// The message `setting.issues.id-length.help`.
+pub const SETTING_ISSUES_ID_LENGTH_HELP: MessageKey =
+    MessageKey::new("setting.issues.id-length.help");
+
+/// The message `setting.issues.id-length.name`.
+pub const SETTING_ISSUES_ID_LENGTH_NAME: MessageKey =
+    MessageKey::new("setting.issues.id-length.name");
+
+/// The message `setting.issues.id-mode.help`.
+pub const SETTING_ISSUES_ID_MODE_HELP: MessageKey = MessageKey::new("setting.issues.id-mode.help");
+
+/// The message `setting.issues.id-mode.name`.
+pub const SETTING_ISSUES_ID_MODE_NAME: MessageKey = MessageKey::new("setting.issues.id-mode.name");
+
 /// The message `setting.page.region-intro`.
 pub const SETTING_PAGE_REGION_INTRO: MessageKey = MessageKey::new("setting.page.region-intro");
 
@@ -6727,6 +6741,19 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "setting.auth.sign-up-enabled.name",
         "Sign up without an invitation",
     ),
+    (
+        "setting.issues.id-length.help",
+        "How many letters and digits a random issue ID has after the dash. Between 4 and 8. It grows by itself when the short ones run out.",
+    ),
+    (
+        "setting.issues.id-length.name",
+        "Length of random issue IDs",
+    ),
+    (
+        "setting.issues.id-mode.help",
+        "Random IDs (like WEB-K7Q2X) hide how many issues there are and how fast they come. Counting IDs (like WEB-142) are easy to say aloud. When you change this, every issue of the project gets a new ID; the old IDs keep working.",
+    ),
+    ("setting.issues.id-mode.name", "Issue IDs"),
     (
         "setting.page.region-intro",
         "These choices are kept with you, so they follow you to every browser you sign in from.",

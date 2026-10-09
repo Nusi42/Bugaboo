@@ -1,0 +1,106 @@
+//! Issues as one viewer sees them: the project and the type by name, the people as *Who sees
+//! people* says, the readable ID as it is now.
+
+use std::collections::{BTreeMap, HashMap};
+use std::sync::Arc;
+
+use bb_core::id::{IssueTypeId, UserId};
+use bb_core::issue::Issue;
+use bb_core::issue_key::IssueKey;
+use bb_core::people_kinds::PeopleKind;
+use bb_core::project::Project;
+use bb_policy::{Evaluation, PeopleContext, PersonRef};
+
+use super::types::{IssueTypeRef, IssueView};
+use crate::auth::{AppError, AuthStore, Ctx, internal};
+use crate::projects::ProjectRef;
+
+/// What turns the issues of one project into views for one viewer. The people are resolved once
+/// each: a list shows the same few people over and over.
+pub(crate) struct IssueViews {
+    viewer: Arc<Evaluation>,
+    project: Project,
+    types: BTreeMap<IssueTypeId, IssueTypeRef>,
+    people: HashMap<(PeopleKind, UserId), PersonRef>,
+}
+
+impl<S: AuthStore> Ctx<'_, S> {
+    /// The views of the issues of `project` for the viewer, whose evaluation is the one at the
+    /// project.
+    pub(crate) async fn issue_views(
+        &self,
+        viewer: Arc<Evaluation>,
+        project: Project,
+    ) -> Result<IssueViews, AppError> {
+        let types = self
+            .store()
+            .issue_types()
+            .await
+            .map_err(|error| internal::<S>(&error))?
+            .iter()
+            .map(|found| (found.id, IssueTypeRef::from(found)))
+            .collect();
+        Ok(IssueViews {
+            viewer,
+            project,
+            types,
+            people: HashMap::new(),
+        })
+    }
+
+    async fn person_once(
+        &self,
+        views: &mut IssueViews,
+        kind: PeopleKind,
+        person: UserId,
+    ) -> Result<PersonRef, AppError> {
+        if let Some(known) = views.people.get(&(kind, person)) {
+            return Ok(known.clone());
+        }
+        let shown = self
+            .person_ref(&views.viewer, kind, PeopleContext::Ordinary, person)
+            .await?;
+        views.people.insert((kind, person), shown.clone());
+        Ok(shown)
+    }
+
+    /// The issue as the viewer sees it. `assigned_to` are the people it is assigned to, in order.
+    pub(crate) async fn issue_view(
+        &self,
+        views: &mut IssueViews,
+        issue: &Issue,
+        assigned_to: &[UserId],
+    ) -> Result<IssueView, AppError> {
+        let issue_type =
+            views.types.get(&issue.issue_type).cloned().ok_or_else(|| {
+                AppError::Internal("an issue has an issue type that is gone".into())
+            })?;
+        let reported_by = self
+            .person_once(views, PeopleKind::ReportedBy, issue.reported_by)
+            .await?;
+        let mut people = Vec::with_capacity(assigned_to.len());
+        for person in assigned_to {
+            people.push(
+                self.person_once(views, PeopleKind::AssignedTo, *person)
+                    .await?,
+            );
+        }
+        Ok(IssueView {
+            id: issue.id,
+            key: IssueKey::new(views.project.short_name.clone(), issue.code.clone()).to_string(),
+            project: ProjectRef::from(&views.project),
+            issue_type,
+            title: issue.title.clone(),
+            description: issue.description.clone(),
+            status: issue.status,
+            status_group: issue.status.group(),
+            priority: issue.priority,
+            reported_by,
+            assigned_to: people,
+            created_at: issue.created_at,
+            updated_at: issue.updated_at,
+            closed_at: issue.closed_at,
+            version: issue.version,
+        })
+    }
+}

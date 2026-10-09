@@ -28,6 +28,12 @@ use crate::access::{
     PeopleToCheckQuery, PeopleVisibility, PeopleVisibilityQuery, field_permissions, own_loss,
     people_to_check, people_visibility,
 };
+use crate::issues::{
+    ChangeIssue, ChangeIssueType, DeleteIssue, IssueDetail, IssuePage, IssueQuery, IssueTypePage,
+    IssueTypeView, IssueTypesQuery, IssueView, IssuesQuery, MakeIssue, MakeIssueType, RestoreIssue,
+    change_issue, change_issue_type, delete_issue, issue, issue_types, issues, make_issue,
+    make_issue_type, restore_issue,
+};
 use crate::people::{
     AddGroupMember, AssignmentChoicesQuery, ChoicePage, DeleteGroup, GroupDetail, GroupList,
     GroupMembers, GroupMembersQuery, GroupQuery, GroupView, GroupsQuery, MakeGroup,
@@ -302,4 +308,22 @@ use_cases! {
     project(ProjectQuery) -> Authorized<ProjectDetail>;
     /// Lists the projects a person sees.
     projects(ProjectsQuery) -> Authorized<ProjectPage>;
+    /// Lists the issue types.
+    issue_types(IssueTypesQuery) -> Authorized<IssueTypePage>;
+    /// Makes an issue type.
+    make_issue_type(MakeIssueType) -> Authorized<IssueTypeView>;
+    /// Changes the name, icon or retired state of an issue type.
+    change_issue_type(ChangeIssueType) -> Authorized<IssueTypeView>;
+    /// Lists the issues of a project a person sees.
+    issues(IssuesQuery) -> Authorized<IssuePage>;
+    /// Makes an issue.
+    make_issue(MakeIssue) -> Authorized<IssueView>;
+    /// Shows one issue by its readable or internal ID.
+    issue(IssueQuery) -> Authorized<IssueDetail>;
+    /// Changes the fields of an issue.
+    change_issue(ChangeIssue) -> Authorized<IssueView>;
+    /// Puts an issue into the trash.
+    delete_issue(DeleteIssue) -> Done;
+    /// Takes an issue out of the trash.
+    restore_issue(RestoreIssue) -> Authorized<IssueView>;
 }

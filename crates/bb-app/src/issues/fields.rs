@@ -1,0 +1,71 @@
+//! What a person asks for in the fields of an issue: the texts are cleaned the way every short
+//! text is, the people have to exist, and every field the person touches has to be one they may
+//! change (the mask of their roles, SEC-04).
+
+use bb_core::ErrorCode;
+use bb_core::fields::Field;
+use bb_core::id::UserId;
+use bb_core::issue::ASSIGNEES_MAX;
+use bb_core::text::{LONG_TEXT_MAX, TITLE_MAX, clean_long};
+use bb_policy::FieldMask;
+
+use crate::auth::{AppError, AuthStore, Ctx, internal};
+use crate::input::clean_text;
+
+/// The title as it is kept, or `request.invalid`.
+pub(crate) fn clean_title(title: &str) -> Result<String, AppError> {
+    clean_text(title, TITLE_MAX)
+}
+
+/// The description as it is kept, or `request.invalid`.
+pub(crate) fn clean_description(text: &str) -> Result<String, AppError> {
+    clean_long(text, LONG_TEXT_MAX)
+        .map(str::to_owned)
+        .ok_or_else(|| ErrorCode::InvalidRequest.into())
+}
+
+/// Refuses (`access.forbidden`) unless the mask lets the person change every one of the fields.
+pub(crate) fn ensure_may_change(mask: &FieldMask, fields: &[Field]) -> Result<(), AppError> {
+    if fields.iter().all(|field| mask.can_change(*field)) {
+        Ok(())
+    } else {
+        Err(ErrorCode::Forbidden.into())
+    }
+}
+
+impl<S: AuthStore> Ctx<'_, S> {
+    /// The people an issue is assigned to, each once in the order given: they have to exist, and
+    /// there are not more than an issue may have. `request.invalid` otherwise.
+    pub(crate) async fn clean_assignees(&self, people: &[UserId]) -> Result<Vec<UserId>, AppError> {
+        let mut distinct: Vec<UserId> = Vec::with_capacity(people.len());
+        for person in people {
+            if !distinct.contains(person) {
+                distinct.push(*person);
+            }
+        }
+        if distinct.len() > ASSIGNEES_MAX {
+            return Err(ErrorCode::InvalidRequest.into());
+        }
+        for person in &distinct {
+            let found = self
+                .store()
+                .person(*person)
+                .await
+                .map_err(|error| internal::<S>(&error))?;
+            if found.is_none() {
+                return Err(ErrorCode::InvalidRequest.into());
+            }
+        }
+        Ok(distinct)
+    }
+}
+
+/// The fields of the catalogue that an issue holds now and that a person can change: the others
+/// (dates, labels, tags, time) come with the packages that store them.
+pub(crate) const CHANGEABLE: [Field; 5] = [
+    Field::Title,
+    Field::Description,
+    Field::Status,
+    Field::Priority,
+    Field::AssignedTo,
+];

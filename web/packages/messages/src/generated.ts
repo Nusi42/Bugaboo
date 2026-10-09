@@ -1029,6 +1029,12 @@ export const messages = {
   "status.done": "Done",
   "error.issue.type-retired":
     "That issue type is retired, so no new issues can be made with it. Choose another type.",
+  "setting.issues.id-mode.name": "Issue IDs",
+  "setting.issues.id-mode.help":
+    "Random IDs (like WEB-K7Q2X) hide how many issues there are and how fast they come. Counting IDs (like WEB-142) are easy to say aloud. When you change this, every issue of the project gets a new ID; the old IDs keep working.",
+  "setting.issues.id-length.name": "Length of random issue IDs",
+  "setting.issues.id-length.help":
+    "How many letters and digits a random issue ID has after the dash. Between 4 and 8. It grows by itself when the short ones run out.",
 } as const;
 
 export type MessageKey = keyof typeof messages;

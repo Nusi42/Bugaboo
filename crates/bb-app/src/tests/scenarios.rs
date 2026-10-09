@@ -53,12 +53,12 @@ use crate::settings::{
 /// The events one call added.
 pub(crate) type Added = Result<usize, String>;
 
-fn text(error: impl std::fmt::Display) -> String {
+pub(crate) fn text(error: impl std::fmt::Display) -> String {
     error.to_string()
 }
 
 /// Runs the call that is under test and says how many events it appended.
-async fn measured<T, E: std::fmt::Display>(
+pub(crate) async fn measured<T, E: std::fmt::Display>(
     store: &FakeStore,
     call: impl Future<Output = Result<T, E>>,
 ) -> Added {
@@ -636,7 +636,7 @@ pub(crate) async fn make_starting_roles_scenario(_world: &World) -> Added {
 
 // ---- Groups, roles, rows, levels and projects ----
 
-fn token(world: &World) -> String {
+pub(crate) fn token(world: &World) -> String {
     world.admin.session_token.clone()
 }
 
@@ -670,7 +670,7 @@ async fn a_role(world: &World, name: &str) -> Result<RoleId, String> {
     .id)
 }
 
-async fn a_project(world: &World, short_name: &str) -> Result<ProjectId, String> {
+pub(crate) async fn a_project(world: &World, short_name: &str) -> Result<ProjectId, String> {
     Ok(make_project(
         &world.ctx(),
         MakeProject {

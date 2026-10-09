@@ -12,6 +12,9 @@ use crate::issue_key::IssueCode;
 use crate::message::{self, MessageKey};
 use crate::personal::Entity;
 
+/// The most people an issue is assigned to.
+pub const ASSIGNEES_MAX: usize = 20;
+
 words! {
     /// The group a status belongs to. Searches, boards and progress ask for the group, so a
     /// workflow can name its statuses as it likes.

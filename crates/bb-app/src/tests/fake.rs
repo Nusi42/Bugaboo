@@ -11,7 +11,8 @@ use std::sync::{Arc, Mutex, MutexGuard};
 
 use bb_core::access::{Assignment, Group, GroupMember};
 use bb_core::event::DomainEvent;
-use bb_core::id::UserId;
+use bb_core::id::{ProjectId, UserId};
+use bb_core::issue::{Issue, IssueAlias, IssueAssignee, IssueType};
 use bb_core::person::Person;
 use bb_core::project::{Project, ProjectAlias};
 use bb_core::security_log::Digest;
@@ -76,6 +77,11 @@ pub(crate) struct State {
     pub(crate) assignments: Vec<Assignment>,
     pub(crate) projects: Vec<Project>,
     pub(crate) aliases: Vec<ProjectAlias>,
+    pub(crate) issue_types: Vec<IssueType>,
+    pub(crate) issues: Vec<Issue>,
+    pub(crate) assignees: Vec<IssueAssignee>,
+    pub(crate) issue_aliases: Vec<IssueAlias>,
+    pub(crate) counters: Vec<(ProjectId, i64)>,
 }
 
 /// The state, what was recorded, and the failures a test asked for.

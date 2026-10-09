@@ -13,14 +13,9 @@ use std::str::FromStr;
 use serde::{Deserialize, Serialize};
 
 use crate::project::ShortName;
+use crate::settings::ISSUES_ID_LENGTH;
 use crate::text::CROCKFORD;
 
-/// The fewest symbols of a random code.
-pub const CODE_LENGTH_MIN: usize = 4;
-/// The most symbols of a random code.
-pub const CODE_LENGTH_MAX: usize = 8;
-/// The length of a random code when the organization chose none.
-pub const CODE_LENGTH_DEFAULT: usize = 5;
 /// The most digits of a counting number, so it always fits a signed 64-bit number.
 const COUNT_DIGITS_MAX: usize = 18;
 /// What separates the short name from the code.
@@ -47,7 +42,9 @@ impl fmt::Display for InvalidIssueCode {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             formatter,
-            "an issue code is a counting number or {CODE_LENGTH_MIN} to {CODE_LENGTH_MAX} capital letters and digits without I, L, O and U"
+            "an issue code is a counting number or {} to {} capital letters and digits without I, L, O and U",
+            shortest_code(),
+            longest_code()
         )
     }
 }
@@ -67,8 +64,28 @@ fn is_counting(text: &str) -> bool {
         && !text.starts_with('0')
 }
 
+/// A number of symbols as the length of a random code: the least or the most when `wanted` is out
+/// of the bounds of the setting *Length of random issue IDs*, which are the one definition of
+/// them.
+#[must_use]
+pub fn code_length(wanted: i64) -> usize {
+    usize::try_from(ISSUES_ID_LENGTH.definition().clamp(wanted)).unwrap_or_default()
+}
+
+/// The fewest symbols of a random code.
+#[must_use]
+pub fn shortest_code() -> usize {
+    code_length(i64::MIN)
+}
+
+/// The most symbols of a random code.
+#[must_use]
+pub fn longest_code() -> usize {
+    code_length(i64::MAX)
+}
+
 fn is_random(text: &str) -> bool {
-    (CODE_LENGTH_MIN..=CODE_LENGTH_MAX).contains(&text.len())
+    (shortest_code()..=longest_code()).contains(&text.len())
         && text.bytes().all(|byte| CROCKFORD.contains(&byte))
 }
 
@@ -253,6 +270,9 @@ mod tests {
     fn iss_01a_random_draws_make_readable_codes_of_the_asked_length_and_then_longer_ones() {
         let mut source = SequentialIds::default();
         let draws: Vec<String> = CodeDraws::new(&mut source, 4, 6).collect();
+        assert_eq!((shortest_code(), longest_code()), (4, 8));
+        assert_eq!(code_length(0), 4);
+        assert_eq!(code_length(99), 8);
         assert_eq!(draws.len(), 3 * crate::text::TRIES_PER_LENGTH);
         for (at, code) in draws.iter().enumerate() {
             assert_eq!(code.len(), 4 + at / crate::text::TRIES_PER_LENGTH);
