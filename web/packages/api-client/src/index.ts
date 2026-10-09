@@ -6,6 +6,7 @@ export type { ErrorCode, Problem } from "./problem.ts";
 export { CSRF_COOKIE, CSRF_HEADER } from "./protocol.ts";
 export type { ReadonlyDeep, Schema } from "./readonly.ts";
 export { pageSizeDefault, pageSizeMax } from "./paging.generated.ts";
+export { issueIconWords } from "./words.generated.ts";
 export {
   settingChoices,
   settingDefaults,

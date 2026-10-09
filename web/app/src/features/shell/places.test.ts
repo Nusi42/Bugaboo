@@ -62,6 +62,9 @@ describe("ux_01 the screens that exist", () => {
     expect(visible(["manage-groups"])).not.toContain(paths.roles);
     expect(visible(["decide-roles"])).toContain(paths.roles);
     expect(visible(["manage-roles"])).toContain(paths.role);
+    expect(visible(["manage-issue-types"])).toContain(paths.issueTypes);
+    expect(visible(["manage-issue-types"])).toContain(paths.organizationSettings);
+    expect(visible(["manage-groups"])).not.toContain(paths.issueTypes);
     expect(mayOpen(paths.status, [])).toBe(false);
     expect(mayOpen(paths.status, ["see-status"])).toBe(true);
   });

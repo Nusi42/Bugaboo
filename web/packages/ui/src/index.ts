@@ -34,6 +34,11 @@ export { Form, type FormProps } from "./Form.tsx";
 export { Icon, type IconProps } from "./Icon.tsx";
 export { iconName, type IconName } from "./icons.ts";
 export { IconButton, type IconButtonProps } from "./IconButton.tsx";
+export {
+  IssueTypeIcon,
+  type IssueTypeIconName,
+  type IssueTypeIconProps,
+} from "./IssueTypeIcon.tsx";
 export { layoutForWidth, layoutModes, useLayout, type LayoutMode } from "./layout.ts";
 export { Link, type LinkProps } from "./Link.tsx";
 export { OrDivider, type OrDividerProps } from "./OrDivider.tsx";

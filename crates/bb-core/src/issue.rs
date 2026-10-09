@@ -143,6 +143,7 @@ words! {
         /// Heat.
         Flame => "flame",
     }
+    messages name = "issue-icon."
 }
 
 words_in_api!(

@@ -1,8 +1,10 @@
 //! What the browser app takes from the Rust code as constants, so it never writes them a second
 //! time: the keys, the choices and the defaults of the settings (ADR-0018), and the page sizes of
-//! the lists (PERF-02).
+//! the lists (PERF-02), and the words of the fixed vocabularies the browser has to list (the icons
+//! of issue types).
 //!
-//! xtask does not link the product crates, so both are read as Rust source.
+//! xtask does not link the product crates, so the first two are read as Rust source and the words
+//! from the API description, which holds every vocabulary of the server as a list of words.
 
 use std::fmt::Write as _;
 
@@ -135,6 +137,56 @@ fn number_const(file: &syn::File, name: &str) -> anyhow::Result<String> {
             _ => None,
         })
         .with_context(|| format!("{PAGING_SOURCE} has no `const {name}` that is a number"))
+}
+
+/// The vocabularies the browser lists at run time (a drop-down of icons), by the name of their
+/// schema in the API description. The type of each stays the generated one; only the list of words
+/// is made here, so it is never written a second time.
+const WORD_LISTS: [&str; 1] = ["IssueIcon"];
+
+/// `IssueIcon` as `issueIconWords`.
+fn words_name(schema: &str) -> String {
+    let mut name = String::new();
+    for (at, c) in schema.chars().enumerate() {
+        if at == 0 {
+            name.extend(c.to_lowercase());
+        } else {
+            name.push(c);
+        }
+    }
+    name.push_str("Words");
+    name
+}
+
+/// The words of the vocabularies in [`WORD_LISTS`], in the order of the Rust list, as constants for
+/// the browser client.
+pub(super) fn words(spec: &str) -> anyhow::Result<String> {
+    let spec: serde_json::Value =
+        serde_json::from_str(spec).context("the API description is not JSON")?;
+    let mut out = String::from(TS_HEADER);
+    for schema in WORD_LISTS {
+        let words = spec["components"]["schemas"][schema]["enum"]
+            .as_array()
+            .with_context(|| format!("the API description has no list of words `{schema}`"))?;
+        let words: Vec<String> = words
+            .iter()
+            .map(|word| {
+                word.as_str()
+                    .map(|text| format!("{text:?}"))
+                    .with_context(|| format!("`{schema}` has a word that is not text"))
+            })
+            .collect::<anyhow::Result<_>>()?;
+        let _ = write!(
+            out,
+            "/** Every word of `{schema}`, in the order the server lists them. */
+export const {} = [{}] as const;
+
+",
+            words_name(schema),
+            words.join(", ")
+        );
+    }
+    Ok(out)
 }
 
 /// The page sizes of the lists as constants for the browser client.
@@ -286,6 +338,19 @@ pub(super) const DEFAULT_LOOK: &str = \"day\";
             CATALOG.replace("MODE_CHOICES: &[Choice]", "OTHER_CHOICES: &[Choice]"),
         );
         assert!(setting_keys(&[broken]).is_err());
+    }
+
+    #[test]
+    fn the_words_of_a_vocabulary_come_from_the_api_description_in_their_order() {
+        let spec =
+            r#"{"components":{"schemas":{"IssueIcon":{"type":"string","enum":["bug","flag"]}}}}"#;
+        let text = words(spec).unwrap();
+        assert!(
+            text.contains("export const issueIconWords = [\"bug\", \"flag\"] as const;"),
+            "{text}"
+        );
+        assert!(words("{}").is_err());
+        assert!(words("not json").is_err());
     }
 
     #[test]

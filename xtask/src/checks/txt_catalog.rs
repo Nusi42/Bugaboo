@@ -14,7 +14,7 @@ use std::collections::{BTreeMap, HashSet};
 use bb_core::ErrorCode;
 use bb_core::access::{FieldLevel, PeopleLevel};
 use bb_core::fields::Field;
-use bb_core::issue::{Priority, Status, StatusGroup};
+use bb_core::issue::{IssueIcon, Priority, Status, StatusGroup};
 use bb_core::issue_key::IdMode;
 use bb_core::message::MessageKey;
 use bb_core::people_kinds::PeopleKind;
@@ -121,6 +121,9 @@ fn made_keys() -> Vec<Made> {
     }
     for priority in Priority::ALL {
         keys.push(made("the priority", priority.code(), priority.name()));
+    }
+    for icon in IssueIcon::ALL {
+        keys.push(made("the icon of an issue type", icon.code(), icon.name()));
     }
     for mode in IdMode::ALL {
         keys.push(made("the mode of issue IDs", mode.code(), mode.name()));

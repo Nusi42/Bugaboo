@@ -1055,6 +1055,54 @@ pub const ISSUE_FIELD_TIME_SPENT: MessageKey = MessageKey::new("issue-field.time
 /// The message `issue-field.title`.
 pub const ISSUE_FIELD_TITLE: MessageKey = MessageKey::new("issue-field.title");
 
+/// The message `issue-icon.book-open`.
+pub const ISSUE_ICON_BOOK_OPEN: MessageKey = MessageKey::new("issue-icon.book-open");
+
+/// The message `issue-icon.bookmark`.
+pub const ISSUE_ICON_BOOKMARK: MessageKey = MessageKey::new("issue-icon.bookmark");
+
+/// The message `issue-icon.bug`.
+pub const ISSUE_ICON_BUG: MessageKey = MessageKey::new("issue-icon.bug");
+
+/// The message `issue-icon.circle-help`.
+pub const ISSUE_ICON_CIRCLE_HELP: MessageKey = MessageKey::new("issue-icon.circle-help");
+
+/// The message `issue-icon.flag`.
+pub const ISSUE_ICON_FLAG: MessageKey = MessageKey::new("issue-icon.flag");
+
+/// The message `issue-icon.flame`.
+pub const ISSUE_ICON_FLAME: MessageKey = MessageKey::new("issue-icon.flame");
+
+/// The message `issue-icon.hammer`.
+pub const ISSUE_ICON_HAMMER: MessageKey = MessageKey::new("issue-icon.hammer");
+
+/// The message `issue-icon.lightbulb`.
+pub const ISSUE_ICON_LIGHTBULB: MessageKey = MessageKey::new("issue-icon.lightbulb");
+
+/// The message `issue-icon.rocket`.
+pub const ISSUE_ICON_ROCKET: MessageKey = MessageKey::new("issue-icon.rocket");
+
+/// The message `issue-icon.shield`.
+pub const ISSUE_ICON_SHIELD: MessageKey = MessageKey::new("issue-icon.shield");
+
+/// The message `issue-icon.sparkles`.
+pub const ISSUE_ICON_SPARKLES: MessageKey = MessageKey::new("issue-icon.sparkles");
+
+/// The message `issue-icon.square-check`.
+pub const ISSUE_ICON_SQUARE_CHECK: MessageKey = MessageKey::new("issue-icon.square-check");
+
+/// The message `issue-icon.star`.
+pub const ISSUE_ICON_STAR: MessageKey = MessageKey::new("issue-icon.star");
+
+/// The message `issue-icon.target`.
+pub const ISSUE_ICON_TARGET: MessageKey = MessageKey::new("issue-icon.target");
+
+/// The message `issue-icon.wrench`.
+pub const ISSUE_ICON_WRENCH: MessageKey = MessageKey::new("issue-icon.wrench");
+
+/// The message `issue-icon.zap`.
+pub const ISSUE_ICON_ZAP: MessageKey = MessageKey::new("issue-icon.zap");
+
 /// The message `issue-id-mode.counting`.
 pub const ISSUE_ID_MODE_COUNTING: MessageKey = MessageKey::new("issue-id-mode.counting");
 
@@ -1072,6 +1120,48 @@ pub const ISSUE_TYPE_GOAL: MessageKey = MessageKey::new("issue-type.goal");
 
 /// The message `issue-type.task`.
 pub const ISSUE_TYPE_TASK: MessageKey = MessageKey::new("issue-type.task");
+
+/// The message `issue-types.field-icon`.
+pub const ISSUE_TYPES_FIELD_ICON: MessageKey = MessageKey::new("issue-types.field-icon");
+
+/// The message `issue-types.field-name`.
+pub const ISSUE_TYPES_FIELD_NAME: MessageKey = MessageKey::new("issue-types.field-name");
+
+/// The message `issue-types.intro`.
+pub const ISSUE_TYPES_INTRO: MessageKey = MessageKey::new("issue-types.intro");
+
+/// The message `issue-types.make`.
+pub const ISSUE_TYPES_MAKE: MessageKey = MessageKey::new("issue-types.make");
+
+/// The message `issue-types.make-intro`.
+pub const ISSUE_TYPES_MAKE_INTRO: MessageKey = MessageKey::new("issue-types.make-intro");
+
+/// The message `issue-types.make-title`.
+pub const ISSUE_TYPES_MAKE_TITLE: MessageKey = MessageKey::new("issue-types.make-title");
+
+/// The message `issue-types.more`.
+pub const ISSUE_TYPES_MORE: MessageKey = MessageKey::new("issue-types.more");
+
+/// The message `issue-types.nothing`.
+pub const ISSUE_TYPES_NOTHING: MessageKey = MessageKey::new("issue-types.nothing");
+
+/// The message `issue-types.offer-again`.
+pub const ISSUE_TYPES_OFFER_AGAIN: MessageKey = MessageKey::new("issue-types.offer-again");
+
+/// The message `issue-types.retire`.
+pub const ISSUE_TYPES_RETIRE: MessageKey = MessageKey::new("issue-types.retire");
+
+/// The message `issue-types.retire-help`.
+pub const ISSUE_TYPES_RETIRE_HELP: MessageKey = MessageKey::new("issue-types.retire-help");
+
+/// The message `issue-types.retired`.
+pub const ISSUE_TYPES_RETIRED: MessageKey = MessageKey::new("issue-types.retired");
+
+/// The message `issue-types.saved`.
+pub const ISSUE_TYPES_SAVED: MessageKey = MessageKey::new("issue-types.saved");
+
+/// The message `issue-types.search`.
+pub const ISSUE_TYPES_SEARCH: MessageKey = MessageKey::new("issue-types.search");
 
 /// The message `keys.database-placeholder`.
 pub const KEYS_DATABASE_PLACEHOLDER: MessageKey = MessageKey::new("keys.database-placeholder");
@@ -1123,6 +1213,9 @@ pub const NAV_GROUPS: MessageKey = MessageKey::new("nav.groups");
 
 /// The message `nav.home`.
 pub const NAV_HOME: MessageKey = MessageKey::new("nav.home");
+
+/// The message `nav.issue-types`.
+pub const NAV_ISSUE_TYPES: MessageKey = MessageKey::new("nav.issue-types");
 
 /// The message `nav.my-settings`.
 pub const NAV_MY_SETTINGS: MessageKey = MessageKey::new("nav.my-settings");
@@ -1461,6 +1554,9 @@ pub const PROJECTS_HEADING: MessageKey = MessageKey::new("projects.heading");
 
 /// The message `projects.intro`.
 pub const PROJECTS_INTRO: MessageKey = MessageKey::new("projects.intro");
+
+/// The message `projects.issue-ids-title`.
+pub const PROJECTS_ISSUE_IDS_TITLE: MessageKey = MessageKey::new("projects.issue-ids-title");
 
 /// The message `projects.make`.
 pub const PROJECTS_MAKE: MessageKey = MessageKey::new("projects.make");
@@ -3499,6 +3595,15 @@ pub fn invitations_take_back_title(email: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("invitations.take-back-title"),
         vec![("email", Value::Text(email.to_string()))],
+    )
+}
+
+/// The message `issue-types.made`.
+#[must_use]
+pub fn issue_types_made(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("issue-types.made"),
+        vec![("name", Value::Text(name.to_string()))],
     )
 }
 
@@ -5784,12 +5889,52 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("issue-field.time-left", "Time left"),
     ("issue-field.time-spent", "Time spent"),
     ("issue-field.title", "Title"),
+    ("issue-icon.book-open", "Open book"),
+    ("issue-icon.bookmark", "Bookmark"),
+    ("issue-icon.bug", "Bug"),
+    ("issue-icon.circle-help", "Question mark"),
+    ("issue-icon.flag", "Flag"),
+    ("issue-icon.flame", "Flame"),
+    ("issue-icon.hammer", "Hammer"),
+    ("issue-icon.lightbulb", "Light bulb"),
+    ("issue-icon.rocket", "Rocket"),
+    ("issue-icon.shield", "Shield"),
+    ("issue-icon.sparkles", "Sparkles"),
+    ("issue-icon.square-check", "Box with a tick"),
+    ("issue-icon.star", "Star"),
+    ("issue-icon.target", "Target"),
+    ("issue-icon.wrench", "Wrench"),
+    ("issue-icon.zap", "Lightning"),
     ("issue-id-mode.counting", "Counting IDs"),
     ("issue-id-mode.random", "Random IDs"),
     ("issue-type.bug", "Bug"),
     ("issue-type.feature", "Feature"),
     ("issue-type.goal", "Goal"),
     ("issue-type.task", "Task"),
+    ("issue-types.field-icon", "Icon"),
+    ("issue-types.field-name", "Name"),
+    (
+        "issue-types.intro",
+        "An issue type says what kind of issue it is: a bug, a task, a feature or a goal. Everybody who makes an issue picks one of these. Retire a type to stop new issues of it; the issues that have it keep it.",
+    ),
+    ("issue-types.made", "The issue type {name} is made."),
+    ("issue-types.make", "Make the issue type"),
+    (
+        "issue-types.make-intro",
+        "A new type goes to the end of the list. Pick an icon so people find it quickly.",
+    ),
+    ("issue-types.make-title", "Make an issue type"),
+    ("issue-types.more", "Show more issue types"),
+    ("issue-types.nothing", "No issue type has that name."),
+    ("issue-types.offer-again", "Offer the issue type again"),
+    ("issue-types.retire", "Retire the issue type"),
+    (
+        "issue-types.retire-help",
+        "A retired type is not offered for new issues. The issues that have it keep it and can still be changed. You can offer it again later.",
+    ),
+    ("issue-types.retired", "Retired"),
+    ("issue-types.saved", "Saved."),
+    ("issue-types.search", "Search issue types"),
     (
         "keys.database-placeholder",
         "--database-url <the address of your database>",
@@ -5846,6 +5991,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("nav.group.work", "Work"),
     ("nav.groups", "Groups"),
     ("nav.home", "Home"),
+    ("nav.issue-types", "Issue types"),
     ("nav.my-settings", "My settings"),
     ("nav.organization-settings", "Organization settings"),
     ("nav.people", "People"),
@@ -6091,6 +6237,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "projects.intro",
         "The projects you can see. Open one to change its name or short name. A project is moved on its own settings page.",
     ),
+    ("projects.issue-ids-title", "Settings of this project"),
     (
         "projects.line-can-no-more",
         "In {project}, {person} can no longer: {things}.",

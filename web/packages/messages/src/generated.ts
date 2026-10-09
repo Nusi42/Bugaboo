@@ -1027,6 +1027,8 @@ export const messages = {
   "status.open": "Open",
   "status.in-progress": "In progress",
   "status.done": "Done",
+  "issue-id-mode.random": "Random IDs",
+  "issue-id-mode.counting": "Counting IDs",
   "error.issue.type-retired":
     "That issue type is retired, so no new issues can be made with it. Choose another type.",
   "setting.issues.id-mode.name": "Issue IDs",
@@ -1035,6 +1037,42 @@ export const messages = {
   "setting.issues.id-length.name": "Length of random issue IDs",
   "setting.issues.id-length.help":
     "How many letters and digits a random issue ID has after the dash. Between 4 and 8. It grows by itself when the short ones run out.",
+  "nav.issue-types": "Issue types",
+  "issue-types.intro":
+    "An issue type says what kind of issue it is: a bug, a task, a feature or a goal. Everybody who makes an issue picks one of these. Retire a type to stop new issues of it; the issues that have it keep it.",
+  "issue-types.more": "Show more issue types",
+  "issue-types.search": "Search issue types",
+  "issue-types.nothing": "No issue type has that name.",
+  "issue-types.retired": "Retired",
+  "issue-types.make-title": "Make an issue type",
+  "issue-types.make-intro":
+    "A new type goes to the end of the list. Pick an icon so people find it quickly.",
+  "issue-types.field-name": "Name",
+  "issue-types.field-icon": "Icon",
+  "issue-types.make": "Make the issue type",
+  "issue-types.made": "The issue type {name} is made.",
+  "issue-types.saved": "Saved.",
+  "issue-types.retire-help":
+    "A retired type is not offered for new issues. The issues that have it keep it and can still be changed. You can offer it again later.",
+  "issue-types.retire": "Retire the issue type",
+  "issue-types.offer-again": "Offer the issue type again",
+  "projects.issue-ids-title": "Settings of this project",
+  "issue-icon.bug": "Bug",
+  "issue-icon.square-check": "Box with a tick",
+  "issue-icon.sparkles": "Sparkles",
+  "issue-icon.flag": "Flag",
+  "issue-icon.target": "Target",
+  "issue-icon.lightbulb": "Light bulb",
+  "issue-icon.rocket": "Rocket",
+  "issue-icon.wrench": "Wrench",
+  "issue-icon.book-open": "Open book",
+  "issue-icon.shield": "Shield",
+  "issue-icon.zap": "Lightning",
+  "issue-icon.circle-help": "Question mark",
+  "issue-icon.star": "Star",
+  "issue-icon.bookmark": "Bookmark",
+  "issue-icon.hammer": "Hammer",
+  "issue-icon.flame": "Flame",
 } as const;
 
 export type MessageKey = keyof typeof messages;
@@ -1129,6 +1167,7 @@ export interface MessageArguments {
   "invitations.made": { when: string | number };
   "invitations.take-back-name": { email: string | number };
   "invitations.take-back-title": { email: string | number };
+  "issue-types.made": { name: string | number };
   "own.ask-text": { lost: string | number };
   "passkeys.added": { name: string | number };
   "passkeys.added-on": { when: string | number };

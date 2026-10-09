@@ -2,6 +2,9 @@ import { QueryGate } from "../shell/index.ts";
 import { useProjectSettings } from "./project.ts";
 import { SettingsForm } from "./SettingsForm.tsx";
 
+/** A project with more settings than this has a search box; a few settings do not need one. */
+const SEARCH_FROM = 8;
+
 export interface ProjectSettingsSectionProps {
   /** The ID of the project. */
   readonly projectId: string;
@@ -20,6 +23,7 @@ export function ProjectSettingsSection({ projectId }: ProjectSettingsSectionProp
         shown.settings.length === 0 ? null : (
           <SettingsForm
             settings={shown.settings}
+            searchable={shown.settings.length > SEARCH_FROM}
             saveState={edits.saveState}
             problem={edits.problem}
             actions={{

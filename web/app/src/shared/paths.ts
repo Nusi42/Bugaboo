@@ -23,6 +23,7 @@ export const paths = {
   people: "/settings/people",
   person: "/settings/people/$person",
   groups: "/settings/groups",
+  issueTypes: "/settings/issue-types",
   roles: "/settings/roles",
   role: "/settings/roles/$role",
   signInRules: "/settings/sign-in-rules",
@@ -73,6 +74,11 @@ export function personAddress(id: string): string {
 /** The address of *Groups* with one group open, `/settings/groups?open=<ID>`. */
 export function groupAddress(id: string): string {
   return `${paths.groups}?open=${encodeURIComponent(id)}`;
+}
+
+/** The address of *Issue types* with one type open, `/settings/issue-types?open=<ID>`. */
+export function issueTypeAddress(id: string): string {
+  return `${paths.issueTypes}?open=${encodeURIComponent(id)}`;
 }
 
 /** The address of the page of a role, `/settings/roles/<ID>`. */

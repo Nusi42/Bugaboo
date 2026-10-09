@@ -3,6 +3,7 @@ import { Card, Link, partOf, part } from "@bugaboo/ui";
 import { useNavigate } from "@tanstack/react-router";
 
 import { paths, projectAddress, routeParam } from "../../shared/paths.ts";
+import { ProjectSettingsSection } from "../settings/index.ts";
 import { ChangeProjectForm } from "./ChangeProjectForm.tsx";
 import { MoveProject } from "./MoveProject.tsx";
 import { ProjectTabs } from "./ProjectTabs.tsx";
@@ -44,6 +45,11 @@ export function ProjectSettings({
               }
             }}
           />
+        </Card>
+      ) : null}
+      {mayChange ? (
+        <Card heading={t("projects.issue-ids-title")}>
+          <ProjectSettingsSection projectId={id} />
         </Card>
       ) : null}
       {mayMove ? (
