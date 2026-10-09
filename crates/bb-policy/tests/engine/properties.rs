@@ -14,6 +14,8 @@ use bb_policy::{
 };
 use proptest::prelude::*;
 
+use crate::common::{PermissionBits, any_permission_bits, permissions_of};
+
 /// The tree of the properties: ACME, WEB inside it, API inside that.
 struct Tree {
     person: UserId,
@@ -52,7 +54,7 @@ struct RuleSpec {
 
 #[derive(Clone, Debug)]
 struct Spec {
-    role_permissions: [u16; 3],
+    role_permissions: [PermissionBits; 3],
     rows: Vec<RowSpec>,
     rules: Vec<RuleSpec>,
     place: usize,
@@ -80,7 +82,7 @@ fn row_strategy() -> impl Strategy<Value = RowSpec> {
 
 fn spec_strategy() -> impl Strategy<Value = Spec> {
     (
-        prop::array::uniform3(0_u16..(1 << 14)),
+        prop::array::uniform3(any_permission_bits()),
         prop::collection::vec(row_strategy(), 0..8),
         prop::collection::vec(
             (
@@ -105,15 +107,6 @@ fn spec_strategy() -> impl Strategy<Value = Spec> {
             rules,
             place,
         })
-}
-
-fn permissions_of(mask: u16) -> BTreeSet<Permission> {
-    Permission::ALL
-        .iter()
-        .enumerate()
-        .filter(|(at, _)| mask & (1 << at) != 0)
-        .map(|(_, permission)| *permission)
-        .collect()
 }
 
 fn row_of(tree: &Tree, number: u64, spec: &RowSpec) -> Row {
@@ -199,14 +192,14 @@ fn inputs(tree: &Tree, spec: &Spec, extra: Option<&RowSpec>) -> Inputs {
     }
 }
 
-fn narrowing_strategy() -> impl Strategy<Value = (u8, u16, Option<u8>)> {
-    (0_u8..8, 0_u16..(1 << 14), prop::option::of(0_u8..8))
+fn narrowing_strategy() -> impl Strategy<Value = (u8, PermissionBits, Option<u8>)> {
+    (0_u8..8, any_permission_bits(), prop::option::of(0_u8..8))
 }
 
 fn narrowing_of(
     tree: &Tree,
     kinds: u8,
-    permissions: u16,
+    permissions: PermissionBits,
     projects: Option<u8>,
     by_kind: bool,
 ) -> Narrowing {

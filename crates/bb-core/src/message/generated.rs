@@ -1288,6 +1288,9 @@ pub const PEOPLE_NOTHING: MessageKey = MessageKey::new("people.nothing");
 /// The message `people.search`.
 pub const PEOPLE_SEARCH: MessageKey = MessageKey::new("people.search");
 
+/// The message `permission-topic.issues`.
+pub const PERMISSION_TOPIC_ISSUES: MessageKey = MessageKey::new("permission-topic.issues");
+
 /// The message `permission-topic.people`.
 pub const PERMISSION_TOPIC_PEOPLE: MessageKey = MessageKey::new("permission-topic.people");
 
@@ -1297,9 +1300,20 @@ pub const PERMISSION_TOPIC_PROJECTS: MessageKey = MessageKey::new("permission-to
 /// The message `permission-topic.settings`.
 pub const PERMISSION_TOPIC_SETTINGS: MessageKey = MessageKey::new("permission-topic.settings");
 
+/// The message `permission-topic.work-settings`.
+pub const PERMISSION_TOPIC_WORK_SETTINGS: MessageKey =
+    MessageKey::new("permission-topic.work-settings");
+
+/// The message `permission.change-issues`.
+pub const PERMISSION_CHANGE_ISSUES: MessageKey = MessageKey::new("permission.change-issues");
+
 /// The message `permission.change-organization-settings`.
 pub const PERMISSION_CHANGE_ORGANIZATION_SETTINGS: MessageKey =
     MessageKey::new("permission.change-organization-settings");
+
+/// The message `permission.change-own-issues`.
+pub const PERMISSION_CHANGE_OWN_ISSUES: MessageKey =
+    MessageKey::new("permission.change-own-issues");
 
 /// The message `permission.change-project-settings`.
 pub const PERMISSION_CHANGE_PROJECT_SETTINGS: MessageKey =
@@ -1308,12 +1322,24 @@ pub const PERMISSION_CHANGE_PROJECT_SETTINGS: MessageKey =
 /// The message `permission.check-access`.
 pub const PERMISSION_CHECK_ACCESS: MessageKey = MessageKey::new("permission.check-access");
 
+/// The message `permission.comment`.
+pub const PERMISSION_COMMENT: MessageKey = MessageKey::new("permission.comment");
+
 /// The message `permission.decide-roles`.
 pub const PERMISSION_DECIDE_ROLES: MessageKey = MessageKey::new("permission.decide-roles");
 
 /// The message `permission.decide-what-roles-see`.
 pub const PERMISSION_DECIDE_WHAT_ROLES_SEE: MessageKey =
     MessageKey::new("permission.decide-what-roles-see");
+
+/// The message `permission.delete-issues`.
+pub const PERMISSION_DELETE_ISSUES: MessageKey = MessageKey::new("permission.delete-issues");
+
+/// The message `permission.edit-anyway`.
+pub const PERMISSION_EDIT_ANYWAY: MessageKey = MessageKey::new("permission.edit-anyway");
+
+/// The message `permission.make-issues`.
+pub const PERMISSION_MAKE_ISSUES: MessageKey = MessageKey::new("permission.make-issues");
 
 /// The message `permission.make-projects`.
 pub const PERMISSION_MAKE_PROJECTS: MessageKey = MessageKey::new("permission.make-projects");
@@ -1322,6 +1348,9 @@ pub const PERMISSION_MAKE_PROJECTS: MessageKey = MessageKey::new("permission.mak
 pub const PERMISSION_MAKE_SUB_PROJECTS: MessageKey =
     MessageKey::new("permission.make-sub-projects");
 
+/// The message `permission.manage-fields`.
+pub const PERMISSION_MANAGE_FIELDS: MessageKey = MessageKey::new("permission.manage-fields");
+
 /// The message `permission.manage-groups`.
 pub const PERMISSION_MANAGE_GROUPS: MessageKey = MessageKey::new("permission.manage-groups");
 
@@ -1329,14 +1358,27 @@ pub const PERMISSION_MANAGE_GROUPS: MessageKey = MessageKey::new("permission.man
 pub const PERMISSION_MANAGE_INVITATIONS: MessageKey =
     MessageKey::new("permission.manage-invitations");
 
+/// The message `permission.manage-issue-types`.
+pub const PERMISSION_MANAGE_ISSUE_TYPES: MessageKey =
+    MessageKey::new("permission.manage-issue-types");
+
+/// The message `permission.manage-labels`.
+pub const PERMISSION_MANAGE_LABELS: MessageKey = MessageKey::new("permission.manage-labels");
+
 /// The message `permission.manage-people`.
 pub const PERMISSION_MANAGE_PEOPLE: MessageKey = MessageKey::new("permission.manage-people");
 
 /// The message `permission.manage-roles`.
 pub const PERMISSION_MANAGE_ROLES: MessageKey = MessageKey::new("permission.manage-roles");
 
+/// The message `permission.move-issues`.
+pub const PERMISSION_MOVE_ISSUES: MessageKey = MessageKey::new("permission.move-issues");
+
 /// The message `permission.move-projects`.
 pub const PERMISSION_MOVE_PROJECTS: MessageKey = MessageKey::new("permission.move-projects");
+
+/// The message `permission.see-issues`.
+pub const PERMISSION_SEE_ISSUES: MessageKey = MessageKey::new("permission.see-issues");
 
 /// The message `permission.see-projects`.
 pub const PERMISSION_SEE_PROJECTS: MessageKey = MessageKey::new("permission.see-projects");
@@ -5854,12 +5896,22 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("people.no-groups", "In no group"),
     ("people.nothing", "Nobody found. Try another word."),
     ("people.search", "Search people by name or e-mail address"),
+    ("permission-topic.issues", "Issues"),
     ("permission-topic.people", "People"),
     ("permission-topic.projects", "Projects"),
     ("permission-topic.settings", "Settings"),
+    ("permission-topic.work-settings", "Work settings"),
+    (
+        "permission.change-issues",
+        "Change anybody's issues, in the fields they may change",
+    ),
     (
         "permission.change-organization-settings",
         "Change organization settings",
+    ),
+    (
+        "permission.change-own-issues",
+        "Change the issues they reported, in the fields they may change",
     ),
     (
         "permission.change-project-settings",
@@ -5870,6 +5922,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "Check what other people can do, and why",
     ),
     (
+        "permission.comment",
+        "Write comments on the issues they see",
+    ),
+    (
         "permission.decide-roles",
         "Decide who has which role, including No access",
     ),
@@ -5877,11 +5933,18 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "permission.decide-what-roles-see",
         "Decide which fields and which people information each role sees",
     ),
+    ("permission.delete-issues", "Delete issues into the trash"),
+    (
+        "permission.edit-anyway",
+        "Take over text somebody else is editing; their text is kept",
+    ),
+    ("permission.make-issues", "Make issues"),
     ("permission.make-projects", "Make projects at the top level"),
     (
         "permission.make-sub-projects",
         "Make sub-projects inside the project",
     ),
+    ("permission.manage-fields", "Make, change and retire fields"),
     (
         "permission.manage-groups",
         "Make, rename and delete groups and change who is in them",
@@ -5891,13 +5954,29 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "Invite people and take invitations back",
     ),
     (
+        "permission.manage-issue-types",
+        "Manage issue types, kinds of relation and layouts",
+    ),
+    (
+        "permission.manage-labels",
+        "Manage labels and tags, also rename and combine them",
+    ),
+    (
         "permission.manage-people",
         "See everybody's e-mail address and correct their names",
     ),
     ("permission.manage-roles", "Make, change and delete roles"),
     (
+        "permission.move-issues",
+        "Move issues into or out of the project",
+    ),
+    (
         "permission.move-projects",
         "Move sub-projects into or out of the project",
+    ),
+    (
+        "permission.see-issues",
+        "See every issue of the project, not only the ones they reported",
     ),
     (
         "permission.see-projects",

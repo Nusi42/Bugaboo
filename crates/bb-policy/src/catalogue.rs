@@ -13,10 +13,11 @@ use bb_core::{words, words_in_api};
 pub use crate::parts::{Counts, Kind, Topic};
 
 /// The permissions an access key never keeps, whatever its choice, even *Everything I can do*
-/// and single permissions (owner decisions of 2026-10-06): a key cannot invite people, change who
-/// has which role or change the settings of the organization (which could switch off the two-step
-/// requirement, open signing up or change how long sessions last). These stay in the app, where
-/// the person is signed in. Defined once, here
+/// and single permissions (decisions on access keys and M3-Q6): a key cannot invite people,
+/// change who has which role or change the settings of the organization (which could switch off
+/// the two-step requirement, open signing up or change how long sessions last), take over
+/// somebody's editing, or change issue types, layouts, fields, labels and tags. These stay in the
+/// app, where the person is signed in. Defined once, here
 /// beside the kinds a key's choice keeps; narrowing, the key form and the key's own checks all
 /// read this list.
 pub const NOT_FOR_KEYS: &[Permission] = &[
@@ -27,6 +28,10 @@ pub const NOT_FOR_KEYS: &[Permission] = &[
     Permission::DecideRoles,
     Permission::DecideWhatRolesSee,
     Permission::ChangeOrganizationSettings,
+    Permission::EditAnyway,
+    Permission::ManageIssueTypes,
+    Permission::ManageFields,
+    Permission::ManageLabels,
 ];
 
 /// Declares the permissions: one line per permission, with the key, topic, where it counts and
@@ -82,6 +87,28 @@ permissions! {
     MoveProjects => ("move-projects", Projects, Project, Change),
     /// Change the project's name, short name and settings.
     ChangeProjectSettings => ("change-project-settings", Projects, Project, Manage),
+    /// See every issue of the project; without it, only the issues the person reported.
+    SeeIssues => ("see-issues", Issues, Project, See),
+    /// Make issues in the project.
+    MakeIssues => ("make-issues", Issues, Project, Change),
+    /// Change anybody's issues, in the fields the person may change.
+    ChangeIssues => ("change-issues", Issues, Project, Change),
+    /// Change the issues the person reported, in the fields they may change.
+    ChangeOwnIssues => ("change-own-issues", Issues, Project, Change),
+    /// Write comments on the issues the person sees.
+    Comment => ("comment", Issues, Project, Change),
+    /// Delete issues into the trash.
+    DeleteIssues => ("delete-issues", Issues, Project, Change),
+    /// Move issues into or out of the project.
+    MoveIssues => ("move-issues", Issues, Project, Change),
+    /// Take over long text that somebody else is editing; their text is kept.
+    EditAnyway => ("edit-anyway", Issues, Project, Manage),
+    /// Manage issue types, kinds of relation and layouts.
+    ManageIssueTypes => ("manage-issue-types", WorkSettings, Project, Manage),
+    /// Make, change and retire fields.
+    ManageFields => ("manage-fields", WorkSettings, Organization, Manage),
+    /// Manage labels and tags, also renaming and combining them.
+    ManageLabels => ("manage-labels", WorkSettings, Project, Manage),
     /// Decide who has which role, including *No access*.
     DecideRoles => ("decide-roles", People, Project, Manage),
     /// Decide which fields and which people information each role sees.

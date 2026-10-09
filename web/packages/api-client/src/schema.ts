@@ -2642,6 +2642,17 @@ export interface components {
       | "make-sub-projects"
       | "move-projects"
       | "change-project-settings"
+      | "see-issues"
+      | "make-issues"
+      | "change-issues"
+      | "change-own-issues"
+      | "comment"
+      | "delete-issues"
+      | "move-issues"
+      | "edit-anyway"
+      | "manage-issue-types"
+      | "manage-fields"
+      | "manage-labels"
       | "decide-roles"
       | "decide-what-roles-see"
       | "check-access"
@@ -3312,7 +3323,7 @@ export interface components {
      * @description What a group of permissions is about.
      * @enum {string}
      */
-    Topic: "projects" | "people" | "settings";
+    Topic: "projects" | "issues" | "work-settings" | "people" | "settings";
     /** @description How the second step of a person is set up. */
     TwoStepBody: {
       /**

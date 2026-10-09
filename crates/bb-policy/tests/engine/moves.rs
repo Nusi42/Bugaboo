@@ -14,6 +14,8 @@ use bb_policy::{
 use jiff::Timestamp;
 use proptest::prelude::*;
 
+use crate::common::{PermissionBits, any_permission_bits, permissions_of};
+
 /// A world of people, roles and projects, made with sequential IDs.
 struct World {
     ids: SequentialIds,
@@ -296,7 +298,7 @@ struct RowSpec {
 struct Spec {
     /// The parent of project `n` is a project before it, or the top level.
     parents: Vec<Option<usize>>,
-    permissions: [u16; 3],
+    permissions: [PermissionBits; 3],
     members: Vec<(usize, usize)>,
     rows: Vec<RowSpec>,
     rules: Vec<(Option<usize>, usize, usize, usize)>,
@@ -309,7 +311,7 @@ struct Spec {
 fn spec() -> impl Strategy<Value = Spec> {
     (
         prop::collection::vec(prop::option::of(0..6_usize), 6),
-        prop::array::uniform3(0_u16..(1 << 14)),
+        prop::array::uniform3(any_permission_bits()),
         prop::collection::vec((0..2_usize, 0..4_usize), 0..6),
         prop::collection::vec(
             (
@@ -386,12 +388,7 @@ fn build(spec: &Spec) -> Option<(World, Vec<UserId>, ProjectId, Option<ProjectId
         .iter()
         .enumerate()
         .map(|(at, bits)| {
-            let granted: Vec<Permission> = Permission::ALL
-                .iter()
-                .enumerate()
-                .filter(|(bit, _)| bits & (1 << bit) != 0)
-                .map(|(_, permission)| *permission)
-                .collect();
+            let granted: Vec<Permission> = permissions_of(*bits).into_iter().collect();
             world.role(&format!("Role {at}"), &granted)
         })
         .collect();

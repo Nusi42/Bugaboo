@@ -12325,6 +12325,17 @@
           "make-sub-projects",
           "move-projects",
           "change-project-settings",
+          "see-issues",
+          "make-issues",
+          "change-issues",
+          "change-own-issues",
+          "comment",
+          "delete-issues",
+          "move-issues",
+          "edit-anyway",
+          "manage-issue-types",
+          "manage-fields",
+          "manage-labels",
           "decide-roles",
           "decide-what-roles-see",
           "check-access",
@@ -13751,7 +13762,7 @@
       "Topic": {
         "type": "string",
         "description": "What a group of permissions is about.",
-        "enum": ["projects", "people", "settings"]
+        "enum": ["projects", "issues", "work-settings", "people", "settings"]
       },
       "TwoStepBody": {
         "type": "object",

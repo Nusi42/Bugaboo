@@ -2,3 +2,47 @@
 # cases that have no route of their own so far (ARCH-PERMS, architecture section 7). Each entry
 # names the permission and a reason that names the follow-up that tracks it. An entry for a
 # permission that a route asks for fails, so the file shrinks as the routes arrive.
+
+[[engine-only]]
+permission = "see-issues"
+reason = "Issue routes come in M3 WP-03 (docs/milestones/M3/WP-03-issues-core.md); tracked by M3-F01."
+
+[[engine-only]]
+permission = "make-issues"
+reason = "Issue routes come in M3 WP-03 (docs/milestones/M3/WP-03-issues-core.md); tracked by M3-F01."
+
+[[engine-only]]
+permission = "change-issues"
+reason = "Issue routes come in M3 WP-03 (docs/milestones/M3/WP-03-issues-core.md); tracked by M3-F01."
+
+[[engine-only]]
+permission = "change-own-issues"
+reason = "Issue routes come in M3 WP-03 (docs/milestones/M3/WP-03-issues-core.md); tracked by M3-F01."
+
+[[engine-only]]
+permission = "delete-issues"
+reason = "Issue routes come in M3 WP-03 (docs/milestones/M3/WP-03-issues-core.md); tracked by M3-F01."
+
+[[engine-only]]
+permission = "manage-issue-types"
+reason = "Issue-type routes come in M3 WP-03 (docs/milestones/M3/WP-03-issues-core.md); tracked by M3-F01."
+
+[[engine-only]]
+permission = "edit-anyway"
+reason = "Edit-lock routes come in M3 WP-04 (docs/milestones/M3/WP-04-versions-edit-locks-drafts.md); tracked by M3-F01."
+
+[[engine-only]]
+permission = "manage-fields"
+reason = "Field routes come in M3 WP-05 (docs/milestones/M3/WP-05-own-fields.md); tracked by M3-F01."
+
+[[engine-only]]
+permission = "comment"
+reason = "Comment routes come in M3 WP-07 (docs/milestones/M3/WP-07-relations-comments-history-follow.md); tracked by M3-F01."
+
+[[engine-only]]
+permission = "move-issues"
+reason = "Moving issues comes in M3 WP-08 (docs/milestones/M3/WP-08-tags-labels-and-many-at-once.md); tracked by M3-F01."
+
+[[engine-only]]
+permission = "manage-labels"
+reason = "Label and tag routes come in M3 WP-08 (docs/milestones/M3/WP-08-tags-labels-and-many-at-once.md); tracked by M3-F01."

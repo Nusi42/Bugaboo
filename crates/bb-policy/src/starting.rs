@@ -43,15 +43,45 @@ const N: PeopleLevel = PeopleLevel::Names;
 const R: PeopleLevel = PeopleLevel::RoleOnly;
 const O: PeopleLevel = PeopleLevel::Hidden;
 
-/// The permissions of a Project lead.
-const PROJECT_LEAD: [Permission; 7] = [
+/// The permissions of a Contributor, which every role above it has too (M3-Q6).
+const CONTRIBUTOR: [Permission; 5] = [
     Permission::SeeProjects,
+    Permission::SeeIssues,
+    Permission::MakeIssues,
+    Permission::ChangeOwnIssues,
+    Permission::Comment,
+];
+
+/// What a Team member has beyond a Contributor.
+const TEAM_MEMBER: [Permission; 3] = [
+    Permission::ChangeIssues,
+    Permission::DeleteIssues,
+    Permission::MoveIssues,
+];
+
+/// What a Project lead has beyond a Team member.
+const PROJECT_LEAD: [Permission; 9] = [
     Permission::MakeSubProjects,
     Permission::MoveProjects,
     Permission::ChangeProjectSettings,
     Permission::DecideRoles,
     Permission::DecideWhatRolesSee,
     Permission::CheckAccess,
+    Permission::EditAnyway,
+    Permission::ManageIssueTypes,
+    Permission::ManageLabels,
+];
+
+/// A Viewer only looks.
+const VIEWER: [Permission; 2] = [Permission::SeeProjects, Permission::SeeIssues];
+
+/// A Guest sees only the issues they reported (no *See issues*), makes issues, changes their own
+/// and comments on them.
+const GUEST: [Permission; 4] = [
+    Permission::SeeProjects,
+    Permission::MakeIssues,
+    Permission::ChangeOwnIssues,
+    Permission::Comment,
 ];
 
 /// Field levels of a field, in the order of the roles of [`StartingRole::ALL`]. A `match` with no
@@ -101,10 +131,11 @@ impl StartingRole {
     pub fn permissions(self) -> Vec<Permission> {
         match self {
             Self::Administrator => Permission::ALL.to_vec(),
-            Self::ProjectLead => PROJECT_LEAD.to_vec(),
-            Self::TeamMember | Self::Contributor | Self::Viewer | Self::Guest => {
-                vec![Permission::SeeProjects]
-            }
+            Self::ProjectLead => [&CONTRIBUTOR[..], &TEAM_MEMBER, &PROJECT_LEAD].concat(),
+            Self::TeamMember => [&CONTRIBUTOR[..], &TEAM_MEMBER].concat(),
+            Self::Contributor => CONTRIBUTOR.to_vec(),
+            Self::Viewer => VIEWER.to_vec(),
+            Self::Guest => GUEST.to_vec(),
         }
     }
 

@@ -9,6 +9,10 @@ words! {
     pub enum Topic {
         /// Projects and sub-projects.
         Projects => "projects",
+        /// Issues: seeing, making, changing, commenting, deleting and moving them.
+        Issues => "issues",
+        /// Issue types, kinds of relation, layouts, fields, labels and tags.
+        WorkSettings => "work-settings",
         /// People, groups, roles and who has which role.
         People => "people",
         /// Organization settings and the state of the server.

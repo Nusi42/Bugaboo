@@ -124,6 +124,8 @@ These are technical and recorded in the decision records; the maintainer may sti
 
 Each question has a proposal. Accepting all of them takes every proposal as written.
 
+**Answered: every proposal was accepted.** WP-01 writes each answer where it belongs and names the place under the question.
+
 - **M3-Q1 — Statuses before workflows.** Workflows come in M4, but an issue needs a status now. Proposal: every issue type starts with one starting workflow: **Open**, **In progress**, **Done** (groups *To do*, *In progress*, *Done*), and every status can follow every other. Moving into *Done* sets the closed date; leaving it clears it. M4's workflow editor replaces this without changing stored issues.
 - **M3-Q2 — What M3 leaves for later.** CF-06, CF-08, TAG-04 and CFG-01 name search, boards, the timeline, time entries, documents and releases, which come in later milestones. Proposal: M3 builds own fields, tags and labels for issues and projects, in the API, permissions and history; each later milestone plugs them into its own screens (list above).
 - **M3-Q3 — Mentions and following before notifications.** Notifications come in M4. Proposal: in M3, followers and mentions are stored and shown (*Followers 3 · Follow*, the *Mentions* block on the start page, unread first); *Ask Ana to finish* and *Edit anyway* show a note in Ana's open issue at the next heartbeat (within 15 s). E-mail and the bell come in M4 and send the same things.
