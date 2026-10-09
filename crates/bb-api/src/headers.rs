@@ -13,9 +13,10 @@ use tower_http::set_header::SetResponseHeaderLayer;
 pub const SECURITY_HEADERS: [(&str, &str); 6] = [
     (
         "content-security-policy",
-        "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; \
-         font-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; \
-         form-action 'self'; require-trusted-types-for 'script'",
+        "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self'; \
+         img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-ancestors 'none'; \
+         base-uri 'none'; form-action 'self'; require-trusted-types-for 'script'; \
+         trusted-types bugaboo-markdown",
     ),
     ("x-content-type-options", "nosniff"),
     ("referrer-policy", "same-origin"),
