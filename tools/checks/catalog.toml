@@ -309,12 +309,12 @@ status = "active"
 
 [[check]]
 id = "ARCH-VERSIONED"
-title = "Every change endpoint requires a version (If-Match) and long-text endpoints an edit-lock token"
+title = "Every change endpoint takes a version in its body and long-text endpoints an edit-lock token"
 rule = "ADR-0019"
-tool = "xtask (reads generated OpenAPI)"
+tool = "xtask (reads the generated OpenAPI document: every operation but a read has `version` in its request body, or is named with a reason in tools/checks/version-exemptions.toml; a route marked x-long-text also has `lock_token` and is never exempt; a route that takes a version documents the structured conflict as its 409; an exemption for a route that is gone or has a version fails)"
 when = ["push", "ci"]
-files = ["crates/bb-api/**"]
-status = "planned"
+files = ["crates/bb-api/**", "tools/checks/version-exemptions.toml"]
+status = "active"
 
 [[check]]
 id = "ARCH-LEAN"
@@ -665,10 +665,10 @@ status = "planned"
 id = "TEST-EDIT-LOCKS"
 title = "Edit locks and confirmed saves: lost lock, take-over, conflict and offline cases keep the person's text"
 rule = "ADR-0019, ISS-17"
-tool = "integration + Playwright tests"
+tool = "integration tests on both databases (the server part: the tests named iss_17_* and iss_11_*, with a record kind that exists only in tests); the Playwright scenarios come with M3 WP-10"
 when = ["ci"]
-files = ["crates/bb-app/**", "web/**"]
-status = "planned"
+files = ["crates/bb-app/**", "crates/bb-server/**", "web/**"]
+status = "active"
 
 [[check]]
 id = "DEV-PORTS"

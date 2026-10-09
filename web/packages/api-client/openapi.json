@@ -7988,7 +7988,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Problem"
+                  "$ref": "#/components/schemas/ConflictProblem"
                 }
               }
             }

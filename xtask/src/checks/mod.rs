@@ -20,6 +20,7 @@ mod arch_perms;
 mod arch_person_ref;
 pub(crate) mod arch_settings;
 mod arch_sql_edge;
+mod arch_versioned;
 mod arch_wasm;
 mod arch_web_api;
 mod arch_web_features;
@@ -69,6 +70,7 @@ mod sec_secrets;
 mod sty_contrast;
 mod sty_tokens;
 mod test_a11y;
+mod test_edit_locks;
 pub(crate) mod test_sample_data;
 mod theme_only;
 mod txt_catalog;
@@ -188,6 +190,7 @@ pub(crate) fn registry() -> Vec<Box<dyn Check>> {
         Box::new(arch_wasm::ArchWasm),
         Box::new(arch_http_edge::ArchHttpEdge),
         Box::new(arch_lean::ArchLean),
+        Box::new(arch_versioned::ArchVersioned),
         Box::new(arch_web_api::ArchWebApi),
         Box::new(arch_web_features::ArchWebFeatures),
         Box::new(data_marks::DataMarks),
@@ -215,6 +218,7 @@ pub(crate) fn registry() -> Vec<Box<dyn Check>> {
         Box::new(sty_tokens::StyTokens),
         Box::new(theme_only::ThemeOnly),
         Box::new(test_a11y::TestA11y),
+        Box::new(test_edit_locks::TestEditLocks),
         Box::new(test_sample_data::TestSampleData),
         Box::new(txt_catalog::TxtCatalog),
         Box::new(txt_literal::TxtLiteral),

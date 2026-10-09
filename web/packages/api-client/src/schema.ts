@@ -9955,7 +9955,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/problem+json": components["schemas"]["Problem"];
+          "application/problem+json": components["schemas"]["ConflictProblem"];
         };
       };
       /** @description error.rate-limit.exceeded (rate_limit.exceeded) */

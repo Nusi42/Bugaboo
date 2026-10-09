@@ -20,6 +20,21 @@ pub mod marks {
     pub const NEVER_STORED: &str = "x-never-stored";
     /// A route whose answer hands out a secret: never stored, never compressed.
     pub const SECRET: &str = "x-secret";
+    /// A route that saves long text: it takes the token of the edit lock besides the version
+    /// (ADR-0019). Written from the list of such routes in `bb-api`.
+    pub const LONG_TEXT: &str = "x-long-text";
+}
+
+/// The words of a change that does not overwrite another one unseen (ADR-0019 amendment M3): the
+/// properties of the request body that ARCH-VERSIONED looks for, and the schema of the answer to a
+/// stale version.
+pub mod versions {
+    /// The version the person read, in the body of every change.
+    pub const VERSION: &str = "version";
+    /// The token of the edit lock, in the body of every save of long text.
+    pub const LOCK_TOKEN: &str = "lock_token";
+    /// The schema of the `409` answer to a stale version.
+    pub const CONFLICT_SCHEMA: &str = "ConflictProblem";
 }
 
 /// The words of a paged list: the query parameters a list route takes, and the properties of its

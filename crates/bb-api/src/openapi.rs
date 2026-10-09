@@ -11,10 +11,12 @@ use std::sync::OnceLock;
 use axum::http::Method;
 use axum::http::header::{ETAG, RETRY_AFTER};
 use bb_api_words::marks;
+use bb_api_words::versions::{CONFLICT_SCHEMA, VERSION};
 use bb_core::{ErrorCode, Problem, error_code::PROBLEM_CONTENT_TYPE};
 use utoipa::openapi::extensions::Extensions;
 use utoipa::openapi::path::{Operation as OperationSpec, PathItem};
 use utoipa::openapi::response::{ResponseBuilder, ResponsesBuilder};
+use utoipa::openapi::schema::{Components, Schema};
 use utoipa::openapi::security::{ApiKey, ApiKeyValue, Http, HttpAuthScheme, SecurityScheme};
 use utoipa::openapi::{ContentBuilder, HeaderBuilder, ObjectBuilder, Ref, RefOr, Type};
 use utoipa::{Modify, OpenApi};
@@ -129,10 +131,12 @@ impl Modify for StandardParts {
             CSRF_SCHEME,
             SecurityScheme::ApiKey(ApiKey::Header(ApiKeyValue::new(CSRF_HEADER))),
         );
+        let components = openapi.components.clone().unwrap_or_default();
         for item in openapi.paths.paths.values_mut() {
             for (_, operation) in each_operation(item) {
                 add_standard_answers(operation);
                 add_marks(operation);
+                add_conflict_answer(&components, operation);
             }
             if let Some(read) = item.get.as_mut() {
                 add_read_answers(read);
@@ -159,10 +163,72 @@ fn add_marks(operation: &mut OperationSpec) {
         Answer::Secret => marks = marks.add(marks::SECRET, serde_json::json!(true)),
         Answer::Ordinary => {}
     }
+    if crate::permissions::LONG_TEXT_ROUTES.contains(&row.id) {
+        marks = marks.add(marks::LONG_TEXT, serde_json::json!(true));
+    }
     operation
         .extensions
         .get_or_insert_with(Extensions::default)
         .merge(marks.build());
+}
+
+/// Whether the JSON body of the operation has the property `name`.
+fn body_has(components: &Components, operation: &OperationSpec, name: &str) -> bool {
+    let Some(RefOr::T(Schema::Object(body))) = operation
+        .request_body
+        .as_ref()
+        .and_then(|body| match body {
+            RefOr::T(body) => body.content.get("application/json"),
+            RefOr::Ref(_) => None,
+        })
+        .and_then(|content| match content {
+            RefOr::T(content) => content.schema.as_ref(),
+            RefOr::Ref(_) => None,
+        })
+        .map(|schema| match schema {
+            RefOr::Ref(reference) => reference
+                .ref_location
+                .rsplit('/')
+                .next()
+                .and_then(|schema| components.schemas.get(schema))
+                .cloned()
+                .unwrap_or_else(|| schema.clone()),
+            RefOr::T(_) => schema.clone(),
+        })
+    else {
+        return false;
+    };
+    body.properties.contains_key(name)
+}
+
+/// A route that takes a `version` answers a stale one with the structured conflict
+/// (`ConflictProblem`, ADR-0019 amendment M3): the description says so for every such route, so the
+/// generated client types it for all of them and no route describes it by hand.
+fn add_conflict_answer(components: &Components, operation: &mut OperationSpec) {
+    if !body_has(components, operation, VERSION) {
+        return;
+    }
+    let code = ErrorCode::VersionChanged;
+    let content = ContentBuilder::new()
+        .schema(Some(Ref::from_schema_name(CONFLICT_SCHEMA)))
+        .build();
+    let status = code.status().to_string();
+    let answer = match operation.responses.responses.remove(&status) {
+        Some(RefOr::T(mut known)) => {
+            known
+                .content
+                .insert(PROBLEM_CONTENT_TYPE.to_owned(), RefOr::T(content));
+            known
+        }
+        _ => ResponseBuilder::new()
+            .description(format!("{} ({})", code.message(), code.code()))
+            .content(PROBLEM_CONTENT_TYPE, content)
+            .build(),
+    };
+    operation
+        .responses
+        .responses
+        .insert(status, RefOr::T(answer));
 }
 
 /// The operations of one address with the name of their method, the one list of methods.
