@@ -124,7 +124,20 @@ These are technical and recorded in the decision records; the maintainer may sti
 
 Each question has a proposal. Accepting all of them takes every proposal as written.
 
-**Answered: every proposal was accepted.** WP-01 writes each answer where it belongs and names the place under the question.
+**Answered: every proposal was accepted.** Where each answer is written:
+
+- M3-Q1: [ADR-0027](../../adr/0027-layouts-and-rules-per-issue-type.md), decision 5, and the glossary (*Starting workflow*). The status groups keep the glossary's names *Not started*, *In progress*, *Done* (the question said "To do").
+- M3-Q2: "What M3 covers of each feature" above.
+- M3-Q3: [ADR-0019](../../adr/0019-edit-locks.md), amendment M3.
+- M3-Q4: [ADR-0021](../../adr/0021-issue-ids.md), amendment M3; WP-08.
+- M3-Q5: the glossary (*History*, *Combine with another choice*, *Retire*, *Pick one group*, *Keep Ben's / Use mine*), ADR-0019 amendment M3, UX §4.4.
+- M3-Q6: the permission catalogue (`crates/bb-policy/src/catalogue.rs`) and the generated table in [architecture §7, *Starting roles*](../../architecture/07-cross-cutting.md#starting-roles).
+- M3-Q7: WP-07, task 4; [security chapter, M3](../../architecture/12-security.md).
+- M3-Q8: WP-08, tasks 1 and 3.
+- M3-Q9: ADR-0019 amendment M3; the glossary (*Draft*).
+- M3-Q10: WP-11, task 1.
+
+The questions as they were asked:
 
 - **M3-Q1 — Statuses before workflows.** Workflows come in M4, but an issue needs a status now. Proposal: every issue type starts with one starting workflow: **Open**, **In progress**, **Done** (groups *To do*, *In progress*, *Done*), and every status can follow every other. Moving into *Done* sets the closed date; leaving it clears it. M4's workflow editor replaces this without changing stored issues.
 - **M3-Q2 — What M3 leaves for later.** CF-06, CF-08, TAG-04 and CFG-01 name search, boards, the timeline, time entries, documents and releases, which come in later milestones. Proposal: M3 builds own fields, tags and labels for issues and projects, in the API, permissions and history; each later milestone plugs them into its own screens (list above).

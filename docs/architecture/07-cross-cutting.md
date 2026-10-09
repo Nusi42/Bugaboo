@@ -225,7 +225,7 @@ N = *Names*, R = *Role only*, H = *Hidden*.
 
 ### The field catalogue
 
-Declared once in `bb-core` (`fields`): key, name (message `issue-field.<key>`), the thing it belongs to, and the kind of people information when it holds a person. Own fields join in M3 (CF-06); rules per issue type come with issue types (M3).
+Declared once in `bb-core` (`fields`): key, name (message `issue-field.<key>`), the thing it belongs to, and the kind of people information when it holds a person. Own fields join in M3 (CF-06) through one key type, `FieldKey`: either a built-in field of this catalogue or an own field (`FieldKey::Own(FieldId)`), so levels, masks, the field-permission page, history and `fields=` name both the same way and no list of own fields is written twice. A new own field starts *Can see* for every role that sees the project and *Can change* for Team member and above; whoever makes it can change that at once. Levels per issue type use the lookup of [ADR-0027](../adr/0027-layouts-and-rules-per-issue-type.md).
 
 | Key | Name | Belongs to | Holds a person |
 |-----|------|-----------|----------------|

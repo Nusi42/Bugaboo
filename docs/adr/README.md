@@ -30,6 +30,7 @@ Each file records one decision: context, decision, consequences, alternatives. N
 | [0024](0024-master-repo-and-work-folders.md) | Master repository in a synced folder, work folders outside it |
 | [0025](0025-roles-groups-and-assignments.md) | Roles, groups and assignments on the project tree |
 | [0026](0026-one-theme-file.md) | One theme file for everything about how the app looks |
+| [0027](0027-layouts-and-rules-per-issue-type.md) | Layouts, rules per issue type and the starting workflow |
 
 ## Template
 

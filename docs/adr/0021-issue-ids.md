@@ -30,6 +30,10 @@ Counting IDs (`WEB-142`) are easy to say aloud, but they reveal how many issues 
 
 TEST-ISSUE-IDS, ARCH-NO-COUNTERS (see `tools/checks/catalog.toml`).
 
+## Amendment (M3)
+
+- **Moving an issue to another project** gives it an ID of the new project (in that project's mode) and keeps the old ID in `issue_alias`, like a change of mode. M3 moves an issue only into a project that has its issue type and own fields; the preview names the issues it skips and why (decision M3-Q4). Enforced by: TEST-ISSUE-IDS.
+
 ## Amendment (M1)
 
 - Records keep a UUIDv7 (time-ordered). A person's ID is a fully random UUIDv4 instead, so it does not show when the account was made.

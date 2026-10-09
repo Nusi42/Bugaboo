@@ -741,7 +741,7 @@ setup-code.txt   the setup code of a server without a console (dead once an acco
 </div>
 <!-- END GENERATED starting-people-levels -->
 <h4>The field catalogue</h4>
-<p>Declared once in <code>bb-core</code> (<code>fields</code>): key, name (message <code>issue-field.&lt;key&gt;</code>), the thing it belongs to, and the kind of people information when it holds a person. Own fields join in M3 (CF-06); rules per issue type come with issue types (M3).</p>
+<p>Declared once in <code>bb-core</code> (<code>fields</code>): key, name (message <code>issue-field.&lt;key&gt;</code>), the thing it belongs to, and the kind of people information when it holds a person. Own fields join in M3 (CF-06) through one key type, <code>FieldKey</code>: either a built-in field of this catalogue or an own field (<code>FieldKey::Own(FieldId)</code>), so levels, masks, the field-permission page, history and <code>fields=</code> name both the same way and no list of own fields is written twice. A new own field starts <em>Can see</em> for every role that sees the project and <em>Can change</em> for Team member and above; whoever makes it can change that at once. Levels per issue type use the lookup of <a href="#adr-0027">ADR-0027</a>.</p>
 <div class="tbl-wrap"><table class="dtable"><thead><tr><th>Key</th><th>Name</th><th>Belongs to</th><th>Holds a person</th></tr></thead><tbody>
 <tr><td><code>title</code></td><td>Title</td><td>issue</td><td>–</td></tr>
 <tr><td><code>description</code></td><td>Description</td><td>issue</td><td>–</td></tr>
@@ -1338,7 +1338,7 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 <h2 id="s12"><button class="sec" data-sec>§12</button>Security: threat model and personal-data flows</h2>
 <p>Part of the security and data-flow documentation (COMP-07) for the CRA technical file and for customers' own risk assessments. It covers what is built so far and grows with every milestone: each milestone review checks that new entry points appear here.</p>
 <p>The method is STRIDE per trust boundary (boundaries from <a href="#s2">Context</a>). Every threat names the mitigation and what proves it: a check from the catalogue (<code>tools/checks/catalog.toml</code>), a test, or <em>review</em> when a person decides.</p>
-<h3 id="s12-1"><button class="sec" data-sec>§12.1</button>Scope (status: M2)</h3>
+<h3 id="s12-1"><button class="sec" data-sec>§12.1</button>Scope (status: M3 planned)</h3>
 <div class="tbl-wrap"><table class="dtable"><thead><tr><th>In scope now</th><th>Comes later (own section then)</th></tr></thead><tbody>
 <tr><td>HTTPS and start-up config, security headers, sign-in (password, passkey, two-step codes), sessions, invitations, first-run setup code, rate limits, the security log, stored secrets, logs (M1); the permission engine (roles, groups, assignments, <em>No access</em>, field masks, <em>Who sees people</em>), projects and short names, access keys, two-step sign-in by role, settings in layers (M2)</td><td>Issues (M3), attachments and mail (M4), search language (M5), MCP and the assistant (M8), <em>Remove a person</em> and exports (M9), webhooks (M12), the served model's control plane (M14)</td></tr>
 </tbody></table>
@@ -1427,6 +1427,18 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 <tr><td>Information disclosure</td><td>The cookie and the cache of a session that has ended stay in the browser, so the next person on the computer sees what was kept</td><td>A <code>401</code> for a session that has ended clears both cookies and the cache (<code>Clear-Site-Data</code>); a session waiting for its second step is left alone</td><td><code>m2_f06_a_session_that_ran_out_is_answered_with_the_cookies_cleared</code>, <code>m2_f06_a_cookie_that_opens_no_session_is_cleared_too</code>, <code>m2_f06_a_session_that_waits_for_its_second_step_is_not_cleared</code> (WP-09)</td></tr>
 <tr><td>Repudiation</td><td>A change of roles, groups, assignments, field levels, <em>Who sees people</em>, project moves or access keys leaves no trace</td><td>Each writes its event and a security-log entry in the same change</td><td>ARCH-EVENTS; <code>sec_15_every_change_of_permissions_is_in_the_security_log</code> (WP-05)</td></tr>
 <tr><td>Tampering</td><td>A changed or old cursor, ETag or cached answer shows another person's view</td><td>Cursors hold only a position and every permission comes from the request; ETags are made from the answer after masking</td><td><code>perf_02_paging_walks_every_item_once_and_refuses_a_changed_cursor</code>, <code>perf_03_every_get_answers_an_etag_and_304_on_a_match</code></td></tr>
+</tbody></table>
+</div>
+<h4>Issues, text and editing (M3)</h4>
+<p>M3 stores text that people write and shows it to others, and lets several people edit one issue. The packages add each row's test when they merge (<span title="../milestones/M3/README.md in the repository">M3 plan</span>).</p>
+<div class="tbl-wrap"><table class="dtable"><thead><tr><th>STRIDE</th><th>Threat</th><th>Mitigation</th><th>Proven by</th></tr></thead><tbody>
+<tr><td>Tampering, elevation of privilege</td><td>Script in a description, comment or long-text field runs in another person's browser (stored XSS)</td><td>One renderer, <code>bb-markdown</code>, with one allowlist; no raw HTML, <code>javascript:</code> or <code>data:</code> links; outside images only from hosts an administrator allows; the browser sets HTML only in one component, behind a Trusted Types policy (ADR-0011, SEC-13)</td><td>SEC-RICHTEXT (corpus), SEC-PATTERNS, ARCH-PURE (WP-02)</td></tr>
+<tr><td>Information disclosure</td><td>A relation, a sub-issue, a progress count or an issue-ID chip shows that a hidden issue exists</td><td>Relations and chips resolve only for issues the reader may see; progress counts only visible sub-issues (PRIV-13)</td><td><code>iss_04_a_relation_to_a_hidden_issue_is_not_shown</code>, <code>iss_03_progress_counts_only_the_sub_issues_you_see</code>, <code>iss_05_a_hidden_issue_id_in_a_comment_stays_text</code> (WP-07)</td></tr>
+<tr><td>Information disclosure</td><td>History, autocomplete or mentions reveal a hidden field, a hidden project's tags or a hidden name</td><td>History is filtered by the reader's mask; autocomplete offers only tags of visible projects; mentions follow <em>Who sees people</em></td><td><code>iss_06_history_leaves_out_changes_to_fields_the_reader_cannot_see</code>, <code>tag_01_autocomplete_never_offers_a_tag_only_used_in_a_hidden_project</code>, <code>iss_05_a_guest_can_mention_a_role_but_not_a_person</code></td></tr>
+<tr><td>Information disclosure</td><td>"… is editing" names a person the reader may not see</td><td>Lock notices are a <code>PersonRef</code> of the kind <em>Editing</em>, else <em>Someone</em> (ADR-0022)</td><td>ARCH-PERSON-REF; <code>iss_17_a_second_person_sees_who_is_editing_or_someone</code> (WP-04)</td></tr>
+<tr><td>Elevation of privilege</td><td>Changing many issues at once skips the check of one of them</td><td>The preview evaluates every issue on its own; applying checks each issue again with its version</td><td><code>iss_09_an_issue_you_cannot_change_is_skipped_with_its_reason</code> (WP-08)</td></tr>
+<tr><td>Information disclosure</td><td>A draft (personal text) is read by somebody else or kept forever</td><td>Drafts are readable only by their author, deleted on save and after 30 days</td><td><code>iss_11_a_draft_is_readable_only_by_its_author</code>, <code>iss_11_a_draft_goes_after_save_and_after_its_keep_period</code> (WP-04)</td></tr>
+<tr><td>Denial of service</td><td>A pattern rule of an own field or a huge text slows the server</td><td>Patterns run on a linear-time engine with a length cap; text length and nesting have named limits</td><td><code>cf_03_a_required_field_and_a_rule_refuse_a_wrong_value_with_a_sentence</code> (WP-05), the corpus of WP-02</td></tr>
 </tbody></table>
 </div>
 <h4>Boundary 4 (operator ↔ data) and the host</h4>
@@ -2003,6 +2015,13 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 </ul>
 <h4>Enforced by</h4>
 <p>ARCH-VERSIONED, TEST-EDIT-LOCKS (see <code>tools/checks/catalog.toml</code>).</p>
+<h4>Amendment (M3, 2026-10-09)</h4>
+<ul>
+<li><strong>The version travels in the body.</strong> Every change sends the version it read as <code>version</code> in the request body, as the M2 routes already do, not in <code>If-Match</code>; a change of many issues carries one version per issue, which a header cannot. ARCH-VERSIONED reads the body of every change operation in the API description; a route without a version (signing in, making a new record) is named with its reason in an exemption file.</li>
+<li><strong>The conflict answer is structured.</strong> <code>edit.version_changed</code> (409) holds who changed it (a <code>PersonRef</code> for the reader), when, which fields, and the current values the reader may see; the browser writes the sentence from it with the reader's field mask and <em>Who sees people</em>, so an error message keeps no placeholder (architecture §7, <em>Errors</em>). For short values the sentence is "Ben changed Priority to Critical 2 minutes ago." with <em>Keep Ben's</em> and <em>Use mine</em> (decision M3-Q5); for long text it stays <em>Compare and save</em>.</li>
+<li><strong>Drafts</strong> are saved with the heartbeat (every 15 s) and kept until the text is saved or thrown away, at most 30 days after their last change (decision M3-Q9); a draft for a new issue belongs to the person, the project and the form. A job deletes the old ones (ADR-0017).</li>
+<li><strong>Ask … to finish and Edit anyway</strong> reach the person who is editing at their next heartbeat, in the open page; e-mail and in-app notifications add the same in M4 (decision M3-Q3).</li>
+</ul>
 
 <!-- 0020-architecture-checks.md -->
 <h3 id="adr-0020"><button class="sec" data-sec>§13.20</button>ADR-0020: Architecture is checked by many small checks, and the checks are checked</h3>
@@ -2070,6 +2089,10 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 </ul>
 <h4>Enforced by</h4>
 <p>TEST-ISSUE-IDS, ARCH-NO-COUNTERS (see <code>tools/checks/catalog.toml</code>).</p>
+<h4>Amendment (M3, 2026-10-09)</h4>
+<ul>
+<li><strong>Moving an issue to another project</strong> gives it an ID of the new project (in that project's mode) and keeps the old ID in <code>issue_alias</code>, like a change of mode. M3 moves an issue only into a project that has its issue type and own fields; the preview names the issues it skips and why (decision M3-Q4). Enforced by: TEST-ISSUE-IDS.</li>
+</ul>
 <h4>Amendment (M1)</h4>
 <ul>
 <li>Records keep a UUIDv7 (time-ordered). A person's ID is a fully random UUIDv4 instead, so it does not show when the account was made.</li>
@@ -2355,6 +2378,34 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 </ul>
 <h4>Enforced by</h4>
 <p>THEME-ONLY (no <code>style=</code>, no <code>className</code>, no CSS file but the generated one), STY-TOKENS (no color written out), LINT-CSS (the compiled rules use token variables only), STY-CONTRAST (every theme and mode), DOC-GENERATED (the sheet, the names and the theme choices are the output of the file).</p>
+
+<!-- 0027-layouts-and-rules-per-issue-type.md -->
+<h3 id="adr-0027"><button class="sec" data-sec>§13.27</button>ADR-0027: Layouts, rules per issue type and the starting workflow</h3>
+<p>Status: <strong>Accepted</strong> · 2026-10-09</p>
+<h4>Context</h4>
+<p>M3 brings issue types (ISS-02), layouts for the issue page and the new-issue form (CFG-01), field levels per issue type (SEC-04, UX §5.2 <em>More options</em>), kinds of relation (ISS-04) and own fields (CF-03). All of these are set for the whole organization or a project, and some also for one issue type. The settings registry (ADR-0018) has the layers default → organization → nearest project → person, but no issue type, and a layout is a structure, not a value. Workflows come in M4, yet every issue needs a status from the start.</p>
+<h4>Decision</h4>
+<ol>
+<li><strong>Own tables, settings-like lookup.</strong> Layouts, field levels per issue type and kinds of relation live in their own tables, not in the settings registry. Each row names its place (the organization or a project) and optionally an issue type.</li>
+<li><strong>One lookup order, defined once:</strong> for a project and an issue type, the nearest place with a row wins (the project, then its parents, then the organization); at one place, a row for the issue type wins over a row for all types. The lookup is one function in <code>bb-core</code>, used by layouts and by field levels; a sub-project uses its parent's layout until it gets its own.</li>
+<li><strong>Field levels per issue type</strong> join the evaluation of architecture §7 (step 7) through that lookup; a level for a type is set under <em>More options</em> on the field-permission page.</li>
+<li><strong>Layouts never widen permissions.</strong> A layout decides where a field shows and for which roles; a field shows only if the layout lists it for one of the person's roles and the field level lets them see it (to fill it in on the new-issue form: change it).</li>
+<li><strong>The starting workflow</strong> (decision M3-Q1): one workflow, defined once in <code>bb-core</code>, with <em>Open</em> (status group <em>Not started</em>), <em>In progress</em> (<em>In progress</em>) and <em>Done</em> (<em>Done</em>); every status can follow every other; entering a status of the <em>Done</em> group sets the closed date and leaving it clears it. Every issue type uses it until M4, whose workflow editor makes it the first workflow of the organization; stored statuses keep their IDs.</li>
+<li><strong>Editors lock.</strong> The layout editor takes an edit lock (ADR-0019) while open, like the workflow and theme editors.</li>
+</ol>
+<h4>Consequences</h4>
+<ul>
+<li>Own fields, layouts and per-type levels follow one inheritance rule people learn once.</li>
+<li>The settings registry stays a registry of single values; structures have their own tables and migrations.</li>
+<li>M4 replaces the starting workflow without a data migration of issues.</li>
+</ul>
+<h4>Alternatives considered</h4>
+<ul>
+<li><strong>Layouts as settings values (JSON in the registry):</strong> no issue-type dimension, no typed validation, and every reader would parse JSON. Rejected.</li>
+<li><strong>Fixed statuses with no workflow model:</strong> M4 would have to migrate every issue. Rejected.</li>
+</ul>
+<h4>Enforced by</h4>
+<p>Review (the lookup function is the one place; its property test <code>cfg_01_a_layout_never_shows_a_field_the_role_cannot_see</code> lives in WP-09) and SEC-MATRIX for the levels per issue type.</p>
 
 
   </main>

@@ -52,6 +52,16 @@ Rules:
 | **Tags**                 | Free words anyone can add (`login`, `slow`)                        | —                                  |
 | **Labels**               | A fixed list of words managed by admins                            | components                         |
 | **Fields**               | The pieces of information on an issue. *Own fields* are those an organization adds | custom field (UI), attribute |
+| **Choice**               | One of the values a *Pick one* or *Pick several* field offers (*Critical*, *Major*), with its color and icon | enum value, list item (in UI) |
+| **Combine with another choice** | Move every issue from one choice, tag or label to another, then remove the first one | merge (in UI) |
+| **Retire**               | Stop offering a choice, label, issue type or field for new issues while old issues keep it | archive, deprecate (in UI) |
+| **Look** (of a field)    | How a field's value is shown: *Badge, Pill, Plain text, Progress bar, Avatar* | display style, renderer |
+| **Pick one group**       | A group of labels of which an issue can have only one (*area: login* or *area: billing*) | exclusive group, mutually exclusive |
+| **Comment**              | What people write under an issue; it can be changed later, and its earlier versions are kept | note (for this), reply |
+| **Mention**              | Naming a person, group or role in a text with `@`, so they find it under *Mentions* | ping, tag (for people) |
+| **History** (of an issue) | The comments and changes of an issue in time order, with the tabs *Everything · Comments · Changes*; changes to fields you can't see are left out | activity (for this), audit log (in UI), timeline (for this) |
+| **Change many issues**   | Select several issues and change them together, after a preview that says what happens to each one | bulk edit, mass update |
+| **Add a field**          | The quiet line on an issue that offers the fields you may fill in that are still empty | — |
 
 ## Statuses and workflows
 
@@ -65,6 +75,7 @@ Rules:
 | **Only if …**            | Rule: something that must be true first                            | condition                          |
 | **Must be filled in**    | Rule: fields that need a value first                               | validator                          |
 | **Ask for**              | Fields shown in a small form during the status change              | transition screen                  |
+| **Starting workflow**    | The workflow every issue type uses until an organization makes its own (M4): *Open*, *In progress*, *Done*, and any status can follow any other | default workflow (in UI) |
 | **Then automatically …** | Actions that run after the change (assign, notify, fill a field)   | post-function                      |
 | **Automations** (later)  | Rules that run on a schedule or event                              | —                                  |
 
@@ -123,6 +134,10 @@ Rules:
 | **Edit anyway**          | Take over a long text someone else is editing; they keep their unsaved text | force unlock, steal lock |
 | **Saving… / Saved / Not saved yet** | The three save states shown next to a change            | syncing, persisted, dirty          |
 | **Compare and save**     | See your text next to the newer version, then choose what to keep  | merge conflict, resolve conflict   |
+| **Draft**                | Text you have written but not saved yet. Bugaboo keeps it privately, in your browser and on the server, until you save or throw it away, at most 30 days | autosave (as a noun), unsaved changes |
+| **Ask … to finish**      | Ask the person who is editing a text to save it, so you can edit it | request unlock |
+| **Keep Ben's / Use mine** | The two answers when somebody changed a short value (a status, a person, a date) just before you did | resolve conflict |
+| **Show changes**         | See what somebody changed in a text after you opened it              | diff (in UI)                       |
 | **Trash**                | Deleted items, restorable for a while                              | recycle bin                        |
 
 ## People and access

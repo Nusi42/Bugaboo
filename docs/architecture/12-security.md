@@ -4,7 +4,7 @@ Part of the security and data-flow documentation (COMP-07) for the CRA technical
 
 The method is STRIDE per trust boundary (boundaries from [Context](02-context.md)). Every threat names the mitigation and what proves it: a check from the catalogue (`tools/checks/catalog.toml`), a test, or *review* when a person decides.
 
-## Scope (status: M2)
+## Scope (status: M3 planned)
 
 | In scope now | Comes later (own section then) |
 |--------------|-------------------------------|
@@ -104,6 +104,20 @@ The model is [ADR-0025](../adr/0025-roles-groups-and-assignments.md) and [§7, *
 | Information disclosure | The cookie and the cache of a session that has ended stay in the browser, so the next person on the computer sees what was kept | A `401` for a session that has ended clears both cookies and the cache (`Clear-Site-Data`); a session waiting for its second step is left alone | `m2_f06_a_session_that_ran_out_is_answered_with_the_cookies_cleared`, `m2_f06_a_cookie_that_opens_no_session_is_cleared_too`, `m2_f06_a_session_that_waits_for_its_second_step_is_not_cleared` (WP-09) |
 | Repudiation | A change of roles, groups, assignments, field levels, *Who sees people*, project moves or access keys leaves no trace | Each writes its event and a security-log entry in the same change | ARCH-EVENTS; `sec_15_every_change_of_permissions_is_in_the_security_log` (WP-05) |
 | Tampering | A changed or old cursor, ETag or cached answer shows another person's view | Cursors hold only a position and every permission comes from the request; ETags are made from the answer after masking | `perf_02_paging_walks_every_item_once_and_refuses_a_changed_cursor`, `perf_03_every_get_answers_an_etag_and_304_on_a_match` |
+
+### Issues, text and editing (M3)
+
+M3 stores text that people write and shows it to others, and lets several people edit one issue. The packages add each row's test when they merge ([M3 plan](../milestones/M3/README.md)).
+
+| STRIDE | Threat | Mitigation | Proven by |
+|--------|--------|-----------|-----------|
+| Tampering, elevation of privilege | Script in a description, comment or long-text field runs in another person's browser (stored XSS) | One renderer, `bb-markdown`, with one allowlist; no raw HTML, `javascript:` or `data:` links; outside images only from hosts an administrator allows; the browser sets HTML only in one component, behind a Trusted Types policy (ADR-0011, SEC-13) | SEC-RICHTEXT (corpus), SEC-PATTERNS, ARCH-PURE (WP-02) |
+| Information disclosure | A relation, a sub-issue, a progress count or an issue-ID chip shows that a hidden issue exists | Relations and chips resolve only for issues the reader may see; progress counts only visible sub-issues (PRIV-13) | `iss_04_a_relation_to_a_hidden_issue_is_not_shown`, `iss_03_progress_counts_only_the_sub_issues_you_see`, `iss_05_a_hidden_issue_id_in_a_comment_stays_text` (WP-07) |
+| Information disclosure | History, autocomplete or mentions reveal a hidden field, a hidden project's tags or a hidden name | History is filtered by the reader's mask; autocomplete offers only tags of visible projects; mentions follow *Who sees people* | `iss_06_history_leaves_out_changes_to_fields_the_reader_cannot_see`, `tag_01_autocomplete_never_offers_a_tag_only_used_in_a_hidden_project`, `iss_05_a_guest_can_mention_a_role_but_not_a_person` |
+| Information disclosure | "… is editing" names a person the reader may not see | Lock notices are a `PersonRef` of the kind *Editing*, else *Someone* (ADR-0022) | ARCH-PERSON-REF; `iss_17_a_second_person_sees_who_is_editing_or_someone` (WP-04) |
+| Elevation of privilege | Changing many issues at once skips the check of one of them | The preview evaluates every issue on its own; applying checks each issue again with its version | `iss_09_an_issue_you_cannot_change_is_skipped_with_its_reason` (WP-08) |
+| Information disclosure | A draft (personal text) is read by somebody else or kept forever | Drafts are readable only by their author, deleted on save and after 30 days | `iss_11_a_draft_is_readable_only_by_its_author`, `iss_11_a_draft_goes_after_save_and_after_its_keep_period` (WP-04) |
+| Denial of service | A pattern rule of an own field or a huge text slows the server | Patterns run on a linear-time engine with a length cap; text length and nesting have named limits | `cf_03_a_required_field_and_a_rule_refuse_a_wrong_value_with_a_sentence` (WP-05), the corpus of WP-02 |
 
 ### Boundary 4 (operator ↔ data) and the host
 

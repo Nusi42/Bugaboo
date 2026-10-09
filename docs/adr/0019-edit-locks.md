@@ -43,3 +43,10 @@ Bugaboo has no real-time co-editing in 1.0. Without care, two people editing a l
 ## Enforced by
 
 ARCH-VERSIONED, TEST-EDIT-LOCKS (see `tools/checks/catalog.toml`).
+
+## Amendment (M3)
+
+- **The version travels in the body.** Every change sends the version it read as `version` in the request body, as the M2 routes already do, not in `If-Match`; a change of many issues carries one version per issue, which a header cannot. ARCH-VERSIONED reads the body of every change operation in the API description; a route without a version (signing in, making a new record) is named with its reason in an exemption file.
+- **The conflict answer is structured.** `edit.version_changed` (409) holds who changed it (a `PersonRef` for the reader), when, which fields, and the current values the reader may see; the browser writes the sentence from it with the reader's field mask and *Who sees people*, so an error message keeps no placeholder (architecture §7, *Errors*). For short values the sentence is "Ben changed Priority to Critical 2 minutes ago." with *Keep Ben's* and *Use mine* (decision M3-Q5); for long text it stays *Compare and save*.
+- **Drafts** are saved with the heartbeat (every 15 s) and kept until the text is saved or thrown away, at most 30 days after their last change (decision M3-Q9); a draft for a new issue belongs to the person, the project and the form. A job deletes the old ones (ADR-0017).
+- **Ask … to finish and Edit anyway** reach the person who is editing at their next heartbeat, in the open page; e-mail and in-app notifications add the same in M4 (decision M3-Q3).
