@@ -1,0 +1,8 @@
+C:\Users\ana\Documents\notes.txt
+C:\Users\ana\Documents
+D:\users\ana\work
+C:/Users/ana/Documents
+/c/Users/ana/Documents
+/home/ana/projects
+/Users/ana/projects
+cd "/home/ana/work/"

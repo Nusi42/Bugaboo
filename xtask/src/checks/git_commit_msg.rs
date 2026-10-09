@@ -59,7 +59,7 @@ fn branch_subjects(root: &Path) -> anyhow::Result<Vec<(String, String)>> {
         .collect())
 }
 
-fn git(root: &Path, args: &[&str]) -> anyhow::Result<Option<String>> {
+pub(super) fn git(root: &Path, args: &[&str]) -> anyhow::Result<Option<String>> {
     let out = Command::new("git")
         .args(args)
         .current_dir(root)

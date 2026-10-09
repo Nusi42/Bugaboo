@@ -1,0 +1,4 @@
+docs: describe the rule
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+Claude-Session: made-up

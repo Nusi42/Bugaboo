@@ -278,9 +278,10 @@ fn run() -> anyhow::Result<ExitCode> {
     }
 }
 
-/// `check commit-msg <file>`: the Git commit-msg hook (GIT-COMMIT-MSG).
+/// `check commit-msg <file>`: the Git commit-msg hook (GIT-COMMIT-MSG and SEC-PRIVATE).
 fn commit_msg(file: &std::path::Path) -> anyhow::Result<ExitCode> {
-    let problems = checks::git_commit_msg::check_file(file)?;
+    let mut problems = checks::git_commit_msg::check_file(file)?;
+    problems.extend(checks::sec_private::message_problems(file)?);
     for problem in &problems {
         output::info(problem);
     }

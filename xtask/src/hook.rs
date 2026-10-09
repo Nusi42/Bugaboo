@@ -10,6 +10,7 @@ use std::process::{Command, ExitCode};
 use anyhow::Context as _;
 use serde::Deserialize;
 
+use crate::checks;
 use crate::output;
 
 /// Exit code that makes Claude Code show stderr to the agent.
@@ -60,6 +61,8 @@ pub(crate) fn post_edit(root: &Path, stdin: &str) -> anyhow::Result<ExitCode> {
     let Some(file) = edited_file(stdin)? else {
         return Ok(ExitCode::SUCCESS);
     };
+    // Claude Code adds a session line to every memory note it saves; it must not reach Git.
+    checks::sec_private::strip_memory_session(&root.join(&file))?;
     // The checks run in a child process: it prints for people, and we turn that into feedback.
     let exe = std::env::current_exe().context("could not find the running xtask program")?;
     let out = Command::new(exe)

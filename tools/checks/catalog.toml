@@ -479,6 +479,15 @@ files = ["*"]
 status = "active"
 
 [[check]]
+id = "SEC-PRIVATE"
+title = "Nothing private about the owner in Git: no profile paths with an account name, no session IDs or links, no account or computer names"
+rule = "coding-standards §2"
+tool = "xtask (tracked text files; commit-msg hook: `check commit-msg <file>`; push and CI: also every commit message reachable from HEAD; reads the optional list ~/.config/bugaboo/private-words.txt; exemptions in tools/checks/private-exemptions.toml)"
+when = ["commit", "push", "ci"]
+files = ["*"]
+status = "active"
+
+[[check]]
 id = "SEC-PATTERNS"
 title = "No unwrap/expect/panic in production code, no dangerouslySetInnerHTML, eval or new Function"
 rule = "coding-standards §3, §4"

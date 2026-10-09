@@ -1,0 +1,8 @@
+# Files that are exempt from the rule on private words of SEC-PRIVATE (coding-standards section 2).
+# They are data the project does not write, so a word of them matching the name of a machine
+# means nothing. The other rules (paths, session IDs) still apply to them. Each entry names an
+# existing file and gives a reason.
+
+[[exempt]]
+path = "crates/bb-auth/data/breached-passwords.txt"
+reason = "A list of passwords that leaked elsewhere, copied as it is; any common word, name or machine name can be in it."

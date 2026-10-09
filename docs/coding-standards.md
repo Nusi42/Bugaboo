@@ -82,6 +82,7 @@ there. LINT-DRY (§7) catches copied blocks automatically; the rest is review.
 - **No orphan TODOs:** every `TODO` must reference an issue (`TODO(BUG-123): …`). Enforced by: LINT-HYGIENE.
 - **Feature traceability:** tests name the feature ID they cover (e.g. `sec_06_…`).
 - **Commits:** follow Conventional Commits (`feat(qry): …`, `fix(sec): …`), and make each commit a single logical change.
+- **No private information in Git.** Nothing private about the maintainer may be committed, in a file or a commit message: no user-profile path with an account name (write `%USERPROFILE%` or `~`), no Claude session ID or link, no session trailer in a commit message, and never the account name or computer name of a machine or a word of the maintainer's private list (a file outside the repository). Test data uses made-up names. The check names the file and line, never the word. Claude Code adds a session line to every memory note; `cargo xtask hook post-edit` removes it. Enforced by: SEC-PRIVATE.
 
 ## 3. Rust
 
