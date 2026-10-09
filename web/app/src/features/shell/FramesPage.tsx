@@ -4,6 +4,7 @@ import { Button, buttonLook, Card, partOf, part } from "@bugaboo/ui";
 import { usePageTitle } from "../../shared/use-page.ts";
 import { FocusView } from "./FocusView.tsx";
 import { ListEditor, type ListRow } from "./ListEditor.tsx";
+import { MarkdownSample } from "./MarkdownSample.tsx";
 import { useExamples, type Example } from "./use-examples.ts";
 
 /** How an item is shown: in the side panel next to the list, or in the focus view. */
@@ -120,29 +121,32 @@ export function FramesPage({ show, item, onOpen, onClose }: FramesPageProps) {
   }));
   const focused = show === "focus" && items.some((example) => example.id === item);
   return (
-    <Card heading={t("frames.title")} level={1}>
-      <p {...partOf(part.text)}>{t("frames.intro")}</p>
-      {focused && item !== undefined ? (
-        <Focused
-          items={items}
-          open={item}
-          onOpen={(id) => {
-            onOpen("focus", id);
-          }}
-          onClose={onClose}
-        />
-      ) : (
-        <ListEditor
-          rows={rows}
-          searchLabel={t("frames.list")}
-          nothing={t("frames.nothing")}
-          openKey={show === "panel" ? item : undefined}
-          onOpen={(key) => {
-            onOpen("panel", key);
-          }}
-          onClose={onClose}
-        />
-      )}
-    </Card>
+    <>
+      <Card heading={t("frames.title")} level={1}>
+        <p {...partOf(part.text)}>{t("frames.intro")}</p>
+        {focused && item !== undefined ? (
+          <Focused
+            items={items}
+            open={item}
+            onOpen={(id) => {
+              onOpen("focus", id);
+            }}
+            onClose={onClose}
+          />
+        ) : (
+          <ListEditor
+            rows={rows}
+            searchLabel={t("frames.list")}
+            nothing={t("frames.nothing")}
+            openKey={show === "panel" ? item : undefined}
+            onOpen={(key) => {
+              onOpen("panel", key);
+            }}
+            onClose={onClose}
+          />
+        )}
+      </Card>
+      {focused ? null : <MarkdownSample />}
+    </>
   );
 }

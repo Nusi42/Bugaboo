@@ -5,6 +5,8 @@ export { ApiError, isProblem, messageKeyOf, PROBLEM_CONTENT_TYPE } from "./probl
 export type { ErrorCode, Problem } from "./problem.ts";
 export { CSRF_COOKIE, CSRF_HEADER } from "./protocol.ts";
 export type { ReadonlyDeep, Schema } from "./readonly.ts";
+export { trustedTypesPolicyName } from "./browser.generated.ts";
+export { isSafeHtml, markSafeHtml, type SafeHtml } from "./safe-html.ts";
 export { pageSizeDefault, pageSizeMax } from "./paging.generated.ts";
 export {
   settingChoices,

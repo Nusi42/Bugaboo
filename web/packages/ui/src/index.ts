@@ -36,6 +36,12 @@ export { iconName, type IconName } from "./icons.ts";
 export { IconButton, type IconButtonProps } from "./IconButton.tsx";
 export { layoutForWidth, layoutModes, useLayout, type LayoutMode } from "./layout.ts";
 export { Link, type LinkProps } from "./Link.tsx";
+export {
+  MarkdownEditor,
+  type MarkdownEditorLabels,
+  type MarkdownEditorProps,
+} from "./markdown/MarkdownEditor.tsx";
+export { MarkdownView, type MarkdownViewProps } from "./markdown/MarkdownView.tsx";
 export { OrDivider, type OrDividerProps } from "./OrDivider.tsx";
 export { Overlay, type OverlayProps } from "./Overlay.tsx";
 export {

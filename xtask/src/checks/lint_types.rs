@@ -19,6 +19,8 @@ impl Check for LintTypes {
         // A change in one project can break another, so every project is checked. Browser code and
         // tooling are separate projects, so browser code cannot use Node's types by accident.
         let projects = context.everything().selected(self.id())?;
+        // The browser code imports the generated WebAssembly glue, which has to be there to be typed.
+        crate::wasm::ensure(context.repo.real_root())?;
         let mut findings = Vec::new();
         for project in projects.iter().filter(|file| file.ends_with(PROJECT_FILE)) {
             findings.extend(type_check(context.repo.root(), project)?);

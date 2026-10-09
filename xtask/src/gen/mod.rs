@@ -4,6 +4,7 @@
 //! without a second formatting step.
 
 pub(crate) mod api;
+pub(crate) mod clippy;
 pub(crate) mod contrast_spec;
 pub(crate) mod icu;
 pub(crate) mod kdl_reader;
@@ -52,7 +53,7 @@ pub(crate) const DOCS: &str = "docs";
 /// Every generator, once. A generated file in the repository is written by one of these;
 /// DOC-GENERATED compares all of them with the disk, `cargo xtask gen <name>` writes one, and
 /// META-COVERAGE counts their paths as generated.
-pub(crate) const GENERATORS: [Generator; 6] = [
+pub(crate) const GENERATORS: [Generator; 7] = [
     Generator {
         name: DOCS,
         help: "The commentable HTML pages from the Markdown sources and the check catalogue.",
@@ -82,6 +83,12 @@ pub(crate) const GENERATORS: [Generator; 6] = [
         help: "The tables of permissions and starting roles in architecture section 7, from bb-policy.",
         paths: || vec![roles::PAGE],
         generate: |repo, _| roles::generate(repo),
+    },
+    Generator {
+        name: "clippy",
+        help: "The clippy.toml of the crates that do no I/O, from the root file and the list of what reaches the world.",
+        paths: clippy::output_paths,
+        generate: |repo, _| clippy::generate(repo),
     },
     Generator {
         name: "api",

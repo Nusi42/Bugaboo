@@ -3,3 +3,5 @@ offline = true
 # Check that the heading a link points to (file.md#heading) exists.
 include_fragments = "anchor-only"
 no_progress = true
+# The sanitizer corpus is hostile text on purpose, with links that point nowhere (SEC-13).
+exclude_path = ["crates/bb-markdown/tests/corpus"]

@@ -731,6 +731,10 @@ pub const ERROR_SERVER_INTERNAL: MessageKey = MessageKey::new("error.server.inte
 /// The message `error.server.unavailable`.
 pub const ERROR_SERVER_UNAVAILABLE: MessageKey = MessageKey::new("error.server.unavailable");
 
+/// The message `error.setting.hosts-not-bare`.
+pub const ERROR_SETTING_HOSTS_NOT_BARE: MessageKey =
+    MessageKey::new("error.setting.hosts-not-bare");
+
 /// The message `error.setting.locked`.
 pub const ERROR_SETTING_LOCKED: MessageKey = MessageKey::new("error.setting.locked");
 
@@ -863,6 +867,15 @@ pub const FRAMES_PANEL_TEXT: MessageKey = MessageKey::new("frames.panel-text");
 
 /// The message `frames.remove`.
 pub const FRAMES_REMOVE: MessageKey = MessageKey::new("frames.remove");
+
+/// The message `frames.text-intro`.
+pub const FRAMES_TEXT_INTRO: MessageKey = MessageKey::new("frames.text-intro");
+
+/// The message `frames.text-label`.
+pub const FRAMES_TEXT_LABEL: MessageKey = MessageKey::new("frames.text-label");
+
+/// The message `frames.text-title`.
+pub const FRAMES_TEXT_TITLE: MessageKey = MessageKey::new("frames.text-title");
 
 /// The message `frames.title`.
 pub const FRAMES_TITLE: MessageKey = MessageKey::new("frames.title");
@@ -1064,6 +1077,42 @@ pub const LIST_NEXT: MessageKey = MessageKey::new("list.next");
 /// The message `list.previous`.
 pub const LIST_PREVIOUS: MessageKey = MessageKey::new("list.previous");
 
+/// The message `markdown.bold`.
+pub const MARKDOWN_BOLD: MessageKey = MessageKey::new("markdown.bold");
+
+/// The message `markdown.code`.
+pub const MARKDOWN_CODE: MessageKey = MessageKey::new("markdown.code");
+
+/// The message `markdown.italic`.
+pub const MARKDOWN_ITALIC: MessageKey = MessageKey::new("markdown.italic");
+
+/// The message `markdown.link`.
+pub const MARKDOWN_LINK: MessageKey = MessageKey::new("markdown.link");
+
+/// The message `markdown.link-text`.
+pub const MARKDOWN_LINK_TEXT: MessageKey = MessageKey::new("markdown.link-text");
+
+/// The message `markdown.list`.
+pub const MARKDOWN_LIST: MessageKey = MessageKey::new("markdown.list");
+
+/// The message `markdown.preview`.
+pub const MARKDOWN_PREVIEW: MessageKey = MessageKey::new("markdown.preview");
+
+/// The message `markdown.preview-empty`.
+pub const MARKDOWN_PREVIEW_EMPTY: MessageKey = MessageKey::new("markdown.preview-empty");
+
+/// The message `markdown.preview-failed`.
+pub const MARKDOWN_PREVIEW_FAILED: MessageKey = MessageKey::new("markdown.preview-failed");
+
+/// The message `markdown.quote`.
+pub const MARKDOWN_QUOTE: MessageKey = MessageKey::new("markdown.quote");
+
+/// The message `markdown.toolbar`.
+pub const MARKDOWN_TOOLBAR: MessageKey = MessageKey::new("markdown.toolbar");
+
+/// The message `markdown.write`.
+pub const MARKDOWN_WRITE: MessageKey = MessageKey::new("markdown.write");
+
 /// The message `nav.access-keys`.
 pub const NAV_ACCESS_KEYS: MessageKey = MessageKey::new("nav.access-keys");
 
@@ -1105,6 +1154,9 @@ pub const NAV_HOME: MessageKey = MessageKey::new("nav.home");
 
 /// The message `nav.my-settings`.
 pub const NAV_MY_SETTINGS: MessageKey = MessageKey::new("nav.my-settings");
+
+/// The message `nav.organization-security`.
+pub const NAV_ORGANIZATION_SECURITY: MessageKey = MessageKey::new("nav.organization-security");
 
 /// The message `nav.organization-settings`.
 pub const NAV_ORGANIZATION_SETTINGS: MessageKey = MessageKey::new("nav.organization-settings");
@@ -2040,8 +2092,19 @@ pub const SETTING_AUTH_SIGN_UP_ENABLED_HELP: MessageKey =
 pub const SETTING_AUTH_SIGN_UP_ENABLED_NAME: MessageKey =
     MessageKey::new("setting.auth.sign-up-enabled.name");
 
+/// The message `setting.content.image-hosts.help`.
+pub const SETTING_CONTENT_IMAGE_HOSTS_HELP: MessageKey =
+    MessageKey::new("setting.content.image-hosts.help");
+
+/// The message `setting.content.image-hosts.name`.
+pub const SETTING_CONTENT_IMAGE_HOSTS_NAME: MessageKey =
+    MessageKey::new("setting.content.image-hosts.name");
+
 /// The message `setting.page.region-intro`.
 pub const SETTING_PAGE_REGION_INTRO: MessageKey = MessageKey::new("setting.page.region-intro");
+
+/// The message `setting.page.security-intro`.
+pub const SETTING_PAGE_SECURITY_INTRO: MessageKey = MessageKey::new("setting.page.security-intro");
 
 /// The message `setting.page.sign-in-rules-intro`.
 pub const SETTING_PAGE_SIGN_IN_RULES_INTRO: MessageKey =
@@ -5494,6 +5557,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "Bugaboo is not available right now. Please try again in a moment.",
     ),
     (
+        "error.setting.hosts-not-bare",
+        "Write only the host names, like images.example.com, without https:// and without a path.",
+    ),
+    (
         "error.setting.locked",
         "An administrator locked this setting, so it can't be changed here.",
     ),
@@ -5591,6 +5658,12 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("frames.remove", "Remove"),
     ("frames.remove-name", "Remove {name}"),
     ("frames.removed", "{name} was removed."),
+    (
+        "frames.text-intro",
+        "Descriptions, comments and long text are written in Markdown. Write, then open Preview to see what others will see.",
+    ),
+    ("frames.text-label", "Description"),
+    ("frames.text-title", "Text with formatting"),
     ("frames.title", "Page frames"),
     ("groups.add", "Put in"),
     ("groups.add-list", "People you can put into the group"),
@@ -5758,6 +5831,21 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("list.next", "Next"),
     ("list.previous", "Previous"),
+    ("markdown.bold", "Bold"),
+    ("markdown.code", "Code"),
+    ("markdown.italic", "Italic"),
+    ("markdown.link", "Link"),
+    ("markdown.link-text", "link text"),
+    ("markdown.list", "List"),
+    ("markdown.preview", "Preview"),
+    ("markdown.preview-empty", "There is nothing to preview yet."),
+    (
+        "markdown.preview-failed",
+        "The preview could not be loaded. Check your connection and try again.",
+    ),
+    ("markdown.quote", "Quote"),
+    ("markdown.toolbar", "Formatting"),
+    ("markdown.write", "Write"),
     ("nav.access-keys", "Access keys"),
     ("nav.appearance", "Appearance"),
     ("nav.check-access", "Check access"),
@@ -5772,6 +5860,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("nav.groups", "Groups"),
     ("nav.home", "Home"),
     ("nav.my-settings", "My settings"),
+    ("nav.organization-security", "Security"),
     ("nav.organization-settings", "Organization settings"),
     ("nav.people", "People"),
     ("nav.people-visibility", "Who sees people"),
@@ -6663,8 +6752,20 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "Sign up without an invitation",
     ),
     (
+        "setting.content.image-hosts.help",
+        "The hosts that may show images in descriptions and comments, as a list separated by commas, like images.example.com. Write only the host name, without https:// and without a path. Leave the list empty to show no image from other hosts.",
+    ),
+    (
+        "setting.content.image-hosts.name",
+        "Hosts that images may come from",
+    ),
+    (
         "setting.page.region-intro",
         "These choices are kept with you, so they follow you to every browser you sign in from.",
+    ),
+    (
+        "setting.page.security-intro",
+        "What the text that people write may show.",
     ),
     (
         "setting.page.sign-in-rules-intro",

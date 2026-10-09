@@ -13,6 +13,8 @@ impl Check for LintTs {
     }
 
     fn run(&self, context: &Context<'_>) -> anyhow::Result<Vec<Finding>> {
+        // The browser code imports the generated WebAssembly glue, which has to be there to be typed.
+        crate::wasm::ensure(context.repo.real_root())?;
         lint(context.repo.root(), &context.selected(self.id())?)
     }
 }

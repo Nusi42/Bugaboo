@@ -32,6 +32,7 @@ mod steps;
 #[cfg(test)]
 mod testutil;
 mod tools;
+mod wasm;
 
 use std::io::Read as _;
 use std::path::PathBuf;
@@ -70,6 +71,8 @@ enum Command {
         #[arg(long)]
         target: Option<String>,
     },
+    /// Build the WebAssembly module of the browser (`bb-wasm`, with `wasm-bindgen` and `wasm-opt`).
+    Wasm,
     /// Everything CI runs: checks, tests, browser build, browser tests.
     Ci,
     /// The throwaway PostgreSQL for the repository tests (architecture §11, "Database tests").
@@ -241,6 +244,7 @@ fn run() -> anyhow::Result<ExitCode> {
             repo.root(),
             target.as_deref(),
         )?)),
+        Command::Wasm => Ok(steps::exit_code(wasm::run(repo.root())?)),
         Command::Ci => Ok(steps::exit_code(ci::run(repo.root())?)),
         Command::Db { action } => {
             let action = match action {
