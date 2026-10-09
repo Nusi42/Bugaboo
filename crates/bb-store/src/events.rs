@@ -68,6 +68,29 @@ impl Database {
             .collect()
     }
 
+    /// The last event about one record, if there is one.
+    ///
+    /// # Errors
+    /// Fails when the database fails or a stored event is unreadable.
+    pub async fn last_event_about(
+        &self,
+        entity: &EntityRef,
+    ) -> Result<Option<DomainEvent>, StoreError> {
+        let mut select = Query::select();
+        select
+            .columns(event_columns())
+            .from(Event::Table)
+            .and_where(Expr::col(Event::EntityKind).eq(entity.kind.as_str()))
+            .and_where(Expr::col(Event::EntityId).eq(entity.id.stored()))
+            .order_by(Event::Id, Order::Desc)
+            .limit(1);
+        self.fetch_optional(&select)
+            .await?
+            .as_ref()
+            .map(read_event)
+            .transpose()
+    }
+
     /// The next events a consumer has not finished, with their outbox entries, in the order they
     /// were committed.
     ///

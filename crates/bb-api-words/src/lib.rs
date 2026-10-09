@@ -1,5 +1,5 @@
 //! The words of the API description that more than one program needs, each written once: the marks
-//! that `bb-api` puts on a route, the words of a paged list, the three words for a route that needs no
+//! that `bb-api` puts on a route, the words of a paged list, the four words for a route that needs no single
 //! permission of the catalogue, and the names of the actors and answers of the permission matrix (SEC-MATRIX).
 //! `sec_matrix::RECORD_PATH` is the exception that is no word of the API: the path of the record in
 //! the repository.
@@ -49,8 +49,12 @@ pub mod needs {
     pub const SIGNED_IN: &str = "signed-in";
     /// A person's own sign-in data: password, passkeys, second step, sessions.
     pub const OWN_ACCOUNT: &str = "own-account";
-    /// All three, for the code that checks a declaration is a key or one of these.
-    pub const WITHOUT_CATALOGUE: [&str; 3] = [PUBLIC, SIGNED_IN, OWN_ACCOUNT];
+    /// A permission that depends on the record the request names: its kind decides what a person
+    /// needs to change it (a project, an issue), so the route lets in whoever is signed in and the
+    /// use case judges the record (ADR-0019, edit locks and drafts).
+    pub const BY_RECORD: &str = "by-record";
+    /// All four, for the code that checks a declaration is a key or one of these.
+    pub const WITHOUT_CATALOGUE: [&str; 4] = [PUBLIC, SIGNED_IN, OWN_ACCOUNT, BY_RECORD];
 }
 
 /// The names the permission matrix (SEC-MATRIX) writes into its record.

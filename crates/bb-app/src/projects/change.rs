@@ -88,7 +88,11 @@ impl<S: AuthStore> Ctx<'_, S> {
             .map_err(|error| internal::<S>(&error))?
             .ok_or(AppError::Refused(ErrorCode::NotFound))?;
         if current.version != input.version {
-            return Err(ErrorCode::VersionChanged.into());
+            return Err(AppError::stale(
+                entity(RecordKind::Project, id),
+                Place::Project(id),
+                actor.person.id,
+            ));
         }
         let plan = Plan {
             name: name.unwrap_or_else(|| current.name.clone()),
@@ -186,7 +190,13 @@ pub async fn change_project<S: AuthStore>(
             })
         })
         .await
-        .map_err(|error| why.answer::<S>(&error, ErrorCode::NameTaken))?;
+        .map_err(|error| {
+            why.answer::<S>(&error, ErrorCode::NameTaken).about(
+                &entity(RecordKind::Project, id),
+                Place::Project(id),
+                actor.person.id,
+            )
+        })?;
     if plan.changes_short_name() {
         ctx.note(
             SecurityAction::ProjectShortNameChanged,

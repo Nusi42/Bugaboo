@@ -5,6 +5,7 @@ use std::fmt;
 use bb_core::ErrorCode;
 
 use super::store::AuthStore;
+use crate::editing::{Conflict, Stale};
 
 /// Why a use case did not do what was asked.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -16,6 +17,12 @@ pub enum AppError {
     /// what it kept (M2-F06). A session that is only not at the stage the request needs (the
     /// password step used where a finished sign-in is needed) is not this: it is still waiting.
     SessionEnded,
+    /// The version a change was made from is not the version the record has now. The use case
+    /// only names the record; `AuthApi` turns this into [`Self::Conflict`] before the answer goes
+    /// out (`editing/conflict.rs`).
+    Stale(Box<Stale>),
+    /// A stale version, with who changed the record, when, which fields, and the values now.
+    Conflict(Box<Conflict>),
     /// Too many failed tries: wait this many seconds.
     Limited {
         /// Seconds until the next try may work.
@@ -33,6 +40,7 @@ impl AppError {
         match self {
             Self::Refused(code) => Some(*code),
             Self::SessionEnded => Some(ErrorCode::NotSignedIn),
+            Self::Stale(_) | Self::Conflict(_) => Some(ErrorCode::VersionChanged),
             Self::Limited { .. } | Self::Internal(_) => None,
         }
     }
@@ -66,6 +74,9 @@ impl fmt::Display for AppError {
         match self {
             Self::Refused(code) => write!(formatter, "refused: {code}"),
             Self::SessionEnded => write!(formatter, "refused: the session has ended"),
+            Self::Stale(_) | Self::Conflict(_) => {
+                write!(formatter, "refused: {}", ErrorCode::VersionChanged)
+            }
             Self::Limited { retry_after } => {
                 write!(formatter, "limited for {retry_after} seconds")
             }

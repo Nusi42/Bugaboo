@@ -28,10 +28,6 @@ permission = "manage-issue-types"
 reason = "Issue-type routes come in M3 WP-03 (docs/milestones/M3/WP-03-issues-core.md); tracked by M3-F01."
 
 [[engine-only]]
-permission = "edit-anyway"
-reason = "Edit-lock routes come in M3 WP-04 (docs/milestones/M3/WP-04-versions-edit-locks-drafts.md); tracked by M3-F01."
-
-[[engine-only]]
 permission = "manage-fields"
 reason = "Field routes come in M3 WP-05 (docs/milestones/M3/WP-05-own-fields.md); tracked by M3-F01."
 

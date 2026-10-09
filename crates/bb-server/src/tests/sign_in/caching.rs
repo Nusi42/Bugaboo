@@ -86,6 +86,12 @@ async fn perf_03_every_get_answers_an_etag_and_304_on_a_match() -> TestResult {
                 .replace("{person_id}", &person_id)
                 .replace("{person}", &person_id)
                 .replace("{project}", project);
+            // The draft route is about a record named in the query: the example project.
+            let filled = if template == "/api/v1/drafts" {
+                format!("{filled}?kind=project&id={project_id}&part=description")
+            } else {
+                filled
+            };
             let path = &filled;
             assert!(
                 !path.contains('{'),

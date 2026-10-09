@@ -30,6 +30,7 @@ mod m0003_policy;
 mod m0004_settings;
 mod m0005_projects;
 mod m0006_access_keys;
+mod m0008_editing;
 
 /// The advisory lock PostgreSQL processes take while they migrate.
 const MIGRATION_LOCK: i64 = 0x4242_4D49_4752_0001;
@@ -129,6 +130,11 @@ const ALL: &[Definition] = &[
         version: 6,
         name: "access_keys",
         steps: || Ok(m0006_access_keys::steps()),
+    },
+    Definition {
+        version: 8,
+        name: "editing",
+        steps: || Ok(m0008_editing::steps()),
     },
 ];
 

@@ -77,19 +77,33 @@ pub(super) fn expectation(actor: Actor, route: &Operation, example: &Example) ->
     if !actor.signed_in() || example.has(Quirk::FinishesAHalfDoneSignIn) {
         return Expect::NotSignedIn;
     }
-    match route.needs {
-        Declared::Public | Declared::SignedIn | Declared::OwnAccount => Expect::Allowed,
-        Declared::Permission(permission) => {
+    let permission = match route.needs {
+        Declared::Public | Declared::SignedIn | Declared::OwnAccount => return Expect::Allowed,
+        Declared::Permission(permission) => Some(permission),
+        // The use case judges the record the request names; the example names the target project.
+        Declared::ByRecord => example.record_permission(),
+    };
+    match permission {
+        None => Expect::Allowed,
+        Some(permission) => {
             if example.has(Quirk::FiltersWhatIsSeen) {
                 return Expect::Allowed;
             }
-            let at = if route.path.contains("{project}") || example.has(Quirk::AtTheTargetProject) {
+            let on_the_target = example.record_permission().is_some();
+            let at = if route.path.contains("{project}")
+                || example.has(Quirk::AtTheTargetProject)
+                || on_the_target
+            {
                 Where::Target
             } else {
                 Where::Organization
             };
             let held = standing(actor, at);
-            if at == Where::Target && example.has(Quirk::HidesUnseen) && !held.sees() {
+            // A record that is not seen is not found, before its permission is looked at.
+            if at == Where::Target
+                && (example.has(Quirk::HidesUnseen) || on_the_target)
+                && !held.sees()
+            {
                 // What is inside a project is not told to a person who does not see it.
                 Expect::NotFound
             } else if held.permissions.contains(&permission) {
@@ -99,7 +113,8 @@ pub(super) fn expectation(actor: Actor, route: &Operation, example: &Example) ->
                     Expect::Allowed
                 }
             } else if at == Where::Target
-                && (!held.knows || (example.has(Quirk::HidesUnseen) && !held.sees()))
+                && (!held.knows
+                    || ((example.has(Quirk::HidesUnseen) || on_the_target) && !held.sees()))
             {
                 Expect::NotFound
             } else {
@@ -431,7 +446,7 @@ async fn run(rig: &Rig, actors: &[Actor]) -> Result<Record, Failure> {
                 )
             })?;
         let mut route_actors = actors.to_vec();
-        route_actors.push(Actor::exactly(route.needs));
+        route_actors.push(Actor::exactly(route.needs, example));
         for actor in &route_actors {
             let browser = browsers
                 .get_mut(&actor.key())

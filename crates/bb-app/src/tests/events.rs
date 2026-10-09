@@ -76,6 +76,9 @@ table! {
     "delete_access_key" => s::delete_access_key_scenario,
     "change_project" => s::change_project_scenario,
     "move_project" => s::move_project_scenario,
+    "ask_to_finish" => s::ask_to_finish_scenario,
+    "edit_anyway" => s::edit_anyway_scenario,
+    "release_stuck_lock" => s::release_stuck_lock_scenario,
 }
 
 #[test]

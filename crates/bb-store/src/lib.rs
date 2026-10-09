@@ -12,6 +12,7 @@ mod anchor;
 mod auth;
 mod chain;
 mod db;
+mod editing;
 mod error;
 mod events;
 mod jobs;

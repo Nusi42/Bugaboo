@@ -19,6 +19,8 @@ use bb_api::permissions::Declared;
 use bb_api_words::sec_matrix as words;
 use bb_app::access::{Permission, StartingRole};
 
+use super::examples::Example;
+
 /// The projects of the matrix.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(super) enum Project {
@@ -89,9 +91,10 @@ impl Actor {
     pub(super) const WITH_A_KEY: [Self; 2] = [Self::KeySeeOnly, Self::KeyForAnotherProject];
 
     /// The actor that holds exactly what a route declares.
-    pub(super) const fn exactly(declared: Declared) -> Self {
+    pub(super) fn exactly(declared: Declared, example: &Example) -> Self {
         match declared {
             Declared::Permission(permission) => Self::Exactly(Some(permission)),
+            Declared::ByRecord => Self::Exactly(example.record_permission()),
             Declared::Public | Declared::SignedIn | Declared::OwnAccount => Self::Exactly(None),
         }
     }

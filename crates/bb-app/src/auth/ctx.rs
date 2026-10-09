@@ -20,6 +20,7 @@ use super::error::{AppError, internal};
 use super::limit::FailureLimit;
 use super::store::{AuthSettings, AuthStore, SecurityEvent};
 use crate::context::{Clock, SystemIds};
+use crate::editing::{EditableRecords, NoRecords};
 use crate::ports::SetupCodeFile;
 use crate::status::LogWrites;
 
@@ -43,6 +44,7 @@ pub struct AuthServices<S> {
     pub(crate) product_name: String,
     pub(crate) log_writes: Arc<LogWrites>,
     pub(crate) setup_code_file: Option<Arc<dyn SetupCodeFile>>,
+    pub(crate) records: Arc<dyn EditableRecords>,
 }
 
 impl<S> AuthServices<S> {
@@ -68,7 +70,16 @@ impl<S> AuthServices<S> {
             product_name,
             log_writes: Arc::new(LogWrites::default()),
             setup_code_file: None,
+            records: Arc::new(NoRecords),
         }
+    }
+
+    /// The kinds of record that can be locked, drafted and watched besides the ones `bb-app`
+    /// keeps (ADR-0019). The program adds issues here when they exist.
+    #[must_use]
+    pub fn with_records(mut self, records: Arc<dyn EditableRecords>) -> Self {
+        self.records = records;
+        self
     }
 
     /// The file that holds the setup code of a server without a console, which the use case that

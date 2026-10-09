@@ -20,6 +20,7 @@ use utoipa::openapi::{ContentBuilder, HeaderBuilder, ObjectBuilder, Ref, RefOr, 
 use utoipa::{Modify, OpenApi};
 
 use crate::api::{AuthHandle, ProbeHandle};
+use crate::conflict::ConflictProblem;
 use crate::cookies::{CSRF_HEADER, Cookie};
 use crate::permissions::{Answer, Declared};
 
@@ -38,12 +39,13 @@ const ACCESS_KEY_SCHEME: &str = "accessKey";
         description = "The API of Bugaboo. The browser app uses exactly this API. Every error \
             is application/problem+json with a stable code and a message key."
     ),
-    components(schemas(Problem, ErrorCode)),
+    components(schemas(Problem, ErrorCode, ConflictProblem)),
     tags(
         (name = "server", description = "The server itself."),
         (name = "auth", description = "Signing in, sessions, second step, passkeys, invitations and setup."),
         (name = "admin", description = "What only administrators see: the state of the server."),
         (name = "settings", description = "Settings in layers: the organization's, a project's and a person's own."),
+        (name = "editing", description = "Edit locks, drafts and the check of what is on the screen: nobody loses text, and no change overwrites another unseen."),
         (name = "access", description = "What roles see (field permissions, who sees people) and what a person can do and why (check access).")
     )
 )]

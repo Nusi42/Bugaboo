@@ -92,6 +92,47 @@ pub(crate) enum Secret {
     UpdatedAt,
 }
 
+/// The lease on one thing being edited. A row lives only while its lease runs (ADR-0019).
+#[derive(Clone, Copy, Iden)]
+pub(crate) enum EditLockRow {
+    #[iden = "edit_lock"]
+    Table,
+    RecordKind,
+    RecordId,
+    Part,
+    Holder,
+    Editor,
+    Token,
+    TakenAt,
+    ExpiresAt,
+}
+
+/// The unsaved text of a person (a draft), kept until it is saved, thrown away, or 30 days old.
+#[derive(Clone, Copy, Iden)]
+pub(crate) enum EditDraftRow {
+    #[iden = "edit_draft"]
+    Table,
+    Author,
+    Target,
+    Text,
+    BaseVersion,
+    SavedAt,
+}
+
+/// A note for the person who was editing, read at their next heartbeat.
+#[derive(Clone, Copy, Iden)]
+pub(crate) enum EditNoticeRow {
+    #[iden = "edit_notice"]
+    Table,
+    Recipient,
+    RecordKind,
+    RecordId,
+    Part,
+    Kind,
+    FromPerson,
+    At,
+}
+
 /// The values of settings. Only `settings.rs` reads or writes this table (ARCH-SETTINGS).
 #[derive(Clone, Copy, Iden)]
 pub(crate) enum SettingRow {
@@ -633,6 +674,32 @@ stored_tables! {
     AccessKeyProjectRow => bb_core::access_key::AccessKeyProject {
         Key => key,
         Project => project,
+    },
+    EditLockRow => bb_core::edit::EditLock {
+        RecordKind => record,
+        RecordId => record,
+        Part => part,
+        Holder => holder,
+        Editor => editor,
+        Token => token,
+        TakenAt => taken_at,
+        ExpiresAt => expires_at,
+    },
+    EditDraftRow => bb_core::edit::Draft {
+        Author => author,
+        Target => target,
+        Text => text,
+        BaseVersion => base_version,
+        SavedAt => saved_at,
+    },
+    EditNoticeRow => bb_core::edit::EditNotice {
+        Recipient => recipient,
+        RecordKind => record,
+        RecordId => record,
+        Part => part,
+        Kind => kind,
+        FromPerson => from,
+        At => at,
     },
     SettingRow => bb_core::settings::StoredSetting {
         Key => key,

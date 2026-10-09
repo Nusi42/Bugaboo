@@ -3,7 +3,7 @@
 //!
 //! Every time and number of the mechanism is a named constant here, written once: the lease (60 s),
 //! the heartbeat (15 s), the keep period of a draft (30 days, owner's answer M3-Q9) and how many
-//! things one watch request may ask about. The browser reads them from the generated client
+//! records one check of versions may ask about. The browser reads them from the generated client
 //! (`cargo xtask gen api`), so it never writes them a second time.
 //!
 //! A lock or a draft is about one *thing being edited*: one part (`description`) of one record. A
@@ -25,8 +25,8 @@ pub const LEASE_SECONDS: i64 = 60;
 pub const HEARTBEAT_SECONDS: i64 = 15;
 /// How long a draft is kept after its last change, in days (M3-Q9).
 pub const DRAFT_KEEP_DAYS: i64 = 30;
-/// The most things one watch request asks about: what is on the screen.
-pub const WATCH_MAX: u32 = 50;
+/// The most records one check of versions asks about: what is on the screen.
+pub const VERSIONS_MAX: u32 = 50;
 /// The most characters of the text of a draft.
 pub const DRAFT_TEXT_MAX: usize = 100_000;
 /// The kind of job that deletes the drafts that outlived their keep period (ADR-0017).

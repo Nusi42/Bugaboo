@@ -13,6 +13,7 @@ use bb_app::auth::{
 };
 use bb_app::context::Clock;
 use bb_app::context::SystemIds;
+use bb_app::editing::EditableRecords;
 use bb_auth::{CsrfKey, Passkeys, PasswordHasher, RelyingParty};
 use bb_core::ErrorCode;
 use bb_core::event::{Actor, Channel, DomainEvent, EntityKind, EntityRef};
@@ -164,7 +165,27 @@ impl Rig {
         Self::build(db, shape).await
     }
 
+    /// A server that also knows other kinds of record (the notes of the tests of editing).
+    pub(super) async fn start_with_records(
+        db: &TestDatabase,
+        records: Arc<dyn EditableRecords>,
+    ) -> Result<Self, Failure> {
+        let rig = Self::build_with(db, Shape::NEW, Some(records)).await?;
+        if rig.setup_code.is_empty() {
+            return Err("no setup code on a new database".into());
+        }
+        Ok(rig)
+    }
+
     async fn build(db: &TestDatabase, shape: Shape) -> Result<Self, Failure> {
+        Self::build_with(db, shape, None).await
+    }
+
+    async fn build_with(
+        db: &TestDatabase,
+        shape: Shape,
+        records: Option<Arc<dyn EditableRecords>>,
+    ) -> Result<Self, Failure> {
         let database = Database::connect(db.url()).await?;
         database.migrate(Timestamp::from_second(START)?).await?;
         let folder = tempfile::tempdir()?;
@@ -175,7 +196,7 @@ impl Rig {
         let storage = AuthStorage::new(database.clone(), keys, seal.clone());
         let clock = Arc::new(TestClock(AtomicI64::new(START)));
         let party = RelyingParty::from_public_url(PUBLIC_URL, "Bugaboo")?;
-        let services = Arc::new(AuthServices::new(
+        let services = AuthServices::new(
             storage.clone(),
             clock.clone(),
             PasswordHasher::new()?,
@@ -186,7 +207,11 @@ impl Rig {
             csrf,
             FailureLimits::new(shape.tries.per_minute()),
             "Bugaboo".to_owned(),
-        ));
+        );
+        let services = Arc::new(match records {
+            Some(records) => services.with_records(records),
+            None => services,
+        });
         // The first start, as the wiring does it: the starting roles first, then the setup code.
         let code = if shape.first_start == FirstStart::Made {
             make_starting_roles(&services.ctx(RequestInfo::default()), MakeStartingRoles)

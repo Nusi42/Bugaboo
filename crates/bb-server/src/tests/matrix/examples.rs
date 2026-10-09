@@ -9,6 +9,7 @@
 //! The entry points of later milestones add their own tables next to this one (M3 issues, M4 e-mail,
 //! M5 search, M8 assistant and AI apps, M9 exports); this one is the API.
 
+use bb_app::access::Permission;
 use bb_app::auth::CreateInvitation;
 use bb_testing::Failure;
 use serde_json::{Value, json};
@@ -52,6 +53,10 @@ pub(super) enum Quirk {
     /// key acts as the person: it reads them, and changes them only if it may change anything
     /// (WP-07, ADR-0025 decision 8).
     KeysActAsThePerson,
+    /// The route lets in whoever is signed in and the use case judges the record it names; the
+    /// example names the target project, so the person needs this permission there (and to see
+    /// the project: one who does not is told it is not found, before the permission is looked at).
+    OnTheTargetProject(Permission),
 }
 
 /// One row of the table: a route and what is special about it.
@@ -78,6 +83,15 @@ impl Example {
     /// Whether the route has this quirk.
     pub(super) fn has(&self, quirk: Quirk) -> bool {
         self.quirks.contains(&quirk)
+    }
+
+    /// The permission a person needs on the target project for a route that judges the record
+    /// it names, if the row says so.
+    pub(super) fn record_permission(&self) -> Option<Permission> {
+        self.quirks.iter().find_map(|quirk| match quirk {
+            Quirk::OnTheTargetProject(permission) => Some(*permission),
+            _ => None,
+        })
     }
 
     /// Whether the row says that the route may answer a person who is let in with this code.
@@ -216,7 +230,30 @@ pub(super) const EXAMPLES: &[Example] = &[
     Example::with("changePeopleVisibility", &[Quirk::AtTheTargetProject]),
     Example::with("checkAccess", &[Quirk::AtTheTargetProject]),
     Example::with("listPeopleToCheck", &[Quirk::AtTheTargetProject]),
+    Example::with("takeEditLock", &[ON_THE_TARGET]),
+    Example::with("heartbeatEditLock", &[ON_THE_TARGET]),
+    Example::route("releaseEditLock"),
+    Example::with("askToFinish", &[ON_THE_TARGET, Quirk::NamesAMissingThing]),
+    Example::with(
+        "editAnyway",
+        &[Quirk::AtTheTargetProject, Quirk::HidesUnseen],
+    ),
+    Example::with(
+        "releaseStuckEditLock",
+        &[
+            Quirk::AtTheTargetProject,
+            Quirk::HidesUnseen,
+            Quirk::NamesAMissingThing,
+        ],
+    ),
+    Example::with("saveDraft", &[ON_THE_TARGET]),
+    Example::with("readDraft", &[ON_THE_TARGET]),
+    Example::route("throwAwayDraft"),
+    Example::route("checkVersions"),
 ];
+
+/// A route that judges the record it names, as the example names the target project.
+const ON_THE_TARGET: Quirk = Quirk::OnTheTargetProject(Permission::ChangeProjectSettings);
 
 /// An ID that no invitation, session, passkey or access key has (the random kind: a time-ordered
 /// one would not be an ID of these, and the route would say "not found" before it looked at
@@ -581,6 +618,9 @@ pub(super) async fn request(
         return Ok(found);
     }
     if let Some(found) = super::examples_people::people_request(fixture, operation).await? {
+        return Ok(found);
+    }
+    if let Some(found) = super::examples_editing::editing_request(fixture, operation) {
         return Ok(found);
     }
     Err(format!("{operation} has a row in the table but no request").into())

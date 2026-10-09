@@ -11,8 +11,8 @@ use std::str::FromStr as _;
 use std::time::Duration;
 
 use bb_core::id::{
-    AccessKeyId, AssignmentId, EntityId, EventId, GroupId, IdError, InvitationId, JobId, PasskeyId,
-    ProjectId, RoleId, SessionId, UserId,
+    AccessKeyId, AssignmentId, EditorId, EntityId, EventId, GroupId, IdError, InvitationId, JobId,
+    LockToken, PasskeyId, ProjectId, RoleId, SessionId, UserId,
 };
 use jiff::Timestamp;
 use sea_query::{
@@ -588,11 +588,13 @@ macro_rules! stored_ids {
 stored_ids!(
     AccessKeyId => "an access key ID",
     AssignmentId => "an assignment ID",
+    EditorId => "an editor ID",
     EntityId => "a record ID",
     EventId => "an event ID",
     GroupId => "a group ID",
     InvitationId => "an invitation ID",
     JobId => "a job ID",
+    LockToken => "an edit lock token",
     PasskeyId => "a passkey ID",
     ProjectId => "a project ID",
     RoleId => "a role ID",

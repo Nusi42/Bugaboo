@@ -9,6 +9,7 @@
 #![forbid(unsafe_code)]
 
 mod api;
+mod conflict;
 pub mod cookies;
 pub mod errors;
 mod etag;

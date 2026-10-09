@@ -30,6 +30,9 @@ pub enum Declared {
     SignedIn,
     /// A person's own sign-in data.
     OwnAccount,
+    /// The permission that depends on the record the request names (its kind decides): the use
+    /// case judges it.
+    ByRecord,
     /// A permission of the catalogue.
     Permission(Permission),
 }
@@ -42,6 +45,7 @@ impl Declared {
             Self::Public => needs::PUBLIC,
             Self::SignedIn => needs::SIGNED_IN,
             Self::OwnAccount => needs::OWN_ACCOUNT,
+            Self::ByRecord => needs::BY_RECORD,
             Self::Permission(permission) => permission.code(),
         }
     }
@@ -119,6 +123,24 @@ pub const ROUTES: &[Route] = &[
         Declared::OwnAccount,
         Answer::Ordinary,
     ),
+    route("takeEditLock", Declared::ByRecord, Answer::Secret),
+    route("heartbeatEditLock", Declared::ByRecord, Answer::Ordinary),
+    route("releaseEditLock", Declared::ByRecord, Answer::Ordinary),
+    route("askToFinish", Declared::ByRecord, Answer::Ordinary),
+    route(
+        "editAnyway",
+        Declared::Permission(Permission::EditAnyway),
+        Answer::Secret,
+    ),
+    route(
+        "releaseStuckEditLock",
+        Declared::Permission(Permission::EditAnyway),
+        Answer::Ordinary,
+    ),
+    route("saveDraft", Declared::ByRecord, Answer::Ordinary),
+    route("readDraft", Declared::ByRecord, Answer::NeverStored),
+    route("throwAwayDraft", Declared::ByRecord, Answer::Ordinary),
+    route("checkVersions", Declared::ByRecord, Answer::Ordinary),
     route("listAccessKeys", Declared::OwnAccount, Answer::NeverStored),
     route("makeAccessKey", Declared::OwnAccount, Answer::Secret),
     route("deleteAccessKey", Declared::OwnAccount, Answer::Ordinary),

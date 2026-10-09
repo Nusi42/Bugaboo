@@ -80,3 +80,12 @@ reason = "The WebAuthn challenge: the random value the server sends so that the 
 term = "token"
 at = ["api:enum ErrorCode request.wrong_token"]
 reason = "The name of the error code for the CSRF token that the browser app sends back in a header, a name for scripts and the app; the message a person reads says to sign in again."
+
+[[allow]]
+term = "token"
+at = [
+  "api:property TakenLockBody.lock_token",
+  "api:property HeartbeatBody.lock_token",
+  "api:property ReleaseLockBody.lock_token",
+]
+reason = "The lock token of ADR-0019 proves that a save or a heartbeat comes from the editor that holds an edit lock. It is not the token of a sign-in session, which the glossary entry Session rules out."

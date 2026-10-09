@@ -679,6 +679,163 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/drafts": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** The draft of the person for a target: theirs, and nobody else's. */
+    get: operations["readDraft"];
+    /**
+     * Keeps a text as the draft of the person, in place of the older one for the same target. Only the
+     *     person can read it, until it is saved, thrown away, or 30 days old.
+     */
+    put: operations["saveDraft"];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/drafts/throw-away": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Throws the draft of the person away (*Throw away*). */
+    post: operations["throwAwayDraft"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/edit-locks": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Takes the lock on a long text, on the first keystroke, or says who is editing it. The lock is a
+     *     lease of a minute that the heartbeat renews; closing the page lets it run out.
+     */
+    post: operations["takeEditLock"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/edit-locks/ask-to-finish": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Asks the person who is editing to finish (*Ask … to finish*). They read it at their next
+     *     heartbeat.
+     */
+    post: operations["askToFinish"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/edit-locks/edit-anyway": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Takes the editing over (*Edit anyway*). Needs the permission *Take over text somebody else is
+     *     editing*. The person who was editing keeps their text as their draft and reads at their next
+     *     heartbeat that it was taken over.
+     */
+    post: operations["editAnyway"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/edit-locks/heartbeat": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Renews the lease of a lock, keeps the text so far as the draft of the person (also when the lock
+     *     is gone), and hands over what others did since the last heartbeat: somebody asked to finish, or
+     *     took the editing over.
+     */
+    post: operations["heartbeatEditLock"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/edit-locks/release": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Lets go of a lock: the text was saved, or the editor was closed. */
+    post: operations["releaseEditLock"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/edit-locks/release-stuck": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Releases a lock that is stuck, whoever holds it. Needs the permission *Take over text somebody
+     *     else is editing*; it is written to the security log.
+     */
+    post: operations["releaseStuckEditLock"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/field-permissions": {
     parameters: {
       query?: never;
@@ -1415,6 +1572,27 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/versions/check": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * The versions of the records on the screen, in one small request: what the browser asks every 30
+     *     seconds and when it returns to a tab, to offer *Show changes* where somebody else changed
+     *     something.
+     */
+    post: operations["checkVersions"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1605,6 +1783,11 @@ export interface components {
       person: components["schemas"]["PersonRef"];
       project?: components["schemas"]["KeyProjectRef"] | null;
     };
+    /** @description The records on the screen. */
+    CheckVersionsBody: {
+      /** @description The records, at most the number the generated client calls `versionsMax`. */
+      records: components["schemas"]["RecordRefBody"][];
+    };
     /** @description One value of a setting that has a fixed list. */
     ChoiceBody: {
       /** @description The key of the message that names the choice. */
@@ -1641,6 +1824,28 @@ export interface components {
       code: string;
       /** @description The password. */
       password: string;
+    };
+    /** @description What changed a record since the person looked at it. */
+    ConflictBody: {
+      /** @description When, as a moment in time. */
+      changed_at?: string | null;
+      changed_by?: components["schemas"]["PersonRef"] | null;
+      /** @description The values those fields have now. */
+      current: Record<string, unknown>;
+      /** @description The fields that changed, without the ones the reader may not see. */
+      fields: string[];
+      /**
+       * Format: int64
+       * @description The version the record has now: what *Use mine* sends again.
+       */
+      version?: number | null;
+    };
+    /**
+     * @description The answer to a change that found the record at another version, or to any other refused
+     *     change: the usual problem, and for `edit.version_changed` the `conflict` member.
+     */
+    ConflictProblem: components["schemas"]["Problem"] & {
+      conflict?: components["schemas"]["ConflictBody"] | null;
     };
     /** @description A role to make from a copy of another. */
     CopyRoleBody: {
@@ -1700,6 +1905,65 @@ export interface components {
      * @enum {string}
      */
     DatabaseKindBody: "built_in" | "sqlite" | "postgres";
+    /** @description A draft as its author sees it. */
+    DraftBody: {
+      /**
+       * Format: int64
+       * @description The version of the record the person started from.
+       */
+      base_version?: number | null;
+      /** @description When the draft last changed. */
+      saved_at: string;
+      /** @description The text. */
+      text: string;
+    };
+    /** @description The draft of the person for a target, if there is one. */
+    DraftSlotBody: {
+      draft?: components["schemas"]["DraftBody"] | null;
+    };
+    /**
+     * @description What a draft is for: a part of a record (`kind`, `id` and `part`), or the form that makes a new
+     *     record of a kind in a project (`kind` and `project`).
+     */
+    DraftTargetBody: {
+      /** @description The ID of the record, for a draft of a part of a record. */
+      id?: string | null;
+      /** @description The kind of record, like `issue`. */
+      kind: string;
+      /** @description Which long text of the record, for a draft of a part of a record. */
+      part?: string | null;
+      /** @description The project, for a draft of a new record. */
+      project?: string | null;
+    };
+    /** @description The text so far of a draft, with the version it started from. */
+    DraftTextBody: {
+      /**
+       * Format: int64
+       * @description The version of the record the person started from; nothing for a new record.
+       */
+      base_version?: number | null;
+      /** @description The text as it stands now. */
+      text: string;
+    };
+    /** @description Take the editing over from the person who is editing. */
+    EditAnywayBody: {
+      /** @description The open editor (a tab) that takes over. */
+      editor_id: string;
+      /** @description The thing somebody else is editing. */
+      what: components["schemas"]["EditWhatBody"];
+    };
+    /** @description One thing being edited: one part of one record. */
+    EditWhatBody: {
+      /** @description Which long text of the record, like `description`. */
+      part: string;
+      /** @description The record. */
+      record: components["schemas"]["RecordRefBody"];
+    };
+    /** @description Which thing somebody else is editing. */
+    EditWhatOnlyBody: {
+      /** @description The thing somebody else is editing. */
+      what: components["schemas"]["EditWhatBody"];
+    };
     /**
      * @description What went wrong. Clients react to this text, which never changes.
      * @enum {string}
@@ -1738,6 +2002,8 @@ export interface components {
       | "request.timed_out"
       | "request.too_large"
       | "edit.version_changed"
+      | "edit.lock_lost"
+      | "edit.taken_over"
       | "rate_limit.exceeded"
       | "server.unavailable"
       | "server.internal";
@@ -1836,6 +2102,34 @@ export interface components {
       projects: number;
       /** @description Whether the group has a role for the whole organization. */
       whole_organization: boolean;
+    };
+    /** @description The answer to a heartbeat. */
+    HeartbeatAnswerBody: {
+      /** @description The text that came with the heartbeat was kept as the draft of the person. */
+      draft_saved: boolean;
+      /** @description Whether the editor still has the lock. */
+      lock: components["schemas"]["LockStatusBody"];
+      /** @description What others did since the last heartbeat; each note is shown once. */
+      notices: components["schemas"]["NoticeBody"][];
+    };
+    /** @description A heartbeat: the editor is still open. */
+    HeartbeatBody: {
+      draft?: components["schemas"]["DraftTextBody"] | null;
+      /** @description The lock token the lock was taken with. */
+      lock_token: string;
+      /** @description The thing that is being edited. */
+      what: components["schemas"]["EditWhatBody"];
+    };
+    /** @description Somebody else is editing. */
+    HeldLockBody: {
+      /** @description The person who asks may take the editing over (*Edit anyway*). */
+      can_edit_anyway: boolean;
+      /** @description Who is editing, as the person who asks may see them. */
+      holder: components["schemas"]["PersonRef"];
+      /** @description Since when. */
+      since: string;
+      /** @description The holder is the person who asks, in another window. */
+      yours_elsewhere: boolean;
     };
     /** @description An invitation as the administrator sees it. */
     InvitationBody: {
@@ -2121,6 +2415,34 @@ export interface components {
        */
       most_items: number;
     };
+    /** @description The answer to asking for a lock. */
+    LockOutcomeBody:
+      | (components["schemas"]["TakenLockBody"] & {
+          /** @enum {string} */
+          status: "taken";
+        })
+      | (components["schemas"]["HeldLockBody"] & {
+          /** @enum {string} */
+          status: "held";
+        });
+    /** @description Whether the editor still has the lock, and if not, why. */
+    LockStatusBody:
+      | {
+          /** @description When it runs out now. */
+          expires_at: string;
+          /** @enum {string} */
+          status: "held";
+        }
+      | {
+          /** @enum {string} */
+          status: "ran_out";
+        }
+      | {
+          /** @description Who, as the person who asks may see them. */
+          by: components["schemas"]["PersonRef"];
+          /** @enum {string} */
+          status: "taken_over";
+        };
     /**
      * @description Why the chain of the security log does not verify.
      * @enum {string}
@@ -2280,6 +2602,20 @@ export interface components {
       /** @description The value. It must be of the type of the setting and one it accepts. */
       value: components["schemas"]["ValueBody"];
     };
+    /** @description A note for the person who is editing. */
+    NoticeBody: {
+      /** @description When. */
+      at: string;
+      /** @description Who did it, as the person who asks may see them. */
+      from: components["schemas"]["PersonRef"];
+      /** @description What happened. */
+      kind: components["schemas"]["NoticeKind"];
+    };
+    /**
+     * @description What the person who is editing is told: somebody asked them to finish, or somebody took the editing over.
+     * @enum {string}
+     */
+    NoticeKind: "finish_asked" | "taken_over";
     /** @description The change that is about to be made. */
     OwnChangeBody:
       | {
@@ -2989,6 +3325,31 @@ export interface components {
           /** @enum {string} */
           kind: "group";
         };
+    /** @description A record, by its kind and ID. */
+    RecordRefBody: {
+      /** @description The ID of the record. */
+      id: string;
+      /** @description The kind of record, like `issue`. */
+      kind: string;
+    };
+    /** @description The version of one record on the screen. */
+    RecordVersionBody: {
+      /** @description The record. */
+      record: components["schemas"]["RecordRefBody"];
+      /**
+       * Format: int64
+       * @description Its version now; nothing when it is gone or the person may not know about it (the two look
+       *     the same).
+       */
+      version?: number | null;
+    };
+    /** @description Which lock to let go of, and the token it was taken with. */
+    ReleaseLockBody: {
+      /** @description The lock token the lock was taken with. */
+      lock_token: string;
+      /** @description The thing that was edited. */
+      what: components["schemas"]["EditWhatBody"];
+    };
     /**
      * @description A role (or *No access*) that somebody has, and where: what a sentence like "Team member in
      *     Website" needs.
@@ -3104,6 +3465,13 @@ export interface components {
       projects: number;
       /** @description Whether somebody has the role for the whole organization. */
       whole_organization: boolean;
+    };
+    /** @description A draft to keep. */
+    SaveDraftBody: {
+      /** @description The text and the version it started from. */
+      draft: components["schemas"]["DraftTextBody"];
+      /** @description What the draft is for. */
+      target: components["schemas"]["DraftTargetBody"];
     };
     /** @description Which ways there are to finish signing in. */
     SecondStepBody: {
@@ -3319,6 +3687,30 @@ export interface components {
      * @enum {string}
      */
     StatusValue: "ok";
+    /** @description Which thing a person wants the lock on, and from which open editor. */
+    TakeLockBody: {
+      /** @description The open editor (a tab): an ID the browser makes when the editor opens. */
+      editor_id: string;
+      /** @description The thing that is going to be edited. */
+      what: components["schemas"]["EditWhatBody"];
+    };
+    /** @description The editor has the lock. */
+    TakenLockBody: {
+      /** @description When the lock runs out if no heartbeat renews it. */
+      expires_at: string;
+      /**
+       * Format: int64
+       * @description How often to send a heartbeat, in seconds.
+       */
+      heartbeat_seconds: number;
+      /**
+       * Format: int64
+       * @description How long a lease lasts, in seconds.
+       */
+      lease_seconds: number;
+      /** @description The lock token to save with and to send with every heartbeat. */
+      lock_token: string;
+    };
     /**
      * @description What a group of permissions is about.
      * @enum {string}
@@ -3343,6 +3735,11 @@ export interface components {
     };
     /** @description What a setting holds: yes or no, a whole number, or text. */
     ValueBody: boolean | number | string;
+    /** @description The versions of the records asked about, in the order asked. */
+    VersionsBody: {
+      /** @description One entry for each record asked about. */
+      items: components["schemas"]["RecordVersionBody"][];
+    };
     /** @description Where a project would go. */
     WhereToBody: {
       /** @description The ID of the project it would go into; `null` for the top level. */
@@ -6523,6 +6920,779 @@ export interface operations {
           [name: string]: unknown;
         };
         content?: never;
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  readDraft: {
+    parameters: {
+      query: {
+        /** @description The kind of record, like `issue`. */
+        kind: string;
+        /** @description The ID of the record, for a draft of a part of a record. */
+        id?: string;
+        /** @description Which long text of the record, for a draft of a part of a record. */
+        part?: string;
+        /** @description The project, for a draft of a new record. */
+        project?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The draft, or nothing. */
+      200: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DraftSlotBody"];
+        };
+      };
+      /** @description Nothing changed since the `ETag` that `If-None-Match` named. No body. */
+      304: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  saveDraft: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["SaveDraftBody"];
+      };
+    };
+    responses: {
+      /** @description The draft as it is kept. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DraftBody"];
+        };
+      };
+      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  throwAwayDraft: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["DraftTargetBody"];
+      };
+    };
+    responses: {
+      /** @description The draft is gone. */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  takeEditLock: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["TakeLockBody"];
+      };
+    };
+    responses: {
+      /** @description The editor has the lock, or somebody else is editing. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["LockOutcomeBody"];
+        };
+      };
+      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  askToFinish: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["EditWhatOnlyBody"];
+      };
+    };
+    responses: {
+      /** @description The person is asked. */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  editAnyway: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["EditAnywayBody"];
+      };
+    };
+    responses: {
+      /** @description The editor has the lock now. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["LockOutcomeBody"];
+        };
+      };
+      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  heartbeatEditLock: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["HeartbeatBody"];
+      };
+    };
+    responses: {
+      /** @description Whether the editor still has the lock, and the notes for it. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HeartbeatAnswerBody"];
+        };
+      };
+      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  releaseEditLock: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ReleaseLockBody"];
+      };
+    };
+    responses: {
+      /** @description The lock is gone. */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  releaseStuckEditLock: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["EditWhatOnlyBody"];
+      };
+    };
+    responses: {
+      /** @description The lock is gone. */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
       };
       /** @description Not signed in (auth.not_signed_in). */
       401: {
@@ -10938,6 +12108,86 @@ export interface operations {
           [name: string]: unknown;
         };
         content?: never;
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  checkVersions: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CheckVersionsBody"];
+      };
+    };
+    responses: {
+      /** @description The version of every record asked about. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["VersionsBody"];
+        };
+      };
+      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
       };
       /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
       429: {
