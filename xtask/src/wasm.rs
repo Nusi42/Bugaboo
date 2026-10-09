@@ -61,6 +61,9 @@ pub(crate) fn run(root: &Path) -> anyhow::Result<bool> {
         std::fs::read(&built).with_context(|| format!("could not read {}", built.display()))?,
     ));
     let out = out_dir(root);
+    std::fs::create_dir_all(&out).with_context(|| format!("could not make {}", out.display()))?;
+    std::fs::write(out.join(BUILT), built.to_string_lossy().as_bytes())
+        .context("could not write where cargo put the module")?;
     let stamp = out.join(STAMP);
     let remembered = std::fs::read_to_string(&stamp).unwrap_or_default();
     if remembered == hash && module_path(root).is_file() {
@@ -98,13 +101,17 @@ pub(crate) fn run(root: &Path) -> anyhow::Result<bool> {
     Ok(true)
 }
 
-/// The sources the module is made from, relative to the repository root: the two crates and the
-/// files that pick the versions of their dependencies.
-const SOURCES: [&str; 4] = [
-    "crates/bb-wasm",
-    "crates/bb-markdown",
+/// Remembers where cargo put the module, inside [`OUT_DIR`]: cargo's own list of what the module
+/// was made from (its dep-info files) is found from there.
+const BUILT: &str = ".built";
+/// Files outside the Rust sources that change the module: the toolchain, the settings of cargo,
+/// the pinned tools. The version of the program that builds it (`xtask`) counts too.
+const OTHER_INPUTS: [&str; 5] = [
     "Cargo.toml",
     "Cargo.lock",
+    "rust-toolchain.toml",
+    ".cargo",
+    "tools/dev/tools.toml",
 ];
 
 /// The newest change in a file or a folder (below it), if any.
@@ -122,15 +129,63 @@ fn newest(path: &Path) -> Option<std::time::SystemTime> {
         .max()
 }
 
+/// The files of this repository that cargo says the module was made from: the source files in the
+/// dep-info (`.d`) files next to it, and the `Cargo.toml` of each crate they belong to.
+fn built_from(root: &Path, built: &Path) -> Vec<PathBuf> {
+    let Ok(entries) = built
+        .parent()
+        .map_or_else(|| PathBuf::from("deps"), |dir| dir.join("deps"))
+        .read_dir()
+    else {
+        return Vec::new();
+    };
+    let mut files = Vec::new();
+    for entry in entries.flatten().map(|entry| entry.path()) {
+        if entry.extension().is_none_or(|extension| extension != "d") {
+            continue;
+        }
+        let text = std::fs::read_to_string(&entry).unwrap_or_default();
+        // `output: input input …` on the first line; the lines after it are empty rules.
+        let inputs = text
+            .lines()
+            .next()
+            .and_then(|line| line.split_once(": "))
+            .map_or("", |(_, inputs)| inputs);
+        for input in inputs.split_whitespace() {
+            let path = root.join(input);
+            if path.starts_with(root) {
+                let manifest = path
+                    .ancestors()
+                    .skip(1)
+                    .take_while(|folder| folder.starts_with(root))
+                    .map(|folder| folder.join("Cargo.toml"))
+                    .find(|manifest| manifest.is_file());
+                files.extend(manifest);
+                files.push(path);
+            }
+        }
+    }
+    files
+}
+
 /// Whether the module is newer than everything it is made from. The checks ask this first, because
-/// asking cargo takes longer than the check can spare.
+/// asking cargo takes longer than the check can spare. What cargo listed is read from its own
+/// files; the rest is [`OTHER_INPUTS`] and the program that builds.
 fn is_fresh(root: &Path) -> bool {
-    let Some(built) = newest(&out_dir(root).join(STAMP)) else {
+    let out = out_dir(root);
+    let Some(stamped) = newest(&out.join(STAMP)) else {
         return false;
     };
-    SOURCES
-        .iter()
-        .all(|source| newest(&root.join(source)).is_none_or(|changed| changed <= built))
+    let Ok(built) = std::fs::read_to_string(out.join(BUILT)) else {
+        return false;
+    };
+    let others = OTHER_INPUTS.iter().map(|input| root.join(input));
+    let program = std::env::current_exe().ok();
+    built_from(root, Path::new(built.trim()))
+        .into_iter()
+        .chain(others)
+        .chain(program)
+        .all(|input| newest(&input).is_none_or(|changed| changed <= stamped))
         && module_path(root).is_file()
 }
 
@@ -234,14 +289,41 @@ mod tests {
     }
 
     #[test]
-    fn without_a_stamp_and_a_module_the_build_is_not_fresh() {
+    fn the_build_is_fresh_until_something_it_was_made_from_changes() {
         let root = tempfile::tempdir().unwrap();
-        assert!(!is_fresh(root.path()));
-        std::fs::create_dir_all(out_dir(root.path())).unwrap();
-        std::fs::write(module_path(root.path()), b"module").unwrap();
-        assert!(!is_fresh(root.path()), "no stamp yet");
-        std::fs::write(out_dir(root.path()).join(STAMP), b"hash").unwrap();
-        assert!(is_fresh(root.path()), "nothing it is made from is newer");
+        let path = root.path();
+        assert!(!is_fresh(path), "nothing built yet");
+        // Cargo's dep-info says what the module was made from.
+        let target = path.join("target").join("wasm");
+        std::fs::create_dir_all(target.join("deps")).unwrap();
+        let source = path.join("crates").join("a").join("lib.rs");
+        std::fs::create_dir_all(source.parent().unwrap()).unwrap();
+        std::fs::write(&source, b"fn a() {}").unwrap();
+        let info = format!(
+            "x.wasm: {}
+
+{}:
+",
+            source.display(),
+            source.display()
+        );
+        std::fs::write(target.join("deps").join("a.d"), info).unwrap();
+        std::fs::create_dir_all(out_dir(path)).unwrap();
+        std::fs::write(module_path(path), b"module").unwrap();
+        let built = target.join("a.wasm");
+        std::fs::write(
+            out_dir(path).join(BUILT),
+            built.to_string_lossy().as_bytes(),
+        )
+        .unwrap();
+        std::thread::sleep(std::time::Duration::from_millis(50));
+        std::fs::write(out_dir(path).join(STAMP), b"hash").unwrap();
+        // The program that runs this test was built before the stamp was written.
+        assert!(is_fresh(path));
+        assert_eq!(built_from(path, &built), [source.clone()]);
+        std::thread::sleep(std::time::Duration::from_millis(50));
+        std::fs::write(&source, b"fn b() {}").unwrap();
+        assert!(!is_fresh(path), "the source is newer than the stamp");
     }
 
     #[test]
