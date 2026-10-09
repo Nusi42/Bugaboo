@@ -17,6 +17,7 @@ It adds no feature. Every package removes duplicated knowledge that the [audit](
 | 2 | C-04 | xtask check infrastructure and LINT-DRY | `win3` / `WIN3` | B3–B5, B6 (xtask part), B9–B12 |
 | 2 | C-05 | Web app and e2e: generated choices, one paged list, one picker | `win2` / `WIN2` | C1–C3, C5–C12 |
 | 3 | C-06 | Move every component onto the theme file | `win4` / `WIN4` | D, C4 |
+| 4 | C-07 | No private information in Git (SEC-PRIVATE) | `win2` / `WIN2` | maintainer |
 
 - Wave 2 waits for wave 1: C-04 builds on C-03's route table and shared marks, and C-05 builds on C-02's generated words and paging.
 - Wave 3 waits for C-05, because both touch every web component.
@@ -98,6 +99,18 @@ Fix audit section A:
 - Every app feature and the shell move from CSS modules to `data-part` rules in the theming file.
 - Shared classes (`.stack`, `.text`, `.muted`, `.row`, `.list`) become parts once. The focus ring, skip link and forced-colors rules exist once.
 - THEME-ONLY passes with no exemption. Screenshots in four themes on phone and computer show no visual change, except the agreed token fixes.
+
+### C-07 No private information in Git
+
+Requirement: nothing private about the maintainer may end up in Git. The lead rewrote the history once; this package keeps it so. The commit author stays as the maintainer set it.
+
+1. **SEC-PRIVATE** (all four parts: rule in the docs, catalog entry, `xtask/src/checks/sec_private.rs`, failing and passing fixtures) runs on commit, on push and in ci. It fails on:
+   - a user-profile path with an account name in a tracked text file or a commit message (`X:\Users\<name>\`, `/c/Users/<name>/`, `/home/<name>/`, `/Users/<name>/`); `%USERPROFILE%` and `~` are the allowed forms;
+   - a Claude session ID or link (`originSessionId:`, `claude.ai/code/session_…`, `session_` followed by a long ID), and a `Claude-Session:` line in a commit message;
+   - the account name and computer name of the machine the check runs on (`USERNAME`, `COMPUTERNAME`, `USER`, `HOSTNAME`), as whole words, and the words in an optional private list outside the repository (`a private-words file`, one per line, never committed). The check never prints a private word; it names the file, the line and the rule that matched.
+2. Commit messages are checked by the commit-msg hook and, for the pushed range, by the pre-push hook.
+3. Claude Code adds `originSessionId:` to every memory note it saves. `cargo xtask hook post-edit` strips that line from `.claude/memory/*.md` right after the edit, so a commit does not fail on it.
+4. Made-up names in test data (`EXAMPLE-PC\ana`) stay allowed, and so does the breached-password list (whole-word matching; a data file the project does not write is exempt with a reason).
 
 ## Done means
 
