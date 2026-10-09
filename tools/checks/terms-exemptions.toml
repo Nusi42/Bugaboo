@@ -85,3 +85,8 @@ reason = "The name of the error code for the CSRF token that the browser app sen
 term = "link"
 at = ["messages/en.json#markdown.link", "messages/en.json#markdown.link-text"]
 reason = "The button of the Markdown editor that writes a web link into the text, and the placeholder for its text. Not the connection between two issues, which is a Relation."
+
+[[allow]]
+term = "link"
+at = ["userDocs/writing/markdown.md"]
+reason = "The Link button of the Markdown editor and the web addresses it writes into a text. Not the connection between two issues, which is a Relation."
