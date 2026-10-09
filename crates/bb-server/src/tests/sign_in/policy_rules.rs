@@ -174,7 +174,7 @@ async fn sec_08_starting_roles_are_made_once_and_can_be_changed_and_reset() -> T
             .await?
             .into_value();
         assert_eq!(reset.name, "Looker");
-        assert_eq!(reset.permissions, vec![Permission::SeeProjects]);
+        assert_eq!(reset.permissions, StartingRole::Viewer.permissions());
         assert!(!reset.two_step);
 
         // A role of our own has nothing to be reset to.

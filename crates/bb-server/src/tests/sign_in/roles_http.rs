@@ -2,7 +2,7 @@
 //! copy, changing and resetting a starting role, and deleting a role that somebody has.
 
 use axum::http::StatusCode;
-use bb_app::access::Permission;
+use bb_app::access::{Permission, StartingRole};
 use bb_testing::{TestResult, each_database};
 use serde_json::{Value, json};
 
@@ -15,6 +15,15 @@ fn permissions_of(role: &Value) -> Vec<&str> {
         .into_iter()
         .flatten()
         .filter_map(Value::as_str)
+        .collect()
+}
+
+/// The keys of a Viewer's starting permissions, from the one definition.
+fn viewer_codes() -> Vec<&'static str> {
+    StartingRole::Viewer
+        .permissions()
+        .into_iter()
+        .map(Permission::code)
         .collect()
 }
 
@@ -87,7 +96,7 @@ async fn sec_08_a_role_is_made_from_a_copy_changed_and_deleted_over_http() -> Te
             .await?;
         assert_eq!(copy.status, StatusCode::OK, "{}", copy.body);
         // The same permissions, but a role of its own: no starting role to reset to.
-        assert_eq!(permissions_of(&copy.body), ["see-projects"]);
+        assert_eq!(permissions_of(&copy.body), viewer_codes());
         assert!(copy.body["starting"].is_null());
         let reviewer = id_of(&copy)?;
         let taken = org
@@ -217,7 +226,7 @@ async fn sec_08_a_changed_starting_role_can_be_reset() -> TestResult {
         assert_eq!(reset.status, StatusCode::OK, "{}", reset.body);
         // The starting permissions and the starting switch are back; the name stays, and the role
         // still knows where it came from.
-        assert_eq!(permissions_of(&reset.body), ["see-projects"]);
+        assert_eq!(permissions_of(&reset.body), viewer_codes());
         assert_eq!(reset.body["two_step"], false);
         assert_eq!(reset.body["name"], "Lookers");
         assert_eq!(reset.body["starting"], "viewer");
@@ -225,7 +234,7 @@ async fn sec_08_a_changed_starting_role_can_be_reset() -> TestResult {
             .ada
             .send("GET", &format!("/api/v1/roles/{viewer}"), None)
             .await?;
-        assert_eq!(permissions_of(&page.body["role"]), ["see-projects"]);
+        assert_eq!(permissions_of(&page.body["role"]), viewer_codes());
         Ok(())
     })
     .await

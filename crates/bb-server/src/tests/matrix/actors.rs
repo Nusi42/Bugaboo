@@ -141,8 +141,9 @@ impl Actor {
 
 /// The permissions that count only from a row for the whole organization, from the table of the
 /// catalogue in architecture §7 (*Counts: organization*).
-const ORGANIZATION_ONLY: [Permission; 7] = [
+const ORGANIZATION_ONLY: [Permission; 8] = [
     Permission::MakeProjects,
+    Permission::ManageFields,
     Permission::ManagePeople,
     Permission::ManageInvitations,
     Permission::ManageGroups,
@@ -151,10 +152,10 @@ const ORGANIZATION_ONLY: [Permission; 7] = [
     Permission::SeeStatus,
 ];
 
-/// The permissions no access key keeps, whatever its choice (`NOT_FOR_KEYS`, owner decisions of
-/// 2026-10-06): inviting people, deciding who has which role and changing organization settings
-/// stay in the app.
-const NOT_FOR_KEYS: [Permission; 7] = [
+/// The permissions no access key keeps, whatever its choice (`NOT_FOR_KEYS`, decisions on
+/// access keys and M3-Q6): inviting people, deciding who has which role, changing organization
+/// settings, taking over somebody's editing and the work settings stay in the app.
+const NOT_FOR_KEYS: [Permission; 11] = [
     Permission::ManageInvitations,
     Permission::ManagePeople,
     Permission::ManageGroups,
@@ -162,11 +163,16 @@ const NOT_FOR_KEYS: [Permission; 7] = [
     Permission::DecideRoles,
     Permission::DecideWhatRolesSee,
     Permission::ChangeOrganizationSettings,
+    Permission::EditAnyway,
+    Permission::ManageIssueTypes,
+    Permission::ManageFields,
+    Permission::ManageLabels,
 ];
 
 /// The permissions of the kind *See*, which an access key that may only see keeps (*Kind: See*).
-const KIND_SEE: [Permission; 3] = [
+const KIND_SEE: [Permission; 4] = [
     Permission::SeeProjects,
+    Permission::SeeIssues,
     Permission::CheckAccess,
     Permission::SeeStatus,
 ];
@@ -185,9 +191,11 @@ pub(super) fn held_exactly(permission: Permission) -> Vec<Permission> {
 /// The permissions of a starting role, from the table of architecture §7.
 fn role_permissions(role: StartingRole) -> BTreeSet<Permission> {
     use Permission::{
-        ChangeOrganizationSettings, ChangeProjectSettings, CheckAccess, DecideRoles,
-        DecideWhatRolesSee, MakeProjects, MakeSubProjects, ManageGroups, ManageInvitations,
-        ManagePeople, ManageRoles, MoveProjects, SeeProjects, SeeStatus,
+        ChangeIssues, ChangeOrganizationSettings, ChangeOwnIssues, ChangeProjectSettings,
+        CheckAccess, Comment, DecideRoles, DecideWhatRolesSee, DeleteIssues, EditAnyway,
+        MakeIssues, MakeProjects, MakeSubProjects, ManageFields, ManageGroups, ManageInvitations,
+        ManageIssueTypes, ManageLabels, ManagePeople, ManageRoles, MoveIssues, MoveProjects,
+        SeeIssues, SeeProjects, SeeStatus,
     };
     match role {
         StartingRole::Administrator => BTreeSet::from([
@@ -196,6 +204,17 @@ fn role_permissions(role: StartingRole) -> BTreeSet<Permission> {
             MakeSubProjects,
             MoveProjects,
             ChangeProjectSettings,
+            SeeIssues,
+            MakeIssues,
+            ChangeIssues,
+            ChangeOwnIssues,
+            Comment,
+            DeleteIssues,
+            MoveIssues,
+            EditAnyway,
+            ManageIssueTypes,
+            ManageFields,
+            ManageLabels,
             DecideRoles,
             DecideWhatRolesSee,
             CheckAccess,
@@ -211,14 +230,35 @@ fn role_permissions(role: StartingRole) -> BTreeSet<Permission> {
             MakeSubProjects,
             MoveProjects,
             ChangeProjectSettings,
+            SeeIssues,
+            MakeIssues,
+            ChangeIssues,
+            ChangeOwnIssues,
+            Comment,
+            DeleteIssues,
+            MoveIssues,
+            EditAnyway,
+            ManageIssueTypes,
+            ManageLabels,
             DecideRoles,
             DecideWhatRolesSee,
             CheckAccess,
         ]),
-        StartingRole::TeamMember
-        | StartingRole::Contributor
-        | StartingRole::Viewer
-        | StartingRole::Guest => BTreeSet::from([SeeProjects]),
+        StartingRole::TeamMember => BTreeSet::from([
+            SeeProjects,
+            SeeIssues,
+            MakeIssues,
+            ChangeIssues,
+            ChangeOwnIssues,
+            Comment,
+            DeleteIssues,
+            MoveIssues,
+        ]),
+        StartingRole::Contributor => {
+            BTreeSet::from([SeeProjects, SeeIssues, MakeIssues, ChangeOwnIssues, Comment])
+        }
+        StartingRole::Viewer => BTreeSet::from([SeeProjects, SeeIssues]),
+        StartingRole::Guest => BTreeSet::from([SeeProjects, MakeIssues, ChangeOwnIssues, Comment]),
     }
 }
 
@@ -399,12 +439,13 @@ mod tests {
 
     #[test]
     fn a_key_never_keeps_what_stays_in_the_app() {
-        // `Everything I can do` would still not manage roles; the see-only key keeps three.
+        // `Everything I can do` would still not manage roles; the see-only key keeps four.
         let seen = standing(Actor::KeySeeOnly, Where::Organization).permissions;
         assert_eq!(
             seen,
             BTreeSet::from([
                 Permission::SeeProjects,
+                Permission::SeeIssues,
                 Permission::CheckAccess,
                 Permission::SeeStatus
             ])
