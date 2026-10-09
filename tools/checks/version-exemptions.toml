@@ -88,9 +88,6 @@ reason = "The lease on a thing being edited and the private draft of a person ar
 
 [[exempt]]
 routes = [
-  "PATCH /api/v1/groups/{group_id}",
-  "PATCH /api/v1/roles/{role_id}",
-  "POST /api/v1/roles/{role_id}/reset",
   "PUT /api/v1/settings/{key}",
   "DELETE /api/v1/settings/{key}",
   "PUT /api/v1/settings/{key}/lock",
@@ -101,4 +98,4 @@ routes = [
   "PUT /api/v1/field-permissions/{role}/{field}",
   "PUT /api/v1/people-visibility/{role}/{kind}",
 ]
-reason = "Stands for now: these records had no stored version in M2 (M3-F31)."
+reason = "Stands for now (M3-F31): one value of a setting or of a level cell, set at once from a screen that does not carry the version of each row yet; the last writer wins and the security log and the event say who set it."

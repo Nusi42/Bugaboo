@@ -18,8 +18,9 @@ use bb_app::editing::{
     HeartbeatQuery, LockOutcome, LockStatus, ReadDraftQuery, ReleaseLockQuery, ReleaseStuckLock,
     SaveDraftQuery, TakeLockQuery, TextSave, ThrowAwayDraftQuery, Versions,
 };
+use bb_app::people::RenameGroup;
 use bb_app::projects::{ChangeProject, ProjectView};
-use bb_app::roles::SetPeopleLevel;
+use bb_app::roles::{ChangeRole, SetPeopleLevel};
 use bb_core::ErrorCode;
 use bb_core::access::PeopleLevel;
 use bb_core::edit::{
@@ -750,6 +751,72 @@ async fn iss_17_a_stale_version_answers_who_changed_what() -> TestResult {
         assert_eq!(
             refused(change(&stage.ben, stage.project.version, "Ben's").await),
             Some(ErrorCode::Forbidden)
+        );
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn iss_17_a_stale_group_or_role_answers_who_changed_what() -> TestResult {
+    on_both_databases("iss_17_stale_group_and_role", async |stage| {
+        let api = stage.rig().api();
+        let ada = stage.ada();
+        let group = stage.org.group("Backend").await?;
+        let rename = |version: i64, name: &str| {
+            api.rename_group(
+                Rig::info(),
+                RenameGroup {
+                    session_token: ada.session.clone(),
+                    group,
+                    version,
+                    name: name.to_owned(),
+                },
+            )
+        };
+        let renamed = rename(1, "Platform").await?.into_value();
+        assert_eq!(renamed.version, 2);
+        let AppError::Conflict(conflict) = rename(1, "Mine").await.unwrap_err() else {
+            return Err("no structured answer for the group".into());
+        };
+        assert_eq!(conflict.version, Some(2));
+        assert_eq!(conflict.fields, ["name"]);
+        assert_eq!(conflict.current["name"], json!("Platform"));
+        assert_eq!(conflict.changed_by, Some(shown_as(ada, "Ada Admin")));
+        // The same for a role: the permissions are one whole, so a stale list is refused.
+        let role = stage.org.role("Reader", &[Permission::SeeProjects]).await?;
+        let change = |version: i64, permissions: Vec<Permission>| {
+            api.change_role(
+                Rig::info(),
+                ChangeRole {
+                    session_token: ada.session.clone(),
+                    role: role.id,
+                    version,
+                    name: None,
+                    permissions: Some(permissions),
+                    two_step: None,
+                },
+            )
+        };
+        let wider = [Permission::SeeProjects, Permission::MakeIssues];
+        assert_eq!(
+            change(role.version, wider.to_vec())
+                .await?
+                .into_value()
+                .version,
+            2
+        );
+        let AppError::Conflict(conflict) = change(role.version, vec![Permission::SeeProjects])
+            .await
+            .unwrap_err()
+        else {
+            return Err("no structured answer for the role".into());
+        };
+        assert_eq!(conflict.version, Some(2));
+        assert!(conflict.fields.contains(&"permissions".to_owned()));
+        assert_eq!(
+            conflict.current["permissions"],
+            json!(["see-projects", "make-issues"])
         );
         Ok(())
     })

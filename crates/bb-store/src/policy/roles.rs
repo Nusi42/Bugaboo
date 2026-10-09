@@ -25,6 +25,7 @@ fn role_select() -> SelectStatement {
             RoleRow::Starting,
             RoleRow::Position,
             RoleRow::TwoStep,
+            RoleRow::Version,
         ])
         .from(RoleRow::Table)
         .order_by(RoleRow::Position, Order::Asc)
@@ -44,6 +45,7 @@ fn read_role(row: &DbRow) -> Result<Role, StoreError> {
             .transpose()?,
         position: row.get(RoleRow::Position)?,
         two_step: row.get(RoleRow::TwoStep)?,
+        version: row.get(RoleRow::Version)?,
     })
 }
 
@@ -132,6 +134,7 @@ pub(crate) async fn insert_role(
             RoleRow::Starting,
             RoleRow::Position,
             RoleRow::TwoStep,
+            RoleRow::Version,
         ])
         .values([
             Expr::val(role.id.stored()),
@@ -139,6 +142,7 @@ pub(crate) async fn insert_role(
             Expr::val(role.starting.as_ref().map(TechnicalName::as_str)),
             Expr::val(role.position),
             Expr::val(role.two_step),
+            Expr::val(role.version),
         ])
         .map_err(|_| StoreError::Corrupt("a role"))?;
     transaction.execute(&insert).await?;
@@ -147,19 +151,23 @@ pub(crate) async fn insert_role(
     levels::insert_own(transaction, role.id, people).await
 }
 
-/// Changes the name and the two-step switch of a role; `false` if there is no such role.
+/// Changes the name and the two-step switch of a role and counts its version up; `false` if there
+/// is no such role at `version`.
 pub(crate) async fn update_role(
     transaction: &mut Transaction,
     id: RoleId,
     name: &str,
     two_step: bool,
+    version: i64,
 ) -> Result<bool, StoreError> {
     let mut update = Query::update();
     update
         .table(RoleRow::Table)
         .value(RoleRow::Name, name)
         .value(RoleRow::TwoStep, two_step)
-        .and_where(Expr::col(RoleRow::Id).eq(id.stored()));
+        .value(RoleRow::Version, Expr::col(RoleRow::Version).add(1))
+        .and_where(Expr::col(RoleRow::Id).eq(id.stored()))
+        .and_where(Expr::col(RoleRow::Version).eq(version));
     Ok(transaction.execute(&update).await? > 0)
 }
 

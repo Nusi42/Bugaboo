@@ -148,6 +148,7 @@ async fn sec_08_a_role_is_changed_and_deleted_over_http() -> TestResult {
                 "PATCH",
                 &format!("/api/v1/roles/{reviewer}"),
                 Some(json!({
+                    "version": 1,
                     "name": "Reviewers",
                     "permissions": ["see-projects", "check-access"],
                     "two_step": true
@@ -211,6 +212,7 @@ async fn sec_08_a_changed_starting_role_can_be_reset() -> TestResult {
                 "PATCH",
                 &format!("/api/v1/roles/{viewer}"),
                 Some(json!({
+                    "version": 1,
                     "name": "Lookers",
                     "permissions": ["see-projects", "make-projects", "see-status"],
                     "two_step": true
@@ -221,7 +223,11 @@ async fn sec_08_a_changed_starting_role_can_be_reset() -> TestResult {
 
         let reset = org
             .ada
-            .send("POST", &format!("/api/v1/roles/{viewer}/reset"), None)
+            .send(
+                "POST",
+                &format!("/api/v1/roles/{viewer}/reset"),
+                Some(json!({"version": 2})),
+            )
             .await?;
         assert_eq!(reset.status, StatusCode::OK, "{}", reset.body);
         // The starting permissions and the starting switch are back; the name stays, and the role

@@ -9,10 +9,14 @@ use crate::db::{Reader, Row as DbRow, StoredId as _, Transaction, to_micros};
 use crate::error::StoreError;
 use crate::schema::{AssignmentRow, GroupMemberRow, GroupRow};
 
+/// The columns of a group, in the order [`read_group`] reads them.
+const GROUP_COLUMNS: [GroupRow; 3] = [GroupRow::Id, GroupRow::Name, GroupRow::Version];
+
 fn read_group(row: &DbRow) -> Result<Group, StoreError> {
     Ok(Group {
         id: row.id::<GroupId>(GroupRow::Id)?,
         name: row.get(GroupRow::Name)?,
+        version: row.get(GroupRow::Version)?,
     })
 }
 
@@ -44,7 +48,7 @@ pub(crate) fn member_select() -> sea_query::SelectStatement {
 pub(crate) async fn groups(reader: &mut impl Reader) -> Result<Vec<Group>, StoreError> {
     let mut select = Query::select();
     select
-        .columns([GroupRow::Id, GroupRow::Name])
+        .columns(GROUP_COLUMNS)
         .from(GroupRow::Table)
         .order_by(GroupRow::Name, Order::Asc)
         .order_by(GroupRow::Id, Order::Asc);
@@ -63,7 +67,7 @@ pub(crate) async fn group(
 ) -> Result<Option<Group>, StoreError> {
     let mut select = Query::select();
     select
-        .columns([GroupRow::Id, GroupRow::Name])
+        .columns(GROUP_COLUMNS)
         .from(GroupRow::Table)
         .and_where(Expr::col(GroupRow::Id).eq(id.stored()));
     reader
@@ -101,7 +105,7 @@ pub(crate) async fn groups_of(
         .and_where(Expr::col(GroupMemberRow::Person).eq(person.stored()));
     let mut select = Query::select();
     select
-        .columns([GroupRow::Id, GroupRow::Name])
+        .columns(GROUP_COLUMNS)
         .from(GroupRow::Table)
         .and_where(Expr::col(GroupRow::Id).in_subquery(member_of))
         .order_by(GroupRow::Name, Order::Asc)
@@ -122,23 +126,30 @@ pub(crate) async fn insert_group(
     let mut insert = Query::insert();
     insert
         .into_table(GroupRow::Table)
-        .columns([GroupRow::Id, GroupRow::Name])
-        .values([Expr::val(group.id.stored()), Expr::val(group.name.as_str())])
+        .columns(GROUP_COLUMNS)
+        .values([
+            Expr::val(group.id.stored()),
+            Expr::val(group.name.as_str()),
+            Expr::val(group.version),
+        ])
         .map_err(|_| StoreError::Corrupt("a group"))?;
     transaction.execute(&insert).await.map(|_| ())
 }
 
-/// Renames a group; `false` if there is no such group.
+/// Renames a group and counts its version up; `false` if there is no such group at `version`.
 pub(crate) async fn rename_group(
     transaction: &mut Transaction,
     id: GroupId,
     name: &str,
+    version: i64,
 ) -> Result<bool, StoreError> {
     let mut update = Query::update();
     update
         .table(GroupRow::Table)
         .value(GroupRow::Name, name)
-        .and_where(Expr::col(GroupRow::Id).eq(id.stored()));
+        .value(GroupRow::Version, Expr::col(GroupRow::Version).add(1))
+        .and_where(Expr::col(GroupRow::Id).eq(id.stored()))
+        .and_where(Expr::col(GroupRow::Version).eq(version));
     Ok(transaction.execute(&update).await? > 0)
 }
 

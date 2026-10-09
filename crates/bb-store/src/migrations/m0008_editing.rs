@@ -5,16 +5,47 @@
 //! period). A draft is kept until it is saved or thrown away, at most 30 days after its last change.
 //! Locks and drafts name any record by its kind and ID, so they need no table of the record.
 
+use bb_core::version::FIRST_VERSION;
 use sea_query::{ColumnDef, ForeignKey, Index, Table};
 
 use super::Step;
-use crate::schema::{EditDraftRow, EditLockRow, EditNoticeRow, PersonRow};
+use crate::schema::{EditDraftRow, EditLockRow, EditNoticeRow, GroupRow, PersonRow, RoleRow};
 
 pub(super) fn steps() -> Vec<Step> {
     let mut steps = locks();
     steps.extend(drafts());
     steps.extend(notices());
+    steps.extend(versions());
     steps
+}
+
+/// Groups and roles get the version that every change counts up and every change is made from
+/// (ADR-0019): the ones that are there start at the first.
+fn versions() -> Vec<Step> {
+    vec![
+        Step::Alter(
+            Table::alter()
+                .table(GroupRow::Table)
+                .add_column(
+                    ColumnDef::new(GroupRow::Version)
+                        .big_integer()
+                        .not_null()
+                        .default(FIRST_VERSION),
+                )
+                .to_owned(),
+        ),
+        Step::Alter(
+            Table::alter()
+                .table(RoleRow::Table)
+                .add_column(
+                    ColumnDef::new(RoleRow::Version)
+                        .big_integer()
+                        .not_null()
+                        .default(FIRST_VERSION),
+                )
+                .to_owned(),
+        ),
+    ]
 }
 
 fn locks() -> Vec<Step> {

@@ -33,6 +33,7 @@ pub mod settings;
 pub mod sign_in;
 pub mod technical;
 pub mod text;
+pub mod version;
 
 pub use error_code::{ErrorCode, Problem};
 pub use event::DomainEvent;

@@ -76,13 +76,19 @@ impl Database {
         &self,
         entity: &EntityRef,
     ) -> Result<Option<DomainEvent>, StoreError> {
+        // The order they were committed in (the outbox position), not the time in their IDs: two
+        // events of the same millisecond have no order there.
         let mut select = Query::select();
         select
-            .columns(event_columns())
-            .from(Event::Table)
-            .and_where(Expr::col(Event::EntityKind).eq(entity.kind.as_str()))
-            .and_where(Expr::col(Event::EntityId).eq(entity.id.stored()))
-            .order_by(Event::Id, Order::Desc)
+            .columns(event_columns().map(|column| (Event::Table, column)))
+            .from(Outbox::Table)
+            .inner_join(
+                Event::Table,
+                Expr::col((Outbox::Table, Outbox::EventId)).equals((Event::Table, Event::Id)),
+            )
+            .and_where(Expr::col((Event::Table, Event::EntityKind)).eq(entity.kind.as_str()))
+            .and_where(Expr::col((Event::Table, Event::EntityId)).eq(entity.id.stored()))
+            .order_by((Outbox::Table, Outbox::Position), Order::Desc)
             .limit(1);
         self.fetch_optional(&select)
             .await?

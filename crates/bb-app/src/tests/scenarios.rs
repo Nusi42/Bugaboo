@@ -14,6 +14,7 @@ use bb_core::id::{EditorId, EntityId, GroupId, ProjectId, RoleId, UserId};
 use bb_core::people_kinds::PeopleKind;
 use bb_core::settings::SettingValue;
 use bb_core::technical::TechnicalName;
+use bb_core::version::FIRST_VERSION;
 use serde_json::Value;
 use webauthn_authenticator_rs::prelude::{Url, WebauthnAuthenticator as _};
 use webauthn_authenticator_rs::softpasskey::SoftPasskey;
@@ -725,6 +726,7 @@ pub(crate) async fn rename_group_scenario(world: &World) -> Added {
             RenameGroup {
                 session_token: token(world),
                 group,
+                version: FIRST_VERSION,
                 name: "Crew".to_owned(),
             },
         ),
@@ -814,6 +816,7 @@ pub(crate) async fn change_role_scenario(world: &World) -> Added {
             ChangeRole {
                 session_token: token(world),
                 role,
+                version: FIRST_VERSION,
                 name: Some("Own role".to_owned()),
                 permissions: None,
                 two_step: Some(true),
@@ -873,6 +876,7 @@ pub(crate) async fn reset_role_scenario(world: &World) -> Added {
             ResetRole {
                 session_token: token(world),
                 role: viewer,
+                version: FIRST_VERSION,
             },
         ),
     )

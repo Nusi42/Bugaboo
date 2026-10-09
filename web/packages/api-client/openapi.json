@@ -5781,7 +5781,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/GroupNameBody"
+                "$ref": "#/components/schemas/RenameGroupBody"
               }
             }
           },
@@ -5843,7 +5843,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Problem"
+                  "$ref": "#/components/schemas/ConflictProblem"
                 }
               }
             }
@@ -9809,7 +9809,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Problem"
+                  "$ref": "#/components/schemas/ConflictProblem"
                 }
               }
             }
@@ -10001,6 +10001,16 @@
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResetRoleBody"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
             "description": "The role as it is now.",
@@ -10057,7 +10067,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Problem"
+                  "$ref": "#/components/schemas/ConflictProblem"
                 }
               }
             }
@@ -11318,6 +11328,7 @@
       "ChangeRoleBody": {
         "type": "object",
         "description": "What to change about a role: what is left out stays as it is.",
+        "required": ["version"],
         "properties": {
           "name": {
             "type": ["string", "null"],
@@ -11333,6 +11344,11 @@
           "two_step": {
             "type": ["boolean", "null"],
             "description": "The two-step switch from now on."
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The version of the role the person looked at; a change made meanwhile stops this one."
           }
         }
       },
@@ -11841,7 +11857,7 @@
       "GroupBody": {
         "type": "object",
         "description": "A group after it was made or renamed.",
-        "required": ["id", "name"],
+        "required": ["id", "name", "version"],
         "properties": {
           "id": {
             "type": "string",
@@ -11850,6 +11866,11 @@
           "name": {
             "type": "string",
             "description": "What it is called."
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Counts up with every change. A change is made on the version that was looked at."
           }
         }
       },
@@ -11879,6 +11900,11 @@
           "name": {
             "type": ["string", "null"],
             "description": "What it is called."
+          },
+          "version": {
+            "type": ["integer", "null"],
+            "format": "int64",
+            "description": "Counts up with every change. A change is made on the version that was looked at."
           }
         }
       },
@@ -13297,6 +13323,11 @@
                 "name": {
                   "type": ["string", "null"],
                   "description": "What it is called."
+                },
+                "version": {
+                  "type": ["integer", "null"],
+                  "format": "int64",
+                  "description": "Counts up with every change. A change is made on the version that was looked at."
                 }
               }
             },
@@ -13630,6 +13661,11 @@
                 "two_step": {
                   "type": ["boolean", "null"],
                   "description": "Whether everybody with it needs two-step sign-in."
+                },
+                "version": {
+                  "type": ["integer", "null"],
+                  "format": "int64",
+                  "description": "Counts up with every change. A change is made on the version that was looked at."
                 }
               }
             },
@@ -14539,6 +14575,34 @@
           }
         }
       },
+      "RenameGroupBody": {
+        "type": "object",
+        "description": "A new name for a group, made on the version that was looked at.",
+        "required": ["name", "version"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "What the group is called from now on."
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The version of the group the person looked at; a change made meanwhile stops this one."
+          }
+        }
+      },
+      "ResetRoleBody": {
+        "type": "object",
+        "description": "Which role to give its starting permissions back, made on the version that was looked at.",
+        "required": ["version"],
+        "properties": {
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The version of the role the person looked at; a change made meanwhile stops this one."
+          }
+        }
+      },
       "RoleAtRef": {
         "type": "object",
         "description": "A role (or *No access*) that somebody has, and where: what a sentence like \"Team member in\nWebsite\" needs.",
@@ -14572,7 +14636,7 @@
       "RoleBody": {
         "type": "object",
         "description": "A role as it is after it was made or changed.",
-        "required": ["id", "name", "position", "two_step", "permissions"],
+        "required": ["id", "name", "position", "two_step", "version", "permissions"],
         "properties": {
           "id": {
             "type": "string",
@@ -14601,6 +14665,11 @@
           "two_step": {
             "type": "boolean",
             "description": "Whether everybody with it needs two-step sign-in."
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Counts up with every change. A change is made on the version that was looked at."
           }
         }
       },
@@ -14650,6 +14719,11 @@
           "two_step": {
             "type": ["boolean", "null"],
             "description": "Whether everybody with it needs two-step sign-in."
+          },
+          "version": {
+            "type": ["integer", "null"],
+            "format": "int64",
+            "description": "Counts up with every change. A change is made on the version that was looked at."
           }
         }
       },

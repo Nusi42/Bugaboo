@@ -260,8 +260,9 @@ impl PolicyStore for AuthStorage {
         id: RoleId,
         name: &str,
         two_step: bool,
+        version: i64,
     ) -> Result<bool, StoreError> {
-        roles::update_role(transaction, id, name, two_step).await
+        roles::update_role(transaction, id, name, two_step, version).await
     }
 
     async fn replace_role_permissions(
@@ -293,8 +294,9 @@ impl PolicyStore for AuthStorage {
         transaction: &mut Transaction,
         id: GroupId,
         name: &str,
+        version: i64,
     ) -> Result<bool, StoreError> {
-        groups::rename_group(transaction, id, name).await
+        groups::rename_group(transaction, id, name, version).await
     }
 
     async fn delete_group(transaction: &mut Transaction, id: GroupId) -> Result<bool, StoreError> {

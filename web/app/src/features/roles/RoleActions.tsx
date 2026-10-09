@@ -17,7 +17,7 @@ export function RoleActions({ role, used }: RoleActionsProps) {
   return (
     <Card heading={t("roles.actions-title")}>
       <div {...partOf(part.stack)}>
-        {starting ? <ResetRole id={role.id} name={role.name} /> : null}
+        {starting ? <ResetRole id={role.id} name={role.name} version={role.version} /> : null}
         <CopyRole id={role.id} name={role.name} />
         <DeleteRole id={role.id} name={role.name} used={used} />
       </div>

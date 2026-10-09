@@ -17,7 +17,7 @@ use bb_app::editing::EditableRecords;
 use bb_auth::{CsrfKey, Passkeys, PasswordHasher, RelyingParty};
 use bb_core::ErrorCode;
 use bb_core::event::{Actor, Channel, DomainEvent, EntityKind, EntityRef};
-use bb_core::id::{EntityId, EventId, UserId};
+use bb_core::id::{EntityId, EventId, GroupId, RoleId, UserId};
 use bb_core::settings::SettingValue;
 use bb_store::{AuthStorage, Database, LogSeal, SettingChange};
 use bb_testing::{Failure, TestDatabase};
@@ -376,6 +376,18 @@ impl Rig {
     pub(super) async fn role_managers(&self) -> Result<usize, Failure> {
         let state = self.storage.organization_state().await?;
         Ok(bb_app::access::guards::role_managers(&state).len())
+    }
+
+    /// The version a role has now, as the store holds it.
+    pub(super) async fn role_version(&self, role: RoleId) -> Result<i64, Failure> {
+        let found = self.storage.role(role).await?.ok_or("no such role")?;
+        Ok(found.role.version)
+    }
+
+    /// The version a group has now, as the store holds it.
+    pub(super) async fn group_version(&self, group: GroupId) -> Result<i64, Failure> {
+        let found = self.storage.group(group).await?.ok_or("no such group")?;
+        Ok(found.version)
     }
 
     /// The person with this address.

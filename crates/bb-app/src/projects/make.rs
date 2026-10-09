@@ -5,6 +5,7 @@ use bb_core::event::RecordKind;
 use bb_core::id::ProjectId;
 use bb_core::project::{Project, ShortName};
 use bb_core::sign_in::SecurityAction;
+use bb_core::version::FIRST_VERSION;
 use bb_policy::{Authorized, Permission, Place, Tree};
 use serde_json::json;
 
@@ -62,7 +63,7 @@ pub async fn make_project<S: AuthStore>(
         parent: input.parent,
         short_name,
         name,
-        version: 1,
+        version: FIRST_VERSION,
     };
     let event = ctx.event(
         by(actor.person.id),

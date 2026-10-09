@@ -13,14 +13,21 @@ export type Member = NamedPerson;
 export interface GroupLine {
   readonly id: string;
   readonly name: string;
+  /** Counts up with every change; a change is made on the version that was looked at. */
+  readonly version: number;
 }
 
 /** The line of a group, or nothing for an item that came without what it needs. */
 export function groupLineOf(item: Schema<"GroupItem">): GroupLine | undefined {
-  const { id, name } = item;
-  return id === undefined || id === null || name === undefined || name === null
+  const { id, name, version } = item;
+  return id === undefined ||
+    id === null ||
+    name === undefined ||
+    name === null ||
+    version === undefined ||
+    version === null
     ? undefined
-    : { id, name };
+    : { id, name, version };
 }
 
 /** The groups in the pages read so far. */
@@ -36,7 +43,7 @@ export function useGroups() {
       api.client.GET("/api/v1/groups", {
         params: {
           query: {
-            fields: fieldList<Schema<"GroupItem">>(["id", "name"]),
+            fields: fieldList<Schema<"GroupItem">>(["id", "name", "version"]),
             limit: pageSize.largest,
             ...after,
           },

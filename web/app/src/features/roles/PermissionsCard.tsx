@@ -30,7 +30,7 @@ export function PermissionsCard({ role }: { readonly role: Schema<"RoleBody"> })
         id={role.id}
         on={role.two_step}
         onChange={(on) => {
-          edits.change({ kind: "two-step", on });
+          edits.change({ kind: "two-step", on, version: role.version });
         }}
       />
       {catalogue.data === undefined ? null : (
@@ -39,7 +39,7 @@ export function PermissionsCard({ role }: { readonly role: Schema<"RoleBody"> })
           catalogue={catalogue.data.permissions}
           held={role.permissions}
           onChange={(permissions) => {
-            edits.change({ kind: "permissions", permissions });
+            edits.change({ kind: "permissions", permissions, version: role.version });
           }}
         />
       )}

@@ -1770,6 +1770,11 @@ export interface components {
       permissions?: components["schemas"]["Permission"][] | null;
       /** @description The two-step switch from now on. */
       two_step?: boolean | null;
+      /**
+       * Format: int64
+       * @description The version of the role the person looked at; a change made meanwhile stops this one.
+       */
+      version: number;
     };
     /** @description What a person can do in a place, and why. */
     CheckAccessBody: {
@@ -2053,6 +2058,11 @@ export interface components {
       id: string;
       /** @description What it is called. */
       name: string;
+      /**
+       * Format: int64
+       * @description Counts up with every change. A change is made on the version that was looked at.
+       */
+      version: number;
     };
     /** @description One group with what it is used for. */
     GroupDetailBody: {
@@ -2067,6 +2077,11 @@ export interface components {
       id?: string | null;
       /** @description What it is called. */
       name?: string | null;
+      /**
+       * Format: int64
+       * @description Counts up with every change. A change is made on the version that was looked at.
+       */
+      version?: number | null;
     };
     /** @description A name for a group. */
     GroupNameBody: {
@@ -2753,6 +2768,11 @@ export interface components {
         id?: string | null;
         /** @description What it is called. */
         name?: string | null;
+        /**
+         * Format: int64
+         * @description Counts up with every change. A change is made on the version that was looked at.
+         */
+        version?: number | null;
       }[];
       /** @description The cursor of the next page; `null` on the last page. */
       next_cursor: string | null;
@@ -2905,6 +2925,11 @@ export interface components {
         starting?: string | null;
         /** @description Whether everybody with it needs two-step sign-in. */
         two_step?: boolean | null;
+        /**
+         * Format: int64
+         * @description Counts up with every change. A change is made on the version that was looked at.
+         */
+        version?: number | null;
       }[];
       /** @description The cursor of the next page; `null` on the last page. */
       next_cursor: string | null;
@@ -3350,6 +3375,24 @@ export interface components {
       /** @description The thing that was edited. */
       what: components["schemas"]["EditWhatBody"];
     };
+    /** @description A new name for a group, made on the version that was looked at. */
+    RenameGroupBody: {
+      /** @description What the group is called from now on. */
+      name: string;
+      /**
+       * Format: int64
+       * @description The version of the group the person looked at; a change made meanwhile stops this one.
+       */
+      version: number;
+    };
+    /** @description Which role to give its starting permissions back, made on the version that was looked at. */
+    ResetRoleBody: {
+      /**
+       * Format: int64
+       * @description The version of the role the person looked at; a change made meanwhile stops this one.
+       */
+      version: number;
+    };
     /**
      * @description A role (or *No access*) that somebody has, and where: what a sentence like "Team member in
      *     Website" needs.
@@ -3380,6 +3423,11 @@ export interface components {
       starting?: string | null;
       /** @description Whether everybody with it needs two-step sign-in. */
       two_step: boolean;
+      /**
+       * Format: int64
+       * @description Counts up with every change. A change is made on the version that was looked at.
+       */
+      version: number;
     };
     /** @description One role with what it is used for. */
     RoleDetailBody: {
@@ -3405,6 +3453,11 @@ export interface components {
       starting?: string | null;
       /** @description Whether everybody with it needs two-step sign-in. */
       two_step?: boolean | null;
+      /**
+       * Format: int64
+       * @description Counts up with every change. A change is made on the version that was looked at.
+       */
+      version?: number | null;
     };
     /** @description A role named in an answer. */
     RoleRef: {
@@ -8305,7 +8358,7 @@ export interface operations {
     };
     requestBody: {
       content: {
-        "application/json": components["schemas"]["GroupNameBody"];
+        "application/json": components["schemas"]["RenameGroupBody"];
       };
     };
     responses: {
@@ -8360,7 +8413,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/problem+json": components["schemas"]["Problem"];
+          "application/problem+json": components["schemas"]["ConflictProblem"];
         };
       };
       /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
@@ -11316,7 +11369,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/problem+json": components["schemas"]["Problem"];
+          "application/problem+json": components["schemas"]["ConflictProblem"];
         };
       };
       /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
@@ -11461,7 +11514,11 @@ export interface operations {
       };
       cookie?: never;
     };
-    requestBody?: never;
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ResetRoleBody"];
+      };
+    };
     responses: {
       /** @description The role as it is now. */
       200: {
@@ -11514,7 +11571,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/problem+json": components["schemas"]["Problem"];
+          "application/problem+json": components["schemas"]["ConflictProblem"];
         };
       };
       /** @description error.rate-limit.exceeded (rate_limit.exceeded) */

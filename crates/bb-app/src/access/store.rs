@@ -128,8 +128,9 @@ pub trait PolicyStore: ChangeStore + 'static {
             fields: &[(Field, FieldLevel)],
             people: &[(PeopleKind, PeopleLevel)]
         ) -> ();
-        /// Changes the name and the two-step switch of a role.
-        fn update_role(id: RoleId, name: &str, two_step: bool) -> bool;
+        /// Changes the name and the two-step switch of a role, counts its version up, and says
+        /// whether the role was still at `version`.
+        fn update_role(id: RoleId, name: &str, two_step: bool, version: i64) -> bool;
         /// Replaces the permissions of a role.
         fn replace_role_permissions(id: RoleId, permissions: &[Permission]) -> ();
         /// Replaces the levels a role has of its own (not those set for projects).
@@ -142,8 +143,9 @@ pub trait PolicyStore: ChangeStore + 'static {
         fn delete_role(id: RoleId) -> bool;
         /// Adds a group.
         fn insert_group(group: &Group) -> ();
-        /// Renames a group.
-        fn rename_group(id: GroupId, name: &str) -> bool;
+        /// Renames a group, counts its version up, and says whether the group was still at
+        /// `version`.
+        fn rename_group(id: GroupId, name: &str, version: i64) -> bool;
         /// Removes a group, with its members and its rows.
         fn delete_group(id: GroupId) -> bool;
         /// Puts a person into a group.

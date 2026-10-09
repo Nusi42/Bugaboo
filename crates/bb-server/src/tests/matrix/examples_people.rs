@@ -106,7 +106,7 @@ async fn groups_request(
         "renameGroup" => (
             "PATCH",
             format!("/api/v1/groups/{}", a_group(fixture).await?),
-            Some(json!({"name": format!("Renamed {}", fixture.next_number())})),
+            Some(json!({"version": 1, "name": format!("Renamed {}", fixture.next_number())})),
         ),
         "deleteGroup" => (
             "DELETE",
@@ -183,7 +183,7 @@ async fn roles_request(fixture: &Fixture<'_>, operation: &str) -> Result<Option<
         "changeRole" => (
             "PATCH",
             format!("/api/v1/roles/{}", an_empty_role(fixture).await?),
-            Some(json!({"name": format!("Changed {}", fixture.next_number())})),
+            Some(json!({"version": 1, "name": format!("Changed {}", fixture.next_number())})),
         ),
         "deleteRole" => (
             "DELETE",
@@ -198,7 +198,7 @@ async fn roles_request(fixture: &Fixture<'_>, operation: &str) -> Result<Option<
         "resetRole" => (
             "POST",
             format!("/api/v1/roles/{}/reset", fixture.a_role()?),
-            None,
+            Some(json!({"version": 1})),
         ),
         "listPermissions" => ("GET", "/api/v1/permissions".into(), None),
         _ => return Ok(None),

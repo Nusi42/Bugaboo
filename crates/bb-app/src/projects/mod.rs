@@ -74,10 +74,22 @@ impl Why {
     /// did not say), `otherwise` for a key used twice, the rule of the policy engine that stopped
     /// it, or an internal failure for anything else.
     pub(crate) fn answer<S: AuthStore>(&self, error: &S::Error, otherwise: ErrorCode) -> AppError {
+        self.answer_with::<S>(error, otherwise, otherwise)
+    }
+
+    /// Like [`Self::answer`], for a change whose key used twice says another thing than its
+    /// check that stopped itself without a reason: `stopped` for the first, `duplicate` for the
+    /// second.
+    pub(crate) fn answer_with<S: AuthStore>(
+        &self,
+        error: &S::Error,
+        stopped: ErrorCode,
+        duplicate: ErrorCode,
+    ) -> AppError {
         let said = *self
             .0
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        change_failed::<S>(error, Stops::new(said.unwrap_or(otherwise), otherwise))
+        change_failed::<S>(error, Stops::new(said.unwrap_or(stopped), duplicate))
     }
 }

@@ -25,12 +25,17 @@ async fn checker(org: &Org<'_>, two_step: bool) -> Run<RoleId> {
 
 /// The role *Inviter*'s switch, changed with whatever the caller holds (a session or a key).
 async fn switch_with(rig: &Rig, credential: &str, role: RoleId) -> Result<(), AppError> {
+    let version = rig
+        .role_version(role)
+        .await
+        .map_err(|error| AppError::Internal(error.to_string()))?;
     rig.api()
         .change_role(
             Rig::info(),
             ChangeRole {
                 session_token: credential.to_owned(),
                 role,
+                version,
                 name: None,
                 permissions: None,
                 two_step: Some(false),

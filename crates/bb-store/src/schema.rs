@@ -278,6 +278,7 @@ pub(crate) enum GroupRow {
     Table,
     Id,
     Name,
+    Version,
 }
 
 #[derive(Clone, Copy, Iden)]
@@ -298,6 +299,7 @@ pub(crate) enum RoleRow {
     Starting,
     Position,
     TwoStep,
+    Version,
 }
 
 #[derive(Clone, Copy, Iden)]
@@ -602,6 +604,7 @@ stored_tables! {
     GroupRow => bb_core::access::Group {
         Id => id,
         Name => name,
+        Version => version,
     },
     GroupMemberRow => bb_core::access::GroupMember {
         Group => group,
@@ -614,6 +617,7 @@ stored_tables! {
         Starting => starting,
         Position => position,
         TwoStep => two_step,
+        Version => version,
     },
     RolePermissionRow => bb_core::access::RolePermission {
         Role => role,

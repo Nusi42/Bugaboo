@@ -28,7 +28,7 @@ export function RoleSections({ role, used }: RoleSectionsProps) {
             used: roleUsedText(used),
           })}
         </p>
-        <RoleName key={role.name} id={role.id} name={role.name} />
+        <RoleName key={role.name} id={role.id} name={role.name} version={role.version} />
         <div {...partOf(part.row)}>
           <Link href={paths.roles}>{t("roles.back")}</Link>
         </div>

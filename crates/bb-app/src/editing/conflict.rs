@@ -18,7 +18,7 @@ use std::collections::BTreeMap;
 use bb_core::ErrorCode;
 use bb_core::event::{Actor as EventActor, DomainEvent, EntityRef, RecordKind};
 use bb_core::fields::Field;
-use bb_core::id::{ProjectId, UserId};
+use bb_core::id::{GroupId, ProjectId, RoleId, UserId};
 use bb_core::people_kinds::PeopleKind;
 use bb_policy::{Evaluation, PeopleContext, PersonRef, Place};
 use jiff::Timestamp;
@@ -86,16 +86,28 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// The version the record has now, if it is still there and the person may know about it.
     async fn version_now(&self, stale: &Stale) -> Result<Option<i64>, AppError> {
         let record = &stale.record;
-        if record.kind == RecordKind::Project.into() {
-            let Ok(id) = ProjectId::from_bytes(record.id.to_bytes()) else {
-                return Ok(None);
+        let ours = |kind: RecordKind| record.kind == kind.into();
+        let failed = |error| internal::<S>(&error);
+        if ours(RecordKind::Project) {
+            let found = match ProjectId::from_bytes(record.id.to_bytes()) {
+                Ok(id) => self.store().project(id).await.map_err(failed)?,
+                Err(_) => None,
             };
-            return Ok(self
-                .store()
-                .project(id)
-                .await
-                .map_err(|error| internal::<S>(&error))?
-                .map(|project| project.version));
+            return Ok(found.map(|project| project.version));
+        }
+        if ours(RecordKind::Group) {
+            let found = match GroupId::from_bytes(record.id.to_bytes()) {
+                Ok(id) => self.store().group(id).await.map_err(failed)?,
+                Err(_) => None,
+            };
+            return Ok(found.map(|group| group.version));
+        }
+        if ours(RecordKind::Role) {
+            let found = match RoleId::from_bytes(record.id.to_bytes()) {
+                Ok(id) => self.store().role(id).await.map_err(failed)?,
+                Err(_) => None,
+            };
+            return Ok(found.map(|found| found.role.version));
         }
         Ok(self
             .services
