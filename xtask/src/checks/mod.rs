@@ -57,13 +57,14 @@ mod meta_new_module;
 mod meta_rule_trace;
 mod meta_speed;
 pub(crate) mod meta_suppress;
-mod meta_wiring;
+pub(crate) mod meta_wiring;
 mod node_tool;
 mod perf_bundle;
 mod plan_trace;
 mod sec_cookies;
 mod sec_headers;
 mod sec_matrix;
+pub(crate) mod sec_private;
 mod sec_secrets;
 mod sty_contrast;
 mod sty_tokens;
@@ -193,6 +194,7 @@ pub(crate) fn registry() -> Vec<Box<dyn Check>> {
         Box::new(arch_db_parity::ArchDbParity),
         Box::new(data_migrations::DataMigrations),
         Box::new(sec_secrets::SecSecrets),
+        Box::new(sec_private::SecPrivate),
         Box::new(sec_headers::SecHeaders),
         Box::new(sec_matrix::SecMatrix),
         Box::new(sec_cookies::SecCookies),

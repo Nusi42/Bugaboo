@@ -1,8 +1,9 @@
 //! The repository the checks run on, and the Git questions they ask.
 
 use std::fs;
+use std::io::Write as _;
 use std::path::{Path, PathBuf};
-use std::process::Command;
+use std::process::{Command, Stdio};
 
 use anyhow::{Context as _, bail};
 
@@ -142,12 +143,36 @@ impl Repo {
         })
     }
 
-    fn git_bytes(&self, args: &[&str]) -> anyhow::Result<Vec<u8>> {
-        let out = Command::new("git")
+    /// What Git writes for the arguments: the one place Git is run.
+    pub(crate) fn git_bytes(&self, args: &[&str]) -> anyhow::Result<Vec<u8>> {
+        self.git_bytes_with_input(args, &[])
+    }
+
+    /// The same, with `input` on the standard input of Git (a list of objects for `cat-file`).
+    pub(crate) fn git_bytes_with_input(
+        &self,
+        args: &[&str],
+        input: &[u8],
+    ) -> anyhow::Result<Vec<u8>> {
+        let mut child = Command::new("git")
             .args(args)
             .current_dir(&self.root)
-            .output()
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
             .context("could not run git; is it installed and on the PATH?")?;
+        let stdin = child.stdin.take();
+        // Written beside the reading, or a long input and a long answer wait for each other.
+        let out = std::thread::scope(|scope| {
+            scope.spawn(move || {
+                if let Some(mut stdin) = stdin {
+                    stdin.write_all(input).ok();
+                }
+            });
+            child.wait_with_output()
+        })
+        .context("could not run git; is it installed and on the PATH?")?;
         if !out.status.success() {
             bail!(
                 "git {} failed: {}",
@@ -158,21 +183,18 @@ impl Repo {
         Ok(out.stdout)
     }
 
+    /// The same, with file names written as they are (not in quotes with escapes for non-ASCII
+    /// letters).
+    pub(crate) fn git_paths_bytes(&self, args: &[&str]) -> anyhow::Result<Vec<u8>> {
+        let all: Vec<&str> = ["-c", "core.quotepath=false"]
+            .into_iter()
+            .chain(args.iter().copied())
+            .collect();
+        self.git_bytes(&all)
+    }
+
     fn git_lines(&self, args: &[&str]) -> anyhow::Result<Vec<String>> {
-        let out = Command::new("git")
-            .args(["-c", "core.quotepath=false"])
-            .args(args)
-            .current_dir(&self.root)
-            .output()
-            .context("could not run git; is it installed and on the PATH?")?;
-        if !out.status.success() {
-            bail!(
-                "git {} failed: {}",
-                args.join(" "),
-                String::from_utf8_lossy(&out.stderr).trim()
-            );
-        }
-        Ok(String::from_utf8_lossy(&out.stdout)
+        Ok(String::from_utf8_lossy(&self.git_paths_bytes(args)?)
             .lines()
             .map(str::trim)
             .filter(|line| !line.is_empty())

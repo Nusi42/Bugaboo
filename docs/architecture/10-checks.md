@@ -29,7 +29,7 @@ flowchart LR
 | **LINT** | Linting: clippy, oxlint with type-aware tsgolint (TypeScript 7), stylelint, tsc type check, typos, lychee, actionlint |
 | **TXT / STY** | Plain words and design: no literal UI text, message catalog complete, glossary "don't say" words, tokens only, theme contrast |
 | **ARCH** | The structure in this document: allowed crate dependencies, pure crates, WebAssembly build, `Authorized<T>` only from the policy engine, only safe types leave the API, HTTP and SQL only at the edges, events for every change, versions and edit-lock tokens on change endpoints, lean list endpoints, permissions declared, settings via the registry, AI tools only from the registry, browser uses only the API client, module map matches the code, docs change with boundaries, no `unsafe`, both databases tested |
-| **SEC** | Secrets, dangerous patterns, the permission matrix, security headers, known vulnerabilities |
+| **SEC** | Secrets, private details of the maintainer, dangerous patterns, the permission matrix, security headers, known vulnerabilities |
 | **DATA** | Personal-data marks, no personal data in logs, one schema source |
 | **DEP / DOC** | Third-party register, licenses, unused dependencies, SBOM, generated files up to date, decision records name their checks |
 | **PERF / TEST** | Bundle and WebAssembly budgets, query counts, benchmarks, accessibility, search round trip, edit locks |

@@ -1,0 +1,18 @@
+%USERPROFILE%\.config\bugaboo
+~/.config/bugaboo/private-words.txt
+C:\Users\<name>\Documents
+/home/<name>/projects
+/home/runner/work/bugaboo
+C:\Users\Public\Documents
+\\wsl$\Ubuntu\home\<name>
+EXAMPLE-PC\ana
+/api/users/12/profile
+https://example.com/home/news/
+"/home/"
+src/home/page/index.ts
+../home/page
+originSessionId: <id>
+a session_store and claude.ai/code/session_ (link)
+"sessionId": "not-a-uuid"
+"session-id": "none"
+zanzibarish is another word
