@@ -502,6 +502,23 @@ export const messages = {
   "frames.focus-text":
     "This is the focus view. The open item takes the main area and the list stays slim on the left.",
   "frames.nothing": "No example items are left.",
+  "frames.text-title": "Text with formatting",
+  "frames.text-intro":
+    "Descriptions, comments and long text are written in Markdown. Write, then open Preview to see what others will see.",
+  "frames.text-label": "Description",
+  "markdown.write": "Write",
+  "markdown.preview": "Preview",
+  "markdown.toolbar": "Formatting",
+  "markdown.bold": "Bold",
+  "markdown.italic": "Italic",
+  "markdown.list": "List",
+  "markdown.link": "Link",
+  "markdown.code": "Code",
+  "markdown.quote": "Quote",
+  "markdown.link-text": "link text",
+  "markdown.preview-empty": "There is nothing to preview yet.",
+  "markdown.preview-failed":
+    "The preview could not be loaded. Check your connection and try again.",
   "save.saving": "Saving…",
   "save.saved": "Saved",
   "save.not-saved": "Not saved yet",

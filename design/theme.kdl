@@ -2682,6 +2682,166 @@ part "shortcuts-page.keys" {
 }
 
 
+// ───────────── Markdown (packages/ui: MarkdownView, MarkdownEditor) ─────────────
+//
+// The text of a person is HTML that `bb-markdown` wrote (ADR-0011): plain elements, a `span` for
+// each issue ID and mention, and no class names. `markdown` is the part that holds it; the rules
+// below style what the renderer writes inside it, with tokens only.
+
+part "markdown" {
+    min-width 0
+    color "$fg"
+    font-size "$fs-md"
+    line-height "$lh-text"
+    overflow-wrap anywhere
+}
+
+base "[data-part=markdown] p" "[data-part=markdown] ul" "[data-part=markdown] ol" "[data-part=markdown] pre" "[data-part=markdown] blockquote" "[data-part=markdown] table" "[data-part=markdown] hr" "[data-part=markdown] h1" "[data-part=markdown] h2" "[data-part=markdown] h3" "[data-part=markdown] h4" "[data-part=markdown] h5" "[data-part=markdown] h6" {
+    margin 0 0 "$space-3"
+}
+
+base "[data-part=markdown] > :last-child" {
+    margin-bottom 0
+}
+
+base "[data-part=markdown] h1" "[data-part=markdown] h2" "[data-part=markdown] h3" "[data-part=markdown] h4" "[data-part=markdown] h5" "[data-part=markdown] h6" {
+    font-size "$fs-md"
+    font-weight "$weight-bold"
+    line-height "$lh-snug"
+}
+
+base "[data-part=markdown] h1" {
+    font-size "$fs-xl"
+}
+
+base "[data-part=markdown] h2" {
+    font-size "$fs-lg"
+}
+
+base "[data-part=markdown] ul" "[data-part=markdown] ol" {
+    padding-left "$space-5"
+}
+
+base "[data-part=markdown] a" {
+    color "$accent-fg"
+    text-decoration underline
+    text-underline-offset "$space-1"
+}
+
+base "[data-part=markdown] code" {
+    font-family "$mono"
+    font-size "$fs-base"
+    padding 0 "$space-1"
+    border-radius "$r-ctl"
+    background "$bg-sunken"
+}
+
+base "[data-part=markdown] pre" {
+    use "sunken-box"
+    padding "$space-3"
+    overflow-x auto
+}
+
+base "[data-part=markdown] pre code" {
+    padding 0
+    background none
+}
+
+base "[data-part=markdown] blockquote" {
+    margin-left 0
+    padding-left "$space-3"
+    border-left "$space-1 solid $border"
+    color "$fg-muted"
+}
+
+base "[data-part=markdown] table" {
+    border-collapse collapse
+}
+
+base "[data-part=markdown] th" "[data-part=markdown] td" {
+    padding "$space-1 $space-3"
+    border "$border-width solid $border"
+    text-align left
+}
+
+base "[data-part=markdown] hr" {
+    border 0
+    border-top "$border-width solid $border"
+}
+
+base "[data-part=markdown] img" {
+    max-width "100%"
+    height auto
+}
+
+// An issue ID or a mention. The server resolves it with the viewer's rights and the page shows it
+// as a chip; until then, and where it cannot be resolved, it is marked text.
+base "[data-part=markdown] [data-token]" {
+    padding 0 "$space-1"
+    border "$border-width solid $border-subtle"
+    border-radius "$r-ctl"
+    background "$accent-soft"
+    color "$accent-fg"
+    font-weight "$weight-bold"
+    white-space nowrap
+}
+
+part "markdown.editor" {
+    display flex
+    flex-direction column
+    gap "$space-2"
+    min-width 0
+}
+
+part "markdown.tabs" {
+    display flex
+    gap "$space-1"
+    border-bottom "$border-width solid $border"
+}
+
+part "markdown.tab" {
+    padding "$space-2 $space-3"
+    min-height "$size-target"
+    box-sizing border-box
+    color "$fg-muted"
+    font-size "$fs-md"
+    font-weight "$weight-bold"
+    cursor pointer
+    border-bottom "$space-1 solid transparent"
+}
+
+part "markdown.tab[hovered]" {
+    background "$bg-hover"
+}
+
+part "markdown.tab[selected]" {
+    color "$fg"
+    border-bottom-color "$accent"
+}
+
+part "markdown.tab[focus-visible]" {
+    use "ring-inside"
+}
+
+part "markdown.toolbar" {
+    display flex
+    flex-wrap wrap
+    gap "$space-1"
+}
+
+part "markdown.panel" {
+    display flex
+    flex-direction column
+    gap "$space-2"
+    min-width 0
+}
+
+part "markdown.preview" {
+    use "surface-box"
+    min-height "$size-target"
+    padding "$space-3"
+}
+
 // ───────────── The design pages (docs/design) ─────────────
 //
 // `docs/design/components.css` and `docs/design/docpage.css` style the documents and mockups in

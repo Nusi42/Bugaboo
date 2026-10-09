@@ -1,0 +1,58 @@
+import { renderToStaticMarkup } from "react-dom/server";
+import { describe, expect, it } from "vitest";
+
+import { MarkdownEditor } from "./MarkdownEditor.tsx";
+import { MarkdownView } from "./MarkdownView.tsx";
+
+const nothing = (): void => undefined;
+
+/** Markup of the tests, not text for people. */
+const view = { html: "<p>Hi</p>", value: "text" } as const;
+
+/** Words of the tests, not text for people. */
+const words = {
+  label: "Text",
+  write: "W",
+  preview: "P",
+  toolbar: "T",
+  bold: "B",
+  italic: "I",
+  list: "L",
+  link: "K",
+  code: "C",
+  quote: "Q",
+  linkText: "x",
+  previewEmpty: "E",
+  previewFailed: "F",
+} as const;
+
+describe("thm_12 the Markdown components carry no styles", () => {
+  it("the view is the part markdown", () => {
+    const markup = renderToStaticMarkup(<MarkdownView html={view.html} />);
+    expect(markup).toContain('data-part="markdown"');
+    expect(markup).not.toContain("style=");
+  });
+
+  it("the editor emits the parts of its tabs, toolbar and text box", () => {
+    const markup = renderToStaticMarkup(
+      <MarkdownEditor
+        label={words.label}
+        labels={words}
+        value={view.value}
+        onChange={nothing}
+        imageHosts={[]}
+      />,
+    );
+    for (const name of [
+      "markdown.editor",
+      "markdown.tabs",
+      "markdown.tab",
+      "markdown.panel",
+      "markdown.toolbar",
+      "field.input",
+    ]) {
+      expect(markup).toContain(`data-part="${name}"`);
+    }
+    expect(markup).not.toContain("style=");
+  });
+});

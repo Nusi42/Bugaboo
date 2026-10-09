@@ -864,6 +864,15 @@ pub const FRAMES_PANEL_TEXT: MessageKey = MessageKey::new("frames.panel-text");
 /// The message `frames.remove`.
 pub const FRAMES_REMOVE: MessageKey = MessageKey::new("frames.remove");
 
+/// The message `frames.text-intro`.
+pub const FRAMES_TEXT_INTRO: MessageKey = MessageKey::new("frames.text-intro");
+
+/// The message `frames.text-label`.
+pub const FRAMES_TEXT_LABEL: MessageKey = MessageKey::new("frames.text-label");
+
+/// The message `frames.text-title`.
+pub const FRAMES_TEXT_TITLE: MessageKey = MessageKey::new("frames.text-title");
+
 /// The message `frames.title`.
 pub const FRAMES_TITLE: MessageKey = MessageKey::new("frames.title");
 
@@ -1063,6 +1072,42 @@ pub const LIST_NEXT: MessageKey = MessageKey::new("list.next");
 
 /// The message `list.previous`.
 pub const LIST_PREVIOUS: MessageKey = MessageKey::new("list.previous");
+
+/// The message `markdown.bold`.
+pub const MARKDOWN_BOLD: MessageKey = MessageKey::new("markdown.bold");
+
+/// The message `markdown.code`.
+pub const MARKDOWN_CODE: MessageKey = MessageKey::new("markdown.code");
+
+/// The message `markdown.italic`.
+pub const MARKDOWN_ITALIC: MessageKey = MessageKey::new("markdown.italic");
+
+/// The message `markdown.link`.
+pub const MARKDOWN_LINK: MessageKey = MessageKey::new("markdown.link");
+
+/// The message `markdown.link-text`.
+pub const MARKDOWN_LINK_TEXT: MessageKey = MessageKey::new("markdown.link-text");
+
+/// The message `markdown.list`.
+pub const MARKDOWN_LIST: MessageKey = MessageKey::new("markdown.list");
+
+/// The message `markdown.preview`.
+pub const MARKDOWN_PREVIEW: MessageKey = MessageKey::new("markdown.preview");
+
+/// The message `markdown.preview-empty`.
+pub const MARKDOWN_PREVIEW_EMPTY: MessageKey = MessageKey::new("markdown.preview-empty");
+
+/// The message `markdown.preview-failed`.
+pub const MARKDOWN_PREVIEW_FAILED: MessageKey = MessageKey::new("markdown.preview-failed");
+
+/// The message `markdown.quote`.
+pub const MARKDOWN_QUOTE: MessageKey = MessageKey::new("markdown.quote");
+
+/// The message `markdown.toolbar`.
+pub const MARKDOWN_TOOLBAR: MessageKey = MessageKey::new("markdown.toolbar");
+
+/// The message `markdown.write`.
+pub const MARKDOWN_WRITE: MessageKey = MessageKey::new("markdown.write");
 
 /// The message `nav.access-keys`.
 pub const NAV_ACCESS_KEYS: MessageKey = MessageKey::new("nav.access-keys");
@@ -5549,6 +5594,12 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("frames.remove", "Remove"),
     ("frames.remove-name", "Remove {name}"),
     ("frames.removed", "{name} was removed."),
+    (
+        "frames.text-intro",
+        "Descriptions, comments and long text are written in Markdown. Write, then open Preview to see what others will see.",
+    ),
+    ("frames.text-label", "Description"),
+    ("frames.text-title", "Text with formatting"),
     ("frames.title", "Page frames"),
     ("groups.add", "Put in"),
     ("groups.add-list", "People you can put into the group"),
@@ -5716,6 +5767,21 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("list.next", "Next"),
     ("list.previous", "Previous"),
+    ("markdown.bold", "Bold"),
+    ("markdown.code", "Code"),
+    ("markdown.italic", "Italic"),
+    ("markdown.link", "Link"),
+    ("markdown.link-text", "link text"),
+    ("markdown.list", "List"),
+    ("markdown.preview", "Preview"),
+    ("markdown.preview-empty", "There is nothing to preview yet."),
+    (
+        "markdown.preview-failed",
+        "The preview could not be loaded. Check your connection and try again.",
+    ),
+    ("markdown.quote", "Quote"),
+    ("markdown.toolbar", "Formatting"),
+    ("markdown.write", "Write"),
     ("nav.access-keys", "Access keys"),
     ("nav.appearance", "Appearance"),
     ("nav.check-access", "Check access"),

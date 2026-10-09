@@ -395,6 +395,13 @@ export const part = {
   shortcutListAlternative: "shortcut-list.alternative",
   shortcutsPageIntro: "shortcuts-page.intro",
   shortcutsPageKeys: "shortcuts-page.keys",
+  markdown: "markdown",
+  markdownEditor: "markdown.editor",
+  markdownTabs: "markdown.tabs",
+  markdownTab: "markdown.tab",
+  markdownToolbar: "markdown.toolbar",
+  markdownPanel: "markdown.panel",
+  markdownPreview: "markdown.preview",
 } as const;
 export type PartName = (typeof part)[keyof typeof part];
 
@@ -603,4 +610,11 @@ export const partWords = {
   "shortcut-list.alternative": { variant: [], state: [] },
   "shortcuts-page.intro": { variant: [], state: [] },
   "shortcuts-page.keys": { variant: [], state: [] },
+  markdown: { variant: [], state: [] },
+  "markdown.editor": { variant: [], state: [] },
+  "markdown.tabs": { variant: [], state: [] },
+  "markdown.tab": { variant: [], state: [] },
+  "markdown.toolbar": { variant: [], state: [] },
+  "markdown.panel": { variant: [], state: [] },
+  "markdown.preview": { variant: [], state: [] },
 } as const;
