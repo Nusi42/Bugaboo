@@ -1,12 +1,13 @@
+import type { SafeHtml } from "@bugaboo/api-client";
 import { useEffect, useMemo, useState } from "react";
 
 /** What the preview has: the module is loading, it is there, or it could not be loaded. */
 export type Preview =
   | { readonly state: "loading" }
   | { readonly state: "failed" }
-  | { readonly state: "ready"; readonly html: string };
+  | { readonly state: "ready"; readonly html: SafeHtml };
 
-type Renderer = (text: string, imageHosts: readonly string[]) => string;
+type Renderer = (text: string, imageHosts: readonly string[]) => SafeHtml;
 
 /** The module of `bb-wasm`, fetched the first time it is asked for. */
 async function loadRenderer(): Promise<Renderer> {

@@ -1,6 +1,8 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
+import { markSafeHtml } from "@bugaboo/api-client";
+
 import { MarkdownEditor } from "./MarkdownEditor.tsx";
 import { MarkdownView } from "./MarkdownView.tsx";
 
@@ -28,7 +30,7 @@ const words = {
 
 describe("thm_12 the Markdown components carry no styles", () => {
   it("the view is the part markdown", () => {
-    const markup = renderToStaticMarkup(<MarkdownView html={view.html} />);
+    const markup = renderToStaticMarkup(<MarkdownView html={markSafeHtml(view.html)} />);
     expect(markup).toContain('data-part="markdown"');
     expect(markup).not.toContain("style=");
   });

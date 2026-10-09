@@ -18,6 +18,9 @@ use crate::{output, tools};
 
 /// The crate that is built for the browser.
 pub(crate) const CRATE: &str = "bb-wasm";
+/// The name of the library, and of the program that joins the module with its glue: the same name,
+/// and the same version (ARCH-WASM holds the two together).
+pub(crate) const BINDGEN: &str = "wasm-bindgen";
 /// The cargo profile with the settings for a small module (root `Cargo.toml`).
 const PROFILE: &str = "wasm";
 /// What the browser runs.
@@ -65,8 +68,7 @@ pub(crate) fn run(root: &Path) -> anyhow::Result<bool> {
         return Ok(true);
     }
     std::fs::create_dir_all(&out).with_context(|| format!("could not make {}", out.display()))?;
-    let bindgen =
-        tools::find("wasm-bindgen").map_err(|finding| anyhow::anyhow!(finding.message))?;
+    let bindgen = tools::find(BINDGEN).map_err(|finding| anyhow::anyhow!(finding.message))?;
     let built_text = built.to_string_lossy();
     run_tool(
         root,

@@ -1,11 +1,11 @@
+import { trustedTypesPolicyName, type SafeHtml } from "@bugaboo/api-client";
 import { useLayoutEffect, useRef, type RefObject } from "react";
 
-/**
- * The one Trusted Types policy of the app (SEC-13, ADR-0011). The content security policy says
- * `trusted-types bugaboo-markdown`, so a browser refuses to set HTML from a string by any other
- * way. SEC-RICHTEXT holds this name to the name in the header of the server.
+/*
+ * The one Trusted Types policy of the app (SEC-13, ADR-0011). Its name is written once, in
+ * `bb-api-words`, where the content security policy of the server takes it from too; a browser
+ * refuses to set HTML from a string by any other way.
  */
-export const trustedTypesPolicyName = "bugaboo-markdown";
 
 /**
  * The part of the Trusted Types interface that is used here (the compiler's own list of types does
@@ -48,8 +48,9 @@ function trustedHtml(html: string): string {
  * The element to put HTML in: its content is the HTML, set through the policy. This is the one
  * place in the app that sets HTML from a string (SEC-RICHTEXT); only `MarkdownView` uses it.
  */
-export function useHtml(html: string): RefObject<HTMLDivElement | null> {
+export function useHtml(safe: SafeHtml): RefObject<HTMLDivElement | null> {
   const box = useRef<HTMLDivElement>(null);
+  const html = safe.html;
   useLayoutEffect(() => {
     if (box.current !== null) {
       box.current.innerHTML = trustedHtml(html);

@@ -1,10 +1,12 @@
+import type { SafeHtml } from "@bugaboo/api-client";
+
 import { partOf } from "../parts.ts";
 import { part } from "../tokens.ts";
 import { useHtml } from "./policy.ts";
 
 export interface MarkdownViewProps {
   /** Safe HTML from `bb-markdown`: from the server, or from the preview of the editor. */
-  readonly html: string;
+  readonly html: SafeHtml;
 }
 
 /**
