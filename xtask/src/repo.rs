@@ -118,8 +118,8 @@ impl Repo {
     ///
     /// The developer's working tree is never written to: no file is swapped, so a crash, a
     /// Ctrl+C or an editor autosave cannot lose anything. Tools still come from the real
-    /// repository (`.tools/`), and `node_modules` is linked into the export so tools that look
-    /// for it next to the files find it. Checks that need Git itself (secrets, commit message,
+    /// repository (`.tools/`), and `node_modules` and the WebAssembly glue are linked into the export so
+    /// tools that look for them next to the files find them. Checks that need Git itself (secrets, commit message,
     /// file sizes) use [`Repo::real_root`].
     pub(crate) fn export_staged(&self) -> anyhow::Result<StagedTree> {
         let dir = self.root.join("target").join("staged-tree");
@@ -128,6 +128,12 @@ impl Repo {
         let prefix = format!("--prefix={}/", dir.to_string_lossy().replace('\\', "/"));
         self.git_bytes(&["checkout-index", "--all", "--force", &prefix])?;
         link_directory(&self.root.join("node_modules"), &dir.join("node_modules"));
+        // The browser code imports the WebAssembly glue that `cargo xtask wasm` makes; Git does not
+        // hold it, so the export links it like `node_modules`.
+        link_directory(
+            &crate::wasm::out_dir(&self.root),
+            &crate::wasm::out_dir(&dir),
+        );
         // Tools that look for `.git` to find the root of the project (rumdl and others) must
         // find the export, not the real repository above `target/`, or their path rules would
         // see `target/staged-tree/...` (M1-F17). An empty folder is enough for that; Git itself

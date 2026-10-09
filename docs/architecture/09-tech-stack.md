@@ -41,7 +41,7 @@ Latest stable versions, checked against crates.io and npm on **2026-10-04**. Loc
 | Errors | thiserror | 2.0.21 | MIT/Apache-2.0 |
 | Logging | tracing | 0.1.44 | MIT |
 | Markdown | pulldown-cmark | 0.13.4 | MIT |
-| HTML sanitizing | ammonia | 4.2.1 | MIT/Apache-2.0 |
+| HTML writing | own writer over pulldown-cmark's events, one allow list (ADR-0011); no HTML parser | — | — |
 | Embedded web app | rust-embed | 8.12.0 | MIT |
 | File type detection | infer | 0.22.0 | MIT |
 | Image previews | image | 0.25.10 | MIT/Apache-2.0 |

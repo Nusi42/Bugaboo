@@ -249,9 +249,9 @@ status = "planned"
 
 [[check]]
 id = "ARCH-WASM"
-title = "The crates shared with the browser (bb-core, bb-searchlang, bb-markdown) still build for WebAssembly"
+title = "The crates shared with the browser (bb-core, bb-searchlang, bb-markdown) and bb-wasm still build for WebAssembly, and the wasm-bindgen program is the version of the library"
 rule = "ADR-0001, ADR-0005, ADR-0011"
-tool = "cargo check --target wasm32-unknown-unknown (minimal form: the size budget with wasm-opt, PERF-04, comes with bb-wasm)"
+tool = "xtask (cargo check --target wasm32-unknown-unknown; compares the wasm-bindgen version in tools/dev/tools.toml with Cargo.lock). The size of the module, PERF-04, is measured in the browser build by PERF-BUNDLE"
 when = ["push", "ci"]
 files = [
   "crates/bb-core/**",
@@ -488,6 +488,20 @@ files = ["*"]
 status = "active"
 
 [[check]]
+id = "SEC-RICHTEXT"
+title = "Text written by people is rendered only by bb-markdown: no other crate depends on pulldown-cmark, no HTML is set from a string outside MarkdownView, the sanitizer corpus test exists, and the CSP names the policy MarkdownView uses"
+rule = "coding-standards §4, ADR-0011, SEC-13"
+tool = "xtask (reads Cargo manifests and the browser code) + the corpus tests `sec_13_the_sanitizer_corpus_renders_every_attack_as_text` and `sec_13_server_and_browser_render_the_same_html`"
+when = ["edit", "commit", "ci"]
+files = [
+  "crates/**/Cargo.toml",
+  "crates/bb-markdown/**",
+  "crates/bb-api/src/headers.rs",
+  "web/**/*.{ts,tsx}",
+]
+status = "planned"
+
+[[check]]
 id = "SEC-PATTERNS"
 title = "No unwrap/expect/panic in production code, no dangerouslySetInnerHTML, eval or new Function"
 rule = "coding-standards §3, §4"
@@ -620,7 +634,7 @@ status = "active"
 id = "PERF-BUNDLE"
 title = "Initial JavaScript stays within its budget (Brotli)"
 rule = "PERF-04"
-tool = "xtask (reads the Vite manifest of the built app, adds up the JavaScript of the entry and what it imports at once, compresses each file with Brotli at the quality the server uses (tools/dev/compression.json) and fails above the budget in tools/checks/perf-bundle.toml; the WebAssembly part is not checked yet, M2-F03)"
+tool = "xtask (reads the Vite manifest of the built app, adds up the JavaScript of the entry and what it imports at once, compresses each file with Brotli at the quality the server uses (tools/dev/compression.json) and fails above the budget in tools/checks/perf-bundle.toml; the WebAssembly modules of the build, together, have their own budget there)"
 when = ["ci"]
 files = ["web/**", "tools/checks/perf-bundle.toml", "tools/dev/compression.json"]
 status = "active"

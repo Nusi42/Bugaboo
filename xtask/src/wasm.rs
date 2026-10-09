@@ -1,0 +1,196 @@
+//! `cargo xtask wasm`: the WebAssembly module of the browser (ADR-0011, PERF-04).
+//!
+//! Three steps: cargo builds `bb-wasm` small (the `wasm` profile), `wasm-bindgen` writes the
+//! module and its JavaScript glue, `wasm-opt` makes the module smaller. The result is in
+//! `web/packages/wasm/generated/` (never committed). The folder remembers the hash of the module
+//! cargo made, so a build without changes takes no time. ARCH-WASM holds the tools to the version
+//! of the library, PERF-BUNDLE the size to its budget.
+
+use std::fmt::Write as _;
+use std::path::{Path, PathBuf};
+use std::process::{Command, Stdio};
+
+use anyhow::{Context as _, bail};
+use serde_json::Value;
+use sha2::{Digest as _, Sha256};
+
+use crate::{output, tools};
+
+/// The crate that is built for the browser.
+pub(crate) const CRATE: &str = "bb-wasm";
+/// The cargo profile with the settings for a small module (root `Cargo.toml`).
+const PROFILE: &str = "wasm";
+/// What the browser runs.
+pub(crate) const TARGET: &str = "wasm32-unknown-unknown";
+/// Where the module and its glue are written, relative to the repository root.
+pub(crate) const OUT_DIR: &str = "web/packages/wasm/generated";
+/// The name cargo gives the library of the crate, and the name of the files
+/// (`<name>.js`, `<name>_bg.wasm`).
+const OUT_NAME: &str = "bb_wasm";
+/// Remembers which module cargo made last (its SHA-256), inside [`OUT_DIR`].
+const STAMP: &str = ".stamp";
+/// What `wasm-opt` is asked to do: optimize for size, with the features the compiler uses.
+const OPTIMIZE: [&str; 5] = [
+    "-Oz",
+    "--enable-bulk-memory",
+    "--enable-nontrapping-float-to-int",
+    "--enable-sign-ext",
+    "--enable-mutable-globals",
+];
+
+/// The folder of the module and its glue, with the separators of this system (a link made by
+/// Windows needs them).
+pub(crate) fn out_dir(root: &Path) -> PathBuf {
+    OUT_DIR
+        .split('/')
+        .fold(root.to_path_buf(), |path, part| path.join(part))
+}
+
+/// The module `wasm-opt` wrote.
+pub(crate) fn module_path(root: &Path) -> PathBuf {
+    out_dir(root).join(format!("{OUT_NAME}_bg.wasm"))
+}
+
+/// Builds the module, or says it is up to date. Returns whether it worked.
+pub(crate) fn run(root: &Path) -> anyhow::Result<bool> {
+    let built = cargo_build(root)?;
+    let hash = hex(&Sha256::digest(
+        std::fs::read(&built).with_context(|| format!("could not read {}", built.display()))?,
+    ));
+    let out = out_dir(root);
+    let stamp = out.join(STAMP);
+    let remembered = std::fs::read_to_string(&stamp).unwrap_or_default();
+    if remembered == hash && module_path(root).is_file() {
+        output::info("ok       WebAssembly module is up to date");
+        return Ok(true);
+    }
+    std::fs::create_dir_all(&out).with_context(|| format!("could not make {}", out.display()))?;
+    let bindgen =
+        tools::find("wasm-bindgen").map_err(|finding| anyhow::anyhow!(finding.message))?;
+    let built_text = built.to_string_lossy();
+    run_tool(
+        root,
+        &bindgen,
+        &[
+            &built_text,
+            "--target",
+            "web",
+            "--out-dir",
+            OUT_DIR,
+            "--out-name",
+            OUT_NAME,
+        ],
+    )?;
+    let optimizer = tools::find("wasm-opt").map_err(|finding| anyhow::anyhow!(finding.message))?;
+    let module = module_path(root);
+    let module_text = module.to_string_lossy();
+    let mut args: Vec<&str> = vec![&module_text];
+    args.extend(OPTIMIZE);
+    args.extend(["-o", &module_text]);
+    run_tool(root, &optimizer, &args)?;
+    std::fs::write(&stamp, hash).with_context(|| format!("could not write {}", stamp.display()))?;
+    output::info(&format!("wrote    {OUT_DIR}/{OUT_NAME}_bg.wasm"));
+    Ok(true)
+}
+
+/// Makes sure the module is there; for checks and tests that read it.
+pub(crate) fn ensure(root: &Path) -> anyhow::Result<()> {
+    if run(root)? {
+        Ok(())
+    } else {
+        bail!("the WebAssembly module could not be built (see the messages above)")
+    }
+}
+
+fn run_tool(root: &Path, program: &Path, args: &[&str]) -> anyhow::Result<()> {
+    let status = Command::new(program)
+        .args(args)
+        .current_dir(root)
+        .status()
+        .with_context(|| format!("could not start {}", program.display()))?;
+    if status.success() {
+        Ok(())
+    } else {
+        bail!("{} failed (see the messages above)", program.display())
+    }
+}
+
+/// Runs cargo and returns the module it wrote. Cargo says where: a different `target-dir` in the
+/// settings of the machine needs no guessing.
+fn cargo_build(root: &Path) -> anyhow::Result<PathBuf> {
+    let out = Command::new("cargo")
+        .args([
+            "build",
+            "--message-format=json-render-diagnostics",
+            "--package",
+            CRATE,
+            "--target",
+            TARGET,
+            "--profile",
+            PROFILE,
+        ])
+        .current_dir(root)
+        .stderr(Stdio::inherit())
+        .output()
+        .context("could not run cargo")?;
+    if !out.status.success() {
+        bail!("cargo could not build {CRATE} for {TARGET} (see the messages above)");
+    }
+    module_from(&String::from_utf8_lossy(&out.stdout))
+        .with_context(|| format!("cargo did not report a module for {CRATE}"))
+}
+
+/// The `.wasm` file of the crate in cargo's JSON messages.
+fn module_from(cargo_output: &str) -> Option<PathBuf> {
+    cargo_output
+        .lines()
+        .filter_map(|line| serde_json::from_str::<Value>(line).ok())
+        .filter(|message| message["reason"] == "compiler-artifact")
+        .filter(|message| message["target"]["name"] == OUT_NAME)
+        .filter_map(|message| {
+            message["filenames"]
+                .as_array()?
+                .iter()
+                .filter_map(Value::as_str)
+                .find(|name| {
+                    Path::new(name)
+                        .extension()
+                        .is_some_and(|extension| extension == "wasm")
+                })
+                .map(PathBuf::from)
+        })
+        .next_back()
+}
+
+fn hex(bytes: &[u8]) -> String {
+    bytes.iter().fold(String::new(), |mut text, byte| {
+        // Writing into a String cannot fail.
+        let _ = write!(text, "{byte:02x}");
+        text
+    })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn the_module_comes_from_the_compiler_artifact_message() {
+        let output = [
+            r#"{"reason":"compiler-artifact","target":{"name":"bb_markdown"},"filenames":["a/libbb_markdown.rlib"]}"#,
+            r#"{"reason":"compiler-artifact","target":{"name":"bb_wasm"},"filenames":["a/libbb_wasm.rlib","D:/custom target/wasm/bb_wasm.wasm"]}"#,
+            "not json",
+        ]
+        .join("\n");
+        assert_eq!(
+            module_from(&output),
+            Some(PathBuf::from("D:/custom target/wasm/bb_wasm.wasm"))
+        );
+        assert_eq!(module_from(""), None);
+    }
+
+    #[test]
+    fn a_hash_is_written_in_hex() {
+        assert_eq!(hex(&[0, 15, 255]), "000fff");
+    }
+}

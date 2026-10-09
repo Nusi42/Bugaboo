@@ -8,3 +8,10 @@ publish.workspace = true
 
 [lints]
 workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+bb-markdown = { path = "../bb-markdown" }
+wasm-bindgen = { workspace = true }
