@@ -320,7 +320,7 @@ mod tests {
         std::fs::write(out_dir(path).join(STAMP), b"hash").unwrap();
         // The program that runs this test was built before the stamp was written.
         assert!(is_fresh(path));
-        assert_eq!(built_from(path, &built), [source.clone()]);
+        assert_eq!(built_from(path, &built), std::slice::from_ref(&source));
         std::thread::sleep(std::time::Duration::from_millis(50));
         std::fs::write(&source, b"fn b() {}").unwrap();
         assert!(!is_fresh(path), "the source is newer than the stamp");
