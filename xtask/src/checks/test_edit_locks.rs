@@ -6,7 +6,7 @@
 //! that the work package names is missing or has lost its `#[tokio::test]`, so the guarantees
 //! (a lock frees itself, *Edit anyway* keeps the first person's text, a lost lock never drops
 //! text, a stale version tells who changed what, a draft is private and goes) cannot be deleted
-//! unseen. The suite itself runs in `cargo xtask ci` (the Rust tests); the browser scenarios come
+//! unseen; a named test that carries `#[ignore]` counts as missing. The suite itself runs in `cargo xtask ci` (the Rust tests); the browser scenarios come
 //! with M3 WP-10.
 
 use super::{Check, Context, Finding};
@@ -52,15 +52,21 @@ fn suite_text(repo: &crate::repo::Repo) -> Option<String> {
     (!suite.is_empty()).then_some(suite)
 }
 
-/// Whether the code has an `async fn` with this name right below a `#[tokio::test]`.
+/// Whether the code has an `async fn` with this name below a `#[tokio::test]` that is not
+/// switched off: no `#[ignore]` anywhere in the attributes between the two.
 fn is_a_test(code: &str, name: &str) -> bool {
     let needle = format!("async fn {name}(");
     code.match_indices(&needle).any(|(at, _)| {
-        code[..at]
-            .trim_end()
-            .lines()
-            .last()
-            .is_some_and(|line| line.trim() == "#[tokio::test]")
+        let mut attributes = Vec::new();
+        for line in code[..at].trim_end().lines().rev() {
+            let line = line.trim();
+            if !line.starts_with("#[") {
+                break;
+            }
+            attributes.push(line);
+        }
+        attributes.contains(&"#[tokio::test]")
+            && !attributes.iter().any(|line| line.starts_with("#[ignore"))
     })
 }
 
@@ -126,6 +132,28 @@ async fn {name}() -> TestResult {{ Ok(()) }}"
         let _ = writeln!(suite, "async fn {name}() {{}}");
         let _ = writeln!(suite, "// #[tokio::test]\n// async fn {name}() {{}}");
         assert_eq!(evaluate(Some(&suite)).len(), 1);
+    }
+
+    #[test]
+    fn bad_example_a_test_that_is_switched_off() {
+        let mut suite = suite_with(&REQUIRED[1..]);
+        let name = REQUIRED[0];
+        let _ = writeln!(
+            suite,
+            "#[tokio::test]
+#[ignore = \"later\"]
+async fn {name}() {{}}"
+        );
+        let found = evaluate(Some(&suite));
+        assert_eq!(found.len(), 1);
+        let mut other = suite_with(&REQUIRED[1..]);
+        let _ = writeln!(
+            other,
+            "#[ignore]
+#[tokio::test]
+async fn {name}() {{}}"
+        );
+        assert_eq!(evaluate(Some(&other)).len(), 1);
     }
 
     #[test]

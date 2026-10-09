@@ -3,7 +3,8 @@
 //!
 //! Read from the generated API description, so a new change route is found without anyone
 //! registering it. A *change operation* is any operation but a `GET`, `HEAD` or `OPTIONS`. Its
-//! request body must have the property `version`, or the route must be named in
+//! request body must have the property `version`, listed as required so a request without it is
+//! refused, or the route must be named in
 //! `tools/checks/version-exemptions.toml` with a reason: signing in has no stored version, making a
 //! new record has nothing to be stale, an idempotent removal loses nothing. A route marked
 //! `x-long-text` (from the table of `bb-api`) saves long text: its body must have `version` and
@@ -79,8 +80,28 @@ fn body_properties<'a>(spec: &'a Value, operation: &'a Value) -> Vec<&'a str> {
 }
 
 fn collect<'a>(spec: &'a Value, schema: &'a Value, names: &mut Vec<&'a str>) {
-    if let Some(properties) = schema.get("properties").and_then(Value::as_object) {
-        names.extend(properties.keys().map(String::as_str));
+    collect_in(spec, schema, "properties", names);
+}
+
+/// The names the body must have (`required`), so a request without a version is refused by the
+/// description and not only by the code.
+fn body_required<'a>(spec: &'a Value, operation: &'a Value) -> Vec<&'a str> {
+    let schema = operation
+        .pointer("/requestBody/content/application~1json/schema")
+        .map(|schema| resolve(spec, schema));
+    let mut names = Vec::new();
+    if let Some(schema) = schema {
+        collect_in(spec, schema, "required", &mut names);
+    }
+    names
+}
+
+/// The keys of `properties`, or the strings of `required`, of a schema and its `allOf` members.
+fn collect_in<'a>(spec: &'a Value, schema: &'a Value, key: &str, names: &mut Vec<&'a str>) {
+    match schema.get(key) {
+        Some(Value::Object(properties)) => names.extend(properties.keys().map(String::as_str)),
+        Some(Value::Array(listed)) => names.extend(listed.iter().filter_map(Value::as_str)),
+        _ => {}
     }
     for member in schema
         .get("allOf")
@@ -88,7 +109,7 @@ fn collect<'a>(spec: &'a Value, schema: &'a Value, names: &mut Vec<&'a str>) {
         .into_iter()
         .flatten()
     {
-        collect(spec, resolve(spec, member), names);
+        collect_in(spec, resolve(spec, member), key, names);
     }
 }
 
@@ -116,6 +137,7 @@ fn is_change(operation: &Operation<'_>) -> bool {
 fn route_findings(spec: &Value, found: &Operation<'_>, exempt: Option<&Exemption>) -> Vec<Finding> {
     let place = found.place();
     let properties = body_properties(spec, found.body);
+    let required = body_required(spec, found.body);
     let versioned = properties.contains(&VERSION);
     let long_text = found.body.get(LONG_TEXT) == Some(&Value::Bool(true));
     let mut findings = Vec::new();
@@ -145,6 +167,18 @@ fn route_findings(spec: &Value, found: &Operation<'_>, exempt: Option<&Exemption
             &place,
             format!("A change must take the `{VERSION}` it read in its body, so nobody overwrites another change unseen (ADR-0019). If it cannot have one (signing in, making a new record), name the route with its reason in {EXEMPTIONS_PATH}."),
         ));
+    }
+    // A property that is optional in the description is a request that may leave the version out.
+    for needed in [VERSION, LOCK_TOKEN] {
+        if properties.contains(&needed)
+            && (needed == VERSION || long_text)
+            && !required.contains(&needed)
+        {
+            findings.push(Finding::at(
+                &place,
+                format!("`{needed}` must be required in the body (not optional), so a request without it is refused."),
+            ));
+        }
     }
     if versioned && !documents_conflict(spec, found.body) {
         findings.push(Finding::at(
@@ -203,8 +237,9 @@ mod tests {
             .iter()
             .map(|name| ((*name).to_owned(), json!({"type": "integer"})))
             .collect();
+        let required: Vec<&str> = properties.to_vec();
         let mut operation = json!({
-            "requestBody": {"content": {"application/json": {"schema": {"type": "object", "properties": body}}}},
+            "requestBody": {"content": {"application/json": {"schema": {"type": "object", "properties": body, "required": required}}}},
             "responses": {"200": {"description": "ok"}}
         });
         if conflict {
@@ -266,6 +301,18 @@ mod tests {
         let bad = spec(&change(&["name"], false, false));
         let found = messages(&bad, &[]).join("\n");
         assert!(found.contains("must take the `version`"), "{found}");
+    }
+
+    #[test]
+    fn bad_example_a_version_that_is_optional_in_the_body() {
+        let mut optional = change(&["name", "version"], true, false);
+        optional["requestBody"]["content"]["application/json"]["schema"]["required"] =
+            json!(["name"]);
+        let found = messages(&spec(&optional), &[]).join(
+            "
+",
+        );
+        assert!(found.contains("must be required"), "{found}");
     }
 
     #[test]
