@@ -1,6 +1,7 @@
 //! What the browser app takes from the Rust code as constants, so it never writes them a second
-//! time: the keys, the choices and the defaults of the settings (ADR-0018), and the page sizes of
-//! the lists (PERF-02).
+//! time: the keys, the choices and the defaults of the settings (ADR-0018), the page sizes of
+//! the lists (PERF-02), and the times and sizes of editing (the lease, the heartbeat, how long a
+//! draft is kept, how many records one check of versions takes: ADR-0019).
 //!
 //! xtask does not link the product crates, so both are read as Rust source.
 
@@ -14,6 +15,7 @@ use crate::rust_registry::{ChoiceLists, read_registry};
 use crate::source::Source;
 
 const PAGING_SOURCE: &str = "crates/bb-core/src/paging.rs";
+const EDIT_SOURCE: &str = "crates/bb-core/src/edit.rs";
 const PAGE_SIZE_MAX: &str = "PAGE_SIZE_MAX";
 const PAGE_SIZE_DEFAULT: &str = "PAGE_SIZE_DEFAULT";
 
@@ -120,8 +122,8 @@ export type SettingChoice<Name extends keyof typeof settingChoices> =
     Ok(out)
 }
 
-/// The value of `pub const NAME: u32 = 100;` in `text`.
-fn number_const(file: &syn::File, name: &str) -> anyhow::Result<String> {
+/// The value of `pub const NAME: u32 = 100;` in the file, which was read from `path`.
+fn number_const(file: &syn::File, path: &str, name: &str) -> anyhow::Result<String> {
     file.items
         .iter()
         .find_map(|item| match item {
@@ -134,7 +136,7 @@ fn number_const(file: &syn::File, name: &str) -> anyhow::Result<String> {
             },
             _ => None,
         })
-        .with_context(|| format!("{PAGING_SOURCE} has no `const {name}` that is a number"))
+        .with_context(|| format!("{path} has no `const {name}` that is a number"))
 }
 
 /// The page sizes of the lists as constants for the browser client.
@@ -150,8 +152,40 @@ export const pageSizeMax = {};
 /** How many items a page of a list holds when the request does not say. */
 export const pageSizeDefault = {};
 ",
-        number_const(&file, PAGE_SIZE_MAX)?,
-        number_const(&file, PAGE_SIZE_DEFAULT)?,
+        number_const(&file, PAGING_SOURCE, PAGE_SIZE_MAX)?,
+        number_const(&file, PAGING_SOURCE, PAGE_SIZE_DEFAULT)?,
+    ))
+}
+
+/// The times and sizes of editing as constants for the browser client: it sends a heartbeat as
+/// often as the lease needs, and asks about as many records as one check takes.
+pub(super) fn editing(sources: &[Source]) -> anyhow::Result<String> {
+    let Some((_, text)) = sources.iter().find(|(path, _)| path == EDIT_SOURCE) else {
+        bail!("{EDIT_SOURCE} is missing");
+    };
+    let file = syn::parse_file(text).with_context(|| format!("{EDIT_SOURCE} is not Rust"))?;
+    let number = |name: &str| number_const(&file, EDIT_SOURCE, name);
+    Ok(format!(
+        "{TS_HEADER}/** How long an edit lock lasts after the last heartbeat, in seconds. */
+export const leaseSeconds = {};
+
+/** How often the open editor sends a heartbeat, in seconds. */
+export const heartbeatSeconds = {};
+
+/** How long a draft is kept after its last change, in days. */
+export const draftKeepDays = {};
+
+/** The most characters of the text of a draft. */
+export const draftTextMax = {};
+
+/** The most records one check of versions asks about. */
+export const versionsMax = {};
+",
+        number("LEASE_SECONDS")?,
+        number("HEARTBEAT_SECONDS")?,
+        number("DRAFT_KEEP_DAYS")?,
+        number("DRAFT_TEXT_MAX")?,
+        number("VERSIONS_MAX")?,
     ))
 }
 
@@ -286,6 +320,27 @@ pub(super) const DEFAULT_LOOK: &str = \"day\";
             CATALOG.replace("MODE_CHOICES: &[Choice]", "OTHER_CHOICES: &[Choice]"),
         );
         assert!(setting_keys(&[broken]).is_err());
+    }
+
+    #[test]
+    fn the_times_of_editing_come_from_the_edit_module() {
+        let source = (
+            EDIT_SOURCE.to_owned(),
+            "pub const LEASE_SECONDS: i64 = 60;
+pub const HEARTBEAT_SECONDS: i64 = 15;
+pub const DRAFT_KEEP_DAYS: i64 = 30;
+pub const DRAFT_TEXT_MAX: usize = 100_000;
+pub const VERSIONS_MAX: u32 = 50;
+"
+            .to_owned(),
+        );
+        let text = editing(&[source]).unwrap();
+        assert!(text.contains("leaseSeconds = 60;"), "{text}");
+        assert!(text.contains("heartbeatSeconds = 15;"), "{text}");
+        assert!(text.contains("draftKeepDays = 30;"), "{text}");
+        assert!(text.contains("draftTextMax = 100000;"), "{text}");
+        assert!(text.contains("versionsMax = 50;"), "{text}");
+        assert!(editing(&[]).is_err());
     }
 
     #[test]
