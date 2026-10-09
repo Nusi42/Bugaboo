@@ -30,10 +30,6 @@ struct Plan {
 }
 
 impl Plan {
-    fn people_change(&self) -> bool {
-        self.assigned_now != self.assigned_next
-    }
-
     /// The fields that change, before and after, for the event.
     fn field_changes(&self) -> Vec<FieldChange> {
         let (before, after) = (&self.current, &self.next);
@@ -85,25 +81,24 @@ impl Plan {
         );
         changes
     }
+}
 
-    /// The fields of the catalogue the change touches: the person has to be allowed to change
-    /// each. Changing the issue type needs *Change issues* and no field of its own.
-    fn touched(&self) -> Vec<Field> {
-        let (before, after) = (&self.current, &self.next);
-        let mut fields = Vec::new();
-        for (changed, field) in [
-            (before.title != after.title, Field::Title),
-            (before.description != after.description, Field::Description),
-            (before.status != after.status, Field::Status),
-            (before.priority != after.priority, Field::Priority),
-            (self.people_change(), Field::AssignedTo),
-        ] {
-            if changed {
-                fields.push(field);
-            }
-        }
-        fields
-    }
+/// The fields of the catalogue that the request names, changed or not. Each has to be one the
+/// person may change: judging only the values that differ would answer 200 or 403 depending on
+/// the value a field has now, which tells a person who may not see the field what it holds.
+/// Changing the issue type needs the right to change the issue (*Change issues*, or *Change own
+/// issues* on an issue the person reported) and no field of its own.
+fn named(input: &ChangeIssue) -> Vec<Field> {
+    [
+        (input.title.is_some(), Field::Title),
+        (input.description.is_some(), Field::Description),
+        (input.status.is_some(), Field::Status),
+        (input.priority.is_some(), Field::Priority),
+        (input.assigned_to.is_some(), Field::AssignedTo),
+    ]
+    .into_iter()
+    .filter_map(|(given, field)| given.then_some(field))
+    .collect()
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
@@ -138,6 +133,9 @@ impl<S: AuthStore> Ctx<'_, S> {
         {
             return Err(ErrorCode::InvalidRequest.into());
         }
+        // Before anything else is looked at: a field the person may not change is refused whether
+        // or not the value differs, and whatever else is wrong with the request.
+        ensure_may_change(&held.field_mask(), &named(input))?;
         let assigned_now: Vec<UserId> = self
             .store()
             .assignees(current.id)
@@ -168,7 +166,6 @@ impl<S: AuthStore> Ctx<'_, S> {
             next,
             assigned_next,
         };
-        ensure_may_change(&held.field_mask(), &plan.touched())?;
         if plan.current.version != input.version {
             return Err(ErrorCode::VersionChanged.into());
         }

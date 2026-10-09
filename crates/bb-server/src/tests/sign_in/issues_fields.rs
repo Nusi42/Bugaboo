@@ -191,6 +191,117 @@ async fn sec_06_issue_answers_refuse_every_field_the_role_may_not_see() -> TestR
     .await
 }
 
+/// A person with a role that changes issues, may change the title and holds `others` for the
+/// other fields a change can name.
+async fn changer(
+    site: &Site<'_>,
+    rig: &Rig,
+    email: &str,
+    others: FieldLevel,
+) -> Result<Browser, Failure> {
+    let role = site
+        .org
+        .role(
+            email,
+            &[
+                Permission::SeeProjects,
+                Permission::SeeIssues,
+                Permission::ChangeIssues,
+            ],
+        )
+        .await?;
+    for field in [
+        Field::Title,
+        Field::Description,
+        Field::Status,
+        Field::Priority,
+        Field::AssignedTo,
+    ] {
+        let level = if field == Field::Title {
+            FieldLevel::CanChange
+        } else {
+            others
+        };
+        rig.api()
+            .set_field_level(
+                Rig::info(),
+                SetFieldLevel {
+                    session_token: site.org.admin.session.clone(),
+                    role: role.id,
+                    project: None,
+                    field,
+                    level: Some(level),
+                },
+            )
+            .await?;
+    }
+    let started = rig.person(&site.org.admin.session, email).await?;
+    let member = Member {
+        id: started.person.id,
+        session: started.session_token,
+    };
+    site.org.give_everywhere(&member, role.id).await?;
+    Browser::signed_in_as(site.app, email).await
+}
+
+#[tokio::test]
+async fn sec_04_an_unchanged_value_of_a_field_i_may_not_change_is_refused_like_a_changed_one()
+-> TestResult {
+    each_database("sec_04_unchanged_value", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let (_, tim) = site.person(StartingRole::TeamMember, "tim").await?;
+        let made = ada
+            .send(
+                "POST",
+                &format!("{PROJECTS}/ACME/issues"),
+                Some(json!({
+                    "issue_type": site.bug,
+                    "title": "Guess me",
+                    "description": "A secret",
+                    "priority": "high",
+                    "assigned_to": [tim.to_string()],
+                })),
+            )
+            .await?;
+        let path = format!("{ISSUES}/{}", ok(&made)?["key"].as_str().ok_or("no key")?);
+        // The values the issue has now: sending one of them back must not tell the sender that
+        // it is right, so it is refused like a value that differs.
+        let now = [
+            ("status", json!("open")),
+            ("priority", json!("high")),
+            ("assigned_to", json!([tim.to_string()])),
+            ("description", json!("A secret")),
+        ];
+        for (name, level) in [("see", FieldLevel::CanSee), ("hidden", FieldLevel::Hidden)] {
+            let mut who = changer(&site, &rig, &format!("{name}@example.test"), level).await?;
+            let seen = ada.send("GET", &path, None).await?;
+            let version = ok(&seen)?["issue"]["version"].clone();
+            for (member, value) in &now {
+                let mut body = json!({"version": version, "title": "Renamed"});
+                body[*member] = value.clone();
+                let refused = who.send("PATCH", &path, Some(body)).await?;
+                assert_eq!(
+                    (refused.status, refused.code()),
+                    (StatusCode::FORBIDDEN, "access.forbidden"),
+                    "{name}: `{member}`"
+                );
+            }
+            // The title alone is theirs to change.
+            let renamed = who
+                .send(
+                    "PATCH",
+                    &path,
+                    Some(json!({"version": version, "title": name})),
+                )
+                .await?;
+            assert_eq!(ok(&renamed)?["title"], name);
+        }
+        Ok(())
+    })
+    .await
+}
+
 /// Every key of every object in the answer.
 fn keys(value: &Value, found: &mut Vec<String>) {
     match value {
