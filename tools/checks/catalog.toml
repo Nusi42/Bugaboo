@@ -508,7 +508,7 @@ id = "SEC-PATTERNS"
 title = "No unwrap/expect/panic/unreachable/todo/dbg in Rust code that ships; no eval, new Function, document.write or timer with a string in the browser code"
 rule = "coding-standards §3, §4"
 tool = "xtask (reads the Rust code that ships, without comments, strings and #[cfg(test)] code, and the browser code)"
-when = ["edit", "commit", "ci"]
+when = ["edit", "push", "ci"]
 files = ["crates/**/*.rs", "xtask/**/*.rs", "web/**/*.{ts,tsx}"]
 status = "active"
 

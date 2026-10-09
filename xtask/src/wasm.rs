@@ -64,6 +64,9 @@ pub(crate) fn run(root: &Path) -> anyhow::Result<bool> {
     let stamp = out.join(STAMP);
     let remembered = std::fs::read_to_string(&stamp).unwrap_or_default();
     if remembered == hash && module_path(root).is_file() {
+        // Written again, so the stamp is newer than the sources and `is_fresh` can say so.
+        std::fs::write(&stamp, hash)
+            .with_context(|| format!("could not write {}", stamp.display()))?;
         output::info("ok       WebAssembly module is up to date");
         return Ok(true);
     }
@@ -95,8 +98,47 @@ pub(crate) fn run(root: &Path) -> anyhow::Result<bool> {
     Ok(true)
 }
 
+/// The sources the module is made from, relative to the repository root: the two crates and the
+/// files that pick the versions of their dependencies.
+const SOURCES: [&str; 4] = [
+    "crates/bb-wasm",
+    "crates/bb-markdown",
+    "Cargo.toml",
+    "Cargo.lock",
+];
+
+/// The newest change in a file or a folder (below it), if any.
+fn newest(path: &Path) -> Option<std::time::SystemTime> {
+    let meta = std::fs::metadata(path).ok()?;
+    let own = meta.modified().ok();
+    if !meta.is_dir() {
+        return own;
+    }
+    std::fs::read_dir(path)
+        .ok()?
+        .flatten()
+        .filter_map(|entry| newest(&entry.path()))
+        .chain(own)
+        .max()
+}
+
+/// Whether the module is newer than everything it is made from. The checks ask this first, because
+/// asking cargo takes longer than the check can spare.
+fn is_fresh(root: &Path) -> bool {
+    let Some(built) = newest(&out_dir(root).join(STAMP)) else {
+        return false;
+    };
+    SOURCES
+        .iter()
+        .all(|source| newest(&root.join(source)).is_none_or(|changed| changed <= built))
+        && module_path(root).is_file()
+}
+
 /// Makes sure the module is there; for checks and tests that read it.
 pub(crate) fn ensure(root: &Path) -> anyhow::Result<()> {
+    if is_fresh(root) {
+        return Ok(());
+    }
     if run(root)? {
         Ok(())
     } else {
@@ -189,6 +231,17 @@ mod tests {
             Some(PathBuf::from("D:/custom target/wasm/bb_wasm.wasm"))
         );
         assert_eq!(module_from(""), None);
+    }
+
+    #[test]
+    fn without_a_stamp_and_a_module_the_build_is_not_fresh() {
+        let root = tempfile::tempdir().unwrap();
+        assert!(!is_fresh(root.path()));
+        std::fs::create_dir_all(out_dir(root.path())).unwrap();
+        std::fs::write(module_path(root.path()), b"module").unwrap();
+        assert!(!is_fresh(root.path()), "no stamp yet");
+        std::fs::write(out_dir(root.path()).join(STAMP), b"hash").unwrap();
+        assert!(is_fresh(root.path()), "nothing it is made from is newer");
     }
 
     #[test]
