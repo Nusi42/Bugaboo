@@ -60,8 +60,9 @@ impl Record {
                 .collect();
             let _ = writeln!(
                 text,
-                "route {} {} {} {} : {}",
+                "route {} {} {} {} {} : {}",
                 route.id,
+                words::ENTRY_API,
                 route.method,
                 route.path,
                 route.needs.key(),

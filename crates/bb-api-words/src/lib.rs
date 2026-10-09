@@ -76,6 +76,13 @@ pub mod sec_matrix {
         )
     }
 
+    /// The way into the product that the matrix runs a route through. The first column of a line of
+    /// the record: the API is the only one today; e-mail, search, the assistant and exports add
+    /// theirs with their milestones (M2-F65).
+    pub const ENTRY_API: &str = "api";
+    /// Every entry point the record may name.
+    pub const ENTRY_POINTS: [&str; 1] = [ENTRY_API];
+
     /// Nobody is signed in.
     pub const NOBODY: &str = "nobody";
     /// A person without a role.

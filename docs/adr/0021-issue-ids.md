@@ -34,6 +34,13 @@ TEST-ISSUE-IDS, ARCH-NO-COUNTERS (see `tools/checks/catalog.toml`).
 
 - **Moving an issue to another project** gives it an ID of the new project (in that project's mode) and keeps the old ID in `issue_alias`, like a change of mode. M3 moves an issue only into a project that has its issue type and own fields; the preview names the issues it skips and why (decision M3-Q4). Enforced by: TEST-ISSUE-IDS.
 
+## Amendment (M3, WP-03)
+
+- **The mode is the setting `issues.id-mode`** (*Random IDs* or *Counting IDs*, project level and organization level, changed by the project's lead). A sub-project follows its parent until it chooses, like every setting in layers (ADR-0018). The length of a random code is the setting `issues.id-length` (4 to 8 symbols, 5 to start, organization level); when the short codes of a project run out, the code gets one symbol longer by itself.
+- **Changing the mode of a project** (setting or resetting it) gives every issue of the project, and of the sub-projects that follow it, a code of the new mode in the same change, and keeps each old code in `issue_alias` with its project. A key is found by the short name of the project (now or an old one) and the code (now or an old one); the answer holds the current ID. A code that was given out is never given out again in its project, not even to another issue: the stored counter only goes up, and a random draw also avoids the old codes. **The organization's default does not renew anything:** an issue that was made keeps its ID, and projects that follow the default give their next issues the new mode (M3-F20).
+- **The counting number is the one counter of the product** (`issue_counter`, one row per project, raised inside the change that makes the issue, so two writers wait for each other and no number is skipped). ARCH-NO-COUNTERS names the files that may use it. Random codes come from the secure random source; a clash with a code of the project is drawn again.
+- Enforced by: TEST-ISSUE-IDS (the tests of these rules exist by name and the database ones run on both databases), ARCH-NO-COUNTERS.
+
 ## Amendment (M1)
 
 - Records keep a UUIDv7 (time-ordered). A person's ID is a fully random UUIDv4 instead, so it does not show when the account was made.

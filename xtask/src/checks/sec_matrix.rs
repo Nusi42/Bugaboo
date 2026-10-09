@@ -93,6 +93,7 @@ fn routes(spec: &Value) -> Vec<Route> {
 
 /// A line of the record: the route as it was run and what each actor was answered.
 struct Line {
+    entry: String,
     method: String,
     path: String,
     declared: String,
@@ -110,14 +111,19 @@ fn parse(record: &str) -> (Vec<String>, BTreeMap<String, Line>) {
             && let Some((head, answers)) = rest.split_once(" : ")
         {
             let mut head = head.split_whitespace();
-            let (Some(operation), Some(method), Some(path), Some(declared)) =
-                (head.next(), head.next(), head.next(), head.next())
-            else {
+            let (Some(operation), Some(entry), Some(method), Some(path), Some(declared)) = (
+                head.next(),
+                head.next(),
+                head.next(),
+                head.next(),
+                head.next(),
+            ) else {
                 continue;
             };
             lines.insert(
                 operation.to_owned(),
                 Line {
+                    entry: entry.to_owned(),
                     method: method.to_owned(),
                     path: path.to_owned(),
                     declared: declared.to_owned(),
@@ -199,6 +205,16 @@ fn route_findings(
         ));
         return found;
     };
+    if !words::ENTRY_POINTS.contains(&line.entry.as_str()) {
+        found.push(Finding::at(
+            RECORD_PATH,
+            format!(
+                "{place} was run through `{}`, which is no entry point the matrix knows ({}).",
+                line.entry,
+                words::ENTRY_POINTS.join(", ")
+            ),
+        ));
+    }
     if line.method != route.method || line.path != route.path || line.declared != route.declared {
         found.push(Finding::at(
             RECORD_PATH,
@@ -349,7 +365,8 @@ mod tests {
             })
             .collect();
         format!(
-            "route {operation} {method} {path} {declared} : {}\n",
+            "route {operation} {} {method} {path} {declared} : {}\n",
+            words::ENTRY_API,
             answers.join(" ")
         )
     }
@@ -473,6 +490,18 @@ mod tests {
         let found = messages(&spec(), Some(&lax), EXAMPLES);
         assert!(
             found.iter().any(|m| m.contains("nobody signed in must be")),
+            "{found:?}"
+        );
+    }
+
+    #[test]
+    fn bad_example_a_route_run_through_an_entry_point_the_matrix_does_not_know() {
+        let other = record(&[]).replacen(" api GET ", " e-mail GET ", 1);
+        let found = messages(&spec(), Some(&other), EXAMPLES);
+        assert!(
+            found
+                .iter()
+                .any(|m| m.contains("no entry point the matrix knows")),
             "{found:?}"
         );
     }
