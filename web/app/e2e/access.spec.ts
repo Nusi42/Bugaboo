@@ -180,18 +180,25 @@ test("sec_03 checking Ana's access in Website reads as a sentence with its reaso
   ).toBeVisible();
   const role = t("starting-role.team-member");
   await expect(
-    page.getByText(
-      t("check-access.reason.role-person-project", {
-        person: ana.name,
-        role,
-        project: "Acme Corporation",
-      }),
-    ),
+    page
+      .getByText(
+        t("check-access.reason.role-person-project", {
+          person: ana.name,
+          role,
+          project: "Acme Corporation",
+        }),
+      )
+      .first(),
   ).toBeVisible();
   await expect(
-    page.getByText(
-      t("check-access.reason.inherited-project", { place: "Website", project: "Acme Corporation" }),
-    ),
+    page
+      .getByText(
+        t("check-access.reason.inherited-project", {
+          place: "Website",
+          project: "Acme Corporation",
+        }),
+      )
+      .first(),
   ).toBeVisible();
   // What she cannot do says why not, and every field and kind of people information has its level.
   await expect(page.getByText(t("check-access.reason.none", { person: ana.name }))).not.toHaveCount(
@@ -217,12 +224,14 @@ test("sec_03 a lead who cannot see the project a role comes from reads a project
   );
   await check(page, null, ana);
   await expect(
-    page.getByText(
-      t("check-access.reason.inherited-project", {
-        place: "Website",
-        project: t("access.hidden-project"),
-      }),
-    ),
+    page
+      .getByText(
+        t("check-access.reason.inherited-project", {
+          place: "Website",
+          project: t("access.hidden-project"),
+        }),
+      )
+      .first(),
   ).toBeVisible();
   await expect(page.getByText("Acme Corporation")).toHaveCount(0);
 });
