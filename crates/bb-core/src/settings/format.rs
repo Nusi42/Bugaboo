@@ -69,6 +69,9 @@ pub enum Format {
     /// sequences that do it. The browser knows which IDs exist; the server only keeps the shape
     /// and the size within limits.
     ShortcutKeys,
+    /// A list of host names separated by commas, such as `images.example.com`: bare names, with an
+    /// optional port, never an address with `https://` or a path.
+    Hosts,
 }
 
 impl Format {
@@ -81,6 +84,7 @@ impl Format {
             Self::TimeZone => is_time_zone(text),
             Self::PageAddress => is_page_address(text),
             Self::ShortcutKeys => are_shortcut_keys(text),
+            Self::Hosts => are_hosts(text),
         }
     }
 
@@ -89,7 +93,9 @@ impl Format {
     pub const fn choices(self) -> &'static [Choice] {
         match self {
             Self::Choices(choices) => choices,
-            Self::Free | Self::TimeZone | Self::PageAddress | Self::ShortcutKeys => &[],
+            Self::Free | Self::TimeZone | Self::PageAddress | Self::ShortcutKeys | Self::Hosts => {
+                &[]
+            }
         }
     }
 }
@@ -142,6 +148,34 @@ fn is_key_sequence(text: &str) -> bool {
     !text.is_empty()
         && text.len() <= SHORTCUT_SEQUENCE_LONGEST
         && text.chars().all(|c| c.is_ascii_graphic() || c == ' ')
+}
+
+/// The most digits of a port.
+const PORT_DIGITS_MOST: usize = 5;
+
+/// A host name as a browser sends it (letters, digits, dots and dashes), with an optional port.
+fn is_host(item: &str) -> bool {
+    let (name, port) = item
+        .split_once(':')
+        .map_or((item, None), |(n, p)| (n, Some(p)));
+    let name_ok = !name.is_empty()
+        && !name.starts_with(['.', '-'])
+        && !name.ends_with(['.', '-'])
+        && name
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || c == '.' || c == '-');
+    let port_ok = port.is_none_or(|port| {
+        !port.is_empty()
+            && port.len() <= PORT_DIGITS_MOST
+            && port.chars().all(|c| c.is_ascii_digit())
+    });
+    name_ok && port_ok
+}
+
+/// Every item of the list is a bare host name. The list is read the way every list of the registry
+/// is read (`list_items`).
+fn are_hosts(text: &str) -> bool {
+    super::list_items(text).all(is_host)
 }
 
 fn are_shortcut_keys(text: &str) -> bool {
@@ -243,6 +277,31 @@ mod tests {
             &format!("/{}", "a".repeat(200)),
         ] {
             assert!(!Format::PageAddress.accepts(bad), "{bad}");
+        }
+    }
+
+    #[test]
+    fn sec_13_hosts_are_bare_names_with_an_optional_port() {
+        for good in [
+            "",
+            "images.example.com",
+            "images.example.com, cdn.example.com:8443",
+            "localhost",
+        ] {
+            assert!(Format::Hosts.accepts(good), "{good}");
+        }
+        for bad in [
+            "https://images.example.com",
+            "images.example.com/path",
+            "user@images.example.com",
+            "*.example.com",
+            ".example.com",
+            "example.com:",
+            "example.com:port",
+            "exa mple.com",
+            "images.example.com;evil.example",
+        ] {
+            assert!(!Format::Hosts.accepts(bad), "{bad}");
         }
     }
 

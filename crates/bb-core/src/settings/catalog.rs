@@ -271,6 +271,7 @@ settings! {
         help: message::SETTING_CONTENT_IMAGE_HOSTS_HELP,
         lockable: false,
         list: (50, 253),
+        format: Format::Hosts,
     }
 
     /// Whether everyone has to use two-step sign-in.

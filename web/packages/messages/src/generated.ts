@@ -60,7 +60,9 @@ export const messages = {
     "Let people make an account on their own, without an invitation. Bugaboo cannot check that an address belongs to the person until e-mail is available, so use this only on a network you trust.",
   "setting.content.image-hosts.name": "Hosts that images may come from",
   "setting.content.image-hosts.help":
-    "The hosts that may show images in descriptions and comments, as a list separated by commas, like images.example.com. Images from this server are always shown. Leave the list empty to show no image from other hosts.",
+    "The hosts that may show images in descriptions and comments, as a list separated by commas, like images.example.com. Write only the host name, without https:// and without a path. Leave the list empty to show no image from other hosts.",
+  "setting.ui.hosts-bare":
+    "Write only the host names, like images.example.com, without https:// and without a path.",
   "setting.auth.sign-up-domains.help":
     "The e-mail domains that may sign up on their own, as a list separated by commas, like example.com. Leave the list empty to let every address sign up while signing up is on, so write your domains in first.",
   "setting.ui.search": "Search settings",
@@ -86,8 +88,7 @@ export const messages = {
   "setting.page.start-page-intro": "Choose the page Bugaboo opens after you sign in.",
   "setting.page.sign-in-rules-intro":
     "How long people stay signed in, and the rules for signing in. They apply to everybody.",
-  "setting.page.security-intro":
-    "What the text that people write may show. Images from this server are always shown.",
+  "setting.page.security-intro": "What the text that people write may show.",
   "setting.page.themes-intro":
     "The organization's choice of look. People can choose their own, unless you lock a setting.",
   "nav.region": "Region",

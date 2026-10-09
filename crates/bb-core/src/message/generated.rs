@@ -2175,6 +2175,9 @@ pub const SETTING_START_PAGE_HELP: MessageKey = MessageKey::new("setting.start.p
 /// The message `setting.start.page.name`.
 pub const SETTING_START_PAGE_NAME: MessageKey = MessageKey::new("setting.start.page.name");
 
+/// The message `setting.ui.hosts-bare`.
+pub const SETTING_UI_HOSTS_BARE: MessageKey = MessageKey::new("setting.ui.hosts-bare");
+
 /// The message `setting.ui.lock`.
 pub const SETTING_UI_LOCK: MessageKey = MessageKey::new("setting.ui.lock");
 
@@ -6666,7 +6669,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "setting.content.image-hosts.help",
-        "The hosts that may show images in descriptions and comments, as a list separated by commas, like images.example.com. Images from this server are always shown. Leave the list empty to show no image from other hosts.",
+        "The hosts that may show images in descriptions and comments, as a list separated by commas, like images.example.com. Write only the host name, without https:// and without a path. Leave the list empty to show no image from other hosts.",
     ),
     (
         "setting.content.image-hosts.name",
@@ -6678,7 +6681,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "setting.page.security-intro",
-        "What the text that people write may show. Images from this server are always shown.",
+        "What the text that people write may show.",
     ),
     (
         "setting.page.sign-in-rules-intro",
@@ -6773,6 +6776,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "setting.ui.example-number",
         "A number looks like this: {number}",
+    ),
+    (
+        "setting.ui.hosts-bare",
+        "Write only the host names, like images.example.com, without https:// and without a path.",
     ),
     ("setting.ui.lock", "Lock for everyone"),
     (

@@ -41,6 +41,12 @@ function TypedControl({ setting, onChange }: SettingControlProps) {
       : t("setting.ui.between", { least: bounds.least, most: bounds.most });
   const submit = (): void => {
     if (!number) {
+      // A host list is bare names; the server refuses more, and says so with a plain sentence here.
+      if (setting.format === "hosts" && draft.includes("/")) {
+        setProblem(t("setting.ui.hosts-bare"));
+        return;
+      }
+      setProblem(undefined);
       onChange(draft);
       return;
     }
