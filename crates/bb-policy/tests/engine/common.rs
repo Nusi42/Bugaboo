@@ -15,24 +15,6 @@ use bb_policy::{
     evaluate,
 };
 
-/// A set of permissions as bits, one per permission of the catalogue in its order.
-pub(crate) type PermissionBits = u64;
-
-/// Every set of permissions of the catalogue, for property tests.
-pub(crate) fn any_permission_bits() -> std::ops::Range<PermissionBits> {
-    0..(1 << Permission::ALL.len())
-}
-
-/// The permissions whose bits are set.
-pub(crate) fn permissions_of(bits: PermissionBits) -> BTreeSet<Permission> {
-    Permission::ALL
-        .iter()
-        .enumerate()
-        .filter(|(at, _)| bits & (1 << at) != 0)
-        .map(|(_, permission)| *permission)
-        .collect()
-}
-
 pub(crate) struct World {
     pub(crate) person: UserId,
     pub(crate) acme: ProjectId,

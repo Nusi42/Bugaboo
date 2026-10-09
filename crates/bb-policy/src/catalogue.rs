@@ -131,6 +131,34 @@ permissions! {
 
 words_in_api!(Permission, "One permission of the catalogue.");
 
+/// A set of permissions as bits, one per permission in the order of [`Permission::ALL`]: a
+/// compact way for property tests to draw any set of the catalogue.
+pub type PermissionBits = u64;
+
+const _: () = assert!(
+    Permission::ALL.len() < PermissionBits::BITS as usize,
+    "the catalogue outgrew PermissionBits"
+);
+
+impl Permission {
+    /// Every set of permissions of the catalogue, as bits.
+    #[must_use]
+    pub const fn every_set() -> std::ops::Range<PermissionBits> {
+        0..(1 << Self::ALL.len())
+    }
+
+    /// The permissions whose bits are set.
+    #[must_use]
+    pub fn set_of(bits: PermissionBits) -> std::collections::BTreeSet<Self> {
+        Self::ALL
+            .iter()
+            .enumerate()
+            .filter(|(at, _)| bits & (1 << at) != 0)
+            .map(|(_, permission)| *permission)
+            .collect()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use std::collections::HashSet;

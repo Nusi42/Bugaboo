@@ -23,7 +23,7 @@ mod people;
 mod starting;
 mod tree;
 
-pub use catalogue::{Counts, Kind, NOT_FOR_KEYS, Permission, Topic};
+pub use catalogue::{Counts, Kind, NOT_FOR_KEYS, Permission, PermissionBits, Topic};
 pub use evaluate::{
     Evaluation, HeldRole, Inputs, Place, RoleData, Row, RowStatus, RowTrace, Who, evaluate,
     row_reaches,

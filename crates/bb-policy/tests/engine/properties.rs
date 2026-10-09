@@ -14,7 +14,7 @@ use bb_policy::{
 };
 use proptest::prelude::*;
 
-use crate::common::{PermissionBits, any_permission_bits, permissions_of};
+use bb_policy::PermissionBits;
 
 /// The tree of the properties: ACME, WEB inside it, API inside that.
 struct Tree {
@@ -82,7 +82,7 @@ fn row_strategy() -> impl Strategy<Value = RowSpec> {
 
 fn spec_strategy() -> impl Strategy<Value = Spec> {
     (
-        prop::array::uniform3(any_permission_bits()),
+        prop::array::uniform3(Permission::every_set()),
         prop::collection::vec(row_strategy(), 0..8),
         prop::collection::vec(
             (
@@ -156,7 +156,7 @@ fn inputs(tree: &Tree, spec: &Spec, extra: Option<&RowSpec>) -> Inputs {
             id: *id,
             name: format!("Role {at}"),
             position: i64::try_from(at).unwrap(),
-            permissions: permissions_of(mask),
+            permissions: Permission::set_of(mask),
             two_step: false,
         })
         .collect();
@@ -193,7 +193,7 @@ fn inputs(tree: &Tree, spec: &Spec, extra: Option<&RowSpec>) -> Inputs {
 }
 
 fn narrowing_strategy() -> impl Strategy<Value = (u8, PermissionBits, Option<u8>)> {
-    (0_u8..8, any_permission_bits(), prop::option::of(0_u8..8))
+    (0_u8..8, Permission::every_set(), prop::option::of(0_u8..8))
 }
 
 fn narrowing_of(
@@ -213,7 +213,7 @@ fn narrowing_of(
                 .collect(),
         )
     } else {
-        Choice::Permissions(permissions_of(permissions))
+        Choice::Permissions(Permission::set_of(permissions))
     };
     let narrowing = Narrowing::new(choice);
     match projects {

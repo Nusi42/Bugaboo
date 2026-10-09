@@ -14,8 +14,8 @@ use bb_core::id::{AccessKeyId, AssignmentId, ProjectId, RoleId, SequentialIds, U
 use bb_core::people_kinds::PeopleKind;
 use bb_core::security_log::Digest;
 use bb_policy::{
-    FieldRule, Inputs, Kind, LevelRules, NOT_FOR_KEYS, PeopleRule, Permission, Place, RoleData,
-    Row, Who, evaluate,
+    FieldRule, Inputs, Kind, LevelRules, NOT_FOR_KEYS, PeopleRule, Permission, PermissionBits,
+    Place, RoleData, Row, Who, evaluate,
 };
 use jiff::Timestamp;
 use proptest::prelude::*;
@@ -66,17 +66,13 @@ fn row_strategy() -> impl Strategy<Value = RowSpec> {
         })
 }
 
-fn permissions_of(mask: u16) -> BTreeSet<Permission> {
-    Permission::ALL
-        .iter()
-        .enumerate()
-        .filter(|(at, _)| mask & (1 << at) != 0)
-        .map(|(_, permission)| *permission)
-        .collect()
-}
-
 /// What the owner holds at the place: `place` 0 is the whole organization, 1 to 3 the projects.
-fn owner_inputs(world: &World, masks: [u16; 2], rows: &[RowSpec], place: usize) -> Inputs {
+fn owner_inputs(
+    world: &World,
+    masks: [PermissionBits; 2],
+    rows: &[RowSpec],
+    place: usize,
+) -> Inputs {
     let rows = rows
         .iter()
         .zip(1_u64..)
@@ -107,7 +103,7 @@ fn owner_inputs(world: &World, masks: [u16; 2], rows: &[RowSpec], place: usize) 
             id: *id,
             name: format!("Role {at}"),
             position: i64::try_from(at).unwrap(),
-            permissions: permissions_of(mask),
+            permissions: Permission::set_of(mask),
             two_step: false,
         })
         .collect();
@@ -207,18 +203,18 @@ proptest! {
 
     #[test]
     fn auth_07_a_key_can_do_only_what_its_owner_can_and_its_scopes_allow(
-        masks in prop::array::uniform2(0_u16..(1 << 14)),
+        masks in prop::array::uniform2(Permission::every_set()),
         rows in prop::collection::vec(row_strategy(), 0..8),
         place in 0..4_usize,
         choice in 0..4_usize,
-        picked in 0_u16..(1 << 14),
+        picked in Permission::every_set(),
         // A key with projects has at least one; a key without a list counts in every project.
         projects in prop::option::of(1_u8..8),
     ) {
         let world = World::new();
         let owner = evaluate(&owner_inputs(&world, masks, &rows, place));
         let choice = KeyChoice::ALL[choice];
-        let picked = permissions_of(picked);
+        let picked = Permission::set_of(picked);
         let record = key_record(&world, choice, &picked, projects);
         let key = owner.narrowed(&narrowing_of(&record));
 
