@@ -34,7 +34,7 @@
 //! The words of a machine come from [`PrivateWords`], which tests build by hand, so no example
 //! depends on the real machine.
 
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
 use std::io::ErrorKind;
 use std::path::Path;
@@ -614,6 +614,28 @@ fn rules_in(text: &str, words: &PrivateWords, names: bool) -> BTreeSet<Rule> {
         .collect()
 }
 
+/// The findings when the name of a file holds something private. `place` says which file it is.
+fn scan_name(place: &str, name: &str, words: &PrivateWords) -> Vec<Finding> {
+    findings_without_line(&format!("{place} (its name)"), rules_in(name, words, true)).collect()
+}
+
+/// The findings in the bytes of a file: its text, or the printable runs of a file that is no text
+/// (then without lines). `names` says whether the rule on private words applies.
+fn scan_content(place: &str, bytes: &[u8], words: &PrivateWords, names: bool) -> Vec<Finding> {
+    if let Some(text) = decode_text(bytes) {
+        scan_text(&text, words, false, names)
+            .into_iter()
+            .map(|(line, rule)| finding(place, line, rule))
+            .collect()
+    } else {
+        findings_without_line(
+            &format!("{place} (a file that is no text)"),
+            rules_in(&printable_runs(bytes), words, names),
+        )
+        .collect()
+    }
+}
+
 /// The names of the files, and their text (or the printable runs of a file that is no text).
 fn scan_files(
     root: &Path,
@@ -624,24 +646,13 @@ fn scan_files(
     let mut findings = Vec::new();
     for file in files {
         let shown = masked(file, words);
-        findings.extend(findings_without_line(
-            &format!("{shown} (its name)"),
-            rules_in(file, words, true),
-        ));
-        let Ok(bytes) = fs::read(root.join(file)) else {
-            continue;
-        };
-        let names = !is_exempt(exempt, file);
-        if let Some(text) = decode_text(&bytes) {
-            findings.extend(
-                scan_text(&text, words, false, names)
-                    .into_iter()
-                    .map(|(line, rule)| finding(&shown, line, rule)),
-            );
-        } else {
-            findings.extend(findings_without_line(
-                &format!("{shown} (a file that is no text)"),
-                rules_in(&printable_runs(&bytes), words, names),
+        findings.extend(scan_name(&shown, file, words));
+        if let Ok(bytes) = fs::read(root.join(file)) {
+            findings.extend(scan_content(
+                &shown,
+                &bytes,
+                words,
+                !is_exempt(exempt, file),
             ));
         }
     }
@@ -658,8 +669,8 @@ fn records(listing: &[u8]) -> Vec<String> {
 }
 
 /// What a push can send: the messages of the commits on every branch, on every tag and on `HEAD`,
-/// the messages of annotated tags, the names of branches and tags, and what the commits that are
-/// not on a remote yet add to the files.
+/// the messages of annotated tags, the names of branches and tags, and the names and contents of
+/// the files that the commits not on a remote add or change.
 fn scan_history(
     repo: &Repo,
     words: &PrivateWords,
@@ -686,41 +697,43 @@ fn scan_history(
     ])?;
     let branches =
         repo.git_bytes(&["for-each-ref", "--format=%(refname:short)%1e", "refs/heads"])?;
+    // Each tag as (kind of object, name, message).
+    let tags: Vec<(String, String, String)> = records(&tags)
+        .iter()
+        .map(|record| {
+            let mut parts = record.splitn(3, '\u{1f}').map(str::to_owned);
+            (
+                parts.next().unwrap_or_default(),
+                parts.next().unwrap_or_default(),
+                parts.next().unwrap_or_default(),
+            )
+        })
+        .collect();
     let mut findings = Vec::new();
     for record in records(&commits) {
         if let Some((hash, message)) = record.split_once('\u{1f}') {
             findings.extend(scan_message(&format!("commit {hash}"), message, words));
         }
     }
-    for record in records(&tags) {
-        let mut parts = record.splitn(3, '\u{1f}');
-        if let (Some("tag"), Some(name), Some(message)) = (parts.next(), parts.next(), parts.next())
-        {
+    for (kind, name, message) in &tags {
+        if kind == "tag" {
             let place = format!("tag {}", masked(name, words));
             findings.extend(scan_message(&place, message, words));
         }
     }
-    let tag_names = tags_names(&tags);
     for (kind, name) in records(&branches)
         .iter()
         .map(|name| ("branch", name.as_str()))
-        .chain(tag_names.iter().map(|name| ("tag", name.as_str())))
+        .chain(tags.iter().map(|(_, name, _)| ("tag", name.as_str())))
     {
-        findings.extend(findings_without_line(
-            &format!("{kind} {} (its name)", masked(name, words)),
-            rules_in(name, words, true),
+        findings.extend(scan_name(
+            &format!("{kind} {}", masked(name, words)),
+            name,
+            words,
         ));
     }
     findings.extend(scan_unpushed_changes(repo, words, exempt, skipped)?);
     Ok(findings)
-}
-
-/// The names of all tags (annotated or not) in the listing of tags.
-fn tags_names(tags: &[u8]) -> Vec<String> {
-    records(tags)
-        .iter()
-        .filter_map(|record| record.split('\u{1f}').nth(1).map(str::to_owned))
-        .collect()
 }
 
 fn scan_message(place: &str, message: &str, words: &PrivateWords) -> Vec<Finding> {
@@ -730,81 +743,123 @@ fn scan_message(place: &str, message: &str, words: &PrivateWords) -> Vec<Finding
         .collect()
 }
 
-/// What the commits that are not on the remote add to the files: the commits after the upstream
-/// of this branch, or, without an upstream (a new branch, a clone), the commits no remote branch
-/// has. A file that was committed with private data and cleaned in a later commit is found here.
+/// How many characters of a commit hash a finding shows.
+const SHORT_HASH: usize = 7;
+
+/// A file that a commit adds or changes: the commit, the path and the content (a blob).
+struct Change {
+    hash: String,
+    path: String,
+    blob: String,
+}
+
+/// The files that the commits add or change on any branch or tag and on `HEAD`, without the
+/// commits a remote has already: a new branch, a second local branch and a clone are covered, and
+/// a repository without remotes yields its whole history.
+fn unpushed_changes(repo: &Repo, skipped: &str) -> anyhow::Result<Vec<Change>> {
+    let raw = repo.git_paths_bytes(&[
+        "log",
+        "--raw",
+        "--no-renames",
+        "--no-abbrev",
+        "--format=%x1e%H",
+        "--branches",
+        "--tags",
+        "HEAD",
+        "--not",
+        "--remotes",
+    ])?;
+    let mut changes = Vec::new();
+    let mut hash = String::new();
+    for line in String::from_utf8_lossy(&raw).lines() {
+        if let Some(short) = line.strip_prefix('\u{1e}') {
+            hash = short.chars().take(SHORT_HASH).collect();
+            continue;
+        }
+        // `:old-mode new-mode old-blob new-blob status<TAB>path`
+        let Some((fields, path)) = line.strip_prefix(':').and_then(|l| l.split_once('\t')) else {
+            continue;
+        };
+        let fields: Vec<&str> = fields.split_whitespace().collect();
+        let (Some(mode), Some(blob), Some(status)) = (fields.get(1), fields.get(3), fields.get(4))
+        else {
+            continue;
+        };
+        // A deleted file adds nothing, and a submodule is no file of ours.
+        if status.starts_with('D') || *mode == "160000" || path.starts_with(skipped) {
+            continue;
+        }
+        changes.push(Change {
+            hash: hash.clone(),
+            path: path.to_owned(),
+            blob: (*blob).to_owned(),
+        });
+    }
+    Ok(changes)
+}
+
+/// The contents of the blobs, by blob, read with one `git cat-file --batch`.
+fn read_blobs(repo: &Repo, blobs: &BTreeSet<&str>) -> anyhow::Result<BTreeMap<String, Vec<u8>>> {
+    let mut found = BTreeMap::new();
+    if blobs.is_empty() {
+        return Ok(found);
+    }
+    let input: String = blobs.iter().flat_map(|blob| [*blob, "\n"]).collect();
+    let output = repo.git_bytes_with_input(&["cat-file", "--batch"], input.as_bytes())?;
+    // Each answer is a line `<blob> <type> <size>`, the content and a line end; `<blob> missing`
+    // has no content.
+    let mut rest: &[u8] = &output;
+    while let Some(end) = rest.iter().position(|byte| *byte == b'\n') {
+        let header = String::from_utf8_lossy(&rest[..end]).into_owned();
+        rest = &rest[end + 1..];
+        let mut parts = header.split(' ');
+        let (Some(blob), Some(kind), Some(size)) = (
+            parts.next(),
+            parts.next(),
+            parts.next().and_then(|size| size.parse::<usize>().ok()),
+        ) else {
+            continue;
+        };
+        if rest.len() < size {
+            break;
+        }
+        if kind == "blob" {
+            found.insert(blob.to_owned(), rest[..size].to_vec());
+        }
+        rest = rest.get(size + 1..).unwrap_or_default();
+    }
+    Ok(found)
+}
+
+/// The names and contents of the files that the commits not on a remote add or change, through
+/// the same reading as the files of the tree. A file that was committed with private data and
+/// cleaned or renamed in a later commit is found here.
 fn scan_unpushed_changes(
     repo: &Repo,
     words: &PrivateWords,
     exempt: &[Exempt],
     skipped: &str,
 ) -> anyhow::Result<Vec<Finding>> {
-    let range: &[&str] = if repo
-        .git_bytes(&["rev-parse", "--verify", "--quiet", "@{u}"])
-        .is_ok()
-    {
-        &["@{u}..HEAD"]
-    } else {
-        &["HEAD", "--not", "--remotes"]
-    };
-    let mut args = vec![
-        "-c",
-        "core.quotepath=false",
-        "log",
-        "-p",
-        "-U0",
-        "--no-color",
-        "--no-ext-diff",
-        "--format=%x1e%h",
-    ];
-    args.extend(range);
-    let diff = repo.git_bytes(&args)?;
-    Ok(scan_diff(
-        &String::from_utf8_lossy(&diff),
-        words,
-        exempt,
-        skipped,
-    ))
-}
-
-/// The lines a `git log -p -U0` listing adds, in the files that are read.
-fn scan_diff(diff: &str, words: &PrivateWords, exempt: &[Exempt], skipped: &str) -> Vec<Finding> {
+    let changes = unpushed_changes(repo, skipped)?;
+    let blobs: BTreeSet<&str> = changes.iter().map(|change| change.blob.as_str()).collect();
+    let contents = read_blobs(repo, &blobs)?;
     let mut findings = Vec::new();
-    let mut hash = "";
-    let mut path: Option<&str> = None;
-    let mut in_header = false;
-    let mut line_number = 0_usize;
-    for line in diff.lines() {
-        if let Some(short) = line.strip_prefix('\u{1e}') {
-            (hash, path, in_header) = (short, None, false);
-        } else if line.starts_with("diff --git ") {
-            (path, in_header) = (None, true);
-        } else if let Some(hunk) = line.strip_prefix("@@ ") {
-            in_header = false;
-            // `-old,count +new,count @@`: the line the added lines start at.
-            line_number = hunk
-                .split(" +")
-                .nth(1)
-                .and_then(|new| new.split([',', ' ']).next())
-                .and_then(|start| start.parse().ok())
-                .unwrap_or(0);
-        } else if in_header {
-            if let Some(file) = line.strip_prefix("+++ b/") {
-                path = Some(file);
-            }
-        } else if let (Some(added), Some(file)) = (line.strip_prefix('+'), path) {
-            if !file.starts_with(skipped) {
-                let place = format!("commit {hash}, {}", masked(file, words));
-                findings.extend(
-                    rules_of(added, words, false, !is_exempt(exempt, file))
-                        .into_iter()
-                        .map(|rule| finding(&place, line_number, rule)),
-                );
-            }
-            line_number += 1;
+    let mut named = BTreeSet::new();
+    let mut read = BTreeSet::new();
+    for change in &changes {
+        let place = format!("commit {}, {}", change.hash, masked(&change.path, words));
+        if named.insert(&change.path) {
+            findings.extend(scan_name(&place, &change.path, words));
+        }
+        if let (true, Some(bytes)) = (
+            read.insert((&change.path, &change.blob)),
+            contents.get(&change.blob),
+        ) {
+            let words_apply = !is_exempt(exempt, &change.path);
+            findings.extend(scan_content(&place, bytes, words, words_apply));
         }
     }
-    findings
+    Ok(findings)
 }
 
 /// What is private in a commit message file written by Git (the diff of `git commit -v` is not
@@ -1207,6 +1262,67 @@ mod tests {
             places.iter().any(|place| place.starts_with("tag v1")),
             "{places:?}"
         );
+    }
+
+    /// A user-profile path with a made-up account, built so this file holds none.
+    fn made_up_path() -> String {
+        format!("{}:{}Users{}mira{}x", "C", "\\", "\\", "\\")
+    }
+
+    #[test]
+    fn a_file_name_in_a_commit_is_read_even_if_the_file_is_renamed_later() {
+        let temp = repo_with_commit("private-renamed", "chore: fine");
+        let id = format!("{}_{}", "session", "01AbCdEfGhIjKlMnOpQrStUv");
+        temp.write(&format!("{id}-notes.txt"), "fine\n");
+        assert!(temp.git(&["add", "."]));
+        assert!(temp.git(&["commit", "--quiet", "-m", "chore: add"]));
+        assert!(temp.git(&["mv", &format!("{id}-notes.txt"), "notes.txt"]));
+        assert!(temp.git(&["commit", "--quiet", "-m", "chore: rename"]));
+        let places = run_check(&temp, None);
+        assert_eq!(places.len(), 1, "{places:?}");
+        assert!(
+            places[0].ends_with(", session_***-notes.txt (its name)"),
+            "{places:?}"
+        );
+    }
+
+    #[test]
+    fn text_in_utf16_and_binary_files_of_a_commit_is_read() {
+        let temp = repo_with_commit("private-binary-history", "chore: fine");
+        let wide: Vec<u8> = [0xFF, 0xFE]
+            .into_iter()
+            .chain(made_up_path().encode_utf16().flat_map(u16::to_le_bytes))
+            .collect();
+        temp.write("wide.txt", wide);
+        let mut picture = b"\x89PNG\r\n\x1a\n\0\0\0\rIHDR".to_vec();
+        picture.extend(made_up_path().bytes());
+        picture.extend(b"\0\0");
+        temp.write("picture.png", picture);
+        assert!(temp.git(&["add", "."]));
+        assert!(temp.git(&["commit", "--quiet", "-m", "chore: add"]));
+        assert!(temp.git(&["rm", "--quiet", "wide.txt", "picture.png"]));
+        assert!(temp.git(&["commit", "--quiet", "-m", "chore: remove"]));
+        let places = run_check(&temp, None);
+        assert_eq!(places.len(), 2, "{places:?}");
+        assert!(places.iter().any(|place| place.ends_with(", wide.txt:1")));
+        assert!(
+            places
+                .iter()
+                .any(|place| place.ends_with(", picture.png (a file that is no text)"))
+        );
+    }
+
+    #[test]
+    fn commits_on_other_local_branches_are_read() {
+        let temp = repo_with_commit("private-other-branch", "chore: fine");
+        assert!(temp.git(&["switch", "--quiet", "-c", "other"]));
+        temp.write("notes.txt", made_up_path());
+        assert!(temp.git(&["add", "."]));
+        assert!(temp.git(&["commit", "--quiet", "-m", "chore: add"]));
+        assert!(temp.git(&["switch", "--quiet", "-"]));
+        let places = run_check(&temp, None);
+        assert_eq!(places.len(), 1, "{places:?}");
+        assert!(places[0].ends_with(", notes.txt:1"), "{places:?}");
     }
 
     #[test]
