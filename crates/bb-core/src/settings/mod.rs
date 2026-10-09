@@ -580,6 +580,17 @@ mod tests {
     }
 
     #[test]
+    fn sec_13_the_image_hosts_start_empty_and_are_a_list_the_administrators_change() {
+        let hosts = CONTENT_IMAGE_HOSTS.definition();
+        assert_eq!(hosts.key(), "content.image-hosts");
+        assert_eq!(hosts.list_limits(), Some((50, 253)));
+        assert!(hosts.list_fits(""));
+        assert!(hosts.list_fits("images.example.com,cdn.example.com"));
+        assert!(!hosts.list_fits(&format!("{}.test", "a".repeat(250))));
+        assert_eq!(hosts.levels(), [Level::Organization]);
+    }
+
+    #[test]
     fn auth_01_the_session_times_have_bounds_and_values_are_cut_to_them() {
         let idle = SECURITY_SESSION_IDLE_MINUTES.definition();
         let absolute = SECURITY_SESSION_ABSOLUTE_HOURS.definition();

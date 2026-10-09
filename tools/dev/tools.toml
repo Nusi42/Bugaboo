@@ -46,6 +46,15 @@ kind = "cargo"
 crate = "lychee"
 version = "0.24.2"
 
+# The program that joins the WebAssembly module of `bb-wasm` with its JavaScript glue
+# (`cargo xtask wasm`). It must be the version of the `wasm-bindgen` library in Cargo.lock; ARCH-WASM
+# compares the two. `wasm-opt` comes from the `binaryen` npm package (package.json).
+[[tool]]
+name = "wasm-bindgen"
+kind = "cargo"
+crate = "wasm-bindgen-cli"
+version = "0.2.129"
+
 [[tool]]
 name = "gitleaks"
 kind = "download"

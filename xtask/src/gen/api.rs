@@ -17,6 +17,8 @@
 //!   browser client's `src/paging.generated.ts`;
 //! - the times and sizes of editing (`crates/bb-core/src/edit.rs`) are written as
 //!   `src/editing.generated.ts`.
+//! - the name of the Trusted Types policy (`crates/bb-api-words`) is read as Rust source and
+//!   written as `src/browser.generated.ts`.
 //!
 //! TypeScript and JSON go through the formatter (`oxfmt`), so the generated files already look
 //! the way FMT-TS wants them.
@@ -52,6 +54,8 @@ pub(crate) const SETTING_KEYS_PATH: &str = "web/packages/api-client/src/setting-
 pub(crate) const PAGING_PATH: &str = "web/packages/api-client/src/paging.generated.ts";
 /// The times and sizes of editing, for the browser app.
 pub(crate) const EDITING_PATH: &str = "web/packages/api-client/src/editing.generated.ts";
+/// Names the browser needs from the server code, such as the Trusted Types policy.
+pub(crate) const BROWSER_NAMES_PATH: &str = "web/packages/api-client/src/browser.generated.ts";
 /// The user docs page.
 pub(crate) const COOKIES_PAGE: &str = "userDocs/cookies.md";
 
@@ -69,6 +73,7 @@ pub(crate) fn output_paths() -> Vec<&'static str> {
         SETTING_KEYS_PATH,
         PAGING_PATH,
         EDITING_PATH,
+        BROWSER_NAMES_PATH,
         COOKIES_PAGE,
     ]
 }
@@ -105,6 +110,14 @@ pub(crate) fn generate(repo: &Repo) -> anyhow::Result<Vec<Generated>> {
         Generated::new(
             EDITING_PATH,
             format_with_oxfmt(repo, EDITING_PATH, &web_constants::editing(&sources)?)?,
+        ),
+        Generated::new(
+            BROWSER_NAMES_PATH,
+            format_with_oxfmt(
+                repo,
+                BROWSER_NAMES_PATH,
+                &web_constants::browser_names(&sources)?,
+            )?,
         ),
         Generated::new(COOKIES_PAGE, cookies_page(&cookies.cookies, &purposes)?),
     ])

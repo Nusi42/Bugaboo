@@ -212,6 +212,7 @@ test("ux_01 Organization settings lists the topics that exist, by heading", asyn
     t("nav.check-access"),
     t("nav.themes"),
     t("nav.projects"),
+    t("nav.organization-security"),
     t("nav.status"),
   ]);
   await topics(page, t("nav.organization-settings")).last().click();

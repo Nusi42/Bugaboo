@@ -14,6 +14,8 @@ use crate::checks::arch_settings::{CATALOG_PATH, REGISTRY_FOLDER};
 use crate::rust_registry::{ChoiceLists, read_registry};
 use crate::source::Source;
 
+const WORDS_SOURCE: &str = "crates/bb-api-words/src/lib.rs";
+const POLICY_MACRO: &str = "macro_rules! trusted_types_policy";
 const PAGING_SOURCE: &str = "crates/bb-core/src/paging.rs";
 const EDIT_SOURCE: &str = "crates/bb-core/src/edit.rs";
 const PAGE_SIZE_MAX: &str = "PAGE_SIZE_MAX";
@@ -189,9 +191,46 @@ export const versionsMax = {};
     ))
 }
 
+/// The name of the Trusted Types policy as a constant for the browser client: the one definition
+/// is the macro in `bb-api-words`, which the content security policy uses too.
+pub(super) fn browser_names(sources: &[Source]) -> anyhow::Result<String> {
+    let Some((_, text)) = sources.iter().find(|(path, _)| path == WORDS_SOURCE) else {
+        bail!("{WORDS_SOURCE} is missing");
+    };
+    let name = text
+        .split_once(POLICY_MACRO)
+        .and_then(|(_, rest)| rest.split('"').nth(1))
+        .with_context(|| format!("{WORDS_SOURCE} has no `{POLICY_MACRO}` with a name"))?;
+    Ok(format!(
+        "{TS_HEADER}/** The one Trusted Types policy that may make HTML (the content security policy names it). */
+export const trustedTypesPolicyName = \"{name}\";
+"
+    ))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_policy_name_comes_from_the_macro_of_the_api_words() {
+        let source = (
+            WORDS_SOURCE.to_owned(),
+            "macro_rules! trusted_types_policy {
+    () => {
+        \"a-policy\"
+    };
+}
+"
+            .to_owned(),
+        );
+        assert!(
+            browser_names(&[source])
+                .unwrap()
+                .contains("= \"a-policy\";")
+        );
+        assert!(browser_names(&[]).is_err());
+    }
 
     const CATALOG: &str = "const MODE_CHOICES: &[Choice] = &[
     Choice::new(\"device\", message::A),

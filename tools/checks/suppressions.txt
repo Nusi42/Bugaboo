@@ -1,8 +1,9 @@
 # Suppressions counted by META-SUPPRESS. Rewritten by `cargo xtask suppressions`.
 # The total may only grow in a change that also updates this file (and the lead approves it).
 .oxlintrc.json 1
+crates/bb-markdown/tests/render.rs 1
 crates/bb-server/src/output.rs 1
 docs/coding-standards.md 1
 web/app/e2e/support/accounts.ts 1
 xtask/src/output.rs 1
-total 5
+total 6

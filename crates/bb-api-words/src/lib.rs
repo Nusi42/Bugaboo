@@ -150,6 +150,23 @@ pub mod sec_matrix {
     pub const ANSWERS: [&str; 5] = [ALLOWED, NOT_SIGNED_IN, FORBIDDEN, NOT_FOUND, NOT_FOR_KEYS];
 }
 
+/// The name of the one Trusted Types policy of the browser app (SEC-13, ADR-0011), written once.
+/// It is a macro so that `concat!` can put it into the content security policy of `bb-api`;
+/// [`trusted_types::POLICY`] is the same text as a constant. `cargo xtask gen api` writes it to the
+/// browser client (`browser.generated.ts`), where the policy is made.
+#[macro_export]
+macro_rules! trusted_types_policy {
+    () => {
+        "bugaboo-markdown"
+    };
+}
+
+/// The Trusted Types policy of the browser app.
+pub mod trusted_types {
+    /// The name of the policy: the only one the content security policy lets make HTML.
+    pub const POLICY: &str = trusted_types_policy!();
+}
+
 #[cfg(test)]
 mod tests {
     use std::collections::BTreeSet;

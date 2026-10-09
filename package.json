@@ -6,13 +6,17 @@
     "web/app",
     "web/packages/ui",
     "web/packages/messages",
-    "web/packages/api-client"
+    "web/packages/api-client",
+    "web/packages/wasm"
   ],
   "type": "module",
   "scripts": {
+    "prebuild": "cargo xtask wasm",
     "build": "vite build --config web/tooling/vite.config.ts",
     "preview": "vite preview --config web/tooling/vite.config.ts",
+    "predev": "cargo xtask wasm",
     "dev": "vite --config web/tooling/vite.config.ts",
+    "pretest": "cargo xtask wasm",
     "test": "vitest run --config web/tooling/vitest.config.ts",
     "test:e2e": "playwright test --config web/tooling/playwright.config.ts",
     "typecheck": "cargo xtask check only LINT-TYPES"
@@ -24,6 +28,7 @@
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
     "@vitejs/plugin-react": "6.1.1",
+    "binaryen": "132.0.0",
     "html-validate": "11.16.2",
     "jscpd": "5.4.0",
     "oxfmt": "0.71.0",

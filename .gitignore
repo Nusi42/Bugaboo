@@ -42,3 +42,6 @@ desktop.ini
 
 # Local Claude Code settings (per machine; points the agent memory to bugaboo.win1/.claude/memory)
 .claude/settings.local.json
+
+# The WebAssembly module and its glue, made by `cargo xtask wasm` (ADR-0011)
+/web/packages/wasm/generated/

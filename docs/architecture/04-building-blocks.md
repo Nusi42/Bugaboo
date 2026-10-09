@@ -34,8 +34,8 @@ bugaboo/
 │   ├── app/                the React app: routes and feature folders
 │   └── packages/
 │       ├── api-client/     types generated from OpenAPI (never edited by hand) and the thin client on top
-│       ├── ui/             shared components on React Aria + the generated style sheet; depends on api-client for the generated choices and defaults of the settings (the look of a person)
-│       ├── wasm/           generated bindings to bb-wasm
+│       ├── ui/             shared components on React Aria + the generated style sheet; depends on api-client for the generated choices and defaults of the settings (the look of a person), and loads `wasm` when a Markdown preview opens
+│       ├── wasm/           loads the module of bb-wasm (`cargo xtask wasm` writes it and its glue into `generated/`, never committed)
 │       └── messages/       generated, typed message keys
 ├── docs/                   development docs (this)
 └── userDocs/               user and admin docs

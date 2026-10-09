@@ -89,3 +89,13 @@ at = [
   "api:property ReleaseLockBody.lock_token",
 ]
 reason = "The lock token of ADR-0019 proves that a save or a heartbeat comes from the editor that holds an edit lock. It is not the token of a sign-in session, which the glossary entry Session rules out."
+
+[[allow]]
+term = "link"
+at = ["messages/en.json#markdown.link", "messages/en.json#markdown.link-text"]
+reason = "The button of the Markdown editor that writes a web link into the text, and the placeholder for its text. Not the connection between two issues, which is a Relation."
+
+[[allow]]
+term = "link"
+at = ["userDocs/writing/markdown.md"]
+reason = "The Link button of the Markdown editor and the web addresses it writes into a text. Not the connection between two issues, which is a Relation."

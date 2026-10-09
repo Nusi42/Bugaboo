@@ -1,0 +1,11 @@
+{
+  "name": "@bugaboo/wasm",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@bugaboo/api-client": "*"
+  }
+}

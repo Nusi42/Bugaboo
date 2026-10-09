@@ -28,7 +28,7 @@ Each scenario becomes at least one automated test or benchmark.
 | **Two databases** double the testing and can hide dialect bugs | Medium | One schema source; every repository test runs against both in CI; PostgreSQL-only features are not allowed in core paths |
 | **Size of scope** (tracker + time + documents + planning + AI) | High | Strict milestones; each milestone ships something usable; "Later" items stay out until 1.0 |
 | **Custom-built timeline, calendar and relation map** take effort | Medium | Built on shared primitives (scales, virtualization, drag helpers); simple first versions, then polish |
-| **WebAssembly size** (search language + Markdown) | Medium | Size budget 150 KB (Brotli) for the bundle, loaded only when needed; `wasm-opt`; measure in CI |
+| **WebAssembly size** (search language + Markdown) | Medium | Size budget for the bundle in `tools/checks/perf-bundle.toml` (Brotli), loaded only when needed; `wasm-opt`; measure in CI |
 | **TypeScript 7** tooling is young (oxfmt is before 1.0) | Low–Medium | oxlint + tsgolint are built on TypeScript 7 itself; versions pinned; Biome as fallback formatter; TS 6 as last resort |
 | **Prompt injection** through issue text | Medium | Untrusted-content fencing, proposals instead of writes, no remote content in output, AI off by default |
 | **EU law uncertainty** (CRA category, AI Act details, NIS2 in Germany) | Medium | Build for the strict reading; legal review before first release (compliance.md) |

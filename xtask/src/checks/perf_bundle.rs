@@ -7,7 +7,8 @@
 //!
 //! The budget and the places to read are the settings in `tools/checks/perf-bundle.toml`, and
 //! nowhere else. A fixture folder holds its own settings file with a small budget, so the
-//! examples stay small. WebAssembly joins the budget when `bb-wasm` exists (M1-F10).
+//! examples stay small. The WebAssembly module of `bb-wasm` has a budget of its own: every `.wasm`
+//! file in the build, after Brotli, together (M1-F10, M2-F03).
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::Path;
@@ -49,6 +50,8 @@ struct Settings {
     manifest: String,
     /// The most Brotli bytes the first page may load (1 KB is 1000 bytes).
     budget_bytes: u64,
+    /// The most Brotli bytes the WebAssembly modules of the build may have together.
+    wasm_budget_bytes: u64,
 }
 
 impl Settings {
@@ -139,6 +142,12 @@ fn kilobytes(bytes: u64) -> String {
 }
 
 fn evaluate(root: &Path, settings: &Settings, quality: i32) -> anyhow::Result<Vec<Finding>> {
+    let mut findings = script_findings(root, settings, quality)?;
+    findings.extend(wasm_findings(root, settings, quality)?);
+    Ok(findings)
+}
+
+fn script_findings(root: &Path, settings: &Settings, quality: i32) -> anyhow::Result<Vec<Finding>> {
     let dist = root.join(&settings.dist);
     let manifest_path = dist.join(&settings.manifest);
     let Ok(text) = std::fs::read_to_string(&manifest_path) else {
@@ -189,6 +198,62 @@ fn evaluate(root: &Path, settings: &Settings, quality: i32) -> anyhow::Result<Ve
     )])
 }
 
+/// Every `.wasm` file below `folder`, in the order of their names.
+fn wasm_files(folder: &Path) -> anyhow::Result<Vec<std::path::PathBuf>> {
+    let mut found = Vec::new();
+    let mut pending = vec![folder.to_path_buf()];
+    while let Some(next) = pending.pop() {
+        let entries = std::fs::read_dir(&next)
+            .with_context(|| format!("could not read the folder {}", next.display()))?;
+        for entry in entries {
+            let path = entry?.path();
+            if path.is_dir() {
+                pending.push(path);
+            } else if has_extension(&path.to_string_lossy(), &["wasm"]) {
+                found.push(path);
+            }
+        }
+    }
+    found.sort();
+    Ok(found)
+}
+
+/// The WebAssembly modules of the build stay within their budget, all together. They are fetched
+/// when a preview or an editor opens, not with the first page, but every browser that opens one
+/// receives them (PERF-04).
+fn wasm_findings(root: &Path, settings: &Settings, quality: i32) -> anyhow::Result<Vec<Finding>> {
+    let dist = root.join(&settings.dist);
+    if !dist.is_dir() {
+        return Ok(Vec::new());
+    }
+    let mut total = 0;
+    let mut named = Vec::new();
+    for path in wasm_files(&dist)? {
+        let bytes =
+            std::fs::read(&path).with_context(|| format!("could not read {}", path.display()))?;
+        let size = brotli_size(&bytes, quality)?;
+        total += size;
+        named.push(format!(
+            "{} ({})",
+            path.file_name()
+                .map_or_else(String::new, |name| name.to_string_lossy().into_owned()),
+            kilobytes(size)
+        ));
+    }
+    if total <= settings.wasm_budget_bytes {
+        return Ok(Vec::new());
+    }
+    Ok(vec![Finding::at(
+        SETTINGS_PATH,
+        format!(
+            "The WebAssembly modules are {} with Brotli; the budget is {} (PERF-04). They are: {}. Take out what the browser does not need, or the module grows past what a phone can fetch quickly.",
+            kilobytes(total),
+            kilobytes(settings.wasm_budget_bytes),
+            named.join(", ")
+        ),
+    )])
+}
+
 #[cfg(test)]
 mod tests {
     use serde_json::json;
@@ -227,9 +292,19 @@ mod tests {
     }
 
     #[test]
+    fn bad_example_a_module_over_its_budget() {
+        let found = run_fixture("bad-wasm");
+        assert_eq!(found.len(), 1);
+        let message = &found[0].message;
+        assert!(message.contains("WebAssembly modules"), "{message}");
+        assert!(message.contains("module-dddd.wasm"), "{message}");
+    }
+
+    #[test]
     fn the_budget_is_read_from_the_settings_file() {
         let settings = Settings::load(&repository().join(SETTINGS_PATH)).unwrap();
         assert!(settings.budget_bytes > 0);
+        assert!(settings.wasm_budget_bytes > 0);
     }
 
     /// The quality is the server's: the server includes the very file this check reads, and sets
@@ -280,6 +355,7 @@ mod tests {
             dist: "dist".to_owned(),
             manifest: "manifest.json".to_owned(),
             budget_bytes: 1,
+            wasm_budget_bytes: 1,
         };
         let found = evaluate(root.path(), &settings, 4).unwrap();
         assert_eq!(found.len(), 1);

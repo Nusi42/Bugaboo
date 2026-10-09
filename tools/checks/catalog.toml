@@ -242,16 +242,16 @@ status = "active"
 id = "ARCH-PURE"
 title = "bb-core, bb-searchlang and bb-markdown do no I/O (no tokio, sqlx, std::fs, std::net)"
 rule = "architecture §4, ADR-0005, ADR-0011"
-tool = "xtask (dependency bans) + ast-grep"
+tool = "xtask (reads the dependencies of the three crates) + clippy (disallowed methods and types of the standard library that reach the world, in a clippy.toml per crate that `cargo xtask gen clippy` writes, held by DOC-GENERATED; clippy runs on push and in CI)"
 when = ["edit", "push", "ci"]
-files = ["crates/bb-core/**", "crates/bb-searchlang/**", "crates/bb-markdown/**"]
-status = "planned"
+files = ["crates/bb-core/**", "crates/bb-searchlang/**", "crates/bb-markdown/**", "clippy.toml"]
+status = "active"
 
 [[check]]
 id = "ARCH-WASM"
-title = "The crates shared with the browser (bb-core, bb-searchlang, bb-markdown) still build for WebAssembly"
+title = "The crates shared with the browser (bb-core, bb-searchlang, bb-markdown) and bb-wasm still build for WebAssembly, and the wasm-bindgen program is the version of the library"
 rule = "ADR-0001, ADR-0005, ADR-0011"
-tool = "cargo check --target wasm32-unknown-unknown (minimal form: the size budget with wasm-opt, PERF-04, comes with bb-wasm)"
+tool = "xtask (cargo check --target wasm32-unknown-unknown; compares the wasm-bindgen version in tools/dev/tools.toml with Cargo.lock). The size of the module, PERF-04, is measured in the browser build by PERF-BUNDLE"
 when = ["push", "ci"]
 files = [
   "crates/bb-core/**",
@@ -488,13 +488,29 @@ files = ["*"]
 status = "active"
 
 [[check]]
-id = "SEC-PATTERNS"
-title = "No unwrap/expect/panic in production code, no dangerouslySetInnerHTML, eval or new Function"
-rule = "coding-standards §3, §4"
-tool = "ast-grep"
+id = "SEC-RICHTEXT"
+title = "Text written by people is rendered only by bb-markdown: no second Markdown or HTML library, HTML is set from a string in one file only and only SafeHtml reaches it, the corpus tests exist, and the CSP allows exactly the one policy, whose name is written once"
+rule = "coding-standards §4, ADR-0011, SEC-13"
+tool = "xtask (reads Cargo manifests and the browser code) + the corpus tests `sec_13_the_sanitizer_corpus_renders_every_attack_as_text` and `sec_13_server_and_browser_render_the_same_html`"
 when = ["edit", "commit", "ci"]
+files = [
+  "crates/**/Cargo.toml",
+  "crates/bb-markdown/**",
+  "crates/bb-api/src/headers.rs",
+  "web/**/*.{ts,tsx}",
+  "web/**/package.json",
+  "package.json",
+]
+status = "active"
+
+[[check]]
+id = "SEC-PATTERNS"
+title = "No unwrap/expect/panic/unreachable/todo/dbg in Rust code that ships; no eval, new Function, document.write or timer with a string in the browser code"
+rule = "coding-standards §3, §4"
+tool = "xtask (reads the Rust code that ships, without comments, strings and #[cfg(test)] code, and the browser code)"
+when = ["edit", "push", "ci"]
 files = ["crates/**/*.rs", "xtask/**/*.rs", "web/**/*.{ts,tsx}"]
-status = "planned"
+status = "active"
 
 [[check]]
 id = "SEC-MATRIX"
@@ -620,7 +636,7 @@ status = "active"
 id = "PERF-BUNDLE"
 title = "Initial JavaScript stays within its budget (Brotli)"
 rule = "PERF-04"
-tool = "xtask (reads the Vite manifest of the built app, adds up the JavaScript of the entry and what it imports at once, compresses each file with Brotli at the quality the server uses (tools/dev/compression.json) and fails above the budget in tools/checks/perf-bundle.toml; the WebAssembly part is not checked yet, M2-F03)"
+tool = "xtask (reads the Vite manifest of the built app, adds up the JavaScript of the entry and what it imports at once, compresses each file with Brotli at the quality the server uses (tools/dev/compression.json) and fails above the budget in tools/checks/perf-bundle.toml; the WebAssembly modules of the build, together, have their own budget there)"
 when = ["ci"]
 files = ["web/**", "tools/checks/perf-bundle.toml", "tools/dev/compression.json"]
 status = "active"

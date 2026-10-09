@@ -150,6 +150,12 @@ fn is_char_literal(chars: &[char], at: usize) -> bool {
     )
 }
 
+/// Whether the file is a module that only holds tests (`mod tests;` in the crate): its code does
+/// not ship, though no attribute in the file says so.
+pub(crate) fn is_test_module_file(path: &str) -> bool {
+    path.rsplit('/').next() == Some("tests.rs")
+}
+
 /// The text with every item behind `#[cfg(test)]` blanked out (new lines stay, so line numbers still
 /// fit), and the rest of the file kept: a unit test module is usually the last item of a file,
 /// but code that comes after it is code that ships. Comments and strings are read as such, so a

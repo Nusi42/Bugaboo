@@ -13,7 +13,7 @@ Write **`bb-searchlang`**: lexer, parser, syntax tree, canonical printer, checke
 ## Consequences
 
 - One grammar (SSOT). Property test: `parse(print(tree)) == tree`.
-- WebAssembly adds download size; it's loaded only when search is first used, with a 150 KB budget shared with the Markdown renderer.
+- WebAssembly adds download size; it's loaded only when search is first used, within the WebAssembly budget in `tools/checks/perf-bundle.toml`, shared with the Markdown renderer.
 
 ## Alternatives considered
 
