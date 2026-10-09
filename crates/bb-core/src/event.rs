@@ -138,7 +138,7 @@ impl From<RecordKind> for EntityKind {
 }
 
 /// The record an event is about.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct EntityRef {
     /// What kind of record it is.
     pub kind: EntityKind,

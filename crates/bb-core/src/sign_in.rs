@@ -129,6 +129,8 @@ words! {
         ProjectShortNameChanged => "project.short_name_changed",
         /// A project was moved into another project or to the top level.
         ProjectMoved => "project.moved",
+        /// Somebody with *Edit anyway* released an edit lock that another person held.
+        EditLockReleased => "edit_lock.released",
     }
 }
 

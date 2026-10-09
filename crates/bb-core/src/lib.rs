@@ -10,6 +10,7 @@ pub mod words;
 
 pub mod access;
 pub mod access_key;
+pub mod edit;
 pub mod entities;
 pub mod error_code;
 pub mod event;

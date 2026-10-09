@@ -298,8 +298,23 @@ define_random_id! {
     AccessKeyId
 }
 
+define_random_id! {
+    /// The ID of one open editor, made by the browser when a person starts to edit a long text
+    /// (ADR-0019). Two tabs of one person are two editors. It opens nothing.
+    EditorId
+}
+
+define_random_id! {
+    /// The token of an edit lock: whoever holds it is the editor that took the lock. A save
+    /// without it is refused (ADR-0019). It is not a credential: the session of the request still
+    /// decides who the person is.
+    LockToken
+}
+
 // Random references to records; they say nothing about a person by themselves.
 impl crate::personal::NotPersonal for SessionId {}
+impl crate::personal::NotPersonal for EditorId {}
+impl crate::personal::NotPersonal for LockToken {}
 impl crate::personal::NotPersonal for PasskeyId {}
 impl crate::personal::NotPersonal for InvitationId {}
 impl crate::personal::NotPersonal for AccessKeyId {}
