@@ -4,13 +4,13 @@
 //! as the draft of the person with a plain reason: it is never dropped.
 
 use bb_core::ErrorCode;
-use bb_core::edit::{DraftTarget, EditWhat};
+use bb_core::edit::{DraftTarget, EditWhat, Hold};
 use bb_core::event::DomainEvent;
 use bb_core::id::{LockToken, UserId};
 use bb_policy::Place;
 
 use super::types::DraftText;
-use crate::auth::{AppError, AuthStore, Ctx};
+use crate::auth::{AppError, AuthStore, Ctx, Stops, change_failed};
 use crate::ports::BoxFuture;
 use crate::projects::Why;
 
@@ -26,10 +26,20 @@ pub struct TextSave {
     pub version: i64,
 }
 
+/// What the write of a record says about the version the person started from.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Written<T> {
+    /// The record was still at that version and is written.
+    Saved(T),
+    /// The record was changed since: nothing is written, and the save is a stale one.
+    Stale,
+}
+
 impl<S: AuthStore> Ctx<'_, S> {
     /// Saves a long text: inside one change it checks that the lock is still the editor's, runs
     /// `write` (which writes the record and says whether the record was still at the version the
-    /// person started from: `None` when it was not), lets go of the lock and deletes the draft.
+    /// person started from; any other trouble is its own error), lets go of the lock and deletes
+    /// the draft.
     ///
     /// A refused save answers `edit.lock_lost` (the lease ran out or the lock was let go),
     /// `edit.taken_over` (somebody used *Edit anyway*) or the structured `edit.version_changed`,
@@ -47,28 +57,32 @@ impl<S: AuthStore> Ctx<'_, S> {
     ) -> Result<T, AppError>
     where
         T: Send + 'static,
-        W: for<'t> FnOnce(&'t mut S::Transaction) -> BoxFuture<'t, Result<Option<T>, S::Error>>
+        W: for<'t> FnOnce(&'t mut S::Transaction) -> BoxFuture<'t, Result<Written<T>, S::Error>>
             + Send
             + 'static,
     {
         let why = Why::default();
         let stopped = why.clone();
-        let (what, token, me, now) = (save.what.clone(), save.token, person, self.now());
+        let (what, me, now) = (save.what.clone(), person, self.now());
+        let hold = Hold {
+            holder: person,
+            token: save.token,
+        };
         let saved = self
             .store()
             .record_change(event, move |transaction| {
                 Box::pin(async move {
                     match S::edit_lock_in(transaction, what.clone()).await? {
-                        Some(lock) if lock.token == token && !lock.has_expired(now) => {}
+                        Some(lock) if lock.is_held_by(hold) && !lock.has_expired(now) => {}
                         Some(lock) if !lock.has_expired(now) => {
                             return Err(stopped.stop::<S>(ErrorCode::EditTakenOver));
                         }
                         _ => return Err(stopped.stop::<S>(ErrorCode::EditLockLost)),
                     }
-                    let Some(done) = write(transaction).await? else {
+                    let Written::Saved(done) = write(transaction).await? else {
                         return Err(stopped.stop::<S>(ErrorCode::VersionChanged));
                     };
-                    S::remove_edit_lock_with_token(transaction, &what, token).await?;
+                    S::remove_edit_lock_held(transaction, &what, hold).await?;
                     S::delete_draft_in(transaction, me, &DraftTarget::Editing(what)).await?;
                     Ok(done)
                 })
@@ -77,11 +91,12 @@ impl<S: AuthStore> Ctx<'_, S> {
         match saved {
             Ok(done) => Ok(done),
             Err(error) => {
-                let refused = why.answer::<S>(&error, ErrorCode::VersionChanged).about(
-                    &save.what.record,
-                    place,
-                    me,
-                );
+                // Only a reason this function gave is a refusal of the save; whatever else the write
+                // or the store did is a failure of its own, not a stale version.
+                let refused = match why.said() {
+                    Some(code) => AppError::Refused(code).about(&save.what.record, place, me),
+                    None => change_failed::<S>(&error, Stops::NONE),
+                };
                 if matches!(
                     refused.code(),
                     Some(

@@ -68,14 +68,15 @@ impl Database {
             .collect()
     }
 
-    /// The last event about one record, if there is one.
+    /// The newest events about one record, newest first, at most `limit`.
     ///
     /// # Errors
     /// Fails when the database fails or a stored event is unreadable.
-    pub async fn last_event_about(
+    pub async fn latest_events_about(
         &self,
         entity: &EntityRef,
-    ) -> Result<Option<DomainEvent>, StoreError> {
+        limit: u64,
+    ) -> Result<Vec<DomainEvent>, StoreError> {
         // The order they were committed in (the outbox position), not the time in their IDs: two
         // events of the same millisecond have no order there.
         let mut select = Query::select();
@@ -89,12 +90,12 @@ impl Database {
             .and_where(Expr::col((Event::Table, Event::EntityKind)).eq(entity.kind.as_str()))
             .and_where(Expr::col((Event::Table, Event::EntityId)).eq(entity.id.stored()))
             .order_by((Outbox::Table, Outbox::Position), Order::Desc)
-            .limit(1);
-        self.fetch_optional(&select)
+            .limit(limit);
+        self.fetch_all(&select)
             .await?
-            .as_ref()
+            .iter()
             .map(read_event)
-            .transpose()
+            .collect()
     }
 
     /// The next events a consumer has not finished, with their outbox entries, in the order they

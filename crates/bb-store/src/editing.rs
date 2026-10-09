@@ -8,7 +8,7 @@
 //! note, a released lock) runs inside the transaction of a change, with its event.
 
 use bb_app::editing::EditStore;
-use bb_core::edit::{Draft, DraftTarget, EditLock, EditNotice, EditWhat, NoticeKind, Taking};
+use bb_core::edit::{Draft, DraftTarget, EditLock, EditNotice, EditWhat, Hold, NoticeKind, Taking};
 use bb_core::event::{DomainEvent, EntityKind, EntityRef};
 use bb_core::id::{EditorId, EntityId, LockToken, UserId};
 use bb_core::technical::TechnicalName;
@@ -22,6 +22,19 @@ use crate::schema::{EditDraftRow as Drafts, EditLockRow as Locks, EditNoticeRow 
 
 /// How often a take starts over when another writer was faster; then the caller may try again.
 const TAKE_ATTEMPTS: usize = 3;
+
+/// The columns of a lock row, in the order `insert_lock` writes them: one list for reading and
+/// writing.
+const LOCK_COLUMNS: [Locks; 8] = [
+    Locks::RecordKind,
+    Locks::RecordId,
+    Locks::Part,
+    Locks::Holder,
+    Locks::Editor,
+    Locks::Token,
+    Locks::TakenAt,
+    Locks::ExpiresAt,
+];
 
 /// The rows of the one thing a lock is on.
 fn lock_of(what: &EditWhat) -> Condition {
@@ -50,18 +63,7 @@ fn read_lock(row: &Row) -> Result<EditLock, StoreError> {
 
 fn lock_select() -> sea_query::SelectStatement {
     let mut select = Query::select();
-    select
-        .columns([
-            Locks::RecordKind,
-            Locks::RecordId,
-            Locks::Part,
-            Locks::Holder,
-            Locks::Editor,
-            Locks::Token,
-            Locks::TakenAt,
-            Locks::ExpiresAt,
-        ])
-        .from(Locks::Table);
+    select.columns(LOCK_COLUMNS).from(Locks::Table);
     select
 }
 
@@ -85,16 +87,7 @@ async fn insert_lock(transaction: &mut Transaction, lock: &EditLock) -> Result<b
     let mut insert = Query::insert();
     insert
         .into_table(Locks::Table)
-        .columns([
-            Locks::RecordKind,
-            Locks::RecordId,
-            Locks::Part,
-            Locks::Holder,
-            Locks::Editor,
-            Locks::Token,
-            Locks::TakenAt,
-            Locks::ExpiresAt,
-        ])
+        .columns(LOCK_COLUMNS)
         .values([
             Expr::val(lock.record.kind.as_str()),
             Expr::val(lock.record.id.stored()),
@@ -136,12 +129,14 @@ async fn update_lock(
 async fn delete_lock(
     transaction: &mut Transaction,
     what: &EditWhat,
-    token: Option<LockToken>,
+    hold: Option<Hold>,
 ) -> Result<bool, StoreError> {
     let mut delete = Query::delete();
     delete.from_table(Locks::Table).cond_where(lock_of(what));
-    if let Some(token) = token {
-        delete.and_where(Expr::col(Locks::Token).eq(token.stored()));
+    if let Some(hold) = hold {
+        delete
+            .and_where(Expr::col(Locks::Token).eq(hold.token.stored()))
+            .and_where(Expr::col(Locks::Holder).eq(hold.holder.stored()));
     }
     Ok(transaction.execute(&delete).await? > 0)
 }
@@ -254,7 +249,7 @@ impl EditStore for AuthStorage {
     async fn renew_edit_lock(
         &self,
         what: &EditWhat,
-        token: LockToken,
+        hold: Hold,
         now: Timestamp,
         ends: Timestamp,
     ) -> Result<bool, StoreError> {
@@ -263,18 +258,15 @@ impl EditStore for AuthStorage {
             .table(Locks::Table)
             .value(Locks::ExpiresAt, to_micros(ends))
             .cond_where(lock_of(what))
-            .and_where(Expr::col(Locks::Token).eq(token.stored()))
+            .and_where(Expr::col(Locks::Token).eq(hold.token.stored()))
+            .and_where(Expr::col(Locks::Holder).eq(hold.holder.stored()))
             .and_where(Expr::col(Locks::ExpiresAt).gt(to_micros(now)));
         Ok(self.database().execute(&update).await? > 0)
     }
 
-    async fn release_edit_lock(
-        &self,
-        what: &EditWhat,
-        token: LockToken,
-    ) -> Result<bool, StoreError> {
+    async fn release_edit_lock(&self, what: &EditWhat, hold: Hold) -> Result<bool, StoreError> {
         let mut transaction = self.database().begin().await?;
-        let released = delete_lock(&mut transaction, what, Some(token)).await?;
+        let released = delete_lock(&mut transaction, what, Some(hold)).await?;
         transaction.commit().await?;
         Ok(released)
     }
@@ -313,7 +305,7 @@ impl EditStore for AuthStorage {
         Ok(deleted)
     }
 
-    async fn purge_drafts(&self, before: Timestamp) -> Result<u64, StoreError> {
+    async fn purge_drafts(&self, before: Timestamp, now: Timestamp) -> Result<u64, StoreError> {
         let mut transaction = self.database().begin().await?;
         let mut drafts = Query::delete();
         drafts
@@ -325,12 +317,22 @@ impl EditStore for AuthStorage {
             .from_table(Notices::Table)
             .and_where(Expr::col(Notices::At).lt(to_micros(before)));
         transaction.execute(&notices).await?;
+        // A lock row that ran out is no lock; it stays only until somebody takes the thing again.
+        let mut locks = Query::delete();
+        locks
+            .from_table(Locks::Table)
+            .and_where(Expr::col(Locks::ExpiresAt).lt(to_micros(now)));
+        transaction.execute(&locks).await?;
         transaction.commit().await?;
         Ok(gone)
     }
 
-    async fn last_change_of(&self, record: &EntityRef) -> Result<Option<DomainEvent>, StoreError> {
-        self.database().last_event_about(record).await
+    async fn latest_events_about(
+        &self,
+        record: &EntityRef,
+        limit: u64,
+    ) -> Result<Vec<DomainEvent>, StoreError> {
+        self.database().latest_events_about(record, limit).await
     }
 
     async fn take_edit_notices(
@@ -407,12 +409,12 @@ impl EditStore for AuthStorage {
         Ok(former)
     }
 
-    async fn remove_edit_lock_with_token(
+    async fn remove_edit_lock_held(
         transaction: &mut Transaction,
         what: &EditWhat,
-        token: LockToken,
+        hold: Hold,
     ) -> Result<bool, StoreError> {
-        delete_lock(transaction, what, Some(token)).await
+        delete_lock(transaction, what, Some(hold)).await
     }
 
     async fn delete_draft_in(

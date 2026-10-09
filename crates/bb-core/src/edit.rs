@@ -125,12 +125,14 @@ words! {
         FinishAsked => "finish_asked",
         /// Somebody took the editing over (*Edit anyway*); their text is kept as their draft.
         TakenOver => "taken_over",
+        /// An administrator released the lock because it was stuck (*Release stuck lock*).
+        Released => "released",
     }
 }
 
 words_in_api!(
     NoticeKind,
-    "What the person who is editing is told: somebody asked them to finish, or somebody took the editing over."
+    "What the person who is editing is told: somebody asked them to finish, took the editing over, or released the lock."
 );
 
 /// The lease on one thing being edited: who holds it, in which editor, until when (ADR-0019). A
@@ -160,7 +162,24 @@ pub struct EditLock {
     pub expires_at: Timestamp,
 }
 
+/// What proves that a request comes from the one who holds a lock: the token, and the person it
+/// was given to. A token alone is not enough, so a lock is bound to its holder; it ends within a
+/// minute after the holder signs out, because nobody renews it.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Hold {
+    /// The person who holds the lock.
+    pub holder: UserId,
+    /// The token the lock was taken with.
+    pub token: LockToken,
+}
+
 impl EditLock {
+    /// Whether the lock is held by this person with this token.
+    #[must_use]
+    pub fn is_held_by(&self, hold: Hold) -> bool {
+        self.holder == hold.holder && self.token == hold.token
+    }
+
     /// What the lock is for.
     #[must_use]
     pub fn what(&self) -> EditWhat {

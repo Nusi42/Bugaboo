@@ -9,9 +9,10 @@ use std::sync::{Arc, Mutex, PoisonError};
 
 use bb_core::event::{EntityKind, EntityRef, InvalidKind};
 use bb_core::id::{EntityId, ProjectId, UserId};
+use bb_core::people_kinds::PeopleKind;
 use bb_policy::{Permission, Place};
 
-use super::records::{EditableRecords, RecordFacts};
+use super::records::{EditableRecords, RecordFacts, Shown};
 use crate::auth::AppError;
 use crate::ports::BoxFuture;
 
@@ -88,6 +89,14 @@ impl EditableRecords for TestNotes {
                 edit: Permission::ChangeIssues,
             });
         Box::pin(async move { Ok(found) })
+    }
+
+    fn shows(&self, _record: &EntityRef, field: &str) -> Shown {
+        match field {
+            "description" | "title" | "status" | "cost-center" => Shown::Plain,
+            "assigned-to" => Shown::Person(PeopleKind::AssignedTo),
+            _ => Shown::Hidden,
+        }
     }
 
     fn making(&self, kind: &EntityKind) -> Option<Permission> {

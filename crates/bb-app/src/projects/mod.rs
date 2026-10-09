@@ -77,6 +77,14 @@ impl Why {
         self.answer_with::<S>(error, otherwise, otherwise)
     }
 
+    /// The reason the change gave for stopping itself, if it gave one.
+    pub(crate) fn said(&self) -> Option<ErrorCode> {
+        *self
+            .0
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+    }
+
     /// Like [`Self::answer`], for a change whose key used twice says another thing than its
     /// check that stopped itself without a reason: `stopped` for the first, `duplicate` for the
     /// second.

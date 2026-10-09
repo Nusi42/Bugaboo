@@ -7,7 +7,12 @@ use bb_core::event::{Actor, Channel, DomainEvent, EntityRef, FieldChange, Record
 use bb_core::fields::Field;
 use bb_core::id::{EntityId, EventId, UserId};
 use bb_policy::{PersonRef, Place};
+use std::sync::Arc;
+
+use bb_core::version::counted_up;
 use serde_json::json;
+
+use crate::editing::testing::TestNotes;
 
 use super::world::{Outcome, World};
 use crate::context::Clock as _;
@@ -21,11 +26,8 @@ use bb_core::access::PeopleLevel;
 use bb_core::people_kinds::PeopleKind;
 
 /// A record that was changed by Ada: its status and its cost center.
-fn changed_by_ada(world: &World) -> Result<EntityRef, String> {
-    let record = EntityRef {
-        kind: RecordKind::Project.into(),
-        id: EntityId::from(UserId::from_random([9; 16])),
-    };
+fn changed_by_ada(world: &World, notes: &TestNotes) -> Result<EntityRef, String> {
+    let record = notes.add(EntityId::from(UserId::from_random([9; 16])));
     let event = DomainEvent {
         id: EventId::from_parts(world.clock.now(), [1; 10]).map_err(|error| error.to_string())?,
         time: world.clock.now(),
@@ -43,6 +45,7 @@ fn changed_by_ada(world: &World) -> Result<EntityRef, String> {
                 before: None,
                 after: Some(json!("4711")),
             },
+            counted_up(1),
         ],
         reason: None,
     };
@@ -52,8 +55,9 @@ fn changed_by_ada(world: &World) -> Result<EntityRef, String> {
 
 #[tokio::test]
 async fn iss_17_the_conflict_leaves_out_what_the_reader_may_not_see() -> Outcome {
-    let world = World::new().await?;
-    let record = changed_by_ada(&world)?;
+    let notes = TestNotes::new()?;
+    let world = World::new().await?.with_records(Arc::new(notes.clone()));
+    let record = changed_by_ada(&world, &notes)?;
     // Bob may see the status, not the cost center, and sees names in *Last changed by*.
     let bob = world.person("bob@example.test").await?;
     let role = make_role(
@@ -131,6 +135,58 @@ async fn iss_17_the_conflict_leaves_out_what_the_reader_may_not_see() -> Outcome
     assert_eq!(conflict.current.len(), 1);
     assert_eq!(conflict.current["status"], json!("Done"));
     assert!(matches!(conflict.changed_by, Some(PersonRef::Name { .. })));
+    Ok(())
+}
+
+#[tokio::test]
+async fn iss_17_a_kind_of_record_decides_which_changes_a_conflict_shows_and_people_become_person_refs()
+-> Outcome {
+    let notes = TestNotes::new()?;
+    let world = World::new().await?.with_records(Arc::new(notes.clone()));
+    let note = notes.add(EntityId::from(UserId::from_random([5; 16])));
+    let bob = world.person("bob@example.test").await?;
+    let event = DomainEvent {
+        id: EventId::from_parts(world.clock.now(), [2; 10]).map_err(|error| error.to_string())?,
+        time: world.clock.now(),
+        actor: Actor::Person(world.admin.person.id),
+        channel: Channel::Ui,
+        entity: note.clone(),
+        changes: vec![
+            FieldChange {
+                field: "assigned-to".to_owned(),
+                before: None,
+                after: Some(json!(bob.person.id.to_string())),
+            },
+            FieldChange {
+                field: "title".to_owned(),
+                before: None,
+                after: Some(json!("A title")),
+            },
+            // A field nobody said how to show stays out.
+            FieldChange {
+                field: "internal_note".to_owned(),
+                before: None,
+                after: Some(json!("secret")),
+            },
+            counted_up(1),
+        ],
+        reason: None,
+    };
+    world.store.lock().events.push(event);
+    let stale = Stale {
+        record: note,
+        place: Place::Organization,
+        viewer: world.admin.person.id,
+    };
+    let crate::auth::AppError::Conflict(conflict) = world.ctx().conflict_of(&stale).await else {
+        return Err("no structured answer".into());
+    };
+    assert_eq!(conflict.fields, ["assigned-to", "title"]);
+    assert_eq!(conflict.current["title"], json!("A title"));
+    assert_eq!(conflict.current["assigned-to"]["shown"], json!("name"));
+    let text = serde_json::to_string(&conflict)?;
+    assert!(conflict.current["assigned-to"].is_object(), "{text}");
+    assert!(!text.contains("secret"), "{text}");
     Ok(())
 }
 

@@ -16,6 +16,7 @@ use bb_api::{AuthHandle, FailureLimits, ProbeHandle};
 use bb_app::access::{MakeStartingRoles, make_starting_roles};
 use bb_app::auth::{AuthServices, IssueSetupCode, RequestInfo, issue_setup_code};
 use bb_app::context::SystemClock;
+use bb_app::editing::{PurgeDraftsQuery, purge_drafts};
 use bb_app::ports::SetupCodeFile;
 use bb_auth::{CsrfKey, Passkeys, PasswordHasher, RelyingParty};
 use bb_core::message::{self, Message};
@@ -40,6 +41,21 @@ pub(crate) struct Wired {
     pub(crate) probe: ProbeHandle,
     /// The setup code of the first start, to print once. `None` when an administrator exists.
     pub(crate) setup_code: Option<String>,
+    /// What the server does on a timer while it runs.
+    pub(crate) housekeeping: Housekeeping,
+}
+
+/// The clearing of what outlived its keep period: drafts, notes for people who were editing and
+/// lock rows that ran out. It stands in for the job `editing.purge_drafts` until the job runner
+/// exists (M3-F30).
+#[derive(Clone)]
+pub(crate) struct Housekeeping(Arc<AuthServices<AuthStorage>>);
+
+impl Housekeeping {
+    /// One round of clearing; returns how many drafts went.
+    pub(crate) async fn clear_old(&self) -> Result<u64, bb_app::auth::AppError> {
+        purge_drafts(&self.0.ctx(RequestInfo::default()), PurgeDraftsQuery).await
+    }
 }
 
 /// The setup code file of a server without a console, as the use case that makes the first
@@ -158,8 +174,10 @@ pub(crate) async fn wire(
         .await
         .map_err(|error| anyhow!(error.to_string()))?
         .map(|code| code.as_str().to_owned());
+    let services = Arc::new(services);
     Ok(Wired {
-        auth: AuthHandle::new(Arc::new(services)),
+        housekeeping: Housekeeping(Arc::clone(&services)),
+        auth: AuthHandle::new(services),
         probe: ProbeHandle::new(Arc::new(probe)),
         setup_code,
     })

@@ -3238,6 +3238,16 @@
               }
             }
           },
+          "409": {
+            "description": "Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConflictProblem"
+                }
+              }
+            }
+          },
           "429": {
             "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
             "headers": {
@@ -4448,7 +4458,7 @@
             }
           }
         },
-        "x-permission": "by-record"
+        "x-permission": "signed-in"
       }
     },
     "/api/v1/edit-locks": {
@@ -4956,7 +4966,7 @@
             }
           }
         },
-        "x-permission": "by-record"
+        "x-permission": "signed-in"
       }
     },
     "/api/v1/edit-locks/release-stuck": {
@@ -12980,8 +12990,8 @@
       },
       "NoticeKind": {
         "type": "string",
-        "description": "What the person who is editing is told: somebody asked them to finish, or somebody took the editing over.",
-        "enum": ["finish_asked", "taken_over"]
+        "description": "What the person who is editing is told: somebody asked them to finish, took the editing over, or released the lock.",
+        "enum": ["finish_asked", "taken_over", "released"]
       },
       "OwnChangeBody": {
         "oneOf": [
@@ -15227,7 +15237,7 @@
       "SignUpPolicyBody": {
         "type": "object",
         "description": "Who may sign up on their own.",
-        "required": ["enabled", "domains"],
+        "required": ["enabled", "domains", "version"],
         "properties": {
           "domains": {
             "type": "array",
@@ -15239,6 +15249,11 @@
           "enabled": {
             "type": "boolean",
             "description": "Whether signing up without an invitation is on."
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Counts up with every change. A change is made on the version that was looked at; the\npolicy has version 0 until it is changed the first time."
           }
         }
       },

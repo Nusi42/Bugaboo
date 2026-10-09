@@ -16,12 +16,14 @@ mod types;
 use std::collections::BTreeSet;
 
 use bb_core::ErrorCode;
-use bb_core::access::Role;
+use bb_core::access::{FieldLevel, PeopleLevel, Role};
 use bb_core::event::{FieldChange, RecordKind};
+use bb_core::fields::Field;
 use bb_core::id::RoleId;
+use bb_core::people_kinds::PeopleKind;
 use bb_core::sign_in::SecurityAction;
 use bb_core::technical::TechnicalName;
-use bb_core::version::FIRST_VERSION;
+use bb_core::version::{FIRST_VERSION, counted_up};
 use bb_policy::guards::{Refusal, ensure_a_manager_remains, ensure_no_escalation};
 use bb_policy::{Authorized, Permission, Place, StartingRole};
 use serde_json::json;
@@ -227,6 +229,7 @@ pub async fn change_role<S: AuthStore>(
                 before: Some(json!(before.role.two_step)),
                 after: Some(json!(two_step)),
             },
+            counted_up(before.role.version),
         ],
     )?;
     let (new_name, new_permissions) = (
@@ -367,6 +370,25 @@ pub async fn delete_role<S: AuthStore>(
     Ok(Done)
 }
 
+/// The level of each field.
+type FieldLevels = Vec<(Field, FieldLevel)>;
+
+/// The levels of a kind of people information, for each kind.
+type PeopleLevels = Vec<(PeopleKind, PeopleLevel)>;
+
+/// The levels of a starting role: for each field, and for each kind of people information.
+fn starting_levels(starting: StartingRole) -> (FieldLevels, PeopleLevels) {
+    let fields = Field::ALL
+        .iter()
+        .map(|field| (*field, starting.field_level(*field)))
+        .collect();
+    let people = PeopleKind::ALL
+        .iter()
+        .map(|kind| (*kind, starting.people_level(*kind)))
+        .collect();
+    (fields, people)
+}
+
 /// Gives a starting role back the permissions and levels it had at the start (*Reset to the
 /// starting permissions*). The name stays; so do the levels set for single projects.
 ///
@@ -400,23 +422,19 @@ pub async fn reset_role<S: AuthStore>(
         return Err(AppError::stale(record, Place::Organization, editor));
     }
     let permissions: BTreeSet<Permission> = starting.permissions().into_iter().collect();
-    let fields: Vec<_> = bb_core::fields::Field::ALL
-        .iter()
-        .map(|field| (*field, starting.field_level(*field)))
-        .collect();
-    let people: Vec<_> = bb_core::people_kinds::PeopleKind::ALL
-        .iter()
-        .map(|kind| (*kind, starting.people_level(*kind)))
-        .collect();
+    let (fields, people) = starting_levels(starting);
     let id = before.role.id;
     let event = ctx.event(
         by(actor.person.id),
         entity(RecordKind::Role, id),
-        vec![FieldChange {
-            field: "permissions".to_owned(),
-            before: Some(json!(keys(&before.permissions))),
-            after: Some(json!(keys(&permissions))),
-        }],
+        vec![
+            FieldChange {
+                field: "permissions".to_owned(),
+                before: Some(json!(keys(&before.permissions))),
+                after: Some(json!(keys(&permissions))),
+            },
+            counted_up(before.role.version),
+        ],
     )?;
     let (name, new_permissions) = (
         before.role.name.clone(),

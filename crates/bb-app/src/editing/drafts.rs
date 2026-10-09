@@ -133,20 +133,21 @@ pub async fn read_draft<S: AuthStore>(
 /// still be allowed to change the record: they only delete their own text.
 ///
 /// # Errors
-/// Only that the session is not one.
+/// Only that the session is not one (an access key is not).
 pub async fn throw_away_draft<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: ThrowAwayDraftQuery,
 ) -> Result<Done, AppError> {
-    let actor = ctx.actor(&input.session_token).await?;
+    // Their own text, so it needs the person who is signed in, not an access key.
+    let person = ctx.active(&input.session_token).await?.person.id;
     ctx.store()
-        .delete_draft(actor.person.id, &input.target)
+        .delete_draft(person, &input.target)
         .await
         .map_err(|error| internal::<S>(&error))?;
     Ok(Done)
 }
 
-/// Deletes the drafts, and the notes for people who were editing, that outlived the keep period.
+/// Deletes the drafts, the notes for people who were editing, and the lock rows that ran out.
 /// What the background job of the kind `editing.purge_drafts` does (ADR-0017); safe to run again.
 /// Returns how many drafts went.
 ///
@@ -157,7 +158,7 @@ pub async fn purge_drafts<S: AuthStore>(
     _input: PurgeDraftsQuery,
 ) -> Result<u64, AppError> {
     ctx.store()
-        .purge_drafts(ctx.draft_not_before()?)
+        .purge_drafts(ctx.draft_not_before()?, ctx.now())
         .await
         .map_err(|error| internal::<S>(&error))
 }

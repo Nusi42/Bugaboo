@@ -12,7 +12,7 @@ use std::sync::Arc;
 
 use bb_core::ErrorCode;
 use bb_core::edit::{
-    self, DraftTarget, EditLock, EditNotice, EditWhat, HEARTBEAT_SECONDS, LEASE_SECONDS,
+    self, DraftTarget, EditLock, EditNotice, EditWhat, HEARTBEAT_SECONDS, Hold, LEASE_SECONDS,
     NoticeKind, Taking,
 };
 use bb_core::event::FieldChange;
@@ -31,6 +31,12 @@ use crate::auth::{AppError, AuthStore, Ctx, Done, Stops, by, change_failed, inte
 
 /// The name of the field an event about a lock changes: the part is in the value.
 const EVENT_FIELD: &str = "edit_lock";
+
+/// When a lease that starts at `now` ends: an error only where time cannot be written.
+fn lease_ends(now: jiff::Timestamp) -> Result<jiff::Timestamp, AppError> {
+    edit::lease_ends(now)
+        .ok_or_else(|| AppError::Internal("a lease that cannot be written".to_owned()))
+}
 
 impl<S: AuthStore> Ctx<'_, S> {
     /// How a person who edits is shown to the viewer: by the kind *"… is editing"*.
@@ -51,8 +57,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         editor: bb_core::id::EditorId,
     ) -> Result<EditLock, AppError> {
         let now = self.now();
-        let expires_at = edit::lease_ends(now)
-            .ok_or_else(|| AppError::Internal("a lease that cannot be written".to_owned()))?;
+        let expires_at = lease_ends(now)?;
         Ok(EditLock {
             record: what.record.clone(),
             part: what.part.clone(),
@@ -121,15 +126,6 @@ pub async fn take_lock<S: AuthStore>(
         .take_edit_lock(&wanted, ctx.now())
         .await
         .map_err(|error| internal::<S>(&error))?;
-    if matches!(taking, Taking::Granted(_)) {
-        // Until the job that deletes old drafts runs on a schedule (ADR-0017), taking a lock, which
-        // happens once for each time somebody starts to write, clears the ones past their keep
-        // period, so no draft is kept longer than it may be.
-        ctx.store()
-            .purge_drafts(ctx.draft_not_before()?)
-            .await
-            .map_err(|error| internal::<S>(&error))?;
-    }
     let outcome = match taking {
         Taking::Granted(lock) => LockOutcome::Taken(Ctx::<S>::taken(&lock)),
         Taking::Held(lock) => LockOutcome::Held(HeldLock {
@@ -169,11 +165,18 @@ pub async fn heartbeat<S: AuthStore>(
         }
         None => false,
     };
-    let ends = edit::lease_ends(now)
-        .ok_or_else(|| AppError::Internal("a lease that cannot be written".to_owned()))?;
+    let ends = lease_ends(now)?;
     let renewed = ctx
         .store()
-        .renew_edit_lock(&input.what, input.token, now, ends)
+        .renew_edit_lock(
+            &input.what,
+            Hold {
+                holder: actor.person.id,
+                token: input.token,
+            },
+            now,
+            ends,
+        )
         .await
         .map_err(|error| internal::<S>(&error))?;
     let notices = ctx
@@ -228,12 +231,17 @@ pub async fn release_lock<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: ReleaseLockQuery,
 ) -> Result<Done, AppError> {
-    let actor = ctx.actor(&input.session_token).await?;
-    // The token is what proves the lock is the editor's own: nobody can release another editor's
-    // lock without it, whatever they may do to the record.
-    let _ = actor;
+    // Only a person who is signed in (not an access key) holds a lock, and only with the token
+    // the lock was taken with: nobody can release another editor's lock without both.
+    let person = ctx.active(&input.session_token).await?.person.id;
     ctx.store()
-        .release_edit_lock(&input.what, input.token)
+        .release_edit_lock(
+            &input.what,
+            Hold {
+                holder: person,
+                token: input.token,
+            },
+        )
         .await
         .map_err(|error| internal::<S>(&error))?;
     Ok(Done)
@@ -274,7 +282,7 @@ pub async fn ask_to_finish<S: AuthStore>(
         vec![FieldChange {
             field: EVENT_FIELD.to_owned(),
             before: None,
-            after: Some(json!({ "asked_to_finish": input.what.part.as_str(), "to": holder })),
+            after: Some(json!({ "asked_to_finish": input.what.part.as_str() })),
         }],
     )?;
     ctx.store()
@@ -298,8 +306,9 @@ pub async fn edit_anyway<S: AuthStore>(
 ) -> Result<Authorized<LockOutcome>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
     let facts = ctx.facts_of(&actor, &input.what.record).await?;
-    // *Edit anyway* is the right to take over, on its own; whether the text can then be saved is
-    // for the change rules of the record (its own routes).
+    // *Edit anyway* is the right to take over, and only for a person who may change the record: a
+    // lock they could not keep would run out in a minute (M3-F35).
+    ctx.require(&actor, facts.edit, facts.place).await?;
     let access = ctx
         .require(&actor, Permission::EditAnyway, facts.place)
         .await?;
@@ -371,24 +380,43 @@ pub async fn release_stuck_lock<S: AuthStore>(
         }],
     )?;
     let what = input.what.clone();
+    let (me, now) = (actor.person.id, ctx.now());
     let stopped = crate::projects::Why::default();
     let stop = stopped.clone();
+    // Whether somebody else's lease that was still running ended: only then an administrator
+    // ended somebody's editing, which is what the security log is for.
+    let ended = Arc::new(std::sync::atomic::AtomicBool::new(false));
+    let ended_in = Arc::clone(&ended);
     ctx.store()
         .record_change(&event, move |transaction| {
             Box::pin(async move {
-                match S::remove_edit_lock(transaction, &what).await? {
-                    Some(_) => Ok(()),
-                    None => Err(stop.stop::<S>(ErrorCode::NotFound)),
+                let Some(former) = S::remove_edit_lock(transaction, &what).await? else {
+                    return Err(stop.stop::<S>(ErrorCode::NotFound));
+                };
+                if !former.has_expired(now) && former.holder != me {
+                    let notice = EditNotice {
+                        recipient: former.holder,
+                        record: former.record,
+                        part: former.part,
+                        kind: NoticeKind::Released,
+                        from: me,
+                        at: now,
+                    };
+                    S::put_edit_notice(transaction, &notice).await?;
+                    ended_in.store(true, std::sync::atomic::Ordering::Relaxed);
                 }
+                Ok(())
             })
         })
         .await
         .map_err(|error| stopped.answer::<S>(&error, ErrorCode::NotFound))?;
-    ctx.note(
-        SecurityAction::EditLockReleased,
-        Some(actor.person.id),
-        Some(input.what.record.clone()),
-    )
-    .await;
+    if ended.load(std::sync::atomic::Ordering::Relaxed) {
+        ctx.note(
+            SecurityAction::EditLockReleased,
+            Some(actor.person.id),
+            Some(input.what.record.clone()),
+        )
+        .await;
+    }
     Ok(access.authorize(Done))
 }

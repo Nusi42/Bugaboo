@@ -200,6 +200,78 @@ async fn sec_17_releasing_a_stuck_lock_is_in_the_security_log() -> TestResult {
             )
             .await?;
         assert_eq!(logged().await?.len(), 1);
+        // A lease that ran out is not somebody's editing any more: it is cleared, with no entry
+        // in the log and no note.
+        let (token, _) = stage.lock(&stage.ben).await?;
+        stage.pass(LEASE_SECONDS);
+        release(&stage.dan).await?;
+        assert_eq!(logged().await?.len(), 1);
+        let beat = stage.heartbeat(&stage.ben, token, None).await?;
+        assert!(beat.notices.is_empty());
+        // The person's own lock, released the administrator's way, is not logged either.
+        stage.lock(&stage.dan).await?;
+        release(&stage.dan).await?;
+        assert_eq!(logged().await?.len(), 1);
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn iss_17_the_person_whose_lock_was_released_is_told_who_released_it() -> TestResult {
+    on_both_databases("iss_17_released_note", async |stage| {
+        let (token, _) = stage.lock(&stage.ben).await?;
+        stage
+            .rig()
+            .api()
+            .release_stuck_lock(
+                Rig::info(),
+                ReleaseStuckLock {
+                    session_token: stage.dan.session.clone(),
+                    what: stage.what.clone(),
+                },
+            )
+            .await?;
+        let beat = stage.heartbeat(&stage.ben, token, None).await?;
+        assert_eq!(beat.lock, LockStatus::RanOut);
+        assert_eq!(beat.notices.len(), 1);
+        assert_eq!(beat.notices[0].kind, NoticeKind::Released);
+        // Ben sees editors as *Someone*: the note is made with the people kind of editing.
+        assert_eq!(beat.notices[0].from, PersonRef::Someone);
+        // Each note is told once.
+        let again = stage.heartbeat(&stage.ben, token, None).await?;
+        assert!(again.notices.is_empty());
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn iss_17_a_token_is_no_use_to_another_person() -> TestResult {
+    on_both_databases("iss_17_token_holder", async |stage| {
+        let (token, _) = stage.lock(&stage.ben).await?;
+        // Cleo has Ben's token, but she is not the holder: her heartbeat does not renew the lease
+        // and her release does not let go of it.
+        stage.pass(LEASE_SECONDS - 10);
+        let beat = stage.heartbeat(&stage.cleo, token, None).await?;
+        assert!(matches!(beat.lock, LockStatus::TakenOver { .. }));
+        stage.let_go(&stage.cleo, token).await?;
+        stage.pass(5);
+        let own = stage.heartbeat(&stage.ben, token, None).await?;
+        assert!(
+            matches!(own.lock, LockStatus::Held { .. }),
+            "{:?}",
+            own.lock
+        );
+        // Nor does a save with it: nothing is written and Ben's lock stays.
+        let error = stage
+            .save(&stage.cleo, token, "Cleo's text", 1)
+            .await
+            .unwrap_err();
+        assert_eq!(error.code(), Some(ErrorCode::EditTakenOver));
+        assert_eq!(stage.notes.version(&stage.note), Some(1));
+        stage.save(&stage.ben, token, "Ben's text", 1).await?;
+        assert_eq!(stage.notes.version(&stage.note), Some(2));
         Ok(())
     })
     .await

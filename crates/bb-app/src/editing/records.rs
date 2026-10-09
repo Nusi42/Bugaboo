@@ -8,6 +8,7 @@
 
 use bb_core::event::{EntityKind, EntityRef, RecordKind};
 use bb_core::id::{ProjectId, UserId};
+use bb_core::people_kinds::PeopleKind;
 use bb_policy::{Permission, Place};
 
 use crate::access::Actor;
@@ -27,6 +28,21 @@ pub struct RecordFacts {
     pub edit: Permission,
 }
 
+/// How a change of a record is shown to somebody who was told that the record changed
+/// meanwhile (`edit.version_changed`, ADR-0019 amendment M3).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Shown {
+    /// Not at all: a field nobody has said how to show stays out, so a new field never leaks
+    /// before its kind decides.
+    Hidden,
+    /// The value as it is, for a field whose value is no personal data (still left out when the
+    /// role of the reader hides a field of the catalogue).
+    Plain,
+    /// The value is a person (the ID in the event): the reader gets a `PersonRef`, shown as the
+    /// kind of people information says (*Assigned to*, *Reported by*).
+    Person(PeopleKind),
+}
+
 /// The kinds of record the editing use cases can work on, besides the ones `bb-app` knows.
 pub trait EditableRecords: Send + Sync {
     /// The facts of a record for a person, or `None` when there is no such record or the person
@@ -39,6 +55,12 @@ pub trait EditableRecords: Send + Sync {
         person: UserId,
         record: &'a EntityRef,
     ) -> BoxFuture<'a, Result<Option<RecordFacts>, AppError>>;
+
+    /// How the change of the field `field` of `record` is shown in a conflict. A kind that says
+    /// nothing hides every field.
+    fn shows(&self, _record: &EntityRef, _field: &str) -> Shown {
+        Shown::Hidden
+    }
 
     /// What a person needs to make a new record of this kind in a project (the form behind a
     /// draft of a new record), or `None` for a kind that has no form.

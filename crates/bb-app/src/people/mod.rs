@@ -25,7 +25,7 @@ use bb_core::event::RecordKind;
 use bb_core::id::{GroupId, ProjectId, UserId};
 use bb_core::people_kinds::PeopleKind;
 use bb_core::sign_in::SecurityAction;
-use bb_core::version::FIRST_VERSION;
+use bb_core::version::{FIRST_VERSION, counted_up};
 use bb_policy::guards::ensure_a_manager_remains;
 use bb_policy::{Authorized, Masked, PeopleContext, Permission, PersonRef, Place};
 use jiff::Timestamp;
@@ -249,11 +249,14 @@ pub async fn rename_group<S: AuthStore>(
     let event = ctx.event(
         by(actor.person.id),
         entity(RecordKind::Group, id),
-        vec![bb_core::event::FieldChange {
-            field: "name".to_owned(),
-            before: Some(json!(before.name)),
-            after: Some(json!(name)),
-        }],
+        vec![
+            bb_core::event::FieldChange {
+                field: "name".to_owned(),
+                before: Some(json!(before.name)),
+                after: Some(json!(name)),
+            },
+            counted_up(before.version),
+        ],
     )?;
     let (new_name, version) = (name.clone(), input.version);
     let why = Why::default();

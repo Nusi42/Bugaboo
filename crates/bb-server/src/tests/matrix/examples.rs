@@ -57,6 +57,9 @@ pub(super) enum Quirk {
     /// example names the target project, so the person needs this permission there (and to see
     /// the project: one who does not is told it is not found, before the permission is looked at).
     OnTheTargetProject(Permission),
+    /// The route declares one permission and its use case also needs this one on the record it
+    /// names (*Edit anyway* takes over editing a record only for a person who may change it).
+    AlsoNeeds(Permission),
 }
 
 /// One row of the table: a route and what is special about it.
@@ -90,6 +93,14 @@ impl Example {
     pub(super) fn record_permission(&self) -> Option<Permission> {
         self.quirks.iter().find_map(|quirk| match quirk {
             Quirk::OnTheTargetProject(permission) => Some(*permission),
+            _ => None,
+        })
+    }
+
+    /// The second permission the use case needs, if the row says so.
+    pub(super) fn also_needs(&self) -> Option<Permission> {
+        self.quirks.iter().find_map(|quirk| match quirk {
+            Quirk::AlsoNeeds(permission) => Some(*permission),
             _ => None,
         })
     }
@@ -236,7 +247,11 @@ pub(super) const EXAMPLES: &[Example] = &[
     Example::with("askToFinish", &[ON_THE_TARGET, Quirk::NamesAMissingThing]),
     Example::with(
         "editAnyway",
-        &[Quirk::AtTheTargetProject, Quirk::HidesUnseen],
+        &[
+            Quirk::AtTheTargetProject,
+            Quirk::HidesUnseen,
+            Quirk::AlsoNeeds(Permission::ChangeProjectSettings),
+        ],
     ),
     Example::with(
         "releaseStuckEditLock",
@@ -491,7 +506,7 @@ async fn organization_request(
         "changeSignUpPolicy" => (
             "PUT",
             "/api/v1/auth/sign-up-policy".into(),
-            Some(json!({"enabled": false, "domains": []})),
+            Some(json!({"enabled": false, "domains": [], "version": 0})),
         ),
         "getServerStatus" => ("GET", "/api/v1/admin/status".into(), None),
         // How many people with a role still have to set up a second step.

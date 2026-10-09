@@ -125,7 +125,7 @@ pub const ROUTES: &[Route] = &[
     ),
     route("takeEditLock", Declared::ByRecord, Answer::Secret),
     route("heartbeatEditLock", Declared::ByRecord, Answer::Ordinary),
-    route("releaseEditLock", Declared::ByRecord, Answer::Ordinary),
+    route("releaseEditLock", Declared::SignedIn, Answer::Ordinary),
     route("askToFinish", Declared::ByRecord, Answer::Ordinary),
     route(
         "editAnyway",
@@ -139,7 +139,7 @@ pub const ROUTES: &[Route] = &[
     ),
     route("saveDraft", Declared::ByRecord, Answer::Ordinary),
     route("readDraft", Declared::ByRecord, Answer::NeverStored),
-    route("throwAwayDraft", Declared::ByRecord, Answer::Ordinary),
+    route("throwAwayDraft", Declared::SignedIn, Answer::Ordinary),
     route("checkVersions", Declared::ByRecord, Answer::Ordinary),
     route("listAccessKeys", Declared::OwnAccount, Answer::NeverStored),
     route("makeAccessKey", Declared::OwnAccount, Answer::Secret),

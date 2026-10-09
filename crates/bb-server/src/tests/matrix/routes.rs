@@ -31,8 +31,8 @@ use bb_core::id::{ProjectId, RoleId};
 use bb_testing::{Failure, TestResult, each_database};
 
 use super::actors::{
-    Actor, Project, Where, actors, everything_seen, held_exactly, short_name, standing,
-    top_of_the_tree,
+    Actor, Project, Where, actors, everything_seen, held_exactly, held_exactly_all, short_name,
+    standing, top_of_the_tree,
 };
 use super::examples::{EXAMPLES, Example, Quirk, request};
 use super::record::Record;
@@ -106,7 +106,11 @@ pub(super) fn expectation(actor: Actor, route: &Operation, example: &Example) ->
             {
                 // What is inside a project is not told to a person who does not see it.
                 Expect::NotFound
-            } else if held.permissions.contains(&permission) {
+            } else if [Some(permission), example.also_needs()]
+                .into_iter()
+                .flatten()
+                .all(|needed| held.permissions.contains(&needed))
+            {
                 if at == Where::Target && example.has(Quirk::NeedsToSeeTheProject) && !held.sees() {
                     Expect::NotFound
                 } else {
@@ -224,6 +228,7 @@ impl<'a> Fixture<'a> {
                 .map(|permission| Actor::Exactly(Some(*permission))),
         );
         everyone.push(Actor::Exactly(None));
+        everyone.extend(both_actors());
         for actor in everyone {
             if !actor.signed_in() {
                 continue;
@@ -287,6 +292,15 @@ async fn hold(
     let role = |role: StartingRole| roles[role.code()];
     match actor {
         Actor::Nobody | Actor::NoRole | Actor::Exactly(None) => {}
+        Actor::ExactlyBoth(first, second) => {
+            let only = org
+                .role(
+                    &format!("Exactly {} and {}", first.code(), second.code()),
+                    &held_exactly_all(&[first, second]),
+                )
+                .await?;
+            org.give_everywhere(member, only.id).await?;
+        }
         Actor::Exactly(Some(permission)) => {
             let only = org
                 .role(
@@ -418,6 +432,23 @@ fn check_content(actor: Actor, route: &Operation, reply: &Reply) -> Result<(), S
     }
 }
 
+/// The people who hold exactly the two permissions a route needs (the `AlsoNeeds` quirk).
+fn both_actors() -> Vec<Actor> {
+    let routes = operations();
+    EXAMPLES
+        .iter()
+        .filter_map(|example| {
+            let route = routes.iter().find(|route| route.id == example.operation)?;
+            match (route.needs, example.also_needs()) {
+                (Declared::Permission(first), Some(second)) => {
+                    Some(Actor::ExactlyBoth(first, second))
+                }
+                _ => None,
+            }
+        })
+        .collect()
+}
+
 /// Runs every route as every actor; the record of what ran.
 async fn run(rig: &Rig, actors: &[Actor]) -> Result<Record, Failure> {
     let fixture = Fixture::start(rig).await?;
@@ -433,6 +464,9 @@ async fn run(rig: &Rig, actors: &[Actor]) -> Result<Record, Failure> {
     }
     for permission in Permission::ALL {
         let actor = Actor::Exactly(Some(*permission));
+        browsers.insert(actor.key(), fixture.browser(actor).await?);
+    }
+    for actor in both_actors() {
         browsers.insert(actor.key(), fixture.browser(actor).await?);
     }
     for route in routes {

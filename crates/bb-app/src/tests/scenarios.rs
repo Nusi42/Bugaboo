@@ -562,6 +562,7 @@ pub(crate) async fn change_sign_up_policy_scenario(world: &World) -> Added {
                 policy: SignUpPolicy {
                     enabled: true,
                     domains: vec!["example.test".to_owned()],
+                    version: 0,
                 },
             },
         ),
@@ -577,6 +578,7 @@ pub(crate) async fn sign_up_scenario(world: &World) -> Added {
             policy: SignUpPolicy {
                 enabled: true,
                 domains: vec!["example.test".to_owned()],
+                version: 0,
             },
         },
     )

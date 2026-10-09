@@ -16,7 +16,7 @@
 use std::collections::BTreeMap;
 
 use bb_core::ErrorCode;
-use bb_core::event::{Actor as EventActor, DomainEvent, EntityRef, RecordKind};
+use bb_core::event::{Actor as EventActor, DomainEvent, EntityKind, EntityRef, RecordKind};
 use bb_core::fields::Field;
 use bb_core::id::{GroupId, ProjectId, RoleId, UserId};
 use bb_core::people_kinds::PeopleKind;
@@ -25,7 +25,8 @@ use jiff::Timestamp;
 use serde::Serialize;
 use serde_json::Value;
 
-use crate::auth::{AppError, AuthStore, Ctx, internal};
+use super::records::Shown;
+use crate::auth::{AppError, AuthStore, Ctx, fixed_entity, internal};
 
 /// A record that a change found at another version than the one the person looked at. It holds
 /// only what is needed to find out what happened; `AuthApi` turns it into a [`Conflict`].
@@ -76,10 +77,29 @@ impl AppError {
     }
 }
 
-/// Whether the reader's mask lets them see the field with this name. A name that is no field of the
-/// catalogue (the name of a project, a setting) is not hidden by a field level.
-fn visible(viewer: &Evaluation, name: &str) -> bool {
-    Field::from_code(name).is_none_or(|field| viewer.field_mask().can_see(field))
+/// How many of the newest events about a record are looked through for the one that counted its
+/// version up.
+const EVENTS_LOOKED_AT: u64 = 50;
+
+/// How the change of a field of a record that `bb-app` keeps itself is shown: only what is no
+/// personal data and no hidden project. Every other field stays out.
+fn shown_by_us(kind: &EntityKind, field: &str) -> Shown {
+    let plain: &[&str] = if *kind == EntityKind::from(RecordKind::Project) {
+        &["name", "short_name"]
+    } else if *kind == EntityKind::from(RecordKind::Group) {
+        &["name"]
+    } else if *kind == EntityKind::from(RecordKind::Role) {
+        &["name", "permissions", "two_step"]
+    } else if *kind == EntityKind::from(RecordKind::Setting) {
+        &["auth_sign_up_enabled", "auth_sign_up_domains"]
+    } else {
+        &[]
+    };
+    if plain.contains(&field) {
+        Shown::Plain
+    } else {
+        Shown::Hidden
+    }
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
@@ -101,6 +121,18 @@ impl<S: AuthStore> Ctx<'_, S> {
                 Err(_) => None,
             };
             return Ok(found.map(|group| group.version));
+        }
+        if ours(RecordKind::Setting) {
+            // The one setting record with a version: the sign-up policy.
+            let policy = fixed_entity(RecordKind::Setting, "auth.sign-up-policy")?;
+            if *record == policy {
+                return Ok(Some(
+                    self.store()
+                        .sign_up_policy_version()
+                        .await
+                        .map_err(failed)?,
+                ));
+            }
         }
         if ours(RecordKind::Role) {
             let found = match RoleId::from_bytes(record.id.to_bytes()) {
@@ -132,11 +164,15 @@ impl<S: AuthStore> Ctx<'_, S> {
             Place::Organization => PeopleContext::Management,
             Place::Project(_) => PeopleContext::Ordinary,
         };
+        // The newest event that counted the version up: events about a lock, a member of a group
+        // or a level change the log of the record but not what the reader looked at.
         let last = self
             .store()
-            .last_change_of(&stale.record)
+            .latest_events_about(&stale.record, EVENTS_LOOKED_AT)
             .await
-            .map_err(|error| internal::<S>(&error))?;
+            .map_err(|error| internal::<S>(&error))?
+            .into_iter()
+            .find(DomainEvent::counted_version);
         let changed_by = match last.as_ref().map(|event| event.actor) {
             Some(EventActor::Person(person)) => Some(
                 self.person_ref(&viewer, PeopleKind::LastChangedBy, context, person)
@@ -145,9 +181,13 @@ impl<S: AuthStore> Ctx<'_, S> {
             Some(EventActor::System) => Some(PersonRef::Someone),
             None => None,
         };
-        let (fields, current) = last
-            .as_ref()
-            .map_or_else(Default::default, |event| shown_changes(&viewer, event));
+        let (fields, current) = match &last {
+            Some(event) => {
+                self.shown_changes(&viewer, context, &stale.record, event)
+                    .await?
+            }
+            None => Default::default(),
+        };
         Ok(Conflict {
             version: self.version_now(stale).await?,
             changed_by,
@@ -156,25 +196,53 @@ impl<S: AuthStore> Ctx<'_, S> {
             current,
         })
     }
-}
 
-/// The names of the fields an event changed and the values they have after it, for the fields the
-/// reader may see.
-fn shown_changes(
-    viewer: &Evaluation,
-    event: &DomainEvent,
-) -> (Vec<String>, BTreeMap<String, Value>) {
-    let mut fields = Vec::new();
-    let mut current = BTreeMap::new();
-    for change in event
-        .changes
-        .iter()
-        .filter(|change| visible(viewer, &change.field))
-    {
-        fields.push(change.field.clone());
-        if let Some(value) = &change.after {
-            current.insert(change.field.clone(), value.clone());
+    /// The names of the fields an event changed and the values they have after it, as the reader
+    /// may see them: what the kind of the record shows, left out where the role of the reader
+    /// hides a field of the catalogue, and a person as a `PersonRef`.
+    async fn shown_changes(
+        &self,
+        viewer: &Evaluation,
+        context: PeopleContext,
+        record: &EntityRef,
+        event: &DomainEvent,
+    ) -> Result<(Vec<String>, BTreeMap<String, Value>), AppError> {
+        let mut fields = Vec::new();
+        let mut current = BTreeMap::new();
+        for change in event
+            .changes
+            .iter()
+            .filter(|change| change.field != bb_core::version::FIELD)
+        {
+            let shown = match shown_by_us(&record.kind, &change.field) {
+                Shown::Hidden => self.services.records.shows(record, &change.field),
+                known => known,
+            };
+            let mask_hides = Field::from_code(&change.field)
+                .is_some_and(|field| !viewer.field_mask().can_see(field));
+            if shown == Shown::Hidden || mask_hides {
+                continue;
+            }
+            fields.push(change.field.clone());
+            let value = match (&change.after, shown) {
+                (Some(value), Shown::Plain) => Some(value.clone()),
+                (Some(Value::String(id)), Shown::Person(kind)) => match id.parse::<UserId>() {
+                    Ok(person) => {
+                        let seen = self.person_ref(viewer, kind, context, person).await?;
+                        Some(
+                            serde_json::to_value(seen)
+                                .map_err(|error| AppError::Internal(error.to_string()))?,
+                        )
+                    }
+                    Err(_) => None,
+                },
+                (Some(Value::Null), Shown::Person(_)) => Some(Value::Null),
+                _ => None,
+            };
+            if let Some(value) = value {
+                current.insert(change.field.clone(), value);
+            }
         }
+        Ok((fields, current))
     }
-    (fields, current)
 }

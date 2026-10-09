@@ -188,6 +188,17 @@ pub struct DomainEvent {
     pub reason: Option<String>,
 }
 
+impl DomainEvent {
+    /// Whether the event counted the version of its record up (it holds the change `version`).
+    /// Events about a lock, a member of a group or a level do not.
+    #[must_use]
+    pub fn counted_version(&self) -> bool {
+        self.changes
+            .iter()
+            .any(|change| change.field == crate::version::FIELD)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use serde_json::json;

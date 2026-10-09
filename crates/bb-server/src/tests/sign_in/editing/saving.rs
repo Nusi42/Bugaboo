@@ -3,6 +3,52 @@
 use super::*;
 
 #[tokio::test]
+async fn iss_17_a_write_that_breaks_is_no_stale_version() -> TestResult {
+    on_both_databases("iss_17_broken_write", async |stage| {
+        let (token, _) = stage.lock(&stage.ben).await?;
+        let event = DomainEvent {
+            id: EventId::generate(&mut SystemIds)?,
+            time: stage.rig().clock_now(),
+            actor: Actor::Person(stage.ben.id),
+            channel: Channel::Ui,
+            entity: stage.note.clone(),
+            changes: Vec::new(),
+            reason: None,
+        };
+        let error = stage
+            .rig()
+            .services
+            .ctx(Rig::info())
+            .save_text(
+                stage.ben.id,
+                bb_app::access::Place::Project(stage.project.id),
+                &TextSave {
+                    what: stage.what.clone(),
+                    token,
+                    text: "Ben's text".to_owned(),
+                    version: 1,
+                },
+                &event,
+                |_transaction| {
+                    Box::pin(async {
+                        Err::<Written<()>, _>(bb_store::StoreError::Corrupt("a note"))
+                    })
+                },
+            )
+            .await
+            .unwrap_err();
+        // The store broke: that is a failure, not the answer to a stale version.
+        assert_eq!(error.code(), None, "{error:?}");
+        assert!(matches!(error, AppError::Internal(_)), "{error:?}");
+        // Nothing was written, and the lock is still Ben's.
+        assert_eq!(stage.notes.version(&stage.note), Some(1));
+        stage.save(&stage.ben, token, "Ben's text", 1).await?;
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
 async fn iss_17_a_save_with_a_lost_lock_is_refused_and_the_text_kept() -> TestResult {
     on_both_databases("iss_17_lost_lock", async |stage| {
         // The lock ran out.
@@ -156,6 +202,123 @@ async fn iss_17_a_stale_version_answers_who_changed_what() -> TestResult {
             refused(change(&stage.ben, stage.project.version, "Ben's").await),
             Some(ErrorCode::Forbidden)
         );
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn iss_17_a_conflict_names_who_changed_the_record_not_who_asked_to_finish() -> TestResult {
+    on_both_databases("iss_17_conflict_skips_other_events", async |stage| {
+        let api = stage.rig().api();
+        let (ada, dan) = (stage.ada(), &stage.dan);
+        let project = EditWhat {
+            record: EntityRef {
+                kind: bb_core::event::RecordKind::Project.into(),
+                id: EntityId::from(stage.project.id),
+            },
+            part: TechnicalName::new("description")?,
+        };
+        let rename = |by: &Member, version: i64, name: &str| {
+            api.change_project(
+                Rig::info(),
+                ChangeProject {
+                    session_token: by.session.clone(),
+                    project: stage.project.id,
+                    version,
+                    name: Some(name.to_owned()),
+                    short_name: None,
+                },
+            )
+        };
+        // Dan edits; Ada renames the project, and then asks Dan to finish: an event that did not
+        // count the version up is the last event of the project.
+        api.take_lock(
+            Rig::info(),
+            TakeLockQuery {
+                session_token: dan.session.clone(),
+                what: project.clone(),
+                editor: EditorId::generate(&mut SystemIds),
+            },
+        )
+        .await?;
+        rename(ada, stage.project.version, "Acme Corporation").await?;
+        api.ask_to_finish(
+            Rig::info(),
+            AskToFinish {
+                session_token: ada.session.clone(),
+                what: project,
+            },
+        )
+        .await?;
+        let AppError::Conflict(conflict) = rename(dan, stage.project.version, "Mine")
+            .await
+            .unwrap_err()
+        else {
+            return Err("no structured answer".into());
+        };
+        assert_eq!(conflict.changed_by, Some(shown_as(ada, "Ada Admin")));
+        assert_eq!(conflict.fields, ["name"]);
+        assert_eq!(conflict.current.keys().collect::<Vec<_>>(), ["name"]);
+        // A member added to a group after a rename is not the last change of the group either.
+        let group = stage.org.group("Backend").await?;
+        let rename_group = |version: i64| {
+            api.rename_group(
+                Rig::info(),
+                RenameGroup {
+                    session_token: ada.session.clone(),
+                    group,
+                    version,
+                    name: "Platform".to_owned(),
+                },
+            )
+        };
+        rename_group(1).await?;
+        stage.org.add_to_group(group, stage.ben.id).await?;
+        let AppError::Conflict(conflict) = rename_group(1).await.unwrap_err() else {
+            return Err("no structured answer for the group".into());
+        };
+        assert_eq!(conflict.fields, ["name"]);
+        assert_eq!(conflict.version, Some(2));
+        // No raw person data reaches the answer.
+        let text = format!("{conflict:?}");
+        assert!(!text.contains(&stage.ben.id.to_string()), "{text}");
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn iss_17_a_stale_sign_up_policy_cannot_turn_signing_up_back_on() -> TestResult {
+    on_both_databases("iss_17_stale_sign_up_policy", async |stage| {
+        let api = stage.rig().api();
+        let change = |version: i64, enabled: bool| {
+            api.change_sign_up_policy(
+                Rig::info(),
+                ChangeSignUpPolicy {
+                    session_token: stage.ada().session.clone(),
+                    policy: SignUpPolicy {
+                        enabled,
+                        domains: vec!["example.test".to_owned()],
+                        version,
+                    },
+                },
+            )
+        };
+        // Two screens read the policy at version 0; the first switches signing up on and the
+        // second, which does not know, would switch it back off with its old list.
+        assert_eq!(change(0, true).await?.into_value().version, 1);
+        let AppError::Conflict(conflict) = change(0, false).await.unwrap_err() else {
+            return Err("no structured answer".into());
+        };
+        assert_eq!(conflict.version, Some(1));
+        assert_eq!(
+            conflict.changed_by,
+            Some(shown_as(stage.ada(), "Ada Admin"))
+        );
+        assert!(conflict.fields.contains(&"auth_sign_up_enabled".to_owned()));
+        assert_eq!(conflict.current["auth_sign_up_enabled"], json!(true));
+        assert!(change(1, false).await.is_ok());
         Ok(())
     })
     .await

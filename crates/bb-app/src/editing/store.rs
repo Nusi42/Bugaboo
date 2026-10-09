@@ -10,9 +10,9 @@
 
 use std::future::Future;
 
-use bb_core::edit::{Draft, DraftTarget, EditLock, EditNotice, EditWhat, Taking};
+use bb_core::edit::{Draft, DraftTarget, EditLock, EditNotice, EditWhat, Hold, Taking};
 use bb_core::event::{DomainEvent, EntityRef};
-use bb_core::id::{LockToken, UserId};
+use bb_core::id::UserId;
 use jiff::Timestamp;
 
 use crate::ports::ChangeStore;
@@ -39,25 +39,28 @@ pub trait EditStore: ChangeStore + 'static {
         /// same editor takes it again. Otherwise says who holds it. Expired rows of the thing
         /// are deleted on the way. One step, so two editors never both get it.
         fn take_edit_lock(wanted: &EditLock, now: Timestamp) -> Taking;
-        /// Makes the lease of the lock with this token last until `ends`, when it is not expired
-        /// at `now`; `false` when the lock is gone, expired or held with another token.
+        /// Makes the lease of the lock held like this last until `ends`, when it is not expired
+        /// at `now`; `false` when the lock is gone, expired or held by another person or with
+        /// another token.
         fn renew_edit_lock(
             what: &EditWhat,
-            token: LockToken,
+            hold: Hold,
             now: Timestamp,
             ends: Timestamp
         ) -> bool;
-        /// Lets go of the lock with this token; `false` when there was none.
-        fn release_edit_lock(what: &EditWhat, token: LockToken) -> bool;
+        /// Lets go of the lock held like this; `false` when there was none.
+        fn release_edit_lock(what: &EditWhat, hold: Hold) -> bool;
         /// Stores a draft, replacing the person's older one for the same target.
         fn save_draft(draft: &Draft) -> ();
         /// Deletes the draft of a person for a target; `false` when there was none.
         fn delete_draft(author: UserId, target: &DraftTarget) -> bool;
-        /// Deletes the drafts last changed before `before`, and the notes of the same age, so
-        /// nothing outlives the keep period. Returns how many drafts went.
-        fn purge_drafts(before: Timestamp) -> u64;
-        /// The last event about a record, if there is one: who changed it last, when, and what.
-        fn last_change_of(record: &EntityRef) -> Option<DomainEvent>;
+        /// Deletes the drafts last changed before `before`, the notes of the same age, and the
+        /// lock rows that ran out at `now`, so nothing outlives its keep period. Returns how many
+        /// drafts went.
+        fn purge_drafts(before: Timestamp, now: Timestamp) -> u64;
+        /// The newest events about a record, newest first, at most `limit`: where the conflict
+        /// finds who changed it last, when, and what.
+        fn latest_events_about(record: &EntityRef, limit: u64) -> Vec<DomainEvent>;
         /// The notes for a person about a thing, oldest first; they are deleted as they are
         /// read, so each is shown once.
         fn take_edit_notices(recipient: UserId, what: &EditWhat) -> Vec<EditNotice>;
@@ -69,8 +72,8 @@ pub trait EditStore: ChangeStore + 'static {
         fn replace_edit_lock(wanted: &EditLock) -> Option<EditLock>;
         /// Deletes the lock on a thing whoever holds it, and returns it.
         fn remove_edit_lock(what: &EditWhat) -> Option<EditLock>;
-        /// Deletes the lock when it is the one with this token; `false` when it is not.
-        fn remove_edit_lock_with_token(what: &EditWhat, token: LockToken) -> bool;
+        /// Deletes the lock when it is held like this; `false` when it is not.
+        fn remove_edit_lock_held(what: &EditWhat, hold: Hold) -> bool;
         /// Deletes the draft of a person for a target, inside a change.
         fn delete_draft_in(author: UserId, target: &DraftTarget) -> bool;
         /// Stores a note for the person who is editing; a newer note of the same kind for the same

@@ -1,9 +1,9 @@
 //! The editing part of the in-memory store: edit locks, drafts and the notes for people who are
 //! editing. The decisions are the ones of `bb_core::edit`, applied to lists.
 
-use bb_core::edit::{Draft, DraftTarget, EditLock, EditNotice, EditWhat, Taking};
+use bb_core::edit::{Draft, DraftTarget, EditLock, EditNotice, EditWhat, Hold, Taking};
 use bb_core::event::{DomainEvent, EntityRef};
-use bb_core::id::{LockToken, UserId};
+use bb_core::id::UserId;
 use jiff::Timestamp;
 
 use super::fake::{FakeError, FakeStore, State, Tx};
@@ -49,33 +49,28 @@ impl EditStore for FakeStore {
     async fn renew_edit_lock(
         &self,
         what: &EditWhat,
-        token: LockToken,
+        hold: Hold,
         now: Timestamp,
         ends: Timestamp,
     ) -> Result<bool, FakeError> {
         let mut shared = self.lock();
-        let renewed = shared
-            .state
-            .locks
-            .iter_mut()
-            .find(|lock| lock.what() == *what && lock.token == token && !lock.has_expired(now));
+        let renewed =
+            shared.state.locks.iter_mut().find(|lock| {
+                lock.what() == *what && lock.is_held_by(hold) && !lock.has_expired(now)
+            });
         Ok(renewed.is_some_and(|lock| {
             lock.expires_at = ends;
             true
         }))
     }
 
-    async fn release_edit_lock(
-        &self,
-        what: &EditWhat,
-        token: LockToken,
-    ) -> Result<bool, FakeError> {
+    async fn release_edit_lock(&self, what: &EditWhat, hold: Hold) -> Result<bool, FakeError> {
         let mut shared = self.lock();
         let before = shared.state.locks.len();
         shared
             .state
             .locks
-            .retain(|lock| !(lock.what() == *what && lock.token == token));
+            .retain(|lock| !(lock.what() == *what && lock.is_held_by(hold)));
         Ok(shared.state.locks.len() != before)
     }
 
@@ -90,22 +85,29 @@ impl EditStore for FakeStore {
         Ok(remove_draft(&mut self.lock().state, author, target))
     }
 
-    async fn purge_drafts(&self, before: Timestamp) -> Result<u64, FakeError> {
+    async fn purge_drafts(&self, before: Timestamp, now: Timestamp) -> Result<u64, FakeError> {
         let mut shared = self.lock();
+        shared.state.locks.retain(|lock| !lock.has_expired(now));
         let drafts = shared.state.drafts.len();
         shared.state.drafts.retain(|draft| draft.saved_at >= before);
         shared.state.notices.retain(|notice| notice.at >= before);
         Ok(u64::try_from(drafts - shared.state.drafts.len()).unwrap_or(u64::MAX))
     }
 
-    async fn last_change_of(&self, record: &EntityRef) -> Result<Option<DomainEvent>, FakeError> {
+    async fn latest_events_about(
+        &self,
+        record: &EntityRef,
+        limit: u64,
+    ) -> Result<Vec<DomainEvent>, FakeError> {
         Ok(self
             .lock()
             .events
             .iter()
             .rev()
-            .find(|event| event.entity == *record)
-            .cloned())
+            .filter(|event| event.entity == *record)
+            .take(usize::try_from(limit).unwrap_or(usize::MAX))
+            .cloned()
+            .collect())
     }
 
     async fn take_edit_notices(
@@ -155,15 +157,15 @@ impl EditStore for FakeStore {
         Ok(remove_lock(&mut tx.state, what))
     }
 
-    async fn remove_edit_lock_with_token(
+    async fn remove_edit_lock_held(
         tx: &mut Tx,
         what: &EditWhat,
-        token: LockToken,
+        hold: Hold,
     ) -> Result<bool, FakeError> {
         let before = tx.state.locks.len();
         tx.state
             .locks
-            .retain(|lock| !(lock.what() == *what && lock.token == token));
+            .retain(|lock| !(lock.what() == *what && lock.is_held_by(hold)));
         Ok(tx.state.locks.len() != before)
     }
 

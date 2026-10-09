@@ -14,13 +14,14 @@ use std::sync::Arc;
 
 use bb_app::access::{Permission, PersonRef};
 use bb_app::auth::AppError;
+use bb_app::auth::{ChangeSignUpPolicy, SignUpPolicy};
 use bb_app::context::SystemIds;
 use bb_app::editing::EditStore as _;
 use bb_app::editing::testing::TestNotes;
 use bb_app::editing::{
     AskToFinish, CheckVersionsQuery, DraftSlot, DraftText, EditAnyway, HeartbeatAnswer,
     HeartbeatQuery, LockOutcome, LockStatus, ReadDraftQuery, ReleaseLockQuery, ReleaseStuckLock,
-    SaveDraftQuery, TakeLockQuery, TextSave, ThrowAwayDraftQuery, Versions,
+    SaveDraftQuery, TakeLockQuery, TextSave, ThrowAwayDraftQuery, Versions, Written,
 };
 use bb_app::people::RenameGroup;
 use bb_app::projects::{ChangeProject, ProjectView};
@@ -319,9 +320,9 @@ impl<'a> Stage<'a> {
                     Box::pin(async move {
                         if notes.version(&note) == Some(version) {
                             notes.change(&note);
-                            Ok(Some(()))
+                            Ok(Written::Saved(()))
                         } else {
-                            Ok(None)
+                            Ok(Written::Stale)
                         }
                     })
                 },

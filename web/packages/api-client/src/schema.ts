@@ -2628,10 +2628,10 @@ export interface components {
       kind: components["schemas"]["NoticeKind"];
     };
     /**
-     * @description What the person who is editing is told: somebody asked them to finish, or somebody took the editing over.
+     * @description What the person who is editing is told: somebody asked them to finish, took the editing over, or released the lock.
      * @enum {string}
      */
-    NoticeKind: "finish_asked" | "taken_over";
+    NoticeKind: "finish_asked" | "taken_over" | "released";
     /** @description The change that is about to be made. */
     OwnChangeBody:
       | {
@@ -3710,6 +3710,12 @@ export interface components {
       domains: string[];
       /** @description Whether signing up without an invitation is on. */
       enabled: boolean;
+      /**
+       * Format: int64
+       * @description Counts up with every change. A change is made on the version that was looked at; the
+       *     policy has version 0 until it is changed the first time.
+       */
+      version: number;
     };
     /** @description The answer to signing in. The cookies come with it. */
     SignedInBody: {
@@ -6365,6 +6371,15 @@ export interface operations {
         };
         content: {
           "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ConflictProblem"];
         };
       };
       /** @description error.rate-limit.exceeded (rate_limit.exceeded) */

@@ -7,6 +7,7 @@ use bb_core::ErrorCode;
 use bb_core::event::{FieldChange, RecordKind};
 use bb_core::project::{Project, ProjectAlias, ShortName};
 use bb_core::sign_in::SecurityAction;
+use bb_core::version::counted_up;
 use bb_policy::{Authorized, Evaluation, Permission, Place};
 use serde_json::json;
 
@@ -135,10 +136,11 @@ pub async fn change_project<S: AuthStore>(
         name: plan.name.clone(),
         version,
     };
-    let field_changes = plan.field_changes();
+    let mut field_changes = plan.field_changes();
     if field_changes.is_empty() {
         return Ok(access.authorize(view(plan.current.version)));
     }
+    field_changes.push(counted_up(plan.current.version));
     let id = plan.current.id;
     let event = ctx.event(
         by(actor.person.id),

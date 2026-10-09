@@ -61,33 +61,38 @@ async fn iss_11_a_draft_is_readable_only_by_its_author() -> TestResult {
 }
 
 #[tokio::test]
-async fn iss_11_taking_a_lock_clears_the_drafts_past_their_keep_period() -> TestResult {
-    on_both_databases("iss_11_taking_a_lock_clears", async |stage| {
+async fn iss_11_the_clearing_deletes_old_drafts_and_lock_rows_that_ran_out() -> TestResult {
+    on_both_databases("iss_11_the_clearing", async |stage| {
         let target = stage.describing();
         stage
             .keep_draft(&stage.cleo, &target, "left behind")
             .await?;
+        stage.lock(&stage.ben).await?;
         stage.pass(DRAFT_KEEP_DAYS * 86_400 + 1);
-        let stored = stage
-            .rig()
-            .storage
-            .draft(stage.cleo.id, target.clone(), Timestamp::UNIX_EPOCH)
-            .await?;
+        let drafts = async || -> Result<bool, Failure> {
+            Ok(stage
+                .rig()
+                .storage
+                .draft(stage.cleo.id, target.clone(), Timestamp::UNIX_EPOCH)
+                .await?
+                .is_some())
+        };
+        let lock_rows = async || -> Result<bool, Failure> {
+            Ok(stage
+                .rig()
+                .storage
+                .edit_lock(stage.what.clone())
+                .await?
+                .is_some())
+        };
         assert!(
-            stored.is_some(),
-            "still stored until somebody starts to write"
+            drafts().await? && lock_rows().await?,
+            "stored until cleared"
         );
-        let ben = stage.signed_in_again(BEN).await?;
-        stage.lock(&ben).await?;
-        let stored = stage
-            .rig()
-            .storage
-            .draft(stage.cleo.id, target, Timestamp::UNIX_EPOCH)
-            .await?;
-        assert!(
-            stored.is_none(),
-            "taking a lock clears what is past its keep period"
-        );
+        let ctx = stage.rig().services.ctx(Rig::info());
+        bb_app::editing::purge_drafts(&ctx, bb_app::editing::PurgeDraftsQuery).await?;
+        assert!(!drafts().await?, "the draft is past its keep period");
+        assert!(!lock_rows().await?, "the lease ran out");
         Ok(())
     })
     .await
