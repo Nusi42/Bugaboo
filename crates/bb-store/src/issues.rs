@@ -15,13 +15,9 @@ use jiff::Timestamp;
 use sea_query::{Expr, ExprTrait as _, OnConflict, Order, Query, SelectStatement};
 
 use crate::auth::AuthStorage;
-use crate::db::{Reader, Row, StoredId, Transaction, to_micros};
+use crate::db::{LockClass, Reader, Row, StoredId, Transaction, to_micros};
 use crate::error::StoreError;
 use crate::schema::{IssueAliasRow, IssueAssigneeRow, IssueCounterRow, IssueRow, IssueTypeRow};
-
-/// Apart from the other advisory locks of the program (`MIGRATION_LOCK`, `POLICY_LOCK`): the lock
-/// that serializes the codes of one project is this number xor eight bytes of the project's ID.
-const ISSUE_CODES_LOCK: i64 = 0x4242_4953_5545_0001;
 
 fn type_select() -> SelectStatement {
     let mut select = Query::select();
@@ -543,12 +539,12 @@ impl IssueStore for AuthStorage {
         transaction: &mut Transaction,
         project: ProjectId,
     ) -> Result<(), StoreError> {
-        // The lock is named by the project: eight bytes of its ID, apart from the other locks.
+        // The lock is named by the project: four random bytes of its ID.
         let bytes = project.to_bytes();
-        let mut tail = [0_u8; 8];
-        tail.copy_from_slice(&bytes[8..]);
+        let mut tail = [0_u8; 4];
+        tail.copy_from_slice(&bytes[12..]);
         transaction
-            .advisory_lock(i64::from_be_bytes(tail) ^ ISSUE_CODES_LOCK)
+            .advisory_lock(LockClass::IssueCodes, i32::from_be_bytes(tail))
             .await
     }
 
@@ -556,7 +552,10 @@ impl IssueStore for AuthStorage {
         transaction: &mut Transaction,
         event: &DomainEvent,
     ) -> Result<(), StoreError> {
-        crate::events::append_event(transaction, event).await
+        // Appended by `record_change` after the event of the change (the outbox lock is the
+        // last lock), not here.
+        transaction.follow_ups.push(event.clone());
+        Ok(())
     }
 
     async fn insert_issue_alias(
