@@ -5,11 +5,11 @@
 
 use std::fs;
 use std::path::Path;
-use std::process::Command;
 
 use anyhow::Context as _;
 
 use super::{Check, Context, Finding};
+use crate::repo::Repo;
 
 /// The commit types the project uses (coding-standards §2).
 const TYPES: [&str; 10] = [
@@ -30,9 +30,8 @@ impl Check for GitCommitMsg {
     }
 
     fn run(&self, context: &Context<'_>) -> anyhow::Result<Vec<Finding>> {
-        let root = context.repo.real_root();
         let mut findings = Vec::new();
-        for (short_hash, subject) in branch_subjects(root)? {
+        for (short_hash, subject) in branch_subjects(context.repo) {
             for problem in problems(&subject) {
                 findings.push(Finding::at(short_hash.clone(), problem));
             }
@@ -42,33 +41,23 @@ impl Check for GitCommitMsg {
 }
 
 /// `(short hash, subject)` of the commits that are not on `main` (or only the last one).
-fn branch_subjects(root: &Path) -> anyhow::Result<Vec<(String, String)>> {
-    let has_main = git(root, &["rev-parse", "--verify", "--quiet", "main"])?.is_some();
+fn branch_subjects(repo: &Repo) -> Vec<(String, String)> {
+    let has_main = repo
+        .git_bytes(&["rev-parse", "--verify", "--quiet", "main"])
+        .is_ok();
     let range = if has_main { "main..HEAD" } else { "HEAD" };
     let mut args = vec!["log", "--no-merges", "--format=%h%x09%s", range];
     if !has_main {
         args.insert(1, "-n1");
     }
-    let Some(text) = git(root, &args)? else {
-        return Ok(Vec::new());
+    let Ok(text) = repo.git_bytes(&args) else {
+        return Vec::new();
     };
-    Ok(text
-        .lines()
+    let text = String::from_utf8_lossy(&text);
+    text.lines()
         .filter_map(|line| line.split_once('\t'))
         .map(|(hash, subject)| (hash.to_owned(), subject.to_owned()))
-        .collect())
-}
-
-pub(super) fn git(root: &Path, args: &[&str]) -> anyhow::Result<Option<String>> {
-    let out = Command::new("git")
-        .args(args)
-        .current_dir(root)
-        .output()
-        .context("could not run git; is it installed and on the PATH?")?;
-    Ok(out
-        .status
-        .success()
-        .then(|| String::from_utf8_lossy(&out.stdout).into_owned()))
+        .collect()
 }
 
 /// Checks the message in a file written by Git; returns the problems, empty when it is fine.
@@ -76,6 +65,15 @@ pub(crate) fn check_file(file: &Path) -> anyhow::Result<Vec<String>> {
     let text = fs::read_to_string(file)
         .with_context(|| format!("could not read the commit message file {}", file.display()))?;
     Ok(problems(subject_of(&text)))
+}
+
+/// The line Git writes before the diff of `git commit -v`; it and what follows are not the message.
+const SCISSORS: &str = "# ------------------------ >8 ------------------------";
+
+/// The text of a message file up to the scissors line. Comment lines stay: a hook that reads the
+/// message must not depend on the comment character Git is set to use.
+pub(crate) fn before_scissors(text: &str) -> &str {
+    text.find(SCISSORS).map_or(text, |at| &text[..at])
 }
 
 /// The first line that is not a comment (Git adds `#` lines to the message file).

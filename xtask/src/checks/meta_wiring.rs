@@ -9,7 +9,9 @@ use crate::docs::text::has_extension;
 use crate::source::read_text;
 
 const LEFTHOOK_FILES: [&str; 2] = ["lefthook.yml", "lefthook.yaml"];
-const CLAUDE_SETTINGS: &str = ".claude/settings.json";
+/// The folder of Claude Code in a work folder (settings, memory notes).
+pub(crate) const CLAUDE_FOLDER: &str = ".claude";
+const SETTINGS_FILE: &str = "settings.json";
 const WORKFLOWS: &str = ".github/workflows";
 
 /// Which command each Git hook runs.
@@ -54,11 +56,9 @@ impl Check for MetaWiring {
                 findings.extend(check_lefthook(file, &read_text(repo, file)?));
             }
         }
-        if repo.path(CLAUDE_SETTINGS).is_file() {
-            findings.extend(check_settings(
-                CLAUDE_SETTINGS,
-                &read_text(repo, CLAUDE_SETTINGS)?,
-            ));
+        let settings = format!("{CLAUDE_FOLDER}/{SETTINGS_FILE}");
+        if repo.path(&settings).is_file() {
+            findings.extend(check_settings(&settings, &read_text(repo, &settings)?));
         }
         if repo.path(WORKFLOWS).is_dir() {
             let is_workflow =

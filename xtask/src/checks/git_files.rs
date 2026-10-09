@@ -3,14 +3,11 @@
 //! Line endings are judged as Git stores them (the index), so `.gitattributes` decides: a file
 //! that is stored with LF and checked out with CRLF (for example `*.ps1`) is fine.
 
-use std::fs;
-use std::path::Path;
-use std::process::Command;
-
-use anyhow::{Context as _, bail};
 use globset::{Glob, GlobSet, GlobSetBuilder};
+use std::fs;
 
 use super::{Check, Context, Finding};
+use crate::repo::Repo;
 
 /// The largest file that may be committed, in bytes.
 const MAX_BYTES: u64 = 1024 * 1024;
@@ -28,14 +25,15 @@ impl Check for GitFiles {
 
     fn run(&self, context: &Context<'_>) -> anyhow::Result<Vec<Finding>> {
         let only = context.files_for(self.id())?;
-        check_root(context.repo.real_root(), only.as_deref())
+        check_root(context.repo, only.as_deref())
     }
 }
 
-fn check_root(root: &Path, only: Option<&[String]>) -> anyhow::Result<Vec<Finding>> {
+fn check_root(repo: &Repo, only: Option<&[String]>) -> anyhow::Result<Vec<Finding>> {
     let allowed = allow_list()?;
     let mut findings = Vec::new();
-    for entry in index_entries(root)? {
+    let root = repo.real_root();
+    for entry in index_entries(repo)? {
         if only.is_some_and(|files| !files.contains(&entry.path)) {
             continue;
         }
@@ -77,19 +75,9 @@ struct IndexEntry {
 }
 
 /// Every tracked file with what Git stored for its line endings (`git ls-files --eol`).
-fn index_entries(root: &Path) -> anyhow::Result<Vec<IndexEntry>> {
-    let out = Command::new("git")
-        .args(["-c", "core.quotepath=false", "ls-files", "--eol", "-z"])
-        .current_dir(root)
-        .output()
-        .context("could not run git; is it installed and on the PATH?")?;
-    if !out.status.success() {
-        bail!(
-            "git ls-files failed: {}",
-            String::from_utf8_lossy(&out.stderr).trim()
-        );
-    }
-    Ok(String::from_utf8_lossy(&out.stdout)
+fn index_entries(repo: &Repo) -> anyhow::Result<Vec<IndexEntry>> {
+    let out = repo.git_bytes(&["-c", "core.quotepath=false", "ls-files", "--eol", "-z"])?;
+    Ok(String::from_utf8_lossy(&out)
         .split('\0')
         .filter_map(|record| record.split_once('\t'))
         .map(|(info, path)| IndexEntry {
@@ -118,7 +106,7 @@ mod tests {
         let temp = TempDir::new("files-crlf");
         temp.write("a.txt", "one\r\ntwo\r\n");
         commit_all(&temp);
-        let findings = check_root(temp.path(), None).unwrap();
+        let findings = check_root(&Repo::at(temp.path().to_path_buf()), None).unwrap();
         assert_eq!(findings.len(), 1);
         assert!(findings[0].message.contains("CRLF"));
     }
@@ -128,7 +116,7 @@ mod tests {
         let temp = TempDir::new("files-large");
         temp.write("big.bin", vec![b'x'; 1_100_000]);
         commit_all(&temp);
-        let findings = check_root(temp.path(), None).unwrap();
+        let findings = check_root(&Repo::at(temp.path().to_path_buf()), None).unwrap();
         assert!(findings.iter().any(|f| f.message.contains("KB")));
     }
 
@@ -138,7 +126,11 @@ mod tests {
         temp.write("a.txt", "one\ntwo\n");
         temp.write("small.bin", vec![0_u8; 1000]);
         commit_all(&temp);
-        assert!(check_root(temp.path(), None).unwrap().is_empty());
+        assert!(
+            check_root(&Repo::at(temp.path().to_path_buf()), None)
+                .unwrap()
+                .is_empty()
+        );
     }
 
     #[test]
@@ -149,6 +141,10 @@ mod tests {
         assert!(temp.git(&["init", "--quiet"]));
         assert!(temp.git(&["add", "."]));
         assert!(temp.git(&["commit", "--quiet", "-m", "chore: test"]));
-        assert!(check_root(temp.path(), None).unwrap().is_empty());
+        assert!(
+            check_root(&Repo::at(temp.path().to_path_buf()), None)
+                .unwrap()
+                .is_empty()
+        );
     }
 }

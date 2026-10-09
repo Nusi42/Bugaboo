@@ -26,6 +26,29 @@ pub(crate) fn normalize(text: &str) -> String {
     text.replace("\r\n", "\n")
 }
 
+/// The text in the bytes of a file, with `\n` line endings, or `None` for a file that is no text
+/// (it holds NUL bytes). UTF-16 with a byte order mark (what PowerShell writes with `>`) is
+/// decoded, a UTF-8 mark is dropped, and any other bytes (Latin-1 for example) are read as far as
+/// they are UTF-8, so a name in plain letters is found in them too. Every check that looks into a
+/// file of unknown kind reads it here.
+pub(crate) fn decode_text(bytes: &[u8]) -> Option<String> {
+    let utf16 = |rest: &[u8], unit: fn([u8; 2]) -> u16| {
+        let units: Vec<u16> = rest
+            .chunks_exact(2)
+            .map(|pair| unit([pair[0], pair[1]]))
+            .collect();
+        String::from_utf16_lossy(&units)
+    };
+    let text = match bytes {
+        [0xFF, 0xFE, rest @ ..] => utf16(rest, u16::from_le_bytes),
+        [0xFE, 0xFF, rest @ ..] => utf16(rest, u16::from_be_bytes),
+        _ if bytes.contains(&0) => return None,
+        [0xEF, 0xBB, 0xBF, rest @ ..] => String::from_utf8_lossy(rest).into_owned(),
+        _ => String::from_utf8_lossy(bytes).into_owned(),
+    };
+    Some(normalize(&text))
+}
+
 /// Reads a text file (path relative to the repository root) with `\n` line endings.
 pub(crate) fn read_text(repo: &Repo, relative: &str) -> anyhow::Result<String> {
     let path = repo.path(relative);

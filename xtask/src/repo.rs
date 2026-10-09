@@ -142,7 +142,7 @@ impl Repo {
         })
     }
 
-    fn git_bytes(&self, args: &[&str]) -> anyhow::Result<Vec<u8>> {
+    pub(crate) fn git_bytes(&self, args: &[&str]) -> anyhow::Result<Vec<u8>> {
         let out = Command::new("git")
             .args(args)
             .current_dir(&self.root)

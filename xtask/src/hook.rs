@@ -58,13 +58,22 @@ pub(crate) fn short_report(stdout: &str, stderr: &str) -> String {
 }
 
 pub(crate) fn post_edit(root: &Path, stdin: &str) -> anyhow::Result<ExitCode> {
+    let exe = std::env::current_exe().context("could not find the running xtask program")?;
+    post_edit_with(root, stdin, &exe)
+}
+
+/// The hook with the program that runs the edit checks given: the tests give one that does
+/// nothing of the kind.
+fn post_edit_with(root: &Path, stdin: &str, exe: &Path) -> anyhow::Result<ExitCode> {
     let Some(file) = edited_file(stdin)? else {
         return Ok(ExitCode::SUCCESS);
     };
-    // Claude Code adds a session line to every memory note it saves; it must not reach Git.
-    checks::sec_private::strip_memory_session(&root.join(&file))?;
+    // Claude Code adds a session line to every memory note it saves; it must not reach Git. A
+    // note that cannot be cleaned is reported, and the edit checks still run.
+    if let Err(error) = checks::sec_private::strip_memory_session(&root.join(&file)) {
+        output::error(&format!("{error:#}"));
+    }
     // The checks run in a child process: it prints for people, and we turn that into feedback.
-    let exe = std::env::current_exe().context("could not find the running xtask program")?;
     let out = Command::new(exe)
         .args(["check", "edit", &file])
         .current_dir(root)
@@ -125,5 +134,34 @@ mod tests {
         let report = short_report(&many, "");
         assert_eq!(report.lines().count(), MAX_REPORT_LINES + 1);
         assert!(report.ends_with("..."));
+    }
+
+    /// The hook input for an edit of `file`.
+    fn input_for(file: &Path) -> String {
+        serde_json::json!({ "tool_input": { "file_path": file } }).to_string()
+    }
+
+    #[test]
+    fn after_an_edit_of_a_memory_note_its_session_line_is_gone() {
+        let temp = crate::testutil::TempDir::new("hook-memory");
+        let key = checks::sec_private::MEMORY_SESSION_KEY;
+        let note = temp.write(
+            ".claude/memory/note.md",
+            format!("---\nname: n\n{key}: 0123456789abcdef\n---\nBody\n"),
+        );
+        // `git` stands in for the edit checks: what it answers does not matter here.
+        post_edit_with(temp.path(), &input_for(&note), Path::new("git")).unwrap();
+        assert_eq!(
+            std::fs::read_to_string(&note).unwrap(),
+            "---\nname: n\n---\nBody\n"
+        );
+    }
+
+    #[test]
+    fn a_note_that_cannot_be_cleaned_does_not_stop_the_edit_checks() {
+        let temp = crate::testutil::TempDir::new("hook-memory-broken");
+        // Not text: reading it fails.
+        let note = temp.write(".claude/memory/note.md", b"\xFF\xFE\xFD");
+        assert!(post_edit_with(temp.path(), &input_for(&note), Path::new("git")).is_ok());
     }
 }

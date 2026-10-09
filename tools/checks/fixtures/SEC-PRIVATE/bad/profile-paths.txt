@@ -1,8 +1,15 @@
 C:\Users\mira\Documents\notes.txt
-C:\Users\mira\Documents
+C:\\Users\\mira\\Documents
 D:\users\mira\work
 C:/Users/mira/Documents
 /c/Users/mira/Documents
 /home/mira/projects
 /Users/mira/projects
 cd "/home/mira/work/"
+\\host\c$\Users\mira\x
+\Users\mira\x
+C%3A%5CUsers%5Cmira%5Cx
+"/home/mira"
+PATH=/home/mira:/usr/bin
+(/Users/mira)
+cd /home/ab/work

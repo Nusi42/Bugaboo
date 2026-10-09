@@ -280,8 +280,7 @@ fn run() -> anyhow::Result<ExitCode> {
 
 /// `check commit-msg <file>`: the Git commit-msg hook (GIT-COMMIT-MSG and SEC-PRIVATE).
 fn commit_msg(file: &std::path::Path) -> anyhow::Result<ExitCode> {
-    let mut problems = checks::git_commit_msg::check_file(file)?;
-    problems.extend(checks::sec_private::message_problems(file)?);
+    let problems = commit_message_problems(file)?;
     for problem in &problems {
         output::info(problem);
     }
@@ -292,9 +291,25 @@ fn commit_msg(file: &std::path::Path) -> anyhow::Result<ExitCode> {
     })
 }
 
+/// What is wrong with a commit message file: the form of the subject and what is private in it.
+fn commit_message_problems(file: &std::path::Path) -> anyhow::Result<Vec<String>> {
+    let mut problems = checks::git_commit_msg::check_file(file)?;
+    problems.extend(checks::sec_private::message_problems(file)?);
+    Ok(problems)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_commit_message_hook_reads_the_form_and_what_is_private() {
+        let temp = testutil::TempDir::new("commit-message-hook");
+        let problems = |text: &str| commit_message_problems(&temp.write("MSG", text)).unwrap();
+        assert!(problems("fix(web): x\n\nCo-Authored-By: someone\n").is_empty());
+        assert_eq!(problems("wip\n").len(), 1);
+        assert_eq!(problems("fix: x\n\nClaude-Session: made-up\n").len(), 1);
+    }
 
     fn parses(arguments: &[&str]) -> bool {
         Cli::try_parse_from(

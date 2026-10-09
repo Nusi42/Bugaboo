@@ -7,8 +7,10 @@ C:\Users\Public\Documents
 EXAMPLE-PC\ana
 /api/users/12/profile
 https://example.com/home/news/
-"/home/dashboard"
+"/home/"
 src/home/page/index.ts
+../home/page
 originSessionId: <id>
 a session_store and claude.ai/code/session_ (link)
+"sessionId": "not-a-uuid"
 zanzibarish is another word

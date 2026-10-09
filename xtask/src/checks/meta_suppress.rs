@@ -12,7 +12,7 @@ use super::{Check, Context, Finding};
 use crate::docs::text::has_extension;
 use crate::repo::Repo;
 use crate::rust_source::balanced;
-use crate::source::{normalize, read_text};
+use crate::source::{decode_text, read_text};
 
 /// Where the counted list lives, relative to the repository root.
 pub(crate) const LIST_PATH: &str = "tools/checks/suppressions.txt";
@@ -110,8 +110,7 @@ fn scan_repo(repo: &Repo) -> anyhow::Result<Scan> {
         } else {
             fs::read(repo.path(&file))
                 .ok()
-                .and_then(|bytes| String::from_utf8(bytes).ok())
-                .map(|text| normalize(&text))
+                .and_then(|bytes| decode_text(&bytes))
         }) else {
             continue;
         };

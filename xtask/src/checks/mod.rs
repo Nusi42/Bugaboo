@@ -57,7 +57,7 @@ mod meta_new_module;
 mod meta_rule_trace;
 mod meta_speed;
 pub(crate) mod meta_suppress;
-mod meta_wiring;
+pub(crate) mod meta_wiring;
 mod node_tool;
 mod perf_bundle;
 mod plan_trace;
