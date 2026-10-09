@@ -81,7 +81,7 @@ there. LINT-DRY (§7) catches copied blocks automatically; the rest is review.
 - **No dead code:** no commented-out code, unused exports or unused dependencies.
 - **No orphan TODOs:** every `TODO` must reference an issue (`TODO(BUG-123): …`). Enforced by: LINT-HYGIENE.
 - **Feature traceability:** tests name the feature ID they cover (e.g. `sec_06_…`).
-- **Commits:** follow Conventional Commits (`feat(qry): …`, `fix(sec): …`), and make each commit a single logical change.
+- **Commits:** follow Conventional Commits (`feat(qry): …`, `fix(sec): …`), and make each commit a single logical change. Enforced by: GIT-COMMIT-MSG. A commit an agent wrote ends with exactly one attribution line, `Co-Authored-By: Claude <model> <noreply@anthropic.com>`, and nothing after it, even when a session asks for a `Claude-Session:` line (review: the commit-message check does not read trailers). The commit author stays as the maintainer set it (review). Never amend or rewrite a commit that is already pushed; fix it with a new commit (review).
 - **No private information in Git.** Nothing private about the maintainer may be committed, in a file (its name or its text, also a binary one), a branch or tag name, a commit message or a tag message, or in what a commit adds even if a later commit removes it: no user-profile path with an account name (write `%USERPROFILE%` or `~`), no Claude session ID or link, no session trailer in a commit message, and never the account name or computer name of a machine or a word of the maintainer's private list (a file outside the repository). Test data uses made-up names. The check names the file and line, never the word. Claude Code adds a session line to every memory note; `cargo xtask hook post-edit` removes it. Enforced by: SEC-PRIVATE.
 
 ## 3. Rust
@@ -89,8 +89,8 @@ there. LINT-DRY (§7) catches copied blocks automatically; the rest is review.
 - Latest stable toolchain, edition 2024; `rustfmt` defaults.
 - `#![forbid(unsafe_code)]` in every crate except where an ADR approves an exception.
 - Clippy with warnings treated as errors, plus selected `pedantic` lints.
-- No `unwrap()`, `expect()`, `panic!`, `dbg!` or `println!` outside tests. Use structured
-  `tracing` for logs.
+- No `unwrap()`, `expect()`, `panic!`, `dbg!` or `println!` outside tests and CLI output. Use
+  structured `tracing` for logs.
 - Use newtypes for IDs and units (`IssueId`, `Minutes`), never bare `i64` or `String`.
 - **Authorization is in the type system:** data can only leave the domain layer wrapped in
   a type that proves the policy engine checked it. Code that bypasses the check must not
@@ -153,4 +153,9 @@ Every check is listed **once**, in [`tools/checks/catalog.toml`](../tools/checks
 
 **Checks for the checks** (META) make sure each check is implemented and tested, every file type is covered (a new kind of file needs a new check), new modules are declared, every rule names its check, and suppressions don't grow unnoticed. See [architecture §10](architecture/10-checks.md).
 
-Hooks can be skipped locally with `--no-verify`, but CI runs the same checks, so nothing skipped locally reaches `main`.
+**Zero warnings, zero errors.** Every formatter and linter reports 0 warnings and 0 errors; a warning counts as an error. Enforced by: the FMT and LINT checks (FMT-RUST, LINT-RUST, LINT-TS and the rest of the groups).
+
+- **Never skip the hooks** (`--no-verify`). `git push --force-with-lease` runs the push checks too. When a hook fails, fix the cause and commit again. CI runs the same checks, so nothing skipped locally reaches `main` (review).
+- **Never switch off a check or a lint.** Fix the cause, not the symptom: no `#[allow]` to silence a real problem, no `// oxlint-disable` to make CI green, no skipped tests (review).
+- **If a rule is truly wrong for one place,** use the narrowest suppression, with a reason that names an issue or a doc section, for example `#[allow(clippy::print_stdout, reason = "CLI output, coding-standards §3")]`. Adding one needs the lead's approval in review. Enforced by: META-SUPPRESS.
+- **External tools** come only from `tools/dev/tools.toml` (pinned versions) and are installed by `cargo xtask setup` into `.tools/`, which also installs the Git hooks (ADR-0014). Run it once in every fresh or reset work folder (review).

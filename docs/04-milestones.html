@@ -51,12 +51,20 @@
 <ol>
 <li><strong>Where:</strong> each builder works in its own clone (<code>bugaboo.winN</code>, branch <code>WINn</code>, ADR-0024), outside OneDrive.</li>
 <li><strong>Build:</strong> the builder reads <code>CLAUDE.md</code>, the glossary, the coding standards and the relevant decision records; writes the acceptance tests; implements until they pass. Edit-time checks (Claude Code hooks) catch problems after every file.</li>
-<li><strong>Self-check:</strong> <code>cargo xtask check staged</code> and the package's tests are green before the branch is pushed.</li>
+<li><strong>Self-check:</strong> <code>cargo xtask check staged</code> and the package's tests are green before the branch is pushed. The builder reports the exact commands it ran and their results.</li>
 <li><strong>CI:</strong> <code>cargo xtask ci</code> in <code>bugaboo.win1</code>, on Windows and in WSL, both databases.</li>
 <li><strong>Review:</strong> at least one reviewer agent with a fresh context reads the diff against the work package, the decision records and the security rules. Packages that touch sign-in, permissions, files, search, AI or personal data always get the security review as well. UI packages get a UX review from screenshots (four themes × computer and phone) compared with the UX design. Every review applies the SSOT/DRY/ODR review gate of coding-standards §1 to the diff and the code it touches; a finding there blocks the merge.</li>
 <li><strong>Fix and merge:</strong> findings go back to the builder; the lead merges the builder's <code>WINn</code> branch into <code>WIN1</code>, runs <code>cargo xtask ci</code> again, and fast-forwards <code>main</code> in the master repository. <code>main</code> is always green.</li>
 </ol>
-<h3 id="s1-4"><button class="sec" data-sec>§1.4</button>Definition of done (every work package)</h3>
+<h3 id="s1-4"><button class="sec" data-sec>§1.4</button>Working in a folder</h3>
+<ul>
+<li><strong>Never build, install or run anything in the master repository</strong> (OneDrive). Work only in your own folder <code>&lt;work root&gt;\bugaboo.winN</code>, on your branch <code>WINn</code> (ADR-0024).</li>
+<li>A builder's folder starts from <code>main</code>: <code>git fetch origin &amp;&amp; git checkout -B WINn origin/main</code>, then <code>cargo xtask setup</code> (pinned tools and Git hooks, coding-standards §7).</li>
+<li>Commit on your branch and push it to <code>origin</code> when the work package is done. Never push to <code>main</code>: only the lead moves it, by a fast-forward in the master.</li>
+<li>Ports come from your folder's block in <code>tools/dev/ports.json</code> (ADR-0023).</li>
+<li><strong>CodeGraph</strong> keeps one index per work folder, never in the master. If your folder has no <code>.codegraph/codegraph.db</code>, run <code>codegraph init</code> in it, then pass your folder as <code>projectPath</code> to <code>codegraph_explore</code> (or run <code>codegraph explore</code> there). The lead's index is in <code>bugaboo.win1</code>.</li>
+</ul>
+<h3 id="s1-5"><button class="sec" data-sec>§1.5</button>Definition of done (every work package)</h3>
 <ul>
 <li>The listed features work as described in the feature list and UX design.</li>
 <li>Acceptance tests written first and passing; no lower test coverage in touched crates.</li>
@@ -68,7 +76,7 @@
 <li>Reviewed by a reviewer agent; findings fixed.</li>
 <li>Screenshots in four themes on computer and phone for every changed screen.</li>
 </ul>
-<h3 id="s1-5"><button class="sec" data-sec>§1.5</button>Testing in every milestone</h3>
+<h3 id="s1-6"><button class="sec" data-sec>§1.6</button>Testing in every milestone</h3>
 <p>The test layers, the sample organization and the ports are described in architecture §11. In short:</p>
 <ul>
 <li><strong>Every pull request:</strong> unit, property, use-case and repository tests (both databases), API tests, the permission matrix, end-to-end tests for touched screens, accessibility checks.</li>
@@ -76,7 +84,7 @@
 <li><strong>Every milestone:</strong> the sample organization grows with the milestone's features, so every demo runs on realistic data.</li>
 <li><strong>Every bug found later</strong> gets a test that would have caught it, and if it's a kind of mistake, a check.</li>
 </ul>
-<h3 id="s1-6"><button class="sec" data-sec>§1.6</button>Milestone review (the exit gate)</h3>
+<h3 id="s1-7"><button class="sec" data-sec>§1.7</button>Milestone review (the exit gate)</h3>
 <p>At the end of each milestone, the lead publishes a <strong>milestone review page</strong> (<code>docs/reviews/Mx.html</code>, commentable on your phone like the design pages) with:</p>
 <ol>
 <li><strong>What's done:</strong> each feature ID with its status and evidence (tests, screenshots).</li>
@@ -87,6 +95,19 @@
 <li><strong>Known issues</strong> and <strong>questions for you</strong>.</li>
 </ol>
 <p>You comment on the page. The lead fixes what you ask for, updates the page, and closes the milestone when you approve. The milestone is tagged (<code>m3-done</code>), and the lessons go into the docs and checks before the next milestone starts.</p>
+<h3 id="s1-8"><button class="sec" data-sec>§1.8</button>The lead's routine</h3>
+<p>A session can end at any time, and a new one starts in the master and continues where the last one stopped. Everything needed to go on is in the repository.</p>
+<ol>
+<li><strong>Read <span title="STATUS.md in the repository"><code>STATUS.md</code></span> first.</strong> It holds the current milestone and wave, each work package's state and folder, open questions for the maintainer, and the next action.</li>
+<li><strong>Agents belong to the session that started them.</strong> A new session finds no running builders or reviewers. Resume a package marked <em>building</em> from its branch and folder as <code>STATUS.md</code> describes, never by waiting for it.</li>
+<li><strong>Update <code>STATUS.md</code> after every step</strong> (builder started, report in, review in, merge, decision), commit it on <code>WIN1</code> and fast-forward <code>main</code>, so the master's copy is always current. Before a long step (a builder, a review, a CI run), write into "Next action" what is running and how to resume it. A commit that changes only docs needs the Git hooks to pass; code needs <code>cargo xtask ci</code> before <code>main</code> moves.</li>
+<li><strong>Builders</strong> (Sonnet, medium effort) work in <code>bugaboo.win2</code> and up, reset to <code>main</code> first (see "Working in a folder"). <strong>Reviewers</strong> start with a fresh context.</li>
+<li><strong>Every builder prompt</strong> names the work package file, the folder and the branch, and points to the rules: this section's "Working in a folder", the coding standards (including the SSOT/DRY/ODR review gate) and the glossary. Every reviewer prompt names the review gate too.</li>
+<li><strong>Merge</strong> into <code>WIN1</code> with Git's own subject, the only form the commit-message check accepts for a merge: <code>git merge --no-ff origin/WINn -m "Merge branch 'WINn' (Mx WP-nn name)"</code>. Then <code>cargo xtask ci</code>, push <code>WIN1</code>, and <code>git merge --ff-only WIN1</code> in the master.</li>
+<li><strong>"Can I close this session?"</strong> Answer with: running background agents and commands; uncommitted or unpushed work in each <code>bugaboo.winN</code> (<code>git status --short</code>, <code>git log origin/WINn..WINn</code>); <code>main</code> against <code>WIN1</code>; whether <code>STATUS.md</code> is current. Say "safe" only when all are clean, or when <code>STATUS.md</code> names exactly what a running builder will leave behind.</li>
+<li><strong>Memory</strong> lives in <code>bugaboo.win1/.claude/memory/</code> (ADR-0024). Commit memory changes with the next <code>STATUS.md</code> update.</li>
+<li><strong>The maintainer reviews on a phone:</strong> milestone review pages and changed design docs go out as commentable HTML pages; replies stay short and name feature IDs.</li>
+</ol>
 <h2 id="s2"><button class="sec" data-sec>§2</button>Overview</h2>
 <div class="tbl-wrap"><table class="dtable"><thead><tr><th>Milestone</th><th>Name</th><th>Phase</th><th>Features</th></tr></thead><tbody>
 <tr><td><strong>M0</strong></td><td>Foundation</td><td>MVP</td><td>2</td></tr>

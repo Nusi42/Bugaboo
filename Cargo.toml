@@ -11,7 +11,7 @@ publish = false
 
 # Zero warnings, zero errors: every lint below is a warning, and every check runs with
 # warnings denied (`cargo xtask check`). Exceptions need a narrow `#[allow(.., reason = "..")]`
-# that names an issue or a doc section (CLAUDE.md, META-SUPPRESS).
+# that names an issue or a doc section (coding-standards §7, META-SUPPRESS).
 [workspace.lints.rust]
 unsafe_code = "forbid"
 missing_docs = "warn"

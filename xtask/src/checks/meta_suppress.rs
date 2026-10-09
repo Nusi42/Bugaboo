@@ -1,5 +1,5 @@
 //! META-SUPPRESS: every suppression has a reason that names an issue or a doc section, and the
-//! total may not grow unnoticed (architecture §10, CLAUDE.md).
+//! total may not grow unnoticed (architecture §10, coding-standards §7).
 //!
 //! The counted list lives in `tools/checks/suppressions.txt`. It is rewritten by
 //! `cargo xtask suppressions`, so a new suppression shows up as a visible change in review.
