@@ -76,7 +76,7 @@ pub(crate) fn image_allowed(url: &str, hosts: &[String]) -> bool {
             .all(|c| c.is_ascii_alphanumeric() || HOST_MARKS.contains(&c))
         && hosts
             .iter()
-            .any(|allowed| allowed.trim().eq_ignore_ascii_case(host))
+            .any(|allowed| allowed.eq_ignore_ascii_case(host))
 }
 
 #[cfg(test)]

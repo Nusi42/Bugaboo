@@ -61,8 +61,10 @@ struct State {
     links: Vec<Option<ImageAsLink>>,
     /// For each open image: was it turned into a link?
     images: Vec<bool>,
-    /// How many images are open inside the description of another image: they only add to its text.
+    /// How many images and links are open inside the description of an image: they only add to
+    /// its text.
     inner_images: usize,
+    inner_links: usize,
     tokens: Vec<Token>,
 }
 
@@ -103,9 +105,15 @@ impl State {
 
     /// Keeps the start of a tag unless it is nested too deep; the end follows the start.
     fn start(&mut self, tag: Tag<'_>, options: &Options, out: &mut Vec<Item>) {
-        if matches!(tag, Tag::Image { .. }) && !self.images.is_empty() {
-            self.inner_images += 1;
-            return;
+        if !self.images.is_empty() {
+            match tag {
+                Tag::Image { .. } => self.inner_images += 1,
+                Tag::Link { .. } => self.inner_links += 1,
+                _ => {}
+            }
+            if matches!(tag, Tag::Image { .. } | Tag::Link { .. }) {
+                return;
+            }
         }
         let mut dropped = false;
         let tag = match tag {
@@ -174,6 +182,10 @@ impl State {
     fn end(&mut self, tag: TagEnd, out: &mut Vec<Item>) {
         if matches!(tag, TagEnd::Image) && self.inner_images > 0 {
             self.inner_images -= 1;
+            return;
+        }
+        if matches!(tag, TagEnd::Link) && self.inner_links > 0 {
+            self.inner_links -= 1;
             return;
         }
         let keep = self.kept.pop().unwrap_or(false);

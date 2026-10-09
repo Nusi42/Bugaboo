@@ -61,6 +61,7 @@ pulldown-cmark = { version = "0.13.4", default-features = false }
 proptest = "1.11.0"
 quote = "1.0.47"
 h2 = "0.4.19"
+html5ever = "0.40.1"
 hyper-util = { version = "0.1.21", default-features = false }
 rcgen = { version = "0.14.10", default-features = false, features = ["crypto", "pem", "ring"] }
 rust-embed = "8.12.0"

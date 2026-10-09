@@ -1,13 +1,6 @@
 //! SEC-13: the sanitizer corpus, the attacks, the limits and the tokens (ISS-01).
 
-#![allow(
-    clippy::disallowed_methods,
-    reason = "the corpus test reads its files; a test is not the pure code of the crate (ARCH-PURE, architecture §4)"
-)]
-
 use std::cell::RefCell;
-use std::fs;
-use std::path::{Path, PathBuf};
 
 use html5ever::tendril::StrTendril;
 use html5ever::tokenizer::{
@@ -20,8 +13,6 @@ use proptest::prelude::*;
 // Used by the library only (`unused_crate_dependencies`).
 use pulldown_cmark as _;
 
-/// Set it to write the expected HTML of a new corpus case; read the file before it is committed.
-const BLESS: &str = "BB_MARKDOWN_BLESS";
 /// What the HTML may have, written again here on purpose: the test must fail if the writer grows.
 /// Each tag with the attributes it may have.
 const ALLOWED: [(&str, &[&str]); 27] = [
@@ -124,42 +115,60 @@ fn problems_in(html: &str) -> Vec<String> {
     problems
 }
 
-fn corpus_dir() -> PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/corpus")
-}
+/// The corpus of attacks, read from its files. Only this module reads files, so only it is allowed
+/// to: the proptests below are not.
+mod corpus {
+    #![allow(
+        clippy::disallowed_methods,
+        reason = "the corpus test reads its files; a test is not the pure code of the crate (ARCH-PURE, architecture §4)"
+    )]
 
-/// The options of a corpus case: the hosts in `name.hosts`, one per line, if the file is there.
-fn options_of(case: &Path) -> Options {
-    let hosts = fs::read_to_string(case.with_extension("hosts")).unwrap_or_default();
-    Options {
-        image_hosts: hosts.lines().map(str::to_owned).collect(),
+    use std::fs;
+    use std::path::{Path, PathBuf};
+
+    use bb_markdown::{Options, render};
+
+    use super::problems_in;
+
+    /// Set it to write the expected HTML of a new corpus case; read the file before it is committed.
+    const BLESS: &str = "BB_MARKDOWN_BLESS";
+    fn corpus_dir() -> PathBuf {
+        Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/corpus")
     }
-}
 
-#[test]
-fn sec_13_the_sanitizer_corpus_renders_every_attack_as_text() {
-    let mut cases: Vec<PathBuf> = fs::read_dir(corpus_dir())
-        .unwrap()
-        .map(|entry| entry.unwrap().path())
-        .filter(|path| path.extension().is_some_and(|extension| extension == "md"))
-        .collect();
-    cases.sort();
-    assert!(cases.len() >= 10, "the corpus is there");
-    for case in cases {
-        let text = fs::read_to_string(&case).unwrap();
-        let html = render(&text, &options_of(&case)).html;
-        assert_eq!(
-            problems_in(&html),
-            Vec::<String>::new(),
-            "{}",
-            case.display()
-        );
-        let expected_path = case.with_extension("html");
-        if std::env::var_os(BLESS).is_some() {
-            fs::write(&expected_path, &html).unwrap();
+    /// The options of a corpus case: the hosts in `name.hosts`, one per line, if the file is there.
+    fn options_of(case: &Path) -> Options {
+        let hosts = fs::read_to_string(case.with_extension("hosts")).unwrap_or_default();
+        Options {
+            image_hosts: hosts.lines().map(str::to_owned).collect(),
         }
-        let expected = fs::read_to_string(&expected_path).unwrap();
-        assert_eq!(html, expected, "{}", case.display());
+    }
+
+    #[test]
+    fn sec_13_the_sanitizer_corpus_renders_every_attack_as_text() {
+        let mut cases: Vec<PathBuf> = fs::read_dir(corpus_dir())
+            .unwrap()
+            .map(|entry| entry.unwrap().path())
+            .filter(|path| path.extension().is_some_and(|extension| extension == "md"))
+            .collect();
+        cases.sort();
+        assert!(cases.len() >= 10, "the corpus is there");
+        for case in cases {
+            let text = fs::read_to_string(&case).unwrap();
+            let html = render(&text, &options_of(&case)).html;
+            assert_eq!(
+                problems_in(&html),
+                Vec::<String>::new(),
+                "{}",
+                case.display()
+            );
+            let expected_path = case.with_extension("html");
+            if std::env::var_os(BLESS).is_some() {
+                fs::write(&expected_path, &html).unwrap();
+            }
+            let expected = fs::read_to_string(&expected_path).unwrap();
+            assert_eq!(html, expected, "{}", case.display());
+        }
     }
 }
 
