@@ -21,4 +21,5 @@ fn sec_04_a_view_cannot_hold_a_member_that_does_not_say_how_it_is_masked() {
 fn sec_04_an_open_member_cannot_be_a_view_with_fields_to_mask() {
     let cases = trybuild::TestCases::new();
     cases.compile_fail("tests/ui/masked_open_view.rs");
+    cases.compile_fail("tests/ui/plain_by_hand.rs");
 }

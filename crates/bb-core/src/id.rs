@@ -116,6 +116,7 @@ fn check(uuid: Uuid, version: usize) -> Result<Uuid, IdError> {
 /// The methods every ID has, whatever its UUID version.
 macro_rules! id_common {
     ($name:ident, $version:expr) => {
+        impl crate::plain::sealed::Sealed for $name {}
         impl crate::plain::Plain for $name {}
 
         impl $name {

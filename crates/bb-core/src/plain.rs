@@ -14,10 +14,23 @@ use jiff::Timestamp;
     label = "mark this member `#[masked(nested)]`, or make the type a plain value",
     note = "an `open` member of a view is shown to everybody who sees the view (SEC-04, M2-F21)"
 )]
-pub trait Plain {}
+///
+/// Sealed: only this crate and its macros (`words!`, the ID types) implement it, so a view cannot
+/// be declared plain by the crate that defines it.
+pub trait Plain: sealed::Sealed {}
+
+/// The supertrait that keeps `Plain` to this crate's own types and macros.
+#[doc(hidden)]
+pub mod sealed {
+    /// Implemented next to every `Plain` impl; never by hand.
+    pub trait Sealed {}
+}
 
 macro_rules! plain {
-    ($($ty:ty),+ $(,)?) => { $(impl Plain for $ty {})+ };
+    ($($ty:ty),+ $(,)?) => { $(
+        impl sealed::Sealed for $ty {}
+        impl Plain for $ty {}
+    )+ };
 }
 
 plain!(
@@ -25,6 +38,9 @@ plain!(
     Timestamp,
 );
 
+impl<T: Plain> sealed::Sealed for Option<T> {}
 impl<T: Plain> Plain for Option<T> {}
+impl<T: Plain> sealed::Sealed for Vec<T> {}
 impl<T: Plain> Plain for Vec<T> {}
+impl<T: Plain + ?Sized> sealed::Sealed for Box<T> {}
 impl<T: Plain + ?Sized> Plain for Box<T> {}
