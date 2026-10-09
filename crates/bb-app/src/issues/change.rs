@@ -9,7 +9,7 @@ use bb_core::issue::{Issue, IssueAssignee};
 use bb_policy::{Authorized, Evaluation, Place};
 use serde_json::{Value, json};
 
-use super::fields::{clean_description, clean_title, ensure_may_change};
+use super::fields::{clean_description, clean_title, ensure_may_change, member};
 use super::types::{ChangeIssue, IssueView};
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, by, entity, internal};
@@ -48,28 +48,28 @@ impl Plan {
             }
         };
         add(
-            "issue_type",
+            member::ISSUE_TYPE,
             json!(before.issue_type.to_string()),
             json!(after.issue_type.to_string()),
         );
-        add("title", json!(before.title), json!(after.title));
+        add(member::TITLE, json!(before.title), json!(after.title));
         add(
-            "description",
+            member::DESCRIPTION,
             json!(before.description),
             json!(after.description),
         );
         add(
-            "status",
+            member::STATUS,
             json!(before.status.code()),
             json!(after.status.code()),
         );
         add(
-            "priority",
+            member::PRIORITY,
             json!(before.priority.code()),
             json!(after.priority.code()),
         );
         add(
-            "assigned_to",
+            member::ASSIGNED_TO,
             json!(
                 self.assigned_now
                     .iter()

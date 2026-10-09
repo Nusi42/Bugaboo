@@ -7,6 +7,7 @@ use bb_core::id::UserId;
 use bb_policy::{Authorized, Place};
 use serde_json::json;
 
+use super::fields::member;
 use super::types::{DeleteIssue, IssueView, RestoreIssue};
 use crate::auth::{AppError, AuthStore, Ctx, Done, by, entity, internal};
 use crate::projects::Why;
@@ -42,7 +43,7 @@ pub async fn delete_issue<S: AuthStore>(
         by(actor.person.id),
         entity(RecordKind::Issue, id),
         vec![FieldChange {
-            field: "deleted_at".to_owned(),
+            field: member::DELETED_AT.to_owned(),
             before: None,
             after: Some(json!(now.to_string())),
         }],
@@ -94,7 +95,7 @@ pub async fn restore_issue<S: AuthStore>(
         by(actor.person.id),
         entity(RecordKind::Issue, id),
         vec![FieldChange {
-            field: "deleted_at".to_owned(),
+            field: member::DELETED_AT.to_owned(),
             before: issue.deleted_at.map(|at| json!(at.to_string())),
             after: None,
         }],

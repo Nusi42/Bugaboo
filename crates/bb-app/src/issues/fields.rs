@@ -69,3 +69,16 @@ pub(crate) const CHANGEABLE: [Field; 5] = [
     Field::Priority,
     Field::AssignedTo,
 ];
+
+/// The names of the members of an issue in its events, which *History* reads: defined once, here.
+pub(crate) mod member {
+    pub(crate) const PROJECT: &str = "project";
+    pub(crate) const ISSUE_TYPE: &str = "issue_type";
+    pub(crate) const TITLE: &str = "title";
+    pub(crate) const DESCRIPTION: &str = "description";
+    pub(crate) const STATUS: &str = "status";
+    pub(crate) const PRIORITY: &str = "priority";
+    pub(crate) const REPORTED_BY: &str = "reported_by";
+    pub(crate) const ASSIGNED_TO: &str = "assigned_to";
+    pub(crate) const DELETED_AT: &str = "deleted_at";
+}

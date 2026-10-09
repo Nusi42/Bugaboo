@@ -13,7 +13,7 @@ use bb_core::project::Project;
 use bb_policy::{Authorized, Evaluation, Permission, Place};
 use serde_json::json;
 
-use super::fields::{clean_description, clean_title, ensure_may_change};
+use super::fields::{clean_description, clean_title, ensure_may_change, member};
 use super::ids::{CodePlan, new_code_in};
 use super::types::{IssueView, MakeIssue};
 use crate::access::Actor;
@@ -151,15 +151,15 @@ pub async fn make_issue<S: AuthStore>(
         by(actor.person.id),
         entity(RecordKind::Issue, id),
         vec![
-            set_to("project", json!(new.project.id.to_string())),
-            set_to("issue_type", json!(new.issue.issue_type.to_string())),
-            set_to("title", json!(new.issue.title)),
-            set_to("description", json!(new.issue.description)),
-            set_to("status", json!(new.issue.status.code())),
-            set_to("priority", json!(new.issue.priority.code())),
-            set_to("reported_by", json!(actor.person.id.to_string())),
+            set_to(member::PROJECT, json!(new.project.id.to_string())),
+            set_to(member::ISSUE_TYPE, json!(new.issue.issue_type.to_string())),
+            set_to(member::TITLE, json!(new.issue.title)),
+            set_to(member::DESCRIPTION, json!(new.issue.description)),
+            set_to(member::STATUS, json!(new.issue.status.code())),
+            set_to(member::PRIORITY, json!(new.issue.priority.code())),
+            set_to(member::REPORTED_BY, json!(actor.person.id.to_string())),
             set_to(
-                "assigned_to",
+                member::ASSIGNED_TO,
                 json!(
                     new.assignees
                         .iter()
