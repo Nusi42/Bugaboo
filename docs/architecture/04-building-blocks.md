@@ -74,6 +74,7 @@ flowchart TB
   auth --> core
   policy --> core
   core -.-> macros
+  policy -.-> macros
   store -. implements ports .-> app
   files -. implements ports .-> app
   ai -. implements ports .-> app
@@ -93,7 +94,7 @@ flowchart TB
 
 ### Dependency rules (checked by `cargo xtask check only ARCH-DEPS`)
 
-1. `bb-core`, `bb-searchlang` and `bb-markdown` do no I/O and depend on no other Bugaboo crate except `bb-core` (searchlang and markdown not even that; `bb-core` uses `bb-macros` for derives at compile time only), so they compile to WebAssembly.
+1. `bb-core`, `bb-searchlang` and `bb-markdown` do no I/O and depend on no other Bugaboo crate except `bb-core` (searchlang and markdown not even that; `bb-core` and `bb-policy` use `bb-macros` for derives at compile time only), so they compile to WebAssembly.
 2. `bb-app` knows **ports** (traits) only. It never imports `bb-store`, `bb-files`, `bb-ai` or `bb-notify`. Tests run use cases against in-memory fakes.
 3. Only `bb-policy` can create `Authorized<T>`. Its constructor is private to the crate.
 4. Only `bb-api` and `bb-mcp` speak HTTP. Only `bb-server` wires adapters to ports, and from M2 WP-06 on also the developer program `bb-sample` (`cargo xtask check only ARCH-HTTP-EDGE`).
@@ -111,9 +112,9 @@ Newtype IDs (`IssueId`, `ProjectId`, …, all UUIDv7 inside, readable keys like 
 - **Permission catalogue** (one Rust enum with plain-language descriptions as message keys) and the **starting roles** (one definition, used once to make editable copies and for *Reset to the starting permissions*), as [ADR-0025](../adr/0025-roles-groups-and-assignments.md) decides.
 - **Evaluation:** given an actor (and an access key's choice) and a place, computes the effective permission set, the **field mask** (hidden / can see / can change per field, per issue type later) and the *Who sees people* levels, from roles, groups and assignments on the project tree with *No access* ([§7, Authorization model](07-cross-cutting.md#authorization-model)). No I/O: the assignments come in through a port of `bb-app`. Cached per request.
 - **`PersonRef`:** resolves every person shown for the viewer, the kind of people information and the place (ADR-0022). **Check access:** the decision with its reasons as data.
-- **Visibility:** project tree, restricted issues, documents.
+- **Visibility:** project tree, issues (`Evaluation::sees_issue`: *See issues*, or an issue the person reported), restricted issues, documents.
 - **Search predicates:** turns the actor's visibility into query-builder expressions that `bb-store` adds to every query.
-- **`Authorized<T>`:** the only way data leaves the domain. It carries the field mask, so projections drop hidden fields automatically.
+- **`Authorized<T>`:** the only way data leaves the domain. It carries the field mask, so projections drop hidden fields automatically. A view is masked by `#[derive(Masked)]`: every member says whether it holds a field of the catalogue, a view inside the view or nothing hidden, so a hidden field of a nested view never leaves (SEC-04, M2-F21).
 
 ### bb-searchlang
 

@@ -69,6 +69,7 @@ mod sec_secrets;
 mod sty_contrast;
 mod sty_tokens;
 mod test_a11y;
+mod test_issue_ids;
 pub(crate) mod test_sample_data;
 mod theme_only;
 mod txt_catalog;
@@ -215,6 +216,7 @@ pub(crate) fn registry() -> Vec<Box<dyn Check>> {
         Box::new(sty_tokens::StyTokens),
         Box::new(theme_only::ThemeOnly),
         Box::new(test_a11y::TestA11y),
+        Box::new(test_issue_ids::TestIssueIds),
         Box::new(test_sample_data::TestSampleData),
         Box::new(txt_catalog::TxtCatalog),
         Box::new(txt_literal::TxtLiteral),

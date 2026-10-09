@@ -217,6 +217,7 @@
   auth --&gt; core
   policy --&gt; core
   core -.-&gt; macros
+  policy -.-&gt; macros
   store -. implements ports .-&gt; app
   files -. implements ports .-&gt; app
   ai -. implements ports .-&gt; app
@@ -234,7 +235,7 @@
   sample --&gt; app &amp; store &amp; core &amp; policy &amp; auth &amp; devwords</pre>
 <h4>Dependency rules (checked by <code>cargo xtask check only ARCH-DEPS</code>)</h4>
 <ol>
-<li><code>bb-core</code>, <code>bb-searchlang</code> and <code>bb-markdown</code> do no I/O and depend on no other Bugaboo crate except <code>bb-core</code> (searchlang and markdown not even that; <code>bb-core</code> uses <code>bb-macros</code> for derives at compile time only), so they compile to WebAssembly.</li>
+<li><code>bb-core</code>, <code>bb-searchlang</code> and <code>bb-markdown</code> do no I/O and depend on no other Bugaboo crate except <code>bb-core</code> (searchlang and markdown not even that; <code>bb-core</code> and <code>bb-policy</code> use <code>bb-macros</code> for derives at compile time only), so they compile to WebAssembly.</li>
 <li><code>bb-app</code> knows <strong>ports</strong> (traits) only. It never imports <code>bb-store</code>, <code>bb-files</code>, <code>bb-ai</code> or <code>bb-notify</code>. Tests run use cases against in-memory fakes.</li>
 <li>Only <code>bb-policy</code> can create <code>Authorized&lt;T&gt;</code>. Its constructor is private to the crate.</li>
 <li>Only <code>bb-api</code> and <code>bb-mcp</code> speak HTTP. Only <code>bb-server</code> wires adapters to ports, and from M2 WP-06 on also the developer program <code>bb-sample</code> (<code>cargo xtask check only ARCH-HTTP-EDGE</code>).</li>
@@ -249,9 +250,9 @@
 <li><strong>Permission catalogue</strong> (one Rust enum with plain-language descriptions as message keys) and the <strong>starting roles</strong> (one definition, used once to make editable copies and for <em>Reset to the starting permissions</em>), as <a href="#adr-0025">ADR-0025</a> decides.</li>
 <li><strong>Evaluation:</strong> given an actor (and an access key's choice) and a place, computes the effective permission set, the <strong>field mask</strong> (hidden / can see / can change per field, per issue type later) and the <em>Who sees people</em> levels, from roles, groups and assignments on the project tree with <em>No access</em> (<span title="07-cross-cutting.md#authorization-model in the repository">§7, Authorization model</span>). No I/O: the assignments come in through a port of <code>bb-app</code>. Cached per request.</li>
 <li><strong><code>PersonRef</code>:</strong> resolves every person shown for the viewer, the kind of people information and the place (ADR-0022). <strong>Check access:</strong> the decision with its reasons as data.</li>
-<li><strong>Visibility:</strong> project tree, restricted issues, documents.</li>
+<li><strong>Visibility:</strong> project tree, issues (<code>Evaluation::sees_issue</code>: <em>See issues</em>, or an issue the person reported), restricted issues, documents.</li>
 <li><strong>Search predicates:</strong> turns the actor's visibility into query-builder expressions that <code>bb-store</code> adds to every query.</li>
-<li><strong><code>Authorized&lt;T&gt;</code>:</strong> the only way data leaves the domain. It carries the field mask, so projections drop hidden fields automatically.</li>
+<li><strong><code>Authorized&lt;T&gt;</code>:</strong> the only way data leaves the domain. It carries the field mask, so projections drop hidden fields automatically. A view is masked by <code>#[derive(Masked)]</code>: every member says whether it holds a field of the catalogue, a view inside the view or nothing hidden, so a hidden field of a nested view never leaves (SEC-04, M2-F21).</li>
 </ul>
 <h4>bb-searchlang</h4>
 <p>Lexer, parser, syntax tree, canonical printer, checker and suggestions. Knows nothing about databases or permissions: the caller passes a <strong>field catalogue</strong> (the fields this person may read), so a hidden field fails exactly like an unknown one. Simple search (filter buttons) edits the same syntax tree.</p>
@@ -1187,7 +1188,7 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 <tr><td><code>ARCH-DB-PARITY</code></td><td>Repository tests ran on both SQLite and PostgreSQL</td><td>ADR-0003</td><td>xtask (`db run` checks target/db-parity.txt right after the tests; the check verifies ci runs the tests through `db run`)</td><td>ci</td></tr>
 <tr><td><code>ARCH-PERSON-REF</code></td><td>People are only shown through PersonRef, resolved for the viewer (names, role only or Someone)</td><td>ADR-0022, PRIV-12</td><td>xtask (reads the code of bb-api and bb-app, and the generated API description: no name or address outside PersonRef; exemptions with a reason in person-ref-exemptions.toml)</td><td>edit · commit · ci</td></tr>
 <tr><td><code>ARCH-NO-COUNTERS</code></td><td>No public identifier or label counts up (IDs, former-user labels); no totals that include hidden items</td><td>ADR-0021, PRIV-13</td><td>xtask (finds counting columns, sequences and count-plus-one numbers in product code, and count properties in the answers of the generated API description, unless tools/checks/counter-exemptions.toml names them with a reason)</td><td>commit · ci</td></tr>
-<tr><td><code>TEST-ISSUE-IDS</code></td><td>Counting and random IDs: unique, readable alphabet, old IDs redirect after moves and mode changes</td><td>ADR-0021</td><td>unit + property tests</td><td>ci</td></tr>
+<tr><td><code>TEST-ISSUE-IDS</code></td><td>Counting and random IDs: unique, readable alphabet, old IDs redirect after moves and mode changes</td><td>ADR-0021</td><td>xtask (the unit, property and two-database tests of the rules about issue IDs exist by name; the two-database ones run through each_database)</td><td>ci</td></tr>
 <tr><td><code>SEC-SECRETS</code></td><td>No keys, tokens or passwords committed</td><td>SEC-16</td><td>gitleaks</td><td>commit · ci</td></tr>
 <tr><td><code>SEC-PRIVATE</code></td><td>Nothing private about the owner in Git: no profile paths with an account name, no session IDs or links, no links to published pages, no account or computer names</td><td>coding-standards §2</td><td>xtask (every file, name and text, the examples of other checks too; commit-msg hook: `check commit-msg &lt;file&gt;`; push and CI: also the messages of every branch, tag and HEAD, annotated tag messages, ref names, and what the commits not on a remote add; reads the optional list ~/.config/bugaboo/private-words.txt; exemptions in tools/checks/private-exemptions.toml)</td><td>commit · push · ci</td></tr>
 <tr><td><code>SEC-PATTERNS</code></td><td>No unwrap/expect/panic in production code, no dangerouslySetInnerHTML, eval or new Function</td><td>coding-standards §3, §4</td><td>ast-grep</td><td>edit · commit · ci</td></tr>
