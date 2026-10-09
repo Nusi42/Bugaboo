@@ -1,0 +1,21 @@
+{
+  "index.html": {
+    "file": "assets/index-aaaa.js",
+    "name": "index",
+    "src": "index.html",
+    "isEntry": true,
+    "imports": ["_vendor-bbbb.js"],
+    "dynamicImports": ["lazy.ts"],
+    "css": ["assets/index-aaaa.css"]
+  },
+  "_vendor-bbbb.js": {
+    "file": "assets/vendor-bbbb.js",
+    "name": "vendor"
+  },
+  "lazy.ts": {
+    "file": "assets/lazy-cccc.js",
+    "name": "lazy",
+    "src": "lazy.ts",
+    "isDynamicEntry": true
+  }
+}
