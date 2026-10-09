@@ -23,7 +23,7 @@ use crate::auth::{AppError, AuthStore, Ctx, Done, internal};
 
 impl<S: AuthStore> Ctx<'_, S> {
     /// The moment before which a draft is too old to be read or kept.
-    fn draft_not_before(&self) -> Result<Timestamp, AppError> {
+    pub(super) fn draft_not_before(&self) -> Result<Timestamp, AppError> {
         draft_cutoff(self.now())
             .ok_or_else(|| AppError::Internal("a keep period that cannot be written".to_owned()))
     }

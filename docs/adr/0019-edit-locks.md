@@ -10,7 +10,7 @@ Bugaboo has no real-time co-editing in 1.0. Without care, two people editing a l
 
 **Two mechanisms, one for each kind of value:**
 
-1. **Short values** (status, priority, people, dates, choices): no lock. The change shows at once and is sent with the entity's **version** (`If-Match`). A stale version gets a conflict answer.
+1. **Short values** (status, priority, people, dates, choices): no lock. The change shows at once and is sent with the entity's **version** (in the body, see the amendment). A stale version gets a conflict answer.
 2. **Long text** (descriptions, long-text own fields, a comment being edited, document pages, and admin editors such as workflows, layouts and themes): an **edit lock**.
    - **Taken on the first keystroke**, not on opening, so readers never block anyone.
    - **A lease, not a permanent lock:** stored in the database (`edit_lock`: what, who, session, token, expires at). It lasts 60 s and is renewed by a heartbeat every 15 s while the editor is open. Closing the tab, losing the network or a crash simply lets it run out.
@@ -50,3 +50,11 @@ ARCH-VERSIONED, TEST-EDIT-LOCKS (see `tools/checks/catalog.toml`).
 - **The conflict answer is structured.** `edit.version_changed` (409) holds who changed it (a `PersonRef` for the reader), when, which fields, and the current values the reader may see; the browser writes the sentence from it with the reader's field mask and *Who sees people*, so an error message keeps no placeholder (architecture §7, *Errors*). For short values the sentence is "Ben changed Priority to Critical 2 minutes ago." with *Keep Ben's* and *Use mine* (decision M3-Q5); for long text it stays *Compare and save*.
 - **Drafts** are saved with the heartbeat (every 15 s) and kept until the text is saved or thrown away, at most 30 days after their last change (decision M3-Q9); a draft for a new issue belongs to the person, the project and the form. A job deletes the old ones (ADR-0017).
 - **Ask … to finish and Edit anyway** reach the person who is editing at their next heartbeat, in the open page; e-mail and in-app notifications add the same in M4 (decision M3-Q3).
+
+## Amendment (M3 WP-04)
+
+- **Numbers.** The lease (60 s), the heartbeat (15 s), the keep period of a draft (30 days) and the most records one check of versions takes (50) are named constants in `bb-core::edit`; the browser client reads them from the generated `editing.generated.ts`.
+- **Any record.** A lock and a draft are about one *part* of a record named by its `EntityRef`. A kind of record says where it sits, which version it has and what a person needs to change it (`EditableRecords`); the editing code names no kind. Routes whose permission depends on the kind declare `by-record`; *Edit anyway* and the release of a stuck lock declare the permission `edit-anyway`, which is the right to take over on its own (the save is judged by the routes of the record).
+- **Events.** The lease, the heartbeat and the draft write no domain event (they are the state of an open editor); *Edit anyway*, *Ask … to finish* and an administrator's release write one, and the release also writes `edit_lock.released` into the security log.
+- **Nothing typed is dropped.** The heartbeat keeps the text so far as the person's draft even when the lock is gone; a save that is refused (`edit.lock_lost`, `edit.taken_over`, `edit.version_changed`) keeps its text as the draft. The notes for the person who was editing are handed over once at their next heartbeat.
+- **Enforced by:** ARCH-VERSIONED (every change takes a version, or is named in `tools/checks/version-exemptions.toml`; a save of long text also takes `lock_token`), TEST-EDIT-LOCKS (server part, both databases; WP-10 adds the browser scenarios).

@@ -121,6 +121,15 @@ pub async fn take_lock<S: AuthStore>(
         .take_edit_lock(&wanted, ctx.now())
         .await
         .map_err(|error| internal::<S>(&error))?;
+    if matches!(taking, Taking::Granted(_)) {
+        // Until the job that deletes old drafts runs on a schedule (ADR-0017), taking a lock, which
+        // happens once for each time somebody starts to write, clears the ones past their keep
+        // period, so no draft is kept longer than it may be.
+        ctx.store()
+            .purge_drafts(ctx.draft_not_before()?)
+            .await
+            .map_err(|error| internal::<S>(&error))?;
+    }
     let outcome = match taking {
         Taking::Granted(lock) => LockOutcome::Taken(Ctx::<S>::taken(&lock)),
         Taking::Held(lock) => LockOutcome::Held(HeldLock {

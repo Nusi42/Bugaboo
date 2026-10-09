@@ -1,7 +1,7 @@
 //! TEST-EDIT-LOCKS: the tests of edit locks, drafts and confirmed saves exist (ISS-17, ISS-11,
 //! ADR-0019).
 //!
-//! The server part is the file `crates/bb-server/src/tests/sign_in/editing.rs`: each test runs on
+//! The server part is the folder `crates/bb-server/src/tests/sign_in/editing/`: each test runs on
 //! both databases against a kind of record that exists only in tests. This check fails when a test
 //! that the work package names is missing or has lost its `#[tokio::test]`, so the guarantees
 //! (a lock frees itself, *Edit anyway* keeps the first person's text, a lost lock never drops
@@ -10,11 +10,13 @@
 //! with M3 WP-10.
 
 use super::{Check, Context, Finding};
+use crate::docs::source::sorted_files;
+use crate::docs::text::has_extension;
 use crate::rust_source::strip;
 use crate::source::read_text;
 
 /// The tests of the server part.
-const SUITE: &str = "crates/bb-server/src/tests/sign_in/editing.rs";
+const SUITE: &str = "crates/bb-server/src/tests/sign_in/editing";
 
 /// What the suite must prove, by the name of the test that proves it (the work package names them).
 const REQUIRED: [&str; 8] = [
@@ -36,8 +38,18 @@ impl Check for TestEditLocks {
     }
 
     fn run(&self, context: &Context<'_>) -> anyhow::Result<Vec<Finding>> {
-        Ok(evaluate(read_text(context.repo, SUITE).ok().as_deref()))
+        Ok(evaluate(suite_text(context.repo).as_deref()))
     }
+}
+
+/// The code of every file of the suite, or nothing when the folder is not there.
+fn suite_text(repo: &crate::repo::Repo) -> Option<String> {
+    let mut suite = String::new();
+    for name in sorted_files(repo, SUITE, |name| has_extension(name, "rs")).ok()? {
+        suite.push_str(&read_text(repo, &format!("{SUITE}/{name}")).ok()?);
+        suite.push('\n');
+    }
+    (!suite.is_empty()).then_some(suite)
 }
 
 /// Whether the code has an `async fn` with this name right below a `#[tokio::test]`.
@@ -56,7 +68,7 @@ fn evaluate(suite: Option<&str>) -> Vec<Finding> {
     let Some(suite) = suite else {
         return vec![Finding::at(
             SUITE,
-            "The tests of edit locks are missing (ADR-0019, ISS-17).",
+            "The folder with the tests of edit locks is missing (ADR-0019, ISS-17).",
         )];
     };
     let code = strip(suite);
@@ -124,7 +136,7 @@ async fn {name}() -> TestResult {{ Ok(()) }}"
     #[test]
     fn the_suite_of_this_repository_has_every_named_test() {
         let repo = crate::repo::Repo::discover().unwrap();
-        let text = read_text(&repo, SUITE).unwrap();
+        let text = suite_text(&repo).unwrap();
         let found: Vec<_> = evaluate(Some(&text))
             .into_iter()
             .map(|finding| finding.message)

@@ -153,7 +153,7 @@ axum router; extractors that turn a session cookie, access key or OAuth token in
 
 ### bb-api-words
 
-The words of the API description that more than one program needs, written once: the marks `bb-api` puts on a route (`x-permission`, `x-never-stored`, `x-secret`), the words of a paged list (`fields`, `cursor`, `limit`, `include`, `items`, `next_cursor`, `truncated`), the three words for a route that needs no permission of the catalogue (`public`, `signed-in`, `own-account`), and the actor and answer names of the permission matrix (SEC-MATRIX). It has no dependencies and does no work, so `bb-api` (writes the words), the server tests (read them) and `xtask` (its checks read the generated description) can import it. The table that says which route gets which mark is `bb-api`'s `permissions::ROUTES`.
+The words of the API description that more than one program needs, written once: the marks `bb-api` puts on a route (`x-permission`, `x-never-stored`, `x-secret`, `x-long-text`), the words of a change that overwrites nothing unseen (`version`, `lock_token`, the schema of the conflict), the words of a paged list (`fields`, `cursor`, `limit`, `include`, `items`, `next_cursor`, `truncated`), the four words for a route that needs no single permission of the catalogue (`public`, `signed-in`, `own-account`, `by-record`), and the actor and answer names of the permission matrix (SEC-MATRIX). It has no dependencies and does no work, so `bb-api` (writes the words), the server tests (read them) and `xtask` (its checks read the generated description) can import it. The table that says which route gets which mark is `bb-api`'s `permissions::ROUTES`.
 
 ### bb-dev-words
 
