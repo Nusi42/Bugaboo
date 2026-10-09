@@ -6,7 +6,7 @@
 //! view cannot be forgotten, and a hidden field of a nested view never leaves.
 
 use proc_macro2::TokenStream;
-use quote::quote;
+use quote::{quote, quote_spanned};
 use syn::spanned::Spanned as _;
 use syn::{Attribute, Data, DeriveInput, Fields, Ident, LitStr};
 
@@ -19,6 +19,8 @@ struct Member<'a> {
     field: Option<LitStr>,
     /// The member is a view of its own, or a list of them, that masks itself.
     nested: bool,
+    /// The member says it holds nothing that needs a mask.
+    open: bool,
 }
 
 pub(crate) fn expand(input: &DeriveInput) -> syn::Result<TokenStream> {
@@ -47,12 +49,13 @@ pub(crate) fn expand(input: &DeriveInput) -> syn::Result<TokenStream> {
         let Some(ident) = &field.ident else {
             return Err(syn::Error::new(field.span(), "a member needs a name"));
         };
-        let (field_word, nested) = read_member(ident, &field.attrs)?;
+        let (field_word, nested, open) = read_member(ident, &field.attrs)?;
         members.push(Member {
             name: ident.to_string(),
             ty: &field.ty,
             field: field_word,
             nested,
+            open,
         });
     }
     let view = &input.ident;
@@ -66,7 +69,17 @@ pub(crate) fn expand(input: &DeriveInput) -> syn::Result<TokenStream> {
         let (name, ty) = (&member.name, &member.ty);
         quote! { ::bb_policy::mask_member::<#ty>(value, #name, mask); }
     });
+    // An open member is a plain value: a type that is itself a view with a mask would leak.
+    let plain = members.iter().filter(|member| member.open).map(|member| {
+        let ty = member.ty;
+        quote_spanned! { ty.span() => plain::<#ty>(); }
+    });
     Ok(quote! {
+        const _: fn() = || {
+            fn plain<T: ?Sized + ::bb_core::plain::Plain>() {}
+            #(#plain)*
+        };
+
         impl ::bb_policy::Masked for #view {
             const FIELDS: &'static [(&'static str, ::bb_core::fields::Field)] = &[#(#entries),*];
 
@@ -96,9 +109,9 @@ fn refuse_serde(attrs: &[Attribute]) -> syn::Result<()> {
     Ok(())
 }
 
-fn read_member(ident: &Ident, attrs: &[Attribute]) -> syn::Result<(Option<LitStr>, bool)> {
+fn read_member(ident: &Ident, attrs: &[Attribute]) -> syn::Result<(Option<LitStr>, bool, bool)> {
     let mut said = false;
-    let (mut field, mut nested) = (None, false);
+    let (mut field, mut nested, mut open) = (None, false, false);
     for attr in attrs.iter().filter(|attr| attr.path().is_ident("masked")) {
         said = true;
         attr.parse_nested_meta(|meta| {
@@ -106,7 +119,9 @@ fn read_member(ident: &Ident, attrs: &[Attribute]) -> syn::Result<(Option<LitStr
                 field = Some(meta.value()?.parse::<LitStr>()?);
             } else if meta.path.is_ident("nested") {
                 nested = true;
-            } else if !meta.path.is_ident("open") {
+            } else if meta.path.is_ident("open") {
+                open = true;
+            } else {
                 return Err(
                     meta.error("expected `field = \"...\"`, `nested` or `open` (SEC-04, M2-F21)")
                 );
@@ -114,8 +129,14 @@ fn read_member(ident: &Ident, attrs: &[Attribute]) -> syn::Result<(Option<LitStr
             Ok(())
         })?;
     }
+    if open && (field.is_some() || nested) {
+        return Err(syn::Error::new(
+            ident.span(),
+            format!("member `{ident}` is `open`, so it is neither a `field` nor `nested`"),
+        ));
+    }
     if said {
-        Ok((field, nested))
+        Ok((field, nested, open))
     } else {
         Err(syn::Error::new(
             ident.span(),

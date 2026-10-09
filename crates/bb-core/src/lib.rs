@@ -27,6 +27,7 @@ pub mod paging;
 pub mod people_kinds;
 pub mod person;
 pub mod personal;
+pub mod plain;
 pub mod project;
 pub mod secret;
 pub mod security_log;
