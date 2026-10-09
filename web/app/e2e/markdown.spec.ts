@@ -75,3 +75,15 @@ test("ux_04 the editor is good in every theme, writing and previewing", async ({
   await expect(page.getByRole("heading", { level: 1, name: "Title" })).toBeVisible();
   await expectGoodInEveryLook(page);
 });
+
+test("sec_13 Security shows the hosts that images in text may come from", async ({ page }) => {
+  await signIn(page, ada);
+  await page.goto(paths.organizationSecurity);
+  await expect(
+    page.getByRole("heading", { level: 1, name: t("nav.organization-security") }),
+  ).toBeVisible();
+  const hosts = page.getByRole("textbox", { name: t("setting.content.image-hosts.name") });
+  await expect(hosts).toBeVisible();
+  await expect(hosts).toHaveValue("");
+  await expectGoodInEveryLook(page);
+});

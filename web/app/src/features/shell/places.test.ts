@@ -100,6 +100,7 @@ describe("ux_01 the topics of a settings screen", () => {
       paths.roles,
       paths.signInRules,
       paths.themes,
+      paths.organizationSecurity,
       paths.status,
     ]);
   });

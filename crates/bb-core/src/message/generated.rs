@@ -1151,6 +1151,9 @@ pub const NAV_HOME: MessageKey = MessageKey::new("nav.home");
 /// The message `nav.my-settings`.
 pub const NAV_MY_SETTINGS: MessageKey = MessageKey::new("nav.my-settings");
 
+/// The message `nav.organization-security`.
+pub const NAV_ORGANIZATION_SECURITY: MessageKey = MessageKey::new("nav.organization-security");
+
 /// The message `nav.organization-settings`.
 pub const NAV_ORGANIZATION_SETTINGS: MessageKey = MessageKey::new("nav.organization-settings");
 
@@ -2043,8 +2046,19 @@ pub const SETTING_AUTH_SIGN_UP_ENABLED_HELP: MessageKey =
 pub const SETTING_AUTH_SIGN_UP_ENABLED_NAME: MessageKey =
     MessageKey::new("setting.auth.sign-up-enabled.name");
 
+/// The message `setting.content.image-hosts.help`.
+pub const SETTING_CONTENT_IMAGE_HOSTS_HELP: MessageKey =
+    MessageKey::new("setting.content.image-hosts.help");
+
+/// The message `setting.content.image-hosts.name`.
+pub const SETTING_CONTENT_IMAGE_HOSTS_NAME: MessageKey =
+    MessageKey::new("setting.content.image-hosts.name");
+
 /// The message `setting.page.region-intro`.
 pub const SETTING_PAGE_REGION_INTRO: MessageKey = MessageKey::new("setting.page.region-intro");
+
+/// The message `setting.page.security-intro`.
+pub const SETTING_PAGE_SECURITY_INTRO: MessageKey = MessageKey::new("setting.page.security-intro");
 
 /// The message `setting.page.sign-in-rules-intro`.
 pub const SETTING_PAGE_SIGN_IN_RULES_INTRO: MessageKey =
@@ -5796,6 +5810,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("nav.groups", "Groups"),
     ("nav.home", "Home"),
     ("nav.my-settings", "My settings"),
+    ("nav.organization-security", "Security"),
     ("nav.organization-settings", "Organization settings"),
     ("nav.people", "People"),
     ("nav.people-visibility", "Who sees people"),
@@ -6650,8 +6665,20 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "Sign up without an invitation",
     ),
     (
+        "setting.content.image-hosts.help",
+        "The hosts that may show images in descriptions and comments, as a list separated by commas, like images.example.com. Images from this server are always shown. Leave the list empty to show no image from other hosts.",
+    ),
+    (
+        "setting.content.image-hosts.name",
+        "Hosts that images may come from",
+    ),
+    (
         "setting.page.region-intro",
         "These choices are kept with you, so they follow you to every browser you sign in from.",
+    ),
+    (
+        "setting.page.security-intro",
+        "What the text that people write may show. Images from this server are always shown.",
     ),
     (
         "setting.page.sign-in-rules-intro",
