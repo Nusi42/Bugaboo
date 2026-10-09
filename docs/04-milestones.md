@@ -98,7 +98,7 @@ A session can end at any time, and a new one starts in the master and continues 
 6. **Merge** into `WIN1` with Git's own subject, the only form the commit-message check accepts for a merge: `git merge --no-ff origin/WINn -m "Merge branch 'WINn' (Mx WP-nn name)"`. Then `cargo xtask ci`, push `WIN1`, and `git merge --ff-only WIN1` in the master.
 7. **"Can I close this session?"** Answer with: running background agents and commands; uncommitted or unpushed work in each `bugaboo.winN` (`git status --short`, `git log origin/WINn..WINn`); `main` against `WIN1`; whether `STATUS.md` is current. Say "safe" only when all are clean, or when `STATUS.md` names exactly what a running builder will leave behind.
 8. **Memory** lives in `bugaboo.win1/.claude/memory/` (ADR-0024). Commit memory changes with the next `STATUS.md` update.
-9. **The maintainer reviews on a phone:** milestone review pages and changed design docs go out as commentable HTML pages; replies stay short and name feature IDs. The links to these pages are private: keep them in `~/.config/bugaboo/links.md`, outside the repository, and name the page in the docs instead (coding-standards §2).
+9. **The maintainer reviews on a phone:** milestone review pages and changed design docs go out as commentable HTML pages; replies stay short and name feature IDs. The links to these pages are private: keep them in the maintainer's list outside the repository, and name the page in the docs instead (coding-standards §2).
 
 ## Overview
 

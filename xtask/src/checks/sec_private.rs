@@ -63,7 +63,12 @@ const MEMORY_FOLDER: &str = "memory";
 
 const SESSION_LINK: &str = "claude.ai/code/session_";
 /// The links to a published page; an ID follows.
-const PAGE_LINKS: [&str; 2] = ["claude.ai/artifact/", "claude.ai/code/artifact/"];
+const PAGE_LINKS: [&str; 4] = [
+    "claude.ai/artifact/",
+    "claude.ai/code/artifact/",
+    "claude.ai/public/artifacts/",
+    "claude.site/artifacts/",
+];
 const SESSION_PREFIX: &str = "session_";
 /// The trailer Claude Code can ask for at the end of a commit message, in lower case.
 const COMMIT_TRAILER: &str = "claude-session";
@@ -158,7 +163,8 @@ impl Rule {
                 "has a session trailer. A commit ends with the Co-Authored-By line only."
             }
             Self::PageLink => {
-                "has a link to a published page. Keep it in the owner's list outside Git and                  name the page instead."
+                "has a link to a published page. Keep it in the owner's list outside Git and \
+                 name the page instead."
             }
             Self::PrivateWord => {
                 "has a private word (the account or computer name of this machine, or a word of \
@@ -1169,6 +1175,28 @@ mod tests {
             );
         }
         assert_nothing_private_is_said(&findings);
+    }
+
+    #[test]
+    fn the_id_of_a_page_link_in_a_name_is_masked() {
+        let name = format!("review/{}{}", PAGE_LINKS[0], "AbCdEf0123456789");
+        assert_eq!(
+            masked(&name, &machine()),
+            format!("review/{}***", PAGE_LINKS[0])
+        );
+    }
+
+    #[test]
+    fn every_message_reads_as_one_sentence_without_a_gap() {
+        for rule in [
+            Rule::ProfilePath,
+            Rule::SessionId,
+            Rule::SessionTrailer,
+            Rule::PageLink,
+            Rule::PrivateWord,
+        ] {
+            assert!(!rule.message().contains("  "), "{rule:?}");
+        }
     }
 
     #[test]

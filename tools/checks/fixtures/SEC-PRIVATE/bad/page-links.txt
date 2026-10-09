@@ -3,3 +3,5 @@ see https://claude.ai/artifact/AbCdEf0123456789XyZ
 HTTPS://CLAUDE.AI/ARTIFACT/ABCDEF0123456789
 claude.ai/code/artifact/0123abcd-4567-89ef-0123-456789abcdef
 <a href="https://claude.ai/artifact/AbCdEf0123456789XyZ">mockup</a>
+https://claude.ai/public/artifacts/0123abcd-4567-89ef-0123-456789abcdef
+https://claude.site/artifacts/AbCdEf0123456789
