@@ -1,9 +1,20 @@
 //! SEC-13: the sanitizer corpus, the attacks, the limits and the tokens (ISS-01).
 
+#![allow(
+    clippy::disallowed_methods,
+    reason = "the corpus test reads its files; a test is not the pure code of the crate (ARCH-PURE, architecture §4)"
+)]
+
+use std::cell::RefCell;
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use bb_markdown::{MAX_NESTING_DEPTH, MAX_TEXT_BYTES, Options, TokenKind, render};
+use html5ever::tendril::StrTendril;
+use html5ever::tokenizer::{
+    BufferQueue, Tag, Token, TokenSink, TokenSinkResult, Tokenizer, TokenizerOpts,
+};
+
+use bb_markdown::{MAX_NESTING_DEPTH, MAX_TEXT_BYTES, MAX_TOKENS, Options, TokenKind, render};
 use proptest::prelude::*;
 
 // Used by the library only (`unused_crate_dependencies`).
@@ -11,50 +22,107 @@ use pulldown_cmark as _;
 
 /// Set it to write the expected HTML of a new corpus case; read the file before it is committed.
 const BLESS: &str = "BB_MARKDOWN_BLESS";
-/// The tags the sanitizer allows, written again here on purpose: the test must fail if the
-/// allowlist grows.
-const ALLOWED_TAGS: [&str; 28] = [
-    "p",
-    "br",
-    "hr",
-    "h1",
-    "h2",
-    "h3",
-    "h4",
-    "h5",
-    "h6",
-    "blockquote",
-    "pre",
-    "code",
-    "em",
-    "strong",
-    "del",
-    "a",
-    "img",
-    "ul",
-    "ol",
-    "li",
-    "table",
-    "thead",
-    "tbody",
-    "tr",
-    "th",
-    "td",
-    "span",
-    "sup",
+/// What the HTML may have, written again here on purpose: the test must fail if the writer grows.
+/// Each tag with the attributes it may have.
+const ALLOWED: [(&str, &[&str]); 27] = [
+    ("p", &[]),
+    ("br", &[]),
+    ("hr", &[]),
+    ("h1", &[]),
+    ("h2", &[]),
+    ("h3", &[]),
+    ("h4", &[]),
+    ("h5", &[]),
+    ("h6", &[]),
+    ("blockquote", &[]),
+    ("pre", &[]),
+    ("code", &[]),
+    ("em", &[]),
+    ("strong", &[]),
+    ("del", &[]),
+    ("a", &["href", "title", "target", "rel"]),
+    ("img", &["src", "alt", "title"]),
+    ("ul", &[]),
+    ("ol", &["start"]),
+    ("li", &[]),
+    ("table", &[]),
+    ("thead", &[]),
+    ("tbody", &[]),
+    ("tr", &[]),
+    ("th", &[]),
+    ("td", &[]),
+    ("span", &["data-token", "data-kind"]),
 ];
-/// The attributes the sanitizer allows, again on purpose.
-const ALLOWED_ATTRIBUTES: [&str; 9] = [
-    "href",
-    "title",
-    "src",
-    "alt",
-    "start",
-    "rel",
-    "target",
-    "data-token",
-    "data-kind",
-];
+/// The schemes an address with a scheme may have.
+const SCHEMES: [&str; 3] = ["http", "https", "mailto"];
+
+/// Collects the tags a real HTML tokenizer (html5ever, the parser browsers' rules come from) reads.
+#[derive(Default)]
+struct Tags(RefCell<Vec<Tag>>);
+
+impl TokenSink for Tags {
+    type Handle = ();
+
+    fn process_token(&self, token: Token, _line: u64) -> TokenSinkResult<()> {
+        if let Token::TagToken(tag) = token {
+            self.0.borrow_mut().push(tag);
+        }
+        TokenSinkResult::Continue
+    }
+}
+
+/// Whether an address of `href` or `src` is one a browser may follow, read the way a browser reads
+/// it: tabs and line breaks inside are dropped, an address has a scheme only when the letters
+/// before the first colon are a valid scheme name, and `\` counts as `/`.
+fn address_is_fine(value: &str) -> bool {
+    let cleaned: String = value
+        .trim_matches(|c: char| c.is_ascii_control() || c == ' ')
+        .chars()
+        .filter(|c| !matches!(c, '\t' | '\n' | '\r'))
+        .map(|c| if c == '\\' { '/' } else { c })
+        .collect::<String>()
+        .to_ascii_lowercase();
+    let name_end = cleaned.find(|c: char| !(c.is_ascii_alphanumeric() || "+-.".contains(c)));
+    match name_end {
+        Some(at)
+            if at > 0
+                && cleaned.as_bytes()[0].is_ascii_alphabetic()
+                && cleaned.as_bytes()[at] == b':' =>
+        {
+            SCHEMES.contains(&&cleaned[..at])
+        }
+        _ => !cleaned.starts_with("//"),
+    }
+}
+
+/// What is wrong with `html` when a real HTML tokenizer reads it: a tag, an attribute or an address
+/// that the allow list does not have. Empty means fine.
+fn problems_in(html: &str) -> Vec<String> {
+    let input = BufferQueue::default();
+    input.push_back(StrTendril::from_slice(html));
+    let tokenizer = Tokenizer::new(Tags::default(), TokenizerOpts::default());
+    let _ = tokenizer.feed(&input);
+    tokenizer.end();
+    let mut problems = Vec::new();
+    for tag in tokenizer.sink.0.borrow().iter() {
+        let name: &str = &tag.name;
+        let Some((_, attributes)) = ALLOWED.iter().find(|(allowed, _)| *allowed == name) else {
+            problems.push(format!("tag <{name}>"));
+            continue;
+        };
+        for attribute in &tag.attrs {
+            let attribute_name: &str = &attribute.name.local;
+            if !attributes.contains(&attribute_name) {
+                problems.push(format!("attribute {attribute_name} in <{name}>"));
+            } else if ["href", "src"].contains(&attribute_name)
+                && !address_is_fine(&attribute.value)
+            {
+                problems.push(format!("address {} in <{name}>", &*attribute.value));
+            }
+        }
+    }
+    problems
+}
 
 fn corpus_dir() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/corpus")
@@ -66,38 +134,6 @@ fn options_of(case: &Path) -> Options {
     Options {
         image_hosts: hosts.lines().map(str::to_owned).collect(),
     }
-}
-
-/// Every tag of `html` and the attributes inside it, with what is not allowed named.
-fn problems_in(html: &str) -> Vec<String> {
-    let mut problems = Vec::new();
-    for piece in html.split('<').skip(1) {
-        let tag_end = piece.find('>').unwrap_or(piece.len());
-        let tag = &piece[..tag_end];
-        let name = tag
-            .trim_start_matches('/')
-            .split(|c: char| !c.is_ascii_alphanumeric())
-            .next()
-            .unwrap_or_default();
-        if !ALLOWED_TAGS.contains(&name) {
-            problems.push(format!("tag <{name}>"));
-        }
-        for attribute in tag.split_whitespace().skip(1) {
-            let attribute_name = attribute.split('=').next().unwrap_or_default();
-            if !ALLOWED_ATTRIBUTES.contains(&attribute_name) && !attribute.ends_with('"') {
-                problems.push(format!("attribute {attribute_name} in <{name}>"));
-            }
-        }
-        for attribute in tag.split_whitespace().skip(1) {
-            let value = attribute.split_once("=\"").map_or("", |(_, value)| value);
-            for danger in ["javascript:", "data:", "vbscript:"] {
-                if value.to_ascii_lowercase().starts_with(danger) {
-                    problems.push(format!("{danger} in <{name}>"));
-                }
-            }
-        }
-    }
-    problems
 }
 
 #[test]
@@ -178,6 +214,16 @@ fn a_text_over_the_limit_is_cut_and_says_so() {
 }
 
 #[test]
+fn more_tokens_than_the_limit_stay_plain_text() {
+    let text = "@a ".repeat(MAX_TOKENS + 500);
+    let rendered = render(&text, &Options::default());
+    assert_eq!(rendered.tokens.len(), MAX_TOKENS);
+    assert_eq!(rendered.html.matches("data-token=").count(), MAX_TOKENS);
+    // The cost of the tokens is bounded by their number, not by how short the text is.
+    assert!(rendered.html.len() < text.len() + MAX_TOKENS * 100);
+}
+
+#[test]
 fn nesting_deeper_than_the_limit_is_flattened() {
     let deep = format!("{}deep", "> ".repeat(MAX_NESTING_DEPTH * 4));
     let html = render(&deep, &Options::default()).html;
@@ -225,6 +271,11 @@ fn fragments() -> impl Strategy<Value = String> {
     prop::collection::vec(pieces, 0..40).prop_map(|pieces| pieces.concat())
 }
 
+/// Pieces of Markdown and attacks between any characters at all.
+fn mixed() -> impl Strategy<Value = String> {
+    (fragments(), "\\PC{0,200}", fragments()).prop_map(|(a, b, c)| format!("{a}{b}{c}"))
+}
+
 proptest! {
     #[test]
     fn iss_01_issue_ids_and_mentions_come_back_as_tokens_with_their_places(text in fragments()) {
@@ -246,9 +297,15 @@ proptest! {
     }
 
     #[test]
-    fn sec_13_whatever_is_written_the_html_has_only_allowed_tags_and_attributes(text in fragments()) {
-        let html = render(&text, &Options::default()).html;
-        prop_assert_eq!(problems_in(&html), Vec::<String>::new());
+    fn sec_13_whatever_is_written_the_html_has_only_allowed_tags_attributes_and_addresses(
+        text in mixed(),
+        arbitrary in "\\PC{0,400}",
+    ) {
+        let options = Options { image_hosts: vec!["images.example.com".to_owned()] };
+        for input in [text, arbitrary] {
+            let html = render(&input, &options).html;
+            prop_assert_eq!(problems_in(&html), Vec::<String>::new(), "{}", input);
+        }
     }
 
     #[test]

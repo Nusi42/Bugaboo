@@ -38,12 +38,19 @@ pub const MAX_NESTING_DEPTH: usize = 16;
 /// The most characters of a name after `@` that count as a mention.
 pub const MAX_MENTION_CHARS: usize = 64;
 
+/// The most tokens one text can hold. More issue IDs and mentions than this stay plain text: each
+/// token costs a `span` in the HTML, and a hostile text of nothing but mentions would otherwise
+/// make an answer many times the size of the text.
+pub const MAX_TOKENS: usize = 2_000;
+
 /// What the renderer needs to know about the organization.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Options {
     /// The hosts from which images may be shown (the setting `content.image-hosts`), such as
     /// `images.example.com`. Images of our own origin (a path that starts with a single `/`) are
-    /// always allowed. Empty means no image from outside.
+    /// always allowed. Empty means no image from outside. The caller makes the list from the setting
+    /// with `bb_core::settings::list_items`, the one reading of a list in a text; this crate has no
+    /// second parser of it.
     pub image_hosts: Vec<String>,
 }
 
@@ -60,5 +67,7 @@ pub struct Rendered {
 }
 
 // Used by the integration tests in `tests/` only (`unused_crate_dependencies`).
+#[cfg(test)]
+use html5ever as _;
 #[cfg(test)]
 use proptest as _;

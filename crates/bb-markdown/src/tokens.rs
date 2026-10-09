@@ -54,12 +54,14 @@ const MENTION_INNER: [char; 3] = ['_', '.', '-'];
 /// Characters, besides letters and digits, that a token must not follow (a path, an address).
 const NOT_BEFORE_A_TOKEN: [char; 7] = ['_', '@', '.', '/', ':', '-', '\\'];
 
-/// The tokens of `text`, in order, never overlapping. `base` is added to every place, so a piece
-/// of a bigger text can be searched.
-pub(crate) fn find(text: &str, base: usize) -> Vec<Token> {
+/// The tokens of `text`, in order, never overlapping, at most `limit` of them. `base` is added to
+/// every place, so a piece of a bigger text can be searched.
+pub(crate) fn find(text: &str, base: usize, limit: usize) -> Vec<Token> {
     let mut found = Vec::new();
     let mut at = 0;
-    while let Some(next) = text[at..].chars().next() {
+    while found.len() < limit
+        && let Some(next) = text[at..].chars().next()
+    {
         let before = text[..at].chars().next_back();
         let matched = if next == MENTION_MARK && starts_a_word(before) {
             mention_length(&text[at..]).map(|length| (TokenKind::Mention, length))
@@ -134,7 +136,7 @@ mod tests {
     use super::*;
 
     fn words(text: &str) -> Vec<(&'static str, &str)> {
-        find(text, 0)
+        find(text, 0, usize::MAX)
             .iter()
             .map(|t| (t.kind.word(), &text[t.start..t.end]))
             .collect()
@@ -178,14 +180,14 @@ mod tests {
     #[test]
     fn a_mention_stops_at_the_limit() {
         let long = format!("@{}", "a".repeat(MAX_MENTION_CHARS + 10));
-        let found = find(&long, 0);
+        let found = find(&long, 0, usize::MAX);
         assert_eq!(found.len(), 1);
         assert_eq!(found[0].end, 1 + MAX_MENTION_CHARS);
     }
 
     #[test]
     fn places_are_shifted_by_the_base() {
-        let found = find("a WEB-1", 10);
+        let found = find("a WEB-1", 10, usize::MAX);
         assert_eq!((found[0].start, found[0].end), (12, 17));
     }
 }

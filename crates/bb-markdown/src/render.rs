@@ -7,7 +7,10 @@ use pulldown_cmark::{
 use crate::html::{self, Item};
 use crate::tokens::{self, Token};
 use crate::urls;
-use crate::{MAX_NESTING_DEPTH, MAX_TEXT_BYTES, Options, Rendered};
+use crate::{MAX_NESTING_DEPTH, MAX_TEXT_BYTES, MAX_TOKENS, Options, Rendered};
+
+/// What an e-mail address in angle brackets gets in front, to be an address a browser can follow.
+const MAIL_SCHEME: &str = "mailto:";
 
 /// What the parser understands besides plain `CommonMark`: tables and ~~strikethrough~~.
 const PARSER_OPTIONS: ParserOptions =
@@ -58,6 +61,8 @@ struct State {
     links: Vec<Option<ImageAsLink>>,
     /// For each open image: was it turned into a link?
     images: Vec<bool>,
+    /// How many images are open inside the description of another image: they only add to its text.
+    inner_images: usize,
     tokens: Vec<Token>,
 }
 
@@ -98,7 +103,26 @@ impl State {
 
     /// Keeps the start of a tag unless it is nested too deep; the end follows the start.
     fn start(&mut self, tag: Tag<'_>, options: &Options, out: &mut Vec<Item>) {
+        if matches!(tag, Tag::Image { .. }) && !self.images.is_empty() {
+            self.inner_images += 1;
+            return;
+        }
         let mut dropped = false;
+        let tag = match tag {
+            // The address of `<ana@example.com>` is the address of a mailbox.
+            Tag::Link {
+                link_type: LinkType::Email,
+                dest_url,
+                title,
+                id,
+            } => Tag::Link {
+                link_type: LinkType::Email,
+                dest_url: format!("{MAIL_SCHEME}{dest_url}").into(),
+                title,
+                id,
+            },
+            other => other,
+        };
         let tag = match tag {
             // An image whose address is not allowed becomes a link to that address.
             Tag::Image {
@@ -148,6 +172,10 @@ impl State {
     }
 
     fn end(&mut self, tag: TagEnd, out: &mut Vec<Item>) {
+        if matches!(tag, TagEnd::Image) && self.inner_images > 0 {
+            self.inner_images -= 1;
+            return;
+        }
         let keep = self.kept.pop().unwrap_or(false);
         let tag = match tag {
             TagEnd::Image if self.images.pop() == Some(true) => TagEnd::Link,
@@ -182,7 +210,8 @@ impl State {
     /// Splits a piece of text around its tokens: the token is a `span` the page can find.
     fn with_tokens(&mut self, text: &str, offset: usize, out: &mut Vec<Item>) {
         let mut done = 0;
-        for token in tokens::find(text, offset) {
+        let room = MAX_TOKENS.saturating_sub(self.tokens.len());
+        for token in tokens::find(text, offset, room) {
             let start = token.start - offset;
             let end = token.end - offset;
             if start > done {
@@ -201,5 +230,21 @@ impl State {
         if done < text.len() {
             out.push(Item::Event(Event::Text(text[done..].to_owned().into())));
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// The writer (`html.rs`) and the corpus cover exactly these extensions of Markdown. Switching
+    /// on another one (footnotes, task lists, heading attributes, math, …) makes events the writer
+    /// does not know: add it to the writer and to the corpus first, then to this test.
+    #[test]
+    fn sec_13_the_parser_has_only_the_extensions_the_writer_and_the_corpus_cover() {
+        assert_eq!(
+            PARSER_OPTIONS,
+            ParserOptions::ENABLE_TABLES | ParserOptions::ENABLE_STRIKETHROUGH
+        );
     }
 }

@@ -1,0 +1,64 @@
+# Tests may unwrap and panic; production code may not (coding-standards §3).
+allow-unwrap-in-tests = true
+allow-expect-in-tests = true
+allow-panic-in-tests = true
+allow-print-in-tests = true
+allow-dbg-in-tests = true
+
+# Product names that are not code; ".." keeps Clippy's built-in list.
+doc-valid-idents = [
+  "OpenAPI",
+  "WebAssembly",
+  "PostgreSQL",
+  "SQLite",
+  "TypeScript",
+  "OneDrive",
+  "GitHub",
+  "..",
+]
+
+# ARCH-PURE (architecture section 4, rule 1): this crate is also built for WebAssembly and does no I/O.
+# Clippy reads only the nearest clippy.toml, so the lines above are the root file, repeated; ARCH-PURE
+# checks that they stay the same.
+disallowed-methods = [
+  { path = "std::fs::read", reason = "ARCH-PURE: this crate does no I/O and never reads the file system; the caller passes it in" },
+  { path = "std::fs::read_to_string", reason = "ARCH-PURE: this crate does no I/O and never reads the file system; the caller passes it in" },
+  { path = "std::fs::write", reason = "ARCH-PURE: this crate does no I/O and never reads the file system; the caller passes it in" },
+  { path = "std::fs::read_dir", reason = "ARCH-PURE: this crate does no I/O and never reads the file system; the caller passes it in" },
+  { path = "std::fs::create_dir", reason = "ARCH-PURE: this crate does no I/O and never reads the file system; the caller passes it in" },
+  { path = "std::fs::create_dir_all", reason = "ARCH-PURE: this crate does no I/O and never reads the file system; the caller passes it in" },
+  { path = "std::fs::remove_file", reason = "ARCH-PURE: this crate does no I/O and never reads the file system; the caller passes it in" },
+  { path = "std::fs::remove_dir", reason = "ARCH-PURE: this crate does no I/O and never reads the file system; the caller passes it in" },
+  { path = "std::fs::remove_dir_all", reason = "ARCH-PURE: this crate does no I/O and never reads the file system; the caller passes it in" },
+  { path = "std::fs::rename", reason = "ARCH-PURE: this crate does no I/O and never reads the file system; the caller passes it in" },
+  { path = "std::fs::copy", reason = "ARCH-PURE: this crate does no I/O and never reads the file system; the caller passes it in" },
+  { path = "std::fs::metadata", reason = "ARCH-PURE: this crate does no I/O and never reads the file system; the caller passes it in" },
+  { path = "std::fs::canonicalize", reason = "ARCH-PURE: this crate does no I/O and never reads the file system; the caller passes it in" },
+  { path = "std::path::Path::exists", reason = "ARCH-PURE: this crate does no I/O and never reads the file system; the caller passes it in" },
+  { path = "std::path::Path::is_file", reason = "ARCH-PURE: this crate does no I/O and never reads the file system; the caller passes it in" },
+  { path = "std::path::Path::is_dir", reason = "ARCH-PURE: this crate does no I/O and never reads the file system; the caller passes it in" },
+  { path = "std::env::var", reason = "ARCH-PURE: this crate does no I/O and never reads the environment; the caller passes it in" },
+  { path = "std::env::var_os", reason = "ARCH-PURE: this crate does no I/O and never reads the environment; the caller passes it in" },
+  { path = "std::env::vars", reason = "ARCH-PURE: this crate does no I/O and never reads the environment; the caller passes it in" },
+  { path = "std::env::args", reason = "ARCH-PURE: this crate does no I/O and never reads the environment; the caller passes it in" },
+  { path = "std::env::current_dir", reason = "ARCH-PURE: this crate does no I/O and never reads the environment; the caller passes it in" },
+  { path = "std::process::exit", reason = "ARCH-PURE: this crate does no I/O and never reads the process; the caller passes it in" },
+  { path = "std::thread::spawn", reason = "ARCH-PURE: this crate does no I/O and never reads a thread; the caller passes it in" },
+  { path = "std::thread::sleep", reason = "ARCH-PURE: this crate does no I/O and never reads a thread; the caller passes it in" },
+  { path = "std::time::SystemTime::now", reason = "ARCH-PURE: this crate does no I/O and never reads the clock; the caller passes it in" },
+  { path = "std::time::Instant::now", reason = "ARCH-PURE: this crate does no I/O and never reads the clock; the caller passes it in" },
+  { path = "std::io::stdin", reason = "ARCH-PURE: this crate does no I/O and never reads the keyboard; the caller passes it in" },
+  { path = "std::io::stdout", reason = "ARCH-PURE: this crate does no I/O and never reads the screen; the caller passes it in" },
+  { path = "std::io::stderr", reason = "ARCH-PURE: this crate does no I/O and never reads the screen; the caller passes it in" },
+  { path = "jiff::Timestamp::now", reason = "ARCH-PURE: this crate does no I/O and never reads the clock; the caller passes it in" },
+  { path = "jiff::Zoned::now", reason = "ARCH-PURE: this crate does no I/O and never reads the clock; the caller passes it in" },
+]
+disallowed-types = [
+  { path = "std::fs::File", reason = "ARCH-PURE: this crate does no I/O and never reads the file system; the caller passes it in" },
+  { path = "std::fs::OpenOptions", reason = "ARCH-PURE: this crate does no I/O and never reads the file system; the caller passes it in" },
+  { path = "std::process::Command", reason = "ARCH-PURE: this crate does no I/O and never reads a process; the caller passes it in" },
+  { path = "std::net::TcpStream", reason = "ARCH-PURE: this crate does no I/O and never reads the network; the caller passes it in" },
+  { path = "std::net::TcpListener", reason = "ARCH-PURE: this crate does no I/O and never reads the network; the caller passes it in" },
+  { path = "std::net::UdpSocket", reason = "ARCH-PURE: this crate does no I/O and never reads the network; the caller passes it in" },
+  { path = "std::thread::JoinHandle", reason = "ARCH-PURE: this crate does no I/O and never reads a thread; the caller passes it in" },
+]
