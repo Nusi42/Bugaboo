@@ -157,7 +157,7 @@ async fn perf_03_a_read_asked_about_again_is_not_modified_when_nothing_changed()
             .send(
                 "PUT",
                 path,
-                Some(json!({"enabled": true, "domains": ["example.test"]})),
+                Some(json!({"enabled": true, "domains": ["example.test"], "version": 0})),
             )
             .await?;
         assert_eq!(changed.status, StatusCode::OK);

@@ -270,6 +270,9 @@ pub struct SignUpPolicy {
     pub enabled: bool,
     /// The e-mail domains that may sign up.
     pub domains: Vec<String>,
+    /// Counts up with every change; a change is made on the version that was looked at. `0` until
+    /// the policy is changed the first time.
+    pub version: i64,
 }
 
 /// The most sessions *Where you're signed in* lists.

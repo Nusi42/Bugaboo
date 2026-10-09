@@ -202,6 +202,45 @@ async fn organization_row(
         .transpose()
 }
 
+/// The version of the organization row of a setting, `0` where the row is not there (or was never
+/// counted). Only the sign-up policy has one.
+pub(crate) async fn organization_version(
+    database: &Database,
+    key: &str,
+) -> Result<i64, StoreError> {
+    let key = known(key).map_err(StoreError::SettingRejected)?;
+    let mut select = Query::select();
+    select
+        .column(Columns::Version)
+        .from(Columns::Table)
+        .and_where(Expr::col(Columns::Key).eq(key.as_str()))
+        .and_where(Expr::col(Columns::Level).eq(Level::Organization.code()))
+        .and_where(Expr::col(Columns::Scope).eq(Vec::<u8>::new()));
+    match database.fetch_optional(&select).await? {
+        Some(row) => row.get(Columns::Version),
+        None => Ok(0),
+    }
+}
+
+/// Counts the version of the organization row of a setting up, inside a change; `false` when the
+/// row is not at `version`. The row is there: the change wrote its value first.
+pub(crate) async fn count_organization_version_up(
+    transaction: &mut Transaction,
+    key: &str,
+    version: i64,
+) -> Result<bool, StoreError> {
+    let key = known(key).map_err(StoreError::SettingRejected)?;
+    let mut update = Query::update();
+    update
+        .table(Columns::Table)
+        .value(Columns::Version, Expr::col(Columns::Version).add(1))
+        .and_where(Expr::col(Columns::Key).eq(key.as_str()))
+        .and_where(Expr::col(Columns::Level).eq(Level::Organization.code()))
+        .and_where(Expr::col(Columns::Scope).eq(Vec::<u8>::new()))
+        .and_where(Expr::col(Columns::Version).eq(version));
+    Ok(transaction.execute(&update).await? > 0)
+}
+
 fn read_value(row: &Row) -> Result<StoredValue, StoreError> {
     Ok(StoredValue {
         value: serde_json::from_str(&row.get::<String>(Columns::Value)?)?,

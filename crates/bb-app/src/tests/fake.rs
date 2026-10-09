@@ -77,6 +77,7 @@ pub(crate) struct State {
     pub(crate) assignments: Vec<Assignment>,
     pub(crate) projects: Vec<Project>,
     pub(crate) aliases: Vec<ProjectAlias>,
+    pub(crate) sign_up_version: i64,
     pub(crate) locks: Vec<EditLock>,
     pub(crate) drafts: Vec<Draft>,
     pub(crate) notices: Vec<EditNotice>,

@@ -757,6 +757,18 @@ impl AuthStore for FakeStore {
         Ok(())
     }
 
+    async fn sign_up_policy_version(&self) -> Result<i64, FakeError> {
+        Ok(self.read(|state| state.sign_up_version))
+    }
+
+    async fn count_sign_up_policy_up(tx: &mut Tx, version: i64) -> Result<bool, FakeError> {
+        if tx.state.sign_up_version != version {
+            return Ok(false);
+        }
+        tx.state.sign_up_version += 1;
+        Ok(true)
+    }
+
     async fn put_setting(
         tx: &mut Tx,
         key: &str,

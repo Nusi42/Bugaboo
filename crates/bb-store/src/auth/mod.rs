@@ -32,7 +32,8 @@ use crate::error::StoreError;
 use crate::keys::KeyRing;
 use crate::security_log::NewSecurityLogEntry;
 use crate::settings::{
-    Scopes, put_organization_setting, resolved, resolved_in_bounds, resolved_list,
+    Scopes, count_organization_version_up, organization_version, put_organization_setting,
+    resolved, resolved_in_bounds, resolved_list,
 };
 
 /// The sign-in storage: the database, the keys that protect secrets in it, and the seal of the
@@ -147,6 +148,22 @@ impl AuthStore for AuthStorage {
             .append_security_log(&self.seal, &entry)
             .await
             .map(|_| ())
+    }
+
+    async fn sign_up_policy_version(&self) -> Result<i64, StoreError> {
+        organization_version(&self.database, AUTH_SIGN_UP_ENABLED.definition().key()).await
+    }
+
+    async fn count_sign_up_policy_up(
+        transaction: &mut Transaction,
+        version: i64,
+    ) -> Result<bool, StoreError> {
+        count_organization_version_up(
+            transaction,
+            AUTH_SIGN_UP_ENABLED.definition().key(),
+            version,
+        )
+        .await
     }
 
     async fn put_setting(

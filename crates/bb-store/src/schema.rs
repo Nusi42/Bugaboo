@@ -144,6 +144,7 @@ pub(crate) enum SettingRow {
     Value,
     Locked,
     UpdatedAt,
+    Version,
 }
 
 /// The values of settings that people chose for themselves in *My settings*. Only `settings.rs`
@@ -712,6 +713,7 @@ stored_tables! {
         Value => value,
         Locked => locked,
         UpdatedAt => updated_at,
+        Version => version,
     },
     PersonSettingRow => bb_core::settings::StoredPersonSetting {
         Person => person,

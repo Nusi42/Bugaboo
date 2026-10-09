@@ -22,6 +22,11 @@ import { messageOf } from "../../shared/errors.ts";
 import { queryClient } from "../../shared/query-client.ts";
 import { statusOptions } from "../../shared/session.ts";
 
+/** The rule for signing up, as the server has it now. */
+function policyOptions() {
+  return api.query.queryOptions("get", "/api/v1/auth/sign-up-policy");
+}
+
 /** The domains as the administrator typed them: one per line, or separated by commas or spaces. */
 function domainsOf(text: string): string[] {
   return text
@@ -37,12 +42,13 @@ function PolicyForm({ policy }: { readonly policy: Schema<"SignUpPolicyBody"> })
   const save = api.query.useMutation("put", "/api/v1/auth/sign-up-policy", {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: statusOptions().queryKey });
+      void queryClient.invalidateQueries({ queryKey: policyOptions().queryKey });
     },
   });
   const domains = domainsOf(text);
   const everybody = enabled && domains.length === 0;
   const send = (): void => {
-    save.mutate({ body: { enabled, domains } });
+    save.mutate({ body: { enabled, domains, version: policy.version } });
   };
   return (
     <Form onSubmit={send}>
@@ -78,7 +84,7 @@ function PolicyForm({ policy }: { readonly policy: Schema<"SignUpPolicyBody"> })
 
 /** *Signing up without an invitation*: who may make their own account. */
 export function SignUpPolicySection() {
-  const policy = useQuery(api.query.queryOptions("get", "/api/v1/auth/sign-up-policy"));
+  const policy = useQuery(policyOptions());
   return (
     <Card heading={t("sign-up-policy.title")}>
       <p {...partOf(part.text)}>{t("sign-up-policy.intro")}</p>

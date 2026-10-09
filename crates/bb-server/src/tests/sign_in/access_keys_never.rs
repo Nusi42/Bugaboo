@@ -49,6 +49,7 @@ async fn settings_of_the_organization(rig: &Rig, credential: &str) -> Result<(),
                 policy: SignUpPolicy {
                     enabled: true,
                     domains: Vec::new(),
+                    version: 0,
                 },
             },
         )

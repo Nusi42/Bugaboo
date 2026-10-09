@@ -875,18 +875,21 @@ async fn sign_up(tour: &mut Tour) -> TestResult {
             None,
         )
         .await?;
-    assert_eq!(reply.body, json!({"enabled": false, "domains": []}));
+    assert_eq!(
+        reply.body,
+        json!({"enabled": false, "domains": [], "version": 0})
+    );
     let reply = ada
         .route(
             "PUT",
             "/api/v1/auth/sign-up-policy",
             &format!("{api}/sign-up-policy"),
-            Some(json!({"enabled": true, "domains": ["example.test"]})),
+            Some(json!({"enabled": true, "domains": ["example.test"], "version": 0})),
         )
         .await?;
     assert_eq!(
         reply.body,
-        json!({"enabled": true, "domains": ["example.test"]})
+        json!({"enabled": true, "domains": ["example.test"], "version": 1})
     );
     let mut eve = Browser::new(app, used);
     let reply = eve

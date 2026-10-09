@@ -503,6 +503,10 @@ pub struct StoredSetting {
     /// When it was last changed.
     #[not_personal]
     pub updated_at: jiff::Timestamp,
+    /// Counts up with every change of the sign-up policy, which is written to two rows and takes
+    /// the version of the row `auth.sign-up-enabled`. `0` on every other row (M3-F31).
+    #[not_personal]
+    pub version: i64,
 }
 
 /// One value of a setting that a person chose for themselves in *My settings* (CFG-04). It is the

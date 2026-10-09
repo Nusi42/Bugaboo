@@ -9,7 +9,9 @@ use bb_core::version::FIRST_VERSION;
 use sea_query::{ColumnDef, ForeignKey, Index, Table};
 
 use super::Step;
-use crate::schema::{EditDraftRow, EditLockRow, EditNoticeRow, GroupRow, PersonRow, RoleRow};
+use crate::schema::{
+    EditDraftRow, EditLockRow, EditNoticeRow, GroupRow, PersonRow, RoleRow, SettingRow,
+};
 
 pub(super) fn steps() -> Vec<Step> {
     let mut steps = locks();
@@ -42,6 +44,19 @@ fn versions() -> Vec<Step> {
                         .big_integer()
                         .not_null()
                         .default(FIRST_VERSION),
+                )
+                .to_owned(),
+        ),
+        // The sign-up policy is two rows with one version (the version of one of them); a row
+        // that was never counted has 0.
+        Step::Alter(
+            Table::alter()
+                .table(SettingRow::Table)
+                .add_column(
+                    ColumnDef::new(SettingRow::Version)
+                        .big_integer()
+                        .not_null()
+                        .default(0),
                 )
                 .to_owned(),
         ),

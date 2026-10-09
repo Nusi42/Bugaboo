@@ -8,6 +8,7 @@ use bb_core::id::InvitationId;
 use bb_core::paging::{Cut, page_len, read_len, read_time_cursor, write_time_cursor};
 use bb_core::settings::{AUTH_SIGN_UP_DOMAINS, AUTH_SIGN_UP_ENABLED, SettingValue};
 use bb_core::sign_in::{Invitation, SecurityAction};
+use bb_core::version::counted_up;
 use bb_policy::{Authorized, Permission, Place};
 use jiff::Timestamp;
 use serde_json::json;
@@ -23,6 +24,7 @@ use super::types::{
     SignUpPolicy, SignUpPolicyQuery,
 };
 use crate::input::cursor_or_invalid;
+use crate::projects::Why;
 
 fn view(invitation: &Invitation) -> InvitationView {
     InvitationView {
@@ -202,7 +204,34 @@ pub async fn sign_up_policy<S: AuthStore>(
     Ok(access.authorize(SignUpPolicy {
         enabled: settings.sign_up_enabled,
         domains: listed_domains(&settings.sign_up_domains).collect(),
+        version: ctx
+            .store()
+            .sign_up_policy_version()
+            .await
+            .map_err(|error| internal::<S>(&error))?,
     }))
+}
+
+/// The domains of a sign-up policy as a list without doubles; a domain that cannot be one is
+/// `request.invalid`.
+fn checked_domains(items: &[String]) -> Result<Vec<String>, AppError> {
+    let mut domains: Vec<String> = Vec::new();
+    for domain in items.iter().flat_map(|item| listed_domains(item)) {
+        let plain = domain.contains('.')
+            && !domain.starts_with('.')
+            && !domain.ends_with('.')
+            && !domain.contains("..")
+            && !domain
+                .chars()
+                .any(|c| c.is_whitespace() || c.is_control() || c == '@');
+        if !plain {
+            return Err(ErrorCode::InvalidRequest.into());
+        }
+        if !domains.contains(&domain) {
+            domains.push(domain);
+        }
+    }
+    Ok(domains)
 }
 
 /// Changes who may sign up on their own. An empty list of domains lets every address sign up
@@ -223,30 +252,25 @@ pub async fn change_sign_up_policy<S: AuthStore>(
             Place::Organization,
         )
         .await?;
-    let mut domains: Vec<String> = Vec::new();
-    for domain in input
-        .policy
-        .domains
-        .iter()
-        .flat_map(|item| listed_domains(item))
-    {
-        let plain = domain.contains('.')
-            && !domain.starts_with('.')
-            && !domain.ends_with('.')
-            && !domain.contains("..")
-            && !domain
-                .chars()
-                .any(|c| c.is_whitespace() || c.is_control() || c == '@');
-        if !plain {
-            return Err(ErrorCode::InvalidRequest.into());
-        }
-        if !domains.contains(&domain) {
-            domains.push(domain);
-        }
+    let domains = checked_domains(&input.policy.domains)?;
+    let record = fixed_entity(RecordKind::Setting, "auth.sign-up-policy")?;
+    let version = input.policy.version;
+    let current = ctx
+        .store()
+        .sign_up_policy_version()
+        .await
+        .map_err(|error| internal::<S>(&error))?;
+    if current != version {
+        return Err(AppError::stale(
+            record,
+            Place::Organization,
+            actor.person.id,
+        ));
     }
     let policy = SignUpPolicy {
         enabled: input.policy.enabled,
         domains,
+        version: version + 1,
     };
     let list = policy.domains.join(",");
     // The registry says how long the list and its items may be (one place for the numbers).
@@ -255,13 +279,16 @@ pub async fn change_sign_up_policy<S: AuthStore>(
     }
     let event = ctx.event(
         by(actor.person.id),
-        fixed_entity(RecordKind::Setting, "auth.sign-up-policy")?,
+        record.clone(),
         vec![
             set_to("auth_sign_up_enabled", json!(policy.enabled)),
             set_to("auth_sign_up_domains", json!(list)),
+            counted_up(version),
         ],
     )?;
     let (store, enabled, now) = (ctx.store(), policy.enabled, ctx.now());
+    let why = Why::default();
+    let stopped = why.clone();
     store
         .record_change(&event, move |transaction| {
             Box::pin(async move {
@@ -278,11 +305,23 @@ pub async fn change_sign_up_policy<S: AuthStore>(
                     &SettingValue::Text(list),
                     now,
                 )
-                .await
+                .await?;
+                // Somebody changed the policy between the check above and this change.
+                if S::count_sign_up_policy_up(transaction, version).await? {
+                    Ok(())
+                } else {
+                    Err(stopped.stop::<S>(ErrorCode::VersionChanged))
+                }
             })
         })
         .await
-        .map_err(|error| change_failed::<S>(&error, Stops::NONE))?;
+        .map_err(|error| {
+            why.answer::<S>(&error, ErrorCode::InvalidRequest).about(
+                &record,
+                Place::Organization,
+                actor.person.id,
+            )
+        })?;
     ctx.note(
         SecurityAction::SignUpPolicyChanged,
         Some(actor.person.id),

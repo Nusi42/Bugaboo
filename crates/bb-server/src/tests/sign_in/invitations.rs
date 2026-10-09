@@ -1,6 +1,7 @@
 //! Invitations and signing up on one's own (AUTH-06).
 
 use bb_app::access::Authorized;
+use bb_app::auth::AuthStore as _;
 use bb_app::auth::InvitationStore as _;
 use bb_app::auth::{
     AcceptInvitation, ChangeSignUpPolicy, CreateInvitation, InvitationLookupQuery,
@@ -339,6 +340,11 @@ async fn change_policy(
     enabled: bool,
     domains: &[&str],
 ) -> Result<SignUpPolicy, bb_app::auth::AppError> {
+    let version = rig
+        .storage
+        .sign_up_policy_version()
+        .await
+        .map_err(|error| bb_app::auth::AppError::Internal(error.to_string()))?;
     rig.api()
         .change_sign_up_policy(
             Rig::info(),
@@ -347,6 +353,7 @@ async fn change_policy(
                 policy: SignUpPolicy {
                     enabled,
                     domains: domains.iter().map(|domain| (*domain).to_owned()).collect(),
+                    version,
                 },
             },
         )
@@ -374,7 +381,8 @@ async fn auth_06_signing_up_is_off_by_default_and_only_administrators_change_the
             policy(&rig, &admin.session_token).await?,
             SignUpPolicy {
                 enabled: false,
-                domains: vec![]
+                domains: vec![],
+                version: 0
             }
         );
         let bob = rig.person(&admin.session_token, "bob@example.test").await?;
