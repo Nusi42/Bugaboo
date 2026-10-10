@@ -86,6 +86,15 @@ async fn perf_03_every_get_answers_an_etag_and_304_on_a_match() -> TestResult {
                 .to_owned(),
         );
         let issue_key = an_issue_in_example(&mut ada).await?;
+        let written = ada
+            .send(
+                "POST",
+                &format!("/api/v1/issues/{issue_key}/comments"),
+                Some(json!({"text": "A comment to read the versions of."})),
+            )
+            .await?;
+        assert_eq!(written.status, StatusCode::OK);
+        let comment_id = written.body["id"].as_str().ok_or("no comment")?.to_owned();
         let routes = get_routes();
         assert!(routes.len() >= 9, "{routes:?}");
         let (mut kept, mut never_stored) = (0, 0);
@@ -104,6 +113,7 @@ async fn perf_03_every_get_answers_an_etag_and_304_on_a_match() -> TestResult {
                 .replace("{person_id}", &person_id)
                 .replace("{person}", &person_id)
                 .replace("{issue}", &issue_key)
+                .replace("{comment}", &comment_id)
                 .replace("{project}", project);
             // The draft route is about a record named in the query: the example project.
             let filled = if template == "/api/v1/drafts" {
