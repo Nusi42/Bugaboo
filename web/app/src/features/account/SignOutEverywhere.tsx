@@ -5,14 +5,14 @@ import { useNavigate } from "@tanstack/react-router";
 import { api } from "../../shared/api.ts";
 import { messageOf } from "../../shared/errors.ts";
 import { paths } from "../../shared/paths.ts";
-import { leaveSession } from "../../shared/session.ts";
+import { signOutOnPurpose } from "../../shared/session.ts";
 
 /** *Sign out everywhere*: every session of the person ends, this one included. */
 export function SignOutEverywhere() {
   const navigate = useNavigate();
   const everywhere = api.query.useMutation("delete", "/api/v1/auth/sessions", {
     onSuccess: () =>
-      leaveSession(() => navigate({ to: paths.signIn, search: { reason: "signed-out" } })),
+      signOutOnPurpose(() => navigate({ to: paths.signIn, search: { reason: "signed-out" } })),
   });
   return (
     <>

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { newerThan } from "./version-watch.ts";
+import { checkedJustNow, newerThan } from "./version-watch.ts";
 
 const issue = { kind: "issue", id: "i1" };
 const other = { kind: "issue", id: "i2" };
@@ -29,5 +29,13 @@ describe("adr_0019 what somebody else changed since the screen looked", () => {
     const watched = [{ record: issue, version: 3 }];
     expect(newerThan(watched, [{ record: issue, version: 3 }])).toEqual([]);
     expect(newerThan(watched, [{ record: issue, version: 2 }])).toEqual([]);
+  });
+});
+
+describe("adr_0019 coming back to a tab sends one request", () => {
+  it("answers the events of one return with the first check", () => {
+    expect(checkedJustNow(Number.NEGATIVE_INFINITY, 5000)).toBe(false);
+    expect(checkedJustNow(5000, 5200)).toBe(true);
+    expect(checkedJustNow(5000, 6500)).toBe(false);
   });
 });

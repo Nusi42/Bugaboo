@@ -42,14 +42,17 @@ export function useNewIssueDraft(project: string | undefined): NewIssueDraft {
   const forget = (): void => {
     later.cancel();
     if (target !== undefined) {
-      forgetBrowserDraft(person, target);
+      if (person !== "") {
+        forgetBrowserDraft(person, target);
+      }
       void throwAwayDraft(api.client, target).catch(() => null);
     }
   };
   return {
     found: found.data ?? null,
     keep: (values) => {
-      if (target === undefined) {
+      // Nothing is filed under nobody: the draft waits until the page knows who is signed in.
+      if (target === undefined || person === "") {
         return;
       }
       if (!hasWriting(values)) {

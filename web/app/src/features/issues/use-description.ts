@@ -5,7 +5,6 @@ import { api } from "../../shared/api.ts";
 import { useLongText, type LongText } from "../../shared/editing/index.ts";
 import { queryClient } from "../../shared/query-client.ts";
 import { queryKeys } from "../../shared/query-keys.ts";
-import { useMe } from "../../shared/use-me.ts";
 import type { IssueView } from "./slots.ts";
 
 /** The description of an issue as a long text being edited, and when it was last saved. */
@@ -20,7 +19,6 @@ export interface Description extends LongText {
  * started from, and the page reads the issue again afterwards.
  */
 export function useDescription(issue: IssueView, address: string): Description {
-  const me = useMe();
   const [savedAt, setSavedAt] = useState<string | null>(null);
   const id = issue.id ?? address;
   const save = useCallback(
@@ -47,7 +45,6 @@ export function useDescription(issue: IssueView, address: string): Description {
     kind: "issue",
     id,
     part: "description",
-    person: me?.id ?? "",
     saved: issue.description ?? "",
     version: issue.version ?? 1,
     save,

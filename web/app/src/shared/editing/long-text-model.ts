@@ -62,6 +62,8 @@ export interface Editing {
 /** What the controller needs from outside. */
 export interface LongTextDeps {
   readonly take: (editorId: string) => Promise<LockOutcome>;
+  /** Who is editing now, without taking the lock; `null` when nobody is. */
+  readonly peek: () => Promise<HeldBySomebody | null>;
   readonly editAnyway: (editorId: string) => Promise<LockOutcome>;
   readonly askToFinish: () => Promise<void>;
   readonly heartbeat: (

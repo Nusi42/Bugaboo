@@ -1,6 +1,7 @@
 import type { Schema } from "@bugaboo/api-client";
 
 import { api } from "./api.ts";
+import { forgetBrowserDrafts } from "./editing/browser-drafts.ts";
 import { codeOf } from "./errors.ts";
 import { forgetPersonalChoices } from "./personal-sources.ts";
 import { queryClient } from "./query-client.ts";
@@ -53,6 +54,11 @@ export async function currentPerson(): Promise<Person | null> {
   }
 }
 
+/** The ID of the person who is signed in as the app knows it now; empty until the app knows. */
+export function signedInPersonId(): string {
+  return queryClient.getQueryData<Person>(meOptions().queryKey)?.id ?? "";
+}
+
 /**
  * Forgets who was known, after somebody signed in: the next page asks the server who it is and
  * what that person may do (the answer of signing in holds neither the permissions nor anything the
@@ -77,4 +83,14 @@ export async function leaveSession(go: () => Promise<void>): Promise<void> {
   // A change of the settings in the cache while the page was changing writes the copy for the
   // first frame again: forget it once more, now that nothing can write it.
   forgetPersonalChoices();
+}
+
+/**
+ * Signs out on purpose (the person pressed *Sign out*): like {@link leaveSession}, and the texts
+ * the browser kept as drafts go too, so the next person at this device finds none. A session that
+ * is lost by itself keeps them: the same person finds them again after signing in.
+ */
+export async function signOutOnPurpose(go: () => Promise<void>): Promise<void> {
+  forgetBrowserDrafts();
+  await leaveSession(go);
 }

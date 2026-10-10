@@ -127,8 +127,5 @@ test("iss_01 a Guest sees a role or Someone where names are not for them", async
     page.getByText(t("projects.person-role", { role: roleName.administrator })),
   ).toBeVisible();
   await page.getByRole("button", { name: t("issues.description.edit"), exact: true }).click();
-  await page
-    .getByRole("textbox", { name: t("issue-field.description"), exact: true })
-    .fill("My words");
   await expect(page.getByText(/^Someone is editing the description/u)).toBeVisible();
 });

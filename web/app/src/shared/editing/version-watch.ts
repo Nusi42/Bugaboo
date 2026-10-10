@@ -25,3 +25,11 @@ export function newerThan(watched: readonly Watched[], found: readonly Found[]):
       : [];
   });
 }
+
+/** Coming back to a tab fires several events together; one check answers all of them. */
+const ONE_CHECK_WITHIN_MS = 1000;
+
+/** Whether the last check was so near `now` (both in milliseconds) that another one is not needed. */
+export function checkedJustNow(lastCheck: number, now: number): boolean {
+  return now - lastCheck < ONE_CHECK_WITHIN_MS;
+}

@@ -149,6 +149,14 @@ export async function issueOf(session: ApiSession, key: string): Promise<MadeIss
   return { id, key };
 }
 
+/** The version an issue has now. */
+export async function versionOf(session: ApiSession, issue: MadeIssue): Promise<number> {
+  const found = dataOf(
+    await session.client.GET("/api/v1/issues/{issue}", { params: { path: { issue: issue.key } } }),
+  );
+  return found.issue.version ?? 1;
+}
+
 /** Makes a project and one issue in it; the issue. */
 export async function makeProjectWithIssue(
   admin: ApiSession,

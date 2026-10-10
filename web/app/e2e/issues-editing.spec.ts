@@ -6,7 +6,8 @@ import { signedInAdmin } from "./support/access.ts";
 import { expectGoodInEveryLook } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { anotherBrowser, signIn } from "./support/flows.ts";
-import { issueOf, prepareWeb } from "./support/issues.ts";
+import { issueOf, prepareWeb, versionOf } from "./support/issues.ts";
+import { holdBackLocks } from "./support/slow.ts";
 import { issueAddress } from "../src/shared/paths.ts";
 
 // Editing the description of an issue under its lock, and changing short values that somebody
@@ -21,10 +22,15 @@ function descriptionBox(page: Page) {
   return page.getByRole("textbox", { name: t("issue-field.description"), exact: true });
 }
 
-/** Opens the box for the description of an issue. */
-async function startEditing(page: Page, key: string): Promise<void> {
+/** Opens the description of an issue for editing; the box is there unless somebody else edits. */
+async function openEditing(page: Page, key: string): Promise<void> {
   await page.goto(issueAddress(key));
   await page.getByRole("button", { name: t("issues.description.edit"), exact: true }).click();
+}
+
+/** Opens the box for the description of an issue. */
+async function startEditing(page: Page, key: string): Promise<void> {
+  await openEditing(page, key);
   await expect(descriptionBox(page)).toBeVisible();
 }
 
@@ -52,14 +58,15 @@ test("iss_17 Ana types, Ben sees who is editing and uses Edit anyway, Ana's text
   await descriptionBox(ana).fill("Ana's text about the passkey");
   // Ben (an administrator) opens the same description and starts to type.
   await signIn(page, ada);
-  await startEditing(page, "WEB-2");
-  await descriptionBox(page).fill("Ben's text");
+  // Ben is told who is editing when the box opens, before he types a key.
+  await openEditing(page, "WEB-2");
   await expect(
     page.getByText(new RegExp(`^${bob.name} is editing the description`, "u")),
   ).toBeVisible();
+  await expect(descriptionBox(page)).toHaveCount(0);
   await expectGoodInEveryLook(page);
   await page.getByRole("button", { name: t("issues.edit-anyway"), exact: true }).click();
-  await expect(descriptionBox(page)).toHaveValue("Ben's text");
+  await descriptionBox(page).fill("Ben's text");
   await page.getByRole("button", { name: t("common.save"), exact: true }).click();
   await expect(page.getByText("Ben's text")).toBeVisible();
   // Ana saves: her time is over, her text is still in her box, and she can compare and save.
@@ -83,8 +90,7 @@ test("iss_17 Ben asks Ana to finish and Ana is told at her next heartbeat", asyn
   await startEditing(ana, "WEB-3");
   await descriptionBox(ana).fill("Ana is writing");
   await signIn(page, ada);
-  await startEditing(page, "WEB-3");
-  await descriptionBox(page).fill("Ben wants in");
+  await openEditing(page, "WEB-3");
   await page
     .getByRole("button", { name: t("issues.ask-to-finish", { name: bob.name }), exact: true })
     .click();
@@ -92,6 +98,21 @@ test("iss_17 Ben asks Ana to finish and Ana is told at her next heartbeat", asyn
   await expect(ana.getByText(t("issues.asked-to-finish", { name: ada.name }))).toBeVisible({
     timeout: 30_000,
   });
+});
+
+test("iss_17 every key typed while the lock is still being asked for is kept", async ({ page }) => {
+  await signIn(page, ada);
+  await holdBackLocks(page, 1500);
+  await page.goto(issueAddress("WEB-1"));
+  await page.getByRole("button", { name: t("issues.description.edit"), exact: true }).click();
+  // The first key replaces the text that is there, so the lock request is still on its way for the rest.
+  await descriptionBox(page).press("ControlOrMeta+a");
+  await descriptionBox(page).pressSequentially("Typed key by key", { delay: 120 });
+  await expect(descriptionBox(page)).toHaveValue("Typed key by key");
+  await page.getByRole("button", { name: t("common.save"), exact: true }).click();
+  await expect(page.getByText(/^Saved/u).first()).toBeVisible();
+  await page.reload();
+  await expect(page.getByText("Typed key by key")).toBeVisible();
 });
 
 test("adr_0019 a short value that somebody changed first shows Keep their value or Use mine", async ({
@@ -106,7 +127,7 @@ test("adr_0019 a short value that somebody changed first shows Keep their value 
   // Somebody else changes the priority while the page is open.
   await admin.client.PATCH("/api/v1/issues/{issue}", {
     params: { path: { issue: login.key } },
-    body: { version: 1, priority: "critical" },
+    body: { version: await versionOf(admin, login), priority: "critical" },
   });
   await page.getByLabel(t("issue-field.priority"), { exact: true }).selectOption({
     label: t("priority.low"),

@@ -2,6 +2,7 @@ import {
   askToFinish,
   editAnyway,
   readDraft,
+  readEditLock,
   releaseEditLock,
   sendHeartbeat,
   startHeartbeats,
@@ -14,6 +15,7 @@ import {
 import { useEffect, useState, useSyncExternalStore } from "react";
 
 import { api } from "../api.ts";
+import { signedInPersonId } from "../session.ts";
 import { forgetBrowserDraft, readBrowserDraft, writeBrowserDraft } from "./browser-drafts.ts";
 import { LongTextEditor } from "./long-text.ts";
 import type { Editing, LongTextDeps } from "./long-text-model.ts";
@@ -26,8 +28,6 @@ export interface LongTextOptions {
   readonly id: string;
   /** Which long text of the record, like `description`. */
   readonly part: string;
-  /** The person who edits: drafts in the browser are kept by person. */
-  readonly person: string;
   /** The text as saved now. */
   readonly saved: string;
   /** The version of the record now. */
@@ -46,12 +46,13 @@ type Which = Omit<LongTextOptions, "saved" | "version">;
 
 /** The calls of one long text, with the real client behind them. */
 function depsOf(which: Which): LongTextDeps {
-  const { kind, id, part, person } = which;
+  const { kind, id, part } = which;
   const what = (): EditWhat => ({ record: { kind, id }, part });
   const target = (): DraftTarget => ({ kind, id, part });
   const client = api.client;
   return {
     take: (editor) => takeEditLock(client, what(), editor),
+    peek: () => readEditLock(client, what()),
     editAnyway: (editor) => editAnyway(client, what(), editor),
     askToFinish: () => askToFinish(client, what()),
     heartbeat: (token, draft) => sendHeartbeat(client, what(), token, draft),
@@ -65,13 +66,20 @@ function depsOf(which: Which): LongTextDeps {
         : { text: found.text, savedAt: found.saved_at, baseVersion: found.base_version ?? null };
     },
     throwAwayServerDraft: () => throwAwayDraft(client, target()),
+    // A draft is kept by person, who is asked when the draft is read or written: before the app
+    // knows who is signed in, none is read or written.
     browserDraft: {
-      read: () => readBrowserDraft(person, target()),
+      read: () =>
+        signedInPersonId() === "" ? null : readBrowserDraft(signedInPersonId(), target()),
       write: (text, baseVersion) => {
-        writeBrowserDraft(person, target(), { text, baseVersion });
+        if (signedInPersonId() !== "") {
+          writeBrowserDraft(signedInPersonId(), target(), { text, baseVersion });
+        }
       },
       forget: () => {
-        forgetBrowserDraft(person, target());
+        if (signedInPersonId() !== "") {
+          forgetBrowserDraft(signedInPersonId(), target());
+        }
       },
     },
     startHeartbeats,
@@ -99,9 +107,13 @@ export interface LongText extends Editing {
  * path is tested without a browser (`long-text.ts`); this puts it on a screen.
  */
 export function useLongText(options: LongTextOptions): LongText {
-  const { kind, id, part, person, save, refresh, saved, version } = options;
+  const { kind, id, part, save, refresh, saved, version } = options;
   const [editor] = useState(
-    () => new LongTextEditor(depsOf({ kind, id, part, person, save, refresh }), { saved, version }),
+    () =>
+      new LongTextEditor(depsOf({ kind, id, part, save, refresh }), {
+        saved,
+        version,
+      }),
   );
   const state = useSyncExternalStore(editor.subscribe, editor.snapshot);
   useEffect(() => {

@@ -2,7 +2,6 @@ import type { SafeHtml } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 import { Button, buttonLook, MarkdownEditor, MarkdownView, partOf, part } from "@bugaboo/ui";
 
-import { doNothing } from "../../shared/do-nothing.ts";
 import { useImageHosts } from "../../shared/image-hosts.ts";
 import { markdownLabels } from "../../shared/markdown-labels.ts";
 import type { Description } from "./use-description.ts";
@@ -12,7 +11,6 @@ export function DescriptionEditor({ description }: { readonly description: Descr
   const hosts = useImageHosts();
   const { phase } = description;
   const saving = phase.kind === "saving";
-  const waiting = phase.kind === "taking" || saving;
   const held = phase.kind === "held";
   const cannotSave = held || phase.kind === "lost";
   return (
@@ -22,7 +20,9 @@ export function DescriptionEditor({ description }: { readonly description: Descr
           label={t("issue-field.description")}
           labels={markdownLabels()}
           value={description.text}
-          onChange={waiting ? doNothing : description.type}
+          // Every key counts while the lock is being taken; only a save in flight takes none.
+          onChange={description.type}
+          busy={saving}
           imageHosts={hosts}
         />
       )}

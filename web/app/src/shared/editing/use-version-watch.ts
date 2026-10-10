@@ -1,11 +1,11 @@
 import { versionsOf, watchSeconds } from "@bugaboo/api-client";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 import { api } from "../api.ts";
-import { newerThan, type Found, type Watched } from "./version-watch.ts";
+import { checkedJustNow, newerThan, type Found, type Watched } from "./version-watch.ts";
 
-/** The events after which the screen asks at once: the person comes back to the tab. */
-const comingBack = ["visibilitychange", "focus", "online"] as const;
+/** The events of the window after which the screen asks at once: the person comes back. */
+const comingBack = ["focus", "online"] as const;
 
 /**
  * Until live updates arrive (ISS-14), the records on the screen are checked every 30 seconds and
@@ -16,11 +16,21 @@ export function useVersionWatch(
   watched: readonly Watched[],
   onNewer: (newer: readonly Watched[]) => void,
 ): void {
+  // The newest function is called; a new one does not restart the timer or the listeners.
+  const told = useRef(onNewer);
   useEffect(() => {
+    told.current = onNewer;
+  }, [onNewer]);
+  useEffect(() => {
+    let lastCheck = Number.NEGATIVE_INFINITY;
     const check = (): void => {
       if (watched.length === 0 || document.visibilityState === "hidden") {
         return;
       }
+      if (checkedJustNow(lastCheck, Date.now())) {
+        return;
+      }
+      lastCheck = Date.now();
       void versionsOf(
         api.client,
         watched.map((one) => one.record),
@@ -28,7 +38,7 @@ export function useVersionWatch(
         (found: readonly Found[]) => {
           const newer = newerThan(watched, found);
           if (newer.length > 0) {
-            onNewer(newer);
+            told.current(newer);
           }
         },
         () => {
@@ -50,5 +60,5 @@ export function useVersionWatch(
       }
       document.removeEventListener("visibilitychange", check);
     };
-  }, [watched, onNewer]);
+  }, [watched]);
 }

@@ -3,7 +3,7 @@
 import { ApiError, type ErrorCode, type Heartbeat, type LockOutcome } from "@bugaboo/api-client";
 
 import { LongTextEditor } from "./long-text.ts";
-import type { LongTextDeps } from "./long-text-model.ts";
+import type { HeldBySomebody, LongTextDeps } from "./long-text-model.ts";
 
 export const ben = { shown: "name", id: "u2", name: "Ben" } as const;
 
@@ -66,6 +66,31 @@ export function refusedOnce(
   };
 }
 
+/** What a lock held by Ben looks like to the box that asks who is editing. */
+export const holding: HeldBySomebody = {
+  holder: ben,
+  since: "2026-10-10T09:58:00Z",
+  yours_elsewhere: false,
+  can_edit_anyway: true,
+};
+
+/** A promise whose answer the test gives later. */
+export function deferred<Value>(): {
+  readonly promise: Promise<Value>;
+  readonly resolve: (value: Value) => void;
+} {
+  let resolve: (value: Value) => void = ignoreAnswer;
+  const promise = new Promise<Value>((done) => {
+    resolve = done;
+  });
+  return { promise, resolve };
+}
+
+/** The answer to nobody, until a promise gives the real one. */
+function ignoreAnswer(): void {
+  // Replaced at once by the resolver of the promise.
+}
+
 /** Lets the promises that were started finish. */
 export function settle(): Promise<void> {
   return new Promise<void>((done) => {
@@ -94,6 +119,7 @@ export class Seen {
         this.log.push(`take ${editor}`);
         return Promise.resolve(taken("t1"));
       },
+      peek: () => Promise.resolve(null),
       editAnyway: () => {
         this.log.push("edit-anyway");
         return Promise.resolve(taken("t2"));

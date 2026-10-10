@@ -1,14 +1,8 @@
 import { conflictOf, type LockOutcome } from "@bugaboo/api-client";
 
 import { codeOf } from "../errors.ts";
-import {
-  lostReasonOf,
-  newestDraft,
-  startingState,
-  type Editing,
-  type LongTextDeps,
-  type Phase,
-} from "./long-text-model.ts";
+import { lostReasonOf, newestDraft, startingState, type LongTextDeps } from "./long-text-model.ts";
+import { EditingStore } from "./long-text-store.ts";
 
 export type * from "./long-text-model.ts";
 
@@ -19,42 +13,16 @@ export type * from "./long-text-model.ts";
  * so every path can be tested without a browser; `useLongText` puts it on a screen.
  */
 
-type Listener = () => void;
-
 /** The controller of one long text of one record. */
-export class LongTextEditor {
-  private state: Editing;
-  private readonly listeners = new Set<Listener>();
-  private token: string | null = null;
-  private stopBeats: (() => void) | null = null;
+export class LongTextEditor extends EditingStore {
   private baseVersion: number;
   private readonly editor: string;
   private saveWhenLocked = false;
 
-  private readonly deps: LongTextDeps;
-
   constructor(deps: LongTextDeps, source: { readonly saved: string; readonly version: number }) {
-    this.deps = deps;
+    super(deps, source);
     this.baseVersion = source.version;
     this.editor = deps.newEditorId();
-    this.state = startingState(source);
-  }
-
-  /** The state now: a new object whenever something changed. */
-  readonly snapshot = (): Editing => this.state;
-
-  readonly subscribe = (listener: Listener): (() => void) => {
-    this.listeners.add(listener);
-    return () => {
-      this.listeners.delete(listener);
-    };
-  };
-
-  private set(change: Partial<Editing>): void {
-    this.state = { ...this.state, ...change };
-    for (const listener of this.listeners) {
-      listener();
-    }
   }
 
   /** The record was read again: the text and version now. A box that is not open follows it. */
@@ -78,6 +46,38 @@ export class LongTextEditor {
     this.baseVersion = this.state.version;
     this.set({ ...startingState(this.state), phase: { kind: "open" } });
     void this.findDraft();
+    void this.findHolder();
+  };
+
+  /**
+   * Asks who is editing when the box opens, so a person who comes second is told before the first
+   * key (UX §6). While somebody is, the question is asked again at each beat: when they let go,
+   * the box opens.
+   */
+  private async findHolder(): Promise<void> {
+    const holder = await this.deps.peek().catch(() => null);
+    // Only while nothing was typed: a person who started writing meets the lock when it is taken.
+    if (
+      holder !== null &&
+      this.state.phase.kind === "open" &&
+      this.state.text === this.state.saved
+    ) {
+      this.set({ phase: { kind: "held", lock: holder } });
+      this.stopBeats ??= this.deps.startHeartbeats(this.watchHolder);
+    }
+  }
+
+  private readonly watchHolder = async (): Promise<void> => {
+    if (this.state.phase.kind !== "held") {
+      return;
+    }
+    const holder = await this.deps.peek();
+    if (holder === null) {
+      this.stopHeartbeats();
+      this.set({ phase: { kind: "open" } });
+    } else {
+      this.set({ phase: { kind: "held", lock: holder } });
+    }
   };
 
   private async findDraft(): Promise<void> {
@@ -138,7 +138,9 @@ export class LongTextEditor {
     }
     this.token = outcome.lock_token;
     this.set({ phase: { kind: "locked" } });
-    this.stopBeats ??= this.deps.startHeartbeats(this.beat);
+    // Whatever timer ran (watching a holder) gives way to the beat of the lock.
+    this.stopHeartbeats();
+    this.stopBeats = this.deps.startHeartbeats(this.beat);
     if (this.saveWhenLocked) {
       this.saveWhenLocked = false;
       void this.save();
@@ -166,23 +168,20 @@ export class LongTextEditor {
       this.stopHeartbeats();
       this.token = null;
       this.set({ phase: { kind: "taking" } });
-      this.arrive(await this.deps.take(this.editor));
+      try {
+        this.arrive(await this.deps.take(this.editor));
+      } catch (problem) {
+        // The lock could not be asked for: the text stays in the box, and *Compare and save*
+        // takes the lock again.
+        this.set({ phase: { kind: "lost", reason: "ran-out" }, problem });
+        return;
+      }
       const now = this.phaseNow();
       if (now.kind === "held") {
         this.set({ phase: { kind: "lost", reason: "ran-out", by: now.lock.holder } });
       }
     }
   };
-
-  /** The phase as it is now, for code that has awaited. */
-  private phaseNow(): Phase {
-    return this.state.phase;
-  }
-
-  private stopHeartbeats(): void {
-    this.stopBeats?.();
-    this.stopBeats = null;
-  }
 
   /** Saves the text. Without a lock it takes one first (after *Compare and save*). */
   readonly save = async (): Promise<void> => {
