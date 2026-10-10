@@ -53,20 +53,17 @@ fn suite_text(repo: &crate::repo::Repo) -> Option<String> {
 }
 
 /// Whether the code has an `async fn` with this name below a `#[tokio::test]` that is not
-/// switched off: no `#[ignore]` anywhere in the attributes between the two.
+/// switched off. The attributes of the function are everything between the end of the item before
+/// it (`}` or `;`) and the function; comments are already blank in `code`, so a doc comment between
+/// the attributes does not hide one, and an attribute over several lines is read whole. `ignore`
+/// anywhere in them (`#[ignore]`, `#[ignore = "…"]`, `#[cfg_attr(…, ignore)]`) counts as off.
 fn is_a_test(code: &str, name: &str) -> bool {
     let needle = format!("async fn {name}(");
     code.match_indices(&needle).any(|(at, _)| {
-        let mut attributes = Vec::new();
-        for line in code[..at].trim_end().lines().rev() {
-            let line = line.trim();
-            if !line.starts_with("#[") {
-                break;
-            }
-            attributes.push(line);
-        }
-        attributes.contains(&"#[tokio::test]")
-            && !attributes.iter().any(|line| line.starts_with("#[ignore"))
+        let before = &code[..at];
+        let start = before.rfind(['}', ';']).map_or(0, |end| end + 1);
+        let attributes = &before[start..];
+        attributes.contains("#[tokio::test]") && !attributes.contains("ignore")
     })
 }
 
@@ -136,24 +133,52 @@ async fn {name}() -> TestResult {{ Ok(()) }}"
 
     #[test]
     fn bad_example_a_test_that_is_switched_off() {
-        let mut suite = suite_with(&REQUIRED[1..]);
         let name = REQUIRED[0];
+        // Each way of switching a test off, one after the other: the name is then missing.
+        for attributes in [
+            "#[tokio::test]
+#[ignore]",
+            "#[ignore]
+#[tokio::test]",
+            "#[tokio::test]
+#[ignore = \"later\"]",
+            "#[tokio::test]
+#[ignore =
+    \"later\"]",
+            "#[tokio::test]
+#[cfg_attr(windows, ignore)]",
+            "#[tokio::test]
+/// Later.
+#[ignore]",
+            "#[tokio::test]
+#[cfg_attr(
+    windows,
+    ignore
+)]",
+        ] {
+            let mut suite = suite_with(&REQUIRED[1..]);
+            let _ = writeln!(
+                suite,
+                "{attributes}
+async fn {name}() {{}}"
+            );
+            let found = evaluate(Some(&suite));
+            assert_eq!(found.len(), 1, "{attributes}");
+        }
+    }
+
+    #[test]
+    fn good_example_doc_comments_and_other_attributes_between_are_fine() {
+        let name = REQUIRED[0];
+        let mut suite = suite_with(&REQUIRED[1..]);
         let _ = writeln!(
             suite,
-            "#[tokio::test]
-#[ignore = \"later\"]
-async fn {name}() {{}}"
-        );
-        let found = evaluate(Some(&suite));
-        assert_eq!(found.len(), 1);
-        let mut other = suite_with(&REQUIRED[1..]);
-        let _ = writeln!(
-            other,
-            "#[ignore]
+            "/// What it proves.
 #[tokio::test]
+#[doc(hidden)]
 async fn {name}() {{}}"
         );
-        assert_eq!(evaluate(Some(&other)).len(), 1);
+        assert!(evaluate(Some(&suite)).is_empty());
     }
 
     #[test]
