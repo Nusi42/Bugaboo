@@ -10,7 +10,6 @@ use bb_core::ErrorCode;
 use bb_core::id::{IssueId, UserId};
 use bb_core::issue_key::IssueKey;
 use bb_core::paging::{Cut, page_len, read_len};
-use bb_core::settings::{CONTENT_IMAGE_HOSTS, list_items};
 use bb_policy::{Authorized, Permission, Place};
 use jiff::Timestamp;
 
@@ -50,23 +49,6 @@ impl<S: AuthStore> Ctx<'_, S> {
                 issue,
                 old_code: false,
             }))
-    }
-}
-
-impl<S: AuthStore> Ctx<'_, S> {
-    /// The hosts images in text may come from: the organization's setting `content.image-hosts`,
-    /// split once here with the registry's own reading of a list.
-    pub(crate) async fn image_hosts(&self) -> Result<Vec<String>, AppError> {
-        let layers = self
-            .store()
-            .setting_layers(None, None)
-            .await
-            .map_err(|error| internal::<S>(&error))?;
-        let value = layers.resolve(CONTENT_IMAGE_HOSTS.definition()).value;
-        let text = CONTENT_IMAGE_HOSTS
-            .resolve(Some(&value))
-            .unwrap_or_default();
-        Ok(list_items(&text).map(str::to_owned).collect())
     }
 }
 

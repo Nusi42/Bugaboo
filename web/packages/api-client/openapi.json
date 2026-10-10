@@ -4118,6 +4118,93 @@
         "x-permission": "check-access"
       }
     },
+    "/api/v1/content/image-hosts": {
+      "get": {
+        "tags": ["settings"],
+        "summary": "The hosts that images in text may come from (the setting `content.image-hosts`), for the preview\nof the editor. Every signed-in person may read them: they are in the content security policy\nthat every page carries. The list is split here once; the browser never splits it again.",
+        "operationId": "getImageHosts",
+        "responses": {
+          "200": {
+            "description": "The hosts.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImageHostsBody"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Nothing changed since the `ETag` that `If-None-Match` named. No body.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-permission": "signed-in"
+      }
+    },
     "/api/v1/drafts": {
       "get": {
         "tags": ["editing"],
@@ -7091,6 +7178,136 @@
             }
           }
         },
+        "x-permission": "change-issues"
+      }
+    },
+    "/api/v1/issues/{issue}/description": {
+      "put": {
+        "tags": ["issues"],
+        "summary": "Saves the description of an issue under the edit lock the person holds, on the version they\nstarted from. A refused save (the lock is gone, somebody took the editing over, the issue\nchanged) keeps the text as the draft of the person. Needs the permission *Change anybody's\nissues*, or *Change the issues they reported* on an issue the person reported, and the right\nto change the description.",
+        "operationId": "saveIssueDescription",
+        "parameters": [
+          {
+            "name": "issue",
+            "in": "path",
+            "description": "The readable ID (WEB-142) or the internal ID of the issue.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveDescriptionBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The issue as it is now.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IssueItem"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such thing (resource.not_found).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConflictProblem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-long-text": true,
         "x-permission": "change-issues"
       }
     },
@@ -13182,6 +13399,20 @@
           }
         }
       },
+      "ImageHostsBody": {
+        "type": "object",
+        "description": "The hosts that images in text may come from, already split into one host for each item.",
+        "required": ["hosts"],
+        "properties": {
+          "hosts": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The hosts, such as `images.example.com`. Empty means no image from outside."
+          }
+        }
+      },
       "InvitationBody": {
         "type": "object",
         "description": "An invitation as the administrator sees it.",
@@ -16428,6 +16659,26 @@
           "whole_organization": {
             "type": "boolean",
             "description": "Whether somebody has the role for the whole organization."
+          }
+        }
+      },
+      "SaveDescriptionBody": {
+        "type": "object",
+        "description": "The description to save under the lock the person holds.",
+        "required": ["version", "lock_token", "text"],
+        "properties": {
+          "lock_token": {
+            "type": "string",
+            "description": "The token of the edit lock the person holds on the description."
+          },
+          "text": {
+            "type": "string",
+            "description": "The description, in Markdown."
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The version the person started from."
           }
         }
       },

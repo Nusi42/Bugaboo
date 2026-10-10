@@ -245,6 +245,7 @@ pub(super) const EXAMPLES: &[Example] = &[
     Example::route("resetProjectSetting"),
     Example::route("checkOwnAccessChange"),
     Example::with("listMySettings", &[Quirk::KeysActAsThePerson]),
+    Example::with("getImageHosts", &[Quirk::KeysActAsThePerson]),
     Example::with("changeMySetting", &[Quirk::KeysActAsThePerson]),
     Example::with("resetMySetting", &[Quirk::KeysActAsThePerson]),
     Example::with("getFieldPermissions", &[Quirk::AtTheTargetProject]),
@@ -289,6 +290,7 @@ pub(super) const EXAMPLES: &[Example] = &[
     Example::with("makeIssue", &[Quirk::NeedsToSeeTheProject]),
     Example::with("getIssue", &[Quirk::AnIssueOfTheTarget]),
     Example::with("changeIssue", &[Quirk::AnIssueOfTheTarget]),
+    Example::with("saveIssueDescription", &[Quirk::AnIssueOfTheTarget]),
     Example::with("deleteIssue", &[Quirk::AnIssueOfTheTarget]),
     Example::with("restoreIssue", &[Quirk::AnIssueOfTheTarget]),
 ];
@@ -363,6 +365,7 @@ fn open_request(operation: &str) -> Result<Option<Request>, Failure> {
         ),
         // Whoever is signed in, and the choices a person makes for themselves.
         "listMySettings" => ("GET", "/api/v1/me/settings".into(), None),
+        "getImageHosts" => ("GET", "/api/v1/content/image-hosts".into(), None),
         "changeMySetting" => (
             "PUT",
             "/api/v1/me/settings/appearance.mode".into(),

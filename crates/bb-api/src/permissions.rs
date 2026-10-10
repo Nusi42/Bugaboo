@@ -229,6 +229,7 @@ pub const ROUTES: &[Route] = &[
         Declared::Permission(Permission::ChangeProjectSettings),
         Answer::Ordinary,
     ),
+    route("getImageHosts", Declared::SignedIn, Answer::Ordinary),
     route("listMySettings", Declared::SignedIn, Answer::NeverStored),
     route("checkOwnAccessChange", Declared::SignedIn, Answer::Ordinary),
     route("changeMySetting", Declared::SignedIn, Answer::Ordinary),
@@ -285,6 +286,11 @@ pub const ROUTES: &[Route] = &[
     ),
     route(
         "changeIssue",
+        Declared::Permission(Permission::ChangeIssues),
+        Answer::Ordinary,
+    ),
+    route(
+        "saveIssueDescription",
         Declared::Permission(Permission::ChangeIssues),
         Answer::Ordinary,
     ),
@@ -473,9 +479,9 @@ pub const ROUTES: &[Route] = &[
 
 /// The routes that save long text, by operation ID: each takes the token of an edit lock besides the
 /// version (ADR-0019), and ARCH-VERSIONED holds the description to it through the mark `x-long-text`.
-/// The routes that save the description of an issue and the text of a comment are added here by the
-/// packages that make them.
-pub const LONG_TEXT_ROUTES: &[&str] = &[];
+/// The route that saves the description of an issue is here; the one that saves the text of a
+/// comment is added by the package that makes it.
+pub const LONG_TEXT_ROUTES: &[&str] = &["saveIssueDescription"];
 
 /// The row of the route with this operation ID, if it is declared.
 #[must_use]

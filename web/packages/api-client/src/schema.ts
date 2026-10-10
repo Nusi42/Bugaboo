@@ -680,6 +680,27 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/content/image-hosts": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * The hosts that images in text may come from (the setting `content.image-hosts`), for the preview
+     *     of the editor. Every signed-in person may read them: they are in the content security policy
+     *     that every page carries. The list is split here once; the browser never splits it again.
+     */
+    get: operations["getImageHosts"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/drafts": {
     parameters: {
       query?: never;
@@ -1065,6 +1086,29 @@ export interface paths {
      *     change.
      */
     patch: operations["changeIssue"];
+    trace?: never;
+  };
+  "/api/v1/issues/{issue}/description": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /**
+     * Saves the description of an issue under the edit lock the person holds, on the version they
+     *     started from. A refused save (the lock is gone, somebody took the editing over, the issue
+     *     changed) keeps the text as the draft of the person. Needs the permission *Change anybody's
+     *     issues*, or *Change the issues they reported* on an issue the person reported, and the right
+     *     to change the description.
+     */
+    put: operations["saveIssueDescription"];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
     trace?: never;
   };
   "/api/v1/issues/{issue}/restore": {
@@ -2294,6 +2338,11 @@ export interface components {
       since: string;
       /** @description The holder is the person who asks, in another window. */
       yours_elsewhere: boolean;
+    };
+    /** @description The hosts that images in text may come from, already split into one host for each item. */
+    ImageHostsBody: {
+      /** @description The hosts, such as `images.example.com`. Empty means no image from outside. */
+      hosts: string[];
     };
     /** @description An invitation as the administrator sees it. */
     InvitationBody: {
@@ -3850,6 +3899,18 @@ export interface components {
       projects: number;
       /** @description Whether somebody has the role for the whole organization. */
       whole_organization: boolean;
+    };
+    /** @description The description to save under the lock the person holds. */
+    SaveDescriptionBody: {
+      /** @description The token of the edit lock the person holds on the description. */
+      lock_token: string;
+      /** @description The description, in Markdown. */
+      text: string;
+      /**
+       * Format: int64
+       * @description The version the person started from.
+       */
+      version: number;
     };
     /** @description A draft to keep. */
     SaveDraftBody: {
@@ -7389,6 +7450,75 @@ export interface operations {
       };
     };
   };
+  getImageHosts: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The hosts. */
+      200: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ImageHostsBody"];
+        };
+      };
+      /** @description Nothing changed since the `ETag` that `If-None-Match` named. No body. */
+      304: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
   readDraft: {
     parameters: {
       query: {
@@ -9604,6 +9734,107 @@ export interface operations {
     requestBody: {
       content: {
         "application/json": components["schemas"]["ChangeIssueBody"];
+      };
+    };
+    responses: {
+      /** @description The issue as it is now. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["IssueItem"];
+        };
+      };
+      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ConflictProblem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  saveIssueDescription: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The readable ID (WEB-142) or the internal ID of the issue. */
+        issue: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["SaveDescriptionBody"];
       };
     };
     responses: {

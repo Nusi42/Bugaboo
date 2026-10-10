@@ -86,6 +86,7 @@ table! {
     "release_stuck_lock" => s::release_stuck_lock_scenario,
     "make_issue" => si::make_issue_scenario,
     "change_issue" => si::change_issue_scenario,
+    "save_description" => si::save_description_scenario,
     "delete_issue" => si::delete_issue_scenario,
     "restore_issue" => si::restore_issue_scenario,
     "make_issue_type" => si::make_issue_type_scenario,

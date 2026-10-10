@@ -17,6 +17,7 @@
 //! layer, and lower layers are refused while it is locked (`setting.locked`). Answers leave only as
 //! `Authorized<T>`.
 
+mod image_hosts;
 mod store;
 
 use std::sync::Arc;
@@ -32,6 +33,9 @@ use bb_core::sign_in::SecurityAction;
 use bb_policy::{Authorized, Evaluation, Permission, Place};
 use serde_json::{Value, json};
 
+pub use image_hosts::{
+    DocumentImagesQuery, ImageHosts, ImageHostsQuery, document_image_hosts, image_hosts,
+};
 pub use store::SettingsStore;
 
 use crate::access::{Actor, ProjectLabel};

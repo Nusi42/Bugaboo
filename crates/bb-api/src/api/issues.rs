@@ -12,7 +12,7 @@ use axum::extract::State;
 use axum::response::Response;
 use bb_app::issues::{
     ChangeIssue, DeleteIssue, IssueDetail, IssueQuery, IssueTypeRef as AppIssueTypeRef, IssueView,
-    IssuesQuery, MakeIssue, RestoreIssue,
+    IssuesQuery, MakeIssue, RestoreIssue, SaveDescription,
 };
 use bb_core::ErrorCode;
 use bb_core::fields::Field;
@@ -241,6 +241,17 @@ pub(crate) struct ChangeIssueBody {
     assigned_to: Option<Vec<String>>,
 }
 
+/// The description to save under the lock the person holds.
+#[derive(Deserialize, ToSchema)]
+pub(crate) struct SaveDescriptionBody {
+    /// The version the person started from.
+    version: i64,
+    /// The token of the edit lock the person holds on the description.
+    lock_token: String,
+    /// The description, in Markdown.
+    text: String,
+}
+
 /// The ID in a request body; a text that is no ID is not a valid request.
 fn id_in_body<Id: std::str::FromStr>(text: &str) -> Result<Id, ApiError> {
     text.parse()
@@ -425,6 +436,51 @@ async fn change_issue(
     answer_authorized(&changed.map(|issue| IssueItem::from(&issue)))
 }
 
+/// Saves the description of an issue under the edit lock the person holds, on the version they
+/// started from. A refused save (the lock is gone, somebody took the editing over, the issue
+/// changed) keeps the text as the draft of the person. Needs the permission *Change anybody's
+/// issues*, or *Change the issues they reported* on an issue the person reported, and the right
+/// to change the description.
+#[utoipa::path(
+    put,
+    path = "/api/v1/issues/{issue}/description",
+    operation_id = "saveIssueDescription",
+    tag = "issues",
+    params(("issue" = String, Path, description = "The readable ID (WEB-142) or the internal ID of the issue.")),
+    request_body = SaveDescriptionBody,
+    responses(
+        (status = 200, description = "The issue as it is now.", body = IssueItem),
+        InvalidAnswer,
+        NotSignedInAnswer,
+        ForbiddenAnswer,
+        NotFoundAnswer,
+        ConflictAnswer
+    )
+)]
+async fn save_issue_description(
+    State(auth): State<AuthHandle>,
+    Info(info): Info,
+    Session(session_token): Session,
+    ApiPath(issue): ApiPath<String>,
+    ApiJson(body): ApiJson<SaveDescriptionBody>,
+) -> Result<Response, ApiError> {
+    let lock_token = id_in_body(&body.lock_token)?;
+    let saved = auth
+        .api()?
+        .save_description(
+            info,
+            SaveDescription {
+                session_token,
+                issue,
+                version: body.version,
+                lock_token,
+                text: body.text,
+            },
+        )
+        .await?;
+    answer_authorized(&saved.map(|issue| IssueItem::from(&issue)))
+}
+
 /// Puts an issue into the trash. Needs the permission *Delete issues into the trash*. *Undo*
 /// takes it out again.
 #[utoipa::path(
@@ -502,6 +558,7 @@ where
         .routes(routes!(list_issues, make_issue))
         .routes(routes!(get_issue, change_issue, delete_issue))
         .routes(routes!(restore_issue))
+        .routes(routes!(save_issue_description))
 }
 
 #[cfg(test)]

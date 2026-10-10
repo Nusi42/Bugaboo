@@ -16,6 +16,8 @@
 
 mod change;
 mod delete;
+mod description;
+pub(crate) mod editing;
 mod fields;
 mod ids;
 mod issue_types;
@@ -27,6 +29,7 @@ mod views;
 
 pub use change::change_issue;
 pub use delete::{delete_issue, restore_issue};
+pub use description::save_description;
 pub use issue_types::{
     MakeStartingIssueTypes, change_issue_type, issue_types, make_issue_type,
     make_starting_issue_types,

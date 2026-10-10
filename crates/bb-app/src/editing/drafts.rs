@@ -41,10 +41,8 @@ impl<S: AuthStore> Ctx<'_, S> {
                 self.require(actor, facts.edit, facts.place).await
             }
             DraftTarget::NewRecord { project, kind } => {
-                let permission = self
-                    .services
-                    .records
-                    .making(kind)
+                let permission = crate::issues::editing::making(kind)
+                    .or_else(|| self.services.records.making(kind))
                     .ok_or(AppError::Refused(ErrorCode::NotFound))?;
                 self.require(actor, permission, Place::Project(*project))
                     .await

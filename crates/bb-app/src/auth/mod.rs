@@ -38,8 +38,8 @@ use crate::editing::{
 use crate::issues::{
     ChangeIssue, ChangeIssueType, DeleteIssue, IssueDetail, IssuePage, IssueQuery, IssueTypePage,
     IssueTypeView, IssueTypesQuery, IssueView, IssuesQuery, MakeIssue, MakeIssueType, RestoreIssue,
-    change_issue, change_issue_type, delete_issue, issue, issue_types, issues, make_issue,
-    make_issue_type, restore_issue,
+    SaveDescription, change_issue, change_issue_type, delete_issue, issue, issue_types, issues,
+    make_issue, make_issue_type, restore_issue, save_description,
 };
 use crate::people::{
     AddGroupMember, AssignmentChoicesQuery, ChoicePage, DeleteGroup, GroupDetail, GroupList,
@@ -62,8 +62,9 @@ use crate::roles::{
     reset_role, role, role_levels, roles, set_level,
 };
 use crate::settings::{
-    ChangeSetting, LockSetting, ResetSetting, SettingList, SettingView, SettingsQuery,
-    change_setting, lock_setting, reset_setting, settings,
+    ChangeSetting, DocumentImagesQuery, ImageHosts, ImageHostsQuery, LockSetting, ResetSetting,
+    SettingList, SettingView, SettingsQuery, change_setting, document_image_hosts, image_hosts,
+    lock_setting, reset_setting, settings,
 };
 
 #[cfg(test)]
@@ -357,6 +358,12 @@ use_cases! {
     issue(IssueQuery) -> Authorized<IssueDetail>;
     /// Changes the fields of an issue.
     change_issue(ChangeIssue) -> Authorized<IssueView>;
+    /// The hosts images in text may come from, for a signed-in person.
+    image_hosts(ImageHostsQuery) -> Authorized<ImageHosts>;
+    /// The same for the document, before anybody signs in.
+    document_image_hosts(DocumentImagesQuery) -> ImageHosts;
+    /// Saves the description of an issue under the edit lock the person holds.
+    save_description(SaveDescription) -> Authorized<IssueView>;
     /// Puts an issue into the trash.
     delete_issue(DeleteIssue) -> Done;
     /// Takes an issue out of the trash.
