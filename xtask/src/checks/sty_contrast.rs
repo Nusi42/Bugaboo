@@ -218,7 +218,7 @@ mod tests {
         // text of a badge, a pill and the muted text on a plain surface of that color all pass,
         // in the four themes and with more contrast.
         let file = ThemeFile::load(&Repo::discover().unwrap()).unwrap();
-        for theme in ["daylight", "paper", "dusk", "midnight"] {
+        for theme in file.themes.iter().map(|theme| theme.name.as_str()) {
             let pairs = file.contrast.pairs(theme);
             for color in bb_core::own_fields::ChoiceColor::ALL {
                 let (text, surface) = (
@@ -237,6 +237,22 @@ mod tests {
         }
         let findings = evaluate(&file);
         assert!(findings.is_empty(), "{:#?}", messages(&findings));
+    }
+
+    #[test]
+    fn cf_04_the_progress_bar_and_the_avatar_are_seen_in_all_four_themes() {
+        // The fill of a progress bar is a shape, not text: it is seen against every plain surface
+        // at 3:1 (WCAG 1.4.11). The initials of an avatar are text on the soft accent.
+        let file = ThemeFile::load(&Repo::discover().unwrap()).unwrap();
+        for theme in file.themes.iter().map(|theme| theme.name.as_str()) {
+            let value = |name: &str| color(&file, name, theme).expect("the token has a color");
+            for surface in ["bg-canvas", "bg-surface", "bg-raised"] {
+                let ratio = contrast_ratio(value("accent"), value(surface));
+                assert!(ratio >= 3.0, "{theme}: accent on {surface} is {ratio:.2}:1");
+            }
+            let ratio = contrast_ratio(value("accent-fg"), value("accent-soft"));
+            assert!(ratio >= 4.5, "{theme}: the initials are {ratio:.2}:1");
+        }
     }
 
     #[test]

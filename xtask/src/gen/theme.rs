@@ -51,6 +51,7 @@ pub(crate) fn outputs(repo: &Repo) -> anyhow::Result<Vec<Generated>> {
     for output in &mut generated {
         if crate::docs::text::has_extension(output.path, "css")
             || crate::docs::text::has_extension(output.path, "js")
+            || crate::docs::text::has_extension(output.path, "ts")
         {
             output.content = super::api::format_with_oxfmt(repo, output.path, &output.content)?;
         }
@@ -523,39 +524,6 @@ fn quoted(names: impl Iterator<Item = String>) -> String {
         .join(", ")
 }
 
-/// The widest line the formatter of the browser code leaves as it is.
-const PRINT_WIDTH: usize = 100;
-
-/// One entry of `partWords`, written the way the formatter would, so the generated file is already
-/// formatted: on one line when it fits, otherwise one property on a line, and a list that does not
-/// fit has one word on a line.
-fn words_entry(key: &str, variants: &[String], states: &[String]) -> String {
-    let list = |names: &[String]| quoted(names.iter().cloned());
-    let single = format!(
-        "  {key}: {{ variant: [{}], state: [{}] }},\n",
-        list(variants),
-        list(states)
-    );
-    if single.trim_end().chars().count() <= PRINT_WIDTH {
-        return single;
-    }
-    let mut out = format!("  {key}: {{\n");
-    for (name, names) in [("variant", variants), ("state", states)] {
-        let inline = format!("    {name}: [{}],", list(names));
-        if inline.chars().count() <= PRINT_WIDTH {
-            let _ = writeln!(out, "{inline}");
-            continue;
-        }
-        let _ = writeln!(out, "    {name}: [");
-        for word in names {
-            let _ = writeln!(out, "      \"{word}\",");
-        }
-        out.push_str("    ],\n");
-    }
-    out.push_str("  },\n");
-    out
-}
-
 /// `field.label` as `fieldLabel`.
 fn camel(name: &str) -> String {
     let mut out = String::new();
@@ -662,7 +630,13 @@ fn typescript(file: &ThemeFile) -> anyhow::Result<String> {
         } else {
             words.part.clone()
         };
-        out.push_str(&words_entry(&key, &words.variants, &words.states));
+        let list = |names: &[String]| quoted(names.iter().cloned());
+        let _ = writeln!(
+            out,
+            "  {key}: {{ variant: [{}], state: [{}] }},",
+            list(&words.variants),
+            list(&words.states)
+        );
     }
     out.push_str("} as const;\n");
     Ok(out)
@@ -706,24 +680,6 @@ fn rust(file: &ThemeFile) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn a_short_list_of_words_stays_on_one_line_and_a_long_one_is_broken_like_the_formatter_does() {
-        let few = ["a".to_owned(), "b".to_owned()];
-        assert_eq!(
-            words_entry("badge", &few, &[]),
-            "  badge: { variant: [\"a\", \"b\"], state: [] },\n"
-        );
-        let many: Vec<String> = (1..=12).map(|n| format!("color-{n}")).collect();
-        let entry = words_entry("field-badge", &many, &[]);
-        assert!(entry.starts_with("  field-badge: {\n    variant: [\n      \"color-1\",\n"));
-        assert!(entry.ends_with("    ],\n    state: [],\n  },\n"), "{entry}");
-        assert!(
-            entry
-                .lines()
-                .all(|line| line.chars().count() <= PRINT_WIDTH)
-        );
-    }
 
     fn file() -> ThemeFile {
         ThemeFile::load(&Repo::discover().unwrap()).unwrap()

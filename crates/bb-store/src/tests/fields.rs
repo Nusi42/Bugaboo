@@ -8,8 +8,8 @@ use bb_app::issues::IssueStore as _;
 use bb_app::ports::{BoxFuture, ChangeStore};
 use bb_core::access::FieldLevel;
 use bb_core::event::{EntityKind, RecordKind};
-use bb_core::fields::{Field, FieldKey};
-use bb_core::id::{ChoiceId, EntityId, FieldId, IdSource, IssueTypeId, ProjectId, RoleId, UserId};
+use bb_core::fields::FieldKey;
+use bb_core::id::{ChoiceId, EntityId, FieldId, IdSource, IssueTypeId, ProjectId, RoleId};
 use bb_core::issue::{IssueIcon, IssueType};
 use bb_core::own_fields::{
     ChoiceColor, FieldChoice, FieldFor, FieldType, Look, OwnField, Rules, Scope,
@@ -305,7 +305,6 @@ async fn adr_0027_a_level_for_an_issue_type_is_stored_apart_and_found_with_the_r
         .await?;
         let typed: Vec<(FieldKey, FieldLevel)> = storage.levels(role, None, Some(bug)).await?;
         assert!(typed.is_empty());
-        let _ = (Field::Title, UserId::generate(&mut source));
         Ok(())
     })
     .await
