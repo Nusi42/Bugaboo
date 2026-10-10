@@ -635,6 +635,10 @@ part "field.input[invalid]" {
     border-color "$danger"
 }
 
+part "field.input[state=busy]" {
+    use "busy"
+}
+
 part "field.input[disabled]" {
     opacity "$opacity-disabled"
 }

@@ -733,6 +733,11 @@ body {
   border-color: var(--danger);
 }
 
+[data-part="field.input"][data-state~="busy"] {
+  cursor: progress;
+  opacity: var(--opacity-busy);
+}
+
 [data-part="field.input"][data-disabled] {
   opacity: var(--opacity-disabled);
 }

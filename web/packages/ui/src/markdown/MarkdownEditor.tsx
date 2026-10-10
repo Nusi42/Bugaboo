@@ -10,7 +10,7 @@ import {
 } from "react-aria-components";
 
 import { partOf } from "../parts.ts";
-import { fieldShape } from "../props.ts";
+import { fieldShape, fieldState } from "../props.ts";
 import { part } from "../tokens.ts";
 import { FormattingToolbar } from "./FormattingToolbar.tsx";
 import type { MarkdownEditorLabels } from "./labels.ts";
@@ -32,6 +32,8 @@ export interface MarkdownEditorProps {
   readonly onChange: (value: string) => void;
   /** The hosts from which images may be shown (the setting `content.image-hosts`). */
   readonly imageHosts: readonly string[];
+  /** The text is being saved: the box shows it and takes no key until the answer is there. */
+  readonly busy?: boolean;
 }
 
 /** The text box with its label and toolbar. */
@@ -41,15 +43,25 @@ function WriteBox({
   name = "",
   value,
   onChange,
+  busy = false,
 }: Omit<MarkdownEditorProps, "imageHosts">) {
   const { area, format } = useFormatting(value, onChange, { linkText: labels.linkText });
   return (
-    <AriaTextField {...partOf(part.field)} name={name} value={value} onChange={onChange}>
+    <AriaTextField
+      {...partOf(part.field)}
+      name={name}
+      value={value}
+      onChange={onChange}
+      isReadOnly={busy}
+    >
       <Label {...partOf(part.fieldLabel)}>{label}</Label>
       <FormattingToolbar labels={labels} onFormat={format} />
       <TextArea
         ref={area}
-        {...partOf(part.fieldInput, { variants: [fieldShape.multiline] })}
+        {...partOf(part.fieldInput, {
+          variants: [fieldShape.multiline],
+          states: [busy && fieldState.busy],
+        })}
         rows={8}
       />
     </AriaTextField>

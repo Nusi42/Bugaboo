@@ -446,7 +446,7 @@ export const partWords = {
   field: { variant: [], state: [] },
   "field.label": { variant: [], state: [] },
   "field.description": { variant: [], state: [] },
-  "field.input": { variant: ["multiline"], state: [] },
+  "field.input": { variant: ["multiline"], state: ["busy"] },
   "field.error": { variant: [], state: [] },
   alert: { variant: ["danger", "success", "warning", "info"], state: [] },
   link: { variant: [], state: [] },

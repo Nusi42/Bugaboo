@@ -2058,6 +2058,12 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 <li><strong>The server renders what the page shows.</strong> The answer of <code>getIssue</code> holds <code>description_html</code>, made by <code>bb-markdown</code> with the image hosts of the organization; the OpenAPI description marks such a string with <code>x-safe-html</code> (written once in <code>bb-api-words</code>), the generated types say <code>SafeHtml</code> for it and the client makes the value (SEC-RICHTEXT). The editor's preview reads the hosts from <code>GET /content/image-hosts</code>; the content security policy of a document lists them in <code>img-src</code> (read at most every 10 seconds).</li>
 <li><strong>The browser side is a controller.</strong> <code>web/app/src/shared/editing/long-text.ts</code> holds the lock on the first key, the heartbeat, the two drafts (<code>browser-drafts.ts</code>: one storage key, by person and by what the draft is for, 30 days) and the three save states; <code>useLongText</code> puts it on a screen, <code>useVersionWatch</code> does the check every 30 seconds and on return to the tab.</li>
 </ul>
+<h4>Amendment (M3 WP-06 fix round)</h4>
+<ul>
+<li><strong>A change never carries long text.</strong> <code>PATCH /issues/{issue}</code> takes no <code>description</code>; a body that names it is refused. ARCH-VERSIONED refuses any change of a record (a body with <code>version</code>) that holds a long-text property (<code>LONG_TEXT_PROPERTIES</code> in <code>bb-api-words</code>) unless the route is marked <code>x-long-text</code>. Making a new record has no version and no lock, so it may take the text.</li>
+<li><strong>Who is editing is asked when the box opens.</strong> <code>GET /edit-locks?kind&amp;id&amp;part</code> says who holds the lock, without taking it (the same rules as taking it); the box shows <em>Ana is editing</em> before the first key and opens when the holder lets go.</li>
+<li><strong>Drafts in the browser belong to a person who is known and are gone after <em>Sign out</em>.</strong> None is read or written before the page knows who is signed in; a sign-out on purpose forgets them all, a session that is lost keeps them.</li>
+</ul>
 
 <!-- 0020-architecture-checks.md -->
 <h3 id="adr-0020"><button class="sec" data-sec>§13.20</button>ADR-0020: Architecture is checked by many small checks, and the checks are checked</h3>

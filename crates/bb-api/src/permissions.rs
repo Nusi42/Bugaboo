@@ -124,6 +124,7 @@ pub const ROUTES: &[Route] = &[
         Answer::Ordinary,
     ),
     route("takeEditLock", Declared::ByRecord, Answer::Secret),
+    route("readEditLock", Declared::ByRecord, Answer::NeverStored),
     route("heartbeatEditLock", Declared::ByRecord, Answer::Ordinary),
     route("releaseEditLock", Declared::SignedIn, Answer::Ordinary),
     route("askToFinish", Declared::ByRecord, Answer::Ordinary),

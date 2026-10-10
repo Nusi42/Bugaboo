@@ -194,40 +194,107 @@ export const {} = [{}] as const;
     Ok(out)
 }
 
-/// The names of the properties that carry the mark `x-safe-html` anywhere in the API description,
-/// sorted: the generated client turns the value of such a property into a `SafeHtml` (M3-F12).
-pub(super) fn safe_html_properties(spec: &str) -> anyhow::Result<Vec<String>> {
+/// The mark that says a property holds HTML the server rendered.
+const SAFE_HTML_MARK: &str = bb_api_words::marks::SAFE_HTML;
+/// The step of a path that stands for every item of a list.
+const EVERY_ITEM: &str = "*";
+
+/// Where the properties with the mark `x-safe-html` are in the answers: for each operation
+/// (`METHOD /path/{template}`), the paths of keys from the top of the answer down to the property,
+/// with `*` for every item of a list (M3-F12). The client turns a string into a `SafeHtml` only at
+/// these places, so a key of the same name anywhere else is only text.
+pub(super) fn safe_html_paths(
+    spec: &str,
+) -> anyhow::Result<std::collections::BTreeMap<String, Vec<Vec<String>>>> {
     let spec: serde_json::Value =
         serde_json::from_str(spec).context("the API description is not JSON")?;
-    let schemas = spec["components"]["schemas"]
+    let paths = spec["paths"]
         .as_object()
-        .context("the API description has no schemas")?;
-    let mut names = std::collections::BTreeSet::new();
-    for schema in schemas.values() {
-        let Some(properties) = schema["properties"].as_object() else {
-            continue;
-        };
-        for (name, property) in properties {
-            if property[bb_api_words::marks::SAFE_HTML] == serde_json::json!(true) {
-                names.insert(name.clone());
+        .context("the API description has no paths")?;
+    let mut found = std::collections::BTreeMap::new();
+    for (address, methods) in paths {
+        for (method, operation) in methods.as_object().into_iter().flatten() {
+            let mut here = Vec::new();
+            for (status, answer) in operation["responses"].as_object().into_iter().flatten() {
+                let schema = &answer["content"]["application/json"]["schema"];
+                if status.starts_with('2') && !schema.is_null() {
+                    walk_for_safe_html(&spec, schema, &mut Vec::new(), &mut Vec::new(), &mut here);
+                }
+            }
+            here.sort();
+            here.dedup();
+            if !here.is_empty() {
+                found.insert(format!("{} {address}", method.to_uppercase()), here);
             }
         }
     }
-    Ok(names.into_iter().collect())
+    Ok(found)
 }
 
-/// The names from [`safe_html_properties`] as a constant for the browser client.
+/// Follows a schema: references, the parts of `allOf`/`oneOf`/`anyOf`, properties and list items.
+fn walk_for_safe_html(
+    spec: &serde_json::Value,
+    schema: &serde_json::Value,
+    path: &mut Vec<String>,
+    followed: &mut Vec<String>,
+    found: &mut Vec<Vec<String>>,
+) {
+    if let Some(reference) = schema["$ref"].as_str() {
+        // A schema that refers to itself is followed once.
+        if followed.iter().any(|seen| seen == reference) {
+            return;
+        }
+        let name = reference.rsplit('/').next().unwrap_or_default();
+        followed.push(reference.to_owned());
+        walk_for_safe_html(
+            spec,
+            &spec["components"]["schemas"][name],
+            path,
+            followed,
+            found,
+        );
+        followed.pop();
+        return;
+    }
+    for keyword in ["allOf", "oneOf", "anyOf"] {
+        for part in schema[keyword].as_array().into_iter().flatten() {
+            walk_for_safe_html(spec, part, path, followed, found);
+        }
+    }
+    for (name, property) in schema["properties"].as_object().into_iter().flatten() {
+        path.push(name.clone());
+        if property[SAFE_HTML_MARK] == serde_json::json!(true) {
+            found.push(path.clone());
+        } else {
+            walk_for_safe_html(spec, property, path, followed, found);
+        }
+        path.pop();
+    }
+    if !schema["items"].is_null() {
+        path.push(EVERY_ITEM.to_owned());
+        walk_for_safe_html(spec, &schema["items"], path, followed, found);
+        path.pop();
+    }
+}
+
+/// The places from [`safe_html_paths`] as a constant for the browser client.
 pub(super) fn safe_html(spec: &str) -> anyhow::Result<String> {
-    let names: Vec<String> = safe_html_properties(spec)?
-        .iter()
-        .map(|name| format!("{name:?}"))
-        .collect();
+    let mut rows = String::new();
+    for (operation, paths) in safe_html_paths(spec)? {
+        let paths: Vec<String> = paths
+            .iter()
+            .map(|path| {
+                let steps: Vec<String> = path.iter().map(|step| format!("{step:?}")).collect();
+                format!("[{}]", steps.join(", "))
+            })
+            .collect();
+        let _ = writeln!(rows, "  {operation:?}: [{}],", paths.join(", "));
+    }
     Ok(format!(
-        "{TS_HEADER}/** The properties of answers that hold HTML the server rendered (mark `{}`): the client turns their values into `SafeHtml`. */
-export const safeHtmlProperties: ReadonlySet<string> = new Set([{}]);
-",
-        bb_api_words::marks::SAFE_HTML,
-        names.join(", ")
+        "{TS_HEADER}/** Where the answers of each operation hold HTML the server rendered (mark `{SAFE_HTML_MARK}`): the keys from the top of the answer down to the string, `{EVERY_ITEM}` for every item of a list. The client turns the strings there into `SafeHtml`, and no other. */
+export const safeHtmlPaths: Readonly<Record<string, readonly (readonly string[])[]>> = {{
+{rows}}};
+"
     ))
 }
 
@@ -493,6 +560,30 @@ pub const VERSIONS_MAX: u32 = 50;
         );
         assert!(words("{}").is_err());
         assert!(words("not json").is_err());
+    }
+
+    #[test]
+    fn m3_f12_the_places_of_rendered_html_follow_the_answers_of_each_operation() {
+        let spec = r##"{
+          "paths": {
+            "/a/{id}": {"get": {"responses": {"200": {"content": {"application/json": {"schema": {"$ref": "#/components/schemas/One"}}}}}}},
+            "/b": {"get": {"responses": {"200": {"content": {"application/json": {"schema": {"$ref": "#/components/schemas/Many"}}}}}}},
+            "/c": {"get": {"responses": {"200": {"content": {"application/json": {"schema": {"$ref": "#/components/schemas/Other"}}}}}}}
+          },
+          "components": {"schemas": {
+            "One": {"type": "object", "properties": {"html": {"type": "string", "x-safe-html": true}}},
+            "Many": {"type": "object", "properties": {"items": {"type": "array", "items": {"$ref": "#/components/schemas/Row"}}}},
+            "Row": {"type": "object", "properties": {"body": {"$ref": "#/components/schemas/One"}, "next": {"$ref": "#/components/schemas/Row"}}},
+            "Other": {"type": "object", "properties": {"html": {"type": "string"}}}
+          }}
+        }"##;
+        let found = safe_html_paths(spec).unwrap();
+        assert_eq!(found["GET /a/{id}"], [["html"]]);
+        assert_eq!(found["GET /b"], [["items", "*", "body", "html"]]);
+        // The same key without the mark is only text.
+        assert!(!found.contains_key("GET /c"));
+        let text = safe_html(spec).unwrap();
+        assert!(text.contains("\"GET /a/{id}\": [[\"html\"]],"), "{text}");
     }
 
     #[test]

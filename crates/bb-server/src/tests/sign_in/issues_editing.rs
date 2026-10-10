@@ -123,6 +123,44 @@ async fn m3_f50_a_change_never_carries_the_description_whoever_holds_the_lock() 
 }
 
 #[tokio::test]
+async fn ux_06_the_box_learns_who_is_editing_before_the_first_key() -> TestResult {
+    each_database("ux_06_read_edit_lock", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let (mut tim, _) = site.person(StartingRole::TeamMember, "tim").await?;
+        let (mut vera, _) = site.person(StartingRole::Viewer, "vera").await?;
+        let made = site.make(&mut ada, "Somebody is typing").await?;
+        let (id, _) = ids_of(ok(&made)?)?;
+        let ask = format!("{LOCKS}?kind=issue&id={id}&part=description");
+        // Nobody edits: nothing is held, and asking takes no lock.
+        let free = tim.send("GET", &ask, None).await?;
+        assert_eq!(ok(&free)?["held"], Value::Null);
+        let _token = lock(&mut ada, &id).await?;
+        let held = tim.send("GET", &ask, None).await?;
+        assert_eq!(ok(&held)?["held"]["yours_elsewhere"], false);
+        assert!(
+            held.body["held"]["holder"]["id"].is_string(),
+            "{}",
+            held.body
+        );
+        // Asking did not take the lock: Tim can still take it only after Ada lets go.
+        let taken = tim
+            .send(
+                "POST",
+                LOCKS,
+                Some(json!({"what": what(&id), "editor_id": AN_EDITOR})),
+            )
+            .await?;
+        assert_eq!(taken.body["status"], "held");
+        // A person who may not change the issue is not told who edits.
+        let refused = vera.send("GET", &ask, None).await?;
+        assert_eq!(refused.status, StatusCode::FORBIDDEN);
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
 async fn adr_0019_a_stale_version_gets_the_structured_answer_and_the_text_is_kept() -> TestResult {
     each_database("adr_0019_issue_stale", async |db| {
         let (rig, app) = rig_and_app(db).await?;

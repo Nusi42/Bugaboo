@@ -24,6 +24,7 @@ export {
   sendHeartbeat,
   startHeartbeats,
   startHeartbeatsOn,
+  readEditLock,
   takeEditLock,
   throwAwayDraft,
   versionsOf,

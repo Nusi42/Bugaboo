@@ -28,6 +28,9 @@ export const buttonShape = { wide: "wide", square: "square" } as const;
 /** What a button is doing that the theme file styles: waiting for an answer. */
 export const buttonState = { busy: "busy" } as const;
 
+/** What a text field is doing that the theme file styles: the text is on its way to the server. */
+export const fieldState = { busy: "busy" } as const;
+
 /** What a button does in a form: only reacts to a press, or sends the form. */
 export const buttonType = { button: "button", submit: "submit" } as const;
 export type ButtonType = (typeof buttonType)[keyof typeof buttonType];

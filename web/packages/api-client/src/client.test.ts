@@ -11,6 +11,7 @@ import {
   isSafeHtml,
   readCookie,
 } from "./index.ts";
+import { readAnswer } from "./client.ts";
 
 const BASE = "http://bugaboo.test";
 
@@ -204,16 +205,48 @@ describe("adr_0008 helpers", () => {
   });
 });
 
+/** The value below `answer` along these keys (a list is entered by its index). */
+function at(answer: unknown, ...keys: readonly (string | number)[]): unknown {
+  return keys.reduce(
+    (value: unknown, key) =>
+      (typeof value === "object" && value !== null
+        ? Reflect.get(value, key)
+        : undefined) as unknown,
+    answer,
+  );
+}
+
 describe("m3_f12 server-rendered HTML becomes SafeHtml", () => {
-  it("marks the properties the description lists and no other string", async () => {
-    const api = answering(() =>
-      Promise.resolve(ok({ description_html: "<p>Hi</p>", description: "<p>Hi</p>" })),
-    );
-    const answer = await api.client.GET("/api/v1/status");
+  const body = { description_html: "<p>Hi</p>", description: "<p>Hi</p>" };
+
+  it("marks the property of the operation that the description lists and no other string", async () => {
+    const api = answering(() => Promise.resolve(ok(body)));
+    const answer = await api.client.GET("/api/v1/issues/{issue}", {
+      params: { path: { issue: "WEB-1" } },
+    });
     const data = new Map(Object.entries(dataOf(answer)));
     expect(isSafeHtml(data.get("description_html"))).toBe(true);
     expect(isSafeHtml(data.get("description"))).toBe(false);
     expect(data.get("description")).toBe("<p>Hi</p>");
+  });
+
+  it("leaves a key of the same name in any other answer as text", async () => {
+    const api = answering(() => Promise.resolve(ok(body)));
+    const data = new Map(Object.entries(dataOf(await api.client.GET("/api/v1/status"))));
+    expect(isSafeHtml(data.get("description_html"))).toBe(false);
+    expect(data.get("description_html")).toBe("<p>Hi</p>");
+  });
+
+  it("marks only along the path: a list, an inner object, and not the same key beside it", () => {
+    const text = JSON.stringify({
+      items: [{ body: { html: "<p>1</p>" }, html: "plain" }, { body: { html: "<p>2</p>" } }],
+      html: "top",
+    });
+    const read = readAnswer(text, [["items", "*", "body", "html"]]);
+    expect(isSafeHtml(at(read, "items", 0, "body", "html"))).toBe(true);
+    expect(isSafeHtml(at(read, "items", 1, "body", "html"))).toBe(true);
+    expect(at(read, "items", 0, "html")).toBe("plain");
+    expect(at(read, "html")).toBe("top");
   });
 });
 

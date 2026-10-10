@@ -255,6 +255,7 @@ pub(super) const EXAMPLES: &[Example] = &[
     Example::with("checkAccess", &[Quirk::AtTheTargetProject]),
     Example::with("listPeopleToCheck", &[Quirk::AtTheTargetProject]),
     Example::with("takeEditLock", &[ON_THE_TARGET, Quirk::SessionOnly]),
+    Example::with("readEditLock", &[ON_THE_TARGET, Quirk::SessionOnly]),
     Example::with("heartbeatEditLock", &[ON_THE_TARGET, Quirk::SessionOnly]),
     Example::route("releaseEditLock"),
     Example::with(

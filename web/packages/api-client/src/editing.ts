@@ -35,6 +35,16 @@ export async function takeEditLock(client: Client, what: EditWhat, editorId: str
   return dataOf(await client.POST("/api/v1/edit-locks", { body: { what, editor_id: editorId } }));
 }
 
+/** Who is editing a thing now, without taking the lock; `null` when nobody is. */
+export async function readEditLock(client: Client, what: EditWhat) {
+  const state = dataOf(
+    await client.GET("/api/v1/edit-locks", {
+      params: { query: { kind: what.record.kind, id: what.record.id, part: what.part } },
+    }),
+  );
+  return state.held ?? null;
+}
+
 /**
  * One heartbeat: keeps the lock and the text so far as the draft of the person, and brings back
  * what others did since the last one (somebody asked to finish, or took the editing over).

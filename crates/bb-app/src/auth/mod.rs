@@ -30,10 +30,10 @@ use crate::access::{
 };
 use crate::editing::{
     AskToFinish, CheckVersionsQuery, DraftSlot, DraftView, EditAnyway, HeartbeatAnswer,
-    HeartbeatQuery, LockOutcome, ReadDraftQuery, ReleaseLockQuery, ReleaseStuckLock,
-    SaveDraftQuery, TakeLockQuery, ThrowAwayDraftQuery, Versions, ask_to_finish, check_versions,
-    edit_anyway, heartbeat, read_draft, release_lock, release_stuck_lock, save_draft, take_lock,
-    throw_away_draft,
+    HeartbeatQuery, LockHolder, LockOutcome, ReadDraftQuery, ReadLockQuery, ReleaseLockQuery,
+    ReleaseStuckLock, SaveDraftQuery, TakeLockQuery, ThrowAwayDraftQuery, Versions, ask_to_finish,
+    check_versions, edit_anyway, heartbeat, read_draft, read_lock, release_lock,
+    release_stuck_lock, save_draft, take_lock, throw_away_draft,
 };
 use crate::issues::{
     AssignablePeoplePage, AssignablePeopleQuery, ChangeIssue, ChangeIssueType, DeleteIssue,
@@ -327,6 +327,8 @@ use_cases! {
     projects(ProjectsQuery) -> Authorized<ProjectPage>;
     /// Takes the lock on a long text, or says who is editing it.
     take_lock(TakeLockQuery) -> Authorized<LockOutcome>;
+    /// Says who is editing a long text, without taking the lock.
+    read_lock(ReadLockQuery) -> Authorized<LockHolder>;
     /// Renews the lock on a long text and keeps the text so far as the draft.
     heartbeat(HeartbeatQuery) -> Authorized<HeartbeatAnswer>;
     /// Lets go of a lock.

@@ -4549,6 +4549,151 @@
       }
     },
     "/api/v1/edit-locks": {
+      "get": {
+        "tags": ["editing"],
+        "summary": "Says whether somebody is editing a long text, and who, without taking the lock: the box asks\nwhen it opens, so a person who comes second is told before the first key.",
+        "operationId": "readEditLock",
+        "parameters": [
+          {
+            "name": "kind",
+            "in": "query",
+            "description": "The kind of record, like `issue`.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "query",
+            "description": "The ID of the record.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "part",
+            "in": "query",
+            "description": "Which long text of the record, like `description`.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Who is editing, or nothing.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LockHolderBody"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Nothing changed since the `ETag` that `If-None-Match` named. No body.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            }
+          },
+          "400": {
+            "description": "The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such thing (resource.not_found).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-never-stored": true,
+        "x-permission": "by-record"
+      },
       "post": {
         "tags": ["editing"],
         "summary": "Takes the lock on a long text, on the first keystroke, or says who is editing it. The lock is a\nlease of a minute that the heartbeat renews; closing the page lets it run out.",
@@ -9194,7 +9339,7 @@
           }
         },
         "x-never-stored": true,
-        "x-permission": "see-issues"
+        "x-permission": "change-issues"
       }
     },
     "/api/v1/projects/{project}/assignment-choices": {
@@ -14310,6 +14455,23 @@
             "format": "int32",
             "description": "The most items.",
             "minimum": 0
+          }
+        }
+      },
+      "LockHolderBody": {
+        "type": "object",
+        "description": "Whether somebody is editing a thing now.",
+        "properties": {
+          "held": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/HeldLockBody",
+                "description": "Who is editing, or nothing when the thing is free."
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         }
       },

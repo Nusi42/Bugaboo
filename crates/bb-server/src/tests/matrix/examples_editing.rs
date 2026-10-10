@@ -29,6 +29,11 @@ pub(super) fn editing_request(fixture: &Fixture<'_>, operation: &str) -> Option<
             "/api/v1/edit-locks".into(),
             Some(json!({"what": editing_what(&target), "editor_id": AN_EDITOR})),
         ),
+        "readEditLock" => (
+            "GET",
+            format!("/api/v1/edit-locks?kind=project&id={target}&part=description"),
+            None,
+        ),
         "heartbeatEditLock" => (
             "POST",
             "/api/v1/edit-locks/heartbeat".into(),
