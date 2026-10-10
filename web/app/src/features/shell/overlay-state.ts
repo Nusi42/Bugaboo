@@ -1,7 +1,16 @@
 import { useSyncExternalStore } from "react";
 
 /** The layers that open over the page; one at a time. */
-export type OverlayName = "search" | "shortcuts" | "menu" | "more";
+export const overlays = {
+  search: "search",
+  shortcuts: "shortcuts",
+  menu: "menu",
+  more: "more",
+  newIssue: "new-issue",
+} as const;
+
+/** The name of a layer. */
+export type OverlayName = (typeof overlays)[keyof typeof overlays];
 
 let open: OverlayName | null = null;
 const listeners = new Set<() => void>();

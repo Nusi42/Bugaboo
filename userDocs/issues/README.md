@@ -2,6 +2,8 @@
 
 An **issue** is anything that is being tracked: a bug, a task, an idea. Every issue has a title, a description, a type, a status, a priority, the person who reported it and the people it is assigned to.
 
+- [The issue page and the list of issues](issue-page.md): opening an issue, changing values where they stand, writing the description, and what happens when two people edit at once
+- [Making a new issue](new-issue.md): the dialog, `c`, and your draft
 - [Issue IDs](issue-ids.md): `WEB-K7Q2X` or `WEB-142`, and what happens when a project changes from one to the other
 - [Issue types](issue-types.md): Bug, Task, Feature and Goal, and how an administrator changes them
 
@@ -20,4 +22,4 @@ At the start every issue type uses the same three statuses: **Open**, **In progr
 
 ## Two people at once
 
-If you change an issue that somebody else changed after you opened it, Bugaboo tells you that someone changed it first, and nothing of yours is lost: look at the issue again and make your change on the new version.
+If you change a value that somebody else changed after you opened the issue, Bugaboo tells you who changed it first and offers "Keep" their value or "Use mine"; nothing is overwritten unseen. The description is locked while somebody writes it: see [the issue page](issue-page.md).

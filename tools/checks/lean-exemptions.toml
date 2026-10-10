@@ -124,3 +124,9 @@ route = "GET /api/v1/check-access/people/{person}"
 property = "kinds"
 whole_value = true
 reason = "The answer holds one entry for each kind of people information (10 in M2): a list bounded by the code, not one that grows with data (M2-F20)."
+
+[[exempt]]
+route = "GET /api/v1/content/image-hosts"
+property = "hosts"
+whole_value = true
+reason = "The hosts are the value of one setting (content.image-hosts), read as a whole; the setting allows at most 50 and the preview needs all of them at once (M3-F11)."

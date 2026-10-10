@@ -47,6 +47,14 @@ export const queryKeys = {
     all: ["issue-types"],
     list: () => ["issue-types", "list"],
   },
+  issues: {
+    all: ["issues"],
+    lists: () => ["issues", "list"],
+    list: (project: string) => ["issues", "list", project],
+    one: (address: string) => ["issues", "one", address],
+    people: (project: string, search: string) => ["issues", "assignable-people", project, search],
+    drafts: (project: string) => ["issues", "new-draft", project],
+  },
   invitations: {
     all: ["invitations"],
     one: (secret: string) => ["invitations", "one", secret],

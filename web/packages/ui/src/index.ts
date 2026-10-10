@@ -114,3 +114,5 @@ export {
   type ThemeId,
 } from "./tokens.ts";
 export { useAppearance, type AppearanceState } from "./useAppearance.ts";
+export { ActionMenu, type ActionMenuProps, type MenuAction } from "./ActionMenu.tsx";
+export { InPlaceText, type InPlaceTextProps } from "./InPlaceText.tsx";

@@ -3,6 +3,8 @@ import createQueryClient from "openapi-react-query";
 
 import { ApiError, isProblem, PROBLEM_CONTENT_TYPE } from "./problem.ts";
 import { CSRF_COOKIE, CSRF_HEADER } from "./protocol.ts";
+import { markSafeHtml } from "./safe-html.ts";
+import { safeHtmlPaths } from "./safe-html.generated.ts";
 import type { paths } from "./schema.ts";
 
 /** The methods that only read; every other method carries the CSRF token. */
@@ -45,6 +47,60 @@ async function errorOf(response: Response): Promise<ApiError> {
   return new ApiError(response.status, undefined);
 }
 
+/** Whether an answer is JSON the client may read (not a problem, which has its own type). */
+function isJson(response: Response): boolean {
+  return response.headers.get("content-type")?.includes("application/json") === true;
+}
+
+/** A place in an answer: the keys from the top down to the string, `*` for every item of a list. */
+type Place = readonly string[];
+
+/** Marks the string at `place` below `value`, and every string at the places below a list. */
+function markAt(value: unknown, place: Place): unknown {
+  const [step, ...rest] = place;
+  if (step === undefined) {
+    return typeof value === "string" ? markSafeHtml(value) : value;
+  }
+  if (step === "*" && Array.isArray(value)) {
+    return value.map((item: unknown) => markAt(item, rest));
+  }
+  if (typeof value === "object" && value !== null && !Array.isArray(value)) {
+    const copy: Record<string, unknown> = {};
+    for (const [key, inner] of Object.entries(value)) {
+      copy[key] = key === step ? markAt(inner, rest) : inner;
+    }
+    return copy;
+  }
+  return value;
+}
+
+/**
+ * Reads an answer and turns the strings at the places the server marks as rendered HTML
+ * (`x-safe-html`, listed per operation in `safeHtmlPaths`) into a `SafeHtml`. This is the one
+ * place in the client that makes one from an answer (M3-F12, SEC-RICHTEXT); the generated types
+ * say `SafeHtml` for these properties. A key of the same name anywhere else stays text.
+ */
+export function readAnswer(text: string, places: readonly Place[]): unknown {
+  return places.reduce((answer: unknown, place) => markAt(answer, place), JSON.parse(text));
+}
+
+/**
+ * The same answer, read with {@link readAnswer} when something asks for its JSON. The length is
+ * given so the client reads the body once as text.
+ */
+async function withSafeHtml(response: Response, places: readonly Place[]): Promise<Response> {
+  const text = await response.text();
+  const headers = new Headers(response.headers);
+  headers.set("content-length", String(new TextEncoder().encode(text).length));
+  const read = new Response(text, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  });
+  Object.defineProperty(read, "json", { value: () => Promise.resolve(readAnswer(text, places)) });
+  return read;
+}
+
 /** Adds the CSRF token to requests that change something, and raises {@link ApiError}s. */
 function rules(csrfToken: NonNullable<ClientOptions["csrfToken"]>): Middleware {
   return {
@@ -57,10 +113,14 @@ function rules(csrfToken: NonNullable<ClientOptions["csrfToken"]>): Middleware {
       }
       return request;
     },
-    async onResponse({ response }) {
+    async onResponse({ request, response, schemaPath }) {
       if (!response.ok) {
         throw await errorOf(response);
       }
+      const places = safeHtmlPaths[`${request.method} ${schemaPath}`];
+      return places !== undefined && isJson(response) && response.status !== 204
+        ? withSafeHtml(response, places)
+        : response;
     },
     onError() {
       // No answer at all: the network or the server is not there.

@@ -77,7 +77,10 @@ impl<S: AuthStore> Ctx<'_, S> {
             .map(clean_description)
             .transpose()?;
         let assignees = match &input.assigned_to {
-            Some(people) => self.clean_assignees(people).await?,
+            Some(people) => {
+                self.clean_assignees(project.id, actor.person.id, people, &[])
+                    .await?
+            }
             None => Vec::new(),
         };
         let issue_type = self

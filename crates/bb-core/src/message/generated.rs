@@ -171,6 +171,9 @@ pub const APPEARANCE_DEVICE_HELP: MessageKey = MessageKey::new("appearance.devic
 /// The message `appearance.device-settings`.
 pub const APPEARANCE_DEVICE_SETTINGS: MessageKey = MessageKey::new("appearance.device-settings");
 
+/// The message `appearance.issue-view.focus`.
+pub const APPEARANCE_ISSUE_VIEW_FOCUS: MessageKey = MessageKey::new("appearance.issue-view.focus");
+
 /// The message `appearance.issue-view.panel`.
 pub const APPEARANCE_ISSUE_VIEW_PANEL: MessageKey = MessageKey::new("appearance.issue-view.panel");
 
@@ -554,6 +557,9 @@ pub const COMMON_CLOSE: MessageKey = MessageKey::new("common.close");
 /// The message `common.continue`.
 pub const COMMON_CONTINUE: MessageKey = MessageKey::new("common.continue");
 
+/// The message `common.done`.
+pub const COMMON_DONE: MessageKey = MessageKey::new("common.done");
+
 /// The message `common.loading`.
 pub const COMMON_LOADING: MessageKey = MessageKey::new("common.loading");
 
@@ -846,48 +852,6 @@ pub const FOCUS_HIDE_LIST: MessageKey = MessageKey::new("focus.hide-list");
 
 /// The message `focus.show-list`.
 pub const FOCUS_SHOW_LIST: MessageKey = MessageKey::new("focus.show-list");
-
-/// The message `frames.focus-text`.
-pub const FRAMES_FOCUS_TEXT: MessageKey = MessageKey::new("frames.focus-text");
-
-/// The message `frames.focus-view`.
-pub const FRAMES_FOCUS_VIEW: MessageKey = MessageKey::new("frames.focus-view");
-
-/// The message `frames.intro`.
-pub const FRAMES_INTRO: MessageKey = MessageKey::new("frames.intro");
-
-/// The message `frames.item-1`.
-pub const FRAMES_ITEM_1: MessageKey = MessageKey::new("frames.item-1");
-
-/// The message `frames.item-2`.
-pub const FRAMES_ITEM_2: MessageKey = MessageKey::new("frames.item-2");
-
-/// The message `frames.item-3`.
-pub const FRAMES_ITEM_3: MessageKey = MessageKey::new("frames.item-3");
-
-/// The message `frames.list`.
-pub const FRAMES_LIST: MessageKey = MessageKey::new("frames.list");
-
-/// The message `frames.nothing`.
-pub const FRAMES_NOTHING: MessageKey = MessageKey::new("frames.nothing");
-
-/// The message `frames.panel-text`.
-pub const FRAMES_PANEL_TEXT: MessageKey = MessageKey::new("frames.panel-text");
-
-/// The message `frames.remove`.
-pub const FRAMES_REMOVE: MessageKey = MessageKey::new("frames.remove");
-
-/// The message `frames.text-intro`.
-pub const FRAMES_TEXT_INTRO: MessageKey = MessageKey::new("frames.text-intro");
-
-/// The message `frames.text-label`.
-pub const FRAMES_TEXT_LABEL: MessageKey = MessageKey::new("frames.text-label");
-
-/// The message `frames.text-title`.
-pub const FRAMES_TEXT_TITLE: MessageKey = MessageKey::new("frames.text-title");
-
-/// The message `frames.title`.
-pub const FRAMES_TITLE: MessageKey = MessageKey::new("frames.title");
 
 /// The message `groups.add`.
 pub const GROUPS_ADD: MessageKey = MessageKey::new("groups.add");
@@ -1182,6 +1146,183 @@ pub const ISSUE_TYPES_SAVED: MessageKey = MessageKey::new("issue-types.saved");
 /// The message `issue-types.search`.
 pub const ISSUE_TYPES_SEARCH: MessageKey = MessageKey::new("issue-types.search");
 
+/// The message `issues.all-details`.
+pub const ISSUES_ALL_DETAILS: MessageKey = MessageKey::new("issues.all-details");
+
+/// The message `issues.assign`.
+pub const ISSUES_ASSIGN: MessageKey = MessageKey::new("issues.assign");
+
+/// The message `issues.assign-list`.
+pub const ISSUES_ASSIGN_LIST: MessageKey = MessageKey::new("issues.assign-list");
+
+/// The message `issues.assign-more`.
+pub const ISSUES_ASSIGN_MORE: MessageKey = MessageKey::new("issues.assign-more");
+
+/// The message `issues.assign-nothing`.
+pub const ISSUES_ASSIGN_NOTHING: MessageKey = MessageKey::new("issues.assign-nothing");
+
+/// The message `issues.assign-only-you`.
+pub const ISSUES_ASSIGN_ONLY_YOU: MessageKey = MessageKey::new("issues.assign-only-you");
+
+/// The message `issues.assign-search`.
+pub const ISSUES_ASSIGN_SEARCH: MessageKey = MessageKey::new("issues.assign-search");
+
+/// The message `issues.assign-title`.
+pub const ISSUES_ASSIGN_TITLE: MessageKey = MessageKey::new("issues.assign-title");
+
+/// The message `issues.assigned`.
+pub const ISSUES_ASSIGNED: MessageKey = MessageKey::new("issues.assigned");
+
+/// The message `issues.bar`.
+pub const ISSUES_BAR: MessageKey = MessageKey::new("issues.bar");
+
+/// The message `issues.change`.
+pub const ISSUES_CHANGE: MessageKey = MessageKey::new("issues.change");
+
+/// The message `issues.change-title`.
+pub const ISSUES_CHANGE_TITLE: MessageKey = MessageKey::new("issues.change-title");
+
+/// The message `issues.changed-after-you`.
+pub const ISSUES_CHANGED_AFTER_YOU: MessageKey = MessageKey::new("issues.changed-after-you");
+
+/// The message `issues.clear-selection`.
+pub const ISSUES_CLEAR_SELECTION: MessageKey = MessageKey::new("issues.clear-selection");
+
+/// The message `issues.comment`.
+pub const ISSUES_COMMENT: MessageKey = MessageKey::new("issues.comment");
+
+/// The message `issues.compare-and-save`.
+pub const ISSUES_COMPARE_AND_SAVE: MessageKey = MessageKey::new("issues.compare-and-save");
+
+/// The message `issues.compare-intro`.
+pub const ISSUES_COMPARE_INTRO: MessageKey = MessageKey::new("issues.compare-intro");
+
+/// The message `issues.compare-keep-mine`.
+pub const ISSUES_COMPARE_KEEP_MINE: MessageKey = MessageKey::new("issues.compare-keep-mine");
+
+/// The message `issues.compare-keep-theirs`.
+pub const ISSUES_COMPARE_KEEP_THEIRS: MessageKey = MessageKey::new("issues.compare-keep-theirs");
+
+/// The message `issues.compare-mine`.
+pub const ISSUES_COMPARE_MINE: MessageKey = MessageKey::new("issues.compare-mine");
+
+/// The message `issues.compare-save`.
+pub const ISSUES_COMPARE_SAVE: MessageKey = MessageKey::new("issues.compare-save");
+
+/// The message `issues.compare-save-mine`.
+pub const ISSUES_COMPARE_SAVE_MINE: MessageKey = MessageKey::new("issues.compare-save-mine");
+
+/// The message `issues.compare-theirs`.
+pub const ISSUES_COMPARE_THEIRS: MessageKey = MessageKey::new("issues.compare-theirs");
+
+/// The message `issues.compare-title`.
+pub const ISSUES_COMPARE_TITLE: MessageKey = MessageKey::new("issues.compare-title");
+
+/// The message `issues.copy-link`.
+pub const ISSUES_COPY_LINK: MessageKey = MessageKey::new("issues.copy-link");
+
+/// The message `issues.create`.
+pub const ISSUES_CREATE: MessageKey = MessageKey::new("issues.create");
+
+/// The message `issues.create-another`.
+pub const ISSUES_CREATE_ANOTHER: MessageKey = MessageKey::new("issues.create-another");
+
+/// The message `issues.create-first`.
+pub const ISSUES_CREATE_FIRST: MessageKey = MessageKey::new("issues.create-first");
+
+/// The message `issues.created-on`.
+pub const ISSUES_CREATED_ON: MessageKey = MessageKey::new("issues.created-on");
+
+/// The message `issues.delete`.
+pub const ISSUES_DELETE: MessageKey = MessageKey::new("issues.delete");
+
+/// The message `issues.description.edit`.
+pub const ISSUES_DESCRIPTION_EDIT: MessageKey = MessageKey::new("issues.description.edit");
+
+/// The message `issues.description.empty`.
+pub const ISSUES_DESCRIPTION_EMPTY: MessageKey = MessageKey::new("issues.description.empty");
+
+/// The message `issues.details`.
+pub const ISSUES_DETAILS: MessageKey = MessageKey::new("issues.details");
+
+/// The message `issues.draft-drop`.
+pub const ISSUES_DRAFT_DROP: MessageKey = MessageKey::new("issues.draft-drop");
+
+/// The message `issues.draft-kept`.
+pub const ISSUES_DRAFT_KEPT: MessageKey = MessageKey::new("issues.draft-kept");
+
+/// The message `issues.edit-anyway`.
+pub const ISSUES_EDIT_ANYWAY: MessageKey = MessageKey::new("issues.edit-anyway");
+
+/// The message `issues.editing-elsewhere`.
+pub const ISSUES_EDITING_ELSEWHERE: MessageKey = MessageKey::new("issues.editing-elsewhere");
+
+/// The message `issues.hide-details`.
+pub const ISSUES_HIDE_DETAILS: MessageKey = MessageKey::new("issues.hide-details");
+
+/// The message `issues.history`.
+pub const ISSUES_HISTORY: MessageKey = MessageKey::new("issues.history");
+
+/// The message `issues.link-copied`.
+pub const ISSUES_LINK_COPIED: MessageKey = MessageKey::new("issues.link-copied");
+
+/// The message `issues.list`.
+pub const ISSUES_LIST: MessageKey = MessageKey::new("issues.list");
+
+/// The message `issues.lost-ran-out`.
+pub const ISSUES_LOST_RAN_OUT: MessageKey = MessageKey::new("issues.lost-ran-out");
+
+/// The message `issues.more`.
+pub const ISSUES_MORE: MessageKey = MessageKey::new("issues.more");
+
+/// The message `issues.more-issues`.
+pub const ISSUES_MORE_ISSUES: MessageKey = MessageKey::new("issues.more-issues");
+
+/// The message `issues.new`.
+pub const ISSUES_NEW: MessageKey = MessageKey::new("issues.new");
+
+/// The message `issues.new-title`.
+pub const ISSUES_NEW_TITLE: MessageKey = MessageKey::new("issues.new-title");
+
+/// The message `issues.nothing`.
+pub const ISSUES_NOTHING: MessageKey = MessageKey::new("issues.nothing");
+
+/// The message `issues.of-project`.
+pub const ISSUES_OF_PROJECT: MessageKey = MessageKey::new("issues.of-project");
+
+/// The message `issues.open-full-page`.
+pub const ISSUES_OPEN_FULL_PAGE: MessageKey = MessageKey::new("issues.open-full-page");
+
+/// The message `issues.project`.
+pub const ISSUES_PROJECT: MessageKey = MessageKey::new("issues.project");
+
+/// The message `issues.show-changes`.
+pub const ISSUES_SHOW_CHANGES: MessageKey = MessageKey::new("issues.show-changes");
+
+/// The message `issues.side-panel-view`.
+pub const ISSUES_SIDE_PANEL_VIEW: MessageKey = MessageKey::new("issues.side-panel-view");
+
+/// The message `issues.someone`.
+pub const ISSUES_SOMEONE: MessageKey = MessageKey::new("issues.someone");
+
+/// The message `issues.title`.
+pub const ISSUES_TITLE: MessageKey = MessageKey::new("issues.title");
+
+/// The message `issues.title-required`.
+pub const ISSUES_TITLE_REQUIRED: MessageKey = MessageKey::new("issues.title-required");
+
+/// The message `issues.type`.
+pub const ISSUES_TYPE: MessageKey = MessageKey::new("issues.type");
+
+/// The message `issues.unassign`.
+pub const ISSUES_UNASSIGN: MessageKey = MessageKey::new("issues.unassign");
+
+/// The message `issues.updated`.
+pub const ISSUES_UPDATED: MessageKey = MessageKey::new("issues.updated");
+
+/// The message `issues.use-mine`.
+pub const ISSUES_USE_MINE: MessageKey = MessageKey::new("issues.use-mine");
+
 /// The message `keys.database-placeholder`.
 pub const KEYS_DATABASE_PLACEHOLDER: MessageKey = MessageKey::new("keys.database-placeholder");
 
@@ -1241,9 +1382,6 @@ pub const NAV_CHECK_ACCESS: MessageKey = MessageKey::new("nav.check-access");
 
 /// The message `nav.field-permissions`.
 pub const NAV_FIELD_PERMISSIONS: MessageKey = MessageKey::new("nav.field-permissions");
-
-/// The message `nav.frames`.
-pub const NAV_FRAMES: MessageKey = MessageKey::new("nav.frames");
 
 /// The message `nav.group.look`.
 pub const NAV_GROUP_LOOK: MessageKey = MessageKey::new("nav.group.look");
@@ -2480,8 +2618,17 @@ pub const SHELL_TRAIL: MessageKey = MessageKey::new("shell.trail");
 /// The message `shell.widen`.
 pub const SHELL_WIDEN: MessageKey = MessageKey::new("shell.widen");
 
+/// The message `shortcut.assign`.
+pub const SHORTCUT_ASSIGN: MessageKey = MessageKey::new("shortcut.assign");
+
 /// The message `shortcut.change-link`.
 pub const SHORTCUT_CHANGE_LINK: MessageKey = MessageKey::new("shortcut.change-link");
+
+/// The message `shortcut.change-status`.
+pub const SHORTCUT_CHANGE_STATUS: MessageKey = MessageKey::new("shortcut.change-status");
+
+/// The message `shortcut.edit-description`.
+pub const SHORTCUT_EDIT_DESCRIPTION: MessageKey = MessageKey::new("shortcut.edit-description");
 
 /// The message `shortcut.everywhere`.
 pub const SHORTCUT_EVERYWHERE: MessageKey = MessageKey::new("shortcut.everywhere");
@@ -2518,6 +2665,12 @@ pub const SHORTCUT_LIST_NEXT: MessageKey = MessageKey::new("shortcut.list-next")
 
 /// The message `shortcut.list-previous`.
 pub const SHORTCUT_LIST_PREVIOUS: MessageKey = MessageKey::new("shortcut.list-previous");
+
+/// The message `shortcut.new-issue`.
+pub const SHORTCUT_NEW_ISSUE: MessageKey = MessageKey::new("shortcut.new-issue");
+
+/// The message `shortcut.on-issue`.
+pub const SHORTCUT_ON_ISSUE: MessageKey = MessageKey::new("shortcut.on-issue");
 
 /// The message `shortcut.or`.
 pub const SHORTCUT_OR: MessageKey = MessageKey::new("shortcut.or");
@@ -3368,6 +3521,59 @@ pub fn config_tls_off_public(address: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `conflict.change`.
+#[must_use]
+pub fn conflict_change(field: impl std::fmt::Display, value: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("conflict.change"),
+        vec![
+            ("field", Value::Text(field.to_string())),
+            ("value", Value::Text(value.to_string())),
+        ],
+    )
+}
+
+/// The message `conflict.field-only`.
+#[must_use]
+pub fn conflict_field_only(field: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("conflict.field-only"),
+        vec![("field", Value::Text(field.to_string()))],
+    )
+}
+
+/// The message `conflict.sentence`.
+#[must_use]
+pub fn conflict_sentence(
+    ago: impl std::fmt::Display,
+    changes: impl std::fmt::Display,
+    who: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("conflict.sentence"),
+        vec![
+            ("ago", Value::Text(ago.to_string())),
+            ("changes", Value::Text(changes.to_string())),
+            ("who", Value::Text(who.to_string())),
+        ],
+    )
+}
+
+/// The message `conflict.sentence-plain`.
+#[must_use]
+pub fn conflict_sentence_plain(
+    ago: impl std::fmt::Display,
+    who: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("conflict.sentence-plain"),
+        vec![
+            ("ago", Value::Text(ago.to_string())),
+            ("who", Value::Text(who.to_string())),
+        ],
+    )
+}
+
 /// The message `data-folder.create-failed`.
 #[must_use]
 pub fn data_folder_create_failed(
@@ -3478,33 +3684,6 @@ pub fn first_run_step_of(
             ("step", Value::Text(step.to_string())),
             ("total", Value::Text(total.to_string())),
         ],
-    )
-}
-
-/// The message `frames.open-focus`.
-#[must_use]
-pub fn frames_open_focus(name: impl std::fmt::Display) -> Message {
-    Message::with_arguments(
-        MessageKey::new("frames.open-focus"),
-        vec![("name", Value::Text(name.to_string()))],
-    )
-}
-
-/// The message `frames.remove-name`.
-#[must_use]
-pub fn frames_remove_name(name: impl std::fmt::Display) -> Message {
-    Message::with_arguments(
-        MessageKey::new("frames.remove-name"),
-        vec![("name", Value::Text(name.to_string()))],
-    )
-}
-
-/// The message `frames.removed`.
-#[must_use]
-pub fn frames_removed(name: impl std::fmt::Display) -> Message {
-    Message::with_arguments(
-        MessageKey::new("frames.removed"),
-        vec![("name", Value::Text(name.to_string()))],
     )
 }
 
@@ -3672,6 +3851,230 @@ pub fn invitations_take_back_title(email: impl std::fmt::Display) -> Message {
 pub fn issue_types_made(name: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("issue-types.made"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `issues.add-field`.
+#[must_use]
+pub fn issues_add_field(field: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("issues.add-field"),
+        vec![("field", Value::Text(field.to_string()))],
+    )
+}
+
+/// The message `issues.ask-to-finish`.
+#[must_use]
+pub fn issues_ask_to_finish(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("issues.ask-to-finish"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `issues.asked-to-finish`.
+#[must_use]
+pub fn issues_asked_to_finish(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("issues.asked-to-finish"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `issues.assign-name`.
+#[must_use]
+pub fn issues_assign_name(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("issues.assign-name"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `issues.changed`.
+#[must_use]
+pub fn issues_changed(field: impl std::fmt::Display, value: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("issues.changed"),
+        vec![
+            ("field", Value::Text(field.to_string())),
+            ("value", Value::Text(value.to_string())),
+        ],
+    )
+}
+
+/// The message `issues.changed-people`.
+#[must_use]
+pub fn issues_changed_people(
+    count: i64,
+    field: impl std::fmt::Display,
+    names: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("issues.changed-people"),
+        vec![
+            ("count", Value::Number(count)),
+            ("field", Value::Text(field.to_string())),
+            ("names", Value::Text(names.to_string())),
+        ],
+    )
+}
+
+/// The message `issues.compare-keep`.
+#[must_use]
+pub fn issues_compare_keep(number: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("issues.compare-keep"),
+        vec![("number", Value::Text(number.to_string()))],
+    )
+}
+
+/// The message `issues.compare-paragraph`.
+#[must_use]
+pub fn issues_compare_paragraph(number: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("issues.compare-paragraph"),
+        vec![("number", Value::Text(number.to_string()))],
+    )
+}
+
+/// The message `issues.created`.
+#[must_use]
+pub fn issues_created(key: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("issues.created"),
+        vec![("key", Value::Text(key.to_string()))],
+    )
+}
+
+/// The message `issues.deleted`.
+#[must_use]
+pub fn issues_deleted(key: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("issues.deleted"),
+        vec![("key", Value::Text(key.to_string()))],
+    )
+}
+
+/// The message `issues.draft-continue`.
+#[must_use]
+pub fn issues_draft_continue(when: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("issues.draft-continue"),
+        vec![("when", Value::Text(when.to_string()))],
+    )
+}
+
+/// The message `issues.draft-found`.
+#[must_use]
+pub fn issues_draft_found(when: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("issues.draft-found"),
+        vec![("when", Value::Text(when.to_string()))],
+    )
+}
+
+/// The message `issues.draft-found-form`.
+#[must_use]
+pub fn issues_draft_found_form(when: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("issues.draft-found-form"),
+        vec![("when", Value::Text(when.to_string()))],
+    )
+}
+
+/// The message `issues.is-editing`.
+#[must_use]
+pub fn issues_is_editing(name: impl std::fmt::Display, since: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("issues.is-editing"),
+        vec![
+            ("name", Value::Text(name.to_string())),
+            ("since", Value::Text(since.to_string())),
+        ],
+    )
+}
+
+/// The message `issues.keep-theirs`.
+#[must_use]
+pub fn issues_keep_theirs(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("issues.keep-theirs"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `issues.lost-changed`.
+#[must_use]
+pub fn issues_lost_changed(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("issues.lost-changed"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `issues.lost-taken-over`.
+#[must_use]
+pub fn issues_lost_taken_over(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("issues.lost-taken-over"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `issues.page-title`.
+#[must_use]
+pub fn issues_page_title(project: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("issues.page-title"),
+        vec![("project", Value::Text(project.to_string()))],
+    )
+}
+
+/// The message `issues.read-only`.
+#[must_use]
+pub fn issues_read_only(field: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("issues.read-only"),
+        vec![("field", Value::Text(field.to_string()))],
+    )
+}
+
+/// The message `issues.saved-at`.
+#[must_use]
+pub fn issues_saved_at(time: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("issues.saved-at"),
+        vec![("time", Value::Text(time.to_string()))],
+    )
+}
+
+/// The message `issues.selected`.
+#[must_use]
+pub fn issues_selected(count: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("issues.selected"),
+        vec![("count", Value::Number(count))],
+    )
+}
+
+/// The message `issues.title-of`.
+#[must_use]
+pub fn issues_title_of(key: impl std::fmt::Display, title: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("issues.title-of"),
+        vec![
+            ("key", Value::Text(key.to_string())),
+            ("title", Value::Text(title.to_string())),
+        ],
+    )
+}
+
+/// The message `issues.unassign-name`.
+#[must_use]
+pub fn issues_unassign_name(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("issues.unassign-name"),
         vec![("name", Value::Text(name.to_string()))],
     )
 }
@@ -5135,6 +5538,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "appearance.device-settings",
         "Your device may already ask for less motion or more contrast. Bugaboo follows both. Your choices are kept with you, so they follow you to every browser you sign in from.",
     ),
+    ("appearance.issue-view.focus", "Focus view"),
     ("appearance.issue-view.panel", "Side panel"),
     ("appearance.larger-text", "Larger text"),
     ("appearance.less-motion", "Less motion"),
@@ -5481,6 +5885,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("common.cancel", "Cancel"),
     ("common.close", "Close"),
     ("common.continue", "Continue"),
+    ("common.done", "Done"),
     ("common.loading", "Loading…"),
     ("common.off", "Off"),
     ("common.on", "On"),
@@ -5563,6 +5968,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "config.tls-off-public",
         "HTTPS cannot be switched off on {address}, because anyone on the network could read what is sent. Use 127.0.0.1 or ::1, or list the proxy that adds HTTPS in trusted_proxies.",
     ),
+    ("conflict.change", "{field} to {value}"),
+    ("conflict.field-only", "{field}"),
+    ("conflict.sentence", "{who} changed {changes} {ago}."),
+    ("conflict.sentence-plain", "{who} changed this issue {ago}."),
     (
         "cookie.csrf.purpose",
         "Protects you from other websites that try to make Bugaboo do something in your name.",
@@ -5824,35 +6233,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("focus.back", "Back to list"),
     ("focus.hide-list", "Hide list"),
     ("focus.show-list", "Show list"),
-    (
-        "frames.focus-text",
-        "This is the focus view. The open item takes the main area and the list stays slim on the left.",
-    ),
-    ("frames.focus-view", "Focus view"),
-    (
-        "frames.intro",
-        "Issues, documents and settings open in these frames. They are empty for now, so this page shows how they work.",
-    ),
-    ("frames.item-1", "First example"),
-    ("frames.item-2", "Second example"),
-    ("frames.item-3", "Third example"),
-    ("frames.list", "Example items"),
-    ("frames.nothing", "No example items are left."),
-    ("frames.open-focus", "Open {name} in the focus view"),
-    (
-        "frames.panel-text",
-        "This is the side panel. A simple item opens here and the list stays in view.",
-    ),
-    ("frames.remove", "Remove"),
-    ("frames.remove-name", "Remove {name}"),
-    ("frames.removed", "{name} was removed."),
-    (
-        "frames.text-intro",
-        "Descriptions, comments and long text are written in Markdown. Write, then open Preview to see what others will see.",
-    ),
-    ("frames.text-label", "Description"),
-    ("frames.text-title", "Text with formatting"),
-    ("frames.title", "Page frames"),
     ("groups.add", "Put in"),
     ("groups.add-list", "People you can put into the group"),
     ("groups.add-more", "Show more people"),
@@ -6022,6 +6402,136 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("issue-types.retired", "Retired"),
     ("issue-types.saved", "Saved."),
     ("issue-types.search", "Search issue types"),
+    ("issues.add-field", "Add {field}"),
+    ("issues.all-details", "All details"),
+    ("issues.ask-to-finish", "Ask {name} to finish"),
+    (
+        "issues.asked-to-finish",
+        "{name} asked you to finish editing.",
+    ),
+    ("issues.assign", "Assign"),
+    ("issues.assign-list", "People of the project"),
+    ("issues.assign-more", "Show more people"),
+    ("issues.assign-name", "Assign {name}"),
+    (
+        "issues.assign-nothing",
+        "Nobody in this project has that name.",
+    ),
+    (
+        "issues.assign-only-you",
+        "Nobody else is offered here: people you cannot see by name are not listed.",
+    ),
+    ("issues.assign-search", "Search the people of the project"),
+    ("issues.assign-title", "Assigned to"),
+    ("issues.assigned", "Assigned"),
+    ("issues.bar", "Actions for this issue"),
+    ("issues.change", "Change"),
+    ("issues.change-title", "Change the title"),
+    ("issues.changed", "{field} changed to {value}."),
+    (
+        "issues.changed-after-you",
+        "The description changed after you started.",
+    ),
+    (
+        "issues.changed-people",
+        "{count, plural, =0 {{field} cleared.} other {{field} changed to {names}.}}",
+    ),
+    ("issues.clear-selection", "Clear the ticks"),
+    ("issues.comment", "Comment"),
+    ("issues.compare-and-save", "Compare and save"),
+    (
+        "issues.compare-intro",
+        "Your text is next to the newer version. For each paragraph that differs, choose which one to keep.",
+    ),
+    ("issues.compare-keep", "Keep, paragraph {number}"),
+    ("issues.compare-keep-mine", "Your text"),
+    ("issues.compare-keep-theirs", "The newer version"),
+    ("issues.compare-mine", "Your text"),
+    ("issues.compare-paragraph", "Paragraph {number}"),
+    ("issues.compare-save", "Save the chosen text"),
+    ("issues.compare-save-mine", "Keep all of mine"),
+    ("issues.compare-theirs", "The newer version"),
+    ("issues.compare-title", "Compare and save"),
+    ("issues.copy-link", "Copy the address"),
+    ("issues.create", "Create"),
+    ("issues.create-another", "Create and start another"),
+    ("issues.create-first", "Create an issue"),
+    ("issues.created", "{key} was created."),
+    ("issues.created-on", "Created"),
+    ("issues.delete", "Delete"),
+    ("issues.deleted", "{key} was moved to the trash."),
+    ("issues.description.edit", "Edit"),
+    ("issues.description.empty", "There is no description yet."),
+    ("issues.details", "Details"),
+    ("issues.draft-continue", "Continue your draft from {when}"),
+    ("issues.draft-drop", "Start again"),
+    (
+        "issues.draft-found",
+        "You have a draft of this description from {when}.",
+    ),
+    (
+        "issues.draft-found-form",
+        "You have a draft of a new issue from {when}.",
+    ),
+    (
+        "issues.draft-kept",
+        "Your draft is kept if you close this window.",
+    ),
+    ("issues.edit-anyway", "Edit anyway"),
+    (
+        "issues.editing-elsewhere",
+        "You are editing this description in another window.",
+    ),
+    ("issues.hide-details", "Hide details"),
+    ("issues.history", "History"),
+    (
+        "issues.is-editing",
+        "{name} is editing the description · since {since}",
+    ),
+    ("issues.keep-theirs", "Keep {name}'s"),
+    ("issues.link-copied", "Address copied"),
+    ("issues.list", "Issues"),
+    (
+        "issues.lost-changed",
+        "Not saved yet: {name} changed the description after you. Your text is kept.",
+    ),
+    (
+        "issues.lost-ran-out",
+        "Not saved yet: your editing time ran out. Your text is kept.",
+    ),
+    (
+        "issues.lost-taken-over",
+        "Not saved yet: {name} took over the editing. Your text is kept.",
+    ),
+    ("issues.more", "More"),
+    ("issues.more-issues", "Show more issues"),
+    ("issues.new", "New issue"),
+    ("issues.new-title", "New issue"),
+    ("issues.nothing", "There are no issues here yet."),
+    ("issues.of-project", "Issues of this project"),
+    ("issues.open-full-page", "Open full page"),
+    ("issues.page-title", "Issues in {project}"),
+    ("issues.project", "Project"),
+    (
+        "issues.read-only",
+        "Only people whose role allows it can change {field}.",
+    ),
+    ("issues.saved-at", "Saved · {time}"),
+    (
+        "issues.selected",
+        "{count, plural, one {# issue is ticked} other {# issues are ticked}}",
+    ),
+    ("issues.show-changes", "Show changes"),
+    ("issues.side-panel-view", "Side panel view"),
+    ("issues.someone", "Someone"),
+    ("issues.title", "Issues"),
+    ("issues.title-of", "{key} {title}"),
+    ("issues.title-required", "Title (required)"),
+    ("issues.type", "Type"),
+    ("issues.unassign", "Take away"),
+    ("issues.unassign-name", "Take {name} away"),
+    ("issues.updated", "Last changed"),
+    ("issues.use-mine", "Use mine"),
     (
         "keys.database-placeholder",
         "--database-url <the address of your database>",
@@ -6084,7 +6594,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("nav.appearance", "Appearance"),
     ("nav.check-access", "Check access"),
     ("nav.field-permissions", "Field permissions"),
-    ("nav.frames", "Page frames"),
     ("nav.group.look", "Look and feel"),
     ("nav.group.look-org", "Look"),
     ("nav.group.people", "People"),
@@ -7206,7 +7715,19 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("shell.skip", "Skip to the content"),
     ("shell.trail", "You are here"),
     ("shell.widen", "Widen the menu"),
+    (
+        "shortcut.assign",
+        "Choose who the open issue is assigned to",
+    ),
     ("shortcut.change-link", "Change the keys"),
+    (
+        "shortcut.change-status",
+        "Change the status of the open issue",
+    ),
+    (
+        "shortcut.edit-description",
+        "Edit the description of the open issue",
+    ),
     ("shortcut.everywhere", "Everywhere"),
     ("shortcut.go-home", "Go to the start page"),
     ("shortcut.in-lists", "Where a list is shown"),
@@ -7225,6 +7746,8 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "shortcut.list-previous",
         "Open the previous item in the list",
     ),
+    ("shortcut.new-issue", "Make a new issue"),
+    ("shortcut.on-issue", "On an open issue"),
     ("shortcut.or", "or"),
     ("shortcut.quick-search", "Open quick search"),
     ("shortcut.show-shortcuts", "Show all keyboard shortcuts"),

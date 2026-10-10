@@ -18,6 +18,8 @@ export type RecordRef = Schema<"RecordRefBody">;
 export type EditWhat = Schema<"EditWhatBody">;
 /** What a draft is for: a part of a record, or the form that makes a new record in a project. */
 export type DraftTarget = Schema<"DraftTargetBody">;
+/** The answer to asking for a lock: it is taken, or somebody else is editing. */
+export type LockOutcome = Schema<"LockOutcomeBody">;
 /** The answer to a heartbeat. */
 export type Heartbeat = Schema<"HeartbeatAnswerBody">;
 /** The text so far of a draft, with the version it started from. */
@@ -31,6 +33,16 @@ export function newEditorId(): string {
 /** The lock on a thing, taken on the first keystroke (`status` says if somebody else is editing). */
 export async function takeEditLock(client: Client, what: EditWhat, editorId: string) {
   return dataOf(await client.POST("/api/v1/edit-locks", { body: { what, editor_id: editorId } }));
+}
+
+/** Who is editing a thing now, without taking the lock; `null` when nobody is. */
+export async function readEditLock(client: Client, what: EditWhat) {
+  const state = dataOf(
+    await client.GET("/api/v1/edit-locks", {
+      params: { query: { kind: what.record.kind, id: what.record.id, part: what.part } },
+    }),
+  );
+  return state.held ?? null;
 }
 
 /**
@@ -57,6 +69,20 @@ export async function releaseEditLock(
   lockToken: string,
 ): Promise<void> {
   await client.POST("/api/v1/edit-locks/release", { body: { what, lock_token: lockToken } });
+}
+
+/** Asks the person who is editing to save and let go (*Ask Ana to finish*); they are told at their next heartbeat. */
+export async function askToFinish(client: Client, what: EditWhat): Promise<void> {
+  await client.POST("/api/v1/edit-locks/ask-to-finish", { body: { what } });
+}
+
+/** Takes the editing over (*Edit anyway*): the lock is the caller's, and the other person's text stays their draft. */
+export async function editAnyway(client: Client, what: EditWhat, editorId: string) {
+  return dataOf(
+    await client.POST("/api/v1/edit-locks/edit-anyway", {
+      body: { what, editor_id: editorId },
+    }),
+  );
 }
 
 /** The draft of the person for a target, or `null` when there is none. */

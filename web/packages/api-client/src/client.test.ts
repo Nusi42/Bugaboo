@@ -1,7 +1,17 @@
 import { QueryClient } from "@tanstack/react-query";
 import { describe, expect, it } from "vitest";
 
-import { ApiError, createApi, CSRF_HEADER, isProblem, readCookie } from "./index.ts";
+import {
+  ApiError,
+  createApi,
+  conflictOf,
+  CSRF_HEADER,
+  dataOf,
+  isProblem,
+  isSafeHtml,
+  readCookie,
+} from "./index.ts";
+import { readAnswer } from "./client.ts";
 
 const BASE = "http://bugaboo.test";
 
@@ -192,5 +202,83 @@ describe("adr_0008 helpers", () => {
     expect(isProblem({ ...body, status: "400" })).toBe(false);
     expect(isProblem(null)).toBe(false);
     expect(isProblem("text")).toBe(false);
+  });
+});
+
+/** The value below `answer` along these keys (a list is entered by its index). */
+function at(answer: unknown, ...keys: readonly (string | number)[]): unknown {
+  return keys.reduce(
+    (value: unknown, key) =>
+      (typeof value === "object" && value !== null
+        ? Reflect.get(value, key)
+        : undefined) as unknown,
+    answer,
+  );
+}
+
+describe("m3_f12 server-rendered HTML becomes SafeHtml", () => {
+  const body = { description_html: "<p>Hi</p>", description: "<p>Hi</p>" };
+
+  it("marks the property of the operation that the description lists and no other string", async () => {
+    const api = answering(() => Promise.resolve(ok(body)));
+    const answer = await api.client.GET("/api/v1/issues/{issue}", {
+      params: { path: { issue: "WEB-1" } },
+    });
+    const data = new Map(Object.entries(dataOf(answer)));
+    expect(isSafeHtml(data.get("description_html"))).toBe(true);
+    expect(isSafeHtml(data.get("description"))).toBe(false);
+    expect(data.get("description")).toBe("<p>Hi</p>");
+  });
+
+  it("leaves a key of the same name in any other answer as text", async () => {
+    const api = answering(() => Promise.resolve(ok(body)));
+    const data = new Map(Object.entries(dataOf(await api.client.GET("/api/v1/status"))));
+    expect(isSafeHtml(data.get("description_html"))).toBe(false);
+    expect(data.get("description_html")).toBe("<p>Hi</p>");
+  });
+
+  it("marks only along the path: a list, an inner object, and not the same key beside it", () => {
+    const text = JSON.stringify({
+      items: [{ body: { html: "<p>1</p>" }, html: "plain" }, { body: { html: "<p>2</p>" } }],
+      html: "top",
+    });
+    const read = readAnswer(text, [["items", "*", "body", "html"]]);
+    expect(isSafeHtml(at(read, "items", 0, "body", "html"))).toBe(true);
+    expect(isSafeHtml(at(read, "items", 1, "body", "html"))).toBe(true);
+    expect(at(read, "items", 0, "html")).toBe("plain");
+    expect(at(read, "html")).toBe("top");
+  });
+});
+
+describe("adr_0019 the structured answer to a stale version", () => {
+  const stale = {
+    type: "edit.version_changed",
+    title: "x",
+    status: 409,
+    code: "edit.version_changed",
+    message_key: "error.edit.version-changed",
+    params: {},
+    conflict: { version: 4, fields: ["priority"], current: { priority: "critical" } },
+  } as const;
+
+  it("hands out who changed what, from the error of a change", async () => {
+    const error = await failureOf(() =>
+      Promise.resolve(
+        new Response(JSON.stringify(stale), {
+          status: 409,
+          headers: { "content-type": "application/problem+json" },
+        }),
+      ),
+    );
+    expect(conflictOf(error)?.fields).toEqual(["priority"]);
+    expect(conflictOf(error)?.version).toBe(4);
+  });
+
+  it("is nothing for any other error and for a conflict that is not one", () => {
+    expect(conflictOf(new Error("x"))).toBeUndefined();
+    expect(conflictOf(new ApiError(404, undefined))).toBeUndefined();
+    const body = { ...stale, conflict: { fields: "no" } };
+    const broken = new ApiError(409, body);
+    expect(conflictOf(broken)).toBeUndefined();
   });
 });

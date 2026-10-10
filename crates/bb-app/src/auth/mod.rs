@@ -30,16 +30,17 @@ use crate::access::{
 };
 use crate::editing::{
     AskToFinish, CheckVersionsQuery, DraftSlot, DraftView, EditAnyway, HeartbeatAnswer,
-    HeartbeatQuery, LockOutcome, ReadDraftQuery, ReleaseLockQuery, ReleaseStuckLock,
-    SaveDraftQuery, TakeLockQuery, ThrowAwayDraftQuery, Versions, ask_to_finish, check_versions,
-    edit_anyway, heartbeat, read_draft, release_lock, release_stuck_lock, save_draft, take_lock,
-    throw_away_draft,
+    HeartbeatQuery, LockHolder, LockOutcome, ReadDraftQuery, ReadLockQuery, ReleaseLockQuery,
+    ReleaseStuckLock, SaveDraftQuery, TakeLockQuery, ThrowAwayDraftQuery, Versions, ask_to_finish,
+    check_versions, edit_anyway, heartbeat, read_draft, read_lock, release_lock,
+    release_stuck_lock, save_draft, take_lock, throw_away_draft,
 };
 use crate::issues::{
-    ChangeIssue, ChangeIssueType, DeleteIssue, IssueDetail, IssuePage, IssueQuery, IssueTypePage,
-    IssueTypeView, IssueTypesQuery, IssueView, IssuesQuery, MakeIssue, MakeIssueType, RestoreIssue,
+    AssignablePeoplePage, AssignablePeopleQuery, ChangeIssue, ChangeIssueType, DeleteIssue,
+    IssueDetail, IssuePage, IssueQuery, IssueTypePage, IssueTypeView, IssueTypesQuery, IssueView,
+    IssuesQuery, MakeIssue, MakeIssueType, RestoreIssue, SaveDescription, assignable_people,
     change_issue, change_issue_type, delete_issue, issue, issue_types, issues, make_issue,
-    make_issue_type, restore_issue,
+    make_issue_type, restore_issue, save_description,
 };
 use crate::people::{
     AddGroupMember, AssignmentChoicesQuery, ChoicePage, DeleteGroup, GroupDetail, GroupList,
@@ -62,8 +63,9 @@ use crate::roles::{
     reset_role, role, role_levels, roles, set_level,
 };
 use crate::settings::{
-    ChangeSetting, LockSetting, ResetSetting, SettingList, SettingView, SettingsQuery,
-    change_setting, lock_setting, reset_setting, settings,
+    ChangeSetting, DocumentImagesQuery, ImageHosts, ImageHostsQuery, LockSetting, ResetSetting,
+    SettingList, SettingView, SettingsQuery, change_setting, document_image_hosts, image_hosts,
+    lock_setting, reset_setting, settings,
 };
 
 #[cfg(test)]
@@ -325,6 +327,8 @@ use_cases! {
     projects(ProjectsQuery) -> Authorized<ProjectPage>;
     /// Takes the lock on a long text, or says who is editing it.
     take_lock(TakeLockQuery) -> Authorized<LockOutcome>;
+    /// Says who is editing a long text, without taking the lock.
+    read_lock(ReadLockQuery) -> Authorized<LockHolder>;
     /// Renews the lock on a long text and keeps the text so far as the draft.
     heartbeat(HeartbeatQuery) -> Authorized<HeartbeatAnswer>;
     /// Lets go of a lock.
@@ -351,12 +355,20 @@ use_cases! {
     change_issue_type(ChangeIssueType) -> Authorized<IssueTypeView>;
     /// Lists the issues of a project a person sees.
     issues(IssuesQuery) -> Authorized<IssuePage>;
+    /// Lists the people an issue of a project can be assigned to.
+    assignable_people(AssignablePeopleQuery) -> Authorized<AssignablePeoplePage>;
     /// Makes an issue.
     make_issue(MakeIssue) -> Authorized<IssueView>;
     /// Shows one issue by its readable or internal ID.
     issue(IssueQuery) -> Authorized<IssueDetail>;
     /// Changes the fields of an issue.
     change_issue(ChangeIssue) -> Authorized<IssueView>;
+    /// The hosts images in text may come from, for a signed-in person.
+    image_hosts(ImageHostsQuery) -> Authorized<ImageHosts>;
+    /// The same for the document, before anybody signs in.
+    document_image_hosts(DocumentImagesQuery) -> ImageHosts;
+    /// Saves the description of an issue under the edit lock the person holds.
+    save_description(SaveDescription) -> Authorized<IssueView>;
     /// Puts an issue into the trash.
     delete_issue(DeleteIssue) -> Done;
     /// Takes an issue out of the trash.

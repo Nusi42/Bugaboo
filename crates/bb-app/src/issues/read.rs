@@ -91,8 +91,12 @@ pub async fn issue<S: AuthStore>(
     let view = ctx.issue_view(&mut views, &issue, &assigned_to).await?;
     let may_change = held.may_change_issue(issue.reported_by);
     let mask = held.field_mask();
+    let image_hosts = ctx.image_hosts().await?;
+    let description_html =
+        bb_markdown::render(&issue.description, &bb_markdown::Options { image_hosts }).html;
     Ok(held.authorize(IssueDetail {
         issue: view,
+        description_html,
         may_change,
         may_delete: held.may_delete_issue(issue.reported_by),
         changeable: if may_change {

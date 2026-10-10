@@ -4,6 +4,7 @@
  */
 export const storageKey = {
   appearance: "bugaboo.appearance",
+  drafts: "bugaboo.drafts",
   firstFrame: "bugaboo.first-frame",
   projectTree: "bugaboo.project-tree",
   recentChoices: "bugaboo.recent-choices",

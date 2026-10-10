@@ -1,7 +1,14 @@
 // Turns the OpenAPI document on standard input into TypeScript types on standard output.
-// `cargo xtask gen api` runs this; nobody calls it by hand.
+// `cargo xtask gen api` runs this; nobody calls it by hand. Its one argument is the name of the
+// mark of a string that the server rendered as HTML (from `bb-api-words`, so it is written once):
+// such a property gets the type `SafeHtml`.
 import openapiTS, { astToString } from "openapi-typescript";
 import ts from "typescript";
+
+const safeHtmlMark = process.argv[2];
+if (safeHtmlMark === undefined) {
+  throw new Error("the name of the safe-HTML mark is missing");
+}
 
 const chunks = [];
 for await (const chunk of process.stdin) {
@@ -22,7 +29,11 @@ const syntaxTree = await openapiTS(document, {
   // openapi-fetch cannot read (it turns such a list into an object without `map`). Screens take
   // answers as read-only parameters instead (lint: prefer-readonly-parameter-types).
   immutable: false,
+  inject: 'import type { SafeHtml } from "./safe-html.ts";',
   transform(schemaObject) {
+    if (schemaObject[safeHtmlMark] === true) {
+      return ts.factory.createTypeReferenceNode("SafeHtml");
+    }
     const open =
       schemaObject.type === "object" &&
       schemaObject.properties === undefined &&

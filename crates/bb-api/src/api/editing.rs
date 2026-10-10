@@ -15,8 +15,8 @@ use axum::extract::State;
 use axum::response::Response;
 use bb_app::editing::{
     AskToFinish, CheckVersionsQuery, DraftSlot, DraftText, DraftView, EditAnyway, HeartbeatAnswer,
-    HeartbeatQuery, HeldLock, LockOutcome, LockStatus, NoticeView, ReadDraftQuery,
-    ReleaseLockQuery, ReleaseStuckLock, SaveDraftQuery, TakeLockQuery, TakenLock,
+    HeartbeatQuery, HeldLock, LockHolder, LockOutcome, LockStatus, NoticeView, ReadDraftQuery,
+    ReadLockQuery, ReleaseLockQuery, ReleaseStuckLock, SaveDraftQuery, TakeLockQuery, TakenLock,
     ThrowAwayDraftQuery, Versions,
 };
 use bb_core::ErrorCode;
@@ -125,6 +125,46 @@ pub(crate) struct HeldLockBody {
     can_edit_anyway: bool,
 }
 
+impl From<&HeldLock> for HeldLockBody {
+    fn from(held: &HeldLock) -> Self {
+        Self {
+            holder: held.holder.clone(),
+            since: held.since.to_string(),
+            yours_elsewhere: held.yours_elsewhere,
+            can_edit_anyway: held.can_edit_anyway,
+        }
+    }
+}
+
+/// Which thing to ask about, in the address.
+#[derive(Deserialize, ToSchema, utoipa::IntoParams)]
+#[into_params(parameter_in = Query)]
+pub(crate) struct EditWhatQuery {
+    /// The kind of record, like `issue`.
+    kind: String,
+    /// The ID of the record.
+    id: String,
+    /// Which long text of the record, like `description`.
+    part: String,
+}
+
+/// Whether somebody is editing a thing now.
+#[derive(Serialize, ToSchema)]
+pub(crate) struct LockHolderBody {
+    /// Who is editing, or nothing when the thing is free.
+    held: Option<HeldLockBody>,
+}
+
+impl Masked for LockHolderBody {}
+
+impl From<&LockHolder> for LockHolderBody {
+    fn from(state: &LockHolder) -> Self {
+        Self {
+            held: state.held.as_ref().map(HeldLockBody::from),
+        }
+    }
+}
+
 /// The answer to asking for a lock.
 #[derive(Serialize, ToSchema)]
 #[serde(tag = "status", rename_all = "snake_case")]
@@ -151,17 +191,7 @@ impl From<&LockOutcome> for LockOutcomeBody {
                 lease_seconds: *lease_seconds,
                 heartbeat_seconds: *heartbeat_seconds,
             }),
-            LockOutcome::Held(HeldLock {
-                holder,
-                since,
-                yours_elsewhere,
-                can_edit_anyway,
-            }) => Self::Held(HeldLockBody {
-                holder: holder.clone(),
-                since: since.to_string(),
-                yours_elsewhere: *yours_elsewhere,
-                can_edit_anyway: *can_edit_anyway,
-            }),
+            LockOutcome::Held(held) => Self::Held(HeldLockBody::from(held)),
         }
     }
 }
@@ -456,6 +486,49 @@ async fn take_edit_lock(
         )
         .await?;
     answer_authorized(&outcome.map(|outcome| LockOutcomeBody::from(&outcome)))
+}
+
+/// Says whether somebody is editing a long text, and who, without taking the lock: the box asks
+/// when it opens, so a person who comes second is told before the first key.
+#[utoipa::path(
+    get,
+    path = "/api/v1/edit-locks",
+    operation_id = "readEditLock",
+    tag = "editing",
+    params(EditWhatQuery),
+    responses(
+        (status = 200, description = "Who is editing, or nothing.", body = LockHolderBody),
+        InvalidAnswer,
+        NotSignedInAnswer,
+        ForbiddenAnswer,
+        NotFoundAnswer
+    )
+)]
+async fn read_edit_lock(
+    State(auth): State<AuthHandle>,
+    Info(info): Info,
+    Session(session_token): Session,
+    ApiQuery(query): ApiQuery<EditWhatQuery>,
+) -> Result<Response, ApiError> {
+    let what = EditWhatBody {
+        record: RecordRefBody {
+            kind: query.kind,
+            id: query.id,
+        },
+        part: query.part,
+    }
+    .what()?;
+    let holder = auth
+        .api()?
+        .read_lock(
+            info,
+            ReadLockQuery {
+                session_token,
+                what,
+            },
+        )
+        .await?;
+    answer_authorized(&holder.map(|holder| LockHolderBody::from(&holder)))
 }
 
 /// Renews the lease of a lock, keeps the text so far as the draft of the person (also when the lock
@@ -773,7 +846,7 @@ where
     AuthHandle: axum::extract::FromRef<S>,
 {
     OpenApiRouter::new()
-        .routes(routes!(take_edit_lock))
+        .routes(routes!(take_edit_lock, read_edit_lock))
         .routes(routes!(heartbeat_edit_lock))
         .routes(routes!(release_edit_lock))
         .routes(routes!(ask_to_finish))

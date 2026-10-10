@@ -23,8 +23,9 @@ use bb_policy::{Authorized, Evaluation, PeopleContext, Permission};
 use serde_json::json;
 
 use super::types::{
-    AskToFinish, EditAnyway, HeartbeatAnswer, HeartbeatQuery, HeldLock, LockOutcome, LockStatus,
-    NoticeView, ReleaseLockQuery, ReleaseStuckLock, TakeLockQuery, TakenLock,
+    AskToFinish, EditAnyway, HeartbeatAnswer, HeartbeatQuery, HeldLock, LockHolder, LockOutcome,
+    LockStatus, NoticeView, ReadLockQuery, ReleaseLockQuery, ReleaseStuckLock, TakeLockQuery,
+    TakenLock,
 };
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, Done, Stops, by, change_failed, internal};
@@ -47,6 +48,23 @@ impl<S: AuthStore> Ctx<'_, S> {
     ) -> Result<bb_policy::PersonRef, AppError> {
         self.person_ref(viewer, PeopleKind::Editing, PeopleContext::Ordinary, person)
             .await
+    }
+
+    /// A lock held on a thing as the person who asks sees it: who holds it (by the kind *"… is
+    /// editing"*), since when, whether it is the person's own in another window, and whether they
+    /// may take the editing over. The one place that makes it, for taking and for asking.
+    async fn held_lock(
+        &self,
+        access: &Evaluation,
+        actor: &Actor,
+        lock: &EditLock,
+    ) -> Result<HeldLock, AppError> {
+        Ok(HeldLock {
+            holder: self.editor_ref(access, lock.holder).await?,
+            since: lock.taken_at,
+            yours_elsewhere: lock.holder == actor.person.id,
+            can_edit_anyway: access.allows(Permission::EditAnyway),
+        })
     }
 
     /// A new lock for the actor, with a fresh token and a lease that starts now.
@@ -108,6 +126,27 @@ impl<S: AuthStore> Ctx<'_, S> {
     }
 }
 
+/// Says who is editing a thing now, without taking the lock: the box asks when it opens, so a
+/// person finds out that somebody is editing before the first key (UX §6). The same rules as
+/// *take the lock*: the person must be allowed to change the record.
+///
+/// # Errors
+/// `resource.not_found` for a record the person may not know about, `access.forbidden` when they
+/// may not change it.
+pub async fn read_lock<S: AuthStore>(
+    ctx: &Ctx<'_, S>,
+    input: ReadLockQuery,
+) -> Result<Authorized<LockHolder>, AppError> {
+    let actor = ctx.session_actor(&input.session_token).await?;
+    let facts = ctx.facts_of(&actor, &input.what.record).await?;
+    let access = ctx.require(&actor, facts.edit, facts.place).await?;
+    let held = match ctx.live_lock(&input.what).await? {
+        Some(lock) => Some(ctx.held_lock(&access, &actor, &lock).await?),
+        None => None,
+    };
+    Ok(access.authorize(LockHolder { held }))
+}
+
 /// Takes the lock on a thing, on the first keystroke, or says who is editing.
 ///
 /// # Errors
@@ -128,12 +167,7 @@ pub async fn take_lock<S: AuthStore>(
         .map_err(|error| internal::<S>(&error))?;
     let outcome = match taking {
         Taking::Granted(lock) => LockOutcome::Taken(Ctx::<S>::taken(&lock)),
-        Taking::Held(lock) => LockOutcome::Held(HeldLock {
-            holder: ctx.editor_ref(&access, lock.holder).await?,
-            since: lock.taken_at,
-            yours_elsewhere: lock.holder == actor.person.id,
-            can_edit_anyway: access.allows(Permission::EditAnyway),
-        }),
+        Taking::Held(lock) => LockOutcome::Held(ctx.held_lock(&access, &actor, &lock).await?),
     };
     Ok(access.authorize(outcome))
 }

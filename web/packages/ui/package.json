@@ -2,6 +2,9 @@
   "name": "@bugaboo/ui",
   "private": true,
   "type": "module",
+  "sideEffects": [
+    "*.css"
+  ],
   "exports": {
     ".": "./src/index.ts",
     "./icons": "./src/icons.ts",

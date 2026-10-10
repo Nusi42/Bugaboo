@@ -114,6 +114,7 @@ export const messages = {
     "Where an issue opens: in the focus view, which gives it most of the page, or in a side panel next to the list.",
   "appearance.mode.light": "Always light",
   "appearance.mode.dark": "Always dark",
+  "appearance.issue-view.focus": "Focus view",
   "appearance.issue-view.panel": "Side panel",
   "setting.region.time-zone.name": "Time zone",
   "setting.region.time-zone.help":
@@ -424,7 +425,6 @@ export const messages = {
   "nav.my-settings": "My settings",
   "nav.organization-settings": "Organization settings",
   "nav.appearance": "Appearance",
-  "nav.frames": "Page frames",
   "nav.group.look": "Look and feel",
   "nav.group.sign-in": "Sign-in",
   "nav.group.people": "People",
@@ -494,27 +494,6 @@ export const messages = {
   "shortcuts.reserved":
     "Your browser uses these keys for copying, pasting and undoing. Choose other keys.",
   "shortcuts.invalid": "These keys cannot be used. Press one key, or two in a row.",
-  "frames.title": "Page frames",
-  "frames.intro":
-    "Issues, documents and settings open in these frames. They are empty for now, so this page shows how they work.",
-  "frames.list": "Example items",
-  "frames.item-1": "First example",
-  "frames.item-2": "Second example",
-  "frames.item-3": "Third example",
-  "frames.focus-view": "Focus view",
-  "frames.open-focus": "Open {name} in the focus view",
-  "frames.remove": "Remove",
-  "frames.remove-name": "Remove {name}",
-  "frames.removed": "{name} was removed.",
-  "frames.panel-text":
-    "This is the side panel. A simple item opens here and the list stays in view.",
-  "frames.focus-text":
-    "This is the focus view. The open item takes the main area and the list stays slim on the left.",
-  "frames.nothing": "No example items are left.",
-  "frames.text-title": "Text with formatting",
-  "frames.text-intro":
-    "Descriptions, comments and long text are written in Markdown. Write, then open Preview to see what others will see.",
-  "frames.text-label": "Description",
   "markdown.write": "Write",
   "markdown.preview": "Preview",
   "markdown.toolbar": "Formatting",
@@ -1052,9 +1031,20 @@ export const messages = {
   "check-access.show-every-field": "Show every field",
   "check-access.show-every-kind": "Show every kind",
   "check-access.group-the-same": "Group those with the same reason",
+  "issue-type.bug": "Bug",
+  "issue-type.task": "Task",
+  "issue-type.feature": "Feature",
+  "issue-type.goal": "Goal",
   "status.open": "Open",
   "status.in-progress": "In progress",
   "status.done": "Done",
+  "status-group.not-started": "Not started",
+  "status-group.in-progress": "In progress",
+  "status-group.done": "Done",
+  "priority.low": "Low",
+  "priority.normal": "Normal",
+  "priority.high": "High",
+  "priority.critical": "Critical",
   "issue-id-mode.random": "Random IDs",
   "issue-id-mode.counting": "Counting IDs",
   "error.issue.type-retired":
@@ -1101,6 +1091,102 @@ export const messages = {
   "issue-icon.bookmark": "Bookmark",
   "issue-icon.hammer": "Hammer",
   "issue-icon.flame": "Flame",
+  "issues.title": "Issues",
+  "issues.page-title": "Issues in {project}",
+  "issues.changed": "{field} changed to {value}.",
+  "issues.changed-people":
+    "{count, plural, =0 {{field} cleared.} other {{field} changed to {names}.}}",
+  "conflict.sentence": "{who} changed {changes} {ago}.",
+  "conflict.sentence-plain": "{who} changed this issue {ago}.",
+  "conflict.change": "{field} to {value}",
+  "conflict.field-only": "{field}",
+  "common.done": "Done",
+  "issues.new": "New issue",
+  "issues.new-title": "New issue",
+  "issues.project": "Project",
+  "issues.type": "Type",
+  "issues.title-required": "Title (required)",
+  "issues.create": "Create",
+  "issues.create-another": "Create and start another",
+  "issues.created": "{key} was created.",
+  "issues.draft-kept": "Your draft is kept if you close this window.",
+  "issues.draft-found": "You have a draft of this description from {when}.",
+  "issues.draft-found-form": "You have a draft of a new issue from {when}.",
+  "issues.draft-continue": "Continue your draft from {when}",
+  "issues.draft-drop": "Start again",
+  "issues.nothing": "There are no issues here yet.",
+  "issues.create-first": "Create an issue",
+  "issues.list": "Issues",
+  "issues.more-issues": "Show more issues",
+  "issues.description.edit": "Edit",
+  "issues.description.empty": "There is no description yet.",
+  "issues.read-only": "Only people whose role allows it can change {field}.",
+  "issues.add-field": "Add {field}",
+  "issues.change": "Change",
+  "issues.change-title": "Change the title",
+  "issues.saved-at": "Saved · {time}",
+  "issues.title-of": "{key} {title}",
+  "issues.more": "More",
+  "issues.copy-link": "Copy the address",
+  "issues.link-copied": "Address copied",
+  "issues.delete": "Delete",
+  "issues.deleted": "{key} was moved to the trash.",
+  "issues.open-full-page": "Open full page",
+  "issues.side-panel-view": "Side panel view",
+  "issues.details": "Details",
+  "issues.all-details": "All details",
+  "issues.hide-details": "Hide details",
+  "issues.created-on": "Created",
+  "issues.updated": "Last changed",
+  "issues.history": "History",
+  "issues.bar": "Actions for this issue",
+  "issues.comment": "Comment",
+  "issues.assign-title": "Assigned to",
+  "issues.assign-search": "Search the people of the project",
+  "issues.assign-list": "People of the project",
+  "issues.assign-nothing": "Nobody in this project has that name.",
+  "issues.assign-only-you":
+    "Nobody else is offered here: people you cannot see by name are not listed.",
+  "issues.assign-more": "Show more people",
+  "issues.assign": "Assign",
+  "issues.assign-name": "Assign {name}",
+  "issues.unassign": "Take away",
+  "issues.unassign-name": "Take {name} away",
+  "issues.assigned": "Assigned",
+  "issues.someone": "Someone",
+  "issues.editing-elsewhere": "You are editing this description in another window.",
+  "issues.is-editing": "{name} is editing the description · since {since}",
+  "issues.ask-to-finish": "Ask {name} to finish",
+  "issues.edit-anyway": "Edit anyway",
+  "issues.asked-to-finish": "{name} asked you to finish editing.",
+  "issues.changed-after-you": "The description changed after you started.",
+  "issues.show-changes": "Show changes",
+  "issues.lost-ran-out": "Not saved yet: your editing time ran out. Your text is kept.",
+  "issues.lost-taken-over": "Not saved yet: {name} took over the editing. Your text is kept.",
+  "issues.lost-changed":
+    "Not saved yet: {name} changed the description after you. Your text is kept.",
+  "issues.compare-and-save": "Compare and save",
+  "issues.compare-title": "Compare and save",
+  "issues.compare-intro":
+    "Your text is next to the newer version. For each paragraph that differs, choose which one to keep.",
+  "issues.compare-paragraph": "Paragraph {number}",
+  "issues.compare-theirs": "The newer version",
+  "issues.compare-mine": "Your text",
+  "issues.compare-keep": "Keep, paragraph {number}",
+  "issues.compare-keep-mine": "Your text",
+  "issues.compare-keep-theirs": "The newer version",
+  "issues.compare-save": "Save the chosen text",
+  "issues.compare-save-mine": "Keep all of mine",
+  "issues.keep-theirs": "Keep {name}'s",
+  "issues.use-mine": "Use mine",
+  "shortcut.new-issue": "Make a new issue",
+  "shortcut.change-status": "Change the status of the open issue",
+  "shortcut.assign": "Choose who the open issue is assigned to",
+  "shortcut.edit-description": "Edit the description of the open issue",
+  "shortcut.on-issue": "On an open issue",
+  "issues.selected": "{count, plural, one {# issue is ticked} other {# issues are ticked}}",
+  "issues.clear-selection": "Clear the ticks",
+  "issues.of-project": "Issues of this project",
 } as const;
 
 export type MessageKey = keyof typeof messages;
@@ -1166,6 +1252,10 @@ export interface MessageArguments {
     role: string | number;
   };
   "check-access.result-heading": { person: string | number; place: string | number };
+  "conflict.change": { field: string | number; value: string | number };
+  "conflict.field-only": { field: string | number };
+  "conflict.sentence": { ago: string | number; changes: string | number; who: string | number };
+  "conflict.sentence-plain": { ago: string | number; who: string | number };
   "data-folder.create-failed": { path: string | number; reason: string | number };
   "data-folder.not-a-data-folder": { path: string | number };
   "data-folder.open": { part: string | number; path: string | number };
@@ -1175,9 +1265,6 @@ export interface MessageArguments {
   "field-permissions.intro-project": { project: string | number };
   "field-permissions.project-title": { project: string | number };
   "first-run.step-of": { name: string | number; step: string | number; total: string | number };
-  "frames.open-focus": { name: string | number };
-  "frames.remove-name": { name: string | number };
-  "frames.removed": { name: string | number };
   "groups.add-name": { name: string | number };
   "groups.added": { group: string | number; name: string | number };
   "groups.delete-name": { name: string | number };
@@ -1196,6 +1283,29 @@ export interface MessageArguments {
   "invitations.take-back-name": { email: string | number };
   "invitations.take-back-title": { email: string | number };
   "issue-types.made": { name: string | number };
+  "issues.add-field": { field: string | number };
+  "issues.ask-to-finish": { name: string | number };
+  "issues.asked-to-finish": { name: string | number };
+  "issues.assign-name": { name: string | number };
+  "issues.changed": { field: string | number; value: string | number };
+  "issues.changed-people": { count: number; field: string | number; names: string | number };
+  "issues.compare-keep": { number: string | number };
+  "issues.compare-paragraph": { number: string | number };
+  "issues.created": { key: string | number };
+  "issues.deleted": { key: string | number };
+  "issues.draft-continue": { when: string | number };
+  "issues.draft-found": { when: string | number };
+  "issues.draft-found-form": { when: string | number };
+  "issues.is-editing": { name: string | number; since: string | number };
+  "issues.keep-theirs": { name: string | number };
+  "issues.lost-changed": { name: string | number };
+  "issues.lost-taken-over": { name: string | number };
+  "issues.page-title": { project: string | number };
+  "issues.read-only": { field: string | number };
+  "issues.saved-at": { time: string | number };
+  "issues.selected": { count: number };
+  "issues.title-of": { key: string | number; title: string | number };
+  "issues.unassign-name": { name: string | number };
   "own.ask-text": { lost: string | number };
   "passkeys.added": { name: string | number };
   "passkeys.added-on": { when: string | number };

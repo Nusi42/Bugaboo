@@ -19,4 +19,9 @@ describe("sec_13 only the renderers make a SafeHtml", () => {
     expect(isSafeHtml(text)).toBe(false);
     expect(isSafeHtml(null)).toBe(false);
   });
+
+  it("is not a plain object, so the query cache keeps it as it is", () => {
+    const safe = markSafeHtml(text);
+    expect(Object.getPrototypeOf(safe)).not.toBe(Object.prototype);
+  });
 });

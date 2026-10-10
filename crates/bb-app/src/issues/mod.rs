@@ -14,8 +14,11 @@
 //! - **Every change is made on the version that was looked at**, and the readable ID of an issue
 //!   is given out inside the change that makes it (`ids.rs`).
 
+mod assignees;
 mod change;
 mod delete;
+mod description;
+pub(crate) mod editing;
 mod fields;
 mod ids;
 mod issue_types;
@@ -25,8 +28,10 @@ mod store;
 mod types;
 mod views;
 
+pub use assignees::{AssignablePeoplePage, AssignablePeopleQuery, assignable_people};
 pub use change::change_issue;
 pub use delete::{delete_issue, restore_issue};
+pub use description::save_description;
 pub use issue_types::{
     MakeStartingIssueTypes, change_issue_type, issue_types, make_issue_type,
     make_starting_issue_types,

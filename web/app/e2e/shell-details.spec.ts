@@ -50,7 +50,7 @@ async function tooltipOnFocus(page: Page): Promise<void> {
   const menu = mainMenu(page);
   await menu.getByRole("button", { name: t("shell.narrow") }).click();
   // With icons only, the keyboard focus shows what the icon is.
-  await menu.getByRole("button", { name: t("shell.search"), exact: true }).focus();
+  await menu.getByRole("button", { name: t("issues.new"), exact: true }).focus();
   await page.keyboard.press("Tab");
   await expect(menu.getByRole("link", { name: t("nav.home"), exact: true })).toBeFocused();
   await expect(page.getByRole("tooltip")).toHaveText(t("nav.home"));

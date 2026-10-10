@@ -3,12 +3,11 @@ import { createRoute, lazyRouteComponent, useNavigate, useSearch } from "@tansta
 import { HomePage } from "../features/home/index.ts";
 import { AppearancePage, RegionPage } from "../features/my-settings/index.ts";
 import { SecurityPage, SignInRulesPage, ThemesPage } from "../features/settings/index.ts";
-import { type FramesShow } from "../features/shell/index.ts";
 import { paths } from "../shared/paths.ts";
 import { shortcutIdOf, type ShortcutId } from "../shared/shortcuts.ts";
 import { appRoute, mySettingsRoute, organizationSettingsRoute } from "./layouts.tsx";
 import { OnlyWith } from "./OnlyWith.tsx";
-import { FramesRoute, ShortcutsRoute, StartPageRoute } from "./settings-routes.tsx";
+import { ShortcutsRoute, StartPageRoute } from "./settings-routes.tsx";
 
 // The pages that are not the first one are loaded when they are first opened, so the first page
 // stays small (coding-standards section 6).
@@ -17,24 +16,6 @@ export const homeRoute = createRoute({
   getParentRoute: () => appRoute,
   path: paths.home,
   component: HomePage,
-});
-
-/** The address `?show=panel&item=2`: how an example is shown, and which one. */
-function isFramesShow(value: unknown): value is FramesShow {
-  return value === "panel" || value === "focus";
-}
-
-/** The frames that issues, documents and settings will open in, as empty frames to try. */
-export const framesRoute = createRoute({
-  getParentRoute: () => appRoute,
-  path: paths.frames,
-  validateSearch: (
-    search: Readonly<Record<string, unknown>>,
-  ): { show?: FramesShow | undefined; item?: string | undefined } => ({
-    show: isFramesShow(search["show"]) ? search["show"] : undefined,
-    item: typeof search["item"] === "string" ? search["item"] : undefined,
-  }),
-  component: FramesRoute,
 });
 
 /** Where *My settings* starts: the frame shows the menu, or goes to the first topic. */

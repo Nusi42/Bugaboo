@@ -105,8 +105,9 @@ async fn perf_03_every_get_answers_an_etag_and_304_on_a_match() -> TestResult {
                 .replace("{person}", &person_id)
                 .replace("{issue}", &issue_key)
                 .replace("{project}", project);
-            // The draft route is about a record named in the query: the example project.
-            let filled = if template == "/api/v1/drafts" {
+            // The draft and the lock routes are about a record named in the query: the example
+            // project.
+            let filled = if template == "/api/v1/drafts" || template == "/api/v1/edit-locks" {
                 format!("{filled}?kind=project&id={project_id}&part=description")
             } else {
                 filled
