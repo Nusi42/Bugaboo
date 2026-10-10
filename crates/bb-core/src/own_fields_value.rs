@@ -103,7 +103,7 @@ impl Cell {
 }
 
 /// A value of an own field for one item (an issue or a project), as stored: one row per value.
-/// The text of a value is personal data unless the field says otherwise; a reference may be a
+/// The text of a value is always marked personal data (a field cannot say otherwise yet, M3-F45); a reference may be a
 /// person.
 #[derive(Clone, Debug, PartialEq, Eq, Entity)]
 pub struct StoredFieldValue {
@@ -378,8 +378,13 @@ impl FieldValue {
                 ])
             }
             FieldType::PickSeveral | FieldType::People => {
+                let items = json.as_array().ok_or(wrong)?;
+                // Too long a list is refused before it is read, so no list costs more than the cap.
+                if items.len() > VALUES_MAX {
+                    return Err(Violation::TooLong);
+                }
                 let mut ids: Vec<[u8; 16]> = Vec::new();
-                for item in json.as_array().ok_or(wrong)? {
+                for item in items {
                     let id = id_bytes(kind, item.as_str().ok_or(wrong)?).ok_or(wrong)?;
                     if !ids.contains(&id) {
                         ids.push(id);

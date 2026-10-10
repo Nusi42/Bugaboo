@@ -635,7 +635,7 @@ Defined in `crates/bb-core/src/access.rs`.
 
 ### StoredFieldValue
 
-A value of an own field for one item (an issue or a project), as stored: one row per value. The text of a value is personal data unless the field says otherwise; a reference may be a person.
+A value of an own field for one item (an issue or a project), as stored: one row per value. The text of a value is always marked personal data (a field cannot say otherwise yet, M3-F45); a reference may be a person.
 
 Defined in `crates/bb-core/src/own_fields_value.rs`.
 

@@ -5,22 +5,25 @@
 //! on the version the person looked at. *Combine with another choice* moves every value in one
 //! change and writes a record into the history of every item it touches (CF-07).
 
+use std::collections::{HashMap, HashSet};
+
 use bb_core::ErrorCode;
-use bb_core::event::{EntityRef, FieldChange, RecordKind};
+use bb_core::event::{EntityKind, EntityRef, FieldChange, RecordKind};
 use bb_core::fields::FieldKey;
-use bb_core::id::{ChoiceId, FieldId, UserId};
+use bb_core::id::{ChoiceId, EntityId, FieldId, UserId};
 use bb_core::issue::IssueIcon;
-use bb_core::own_fields::{CHOICES_MAX, ChoiceColor, Edit, FieldChoice};
+use bb_core::own_fields::{CHOICES_MAX, ChoiceColor, Edit, FieldChoice, FieldType};
 use bb_core::own_fields_value::FieldValue;
 use bb_core::version::{counted_up, next};
 use bb_policy::{Authorized, Permission, Place};
+use jiff::Timestamp;
 use serde_json::{Value, json};
 
 use super::member;
 use super::types::{
     AddChoice, ChangeChoice, CombineChoices, Definition, FieldView, ReorderChoices,
 };
-use crate::auth::{AppError, AuthStore, Ctx, by, entity, set_to};
+use crate::auth::{AppError, AuthStore, Ctx, EventMaker, by, entity, set_to};
 use crate::input::clean_name;
 use crate::ports::{BoxFuture, ChangeStore};
 use crate::projects::Why;
@@ -355,6 +358,108 @@ pub async fn reorder_choices<S: AuthStore>(
     Ok(held.authorize(ctx.field_after(&actor, &held, definition, true).await?))
 }
 
+/// What a combine of two choices moves, for the history.
+struct Combined<'a> {
+    key: &'a str,
+    kind: FieldType,
+    field: FieldId,
+    from: ChoiceId,
+    into: ChoiceId,
+    at: Timestamp,
+}
+
+/// Moves every value of a choice to another one, inside the change of the field, and appends a
+/// record to the history of every item it touched (and counts its version up). The reads and the
+/// moves are one for each kind of item, never one for each item; the events are one each.
+async fn record_combined<S: AuthStore>(
+    transaction: &mut S::Transaction,
+    events: &EventMaker,
+    args: Combined<'_>,
+) -> Result<(), S::Error> {
+    // What each item held, to say what changed in its history: one read for each kind of
+    // item before and one after.
+    let holders = S::items_with_choice_in(transaction, args.field, args.from).await?;
+    let held_by = |kind: &EntityKind| -> Vec<EntityId> {
+        holders
+            .iter()
+            .filter(|(each, _)| each == kind)
+            .map(|(_, item)| *item)
+            .collect()
+    };
+    let kinds: Vec<EntityKind> = {
+        let mut kinds: Vec<EntityKind> = Vec::new();
+        for (kind, _) in &holders {
+            if !kinds.contains(kind) {
+                kinds.push(kind.clone());
+            }
+        }
+        kinds
+    };
+    let mut before = HashMap::new();
+    for kind in &kinds {
+        for stored in S::field_values_in(transaction, kind.clone(), held_by(kind)).await? {
+            if stored.field == args.field {
+                before.insert(
+                    stored.entity,
+                    FieldValue::from_cells(args.kind, &stored.cells),
+                );
+            }
+        }
+    }
+    let touched: HashSet<EntityId> =
+        S::combine_choice_values(transaction, args.field, args.from, args.into)
+            .await?
+            .into_iter()
+            .map(|(_, item)| item)
+            .collect();
+    let mut after = HashMap::new();
+    for kind in &kinds {
+        let items: Vec<EntityId> = held_by(kind)
+            .into_iter()
+            .filter(|item| touched.contains(item))
+            .collect();
+        for stored in S::field_values_in(transaction, kind.clone(), items).await? {
+            if stored.field == args.field {
+                after.insert(
+                    stored.entity,
+                    FieldValue::from_cells(args.kind, &stored.cells),
+                );
+            }
+        }
+    }
+    for (item_kind, item) in holders {
+        if !touched.contains(&item) {
+            continue;
+        }
+        let version = S::touch_item(transaction, &item_kind, item, args.at).await?;
+        let mut changes = vec![FieldChange {
+            field: args.key.to_owned(),
+            before: before
+                .remove(&item)
+                .flatten()
+                .and_then(|value| value.to_json(args.kind)),
+            after: after
+                .remove(&item)
+                .flatten()
+                .and_then(|value| value.to_json(args.kind)),
+        }];
+        if let Some(version) = version {
+            changes.push(counted_up(version));
+        }
+        let event = events
+            .make(
+                EntityRef {
+                    kind: item_kind,
+                    id: item,
+                },
+                changes,
+            )
+            .map_err(|_| S::aborted())?;
+        S::append_follow_up_event(transaction, &event).await?;
+    }
+    Ok(())
+}
+
 /// Moves every value of a choice to another choice and retires the first one (*Combine with
 /// another choice*). Every item it touches gets a record in its history and a new version.
 ///
@@ -394,7 +499,7 @@ pub async fn combine_choices<S: AuthStore>(
             counted_up(input.version),
         ],
     )?;
-    let (kind, field_id) = (definition.field.kind, input.field);
+    let (kind_of, field_id) = (definition.field.kind, input.field);
     let key = FieldKey::Own(field_id).code().into_owned();
     let events = ctx.event_maker(by(actor.person.id));
     let (retired_at, now) = (ctx.now(), ctx.now());
@@ -405,47 +510,19 @@ pub async fn combine_choices<S: AuthStore>(
     let (from_id, into_id) = (from.id, into.id);
     let (why, write) = guarded::<S, _>(input.field, input.version, move |transaction, _stopped| {
         Box::pin(async move {
-            // What each item held, to say what changed in its history.
-            let mut before = Vec::new();
-            for (item_kind, item) in S::items_with_choice_in(transaction, field_id, from_id).await?
-            {
-                let held = S::field_values_in(transaction, item_kind.clone(), vec![item])
-                    .await?
-                    .into_iter()
-                    .find(|stored| stored.field == field_id)
-                    .and_then(|stored| FieldValue::from_cells(kind, &stored.cells));
-                before.push((item_kind, item, held));
-            }
-            let touched = S::combine_choice_values(transaction, field_id, from_id, into_id).await?;
-            for (item_kind, item, was) in before {
-                if !touched.contains(&(item_kind.clone(), item)) {
-                    continue;
-                }
-                let now_held = S::field_values_in(transaction, item_kind.clone(), vec![item])
-                    .await?
-                    .into_iter()
-                    .find(|stored| stored.field == field_id)
-                    .and_then(|stored| FieldValue::from_cells(kind, &stored.cells));
-                let version = S::touch_item(transaction, &item_kind, item, now).await?;
-                let mut changes = vec![FieldChange {
-                    field: key.clone(),
-                    before: was.and_then(|value| value.to_json(kind)),
-                    after: now_held.and_then(|value| value.to_json(kind)),
-                }];
-                if let Some(version) = version {
-                    changes.push(counted_up(version));
-                }
-                let event = events
-                    .make(
-                        EntityRef {
-                            kind: item_kind,
-                            id: item,
-                        },
-                        changes,
-                    )
-                    .map_err(|_| S::aborted())?;
-                S::append_follow_up_event(transaction, &event).await?;
-            }
+            record_combined::<S>(
+                transaction,
+                &events,
+                Combined {
+                    key: &key,
+                    kind: kind_of,
+                    field: field_id,
+                    from: from_id,
+                    into: into_id,
+                    at: now,
+                },
+            )
+            .await?;
             S::update_choice(transaction, &retired).await
         })
     });

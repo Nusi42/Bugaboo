@@ -566,28 +566,38 @@ impl FieldStore for AuthStorage {
         into: ChoiceId,
     ) -> Result<Vec<(EntityKind, EntityId)>, StoreError> {
         let holders = items_with_choice_in(transaction, field, from).await?;
-        let also_into = items_with_choice_in(transaction, field, into).await?;
-        for (kind, entity) in &holders {
-            let both = also_into.contains(&(kind.clone(), *entity));
-            let target = Expr::col(FieldValueRow::EntityKind)
-                .eq(kind_text(kind))
-                .and(Expr::col(FieldValueRow::EntityId).eq(entity.stored()))
-                .and(Expr::col(FieldValueRow::Field).eq(field.stored()))
-                .and(Expr::col(FieldValueRow::ValueRef).eq(from.stored()));
-            if both {
-                // The item holds both choices: it keeps the one row it has for the other.
-                let mut delete = Query::delete();
-                delete.from_table(FieldValueRow::Table).and_where(target);
-                transaction.execute(&delete).await?;
-            } else {
-                let mut update = Query::update();
-                update
-                    .table(FieldValueRow::Table)
-                    .value(FieldValueRow::ValueRef, into.stored())
-                    .and_where(target);
-                transaction.execute(&update).await?;
-            }
+        if holders.is_empty() {
+            return Ok(holders);
         }
+        // An item that holds both choices keeps the one row it has for the other: the rows of
+        // the first choice go, for every such item at once.
+        let mut into_holders = Query::select();
+        into_holders
+            .columns([FieldValueRow::EntityKind, FieldValueRow::EntityId])
+            .from(FieldValueRow::Table)
+            .and_where(Expr::col(FieldValueRow::Field).eq(field.stored()))
+            .and_where(Expr::col(FieldValueRow::ValueRef).eq(into.stored()));
+        let mut delete = Query::delete();
+        delete
+            .from_table(FieldValueRow::Table)
+            .and_where(Expr::col(FieldValueRow::Field).eq(field.stored()))
+            .and_where(Expr::col(FieldValueRow::ValueRef).eq(from.stored()))
+            .and_where(
+                Expr::tuple([
+                    Expr::col(FieldValueRow::EntityKind),
+                    Expr::col(FieldValueRow::EntityId),
+                ])
+                .in_subquery(into_holders),
+            );
+        transaction.execute(&delete).await?;
+        // The others move to the other choice, all in one statement.
+        let mut update = Query::update();
+        update
+            .table(FieldValueRow::Table)
+            .value(FieldValueRow::ValueRef, into.stored())
+            .and_where(Expr::col(FieldValueRow::Field).eq(field.stored()))
+            .and_where(Expr::col(FieldValueRow::ValueRef).eq(from.stored()));
+        transaction.execute(&update).await?;
         Ok(holders)
     }
 
