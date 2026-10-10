@@ -153,8 +153,11 @@ fn is_key_sequence(text: &str) -> bool {
 /// The most digits of a port.
 const PORT_DIGITS_MOST: usize = 5;
 
-/// A host name as a browser sends it (letters, digits, dots and dashes), with an optional port.
-fn is_host(item: &str) -> bool {
+/// A host name as a browser sends it (letters, digits, dots and dashes), with an optional port:
+/// the one rule for a host of a setting (the registry) and for a host written into a policy of the
+/// browser (`bb-api`).
+#[must_use]
+pub fn is_host(item: &str) -> bool {
     let (name, port) = item
         .split_once(':')
         .map_or((item, None), |(n, p)| (n, Some(p)));

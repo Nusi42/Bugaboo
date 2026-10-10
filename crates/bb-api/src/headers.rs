@@ -16,6 +16,7 @@ use axum::response::Response;
 use bb_app::auth::RequestInfo;
 use bb_app::settings::DocumentImagesQuery;
 use bb_auth::Device;
+use bb_core::settings::is_host;
 use tokio::sync::Mutex;
 use tower_http::set_header::SetResponseHeaderLayer;
 
@@ -53,23 +54,16 @@ const IMG_SRC: &str = "img-src 'self' data:";
 /// documents loaded after this long.
 const HOSTS_KEPT: Duration = Duration::from_secs(10);
 
-/// Whether a host of the setting is safe to write into a policy: letters, digits, dots, dashes and
-/// a port. The registry checks the setting when it is saved; this is the second line of defence for
-/// a value written by hand into the database, because a space or a `;` would add a directive.
-fn is_plain_host(host: &str) -> bool {
-    !host.is_empty()
-        && host
-            .chars()
-            .all(|c| c.is_ascii_alphanumeric() || matches!(c, '.' | '-' | ':'))
-}
-
 /// The policy with the image hosts of the organization added to `img-src`. Images always come over
 /// HTTPS, so the sources say so.
 #[must_use]
 pub(crate) fn with_image_hosts(policy: &str, hosts: &[String]) -> String {
     let sources: Vec<String> = hosts
         .iter()
-        .filter(|host| is_plain_host(host))
+        // The registry checks the setting when it is saved; the same rule is the second line of
+        // defence for a value written by hand into the database, because a space or a `;` would
+        // add a directive.
+        .filter(|host| is_host(host))
         .map(|host| format!("https://{host}"))
         .collect();
     if sources.is_empty() {
@@ -83,15 +77,28 @@ pub(crate) fn with_image_hosts(policy: &str, hosts: &[String]) -> String {
 struct ImageHostsCache {
     auth: AuthHandle,
     kept: Mutex<Option<(Instant, Vec<String>)>>,
+    /// Held while one request reads, so a burst of page loads costs one read, and the lock of
+    /// `kept` is never held across the read of the database.
+    refreshing: Mutex<()>,
 }
 
 impl ImageHostsCache {
+    /// The hosts that were read lately, if there are any.
+    async fn fresh(&self) -> Option<Vec<String>> {
+        let kept = self.kept.lock().await;
+        kept.as_ref()
+            .filter(|(read_at, _)| read_at.elapsed() < HOSTS_KEPT)
+            .map(|(_, hosts)| hosts.clone())
+    }
+
     async fn hosts(&self) -> Vec<String> {
-        let mut kept = self.kept.lock().await;
-        if let Some((read_at, hosts)) = kept.as_ref()
-            && read_at.elapsed() < HOSTS_KEPT
-        {
-            return hosts.clone();
+        if let Some(hosts) = self.fresh().await {
+            return hosts;
+        }
+        let _turn = self.refreshing.lock().await;
+        // Another request may have read while this one waited for its turn.
+        if let Some(hosts) = self.fresh().await {
+            return hosts;
         }
         let request = RequestInfo {
             network: None,
@@ -107,7 +114,7 @@ impl ImageHostsCache {
                 .unwrap_or_default(),
             Err(_) => Vec::new(),
         };
-        *kept = Some((Instant::now(), hosts.clone()));
+        *self.kept.lock().await = Some((Instant::now(), hosts.clone()));
         hosts
     }
 }
@@ -169,6 +176,7 @@ pub(crate) fn apply(router: Router, hsts_max_age: Option<u64>, auth: AuthHandle)
     let cache = Arc::new(ImageHostsCache {
         auth,
         kept: Mutex::new(None),
+        refreshing: Mutex::new(()),
     });
     let router = fixed.chain(hsts).fold(router, |router, (name, value)| {
         match HeaderValue::from_str(&value) {

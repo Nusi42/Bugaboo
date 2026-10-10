@@ -19,7 +19,7 @@ mod layers;
 mod themes;
 
 pub use catalog::*;
-pub use format::{Choice, DEVICE, Format};
+pub use format::{Choice, DEVICE, Format, is_host};
 pub use layers::{Layers, OrganizationValue, Resolved, Scope, Source};
 
 words! {
