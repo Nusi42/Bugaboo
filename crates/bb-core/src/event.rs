@@ -107,6 +107,10 @@ words! {
         AccessKey => "access_key",
         /// One row of *Who has which role*.
         Assignment => "assignment",
+        /// A comment on an issue.
+        Comment => "comment",
+        /// Who follows an issue (the record is the issue).
+        Follower => "follower",
         /// A group of people.
         Group => "group",
         /// An invitation.
@@ -121,6 +125,10 @@ words! {
         Person => "person",
         /// A project.
         Project => "project",
+        /// One relation between two issues.
+        Relation => "relation",
+        /// A kind of relation.
+        RelationKind => "relation_kind",
         /// A role.
         Role => "role",
         /// A sign-in session.

@@ -1052,6 +1052,9 @@ export const messages = {
   "check-access.show-every-field": "Show every field",
   "check-access.show-every-kind": "Show every kind",
   "check-access.group-the-same": "Group those with the same reason",
+  "error.issue.parent-circle":
+    "An issue cannot sit under itself or under one of its own sub-issues, and sub-issues cannot go that deep. Choose another issue.",
+  "error.relation.exists": "Those two issues are related in that way already.",
   "status.open": "Open",
   "status.in-progress": "In progress",
   "status.done": "Done",

@@ -92,6 +92,11 @@ error_codes! {
     MovePreviewChanged => ("project.preview_changed", 409),
     /// An issue type that was retired takes no new issues (ISS-02).
     IssueTypeRetired => ("issue.type_retired", 409),
+    /// An issue would sit under itself or under one of its own sub-issues, or the chain of
+    /// sub-issues would get too long (ISS-03).
+    ParentCircle => ("issue.parent_circle", 409),
+    /// Those two issues are related in that way already (ISS-04).
+    RelationExists => ("relation.exists", 409),
     /// A name of a group, role or project is used already.
     NameTaken => ("name.taken", 409),
     /// There is no such thing, or the person may not know about it.

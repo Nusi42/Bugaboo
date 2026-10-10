@@ -679,6 +679,9 @@ pub const ERROR_EDIT_TAKEN_OVER: MessageKey = MessageKey::new("error.edit.taken-
 /// The message `error.edit.version-changed`.
 pub const ERROR_EDIT_VERSION_CHANGED: MessageKey = MessageKey::new("error.edit.version-changed");
 
+/// The message `error.issue.parent-circle`.
+pub const ERROR_ISSUE_PARENT_CIRCLE: MessageKey = MessageKey::new("error.issue.parent-circle");
+
 /// The message `error.issue.type-retired`.
 pub const ERROR_ISSUE_TYPE_RETIRED: MessageKey = MessageKey::new("error.issue.type-retired");
 
@@ -702,6 +705,9 @@ pub const ERROR_PROJECT_TOO_DEEP: MessageKey = MessageKey::new("error.project.to
 
 /// The message `error.rate-limit.exceeded`.
 pub const ERROR_RATE_LIMIT_EXCEEDED: MessageKey = MessageKey::new("error.rate-limit.exceeded");
+
+/// The message `error.relation.exists`.
+pub const ERROR_RELATION_EXISTS: MessageKey = MessageKey::new("error.relation.exists");
 
 /// The message `error.request.bad-cursor`.
 pub const ERROR_REQUEST_BAD_CURSOR: MessageKey = MessageKey::new("error.request.bad-cursor");
@@ -1757,6 +1763,27 @@ pub const PROJECTS_TREE_EMPTY: MessageKey = MessageKey::new("projects.tree-empty
 
 /// The message `projects.tree-more`.
 pub const PROJECTS_TREE_MORE: MessageKey = MessageKey::new("projects.tree-more");
+
+/// The message `relation-kind.blocks`.
+pub const RELATION_KIND_BLOCKS: MessageKey = MessageKey::new("relation-kind.blocks");
+
+/// The message `relation-kind.causes`.
+pub const RELATION_KIND_CAUSES: MessageKey = MessageKey::new("relation-kind.causes");
+
+/// The message `relation-kind.duplicate-of`.
+pub const RELATION_KIND_DUPLICATE_OF: MessageKey = MessageKey::new("relation-kind.duplicate-of");
+
+/// The message `relation-kind.has-duplicate`.
+pub const RELATION_KIND_HAS_DUPLICATE: MessageKey = MessageKey::new("relation-kind.has-duplicate");
+
+/// The message `relation-kind.is-blocked-by`.
+pub const RELATION_KIND_IS_BLOCKED_BY: MessageKey = MessageKey::new("relation-kind.is-blocked-by");
+
+/// The message `relation-kind.is-caused-by`.
+pub const RELATION_KIND_IS_CAUSED_BY: MessageKey = MessageKey::new("relation-kind.is-caused-by");
+
+/// The message `relation-kind.related-to`.
+pub const RELATION_KIND_RELATED_TO: MessageKey = MessageKey::new("relation-kind.related-to");
 
 /// The message `roles.actions-title`.
 pub const ROLES_ACTIONS_TITLE: MessageKey = MessageKey::new("roles.actions-title");
@@ -5675,6 +5702,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "Someone changed this while you were working. Use Compare and save to keep your changes.",
     ),
     (
+        "error.issue.parent-circle",
+        "An issue cannot sit under itself or under one of its own sub-issues, and sub-issues cannot go that deep. Choose another issue.",
+    ),
+    (
         "error.issue.type-retired",
         "That issue type is retired, so no new issues can be made with it. Choose another type.",
     ),
@@ -5701,6 +5732,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "error.rate-limit.exceeded",
         "Too many tries. Please wait a little and try again.",
+    ),
+    (
+        "error.relation.exists",
+        "Those two issues are related in that way already.",
     ),
     (
         "error.request.bad-cursor",
@@ -6471,6 +6506,13 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("projects.toggle-name", "Sub-projects of {name}"),
     ("projects.tree-empty", "You do not see any project yet."),
     ("projects.tree-more", "Show more projects"),
+    ("relation-kind.blocks", "blocks"),
+    ("relation-kind.causes", "causes"),
+    ("relation-kind.duplicate-of", "duplicate of"),
+    ("relation-kind.has-duplicate", "has duplicate"),
+    ("relation-kind.is-blocked-by", "is blocked by"),
+    ("relation-kind.is-caused-by", "is caused by"),
+    ("relation-kind.related-to", "related to"),
     ("roles.actions-title", "More about this role"),
     ("roles.applies.organization", "Whole organization"),
     ("roles.applies.project", "Only this project"),
