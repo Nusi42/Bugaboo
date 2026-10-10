@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { type Locator, type Page } from "@playwright/test";
+import { type Page } from "@playwright/test";
 
 import { ada } from "./support/accounts.ts";
 import { expectGoodInEveryLook } from "./support/checks.ts";
@@ -27,22 +27,15 @@ async function openEditor(page: Page) {
   return box;
 }
 
-/**
- * Writes a text. An earlier test left its lock behind (a closed page lets go after a minute), so
- * the page may say that somebody is editing: then this test edits anyway and keeps its text.
- */
-async function write(page: Page, box: Locator, text: string): Promise<void> {
-  await box.fill(text);
-  const anyway = page.getByRole("button", {
-    name: t("issues.edit-anyway"),
-    exact: true,
-  });
-  await expect(box.or(anyway).first()).toBeVisible();
-  if (await anyway.isVisible()) {
-    await anyway.click();
+// Every test cancels its editing, so the lock is let go and the next test is not told that somebody
+// is editing.
+test.afterEach(async ({ page }) => {
+  const cancel = page.getByRole("button", { name: t("common.cancel"), exact: true });
+  if (await cancel.isVisible()) {
+    await cancel.click();
+    await expect(cancel).toBeHidden();
   }
-  await expect(box).toHaveValue(text);
-}
+});
 
 async function openPreview(page: Page): Promise<void> {
   await page.getByRole("tab", { name: t("markdown.preview"), exact: true }).click();
@@ -50,7 +43,7 @@ async function openPreview(page: Page): Promise<void> {
 
 test("sec_13 a pasted script shows as text in the preview and never runs", async ({ page }) => {
   const box = await openEditor(page);
-  await write(page, box, `${pasted}\n\nSee **this**.`);
+  await box.fill(`${pasted}\n\nSee **this**.`);
   await openPreview(page);
   const preview = page.getByRole("tabpanel", {
     name: t("markdown.preview"),
@@ -66,7 +59,7 @@ test("cf_01 the toolbar writes Markdown and the preview shows what others will s
   page,
 }) => {
   const box = await openEditor(page);
-  await write(page, box, "one two");
+  await box.fill("one two");
   await box.selectText();
   await page.getByRole("button", { name: t("markdown.bold"), exact: true }).click();
   await expect(box).toHaveValue("**one two**");
@@ -90,9 +83,7 @@ test("iss_05 an empty text says there is nothing to preview", async ({ page }) =
 
 test("ux_04 the editor is good in every theme, writing and previewing", async ({ page }) => {
   const box = await openEditor(page);
-  await write(
-    page,
-    box,
+  await box.fill(
     "# Title\n\nSome *emphasis*, `code`, WEB-1 and @ana.\n\n> A quote\n\n- one\n- two",
   );
   await expectGoodInEveryLook(page);
