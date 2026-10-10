@@ -12,6 +12,7 @@ use std::future::Future;
 use std::pin::Pin;
 
 use super::scenarios::{self as s, Added};
+use super::scenarios_issues as si;
 use super::world::{Outcome, World};
 use crate::auth::USE_CASES;
 
@@ -20,7 +21,11 @@ use crate::auth::USE_CASES;
 type Scenario = for<'a> fn(&'a World) -> Pin<Box<dyn Future<Output = Added> + 'a>>;
 
 /// The use cases the server calls itself, at every start, and not through `AuthApi`.
-const SYSTEM_USE_CASES: [&str; 2] = ["issue_setup_code", "make_starting_roles"];
+const SYSTEM_USE_CASES: [&str; 3] = [
+    "issue_setup_code",
+    "make_starting_roles",
+    "make_starting_issue_types",
+];
 
 /// The table: the name of the use case and its scenario. One line per command use case.
 macro_rules! table {
@@ -76,6 +81,13 @@ table! {
     "delete_access_key" => s::delete_access_key_scenario,
     "change_project" => s::change_project_scenario,
     "move_project" => s::move_project_scenario,
+    "make_issue" => si::make_issue_scenario,
+    "change_issue" => si::change_issue_scenario,
+    "delete_issue" => si::delete_issue_scenario,
+    "restore_issue" => si::restore_issue_scenario,
+    "make_issue_type" => si::make_issue_type_scenario,
+    "change_issue_type" => si::change_issue_type_scenario,
+    "make_starting_issue_types" => si::make_starting_issue_types_scenario,
 }
 
 #[test]

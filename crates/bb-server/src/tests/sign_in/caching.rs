@@ -8,7 +8,7 @@ use axum::http::{Method, Request, StatusCode};
 use bb_api::openapi::operations;
 use bb_app::access::Permission;
 use bb_app::roles::MakeRole;
-use bb_testing::{TestResult, each_database};
+use bb_testing::{Failure, TestResult, each_database};
 use serde_json::json;
 use tower::ServiceExt as _;
 
@@ -23,6 +23,23 @@ fn get_routes() -> Vec<String> {
         .filter(|operation| operation.method == Method::GET)
         .map(|operation| operation.path.clone())
         .collect()
+}
+
+/// An issue in the project EXAMPLE, for the route that names one: its readable ID.
+async fn an_issue_in_example(ada: &mut Browser) -> Result<String, Failure> {
+    let types = ada.send("GET", "/api/v1/issue-types", None).await?;
+    let issue = ada
+        .send(
+            "POST",
+            "/api/v1/projects/EXAMPLE/issues",
+            Some(json!({
+                "issue_type": types.body["items"][0]["id"],
+                "title": "An issue to ask for"
+            })),
+        )
+        .await?;
+    assert_eq!(issue.status, StatusCode::OK, "{}", issue.body);
+    Ok(issue.body["key"].as_str().ok_or("no issue")?.to_owned())
 }
 
 #[tokio::test]
@@ -68,6 +85,7 @@ async fn perf_03_every_get_answers_an_etag_and_304_on_a_match() -> TestResult {
                 .ok_or("no person")?
                 .to_owned(),
         );
+        let issue_key = an_issue_in_example(&mut ada).await?;
         let routes = get_routes();
         assert!(routes.len() >= 9, "{routes:?}");
         let (mut kept, mut never_stored) = (0, 0);
@@ -85,6 +103,7 @@ async fn perf_03_every_get_answers_an_etag_and_304_on_a_match() -> TestResult {
                 .replace("{group_id}", &group_id)
                 .replace("{person_id}", &person_id)
                 .replace("{person}", &person_id)
+                .replace("{issue}", &issue_key)
                 .replace("{project}", project);
             let path = &filled;
             assert!(

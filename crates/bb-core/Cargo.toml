@@ -24,6 +24,7 @@ utoipa = { workspace = true, optional = true }
 uuid = { workspace = true, features = ["std"] }
 
 [dev-dependencies]
+proptest = { workspace = true }
 trybuild = { workspace = true }
 
 [lints]

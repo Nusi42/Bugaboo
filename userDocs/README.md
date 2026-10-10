@@ -6,6 +6,7 @@ End-user and administrator documentation. It is written alongside the work on Bu
 - [The basics](basics/README.md): finding your way around, keyboard shortcuts, appearance
 - [My settings](my-settings/README.md): appearance, region, start page and keyboard shortcuts, kept with you
 - [Projects](projects/README.md): the tree, short names, making and moving projects
+- [Issues](issues/README.md): making and changing issues, [issue IDs](issues/issue-ids.md) and [issue types](issues/issue-types.md)
 - [People, groups and roles](people/README.md): the list of people and the invitations, groups, roles and permissions, and who has which role
 - [What roles see](permissions/README.md): field permissions, who sees people, and check access
 - [Writing text](writing/README.md): the marks, the buttons and the preview for descriptions and comments
@@ -16,7 +17,7 @@ End-user and administrator documentation. It is written alongside the work on Bu
 
 Planned sections:
 
-- Using Bugaboo (issues, searches, boards, Gantt, time tracking)
+- Using Bugaboo (searches, boards, Gantt, time tracking)
 - Search language reference
 - Administration (workflows, custom fields, themes)
 - AI assistant and MCP integration

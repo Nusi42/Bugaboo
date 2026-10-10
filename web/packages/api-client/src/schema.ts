@@ -838,6 +838,97 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/issue-types": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * The issue types in the order they are offered in, a page at a time, retired ones too. Open to
+     *     everybody who is signed in.
+     */
+    get: operations["listIssueTypes"];
+    put?: never;
+    /** Makes an issue type. Needs the permission *Manage issue types, kinds of relation and layouts*. */
+    post: operations["makeIssueType"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/issue-types/{issue_type}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /**
+     * Changes the name or the icon of an issue type, or retires it (or offers it again). Needs the
+     *     permission *Manage issue types, kinds of relation and layouts*.
+     */
+    patch: operations["changeIssueType"];
+    trace?: never;
+  };
+  "/api/v1/issues/{issue}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * One issue by its readable ID (an old one too; the answer holds the current one) or its
+     *     internal ID, with what the person may do with it. Needs the permission *See every issue of the
+     *     project*, or the issue is one the person reported.
+     */
+    get: operations["getIssue"];
+    put?: never;
+    post?: never;
+    /**
+     * Puts an issue into the trash. Needs the permission *Delete issues into the trash*. *Undo*
+     *     takes it out again.
+     */
+    delete: operations["deleteIssue"];
+    options?: never;
+    head?: never;
+    /**
+     * Changes the fields of an issue. Needs the permission *Change anybody's issues*, or *Change the
+     *     issues they reported* on an issue the person reported; each field must be one the person may
+     *     change.
+     */
+    patch: operations["changeIssue"];
+    trace?: never;
+  };
+  "/api/v1/issues/{issue}/restore": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Takes an issue out of the trash (*Undo*). Needs the permission *Delete issues into the
+     *     trash*.
+     */
+    post: operations["restoreIssue"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/me/settings": {
     parameters: {
       query?: never;
@@ -1105,6 +1196,30 @@ export interface paths {
      *     there themselves.
      */
     post: operations["assignProjectRole"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/projects/{project}/issues": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * The issues of a project the person sees, newest first, a page at a time. Without *See every
+     *     issue of the project* the person sees the issues they reported.
+     */
+    get: operations["listIssues"];
+    put?: never;
+    /**
+     * Makes an issue in a project. Needs the permission *Make issues*; the fields set must be ones
+     *     the person may change (the title always).
+     */
+    post: operations["makeIssue"];
     delete?: never;
     options?: never;
     head?: never;
@@ -1572,6 +1687,37 @@ export interface components {
       /** @description What the device is asked, to give to `navigator.credentials`. */
       options: Record<string, unknown>;
     };
+    /** @description What to change about an issue: what is left out stays as it is. */
+    ChangeIssueBody: {
+      /** @description The IDs of the people it is assigned to from now on: all of them, not the ones to add. */
+      assigned_to?: string[] | null;
+      /** @description A new description. */
+      description?: string | null;
+      /** @description A new issue type; a retired type is refused. */
+      issue_type?: string | null;
+      priority?: components["schemas"]["Priority"] | null;
+      status?: components["schemas"]["Status"] | null;
+      /** @description A new title. */
+      title?: string | null;
+      /**
+       * Format: int64
+       * @description The version the person looked at.
+       */
+      version: number;
+    };
+    /** @description What to change about an issue type: what is left out stays as it is. */
+    ChangeIssueTypeBody: {
+      icon?: components["schemas"]["IssueIcon"] | null;
+      /** @description A new name. */
+      name?: string | null;
+      /** @description `true` retires the type (no new issues of it), `false` offers it again. */
+      retired?: boolean | null;
+      /**
+       * Format: int64
+       * @description The version the person looked at.
+       */
+      version: number;
+    };
     /** @description What to change about a project: what is left out stays as it is. */
     ChangeProjectBody: {
       /** @description A new name. */
@@ -1728,6 +1874,7 @@ export interface components {
       | "project.move_into_itself"
       | "project.too_deep"
       | "project.preview_changed"
+      | "issue.type_retired"
       | "name.taken"
       | "resource.not_found"
       | "request.invalid"
@@ -1872,6 +2019,98 @@ export interface components {
     InviteBody: {
       /** @description The e-mail address to invite. */
       email: string;
+    };
+    /** @description One issue with what the person may do with it. */
+    IssueDetailBody: {
+      /** @description The fields the person may change in this issue; empty when they may not change it. */
+      changeable: components["schemas"]["Field"][];
+      /** @description The issue, with every field the person may see. */
+      issue: components["schemas"]["IssueItem"];
+      /** @description Whether the person may change the issue at all, in the fields they may change. */
+      may_change: boolean;
+      /** @description Whether the person may delete the issue into the trash. */
+      may_delete: boolean;
+    };
+    /**
+     * @description The icon of an issue type, by its name in Lucide.
+     * @enum {string}
+     */
+    IssueIcon:
+      | "bug"
+      | "square-check"
+      | "sparkles"
+      | "flag"
+      | "target"
+      | "lightbulb"
+      | "rocket"
+      | "wrench"
+      | "book-open"
+      | "shield"
+      | "zap"
+      | "circle-help"
+      | "star"
+      | "bookmark"
+      | "hammer"
+      | "flame";
+    /**
+     * @description An issue: the fields that can be asked for. An answer holds only those that were asked for (a
+     *     list holds a few by default; one issue holds all) and that the person may see: a field that is
+     *     hidden from them is left out, and asking for it fails like asking for one that does not exist.
+     */
+    IssueItem: {
+      /** @description Who works on it, as the viewer may see people of this kind. */
+      assigned_to?: components["schemas"]["PersonRef"][] | null;
+      /** @description When it entered the group *Done*, while it is in it. Hidden with the status. */
+      closed_at?: string | null;
+      /** @description When it was made. */
+      created_at?: string | null;
+      /** @description The long text, in Markdown. */
+      description?: string | null;
+      /** @description The internal ID, which never changes. */
+      id?: string | null;
+      issue_type?: components["schemas"]["IssueTypeRef"] | null;
+      /** @description The readable ID now (`WEB-142`, `WEB-K7Q2X`). */
+      key?: string | null;
+      priority?: components["schemas"]["Priority"] | null;
+      project?: components["schemas"]["ProjectRef"] | null;
+      reported_by?: components["schemas"]["PersonRef"] | null;
+      status?: components["schemas"]["Status"] | null;
+      status_group?: components["schemas"]["StatusGroup"] | null;
+      /** @description What it is about. */
+      title?: string | null;
+      /** @description When it was last changed. */
+      updated_at?: string | null;
+      /**
+       * Format: int64
+       * @description Counts up with every change. A change is made on the version that was looked at.
+       */
+      version?: number | null;
+    };
+    /** @description An issue type: the fields that can be asked for. */
+    IssueTypeItem: {
+      icon?: components["schemas"]["IssueIcon"] | null;
+      /** @description The ID of the type. */
+      id?: string | null;
+      /** @description What it is called. */
+      name?: string | null;
+      /** @description Whether it is retired: old issues keep it, new ones cannot have it. */
+      retired?: boolean | null;
+      /**
+       * Format: int64
+       * @description Counts up with every change. A change is made on the version that was looked at.
+       */
+      version?: number | null;
+    };
+    /** @description An issue type as a small reference: what the line of an issue needs. */
+    IssueTypeRef: {
+      /** @description Its icon. */
+      icon: components["schemas"]["IssueIcon"];
+      /** @description The ID of the type. */
+      id: string;
+      /** @description What it is called. */
+      name: string;
+      /** @description Whether it is retired: old issues keep it, new ones cannot have it. */
+      retired: boolean;
     };
     /**
      * @description What the key may do: see only, see and change, everything its owner can do, or single permissions.
@@ -2228,6 +2467,26 @@ export interface components {
     NewFieldLevelBody: {
       level?: components["schemas"]["FieldLevel"] | null;
     };
+    /** @description An issue to make. */
+    NewIssueBody: {
+      /** @description The IDs of the people it is assigned to. Nobody when left out. */
+      assigned_to?: string[] | null;
+      /** @description The long text, in Markdown. Empty when left out. */
+      description?: string | null;
+      /** @description The ID of its issue type; a retired type takes no new issues. */
+      issue_type: string;
+      priority?: components["schemas"]["Priority"] | null;
+      status?: components["schemas"]["Status"] | null;
+      /** @description What it is about. */
+      title: string;
+    };
+    /** @description An issue type to make. */
+    NewIssueTypeBody: {
+      /** @description Its icon. */
+      icon: components["schemas"]["IssueIcon"];
+      /** @description What it is called. */
+      name: string;
+    };
     /** @description A row for the whole organization to give: to a person or to a group, and the role. */
     NewOrganizationRowBody: {
       /** @description The ID of the role. */
@@ -2437,6 +2696,67 @@ export interface components {
         expires_at?: string | null;
         /** @description The ID of the invitation. */
         id?: string | null;
+      }[];
+      /** @description The cursor of the next page; `null` on the last page. */
+      next_cursor: string | null;
+    };
+    /**
+     * @description One page of a list. `T` is the view of an item for the API description; an answer holds the
+     *     items cut to the chosen fields ([`Page::of_authorized`]).
+     */
+    Page_IssueItem: {
+      /** @description The items of this page. */
+      items: {
+        /** @description Who works on it, as the viewer may see people of this kind. */
+        assigned_to?: components["schemas"]["PersonRef"][] | null;
+        /** @description When it entered the group *Done*, while it is in it. Hidden with the status. */
+        closed_at?: string | null;
+        /** @description When it was made. */
+        created_at?: string | null;
+        /** @description The long text, in Markdown. */
+        description?: string | null;
+        /** @description The internal ID, which never changes. */
+        id?: string | null;
+        issue_type?: components["schemas"]["IssueTypeRef"] | null;
+        /** @description The readable ID now (`WEB-142`, `WEB-K7Q2X`). */
+        key?: string | null;
+        priority?: components["schemas"]["Priority"] | null;
+        project?: components["schemas"]["ProjectRef"] | null;
+        reported_by?: components["schemas"]["PersonRef"] | null;
+        status?: components["schemas"]["Status"] | null;
+        status_group?: components["schemas"]["StatusGroup"] | null;
+        /** @description What it is about. */
+        title?: string | null;
+        /** @description When it was last changed. */
+        updated_at?: string | null;
+        /**
+         * Format: int64
+         * @description Counts up with every change. A change is made on the version that was looked at.
+         */
+        version?: number | null;
+      }[];
+      /** @description The cursor of the next page; `null` on the last page. */
+      next_cursor: string | null;
+    };
+    /**
+     * @description One page of a list. `T` is the view of an item for the API description; an answer holds the
+     *     items cut to the chosen fields ([`Page::of_authorized`]).
+     */
+    Page_IssueTypeItem: {
+      /** @description The items of this page. */
+      items: {
+        icon?: components["schemas"]["IssueIcon"] | null;
+        /** @description The ID of the type. */
+        id?: string | null;
+        /** @description What it is called. */
+        name?: string | null;
+        /** @description Whether it is retired: old issues keep it, new ones cannot have it. */
+        retired?: boolean | null;
+        /**
+         * Format: int64
+         * @description Counts up with every change. A change is made on the version that was looked at.
+         */
+        version?: number | null;
       }[];
       /** @description The cursor of the next page; `null` on the last page. */
       next_cursor: string | null;
@@ -2789,6 +3109,11 @@ export interface components {
           /** @enum {string} */
           kind: "hidden";
         };
+    /**
+     * @description How important an issue is.
+     * @enum {string}
+     */
+    Priority: "low" | "normal" | "high" | "critical";
     /**
      * @description The body of an error answer, as plain data. The HTTP layer only sends it.
      *
@@ -3315,6 +3640,16 @@ export interface components {
       /** @description The person sees the project. */
       sees: boolean;
     };
+    /**
+     * @description A status of the starting workflow.
+     * @enum {string}
+     */
+    Status: "open" | "in-progress" | "done";
+    /**
+     * @description The group of a status.
+     * @enum {string}
+     */
+    StatusGroup: "not-started" | "in-progress" | "done";
     /**
      * @description The only value a status can have today.
      * @enum {string}
@@ -7588,6 +7923,610 @@ export interface operations {
       };
     };
   };
+  listIssueTypes: {
+    parameters: {
+      query?: {
+        /** @description The fields each item holds, separated by commas. The answer schema names every field that can be asked for; when this is left out the route's own small default is used. */
+        fields?: string;
+        /** @description Where the page starts: the `next_cursor` of the page before. */
+        cursor?: string;
+        /** @description How many items a page holds at most (default 50, at most 100). */
+        limit?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The issue types. */
+      200: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Page_IssueTypeItem"];
+        };
+      };
+      /** @description Nothing changed since the `ETag` that `If-None-Match` named. No body. */
+      304: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  makeIssueType: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["NewIssueTypeBody"];
+      };
+    };
+    responses: {
+      /** @description The issue type. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["IssueTypeItem"];
+        };
+      };
+      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  changeIssueType: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the issue type. */
+        issue_type: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ChangeIssueTypeBody"];
+      };
+    };
+    responses: {
+      /** @description The issue type as it is now. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["IssueTypeItem"];
+        };
+      };
+      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  getIssue: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The readable ID (WEB-142) or the internal ID of the issue. */
+        issue: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The issue. */
+      200: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["IssueDetailBody"];
+        };
+      };
+      /** @description Nothing changed since the `ETag` that `If-None-Match` named. No body. */
+      304: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  deleteIssue: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The readable ID (WEB-142) or the internal ID of the issue. */
+        issue: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The issue is in the trash. */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  changeIssue: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The readable ID (WEB-142) or the internal ID of the issue. */
+        issue: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ChangeIssueBody"];
+      };
+    };
+    responses: {
+      /** @description The issue as it is now. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["IssueItem"];
+        };
+      };
+      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  restoreIssue: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The readable ID (WEB-142) or the internal ID of the issue. */
+        issue: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The issue, out of the trash. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["IssueItem"];
+        };
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
   listMySettings: {
     parameters: {
       query?: {
@@ -9041,6 +9980,195 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["AssignmentItem"];
+        };
+      };
+      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  listIssues: {
+    parameters: {
+      query?: {
+        /** @description The fields each item holds, separated by commas. The answer schema names every field that can be asked for; when this is left out the route's own small default is used. */
+        fields?: string;
+        /** @description Where the page starts: the `next_cursor` of the page before. */
+        cursor?: string;
+        /** @description How many items a page holds at most (default 50, at most 100). */
+        limit?: number;
+      };
+      header?: never;
+      path: {
+        /** @description The ID of the project, or its short name. */
+        project: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The issues, newest first. */
+      200: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Page_IssueItem"];
+        };
+      };
+      /** @description Nothing changed since the `ETag` that `If-None-Match` named. No body. */
+      304: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  makeIssue: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the project, or its short name. */
+        project: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["NewIssueBody"];
+      };
+    };
+    responses: {
+      /** @description The issue. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["IssueItem"];
         };
       };
       /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */

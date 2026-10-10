@@ -265,8 +265,14 @@ async fn auth_07_an_expired_a_deleted_and_an_unknown_key_get_the_same_answer_ove
     .await
 }
 
-/// The routes of *My settings*, which keys may use.
-const MY_SETTINGS: [&str; 3] = ["listMySettings", "changeMySetting", "resetMySetting"];
+/// The routes of *My settings*, which keys may use, and the list of issue types, which every
+/// signed-in person reads and a key reads as its owner.
+const MY_SETTINGS: [&str; 4] = [
+    "listMySettings",
+    "changeMySetting",
+    "resetMySetting",
+    "listIssueTypes",
+];
 
 #[tokio::test]
 async fn auth_07_no_route_of_the_owners_sign_in_data_opens_for_a_key() -> TestResult {

@@ -60,8 +60,9 @@ impl Record {
                 .collect();
             let _ = writeln!(
                 text,
-                "route {} {} {} {} : {}",
+                "route {} {} {} {} {} : {}",
                 route.id,
+                words::ENTRY_API,
                 route.method,
                 route.path,
                 route.needs.key(),
@@ -159,7 +160,7 @@ mod tests {
         let zeta = text.find("route zeta").unwrap_or(usize::MAX);
         assert!(alpha < zeta);
         assert!(text.contains(
-            "route alpha GET /api/v1/x see-projects : nobody=forbidden role-guest=forbidden\n"
+            "route alpha api GET /api/v1/x see-projects : nobody=forbidden role-guest=forbidden\n"
         ));
     }
 }

@@ -43,6 +43,10 @@ export const queryKeys = {
     one: (address: string) => ["projects", "one", address],
     movePreview: (project: string, to: string | null) => ["projects", "move-preview", project, to],
   },
+  issueTypes: {
+    all: ["issue-types"],
+    list: () => ["issue-types", "list"],
+  },
   invitations: {
     all: ["invitations"],
     one: (secret: string) => ["invitations", "one", secret],
@@ -63,6 +67,11 @@ export const queryKeys = {
     ],
   },
 } as const;
+
+/** An issue type was made or changed: the list of types is read again. */
+export function refreshIssueTypes(): void {
+  void queryClient.invalidateQueries({ queryKey: queryKeys.issueTypes.all });
+}
 
 /** Something about people, groups, roles or rows changed: all of it is read again where it is shown. */
 export function refreshAccess(): void {

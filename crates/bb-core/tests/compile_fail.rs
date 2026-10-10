@@ -4,6 +4,7 @@
 // Dependencies of the library that this test does not use itself (`unused_crate_dependencies`).
 use bb_macros as _;
 use jiff as _;
+use proptest as _;
 use serde as _;
 use serde_json as _;
 #[cfg(feature = "openapi")]

@@ -11,7 +11,8 @@ use std::sync::{Arc, Mutex, MutexGuard};
 
 use bb_core::access::{Assignment, Group, GroupMember};
 use bb_core::event::DomainEvent;
-use bb_core::id::UserId;
+use bb_core::id::{ProjectId, UserId};
+use bb_core::issue::{Issue, IssueAlias, IssueAssignee, IssueType};
 use bb_core::person::Person;
 use bb_core::project::{Project, ProjectAlias};
 use bb_core::security_log::Digest;
@@ -76,6 +77,11 @@ pub(crate) struct State {
     pub(crate) assignments: Vec<Assignment>,
     pub(crate) projects: Vec<Project>,
     pub(crate) aliases: Vec<ProjectAlias>,
+    pub(crate) issue_types: Vec<IssueType>,
+    pub(crate) issues: Vec<Issue>,
+    pub(crate) assignees: Vec<IssueAssignee>,
+    pub(crate) issue_aliases: Vec<IssueAlias>,
+    pub(crate) counters: Vec<(ProjectId, i64)>,
 }
 
 /// The state, what was recorded, and the failures a test asked for.
@@ -105,6 +111,8 @@ pub(crate) struct FakeStore {
 /// The open "transaction" of a change: a copy of the state.
 pub(crate) struct Tx {
     pub(crate) state: State,
+    /// The events of what a change did besides what its own event says.
+    pub(crate) follow_ups: Vec<DomainEvent>,
 }
 
 impl FakeStore {
@@ -174,11 +182,15 @@ impl ChangeStore for FakeStore {
             }
             shared.state.clone()
         };
-        let mut tx = Tx { state };
+        let mut tx = Tx {
+            state,
+            follow_ups: Vec::new(),
+        };
         let result = change(&mut tx).await?;
         let mut shared = self.lock();
         shared.state = tx.state;
         shared.events.push(event.clone());
+        shared.events.extend(tx.follow_ups);
         Ok(result)
     }
 
@@ -191,6 +203,10 @@ impl ChangeStore for FakeStore {
             shared.reads += 1;
             shared.state.clone()
         };
-        read(&mut Tx { state }).await
+        read(&mut Tx {
+            state,
+            follow_ups: Vec::new(),
+        })
+        .await
     }
 }

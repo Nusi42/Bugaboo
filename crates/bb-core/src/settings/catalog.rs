@@ -6,6 +6,7 @@ use super::themes::{
 use super::{
     Bool, ChangedBy, Choice, Format, Integer, Level, Setting, SettingDefinition, Text, settings,
 };
+use crate::issue_key::IdMode;
 use crate::message;
 
 /// The choices of *Theme*: follow the device, or always light or always dark.
@@ -54,6 +55,19 @@ const FIRST_DAY_CHOICES: &[Choice] = &[
     Choice::new("sunday", message::SETTING_REGION_FIRST_DAY_SUNDAY),
     Choice::new("saturday", message::SETTING_REGION_FIRST_DAY_SATURDAY),
 ];
+
+/// The choices of *Issue IDs*: the two modes of ADR-0021. The registry is read as text by the tools
+/// that make the constants of the browser, so a choice is written out; the assertions below stop
+/// the build when it differs from the word of `IdMode`.
+const ID_MODE_CHOICES: &[Choice] = &[
+    Choice::new("random", IdMode::Random.name()),
+    Choice::new("counting", IdMode::Counting.name()),
+];
+
+const _: () = {
+    assert!(crate::words::same_text(IdMode::Random.code(), "random"));
+    assert!(crate::words::same_text(IdMode::Counting.code(), "counting"));
+};
 
 settings! {
     /// The theme choice: `light`, `dark`, or `device` for *Match my device*.
@@ -307,6 +321,33 @@ settings! {
         help: message::SETTING_AUTH_ACCESS_KEY_LONGEST_DAYS_HELP,
         lockable: false,
         bounds: (1, 365),
+    }
+
+    /// How a project gives out issue IDs: `random` (`WEB-K7Q2X`) or `counting` (`WEB-142`). The
+    /// organization's value is the default of every project; a project can choose (ISS-01a,
+    /// ADR-0021). Changing it gives every issue of the project a new ID and keeps the old ones.
+    ISSUES_ID_MODE: Text = {
+        key: "issues.id-mode",
+        name: message::SETTING_ISSUES_ID_MODE_NAME,
+        default: "random",
+        levels: [Organization, Project],
+        changed_by: ProjectLeads,
+        help: message::SETTING_ISSUES_ID_MODE_HELP,
+        lockable: false,
+        format: Format::Choices(ID_MODE_CHOICES),
+    }
+
+    /// How many symbols a random issue ID has when it is drawn; the length grows by itself when
+    /// the short ones run out.
+    ISSUES_ID_LENGTH: Integer = {
+        key: "issues.id-length",
+        name: message::SETTING_ISSUES_ID_LENGTH_NAME,
+        default: 5,
+        levels: [Organization],
+        changed_by: Administrators,
+        help: message::SETTING_ISSUES_ID_LENGTH_HELP,
+        lockable: false,
+        bounds: (4, 8),
     }
 }
 

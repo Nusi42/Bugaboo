@@ -12,15 +12,15 @@ use bb_core::settings::{Layers, Scope, SettingValue};
 use jiff::Timestamp;
 
 use crate::access::PolicyStore;
-use crate::store_macros::{reads, writes};
+use crate::store_macros::{queries, writes};
 
 /// What the settings use cases need from storage.
 pub trait SettingsStore: PolicyStore + 'static {
-    reads! {
+    queries! {
         /// Everything stored that can matter for a person in a place: the organization's values,
         /// the values of the projects from `project` up to the top (nearest first) and the
         /// person's own. A project that does not exist counts as a project without a parent.
-        fn setting_layers(project: Option<ProjectId>, person: Option<UserId>) -> Layers;
+        fn setting_layers(project: Option<ProjectId>, person: Option<UserId>) -> Layers = setting_layers_in;
     }
 
     writes! {

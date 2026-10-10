@@ -7,6 +7,14 @@
 # [[counting]]: a folder or file whose code may make numbers that count up. Only the counting issue IDs of
 # a project (ADR-0021, M3) and labels that nobody sees belong here. An entry with nothing that counts fails.
 
+[[counting]]
+folder = "crates/bb-store/src/issues.rs"
+reason = "The counter of the counting issue IDs of a project: the one counter of the product, raised inside the change that makes the issue (ADR-0021, ISS-01a). Random IDs are the default."
+
+[[counting]]
+folder = "crates/bb-store/src/migrations/m0007_issues.rs"
+reason = "Makes the table of that counter (ADR-0021, ISS-01a)."
+
 [[exempt]]
 route = "GET /api/v1/roles/{role_id}/second-step-gap"
 property = "still_to_set_up"

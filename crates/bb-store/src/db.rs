@@ -10,9 +10,10 @@ use std::future::Future;
 use std::str::FromStr as _;
 use std::time::Duration;
 
+use bb_core::event::DomainEvent;
 use bb_core::id::{
-    AccessKeyId, AssignmentId, EntityId, EventId, GroupId, IdError, InvitationId, JobId, PasskeyId,
-    ProjectId, RoleId, SessionId, UserId,
+    AccessKeyId, AssignmentId, EntityId, EventId, GroupId, IdError, InvitationId, IssueId,
+    IssueTypeId, JobId, PasskeyId, ProjectId, RoleId, SessionId, UserId,
 };
 use jiff::Timestamp;
 use sea_query::{
@@ -211,6 +212,7 @@ impl Database {
     /// architecture §7 (Performance).
     pub(crate) async fn begin(&self) -> Result<Transaction, StoreError> {
         Ok(Transaction {
+            follow_ups: Vec::new(),
             inner: match &self.pool {
                 Pool::Sqlite(pool) => TxInner::Sqlite(pool.begin_with("BEGIN IMMEDIATE").await?),
                 Pool::Postgres(pool) => TxInner::Postgres(pool.begin().await?),
@@ -223,6 +225,7 @@ impl Database {
     /// repeatable read on PostgreSQL.
     pub(crate) async fn begin_read(&self) -> Result<Transaction, StoreError> {
         Ok(Transaction {
+            follow_ups: Vec::new(),
             inner: match &self.pool {
                 Pool::Sqlite(pool) => TxInner::Sqlite(pool.begin().await?),
                 Pool::Postgres(pool) => TxInner::Postgres(
@@ -357,11 +360,27 @@ enum TxInner {
     Postgres(sqlx::Transaction<'static, Postgres>),
 }
 
+/// The kinds of advisory lock of the program, the one home of their numbers: PostgreSQL takes
+/// the two-key form `pg_advisory_xact_lock(class, key)`, so locks of different kinds never meet.
+#[derive(Clone, Copy, Debug)]
+#[repr(i32)]
+pub(crate) enum LockClass {
+    /// Processes that migrate one after the other (key 0).
+    Migration = 1,
+    /// Changes of roles and rows that could leave no administrator (key 0).
+    Policy = 2,
+    /// The codes of the issues of one project (key: four bytes of the project's ID).
+    IssueCodes = 3,
+}
+
 /// A database transaction. Domain data is written only inside one, and only through
 /// [`Database::record_change`](crate::events), so every change comes with its event and its
 /// outbox entry. A transaction that is dropped without `commit` is rolled back.
 pub struct Transaction {
     inner: TxInner,
+    /// Events the change adds besides its own; `record_change` appends them after the event of
+    /// the change, so the lock on the outbox stays the last lock of the transaction.
+    pub(crate) follow_ups: Vec<DomainEvent>,
 }
 
 impl std::fmt::Debug for Transaction {
@@ -413,11 +432,17 @@ impl Transaction {
     /// thing (migrate) run one after the other. Dialect-specific on purpose (ADR-0003): on
     /// SQLite the transaction already holds the write lock (`BEGIN IMMEDIATE`), so nothing is
     /// needed; PostgreSQL has many writers and needs an advisory lock.
-    pub(crate) async fn advisory_lock(&mut self, key: i64) -> Result<(), StoreError> {
+    pub(crate) async fn advisory_lock(
+        &mut self,
+        class: LockClass,
+        key: i32,
+    ) -> Result<(), StoreError> {
         if matches!(self.inner, TxInner::Postgres(_)) {
             let mut select = SelectStatement::new();
             select.expr(
-                sea_query::Func::cust(sea_query::Alias::new("pg_advisory_xact_lock")).arg(key),
+                sea_query::Func::cust(sea_query::Alias::new("pg_advisory_xact_lock"))
+                    .arg(class as i32)
+                    .arg(key),
             );
             self.fetch_all(&select).await?;
         }
@@ -592,6 +617,8 @@ stored_ids!(
     EventId => "an event ID",
     GroupId => "a group ID",
     InvitationId => "an invitation ID",
+    IssueId => "an issue ID",
+    IssueTypeId => "an issue type ID",
     JobId => "a job ID",
     PasskeyId => "a passkey ID",
     ProjectId => "a project ID",

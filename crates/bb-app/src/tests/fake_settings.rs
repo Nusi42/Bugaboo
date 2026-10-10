@@ -84,12 +84,12 @@ pub(crate) fn put(state: &mut State, scope: Scope, key: &str, value: &SettingVal
 }
 
 impl SettingsStore for FakeStore {
-    async fn setting_layers(
-        &self,
+    async fn setting_layers_in(
+        tx: &mut Tx,
         project: Option<ProjectId>,
         person: Option<UserId>,
     ) -> Result<Layers, FakeError> {
-        Ok(self.read(|state| layers_of(state, project, person)))
+        Ok(layers_of(&tx.state, project, person))
     }
 
     async fn put_setting_value(

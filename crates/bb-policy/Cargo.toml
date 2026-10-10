@@ -15,6 +15,7 @@ peek = []
 
 [dependencies]
 bb-core = { path = "../bb-core" }
+bb-macros = { path = "../bb-macros" }
 serde = { workspace = true }
 serde_json = { workspace = true }
 utoipa = { workspace = true, optional = true }

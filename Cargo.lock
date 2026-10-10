@@ -494,6 +494,7 @@ version = "0.0.0"
 dependencies = [
  "bb-macros",
  "jiff",
+ "proptest",
  "serde",
  "serde_json",
  "trybuild",
@@ -549,6 +550,7 @@ name = "bb-policy"
 version = "0.0.0"
 dependencies = [
  "bb-core",
+ "bb-macros",
  "jiff",
  "proptest",
  "serde",

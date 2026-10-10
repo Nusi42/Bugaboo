@@ -36,6 +36,7 @@ pub use store::SettingsStore;
 
 use crate::access::{Actor, ProjectLabel};
 use crate::auth::{AppError, AuthStore, Ctx, Stops, by, change_failed, fixed_entity, internal};
+use crate::issues::{ModeChange, plan_renewals_in, renew_in};
 
 /// Where the settings of a request are: the organization, a project, or the person who asks.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -465,11 +466,20 @@ pub async fn change_setting<S: AuthStore>(
             after: Some(json_of(&input.value)),
         }],
     )?;
+    // The issues of a project get new IDs in the same change when its mode of issue IDs changes.
     let (store_key, value, now) = (definition.key(), input.value, ctx.now());
+    let mode_change = ModeChange::Set(value.clone());
+    let (mut source, events) = (ctx.owned_ids(), ctx.event_maker(by(actor.person.id)));
     ctx.store()
         .record_change(&event, move |transaction| {
             Box::pin(async move {
-                S::put_setting_value(transaction, scope, store_key, &value, now).await
+                let renewals =
+                    plan_renewals_in::<S>(transaction, scope, store_key, &mode_change).await?;
+                S::put_setting_value(transaction, scope, store_key, &value, now).await?;
+                for renewal in &renewals {
+                    renew_in::<S>(transaction, renewal, &mut source, &events, now).await?;
+                }
+                Ok(())
             })
         })
         .await
@@ -513,16 +523,22 @@ pub async fn reset_setting<S: AuthStore>(
         }],
     )?;
     let (store_key, now) = (definition.key(), ctx.now());
+    let (mut source, events) = (ctx.owned_ids(), ctx.event_maker(by(actor.person.id)));
     ctx.store()
         .record_change(&event, move |transaction| {
             Box::pin(async move {
+                let renewals =
+                    plan_renewals_in::<S>(transaction, scope, store_key, &ModeChange::Reset)
+                        .await?;
                 if keeps_the_lock {
-                    S::put_setting_value(transaction, scope, store_key, &standard, now).await
+                    S::put_setting_value(transaction, scope, store_key, &standard, now).await?;
                 } else {
-                    S::clear_setting_value(transaction, scope, store_key)
-                        .await
-                        .map(|_| ())
+                    S::clear_setting_value(transaction, scope, store_key).await?;
                 }
+                for renewal in &renewals {
+                    renew_in::<S>(transaction, renewal, &mut source, &events, now).await?;
+                }
+                Ok(())
             })
         })
         .await

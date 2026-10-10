@@ -90,6 +90,8 @@ error_codes! {
     ProjectTooDeep => ("project.too_deep", 409),
     /// The projects, or who has which role, changed since the move was previewed.
     MovePreviewChanged => ("project.preview_changed", 409),
+    /// An issue type that was retired takes no new issues (ISS-02).
+    IssueTypeRetired => ("issue.type_retired", 409),
     /// A name of a group, role or project is used already.
     NameTaken => ("name.taken", 409),
     /// There is no such thing, or the person may not know about it.

@@ -4,28 +4,8 @@
 # permission that a route asks for fails, so the file shrinks as the routes arrive.
 
 [[engine-only]]
-permission = "see-issues"
-reason = "Issue routes come in M3 WP-03 (docs/milestones/M3/WP-03-issues-core.md); tracked by M3-F01."
-
-[[engine-only]]
-permission = "make-issues"
-reason = "Issue routes come in M3 WP-03 (docs/milestones/M3/WP-03-issues-core.md); tracked by M3-F01."
-
-[[engine-only]]
-permission = "change-issues"
-reason = "Issue routes come in M3 WP-03 (docs/milestones/M3/WP-03-issues-core.md); tracked by M3-F01."
-
-[[engine-only]]
 permission = "change-own-issues"
-reason = "Issue routes come in M3 WP-03 (docs/milestones/M3/WP-03-issues-core.md); tracked by M3-F01."
-
-[[engine-only]]
-permission = "delete-issues"
-reason = "Issue routes come in M3 WP-03 (docs/milestones/M3/WP-03-issues-core.md); tracked by M3-F01."
-
-[[engine-only]]
-permission = "manage-issue-types"
-reason = "Issue-type routes come in M3 WP-03 (docs/milestones/M3/WP-03-issues-core.md); tracked by M3-F01."
+reason = "Judged by Evaluation::may_change_issue inside the route that declares change-issues (PATCH /api/v1/issues/{issue}): a person with only this permission changes the issues they reported. It has no route of its own and stays here for good (M3-F01)."
 
 [[engine-only]]
 permission = "edit-anyway"
