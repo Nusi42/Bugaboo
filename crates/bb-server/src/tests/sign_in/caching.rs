@@ -25,6 +25,19 @@ fn get_routes() -> Vec<String> {
         .collect()
 }
 
+/// The ID of a comment written on the issue, for the routes that name a comment.
+async fn a_comment_on(ada: &mut Browser, issue_key: &str) -> Result<String, Failure> {
+    let written = ada
+        .send(
+            "POST",
+            &format!("/api/v1/issues/{issue_key}/comments"),
+            Some(json!({"text": "A comment to read the versions of."})),
+        )
+        .await?;
+    assert_eq!(written.status, StatusCode::OK);
+    Ok(written.body["id"].as_str().ok_or("no comment")?.to_owned())
+}
+
 /// An issue in the project EXAMPLE, for the route that names one: its readable ID.
 async fn an_issue_in_example(ada: &mut Browser) -> Result<String, Failure> {
     let types = ada.send("GET", "/api/v1/issue-types", None).await?;
@@ -86,15 +99,7 @@ async fn perf_03_every_get_answers_an_etag_and_304_on_a_match() -> TestResult {
                 .to_owned(),
         );
         let issue_key = an_issue_in_example(&mut ada).await?;
-        let written = ada
-            .send(
-                "POST",
-                &format!("/api/v1/issues/{issue_key}/comments"),
-                Some(json!({"text": "A comment to read the versions of."})),
-            )
-            .await?;
-        assert_eq!(written.status, StatusCode::OK);
-        let comment_id = written.body["id"].as_str().ok_or("no comment")?.to_owned();
+        let comment_id = a_comment_on(&mut ada, &issue_key).await?;
         let routes = get_routes();
         assert!(routes.len() >= 9, "{routes:?}");
         let (mut kept, mut never_stored) = (0, 0);
