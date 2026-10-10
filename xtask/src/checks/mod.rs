@@ -162,7 +162,9 @@ impl Context<'_> {
 }
 
 /// A check from the catalogue. An empty list of findings means it passed.
-pub(crate) trait Check {
+/// One check of the catalogue. Checks run side by side (`runner::run_entries`), so a check keeps
+/// its own work folder and takes a lock around anything it shares with another check.
+pub(crate) trait Check: Send + Sync {
     fn id(&self) -> &'static str;
     fn run(&self, context: &Context<'_>) -> anyhow::Result<Vec<Finding>>;
 }

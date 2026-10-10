@@ -1,11 +1,13 @@
 //! Picks the checks for a moment (edit, commit, push, CI) and runs them.
 
-use std::time::Instant;
+use std::sync::Mutex;
+use std::sync::atomic::{AtomicUsize, Ordering};
+use std::time::{Duration, Instant};
 
 use anyhow::bail;
 
 use crate::catalog::{Catalog, Entry};
-use crate::checks::{Check, Context};
+use crate::checks::{Check, Context, Finding};
 use crate::output;
 use crate::repo::Repo;
 
@@ -47,22 +49,86 @@ pub(crate) fn run(
         files,
     };
     let mut failed = 0_usize;
-    for entry in &selected {
+    for ran in run_entries(registry, &selected, &context)? {
+        output::result(ran.entry, &ran.findings, ran.took);
+        if !ran.findings.is_empty() {
+            failed += 1;
+        }
+    }
+    output::summary(selected.len(), failed, context.files.map(<[String]>::len));
+    Ok(failed == 0)
+}
+
+/// What one check found, and how long it took.
+pub(crate) struct Ran<'e> {
+    pub(crate) entry: &'e Entry,
+    pub(crate) findings: Vec<Finding>,
+    pub(crate) took: Duration,
+}
+
+/// What a check answered, and how long it took; kept until every check has run.
+type Outcome = anyhow::Result<(Vec<Finding>, Duration)>;
+
+/// Runs the checks side by side, as many at once as the machine has cores, and answers their
+/// results in the order of `entries` (catalogue order), so the output reads the same every time.
+/// Most checks are short, but several read the whole repository, so one after the other they
+/// grew past the commit-time budget as the code grew (META-SPEED, architecture §10).
+pub(crate) fn run_entries<'e>(
+    registry: &[Box<dyn Check>],
+    entries: &[&'e Entry],
+    context: &Context<'_>,
+) -> anyhow::Result<Vec<Ran<'e>>> {
+    let mut checks = Vec::with_capacity(entries.len());
+    for entry in entries {
         let Some(check) = registry.iter().find(|check| check.id() == entry.id) else {
             bail!(
                 "{} is active in the catalogue but not implemented (META-CATALOG)",
                 entry.id
             );
         };
-        let started = Instant::now();
-        let findings = check.run(&context)?;
-        output::result(entry, &findings, started.elapsed());
-        if !findings.is_empty() {
-            failed += 1;
-        }
+        checks.push(check.as_ref());
     }
-    output::summary(selected.len(), failed, context.files.map(<[String]>::len));
-    Ok(failed == 0)
+    let next = AtomicUsize::new(0);
+    let results: Mutex<Vec<Option<Outcome>>> =
+        Mutex::new((0..checks.len()).map(|_| None).collect());
+    let workers = std::thread::available_parallelism()
+        .map_or(1, std::num::NonZeroUsize::get)
+        .min(checks.len());
+    std::thread::scope(|scope| {
+        for _ in 0..workers {
+            scope.spawn(|| {
+                loop {
+                    let at = next.fetch_add(1, Ordering::Relaxed);
+                    let Some(check) = checks.get(at) else {
+                        break;
+                    };
+                    let started = Instant::now();
+                    let result = check.run(context).map(|found| (found, started.elapsed()));
+                    if let Ok(mut slots) = results.lock()
+                        && let Some(slot) = slots.get_mut(at)
+                    {
+                        *slot = Some(result);
+                    }
+                }
+            });
+        }
+    });
+    let slots = results
+        .into_inner()
+        .map_err(|_| anyhow::anyhow!("a check stopped while it held the list of results"))?;
+    let mut ran = Vec::with_capacity(entries.len());
+    for (entry, slot) in entries.iter().zip(slots) {
+        let Some(result) = slot else {
+            bail!("{} did not run to its end", entry.id);
+        };
+        let (findings, took) = result?;
+        ran.push(Ran {
+            entry,
+            findings,
+            took,
+        });
+    }
+    Ok(ran)
 }
 
 fn select<'a>(catalog: &'a Catalog, scope: &Scope) -> anyhow::Result<Vec<&'a Entry>> {

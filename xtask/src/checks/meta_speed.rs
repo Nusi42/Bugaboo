@@ -66,7 +66,8 @@ pub(crate) struct MetaSpeed;
 enum Work<'a> {
     /// One edit-time check on one file.
     Edit { entry: &'a Entry, file: String },
-    /// All commit-time checks that match, one after the other, on the sample.
+    /// All commit-time checks that match, side by side as the commit hook runs them, on the
+    /// sample.
     Commit {
         entries: Vec<&'a Entry>,
         sample: Vec<String>,
@@ -139,18 +140,18 @@ impl Check for MetaSpeed {
             |index, probe| match &works[index] {
                 Work::Edit { entry, file } => time_check(entry, std::slice::from_ref(file)),
                 Work::Commit { entries, sample } => {
-                    let mut total = Duration::ZERO;
-                    for entry in entries {
-                        let took = time_check(entry, sample)?;
-                        total += took;
-                        // A run of the commit-time checks is long; a load that comes and
-                        // goes shows only when the reference is taken in between. Checks
-                        // shorter than the reference itself add too little to be worth it.
-                        if took > REFERENCE_QUIET {
-                            probe()?;
-                        }
-                    }
-                    Ok(total)
+                    let inner = Context {
+                        repo,
+                        catalog: context.catalog,
+                        files: Some(sample),
+                    };
+                    let started = Instant::now();
+                    crate::runner::run_entries(&registry, entries, &inner)?;
+                    let took = started.elapsed();
+                    // A load that comes and goes during the run shows in a reference taken
+                    // right after it.
+                    probe()?;
+                    Ok(took)
                 }
             },
             || reference_workload(repo),

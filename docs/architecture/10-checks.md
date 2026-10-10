@@ -18,7 +18,7 @@ flowchart LR
 ```
 
 - **One catalogue, one runner.** Each check has an ID (for example `ARCH-AUTHZ-ONLY`), a plain title, the rule it enforces, the tool, when it runs and which files trigger it. People, agents and CI all run the same code.
-- **Small and fast.** A check runs only when its files change. Edit-time checks take under 3 seconds per file and commit-time checks under 10 seconds on a quiet PC, so nobody is tempted to skip them.
+- **Small and fast.** A check runs only when its files change, and the selected checks run side by side, as many at once as the machine has cores (several read the whole repository, so one after the other they grow with the code). Edit-time checks take under 3 seconds per file and commit-time checks under 10 seconds on a quiet PC, so nobody is tempted to skip them.
 - **Explains itself.** A failing check prints one sentence: what's wrong, which rule, and where it's written down.
 
 ## Groups of checks
