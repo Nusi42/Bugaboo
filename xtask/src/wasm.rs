@@ -189,8 +189,15 @@ fn is_fresh(root: &Path) -> bool {
         && module_path(root).is_file()
 }
 
+/// Held while [`ensure`] looks at or builds the module: checks run side by side, and two of them
+/// (LINT-TS, LINT-TYPES) ask for the module.
+static ENSURING: std::sync::Mutex<()> = std::sync::Mutex::new(());
+
 /// Makes sure the module is there; for checks and tests that read it.
 pub(crate) fn ensure(root: &Path) -> anyhow::Result<()> {
+    let _one_at_a_time = ENSURING
+        .lock()
+        .map_err(|_| anyhow::anyhow!("a build of the WebAssembly module stopped half way"))?;
     if is_fresh(root) {
         return Ok(());
     }
