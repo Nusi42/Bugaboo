@@ -13,20 +13,9 @@ import {
 import { useState } from "react";
 
 import { messageOf } from "../../shared/errors.ts";
-import type { Field } from "./fields.ts";
+import { useFieldTypes, type Field } from "./fields.ts";
 import { fieldChange, useChangeField } from "./use-change-field.ts";
 import { ValueEditor, type Sent } from "./ValueEditor.tsx";
-
-/** The kinds that cannot have a default: they point to people, groups or issues, or are long texts. */
-function hasNoDefault(field: Field): boolean {
-  return (
-    field.kind === "person" ||
-    field.kind === "people" ||
-    field.kind === "group" ||
-    field.kind === "issue" ||
-    field.kind === "long-text"
-  );
-}
 
 /** The switches of the basics: required, and never sent to the assistant. */
 function Flags({ field }: { readonly field: Field }) {
@@ -76,6 +65,10 @@ export function BasicsSection({ field }: { readonly field: Field }) {
   const [name, setName] = useState(field.name);
   const [help, setHelp] = useState(field.help);
   const change = useChangeField();
+  const types = useFieldTypes();
+  const takesDefault = types.data?.kinds
+    .find((each) => each.kind === field.kind)
+    ?.traits.includes("takes-default");
   return (
     <Card heading={t("fields.basics")}>
       <Form
@@ -95,7 +88,7 @@ export function BasicsSection({ field }: { readonly field: Field }) {
         </div>
       </Form>
       <Flags field={field} />
-      {hasNoDefault(field) ? null : <DefaultValue field={field} />}
+      {takesDefault === true ? <DefaultValue field={field} /> : null}
     </Card>
   );
 }

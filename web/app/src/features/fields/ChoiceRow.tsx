@@ -4,7 +4,7 @@ import {
   Alert,
   alertTone,
   buttonLook,
-  ColorChoice,
+  ChoiceGroup,
   ConfirmDialog,
   FieldValue,
   Form,
@@ -20,12 +20,11 @@ import {
 import { useState } from "react";
 
 import { messageOf } from "../../shared/errors.ts";
-import { plainText, type Choice, type Field } from "./fields.ts";
+import { badgeLook, plainText, type Choice, type Field } from "./fields.ts";
 import { useChangeChoice } from "./use-change-field.ts";
 
 /** Words of the HTML standard and marks that are not text for people. */
 const noIcon = "none";
-const badge = "badge";
 
 const iconChoices = [
   { value: noIcon, label: t("fields.no-icon") },
@@ -62,7 +61,7 @@ function ChoiceTitle({
   return (
     <>
       <FieldValue
-        look={field.look === plainText ? badge : field.look}
+        look={field.look === plainText ? badgeLook : field.look}
         text={choice.name}
         color={choice.color}
         icon={choice.icon ?? undefined}
@@ -123,11 +122,13 @@ function ChoiceName({
 function ChoiceLook({ choice, send }: { readonly choice: Choice; readonly send: Send }) {
   return (
     <>
-      <ColorChoice
+      <ChoiceGroup
         legend={t("fields.choice-color", { name: choice.name })}
-        colors={colorChoices}
+        choices={colorChoices}
         value={choice.color}
-        sample={t("fields.color-sample")}
+        renderLabel={(color) => (
+          <span {...partOf(part.fieldSwatch, { variants: [color.value] })}>{color.label}</span>
+        )}
         onChange={(color) => {
           send({ color });
         }}

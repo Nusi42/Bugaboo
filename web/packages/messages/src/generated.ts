@@ -1176,7 +1176,6 @@ export const messages = {
   "fields.choice-color": "Color of {name}",
   "fields.choice-icon": "Icon of {name}",
   "fields.no-icon": "No icon",
-  "fields.color-sample": "Aa",
   "fields.choice-retire": "Retire this choice",
   "fields.choice-offer-again": "Offer this choice again",
   "fields.combine-into": "Combine with another choice",
@@ -1265,6 +1264,8 @@ export const messages = {
   "fields.combine-text":
     "Every value of {name} becomes {into}, in every issue and project that has it, and {name} is retired. Each of those issues gets a record in its history. This cannot be taken back.",
   "fields.used-more": "{count, plural, one {And # more project.} other {And # more projects.}}",
+  "fields.unit-hour": "h",
+  "fields.unit-minute": "m",
 } as const;
 
 export type MessageKey = keyof typeof messages;

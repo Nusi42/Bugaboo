@@ -1,11 +1,8 @@
-import { choiceColorWords, lookWords } from "@bugaboo/api-client";
+import { lookWords } from "@bugaboo/api-client";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
-import { ColorChoice } from "./ColorChoice.tsx";
 import { FieldValue } from "./FieldValue.tsx";
-
-const nothing = (): void => undefined;
 
 /** Words of the tests, not text for people. */
 const text = { value: "Critical", legend: "Color", sample: "Aa" } as const;
@@ -50,21 +47,5 @@ describe("cf_04 every look of a value is a part of the theme", () => {
     expect(markup).toContain("<progress");
     expect(markup).toContain('aria-label="Critical"');
     expect(markup).toContain('value="1"');
-  });
-
-  it("offers every choice color of the server as a swatch, once", () => {
-    const markup = renderToStaticMarkup(
-      <ColorChoice
-        legend={text.legend}
-        colors={choiceColorWords.map((word) => ({ value: word, label: word }))}
-        value={words.one}
-        sample={text.sample}
-        onChange={nothing}
-      />,
-    );
-    for (const word of choiceColorWords) {
-      expect(markup).toContain(`data-variant="${word}"`);
-    }
-    expect(markup.match(/type="radio"/gu)).toHaveLength(choiceColorWords.length);
   });
 });

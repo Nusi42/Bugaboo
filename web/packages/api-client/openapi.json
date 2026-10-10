@@ -15332,7 +15332,16 @@
       "KindTrait": {
         "type": "string",
         "description": "What is true of a kind of information.",
-        "enum": ["has-choices", "many", "text", "range", "long-text", "holds-people"]
+        "enum": [
+          "has-choices",
+          "many",
+          "text",
+          "range",
+          "long-text",
+          "holds-people",
+          "takes-default",
+          "dated"
+        ]
       },
       "LevelAnswerBody_FieldKey_FieldLevel": {
         "type": "object",

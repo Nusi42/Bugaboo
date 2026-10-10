@@ -1007,9 +1007,6 @@ pub const FIELDS_CHOICES: MessageKey = MessageKey::new("fields.choices");
 /// The message `fields.choices-help`.
 pub const FIELDS_CHOICES_HELP: MessageKey = MessageKey::new("fields.choices-help");
 
-/// The message `fields.color-sample`.
-pub const FIELDS_COLOR_SAMPLE: MessageKey = MessageKey::new("fields.color-sample");
-
 /// The message `fields.combine`.
 pub const FIELDS_COMBINE: MessageKey = MessageKey::new("fields.combine");
 
@@ -1187,6 +1184,12 @@ pub const FIELDS_TAKE_AWAY: MessageKey = MessageKey::new("fields.take-away");
 
 /// The message `fields.time-of-day`.
 pub const FIELDS_TIME_OF_DAY: MessageKey = MessageKey::new("fields.time-of-day");
+
+/// The message `fields.unit-hour`.
+pub const FIELDS_UNIT_HOUR: MessageKey = MessageKey::new("fields.unit-hour");
+
+/// The message `fields.unit-minute`.
+pub const FIELDS_UNIT_MINUTE: MessageKey = MessageKey::new("fields.unit-minute");
 
 /// The message `fields.unknown-choice`.
 pub const FIELDS_UNKNOWN_CHOICE: MessageKey = MessageKey::new("fields.unknown-choice");
@@ -6430,7 +6433,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "fields.choices-help",
         "Use the arrows to change the order. Retire a choice to stop offering it for new values; the values already set stay. Combine a choice with another one to move every value over.",
     ),
-    ("fields.color-sample", "Aa"),
     ("fields.combine", "Combine"),
     ("fields.combine-into", "Combine with another choice"),
     ("fields.combine-name", "Combine {name} with another choice"),
@@ -6546,6 +6548,8 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("fields.see-title", "Who can see it"),
     ("fields.take-away", "Take away"),
     ("fields.time-of-day", "Time (hours and minutes, like 14:30)"),
+    ("fields.unit-hour", "h"),
+    ("fields.unit-minute", "m"),
     ("fields.unknown-choice", "A choice that is gone"),
     ("fields.usage", "Where it is used"),
     (

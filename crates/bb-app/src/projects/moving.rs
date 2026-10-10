@@ -183,10 +183,10 @@ impl<S: AuthStore> Ctx<'_, S> {
         };
         let mut people: Vec<PersonChange> = Vec::new();
         let field_names: std::collections::HashMap<bb_core::id::FieldId, String> = self
-            .field_catalogue()
+            .known_field_names(actor, viewer, Some(project.id))
             .await?
-            .iter()
-            .map(|definition| (definition.field.id, definition.field.name.clone()))
+            .into_iter()
+            .filter_map(|(key, name)| key.own().map(|id| (id, name)))
             .collect();
         let mut truncated = false;
         let mut listed = 0_usize;

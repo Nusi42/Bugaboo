@@ -65,8 +65,7 @@ export function RulesSection({ field }: { readonly field: Field }) {
     <QueryGate error={types.error} data={types.data}>
       {(known) => {
         const traits = known.kinds.find((each) => each.kind === field.kind)?.traits ?? [];
-        const ranged =
-          traits.includes("range") && field.kind !== "date" && field.kind !== "date-time";
+        const ranged = traits.includes("range") && !traits.includes("dated");
         const pattern = traits.includes("text");
         const counted = pattern || traits.includes("many");
         return ranged || counted ? (

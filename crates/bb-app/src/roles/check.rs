@@ -272,6 +272,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         checker: &Actor,
         report: &AccessReport,
         person: PersonRef,
+        own_names: &std::collections::HashMap<FieldKey, String>,
     ) -> Result<AccessAnswer, AppError> {
         let mut permissions = Vec::with_capacity(report.permissions.len());
         for decision in &report.permissions {
@@ -286,19 +287,12 @@ impl<S: AuthStore> Ctx<'_, S> {
             });
         }
         let mut named = Vec::new();
-        let own_names: std::collections::HashMap<FieldKey, String> = self
-            .field_catalogue()
-            .await?
-            .iter()
-            .map(|definition| {
-                (
-                    FieldKey::Own(definition.field.id),
-                    definition.field.name.clone(),
-                )
-            })
-            .collect();
         let mut fields = Vec::with_capacity(report.fields.len());
         for decision in &report.fields {
+            // An own field the checker may not know is not told at all.
+            if decision.subject.own().is_some() && !own_names.contains_key(&decision.subject) {
+                continue;
+            }
             let mut answer = self.level_answer(checker, decision, &mut named).await?;
             answer.name = own_names.get(&answer.subject).cloned();
             fields.push(answer);
@@ -350,6 +344,9 @@ pub async fn check_access<S: AuthStore>(
             input.person,
         )
         .await?;
-    let answer = ctx.access_answer(&actor, &theirs.report(), person).await?;
+    let own_names = ctx.known_field_names(&actor, &checker, input.place).await?;
+    let answer = ctx
+        .access_answer(&actor, &theirs.report(), person, &own_names)
+        .await?;
     Ok(checker.authorize(answer))
 }

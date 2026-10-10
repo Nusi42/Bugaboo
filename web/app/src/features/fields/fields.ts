@@ -16,7 +16,10 @@ export type KindWord = Schema<"FieldType">;
 export type LookWord = Schema<"Look">;
 
 /** The look of plain text, which has no color or icon of its own. */
-export const plainText: LookWord = "plain-text";
+export const plainText = "plain-text" satisfies LookWord;
+
+/** The look of a small colored label. */
+export const badgeLook = "badge" satisfies LookWord;
 
 /** The kinds of information a field can hold, with what each allows: the server's, never a second list. */
 export function useFieldTypes() {
@@ -71,28 +74,9 @@ export function lookName(look: LookWord): string {
   return t(`field-look.${look}`);
 }
 
-/** The sentence under a kind of information: an example of what it holds. */
-const examples: Readonly<Record<KindWord, () => string>> = {
-  text: () => t("field-example.text"),
-  "long-text": () => t("field-example.long-text"),
-  "whole-number": () => t("field-example.whole-number"),
-  decimal: () => t("field-example.decimal"),
-  "yes-no": () => t("field-example.yes-no"),
-  "web-address": () => t("field-example.web-address"),
-  date: () => t("field-example.date"),
-  "date-time": () => t("field-example.date-time"),
-  duration: () => t("field-example.duration"),
-  "pick-one": () => t("field-example.pick-one"),
-  "pick-several": () => t("field-example.pick-several"),
-  person: () => t("field-example.person"),
-  people: () => t("field-example.people"),
-  group: () => t("field-example.group"),
-  issue: () => t("field-example.issue"),
-};
-
 /** An example of what a kind of information holds. */
 export function typeExample(kind: KindWord): string {
-  return examples[kind]();
+  return t(`field-example.${kind}`);
 }
 
 /** Where a field is used, in words: the whole organization, or how many projects. */

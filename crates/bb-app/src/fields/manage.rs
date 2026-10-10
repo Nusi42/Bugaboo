@@ -67,6 +67,40 @@ fn check_rules(kind: FieldType, rules: &Rules) -> Result<(), AppError> {
     Ok(())
 }
 
+/// Whether a value can still be the default of a field: it keeps the rules (but "required": a
+/// default is what fills a required field) and, for choices, only offers choices that are not
+/// retired.
+pub(super) fn default_fits(
+    kind: FieldType,
+    rules: &Rules,
+    choices: &[FieldChoice],
+    value: &FieldValue,
+) -> bool {
+    let without_required = Rules {
+        required: false,
+        ..rules.clone()
+    };
+    without_required.check(kind, Some(value), &Linear).is_ok()
+        && (!kind.has_choices()
+            || value.ids().iter().all(|bytes| {
+                choices
+                    .iter()
+                    .any(|choice| choice.retired_at.is_none() && choice.id.to_bytes() == *bytes)
+            }))
+}
+
+/// The default a field starts new items with, if it still fits: a default that the rules or the
+/// choices have left behind (a retired choice, a tighter range) is not used.
+pub(super) fn current_default(definition: &Definition) -> Option<FieldValue> {
+    let field = &definition.field;
+    if field.default_value.is_empty() || !field.kind.takes_default() {
+        return None;
+    }
+    let json = serde_json::from_str::<Value>(&field.default_value).ok()?;
+    let value = FieldValue::from_json(field.kind, &json).ok().flatten()?;
+    default_fits(field.kind, &field.rules, &definition.choices, &value).then_some(value)
+}
+
 /// The default value as it is kept (the JSON of its type), checked against the rules and, for a
 /// *Pick one* or *Pick several* field, against its choices. Empty text for no default.
 fn default_text(
@@ -78,26 +112,14 @@ fn default_text(
     let Some(json) = default.filter(|json| !json.is_null()) else {
         return Ok(String::new());
     };
+    if !kind.takes_default() {
+        return Err(ErrorCode::InvalidRequest.into());
+    }
     let value = FieldValue::from_json(kind, json)
         .map_err(|_| AppError::Refused(ErrorCode::InvalidRequest))?
         .ok_or(AppError::Refused(ErrorCode::InvalidRequest))?;
-    // The default has to keep the rules, except "required": it is what fills a required field.
-    let without_required = Rules {
-        required: false,
-        ..rules.clone()
-    };
-    without_required
-        .check(kind, Some(&value), &Linear)
-        .map_err(|_| AppError::Refused(ErrorCode::InvalidRequest))?;
-    if kind.has_choices() {
-        let offered = value.ids().iter().all(|bytes| {
-            choices
-                .iter()
-                .any(|choice| choice.retired_at.is_none() && choice.id.to_bytes() == *bytes)
-        });
-        if !offered {
-            return Err(ErrorCode::InvalidRequest.into());
-        }
+    if !default_fits(kind, rules, choices, &value) {
+        return Err(ErrorCode::InvalidRequest.into());
     }
     let json = value
         .to_json(kind)
@@ -396,6 +418,10 @@ impl<S: AuthStore> Ctx<'_, S> {
         if let Some(rules) = &input.rules {
             check_rules(kind, rules)?;
             after.field.rules = rules.clone();
+            // A default that the new rules no longer allow is taken away.
+            if input.default_value.is_keep() && current_default(&after).is_none() {
+                after.field.default_value = String::new();
+            }
         }
         if !input.default_value.is_keep() {
             let default = match &input.default_value {

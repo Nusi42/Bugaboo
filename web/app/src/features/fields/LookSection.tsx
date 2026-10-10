@@ -27,7 +27,7 @@ const SAMPLE_CHOICES = 4;
 /** One value in the look, for the preview: the choices of the field, or a sample of the kind. */
 function Samples({ field, look }: { readonly field: Field; readonly look: LookWord }) {
   const choices = field.choices.filter((choice) => !choice.retired).slice(0, SAMPLE_CHOICES);
-  if (field.kind === "pick-one" || field.kind === "pick-several") {
+  if (choices.length > 0) {
     return (
       <>
         {choices.map((choice) => (

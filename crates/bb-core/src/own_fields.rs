@@ -113,7 +113,8 @@ words! {
         /// One issue.
         Issue => "issue",
     }
-    messages name = "field-type."
+    messages name = "field-type.";
+    messages example = "field-example."
 }
 
 words_in_api!(FieldType, "What kind of information an own field holds.");
@@ -197,6 +198,23 @@ impl FieldType {
     pub const fn holds_people(self) -> bool {
         matches!(self, Self::Person | Self::People)
     }
+
+    /// Whether the value is a day or a moment.
+    #[must_use]
+    pub const fn is_dated(self) -> bool {
+        matches!(self, Self::Date | Self::DateTime)
+    }
+
+    /// Whether a field of this kind can start with a value: not one that points to people, groups
+    /// or issues (what a new item points to is for the person to choose, and checked for them),
+    /// and not a long text (saved only under an edit lock).
+    #[must_use]
+    pub const fn takes_default(self) -> bool {
+        !matches!(
+            self,
+            Self::Person | Self::People | Self::Group | Self::Issue | Self::LongText
+        )
+    }
 }
 
 words! {
@@ -215,6 +233,10 @@ words! {
         LongText => "long-text",
         /// It points to people, who are shown as *Who sees people* says.
         HoldsPeople => "holds-people",
+        /// A field of this kind can start with a value.
+        TakesDefault => "takes-default",
+        /// The value is a day or a moment.
+        Dated => "dated",
     }
 }
 
@@ -231,6 +253,8 @@ impl FieldType {
             (self.has_range(), KindTrait::Range),
             (self.is_long_text(), KindTrait::LongText),
             (self.holds_people(), KindTrait::HoldsPeople),
+            (self.takes_default(), KindTrait::TakesDefault),
+            (self.is_dated(), KindTrait::Dated),
         ]
         .into_iter()
         .filter_map(|(true_of_it, word)| true_of_it.then_some(word))

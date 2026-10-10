@@ -20,6 +20,7 @@ const WORDS_SOURCE: &str = "crates/bb-api-words/src/lib.rs";
 const POLICY_MACRO: &str = "macro_rules! trusted_types_policy";
 const PAGING_SOURCE: &str = "crates/bb-core/src/paging.rs";
 const EDIT_SOURCE: &str = "crates/bb-core/src/edit.rs";
+const FIELDS_SOURCE: &str = "crates/bb-core/src/own_fields.rs";
 const PAGE_SIZE_MAX: &str = "PAGE_SIZE_MAX";
 const PAGE_SIZE_DEFAULT: &str = "PAGE_SIZE_DEFAULT";
 
@@ -240,6 +241,25 @@ export const versionsMax = {};
         number("DRAFT_KEEP_DAYS")?,
         number("DRAFT_TEXT_MAX")?,
         number("VERSIONS_MAX")?,
+    ))
+}
+
+/// The scale of the decimal numbers of own fields as constants for the browser client: how many
+/// parts a whole has, and how many digits that is after the point.
+pub(super) fn fields(sources: &[Source]) -> anyhow::Result<String> {
+    let Some((_, text)) = sources.iter().find(|(path, _)| path == FIELDS_SOURCE) else {
+        bail!("{FIELDS_SOURCE} is missing");
+    };
+    let file = syn::parse_file(text).with_context(|| format!("{FIELDS_SOURCE} is not Rust"))?;
+    let parts = number_const(&file, FIELDS_SOURCE, "DECIMAL_PARTS")?;
+    let digits = parts.len().saturating_sub(1);
+    Ok(format!(
+        "{TS_HEADER}/** How many parts a whole has in a decimal number of an own field (it is stored in these parts). */
+export const decimalParts = {parts};
+
+/** How many digits a decimal number of an own field has after the point. */
+export const decimalDigits = {digits};
+"
     ))
 }
 

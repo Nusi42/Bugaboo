@@ -36,6 +36,7 @@ export type {
 } from "./editing.ts";
 export { trustedTypesPolicyName } from "./browser.generated.ts";
 export { isSafeHtml, markSafeHtml, type SafeHtml } from "./safe-html.ts";
+export { decimalDigits, decimalParts } from "./fields.generated.ts";
 export { pageSizeDefault, pageSizeMax } from "./paging.generated.ts";
 export {
   choiceColorWords,

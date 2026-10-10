@@ -17,6 +17,8 @@
 //!   browser client's `src/paging.generated.ts`;
 //! - the times and sizes of editing (`crates/bb-core/src/edit.rs`) are written as
 //!   `src/editing.generated.ts`;
+//! - the scale of own-field decimals (`crates/bb-core/src/own_fields.rs`) is written as
+//!   `src/fields.generated.ts`;
 //! - the words of the vocabularies the browser lists (the icons of issue types) are read from the
 //!   API description into `src/words.generated.ts`;
 //! - the name of the Trusted Types policy (`crates/bb-api-words`) is read as Rust source and
@@ -56,6 +58,8 @@ pub(crate) const SETTING_KEYS_PATH: &str = "web/packages/api-client/src/setting-
 pub(crate) const PAGING_PATH: &str = "web/packages/api-client/src/paging.generated.ts";
 /// The times and sizes of editing, for the browser app.
 pub(crate) const EDITING_PATH: &str = "web/packages/api-client/src/editing.generated.ts";
+/// The scale of own-field numbers, for the browser app.
+pub(crate) const FIELDS_PATH: &str = "web/packages/api-client/src/fields.generated.ts";
 /// The words of the vocabularies the browser lists at run time.
 pub(crate) const WORDS_PATH: &str = "web/packages/api-client/src/words.generated.ts";
 /// Names the browser needs from the server code, such as the Trusted Types policy.
@@ -115,6 +119,10 @@ pub(crate) fn generate(repo: &Repo) -> anyhow::Result<Vec<Generated>> {
         Generated::new(
             EDITING_PATH,
             format_with_oxfmt(repo, EDITING_PATH, &web_constants::editing(&sources)?)?,
+        ),
+        Generated::new(
+            FIELDS_PATH,
+            format_with_oxfmt(repo, FIELDS_PATH, &web_constants::fields(&sources)?)?,
         ),
         Generated::new(
             WORDS_PATH,

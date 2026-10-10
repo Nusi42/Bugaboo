@@ -26,6 +26,7 @@ use bb_core::people_kinds::PeopleKind;
 use bb_policy::{Evaluation, PeopleContext, Place};
 use serde_json::Value;
 
+use super::manage::current_default;
 use super::pattern::Linear;
 use super::types::Definition;
 use crate::access::Actor;
@@ -506,13 +507,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             if !reaches || sets.iter().any(|set| set.field == field.id) {
                 continue;
             }
-            let default = if field.default_value.is_empty() {
-                None
-            } else {
-                serde_json::from_str::<Value>(&field.default_value)
-                    .ok()
-                    .and_then(|json| FieldValue::from_json(field.kind, &json).ok().flatten())
-            };
+            let default = current_default(definition);
             if default.is_none() {
                 let may_fill = viewer.field_level_for(item.issue_type, FieldKey::Own(field.id))
                     >= FieldLevel::CanChange;

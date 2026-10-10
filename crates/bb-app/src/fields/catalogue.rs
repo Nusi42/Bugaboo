@@ -14,6 +14,7 @@ use bb_core::issue::IssueType;
 use bb_core::own_fields::{FieldType, Scope, USAGE_PROJECTS_MAX};
 use bb_policy::{Authorized, Evaluation, Permission, Place};
 
+use super::manage::current_default;
 use super::types::{
     ChoiceView, Definition, FieldPage, FieldQuery, FieldTypeInfo, FieldTypePage, FieldTypesQuery,
     FieldUsage, FieldView, FieldsQuery, ScopeView,
@@ -47,6 +48,67 @@ impl<S: AuthStore> Ctx<'_, S> {
         };
         seen.insert(project, found.clone());
         Ok(found)
+    }
+
+    /// Whether the viewer may know the field at a place: they may see it somewhere (or manage
+    /// fields), and it reaches the place. `chain` is the projects from the top down to the place,
+    /// or none for the organization, where a field limited to projects counts for a viewer who
+    /// sees one of them (or manages fields).
+    pub(crate) async fn field_in_view(
+        &self,
+        actor: &Actor,
+        held: &Evaluation,
+        chain: Option<&[ProjectId]>,
+        definition: &Definition,
+        seen: &mut Seen,
+    ) -> Result<bool, AppError> {
+        if !may_know(held, definition.field.id) {
+            return Ok(false);
+        }
+        let projects = &definition.scope.projects;
+        if projects.is_empty() {
+            return Ok(true);
+        }
+        if let Some(chain) = chain {
+            return Ok(projects.iter().any(|project| chain.contains(project)));
+        }
+        if held.allows(Permission::ManageFields) {
+            return Ok(true);
+        }
+        for project in projects {
+            if self.visible_project(actor, *project, seen).await?.is_some() {
+                return Ok(true);
+            }
+        }
+        Ok(false)
+    }
+
+    /// The names of the own fields the viewer may know at a place (the screens that list fields
+    /// of the catalogue next to the own ones show no other name).
+    pub(crate) async fn known_field_names(
+        &self,
+        actor: &Actor,
+        held: &Evaluation,
+        project: Option<ProjectId>,
+    ) -> Result<HashMap<FieldKey, String>, AppError> {
+        let chain = match project {
+            Some(project) => Some(self.chain_of(project).await?),
+            None => None,
+        };
+        let mut seen = Seen::new();
+        let mut names = HashMap::new();
+        for definition in self.field_catalogue().await?.iter() {
+            if self
+                .field_in_view(actor, held, chain.as_deref(), definition, &mut seen)
+                .await?
+            {
+                names.insert(
+                    FieldKey::Own(definition.field.id),
+                    definition.field.name.clone(),
+                );
+            }
+        }
+        Ok(names)
     }
 
     /// Where a field is used, as the viewer may know it: the projects they see, and the types.
@@ -107,7 +169,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             kind: field.kind,
             applies_to: field.applies_to,
             rules: field.rules.clone(),
-            default_value: serde_json::from_str(&field.default_value).ok(),
+            default_value: current_default(definition).and_then(|value| value.to_json(field.kind)),
             look: field.look,
             never_to_assistant: field.never_to_assistant,
             retired: field.retired_at.is_some(),
@@ -174,15 +236,9 @@ pub async fn fields<S: AuthStore>(
         let field = &definition.field;
         let wanted = (input.retired || field.retired_at.is_none())
             && input.applies_to.is_none_or(|kind| kind == field.applies_to)
-            && may_know(&held, field.id)
-            && chain.as_ref().is_none_or(|chain| {
-                definition.scope.projects.is_empty()
-                    || definition
-                        .scope
-                        .projects
-                        .iter()
-                        .any(|project| chain.contains(project))
-            });
+            && ctx
+                .field_in_view(&actor, &held, chain.as_deref(), definition, &mut seen)
+                .await?;
         if wanted {
             items.push(
                 ctx.field_view(&actor, &held, definition, &types, &mut seen)

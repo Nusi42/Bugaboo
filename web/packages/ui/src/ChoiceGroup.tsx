@@ -1,4 +1,4 @@
-import { useId } from "react";
+import { useId, type ReactNode } from "react";
 
 import { partOf } from "./parts.ts";
 import { part } from "./tokens.ts";
@@ -18,6 +18,8 @@ export interface ChoiceGroupProps<Value extends string> {
   readonly choices: readonly Choice<Value>[];
   readonly value: Value;
   readonly onChange: (value: Value) => void;
+  /** How a choice shows its name, next to the input; the usual label by default. */
+  readonly renderLabel?: (choice: Choice<Value>) => ReactNode;
 }
 
 /** One choice out of a few, shown as buttons that sit side by side: themes, spacing and the like. */
@@ -26,6 +28,7 @@ export function ChoiceGroup<Value extends string>({
   choices,
   value,
   onChange,
+  renderLabel,
 }: ChoiceGroupProps<Value>) {
   const group = useId();
   return (
@@ -44,7 +47,11 @@ export function ChoiceGroup<Value extends string>({
                 onChange(choice.value);
               }}
             />
-            <span {...partOf(part.choiceGroupLabel)}>{choice.label}</span>
+            {renderLabel === undefined ? (
+              <span {...partOf(part.choiceGroupLabel)}>{choice.label}</span>
+            ) : (
+              renderLabel(choice)
+            )}
           </label>
         ))}
       </div>

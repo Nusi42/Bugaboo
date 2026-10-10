@@ -263,19 +263,14 @@ pub async fn field_permissions<S: AuthStore>(
     let table = ctx
         .permissions_table::<FieldKey>(&actor, input.project, input.issue_type)
         .await?;
-    // The names of the own fields: whoever decides what roles see may know them.
-    let names: std::collections::HashMap<FieldKey, String> = ctx
-        .field_catalogue()
-        .await?
-        .iter()
-        .map(|definition| {
-            (
-                FieldKey::Own(definition.field.id),
-                definition.field.name.clone(),
-            )
-        })
-        .collect();
+    // Only the own fields the person may know at this place are listed, with their names.
+    let place = input.project.map_or(Place::Organization, Place::Project);
+    let held = ctx.evaluation_of(&actor, place).await?;
+    let names = ctx.known_field_names(&actor, &held, input.project).await?;
     Ok(table.map(|mut table| {
+        table
+            .rows
+            .retain(|row| row.subject.own().is_none() || names.contains_key(&row.subject));
         for row in &mut table.rows {
             row.name = names.get(&row.subject).cloned();
         }

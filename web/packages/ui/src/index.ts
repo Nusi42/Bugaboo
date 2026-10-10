@@ -22,7 +22,6 @@ export {
 export { Button, type ButtonProps } from "./Button.tsx";
 export { Card, type CardProps } from "./Card.tsx";
 export { Checkbox, type CheckboxProps } from "./Checkbox.tsx";
-export { ColorChoice, type ColorChoiceProps } from "./ColorChoice.tsx";
 export { ChoiceGroup, type Choice, type ChoiceGroupProps } from "./ChoiceGroup.tsx";
 export {
   AskDialog,

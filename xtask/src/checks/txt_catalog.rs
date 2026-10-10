@@ -133,6 +133,7 @@ fn made_keys() -> Vec<Made> {
         keys.push(made("the field level", level.code(), level.name()));
     }
     for kind in FieldType::ALL {
+        keys.push(made("the example of the kind", kind.code(), kind.example()));
         keys.push(made("the kind of an own field", kind.code(), kind.name()));
     }
     for what in FieldFor::ALL {

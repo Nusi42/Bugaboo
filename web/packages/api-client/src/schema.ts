@@ -2824,7 +2824,15 @@ export interface components {
      * @description What is true of a kind of information.
      * @enum {string}
      */
-    KindTrait: "has-choices" | "many" | "text" | "range" | "long-text" | "holds-people";
+    KindTrait:
+      | "has-choices"
+      | "many"
+      | "text"
+      | "range"
+      | "long-text"
+      | "holds-people"
+      | "takes-default"
+      | "dated";
     /** @description A field or a kind with its level and what each role says. */
     LevelAnswerBody_FieldKey_FieldLevel: {
       /** @description An access key lowered the level to *Can see*. */
