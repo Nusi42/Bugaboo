@@ -229,9 +229,8 @@ export class LongTextEditor {
       phase: { kind: "lost", reason, ...(by === null || by === undefined ? {} : { by }) },
       problem: null,
     });
-    if (reason === "version-changed") {
-      await this.deps.refresh().catch(ignore);
-    }
+    // Whatever the reason, the newer text and version are what Compare and save works with.
+    await this.deps.refresh().catch(ignore);
   }
 
   /** The text is saved or thrown away: nothing is held and no draft is kept. */

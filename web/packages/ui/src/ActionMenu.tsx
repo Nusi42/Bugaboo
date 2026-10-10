@@ -1,7 +1,10 @@
-import { Menu, MenuItem, MenuTrigger, Popover } from "react-aria-components";
+import { useState } from "react";
 
-import { Button } from "./Button.tsx";
+import { Button, type ButtonProps } from "./Button.tsx";
+import { useLayout } from "./layout.ts";
+import { Overlay } from "./Overlay.tsx";
 import { partOf } from "./parts.ts";
+import { buttonLook, overlayEdge } from "./props.ts";
 import { part } from "./tokens.ts";
 
 export interface MenuAction {
@@ -16,30 +19,50 @@ export interface ActionMenuProps {
   /** The button that opens the menu: *More*. */
   readonly label: string;
   readonly actions: readonly MenuAction[];
+  readonly look?: ButtonProps["look"];
 }
 
 /**
- * A button that opens a short list of actions (UX §4.4: *More*). It works with the keyboard and a
- * screen reader as React Aria makes it, closes with Esc and gives the focus back to the button.
+ * A button that opens a short list of actions (UX §4.4: *More*). The list opens in the one overlay
+ * of the app (a sheet from the bottom on a phone), takes the focus, closes with Esc and gives the
+ * focus back to the button; pressing an action does it and closes the list.
  */
-export function ActionMenu({ label, actions }: ActionMenuProps) {
+export function ActionMenu({ label, actions, look = buttonLook.plain }: ActionMenuProps) {
+  const [open, setOpen] = useState(false);
+  const phone = useLayout() === "phone";
   return (
-    <MenuTrigger>
-      <Button>{label}</Button>
-      <Popover {...partOf(part.actionMenuPopover)}>
-        <Menu {...partOf(part.actionMenu)} aria-label={label}>
+    <>
+      <Button
+        look={look}
+        onPress={() => {
+          setOpen(true);
+        }}
+      >
+        {label}
+      </Button>
+      <Overlay
+        isOpen={open}
+        onOpenChange={setOpen}
+        label={label}
+        from={phone ? overlayEdge.bottom : overlayEdge.center}
+      >
+        <ul {...partOf(part.actionMenu)}>
           {actions.map((action) => (
-            <MenuItem
-              key={action.id}
-              id={action.id}
-              {...partOf(part.actionMenuItem)}
-              onAction={action.onAction}
-            >
-              {action.label}
-            </MenuItem>
+            <li key={action.id}>
+              <Button
+                look={buttonLook.quiet}
+                wide
+                onPress={() => {
+                  setOpen(false);
+                  action.onAction();
+                }}
+              >
+                {action.label}
+              </Button>
+            </li>
           ))}
-        </Menu>
-      </Popover>
-    </MenuTrigger>
+        </ul>
+      </Overlay>
+    </>
   );
 }

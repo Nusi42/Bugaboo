@@ -2549,34 +2549,12 @@ part "in-place.input:focus" {
     use "ring"
 }
 
-// The list of actions that opens from a button.
-part "action-menu.popover" {
-    use "floating-box"
-    min-width "$size-form"
-    max-width "100%"
-    padding "$space-1"
-    border-radius "$r-card"
-}
-
+// The list of actions that opens from a button, inside the one overlay.
 part "action-menu" {
     use "list-reset"
     display flex
     flex-direction column
-    outline none
-}
-
-part "action-menu.item" {
-    use "pick-row"
-    border-radius "$r-ctl"
-    outline none
-}
-
-part "action-menu.item[focused]" {
-    background "$bg-hover"
-}
-
-part "action-menu.item[focus-visible]" {
-    use "ring-inside"
+    gap "$space-1"
 }
 
 part "issue-page" {

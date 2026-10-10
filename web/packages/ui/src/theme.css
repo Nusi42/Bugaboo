@@ -2787,47 +2787,13 @@ body {
   outline-offset: var(--ring-offset);
 }
 
-[data-part="action-menu.popover"] {
-  box-sizing: border-box;
-  border: var(--border-width) solid var(--border);
-  background: var(--bg-raised);
-  box-shadow: var(--shadow);
-  min-width: var(--size-form);
-  max-width: 100%;
-  padding: var(--space-1);
-  border-radius: var(--r-card);
-}
-
 [data-part="action-menu"] {
   margin: 0;
   padding: 0;
   list-style: none;
   display: flex;
   flex-direction: column;
-  outline: none;
-}
-
-[data-part="action-menu.item"] {
-  display: flex;
-  flex-direction: column;
   gap: var(--space-1);
-  box-sizing: border-box;
-  min-height: var(--size-target);
-  padding: var(--space-2) var(--space-3);
-  color: var(--fg);
-  text-decoration: none;
-  cursor: pointer;
-  border-radius: var(--r-ctl);
-  outline: none;
-}
-
-[data-part="action-menu.item"][data-focused] {
-  background: var(--bg-hover);
-}
-
-[data-part="action-menu.item"][data-focus-visible] {
-  outline: var(--ring-width) solid var(--accent);
-  outline-offset: calc(var(--ring-width) * -1);
 }
 
 [data-part="issue-page"] {

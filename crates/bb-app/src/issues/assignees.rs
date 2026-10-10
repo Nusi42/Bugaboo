@@ -9,13 +9,12 @@
 
 use bb_core::ErrorCode;
 use bb_core::access::PeopleLevel;
-use bb_core::paging::{Cut, page_len, read_len};
+use bb_core::paging::{Cut, page_len};
 use bb_core::people_kinds::PeopleKind;
-use bb_core::person::Person;
 use bb_policy::{Authorized, Masked, PeopleContext, Permission, PersonRef, Place};
 use serde::Serialize;
 
-use crate::auth::{AppError, AuthStore, Ctx, PeoplePosition, SearchIn, internal};
+use crate::auth::{AppError, AuthStore, Ctx};
 use crate::people::write_cursor;
 
 /// List the people an issue of a project can be assigned to.
@@ -65,7 +64,7 @@ pub async fn assignable_people<S: AuthStore>(
     if !held.allows(Permission::SeeIssues) {
         return Err(ErrorCode::Forbidden.into());
     }
-    let mut after = ctx.people_position(input.cursor.as_deref()).await?;
+    let after = ctx.people_position(input.cursor.as_deref()).await?;
     if held.people_level(PeopleKind::AssignedTo, PeopleContext::Ordinary) != PeopleLevel::Names {
         return Ok(held.authorize(AssignablePeoplePage {
             items: Vec::new(),
@@ -73,35 +72,9 @@ pub async fn assignable_people<S: AuthStore>(
         }));
     }
     let wanted = page_len(Some(input.limit));
-    let mut page: Vec<Person> = Vec::with_capacity(wanted.saturating_add(1));
-    // The store gives the people by name, a batch at a time; only those with a role that reaches
-    // the project are kept, so more batches are read until a page (and one more, to know whether
-    // there is a next one) is full.
-    'batches: loop {
-        let batch = ctx
-            .store()
-            .people_page(
-                input.search.as_deref(),
-                SearchIn::Names,
-                after.as_ref(),
-                read_len(wanted),
-            )
-            .await
-            .map_err(|error| internal::<S>(&error))?;
-        let full = batch.len() > wanted;
-        for person in &batch {
-            if ctx.has_a_role_at(person.id, place).await? {
-                page.push(person.clone());
-                if page.len() > wanted {
-                    break 'batches;
-                }
-            }
-        }
-        match batch.last() {
-            Some(last) if full => after = Some(position_of(last)),
-            _ => break,
-        }
-    }
+    let page = ctx
+        .members_page(place, input.search.as_deref(), after, wanted, false)
+        .await?;
     let page = Cut::of(page, wanted);
     let next_cursor = page.next_cursor(write_cursor);
     let mut items = Vec::with_capacity(page.items.len());
@@ -117,12 +90,4 @@ pub async fn assignable_people<S: AuthStore>(
         );
     }
     Ok(held.authorize(AssignablePeoplePage { items, next_cursor }))
-}
-
-/// Where a page of people ends, for the store.
-fn position_of(person: &Person) -> PeoplePosition {
-    PeoplePosition {
-        name: person.display_name.clone(),
-        id: person.id,
-    }
 }

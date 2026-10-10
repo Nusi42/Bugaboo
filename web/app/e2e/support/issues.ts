@@ -1,7 +1,7 @@
 import { dataOf, settingKeys, type SettingChoice } from "@bugaboo/api-client";
 
 import { ana, lea, makePeopleWithRoles, roleName } from "./access.ts";
-import { makeAdmin, signInThroughApi } from "./accounts.ts";
+import { bob, makeAdmin, signInThroughApi } from "./accounts.ts";
 import { type ApiSession } from "./api.ts";
 import { makeProject } from "./projects.ts";
 import { type Instance } from "./server.ts";
@@ -105,6 +105,7 @@ export async function prepareWeb(server: Instance): Promise<void> {
   await makeIssue(admin, "WEB", webIssues.passkey);
   await makePeopleWithRoles(server, admin, [
     { person: ana, role: roleName.viewer, project: "WEB" },
+    { person: bob, role: roleName.teamMember, project: "WEB" },
     { person: lea, role: roleName.guest, project: "WEB" },
   ]);
   const guest = await signInThroughApi(server, lea);
